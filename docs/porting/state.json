@@ -9,9 +9,39 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "live-oracle",
-    "nextAction": "Continue live-oracle work from reconciledCommit e23d559a; preserve the unresolved dynamic TLS input-ownership boundary and defer genAsyncResumeInfo until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "stage": "parity-validation",
+    "nextAction": "Capture full compilation dumps for the same 762-method Windows x64 CoreLib corpus using native and managed primary-JIT Core_Roots; verify identical method/compilation counts and native-repeat stability, then compare every phase with scripts\\porting\\Compare-PortingDumps.ps1, extending phase support narrowly as needed. Selected-method AltJIT phase matches are diagnostic evidence only. Keep dynamic TLS input ownership unresolved until its allocation boundary is identified.",
     "activeBatch": null,
+    "parityEvidence": {
+      "oracleCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
+      "corelibAssemblyListing": {
+        "architecture": "Windows x64",
+        "methodBlocks": 762,
+        "differences": 0,
+        "normalization": "Generated G_M label identifiers only",
+        "scope": "Text assembly listings; not relocation-aware machine-code or GC/EH/unwind metadata parity"
+      },
+      "focusedDumpComparisons": {
+        "System.Resources.ResourceManager": {
+          "methods": 9,
+          "importation": "Equal after canonicalizing process-local CorInfo handle fields",
+          "redundantBranchOpts": "Raw exact equality",
+          "capture": "Selected-method AltJIT; not full primary-JIT dump parity"
+        },
+        "System.SpanHelpers.IndexOf": {
+          "phase": "Importation",
+          "result": "Equal after canonicalizing process-local CorInfo handle fields"
+        }
+      },
+      "comparator": {
+        "script": "scripts\\porting\\Compare-PortingDumps.ps1",
+        "phases": [
+          "Importation",
+          "Redundant branch opts"
+        ],
+        "negativeControl": "The pre-fix class-attribute formatting mismatch remains visible with handle canonicalization enabled."
+      }
+    },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
       "finding": "Selected runtime-async adapters retain matching transformed-body instructions but use different EE-assigned TLS indices and offsets; the earlier slot allocations causing the managed shift are unidentified.",

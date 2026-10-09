@@ -2,7 +2,9 @@
 param(
     [Parameter(Mandatory)][string] $NativeDump,
     [Parameter(Mandatory)][string] $ManagedDump,
-    [Parameter(Mandatory)][string] $OutputPath
+    [Parameter(Mandatory)][string] $OutputPath,
+    [ValidateSet("Importation", "Redundant branch opts")][string] $Phase = "Importation",
+    [switch] $CanonicalizeProcessSpecificHandles
 )
 
 $ErrorActionPreference = "Stop"
@@ -27,6 +29,100 @@ function Get-Methods([string] $Path) {
     return $methods
 }
 
+function Get-ComparisonRegions([string] $Text, [string] $Method, [string] $Phase) {
+    $regions = [Collections.Generic.List[string]]::new()
+    if ($Phase -eq "Importation") {
+        $boundary = "*************** Finishing PHASE Importation"
+        $end = $Text.IndexOf($boundary, [StringComparison]::Ordinal)
+        if ($end -lt 0) {
+            throw "Missing importation completion for $Method"
+        }
+        $regions.Add($Text.Substring(0, $end))
+        return $regions.ToArray()
+    }
+
+    $startMarker = "*************** Starting PHASE $Phase"
+    $endMarker = "*************** Finishing PHASE $Phase"
+    $offset = 0
+    while ($offset -lt $Text.Length) {
+        $start = $Text.IndexOf($startMarker, $offset, [StringComparison]::Ordinal)
+        if ($start -lt 0) {
+            break
+        }
+
+        $end = $Text.IndexOf($endMarker, $start, [StringComparison]::Ordinal)
+        if ($end -lt 0) {
+            throw "Missing completion for phase '$Phase' in $Method"
+        }
+
+        $end += $endMarker.Length
+        $regions.Add($Text.Substring($start, $end - $start))
+        $offset = $end
+    }
+
+    if ($regions.Count -eq 0) {
+        throw "No phase '$Phase' in $Method"
+    }
+
+    return $regions.ToArray()
+}
+
+function Normalize-ProcessSpecificHandles([string] $Text) {
+    $mapping = [Collections.Generic.Dictionary[string, string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $handlePattern = [regex]::new(
+        '(?<prefix>(?:method|class|context) )(?<address>[0-9A-Fa-f]{8}(?:[0-9A-Fa-f]{8})?)(?![0-9A-Fa-f])|' +
+        '(?<prefix>exactContextHandle=0x)(?<address>[0-9A-Fa-f]{8}(?:[0-9A-Fa-f]{8})?)(?![0-9A-Fa-f])')
+    $lines = $Text.Split("`n")
+    for ($lineIndex = 0; $lineIndex -lt $lines.Length; $lineIndex++) {
+        $line = $lines[$lineIndex]
+        if ($line.Contains("ResolveVirtualMethod (") -or $line.Contains("CheckCanInline:") -or
+            $line.Contains("exactContextHandle=0x")) {
+            $matches = $handlePattern.Matches($line)
+            if ($matches.Count -gt 0) {
+                $builder = [Text.StringBuilder]::new($line.Length)
+                $offset = 0
+                foreach ($match in $matches) {
+                    [void]$builder.Append($line, $offset, $match.Index - $offset)
+                    $address = $match.Groups["address"].Value
+                    if (-not $mapping.ContainsKey($address)) {
+                        $mapping.Add($address, "HANDLE{0:D4}" -f ($mapping.Count + 1))
+                    }
+                    [void]$builder.Append($match.Groups["prefix"].Value)
+                    [void]$builder.Append($mapping[$address])
+                    $offset = $match.Index + $match.Length
+                }
+                [void]$builder.Append($line, $offset, $line.Length - $offset)
+                $lines[$lineIndex] = $builder.ToString()
+            }
+        }
+    }
+
+    # Keep handle-identity relationships while removing only process-local addresses in these diagnostics.
+    return [string]::Join("`n", $lines)
+}
+
+function Get-FirstDifference([string] $Native, [string] $Managed) {
+    $nativeLines = $Native.Split("`n")
+    $managedLines = $Managed.Split("`n")
+    $limit = [Math]::Min($nativeLines.Length, $managedLines.Length)
+    $firstDifference = -1
+    for ($line = 0; $line -lt $limit; $line++) {
+        if (-not [string]::Equals($nativeLines[$line], $managedLines[$line], [StringComparison]::Ordinal)) {
+            $firstDifference = $line
+            break
+        }
+    }
+    if ($firstDifference -eq -1 -and $nativeLines.Length -ne $managedLines.Length) {
+        $firstDifference = $limit
+    }
+
+    return [ordered]@{
+        line = if ($firstDifference -ge 0) { $firstDifference + 1 } else { $null }
+        nativeLine = if ($firstDifference -ge 0 -and $firstDifference -lt $nativeLines.Length) { $nativeLines[$firstDifference] } else { $null }
+        managedLine = if ($firstDifference -ge 0 -and $firstDifference -lt $managedLines.Length) { $managedLines[$firstDifference] } else { $null }
+    }
+}
+
 $nativeMethods = Get-Methods $NativeDump
 $managedMethods = Get-Methods $ManagedDump
 $names = @($nativeMethods.Keys)
@@ -43,38 +139,42 @@ $results = foreach ($name in $names) {
     if (-not $managedMethods.Contains($name)) {
         throw "Missing managed compilation: $name"
     }
-    $native = $nativeMethods[$name]
-    $managed = $managedMethods[$name]
-    $boundary = "*************** Finishing PHASE Importation"
-    $nativeImportEnd = $native.IndexOf($boundary, [StringComparison]::Ordinal)
-    $managedImportEnd = $managed.IndexOf($boundary, [StringComparison]::Ordinal)
-    if ($nativeImportEnd -lt 0 -or $managedImportEnd -lt 0) {
-        throw "Missing importation completion for $name"
+    $nativeRegions = @(Get-ComparisonRegions $nativeMethods[$name] $name $Phase)
+    $managedRegions = @(Get-ComparisonRegions $managedMethods[$name] $name $Phase)
+    $nativeText = [string]::Join("`n", $nativeRegions)
+    $managedText = [string]::Join("`n", $managedRegions)
+    $rawEqual = [string]::Equals($nativeText, $managedText, [StringComparison]::Ordinal)
+    $rawDifference = Get-FirstDifference $nativeText $managedText
+    if ($CanonicalizeProcessSpecificHandles) {
+        $nativeText = Normalize-ProcessSpecificHandles $nativeText
+        $managedText = Normalize-ProcessSpecificHandles $managedText
     }
-    $nativePrefix = $native.Substring(0, $nativeImportEnd)
-    $managedPrefix = $managed.Substring(0, $managedImportEnd)
-    $nativeLines = $nativePrefix.Split("`n")
-    $managedLines = $managedPrefix.Split("`n")
-    $limit = [Math]::Min($nativeLines.Length, $managedLines.Length)
-    $firstDifference = -1
-    for ($line = 0; $line -lt $limit; $line++) {
-        if (-not [string]::Equals($nativeLines[$line], $managedLines[$line], [StringComparison]::Ordinal)) {
-            $firstDifference = $line
-            break
-        }
-    }
-    if ($firstDifference -eq -1 -and $nativeLines.Length -ne $managedLines.Length) {
-        $firstDifference = $limit
-    }
-    [ordered]@{
+    $difference = Get-FirstDifference $nativeText $managedText
+    $equal = ($nativeRegions.Count -eq $managedRegions.Count) -and
+        [string]::Equals($nativeText, $managedText, [StringComparison]::Ordinal)
+    $result = [ordered]@{
         method = $name
-        prefixBeforeImportationCompletionEqual = [string]::Equals($nativePrefix, $managedPrefix, [StringComparison]::Ordinal)
-        nativePrefixLines = $nativeLines.Length
-        managedPrefixLines = $managedLines.Length
-        firstDifferentLine = if ($firstDifference -ge 0) { $firstDifference + 1 } else { $null }
-        nativeLine = if ($firstDifference -ge 0 -and $firstDifference -lt $nativeLines.Length) { $nativeLines[$firstDifference] } else { $null }
-        managedLine = if ($firstDifference -ge 0 -and $firstDifference -lt $managedLines.Length) { $managedLines[$firstDifference] } else { $null }
+        phase = $Phase
+        phaseOccurrenceCountNative = $nativeRegions.Count
+        phaseOccurrenceCountManaged = $managedRegions.Count
+        equal = $equal
+        rawEqual = $rawEqual
+        processSpecificHandlesCanonicalized = [bool]$CanonicalizeProcessSpecificHandles
+        nativeLines = $nativeText.Split("`n").Length
+        managedLines = $managedText.Split("`n").Length
+        firstDifferentLine = $difference.line
+        nativeLine = $difference.nativeLine
+        managedLine = $difference.managedLine
+        firstRawDifferentLine = $rawDifference.line
+        rawNativeLine = $rawDifference.nativeLine
+        rawManagedLine = $rawDifference.managedLine
     }
+    if ($Phase -eq "Importation") {
+        $result["prefixBeforeImportationCompletionEqual"] = $equal
+        $result["nativePrefixLines"] = $nativeText.Split("`n").Length
+        $result["managedPrefixLines"] = $managedText.Split("`n").Length
+    }
+    $result
 }
 $results | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $OutputPath
-$results | ForEach-Object { "{0}: equal={1}; first difference={2}" -f $_.method, $_.prefixBeforeImportationCompletionEqual, $_.firstDifferentLine }
+$results | ForEach-Object { "{0}: equal={1}; first difference={2}" -f $_.method, $_.equal, $_.firstDifferentLine }

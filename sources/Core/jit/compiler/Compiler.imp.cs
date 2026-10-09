@@ -3144,7 +3144,7 @@ public partial class Compiler
         ref CORINFO_METHOD_HANDLE method,
         ref CorInfoFlag methodFlags,
         ref CORINFO_CONTEXT_HANDLE contextHandle,
-        out CORINFO_CONTEXT_HANDLE exactContextHandle,
+        ref CORINFO_CONTEXT_HANDLE exactContextHandle,
         bool isLateDevirtualization,
         bool isExplicitTailCall,
         IL_OFFSET ilOffset = BAD_IL_OFFSET)
@@ -3188,7 +3188,6 @@ public partial class Compiler
         // Bail if devirt is disabled.
         if (JitConfig.JitEnableDevirtualization is 0)
         {
-            exactContextHandle = null;
             return;
         }
 
@@ -3236,8 +3235,6 @@ public partial class Compiler
         //
         if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) is 0)
         {
-            exactContextHandle = null;
-
             assert(call.IsVirtualStub || call.IsGenericVirtual(this));
             assert(IsAot);
 
@@ -3265,7 +3262,6 @@ public partial class Compiler
         if (objClass == NO_CLASS_HANDLE)
         {
             JITDUMP($"\nimpDevirtualizeCall: no type available (op={thisObj.Oper.Name})\n");
-            exactContextHandle = null;
 
             if (isLateDevirtualization)
             {
@@ -3294,7 +3290,7 @@ public partial class Compiler
             baseMethodFullName = eeGetMethodFullName(baseMethod);
 
             jitprintf($"\nimpDevirtualizeCall: Trying to devirtualize {(isInterface ? "interface" : "virtual")} call:\n");
-            jitprintf($"    class for 'this' is {objClassName}{objClassNote} (attrib {objClassAttribs})\n");
+            jitprintf($"    class for 'this' is {objClassName}{objClassNote} (attrib {unchecked((uint)objClassAttribs):x8})\n");
             jitprintf($"    base method is {baseMethodFullName}\n");
         }
 #endif
@@ -3308,8 +3304,6 @@ public partial class Compiler
 
         if ((objClassAttribs & CORINFO_FLG_INTERFACE) is not 0)
         {
-            exactContextHandle = null;
-
             if (isLateDevirtualization)
             {
                 // Don't try guarded devirtualiztion when we're doing late devirtualization.
@@ -3341,7 +3335,8 @@ public partial class Compiler
         fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
         {
             dvInfo.pResolvedTokenVirtualMethod = pResolvedToken;
-            JITDUMP($"ResolveVirtualMethod (method {FMT_DSP_PTR(dvInfo.virtualMethod)} class {FMT_DSP_PTR(dvInfo.objClass)} context {FMT_DSP_PTR(dvInfo.context)})\n");
+            // Native uses %p here, so retain the raw CorInfo handles even in diffable dumps.
+            JITDUMP($"ResolveVirtualMethod (method {FMT_PTR((void*)dvInfo.virtualMethod)} class {FMT_PTR((void*)dvInfo.objClass)} context {FMT_PTR((void*)dvInfo.context)})\n");
             info.compCompHnd->resolveVirtualMethod(&dvInfo);
         }
 
@@ -3389,7 +3384,6 @@ public partial class Compiler
 
                 if (isArrayInterfaceDevirt && !isExact)
                 {
-                    exactContextHandle = null;
                     JITDUMP("Array interface devirt: array type is inexact, sorry.\n");
                     return;
                 }
@@ -3435,8 +3429,6 @@ public partial class Compiler
                 jitprintf($"@@@ Exact/Final devirt failure in {info.compFullName} at [{call.TreeId:D6}] $ {DevirtualizationDetailToString(dvInfo.detail)}\n");
             }
 #endif
-
-            exactContextHandle = null;
 
             if (isLateDevirtualization)
             {

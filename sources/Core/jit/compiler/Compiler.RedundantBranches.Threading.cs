@@ -57,7 +57,8 @@ public partial class Compiler
             {
                 if (_dfsTree.Contains(predecessor) && !_domTree.Dominates(domBlock, predecessor))
                 {
-                    JITDUMP($"Dom {FMT_BB(domBlock.bbNum)} is stale; no threading\n");
+                    JITDUMP($"Dom {FMT_BB(domBlock.bbNum)} is stale (does not dominate pred " +
+                        $"{FMT_BB(predecessor.bbNum)}); no threading\n");
                     return JumpThreadCheckResult.CannotThread;
                 }
             }
@@ -78,11 +79,15 @@ public partial class Compiler
                     // Promoted fields can have implicit uses that SSA does not record.
                     if (descriptor.lvIsStructField)
                     {
+                        JITDUMP($"{FMT_BB(block.bbNum)} has phi for promoted field " +
+                            $"V{phiDef.LclNum:D2}.{phiDef.SsaNum}; no phi-based threading\n");
                         return JumpThreadCheckResult.CannotThread;
                     }
 
                     if (descriptor.GetPerSsaData(phiDef.SsaNum).HasGlobalUse)
                     {
+                        JITDUMP($"{FMT_BB(block.bbNum)} has global phi for " +
+                            $"V{phiDef.LclNum:D2}.{phiDef.SsaNum}; must look for phi uses\n");
                         hasGlobalPhiUses = true;
                     }
                 }
@@ -117,25 +122,37 @@ public partial class Compiler
             return false;
         }
 
-        if (domBlock != block.bbIDom)
+        var isImmediateDominator = domBlock == block.bbIDom;
+        if (!isImmediateDominator)
         {
             var immediate = block.bbIDom;
             while ((immediate is not null) && (immediate != domBlock))
             {
                 if (immediate.Kind is BBJ_COND)
                 {
+                    JITDUMP($" -- {FMT_BB(immediate.bbNum)} not closest branching dom, so no threading\n");
                     return false;
                 }
 
+                JITDUMP($" -- bypassing {(immediate == block.bbIDom ? "i" : "")}dom " +
+                    $"{FMT_BB(immediate.bbNum)} as it was already optimized\n");
                 immediate = immediate.bbIDom;
             }
 
             assert(immediate == domBlock);
         }
 
+        JITDUMP($"Both successors of {(isImmediateDominator ? "i" : "")}dom {FMT_BB(domBlock.bbNum)} " +
+            $"reach {FMT_BB(block.bbNum)} -- attempting jump threading\n");
+
         var check = optJumpThreadCheck(block, domBlock);
         if (check is not JumpThreadCheckResult.CanThread)
         {
+            if (check is JumpThreadCheckResult.NeedsPhiUseResolution)
+            {
+                JITDUMP($"{FMT_BB(block.bbNum)} has global phi uses; no jump threading\n");
+            }
+
             return false;
         }
 
@@ -147,6 +164,7 @@ public partial class Compiler
             info.NumPreds++;
             if (predecessor.Kind is BBJ_SWITCH)
             {
+                JITDUMP($"{FMT_BB(predecessor.bbNum)} is a switch pred\n");
                 _ = info.AmbiguousPreds.Add(predecessor);
                 info.NumAmbiguousPreds++;
                 continue;
@@ -158,6 +176,7 @@ public partial class Compiler
                 ? domFalseSuccessor == block : optReachable(domFalseSuccessor, predecessor, domBlock);
             if (isTruePred == isFalsePred)
             {
+                JITDUMP($"{FMT_BB(predecessor.bbNum)} is an ambiguous pred\n");
                 _ = info.AmbiguousPreds.Add(predecessor);
                 info.NumAmbiguousPreds++;
                 continue;
@@ -167,6 +186,7 @@ public partial class Compiler
             {
                 if (!BasicBlock.sameEHRegion(predecessor, info.TrueTarget))
                 {
+                    JITDUMP($"{FMT_BB(predecessor.bbNum)} is an eh constrained pred\n");
                     _ = info.AmbiguousPreds.Add(predecessor);
                     info.NumAmbiguousPreds++;
                     continue;
@@ -174,17 +194,20 @@ public partial class Compiler
 
                 _ = info.TruePreds.Add(predecessor);
                 info.NumTruePreds++;
+                JITDUMP($"{FMT_BB(predecessor.bbNum)} is a true pred\n");
             }
             else
             {
                 if (!BasicBlock.sameEHRegion(predecessor, info.FalseTarget))
                 {
+                    JITDUMP($"{FMT_BB(predecessor.bbNum)} is an eh constrained pred\n");
                     _ = info.AmbiguousPreds.Add(predecessor);
                     info.NumAmbiguousPreds++;
                     continue;
                 }
 
                 info.NumFalsePreds++;
+                JITDUMP($"{FMT_BB(predecessor.bbNum)} is a false pred\n");
             }
         }
 

@@ -3917,7 +3917,7 @@ public partial class Compiler
 
                     // See if we can devirtualize.
                     // Take care to pass raw IL offset here as the 'debug info' might be different for inlinees.
-                    compiler.impDevirtualizeCall(call, resolvedToken, ref callInfo.hMethod, ref callInfo.methodFlags, ref callInfo.contextHandle, out exactContextHnd, isLateDevirtualization: false, isExplicitTailCall: (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) is not 0, opcodeOffs);
+                    compiler.impDevirtualizeCall(call, resolvedToken, ref callInfo.hMethod, ref callInfo.methodFlags, ref callInfo.contextHandle, ref exactContextHnd, isLateDevirtualization: false, isExplicitTailCall: (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) is not 0, opcodeOffs);
 
                     var wasDevirtualized = !call.IsDevirtualizationCandidate(compiler);
 

@@ -308,7 +308,12 @@ coverage; do not trade correctness for throughput.
    recorded in `DEVIATIONS.md`; D001 permits allocation-statistics differences
    only and does not imply other allocator-related output. Investigate every
    other mismatch instead of normalizing it away. Require comparison-tool checks
-   that prove real compiler differences are still detected.
+   that prove real compiler differences are still detected. The comparator's
+   optional process-handle canonicalization is limited to the identified
+   process-local CorInfo fields in `ResolveVirtualMethod`, `CheckCanInline`, and
+   `exactContextHandle`; it preserves repeated-handle identity and reports raw
+   as well as canonicalized differences. This comparison-only treatment does
+   not waive compiler-behavior mismatches.
 3. Expand the same disassembly and dump comparisons from CoreLib to the
    relevant runtime libraries, then to the general runtime test corpus. Keep
    a native-JIT control run for the same `Core_Root`, test selection, and

@@ -97,9 +97,15 @@ public partial class Compiler
                 break;
             }
 
-            if ((domBlockProbe.Kind is not BBJ_COND) || domBlockProbe.HasFlag(BBF_STALE_PREDICATE))
+            if (domBlockProbe.Kind is not BBJ_COND)
             {
-                JITDUMP($"failed -- dominator {FMT_BB(domBlockProbe.bbNum)} is not a usable BBJ_COND\n");
+                JITDUMP($"failed -- dominator {FMT_BB(domBlockProbe.bbNum)} is not BBJ_COND\n");
+                break;
+            }
+
+            if (domBlockProbe.HasFlag(BBF_STALE_PREDICATE))
+            {
+                JITDUMP($"failed -- dominator {FMT_BB(domBlockProbe.bbNum)} has a stale predicate\n");
                 break;
             }
 
@@ -132,8 +138,12 @@ public partial class Compiler
 
             if (blockPathVN == ValueNumStore.NoVN)
             {
+                JITDUMP($"failed -- {FMT_BB(block.bbNum)} does not have a usable VN\n");
                 break;
             }
+
+            JITDUMP($"{FMT_BB(domBlockProbe.bbNum)} and {FMT_BB(block.bbNum)} have shared successor " +
+                $"{FMT_BB(sharedSuccessor.bbNum)}\n");
 
             var domStatement = domBlockProbe.LastStmt;
             assert(domStatement is not null && domStatement.RootNode.Oper is GT_JTRUE);
@@ -169,6 +179,15 @@ public partial class Compiler
 
             if (!canOptimize)
             {
+                if (info.CanInfer)
+                {
+                    JITDUMP("Can't infer along the path we care about; trying simplification instead\n");
+                }
+                else
+                {
+                    JITDUMP("Can't infer, trying simplification instead\n");
+                }
+
                 var andVN = vnStore.VNForFunc(TYP_INT, VNF_AND, blockPathVN, domPathVN);
                 var andApp = new VNFuncApp();
                 var pathApp = new VNFuncApp();
@@ -188,6 +207,14 @@ public partial class Compiler
                             newRelopFunc = andApp.Func;
                         }
                     }
+
+#if DEBUG
+                    vnStore.vnDump(this, blockPathVN);
+                    JITDUMP(" AND");
+                    vnStore.vnDump(this, domPathVN);
+                    JITDUMP(" ==>");
+                    vnStore.vnDump(this, andVN);
+#endif
                 }
 
                 if (newRelopFunc != VNF_NONE)
@@ -205,21 +232,30 @@ public partial class Compiler
                     newRelop = vnStore.VNRelopToGenTreeOp(newRelopFunc, out isUnsigned);
                     if (newRelop != GT_NONE)
                     {
+                        JITDUMP($"; simplified to {newRelop.Name}{(isUnsigned ? " (unsigned)" : "")}\n");
                         canOptimize = true;
                     }
+                }
+                else
+                {
+                    JITDUMP("; not a relop, cannot simplify\n");
                 }
             }
 
             if (!canOptimize)
             {
-                JITDUMP($"failed -- Dominated VN {blockPathVN} does not imply dominating VN {domPathVN}\n");
+                JITDUMP($"failed -- Dominated VN ${blockPathVN:x} does not imply dominating VN ${domPathVN:x}\n");
                 break;
             }
+
+            JITDUMP($"Optimizing branch in dominating {FMT_BB(domBlockProbe.bbNum)} with relop " +
+                $"[{domTree.TreeId:D6}] based on {FMT_BB(block.bbNum)}'s relop [{tree.TreeId:D6}]\n");
 
             var domRelopValue = currentIsDomTrueSucc ? 1 : 0;
             var domMayHaveSideEffects = (domTree.Flags & GTF_SIDE_EFFECT) != 0;
             if (domMayHaveSideEffects)
             {
+                JITDUMP("Dominating relop has side effects, keeping it, unused\n");
                 domJumpTree.AsUnOp().Op1 = gtNewCommaNode(TYP_INT, domTree,
                     gtNewIconNode(TYP_INT, domRelopValue));
             }
@@ -232,6 +268,8 @@ public partial class Compiler
                 constant.Flags &= ~GTF_ALL_EFFECT;
                 domJumpTree.AsUnOp().Op1 = constant;
             }
+
+            JITDUMP($"\nRedundant dominating branch opt in {FMT_BB(domBlockProbe.bbNum)}:\n");
 
             _ = fgMorphBlockStmt(domBlockProbe, domStatement, allowFGChange: true,
                 invalidateDFSTreeOnFGChange: false, message: nameof(optRedundantDominatingBranch));
@@ -268,6 +306,7 @@ public partial class Compiler
 
             currentBlock = domBlockProbe;
             domBlockProbe = fgGetDomSpeculatively(domBlockProbe);
+            JITDUMP("continuing to the next immediate dominator\n");
         }
 
         return madeChanges;

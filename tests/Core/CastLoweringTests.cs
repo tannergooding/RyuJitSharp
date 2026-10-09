@@ -54,6 +54,21 @@ internal static unsafe class CastLoweringTests
         });
     }
 
+    [TestCase(var_types.TYP_SHORT, var_types.TYP_USHORT, true)]
+    [TestCase(var_types.TYP_USHORT, var_types.TYP_SHORT, true)]
+    [TestCase(var_types.TYP_UBYTE, var_types.TYP_INT, false)]
+    [TestCase(var_types.TYP_BYTE, var_types.TYP_UINT, true)]
+    public static void CastNeededPreservesSignedness(var_types sourceType, var_types destinationType,
+        bool expected)
+    {
+        WithCompiler(compiler => {
+            var operand = compiler.gtNewIconNode(var_types.TYP_INT, 0);
+            var source = new GenTreeCast(var_types.TYP_INT, operand, false, sourceType);
+
+            Assert.That(compiler.fgCastNeeded(source, destinationType), Is.EqualTo(expected));
+        });
+    }
+
 #if TARGET_X86
     [TestCase(var_types.TYP_FLOAT)]
     [TestCase(var_types.TYP_DOUBLE)]

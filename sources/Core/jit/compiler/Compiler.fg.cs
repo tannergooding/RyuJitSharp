@@ -2773,7 +2773,9 @@ public partial class Compiler
 
         if (varTypeIsUnsigned(toType) != varTypeIsUnsigned(fromType))
         {
-            if (!varTypeIsUnsigned(fromType) && (fromType.Size < toType.Size))
+            var isZeroExtension = varTypeIsUnsigned(fromType) && (fromType.Size < toType.Size);
+
+            if (!isZeroExtension)
             {
                 return true;
             }

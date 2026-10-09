@@ -186,6 +186,8 @@ public partial class Compiler
 
             if (!optFindPhiUsesInBlockAndSuccessors(info.Block, phiDef, info))
             {
+                JITDUMP($"Could not find all uses for V{phiDef.LclNum:D2}.{phiDef.SsaNum} " +
+                    $"in {FMT_BB(info.Block.bbNum)} or its successors\n");
                 return false;
             }
 
@@ -205,6 +207,8 @@ public partial class Compiler
             {
                 if (!optGetThreadedSsaNumForBlock(info, phiDef, out var replacement))
                 {
+                    JITDUMP($"Ambiguous preds do not agree on a replacement SSA for " +
+                        $"V{phiDef.LclNum:D2}.{phiDef.SsaNum} in {FMT_BB(info.Block.bbNum)}\n");
                     return false;
                 }
 
@@ -239,9 +243,18 @@ public partial class Compiler
                     continue;
                 }
 
-                if ((successor.GetUniquePred(this) != info.Block) ||
-                    !optGetThreadedSsaNumForSuccessor(info, phiDef, successor, out var threaded, out var replacement))
+                if (successor.GetUniquePred(this) != info.Block)
                 {
+                    JITDUMP($"{FMT_BB(info.Block.bbNum)} successor {FMT_BB(successor.bbNum)} " +
+                        "is a join with phi uses; cannot rewrite phi uses\n");
+                    return false;
+                }
+
+                if (!optGetThreadedSsaNumForSuccessor(
+                    info, phiDef, successor, out var threaded, out var replacement))
+                {
+                    JITDUMP($"{FMT_BB(info.Block.bbNum)} successor {FMT_BB(successor.bbNum)} " +
+                        $"incoming defs for V{phiDef.LclNum:D2}.{phiDef.SsaNum} do not agree\n");
                     return false;
                 }
 

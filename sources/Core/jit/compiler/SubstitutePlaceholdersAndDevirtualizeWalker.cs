@@ -100,7 +100,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                     ref method,
                     ref methodFlags,
                     ref contextInput,
-                    out context,
+                    ref context,
                     isLateDevirtualization,
                     explicitTailCall);
 

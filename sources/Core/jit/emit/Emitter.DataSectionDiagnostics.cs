@@ -169,7 +169,7 @@ public partial class Emitter
                             var bits = ReadDataWord(bytes, i, sizeof(float));
                             var value = BitConverter.Int32BitsToSingle(unchecked((int)bits));
                             jitprintf($"\tdd\t{bits:X8}h\t");
-                            jitprintf($"; {FormatDataFloat(value, 6, 9)}");
+                            jitprintf($"\t; {FormatDataFloat(value, 6, 9)}");
                             i += sizeof(float);
                             break;
                         }
@@ -296,7 +296,7 @@ public partial class Emitter
 
     private static string FormatDataFloat(double value, int precision, int width)
     {
-        var formatted = double.IsNaN(value) ? "nan"
+        var formatted = double.IsNaN(value) ? (double.IsNegative(value) ? "-nan" : "nan")
             : double.IsPositiveInfinity(value) ? "inf"
             : double.IsNegativeInfinity(value) ? "-inf"
             : value.ToString($"G{precision}", CultureInfo.InvariantCulture).Replace('E', 'e');

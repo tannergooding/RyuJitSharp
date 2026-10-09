@@ -14,10 +14,21 @@ and flow optimizations, profile-guided paths, and register-allocation policies;
 selected tiered/PGO and GC-stress scenarios also execute.
 
 These results apply only to the tested corpora and configurations. Broader
-runtime and JIT/EE ABI/GC coverage, full dump and generated-code parity, and
-Linux and other-target implementation and runtime validation remain open.
+runtime and JIT/EE ABI/GC coverage, full primary-JIT dump parity,
+relocation-aware code-generation and GC/EH/unwind metadata parity, and Linux
+and other-target implementation and runtime validation remain open.
 Target-specific translations and fixtures do not by themselves establish
 execution or parity on those targets.
+
+At pinned oracle `6ff62b1d7ff0`, Windows x64 CoreLib assembly listings match
+across 762 method blocks after canonicalizing generated `G_M` label identifiers.
+Focused dump captures match through Importation and Redundant Branch Opts for
+nine `System.Resources.ResourceManager` methods, and through Importation for
+`System.SpanHelpers.IndexOf`; only process-local CorInfo handle fields are
+canonicalized in those comparisons. The ResourceManager phase capture is a
+selected-method AltJIT run; these focused captures do not establish full
+CoreLib primary-JIT dump parity. The dynamic TLS input-ownership boundary also
+remains unresolved.
 
 ## Major milestones
 
