@@ -151,9 +151,49 @@ public static partial class API_ICorJitInfo_NamesExtensions
 
     private static void GenerateWrapICorJitInfo()
     {
-        // Use the managed ABI declarations for types/defaults, and the native API
-        // list for indices and order. Neither the EE layout nor its vtable changes.
+        // Use the managed ABI declarations for signatures and the native API list
+        // for slot order. The generated proxy uses the existing EE vtable layout.
         var signatures = new Dictionary<string, string>(StringComparer.Ordinal);
+        var vtablePaths = new Dictionary<string, string>(StringComparer.Ordinal);
+        var thunks = new StringBuilder();
+        var vtableAssignments = new StringBuilder();
+        var apiCount = 0;
+
+        AddVtablePaths(@"..\Core\inc\corjit\ICorJitInfo.cs", "vtable->");
+        AddVtablePaths(@"..\Core\inc\corinfo\ICorDynamicInfo.cs", "vtable->Base.");
+        AddVtablePaths(@"..\Core\inc\corinfo\ICorStaticInfo.cs", "vtable->Base.Base.");
+
+        void AddVtablePaths(string path, string prefix)
+        {
+            var inVtable = false;
+
+            foreach (var line in File.ReadLines(path))
+            {
+                if (line.Contains("public struct Vtbl<TSelf>", StringComparison.Ordinal))
+                {
+                    inVtable = true;
+                    continue;
+                }
+
+                if (inVtable && line.Trim() is "}")
+                {
+                    inVtable = false;
+                    continue;
+                }
+
+                if (!inVtable)
+                {
+                    continue;
+                }
+
+                var match = Regex.Match(line, @"^\s*public delegate\* unmanaged\[MemberFunction\]<.*>\s+(?<name>\w+);");
+                if (match.Success)
+                {
+                    var name = match.Groups["name"].Value;
+                    vtablePaths.Add(name, $"{prefix}{name}");
+                }
+            }
+        }
 
         foreach (var line in File.ReadLines(@"..\Core\inc\corjit\ICorJitInfo.cs"))
         {
@@ -173,22 +213,28 @@ public static partial class API_ICorJitInfo_NamesExtensions
 
             var name = parts[0].Trim();
 
-            if (!signatures.Remove(name, out var signature))
+            if (!signatures.Remove(name, out var signature) || !vtablePaths.TryGetValue(name, out var vtablePath))
             {
-                throw new InvalidDataException($"Missing or duplicate ICorJitInfo signature: '{name}'");
+                throw new InvalidDataException($"Missing or duplicate ICorJitInfo signature or vtable slot: '{name}'");
             }
 
             var openParen = signature.IndexOf('(', StringComparison.Ordinal);
             var parameters = signature.AsSpan(openParen + 1, signature.Length - openParen - 2);
             var arguments = new List<string>();
+            var parameterDeclarations = new List<string>();
 
             foreach (var parameter in parameters.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
                 var declaration = parameter.Split('=')[0].Trim();
-                arguments.Add(declaration[(declaration.LastIndexOf(' ', StringComparison.Ordinal) + 1)..]);
+                var nameIndex = declaration.LastIndexOf(' ', StringComparison.Ordinal);
+                var parameterType = declaration[..nameIndex].Trim();
+                var parameterName = declaration[(nameIndex + 1)..];
+                arguments.Add(parameterName);
+                parameterDeclarations.Add($"{parameterType} {parameterName}");
             }
 
             var returnType = signature[..(openParen - name.Length - 1)];
+            var unmanagedReturnType = returnType == "bool" ? "byte" : returnType;
             var call = $"wrapHnd->{name}({string.Join(", ", arguments)})";
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {signature}");
             _ = builder.AppendLine("    {");
@@ -209,6 +255,42 @@ public static partial class API_ICorJitInfo_NamesExtensions
 
             _ = builder.AppendLine("    }");
             _ = builder.AppendLine();
+
+            _ = thunks.AppendLine("    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]");
+            _ = thunks.AppendLine(CultureInfo.InvariantCulture,
+                $"    private static {unmanagedReturnType} Thunk_{name}(ICorJitInfo* self{(parameterDeclarations.Count is 0 ? "" : $", {string.Join(", ", parameterDeclarations)}")})");
+            _ = thunks.AppendLine("    {");
+            _ = thunks.AppendLine("        try");
+            _ = thunks.AppendLine("        {");
+
+            if (returnType == "void")
+            {
+                _ = thunks.AppendLine(CultureInfo.InvariantCulture,
+                    $"            GetWrapper(self).{name}({string.Join(", ", arguments)});");
+            }
+            else if (returnType == "bool")
+            {
+                _ = thunks.AppendLine(CultureInfo.InvariantCulture,
+                    $"            return GetWrapper(self).{name}({string.Join(", ", arguments)}) ? (byte)1 : (byte)0;");
+            }
+            else
+            {
+                _ = thunks.AppendLine(CultureInfo.InvariantCulture,
+                    $"            return GetWrapper(self).{name}({string.Join(", ", arguments)});");
+            }
+
+            _ = thunks.AppendLine("        }");
+            _ = thunks.AppendLine("        catch (Exception exception)");
+            _ = thunks.AppendLine("        {");
+            _ = thunks.AppendLine("            FailFastCallback(exception);");
+            _ = thunks.AppendLine("            throw;");
+            _ = thunks.AppendLine("        }");
+            _ = thunks.AppendLine("    }");
+            _ = thunks.AppendLine();
+
+            _ = vtableAssignments.AppendLine(CultureInfo.InvariantCulture,
+                $"        {vtablePath} = &Thunk_{name};");
+            apiCount++;
         });
 
         if (signatures.Count != 0)
@@ -224,6 +306,7 @@ public static partial class API_ICorJitInfo_NamesExtensions
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if MEASURE_CLRAPI_CALLS
+using System.Runtime.CompilerServices;
 using static RyuJitSharp.ICorJitInfo;
 
 namespace RyuJitSharp;
@@ -231,6 +314,60 @@ namespace RyuJitSharp;
 public sealed unsafe partial class WrapICorJitInfo
 {
 {{builder}}}
+#endif
+""");
+
+        File.WriteAllText(@"Outputs\jit\compiler\WrapICorJitInfo.Vtbl.generated.cs", $$"""
+// Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+#if MEASURE_CLRAPI_CALLS
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using static RyuJitSharp.ICorJitInfo;
+
+namespace RyuJitSharp;
+
+public sealed unsafe partial class WrapICorJitInfo
+{
+    private static readonly ICorJitInfo.Vtbl<ICorJitInfo>* s_vtbl = CreateVtbl();
+
+    private static ICorJitInfo.Vtbl<ICorJitInfo>* CreateVtbl()
+    {
+        var vtable = (ICorJitInfo.Vtbl<ICorJitInfo>*)RuntimeHelpers.AllocateTypeAssociatedMemory(
+            typeof(WrapICorJitInfo), sizeof(ICorJitInfo.Vtbl<ICorJitInfo>));
+
+        if (sizeof(ICorJitInfo.Vtbl<ICorJitInfo>) != {{apiCount}} * sizeof(nint))
+        {
+            throw new InvalidOperationException("ICorJitInfo vtable layout does not match the generated API order.");
+        }
+
+{{vtableAssignments}}        return vtable;
+    }
+
+    private static WrapICorJitInfo GetWrapper(ICorJitInfo* self)
+    {
+        var proxy = (ProxyContext*)self;
+        var handle = GCHandle.FromIntPtr(proxy->WrapperHandle);
+
+        return handle.Target is WrapICorJitInfo wrapper
+            ? wrapper
+            : throw new InvalidOperationException("ICorJitInfo proxy context is no longer valid.");
+    }
+
+    [DoesNotReturn]
+    private static void FailFastCallback(Exception exception)
+    {
+        // The native JIT cannot continue safely with a fabricated EE result.
+        Environment.FailFast("An exception escaped an ICorJitInfo timing proxy callback.", exception);
+        throw new InvalidOperationException("Environment.FailFast returned unexpectedly.", exception);
+    }
+
+{{thunks}}}
 #endif
 """);
     }

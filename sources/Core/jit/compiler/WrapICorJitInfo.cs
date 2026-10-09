@@ -4,32 +4,97 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if MEASURE_CLRAPI_CALLS
+using System;
+using System.Runtime.InteropServices;
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
 
-/// <summary>Managed timing forwarding surface, not an unmanaged EE vtable.</summary>
-public sealed unsafe partial class WrapICorJitInfo : ICorJitInfo.Interface
+/// <summary>Per-compilation unmanaged proxy that times calls forwarded to the EE.</summary>
+public sealed unsafe partial class WrapICorJitInfo : ICorJitInfo.Interface, IDisposable
 {
     private readonly Compiler wrapComp;
     private readonly ICorJitInfo* wrapHnd;
+    private readonly GCHandle _wrapperHandle;
+    private ProxyContext* _proxyContext;
 
     public WrapICorJitInfo(Compiler compiler, ICorJitInfo* jitInfo)
     {
         wrapComp = compiler;
         wrapHnd = jitInfo;
+
+        var proxyContext = (ProxyContext*)NativeMemory.Alloc((nuint)sizeof(ProxyContext));
+        if (proxyContext == null)
+        {
+            throw new FatalJitException(CORJIT_OUTOFMEM, "Unable to allocate the ICorJitInfo timing proxy.");
+        }
+
+        var wrapperHandle = default(GCHandle);
+        try
+        {
+            wrapperHandle = GCHandle.Alloc(this);
+            proxyContext->JitInfo.lpVtbl = s_vtbl;
+            proxyContext->WrapperHandle = GCHandle.ToIntPtr(wrapperHandle);
+            _wrapperHandle = wrapperHandle;
+            _proxyContext = proxyContext;
+        }
+        catch
+        {
+            if (wrapperHandle.IsAllocated)
+            {
+                wrapperHandle.Free();
+            }
+
+            NativeMemory.Free(proxyContext);
+            throw;
+        }
     }
 
-    public static void EnsureInstallationSupported()
+    public ICorJitInfo* JitInfo
     {
-#if FEATURE_JIT_METHOD_PERF
-        if (JitConfig.JitEECallTimingInfo is not 0)
+        get
         {
-            throw new FatalJitException(
-                CORJIT_SKIPPED,
-                "CLR API call timing requires an unmanaged ICorJitInfo proxy with the native lifetime.");
+            ObjectDisposedException.ThrowIf(_proxyContext == null, this);
+            return &_proxyContext->JitInfo;
         }
-#endif
+    }
+
+    public void Install()
+    {
+        ObjectDisposedException.ThrowIf(_proxyContext == null, this);
+
+        if (wrapComp.info.compCompHnd != wrapHnd)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, "The compiler EE handle changed before timing proxy installation.");
+        }
+
+        wrapComp.info.compCompHnd = &_proxyContext->JitInfo;
+    }
+
+    public void Dispose()
+    {
+        var proxyContext = _proxyContext;
+        if (proxyContext == null)
+        {
+            return;
+        }
+
+        if (wrapComp.info.compCompHnd == &proxyContext->JitInfo)
+        {
+            wrapComp.info.compCompHnd = wrapHnd;
+        }
+
+        _proxyContext = null;
+        proxyContext->WrapperHandle = 0;
+        NativeMemory.Free(proxyContext);
+        _wrapperHandle.Free();
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ProxyContext
+    {
+        public ICorJitInfo JitInfo;
+        public nint WrapperHandle;
     }
 }
 #endif

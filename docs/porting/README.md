@@ -101,6 +101,9 @@ For direct `dotnet build` or `dotnet test` iterations, use
 the default: build and test without these overrides in the same configuration
 before committing a porting batch, and keep final NativeAOT publication and
 execution validation unchanged. Fast-mode success is not a full-analysis checkpoint.
+CLR API timing can be compiled into Release with
+`-p:RyuJitMeasureClrApiCalls=true`; Debug intentionally rejects this option because
+timing Debug compiler code is not meaningful.
 
 Full analysis uses the repository's analyzer configuration. The root
 `.editorconfig` temporarily disables CA1508, CA2329, CA2330, CA3001, CA5390 and
@@ -465,7 +468,9 @@ to its working directory. It verifies that the working directory contains
 subtree, preventing an invocation from an unrelated directory from deleting its
 `Outputs`. Run it from `sources\GenerateTables`, check input provenance, review
 generated output, and update the corresponding files under `sources\Core`;
-generating output does not integrate it automatically.
+generating output does not integrate it automatically. The CLR API timing
+generator produces both the managed forwarding methods and their
+`UnmanagedCallersOnly` `ICorJitInfo` vtable proxy.
 Establish clean-baseline reproducibility before regenerating against new inputs.
 `NamedIntrinsic` uses the pinned `namedintrinsiclist.h` enum body as well as the
 hardware tables; validate the complete ordered enum, not just HWI row counts.

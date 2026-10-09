@@ -446,10 +446,6 @@ public partial class Globals
 
                 try
                 {
-#if MEASURE_CLRAPI_CALLS
-                    WrapICorJitInfo.EnsureInstallationSupported();
-#endif
-
                     // Native placement-new reconstructs every attempt, even when reusing
                     // the inlinee's storage. A managed compiler must likewise start fresh.
                     compiler = new Compiler(methodHandle, jitInfo, methodInfo, inlineInfo);
@@ -475,6 +471,9 @@ public partial class Globals
                     if (compiler is not null)
                     {
                         compiler.info.compCode = null;
+#if MEASURE_CLRAPI_CALLS
+                        compiler.DisposeClrApiTimingProxy();
+#endif
 
                         // pop the compiler off the TLS stack only if it was linked above
                         assert(JitTls.Compiler == compiler);

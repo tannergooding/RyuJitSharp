@@ -538,6 +538,10 @@
     <!-- MEASURE_CLRAPI_CALLS -->
     <!-- <DefineConstants>$(DefineConstants);MEASURE_CLRAPI_CALLS</DefineConstants> -->
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RyuJitMeasureClrApiCalls)' == 'true'">
+    <DefineConstants>$(DefineConstants);MEASURE_CLRAPI_CALLS</DefineConstants>
+  </PropertyGroup>
   
   <PropertyGroup>
     <!-- CSE_INTO_HANDLERS -->

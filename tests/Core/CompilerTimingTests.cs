@@ -159,33 +159,6 @@ internal static unsafe class CompilerTimingTests
         }
     }
 
-    [TestCase(0, false)]
-    [TestCase(1, true)]
-    public static void ManagedEeProxyInstallationRejectsEnabledTiming(int enabled, bool shouldReject)
-    {
-        var previousConfig = JitConfig;
-        JitConfig = new JitConfigValues();
-        ClrTimingEnabled(ref JitConfig) = enabled;
-
-        try
-        {
-            if (shouldReject)
-            {
-                var exception = Assert.Throws<FatalJitException>(() => WrapICorJitInfo.EnsureInstallationSupported());
-                Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
-                Assert.That(exception?.Message, Does.Contain("unmanaged ICorJitInfo proxy"));
-            }
-            else
-            {
-                Assert.DoesNotThrow(() => WrapICorJitInfo.EnsureInstallationSupported());
-            }
-        }
-        finally
-        {
-            JitConfig = previousConfig;
-        }
-    }
-
     [Test]
     public static void ManagedEeWrapperForwardsAndAccountsForTheApiCall()
     {
@@ -203,17 +176,50 @@ internal static unsafe class CompilerTimingTests
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.isIntrinsic = &IsIntrinsic;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
-            var wrapper = new WrapICorJitInfo(compiler, &jitInfo);
+            compiler.info.compCompHnd = &jitInfo;
+            using var wrapper = new WrapICorJitInfo(compiler, &jitInfo);
+            wrapper.Install();
 
-            Assert.That(wrapper.isIntrinsic(default), Is.True);
+            Assert.That(compiler.info.compCompHnd->isIntrinsic(default), Is.True);
             Assert.That(_isIntrinsicCallCount, Is.EqualTo(1));
             Assert.That(TimerInfo(timer)._allClrApiCalls, Is.EqualTo(1u));
             Assert.That(TimerInfo(timer)._perClrApiCalls[(int)API_isIntrinsic], Is.EqualTo(1u));
             Assert.That(ClrActiveApi(timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
             Assert.That(ClrCallStart(timer), Is.Zero);
+            Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)wrapper.JitInfo));
+            wrapper.Dispose();
+            Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)(&jitInfo)));
         }
         finally
         {
+            JitConfig = previousConfig;
+        }
+    }
+
+    [Test]
+    public static void ClrTimingCreatesTimerWithoutOrdinaryJitTimingLog()
+    {
+        var previousConfig = JitConfig;
+        var previousLogFilename = JitTimeLogFilename(null);
+        JitConfig = new JitConfigValues();
+        ClrTimingEnabled(ref JitConfig) = 1;
+        JitTimeLogFilename(null) = 0;
+
+        try
+        {
+            var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+            CORINFO_METHOD_INFO methodInfo = default;
+            methodInfo.ILCodeSize = 23;
+            compiler.info.compMethodInfo = &methodInfo;
+
+            InitializeJitTimer(compiler);
+
+            var timer = CompilerJitTimer(compiler) ?? throw new InvalidOperationException("CLR timing did not initialize its JIT timer.");
+            Assert.That(TimerInfo(timer)._byteCodeBytes, Is.EqualTo(23));
+        }
+        finally
+        {
+            JitTimeLogFilename(null) = previousLogFilename;
             JitConfig = previousConfig;
         }
     }
@@ -263,6 +269,12 @@ internal static unsafe class CompilerTimingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "compJitTimer")]
     private static extern ref JitTimer? CompilerJitTimer(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InitializeJitTimer")]
+    private static extern void InitializeJitTimer(Compiler compiler);
+
+    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "compJitTimeLogFilename")]
+    private static extern ref nint JitTimeLogFilename(Compiler? compiler);
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsIntrinsic(ICorJitInfo* self, CORINFO_METHOD_STRUCT_* ftn)

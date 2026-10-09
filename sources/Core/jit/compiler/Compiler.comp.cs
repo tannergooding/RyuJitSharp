@@ -15,6 +15,7 @@ using static RyuJitSharp.ICorJitInfo;
 
 namespace RyuJitSharp;
 
+[SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "The timing proxy lifetime is scoped to CILJit.compileMethod and disposed in its finally block.")]
 public partial class Compiler
 {
     private unsafe PatchpointInfo* _ownedPatchpointInfo;
@@ -290,6 +291,10 @@ public partial class Compiler
     
     /// <summary>If a log file for JIT time is desired, filename to write it to.</summary>
     private static nint compJitTimeLogFilename;
+#endif
+
+#if MEASURE_CLRAPI_CALLS
+    private WrapICorJitInfo? _wrapICorJitInfo;
 #endif
 
 #if DEBUG
@@ -597,11 +602,29 @@ public partial class Compiler
         compDisplayStaticSizes();
     }
 
+#if MEASURE_CLRAPI_CALLS
+    internal void DisposeClrApiTimingProxy()
+    {
+        _wrapICorJitInfo?.Dispose();
+        _wrapICorJitInfo = null;
+    }
+#endif
+
 #if DEBUG
     private static ConfigMethodRange s_jitInstrumentIfOptimizingRange;
 #endif
 
     private static bool s_checkedForJitTimeLog;
+
+#if FEATURE_JIT_METHOD_PERF
+    private unsafe void InitializeJitTimer()
+    {
+        if ((compJitTimeLogFilename is not 0) || (JitConfig.JitTimeLogCsv is not null) || (JitConfig.JitEECallTimingInfo is not 0))
+        {
+            compJitTimer = new JitTimer(info.compMethodInfo->ILCodeSize);
+        }
+    }
+#endif
 
     public unsafe CorJitResult compCompileAfterInit(CORINFO_MODULE_HANDLE moduleHandle, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags)
     {
@@ -621,9 +644,14 @@ public partial class Compiler
             s_checkedForJitTimeLog = true;
         }
 
-        if ((compJitTimeLogFilename is not 0) || (JitConfig.JitTimeLogCsv is not null))
+        InitializeJitTimer();
+#endif
+
+#if MEASURE_CLRAPI_CALLS
+        if (JitConfig.JitEECallTimingInfo is not 0)
         {
-            compJitTimer = new JitTimer(info.compMethodInfo->ILCodeSize);
+            _wrapICorJitInfo = new WrapICorJitInfo(this, info.compCompHnd);
+            _wrapICorJitInfo.Install();
         }
 #endif
 

@@ -40,29 +40,38 @@ internal static unsafe class ICorJitInfoWrapperTests
             vtable.setEHcount = &SetEHCount;
             vtable.allocGCInfo = &AllocGCInfo;
             ICorJitInfo jitInfo = new ICorJitInfo { lpVtbl = &vtable };
-            var wrapper = new WrapICorJitInfo(compiler, &jitInfo);
+            compiler.info.compCompHnd = &jitInfo;
+            using var wrapper = new WrapICorJitInfo(compiler, &jitInfo);
+            wrapper.Install();
+            var proxy = compiler.info.compCompHnd;
+
+            var slots = (nint*)proxy->lpVtbl;
+            for (var index = 0; index < (int)API_COUNT; index++)
+            {
+                Assert.That(slots[index], Is.Not.Zero, $"Missing callback for ICorJitInfo API slot {index}.");
+            }
 
             for (var index = 0; index < 2; index++)
             {
-                Assert.That(wrapper.isIntrinsic((CORINFO_METHOD_STRUCT_*)(123 + index)), Is.True);
+                Assert.That(proxy->isIntrinsic((CORINFO_METHOD_STRUCT_*)(123 + index)), Is.True);
                 Assert.That(s_observedApi, Is.EqualTo(API_isIntrinsic));
                 Assert.That(s_observedReceiver, Is.EqualTo((nint)(&jitInfo)));
                 Assert.That(s_observedArgument, Is.EqualTo((nint)(123 + index)));
                 Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
             }
 
-            wrapper.setEHcount(17);
+            proxy->setEHcount(17);
             Assert.That(s_observedApi, Is.EqualTo(API_setEHcount));
             Assert.That(s_observedArgument, Is.EqualTo((nint)17));
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
-            Assert.That((nint)wrapper.allocGCInfo(29), Is.EqualTo((nint)456));
+            Assert.That((nint)proxy->allocGCInfo(29), Is.EqualTo((nint)456));
             Assert.That(s_observedApi, Is.EqualTo(API_allocGCInfo));
             Assert.That(s_observedArgument, Is.EqualTo((nint)29));
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
 
             CORINFO_CONST_LOOKUP lookup = default;
             CORINFO_METHOD_STRUCT_* method = null;
-            wrapper.getHelperFtn(CORINFO_HELP_MEMCPY, &lookup, &method);
+            proxy->getHelperFtn(CORINFO_HELP_MEMCPY, &lookup, &method);
             Assert.That(s_observedApi, Is.EqualTo(API_getHelperFtn));
             Assert.That(s_observedReceiver, Is.EqualTo((nint)(&jitInfo)));
             Assert.That(s_observedArgument, Is.EqualTo((nint)CORINFO_HELP_MEMCPY));
@@ -73,12 +82,12 @@ internal static unsafe class ICorJitInfoWrapperTests
             Assert.That((nint)method, Is.EqualTo((nint)0x5678));
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
 
-            wrapper.getHelperFtn(CORINFO_HELP_MEMCPY, &lookup);
+            proxy->getHelperFtn(CORINFO_HELP_MEMCPY, &lookup);
             Assert.That(s_observedApi, Is.EqualTo(API_getHelperFtn));
             Assert.That(s_observedMethodOutput, Is.EqualTo((nint)0));
             Assert.That(ActiveApi(s_timer), Is.EqualTo((API_ICorJitInfo_Names)(-1)));
 
-            wrapper.getHelperFtn(CORINFO_HELP_MEMCPY, null, &method);
+            proxy->getHelperFtn(CORINFO_HELP_MEMCPY, null, &method);
             Assert.That(s_observedOutput, Is.EqualTo((nint)0));
             Assert.That(s_observedMethodOutput, Is.EqualTo((nint)(&method)));
             Assert.That((nint)method, Is.EqualTo((nint)0x5678));
@@ -105,6 +114,9 @@ internal static unsafe class ICorJitInfoWrapperTests
             Assert.That(calls, Is.EqualTo(7));
             Assert.That(cycles, Is.EqualTo(info._allClrApiCycles));
             Assert.That(info._cyclesByPhase[(int)PHASE_CLR_API], Is.EqualTo((ulong)cycles));
+            Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)proxy));
+            wrapper.Dispose();
+            Assert.That((nint)compiler.info.compCompHnd, Is.EqualTo((nint)(&jitInfo)));
         }
         finally
         {

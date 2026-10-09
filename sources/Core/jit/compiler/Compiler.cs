@@ -1030,20 +1030,14 @@ public partial class Compiler
     public void CLRApiCallEnter(uint apix)
     {
 #if FEATURE_JIT_METHOD_PERF
-        if (compJitTimer is not null)
-        {
-            compJitTimer.ClrApiCallEnter(unchecked((API_ICorJitInfo_Names)apix));
-        }
+        compJitTimer?.ClrApiCallEnter(unchecked((API_ICorJitInfo_Names)apix));
 #endif
     }
 
     public void CLRApiCallLeave(uint apix)
     {
 #if FEATURE_JIT_METHOD_PERF
-        if (compJitTimer is not null)
-        {
-            compJitTimer.ClrApiCallLeave(unchecked((API_ICorJitInfo_Names)apix));
-        }
+        compJitTimer?.ClrApiCallLeave(unchecked((API_ICorJitInfo_Names)apix));
 #endif
     }
 
