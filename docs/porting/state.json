@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "Owner review: decide whether to accept the unresolved B515 RangeCheck and B516 GenericCatch diagnostic-coverage gaps without their original inputs; no compiler behavior change is justified until matching reproducers are available.",
+    "nextAction": "Owner review: decide whether the pinned non-exact argument-unbox diagnostic typo (B017) should remain for parity or be corrected in a coordinated native and managed change.",
     "activeBatch": {
-      "scope": "Owner review of the unresolved B515 and B516 diagnostic-coverage gaps.",
-      "doneWhen": "Owner accepts the documented limits or supplies the original RangeCheck reproducer and matching GenericCatch PGO inputs; do not alter compiler behavior based on unmatched captures.",
-      "validation": "If inputs are supplied, compare native and managed diagnostics at the first relevant phase; otherwise make no parity claim and keep behavior unchanged.",
-      "deferred": "No unblocked implementation item remains. Owner-review decisions are listed in BACKLOG.md."
+      "scope": "Sequential owner review of the remaining decisions in BACKLOG.md, beginning with B017.",
+      "doneWhen": "Record each decision by removing resolved entries and updating DEVIATIONS.md or other relevant tracking; make no behavior change without explicit approval.",
+      "validation": "After each decision, verify the backlog disposition, deviation record, and checkpoint cursor are consistent.",
+      "deferred": "No unblocked implementation item remains. Pending owner-review decisions are listed in BACKLOG.md."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",

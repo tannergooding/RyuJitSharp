@@ -2214,8 +2214,7 @@ requirement.
 
 ### D009: CoreDisTools buffered decoder-error routing
 
-**Status:** accepted bounded output difference; a native bridge is tracked by
-B529.
+**Status:** accepted bounded output difference; no native bridge is planned.
 
 The managed backend uses CoreDisTools' `InitBufferedDisasm`,
 `GetOutputBuffer`, and `ClearOutputBuffer` exports. Valid instruction text is
