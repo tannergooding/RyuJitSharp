@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B525: reproduce pinned native FloatingPointUtils::ilogb(double) overload resolution and behavior for finite nonzero inputs, then compare it with the managed Math.ILogB path before deciding whether this is a confirmed upstream defect or an intentional parity gap.",
+    "nextAction": "B526: compare representative managed ARM32 instruction display and verbose output with the pinned native implementation across Thumb bytes, branch displacements, writable aliases, hot/cold offsets, and large conditional jumps; fix only confirmed differences.",
     "activeBatch": {
-      "scope": "B525 native/managed double-precision ilogb behavior.",
-      "doneWhen": "Establish the compiled pinned behavior and runtime reachability; preserve parity or move the confirmed behavior difference to owner review with a coordinated-fix recommendation.",
-      "validation": "Compile a focused native reproduction matching the pinned overload context, inspect the result without relying on a crashing full JIT run, and run the managed ilogb boundary tests.",
-      "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520 and B523 await owner review of the recommended optional-feature boundaries."
+      "scope": "B526 ARM32 instruction display and verbose-output parity.",
+      "doneWhen": "Compare the listed encoding/display cases against the pinned native implementation, fix confirmed managed differences, and retain the exact comparison evidence.",
+      "validation": "Run focused ARM32 emitter/disassembly tests and compare outputs for Thumb encodings, positive/negative displacements and aliases, hot/cold offsets, and synthesized large conditional jumps.",
+      "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520, B523, and B525 await owner review."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
