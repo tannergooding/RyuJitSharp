@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B515: inspect existing tests, artifacts, and local inputs for the missing RangeCheck phi-edge reproducer; determine whether the branch/reachability state can be reconstructed before changing compiler behavior.",
+    "nextAction": "Owner review: decide whether to accept the unresolved B515 RangeCheck and B516 GenericCatch diagnostic-coverage gaps without their original inputs; no compiler behavior change is justified until matching reproducers are available.",
     "activeBatch": {
-      "scope": "B515 RangeCheck phi-edge diagnostic mismatch and reproducer recovery.",
-      "doneWhen": "Recover the original case or establish a minimal reproducer that distinguishes native and managed predecessor/reachability state; fix only a confirmed translation defect, otherwise preserve the blocker.",
-      "validation": "Compare the first RangeCheck entry state and assertion diagnostics against pinned native behavior without suppressing checks or changing assertion semantics.",
-      "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520, B523, and B525 await owner review."
+      "scope": "Owner review of the unresolved B515 and B516 diagnostic-coverage gaps.",
+      "doneWhen": "Owner accepts the documented limits or supplies the original RangeCheck reproducer and matching GenericCatch PGO inputs; do not alter compiler behavior based on unmatched captures.",
+      "validation": "If inputs are supplied, compare native and managed diagnostics at the first relevant phase; otherwise make no parity claim and keep behavior unchanged.",
+      "deferred": "No unblocked implementation item remains. Owner-review decisions are listed in BACKLOG.md."
     },
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
