@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "backlog-burn-down",
-    "nextAction": "B134: revisit head-tail merge phase-dump parity using the pinned Checked Core_Root now present in runtime-oracle; determine whether native and managed dumps can be captured through existing harnesses without introducing a new runtime bridge.",
+    "nextAction": "B515: inspect existing tests, artifacts, and local inputs for the missing RangeCheck phi-edge reproducer; determine whether the branch/reachability state can be reconstructed before changing compiler behavior.",
     "activeBatch": {
-      "scope": "B134 head-tail merge native/managed phase-dump parity.",
-      "doneWhen": "Use the verified pinned Core_Root and existing managed tests to establish whether matching early/post-morph dumps are feasible; capture and compare when a supported harness exists, otherwise move the integration-harness requirement to owner review.",
-      "validation": "Verify the native runtime identity and execute only matched native test inputs; do not claim parity from managed tests or native execution alone.",
+      "scope": "B515 RangeCheck phi-edge diagnostic mismatch and reproducer recovery.",
+      "doneWhen": "Recover the original case or establish a minimal reproducer that distinguishes native and managed predecessor/reachability state; fix only a confirmed translation defect, otherwise preserve the blocker.",
+      "validation": "Compare the first RangeCheck entry state and assertion diagnostics against pinned native behavior without suppressing checks or changing assertion semantics.",
       "deferred": "B515 remains blocked on its missing range-check reproducer; B516 remains blocked on matching native/managed PGO inputs and pre-import captures; B520, B523, and B525 await owner review."
     },
     "dynamicTlsInputBoundary": {
