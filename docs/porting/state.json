@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "targetObservedAt": "2026-10-08",
-    "reconciledCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605"
+    "targetCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+    "targetObservedAt": "2026-10-10",
+    "reconciledCommit": "e23d559ac0db234786d68bd5135fed6ad9621750"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "live-oracle",
-    "nextAction": "For a subsequent oracle refresh, capture the desired dotnet/runtime commit once and follow .github/skills/oracle-update/SKILL.md from reconciledCommit 6ff62b1d; preserve the unresolved dynamic TLS input-ownership boundary.",
+    "nextAction": "Continue live-oracle work from reconciledCommit e23d559a; preserve the unresolved dynamic TLS input-ownership boundary and defer genAsyncResumeInfo until the B209 target-width table/emitter dependency closure is ported and tested.",
     "activeBatch": null,
     "dynamicTlsInputBoundary": {
       "status": "unresolved-input-ownership",
@@ -263,7 +263,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "reconciledCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
+    "reconciledCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."

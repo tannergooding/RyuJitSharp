@@ -180,7 +180,21 @@ public sealed partial class Lowering
 
         CheckImmedAndMakeContained(cmp, cmp.Op2);
 #elif TARGET_WASM
-        // Wasm compare containment remains an optimization opportunity.
+        if (!cmp.OperIs(GT_EQ, GT_NE))
+        {
+            return;
+        }
+
+        var zero = cmp.Op2;
+        if (!zero.IsIntegralConst(0))
+        {
+            zero = cmp.Op1;
+        }
+
+        if (zero.IsIntegralConst(0))
+        {
+            MakeSrcContained(cmp, zero);
+        }
 #elif TARGET_LOONGARCH64
         CheckImmedAndMakeContained(cmp, cmp.Op2);
 #else

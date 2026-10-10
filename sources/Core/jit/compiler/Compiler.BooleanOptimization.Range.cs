@@ -105,7 +105,7 @@ public partial class Compiler
         variable = null;
         constant = null;
         comparison = GT_NONE;
-        if ((tree.Oper is not (GT_LE or GT_LT or GT_GE or GT_GT)) || tree.IsUnsigned ||
+        if ((tree.Oper is not (GT_LE or GT_LT or GT_GE or GT_GT)) ||
             !varTypeIsIntegral(tree.Op1.Type) || !varTypeIsIntegral(tree.Op2.Type) ||
             (tree.Op1.Type != tree.Op2.Type))
         {
@@ -134,7 +134,8 @@ public partial class Compiler
     private bool FoldNeverNegativeRangeTest(GenTreeOp first, bool firstReversed,
         GenTreeOp second, bool secondReversed)
     {
-        if (!IsBooleanConstantRangeTest(first, out var variable, out var constant, out var firstOp))
+        if (first.IsUnsigned ||
+            !IsBooleanConstantRangeTest(first, out var variable, out var constant, out var firstOp))
         {
             return false;
         }
@@ -181,7 +182,8 @@ public partial class Compiler
     private bool FoldBooleanRangeTests(GenTreeOp first, bool firstReversed,
         GenTreeOp second, bool secondReversed)
     {
-        if (!IsBooleanConstantRangeTest(first, out var firstVariable, out var firstConstant, out var firstOp) ||
+        if ((first.IsUnsigned != second.IsUnsigned) ||
+            !IsBooleanConstantRangeTest(first, out var firstVariable, out var firstConstant, out var firstOp) ||
             !IsBooleanConstantRangeTest(second, out var secondVariable, out var secondConstant, out var secondOp))
         {
             return FoldNeverNegativeRangeTest(first, firstReversed, second, secondReversed);

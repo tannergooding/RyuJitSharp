@@ -37,6 +37,56 @@ internal static unsafe class BooleanOptimizationTests
         });
     }
 
+    [TestCase(false, false, true)]
+    [TestCase(true, true, true)]
+    [TestCase(false, true, true)]
+    [TestCase(true, false, false)]
+    public static void BooleanRangeFoldingPreservesSignedness(
+        bool firstUnsigned, bool secondUnsigned, bool expected)
+    {
+        WithCompiler(compiler =>
+        {
+            var variable = compiler.gtNewLclvNode(TYP_INT, 0);
+            var first = compiler.gtNewBinaryNode(GT_GE, TYP_INT,
+                variable, compiler.gtNewIconNode(TYP_INT, 0)).AsOp();
+            var secondVariable = compiler.gtNewLclvNode(TYP_INT, 0);
+            var second = compiler.gtNewBinaryNode(GT_LT, TYP_INT,
+                secondVariable, compiler.gtNewIconNode(TYP_INT, 10)).AsOp();
+            if (firstUnsigned)
+            {
+                first.Flags |= GTF_UNSIGNED;
+            }
+
+            if (secondUnsigned)
+            {
+                second.Flags |= GTF_UNSIGNED;
+            }
+
+            var oldRight = first.Op2;
+            var method = typeof(Compiler).GetMethod("FoldBooleanRangeTests",
+                BindingFlags.NonPublic | BindingFlags.Instance) ??
+                throw new AssertionException("Missing range fold.");
+
+            Assert.That(method.Invoke(compiler, [first, false, second, false]), Is.EqualTo(expected));
+            if (!expected)
+            {
+                Assert.That(first.Oper, Is.EqualTo(GT_GE));
+                Assert.That(first.Op2, Is.SameAs(oldRight));
+            }
+            else if (!firstUnsigned && secondUnsigned)
+            {
+                Assert.That(first.Oper, Is.EqualTo(GT_LT));
+                Assert.That(first.Op2, Is.SameAs(second.Op2));
+                Assert.That(first.IsUnsigned, Is.True);
+            }
+            else
+            {
+                Assert.That(first.Oper, Is.EqualTo(GT_LE));
+                Assert.That(first.IsUnsigned, Is.True);
+            }
+        });
+    }
+
     [TestCase(GT_GE, GT_LE, 0L, 100L, true, 0L, 100L)]
     [TestCase(GT_GT, GT_LT, 10L, 20L, true, 11L, 19L)]
     [TestCase(GT_GT, GT_LE, 10L, 11L, false, 11L, 11L)]

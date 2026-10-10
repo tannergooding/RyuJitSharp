@@ -310,9 +310,7 @@ public partial class Compiler
         }
 
         var constant = folded.AsIntCon();
-        first.IconValue = constant.IconValue;
-        first._vnPair = constant._vnPair;
-        first.FieldSeq = constant.FieldSeq;
+        left.AsOp().Op2 = constant;
         left = tree.Op1;
         left._vnPair = tree._vnPair;
 

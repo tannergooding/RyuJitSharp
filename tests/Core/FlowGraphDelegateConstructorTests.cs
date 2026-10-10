@@ -1,7 +1,12 @@
 #if TARGET_WASM && FEATURE_READYTORUN
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using unsafe CORINFO_CLASS_HANDLE = RyuJitSharp.CORINFO_CLASS_STRUCT_*;
+using unsafe CORINFO_CONTEXT_HANDLE = RyuJitSharp.CORINFO_CONTEXT_STRUCT_*;
+using unsafe CORINFO_METHOD_HANDLE = RyuJitSharp.CORINFO_METHOD_STRUCT_*;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.var_types;
 

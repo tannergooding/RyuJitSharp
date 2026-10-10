@@ -3,13 +3,20 @@
 
 #if TARGET_WASM
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
+using static RyuJitSharp.regNumber;
+using static RyuJitSharp.var_types;
+using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -74,6 +81,59 @@ internal static unsafe class WasmEmitterOutputTests
             {
                 CultureInfo.CurrentCulture = previousCulture;
             }
+        });
+    }
+
+    [TestCase(GT_EQ, TYP_INT, false, false)]
+    [TestCase(GT_EQ, TYP_INT, true, false)]
+    [TestCase(GT_NE, TYP_INT, false, false)]
+    [TestCase(GT_NE, TYP_INT, false, true)]
+    [TestCase(GT_EQ, TYP_LONG, false, false)]
+    [TestCase(GT_NE, TYP_LONG, true, true)]
+    public static void ComparisonAgainstZeroUsesWasmEqz(
+        genTreeOps oper, var_types type, bool zeroOnFirst, bool isBranch)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var emitter = codeGen.Emitter;
+            var descriptors = CurrentDescriptors(emitter) ??
+                throw new AssertionException("Missing Wasm instruction descriptors.");
+            var firstDescriptor = descriptors.Count;
+            var constantInstruction = type is TYP_INT ? INS_i32_const : INS_i64_const;
+            emitter.emitIns_I(constantInstruction, type.EmitSize, 1);
+
+            var zero = compiler.gtNewIconNode(type, 0);
+            zero.IsContained = true;
+            var value = compiler.gtNewIconNode(type, 1);
+            value.IsContained = true;
+            var comparison = compiler.gtNewBinaryNode(oper, TYP_INT,
+                zeroOnFirst ? zero : value, zeroOnFirst ? value : zero).AsOp();
+            comparison.RegNum = REG_NA;
+            if (isBranch)
+            {
+                comparison.Flags |= GTF_RELOP_JMP_USED;
+            }
+
+            GenCompareInt(codeGen, comparison);
+
+            var expected = new List<instruction> { constantInstruction };
+            if (oper is GT_EQ)
+            {
+                expected.Add(type is TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+            }
+            else if (!isBranch || (type is not TYP_INT))
+            {
+                expected.Add(type is TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+                expected.Add(INS_i32_eqz);
+            }
+
+            var actual = new instruction[descriptors.Count - firstDescriptor];
+            for (var index = 0; index < actual.Length; index++)
+            {
+                actual[index] = descriptors[firstDescriptor + index].idIns();
+            }
+
+            Assert.That(actual, Is.EqualTo(expected));
         });
     }
 
@@ -166,6 +226,42 @@ internal static unsafe class WasmEmitterOutputTests
         }
     }
 
+    private static void WithCodeGen(Action<Compiler, CodeGen> action)
+    {
+#if DEBUG
+        using var tls = new JitTls(null);
+#endif
+        var previousCompiler = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(true);
+        compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
+        compiler.lvaCount = 1;
+        compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
+        compiler.fgNodeThreading = NodeThreading.LIR;
+        compiler.compCurBB = new BasicBlock(null, null);
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            codeGen.genPrepForCompiler();
+            codeGen.Emitter.emitBegCG(compiler, default);
+            codeGen.Emitter.emitBegFN(false
+#if DEBUG
+                , false
+#endif
+                );
+            action(compiler, codeGen);
+        }
+        finally
+        {
+            JitTls.Compiler = previousCompiler;
+        }
+    }
+
     private struct CallbackContext
     {
         public ICorJitInfo JitInfo;
@@ -202,6 +298,12 @@ internal static unsafe class WasmEmitterOutputTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitOutputConstantFunclet")]
     private static extern nuint EmitOutputConstantFunclet(Emitter emitter, byte* destination,
         Emitter.instrDesc descriptor, CorInfoReloc relocationType);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
+    private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCompareInt")]
+    private static extern void GenCompareInt(CodeGen codeGen, GenTreeOp comparison);
 
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genEmitWasmEmitterTestSkipBlock")]

@@ -104,7 +104,9 @@ public sealed partial class RangeCheck
                 var matchesOp2 = ((vn == boundVN) && (offset == 0)) ||
                     ((offset != 0) && store.IsVNBinFuncWithConst(vn, VNF_ADD, ref addVN, ref addCns) &&
                         (addVN == boundVN) && (addCns == offset));
-                if (canUseCheckedBounds && (vn == assertion.Op1.VN))
+                // A checked bound from another path needs a nonnegative proof unless it is the preferred bound.
+                if (canUseCheckedBounds && (vn == assertion.Op1.VN) &&
+                    (assertion.Op2.IsVNNeverNegative || (boundVN == preferredBound)))
                 {
                     comparison = Compiler.AssertionDsc.ToCompareOper(assertion.Kind, out unsigned);
                     limit = new(LimitType.BinOpArray, boundVN, offset);
@@ -116,7 +118,8 @@ public sealed partial class RangeCheck
                     {
                         limit = new(LimitType.Constant, store.ConstantValue<int>(assertion.Op1.VN));
                     }
-                    else if (canUseCheckedBounds && store.IsVNCheckedBound(assertion.Op1.VN))
+                    else if (canUseCheckedBounds && store.IsVNCheckedBound(assertion.Op1.VN) &&
+                        (store.IsVNNeverNegative(assertion.Op1.VN) || (assertion.Op1.VN == preferredBound)))
                     {
                         limit = new(LimitType.BinOpArray, assertion.Op1.VN, 0);
                     }
@@ -168,7 +171,8 @@ public sealed partial class RangeCheck
             }
             else if (canUseCheckedBounds && assertion.KindIs(OAK_EQUAL, OAK_NOT_EQUAL) &&
                 (assertion.Op1.VN == vn) && assertion.Op2.KindIs(O2K_VN_ADD_CNS) &&
-                (assertion.Op2.Cns == 0) && store.IsVNCheckedBound(assertion.Op2.VN))
+                (assertion.Op2.Cns == 0) && store.IsVNCheckedBound(assertion.Op2.VN) &&
+                (assertion.Op2.IsVNNeverNegative || (assertion.Op2.VN == preferredBound)))
             {
                 var boundVN = assertion.Op2.VN;
                 if (assertion.KindIs(OAK_EQUAL))

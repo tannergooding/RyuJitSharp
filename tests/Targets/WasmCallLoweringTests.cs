@@ -82,6 +82,32 @@ internal static unsafe class WasmCallLoweringTests
         });
     }
 
+    [TestCase(GT_EQ, false, true)]
+    [TestCase(GT_EQ, true, true)]
+    [TestCase(GT_NE, false, true)]
+    [TestCase(GT_NE, true, true)]
+    [TestCase(GT_LT, false, false)]
+    public static void CompareContainmentContainsOnlyEqualityZeroOperands(
+        genTreeOps oper, bool zeroOnFirst, bool expectedContained)
+    {
+        WithLowering((compiler, lowering, block) =>
+        {
+            var value = compiler.gtNewIconNode(TYP_INT, 5);
+            var zero = compiler.gtNewIconNode(TYP_INT, 0);
+            var compare = compiler.gtNewBinaryNode(oper, TYP_INT,
+                zeroOnFirst ? zero : value, zeroOnFirst ? value : zero).AsOp();
+            block.InsertAtEnd(compare.Op1);
+            block.InsertAtEnd(compare.Op2);
+            block.InsertAtEnd(compare);
+
+            ContainCheckCompare(lowering, compare);
+
+            Assert.That(zero.IsContained, Is.EqualTo(expectedContained));
+            Assert.That(value.IsContained, Is.False);
+            Assert.That(block.LastNode, Is.SameAs(compare));
+        });
+    }
+
     [TestCase(3, TYP_INT)]
     [TestCase(5, TYP_LONG)]
     [TestCase(6, TYP_LONG)]
@@ -140,6 +166,9 @@ internal static unsafe class WasmCallLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCall")]
     private static extern GenTree? LowerCall(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckCompare")]
+    private static extern void ContainCheckCompare(Lowering lowering, GenTreeOp comparison);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_block")]
     private static extern ref BasicBlock? LoweringBlock(Lowering lowering);

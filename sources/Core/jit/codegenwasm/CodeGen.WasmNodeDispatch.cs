@@ -660,9 +660,44 @@ public sealed partial class CodeGen
     private void genCompareInt(GenTreeOp treeNode)
     {
         assert(treeNode.OperIsCmpCompare());
+
+        var op1 = treeNode.Op1;
+        var op2 = treeNode.Op2;
+        GenTree? value = null;
+
+        if (treeNode.OperIs(GT_EQ, GT_NE))
+        {
+            if (op1.IsContained && op1.IsIntegralConst(0))
+            {
+                value = op2;
+            }
+            else if (op2.IsContained && op2.IsIntegralConst(0))
+            {
+                value = op1;
+            }
+        }
+
         genConsumeOperands(treeNode);
 
-        var type = genActualType(treeNode.Op1.Type);
+        if (value is not null)
+        {
+            var canUseValueDirectly = treeNode.OperIs(GT_NE) &&
+                ((treeNode.Flags & GTF_RELOP_JMP_USED) != 0) &&
+                (genActualType(value.Type) == TYP_INT);
+            if (!canUseValueDirectly)
+            {
+                GetEmitter().emitIns(genActualType(value.Type) == TYP_LONG ? INS_i64_eqz : INS_i32_eqz);
+                if (treeNode.OperIs(GT_NE))
+                {
+                    GetEmitter().emitIns(INS_i32_eqz);
+                }
+            }
+
+            WasmProduceReg(treeNode);
+            return;
+        }
+
+        var type = genActualType(op1.Type);
         instruction ins;
         switch ((treeNode.Oper, type))
         {
@@ -1807,9 +1842,9 @@ public sealed partial class CodeGen
         var nullCheckDest = (blkOp.Flags & GTF_IND_NONFAULTING) == 0;
         var nullCheckSrc = false;
         var dest = blkOp.Addr;
-        var_types destType = TYP_UNKNOWN;
+        var destType = TYP_UNKNOWN;
         var src = blkOp.Data;
-        var_types srcType = TYP_UNKNOWN;
+        var srcType = TYP_UNKNOWN;
         var destReg = REG_NA;
         var srcReg = REG_NA;
         uint destOffset = 0;

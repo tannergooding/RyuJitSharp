@@ -1,7 +1,9 @@
 // Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NUnit.Framework;
@@ -11,6 +13,7 @@ using static RyuJitSharp.Globals;
 using static RyuJitSharp.VNFunc;
 using static RyuJitSharp.var_types;
 using BitOps = RyuJitSharp.BitSetOps<RyuJitSharp.BitVecTraits, RyuJitSharp.BitVecTraits>;
+using ValueNum = int;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -383,6 +386,85 @@ internal static unsafe class RangeAnalysisTests
         });
     }
 
+    [TestCase(false, false, false)]
+    [TestCase(true, false, true)]
+    [TestCase(false, true, true)]
+    public static void CheckedBoundRelationalAssertionsRequireNonnegativeOrPreferredProof(
+        bool nonnegative, bool preferred, bool expected)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var indexVN = store.VNForExpr(null, TYP_INT);
+            var boundVN = store.VNForExpr(null, TYP_INT);
+            store.SetVNIsCheckedBound(boundVN);
+            var assertion = Compiler.AssertionDsc.CreateCompareCheckedBound(
+                compiler, VNF_LT, indexVN, boundVN, 0, isVNNeverNegative: nonnegative);
+            var index = compiler.optAddAssertion(assertion);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, active, index - 1);
+            var preferredBound = preferred ? boundVN : ValueNumStore.NoVN;
+
+            var range = MergeEdgeAssertionsWorker(compiler, indexVN, preferredBound, active);
+
+            Assert.That(range.UpperLimit.IsUnknown, Is.EqualTo(!expected));
+        });
+    }
+
+    [TestCase(false, false, false)]
+    [TestCase(true, false, true)]
+    [TestCase(false, true, true)]
+    public static void CheckedBoundEqualityAssertionsRequireNonnegativeOrPreferredProof(
+        bool nonnegative, bool preferred, bool expected)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var indexVN = store.VNForExpr(null, TYP_INT);
+            var boundVN = store.VNForExpr(null, TYP_INT);
+            store.SetVNIsCheckedBound(boundVN);
+            var assertion = Compiler.AssertionDsc.CreateCompareCheckedBound(
+                compiler, VNF_EQ, indexVN, boundVN, 0, isVNNeverNegative: nonnegative);
+            var index = compiler.optAddAssertion(assertion);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, active, index - 1);
+            var preferredBound = preferred ? boundVN : ValueNumStore.NoVN;
+
+            var range = MergeEdgeAssertionsWorker(compiler, indexVN, preferredBound, active);
+
+            Assert.That(range.LowerLimit.IsUnknown, Is.EqualTo(!expected));
+            Assert.That(range.UpperLimit.IsUnknown, Is.EqualTo(!expected));
+        });
+    }
+
+    [TestCase(false, false, false)]
+    [TestCase(true, false, true)]
+    [TestCase(false, true, true)]
+    public static void CheckedBoundOnLeftRequiresNonnegativeOrPreferredProof(
+        bool nonnegative, bool preferred, bool expected)
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var leftBoundVN = nonnegative
+                ? store.VNForFunc(TYP_INT, VNF_ARR_LENGTH, store.VNForExpr(null, TYP_REF))
+                : store.VNForExpr(null, TYP_INT);
+            var rightBoundVN = store.VNForExpr(null, TYP_INT);
+            store.SetVNIsCheckedBound(leftBoundVN);
+            store.SetVNIsCheckedBound(rightBoundVN);
+            var assertion = Compiler.AssertionDsc.CreateCompareCheckedBound(
+                compiler, VNF_LT, leftBoundVN, rightBoundVN, 0);
+            var index = compiler.optAddAssertion(assertion);
+            var traits = compiler.apTraits ?? throw new InvalidOperationException();
+            var active = BitOps.MakeEmpty(traits);
+            BitOps.AddElemD(traits, active, index - 1);
+            var preferredBound = preferred ? leftBoundVN : ValueNumStore.NoVN;
+
+            var range = MergeEdgeAssertionsWorker(compiler, rightBoundVN, preferredBound, active);
+
+            Assert.That(range.LowerLimit.IsUnknown, Is.EqualTo(!expected));
+        });
+    }
+
     [Test]
     public static void GetRangeSelectsIncomingAssertionsAndReportsFailedSsaWalkAsUnknown()
     {
@@ -537,5 +619,29 @@ internal static unsafe class RangeAnalysisTests
         {
             JitTls.Compiler = previous;
         }
+    }
+
+    private static Range MergeEdgeAssertionsWorker(Compiler compiler, ValueNum vn,
+        ValueNum preferredBound, object assertions)
+    {
+        var method = typeof(RangeCheck).GetMethod("MergeEdgeAssertionsWorker",
+            BindingFlags.NonPublic | BindingFlags.Static) ??
+            throw new AssertionException("Missing edge assertion worker.");
+        object?[] arguments =
+        [
+            compiler,
+            vn,
+            preferredBound,
+            assertions,
+            new Range(new Limit(LimitType.Unknown)),
+            true,
+            3,
+            new HashSet<ValueNum>(),
+        ];
+
+        _ = method.Invoke(null, arguments);
+        return arguments[4] is Range range
+            ? range
+            : throw new AssertionException("Range worker did not update its range.");
     }
 }

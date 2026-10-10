@@ -343,9 +343,12 @@ internal static unsafe class ArithmeticMorphTests
             Assert.That(result, Is.SameAs(inner));
             Assert.That(result.Type, Is.EqualTo(type));
             Assert.That(result.AsOp().Op1, Is.SameAs(local));
-            Assert.That(result.AsOp().Op2, Is.SameAs(constant));
-            Assert.That(constant.IconValue, Is.EqualTo((nint)0));
+            Assert.That(result.AsOp().Op2, Is.Not.SameAs(constant));
+            Assert.That(result.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)0));
+            Assert.That(constant.IconValue, Is.EqualTo((nint)8));
             Assert.That(constant.FieldSeq,
+                Is.SameAs(compiler.FieldSeqStore.Create(field, 8, FieldSeq.FieldKind.Instance)));
+            Assert.That(result.AsOp().Op2.AsIntCon().FieldSeq,
                 Is.SameAs(compiler.FieldSeqStore.Create(field, 8, FieldSeq.FieldKind.Instance)));
         });
     }
@@ -375,7 +378,9 @@ internal static unsafe class ArithmeticMorphTests
             if (fold)
             {
                 Assert.That(result, Is.SameAs(left));
-                Assert.That(constant.IconValue, Is.EqualTo((nint)int.MinValue));
+                Assert.That(inner.Op2, Is.Not.SameAs(constant));
+                Assert.That(inner.Op2.AsIntCon().IconValue, Is.EqualTo((nint)int.MinValue));
+                Assert.That(constant.IconValue, Is.EqualTo((nint)int.MaxValue));
                 Assert.That(result!._vnPair.Liberal, Is.EqualTo(42));
                 if (comma)
                 {
@@ -388,6 +393,7 @@ internal static unsafe class ArithmeticMorphTests
             {
                 Assert.That(result, Is.Null);
                 Assert.That(constant.IconValue, Is.EqualTo((nint)int.MaxValue));
+                Assert.That(inner.Op2, Is.SameAs(constant));
             }
         });
     }
