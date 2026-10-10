@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Continue incremental Windows x64 CoreLib primary-JIT phase-dump comparison with the next small method sample; compare phase bodies separately from pre-phase diagnostics. The three-method EventSource follow-up confirms Initialize's Importation body matches after process-local handle canonicalization, but its pre-Importation profile-check diagnostics still differ.",
+    "nextAction": "Continue incremental Windows x64 CoreLib primary-JIT phase-dump comparison with the next small method sample; compare phase bodies separately from pre-phase diagnostics. EventSource.Initialize's Importation body matches after process-local handle canonicalization. Its pre-Importation profile-check difference is the confirmed native uninitialized-field defect B322 and accepted deterministic managed behavior D015.",
     "activeBatch": null,
     "parityEvidence": {
       "oracleCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
@@ -85,7 +85,7 @@
             ],
             "managedJitSha256": "AB679D2A60B51D6B932CB4895E63F2E99AA6292327CD4BDB52A91A1E2260DD1C",
             "initializeImportationBody": "All 1,491 lines match after canonicalizing only process-local CorInfo handles; both volatile.stfld annotations match.",
-            "fullPrefixDifference": "Before Importation, native reports a deferred prior profile check was skipped while managed checks profile weights (flags:0x1c); do not claim full-prefix equality.",
+            "fullPrefixDifference": "Before Importation, native reports a deferred prior profile check was skipped while managed checks profile weights (flags:0x1c). This is B322/D015: the pinned native debug-only fgPgoDeferredInconsistency field is uninitialized and is read on the no-profile/no-synthesis path; Checked allocator poison yields the skip, while managed zero-initialization reports no profiled blocks. Keep the deterministic managed behavior; do not emulate an uninitialized native bool.",
             "nativeRepeatControl": "The native and native-repeat Initialize dump SHA-256 values match: A1EC6EDB96AEDFA6836261A6D13351C03A9BA56B168E7DF393D64172B58C2FFE.",
             "diffableDisassembly": true,
             "additionalPrefixes": "CEE_UNALIGNED and CEE_CONSTRAINED do not occur in this three-method sample and remain unassessed.",

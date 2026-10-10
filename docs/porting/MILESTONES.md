@@ -52,10 +52,15 @@ that `EventSource.Initialize`'s 1,491-line Importation body matches native
 after canonicalizing only process-local CorInfo handles, including both
 volatile stores. The full comparison prefix still differs before Importation:
 native skips a deferred profile check while managed runs the profile-weight
-check. That diagnostic is outside the phase body. The ResourceManager phase
-capture is a selected-method AltJIT run; full CoreLib primary-JIT phase-dump
-parity remains open. The dynamic TLS input-ownership boundary also remains
-unresolved.
+check. This is the existing B322/D015 finding, not a port inconsistency: native
+does not initialize `fgPgoDeferredInconsistency`, and this no-profile,
+no-synthesis path reads it before assignment. Checked allocator poison makes
+the native check skip; the managed `bool` is deterministically zero-initialized
+and reports no profiled blocks. Keep the managed behavior rather than emulating
+an uninitialized native value. This diagnostic is outside the Importation phase
+body. The ResourceManager phase capture is a selected-method AltJIT run; full
+CoreLib primary-JIT phase-dump parity remains open. The dynamic TLS input-
+ownership boundary also remains unresolved.
 
 ## Major milestones
 
