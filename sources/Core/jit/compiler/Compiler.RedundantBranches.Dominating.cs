@@ -251,8 +251,10 @@ public partial class Compiler
                 break;
             }
 
+#if DEBUG
             JITDUMP($"Optimizing branch in dominating {FMT_BB(domBlockProbe.bbNum)} with relop " +
                 $"[{domTree.TreeId:D6}] based on {FMT_BB(block.bbNum)}'s relop [{tree.TreeId:D6}]\n");
+#endif
 
             var domRelopValue = currentIsDomTrueSucc ? 1 : 0;
             var domMayHaveSideEffects = (domTree.Flags & GTF_SIDE_EFFECT) != 0;
