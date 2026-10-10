@@ -301,9 +301,9 @@ coverage; do not trade correctness for throughput.
    metadata where applicable; text disassembly alone is not a full code-generation
    pass.
 2. Compare full compilation dumps for the same corpus and configuration.
-   Reuse `Compare-PortingDumps.ps1` where its phase coverage is sufficient;
-   extend the existing comparator narrowly when needed to cover the remaining
-   phases. Preserve raw captures and semantic output such as tree/block IDs,
+   Use `Compare-PortingDumps.ps1 -Phase FullDump` for complete per-method
+   blocks, including all phases and inlines; select an individual phase only for
+   focused analysis. Preserve raw captures and semantic output such as tree/block IDs,
    ordering, diagnostics, and costs. Apply only applicable exceptions already
    recorded in `DEVIATIONS.md`; D001 permits allocation-statistics differences
    only and does not imply other allocator-related output. Investigate every

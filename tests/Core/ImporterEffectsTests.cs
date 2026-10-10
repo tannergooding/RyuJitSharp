@@ -1,8 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -380,6 +382,70 @@ internal static unsafe class ImporterEffectsTests
             Assert.That(indirect.IsVolatile, Is.True);
             Assert.That(output.Contains("volatile.ldind.i4", StringComparison.Ordinal), Is.EqualTo(verbose));
         });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ConstrainedPrefixIsShownInImporterDiagnostics(bool verbose)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.doAssert = &ContinueConstrainedPrefixAssertion;
+        vtable.Base.Base.resolveToken = &ResolveConstrainedToken;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+#if DEBUG
+        using var jitTls = new JitTls(&jitInfo);
+#endif
+        var previousCompiler = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.info = new Compiler.Info {
+            compFullName = nameof(ConstrainedPrefixIsShownInImporterDiagnostics),
+            compCompHnd = &jitInfo,
+            compMaxStack = 0,
+            compRetBuffArg = Globals.BAD_VAR_NUM,
+        };
+        compiler.stackState.esStack = [];
+        compiler.verbose = verbose;
+        var il = new byte[] {
+            (byte)OPCODE.CEE_PREFIX1,
+            (byte)((int)OPCODE.CEE_CONSTRAINED - 0x0100),
+            1,
+            0,
+            0,
+            2,
+            (byte)OPCODE.CEE_NOP,
+        };
+        var block = new BasicBlock(null, null) { bbCodeOffsEnd = il.Length };
+        compiler.fgFirstBB = compiler.compCurBB = block;
+        JitTls.Compiler = compiler;
+        JitTls.LogEnv.Compiler = compiler;
+
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previousWriter = Globals.s_jitstdout;
+        try
+        {
+            Globals.s_jitstdout = writer;
+            Assert.Throws<FatalJitException>(() =>
+            {
+                fixed (byte* code = il)
+                {
+                    compiler.info.compCode = code;
+                    compiler.info.compILCodeSize = il.Length;
+                    compiler.impImportBlockCode(block);
+                }
+            });
+            writer.Flush();
+        }
+        finally
+        {
+            Globals.s_jitstdout = previousWriter;
+            JitTls.Compiler = previousCompiler;
+        }
+
+        var output = Encoding.UTF8.GetString(stream.ToArray());
+        Assert.That(output.Contains("constrained. (02000001) ", StringComparison.Ordinal), Is.EqualTo(verbose));
     }
 #endif
 
@@ -957,4 +1023,12 @@ internal static unsafe class ImporterEffectsTests
             JitTls.Compiler = previous;
         }
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void ResolveConstrainedToken(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* token)
+        => token->hClass = (CORINFO_CLASS_STRUCT_*)1;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static int ContinueConstrainedPrefixAssertion(ICorJitInfo* self, byte* file, int line, byte* expression)
+        => 0;
 }

@@ -5969,11 +5969,8 @@ public partial class Compiler
                                 {
                                     compInlineResult.Note(InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK);
                                 }
-                                else
-                                {
-                                    fgStack.PushUnknown();
-                                }
 
+                                fgStack.PushUnknown();
                                 break;
                             }
 
@@ -15923,7 +15920,7 @@ public partial class Compiler
             varDsc.lvDoNotEnregister = false;
 #if DEBUG
             varDsc.lvKeepType = true;
-            JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to {varDsc.Type}.\n");
+            JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to {varDsc.Type.Name}.\n");
 #endif
         }
 #endif

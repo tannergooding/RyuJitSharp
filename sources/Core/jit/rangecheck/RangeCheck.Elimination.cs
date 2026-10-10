@@ -16,7 +16,7 @@ public sealed partial class RangeCheck
         if (_compiler.verbose)
         {
             jitprintf($"{range} BetweenBounds <0, [{upper.TreeId:D6}]>\n");
-            jitprintf($"{upperVN} upper bound is: ");
+            jitprintf($"${upperVN:x} upper bound is: ");
             store.vnDump(_compiler, upperVN);
             jitprintf("\n");
         }

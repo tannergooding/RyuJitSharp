@@ -70,6 +70,11 @@ public sealed partial class RangeCheck
             return true;
         }
 
+#if DEBUG
+        var operName = binary.Oper.ToString()[3..];
+        JITDUMP($"Checking bin op overflow {operName} {leftRange} {rightRange}\n");
+#endif
+
         if (binary.Oper is GT_ADD)
         {
             return AddOverflows(leftRange.UpperLimit, rightRange.UpperLimit);

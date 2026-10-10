@@ -5468,7 +5468,7 @@ public partial class Compiler
         // want to do the same for small structs if they don't come from
         // calls and don't have GC pointers, since explicitly copying such
         // structs is cheap.
-        JITDUMP("\nCompiler.impImportAndPushBox -- handling BOX(value class) via");
+        JITDUMP("\nCompiler::impImportAndPushBox -- handling BOX(value class) via");
 
         var canExpandInline = boxHelper is CORINFO_HELP_BOX;
         var optForSize = !exprToBox.Oper.IsCall && varTypeIsStruct(exprToBox.Type) && opts.OptimizationDisabled;
@@ -6734,6 +6734,7 @@ public partial class Compiler
                     case CEE_CONSTRAINED:
                     {
                         assertImp(opcode.Size == sizeof(int));
+                        JITDUMP(opcode.Name);
                         prefixFlags |= PREFIX_CONSTRAINED;
 
                         impResolveToken(codeAddr, out constrainedResolvedToken, CORINFO_TOKENKIND_Constrained);

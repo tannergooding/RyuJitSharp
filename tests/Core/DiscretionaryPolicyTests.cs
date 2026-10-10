@@ -216,6 +216,34 @@ internal static class DiscretionaryPolicyTests
         Assert.That(policy.Observation, Is.EqualTo(expected));
     }
 
+    [Test]
+    public static void BenefitMultiplierDiagnosticUsesNativeGeneralPrecision()
+    {
+        var compiler = CreateCompiler();
+        compiler.verbose = true;
+        JitTls.Compiler = compiler;
+        var policy = new FixedMultiplierPolicy(compiler, 7.02392578125);
+        Prepare(policy, 1000, InlineCallsiteFrequency.BORING);
+
+        using var stream = new MemoryStream();
+        using var writer = new JitTextWriter(stream, leaveOpen: true);
+        var previous = Globals.s_jitstdout;
+        Globals.s_jitstdout = writer;
+        try
+        {
+            policy.DetermineProfitability(VoidMethod());
+            writer.Flush();
+        }
+        finally
+        {
+            Globals.s_jitstdout = previous;
+        }
+
+        var output = System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        Assert.That(output, Does.Contain("benefit multiplier=7.02393"));
+        Assert.That(output, Does.Contain("(multiplier = 7.02393)"));
+    }
+
     [TestCase(typeof(DiscretionaryPolicy), "DiscretionaryPolicy")]
     [TestCase(typeof(ModelPolicy), "ModelPolicy")]
     [TestCase(typeof(ProfilePolicy), "ProfilePolicy")]
@@ -434,5 +462,10 @@ internal static class DiscretionaryPolicyTests
         {
             MethodInfoObservations(info);
         }
+    }
+
+    private sealed class FixedMultiplierPolicy(Compiler compiler, double multiplier) : DiscretionaryPolicy(compiler, true)
+    {
+        protected override double DetermineMultiplier() => multiplier;
     }
 }

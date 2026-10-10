@@ -10,96 +10,45 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Continue incremental Windows x64 CoreLib primary-JIT phase-dump comparison with the next small method sample; compare phase bodies separately from pre-phase diagnostics. EventSource.Initialize's Importation body matches after process-local handle canonicalization. Its pre-Importation profile-check difference is the confirmed native uninitialized-field defect B322 and accepted deterministic managed behavior D015.",
+    "nextAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
     "parityEvidence": {
-      "oracleCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-      "corelibAssemblyListing": {
+      "corelibCodegen": {
         "architecture": "Windows x64",
-        "methodBlocks": 762,
-        "methodOrderMatches": true,
-        "differences": 0,
-        "outputBytes": 6134421,
-        "outputSha256": "958490566220eebd70136aa58061f476402f557ad59c996bbb190959b16a88fc",
-        "normalization": "None; native and managed diffable stdout files are byte-for-byte equal.",
-        "fix": "Large static-readonly struct zero checks inspect only the EE-reported field size; the regression verifies uninitialized tail bytes are ignored.",
-        "nativeRepeatControl": {
-          "captures": 6,
-          "matchingCaptures": 5,
-          "outlierMethod": "Interop+Kernel32:LocalFree(nint):nint (FullOpts)",
-          "outlierExplanation": "CoreCLR supplied a resolved IAT_VALUE target in the outlier and a late-bound IAT_PVALUE slot in the matching captures. The variant is retained, not normalized."
-        },
-        "evidence": "artifacts\\parity-6ff62b1d-20261009-retry1\\corelib-asm-diffable-e1dc68b0\\assembly-comparison-post-staticreadonly-fix.json",
-        "scope": "Diffable listings for the 762 System.Private.CoreLib methods compiled by the PortingCorpus workload; not a full CoreLib method inventory or relocation-aware machine-code and GC/EH/unwind metadata parity."
-      },
-      "corelibFullPmiDisassembly": {
-        "architecture": "Windows x64",
-        "diffable": true,
+        "result": "Identical",
         "types": 4284,
-        "methodSlots": 75676,
+        "methods": 75676,
         "skippedTypes": 60,
-        "skippedMethods": 1267,
-        "methodBlocks": 75824,
-        "uniqueHeaders": 75644,
-        "methodOrderMatches": false,
-        "methodHeaderMultisetsMatch": true,
-        "orderedHeaderPositionsDiffer": 7,
-        "methodOrderDifference": "System.Enum+EnumInfo`1[double]:CloneValues moved ahead of six SharedArrayPool headers in the final one-sided capture; per-method code is unchanged.",
-        "codeBytes": 8430400,
-        "codeSizeDiffMethods": 0,
-        "instructionAndLabelSequenceDiffMethods": 0,
-        "fullMethodTextMatchesExceptRWDDataRows": true,
-        "nanAnnotationLinesMatched": 1689,
-        "managedPrefixedHeaders": 0,
-        "previousManagedPrefixedHeaders": 36,
-        "focusedValidation": "Earlier focused suite: 173/173 passed. After the verbose-gate fix, a FullOpts System.IO.StreamWriter constructor harness passed with verbose off and JitDump on; clean Windows x64 Debug NativeAOT publish succeeded.",
-        "managedJitSha256": "108AB6178491541A7CDFFFEC154BD30768D050888110C05D94999C99C698C638",
-        "nativeJitSha256": "4E82875171D561E11DB64F05D9B0B63D1DDB2CF25F2CE51CD2E4975ECEBE5F62",
-        "canonicalization": "Generated G_M method identifiers only; RWD row values are compared separately, with no instruction text normalized.",
-        "rawOutputDifferences": "The 36 managed-only condition-expression prefixes are gone. Six process-variable RWD data rows remain in three async continuation methods. The final one-sided capture reorders seven header positions, but per-method text matches.",
-        "pairedCaptureNote": "A paired recapture of the final managed JIT contains interleaved managed stdout near StaticsHelpers.GetGCThreadStaticsByIndexSlow and is excluded from parity evidence; see artifacts\\corelib-pmi-verbose-gate-paired-jit-diff-20261010.",
-        "evidence": "artifacts\\corelib-pmi-verbose-gate-jit-diff-20261010\\full-pmi-instruction-comparison.json",
-        "nativeRepeatControl": "artifacts\\corelib-pmi-native-repeat-jit-diff-20261010"
+        "skippedMethods": 1267
       },
-      "focusedDumpComparisons": {
-        "System.Resources.ResourceManager": {
-          "methods": 9,
-          "importation": "Equal after canonicalizing process-local CorInfo handle fields",
-          "redundantBranchOpts": "Raw exact equality",
-          "capture": "Selected-method AltJIT; not full primary-JIT dump parity"
-        },
-        "System.SpanHelpers.IndexOf": {
-          "phase": "Importation",
-          "result": "Equal after canonicalizing process-local CorInfo handle fields"
-        },
-        "System.Diagnostics.Tracing.EventSource": {
-          "methods": 25,
-          "phase": "Importation",
-          "result": "Static-readonly folding and the local table now match. The original volatile-prefix mismatch was fixed and verified in the three-method follow-up below.",
-          "capture": "Focused primary-JIT; not full CoreLib phase parity",
-          "postFixFollowup": {
-            "sampleMethods": [
-              "System.Diagnostics.Tracing.EventSource:.cctor",
-              "System.Diagnostics.Tracing.EventSource:get_SelfDescribingEvents",
-              "System.Diagnostics.Tracing.EventSource:Initialize"
-            ],
-            "managedJitSha256": "AB679D2A60B51D6B932CB4895E63F2E99AA6292327CD4BDB52A91A1E2260DD1C",
-            "initializeImportationBody": "All 1,491 lines match after canonicalizing only process-local CorInfo handles; both volatile.stfld annotations match.",
-            "fullPrefixDifference": "Before Importation, native reports a deferred prior profile check was skipped while managed checks profile weights (flags:0x1c). This is B322/D015: the pinned native debug-only fgPgoDeferredInconsistency field is uninitialized and is read on the no-profile/no-synthesis path; Checked allocator poison yields the skip, while managed zero-initialization reports no profiled blocks. Keep the deterministic managed behavior; do not emulate an uninitialized native bool.",
-            "nativeRepeatControl": "The native and native-repeat Initialize dump SHA-256 values match: A1EC6EDB96AEDFA6836261A6D13351C03A9BA56B168E7DF393D64172B58C2FFE.",
-            "diffableDisassembly": true,
-            "additionalPrefixes": "CEE_UNALIGNED and CEE_CONSTRAINED do not occur in this three-method sample and remain unassessed.",
-            "capture": "artifacts\\corelib-importation-volatile-prefix-fix-20261010\\capture"
-          }
-        }
-      },
-      "comparator": {
-        "script": "scripts\\porting\\Compare-PortingDumps.ps1",
-        "phases": [
-          "Importation",
-          "Redundant branch opts"
+      "eventsourceInitialThreeFullDump": {
+        "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+        "methodCount": 3,
+        "methods": [
+          "System.Diagnostics.Tracing.EventSource:.cctor()",
+          "System.Diagnostics.Tracing.EventSource:get_SelfDescribingEvents():bool:this",
+          "System.Diagnostics.Tracing.EventSource:Initialize(System.Guid,System.String,System.String[]):this"
         ],
-        "negativeControl": "The pre-fix class-attribute formatting mismatch remains visible with handle canonicalization enabled."
+        "diffable": true,
+        "nativeRepeat": "Byte-identical",
+        "nativeRepeatSha256": "1E7337EA03D4DBAA1969B836D8034012009184E81F4622391D0278BB53C05F21",
+        "rawFullDumpEquality": "0/3; first differences are the accepted D015 profile diagnostics.",
+        "afterD001D015": "2/3 exact; Initialize retains only the accepted D020 equal-key prolog debug-range ordering.",
+        "afterAcceptedDifferences": "3/3 exact after setting aside only documented D001/D015/D020 output.",
+        "verifiedFixes": [
+          "CEE_VOLATILE importer diagnostic matches native.",
+          "Enum-form type diagnostic prints long.",
+          "Duplicate LSRA block-state row is absent."
+        ],
+        "validation": "InlineScanTests and RangeAnalysisTests passed 96/96; Debug NativeAOT capture exited successfully.",
+        "evidence": {
+          "nativeCapture": "artifacts\\corelib-eventsource-constrained-prefix-native-primary\\jitdump.txt",
+          "nativeRepeat": "artifacts\\corelib-eventsource-constrained-prefix-native-repeat\\jitdump.txt",
+          "managedCapture": "artifacts\\corelib-eventsource-constrained-prefix-managed-range-diagnostics\\jitdump.txt",
+          "rawComparison": "artifacts\\corelib-eventsource-initial-three-raw-comparison.json",
+          "withoutD001D015": "artifacts\\corelib-eventsource-initial-three-without-d015-d001-comparison.json",
+          "withoutD001D015D020": "artifacts\\corelib-eventsource-initial-three-without-d015-d001-d020-comparison.json"
+        }
       }
     },
     "dynamicTlsInputBoundary": {

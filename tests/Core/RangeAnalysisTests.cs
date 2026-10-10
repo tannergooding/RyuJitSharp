@@ -25,8 +25,122 @@ internal static unsafe class RangeAnalysisTests
         GenTreeLclVarCommon local, Range range);
 
 #if DEBUG
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoesBinOpOverflow")]
+    private static extern bool DoesBinOpOverflow(RangeCheck analysis, BasicBlock block, GenTreeOp binary, Range range);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Widen")]
+    private static extern void Widen(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "MergeAssertion")]
     private static extern void MergeAssertion(RangeCheck analysis, BasicBlock block, GenTree tree, ref Range range);
+
+    [Test]
+    public static void WidenDiagnosticPrintsBlockAndTree()
+    {
+        WithCompiler((compiler, _) =>
+        {
+            var block = new BasicBlock(null, null) { bbNum = 12 };
+            var tree = compiler.gtNewLclvNode(TYP_INT, 0);
+            var analysis = compiler.GetRangeCheck();
+            var range = new Range(new Limit(LimitType.Constant, 0), new Limit(LimitType.Constant, 1));
+
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+            var previous = Globals.s_jitstdout;
+            Globals.s_jitstdout = writer;
+            compiler.verbose = true;
+
+            try
+            {
+                Widen(analysis, block, tree, ref range);
+                writer.Flush();
+
+                Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
+                    Is.EqualTo($"[RangeCheck::Widen] {FMT_BB(block.bbNum)}, \n[{tree.TreeId:D6}]\n"));
+            }
+            finally
+            {
+                Globals.s_jitstdout = previous;
+            }
+        });
+    }
+
+    [Test]
+    public static void BetweenBoundsDiagnosticFormatsValueNumberAsHexadecimal()
+    {
+        WithCompiler((compiler, store) =>
+        {
+            var upper = compiler.gtNewLclvNode(TYP_INT, 0);
+            var upperVN = store.VNNormalValue(upper._vnPair.Conservative);
+            var range = new Range(new Limit(LimitType.Constant, 0), new Limit(LimitType.Constant, 1));
+
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+            var previous = Globals.s_jitstdout;
+            Globals.s_jitstdout = writer;
+            compiler.verbose = true;
+
+            try
+            {
+                _ = compiler.GetRangeCheck().BetweenBounds(range, upper, 0);
+                writer.Flush();
+
+                Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
+                    Does.Contain($"${upperVN:x} upper bound is: "));
+            }
+            finally
+            {
+                Globals.s_jitstdout = previous;
+            }
+        });
+    }
+
+    [Test]
+    public static void BinaryOverflowDiagnosticPrintsOperatorAndOperandRanges()
+    {
+        WithCompiler((compiler, _) =>
+        {
+            var block = new BasicBlock(null, null);
+            var left = compiler.gtNewLclvNode(TYP_INT, 0);
+            var right = compiler.gtNewLclvNode(TYP_INT, 1);
+            var binary = compiler.gtNewBinaryNode(genTreeOps.GT_ADD, TYP_INT, left, right);
+            var analysis = compiler.GetRangeCheck();
+            var rangeMapField = typeof(RangeCheck).GetField("_rangeMap", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("RangeCheck range map was not found.");
+            var searchPathField = typeof(RangeCheck).GetField("_searchPath", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("RangeCheck search path was not found.");
+            var rangeMap = (Dictionary<GenTree, Range>)(rangeMapField.GetValue(analysis)
+                ?? throw new InvalidOperationException("RangeCheck range map was not initialized."));
+            var searchPath = (Dictionary<GenTree, BasicBlock?>)(searchPathField.GetValue(analysis)
+                ?? throw new InvalidOperationException("RangeCheck search path was not initialized."));
+            var leftRange = new Range(new Limit(LimitType.Constant, 0), new Limit(LimitType.Constant, 10));
+            var rightRange = new Range(new Limit(LimitType.Constant, 0), new Limit(LimitType.Constant, 5));
+            rangeMap[left] = leftRange;
+            rangeMap[right] = rightRange;
+            searchPath[left] = block;
+            searchPath[right] = block;
+
+            using var stream = new MemoryStream();
+            using var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true);
+            var previous = Globals.s_jitstdout;
+            Globals.s_jitstdout = writer;
+            compiler.verbose = true;
+
+            try
+            {
+                var range = new Range(new Limit(LimitType.Constant, 0), new Limit(LimitType.Constant, 15));
+                Assert.That(DoesBinOpOverflow(analysis, block, binary, range), Is.False);
+                writer.Flush();
+
+                Assert.That(Encoding.UTF8.GetString(stream.ToArray()),
+                    Is.EqualTo($"Checking bin op overflow ADD {leftRange} {rightRange}\n"));
+            }
+            finally
+            {
+                Globals.s_jitstdout = previous;
+            }
+        });
+    }
 
     [TestCase(false, false, false)]
     [TestCase(false, true, false)]

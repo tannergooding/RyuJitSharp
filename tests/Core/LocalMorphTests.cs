@@ -924,7 +924,15 @@ internal static unsafe class LocalMorphTests
             arg.lvDoNotEnregister = true;
             compiler.lvaTable[1].Type = TYP_INT;
 
-            var status = compiler.fgRetypeImplicitByRefArgs();
+            var status = PhaseStatus.MODIFIED_NOTHING;
+#if DEBUG
+            compiler.verbose = true;
+            var output = InstructionRecordingTestSupport.Capture(() => status = compiler.fgRetypeImplicitByRefArgs());
+            var diagnostic = $"Changing the lvType for struct parameter V00 to {TYP_I_IMPL.Name}.";
+            Assert.That(output, implicitByRef ? Does.Contain(diagnostic) : Does.Not.Contain("Changing the lvType"));
+#else
+            status = compiler.fgRetypeImplicitByRefArgs();
+#endif
 
             Assert.That(status, Is.EqualTo(implicitByRef ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
             Assert.That(arg.Type, Is.EqualTo(implicitByRef ? TYP_I_IMPL : TYP_STRUCT));

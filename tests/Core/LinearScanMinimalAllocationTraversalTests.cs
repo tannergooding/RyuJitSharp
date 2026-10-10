@@ -385,7 +385,20 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
             var secondUse = allocator.newRefPosition(
                 secondInterval, 12, RefType.RefTypeUse, secondTree, SRBM_RBX);
 
+#if DEBUG
+            compiler.verbose = true;
+            var output = Capture(() => AllocateRegistersMinimal(allocator));
+            var lines = output.Split(Environment.NewLine);
+            var blockRow = Array.FindIndex(lines, line =>
+                line.Contains($"BB{blocks[1].bbNum}", StringComparison.Ordinal) &&
+                line.Contains("PredBB", StringComparison.Ordinal));
+
+            Assert.That(blockRow, Is.GreaterThanOrEqualTo(0));
+            Assert.That(blockRow + 1, Is.LessThan(lines.Length));
+            Assert.That(lines[blockRow + 1], Does.Not.StartWith("|"));
+#else
             AllocateRegistersMinimal(allocator);
+#endif
 
             Assert.That(firstInterval.physReg, Is.EqualTo(regNumber.REG_NA));
             Assert.That(secondDefinition.registerAssignment, Is.EqualTo(SRBM_RBX));

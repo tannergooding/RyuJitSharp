@@ -708,8 +708,6 @@ public sealed partial class LinearScan
         {
             dumpRefPositionShort(refPosition, block);
         }
-
-        dumpAllocationRegisterRecords();
     }
 
     private void dumpMinimalAllocationEvent(

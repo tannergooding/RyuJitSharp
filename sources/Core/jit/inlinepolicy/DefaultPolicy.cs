@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Globalization;
 using System.IO;
 
 namespace RyuJitSharp;
@@ -330,14 +331,14 @@ public partial class DefaultPolicy : LegacyPolicy
         // Note the DefaultPolicy estimates are scaled up by SIZE_SCALE
         JITDUMP($"\ncalleeNativeSizeEstimate={_calleeNativeSizeEstimate}\n");
         JITDUMP($"callsiteNativeSizeEstimate={_callsiteNativeSizeEstimate}\n");
-        JITDUMP($"benefit multiplier={_multiplier}\n");
+        JITDUMP($"benefit multiplier={_multiplier.ToString("G6", CultureInfo.InvariantCulture)}\n");
         JITDUMP($"threshold={threshold}\n");
 
         // Reject if callee size is over the threshold
         if (_calleeNativeSizeEstimate > threshold)
         {
             // Inline appears to be unprofitable
-            _rootCompiler.JITLOG(LL_INFO100000, $"Native estimate for function size exceeds threshold for inlining {(double)(_calleeNativeSizeEstimate) / SIZE_SCALE} > {(double)(threshold) / SIZE_SCALE} (multiplier = {_multiplier})\n");
+            _rootCompiler.JITLOG(LL_INFO100000, $"Native estimate for function size exceeds threshold for inlining {(double)(_calleeNativeSizeEstimate) / SIZE_SCALE} > {(double)(threshold) / SIZE_SCALE} (multiplier = {_multiplier.ToString("G6", CultureInfo.InvariantCulture)})\n");
 
             // Fail the inline
             if (_isPrejitRoot)
@@ -352,7 +353,7 @@ public partial class DefaultPolicy : LegacyPolicy
         else
         {
             // Inline appears to be profitable
-            _rootCompiler.JITLOG(LL_INFO100000, $"Native estimate for function size is within threshold for inlining {(double)(_calleeNativeSizeEstimate) / SIZE_SCALE} <= {(double)(threshold) / SIZE_SCALE} (multiplier = {_multiplier})\n");
+            _rootCompiler.JITLOG(LL_INFO100000, $"Native estimate for function size is within threshold for inlining {(double)(_calleeNativeSizeEstimate) / SIZE_SCALE} <= {(double)(threshold) / SIZE_SCALE} (multiplier = {_multiplier.ToString("G6", CultureInfo.InvariantCulture)})\n");
 
             // Update candidacy
             if (_isPrejitRoot)

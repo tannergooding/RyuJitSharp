@@ -120,6 +120,14 @@ public sealed partial class RangeCheck
 
     private void Widen(BasicBlock block, GenTree tree, ref Range range)
     {
+#if DEBUG
+        if (_compiler.verbose)
+        {
+            JITDUMP($"[RangeCheck::Widen] {FMT_BB(block.bbNum)}, \n");
+            JITDUMP($"[{tree.TreeId:D6}]\n");
+        }
+#endif
+
         if ((range.LowerLimit.IsDependent || range.LowerLimit.IsUnknown) &&
             IsMonotonicallyIncreasing(tree, false))
         {

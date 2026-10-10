@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory)][string] $NativeDump,
     [Parameter(Mandatory)][string] $ManagedDump,
     [Parameter(Mandatory)][string] $OutputPath,
-    [ValidateSet("Importation", "Redundant branch opts")][string] $Phase = "Importation",
+    [ValidateSet("Importation", "Redundant branch opts", "FullDump")][string] $Phase = "Importation",
     [switch] $CanonicalizeProcessSpecificHandles
 )
 
@@ -31,6 +31,11 @@ function Get-Methods([string] $Path) {
 
 function Get-ComparisonRegions([string] $Text, [string] $Method, [string] $Phase) {
     $regions = [Collections.Generic.List[string]]::new()
+    if ($Phase -eq "FullDump") {
+        $regions.Add($Text)
+        return $regions.ToArray()
+    }
+
     if ($Phase -eq "Importation") {
         $boundary = "*************** Finishing PHASE Importation"
         $end = $Text.IndexOf($boundary, [StringComparison]::Ordinal)

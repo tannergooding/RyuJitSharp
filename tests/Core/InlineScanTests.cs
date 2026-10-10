@@ -116,6 +116,10 @@ internal static class InlineScanTests
             CALLEE_ARG_FEEDS_RANGE_CHECK);
         yield return ScanCase("argument-beq-length", [0x02, 0x03, 0x8E, 0x2E, 0, 0x2A], 0,
             CALLEE_ARG_FEEDS_RANGE_CHECK);
+        yield return ScanCase("array-load-does-not-preserve-argument", [0x02, 0x03, 0x90, 0x7D, 0, 0, 0, 0, 0x2A], 0,
+            CALLEE_ARG_FEEDS_RANGE_CHECK);
+        yield return ScanCase("array-store-does-not-preserve-argument",
+            [0x02, 0x03, 0x04, 0x9C, 0x7D, 0, 0, 0, 0, 0x2A], 3, 0, CALLEE_ARG_FEEDS_RANGE_CHECK);
     }
 
     private static TestCaseData ScanCase(string name, byte[] il, int invariantArgs, params InlineObservation[] expected)
@@ -170,7 +174,8 @@ internal static class InlineScanTests
             var actual = policy.Observations.Where(observation => observation is
                 CALLSITE_FOLDABLE_BRANCH or CALLSITE_CONSTANT_ARG_FEEDS_TEST or
                 CALLSITE_FOLDABLE_EXPR or CALLSITE_DIV_BY_CNS or CALLEE_BINARY_EXRP_WITH_CNS or
-                CALLEE_ARG_FEEDS_CONSTANT_TEST or CALLEE_ARG_FEEDS_RANGE_CHECK or CALLEE_ARG_FEEDS_TEST);
+                CALLEE_ARG_FEEDS_CONSTANT_TEST or CALLEE_ARG_FEEDS_RANGE_CHECK or CALLEE_ARG_FEEDS_TEST or
+                CALLEE_ARG_STRUCT_FIELD_ACCESS);
             Assert.That(actual, Is.EqualTo(expected));
         }
         finally

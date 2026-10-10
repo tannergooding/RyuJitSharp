@@ -2566,3 +2566,19 @@ optimization decisions or generated code. A bridge would require a native
 fixed-arity adapter, safe `va_list` construction, string-lifetime handling, and
 native build/package support for the six host RIDs. The owner has judged this
 non-core, so retain the current managed behavior rather than adding the bridge.
+
+### D020: Equal-key prolog debug-range ordering
+
+**Status:** accepted diagnostic-only ordering difference; no semantic output
+difference is implied.
+
+Native and managed scope lists compare only `vsdLifeBeg`/`vsdLifeEnd`, and
+neither sort guarantees stable ordering for equal keys. In the pinned
+`EventSource.Initialize` dump, parameters entering at the same offset produce
+different `psiBegProlog` debug-message orders: native `V00, V03, V02, V01`;
+managed `V00, V01, V02, V03`. Each range is stored in its own variable
+descriptor, and final scope records are emitted by variable number. The
+captured method's generated code and final scope records match; only verbose
+range-registration lines differ. This difference is not normalized by the
+comparator. Evidence: `artifacts\corelib-eventsource-pinned-e23d559-full-dumps`
+with `DOTNET_JitDisasmDiffable=1`.
