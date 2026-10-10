@@ -209,11 +209,14 @@ public partial class Compiler
                     }
 
 #if DEBUG
-                    vnStore.vnDump(this, blockPathVN);
-                    JITDUMP(" AND");
-                    vnStore.vnDump(this, domPathVN);
-                    JITDUMP(" ==>");
-                    vnStore.vnDump(this, andVN);
+                    if (verbose)
+                    {
+                        vnStore.vnDump(this, blockPathVN);
+                        JITDUMP(" AND");
+                        vnStore.vnDump(this, domPathVN);
+                        JITDUMP(" ==>");
+                        vnStore.vnDump(this, andVN);
+                    }
 #endif
                 }
 

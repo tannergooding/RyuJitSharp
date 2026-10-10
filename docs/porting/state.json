@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Trace the emitting call for the 36 recurring managed-only condition-expression prefixes before assembly headers, starting at the System.IO.StreamWriter constructor sample in artifacts\\corelib-pmi-final-nan-format-jit-diff-20261010\\dasmset_1\\diff\\System.Private.CoreLib.dasm. Determine whether they are intentional diagnostics or a managed dump discrepancy. Keep the six RWD address-row differences separate from instruction mismatches; the native repeat control confirms those values vary by process. Then begin full CoreLib primary-JIT phase-dump comparison at Importation.",
+    "nextAction": "Continue incremental Windows x64 CoreLib primary-JIT phase-dump comparison with the next small method sample; compare phase bodies separately from pre-phase diagnostics. The three-method EventSource follow-up confirms Initialize's Importation body matches after process-local handle canonicalization, but its pre-Importation profile-check diagnostics still differ.",
     "activeBatch": null,
     "parityEvidence": {
       "oracleCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
@@ -41,17 +41,24 @@
         "skippedMethods": 1267,
         "methodBlocks": 75824,
         "uniqueHeaders": 75644,
-        "methodOrderMatches": true,
+        "methodOrderMatches": false,
+        "methodHeaderMultisetsMatch": true,
+        "orderedHeaderPositionsDiffer": 7,
+        "methodOrderDifference": "System.Enum+EnumInfo`1[double]:CloneValues moved ahead of six SharedArrayPool headers in the final one-sided capture; per-method code is unchanged.",
         "codeBytes": 8430400,
         "codeSizeDiffMethods": 0,
         "instructionAndLabelSequenceDiffMethods": 0,
+        "fullMethodTextMatchesExceptRWDDataRows": true,
         "nanAnnotationLinesMatched": 1689,
-        "focusedValidation": "173/173 focused tests passed; Windows x64 Debug NativeAOT JIT publish succeeded.",
-        "managedJitSha256": "CC0FC4A676F822FB7EE985B0585F78A4C326C4C194D3881B87B842CB2FF43915",
+        "managedPrefixedHeaders": 0,
+        "previousManagedPrefixedHeaders": 36,
+        "focusedValidation": "Earlier focused suite: 173/173 passed. After the verbose-gate fix, a FullOpts System.IO.StreamWriter constructor harness passed with verbose off and JitDump on; clean Windows x64 Debug NativeAOT publish succeeded.",
+        "managedJitSha256": "108AB6178491541A7CDFFFEC154BD30768D050888110C05D94999C99C698C638",
         "nativeJitSha256": "4E82875171D561E11DB64F05D9B0B63D1DDB2CF25F2CE51CD2E4975ECEBE5F62",
-        "canonicalization": "Generated G_M method identifiers only; no instruction text was normalized.",
-        "rawOutputDifferences": "36 managed-only condition-expression prefixes before assembly headers; six process-variable RWD data rows in three async continuation methods.",
-        "evidence": "artifacts\\corelib-pmi-final-nan-format-jit-diff-20261010\\full-pmi-instruction-comparison.json",
+        "canonicalization": "Generated G_M method identifiers only; RWD row values are compared separately, with no instruction text normalized.",
+        "rawOutputDifferences": "The 36 managed-only condition-expression prefixes are gone. Six process-variable RWD data rows remain in three async continuation methods. The final one-sided capture reorders seven header positions, but per-method text matches.",
+        "pairedCaptureNote": "A paired recapture of the final managed JIT contains interleaved managed stdout near StaticsHelpers.GetGCThreadStaticsByIndexSlow and is excluded from parity evidence; see artifacts\\corelib-pmi-verbose-gate-paired-jit-diff-20261010.",
+        "evidence": "artifacts\\corelib-pmi-verbose-gate-jit-diff-20261010\\full-pmi-instruction-comparison.json",
         "nativeRepeatControl": "artifacts\\corelib-pmi-native-repeat-jit-diff-20261010"
       },
       "focusedDumpComparisons": {
@@ -68,8 +75,22 @@
         "System.Diagnostics.Tracing.EventSource": {
           "methods": 25,
           "phase": "Importation",
-          "result": "Static-readonly folding and the local table now match; native prints volatile.stfld and managed prints stfld at IL_00E6 while the STOREIND flags/tree match.",
-          "capture": "Focused primary-JIT; not full CoreLib phase parity"
+          "result": "Static-readonly folding and the local table now match. The original volatile-prefix mismatch was fixed and verified in the three-method follow-up below.",
+          "capture": "Focused primary-JIT; not full CoreLib phase parity",
+          "postFixFollowup": {
+            "sampleMethods": [
+              "System.Diagnostics.Tracing.EventSource:.cctor",
+              "System.Diagnostics.Tracing.EventSource:get_SelfDescribingEvents",
+              "System.Diagnostics.Tracing.EventSource:Initialize"
+            ],
+            "managedJitSha256": "AB679D2A60B51D6B932CB4895E63F2E99AA6292327CD4BDB52A91A1E2260DD1C",
+            "initializeImportationBody": "All 1,491 lines match after canonicalizing only process-local CorInfo handles; both volatile.stfld annotations match.",
+            "fullPrefixDifference": "Before Importation, native reports a deferred prior profile check was skipped while managed checks profile weights (flags:0x1c); do not claim full-prefix equality.",
+            "nativeRepeatControl": "The native and native-repeat Initialize dump SHA-256 values match: A1EC6EDB96AEDFA6836261A6D13351C03A9BA56B168E7DF393D64172B58C2FFE.",
+            "diffableDisassembly": true,
+            "additionalPrefixes": "CEE_UNALIGNED and CEE_CONSTRAINED do not occur in this three-method sample and remain unassessed.",
+            "capture": "artifacts\\corelib-importation-volatile-prefix-fix-20261010\\capture"
+          }
         }
       },
       "comparator": {

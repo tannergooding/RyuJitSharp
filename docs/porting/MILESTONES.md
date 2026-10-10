@@ -24,29 +24,38 @@ The earlier 762-method `PortingCorpus` result was only a workload subset. At
 pinned oracle `6ff62b1d7ff0`, a full Windows x64 primary-JIT PMI capture covered
 4,284 types and 75,676 method slots on each side (60 skipped types and 1,267
 skipped methods), producing 75,824 method blocks and 75,644 unique headers.
-With `DOTNET_JitDisasmDiffable=1`, method order matched and all per-method
-instruction and `IG`-label sequences matched after canonicalizing only
-generated `G_M` identifiers. Both sides emitted 8,430,400 code bytes with no
-code-size deltas, and all 1,689 NaN annotation lines matched. The per-method
-text otherwise matched except for six `RWD` data rows in three async
-continuation methods; a native repeat control confirmed those absolute pointer
-values vary between processes. The managed output also has 36 recurring
-condition-expression prefixes before assembly headers that are absent from
-native output, so the raw stdout files are not byte-for-byte equal and those
-diagnostics remain unclassified. This establishes instruction-listing parity,
-not relocation-aware machine-code or GC/EH/unwind metadata parity. Captures and
-the comparison report are under
-`artifacts\corelib-pmi-final-nan-format-jit-diff-20261010`.
+After matching blocks by method, all per-method instruction and `IG`-label
+sequences match after canonicalizing only generated `G_M` identifiers. Both
+sides emitted 8,430,400 code bytes with no code-size deltas, and all 1,689 NaN
+annotation lines matched. The 36 managed-only condition-expression prefixes
+were traced to redundant-branch `vnDump` calls that lacked native's `verbose`
+guard; the guard now removes them from the final capture. Six process-variable
+`RWD` data rows remain in three async continuation methods; a native repeat
+control confirmed those absolute pointer values vary between processes. The
+final one-sided recapture reorders seven header positions while preserving the
+same header multiset and per-method text after canonicalizing generated `G_M`
+identifiers and isolating the six `RWD` rows. A paired recapture of the final
+managed JIT contains interleaved stdout and is excluded from parity evidence.
+Raw stdout is therefore not byte-for-byte equal; this establishes per-method
+instruction-listing parity, not relocation-aware machine-code or GC/EH/unwind
+metadata parity. Captures and comparison reports are under
+`artifacts\corelib-pmi-verbose-gate-jit-diff-20261010` and
+`artifacts\corelib-pmi-verbose-gate-paired-jit-diff-20261010`.
 
 Focused dump captures match through Importation and Redundant Branch Opts for
 nine `System.Resources.ResourceManager` methods, and through Importation for
 `System.SpanHelpers.IndexOf`; only process-local CorInfo handle fields are
 canonicalized in those comparisons. A focused `EventSource` capture now
-matches the static-readonly fold and local table, but still differs in the
-`volatile.stfld` versus `stfld` Importation annotation at IL_00E6 while the
-`STOREIND` flags/tree match. The ResourceManager phase capture is a
-selected-method AltJIT run; full CoreLib primary-JIT phase-dump parity remains
-open. The dynamic TLS input-ownership boundary also remains unresolved.
+matches the static-readonly fold and local table. The managed importer now
+prints the `volatile.` prefix; a three-method primary-JIT follow-up confirms
+that `EventSource.Initialize`'s 1,491-line Importation body matches native
+after canonicalizing only process-local CorInfo handles, including both
+volatile stores. The full comparison prefix still differs before Importation:
+native skips a deferred profile check while managed runs the profile-weight
+check. That diagnostic is outside the phase body. The ResourceManager phase
+capture is a selected-method AltJIT run; full CoreLib primary-JIT phase-dump
+parity remains open. The dynamic TLS input-ownership boundary also remains
+unresolved.
 
 ## Major milestones
 

@@ -344,6 +344,45 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
+#if DEBUG
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void VolatilePrefixIsShownInImporterDiagnostics(bool verbose)
+    {
+        WithCompiler(compiler => {
+            compiler.opts.SetMinOpts(false);
+            compiler.info.compMaxStack = 1;
+            compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
+            compiler.lvaTable[0].Type = var_types.TYP_BYREF;
+            compiler.stackState.esStack = new StackEntry[1];
+            compiler.verbose = verbose;
+            var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            compiler.impPushOnStack(address, new typeInfo());
+
+            byte[] il = [
+                (byte)OPCODE.CEE_PREFIX1,
+                (byte)((int)OPCODE.CEE_VOLATILE - 0x0100),
+                (byte)OPCODE.CEE_LDIND_I4,
+            ];
+            var block = new BasicBlock(null, null) { bbCodeOffsEnd = il.Length };
+            compiler.fgFirstBB = compiler.compCurBB = block;
+            var output = CodeGenLifeTransitionTests.Capture(() =>
+            {
+                fixed (byte* code = il)
+                {
+                    compiler.info.compCode = code;
+                    compiler.info.compILCodeSize = il.Length;
+                    compiler.impImportBlockCode(block);
+                }
+            });
+
+            var indirect = compiler.impStackTop().val.AsIndir();
+            Assert.That(indirect.IsVolatile, Is.True);
+            Assert.That(output.Contains("volatile.ldind.i4", StringComparison.Ordinal), Is.EqualTo(verbose));
+        });
+    }
+#endif
+
     [Test]
     public static void NativeIntegerComparisonsValidateTheWidenedOperands(
         [Values(OPCODE.CEE_CEQ, OPCODE.CEE_CGT, OPCODE.CEE_CGT_UN, OPCODE.CEE_CLT, OPCODE.CEE_CLT_UN,

@@ -6701,6 +6701,7 @@ public partial class Compiler
                     case CEE_VOLATILE:
                     {
                         assert(opcode.Size is 0);
+                        JITDUMP(opcode.Name);
                         prefixFlags |= PREFIX_VOLATILE;
 
                         impValidateMemoryAccessOpcode(codeAddr, codeEndp, volatilePrefix: true);
