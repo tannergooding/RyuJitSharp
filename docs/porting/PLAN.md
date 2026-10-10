@@ -170,19 +170,6 @@ Importation and does not establish code-generation or runtime parity; the
 dynamic TLS input-ownership boundary also remains unresolved. Full-runtime
 parity is a separate stage in section 6.
 
-The 2026-10-10 refresh reconciles immutable `6ff62b1d` to `e23d559a` across
-9 changed `src/coreclr/jit` and `src/coreclr/inc` paths (16 hunks). It ports
-Wasm equality-to-zero containment and code generation, constant reassociation
-ownership, signedness-qualified boolean range folds, and checked-bound range
-inference. Six CoreCLR include/runtime hunks have no managed counterpart, and
-the Wasm comment-only hunk requires no managed change. No managed table input
-or output changed, so table regeneration was not required. Full Debug Core
-analysis/tests pass (17,653); focused Wasm comparison tests pass in Debug and
-Release (11 each). This is source and focused-target evidence, not full runtime
-parity; D015 remains accepted, dynamic TLS input ownership remains unresolved,
-and `genAsyncResumeInfo` stays deferred until B209's target-width table/emitter
-dependency closure is ported and tested.
-
 Prefer substantial source sections and their dependency closure over individual
 helper batches. Use builds and small focused checks for concrete behavior changes
 or translation defects; reserve NativeAOT publication and corpus recapture for

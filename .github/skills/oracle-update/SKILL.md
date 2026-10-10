@@ -137,6 +137,10 @@ Only after all relevant hunks are reconciled and validation passes:
   Update milestone or other maintained evidence only where the change requires
   it; keep large inventories, raw dumps, and machine-local paths outside the
   repository.
+- Keep `PLAN.md` as durable roadmap and milestone guidance, not a per-refresh
+  changelog. Do not append a dated provenance or validation paragraph for each
+  oracle update. Update it only when the roadmap, validation workflow, or a
+  durable milestone materially changes.
 - Commit each completed dependency-coherent batch with its tests and related
   documentation. Use an imperative subject and include the repository's
   required co-author trailer. Do not amend commits, push, open a PR, or create
