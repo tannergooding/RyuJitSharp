@@ -1506,7 +1506,7 @@ public partial class Compiler
             }
 
             assert(!Unsafe.IsNullRef(in argInfo));
-            fgInsertInlineeArgument(ref argInfo, block, ref afterStmt, ref newStmt, callDI);
+            fgInsertInlineeArgument(ref argInfo, block, ref afterStmt, ref newStmt, ref nullcheck, callDI);
         }
 
         assert(ilArgNum == inlineInfo.argCnt);
@@ -1598,8 +1598,11 @@ public partial class Compiler
     /// <param name="block">block to insert the argument into</param>
     /// <param name="afterStmt">statement to insert the argument after</param>
     /// <param name="newStmt">updated with the new statement</param>
+    /// <param name="additionalRoot">caller-owned tree root that may reference the argument temp</param>
     /// <param name="callDI">debug info for the call</param>
-    public void fgInsertInlineeArgument(ref InlArgInfo argInfo, BasicBlock block, ref Statement afterStmt, ref Statement? newStmt, in DebugInfo callDI)
+    public void fgInsertInlineeArgument(
+        ref InlArgInfo argInfo, BasicBlock block, ref Statement afterStmt, ref Statement? newStmt,
+        ref GenTree? additionalRoot, in DebugInfo callDI)
     {
         var argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
 
@@ -1633,7 +1636,7 @@ public partial class Compiler
 
                 assert(argNode.Oper is not GT_BLK);
 
-                fgReplaceInlineArgument(argSingleUseNode, argNode);
+                fgReplaceInlineArgument(argSingleUseNode, argNode, ref additionalRoot);
                 argInfo.argBashTmpNode = argNode;
                 return;
             }
@@ -1769,14 +1772,14 @@ public partial class Compiler
         }
     }
 
-    private void fgReplaceInlineArgument(GenTree target, GenTree replacement)
+    private void fgReplaceInlineArgument(GenTree target, GenTree replacement, ref GenTree? additionalRoot)
     {
         assert(InlineeCompiler is not null);
         assert(InlineeCompiler.fgNodeThreading is NodeThreading.None);
         assert((replacement.Prev is null) && (replacement.Next is null));
 
         // Managed nodes cannot change CLR subtype like native ReplaceWith. Rewrite live edges
-        // before splicing the inlinee, including a return expression kept outside its statements.
+        // before splicing the inlinee, including the return expression and caller-owned null check.
         var visitor = new ReplaceInlineArgumentVisitor(target, replacement);
 
         foreach (var block in InlineeCompiler.Blocks)
@@ -1794,6 +1797,11 @@ public partial class Compiler
         {
             _ = visitor.WalkTree(ref substExpr, null);
             retExpr.SubstExpr = substExpr;
+        }
+
+        if (additionalRoot is not null)
+        {
+            _ = visitor.WalkTree(ref additionalRoot, null);
         }
     }
 
@@ -5181,6 +5189,23 @@ public partial class Compiler
                     {
                         varNum = (opcode - CEE_STLOC_0);
                         StoreLocal(this, varNum);
+                        break;
+                    }
+
+                    case CEE_LDARG_S:
+                    case CEE_LDARG:
+                    {
+                        noway_assert(sz is sizeof(byte) or sizeof(ushort));
+
+                        if (codeAddr > (codeEndp - sz))
+                        {
+                            TooFar(codeAddr, codeBegp);
+                        }
+
+                        varNum = (sz is sizeof(byte))
+                            ? codeAddr[0]
+                            : BinaryPrimitives.ReadUInt16LittleEndian(new ReadOnlySpan<byte>(codeAddr, sizeof(ushort)));
+
                         break;
                     }
 

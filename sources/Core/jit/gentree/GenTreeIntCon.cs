@@ -143,7 +143,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     public new bool IsIconHandle()
         => (Flags & GTF_ICON_HDL_MASK) != 0;
 
-    public bool IsIconHandle(GenTreeFlags handleType)
+    public new bool IsIconHandle(GenTreeFlags handleType)
     {
         // check that handleType is one of the valid GTF_ICON_* values
 

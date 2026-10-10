@@ -45,7 +45,8 @@ internal static unsafe class InlineArgumentTests
             var after = info.iciStmt ?? throw new InvalidOperationException("Missing call statement.");
             var block = info.iciBlock ?? throw new InvalidOperationException("Missing caller block.");
             Statement? added = null;
-            compiler.fgInsertInlineeArgument(ref argInfo, block, ref after, ref added, default);
+            GenTree? additionalRoot = null;
+            compiler.fgInsertInlineeArgument(ref argInfo, block, ref after, ref added, ref additionalRoot, default);
             Assert.That(added, Is.SameAs(after));
             Assert.That(after.RootNode.Oper, Is.EqualTo(mayFault ? GT_NULLCHECK : GT_COMMA));
             Assert.That(after.RootNode.AsUnOp().Op1, Is.SameAs(address));
@@ -100,7 +101,8 @@ internal static unsafe class InlineArgumentTests
             var after = info.iciStmt ?? throw new InvalidOperationException("Missing call statement.");
             var block = info.iciBlock ?? throw new InvalidOperationException("Missing caller block.");
             Statement? added = null;
-            compiler.fgInsertInlineeArgument(ref argInfo, block, ref after, ref added, default);
+            GenTree? additionalRoot = null;
+            compiler.fgInsertInlineeArgument(ref argInfo, block, ref after, ref added, ref additionalRoot, default);
 
             var needsTemp = shape is "more-uses" or "address" or "starg";
             Assert.That(added is not null, Is.EqualTo(needsTemp));
@@ -160,6 +162,31 @@ internal static unsafe class InlineArgumentTests
             }
 
             Assert.That(last.NextStmt, Is.Null);
+        });
+    }
+
+    [Test]
+    public static void InlinePreludeBashesSingleUseReceiverIntoNullCheck()
+    {
+        WithCompiler((compiler, inlinee, info) => {
+            var call = info.iciCall ?? throw new InvalidOperationException("Missing call.");
+            call.Flags |= GenTreeFlags.GTF_CALL_NULLCHECK;
+            var receiverValue = compiler.gtNewCommaNode(TYP_REF,
+                compiler.gtNewIconNode(TYP_INT, 1),
+                compiler.gtNewLclvNode(TYP_REF, 3));
+            var receiver = call.Args.PushBack(NewCallArg.CreateForPrimitive(receiverValue).WithWellKnownArg(WellKnownArg.ThisPointer));
+            info.argCnt = 1;
+            info.inlArgInfo[0] = new InlArgInfo { arg = receiver };
+            info.lclVarInfo[0].lclTypeInfo = TYP_REF;
+            info.lclVarInfo[0].lclTypeHandle = (CORINFO_CLASS_STRUCT_*)0x1234;
+
+            var last = compiler.fgInlinePrependStatements(info);
+            var nullCheck = info.iciStmt?.NextStmt ?? throw new InvalidOperationException("Missing receiver null check.");
+
+            Assert.That(nullCheck, Is.SameAs(last));
+            Assert.That(nullCheck.RootNode.Oper, Is.EqualTo(GT_NULLCHECK));
+            Assert.That(nullCheck.RootNode.AsUnOp().Op1, Is.SameAs(receiverValue));
+            Assert.That(nullCheck.NextStmt, Is.Null);
         });
     }
 

@@ -14,19 +14,29 @@ and flow optimizations, profile-guided paths, and register-allocation policies;
 selected tiered/PGO and GC-stress scenarios also execute.
 
 These results apply only to the tested corpora and configurations. Broader
-runtime and JIT/EE ABI/GC coverage, full primary-JIT dump parity,
+runtime and JIT/EE ABI/GC coverage, full primary-JIT phase-dump parity,
 relocation-aware code-generation and GC/EH/unwind metadata parity, and Linux
 and other-target implementation and runtime validation remain open.
 Target-specific translations and fixtures do not by themselves establish
 execution or parity on those targets.
 
-At pinned oracle `6ff62b1d7ff0`, a fresh Windows x64 primary-JIT comparison is
-byte-for-byte equal for the 762 `System.Private.CoreLib` methods compiled by
-the `PortingCorpus` workload, with diffable disassembly and no normalization.
-This is not a full CoreLib method inventory or relocation-aware machine-code
-and metadata parity. One native repeat uses a resolved `LocalFree` P/Invoke
-target instead of the late-bound target slot; that EE lookup-state variant is
-retained, not normalized.
+The earlier 762-method `PortingCorpus` result was only a workload subset. At
+pinned oracle `6ff62b1d7ff0`, a full Windows x64 primary-JIT PMI capture covered
+4,284 types and 75,676 method slots on each side (60 skipped types and 1,267
+skipped methods), producing 75,824 method blocks and 75,644 unique headers.
+With `DOTNET_JitDisasmDiffable=1`, method order matched and all per-method
+instruction and `IG`-label sequences matched after canonicalizing only
+generated `G_M` identifiers. Both sides emitted 8,430,400 code bytes with no
+code-size deltas, and all 1,689 NaN annotation lines matched. The per-method
+text otherwise matched except for six `RWD` data rows in three async
+continuation methods; a native repeat control confirmed those absolute pointer
+values vary between processes. The managed output also has 36 recurring
+condition-expression prefixes before assembly headers that are absent from
+native output, so the raw stdout files are not byte-for-byte equal and those
+diagnostics remain unclassified. This establishes instruction-listing parity,
+not relocation-aware machine-code or GC/EH/unwind metadata parity. Captures and
+the comparison report are under
+`artifacts\corelib-pmi-final-nan-format-jit-diff-20261010`.
 
 Focused dump captures match through Importation and Redundant Branch Opts for
 nine `System.Resources.ResourceManager` methods, and through Importation for

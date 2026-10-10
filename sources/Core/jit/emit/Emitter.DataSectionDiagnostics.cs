@@ -294,12 +294,24 @@ public partial class Emitter
     private static ulong ReadDataQword(byte[] data, uint offset)
         => BinaryPrimitives.ReadUInt64LittleEndian(data.AsSpan(checked((int)offset), sizeof(ulong)));
 
+    private const ulong WindowsNegativeIndefiniteNaNBits = 0xFFF8_0000_0000_0000UL;
+
     private static string FormatDataFloat(double value, int precision, int width)
     {
-        var formatted = double.IsNaN(value) ? (double.IsNegative(value) ? "-nan" : "nan")
+        var formatted = double.IsNaN(value) ? FormatDataNaN(value)
             : double.IsPositiveInfinity(value) ? "inf"
             : double.IsNegativeInfinity(value) ? "-inf"
             : value.ToString($"G{precision}", CultureInfo.InvariantCulture).Replace('E', 'e');
         return formatted.PadLeft(width);
+    }
+
+    private static string FormatDataNaN(double value)
+    {
+        if (OperatingSystem.IsWindows() && BitConverter.DoubleToUInt64Bits(value) == WindowsNegativeIndefiniteNaNBits)
+        {
+            return "-nan(ind)";
+        }
+
+        return double.IsNegative(value) ? "-nan" : "nan";
     }
 }

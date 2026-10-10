@@ -173,6 +173,26 @@ internal static unsafe class ComparisonMorphTests
     }
 
     [Test]
+    public static void WidenedUnsignedComparisonNarrowsLinkedConstant()
+    {
+        WithCompiler(compiler => {
+            compiler.fgNodeThreading = NodeThreading.AllTrees;
+            var local = compiler.gtNewLclvNode(TYP_INT, 1);
+            var cast = compiler.gtNewCastNode(TYP_LONG, local, true, TYP_LONG);
+            var constant = compiler.gtNewLconNode(64);
+            constant.Next = compiler.gtNewNothingNode();
+            var comparison = compiler.gtNewBinaryNode(GT_LT, TYP_INT, cast, constant);
+
+            _ = compiler.fgOptimizeRelationalComparisonWithCasts(comparison);
+
+            Assert.That(comparison.Op2, Is.Not.SameAs(constant));
+            Assert.That(comparison.Op2.Type, Is.EqualTo(TYP_INT));
+            Assert.That(comparison.Op2.AsIntCon().IconValue, Is.EqualTo((nint)64));
+            Assert.That(constant.Type, Is.EqualTo(TYP_LONG));
+        });
+    }
+
+    [Test]
     public static void LongMaskedEqualityInstallsAllNarrowedOperands()
     {
         WithCompiler(compiler => {

@@ -2532,6 +2532,9 @@ public partial class GenTree
 
     public bool IsIconHandle() => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle();
 
+    public bool IsIconHandle(GenTreeFlags handleType)
+        => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle(handleType);
+
     public bool IsTlsIconHandle()
     {
         if (IsIconHandle())

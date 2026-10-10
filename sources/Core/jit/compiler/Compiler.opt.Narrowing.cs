@@ -45,7 +45,7 @@ public partial class Compiler
 
                 if (doIt)
                 {
-                    tree = tree.BashToZeroConst(TYP_INT);
+                    tree = tree.BashToZeroConst(TYP_INT, fgNodeThreading);
                     tree.AsIntCon().IconValue = unchecked((int)value);
                     fgUpdateConstTreeValueNumber(tree);
                 }

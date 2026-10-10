@@ -11,6 +11,7 @@ using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.EHHandlerType;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.var_types;
 using static RyuJitSharp.bbCatchType;
 #endif
 
@@ -37,6 +38,43 @@ internal static unsafe class EHVerificationTests
         WithCompiler(compiler => {
             compiler.fgVerifyHandlerTab();
             Assert.That(s_assertions, Is.Empty);
+        });
+    }
+
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2075",
+        Justification = "The debug-only test inspects the saved stack field on the private pending descriptor.")]
+    [Test]
+    public static void ReusedPendingDescriptorClearsStaleStackDepthForEmptyStack()
+    {
+        WithCompiler(compiler => {
+            const BindingFlags privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+            typeof(Compiler).GetField("impPendingBlockMembers", privateInstance)!
+                .SetValue(compiler, new List<byte>());
+
+            compiler.stackState.esStackDepth = 1;
+            compiler.stackState.esStack = [new StackEntry { val = compiler.gtNewIconNode(TYP_INT, 1) }];
+            var firstBlock = NewBlock(compiler);
+            compiler.impImportBlockPending(firstBlock);
+
+            var pendingListField = typeof(Compiler).GetField("impPendingList", privateInstance)!;
+            var descriptor = pendingListField.GetValue(compiler)!;
+            var savedStackField = descriptor.GetType().GetField(
+                "pdSavedStack", BindingFlags.Instance | BindingFlags.Public)!;
+            var savedStack = (Compiler.SavedStack)savedStackField.GetValue(descriptor)!;
+            Assert.That(savedStack.ssDepth, Is.EqualTo(1));
+
+            compiler.impSetPendingBlockMember(firstBlock, 0);
+            pendingListField.SetValue(compiler, null);
+            typeof(Compiler).GetField("impPendingFree", privateInstance)!.SetValue(compiler, descriptor);
+            compiler.stackState.esStackDepth = 0;
+
+            var secondBlock = NewBlock(compiler);
+            compiler.impImportBlockPending(secondBlock);
+
+            var reusedDescriptor = pendingListField.GetValue(compiler)!;
+            Assert.That(reusedDescriptor, Is.SameAs(descriptor));
+            savedStack = (Compiler.SavedStack)savedStackField.GetValue(reusedDescriptor)!;
+            Assert.That(savedStack.ssDepth, Is.Zero);
         });
     }
 

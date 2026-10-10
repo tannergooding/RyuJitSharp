@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Capture and compare full primary-JIT phase dumps for the same 762-method Windows x64 CoreLib workload. Start at EventSource.Initialize IL_00E6 (native volatile.stfld versus managed stfld); its STOREIND flags/tree appear identical, so verify downstream IR before deciding whether this is diagnostic-only. Compare every phase with scripts\\porting\\Compare-PortingDumps.ps1, extending phase support narrowly as needed. Keep dynamic TLS input ownership unresolved until its allocation boundary is identified.",
+    "nextAction": "Trace the emitting call for the 36 recurring managed-only condition-expression prefixes before assembly headers, starting at the System.IO.StreamWriter constructor sample in artifacts\\corelib-pmi-final-nan-format-jit-diff-20261010\\dasmset_1\\diff\\System.Private.CoreLib.dasm. Determine whether they are intentional diagnostics or a managed dump discrepancy. Keep the six RWD address-row differences separate from instruction mismatches; the native repeat control confirms those values vary by process. Then begin full CoreLib primary-JIT phase-dump comparison at Importation.",
     "activeBatch": null,
     "parityEvidence": {
       "oracleCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
@@ -31,6 +31,28 @@
         },
         "evidence": "artifacts\\parity-6ff62b1d-20261009-retry1\\corelib-asm-diffable-e1dc68b0\\assembly-comparison-post-staticreadonly-fix.json",
         "scope": "Diffable listings for the 762 System.Private.CoreLib methods compiled by the PortingCorpus workload; not a full CoreLib method inventory or relocation-aware machine-code and GC/EH/unwind metadata parity."
+      },
+      "corelibFullPmiDisassembly": {
+        "architecture": "Windows x64",
+        "diffable": true,
+        "types": 4284,
+        "methodSlots": 75676,
+        "skippedTypes": 60,
+        "skippedMethods": 1267,
+        "methodBlocks": 75824,
+        "uniqueHeaders": 75644,
+        "methodOrderMatches": true,
+        "codeBytes": 8430400,
+        "codeSizeDiffMethods": 0,
+        "instructionAndLabelSequenceDiffMethods": 0,
+        "nanAnnotationLinesMatched": 1689,
+        "focusedValidation": "173/173 focused tests passed; Windows x64 Debug NativeAOT JIT publish succeeded.",
+        "managedJitSha256": "CC0FC4A676F822FB7EE985B0585F78A4C326C4C194D3881B87B842CB2FF43915",
+        "nativeJitSha256": "4E82875171D561E11DB64F05D9B0B63D1DDB2CF25F2CE51CD2E4975ECEBE5F62",
+        "canonicalization": "Generated G_M method identifiers only; no instruction text was normalized.",
+        "rawOutputDifferences": "36 managed-only condition-expression prefixes before assembly headers; six process-variable RWD data rows in three async continuation methods.",
+        "evidence": "artifacts\\corelib-pmi-final-nan-format-jit-diff-20261010\\full-pmi-instruction-comparison.json",
+        "nativeRepeatControl": "artifacts\\corelib-pmi-native-repeat-jit-diff-20261010"
       },
       "focusedDumpComparisons": {
         "System.Resources.ResourceManager": {

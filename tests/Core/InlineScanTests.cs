@@ -91,6 +91,10 @@ internal static class InlineScanTests
             CALLSITE_FOLDABLE_EXPR, CALLSITE_FOLDABLE_BRANCH);
         yield return ScanCase("literal-add-constant-argument", [0x17, 0x02, 0x58, 0x2D, 0, 0x2A], 1,
             CALLSITE_FOLDABLE_EXPR, CALLSITE_FOLDABLE_BRANCH);
+        yield return ScanCase("short-constant-argument-ceq", [0x0E, 0x04, 0x16, 0xFE, 0x01, 0x2A], 5, 1 << 4,
+            CALLSITE_FOLDABLE_EXPR);
+        yield return ScanCase("long-constant-argument-ceq", [0xFE, 0x09, 0x04, 0x00, 0x16, 0xFE, 0x01, 0x2A],
+            5, 1 << 4, CALLSITE_FOLDABLE_EXPR);
         yield return ScanCase("argument-div-literal", [0x02, 0x17, 0x5B, 0x2D, 0, 0x2A], 0,
             CALLEE_BINARY_EXRP_WITH_CNS, CALLEE_ARG_FEEDS_CONSTANT_TEST);
         yield return ScanCase("argument-div-constant-argument", [0x02, 0x03, 0x5B, 0x2D, 0, 0x2A], 2,
@@ -116,12 +120,18 @@ internal static class InlineScanTests
 
     private static TestCaseData ScanCase(string name, byte[] il, int invariantArgs, params InlineObservation[] expected)
     {
-        return new TestCaseData(il, invariantArgs, expected).SetName($"PreciseConstantScan_{name}");
+        return ScanCase(name, il, 2, invariantArgs, expected);
+    }
+
+    private static TestCaseData ScanCase(
+        string name, byte[] il, int argCount, int invariantArgs, params InlineObservation[] expected)
+    {
+        return new TestCaseData(il, argCount, invariantArgs, expected).SetName($"PreciseConstantScan_{name}");
     }
 
     [TestCaseSource(nameof(ConstantScanCases))]
     public static unsafe void PreciseConstantScanPreservesNativeObservations(
-        byte[] il, int invariantArgs, InlineObservation[] expected)
+        byte[] il, int argCount, int invariantArgs, InlineObservation[] expected)
     {
 #if DEBUG
         using var jitTls = new JitTls(null);
@@ -137,11 +147,15 @@ internal static class InlineScanTests
         compiler.compInlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
         compiler.compInlineContext._ilSize = il.Length;
         compiler.impInlineInfo = new InlineInfo {
-            argCnt = 2,
+            argCnt = argCount,
             iciBlock = new BasicBlock(null, null),
         };
-        compiler.impInlineInfo.inlArgInfo[0].argIsInvariant = (invariantArgs & 1) != 0;
-        compiler.impInlineInfo.inlArgInfo[1].argIsInvariant = (invariantArgs & 2) != 0;
+
+        for (var argNum = 0; argNum < argCount; argNum++)
+        {
+            compiler.impInlineInfo.inlArgInfo[argNum].argIsInvariant = (invariantArgs & (1 << argNum)) != 0;
+        }
+
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         JitTls.Compiler = compiler;

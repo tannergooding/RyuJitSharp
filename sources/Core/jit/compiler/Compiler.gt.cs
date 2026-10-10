@@ -9357,11 +9357,11 @@ public partial class Compiler
 
                 if (varTypeIsFloating(simdBaseType))
                 {
-                    vecCon.EvaluateBroadcastInPlace(simdBaseType, 1);
+                    vecCon.EvaluateBroadcastInPlace(simdBaseType, 1.0);
                 }
                 else
                 {
-                    vecCon.EvaluateBroadcastInPlace(simdBaseType,1.0);
+                    vecCon.EvaluateBroadcastInPlace(simdBaseType, 1);
                 }
                 return vecCon;
             }
@@ -11998,7 +11998,7 @@ public partial class Compiler
 
         assert(!isScalar);
 
-        if (isMagnitude)
+        if (isMagnitude && !varTypeIsUnsigned(simdBaseType))
         {
             var op1Dup = fgMakeMultiUse(ref op1);
             var op2Dup = fgMakeMultiUse(ref op2);
@@ -14961,7 +14961,6 @@ public partial class Compiler
                     costEx = 1;
                     costSz = 1;
 
-                    unreached();
                     break;
                 }
             }
@@ -17788,7 +17787,7 @@ public partial class Compiler
             if (defSrcOper == GT_ALLOCOBJ)
             {
                 var allocObj = defSrc.AsAllocObj();
-                boxTypeHandle = allocObj.AsOp().Op1;
+                boxTypeHandle = allocObj.Op1;
             }
             else if (defSrcOper == GT_CALL)
             {

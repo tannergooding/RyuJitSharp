@@ -318,7 +318,7 @@ public partial class Compiler
                 if (use.Oper.IsIntegralConst)
                 {
                     var value = unchecked((int)use.AsIntConCommon().IntegralValue);
-                    use = use.BashToZeroConst(TYP_INT);
+                    use = use.BashToZeroConst(TYP_INT, fgNodeThreading);
                     use.AsIntCon().IconValue = value;
                     fgUpdateConstTreeValueNumber(use);
                 }
@@ -470,7 +470,7 @@ public partial class Compiler
             {
                 comparison.Op1 = left.AsCast().CastOp;
                 var value = unchecked((int)right.IntegralValue);
-                comparison.Op2 = right.BashToZeroConst(TYP_INT);
+                comparison.Op2 = right.BashToZeroConst(TYP_INT, fgNodeThreading);
                 comparison.Op2.AsIntCon().IconValue = value;
                 fgUpdateConstTreeValueNumber(comparison.Op2);
             }
@@ -515,11 +515,11 @@ public partial class Compiler
             }
 
             var maskValue = unchecked((int)mask.IntegralValue);
-            and.Op2 = mask.BashToZeroConst(TYP_INT);
+            and.Op2 = mask.BashToZeroConst(TYP_INT, fgNodeThreading);
             and.Op2.AsIntCon().IconValue = maskValue;
             and.ChangeType(TYP_INT);
             var compareValue = unchecked((int)right.IntegralValue);
-            comparison.Op2 = right.BashToZeroConst(TYP_INT);
+            comparison.Op2 = right.BashToZeroConst(TYP_INT, fgNodeThreading);
             comparison.Op2.AsIntCon().IconValue = compareValue;
         }
 

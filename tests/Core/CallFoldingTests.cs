@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
+using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeCallFlags;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
@@ -301,6 +302,29 @@ internal static unsafe class CallFoldingTests
                 Assert.That(copy.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
                 Assert.That(copy._vnPair.BothDefined, Is.False);
             }
+        });
+    }
+
+    [Test]
+    public static void BoxTypeHandleRetrievalUsesAllocObjOperand()
+    {
+        WithCompiler("Enum", "HasFlag", (compiler, _) =>
+        {
+            var typeHandle = compiler.gtNewIconNode(TYP_I_IMPL, 123);
+            var allocation = new GenTreeAllocObj(TYP_REF, typeHandle, CORINFO_HELP_NEWSFAST, true,
+                (CORINFO_CLASS_STRUCT_*)123);
+            var allocationStore = compiler.gtNewStoreLclVarNode(0, allocation);
+            var copy = compiler.gtNewStoreIndNode(TYP_INT, compiler.gtNewIconNode(TYP_BYREF, 16),
+                compiler.gtNewIconNode(TYP_INT, 42));
+            var box = new GenTreeBox(TYP_REF, compiler.gtNewLclvNode(TYP_REF, 0),
+                compiler.gtNewStmt(allocationStore), compiler.gtNewStmt(copy));
+
+            var result = compiler.gtTryRemoveBoxUpstreamEffects(box,
+                Compiler.BoxRemovalOptions.BR_DONT_REMOVE_WANT_TYPE_HANDLE);
+
+            Assert.That(result, Is.SameAs(typeHandle));
+            Assert.That(allocationStore.Oper, Is.EqualTo(GT_STORE_LCL_VAR));
+            Assert.That(copy.Oper, Is.EqualTo(GT_STOREIND));
         });
     }
 

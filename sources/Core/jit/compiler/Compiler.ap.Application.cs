@@ -89,7 +89,7 @@ public partial class Compiler
         }
 #endif
         DISPNODE(tree);
-        tree = tree.BashToZeroConst(TYP_INT);
+        tree = tree.BashToZeroConst(TYP_INT, fgNodeThreading);
         JITDUMP(" =>\n");
         DISPNODE(tree);
         return true;

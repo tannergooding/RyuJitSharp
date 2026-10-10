@@ -54,6 +54,39 @@ internal static unsafe class ImporterEffectsTests
         });
     }
 
+    [Test]
+    public static void ExactArrayIsInstExpandsWhenClassHandleUsesRuntimeLookup()
+    {
+        WithCompiler(compiler =>
+        {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.isExactType = &IsExactType;
+            vtable.Base.Base.getClassAttribs = &GetClassAttributes;
+            vtable.Base.Base.getTypeForBox = &GetTypeForBox;
+            vtable.Base.Base.getCastingHelper =
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, bool, CorInfoHelpFunc>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_RESOLVED_TOKEN*, byte, CorInfoHelpFunc>)&GetArrayCastingHelper;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info.compCompHnd = &jitInfo;
+            compiler.opts.SetMinOpts(false);
+            var block = new BasicBlock(null, null);
+            block.setBBProfileWeight(100);
+            compiler.compCurBB = block;
+
+            var instance = compiler.gtNewLclvNode(var_types.TYP_REF, 0);
+            var target = compiler.gtNewRuntimeLookup(compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0),
+                (CORINFO_GENERIC_STRUCT_*)0x2000, CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS);
+            CORINFO_RESOLVED_TOKEN token = new() { hClass = (CORINFO_CLASS_STRUCT_*)0x1000 };
+            var booleanCheck = false;
+
+            Assert.That(target.Oper, Is.EqualTo(genTreeOps.GT_RUNTIMELOOKUP));
+
+            var result = compiler.impCastClassOrIsInstToTree(instance, target, ref token, false, ref booleanCheck, 0);
+
+            Assert.That(result.Oper, Is.EqualTo(genTreeOps.GT_LCL_VAR));
+        });
+    }
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impStmtList")]
     private static extern ref Statement? ImporterStatements(Compiler compiler);
 
@@ -69,6 +102,10 @@ internal static unsafe class ImporterEffectsTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoHelpFunc GetCastingHelper(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* token, byte throwing)
         => CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFCLASS;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoHelpFunc GetArrayCastingHelper(ICorJitInfo* self, CORINFO_RESOLVED_TOKEN* token, byte throwing)
+        => CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFARRAY;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetExactClasses(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type, int count, CORINFO_CLASS_STRUCT_** classes)

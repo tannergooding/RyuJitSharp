@@ -92,6 +92,17 @@ internal static unsafe class AsyncContextSaveTests
         });
     }
 
+    [Test]
+    public static void ContinuationMemberOffsetUsesNativeDefaultEvaluationCost()
+    {
+        WithCompiler(compiler => {
+            var offset = new GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_I_IMPL, 0);
+
+            Assert.That(compiler.gtSetEvalOrder(offset), Is.EqualTo(1));
+            Assert.That((offset.CostEx, offset.CostSz), Is.EqualTo((1, 1)));
+        });
+    }
+
 #if DEBUG
     [TestCase(ContinuationMemberType.CustomAwaiterOfLayout, "CustomAwaiter<Awaiter>")]
     [TestCase(ContinuationMemberType.InlineFrameExecutionContext, "ExecutionContext for inline depth 2")]

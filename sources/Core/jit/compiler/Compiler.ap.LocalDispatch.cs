@@ -192,7 +192,7 @@ public partial class Compiler
             result = !result;
         }
 
-        var replacement = new GenTreeIntCon(TYP_INT, result ? 1 : 0, null, right) {
+        var replacement = new GenTreeIntCon(TYP_INT, result ? 1 : 0, null, right, fgNodeThreading) {
             _vnPair = new ValueNumPair(),
         };
         return optAssertionProp_Update(replacement, tree, statement);

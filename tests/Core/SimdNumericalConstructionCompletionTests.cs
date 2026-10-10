@@ -18,6 +18,37 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SimdNumericalConstructionCompletionTests
 {
+    [TestCase(TYP_BYTE)]
+    [TestCase(TYP_UBYTE)]
+    [TestCase(TYP_SHORT)]
+    [TestCase(TYP_USHORT)]
+    [TestCase(TYP_INT)]
+    [TestCase(TYP_UINT)]
+    [TestCase(TYP_LONG)]
+    [TestCase(TYP_ULONG)]
+    [TestCase(TYP_FLOAT)]
+    [TestCase(TYP_DOUBLE)]
+    public static void OneVectorConstantUsesMatchingElementType(var_types baseType)
+    {
+        WithCompiler(compiler =>
+        {
+            var value = compiler.gtNewOneConNode(TYP_SIMD16, baseType).AsVecCon();
+            var elementCount = 16 / baseType.Size;
+
+            for (var index = 0; index < elementCount; index++)
+            {
+                if (baseType is TYP_FLOAT or TYP_DOUBLE)
+                {
+                    Assert.That(value.GetElementFloating(baseType, index), Is.EqualTo(1.0));
+                }
+                else
+                {
+                    Assert.That(value.GetElementIntegral(baseType, index), Is.EqualTo(1L));
+                }
+            }
+        });
+    }
+
     [Test]
     public static void RoundingPreservesSourceBitsAndSelectsNativeControls(
         [Values(TYP_FLOAT, TYP_DOUBLE)] var_types baseType,
@@ -79,6 +110,28 @@ internal static unsafe class SimdNumericalConstructionCompletionTests
             }
         });
     }
+
+#if TARGET_XARCH
+    [TestCase((byte)16, TYP_SIMD16, NI_X86Base_Max, NI_X86Base_Min)]
+    [TestCase((byte)32, TYP_SIMD32, NI_AVX2_Max, NI_AVX2_Min)]
+    [TestCase((byte)64, TYP_SIMD64, NI_AVX512_Max, NI_AVX512_Min)]
+    public static void UnsignedMagnitudeUsesNativeMinMax(
+        byte size, var_types simdType, NamedIntrinsic expectedMax, NamedIntrinsic expectedMin)
+    {
+        WithCompiler(compiler =>
+        {
+            var max = compiler.gtNewSimdMinMaxNode(
+                simdType, new GenTreeLclVar(simdType, 0), new GenTreeLclVar(simdType, 1),
+                TYP_UBYTE, size, isMax: true, isMagnitude: true, isNumber: false);
+            var min = compiler.gtNewSimdMinMaxNode(
+                simdType, new GenTreeLclVar(simdType, 0), new GenTreeLclVar(simdType, 1),
+                TYP_UBYTE, size, isMax: false, isMagnitude: true, isNumber: false);
+
+            Assert.That(max.AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(expectedMax));
+            Assert.That(min.AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(expectedMin));
+        });
+    }
+#endif
 
     [Test]
     public static void FmaPreservesNativeOperandOrder(

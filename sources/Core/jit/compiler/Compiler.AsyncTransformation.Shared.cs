@@ -70,7 +70,7 @@ public partial class Compiler
                 if (_sharedFinishContextHandlingResumedVar == BAD_VAR_NUM)
                 {
                     _sharedFinishContextHandlingResumedVar = _compiler.lvaGrabTemp(
-                        false, "resumed for shared finish context handling");
+                        false, "'resumed' for shared finish context handling");
                     _compiler.lvaGetDesc(_sharedFinishContextHandlingResumedVar).Type = TYP_INT;
                 }
 

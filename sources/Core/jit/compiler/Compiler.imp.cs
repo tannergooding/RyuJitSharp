@@ -2240,7 +2240,7 @@ public partial class Compiler
             {
                 shouldExpandEarly = true;
             }
-            else if ((helper is CORINFO_HELP_ISINSTANCEOFARRAY) && op2.Oper.IsCnsIntOrI && !op2.AsIntCon().IsIconHandle(GTF_ICON_CLASS_HDL))
+            else if ((helper is CORINFO_HELP_ISINSTANCEOFARRAY) && !op2.IsIconHandle(GTF_ICON_CLASS_HDL))
             {
                 shouldExpandEarly = true;
             }
@@ -11894,6 +11894,9 @@ public partial class Compiler
             dsc = new PendingDsc(block);
         }
 
+        // Pending descriptors are reused, so reset the depth even when there are no trees to save.
+        dsc.pdSavedStack.ssDepth = stackState.esStackDepth;
+
         if (stackState.esStackDepth is not 0)
         {
             // Save the stack trees for later
@@ -20044,7 +20047,7 @@ public partial class Compiler
                         if (unboxedEntrySig.hasTypeArg())
                         {
                             var unboxedMethodAttribs = info.compCompHnd->getMethodAttribs(unboxedEntryMethod);
-                            JITDUMP($"Updating method attribs from 0x{derivedMethodAttribs:x8} to 0x{unboxedMethodAttribs:x8}\n");
+                            JITDUMP($"Updating method attribs from 0x{unchecked((uint)derivedMethodAttribs):x8} to 0x{unchecked((uint)unboxedMethodAttribs):x8}\n");
                             derivedMethodAttribs = unboxedMethodAttribs;
                         }
 
@@ -20762,23 +20765,35 @@ public partial class Compiler
     /// <param name="method">method handle of the intrinsic function.</param>
     /// <param name="sig">signature of the intrinsic call</param>
     /// <param name="mustExpand">true if the intrinsic must return a GenTree*; otherwise, false</param>
-    /// <returns>a gtNewMustThrowException if mustExpand is true; otherwise, null</returns>
+    /// <returns>a gtNewMustThrowException when expansion is required or optimizations are enabled; otherwise, null</returns>
     public unsafe GenTree? impUnsupportedNamedIntrinsic(CorInfoHelpFunc helper, CORINFO_METHOD_HANDLE method, in CORINFO_SIG_INFO sig, bool mustExpand)
     {
         // We've hit some error case and may need to return a node for the given error.
         //
-        // When `mustExpand=false`, we are attempting to inline the intrinsic directly into another method. In this
-        // scenario, we need to return `null` so that a GT_CALL to the intrinsic is emitted instead. This is to
-        // ensure that everything continues to behave correctly when optimizations are enabled (e.g. things like the
-        // inliner may expect the node we return to have a certain signature, and the `MustThrowException` node won't
-        // match that).
+        // When `mustExpand=false`, optimized compilation should surface the throw at the intrinsic call site instead
+        // of inlining a managed fallback that throws the same exception. MinOpts keeps the call to preserve debugging
+        // and tier-up behavior.
         //
         // When `mustExpand=true`, we are in a GT_CALL to the intrinsic and are attempting to JIT it. This will generally
         // be in response to an indirect call (e.g. done via reflection) or in response to an earlier attempt returning
         // `null` (under `mustExpand=false`). In that scenario, we are safe to return the `MustThrowException` node.
 
-        if (mustExpand)
+        if ((helper is CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED) && IsAot)
         {
+            // AOT images do not have the helper for the regular NotSupportedException with its type message.
+            // Use PlatformNotSupportedException when expansion is required; otherwise keep the managed call.
+            if (!mustExpand)
+            {
+                return null;
+            }
+
+            helper = CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED;
+        }
+
+        if (mustExpand || opts.OptimizationEnabled)
+        {
+            impSpillSideEffects(true, CHECK_SPILL_ALL, "impUnsupportedNamedIntrinsic");
+
             for (var i = 0; i < sig.numArgs; i++)
             {
                 _ = impPopStack();
@@ -20786,10 +20801,8 @@ public partial class Compiler
 
             return gtNewMustThrowException(helper, sig.retType.VarType, sig.retTypeClass);
         }
-        else
-        {
-            return null;
-        }
+
+        return null;
     }
 
     /// <summary>The main entry-point for [ReadOnly]Span&lt;char&gt; methods</summary>

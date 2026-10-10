@@ -589,6 +589,34 @@ internal static unsafe class AssertionTests
     }
 
     [Test]
+    public static void ZeroObjectLocalStorePropagationAcceptsThreadedSource()
+    {
+        WithCompiler(compiler => {
+            var layout = new ClassLayout(8);
+            compiler.lvaTable = [
+                new LclVarDsc { Type = TYP_STRUCT, Layout = layout },
+                new LclVarDsc { Type = TYP_STRUCT, Layout = layout },
+            ];
+            compiler.fgNodeThreading = NodeThreading.AllTrees;
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+#endif
+            compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
+            var assertions = InstallAssertions(compiler, [
+                AssertionDsc.CreateConstLclVarAssertion(
+                    compiler, 1, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true),
+            ]);
+            var source = compiler.gtNewLclvNode(TYP_STRUCT, 1);
+            source.Next = compiler.gtNewNothingNode();
+            var store = compiler.gtNewStoreLclVarNode(0, source);
+
+            Assert.That(compiler.optAssertionProp_LocalStore(assertions, store, null), Is.SameAs(store));
+            Assert.That(store.Data, Is.TypeOf<GenTreeIntCon>());
+            Assert.That(source.Oper, Is.EqualTo(GT_LCL_VAR));
+        });
+    }
+
+    [Test]
     public static void BlockStoreZeroPropagationUpdatesTheOwningDataOperand()
     {
         WithCompiler(compiler => {

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.CorInfoType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -67,6 +68,73 @@ internal static unsafe class HWIntrinsicImportClosureTests
     public static void AvxOnlyCompatibilityUsesPinnedMetadata(NamedIntrinsic intrinsic, bool expected)
     {
         Assert.That(HWIntrinsicInfo.AvxOnlyCompatible(intrinsic), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void UnsupportedNamedIntrinsicSurfacesMustThrowAtOptimizedInlineSites()
+    {
+        WithImporter(compiler => {
+            compiler.opts.SetMinOpts(false);
+
+            var argument = compiler.gtNewIconNode(TYP_INT, 1);
+            compiler.impPushOnStack(argument, new typeInfo(TYP_INT));
+
+            CORINFO_SIG_INFO sig = default;
+            sig.numArgs = 1;
+            sig.retType = CORINFO_TYPE_VOID;
+
+            var result = compiler.impUnsupportedNamedIntrinsic(
+                CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, default, in sig, mustExpand: false);
+
+            Assert.That(result, Is.Not.Null);
+            var call = result!.AsCall();
+            Assert.That(call.IsHelperCall(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED), Is.True);
+            Assert.That(call.IsNoReturn, Is.True);
+            Assert.That(compiler.impStackHeight, Is.Zero);
+        });
+    }
+
+    [Test]
+    public static void UnsupportedNamedIntrinsicUsesCallInMinOpts()
+    {
+        WithImporter(compiler => {
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_MIN_OPT);
+            compiler.opts.SetMinOpts(false);
+
+            var argument = compiler.gtNewIconNode(TYP_INT, 1);
+            compiler.impPushOnStack(argument, new typeInfo(TYP_INT));
+
+            CORINFO_SIG_INFO sig = default;
+            sig.numArgs = 1;
+            sig.retType = CORINFO_TYPE_VOID;
+
+            var result = compiler.impUnsupportedNamedIntrinsic(
+                CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, default, in sig, mustExpand: false);
+
+            Assert.That(result, Is.Null);
+            Assert.That(compiler.impStackHeight, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public static void UnsupportedTypeUsesPlatformNotSupportedForAot()
+    {
+        WithImporter(compiler => {
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+            compiler.opts.SetMinOpts(false);
+
+            CORINFO_SIG_INFO sig = default;
+            sig.retType = CORINFO_TYPE_VOID;
+
+            var fallback = compiler.impUnsupportedNamedIntrinsic(
+                CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, default, in sig, mustExpand: false);
+            var result = compiler.impUnsupportedNamedIntrinsic(
+                CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, default, in sig, mustExpand: true);
+
+            Assert.That(fallback, Is.Null);
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result!.AsCall().IsHelperCall(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED), Is.True);
+        });
     }
 
     [Test]
