@@ -36,6 +36,14 @@
     <RyuJitTargetIsXarch Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-x64')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-x86'))">true</RyuJitTargetIsXarch>
     <RyuJitTargetIsWasm Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsWasm>
     <RyuJitTargetIsWasm Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-wasm'))">true</RyuJitTargetIsWasm>
+    <RyuJitTargetIsWindows Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsWindows>
+    <RyuJitTargetIsWindows Condition="$(RyuJitTestTargetRuntimeIdentifier.StartsWith('win-'))">true</RyuJitTargetIsWindows>
+    <RyuJitTargetIsUnix Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">true</RyuJitTargetIsUnix>
+    <RyuJitTargetIsUnix Condition="$(RyuJitTestTargetRuntimeIdentifier.StartsWith('win-'))">false</RyuJitTargetIsUnix>
+    <RyuJitTargetIsApple Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsApple>
+    <RyuJitTargetIsApple Condition="$(RyuJitTestTargetRuntimeIdentifier.StartsWith('osx-')) or $(RyuJitTestTargetRuntimeIdentifier.StartsWith('ios-')) or $(RyuJitTestTargetRuntimeIdentifier.StartsWith('tvos-')) or $(RyuJitTestTargetRuntimeIdentifier.StartsWith('maccatalyst-'))">true</RyuJitTargetIsApple>
+    <RyuJitTargetOSRuntimeDetermined Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetOSRuntimeDetermined>
+    <RyuJitUnixOSRuntimeDetermined Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitUnixOSRuntimeDetermined>
     <RyuJitUnixX86Abi Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitUnixX86Abi>
     <RyuJitUnixX86Abi Condition="$(RyuJitTestTargetRuntimeIdentifier.StartsWith('linux-')) and $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-x86'))">true</RyuJitUnixX86Abi>
     <RyuJitUnixX86Abi Condition="'$(RyuJitUnixX86Abi)' == ''">false</RyuJitUnixX86Abi>
@@ -45,7 +53,7 @@
     <RyuJitFeatureHwIntrinsics Condition="'$(RyuJitFeatureHwIntrinsics)' == ''">false</RyuJitFeatureHwIntrinsics>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitUnixX86Abi)' != ''">
+  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitUnixX86Abi)' != ''">
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HW_INTRINSICS" Value="$(RyuJitFeatureHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HAS_ZERO_REG" Value="$(RyuJitFeatureHasZeroReg)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_SIMD" Value="$(RyuJitFeatureSimd)" />
@@ -57,6 +65,11 @@
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_RISCV64" Value="$(RyuJitTargetIsRiscV64)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_XARCH" Value="$(RyuJitTargetIsXarch)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_WASM" Value="$(RyuJitTargetIsWasm)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_WINDOWS" Value="$(RyuJitTargetIsWindows)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_UNIX" Value="$(RyuJitTargetIsUnix)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_APPLE" Value="$(RyuJitTargetIsApple)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_OS_RUNTIMEDETERMINED" Value="$(RyuJitTargetOSRuntimeDetermined)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_UNIX_OS_RUNTIMEDETERMINED" Value="$(RyuJitUnixOSRuntimeDetermined)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.UNIX_X86_ABI" Value="$(RyuJitUnixX86Abi)" />
   </ItemGroup>
 

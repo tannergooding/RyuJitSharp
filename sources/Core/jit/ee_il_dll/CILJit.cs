@@ -55,16 +55,9 @@ public unsafe partial struct CILJit : ICorJitCompiler.Interface
 
     public readonly void setTargetOS(CORINFO_OS os)
     {
-#if TARGET_OS_RUNTIMEDETERMINED
-        TargetOS.IsApplePlatform = os is CORINFO_APPLE;
-
-        
-#if !TARGET_UNIX_OS_RUNTIMEDETERMINED
-        TargetOS.IsUnix = os is CORINFO_UNIX or CORINFO_APPLE;
-        TargetOS.IsWindows = os is CORINFO_WINNT;
-#endif
-
-        TargetOS.OSSettingConfigured = true;
-#endif
+        TargetOS.SetTargetOS(
+            os is CORINFO_WINNT,
+            os is CORINFO_UNIX or CORINFO_APPLE,
+            os is CORINFO_APPLE);
     }
 }

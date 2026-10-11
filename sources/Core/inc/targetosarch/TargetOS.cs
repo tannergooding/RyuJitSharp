@@ -7,33 +7,36 @@ namespace RyuJitSharp;
 
 public struct TargetOS
 {
-#if TARGET_WINDOWS
-    public const bool IsWindows = true;
+    private static bool s_osSettingConfigured;
+    private static bool s_isWindows;
+    private static bool s_isUnix;
+    private static bool s_isApplePlatform;
 
-    public const bool IsUnix = false;
+    public static bool OSSettingConfigured => s_osSettingConfigured;
 
-    public const bool IsApplePlatform = false;
-#elif TARGET_UNIX
-    public const bool IsWindows = false;
+    public static bool IsWindows => Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED
+        ? false
+        : s_osSettingConfigured ? s_isWindows : Configuration.TARGET_WINDOWS;
 
-    public const bool IsUnix = true;
+    public static bool IsUnix => Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED
+        || (s_osSettingConfigured ? s_isUnix : Configuration.TARGET_UNIX);
 
-#if TARGET_UNIX_ANYOS
-    public static bool OSSettingConfigured;
+    public static bool IsApplePlatform => s_osSettingConfigured ? s_isApplePlatform : Configuration.TARGET_APPLE;
 
-    public static bool IsApplePlatform;
-#elif TARGET_APPLE
-    public const bool IsApplePlatform = true;
-#else
-    public const bool IsApplePlatform = false;
-#endif
-#else
-    public static bool OSSettingConfigured;
-    
-    public static bool IsWindows;
-    
-    public static bool IsUnix;
-    
-    public static bool IsApplePlatform;
-#endif
+    internal static void SetTargetOS(bool isWindows, bool isUnix, bool isApplePlatform)
+    {
+        if (!Configuration.TARGET_OS_RUNTIMEDETERMINED)
+        {
+            return;
+        }
+
+        s_isApplePlatform = isApplePlatform;
+        if (!Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED)
+        {
+            s_isUnix = isUnix;
+            s_isWindows = isWindows;
+        }
+
+        s_osSettingConfigured = true;
+    }
 }

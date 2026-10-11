@@ -32,6 +32,16 @@ internal static class Configuration
 
     internal static bool TARGET_WASM => GetFeatureSwitch(nameof(TARGET_WASM));
 
+    internal static bool TARGET_WINDOWS => GetFeatureSwitch(nameof(TARGET_WINDOWS));
+
+    internal static bool TARGET_UNIX => GetFeatureSwitch(nameof(TARGET_UNIX));
+
+    internal static bool TARGET_APPLE => GetFeatureSwitch(nameof(TARGET_APPLE));
+
+    internal static bool TARGET_OS_RUNTIMEDETERMINED => GetFeatureSwitch(nameof(TARGET_OS_RUNTIMEDETERMINED));
+
+    internal static bool TARGET_UNIX_OS_RUNTIMEDETERMINED => GetFeatureSwitch(nameof(TARGET_UNIX_OS_RUNTIMEDETERMINED));
+
     internal static bool UNIX_X86_ABI => GetFeatureSwitch(nameof(UNIX_X86_ABI));
 
     private static bool GetFeatureSwitch(string featureName)

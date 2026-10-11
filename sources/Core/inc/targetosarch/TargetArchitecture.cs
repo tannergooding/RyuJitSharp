@@ -7,75 +7,21 @@ namespace RyuJitSharp;
 
 public static class TargetArchitecture
 {
-#if TARGET_64BIT
-    public const bool Is64Bit = true;
-#else
-    public const bool Is64Bit = false;
-#endif
+    public static bool Is64Bit => Configuration.TARGET_64BIT;
 
-#if TARGET_WASM
-    public const bool IsWasm = true;
-#else
-    public const bool IsWasm = false;
-#endif
+    public static bool IsWasm => Configuration.TARGET_WASM;
 
-#if TARGET_ARM
-    public const bool IsX86 = false;
-    public const bool IsX64 = false;
-    public const bool IsArm64 = false;
-    public const bool IsArm32 = true;
-    public const bool IsArmArch = true;
-    public const bool IsLoongArch64 = false;
-    public const bool IsRiscV64 = false;
-#elif TARGET_ARM64
-    public const bool IsX86 = false;
-    public const bool IsX64 = false;
-    public const bool IsArm64 = true;
-    public const bool IsArm32 = false;
-    public const bool IsArmArch = true;
-    public const bool IsLoongArch64 = false;
-    public const bool IsRiscV64 = false;
-#elif TARGET_AMD64
-    public const bool IsX86 = false;
-    public const bool IsX64 = true;
-    public const bool IsArm64 = false;
-    public const bool IsArm32 = false;
-    public const bool IsArmArch = false;
-    public const bool IsLoongArch64 = false;
-    public const bool IsRiscV64 = false;
-#elif TARGET_X86
-    public const bool IsX86 = true;
-    public const bool IsX64 = false;
-    public const bool IsArm64 = false;
-    public const bool IsArm32 = false;
-    public const bool IsArmArch = false;
-    public const bool IsLoongArch64 = false;
-    public const bool IsRiscV64 = false;
-#elif TARGET_LOONGARCH64
-    public const bool IsX86 = false;
-    public const bool IsX64 = false;
-    public const bool IsArm64 = false;
-    public const bool IsArm32 = false;
-    public const bool IsArmArch = false;
-    public const bool IsLoongArch64 = true;
-    public const bool IsRiscV64 = false;
-#elif TARGET_RISCV64
-    public const bool IsX86 = false;
-    public const bool IsX64 = false;
-    public const bool IsArm64 = false;
-    public const bool IsArm32 = false;
-    public const bool IsArmArch = false;
-    public const bool IsLoongArch64 = false;
-    public const bool IsRiscV64 = true;
-#elif TARGET_WASM
-    public const bool IsX86 = false;
-    public const bool IsX64 = false;
-    public const bool IsArm64 = false;
-    public const bool IsArm32 = false;
-    public const bool IsArmArch = false;
-    public const bool IsLoongArch64 = false;
-    public const bool IsRiscV64 = false;
-#else
-#error Unknown architecture
-#endif
+    public static bool IsX86 => Configuration.TARGET_X86;
+
+    public static bool IsX64 => Configuration.TARGET_AMD64;
+
+    public static bool IsArm64 => Configuration.TARGET_ARM64;
+
+    public static bool IsArm32 => Configuration.TARGET_ARM;
+
+    public static bool IsArmArch => Configuration.TARGET_ARMARCH;
+
+    public static bool IsLoongArch64 => Configuration.TARGET_LOONGARCH64;
+
+    public static bool IsRiscV64 => Configuration.TARGET_RISCV64;
 }
