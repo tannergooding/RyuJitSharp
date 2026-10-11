@@ -14,9 +14,8 @@ public struct TargetOS
 
     public static bool OSSettingConfigured => s_osSettingConfigured;
 
-    public static bool IsWindows => Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED
-        ? false
-        : s_osSettingConfigured ? s_isWindows : Configuration.TARGET_WINDOWS;
+    public static bool IsWindows => !Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED
+        && (s_osSettingConfigured ? s_isWindows : Configuration.TARGET_WINDOWS);
 
     public static bool IsUnix => Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED
         || (s_osSettingConfigured ? s_isUnix : Configuration.TARGET_UNIX);

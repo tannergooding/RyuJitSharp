@@ -7,7 +7,20 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
-    internal static bool emitIns_valid_imm_for_ccmp(long immediate) => FitsInI32(immediate);
-#endif
+    internal static bool emitIns_valid_imm_for_ccmp(long immediate)
+    {
+        if (Configuration.TARGET_AMD64)
+        {
+            return FitsInI32(immediate);
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return (immediate & 0x1f) == immediate;
+        }
+
+        throw new FatalJitException(
+            CORJIT_INTERNALERROR,
+            "Conditional compare immediates are only supported for x64 and ARM64.");
+    }
 }

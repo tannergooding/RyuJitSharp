@@ -10,28 +10,24 @@ namespace RyuJitSharp;
 [Flags]
 public enum insCFlags : uint
 {
-#if TARGET_ARM64
-    INS_FLAGS_NONE,
-    INS_FLAGS_V,
-    INS_FLAGS_C,
-    INS_FLAGS_CV,
-    INS_FLAGS_Z,
-    INS_FLAGS_ZV,
-    INS_FLAGS_ZC,
-    INS_FLAGS_ZCV,
-    INS_FLAGS_N,
-    INS_FLAGS_NV,
-    INS_FLAGS_NC,
-    INS_FLAGS_NCV,
-    INS_FLAGS_NZ,
-    INS_FLAGS_NZV,
-    INS_FLAGS_NZC,
-    INS_FLAGS_NZCV,
-#elif TARGET_XARCH
     INS_FLAGS_NONE = 0x0,
+    INS_FLAGS_V = 0x1,
+    INS_FLAGS_C = 0x2,
+    INS_FLAGS_CV = 0x3,
+    INS_FLAGS_Z = 0x4,
+    INS_FLAGS_ZV = 0x5,
+    INS_FLAGS_ZC = 0x6,
+    INS_FLAGS_ZCV = 0x7,
+    INS_FLAGS_N = 0x8,
+    INS_FLAGS_NV = 0x9,
+    INS_FLAGS_NC = 0xA,
+    INS_FLAGS_NCV = 0xB,
+    INS_FLAGS_NZ = 0xC,
+    INS_FLAGS_NZV = 0xD,
+    INS_FLAGS_NZC = 0xE,
+    INS_FLAGS_NZCV = 0xF,
     INS_FLAGS_CF = 0x1,
     INS_FLAGS_ZF = 0x2,
     INS_FLAGS_SF = 0x4,
     INS_FLAGS_OF = 0x8,
-#endif
 }

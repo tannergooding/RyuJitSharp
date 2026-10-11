@@ -10,35 +10,45 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if TARGET_AMD64 || TARGET_ARM64
     private static insCFlags TruthifyingFlags(GenCondition condition)
     {
-        return condition.Code switch {
-#if TARGET_ARM64
-            GenCondition.EQ => INS_FLAGS_Z,
-            GenCondition.NE => INS_FLAGS_NONE,
-            GenCondition.SGE => INS_FLAGS_Z,
-            GenCondition.SGT => INS_FLAGS_NONE,
-            GenCondition.SLE => INS_FLAGS_NZC,
-            GenCondition.SLT => INS_FLAGS_NC,
-            GenCondition.UGE => INS_FLAGS_C,
-            GenCondition.UGT => INS_FLAGS_C,
-            GenCondition.ULE => INS_FLAGS_Z,
-            GenCondition.ULT => INS_FLAGS_NONE,
-#else
-            GenCondition.EQ => INS_FLAGS_ZF,
-            GenCondition.NE => INS_FLAGS_NONE,
-            GenCondition.SGE => INS_FLAGS_NONE,
-            GenCondition.SGT => INS_FLAGS_NONE,
-            GenCondition.SLE => INS_FLAGS_ZF,
-            GenCondition.SLT => INS_FLAGS_SF,
-            GenCondition.UGE => INS_FLAGS_NONE,
-            GenCondition.UGT => INS_FLAGS_NONE,
-            GenCondition.ULE => INS_FLAGS_ZF,
-            GenCondition.ULT => INS_FLAGS_CF,
-#endif
-            _ => throw new InvalidOperationException("Unexpected condition type."),
-        };
+        if (Configuration.TARGET_ARM64)
+        {
+            return condition.Code switch {
+                GenCondition.EQ => INS_FLAGS_Z,
+                GenCondition.NE => INS_FLAGS_NONE,
+                GenCondition.SGE => INS_FLAGS_Z,
+                GenCondition.SGT => INS_FLAGS_NONE,
+                GenCondition.SLE => INS_FLAGS_NZC,
+                GenCondition.SLT => INS_FLAGS_NC,
+                GenCondition.UGE => INS_FLAGS_C,
+                GenCondition.UGT => INS_FLAGS_C,
+                GenCondition.ULE => INS_FLAGS_Z,
+                GenCondition.ULT => INS_FLAGS_NONE,
+                _ => throw new InvalidOperationException("Unexpected condition type."),
+            };
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            return condition.Code switch {
+                GenCondition.EQ => INS_FLAGS_ZF,
+                GenCondition.NE => INS_FLAGS_NONE,
+                GenCondition.SGE => INS_FLAGS_NONE,
+                GenCondition.SGT => INS_FLAGS_NONE,
+                GenCondition.SLE => INS_FLAGS_ZF,
+                GenCondition.SLT => INS_FLAGS_SF,
+                GenCondition.UGE => INS_FLAGS_NONE,
+                GenCondition.UGT => INS_FLAGS_NONE,
+                GenCondition.ULE => INS_FLAGS_ZF,
+                GenCondition.ULT => INS_FLAGS_CF,
+                _ => throw new InvalidOperationException("Unexpected condition type."),
+            };
+        }
+
+        throw new FatalJitException(
+            CORJIT_INTERNALERROR,
+            "Conditional compare lowering is only supported for x64 and ARM64.");
     }
 
     private bool CanConvertOpToCCMP(GenTree operand, GenTree tree)
@@ -47,6 +57,7 @@ public sealed partial class Lowering
             varTypeIsIntegralOrI(operand.AsOp().Op1.Type) && IsInvariantInRange(operand, tree);
     }
 
+#if TARGET_AMD64 || TARGET_ARM64
     private bool TryLowerAndOrToCCMP(GenTreeOp tree, out GenTree? next)
     {
         assert(tree.Oper is GT_AND or GT_OR);

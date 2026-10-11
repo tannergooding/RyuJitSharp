@@ -3,18 +3,16 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
-    "targetObservedAt": "2026-10-13",
-    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
+    "targetCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+    "targetObservedAt": "2026-10-10",
+    "reconciledCommit": "e23d559ac0db234786d68bd5135fed6ad9621750"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "parity-validation",
-    "nextAction": "Resume the dynamic TLS input-ownership investigation using artifacts\\dynamic-tls-inputs: identify the earlier EE slot allocations responsible for the managed shift before claiming helper parity or changing compiler constants. The completion boundary is a reproducible account of the matching compilation inputs, followed by full primary-JIT dump comparison at the pinned oracle revision.",
+    "stage": "universal-compilation",
+    "nextAction": "Continue the target/feature conditional-compilation migration. The next blocking closure is GT_CCMP: make GenTreeCCMP and its generated type mapping/clone dispatch compile universally while keeping codegen unsupported on other targets; validate x64 and ARM64 behavior plus x86 compilation.",
+    "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
-    "validationGaps": [
-      "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation."
-    ],
     "parityEvidence": {
       "corelibCodegen": {
         "architecture": "Windows x64",
@@ -294,37 +292,6 @@
       ],
       "disposition": "The managed compiler retains GetLayoutNum/GetLayoutByNum as internal per-compiler identity tokens for zero-object value numbering and diagnostics; native uses pointer identity. This is an implementation mapping, not an observable JIT/EE difference.",
       "sourceCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605"
-    },
-    {
-      "area": "relocatable-integral-range",
-      "native": [
-        "src\\coreclr\\jit\\assertionprop.cpp"
-      ],
-      "csharp": [
-        "sources\\Core\\jit\\compiler\\IntegralRange.cs"
-      ],
-      "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
-    },
-    {
-      "area": "readutf8-immutable-source-data",
-      "native": [
-        "src\\coreclr\\jit\\helperexpansion.cpp"
-      ],
-      "csharp": [
-        "sources\\Core\\jit\\compiler\\Compiler.VNIntrinsicExpansion.cs",
-        "sources\\Core\\jit\\compiler\\Compiler.VNMemoryAccess.cs"
-      ],
-      "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
-    },
-    {
-      "area": "xarch-scalar-insert-lowering",
-      "native": [
-        "src\\coreclr\\jit\\lowerxarch.cpp"
-      ],
-      "csharp": [
-        "sources\\Core\\jit\\lower\\Lowering.HardwareIntrinsics.cs"
-      ],
-      "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
     }
   ],
   "generatorInputMapping": {
@@ -336,7 +303,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
+    "reconciledCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."
