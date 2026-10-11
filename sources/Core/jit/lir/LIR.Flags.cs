@@ -30,10 +30,10 @@ public partial class LIR
         /// <summary>Set on a node if it produces a value, but does not require a register (i.e. it can be used from memory).</summary>
         RegOptional = 0x04,
 
-#if TARGET_WASM
         /// <summary>Set by lowering on nodes that the RA should allocate into a dedicated register (WASM local), for multiple uses.</summary>
         MultiplyUsed = 0x08,
 
+#if TARGET_WASM
         /// <summary>Set when an address is folded into a WebAssembly memory instruction.</summary>
         FoldedAddr = 0x10,
 #endif

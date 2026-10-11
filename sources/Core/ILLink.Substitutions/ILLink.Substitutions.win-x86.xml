@@ -2,6 +2,13 @@
   <assembly fullname="RyuJitSharp">
     <type fullname="RyuJitSharp.Configuration">
       <method signature="System.Boolean get_FEATURE_HAS_ZERO_REG()" body="stub" value="false" />
+      <method signature="System.Boolean get_TARGET_64BIT()" body="stub" value="false" />
+      <method signature="System.Boolean get_TARGET_ARM()" body="stub" value="false" />
+      <method signature="System.Boolean get_TARGET_ARM64()" body="stub" value="false" />
+      <method signature="System.Boolean get_TARGET_LOONGARCH64()" body="stub" value="false" />
+      <method signature="System.Boolean get_TARGET_RISCV64()" body="stub" value="false" />
+      <method signature="System.Boolean get_TARGET_XARCH()" body="stub" value="true" />
+      <method signature="System.Boolean get_TARGET_WASM()" body="stub" value="false" />
     </type>
   </assembly>
 </linker>

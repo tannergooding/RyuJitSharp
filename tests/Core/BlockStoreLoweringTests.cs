@@ -75,7 +75,8 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(store.Type, Is.EqualTo(TYP_USHORT));
             Assert.That(load.Type, Is.EqualTo(TYP_USHORT));
             Assert.That(load.Oper, Is.EqualTo(GT_IND));
-            Assert.That(load.Flags & GTF_DONT_EXTEND, Is.EqualTo(GTF_DONT_EXTEND));
+            var expectedDontExtend = Configuration.TARGET_XARCH ? GTF_DONT_EXTEND : GTF_EMPTY;
+            Assert.That(load.Flags & GTF_DONT_EXTEND, Is.EqualTo(expectedDontExtend));
             Assert.That(load._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(load.Addr, Is.SameAs(sourceAddress));
             Assert.That(source.Next, Is.Null);
@@ -218,6 +219,76 @@ internal static unsafe class BlockStoreLoweringTests
         });
     }
 
+    [Test]
+    public static void InitBlockStoreUsesConfiguredTargetKind()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var fill = compiler.gtNewIconNode(var_types.TYP_INT, 1);
+            var init = new GenTreeUnOp(genTreeOps.GT_INIT_VAL, var_types.TYP_INT, fill);
+            var store = new GenTreeBlk(var_types.TYP_STRUCT, address, init, new ClassLayout(8));
+            var block = NewBlock(address, fill, init, store);
+            var lowering = NewLowering(compiler, block);
+
+            _ = LowerNode(lowering, store);
+
+            var expectedKind = Configuration.TARGET_WASM
+                ? GenTreeBlk.BlkOpKindNativeOpcode
+                : GenTreeBlk.BlkOpKindUnroll;
+            var expectedMultiplyUsed = Configuration.TARGET_WASM
+                ? LIR.Flags.MultiplyUsed
+                : LIR.Flags.None;
+            Assert.That(store._kind, Is.EqualTo(expectedKind));
+            Assert.That(address._lirFlags & LIR.Flags.MultiplyUsed, Is.EqualTo(expectedMultiplyUsed));
+        });
+    }
+
+    [Test]
+    public static void InitBlockStoreFillWidthMatchesConfiguredPointerSize()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var fill = compiler.gtNewIconNode(var_types.TYP_INT, 0x112);
+            var init = new GenTreeUnOp(genTreeOps.GT_INIT_VAL, var_types.TYP_INT, fill);
+            var store = new GenTreeBlk(var_types.TYP_STRUCT, address, init, new ClassLayout(8));
+            var block = NewBlock(address, fill, init, store);
+            var lowering = NewLowering(compiler, block);
+
+            _ = LowerNode(lowering, store);
+
+            var is64Bit = Configuration.TARGET_64BIT;
+            var expectedType = is64Bit ? var_types.TYP_LONG : var_types.TYP_INT;
+            var expectedFill = is64Bit ? 0x1212121212121212L : 0x12121212L;
+            Assert.That(fill.Type, Is.EqualTo(expectedType));
+            Assert.That((long)fill.IconValue, Is.EqualTo(expectedFill));
+        });
+    }
+
+    [Test]
+    public static void CopyBlockStoreUsesConfiguredTargetKind()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewLclvNode(var_types.TYP_BYREF, 0);
+            var sourceAddress = compiler.gtNewLclvNode(var_types.TYP_BYREF, 1);
+            var source = new GenTreeIndir(genTreeOps.GT_IND, var_types.TYP_INT, sourceAddress);
+            var store = new GenTreeBlk(var_types.TYP_STRUCT, address, source, new ClassLayout(8));
+            var block = NewBlock(address, sourceAddress, source, store);
+            var lowering = NewLowering(compiler, block);
+
+            _ = LowerNode(lowering, store);
+
+            var expectedKind = Configuration.TARGET_WASM
+                ? GenTreeBlk.BlkOpKindNativeOpcode
+                : GenTreeBlk.BlkOpKindUnroll;
+            var expectedMultiplyUsed = Configuration.TARGET_WASM
+                ? LIR.Flags.MultiplyUsed
+                : LIR.Flags.None;
+            Assert.That(store._kind, Is.EqualTo(expectedKind));
+            Assert.That(address._lirFlags & LIR.Flags.MultiplyUsed, Is.EqualTo(expectedMultiplyUsed));
+            Assert.That(sourceAddress._lirFlags & LIR.Flags.MultiplyUsed, Is.EqualTo(expectedMultiplyUsed));
+        });
+    }
+
     [TestCase(4, 0x112, 0x12121212L, false, var_types.TYP_INT)]
     [TestCase(8, 0x112, 0x1212121212121212L, false, var_types.TYP_LONG)]
     [TestCase(8, 0x1FF, -1L, false, var_types.TYP_LONG)]
@@ -236,11 +307,30 @@ internal static unsafe class BlockStoreLoweringTests
 
             _ = LowerNode(lowering, store);
 
+            var expectedFill = expected;
+            var expectedType = type;
+            var expectedIsContained = contained;
+            if ((size >= 16) && !Configuration.TARGET_XARCH)
+            {
+                expectedIsContained = false;
+                if (Configuration.TARGET_64BIT)
+                {
+                    expectedFill = unchecked((value & 0xFF) * 0x0101010101010101L);
+                    expectedType = var_types.TYP_LONG;
+                }
+                else
+                {
+                    expectedFill = unchecked((value & 0xFF) * 0x01010101);
+                    expectedType = var_types.TYP_INT;
+                }
+            }
+
             Assert.That(store._kind, Is.EqualTo(GenTreeBlk.BlkOpKindUnroll));
             Assert.That(init.IsContained, Is.True);
-            Assert.That(fill.IconValue, Is.EqualTo((nint)expected));
-            Assert.That(fill.Type, Is.EqualTo(type));
-            Assert.That(fill.IsContained, Is.EqualTo(contained));
+            Assert.That(fill.IconValue, Is.EqualTo((nint)expectedFill));
+            Assert.That(fill.Type, Is.EqualTo(expectedType));
+            expectedIsContained |= Configuration.FEATURE_HAS_ZERO_REG && ((value & 0xFF) == 0);
+            Assert.That(fill.IsContained, Is.EqualTo(expectedIsContained));
         });
     }
 
@@ -267,7 +357,7 @@ internal static unsafe class BlockStoreLoweringTests
             Assert.That(store.Oper, Is.EqualTo(genTreeOps.GT_STORE_BLK));
             Assert.That(store._kind, Is.EqualTo(GenTreeBlk.BlkOpKindLoop));
             Assert.That(store.Data, Is.SameAs(zero));
-            Assert.That(zero.IsContained, Is.False);
+            Assert.That(zero.IsContained, Is.EqualTo(Configuration.FEATURE_HAS_ZERO_REG));
         });
     }
 

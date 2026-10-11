@@ -11,9 +11,7 @@ public partial class GenTreeBlk
     public const BlkOpKind BlkOpKindLoop = BlkOpKind.BlkOpKindLoop;
     public const BlkOpKind BlkOpKindUnroll = BlkOpKind.BlkOpKindUnroll;
     public const BlkOpKind BlkOpKindUnrollMemmove = BlkOpKind.BlkOpKindUnrollMemmove;
-#if TARGET_WASM
     public const BlkOpKind BlkOpKindNativeOpcode = BlkOpKind.BlkOpKindNativeOpcode;
-#endif
 
     public enum BlkOpKind
     {
@@ -21,8 +19,6 @@ public partial class GenTreeBlk
         BlkOpKindLoop,
         BlkOpKindUnroll,
         BlkOpKindUnrollMemmove,
-#if TARGET_WASM
         BlkOpKindNativeOpcode,
-#endif
     }
 }

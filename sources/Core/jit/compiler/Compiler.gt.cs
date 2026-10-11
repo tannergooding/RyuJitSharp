@@ -3207,13 +3207,11 @@ public partial class Compiler
                             break;
                         }
 
-#if TARGET_WASM
                         case GenTreeBlk.BlkOpKindNativeOpcode:
                         {
                             jitprintf($" (memory.{(tree.IsCopyBlkOp ? "copy" : "fill")})");
                             break;
                         }
-#endif
 
                         default:
                         {

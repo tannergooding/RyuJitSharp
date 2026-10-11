@@ -77,20 +77,7 @@ public ref struct WasmClassifier
 
     public static var_types ToJitType(CorInfoWasmType wasmType)
     {
-        return wasmType switch {
-            CORINFO_WASM_TYPE_I32 => TYP_INT,
-            CORINFO_WASM_TYPE_I64 => TYP_LONG,
-            CORINFO_WASM_TYPE_F32 => TYP_FLOAT,
-            CORINFO_WASM_TYPE_F64 => TYP_DOUBLE,
-            CORINFO_WASM_TYPE_V128 => TYP_SIMD16,
-            _ => InvalidWasmType(),
-        };
-    }
-
-    private static var_types InvalidWasmType()
-    {
-        unreached();
-        return TYP_UNDEF;
+        return WasmTypeMapper.ToJitType(wasmType);
     }
 }
 #endif

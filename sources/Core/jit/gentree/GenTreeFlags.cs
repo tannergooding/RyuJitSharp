@@ -61,11 +61,9 @@ public enum GenTreeFlags
     /// <summary>Requires that codegen for this node set the flags. Use gtSetFlags() to check this flag.</summary>
     GTF_SET_FLAGS = 1 << 9,
 
-#if TARGET_XARCH
     /// <summary>This small-typed tree produces a value with undefined upper bits.</summary>
     /// <remarks>Used on x86/x64 as a lowering optimization and tells the codegen to use instructions like "mov al, [addr]" instead of "movzx/movsx", when the user node doesn't need the upper bits.</remarks>
     GTF_DONT_EXTEND = 1 << 10,
-#endif
 
     /// <summary>Hoisted expression: try hard to make this into CSE (see optPerformHoistExpr)</summary>
     GTF_MAKE_CSE = 1 << 11,

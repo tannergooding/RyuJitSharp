@@ -84,7 +84,6 @@ public sealed partial class Lowering
         ContainCheckDivOrMod(divMod);
     }
 
-#if TARGET_WASM
     private static void SetMultiplyUsed(GenTree node
 #if DEBUG
         , string reason
@@ -98,5 +97,4 @@ public sealed partial class Lowering
         assert(!node.IsContained);
         node._lirFlags |= LIR.Flags.MultiplyUsed;
     }
-#endif
 }

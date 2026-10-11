@@ -11,7 +11,15 @@ public sealed partial class Lowering
 {
     private void ContainBlockStoreAddress(GenTreeBlk block, uint size, GenTree address, GenTree? addressParent)
     {
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
+        if (!Configuration.TARGET_XARCH &&
+            !Configuration.TARGET_ARM &&
+            !Configuration.TARGET_ARM64 &&
+            !Configuration.TARGET_RISCV64 &&
+            !Configuration.TARGET_LOONGARCH64)
+        {
+            throw new NotImplementedException("Block-store address containment is not ported for this target.");
+        }
+
         assert((block.Oper is GT_STORE_BLK) && (block._kind is GenTreeBlk.BlkOpKindUnroll));
         assert(size < int.MaxValue);
 
@@ -20,158 +28,169 @@ public sealed partial class Lowering
             address.IsContained = true;
             return;
         }
-#if TARGET_XARCH
-        if ((address.Oper is not GT_LEA) && !TryCreateAddrMode(ref address, true, block))
+
+        if (Configuration.TARGET_XARCH)
         {
+            if ((address.Oper is not GT_LEA) && !TryCreateAddrMode(ref address, true, block))
+            {
+                return;
+            }
+
+            var mode = address.AsAddrMode();
+            // Unrolling adds displacements; keep even the conservative offset + size bound below INT32_MAX.
+            if (mode.Offset >= (uint)int.MaxValue - size)
+            {
+                return;
+            }
+            var invariant = addressParent is null
+                ? IsInvariantInRange(mode, block)
+                : IsInvariantInRange(mode, block, addressParent);
+            if (invariant)
+            {
+                mode.IsContained = true;
+            }
+
             return;
         }
 
-        var mode = address.AsAddrMode();
-        // Unrolling adds displacements; keep even the conservative offset + size bound below INT32_MAX.
-        if (mode.Offset >= (uint)int.MaxValue - size)
+        if (Configuration.TARGET_ARM)
         {
-            return;
-        }
-        var invariant = addressParent is null
-            ? IsInvariantInRange(mode, block)
-            : IsInvariantInRange(mode, block, addressParent);
-        if (invariant)
-        {
-            mode.IsContained = true;
-        }
-#elif TARGET_ARM
-        if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
-            (address.AsOp().Op2.Oper is not GT_CNS_INT))
-        {
-            return;
-        }
+            if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
+                (address.AsOp().Op2.Oper is not GT_CNS_INT))
+            {
+                return;
+            }
 
-        var offsetNode = address.AsOp().Op2.AsIntCon();
-        var offset = offsetNode.IconValue;
-        if ((offset < -255) || (offset > 255) || ((long)offset + size > 256))
-        {
-            return;
-        }
+            var offsetNode = address.AsOp().Op2.AsIntCon();
+            var offset = offsetNode.IconValue;
+            if ((offset < -255) || (offset > 255) || ((long)offset + size > 256))
+            {
+                return;
+            }
 
-        var invariant = addressParent is null
-            ? IsInvariantInRange(address, block)
-            : IsInvariantInRange(address, block, addressParent);
-        if (!invariant)
-        {
-            return;
-        }
+            var invariant = addressParent is null
+                ? IsInvariantInRange(address, block)
+                : IsInvariantInRange(address, block, addressParent);
+            if (!invariant)
+            {
+                return;
+            }
 
-        BlockRange().Remove(offsetNode);
-        var mode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
-            address, NodeThreading.LIR) {
-            Flags = address.Flags & GTF_COMMON_MASK,
-            IsContained = true,
-        };
-        BlockRange().ReplaceNode(address, mode);
-#elif TARGET_ARM64
-        if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
-            (address.AsOp().Op2.Oper is not GT_CNS_INT))
-        {
+            BlockRange().Remove(offsetNode);
+            var mode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
+                address, NodeThreading.LIR) {
+                Flags = address.Flags & GTF_COMMON_MASK,
+                IsContained = true,
+            };
+            BlockRange().ReplaceNode(address, mode);
             return;
         }
 
-        var offsetNode = address.AsOp().Op2.AsIntCon();
-        var offset = offsetNode.IconValue;
-        // Native ClrSafeInt checks the conversion as well as offset + size; INT32_MAX is excluded.
-        if ((offset < int.MinValue) || (offset > int.MaxValue) || ((long)offset + size >= int.MaxValue))
+        if (Configuration.TARGET_ARM64)
         {
+            if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
+                (address.AsOp().Op2.Oper is not GT_CNS_INT))
+            {
+                return;
+            }
+
+            var offsetNode = address.AsOp().Op2.AsIntCon();
+            var offset = offsetNode.IconValue;
+            // Native ClrSafeInt checks the conversion as well as offset + size; INT32_MAX is excluded.
+            if ((offset < int.MinValue) || (offset > int.MaxValue) || ((long)offset + size >= int.MaxValue))
+            {
+                return;
+            }
+
+            var invariant = addressParent is null
+                ? IsInvariantInRange(address, block)
+                : IsInvariantInRange(address, block, addressParent);
+            if (!invariant)
+            {
+                return;
+            }
+
+            BlockRange().Remove(offsetNode);
+            var mode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
+                address, NodeThreading.LIR) {
+                Flags = address.Flags & GTF_COMMON_MASK,
+                IsContained = true,
+            };
+            BlockRange().ReplaceNode(address, mode);
             return;
         }
 
-        var invariant = addressParent is null
-            ? IsInvariantInRange(address, block)
-            : IsInvariantInRange(address, block, addressParent);
-        if (!invariant)
+        if (Configuration.TARGET_RISCV64)
         {
+            if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
+                (address.AsOp().Op2.Oper is not GT_CNS_INT))
+            {
+                return;
+            }
+
+            var offsetNode = address.AsOp().Op2.AsIntCon();
+            var offset = offsetNode.IconValue;
+            if ((offset < -2048) || (offset > 2047) ||
+                ((offset + (int)size) < -2048) || ((offset + (int)size) > 2047))
+            {
+                return;
+            }
+
+            var invariant = addressParent is null
+                ? IsInvariantInRange(address, block)
+                : IsInvariantInRange(address, block, addressParent);
+            if (!invariant)
+            {
+                return;
+            }
+
+            var baseNode = address.AsOp().Op1;
+            BlockRange().Remove(offsetNode);
+            var mode = new GenTreeAddrMode(address.Type, baseNode, null, 0, (int)offset,
+                address, NodeThreading.LIR) {
+                Flags = address.Flags & GTF_COMMON_MASK,
+                IsContained = true,
+            };
+            BlockRange().ReplaceNode(address, mode);
             return;
         }
 
-        BlockRange().Remove(offsetNode);
-        var mode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
-            address, NodeThreading.LIR) {
-            Flags = address.Flags & GTF_COMMON_MASK,
-            IsContained = true,
-        };
-        BlockRange().ReplaceNode(address, mode);
-#elif TARGET_RISCV64
-        if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
-            (address.AsOp().Op2.Oper is not GT_CNS_INT))
+        if (Configuration.TARGET_LOONGARCH64)
         {
+            if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
+                (address.AsOp().Op2.Oper is not GT_CNS_INT))
+            {
+                return;
+            }
+
+            var offsetNode = address.AsOp().Op2.AsIntCon();
+            var offset = offsetNode.IconValue;
+            var endOffset = unchecked(offset + (nint)(int)size);
+            if ((offset < -2048) || (offset >= 2048) ||
+                (endOffset < -2048) || (endOffset >= 2048))
+            {
+                return;
+            }
+
+            var invariant = addressParent is null
+                ? IsInvariantInRange(address, block)
+                : IsInvariantInRange(address, block, addressParent);
+            if (!invariant)
+            {
+                return;
+            }
+
+            BlockRange().Remove(offsetNode);
+            var addrMode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
+                address, NodeThreading.LIR) {
+                Flags = address.Flags & GTF_COMMON_MASK,
+                IsContained = true,
+            };
+            BlockRange().ReplaceNode(address, addrMode);
             return;
         }
 
-        var offsetNode = address.AsOp().Op2.AsIntCon();
-        var offset = offsetNode.IconValue;
-        if ((offset < -2048) || (offset > 2047) ||
-            ((offset + (int)size) < -2048) || ((offset + (int)size) > 2047))
-        {
-            return;
-        }
-
-        var invariant = addressParent is null
-            ? IsInvariantInRange(address, block)
-            : IsInvariantInRange(address, block, addressParent);
-        if (!invariant)
-        {
-            return;
-        }
-
-        var baseNode = address.AsOp().Op1;
-        BlockRange().Remove(offsetNode);
-        var mode = new GenTreeAddrMode(address.Type, baseNode, null, 0, (int)offset,
-            address, NodeThreading.LIR) {
-            Flags = address.Flags & GTF_COMMON_MASK,
-            IsContained = true,
-        };
-        BlockRange().ReplaceNode(address, mode);
-#endif
-#elif TARGET_LOONGARCH64
-        assert((block.Oper is GT_STORE_BLK) && (block._kind is GenTreeBlk.BlkOpKindUnroll));
-        assert(size < int.MaxValue);
-
-        if ((address.Oper is GT_LCL_ADDR) && IsContainableLclAddr(address.AsLclFld(), size))
-        {
-            address.IsContained = true;
-            return;
-        }
-
-        if ((address.Oper is not GT_ADD) || address.HasOverflowCheck ||
-            (address.AsOp().Op2.Oper is not GT_CNS_INT))
-        {
-            return;
-        }
-
-        var offsetNode = address.AsOp().Op2.AsIntCon();
-        var offset = offsetNode.IconValue;
-        if (!Emitter.isValidSimm12(offset) ||
-            !Emitter.isValidSimm12(unchecked(offset + (nint)(int)size)))
-        {
-            return;
-        }
-
-        var invariant = addressParent is null
-            ? IsInvariantInRange(address, block)
-            : IsInvariantInRange(address, block, addressParent);
-        if (!invariant)
-        {
-            return;
-        }
-
-        BlockRange().Remove(offsetNode);
-        var addrMode = new GenTreeAddrMode(address.Type, address.AsOp().Op1, null, 0, (int)offset,
-            address, NodeThreading.LIR) {
-            Flags = address.Flags & GTF_COMMON_MASK,
-            IsContained = true,
-        };
-        BlockRange().ReplaceNode(address, addrMode);
-#else
         throw new NotImplementedException("Block-store address containment is not ported for this target.");
-#endif
     }
 
     private GenTree? LowerStoreBlock(GenTreeBlk block)
@@ -248,12 +267,10 @@ public sealed partial class Lowering
 
         if (source.IsCnsInitVal)
         {
-#if !TARGET_XARCH
-            if (varTypeIsSimd(registerType))
+            if (!Configuration.TARGET_XARCH && varTypeIsSimd(registerType))
             {
                 return false;
             }
-#endif
             assert(!block.ContainsReferences);
             if (source.Oper.IsInitVal)
             {
@@ -270,36 +287,39 @@ public sealed partial class Lowering
         else if (varTypeIsStruct(source.Type))
         {
             source.ChangeType(registerType);
-#if TARGET_ARM64
-            switch (source.Oper)
+            if (Configuration.TARGET_ARM64)
             {
-                case GT_IND:
+                switch (source.Oper)
                 {
-                    _ = LowerIndir(source.AsIndir());
-                    break;
-                }
+                    case GT_IND:
+                    {
+                        _ = LowerIndir(source.AsIndir());
+                        break;
+                    }
 
-                case GT_LCL_VAR:
-                {
-                    LowerLclVar(source.AsLclVar());
-                    break;
-                }
+                    case GT_LCL_VAR:
+                    {
+                        LowerLclVar(source.AsLclVar());
+                        break;
+                    }
 
-                case GT_LCL_FLD:
-                {
-                    VerifyLclFldDoNotEnregister(source.AsLclVarCommon().LclNum);
-                    break;
-                }
+                    case GT_LCL_FLD:
+                    {
+                        VerifyLclFldDoNotEnregister(source.AsLclVarCommon().LclNum);
+                        break;
+                    }
 
-                default:
-                {
-                    unreached();
-                    break;
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
                 }
             }
-#else
-            _ = LowerNode(block.Data);
-#endif
+            else
+            {
+                _ = LowerNode(block.Data);
+            }
         }
         else
         {
@@ -312,12 +332,12 @@ public sealed partial class Lowering
         var store = new GenTreeStoreInd(registerType, block.Addr, block.Data, block, NodeThreading.LIR);
         BlockRange().ReplaceNode(block, store);
 
-#if TARGET_XARCH
-        if (varTypeIsSmall(registerType) && (source.Oper is GT_IND or GT_LCL_FLD))
+        if (Configuration.TARGET_XARCH &&
+            varTypeIsSmall(registerType) &&
+            (source.Oper is GT_IND or GT_LCL_FLD))
         {
             source.Flags |= GTF_DONT_EXTEND;
         }
-#endif
         _ = LowerStoreIndirCommon(store);
         return true;
     }
@@ -337,11 +357,13 @@ public sealed partial class Lowering
                 registerType = call.Type;
             }
 #endif
-#if TARGET_WASM
-            var wasmAbiType = CompilerInstance.info.compCompHnd->getWasmLowering(call.RetClsHnd);
-            assert(wasmAbiType is not CORINFO_WASM_TYPE_VOID);
-            registerType = WasmClassifier.ToJitType(wasmAbiType);
-#endif
+            if (Configuration.TARGET_WASM)
+            {
+                var wasmAbiType = CompilerInstance.info.compCompHnd->getWasmLowering(call.RetClsHnd);
+                assert(wasmAbiType is not CORINFO_WASM_TYPE_VOID);
+                registerType = WasmTypeMapper.ToJitType(wasmAbiType);
+            }
+
             var store = new GenTreeStoreInd(registerType, block.Addr, block.Data, block, NodeThreading.LIR) {
                 Flags = block.Flags,
             };
@@ -362,105 +384,107 @@ public sealed partial class Lowering
     private void LowerInitBlockStore(GenTreeBlk block)
     {
         assert(block.IsInitBlkOp);
-#if TARGET_WASM
-        var destination = block.Addr;
-        var source = block.Data;
-        if (source.Oper is GT_INIT_VAL)
+        if (Configuration.TARGET_WASM)
         {
-            source.IsContained = true;
-            source = source.AsUnOp().Op1;
-        }
+            var destination = block.Addr;
+            var source = block.Data;
+            if (source.Oper is GT_INIT_VAL)
+            {
+                source.IsContained = true;
+                source = source.AsUnOp().Op1;
+            }
 
-        if (block.IsZeroingGCPointersOnHeap)
-        {
-            block._kind = GenTreeBlk.BlkOpKindLoop;
-            source.IsContained = true;
+            if (block.IsZeroingGCPointersOnHeap)
+            {
+                block._kind = GenTreeBlk.BlkOpKindLoop;
+                source.IsContained = true;
+            }
+            else
+            {
+                block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
+            }
+
+            if ((block._kind is not GenTreeBlk.BlkOpKindNativeOpcode) ||
+                ((block.Flags & GTF_IND_NONFAULTING) is 0))
+            {
+                SetMultiplyUsed(destination
+#if DEBUG
+                    , "LowerInitBlockStore destination address"
+#endif
+                );
+            }
         }
         else
         {
-            block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
-        }
-
-        if ((block._kind is not GenTreeBlk.BlkOpKindNativeOpcode) ||
-            ((block.Flags & GTF_IND_NONFAULTING) is 0))
-        {
-            SetMultiplyUsed(destination
-#if DEBUG
-                , "LowerInitBlockStore destination address"
-#endif
-            );
-        }
-#else
-#if TARGET_XARCH
-        _ = TryCreateAddrMode(ref block.AddrRef, false, block);
-#endif
-        var address = block.Addr;
-        var source = block.Data;
-        var size = block.Size;
-        if (source.Oper is GT_INIT_VAL)
-        {
-            source.IsContained = true;
-            source = source.AsUnOp().Op1;
-        }
-
-#if TARGET_ARM64
-        // Aligned ARM64 SIMD stores preserve 8-byte atomicity for GC pointers.
-        const bool canUseSimd = true;
-#else
-        var canUseSimd = !block.IsOnHeapAndContainsReferences;
-#endif
-        if ((source.Oper is GT_CNS_INT) &&
-            (size <= (uint)CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memset, canUseSimd)))
-        {
-            var fill = source.AsIntCon().IconValue & 0xFF;
-            var useSimdFill = false;
-#if TARGET_XARCH
-            useSimdFill = canUseSimd && (size >= XMM_REGSIZE_BYTES);
-#endif
-            if (useSimdFill)
+            if (Configuration.TARGET_XARCH)
             {
-                // Overlapping SIMD stores handle the remainder without another fill register.
-                source.IsContained = true;
+                _ = TryCreateAddrMode(ref block.AddrRef, false, block);
             }
-            else if (fill == 0)
+
+            var address = block.Addr;
+            var source = block.Data;
+            var size = block.Size;
+            if (source.Oper is GT_INIT_VAL)
             {
+                source.IsContained = true;
+                source = source.AsUnOp().Op1;
+            }
+
+            // Aligned ARM64 SIMD stores preserve 8-byte atomicity for GC pointers.
+            var canUseSimd = Configuration.TARGET_ARM64 || !block.IsOnHeapAndContainsReferences;
+            if ((source.Oper is GT_CNS_INT) &&
+                (size <= (uint)CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memset, canUseSimd)))
+            {
+                var fill = source.AsIntCon().IconValue & 0xFF;
+                var useSimdFill = false;
+                if (Configuration.TARGET_XARCH)
+                {
+                    const uint xmmRegisterSize = 16;
+                    useSimdFill = canUseSimd && (size >= xmmRegisterSize);
+                }
+
+                if (useSimdFill)
+                {
+                    // Overlapping SIMD stores handle the remainder without another fill register.
+                    source.IsContained = true;
+                }
+                else if (fill == 0)
+                {
+                    if (Configuration.FEATURE_HAS_ZERO_REG)
+                    {
+                        source.IsContained = true;
+                    }
+                }
+                else if (Configuration.TARGET_64BIT && (size >= REGSIZE_BYTES))
+                {
+                    fill = unchecked(fill * (nint)0x0101010101010101L);
+                    source.Type = TYP_LONG;
+                }
+                else
+                {
+                    fill = unchecked(fill * 0x01010101);
+                }
+
+                block._kind = GenTreeBlk.BlkOpKindUnroll;
+                source.AsIntCon().IconValue = fill;
+                ContainBlockStoreAddress(block, size, address, null);
+                return;
+            }
+
+            if (source.IsIntegralConst(0) && block.ContainsReferences)
+            {
+                // A GC-safe helper could observe a torn GC pointer, including in a stack destination.
+                block._kind = GenTreeBlk.BlkOpKindLoop;
                 if (Configuration.FEATURE_HAS_ZERO_REG)
                 {
                     source.IsContained = true;
                 }
             }
-#if TARGET_64BIT
-            else if (size >= REGSIZE_BYTES)
-            {
-                fill = unchecked(fill * (nint)0x0101010101010101L);
-                source.Type = TYP_LONG;
-            }
-#endif
             else
             {
-                fill = unchecked(fill * 0x01010101);
-            }
-
-            block._kind = GenTreeBlk.BlkOpKindUnroll;
-            source.AsIntCon().IconValue = fill;
-            ContainBlockStoreAddress(block, size, address, null);
-            return;
-        }
-
-        if (source.IsIntegralConst(0) && block.ContainsReferences)
-        {
-            // A GC-safe helper could observe a torn GC pointer, including in a stack destination.
-            block._kind = GenTreeBlk.BlkOpKindLoop;
-            if (Configuration.FEATURE_HAS_ZERO_REG)
-            {
-                source.IsContained = true;
+                LowerBlockStoreAsHelperCall(block);
             }
         }
-        else
-        {
-            LowerBlockStoreAsHelperCall(block);
-        }
-#endif
     }
 
     private void LowerCopyBlockStore(GenTreeBlk block)
@@ -480,22 +504,26 @@ public sealed partial class Lowering
 
         var copyGcPointers = block.Layout.HasGCPtr;
         var isNotHeap = block.IsAddressNotOnHeap(CompilerInstance);
-#if !TARGET_WASM
-        var unrollLimit = CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memcpy, !copyGcPointers || isNotHeap);
-#endif
+        var isWasm = Configuration.TARGET_WASM;
+        var unrollLimit = 0;
+        if (!isWasm)
+        {
+            unrollLimit = CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memcpy, !copyGcPointers || isNotHeap);
+        }
+
 #if !JIT32_GCENCODER
         if (copyGcPointers && isNotHeap)
         {
-#if TARGET_WASM
-            copyGcPointers = false;
-#else
-            if (size <= unrollLimit)
+            if (isWasm)
+            {
+                copyGcPointers = false;
+            }
+            else if (size <= unrollLimit)
             {
                 copyGcPointers = false;
                 // The temporary registers do not report GC references, so the entire copy must be non-interruptible.
                 block._gcUnsafe = true;
             }
-#endif
         }
 #endif
         if (copyGcPointers)
@@ -507,38 +535,41 @@ public sealed partial class Lowering
             return;
         }
 
-#if TARGET_WASM
-        block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
-        if ((source.Oper is GT_IND) && ((source.Flags & GTF_IND_NONFAULTING) is 0))
+        if (isWasm)
         {
-            SetMultiplyUsed(source.AsIndir().Addr
-#if DEBUG
-                , "LowerCopyBlockStore source address (indirection)"
-#endif
-            );
-        }
-
-        if ((block.Flags & GTF_IND_NONFAULTING) is 0)
-        {
-            SetMultiplyUsed(address
-#if DEBUG
-                , "LowerCopyBlockStore destination address"
-#endif
-            );
-        }
-#else
-        if (size <= (uint)unrollLimit)
-        {
-            block._kind = GenTreeBlk.BlkOpKindUnroll;
-            if (source.Oper is GT_IND)
+            block._kind = GenTreeBlk.BlkOpKindNativeOpcode;
+            if ((source.Oper is GT_IND) && ((source.Flags & GTF_IND_NONFAULTING) is 0))
             {
-                ContainBlockStoreAddress(block, size, source.AsIndir().Addr, source);
-            }
-            ContainBlockStoreAddress(block, size, address, null);
-            return;
-        }
-
-        LowerBlockStoreAsHelperCall(block);
+                SetMultiplyUsed(source.AsIndir().Addr
+#if DEBUG
+                    , "LowerCopyBlockStore source address (indirection)"
 #endif
+                );
+            }
+
+            if ((block.Flags & GTF_IND_NONFAULTING) is 0)
+            {
+                SetMultiplyUsed(address
+#if DEBUG
+                    , "LowerCopyBlockStore destination address"
+#endif
+                );
+            }
+        }
+        else
+        {
+            if (size <= (uint)unrollLimit)
+            {
+                block._kind = GenTreeBlk.BlkOpKindUnroll;
+                if (source.Oper is GT_IND)
+                {
+                    ContainBlockStoreAddress(block, size, source.AsIndir().Addr, source);
+                }
+                ContainBlockStoreAddress(block, size, address, null);
+                return;
+            }
+
+            LowerBlockStoreAsHelperCall(block);
+        }
     }
 }
