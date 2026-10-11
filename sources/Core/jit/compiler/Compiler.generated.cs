@@ -35,9 +35,7 @@ public partial class Compiler
 #elif TARGET_ARM64
         varTypeCalleeTrashRegMasks[(int)(TYP_SIMD)] = SRBM_FLT_CALLEE_TRASH;
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         varTypeCalleeTrashRegMasks[(int)(TYP_MASK)] = SRBM_MSK_CALLEE_TRASH;
-#endif
 #endif
         varTypeCalleeTrashRegMasks[(int)(TYP_UNKNOWN)] = SRBM_INT_CALLEE_TRASH;
     }

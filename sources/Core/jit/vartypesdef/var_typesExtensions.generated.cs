@@ -35,9 +35,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         TYP_SIMD, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         TYP_MASK, // TYP_MASK
-#endif
 #endif
         TYP_UNKNOWN, // TYP_UNKNOWN
     ];
@@ -68,9 +66,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         16, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         8, // TYP_MASK
-#endif
 #endif
         0, // TYP_UNKNOWN
     ];
@@ -101,9 +97,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         VTF_S|VTF_VEC, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         VTF_S, // TYP_MASK
-#endif
 #endif
         VTF_ANY, // TYP_UNKNOWN
     ];
@@ -134,9 +128,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         EAU, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         (emitAttr)(8), // TYP_MASK
-#endif
 #endif
         (emitAttr)(0), // TYP_UNKNOWN
     ];
@@ -167,9 +159,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         EAU, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         (emitAttr)(8), // TYP_MASK
-#endif
 #endif
         (emitAttr)(0), // TYP_UNKNOWN
     ];
@@ -201,9 +191,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         "simd", // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         "mask", // TYP_MASK
-#endif
 #endif
         "unknown", // TYP_UNKNOWN
     ];
@@ -235,9 +223,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         VTR_FLOAT, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         VTR_MASK, // TYP_MASK
-#endif
 #endif
         VTR_INT, // TYP_UNKNOWN
     ];
@@ -268,9 +254,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         SZU, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         8, // TYP_MASK
-#endif
 #endif
         0, // TYP_UNKNOWN
     ];
@@ -301,9 +285,7 @@ public static partial class var_typesExtensions
 #elif TARGET_ARM64
         0, // TYP_SIMD
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         2, // TYP_MASK
-#endif
 #endif
         0, // TYP_UNKNOWN
     ];

@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_MASKED_HW_INTRINSICS
+using System;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -15,6 +15,11 @@ public sealed class GenTreeMskCon : GenTree
     public GenTreeMskCon(simdmask_t simdMaskVal)
         : base(GT_CNS_MSK, TYP_MASK)
     {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+        }
+
         _simdMaskVal = simdMaskVal;
         if (Configuration.TARGET_ARM64)
         {
@@ -56,6 +61,7 @@ public sealed class GenTreeMskCon : GenTree
         }
     }
 
+#if FEATURE_MASKED_HW_INTRINSICS
     public void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, int simdSize)
     {
         simdmask_t result = default;
@@ -69,6 +75,7 @@ public sealed class GenTreeMskCon : GenTree
         EvaluateBinaryMask(oper, scalar, baseType, simdSize, ref result, _simdMaskVal, other._simdMaskVal);
         _simdMaskVal = result;
     }
+#endif
 
     public static bool Equals(GenTreeMskCon left, GenTreeMskCon right)
     {
@@ -102,4 +109,3 @@ public sealed class GenTreeMskCon : GenTree
         return EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, _simdMaskVal) == SveMaskPattern.SveMaskPatternAll;
     }
 }
-#endif

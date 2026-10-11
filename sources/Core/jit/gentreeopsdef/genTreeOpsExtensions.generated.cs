@@ -35,9 +35,7 @@ public static partial class genTreeOpsExtensions
 #if FEATURE_SIMD
         GTK_LEAF, // GT_CNS_VEC
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         GTK_LEAF, // GT_CNS_MSK
-#endif
         GTK_UNOP, // GT_NOT
         GTK_LEAF, // GT_NOP
         GTK_UNOP, // GT_NEG
@@ -223,9 +221,7 @@ public static partial class genTreeOpsExtensions
 #if FEATURE_SIMD
         DBK_NONE, // GT_CNS_VEC
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         DBK_NONE, // GT_CNS_MSK
-#endif
         DBK_NONE, // GT_NOT
         DBK_NOCONTAIN, // GT_NOP
         DBK_NONE, // GT_NEG
@@ -412,9 +408,7 @@ public static partial class genTreeOpsExtensions
 #if FEATURE_SIMD
         "CNS_VEC", // GT_CNS_VEC
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         "CNS_MSK", // GT_CNS_MSK
-#endif
         "NOT", // GT_NOT
         "NOP", // GT_NOP
         "NEG", // GT_NEG
@@ -601,9 +595,7 @@ public static partial class genTreeOpsExtensions
 #if FEATURE_SIMD
         typeof(GenTreeVecCon), // GT_CNS_VEC
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         typeof(GenTreeMskCon), // GT_CNS_MSK
-#endif
         typeof(GenTreeUnOp), // GT_NOT
         typeof(GenTree), // GT_NOP
         typeof(GenTreeUnOp), // GT_NEG

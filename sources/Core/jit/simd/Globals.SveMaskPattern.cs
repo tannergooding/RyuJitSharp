@@ -12,7 +12,6 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if FEATURE_MASKED_HW_INTRINSICS
     public static bool EvaluateSimdPatternToVector<TSimd, TBase>(ref TSimd result, SveMaskPattern pattern)
         where TSimd : unmanaged
         where TBase : unmanaged
@@ -230,4 +229,3 @@ public static partial class Globals
         return SveMaskPattern.SveMaskPatternNone;
     }
 }
-#endif

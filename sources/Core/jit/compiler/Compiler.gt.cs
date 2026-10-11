@@ -405,13 +405,11 @@ public partial class Compiler
             }
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
             case GT_CNS_MSK:
             {
                 copy = gtCloneCnsMsk(tree.AsMskCon());
                 break;
             }
-#endif
 
             default:
             {
@@ -530,12 +528,10 @@ public partial class Compiler
         return gtNewLconNode(lngCon.LconValue);
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public GenTreeMskCon gtCloneCnsMsk(GenTreeMskCon mskCon)
     {
         return gtNewMskConNode(mskCon.SimdMaskVal);
     }
-#endif
 
 #if FEATURE_SIMD
     public GenTreeVecCon gtCloneCnsVec(GenTreeVecCon vecCon)
@@ -903,13 +899,11 @@ public partial class Compiler
                 }
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
                 case GT_CNS_MSK:
                 {
                     copy = compiler.gtCloneCnsMsk(tree.AsMskCon());
                     break;
                 }
-#endif
 
                 case GT_MEMORYBARRIER:
                 {
@@ -1897,22 +1891,18 @@ public partial class Compiler
             }
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
             case GT_CNS_MSK:
             {
                 var mskCon = tree.AsMskCon();
-#if TARGET_ARM64
-                if (JitConfig.JitUseScalableVectorT != 0)
+                if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
                 {
                     var value = mskCon.SimdScalableMaskVal;
                     jitprintf($"{value.BaseType.Name,-6} <0x{value.Index:x}, 0x{value.Index:x}, 0x{value.Index:x}...>");
                     break;
                 }
-#endif
                 jitprintf($"<0x{mskCon.SimdMaskVal.u32[0]:x8}, 0x{mskCon.SimdMaskVal.u32[1]:x8}>");
                 break;
             }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
             default:
             {
@@ -9210,23 +9200,26 @@ public partial class Compiler
         return gtNewIndir(TYP_I_IMPL, obj, GTF_IND_INVARIANT | GTF_IND_NONNULL);
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public GenTreeMskCon gtNewMskConNode(simdmask_t simdMaskVal)
     {
         return new GenTreeMskCon(simdMaskVal);
     }
-#if TARGET_ARM64
+
     public GenTreeMskCon gtNewMskConNode(var_types type, var_types baseType, bool index)
     {
         assert(varTypeIsMask(type));
+
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Scalable mask constants are only supported on ARM64.");
+        }
+
         var mask = gtNewMskConNode(default);
         mask.SimdScalableMaskVal.BaseType = baseType;
         mask.SimdScalableMaskVal.Index = index ? (byte)1 : (byte)0;
 
         return mask;
     }
-#endif
-#endif
 
     /// <summary> create a throw node (calling into JIT helper) that must be thrown.</summary>
     /// <param name="helper">JIT helper ID</param>
@@ -14014,8 +14007,8 @@ public partial class Compiler
         }
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
-        if (varTypeIsMask(type))
+#if FEATURE_SIMD
+        if (type is TYP_MASK)
         {
             return gtNewMskConNode(default);
         }

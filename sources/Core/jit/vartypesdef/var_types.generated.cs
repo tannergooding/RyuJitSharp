@@ -34,9 +34,7 @@ public enum var_types : byte
 #elif TARGET_ARM64
     TYP_SIMD,
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
     TYP_MASK,
-#endif
 #endif
     TYP_UNKNOWN,
     TYP_COUNT,

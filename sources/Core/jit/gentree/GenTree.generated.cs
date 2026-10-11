@@ -88,14 +88,12 @@ public partial class GenTree
         return Unsafe.As<GenTreeVecCon>(this);
     }
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
     public GenTreeMskCon AsMskCon()
     {
         assert(_oper is GT_CNS_MSK);
         assert(this is GenTreeMskCon);
         return Unsafe.As<GenTreeMskCon>(this);
     }
-#endif
     public GenTreeLclVarCommon AsLclVarCommon()
     {
         assert(_oper is GT_LCL_VAR or GT_LCL_FLD or GT_PHI_ARG or GT_STORE_LCL_VAR or GT_STORE_LCL_FLD or GT_LCL_ADDR);

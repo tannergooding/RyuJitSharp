@@ -142,11 +142,7 @@ public static partial class genTreeOpsExtensions
 
         public bool IsCnsIntOrI => oper is GT_CNS_INT;
 
-#if FEATURE_MASKED_HW_INTRINSICS
-        public bool IsCnsMsk => oper is GT_CNS_MSK;
-#else
-        public bool IsCnsMsk => false;
-#endif
+        public bool IsCnsMsk => Configuration.FEATURE_MASKED_HW_INTRINSICS && (oper is GT_CNS_MSK);
 
 #if FEATURE_SIMD
         public bool IsCnsVec => oper is GT_CNS_VEC;
@@ -193,14 +189,16 @@ public static partial class genTreeOpsExtensions
         {
             get
             {
-#if FEATURE_MASKED_HW_INTRINSICS
+#if FEATURE_SIMD
                 assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC, GT_CNS_MSK));
-                return oper is >= GT_CNS_INT and <= GT_CNS_MSK;
-#elif FEATURE_SIMD
-                assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
+                if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                {
+                    return oper is >= GT_CNS_INT and <= GT_CNS_MSK;
+                }
+
                 return oper is >= GT_CNS_INT and <= GT_CNS_VEC;
 #else
-                assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
+                assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_MSK));
                 return oper is >= GT_CNS_INT and <= GT_CNS_STR;
 #endif
             }

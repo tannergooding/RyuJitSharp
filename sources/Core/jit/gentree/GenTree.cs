@@ -657,15 +657,9 @@ public partial class GenTree
     public bool IsLirOp => (_oper.DebugKind & DBK_NOTLIR) == 0;
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public bool IsMaskAllBitsSet => _oper.IsCnsMsk && AsMskCon().IsAllBitsSet;
 
     public bool IsMaskZero => _oper.IsCnsMsk && AsMskCon().IsZero;
-#else
-    public bool IsMaskAllBitsSet => false;
-
-    public bool IsMaskZero => false;
-#endif
 
     /// <summary>Indicates whether it is a memory op.</summary>
     /// <remarks>Right now it includes Indir and LclField ops.</remarks>
@@ -861,12 +855,10 @@ public partial class GenTree
                     result = true;
                 }
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
                 else if (_oper.IsCnsMsk)
                 {
                     result = true;
                 }
-#endif
             }
 
             if (!result)
@@ -1321,9 +1313,7 @@ public partial class GenTree
 #if FEATURE_SIMD
                 GT_CNS_VEC => GenTreeVecCon.Equals(op1.AsVecCon(), op2.AsVecCon()),
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
                 GT_CNS_MSK => GenTreeMskCon.Equals(op1.AsMskCon(), op2.AsMskCon()),
-#endif
                 _ => false,
             };
         }
@@ -2631,11 +2621,7 @@ public partial class GenTree
         return result;
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public bool IsTrueMask(var_types simdBaseType) => _oper.IsCnsMsk && AsMskCon().IsTrue(simdBaseType);
-#else
-    public bool IsTrueMask(var_types simdBaseType) => false;
-#endif
 
 #if FEATURE_SIMD
     public bool IsVectorBroadcast(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsBroadcast(simdBaseType);

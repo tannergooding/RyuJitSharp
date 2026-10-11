@@ -68,9 +68,7 @@ DEF_TP(SIMD64   ,"simd64" , TYP_SIMD64,  64,64, 64,  16,16, VTR_FLOAT, available
 #elif defined(TARGET_ARM64)
 DEF_TP(SIMD     ,"simd" ,   TYP_SIMD,   SZU,EAU,EAU,  0,16, VTR_FLOAT, availableDoubleRegs, RBM_FLT_CALLEE_SAVED,    RBM_FLT_CALLEE_TRASH,    VTF_S|VTF_VEC)
 #endif // TARGET_XARCH
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
 DEF_TP(MASK     ,"mask"   , TYP_MASK,     8, 8,  8,   2, 8, VTR_MASK,  availableMaskRegs,   RBM_MSK_CALLEE_SAVED,    RBM_MSK_CALLEE_TRASH,    VTF_S)
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 DEF_TP(UNKNOWN ,"unknown" ,TYP_UNKNOWN,  0,  0,  0,   0, 0, VTR_INT,   availableIntRegs,    RBM_INT_CALLEE_SAVED,    RBM_INT_CALLEE_TRASH,    VTF_ANY)

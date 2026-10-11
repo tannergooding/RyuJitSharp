@@ -34,9 +34,7 @@ public enum genTreeOps : byte
 #if FEATURE_SIMD
     GT_CNS_VEC,
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
     GT_CNS_MSK,
-#endif
     GT_NOT,
     GT_NOP,
     GT_NEG,

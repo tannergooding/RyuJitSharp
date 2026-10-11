@@ -54,8 +54,8 @@ public partial class Globals
 
     public static bool varTypeIsMask(var_types v)
     {
-#if FEATURE_MASKED_HW_INTRINSICS
-        return v == TYP_MASK;
+#if FEATURE_SIMD
+        return Configuration.FEATURE_MASKED_HW_INTRINSICS && (v == TYP_MASK);
 #else
         return false;
 #endif
