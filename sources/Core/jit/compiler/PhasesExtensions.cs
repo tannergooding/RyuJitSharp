@@ -14,8 +14,8 @@ public static partial class PhasesExtensions
         {
             get
             {
-                assert(s_names.Length == (int)(PHASE_NUMBER_OF));
-                return s_names[(int)(phase)];
+                assert((uint)phase < (uint)PHASE_NUMBER_OF);
+                return GetName(phase);
             }
         }
 #else

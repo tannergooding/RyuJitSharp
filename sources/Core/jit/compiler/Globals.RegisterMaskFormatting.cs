@@ -22,7 +22,7 @@ public static partial class Globals
     // Managed strings replace the native arena-owned diagnostic buffers.
     public static string regMaskToString(regMaskTP mask, Compiler context)
     {
-        return string.Format(CultureInfo.InvariantCulture, s_regMaskAllFormat,
+        return string.Format(CultureInfo.InvariantCulture, RegisterDiagnosticFormats.All,
             unchecked((MaskFormattingBits)mask.Lower));
     }
 
@@ -33,7 +33,7 @@ public static partial class Globals
 #else
         var registers = mask.Lower & SRBM_ALLINT;
 #endif
-        return string.Format(CultureInfo.InvariantCulture, s_regMaskIntFormat,
+        return string.Format(CultureInfo.InvariantCulture, RegisterDiagnosticFormats.Int,
             unchecked((MaskFormattingBits)registers));
     }
 }

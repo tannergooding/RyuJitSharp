@@ -32,6 +32,20 @@ public partial class Globals
         }
     }
 
+    public static void jitprintf(ReadOnlySpan<char> message)
+    {
+        var jitstdout = Globals.jitstdout();
+
+        if (message.IsEmpty)
+        {
+            jitstdout.Flush();
+        }
+        else
+        {
+            jitstdout.Write(message);
+        }
+    }
+
 #if DEBUG
     public static bool vlogf(int level, string message)
     {

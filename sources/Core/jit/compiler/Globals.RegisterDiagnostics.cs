@@ -10,11 +10,14 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    private static readonly CompositeFormat s_regMaskAllFormat = CompositeFormat.Parse(REG_MASK_ALL_FMT);
-    private static readonly CompositeFormat s_regMaskIntFormat = CompositeFormat.Parse(REG_MASK_INT_FMT);
+    private static class RegisterDiagnosticFormats
+    {
+        internal static readonly CompositeFormat All = CompositeFormat.Parse(REG_MASK_ALL_FMT);
+        internal static readonly CompositeFormat Int = CompositeFormat.Parse(REG_MASK_INT_FMT);
+    }
 
     public static void printRegMask(regMaskTP mask) =>
-        jitprintf(string.Format(CultureInfo.InvariantCulture, s_regMaskAllFormat, unchecked((ulong)mask.Lower)));
+        jitprintf(string.Format(CultureInfo.InvariantCulture, RegisterDiagnosticFormats.All, unchecked((ulong)mask.Lower)));
 
     public static void printRegMaskInt(regMaskTP mask)
     {
@@ -23,6 +26,6 @@ public static partial class Globals
 #else
         var registers = mask.Lower & SRBM_ALLINT;
 #endif
-        jitprintf(string.Format(CultureInfo.InvariantCulture, s_regMaskIntFormat, (ulong)registers));
+        jitprintf(string.Format(CultureInfo.InvariantCulture, RegisterDiagnosticFormats.Int, (ulong)registers));
     }
 }

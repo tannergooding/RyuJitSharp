@@ -4,11 +4,13 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_XARCH
+using System;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private string emitDisplayName(instrDesc id) => codeGen.genInsDisplayName(id);
+    private ReadOnlySpan<char> emitDisplayName(instrDesc id) => codeGen.genInsDisplayName(id);
 
     private static string emitSizeString(emitAttr attr) => attr switch
     {

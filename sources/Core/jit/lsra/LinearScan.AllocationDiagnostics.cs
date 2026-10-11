@@ -3,10 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
-using System;
-#endif
 #if DEBUG || TRACK_LSRA_STATS
+using System;
 using System.Globalization;
 #endif
 #if TRACK_LSRA_STATS
@@ -762,37 +760,36 @@ public sealed partial class LinearScan
 #endif
 
 #if TRACK_LSRA_STATS
-    private static readonly string[] s_lsraStatNames =
-    [
-        "SpillCount",
-        "CopyReg",
-        "ResolutionMovs",
-        "SplitEdges",
-        "FREE",
-        "CONST_AVAILABLE",
-        "THIS_ASSIGNED",
-        "COVERS",
-        "OWN_PREFERENCE",
-        "COVERS_RELATED",
-        "RELATED_PREFERENCE",
-        "CALLER_CALLEE",
-        "UNASSIGNED",
-        "COVERS_FULL",
-        "BEST_FIT",
-        "IS_PREV_REG",
-        "REG_ORDER",
-        "SPILL_COST",
-        "FAR_NEXT_REF",
-        "PREV_REG_OPT",
-        "REG_NUM",
-    ];
-
     private static string getStatName(uint stat)
     {
         assert(stat != (uint)LsraStat.COUNT);
-        assert(stat < (uint)s_lsraStatNames.Length);
+        assert(stat < (uint)LsraStat.COUNT);
 
-        return s_lsraStatNames[(int)stat];
+        return ((LsraStat)stat) switch
+        {
+            LsraStat.STAT_SPILL => "SpillCount",
+            LsraStat.STAT_COPY_REG => "CopyReg",
+            LsraStat.STAT_RESOLUTION_MOV => "ResolutionMovs",
+            LsraStat.STAT_SPLIT_EDGE => "SplitEdges",
+            LsraStat.STAT_FREE => "FREE",
+            LsraStat.STAT_CONST_AVAILABLE => "CONST_AVAILABLE",
+            LsraStat.STAT_THIS_ASSIGNED => "THIS_ASSIGNED",
+            LsraStat.STAT_COVERS => "COVERS",
+            LsraStat.STAT_OWN_PREFERENCE => "OWN_PREFERENCE",
+            LsraStat.STAT_COVERS_RELATED => "COVERS_RELATED",
+            LsraStat.STAT_RELATED_PREFERENCE => "RELATED_PREFERENCE",
+            LsraStat.STAT_CALLER_CALLEE => "CALLER_CALLEE",
+            LsraStat.STAT_UNASSIGNED => "UNASSIGNED",
+            LsraStat.STAT_COVERS_FULL => "COVERS_FULL",
+            LsraStat.STAT_BEST_FIT => "BEST_FIT",
+            LsraStat.STAT_IS_PREV_REG => "IS_PREV_REG",
+            LsraStat.STAT_REG_ORDER => "REG_ORDER",
+            LsraStat.STAT_SPILL_COST => "SPILL_COST",
+            LsraStat.STAT_FAR_NEXT_REF => "FAR_NEXT_REF",
+            LsraStat.STAT_PREV_REG_OPT => "PREV_REG_OPT",
+            LsraStat.STAT_REG_NUM => "REG_NUM",
+            _ => throw new FatalJitException("Invalid LSRA statistic."),
+        };
     }
 
     private void updateLsraStat(LsraStat stat, uint blockNumber)

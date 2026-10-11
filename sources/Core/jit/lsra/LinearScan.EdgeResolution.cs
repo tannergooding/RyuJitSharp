@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public sealed partial class LinearScan
@@ -15,7 +17,14 @@ public sealed partial class LinearScan
         ResolveSharedCritical,
     }
 
-    private static readonly string[] s_resolveTypeName = ["Split", "Join", "Critical", "SharedCritical"];
+    private static string GetResolveTypeName(ResolveType resolveType) => resolveType switch
+    {
+        ResolveType.ResolveSplit => "Split",
+        ResolveType.ResolveJoin => "Join",
+        ResolveType.ResolveCritical => "Critical",
+        ResolveType.ResolveSharedCritical => "SharedCritical",
+        _ => throw new FatalJitException("Invalid LSRA edge resolution type."),
+    };
 
     private void requireLocalEdgeResolution()
     {

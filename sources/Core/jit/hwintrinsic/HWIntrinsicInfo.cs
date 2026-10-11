@@ -4,59 +4,23 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
-#if FEATURE_HW_INTRINSICS
-    private static readonly int[] s_isaRangeBounds = CreateIsaRangeBounds();
-
-    private static int[] CreateIsaRangeBounds()
+    private static ReadOnlySpan<char> GetName(int tableIndex)
     {
-        var instructionSets = s_instructionSets;
-        var isaRangeBounds = new int[((int)InstructionSet_NONE + 1) * 2];
-        Array.Fill(isaRangeBounds, -1);
-
-        for (var index = 0; index < instructionSets.Length; index++)
-        {
-            var boundsIndex = (int)instructionSets[index] * 2;
-
-            if (isaRangeBounds[boundsIndex] is -1)
-            {
-                isaRangeBounds[boundsIndex] = index;
-            }
-            else if (isaRangeBounds[boundsIndex + 1] != index - 1)
-            {
-                // Internal codegen-only intrinsics appear after their ISA's sorted lookup range.
-                continue;
-            }
-
-            isaRangeBounds[boundsIndex + 1] = index;
-        }
-
-        // All portable vector widths use the same intrinsic IDs and names.
-        var vectorRange = (int)InstructionSet_Vector * 2;
-        var vector128Range = (int)InstructionSet_Vector128 * 2;
-        isaRangeBounds[vector128Range] = isaRangeBounds[vectorRange];
-        isaRangeBounds[vector128Range + 1] = isaRangeBounds[vectorRange + 1];
-
-#if TARGET_XARCH
-        var vector256Range = (int)InstructionSet_Vector256 * 2;
-        var vector512Range = (int)InstructionSet_Vector512 * 2;
-        isaRangeBounds[vector256Range] = isaRangeBounds[vectorRange];
-        isaRangeBounds[vector256Range + 1] = isaRangeBounds[vectorRange + 1];
-        isaRangeBounds[vector512Range] = isaRangeBounds[vectorRange];
-        isaRangeBounds[vector512Range + 1] = isaRangeBounds[vectorRange + 1];
-#elif TARGET_ARM64
-        var vector64Range = (int)InstructionSet_Vector64 * 2;
-        isaRangeBounds[vector64Range] = isaRangeBounds[vectorRange];
-        isaRangeBounds[vector64Range + 1] = isaRangeBounds[vectorRange + 1];
-#endif
-
-        return isaRangeBounds;
+        var rangeIndex = tableIndex * 2;
+        var characterIndex = GetRvaSpanEntry(s_nameRanges, rangeIndex);
+        var nameLength = GetRvaSpanEntry(s_nameRanges, rangeIndex + 1);
+        var name = GetRvaSpanSlice(s_nameData, characterIndex, nameLength);
+        assert(GetRvaSpanEntry(s_nameData, characterIndex + nameLength) is '\0');
+        return name;
     }
 
+#if FEATURE_HW_INTRINSICS
     public static unsafe NamedIntrinsic LookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, ReadOnlySpan<byte> methodName)
     {
         if (sig->hasThis() || isa is InstructionSet_NONE)
@@ -100,10 +64,10 @@ public readonly partial struct HWIntrinsicInfo
             return NI_Illegal;
         }
 
-        var rangeLower = s_isaRangeBounds[boundsIndex];
-        var rangeUpper = s_isaRangeBounds[boundsIndex + 1];
+        var rangeLower = (int)GetRvaSpanEntry(s_isaRangeBounds, boundsIndex);
+        var rangeUpper = (int)GetRvaSpanEntry(s_isaRangeBounds, boundsIndex + 1);
 
-        if (rangeLower is -1)
+        if (rangeLower is ushort.MaxValue)
         {
             return NI_Illegal;
         }
@@ -111,7 +75,7 @@ public readonly partial struct HWIntrinsicInfo
         while (rangeLower <= rangeUpper)
         {
             var rangeIndex = (rangeUpper + rangeLower) / 2;
-            var sortOrder = CompareUtf8Name(methodName, s_names[rangeIndex]);
+            var sortOrder = CompareUtf8Name(methodName, GetName(rangeIndex));
 
             if (sortOrder < 0)
             {
@@ -123,7 +87,7 @@ public readonly partial struct HWIntrinsicInfo
             }
             else
             {
-                var expectedArgCount = s_numArgs[rangeIndex];
+                var expectedArgCount = GetRvaSpanEntry(s_numArgs, rangeIndex);
                 assert((expectedArgCount == byte.MaxValue) || (sig->numArgs == expectedArgCount));
                 return (NamedIntrinsic)((int)NI_HW_INTRINSIC_START + rangeIndex + 1);
             }
@@ -132,7 +96,7 @@ public readonly partial struct HWIntrinsicInfo
         return NI_Illegal;
     }
 
-    private static int CompareUtf8Name(ReadOnlySpan<byte> utf8Name, string intrinsicName)
+    private static int CompareUtf8Name(ReadOnlySpan<byte> utf8Name, ReadOnlySpan<char> intrinsicName)
     {
         var compareLength = int.Min(utf8Name.Length, intrinsicName.Length);
 
@@ -271,7 +235,7 @@ public readonly partial struct HWIntrinsicInfo
 
     public static int lookupNumArgs(NamedIntrinsic id)
     {
-        var count = s_numArgs[GetTableIndex(id)];
+        var count = GetRvaSpanEntry(s_numArgs, GetTableIndex(id));
         return count == byte.MaxValue ? -1 : count;
     }
 
@@ -279,22 +243,22 @@ public readonly partial struct HWIntrinsicInfo
 
     public static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
     {
-        return s_categories[GetTableIndex(id)];
+        return GetRvaSpanEntry(s_categories, GetTableIndex(id));
     }
 
     public static CORINFO_InstructionSet lookupIsa(NamedIntrinsic id)
     {
-        return s_instructionSets[GetTableIndex(id)];
+        return GetRvaSpanEntry(s_instructionSets, GetTableIndex(id));
     }
 
     public static HWIntrinsicFlag lookupFlags(NamedIntrinsic id)
     {
-        return s_flags[GetTableIndex(id)];
+        return GetRvaSpanEntry(s_flags, GetTableIndex(id));
     }
 
     private static bool tryLookupSimdSize(NamedIntrinsic id, out uint simdSize)
     {
-        var size = s_simdSizes[GetTableIndex(id)];
+        var size = GetRvaSpanEntry(s_simdSizes, GetTableIndex(id));
 
         if (size != byte.MaxValue)
         {
@@ -375,19 +339,19 @@ public readonly partial struct HWIntrinsicInfo
 #if TARGET_XARCH
     public static byte lookupFltCost(NamedIntrinsic id)
     {
-        return s_fltCosts[GetTableIndex(id)];
+        return GetRvaSpanEntry(s_fltCosts, GetTableIndex(id));
     }
 
     public static byte lookupIntCost(NamedIntrinsic id)
     {
-        return s_intCosts[GetTableIndex(id)];
+        return GetRvaSpanEntry(s_intCosts, GetTableIndex(id));
     }
 #endif
 
 #if DEBUG
     public static string lookupName(NamedIntrinsic id)
     {
-        return s_names[GetTableIndex(id)];
+        return GetName(GetTableIndex(id)).ToString();
     }
 #endif
 

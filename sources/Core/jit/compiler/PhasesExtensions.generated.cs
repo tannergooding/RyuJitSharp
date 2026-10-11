@@ -10,138 +10,140 @@ namespace RyuJitSharp;
 public static partial class PhasesExtensions
 {
 #if FEATURE_JIT_METHOD_PERF || DUMP_FLOWGRAPHS
-    private static readonly string[] s_names = [
-        "Pre-import", // PHASE_PRE_IMPORT
-        "Importation", // PHASE_IMPORTATION
-        "Indirect call transform", // PHASE_INDXCALL
-        "Expand patchpoints", // PHASE_PATCHPOINTS
-        "Post-import", // PHASE_POST_IMPORT
-        "Save contexts around async calls", // PHASE_ASYNC_SAVE_CONTEXTS
-        "Profile instrumentation prep", // PHASE_IBCPREP
-        "Profile instrumentation", // PHASE_IBCINSTR
-        "Profile incorporation", // PHASE_INCPROFILE
-        "Post-inline no-return cleanup", // PHASE_POST_INLINE_NORETURN
-        "Resolve GDV Checks", // PHASE_RESOLVE_GDVS
-        "Morph - Init", // PHASE_MORPH_INIT
-        "Morph - Inlining", // PHASE_MORPH_INLINE
-        "Morph - Add internal blocks", // PHASE_MORPH_ADD_INTERNAL
-        "Add Swift error returns", // PHASE_SWIFT_ERROR_RET
-        "Allocate Objects", // PHASE_ALLOCATE_OBJECTS
-        "Remove empty try", // PHASE_EMPTY_TRY
-        "Remove empty try/catch/fault", // PHASE_EMPTY_TRY_CATCH_FAULT
-        "Remove empty finally", // PHASE_EMPTY_FINALLY
-        "Merge callfinally chains", // PHASE_MERGE_FINALLY_CHAINS
-        "Clone finally", // PHASE_CLONE_FINALLY
-        "Update finally target flags", // PHASE_UPDATE_FINALLY_FLAGS
-        "Update flow graph early pass", // PHASE_EARLY_UPDATE_FLOW_GRAPH
-        "DFS blocks and remove dead code 1", // PHASE_DFS_BLOCKS1
-        "DFS blocks and remove dead code 2", // PHASE_DFS_BLOCKS2
-        "DFS blocks and remove dead code 3", // PHASE_DFS_BLOCKS3
-        "Local morph", // PHASE_LOCAL_MORPH
-        "Optimize mask conversions", // PHASE_OPTIMIZE_MASK_CONVERSIONS
-        "Early liveness", // PHASE_EARLY_LIVENESS
-        "Physical promotion", // PHASE_PHYSICAL_PROMOTION
-        "Unpin non-movable locals", // PHASE_UNPIN_LOCALS
-        "Forward Substitution", // PHASE_FWD_SUB
-        "Identify candidates for implicit byref copy omission", // PHASE_IMPBYREF_COPY_OMISSION
-        "Morph - ByRefs", // PHASE_MORPH_IMPBYREF
-        "Morph - Promote Structs", // PHASE_PROMOTE_STRUCTS
-        "Morph - Global", // PHASE_MORPH_GLOBAL
-        "Post-Morph", // PHASE_POST_MORPH
-        "Morph - Finish", // PHASE_MORPH_END
-        "GS Cookie", // PHASE_GS_COOKIE
-        "Compute block weights", // PHASE_COMPUTE_BLOCK_WEIGHTS
-        "Create EH funclets", // PHASE_CREATE_FUNCLETS
-        "Head and tail merge", // PHASE_HEAD_TAIL_MERGE
-        "Early QMARK expansion", // PHASE_EARLY_QMARK_EXPANSION
-        "Invert loops", // PHASE_INVERT_LOOPS
-        "Post-morph head and tail merge", // PHASE_HEAD_TAIL_MERGE2
-        "Optimize control flow", // PHASE_OPTIMIZE_FLOW
-        "Optimize pre-layout", // PHASE_OPTIMIZE_PRE_LAYOUT
-        "Optimize layout", // PHASE_OPTIMIZE_LAYOUT
-        "Optimize post-layout", // PHASE_OPTIMIZE_POST_LAYOUT
-        "Compute dominators", // PHASE_COMPUTE_DOMINATORS
-        "Canonicalize entry", // PHASE_CANONICALIZE_ENTRY
-        "Set block weights", // PHASE_SET_BLOCK_WEIGHTS
-        "Redundant zero Inits", // PHASE_ZERO_INITS
-        "Adjust throw edge likelihoods", // PHASE_ADJUST_THROW_LIKELIHOODS
-        "Find loops", // PHASE_FIND_LOOPS
-        "Clone loops", // PHASE_CLONE_LOOPS
-        "Unroll loops", // PHASE_UNROLL_LOOPS
-        "Morph array ops", // PHASE_MORPH_MDARR
-        "Remove empty finally 2", // PHASE_EMPTY_FINALLY_2
-        "Remove empty try 2", // PHASE_EMPTY_TRY_2
-        "Remove empty try-catch-fault 2", // PHASE_EMPTY_TRY_CATCH_FAULT_2
-        "Hoist loop code", // PHASE_HOIST_LOOP_CODE
-        "Mark local vars", // PHASE_MARK_LOCAL_VARS
-        "Optimize bools", // PHASE_OPTIMIZE_BOOLS
-        "Recognize Switch", // PHASE_SWITCH_RECOGNITION
-        "Find oper order", // PHASE_FIND_OPER_ORDER
-        "Set block order", // PHASE_SET_BLOCK_ORDER
-        "Build SSA representation", // PHASE_BUILD_SSA
-        "SSA: liveness", // PHASE_BUILD_SSA_LIVENESS
-        "SSA: DF", // PHASE_BUILD_SSA_DF
-        "SSA: insert phis", // PHASE_BUILD_SSA_INSERT_PHIS
-        "SSA: rename", // PHASE_BUILD_SSA_RENAME
-        "Early Value Propagation", // PHASE_EARLY_PROP
-        "Optimize Induction Variables", // PHASE_OPTIMIZE_INDUCTION_VARIABLES
-        "Do value numbering", // PHASE_VALUE_NUMBER
-        "Optimize index checks", // PHASE_OPTIMIZE_INDEX_CHECKS
-        "Optimize Valnum CSEs", // PHASE_OPTIMIZE_VALNUM_CSES
-        "VN based copy prop", // PHASE_VN_COPY_PROP
-        "VN based intrinsic expansion", // PHASE_VN_BASED_INTRINSIC_EXPAND
-        "Redundant branch opts", // PHASE_OPTIMIZE_BRANCHES
-        "Coalesce bounds checks", // PHASE_BOUNDS_CHECK_COALESCE
-        "Assertion prop", // PHASE_ASSERTION_PROP_MAIN
-        "Clone blocks with range checks", // PHASE_RANGE_CHECK_CLONING
-        "If conversion", // PHASE_IF_CONVERSION
-        "VN-based dead store removal", // PHASE_VN_BASED_DEAD_STORE_REMOVAL
-        "Remove empty finally 3", // PHASE_EMPTY_FINALLY_3
-        "Remove empty try 3", // PHASE_EMPTY_TRY_3
-        "Remove empty try-catch-fault 3", // PHASE_EMPTY_TRY_CATCH_FAULT_3
-        "Remove unreachable try", // PHASE_REMOVE_UNREACHABLE_TRY
-        "Update flow graph opt pass", // PHASE_OPT_UPDATE_FLOW_GRAPH
-        "Remove unreachable blocks", // PHASE_OPT_DFS_BLOCKS
-        "Stress gtSplitTree", // PHASE_STRESS_SPLIT_TREE
-        "Expand runtime lookups", // PHASE_EXPAND_RTLOOKUPS
-        "Expand static init", // PHASE_EXPAND_STATIC_INIT
-        "Expand casts", // PHASE_EXPAND_CASTS
-        "Expand TLS access", // PHASE_EXPAND_TLS
-        "Expand stack array allocation", // PHASE_EXPAND_STACK_ARR
-        "Insert GC Polls", // PHASE_INSERT_GC_POLLS
-        "Create throw helper blocks", // PHASE_CREATE_THROW_HELPERS
-        "Determine first cold block", // PHASE_DETERMINE_FIRST_COLD_BLOCK
-        "Rationalize IR", // PHASE_RATIONALIZE
-        "Repair profile post-morph", // PHASE_REPAIR_PROFILE_POST_MORPH
-        "Repair profile pre-layout", // PHASE_REPAIR_PROFILE_PRE_LAYOUT
-        "Wasm remove unreachable blocks", // PHASE_DFS_BLOCKS_WASM
-        "Wasm eh control flow", // PHASE_WASM_EH_FLOW
-        "Wasm repair try entries", // PHASE_WASM_REPAIR_TRY_ENTRIES
-        "Wasm transform sccs", // PHASE_WASM_TRANSFORM_SCCS
-        "Wasm control flow", // PHASE_WASM_CONTROL_FLOW
-        "Wasm spill refs", // PHASE_WASM_SPILL_REFS
-        "Wasm virtual IP", // PHASE_WASM_VIRTUAL_IP
-        "Transform async", // PHASE_ASYNC
-        "Local var liveness", // PHASE_LCLVARLIVENESS
-        "Local var liveness init", // PHASE_LCLVARLIVENESS_INIT
-        "Per block local var liveness", // PHASE_LCLVARLIVENESS_PERBLOCK
-        "Global local var liveness", // PHASE_LCLVARLIVENESS_INTERBLOCK
-        "Lowering decomposition", // PHASE_LOWERING_DECOMP
-        "Lowering nodeinfo", // PHASE_LOWERING
-        "Calculate stack level slots", // PHASE_STACK_LEVEL_SETTER
-        "Linear scan register alloc", // PHASE_LINEAR_SCAN
-        "LSRA build intervals", // PHASE_LINEAR_SCAN_BUILD
-        "LSRA allocate", // PHASE_LINEAR_SCAN_ALLOC
-        "LSRA resolve", // PHASE_LINEAR_SCAN_RESOLVE
-        "Place 'align' instructions", // PHASE_ALIGN_LOOPS
-        "Generate code", // PHASE_GENERATE_CODE
-        "Emit code", // PHASE_EMIT_CODE
-        "Emit GC+EH tables", // PHASE_EMIT_GCEH
-        "Post-Emit", // PHASE_POST_EMIT
+    private static string GetName(Phases phase) => phase switch
+    {
+        Phases.PHASE_PRE_IMPORT => "Pre-import",
+        Phases.PHASE_IMPORTATION => "Importation",
+        Phases.PHASE_INDXCALL => "Indirect call transform",
+        Phases.PHASE_PATCHPOINTS => "Expand patchpoints",
+        Phases.PHASE_POST_IMPORT => "Post-import",
+        Phases.PHASE_ASYNC_SAVE_CONTEXTS => "Save contexts around async calls",
+        Phases.PHASE_IBCPREP => "Profile instrumentation prep",
+        Phases.PHASE_IBCINSTR => "Profile instrumentation",
+        Phases.PHASE_INCPROFILE => "Profile incorporation",
+        Phases.PHASE_POST_INLINE_NORETURN => "Post-inline no-return cleanup",
+        Phases.PHASE_RESOLVE_GDVS => "Resolve GDV Checks",
+        Phases.PHASE_MORPH_INIT => "Morph - Init",
+        Phases.PHASE_MORPH_INLINE => "Morph - Inlining",
+        Phases.PHASE_MORPH_ADD_INTERNAL => "Morph - Add internal blocks",
+        Phases.PHASE_SWIFT_ERROR_RET => "Add Swift error returns",
+        Phases.PHASE_ALLOCATE_OBJECTS => "Allocate Objects",
+        Phases.PHASE_EMPTY_TRY => "Remove empty try",
+        Phases.PHASE_EMPTY_TRY_CATCH_FAULT => "Remove empty try/catch/fault",
+        Phases.PHASE_EMPTY_FINALLY => "Remove empty finally",
+        Phases.PHASE_MERGE_FINALLY_CHAINS => "Merge callfinally chains",
+        Phases.PHASE_CLONE_FINALLY => "Clone finally",
+        Phases.PHASE_UPDATE_FINALLY_FLAGS => "Update finally target flags",
+        Phases.PHASE_EARLY_UPDATE_FLOW_GRAPH => "Update flow graph early pass",
+        Phases.PHASE_DFS_BLOCKS1 => "DFS blocks and remove dead code 1",
+        Phases.PHASE_DFS_BLOCKS2 => "DFS blocks and remove dead code 2",
+        Phases.PHASE_DFS_BLOCKS3 => "DFS blocks and remove dead code 3",
+        Phases.PHASE_LOCAL_MORPH => "Local morph",
+        Phases.PHASE_OPTIMIZE_MASK_CONVERSIONS => "Optimize mask conversions",
+        Phases.PHASE_EARLY_LIVENESS => "Early liveness",
+        Phases.PHASE_PHYSICAL_PROMOTION => "Physical promotion",
+        Phases.PHASE_UNPIN_LOCALS => "Unpin non-movable locals",
+        Phases.PHASE_FWD_SUB => "Forward Substitution",
+        Phases.PHASE_IMPBYREF_COPY_OMISSION => "Identify candidates for implicit byref copy omission",
+        Phases.PHASE_MORPH_IMPBYREF => "Morph - ByRefs",
+        Phases.PHASE_PROMOTE_STRUCTS => "Morph - Promote Structs",
+        Phases.PHASE_MORPH_GLOBAL => "Morph - Global",
+        Phases.PHASE_POST_MORPH => "Post-Morph",
+        Phases.PHASE_MORPH_END => "Morph - Finish",
+        Phases.PHASE_GS_COOKIE => "GS Cookie",
+        Phases.PHASE_COMPUTE_BLOCK_WEIGHTS => "Compute block weights",
+        Phases.PHASE_CREATE_FUNCLETS => "Create EH funclets",
+        Phases.PHASE_HEAD_TAIL_MERGE => "Head and tail merge",
+        Phases.PHASE_EARLY_QMARK_EXPANSION => "Early QMARK expansion",
+        Phases.PHASE_INVERT_LOOPS => "Invert loops",
+        Phases.PHASE_HEAD_TAIL_MERGE2 => "Post-morph head and tail merge",
+        Phases.PHASE_OPTIMIZE_FLOW => "Optimize control flow",
+        Phases.PHASE_OPTIMIZE_PRE_LAYOUT => "Optimize pre-layout",
+        Phases.PHASE_OPTIMIZE_LAYOUT => "Optimize layout",
+        Phases.PHASE_OPTIMIZE_POST_LAYOUT => "Optimize post-layout",
+        Phases.PHASE_COMPUTE_DOMINATORS => "Compute dominators",
+        Phases.PHASE_CANONICALIZE_ENTRY => "Canonicalize entry",
+        Phases.PHASE_SET_BLOCK_WEIGHTS => "Set block weights",
+        Phases.PHASE_ZERO_INITS => "Redundant zero Inits",
+        Phases.PHASE_ADJUST_THROW_LIKELIHOODS => "Adjust throw edge likelihoods",
+        Phases.PHASE_FIND_LOOPS => "Find loops",
+        Phases.PHASE_CLONE_LOOPS => "Clone loops",
+        Phases.PHASE_UNROLL_LOOPS => "Unroll loops",
+        Phases.PHASE_MORPH_MDARR => "Morph array ops",
+        Phases.PHASE_EMPTY_FINALLY_2 => "Remove empty finally 2",
+        Phases.PHASE_EMPTY_TRY_2 => "Remove empty try 2",
+        Phases.PHASE_EMPTY_TRY_CATCH_FAULT_2 => "Remove empty try-catch-fault 2",
+        Phases.PHASE_HOIST_LOOP_CODE => "Hoist loop code",
+        Phases.PHASE_MARK_LOCAL_VARS => "Mark local vars",
+        Phases.PHASE_OPTIMIZE_BOOLS => "Optimize bools",
+        Phases.PHASE_SWITCH_RECOGNITION => "Recognize Switch",
+        Phases.PHASE_FIND_OPER_ORDER => "Find oper order",
+        Phases.PHASE_SET_BLOCK_ORDER => "Set block order",
+        Phases.PHASE_BUILD_SSA => "Build SSA representation",
+        Phases.PHASE_BUILD_SSA_LIVENESS => "SSA: liveness",
+        Phases.PHASE_BUILD_SSA_DF => "SSA: DF",
+        Phases.PHASE_BUILD_SSA_INSERT_PHIS => "SSA: insert phis",
+        Phases.PHASE_BUILD_SSA_RENAME => "SSA: rename",
+        Phases.PHASE_EARLY_PROP => "Early Value Propagation",
+        Phases.PHASE_OPTIMIZE_INDUCTION_VARIABLES => "Optimize Induction Variables",
+        Phases.PHASE_VALUE_NUMBER => "Do value numbering",
+        Phases.PHASE_OPTIMIZE_INDEX_CHECKS => "Optimize index checks",
+        Phases.PHASE_OPTIMIZE_VALNUM_CSES => "Optimize Valnum CSEs",
+        Phases.PHASE_VN_COPY_PROP => "VN based copy prop",
+        Phases.PHASE_VN_BASED_INTRINSIC_EXPAND => "VN based intrinsic expansion",
+        Phases.PHASE_OPTIMIZE_BRANCHES => "Redundant branch opts",
+        Phases.PHASE_BOUNDS_CHECK_COALESCE => "Coalesce bounds checks",
+        Phases.PHASE_ASSERTION_PROP_MAIN => "Assertion prop",
+        Phases.PHASE_RANGE_CHECK_CLONING => "Clone blocks with range checks",
+        Phases.PHASE_IF_CONVERSION => "If conversion",
+        Phases.PHASE_VN_BASED_DEAD_STORE_REMOVAL => "VN-based dead store removal",
+        Phases.PHASE_EMPTY_FINALLY_3 => "Remove empty finally 3",
+        Phases.PHASE_EMPTY_TRY_3 => "Remove empty try 3",
+        Phases.PHASE_EMPTY_TRY_CATCH_FAULT_3 => "Remove empty try-catch-fault 3",
+        Phases.PHASE_REMOVE_UNREACHABLE_TRY => "Remove unreachable try",
+        Phases.PHASE_OPT_UPDATE_FLOW_GRAPH => "Update flow graph opt pass",
+        Phases.PHASE_OPT_DFS_BLOCKS => "Remove unreachable blocks",
+        Phases.PHASE_STRESS_SPLIT_TREE => "Stress gtSplitTree",
+        Phases.PHASE_EXPAND_RTLOOKUPS => "Expand runtime lookups",
+        Phases.PHASE_EXPAND_STATIC_INIT => "Expand static init",
+        Phases.PHASE_EXPAND_CASTS => "Expand casts",
+        Phases.PHASE_EXPAND_TLS => "Expand TLS access",
+        Phases.PHASE_EXPAND_STACK_ARR => "Expand stack array allocation",
+        Phases.PHASE_INSERT_GC_POLLS => "Insert GC Polls",
+        Phases.PHASE_CREATE_THROW_HELPERS => "Create throw helper blocks",
+        Phases.PHASE_DETERMINE_FIRST_COLD_BLOCK => "Determine first cold block",
+        Phases.PHASE_RATIONALIZE => "Rationalize IR",
+        Phases.PHASE_REPAIR_PROFILE_POST_MORPH => "Repair profile post-morph",
+        Phases.PHASE_REPAIR_PROFILE_PRE_LAYOUT => "Repair profile pre-layout",
+        Phases.PHASE_DFS_BLOCKS_WASM => "Wasm remove unreachable blocks",
+        Phases.PHASE_WASM_EH_FLOW => "Wasm eh control flow",
+        Phases.PHASE_WASM_REPAIR_TRY_ENTRIES => "Wasm repair try entries",
+        Phases.PHASE_WASM_TRANSFORM_SCCS => "Wasm transform sccs",
+        Phases.PHASE_WASM_CONTROL_FLOW => "Wasm control flow",
+        Phases.PHASE_WASM_SPILL_REFS => "Wasm spill refs",
+        Phases.PHASE_WASM_VIRTUAL_IP => "Wasm virtual IP",
+        Phases.PHASE_ASYNC => "Transform async",
+        Phases.PHASE_LCLVARLIVENESS => "Local var liveness",
+        Phases.PHASE_LCLVARLIVENESS_INIT => "Local var liveness init",
+        Phases.PHASE_LCLVARLIVENESS_PERBLOCK => "Per block local var liveness",
+        Phases.PHASE_LCLVARLIVENESS_INTERBLOCK => "Global local var liveness",
+        Phases.PHASE_LOWERING_DECOMP => "Lowering decomposition",
+        Phases.PHASE_LOWERING => "Lowering nodeinfo",
+        Phases.PHASE_STACK_LEVEL_SETTER => "Calculate stack level slots",
+        Phases.PHASE_LINEAR_SCAN => "Linear scan register alloc",
+        Phases.PHASE_LINEAR_SCAN_BUILD => "LSRA build intervals",
+        Phases.PHASE_LINEAR_SCAN_ALLOC => "LSRA allocate",
+        Phases.PHASE_LINEAR_SCAN_RESOLVE => "LSRA resolve",
+        Phases.PHASE_ALIGN_LOOPS => "Place 'align' instructions",
+        Phases.PHASE_GENERATE_CODE => "Generate code",
+        Phases.PHASE_EMIT_CODE => "Emit code",
+        Phases.PHASE_EMIT_GCEH => "Emit GC+EH tables",
+        Phases.PHASE_POST_EMIT => "Post-Emit",
 #if MEASURE_CLRAPI_CALLS
-        "CLR API calls", // PHASE_CLR_API
+        Phases.PHASE_CLR_API => "CLR API calls",
 #endif
-    ];
+        _ => throw new FatalJitException("Invalid compiler phase."),
+    };
 #endif
 
 #if FEATURE_JIT_METHOD_PERF

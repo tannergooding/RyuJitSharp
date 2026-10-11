@@ -170,7 +170,7 @@ public sealed partial class LinearScan
                 assert(genIsValidFloatReg(toReg));
             }
             addResolution(block, insertionPoint, lowerInterval, toReg, fromReg,
-                fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                fromBlock, toBlock, GetResolveTypeName(resolveType));
             location[(int)fromReg] = toReg;
         }
 
@@ -179,7 +179,7 @@ public sealed partial class LinearScan
             assert(upperInterval.registerType is TYP_FLOAT);
             var upperTo = toReg + 1;
             addResolution(block, insertionPoint, upperInterval, upperTo, upperFrom,
-                fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                fromBlock, toBlock, GetResolveTypeName(resolveType));
             location[(int)upperFrom] = upperTo;
         }
     }

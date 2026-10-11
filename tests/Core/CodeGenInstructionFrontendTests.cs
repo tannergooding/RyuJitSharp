@@ -89,7 +89,7 @@ internal static class CodeGenInstructionFrontendTests
     public static void Arm64SveInstructionNameKeepsTheNativeMnemonic()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        Assert.That(new CodeGen(compiler).genInsName(INS_sve_mov), Is.EqualTo("mov"));
+        Assert.That(new CodeGen(compiler).genInsName(INS_sve_mov).ToString(), Is.EqualTo("mov"));
     }
 #endif
 

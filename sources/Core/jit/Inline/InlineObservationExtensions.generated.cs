@@ -9,168 +9,170 @@ namespace RyuJitSharp;
 
 public static partial class InlineObservationExtensions
 {
-    private static readonly string[] s_descriptions = [
-        "unused initial observation", // CALLEE_UNUSED_INITIAL
-        "invalid argument number", // CALLEE_BAD_ARGUMENT_NUMBER
-        "invalid local number", // CALLEE_BAD_LOCAL_NUMBER
-        "compilation error", // CALLEE_COMPILATION_ERROR
-        "explicit tail prefix in callee", // CALLEE_EXPLICIT_TAIL_PREFIX
-        "has exception handling", // CALLEE_HAS_EH
-        "has endfilter", // CALLEE_HAS_ENDFILTER
-        "has endfinally", // CALLEE_HAS_ENDFINALLY
-        "has leave", // CALLEE_HAS_LEAVE
-        "managed varargs", // CALLEE_HAS_MANAGED_VARARGS
-        "native varargs", // CALLEE_HAS_NATIVE_VARARGS
-        "has no body", // CALLEE_HAS_NO_BODY
-        "has null pointer for ldelem", // CALLEE_HAS_NULL_FOR_LDELEM
-        "has unmanaged calling convention", // CALLEE_HAS_UNMANAGED_CALLCONV
-        "is array method", // CALLEE_IS_ARRAY_METHOD
-        "noinline per JitNoinline", // CALLEE_IS_JIT_NOINLINE
-        "noinline per IL/cached result", // CALLEE_IS_NOINLINE
-        "is synchronized", // CALLEE_IS_SYNCHRONIZED
-        "noinline per VM", // CALLEE_IS_VM_NOINLINE
-        "no return expression", // CALLSITE_LACKS_RETURN
-        "ldfld needs helper", // CALLEE_LDFLD_NEEDS_HELPER
-        "localloc size too large", // CALLEE_LOCALLOC_TOO_LARGE
-        "rejected by log replay", // CALLEE_LOG_REPLAY_REJECT
-        "skipped by complus request", // CALLEE_MARKED_AS_SKIPPED
-        "maxstack too big", // CALLEE_MAXSTACK_TOO_BIG
-        "cannot get method info", // CALLEE_NO_METHOD_INFO
-        "unprofitable inline", // CALLEE_NOT_PROFITABLE_INLINE
-        "random reject", // CALLEE_RANDOM_REJECT
-        "uses stack crawl mark", // CALLEE_STACK_CRAWL_MARK
-        "stfld needs helper", // CALLEE_STFLD_NEEDS_HELPER
-        "too many arguments", // CALLEE_TOO_MANY_ARGUMENTS
-        "too many locals", // CALLEE_TOO_MANY_LOCALS
-        "has await", // CALLEE_AWAIT
-        "has await inside try region", // CALLEE_AWAIT_IN_TRY
-        "has async suspend", // CALLEE_ASYNC_SUSPEND
-        "ldsfld of value class", // CALLEE_LDFLD_STATIC_VALUECLASS
-        "too many basic blocks", // CALLEE_TOO_MANY_BASIC_BLOCKS
-        "too many il bytes", // CALLEE_TOO_MUCH_IL
-        "argument feeds constant test", // CALLEE_ARG_FEEDS_CONSTANT_TEST
-        "argument feeds test", // CALLEE_ARG_FEEDS_TEST
-        "argument feeds castclass or isinst", // CALLEE_ARG_FEEDS_CAST
-        "argument feeds range check", // CALLEE_ARG_FEEDS_RANGE_CHECK
-        "argument feeds IsKnownConstant", // CALLEE_ARG_FEEDS_ISCONST
-        "const argument feeds IsKnownConstant", // CALLEE_CONST_ARG_FEEDS_ISCONST
-        "arg is a struct passed by value", // CALLEE_ARG_STRUCT
-        "returns a struct by value", // CALLEE_RETURNS_STRUCT
-        "ldfld/stfld over arg (struct)", // CALLEE_ARG_STRUCT_FIELD_ACCESS
-        "'X op CNS' pattern", // CALLEE_BINARY_EXRP_WITH_CNS
-        "prepare to look at opcodes", // CALLEE_BEGIN_OPCODE_SCAN
-        "below ALWAYS_INLINE size", // CALLEE_BELOW_ALWAYS_INLINE_SIZE
-        "promotable value class", // CALLEE_CLASS_PROMOTABLE
-        "value class", // CALLEE_CLASS_VALUETYPE
-        "foldable box/unbox operation", // CALLEE_FOLDABLE_BOX
-        "call marked as intrinsic", // CALLEE_INTRINSIC
-        "backward jump", // CALLEE_BACKWARD_JUMP
-        "throw block", // CALLEE_THROW_BLOCK
-        "does not return", // CALLEE_DOES_NOT_RETURN
-        "done looking at opcodes", // CALLEE_END_OPCODE_SCAN
-        "has gc field in struct local", // CALLEE_HAS_GC_STRUCT
-        "has localloc", // CALLEE_HAS_LOCALLOC
-        "has pinned locals", // CALLEE_HAS_PINNED_LOCALS
-        "has SIMD arg, local, or ret", // CALLEE_HAS_SIMD
-        "has switch", // CALLEE_HAS_SWITCH
-        "number of bytes of IL", // CALLEE_IL_CODE_SIZE
-        "class constructor", // CALLEE_IS_CLASS_CTOR
-        "can inline, check heuristics", // CALLEE_IS_DISCRETIONARY_INLINE
-        "aggressive inline attribute", // CALLEE_IS_FORCE_INLINE
-        "instance constructor", // CALLEE_IS_INSTANCE_CTOR
-        "profitable inline", // CALLEE_IS_PROFITABLE_INLINE
-        "size decreasing inline", // CALLEE_IS_SIZE_DECREASING_INLINE
-        "callee class marked as Intrinsic", // CALLEE_IS_INTRINSIC_TYPE
-        "is an async call", // CALLEE_IS_ASYNC
-        "accepted by log replay", // CALLEE_LOG_REPLAY_ACCEPT
-        "thin wrapper around a call", // CALLEE_LOOKS_LIKE_WRAPPER
-        "maxstack", // CALLEE_MAXSTACK
-        "may return a small new array", // CALLEE_MAY_RETURN_SMALL_ARRAY
-        "next opcode in IL stream", // CALLEE_OPCODE
-        "next opcode in IL stream", // CALLEE_OPCODE_NORMED
-        "number of arguments", // CALLEE_NUMBER_OF_ARGUMENTS
-        "number of basic blocks", // CALLEE_NUMBER_OF_BASIC_BLOCKS
-        "number of locals", // CALLEE_NUMBER_OF_LOCALS
-        "random accept", // CALLEE_RANDOM_ACCEPT
-        "callee unboxes arg", // CALLEE_UNBOX_ARG
-        "unsupported opcode", // CALLEE_UNSUPPORTED_OPCODE
-        "debug codegen", // CALLER_DEBUG_CODEGEN
-        "noinline per JitNoInlineRange", // CALLER_IS_JIT_NOINLINE
-        "uses NextCallReturnAddress intrinsic", // CALLER_USES_NEXT_CALL_RET_ADDR
-        "uses AsyncCallContinuation intrinsic", // CALLER_ASYNC_USED_CONTINUATION
-        "has newarray", // CALLER_HAS_NEWARRAY
-        "has newobj", // CALLER_HAS_NEWOBJ
-        "this pointer argument is null", // CALLSITE_ARG_HAS_NULL_THIS
-        "argument can't bash to int", // CALLSITE_ARG_NO_BASH_TO_INT
-        "argument can't bash to ref", // CALLSITE_ARG_NO_BASH_TO_REF
-        "argument types incompatible", // CALLSITE_ARG_TYPES_INCOMPATIBLE
-        "has await, root method is not async", // CALLSITE_AWAIT_IN_NON_ASYNC_ROOT
-        "within try region, has await", // CALLSITE_AWAIT_IN_TRY_REGION
-        "can't class init", // CALLSITE_CANT_CLASS_INIT
-        "compilation error", // CALLSITE_COMPILATION_ERROR
-        "failed to compile", // CALLSITE_COMPILATION_FAILURE
-        "explicit tail prefix", // CALLSITE_EXPLICIT_TAIL_PREFIX
-        "callee has eh, eh table is full", // CALLSITE_EH_TABLE_FULL
-        "runtime dictionary lookup", // CALLSITE_GENERIC_DICTIONARY_LOOKUP
-        "complex handle access", // CALLSITE_HAS_COMPLEX_HANDLE
-        "implicit recursive tail call", // CALLSITE_IMPLICIT_REC_TAIL_CALL
-        "target is helper", // CALLSITE_IS_CALL_TO_HELPER
-        "target not direct", // CALLSITE_IS_NOT_DIRECT
-        "target not direct managed", // CALLSITE_IS_NOT_DIRECT_MANAGED
-        "recursive", // CALLSITE_IS_RECURSIVE
-        "too deep", // CALLSITE_IS_TOO_DEEP
-        "virtual", // CALLSITE_IS_VIRTUAL
-        "noinline per VM", // CALLSITE_IS_VM_NOINLINE
-        "within catch region", // CALLSITE_IS_WITHIN_CATCH
-        "within filter region", // CALLSITE_IS_WITHIN_FILTER
-        "ldarga not on local var", // CALLSITE_LDARGA_NOT_LOCAL_VAR
-        "ldfld needs helper", // CALLSITE_LDFLD_NEEDS_HELPER
-        "ldvirtfn on non-virtual", // CALLSITE_LDVIRTFN_ON_NON_VIRTUAL
-        "within loop, has localloc", // CALLSITE_LOCALLOC_IN_LOOP
-        "localloc size unknown", // CALLSITE_LOCALLOC_SIZE_UNKNOWN
-        "rejected by log replay", // CALLSITE_LOG_REPLAY_REJECT
-        "not inline candidate", // CALLSITE_NOT_CANDIDATE
-        "unprofitable inline", // CALLSITE_NOT_PROFITABLE_INLINE
-        "inline exceeds budget", // CALLSITE_OVER_BUDGET
-        "limited by JitInlineLimit", // CALLSITE_OVER_INLINE_LIMIT
-        "within try region, pinned", // CALLSITE_PIN_IN_TRY_REGION
-        "random reject", // CALLSITE_RANDOM_REJECT
-        "return type mismatch", // CALLSITE_RETURN_TYPE_MISMATCH
-        "stfld needs helper", // CALLSITE_STFLD_NEEDS_HELPER
-        "too many locals", // CALLSITE_TOO_MANY_LOCALS
-        "PInvoke call site with EH", // CALLSITE_PINVOKE_EH
-        "rarely called, has gc struct", // CALLSITE_RARE_GC_STRUCT
-        "callee is generic and caller is not", // CALLSITE_NONGENERIC_CALLS_GENERIC
-        "arg is of an exact class", // CALLSITE_ARG_EXACT_CLS
-        "arg is more concrete than in sig.", // CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT
-        "arg is a constant", // CALLSITE_ARG_CONST
-        "arg is boxed at call site", // CALLSITE_ARG_BOXED
-        "async inlining stress index", // CALLSITE_ASYNC_STRESS_INDEX
-        "foldable intrinsic", // CALLSITE_FOLDABLE_INTRINSIC
-        "foldable binary expression", // CALLSITE_FOLDABLE_EXPR
-        "foldable unary expression", // CALLSITE_FOLDABLE_EXPR_UN
-        "foldable branch", // CALLSITE_FOLDABLE_BRANCH
-        "foldable switch", // CALLSITE_FOLDABLE_SWITCH
-        "unrollable memmove/memcmp", // CALLSITE_UNROLLABLE_MEMOP
-        "dividy by const", // CALLSITE_DIV_BY_CNS
-        "constant argument feeds test", // CALLSITE_CONSTANT_ARG_FEEDS_TEST
-        "depth", // CALLSITE_DEPTH
-        "rough call site frequency", // CALLSITE_FREQUENCY
-        "profile weights are available", // CALLSITE_HAS_PROFILE_WEIGHTS
-        "inside throw block", // CALLSITE_INSIDE_THROW_BLOCK
-        "call site is in a loop", // CALLSITE_IN_LOOP
-        "call site is in a try region", // CALLSITE_IN_TRY_REGION
-        "call site is in a no-return region", // CALLSITE_IN_NORETURN_REGION
-        "profitable inline", // CALLSITE_IS_PROFITABLE_INLINE
-        "same this as root caller", // CALLSITE_IS_SAME_THIS
-        "size decreasing inline", // CALLSITE_IS_SIZE_DECREASING_INLINE
-        "accepted by log replay", // CALLSITE_LOG_REPLAY_ACCEPT
-        "frequency from profile data", // CALLSITE_PROFILE_FREQUENCY
-        "random accept", // CALLSITE_RANDOM_ACCEPT
-        "frequency from block weight", // CALLSITE_WEIGHT
-        "unbox of arg with exact class", // CALLSITE_UNBOX_EXACT_ARG
-        "unused final observation", // CALLEE_UNUSED_FINAL
-    ];
+    private static string GetDescription(InlineObservation observation) => observation switch
+    {
+        InlineObservation.CALLEE_UNUSED_INITIAL => "unused initial observation",
+        InlineObservation.CALLEE_BAD_ARGUMENT_NUMBER => "invalid argument number",
+        InlineObservation.CALLEE_BAD_LOCAL_NUMBER => "invalid local number",
+        InlineObservation.CALLEE_COMPILATION_ERROR => "compilation error",
+        InlineObservation.CALLEE_EXPLICIT_TAIL_PREFIX => "explicit tail prefix in callee",
+        InlineObservation.CALLEE_HAS_EH => "has exception handling",
+        InlineObservation.CALLEE_HAS_ENDFILTER => "has endfilter",
+        InlineObservation.CALLEE_HAS_ENDFINALLY => "has endfinally",
+        InlineObservation.CALLEE_HAS_LEAVE => "has leave",
+        InlineObservation.CALLEE_HAS_MANAGED_VARARGS => "managed varargs",
+        InlineObservation.CALLEE_HAS_NATIVE_VARARGS => "native varargs",
+        InlineObservation.CALLEE_HAS_NO_BODY => "has no body",
+        InlineObservation.CALLEE_HAS_NULL_FOR_LDELEM => "has null pointer for ldelem",
+        InlineObservation.CALLEE_HAS_UNMANAGED_CALLCONV => "has unmanaged calling convention",
+        InlineObservation.CALLEE_IS_ARRAY_METHOD => "is array method",
+        InlineObservation.CALLEE_IS_JIT_NOINLINE => "noinline per JitNoinline",
+        InlineObservation.CALLEE_IS_NOINLINE => "noinline per IL/cached result",
+        InlineObservation.CALLEE_IS_SYNCHRONIZED => "is synchronized",
+        InlineObservation.CALLEE_IS_VM_NOINLINE => "noinline per VM",
+        InlineObservation.CALLSITE_LACKS_RETURN => "no return expression",
+        InlineObservation.CALLEE_LDFLD_NEEDS_HELPER => "ldfld needs helper",
+        InlineObservation.CALLEE_LOCALLOC_TOO_LARGE => "localloc size too large",
+        InlineObservation.CALLEE_LOG_REPLAY_REJECT => "rejected by log replay",
+        InlineObservation.CALLEE_MARKED_AS_SKIPPED => "skipped by complus request",
+        InlineObservation.CALLEE_MAXSTACK_TOO_BIG => "maxstack too big",
+        InlineObservation.CALLEE_NO_METHOD_INFO => "cannot get method info",
+        InlineObservation.CALLEE_NOT_PROFITABLE_INLINE => "unprofitable inline",
+        InlineObservation.CALLEE_RANDOM_REJECT => "random reject",
+        InlineObservation.CALLEE_STACK_CRAWL_MARK => "uses stack crawl mark",
+        InlineObservation.CALLEE_STFLD_NEEDS_HELPER => "stfld needs helper",
+        InlineObservation.CALLEE_TOO_MANY_ARGUMENTS => "too many arguments",
+        InlineObservation.CALLEE_TOO_MANY_LOCALS => "too many locals",
+        InlineObservation.CALLEE_AWAIT => "has await",
+        InlineObservation.CALLEE_AWAIT_IN_TRY => "has await inside try region",
+        InlineObservation.CALLEE_ASYNC_SUSPEND => "has async suspend",
+        InlineObservation.CALLEE_LDFLD_STATIC_VALUECLASS => "ldsfld of value class",
+        InlineObservation.CALLEE_TOO_MANY_BASIC_BLOCKS => "too many basic blocks",
+        InlineObservation.CALLEE_TOO_MUCH_IL => "too many il bytes",
+        InlineObservation.CALLEE_ARG_FEEDS_CONSTANT_TEST => "argument feeds constant test",
+        InlineObservation.CALLEE_ARG_FEEDS_TEST => "argument feeds test",
+        InlineObservation.CALLEE_ARG_FEEDS_CAST => "argument feeds castclass or isinst",
+        InlineObservation.CALLEE_ARG_FEEDS_RANGE_CHECK => "argument feeds range check",
+        InlineObservation.CALLEE_ARG_FEEDS_ISCONST => "argument feeds IsKnownConstant",
+        InlineObservation.CALLEE_CONST_ARG_FEEDS_ISCONST => "const argument feeds IsKnownConstant",
+        InlineObservation.CALLEE_ARG_STRUCT => "arg is a struct passed by value",
+        InlineObservation.CALLEE_RETURNS_STRUCT => "returns a struct by value",
+        InlineObservation.CALLEE_ARG_STRUCT_FIELD_ACCESS => "ldfld/stfld over arg (struct)",
+        InlineObservation.CALLEE_BINARY_EXRP_WITH_CNS => "'X op CNS' pattern",
+        InlineObservation.CALLEE_BEGIN_OPCODE_SCAN => "prepare to look at opcodes",
+        InlineObservation.CALLEE_BELOW_ALWAYS_INLINE_SIZE => "below ALWAYS_INLINE size",
+        InlineObservation.CALLEE_CLASS_PROMOTABLE => "promotable value class",
+        InlineObservation.CALLEE_CLASS_VALUETYPE => "value class",
+        InlineObservation.CALLEE_FOLDABLE_BOX => "foldable box/unbox operation",
+        InlineObservation.CALLEE_INTRINSIC => "call marked as intrinsic",
+        InlineObservation.CALLEE_BACKWARD_JUMP => "backward jump",
+        InlineObservation.CALLEE_THROW_BLOCK => "throw block",
+        InlineObservation.CALLEE_DOES_NOT_RETURN => "does not return",
+        InlineObservation.CALLEE_END_OPCODE_SCAN => "done looking at opcodes",
+        InlineObservation.CALLEE_HAS_GC_STRUCT => "has gc field in struct local",
+        InlineObservation.CALLEE_HAS_LOCALLOC => "has localloc",
+        InlineObservation.CALLEE_HAS_PINNED_LOCALS => "has pinned locals",
+        InlineObservation.CALLEE_HAS_SIMD => "has SIMD arg, local, or ret",
+        InlineObservation.CALLEE_HAS_SWITCH => "has switch",
+        InlineObservation.CALLEE_IL_CODE_SIZE => "number of bytes of IL",
+        InlineObservation.CALLEE_IS_CLASS_CTOR => "class constructor",
+        InlineObservation.CALLEE_IS_DISCRETIONARY_INLINE => "can inline, check heuristics",
+        InlineObservation.CALLEE_IS_FORCE_INLINE => "aggressive inline attribute",
+        InlineObservation.CALLEE_IS_INSTANCE_CTOR => "instance constructor",
+        InlineObservation.CALLEE_IS_PROFITABLE_INLINE => "profitable inline",
+        InlineObservation.CALLEE_IS_SIZE_DECREASING_INLINE => "size decreasing inline",
+        InlineObservation.CALLEE_IS_INTRINSIC_TYPE => "callee class marked as Intrinsic",
+        InlineObservation.CALLEE_IS_ASYNC => "is an async call",
+        InlineObservation.CALLEE_LOG_REPLAY_ACCEPT => "accepted by log replay",
+        InlineObservation.CALLEE_LOOKS_LIKE_WRAPPER => "thin wrapper around a call",
+        InlineObservation.CALLEE_MAXSTACK => "maxstack",
+        InlineObservation.CALLEE_MAY_RETURN_SMALL_ARRAY => "may return a small new array",
+        InlineObservation.CALLEE_OPCODE => "next opcode in IL stream",
+        InlineObservation.CALLEE_OPCODE_NORMED => "next opcode in IL stream",
+        InlineObservation.CALLEE_NUMBER_OF_ARGUMENTS => "number of arguments",
+        InlineObservation.CALLEE_NUMBER_OF_BASIC_BLOCKS => "number of basic blocks",
+        InlineObservation.CALLEE_NUMBER_OF_LOCALS => "number of locals",
+        InlineObservation.CALLEE_RANDOM_ACCEPT => "random accept",
+        InlineObservation.CALLEE_UNBOX_ARG => "callee unboxes arg",
+        InlineObservation.CALLEE_UNSUPPORTED_OPCODE => "unsupported opcode",
+        InlineObservation.CALLER_DEBUG_CODEGEN => "debug codegen",
+        InlineObservation.CALLER_IS_JIT_NOINLINE => "noinline per JitNoInlineRange",
+        InlineObservation.CALLER_USES_NEXT_CALL_RET_ADDR => "uses NextCallReturnAddress intrinsic",
+        InlineObservation.CALLER_ASYNC_USED_CONTINUATION => "uses AsyncCallContinuation intrinsic",
+        InlineObservation.CALLER_HAS_NEWARRAY => "has newarray",
+        InlineObservation.CALLER_HAS_NEWOBJ => "has newobj",
+        InlineObservation.CALLSITE_ARG_HAS_NULL_THIS => "this pointer argument is null",
+        InlineObservation.CALLSITE_ARG_NO_BASH_TO_INT => "argument can't bash to int",
+        InlineObservation.CALLSITE_ARG_NO_BASH_TO_REF => "argument can't bash to ref",
+        InlineObservation.CALLSITE_ARG_TYPES_INCOMPATIBLE => "argument types incompatible",
+        InlineObservation.CALLSITE_AWAIT_IN_NON_ASYNC_ROOT => "has await, root method is not async",
+        InlineObservation.CALLSITE_AWAIT_IN_TRY_REGION => "within try region, has await",
+        InlineObservation.CALLSITE_CANT_CLASS_INIT => "can't class init",
+        InlineObservation.CALLSITE_COMPILATION_ERROR => "compilation error",
+        InlineObservation.CALLSITE_COMPILATION_FAILURE => "failed to compile",
+        InlineObservation.CALLSITE_EXPLICIT_TAIL_PREFIX => "explicit tail prefix",
+        InlineObservation.CALLSITE_EH_TABLE_FULL => "callee has eh, eh table is full",
+        InlineObservation.CALLSITE_GENERIC_DICTIONARY_LOOKUP => "runtime dictionary lookup",
+        InlineObservation.CALLSITE_HAS_COMPLEX_HANDLE => "complex handle access",
+        InlineObservation.CALLSITE_IMPLICIT_REC_TAIL_CALL => "implicit recursive tail call",
+        InlineObservation.CALLSITE_IS_CALL_TO_HELPER => "target is helper",
+        InlineObservation.CALLSITE_IS_NOT_DIRECT => "target not direct",
+        InlineObservation.CALLSITE_IS_NOT_DIRECT_MANAGED => "target not direct managed",
+        InlineObservation.CALLSITE_IS_RECURSIVE => "recursive",
+        InlineObservation.CALLSITE_IS_TOO_DEEP => "too deep",
+        InlineObservation.CALLSITE_IS_VIRTUAL => "virtual",
+        InlineObservation.CALLSITE_IS_VM_NOINLINE => "noinline per VM",
+        InlineObservation.CALLSITE_IS_WITHIN_CATCH => "within catch region",
+        InlineObservation.CALLSITE_IS_WITHIN_FILTER => "within filter region",
+        InlineObservation.CALLSITE_LDARGA_NOT_LOCAL_VAR => "ldarga not on local var",
+        InlineObservation.CALLSITE_LDFLD_NEEDS_HELPER => "ldfld needs helper",
+        InlineObservation.CALLSITE_LDVIRTFN_ON_NON_VIRTUAL => "ldvirtfn on non-virtual",
+        InlineObservation.CALLSITE_LOCALLOC_IN_LOOP => "within loop, has localloc",
+        InlineObservation.CALLSITE_LOCALLOC_SIZE_UNKNOWN => "localloc size unknown",
+        InlineObservation.CALLSITE_LOG_REPLAY_REJECT => "rejected by log replay",
+        InlineObservation.CALLSITE_NOT_CANDIDATE => "not inline candidate",
+        InlineObservation.CALLSITE_NOT_PROFITABLE_INLINE => "unprofitable inline",
+        InlineObservation.CALLSITE_OVER_BUDGET => "inline exceeds budget",
+        InlineObservation.CALLSITE_OVER_INLINE_LIMIT => "limited by JitInlineLimit",
+        InlineObservation.CALLSITE_PIN_IN_TRY_REGION => "within try region, pinned",
+        InlineObservation.CALLSITE_RANDOM_REJECT => "random reject",
+        InlineObservation.CALLSITE_RETURN_TYPE_MISMATCH => "return type mismatch",
+        InlineObservation.CALLSITE_STFLD_NEEDS_HELPER => "stfld needs helper",
+        InlineObservation.CALLSITE_TOO_MANY_LOCALS => "too many locals",
+        InlineObservation.CALLSITE_PINVOKE_EH => "PInvoke call site with EH",
+        InlineObservation.CALLSITE_RARE_GC_STRUCT => "rarely called, has gc struct",
+        InlineObservation.CALLSITE_NONGENERIC_CALLS_GENERIC => "callee is generic and caller is not",
+        InlineObservation.CALLSITE_ARG_EXACT_CLS => "arg is of an exact class",
+        InlineObservation.CALLSITE_ARG_EXACT_CLS_SIG_IS_NOT => "arg is more concrete than in sig.",
+        InlineObservation.CALLSITE_ARG_CONST => "arg is a constant",
+        InlineObservation.CALLSITE_ARG_BOXED => "arg is boxed at call site",
+        InlineObservation.CALLSITE_ASYNC_STRESS_INDEX => "async inlining stress index",
+        InlineObservation.CALLSITE_FOLDABLE_INTRINSIC => "foldable intrinsic",
+        InlineObservation.CALLSITE_FOLDABLE_EXPR => "foldable binary expression",
+        InlineObservation.CALLSITE_FOLDABLE_EXPR_UN => "foldable unary expression",
+        InlineObservation.CALLSITE_FOLDABLE_BRANCH => "foldable branch",
+        InlineObservation.CALLSITE_FOLDABLE_SWITCH => "foldable switch",
+        InlineObservation.CALLSITE_UNROLLABLE_MEMOP => "unrollable memmove/memcmp",
+        InlineObservation.CALLSITE_DIV_BY_CNS => "dividy by const",
+        InlineObservation.CALLSITE_CONSTANT_ARG_FEEDS_TEST => "constant argument feeds test",
+        InlineObservation.CALLSITE_DEPTH => "depth",
+        InlineObservation.CALLSITE_FREQUENCY => "rough call site frequency",
+        InlineObservation.CALLSITE_HAS_PROFILE_WEIGHTS => "profile weights are available",
+        InlineObservation.CALLSITE_INSIDE_THROW_BLOCK => "inside throw block",
+        InlineObservation.CALLSITE_IN_LOOP => "call site is in a loop",
+        InlineObservation.CALLSITE_IN_TRY_REGION => "call site is in a try region",
+        InlineObservation.CALLSITE_IN_NORETURN_REGION => "call site is in a no-return region",
+        InlineObservation.CALLSITE_IS_PROFITABLE_INLINE => "profitable inline",
+        InlineObservation.CALLSITE_IS_SAME_THIS => "same this as root caller",
+        InlineObservation.CALLSITE_IS_SIZE_DECREASING_INLINE => "size decreasing inline",
+        InlineObservation.CALLSITE_LOG_REPLAY_ACCEPT => "accepted by log replay",
+        InlineObservation.CALLSITE_PROFILE_FREQUENCY => "frequency from profile data",
+        InlineObservation.CALLSITE_RANDOM_ACCEPT => "random accept",
+        InlineObservation.CALLSITE_WEIGHT => "frequency from block weight",
+        InlineObservation.CALLSITE_UNBOX_EXACT_ARG => "unbox of arg with exact class",
+        InlineObservation.CALLEE_UNUSED_FINAL => "unused final observation",
+        _ => throw new FatalJitException("Invalid inline observation."),
+    };
 
     private static ReadOnlySpan<InlineImpact> s_impacts => [
         InlineImpact.FATAL, // CALLEE_UNUSED_INITIAL

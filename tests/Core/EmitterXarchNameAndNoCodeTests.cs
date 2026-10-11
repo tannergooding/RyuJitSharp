@@ -25,7 +25,7 @@ internal static class EmitterXarchNameAndNoCodeTests
         var id = DescriptorView.Basic(ins, 1);
         id.idOpSize(size);
 
-        Assert.That(codeGen.genInsDisplayName(id), Is.EqualTo(expected));
+        Assert.That(codeGen.genInsDisplayName(id).ToString(), Is.EqualTo(expected));
     }
 
     [Test]

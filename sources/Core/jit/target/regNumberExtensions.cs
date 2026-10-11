@@ -62,8 +62,8 @@ public static partial class regNumberExtensions
                     return "NA";
                 }
 
-                assert(s_names.Length == (int)(REG_COUNT));
-                return s_names[(int)(regNum)];
+                assert((uint)regNum < (uint)REG_COUNT);
+                return GetName(regNum);
             }
         }
 #endif

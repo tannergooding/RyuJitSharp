@@ -39,7 +39,7 @@ public static partial class InlineObservationExtensions
             get
             {
                 assert(observation.IsValid);
-                return s_descriptions[(int)(observation)];
+                return GetDescription(observation);
             }
         }
 

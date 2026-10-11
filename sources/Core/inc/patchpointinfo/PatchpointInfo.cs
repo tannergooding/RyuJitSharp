@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
@@ -37,7 +36,8 @@ public partial struct PatchpointInfo
     public static unsafe int ComputeSize(int localCount)
     {
         // The native flexible array has no element in sizeof(PatchpointInfo).
-        var baseSize = (int)Marshal.OffsetOf<PatchpointInfo>(nameof(_offsetAndExposureData));
+        PatchpointInfo value = default;
+        var baseSize = (int)((byte*)&value._offsetAndExposureData - (byte*)&value);
         var variableSize = localCount * sizeof(int);
         var totalSize = baseSize + variableSize;
         return totalSize;

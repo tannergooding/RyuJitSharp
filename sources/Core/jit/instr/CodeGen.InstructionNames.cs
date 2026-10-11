@@ -10,26 +10,38 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public string genInsName(instruction ins)
+    public ReadOnlySpan<char> genInsName(instruction ins)
     {
-        assert((uint)ins < (uint)s_insNames.Length);
-        assert(s_insNames[(int)ins] is not null);
-        return s_insNames[(int)ins];
+        return GetInstructionName(ins);
+    }
+
+    private static ReadOnlySpan<char> GetInstructionName(instruction ins)
+    {
+        var index = (int)ins;
+        assert((uint)index < (uint)(s_instructionNameRanges.Length / 2));
+
+        var rangeIndex = index * 2;
+        var characterIndex = GetRvaSpanEntry(s_instructionNameRanges, rangeIndex);
+        var nameLength = GetRvaSpanEntry(s_instructionNameRanges, rangeIndex + 1);
+
+        var name = GetRvaSpanSlice(s_instructionNameData, characterIndex, nameLength);
+        assert(GetRvaSpanEntry(s_instructionNameData, characterIndex + nameLength) is '\0');
+        return name;
     }
 
 #if TARGET_XARCH
-    public string genInsDisplayName(global::RyuJitSharp.Emitter.instrDesc id)
+    public ReadOnlySpan<char> genInsDisplayName(global::RyuJitSharp.Emitter.instrDesc id)
     {
         var ins = id.idIns();
         var insName = genInsName(ins);
         var emit = Emitter;
 
-        string RemoveVexPrefixIfNeeded(string name)
+        ReadOnlySpan<char> RemoveVexPrefixIfNeeded(ReadOnlySpan<char> name)
         {
-            return !emit.UseVexEncodings && name.StartsWith('v', StringComparison.Ordinal) ? name[1..] : name;
+            return !emit.UseVexEncodings && (name.Length > 0) && (name[0] is 'v') ? name[1..] : name;
         }
 
-        string GetFltCmpOpName(string suffix)
+        ReadOnlySpan<char> GetFltCmpOpName(string suffix)
         {
             ReadOnlySpan<string> names = [
                 "eq", "lt", "le", "unord", "neq", "nlt", "nle", "ord",
@@ -42,7 +54,7 @@ public sealed partial class CodeGen
             return RemoveVexPrefixIfNeeded($"vcmp{names[control]}{suffix}");
         }
 
-        string GetIntCmpOpName(string suffix)
+        ReadOnlySpan<char> GetIntCmpOpName(string suffix)
         {
             ReadOnlySpan<string> names = ["eq", "lt", "le", "false", "neq", "ge", "gt", "true"];
             var control = unchecked((byte)global::RyuJitSharp.Emitter.emitGetInsSC(id));
@@ -50,9 +62,9 @@ public sealed partial class CodeGen
             return RemoveVexPrefixIfNeeded($"vpcmp{names[control]}{suffix}");
         }
 
-        string GetEvexOnlyName(string pseudoName)
+        ReadOnlySpan<char> GetEvexOnlyName(ReadOnlySpan<char> name, string pseudoName)
         {
-            return emit.TakesEvexPrefix(id) ? pseudoName : RemoveVexPrefixIfNeeded(insName);
+            return emit.TakesEvexPrefix(id) ? pseudoName : RemoveVexPrefixIfNeeded(name);
         }
 
         if (instHasPseudoName(ins))
@@ -107,22 +119,22 @@ public sealed partial class CodeGen
 
                 case INS_movdqa32:
                 {
-                    return GetEvexOnlyName("vmovdqa32");
+                    return GetEvexOnlyName(insName, "vmovdqa32");
                 }
 
                 case INS_movdqu32:
                 {
-                    return GetEvexOnlyName("vmovdqu32");
+                    return GetEvexOnlyName(insName, "vmovdqu32");
                 }
 
                 case INS_pandd:
                 {
-                    return GetEvexOnlyName("vpandd");
+                    return GetEvexOnlyName(insName, "vpandd");
                 }
 
                 case INS_pandnd:
                 {
-                    return GetEvexOnlyName("vpandnd");
+                    return GetEvexOnlyName(insName, "vpandnd");
                 }
 
                 case INS_pclmulqdq:
@@ -138,62 +150,62 @@ public sealed partial class CodeGen
 
                 case INS_pord:
                 {
-                    return GetEvexOnlyName("vpord");
+                    return GetEvexOnlyName(insName, "vpord");
                 }
 
                 case INS_pxord:
                 {
-                    return GetEvexOnlyName("vpxord");
+                    return GetEvexOnlyName(insName, "vpxord");
                 }
 
                 case INS_roundpd:
                 {
-                    return GetEvexOnlyName("vrndscalepd");
+                    return GetEvexOnlyName(insName, "vrndscalepd");
                 }
 
                 case INS_roundps:
                 {
-                    return GetEvexOnlyName("vrndscaleps");
+                    return GetEvexOnlyName(insName, "vrndscaleps");
                 }
 
                 case INS_roundsd:
                 {
-                    return GetEvexOnlyName("vrndscalesd");
+                    return GetEvexOnlyName(insName, "vrndscalesd");
                 }
 
                 case INS_roundss:
                 {
-                    return GetEvexOnlyName("vrndscaless");
+                    return GetEvexOnlyName(insName, "vrndscaless");
                 }
 
                 case INS_vbroadcastf32x4:
                 {
-                    return GetEvexOnlyName("vbroadcastf32x4");
+                    return GetEvexOnlyName(insName, "vbroadcastf32x4");
                 }
 
                 case INS_vbroadcasti32x4:
                 {
-                    return GetEvexOnlyName("vbroadcasti32x4");
+                    return GetEvexOnlyName(insName, "vbroadcasti32x4");
                 }
 
                 case INS_vextractf32x4:
                 {
-                    return GetEvexOnlyName("vextractf32x4");
+                    return GetEvexOnlyName(insName, "vextractf32x4");
                 }
 
                 case INS_vextracti32x4:
                 {
-                    return GetEvexOnlyName("vextracti32x4");
+                    return GetEvexOnlyName(insName, "vextracti32x4");
                 }
 
                 case INS_vinsertf32x4:
                 {
-                    return GetEvexOnlyName("vinsertf32x4");
+                    return GetEvexOnlyName(insName, "vinsertf32x4");
                 }
 
                 case INS_vinserti32x4:
                 {
-                    return GetEvexOnlyName("vinserti32x4");
+                    return GetEvexOnlyName(insName, "vinserti32x4");
                 }
 
                 case INS_vpcmpb:
@@ -249,7 +261,7 @@ public sealed partial class CodeGen
         }
         if (id.idIsApxPpxContextSet())
         {
-            return insName + "p";
+            return insName.ToString() + "p";
         }
         return insName;
     }

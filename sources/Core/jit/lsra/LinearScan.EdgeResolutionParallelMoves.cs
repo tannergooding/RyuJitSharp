@@ -173,7 +173,7 @@ public sealed partial class LinearScan
             {
                 addResolution(block, insertionPoint, interval, REG_STK, from,
                     fromBlock, toBlock,
-                    interval.isWriteThru ? "EH DUMMY" : s_resolveTypeName[(int)resolveType]);
+                    interval.isWriteThru ? "EH DUMMY" : GetResolveTypeName(resolveType));
             }
             else
             {
@@ -244,7 +244,7 @@ public sealed partial class LinearScan
                 var interval = sourceIntervals[(int)original]
                     ?? throw new FatalJitException("Ready resolution target requires an interval.");
                 addResolution(block, insertionPoint, interval, target, from,
-                    fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                    fromBlock, toBlock, GetResolveTypeName(resolveType));
                 sourceIntervals[(int)original] = null;
                 location[(int)original] = REG_NA;
 
@@ -354,7 +354,7 @@ public sealed partial class LinearScan
                         ?? throw new FatalJitException("Cycle spill requires a displaced interval.");
                     setIntervalAsSpilled(displaced);
                     addResolution(block, insertionPoint, displaced, REG_STK, targetReg,
-                        fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                        fromBlock, toBlock, GetResolveTypeName(resolveType));
                     location[(int)source[(int)otherTargetReg]] = REG_STK;
                     targetsFromStack |= regMaskTP.CreateFromRegNum(otherTargetReg, genSingleTypeRegMask(otherTargetReg));
                     stackToRegIntervals[(int)otherTargetReg] = displaced;
@@ -363,7 +363,7 @@ public sealed partial class LinearScan
                     var moved = sourceIntervals[(int)sourceReg]
                         ?? throw new FatalJitException("Cycle resolution requires a source interval.");
                     addResolution(block, insertionPoint, moved, targetReg, fromReg,
-                        fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                        fromBlock, toBlock, GetResolveTypeName(resolveType));
                     location[(int)sourceReg] = REG_NA;
                     if (source[(int)fromReg] != REG_NA && fromReg != otherTargetReg)
                     {
@@ -415,7 +415,7 @@ public sealed partial class LinearScan
                     var displaced = sourceIntervals[(int)targetReg]
                         ?? throw new FatalJitException("Cycle scratch move requires a displaced interval.");
                     addResolution(block, insertionPoint, displaced, tempReg, targetReg,
-                        fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                        fromBlock, toBlock, GetResolveTypeName(resolveType));
                     location[(int)targetReg] = tempReg;
 #if TARGET_ARM
                     if (displaced.registerType is TYP_DOUBLE)
@@ -435,7 +435,7 @@ public sealed partial class LinearScan
             var interval = stackToRegIntervals[(int)target]
                 ?? throw new FatalJitException("Stack resolution requires a pending interval.");
             addResolution(block, insertionPoint, interval, target, REG_STK,
-                fromBlock, toBlock, s_resolveTypeName[(int)resolveType]);
+                fromBlock, toBlock, GetResolveTypeName(resolveType));
         }
     }
 }

@@ -128,8 +128,8 @@ public static partial class regNumberExtensions
 
             return regName;
 #elif TARGET_ARM64 || TARGET_LOONGARCH64
-            assert((uint)reg < (uint)s_names.Length, conditionExpression: "(unsigned)reg < ArrLen(regNamesFloat)");
-            return s_names[(int)reg];
+            assert((uint)reg < (uint)REG_COUNT, conditionExpression: "(unsigned)reg < ArrLen(regNamesFloat)");
+            return GetName(reg);
 #else
             assert((uint)reg < (uint)FloatRegisterNames.s_floatNames.Length,
                 conditionExpression: "(unsigned)reg < ArrLen(regNamesFloat)");
@@ -151,7 +151,7 @@ public static partial class regNumberExtensions
     }
 
 #if !TARGET_ARM && !TARGET_ARM64 && !TARGET_LOONGARCH64
-    // A separate holder lets s_names finish initialization regardless of partial-file ordering.
+    // Keep the Debug-only prefixed names lazy until floating-register diagnostics need them.
     private static class FloatRegisterNames
     {
         internal static readonly string[] s_floatNames = CreatePrefixedNames("x");
@@ -162,10 +162,10 @@ public static partial class regNumberExtensions
 
         private static string[] CreatePrefixedNames(string prefix)
         {
-            var names = new string[s_names.Length];
+            var names = new string[(int)REG_COUNT];
             for (var index = 0; index < names.Length; index++)
             {
-                names[index] = prefix + s_names[index];
+                names[index] = prefix + GetName((regNumber)index);
             }
 
             return names;

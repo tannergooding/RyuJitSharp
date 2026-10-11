@@ -47,7 +47,12 @@ public partial class Emitter
         }
 #endif
         var mnemonic = emitDisplayName(id);
-        jitprintf($" {mnemonic,-9}");
+        jitprintf(" ");
+        jitprintf(mnemonic);
+        if (mnemonic.Length < 9)
+        {
+            jitprintf("         ".AsSpan(0, 9 - mnemonic.Length));
+        }
 #if TARGET_AMD64
         if (IsCCMP(ins) || IsCTEST(ins))
         {

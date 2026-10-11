@@ -43,6 +43,7 @@ internal static class Program
         GenerateGenTreeOpsExtensions();
 
         GenerateHandleKindIndex();
+        ProcessInstructionSetDesc();
         GenerateHWIntrinsicInfo();
         GenerateTernaryLogicInfo();
 
@@ -82,8 +83,6 @@ internal static class Program
 
         GenerateVNFunc();
         GenerateVNFuncExtensions();
-
-        ProcessInstructionSetDesc();
     }
 
     private static void GenerateApiICorJitInfoNames()
@@ -892,8 +891,19 @@ public enum HandleKindIndex
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        InstructionSet_{isa}, // NI_{isa}_{name}");
         });
+        var isaRangeBoundsBuilder = GenerateIsaRangeBounds(isaBuilder.ToString());
 
-        var nameBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
+        var commonNameDataBuilder = new StringBuilder();
+        var xarchNameDataBuilder = new StringBuilder();
+        var otherNameDataBuilder = new StringBuilder();
+        var commonNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
+        var xarchNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
+        var otherNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
+        var commonNameDataLength = 0;
+        var xarchNameDataLength = 0;
+        var otherNameDataLength = 0;
+
+        var nameRangesBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
             if (parts.Length is not 16 and not 18)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -902,7 +912,52 @@ public enum HandleKindIndex
             var isa = parts[0].AsSpan().Trim();
             var name = parts[1].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        \"{name}\", // NI_{isa}_{name}");
+            var isCommon = inputFile.Equals(@"Inputs\hwintrinsiclist.h", StringComparison.Ordinal);
+            var isXarch = inputFile.Equals(@"Inputs\hwintrinsiclistxarch.h", StringComparison.Ordinal);
+            var nameValue = name.ToString();
+            var nameDataBuilder = isCommon ? commonNameDataBuilder : isXarch ? xarchNameDataBuilder : otherNameDataBuilder;
+            var nameOffsets = isCommon ? commonNameOffsets : isXarch ? xarchNameOffsets : otherNameOffsets;
+            var nameDataLength = isCommon ? commonNameDataLength : isXarch ? xarchNameDataLength : otherNameDataLength;
+
+            if (!nameOffsets.TryGetValue(nameValue, out var characterIndex))
+            {
+                characterIndex = nameDataLength;
+                nameOffsets.Add(nameValue, characterIndex);
+
+                if (isCommon)
+                {
+                    _ = xarchNameOffsets.TryAdd(nameValue, characterIndex);
+                    _ = otherNameOffsets.TryAdd(nameValue, characterIndex);
+                }
+
+                foreach (var character in name)
+                {
+                    AppendCharacterLiteral(nameDataBuilder, character);
+                    _ = nameDataBuilder.Append(", ");
+                }
+
+                _ = nameDataBuilder.Append("'\\0',");
+                _ = nameDataBuilder.AppendLine(CultureInfo.InvariantCulture, $" // NI_{isa}_{name}");
+                nameDataLength += name.Length + 1;
+
+                if (isCommon)
+                {
+                    commonNameDataLength = nameDataLength;
+                    xarchNameDataLength = nameDataLength;
+                    otherNameDataLength = nameDataLength;
+                }
+                else if (isXarch)
+                {
+                    xarchNameDataLength = nameDataLength;
+                }
+                else
+                {
+                    otherNameDataLength = nameDataLength;
+                }
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {characterIndex}, {name.Length}, // NI_{isa}_{name}");
         });
 
         var simdSizeBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
@@ -1109,12 +1164,28 @@ public partial struct HWIntrinsicInfo
 {{isaBuilder}}
     ];
 
+#if FEATURE_HW_INTRINSICS
+    private static ReadOnlySpan<ushort> s_isaRangeBounds => [
+{{isaRangeBoundsBuilder}}
+    ];
+#endif
+
     private static ReadOnlySpan<byte> s_intCosts => [
 {{intCostBuilder}}
     ];
 
-    private static readonly string[] s_names = [
-{{nameBuilder}}
+    private static ReadOnlySpan<char> s_nameData => [
+#if FEATURE_HW_INTRINSICS
+#if TARGET_XARCH
+{{commonNameDataBuilder}}{{xarchNameDataBuilder}}
+#else
+{{commonNameDataBuilder}}{{otherNameDataBuilder}}
+#endif
+#endif
+    ];
+
+    private static ReadOnlySpan<int> s_nameRanges => [
+{{nameRangesBuilder}}
     ];
 
     private static ReadOnlySpan<byte> s_numArgs => [
@@ -1126,6 +1197,288 @@ public partial struct HWIntrinsicInfo
     ];
 }
 """);
+    }
+
+    private static StringBuilder GenerateIsaRangeBounds(string instructionSetBuilder)
+    {
+        var instructionSetSource = File.ReadAllText(@"Outputs\inc\corinfoinstructionset\CORINFO_InstructionSet.generated.cs");
+        var builder = new StringBuilder();
+
+        _ = builder.AppendLine("#if TARGET_XARCH");
+        AppendIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "xarch", ["FEATURE_HW_INTRINSICS", "TARGET_XARCH"]);
+        _ = builder.AppendLine("#elif TARGET_ARM64");
+        AppendIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "arm64", ["FEATURE_HW_INTRINSICS", "TARGET_ARM64"]);
+        _ = builder.AppendLine("#elif TARGET_WASM || TARGET_WASM32");
+        AppendIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "wasm", ["FEATURE_HW_INTRINSICS", "TARGET_WASM", "TARGET_WASM32"]);
+        _ = builder.AppendLine("#else");
+        _ = builder.AppendLine("#error Unsupported target with hardware-intrinsic support.");
+        _ = builder.AppendLine("#endif");
+
+        return builder;
+    }
+
+    private static void AppendIsaRangeBounds(StringBuilder builder, string instructionSetSource, string instructionSetBuilder, string target, HashSet<string> definedSymbols)
+    {
+        var instructionSetValues = ParseInstructionSetValues(instructionSetSource, definedSymbols);
+        var instructionSets = ParseInstructionSetRows(instructionSetBuilder, definedSymbols);
+
+        var vectorInstructionSetValue = instructionSetValues["InstructionSet_Vector"];
+        var noneInstructionSetValue = instructionSetValues["InstructionSet_NONE"];
+        var maximumInstructionSetValue = 0;
+
+        foreach (var (name, value) in instructionSetValues)
+        {
+            if (name is not "InstructionSet_Vector" and not "InstructionSet_NONE")
+            {
+                maximumInstructionSetValue = Math.Max(maximumInstructionSetValue, value);
+            }
+        }
+
+        var isaRangeBounds = new ushort[(maximumInstructionSetValue + 1) * 2];
+        Array.Fill(isaRangeBounds, ushort.MaxValue);
+        ushort[] vectorRangeBounds = [ushort.MaxValue, ushort.MaxValue];
+
+        for (var index = 0; index < instructionSets.Count; index++)
+        {
+            // Keep ushort.MaxValue available as the sentinel for an ISA without a lookup range.
+            if ((uint)index >= ushort.MaxValue)
+            {
+                throw new InvalidDataException($"The intrinsic table index exceeds the ISA range encoding: {index}.");
+            }
+
+            if (!instructionSetValues.TryGetValue(instructionSets[index], out var instructionSetValue) ||
+                (instructionSetValue == noneInstructionSetValue))
+            {
+                throw new InvalidDataException($"Intrinsic ISA '{instructionSets[index]}' is not present in the target instruction-set enum.");
+            }
+
+            var isVectorInstructionSet = instructionSetValue == vectorInstructionSetValue;
+            var targetRangeBounds = isVectorInstructionSet ? vectorRangeBounds : isaRangeBounds;
+            var boundsIndex = isVectorInstructionSet ? 0 : instructionSetValue * 2;
+
+            if (targetRangeBounds[boundsIndex] is ushort.MaxValue)
+            {
+                targetRangeBounds[boundsIndex] = checked((ushort)index);
+            }
+            else if (targetRangeBounds[boundsIndex + 1] != index - 1)
+            {
+                // Internal codegen-only intrinsics follow the ISA's sorted lookup rows.
+                continue;
+            }
+
+            targetRangeBounds[boundsIndex + 1] = checked((ushort)index);
+        }
+
+        // All portable vector widths share the Vector intrinsic IDs and names.
+        CopyIsaRange(isaRangeBounds, instructionSetValues, "InstructionSet_Vector128", vectorRangeBounds[0], vectorRangeBounds[1]);
+
+        if (target.Equals("xarch", StringComparison.Ordinal))
+        {
+            CopyIsaRange(isaRangeBounds, instructionSetValues, "InstructionSet_Vector256", vectorRangeBounds[0], vectorRangeBounds[1]);
+            CopyIsaRange(isaRangeBounds, instructionSetValues, "InstructionSet_Vector512", vectorRangeBounds[0], vectorRangeBounds[1]);
+        }
+        else if (target.Equals("arm64", StringComparison.Ordinal))
+        {
+            CopyIsaRange(isaRangeBounds, instructionSetValues, "InstructionSet_Vector64", vectorRangeBounds[0], vectorRangeBounds[1]);
+        }
+
+        var instructionSetNames = new string[isaRangeBounds.Length / 2];
+        foreach (var (name, value) in instructionSetValues)
+        {
+            if (name is not "InstructionSet_Vector" and not "InstructionSet_NONE")
+            {
+                instructionSetNames[value] = name;
+            }
+        }
+
+        for (var index = 0; index < isaRangeBounds.Length; index += 2)
+        {
+            var instructionSetName = instructionSetNames[index / 2];
+            var comment = instructionSetName is null ? "" : $" // {instructionSetName}";
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {isaRangeBounds[index]}, {isaRangeBounds[index + 1]},{comment}");
+        }
+    }
+
+    private static Dictionary<string, int> ParseInstructionSetValues(string instructionSetSource, HashSet<string> definedSymbols)
+    {
+        var instructionSetValues = new Dictionary<string, int>(StringComparer.Ordinal);
+        var nextValue = 0;
+        var activeSource = GetActivePreprocessorLines(instructionSetSource, definedSymbols);
+
+        foreach (var line in activeSource.Split('\n'))
+        {
+            var match = Regex.Match(line, @"^\s*(InstructionSet_[A-Za-z0-9_]+)(?:\s*=\s*(\d+))?\s*,?\s*$", RegexOptions.CultureInvariant);
+
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            var name = match.Groups[1].Value;
+            var value = match.Groups[2].Success
+                ? int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture)
+                : nextValue;
+
+            if (!instructionSetValues.TryAdd(name, value))
+            {
+                throw new InvalidDataException($"Instruction set is defined more than once for the target: '{name}'.");
+            }
+
+            nextValue = checked(value + 1);
+        }
+
+        if (!instructionSetValues.ContainsKey("InstructionSet_NONE"))
+        {
+            throw new InvalidDataException("The generated instruction-set enum does not define InstructionSet_NONE.");
+        }
+
+        return instructionSetValues;
+    }
+
+    private static List<string> ParseInstructionSetRows(string instructionSetBuilder, HashSet<string> definedSymbols)
+    {
+        var instructionSets = new List<string>();
+        var activeSource = GetActivePreprocessorLines(instructionSetBuilder, definedSymbols);
+
+        foreach (var line in activeSource.Split('\n'))
+        {
+            var match = Regex.Match(line, @"^\s*(InstructionSet_[A-Za-z0-9_]+)\s*,", RegexOptions.CultureInvariant);
+
+            if (match.Success)
+            {
+                instructionSets.Add(match.Groups[1].Value);
+            }
+        }
+
+        return instructionSets;
+    }
+
+    private static string GetActivePreprocessorLines(string source, HashSet<string> definedSymbols)
+    {
+        var builder = new StringBuilder();
+        var conditionalStack = new Stack<(bool ParentIncluded, bool BranchTaken)>();
+        var isIncluded = true;
+
+        using var reader = new StringReader(source);
+
+        while (reader.ReadLine() is string line)
+        {
+            var trimmedLine = line.Trim();
+
+            if (trimmedLine.StartsWith("#if ", StringComparison.Ordinal))
+            {
+                var condition = EvaluatePreprocessorCondition(trimmedLine[4..], definedSymbols);
+                conditionalStack.Push((isIncluded, condition));
+                isIncluded &= condition;
+            }
+            else if (trimmedLine.StartsWith("#elif ", StringComparison.Ordinal))
+            {
+                if (conditionalStack.Count is 0)
+                {
+                    throw new InvalidDataException($"Unexpected preprocessor #elif: '{line}'.");
+                }
+
+                var (parentIncluded, branchTaken) = conditionalStack.Pop();
+                var condition = EvaluatePreprocessorCondition(trimmedLine[6..], definedSymbols);
+                var branchIncluded = !branchTaken && condition;
+                conditionalStack.Push((parentIncluded, branchTaken || condition));
+                isIncluded = parentIncluded && branchIncluded;
+            }
+            else if (trimmedLine.Equals("#else", StringComparison.Ordinal))
+            {
+                if (conditionalStack.Count is 0)
+                {
+                    throw new InvalidDataException($"Unexpected preprocessor #else: '{line}'.");
+                }
+
+                var (parentIncluded, branchTaken) = conditionalStack.Pop();
+                isIncluded = parentIncluded && !branchTaken;
+                conditionalStack.Push((parentIncluded, true));
+            }
+            else if (trimmedLine.Equals("#endif", StringComparison.Ordinal))
+            {
+                if (conditionalStack.Count is 0)
+                {
+                    throw new InvalidDataException($"Unexpected preprocessor #endif: '{line}'.");
+                }
+
+                isIncluded = conditionalStack.Pop().ParentIncluded;
+            }
+            else if (trimmedLine.StartsWith("#error ", StringComparison.Ordinal))
+            {
+                if (isIncluded)
+                {
+                    throw new InvalidDataException($"Active #error in intrinsic lookup table: '{line}'.");
+                }
+            }
+            else if (trimmedLine.Length > 0 && trimmedLine[0] is '#')
+            {
+                throw new InvalidDataException($"Unsupported preprocessor directive in intrinsic lookup table: '{line}'.");
+            }
+            else if (isIncluded)
+            {
+                _ = builder.AppendLine(line);
+            }
+        }
+
+        if (conditionalStack.Count is not 0)
+        {
+            throw new InvalidDataException("Unterminated conditional region in intrinsic lookup table.");
+        }
+
+        return builder.ToString();
+    }
+
+    private static bool EvaluatePreprocessorCondition(string condition, HashSet<string> definedSymbols)
+    {
+        foreach (var disjunction in condition.Split("||", StringSplitOptions.TrimEntries))
+        {
+            var isConjunctionTrue = true;
+
+            foreach (var term in disjunction.Split("&&", StringSplitOptions.TrimEntries))
+            {
+                var symbol = term.Trim('(', ')', ' ');
+                var isNegated = symbol.Length > 0 && symbol[0] is '!';
+
+                if (isNegated)
+                {
+                    symbol = symbol[1..].Trim('(', ')', ' ');
+                }
+
+                if (symbol.Length is 0 || !Regex.IsMatch(symbol, @"^[A-Za-z0-9_]+$", RegexOptions.CultureInvariant))
+                {
+                    throw new InvalidDataException($"Unsupported preprocessor condition in intrinsic lookup table: '{condition}'.");
+                }
+
+                var isDefined = definedSymbols.Contains(symbol);
+
+                if (!isDefined && symbol is not "FEATURE_HW_INTRINSICS" and not "TARGET_XARCH" and not "TARGET_ARM64" and not "TARGET_RISCV64" and not "TARGET_WASM" and not "TARGET_WASM32")
+                {
+                    throw new InvalidDataException($"Unknown preprocessor symbol in intrinsic lookup table: '{symbol}'.");
+                }
+
+                isConjunctionTrue &= isNegated ? !isDefined : isDefined;
+            }
+
+            if (isConjunctionTrue)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void CopyIsaRange(ushort[] isaRangeBounds, Dictionary<string, int> instructionSetValues, string instructionSet, ushort lowerBound, ushort upperBound)
+    {
+        if (!instructionSetValues.TryGetValue(instructionSet, out var instructionSetValue))
+        {
+            throw new InvalidDataException($"The generated instruction-set enum does not define '{instructionSet}'.");
+        }
+
+        var boundsIndex = instructionSetValue * 2;
+        isaRangeBounds[boundsIndex] = lowerBound;
+        isaRangeBounds[boundsIndex + 1] = upperBound;
     }
 
     private static void GenerateTernaryLogicInfo()
@@ -1232,7 +1585,8 @@ public enum InlineObservation
             var description = parts[2].AsSpan().Trim();
             var scope = parts[4].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {description}, // {scope}_{name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        InlineObservation.{scope}_{name} => {description},");
         });
 
         var targetsBuilder = ProcessMacroBasedFile(@"Inputs\inline.def", "INLINE_OBSERVATION(", (builder, inputFile, line, prefix, parts) => {
@@ -1274,8 +1628,10 @@ namespace RyuJitSharp;
 
 public static partial class InlineObservationExtensions
 {
-    private static readonly string[] s_descriptions = [
-{{descriptionsBuilder}}    ];
+    private static string GetDescription(InlineObservation observation) => observation switch
+    {
+{{descriptionsBuilder}}        _ => throw new FatalJitException("Invalid inline observation."),
+    };
 
     private static ReadOnlySpan<InlineImpact> s_impacts => [
 {{impactsBuilder}}    ];
@@ -1364,6 +1720,22 @@ public partial class Emitter
 """);
     }
 
+    private static void AppendCharacterLiteral(StringBuilder builder, char value)
+    {
+        _ = builder.Append('\'');
+        _ = builder.Append(value switch
+        {
+            '\0' => "\\0",
+            '\t' => "\\t",
+            '\n' => "\\n",
+            '\r' => "\\r",
+            '\\' => "\\\\",
+            '\'' => "\\'",
+            _ => value.ToString(),
+        });
+        _ = builder.Append('\'');
+    }
+
     private static void GenerateInstruction()
     {
         var builder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
@@ -1403,24 +1775,15 @@ public enum instruction
 }
 """);
 
-        var nameBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
-            if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
-            {
-                return;
-            }
+        var xarchNameDataBuilder = new StringBuilder();
+        var otherNameDataBuilder = new StringBuilder();
+        var xarchNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
+        var otherNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
+        var xarchNameDataLength = 0;
+        var otherNameDataLength = 0;
 
-            var name = parts[1].Trim();
-            if (!name.StartsWith('"', StringComparison.Ordinal)
-                || !name.EndsWith('"', StringComparison.Ordinal))
-            {
-                throw new InvalidDataException($"Unexpected xarch instruction name: '{line}'");
-            }
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {name}, // INS_{parts[0].Trim()}");
-        });
-
-        var otherNameBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
-            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+        var nameRangesBuilder = ProcessInstrs((rangeBuilder, inputFile, line, prefix, parts) => {
+            if (parts.Length is 0)
             {
                 return;
             }
@@ -1433,12 +1796,52 @@ public enum instruction
             }
 
             var id = parts[0].Trim();
+            var nameDataBuilder = xarchNameDataBuilder;
+            var nameOffsets = xarchNameOffsets;
+            var nameDataLength = xarchNameDataLength;
+
+            if (!inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                nameDataBuilder = otherNameDataBuilder;
+                nameOffsets = otherNameOffsets;
+                nameDataLength = otherNameDataLength;
+            }
+
             if (inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
             {
                 id = $"sve_{id}";
             }
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {name}, // INS_{id}");
+            var characters = name.AsSpan(1, name.Length - 2);
+            var nameValue = characters.ToString();
+
+            if (!nameOffsets.TryGetValue(nameValue, out var characterIndex))
+            {
+                characterIndex = nameDataLength;
+                nameOffsets.Add(nameValue, characterIndex);
+
+                for (var index = 0; index < characters.Length; index++)
+                {
+                    AppendCharacterLiteral(nameDataBuilder, characters[index]);
+                    _ = nameDataBuilder.Append(", ");
+                }
+
+                _ = nameDataBuilder.Append("'\\0',");
+                _ = nameDataBuilder.AppendLine(CultureInfo.InvariantCulture, $" // {name}");
+                nameDataLength += characters.Length + 1;
+
+                if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+                {
+                    xarchNameDataLength = nameDataLength;
+                }
+                else
+                {
+                    otherNameDataLength = nameDataLength;
+                }
+            }
+
+            _ = rangeBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {characterIndex}, {characters.Length}, // INS_{id}");
         });
 
         _ = Directory.CreateDirectory(@"Outputs\jit\instr");
@@ -1454,13 +1857,15 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
+    private static ReadOnlySpan<char> s_instructionNameData => [
 #if TARGET_XARCH
-    private static readonly string[] s_insNames = [
-{{nameBuilder}}    ];
+{{xarchNameDataBuilder}}    ];
 #else
-    private static readonly string[] s_insNames = [
-{{otherNameBuilder}}    ];
+{{otherNameDataBuilder}}    ];
 #endif
+
+    private static ReadOnlySpan<int> s_instructionNameRanges => [
+{{nameRangesBuilder}}    ];
 }
 """);
 
@@ -3180,7 +3585,7 @@ public enum Phases
             var enumName = parts[0].AsSpan().Trim();
             var stringName = parts[1].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {stringName}, // {enumName}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        Phases.{enumName} => {stringName},");
         });
 
         var hasChildrenBuilder = ProcessMacroBasedFile(@"Inputs\compphases.h", "CompPhaseNameMacro(", (builder, inputFile, line, prefix, parts) => {
@@ -3241,8 +3646,10 @@ namespace RyuJitSharp;
 public static partial class PhasesExtensions
 {
 #if FEATURE_JIT_METHOD_PERF || DUMP_FLOWGRAPHS
-    private static readonly string[] s_names = [
-{{namesBuilder}}    ];
+    private static string GetName(Phases phase) => phase switch
+    {
+{{namesBuilder}}        _ => throw new FatalJitException("Invalid compiler phase."),
+    };
 #endif
 
 #if FEATURE_JIT_METHOD_PERF
@@ -3455,7 +3862,7 @@ public enum regNumber : byte
             var name = parts[0].AsSpan().Trim();
             var sname = parts[3].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {sname}, // REG_{name}");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        REG_{name} => {sname},");
         }, includeRegAlias: false);
 
         var masksBuilder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
@@ -3482,8 +3889,10 @@ namespace RyuJitSharp;
 
 public static partial class regNumberExtensions
 {
-    private static readonly string[] s_names = [
-{{builder}}    ];
+    private static string GetName(regNumber regNum) => regNum switch
+    {
+{{builder}}        _ => throw new FatalJitException("Invalid register number."),
+    };
 
     private static ReadOnlySpan<regMask> s_masks => [
 {{masksBuilder}}    ];
@@ -4024,7 +4433,14 @@ public enum VNFunc
             Debug.Assert(commute.Equals("0", StringComparison.Ordinal) || commute.Equals("1", StringComparison.Ordinal));
             Debug.Assert(illegalAsVNFunc.Equals("0", StringComparison.Ordinal) || illegalAsVNFunc.Equals("1", StringComparison.Ordinal));
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        ValueNumStore.GetOpAttribsForGenTree(GT_{name}, commute: {(commute.Equals("1", StringComparison.Ordinal) ? "true" : "false")}, illegalAsVNFunc: {(illegalAsVNFunc.Equals("1", StringComparison.Ordinal) ? "true" : "false")}, GT_{name}.Kind), // VNF_{name}");
+            var arity = name.Equals("SELECT", StringComparison.Ordinal) ? 3
+                : (flags.Contains("GTK_UNOP", StringComparison.Ordinal) ? 1 : 0)
+                    | (flags.Contains("GTK_BINOP", StringComparison.Ordinal) ? 2 : 0);
+            var attributes = EncodeValueNumAttributes(arity, commute.Equals("1", StringComparison.Ordinal), knownNonNull: false);
+            attributes |= illegalAsVNFunc.Equals("1", StringComparison.Ordinal) ? (byte)1 : (byte)0;
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (ValueNumStore.VNFOpAttrib)0x{attributes:X2}, // VNF_{name}");
         });
 
         var builder2 = ProcessMacroBasedFile(@"Inputs\valuenumfuncs.h", "ValueNumFuncDef(", (builder, inputFile, line, prefix, parts) => {
@@ -4041,10 +4457,13 @@ public enum VNFunc
                     var numArgs = parts[3].AsSpan().Trim();
                     var flags = parts[(parts.Length is 18) ? 17 : 15].AsSpan().Trim();
 
-                    var arity = numArgs.Equals("-1", StringComparison.Ordinal) ? "-1" : $"{numArgs} + 1";
-                    var commute = flags.Contains("HW_Flag_Commutative", StringComparison.Ordinal) ? "true" : "false";
+                    var argumentCount = int.Parse(numArgs, CultureInfo.InvariantCulture);
+                    var arity = argumentCount == -1 ? -1 : argumentCount + 1;
+                    var commute = flags.Contains("HW_Flag_Commutative", StringComparison.Ordinal);
+                    var attributes = EncodeValueNumAttributes(arity, commute, knownNonNull: false);
 
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        ValueNumStore.GetOpAttribsForFunc(arity: {arity}, commute: {commute}, knownNonNull: false), // VNF_HWI_{isa}_{name}");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                        $"        (ValueNumStore.VNFOpAttrib)0x{attributes:X2}, // VNF_HWI_{isa}_{name}");
                 });
 
                 _ = builder.Append(hwiBuilder);
@@ -4061,7 +4480,10 @@ public enum VNFunc
             var commute = parts[2].AsSpan().Trim();
             var knownNonNull = parts[3].AsSpan().Trim();
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        ValueNumStore.GetOpAttribsForFunc(arity: {arity}, commute: {commute}, knownNonNull: {knownNonNull}), // VNF_{name}");
+            var attributes = EncodeValueNumAttributes(int.Parse(arity, CultureInfo.InvariantCulture),
+                bool.Parse(commute), bool.Parse(knownNonNull));
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (ValueNumStore.VNFOpAttrib)0x{attributes:X2}, // VNF_{name}");
         });
 
         _ = Directory.CreateDirectory(@"Outputs\jit\valuenum");
@@ -4117,6 +4539,15 @@ public static partial class VNFuncExtensions
 #endif
 }
 """);
+    }
+
+    private static byte EncodeValueNumAttributes(int arity, bool commute, bool knownNonNull)
+    {
+        // Match ValueNumStore's VNFOA encoding: commute bit 1, arity bits 2-4, non-null bit 5.
+        var attributes = (Math.Max(arity, 0) << 2) & 0x1C;
+        attributes |= commute ? 0x02 : 0;
+        attributes |= knownNonNull ? 0x20 : 0;
+        return (byte)attributes;
     }
 
     private static void ProcessInstructionSetDesc()
@@ -4656,8 +5087,8 @@ public partial class Globals
     private static StringBuilder ProcessMacroBasedFile(
         string inputFile, ReadOnlySpan<string> lines, ReadOnlySpan<string> prefixes,
         Action<StringBuilder, string, string, string, string[]> callback,
-        Action<StringBuilder> onConditionalRegionStart = null,
-        Action<StringBuilder> onConditionalRegionEnd = null)
+        Action<StringBuilder>? onConditionalRegionStart = null,
+        Action<StringBuilder>? onConditionalRegionEnd = null)
     {
         var builder = new StringBuilder();
 

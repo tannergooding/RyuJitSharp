@@ -138,7 +138,7 @@ internal static unsafe class EmitterInstructionDisplayTests
     public static void InstructionNamesComeFromTheNativeTable(instruction ins, string expected)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
-        Assert.That(new CodeGen(compiler).genInsName(ins), Is.EqualTo(expected));
+        Assert.That(new CodeGen(compiler).genInsName(ins).ToString(), Is.EqualTo(expected));
     }
 
 #if TARGET_AMD64
@@ -299,7 +299,12 @@ internal static unsafe class EmitterInstructionDisplayTests
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitDisplayName")]
-    private static extern string DisplayName(Emitter emitter, Emitter.instrDesc id);
+    private static extern ReadOnlySpan<char> DisplayNameSpan(Emitter emitter, Emitter.instrDesc id);
+
+    private static string DisplayName(Emitter emitter, Emitter.instrDesc id)
+    {
+        return DisplayNameSpan(emitter, id).ToString();
+    }
 
     private static string Capture(Action action)
     {

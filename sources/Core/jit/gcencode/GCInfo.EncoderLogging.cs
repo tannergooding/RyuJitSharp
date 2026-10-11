@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 internal sealed class GcInfoEncoderWithLogging
@@ -22,13 +24,26 @@ internal sealed class GcInfoEncoderWithLogging
 #endif
     }
 
-    private static readonly string[] StackBaseNames = ["caller.sp", "sp", "frame"];
-    private static readonly string[] SlotFlagNames =
-    [
-        "", "(byref) ", "(pinned) ", "(byref, pinned) ",
-        "(untracked) ", "(byref, untracked) ", "(pinned, untracked) ",
-        "(byref, pinned, untracked) ",
-    ];
+    private static string GetStackBaseName(GcStackSlotBase stackBase) => stackBase switch
+    {
+        GcStackSlotBase.GC_CALLER_SP_REL => "caller.sp",
+        GcStackSlotBase.GC_SP_REL => "sp",
+        GcStackSlotBase.GC_FRAMEREG_REL => "frame",
+        _ => throw new FatalJitException("Invalid stack slot base."),
+    };
+
+    private static string GetSlotFlagName(GcSlotFlags flags) => ((int)flags & 7) switch
+    {
+        0 => "",
+        1 => "(byref) ",
+        2 => "(pinned) ",
+        3 => "(byref, pinned) ",
+        4 => "(untracked) ",
+        5 => "(byref, untracked) ",
+        6 => "(pinned, untracked) ",
+        7 => "(byref, pinned, untracked) ",
+        _ => throw new FatalJitException("Invalid GC slot flags."),
+    };
 
     public uint GetStackSlotId(int offset, GcSlotFlags flags, GcStackSlotBase stackBase = GcStackSlotBase.GC_CALLER_SP_REL)
     {
@@ -36,7 +51,7 @@ internal sealed class GcInfoEncoderWithLogging
         if (_log)
         {
             jitprintf($"Stack slot id for offset {offset} ({(offset < 0 ? "-" : "")}0x{(offset < 0 ? -(long)offset : offset):x}) " +
-                $"({StackBaseNames[(int)stackBase]}) {SlotFlagNames[(int)flags & 7]}= {id}.\n");
+                $"({GetStackBaseName(stackBase)}) {GetSlotFlagName(flags)}= {id}.\n");
         }
         return id;
     }
@@ -46,7 +61,7 @@ internal sealed class GcInfoEncoderWithLogging
         var id = _encoder.GetRegisterSlotId(regNum, flags);
         if (_log)
         {
-            jitprintf($"Register slot id for reg {((regNumber)regNum).Name} {SlotFlagNames[(int)flags & 7]}= {id}.\n");
+            jitprintf($"Register slot id for reg {((regNumber)regNum).Name} {GetSlotFlagName(flags)}= {id}.\n");
         }
         return id;
     }
