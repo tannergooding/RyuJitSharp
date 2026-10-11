@@ -151,6 +151,33 @@ internal static unsafe class ConstantDivisionLoweringTests
         }, minOpts: false);
     }
 
+    [Test]
+    public static void WasmSignedMagicDivisionRemainsForTargetLowering()
+    {
+        WithCompiler(compiler => {
+            var dividend = compiler.gtNewLclvNode(TYP_INT, 0);
+            var divisor = compiler.gtNewIconNode(TYP_INT, 37);
+            var division = new GenTreeOp(GT_DIV, TYP_INT, dividend, divisor);
+            var lowering = NewLowering(compiler, NewBlock(dividend, divisor, division));
+
+            var transformed = TrySigned(lowering, division, out var next);
+
+            Assert.That(transformed, Is.EqualTo(!Configuration.TARGET_WASM));
+            if (Configuration.TARGET_WASM)
+            {
+                Assert.That(division.Oper, Is.EqualTo(GT_DIV));
+                Assert.That(division.Op2, Is.SameAs(divisor));
+                Assert.That(divisor.AsIntCon().IconValue, Is.EqualTo((nint)37));
+                Assert.That(next, Is.Null);
+            }
+            else
+            {
+                Assert.That(division.Oper, Is.EqualTo(GT_ADD));
+                Assert.That(next?.Oper, Is.EqualTo(GT_MULHI));
+            }
+        }, minOpts: false);
+    }
+
     [TestCase(GT_UDIV, 3)]
     [TestCase(GT_UDIV, 7)]
     [TestCase(GT_UDIV, 14)]

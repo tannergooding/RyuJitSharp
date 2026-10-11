@@ -53,9 +53,11 @@ public sealed partial class Lowering
 #if TARGET_ARMARCH
         assert(divMod.Oper is not GT_MOD);
 #endif
-#if TARGET_WASM
-        return false;
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            return false;
+        }
+
         if (!divisor.Oper.IsCnsIntOrI || dividend.Oper.IsCnsIntOrI)
         {
             return false;
