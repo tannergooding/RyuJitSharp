@@ -85,8 +85,8 @@ internal static unsafe class QmarkExpansionTests
             {
                 Assert.That(cond.TrueTarget, Is.SameAs(remainder));
                 Assert.That(cond.FalseTarget, Is.SameAs(blocks[2]));
-                Assert.That(cond.TrueEdge.Likelihood, Is.EqualTo(0.8));
-                Assert.That(cond.FalseEdge.Likelihood, Is.EqualTo(0.2));
+                Assert.That(cond.TrueEdge.Likelihood, Is.EqualTo(shape == 1 ? 0.2 : 0.8));
+                Assert.That(cond.FalseEdge.Likelihood, Is.EqualTo(shape == 1 ? 0.8 : 0.2));
                 Assert.That(blocks[2].bbWeight, Is.EqualTo(shape == 1 ? 80 : 20));
                 Assert.That((blocks[2].FirstStmt ?? throw new InvalidOperationException()).RootNode,
                     Is.SameAs(shape == 1 ? thenTree : elseTree));

@@ -804,9 +804,16 @@ public partial class Compiler
                         var canTransform = true;
                         if (constant.Oper.IsCnsIntOrI)
                         {
-                            canTransform = arithmetic.Oper is GT_DIV
-                                ? constant.AsIntCon().IconValue is not -1 and not 1
-                                : !arithmetic.HasOverflowCheck;
+                            if (arithmetic.Oper is GT_DIV)
+                            {
+                                var divisor = constant.AsIntConCommon().IntegralValue;
+                                var minimum = arithmetic.Type is TYP_INT ? int.MinValue : long.MinValue;
+                                canTransform = (divisor != -1) && (divisor != 1) && (divisor != minimum);
+                            }
+                            else
+                            {
+                                canTransform = !arithmetic.HasOverflowCheck;
+                            }
                             if (canTransform)
                             {
                                 constant.AsIntConCommon().SetValueTruncating(unchecked(-constant.AsIntConCommon().IconValue));

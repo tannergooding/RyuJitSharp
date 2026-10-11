@@ -111,6 +111,65 @@ internal static unsafe class ImporterCallTests
         }
     }
 
+    [TestCase(CorInfoType.CORINFO_TYPE_INT)]
+#if TARGET_64BIT
+    [TestCase(CorInfoType.CORINFO_TYPE_LONG)]
+#endif
+    public static void SignedLog2FallbackTracksUnknownExceptions(CorInfoType type)
+    {
+        ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+        vtable.Base.Base.getArgType = &GetPrimitiveArgumentType;
+        ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+#if DEBUG
+        using var jitTls = new JitTls(&jitInfo);
+#endif
+        var previous = JitTls.Compiler;
+        var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        JitFlags flags = default;
+        compiler.opts.jitFlags = &flags;
+        compiler.opts.SetMinOpts(true);
+        var inputType = type is CorInfoType.CORINFO_TYPE_LONG ? var_types.TYP_LONG : var_types.TYP_INT;
+        compiler.lvaTable = new LclVarDsc[4];
+        compiler.lvaCount = 1;
+        compiler.lvaTable[0].Type = inputType;
+        compiler.info = new Compiler.Info { compCompHnd = &jitInfo, compMaxStack = 1 };
+        compiler.compCurBB = new BasicBlock(null, null);
+        compiler.stackState.esStack = new StackEntry[1];
+        JitTls.Compiler = compiler;
+
+        try
+        {
+            compiler.impBeginTreeList();
+            var value = compiler.gtNewLclvNode(inputType, 0);
+            compiler.impPushOnStack(value, new typeInfo(inputType));
+            var signature = new CORINFO_SIG_INFO { numArgs = 1, retType = type };
+            var result = compiler.impPrimitiveNamedIntrinsic(NamedIntrinsic.NI_PRIMITIVE_Log2, null, null, signature, default);
+
+            Assert.That(result, Is.Not.Null);
+
+            var statement = ImporterStatements(compiler);
+            while ((statement is not null) &&
+                (!statement.RootNode.Oper.IsLocalStore ||
+                    (statement.RootNode.AsLclVarCommon().Data.Oper is not genTreeOps.GT_QMARK)))
+            {
+                statement = statement.NextStmt;
+            }
+
+            var qmarkStore = statement ?? throw new InvalidOperationException("Missing signed Log2 qmark store.");
+            var fallback = qmarkStore.RootNode.AsLclVarCommon().Data.AsQmark().ThenNode.AsIntrinsic();
+            Assert.That(fallback.IntrinsicName, Is.EqualTo(NamedIntrinsic.NI_PRIMITIVE_Log2));
+            Assert.That(fallback.Flags & GenTreeFlags.GTF_EXCEPT, Is.EqualTo(GenTreeFlags.GTF_EXCEPT));
+            Assert.That(fallback.Exceptions(compiler), Is.EqualTo(ExceptionSetFlags.UnknownException));
+        }
+        finally
+        {
+            JitTls.Compiler = previous;
+        }
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "impStmtList")]
+    private static extern ref Statement? ImporterStatements(Compiler compiler);
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static CorInfoTypeWithMod GetPrimitiveArgumentType(ICorJitInfo* self, CORINFO_SIG_INFO* signature,
         CORINFO_ARG_LIST_STRUCT_* argument, CORINFO_CLASS_STRUCT_** type)

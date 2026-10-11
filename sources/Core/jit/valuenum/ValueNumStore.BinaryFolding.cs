@@ -56,11 +56,19 @@ public sealed partial class ValueNumStore
 
                 case VNF_EQ:
                 case VNF_NE:
+                {
+                    break;
+                }
+
                 case VNF_GT:
                 case VNF_GE:
                 case VNF_LT:
                 case VNF_LE:
                 {
+                    if (_compiler.opts.compReloc && (IsVNHandle(arg0VN) || IsVNHandle(arg1VN)))
+                    {
+                        return false;
+                    }
                     break;
                 }
 

@@ -299,6 +299,16 @@ public partial class Compiler
 
             case GT_INTRINSIC:
             {
+                if (tree.AsIntrinsic().IntrinsicName is NI_PRIMITIVE_Log2)
+                {
+                    assert(vnStore is not null);
+                    var opaque = vnStore.VNPExcSetSingleton(
+                        vnStore.VNPairForFunc(TYP_REF, VNF_HelperOpaqueExc,
+                            vnStore.VNPairForExpr(compCurBB, TYP_I_IMPL)));
+                    tree._vnPair = vnStore.VNPWithExc(tree._vnPair, opaque);
+                    break;
+                }
+
                 assert(tree.AsIntrinsic().IntrinsicName is NI_System_Object_GetType);
                 fgValueNumberAddExceptionSetForIndirection(tree, tree.AsIntrinsic().Op1);
                 break;

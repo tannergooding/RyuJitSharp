@@ -21,11 +21,13 @@
     <ProjectReference Include="..\..\sources\Core\RyuJitSharp.csproj" />
     <Compile Include="..\Core\AbiHeaderTests.cs" Link="AbiHeaderTests.cs" />
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
+    <Compile Include="..\Core\ArithmeticMorphTests.cs" Link="ArithmeticMorphTests.cs" />
     <Compile Include="..\Core\AsyncResumeCodeGenTestSupport.cs" Link="AsyncResumeCodeGenTestSupport.cs" />
     <Compile Include="..\Core\AsyncResumeTableTargetTests.cs" Link="AsyncResumeTableTargetTests.cs" />
     <Compile Include="..\Core\ArmCalleeSavedRegisterTests.cs" Link="ArmCalleeSavedRegisterTests.cs" />
     <Compile Include="..\Core\ArmGcInfoPublicationTests.cs" Link="ArmGcInfoPublicationTests.cs" />
     <Compile Include="..\Core\Arm64*Tests.cs" Link="%(Filename)%(Extension)" />
+    <Compile Include="..\Core\BlockStoreLoweringTargetTests.cs" Link="BlockStoreLoweringTargetTests.cs" />
     <Compile Include="..\Core\CSELiveAcrossCallCostTests.cs" Link="CSELiveAcrossCallCostTests.cs" />
     <Compile Include="..\Core\ConfigIntegerReinterpretationTests.cs" Link="ConfigIntegerReinterpretationTests.cs" />
     <Compile Include="..\Core\CodeGenLinearCastClosureTests.cs" Link="CodeGenLinearCastClosureTests.cs" />
@@ -39,11 +41,15 @@
     <Compile Include="..\Core\HWIntrinsicCodegenClassificationTests.cs" Link="HWIntrinsicCodegenClassificationTests.cs" />
     <Compile Include="..\Core\HWIntrinsicLookupRangeTests.cs" Link="HWIntrinsicLookupRangeTests.cs" />
     <Compile Include="..\Core\HWIntrinsicXplatImportTests.cs" Link="HWIntrinsicXplatImportTests.cs" />
+    <Compile Include="..\Core\ImporterCallTests.cs" Link="ImporterCallTests.cs" />
     <Compile Include="..\Core\LocalReferenceAccountingTargetTests.cs" Link="LocalReferenceAccountingTargetTests.cs" />
     <Compile Include="..\Core\LateDisassemblyBackendTests.cs" Link="LateDisassemblyBackendTests.cs" />
+    <Compile Include="..\Core\QmarkExpansionTests.cs" Link="QmarkExpansionTests.cs" />
     <Compile Include="..\Core\SideEffectSetTests.cs" Link="SideEffectSetTests.cs" />
     <Compile Include="..\Core\SwiftAbiTests.cs" Link="SwiftAbiTests.cs" />
     <Compile Include="..\Core\SysVX64ClassifierTests.cs" Link="SysVX64ClassifierTests.cs" />
+    <Compile Include="..\Core\ValueNumBinaryFoldingTests.cs" Link="ValueNumBinaryFoldingTests.cs" />
+    <Compile Include="..\Core\ValueNumExceptionTests.cs" Link="ValueNumExceptionTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">

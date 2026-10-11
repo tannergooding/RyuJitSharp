@@ -214,17 +214,29 @@ public sealed partial class Lowering
         var sourceAddressType = TYP_UNDEF;
         var sourceLocal = BAD_VAR_NUM;
         ushort sourceOffset = 0;
+        var sourceFlags = GTF_EMPTY;
         if (source.Oper is GT_IND)
         {
             var sourceUse = new LIR.Use(BlockRange(), ref source.AsIndir().AddrRef, source);
             sourceAddressType = source.AsIndir().Addr.Type;
             sourceAddressLocal = sourceUse.ReplaceWithLclVar(compiler);
+            sourceFlags = source.Flags & GTF_IND_FLAGS;
         }
         else
         {
             sourceLocal = source.AsLclVarCommon().LclNum;
             sourceOffset = source.AsLclVarCommon().LclOffs;
             compiler.lvaSetVarDoNotEnregister(sourceLocal, DoNotEnregisterReason.BlockOp);
+
+            if (!compiler.IsValidLclAddr(sourceLocal, checked(sourceOffset + (int)layout.Size - 1)))
+            {
+                source = GetBlockCopySourceAddress(source);
+                var sourceUse = new LIR.Use(BlockRange(), ref block.DataRef, block);
+                sourceAddressType = TYP_I_IMPL;
+                sourceAddressLocal = sourceUse.ReplaceWithLclVar(compiler);
+                sourceFlags = GTF_IND_NONFAULTING;
+                source = block.Data;
+            }
         }
 
         GenTree OffsetAddress(int local, var_types type, int offset)
@@ -238,13 +250,11 @@ public sealed partial class Lowering
 
             return address;
         }
-
         var destinationFlags = block.Flags & GTF_IND_FLAGS;
-        var sourceFlags = source.Oper is GT_IND ? source.Flags & GTF_IND_FLAGS : GTF_EMPTY;
         void EmitStore(int offset, var_types scalarType, ClassLayout? runLayout)
         {
             var type = runLayout is not null ? TYP_STRUCT : scalarType;
-            GenTree value = source.Oper is GT_IND
+            GenTree value = sourceAddressLocal != BAD_VAR_NUM
                 ? compiler.gtNewLoadValueNode(type, OffsetAddress(sourceAddressLocal, sourceAddressType, offset),
                     runLayout, sourceFlags)
                 : compiler.gtNewLclFldNode(type, sourceLocal, checked((ushort)(sourceOffset + offset)), runLayout);

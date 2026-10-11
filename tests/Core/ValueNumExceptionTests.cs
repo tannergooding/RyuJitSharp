@@ -374,6 +374,33 @@ internal static unsafe class ValueNumExceptionTests
     }
 
     [Test]
+    public static void Log2FallbackAddsAnOpaqueValueNumberException()
+    {
+        WithStore((compiler, store) =>
+        {
+            var input = Node(TYP_INT, store.VNForExpr(compiler.compCurBB, TYP_INT));
+            var normal = store.VNForExpr(compiler.compCurBB, TYP_INT);
+            var intrinsic = new GenTreeIntrinsic(TYP_INT, input, NamedIntrinsic.NI_PRIMITIVE_Log2, methodHandle: null)
+            {
+                Flags = GenTreeFlags.GTF_CALL | GenTreeFlags.GTF_EXCEPT,
+                _vnPair = new(normal, normal),
+            };
+
+            Assert.That(intrinsic.Exceptions(compiler), Is.EqualTo(ExceptionSetFlags.UnknownException));
+
+            compiler.fgValueNumberAddExceptionSet(intrinsic);
+
+            var exceptions = store.VNPExceptionSet(intrinsic._vnPair);
+            var liberalOpaque = FindException(store, exceptions.Liberal, VNF_HelperOpaqueExc);
+            var conservativeOpaque = FindException(store, exceptions.Conservative, VNF_HelperOpaqueExc);
+            var liberalOpaqueInput = new VNFuncApp();
+            Assert.That(store.GetVNFunc(liberalOpaque.GetArg(0), ref liberalOpaqueInput), Is.True);
+            Assert.That(liberalOpaqueInput.FuncIs(VNF_MemOpaque), Is.True);
+            Assert.That(conservativeOpaque.GetArg(0), Is.EqualTo(liberalOpaque.GetArg(0)));
+        });
+    }
+
+    [Test]
     public static void DispatcherRoutesDivisionBoundsAndIndirection()
     {
         WithStore((compiler, store) =>

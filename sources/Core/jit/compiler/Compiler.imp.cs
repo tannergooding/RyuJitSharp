@@ -16681,7 +16681,7 @@ public partial class Compiler
                     var fallback = new GenTreeIntrinsic(retType, op1Dup, intrinsic, method) {
                         EntryPoint = entryPoint,
                     };
-                    fallback.Flags |= GTF_CALL;
+                    fallback.Flags |= GTF_CALL | GTF_EXCEPT;
                     var cond = gtNewBinaryNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
                     var colon = gtNewColonNode(retType, fallback, result);
                     var qmark = gtNewQmarkNode(retType, cond, colon);

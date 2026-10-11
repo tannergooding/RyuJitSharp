@@ -1864,10 +1864,13 @@ public partial class GenTree
             case GT_INTRINSIC:
             {
                 // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
-                // Currently, this is the only intrinsic that can throw an exception.
                 if (AsIntrinsic().IntrinsicName == NI_System_Object_GetType)
                 {
                     return ExceptionSetFlags.NullReferenceException;
+                }
+                if (AsIntrinsic().IntrinsicName == NI_PRIMITIVE_Log2)
+                {
+                    return ExceptionSetFlags.UnknownException;
                 }
                 return ExceptionSetFlags.None;
             }

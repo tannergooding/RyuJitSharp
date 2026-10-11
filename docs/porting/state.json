@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+    "targetCommit": "8630d8988107478d249e2fdb8162f8c7dcbd3dbb",
     "targetObservedAt": "2026-10-10",
-    "reconciledCommit": "e23d559ac0db234786d68bd5135fed6ad9621750"
+    "reconciledCommit": "8630d8988107478d249e2fdb8162f8c7dcbd3dbb"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
+    "nextAction": "Select the next dependency-coherent batch from docs/porting/BACKLOG.md; the 8630d898 oracle refresh is reconciled. Preserve the unresolved dynamic TLS input-ownership boundary and defer genAsyncResumeInfo until the B209 target-width table/emitter dependency closure is ported and tested.",
     "activeBatch": null,
     "parityEvidence": {
       "corelibCodegen": {
@@ -302,7 +302,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "reconciledCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+    "reconciledCommit": "8630d8988107478d249e2fdb8162f8c7dcbd3dbb",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."

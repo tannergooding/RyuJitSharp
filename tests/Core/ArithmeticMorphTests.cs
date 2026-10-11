@@ -601,6 +601,46 @@ internal static unsafe class ArithmeticMorphTests
         });
     }
 
+    [TestCase(TYP_INT, int.MinValue, false)]
+    // 32-bit targets morph TYP_LONG division into a helper before this rewrite.
+#if TARGET_64BIT
+    [TestCase(TYP_LONG, long.MinValue, false)]
+#endif
+    [TestCase(TYP_INT, -1, false)]
+    [TestCase(TYP_INT, 1, false)]
+    [TestCase(TYP_INT, -3, true)]
+#if TARGET_64BIT
+    [TestCase(TYP_LONG, -3, true)]
+#endif
+    public static void NegatedSignedDivisionPreservesMinimumDivisors(var_types type, long divisorValue, bool moveNegation)
+    {
+        WithCompiler(compiler => {
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.Base.getEEInfo = &GetCoreClrEEInfo;
+            ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+            compiler.info = new Compiler.Info { compCompHnd = &jitInfo };
+            var numerator = compiler.gtNewLclvNode(type, type is TYP_LONG ? 0 : 1);
+            var divisor = type is TYP_LONG
+                ? compiler.gtNewLconNode(divisorValue)
+                : compiler.gtNewIconNode(type, checked((nint)divisorValue));
+            var division = compiler.gtNewBinaryNode(GT_DIV, type, numerator, divisor);
+            var negation = compiler.gtNewUnaryNode(GT_NEG, type, division);
+
+            var result = compiler.fgMorphTree(negation);
+
+            if (moveNegation)
+            {
+                Assert.That(result, Is.SameAs(division));
+                Assert.That(divisor.AsIntConCommon().IntegralValue, Is.EqualTo(-divisorValue));
+            }
+            else
+            {
+                Assert.That(result, Is.SameAs(negation));
+                Assert.That(divisor.AsIntConCommon().IntegralValue, Is.EqualTo(divisorValue));
+            }
+        });
+    }
+
     [Test]
     public static void MinOptsDoesNotPrepareConstantDivision()
     {
@@ -809,6 +849,12 @@ internal static unsafe class ArithmeticMorphTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsInstanceFieldStatic(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle) => 0;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static void GetCoreClrEEInfo(ICorJitInfo* info, CORINFO_EE_INFO* eeInfo)
+    {
+        *eeInfo = new CORINFO_EE_INFO { targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI };
+    }
 
     private static void WithCompiler(Action<Compiler> action, bool minOpts = false)
     {

@@ -13323,15 +13323,15 @@ public partial class Compiler
             var elseLikelihood = qmark.ElseNodeLikelihood;
 
             assert(condBlock.Target == elseBlock);
-            var thenEdge = fgAddRefPred(remainderBlock, condBlock);
-            var elseEdge = condBlock.TargetEdge;
-            condBlock.SetCond(thenEdge, elseEdge);
+            var skipEdge = fgAddRefPred(remainderBlock, condBlock);
+            var thenEdge = condBlock.TargetEdge;
+            condBlock.SetCond(skipEdge, thenEdge);
             thenBlock = elseBlock;
             elseBlock = null;
 
             thenBlock.inheritWeightPercentage(condBlock, thenLikelihood);
             thenEdge.Likelihood = thenLikelihood / 100.0;
-            elseEdge.Likelihood = elseLikelihood / 100.0;
+            skipEdge.Likelihood = elseLikelihood / 100.0;
         }
         else if (hasFalseExpr)
         {

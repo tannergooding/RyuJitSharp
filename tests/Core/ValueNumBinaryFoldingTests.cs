@@ -31,6 +31,10 @@ internal static unsafe class ValueNumBinaryFoldingTests
     [TestCase(VNFunc.VNF_ADD, false)]
     [TestCase(VNFunc.VNF_ADD_OVF, false)]
     [TestCase(VNFunc.VNF_GT_UN, false)]
+    [TestCase(VNFunc.VNF_GT, false)]
+    [TestCase(VNFunc.VNF_GE, false)]
+    [TestCase(VNFunc.VNF_LT, false)]
+    [TestCase(VNFunc.VNF_LE, false)]
     [TestCase(VNFunc.VNF_EQ, true)]
     [TestCase(VNFunc.VNF_NE, true)]
     [TestCase(VNFunc.VNF_Cast, true)]
@@ -48,8 +52,32 @@ internal static unsafe class ValueNumBinaryFoldingTests
 
             if (func is VNFunc.VNF_Cast or VNFunc.VNF_CastOvf)
             {
-                Assert.That(CanFold(store, TYP_INT, func, handle, right), Is.False);
+                if (type != TYP_INT)
+                {
+                    Assert.That(CanFold(store, TYP_INT, func, handle, right), Is.False);
+                }
             }
+        });
+    }
+
+    [Test]
+    public static void IntToLongNormalizationDoesNotNarrowRelocatableHandles()
+    {
+        WithStore((store, compiler) => {
+            compiler.opts.compReloc = true;
+            var handle = store.VNForHandle(0x1000, GTF_ICON_CLASS_HDL);
+
+            Assert.That(store.IsVNHandle(handle), Is.True);
+            var nativeIntType = TYP_I_IMPL;
+            if (nativeIntType == TYP_LONG)
+            {
+                Assert.That(store.TypeOfVN(handle), Is.EqualTo(TYP_LONG));
+                Assert.That(store.IsVNIntegralConstant(handle, out int _), Is.True);
+            }
+            Assert.That(store.VNIgnoreIntToLongCast(handle), Is.EqualTo(handle));
+
+            var constant = store.VNForLongCon(0x1000);
+            Assert.That(store.VNIgnoreIntToLongCast(constant), Is.EqualTo(store.VNForIntCon(0x1000)));
         });
     }
 

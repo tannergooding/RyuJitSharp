@@ -259,7 +259,7 @@ public sealed partial class ValueNumStore
                 }
             }
 
-            if (IsVNIntegralConstant(vn, out int constant))
+            if (!IsVNHandle(vn) && IsVNIntegralConstant(vn, out int constant))
             {
                 return VNForIntCon(constant);
             }
