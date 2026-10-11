@@ -335,11 +335,7 @@ public partial class Globals
 
     public const int CLFLG_INLINING = 0x00200;
 
-#if FEATURE_STRUCTPROMOTE
     public const int CLFLG_STRUCTPROMOTE = 0x00400;
-#else
-    public const int CLFLG_STRUCTPROMOTE = 0x00000;
-#endif
 
     public const int CLFLG_MAXOPT = CLFLG_REGVAR | CLFLG_TREETRANS | CLFLG_INLINING | CLFLG_STRUCTPROMOTE;
 

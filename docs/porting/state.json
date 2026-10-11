@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Remove the always-defined FEATURE_STRUCTPROMOTE conditional from jit/Globals.cs and its csproj define; preserve the enabled CLFLG_STRUCTPROMOTE value and verify no source references remain.",
+    "nextAction": "Remove the always-enabled FEATURE_VN_TRACE_APPLY_SELECTORS preprocessor gates in valuenum/ValueNumStore.Maps.cs and its csproj define; preserve DEBUG-only tracing guards and verify all selector-trace paths still compile.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize FEATURE_REMAP_FUNCTION in the RISC-V and LoongArch GC-info publication paths with a target-derived Configuration property; remove target-specific project defines.",
-      "doneWhen": "No FEATURE_REMAP_FUNCTION preprocessor guards or target-specific compile defines remain; the runtime feature is true for ARM64, AMD64, and Windows x86 and false for other targets.",
-      "validation": "Debug and Release FeatureConfigurationTests passed 21/21 for each of win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64. `git diff --check` passed.",
-      "deferred": "FEATURE_REMAP_FUNCTION project defines and source guards are removed. The broader TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Remove FEATURE_STRUCTPROMOTE's compile-time conditional and project define because the feature is always enabled; retain the enabled optimization flag value.",
+      "doneWhen": "No FEATURE_STRUCTPROMOTE preprocessor guards or project defines remain, and CLFLG_STRUCTPROMOTE remains 0x00400.",
+      "validation": "PhysicalPromotionTests and StructPromotionTests passed 126/126 in Debug and 121/121 in Release on win-x64. `git diff --check` passed.",
+      "deferred": "FEATURE_STRUCTPROMOTE was unconditionally defined; the unreachable zero-valued alternative is removed. The broader TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

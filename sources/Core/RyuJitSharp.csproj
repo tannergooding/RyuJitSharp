@@ -496,9 +496,6 @@
     <!-- FEATURE_ON_STACK_REPLACEMENT -->
     <DefineConstants>$(DefineConstants);FEATURE_ON_STACK_REPLACEMENT</DefineConstants>
     
-    <!-- FEATURE_STRUCTPROMOTE: JIT Optimization to promote fields of structs into registers -->
-    <DefineConstants>$(DefineConstants);FEATURE_STRUCTPROMOTE</DefineConstants>
-
     <!-- FEATURE_USE_ASM_GC_WRITE_BARRIERS -->
     <DefineConstants>$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
 
