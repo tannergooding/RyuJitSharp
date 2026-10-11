@@ -25,18 +25,13 @@ public static partial class var_typesExtensions
         TYP_REF, // TYP_REF
         TYP_BYREF, // TYP_BYREF
         TYP_STRUCT, // TYP_STRUCT
-#if FEATURE_SIMD
         TYP_SIMD8, // TYP_SIMD8
         TYP_SIMD12, // TYP_SIMD12
         TYP_SIMD16, // TYP_SIMD16
-#if TARGET_XARCH
         TYP_SIMD32, // TYP_SIMD32
         TYP_SIMD64, // TYP_SIMD64
-#elif TARGET_ARM64
-        TYP_SIMD, // TYP_SIMD
-#endif
+        TYP_SIMD_ARM64, // TYP_SIMD_ARM64
         TYP_MASK, // TYP_MASK
-#endif
         TYP_UNKNOWN, // TYP_UNKNOWN
     ];
 
@@ -56,18 +51,13 @@ public static partial class var_typesExtensions
         PS, // TYP_REF
         PS, // TYP_BYREF
         4, // TYP_STRUCT
-#if FEATURE_SIMD
         8, // TYP_SIMD8
         16, // TYP_SIMD12
         16, // TYP_SIMD16
-#if TARGET_XARCH
         16, // TYP_SIMD32
         16, // TYP_SIMD64
-#elif TARGET_ARM64
-        16, // TYP_SIMD
-#endif
+        16, // TYP_SIMD_ARM64
         8, // TYP_MASK
-#endif
         0, // TYP_UNKNOWN
     ];
 
@@ -87,18 +77,13 @@ public static partial class var_typesExtensions
         VTF_ANY|VTF_GCR|VTF_I, // TYP_REF
         VTF_ANY|VTF_BYR|VTF_I, // TYP_BYREF
         VTF_S, // TYP_STRUCT
-#if FEATURE_SIMD
         VTF_S|VTF_VEC, // TYP_SIMD8
         VTF_S|VTF_VEC, // TYP_SIMD12
         VTF_S|VTF_VEC, // TYP_SIMD16
-#if TARGET_XARCH
         VTF_S|VTF_VEC, // TYP_SIMD32
         VTF_S|VTF_VEC, // TYP_SIMD64
-#elif TARGET_ARM64
-        VTF_S|VTF_VEC, // TYP_SIMD
-#endif
+        VTF_S|VTF_VEC, // TYP_SIMD_ARM64
         VTF_S, // TYP_MASK
-#endif
         VTF_ANY, // TYP_UNKNOWN
     ];
 
@@ -118,18 +103,13 @@ public static partial class var_typesExtensions
         GCS, // TYP_REF
         BRS, // TYP_BYREF
         (emitAttr)(0), // TYP_STRUCT
-#if FEATURE_SIMD
         (emitAttr)(8), // TYP_SIMD8
         (emitAttr)(16), // TYP_SIMD12
         (emitAttr)(16), // TYP_SIMD16
-#if TARGET_XARCH
         (emitAttr)(32), // TYP_SIMD32
         (emitAttr)(64), // TYP_SIMD64
-#elif TARGET_ARM64
-        EAU, // TYP_SIMD
-#endif
+        EAU, // TYP_SIMD_ARM64
         (emitAttr)(8), // TYP_MASK
-#endif
         (emitAttr)(0), // TYP_UNKNOWN
     ];
 
@@ -149,18 +129,13 @@ public static partial class var_typesExtensions
         GCS, // TYP_REF
         BRS, // TYP_BYREF
         (emitAttr)(0), // TYP_STRUCT
-#if FEATURE_SIMD
         (emitAttr)(8), // TYP_SIMD8
         (emitAttr)(16), // TYP_SIMD12
         (emitAttr)(16), // TYP_SIMD16
-#if TARGET_XARCH
         (emitAttr)(32), // TYP_SIMD32
         (emitAttr)(64), // TYP_SIMD64
-#elif TARGET_ARM64
-        EAU, // TYP_SIMD
-#endif
+        EAU, // TYP_SIMD_ARM64
         (emitAttr)(8), // TYP_MASK
-#endif
         (emitAttr)(0), // TYP_UNKNOWN
     ];
 
@@ -181,18 +156,13 @@ public static partial class var_typesExtensions
         "ref", // TYP_REF
         "byref", // TYP_BYREF
         "struct", // TYP_STRUCT
-#if FEATURE_SIMD
         "simd8", // TYP_SIMD8
         "simd12", // TYP_SIMD12
         "simd16", // TYP_SIMD16
-#if TARGET_XARCH
         "simd32", // TYP_SIMD32
         "simd64", // TYP_SIMD64
-#elif TARGET_ARM64
-        "simd", // TYP_SIMD
-#endif
+        "simd", // TYP_SIMD_ARM64
         "mask", // TYP_MASK
-#endif
         "unknown", // TYP_UNKNOWN
     ];
 #endif
@@ -213,18 +183,13 @@ public static partial class var_typesExtensions
         VTR_INT, // TYP_REF
         VTR_INT, // TYP_BYREF
         VTR_INT, // TYP_STRUCT
-#if FEATURE_SIMD
         VTR_FLOAT, // TYP_SIMD8
         VTR_FLOAT, // TYP_SIMD12
         VTR_FLOAT, // TYP_SIMD16
-#if TARGET_XARCH
         VTR_FLOAT, // TYP_SIMD32
         VTR_FLOAT, // TYP_SIMD64
-#elif TARGET_ARM64
-        VTR_FLOAT, // TYP_SIMD
-#endif
+        VTR_FLOAT, // TYP_SIMD_ARM64
         VTR_MASK, // TYP_MASK
-#endif
         VTR_INT, // TYP_UNKNOWN
     ];
 
@@ -244,18 +209,13 @@ public static partial class var_typesExtensions
         PS, // TYP_REF
         PS, // TYP_BYREF
         0, // TYP_STRUCT
-#if FEATURE_SIMD
         8, // TYP_SIMD8
         12, // TYP_SIMD12
         16, // TYP_SIMD16
-#if TARGET_XARCH
         32, // TYP_SIMD32
         64, // TYP_SIMD64
-#elif TARGET_ARM64
-        SZU, // TYP_SIMD
-#endif
+        SZU, // TYP_SIMD_ARM64
         8, // TYP_MASK
-#endif
         0, // TYP_UNKNOWN
     ];
 
@@ -275,18 +235,13 @@ public static partial class var_typesExtensions
         PST, // TYP_REF
         PST, // TYP_BYREF
         1, // TYP_STRUCT
-#if FEATURE_SIMD
         2, // TYP_SIMD8
         4, // TYP_SIMD12
         4, // TYP_SIMD16
-#if TARGET_XARCH
         8, // TYP_SIMD32
         16, // TYP_SIMD64
-#elif TARGET_ARM64
-        0, // TYP_SIMD
-#endif
+        0, // TYP_SIMD_ARM64
         2, // TYP_MASK
-#endif
         0, // TYP_UNKNOWN
     ];
 }

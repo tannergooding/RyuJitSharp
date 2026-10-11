@@ -538,7 +538,7 @@ public partial class Compiler
     {
         var vecConClone = gtNewVconNode(vecCon.Type);
 #if TARGET_ARM64
-        if (vecCon.Type == TYP_SIMD)
+        if (vecCon.Type == TYP_SIMD_ARM64)
         {
             vecConClone.SimdScalableVal = vecCon.SimdScalableVal;
 
@@ -1759,7 +1759,7 @@ public partial class Compiler
 #endif
 
 #if TARGET_ARM64
-                    case TYP_SIMD:
+                    case TYP_SIMD_ARM64:
                     {
                         var simdValue = vecCon.SimdScalableVal;
                         var baseType = simdValue.BaseType;
@@ -8229,7 +8229,7 @@ public partial class Compiler
     public GenTree gtNewAllBitsSetConNode(var_types type)
     {
 #if TARGET_ARM64
-        if (type == TYP_SIMD)
+        if (type == TYP_SIMD_ARM64)
         {
             return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0xFF);
         }
@@ -10282,7 +10282,7 @@ public partial class Compiler
         if (op1.Oper.IsIntegralConst || op1.Oper.IsCnsFltOrDbl)
         {
 #if TARGET_ARM64
-            if (type == TYP_SIMD)
+            if (type == TYP_SIMD_ARM64)
             {
                 var scalableVecCon = gtNewSimdVconNode(type, simdBaseType, SimdScalableKind.SimdScalableRepeated, 0);
 
@@ -13777,7 +13777,7 @@ public partial class Compiler
     public GenTreeVecCon gtNewVconNode(var_types type)
     {
 #if TARGET_ARM64
-        assert(type != TYP_SIMD);
+        assert(type != TYP_SIMD_ARM64);
 #endif
         return new GenTreeVecCon(type);
     }
@@ -13785,7 +13785,7 @@ public partial class Compiler
 #if TARGET_ARM64
     public GenTreeVecCon gtNewSimdVconNode(var_types type, in simdscalable_t value)
     {
-        assert(type == TYP_SIMD);
+        assert(type == TYP_SIMD_ARM64);
 
         return gtNewSimdVconNode(type, value.BaseType, value.Kind, value.Index.u64[0], value.Step.u64[0]);
     }
@@ -13793,7 +13793,7 @@ public partial class Compiler
     public GenTreeVecCon gtNewSimdVconNode(
         var_types type, var_types baseType, SimdScalableKind kind, ulong index, ulong step = 0)
     {
-        assert(type == TYP_SIMD);
+        assert(type == TYP_SIMD_ARM64);
         assert(!varTypeIsSimd(baseType));
 
         var node = new GenTreeVecCon(type);
@@ -13978,7 +13978,7 @@ public partial class Compiler
             }
 
 #if TARGET_ARM64
-            case TYP_SIMD:
+            case TYP_SIMD_ARM64:
             {
                 return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, pattern);
             }
@@ -13995,7 +13995,7 @@ public partial class Compiler
     public GenTree gtNewZeroConNode(var_types type)
     {
 #if TARGET_ARM64
-        if (type == TYP_SIMD)
+        if (type == TYP_SIMD_ARM64)
         {
             return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0);
         }

@@ -488,7 +488,7 @@ public partial class Compiler
             // Own the active bytes: later node mutations must not change an assertion.
             byte[] payload;
 #if TARGET_ARM64
-            if (cns.Type is TYP_SIMD)
+            if (cns.Type is TYP_SIMD_ARM64)
             {
                 payload = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in cns.SimdScalableVal, 1)).ToArray();
             }

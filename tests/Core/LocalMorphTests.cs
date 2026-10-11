@@ -269,7 +269,7 @@ internal static unsafe class LocalMorphTests
         WithInstanceFieldCompiler(compiler => {
             compiler.lvaTable[0].Type = TYP_REF;
             compiler.lvaTable[2].Type = TYP_INT;
-            for (var i = 0; i < (int)TYP_COUNT; i++)
+            for (var i = 0; i < (int)TYP_SIMD_ARM64; i++)
             {
                 BigOffsetMorphingTemps(compiler)[i] = BAD_VAR_NUM;
             }

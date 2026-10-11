@@ -1436,7 +1436,7 @@ public partial struct LclVarDsc
         }
     }
 
-    /// <summary>This is only used for locals that have an unknown size, such as TYP_SIMD/TYP_MASK on Arm64. These locals do not have an absolute stack offset.</summary>
+    /// <summary>This is only used for locals that have an unknown size, such as TYP_SIMD_ARM64/TYP_MASK on Arm64. These locals do not have an absolute stack offset.</summary>
     public int UnknownSizeFrameIndex
     {
         readonly get

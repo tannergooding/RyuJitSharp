@@ -149,7 +149,7 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(large.Segments[0].Register, Is.EqualTo(REG_R2));
         Assert.That(large.Segments[0].Size, Is.EqualTo(8));
 
-        var simd = classifier.Classify(compiler, TYP_SIMD, new ClassLayout(16), WellKnownArg.None);
+        var simd = classifier.Classify(compiler, TYP_SIMD_ARM64, new ClassLayout(16), WellKnownArg.None);
         Assert.That(simd.IsPassedByReference, Is.True);
         Assert.That(simd.Segments[0].Register, Is.EqualTo(REG_R3));
     }

@@ -243,7 +243,7 @@ public sealed partial class LinearScan
             case NI_Vector_Create:
             case NI_Vector_CreateScalarUnsafe:
             {
-                if ((intrinsic.Type is TYP_SIMD) && varTypeIsFloating(intrinsic.SimdBaseType))
+                if ((intrinsic.Type is TYP_SIMD_ARM64) && varTypeIsFloating(intrinsic.SimdBaseType))
                 {
                     _ = buildInternalIntRegisterDefForNode(intrinsic, _availableIntRegs);
                 }

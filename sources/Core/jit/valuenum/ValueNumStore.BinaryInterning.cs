@@ -214,25 +214,21 @@ public sealed partial class ValueNumStore
         return type switch {
             TYP_INT or TYP_UINT => VNForIntCon(-1),
             TYP_LONG or TYP_ULONG => VNForLongCon(-1),
-#if FEATURE_SIMD
             TYP_SIMD8 => VNForSimd8Con(simd8_t.AllBitsSet),
             TYP_SIMD12 => VNForSimd12Con(simd12_t.AllBitsSet),
             TYP_SIMD16 => VNForSimd16Con(simd16_t.AllBitsSet),
-#if TARGET_XARCH
             TYP_SIMD32 => VNForSimd32Con(simd32_t.AllBitsSet),
             TYP_SIMD64 => VNForSimd64Con(simd64_t.AllBitsSet),
-#elif TARGET_ARM64
-            TYP_SIMD => VNForSimdScalableCon(simdscalable_t.AllBitsSet),
-#endif
+            TYP_SIMD_ARM64 => VNForSimdScalableCon(simdscalable_t.AllBitsSet),
             TYP_MASK when !Configuration.FEATURE_MASKED_HW_INTRINSICS
                 => throw new PlatformNotSupportedException(
                     "Masked hardware intrinsics are not enabled for this target."),
 #if DEBUG
-            TYP_MASK when Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0)
+            TYP_MASK when Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+                Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0)
                 => VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet),
 #endif
             TYP_MASK => VNForSimdMaskCon(simdmask_t.AllBitsSet(elementCount)),
-#endif
             _ => NoVN,
         };
     }

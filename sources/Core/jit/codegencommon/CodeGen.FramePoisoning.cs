@@ -122,7 +122,7 @@ public sealed partial class CodeGen
         assert(varNum >= 0);
         assert(varDsc.IsAddressExposed);
 
-        if (varDsc.Type is TYP_SIMD)
+        if (varDsc.Type is TYP_SIMD_ARM64)
         {
             Emitter.emitIns_R_I(INS_sve_mov, EA_SCALABLE, REG_SCRATCH_V, poisonVal, INS_OPTS_SCALABLE_B);
             Emitter.emitIns_S_R(INS_sve_str, EA_SCALABLE, REG_SCRATCH_V, varNum, 0);

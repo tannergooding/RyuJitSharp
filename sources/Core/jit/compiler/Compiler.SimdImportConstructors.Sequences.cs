@@ -14,7 +14,7 @@ public partial class Compiler
         assert(varTypeIsArithmetic(simdBaseType));
 
 #if TARGET_ARM64
-        if (type == TYP_SIMD)
+        if (type == TYP_SIMD_ARM64)
         {
             if (simdBaseType == TYP_FLOAT)
             {
@@ -53,7 +53,7 @@ public partial class Compiler
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
 #if TARGET_ARM64
-        if (type == TYP_SIMD)
+        if (type == TYP_SIMD_ARM64)
         {
             // SVE can do this in a single instruction.
             if (varTypeIsIntegral(simdBaseType))

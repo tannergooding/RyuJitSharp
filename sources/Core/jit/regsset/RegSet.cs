@@ -126,9 +126,9 @@ public partial struct RegSet
         switch (type)
         {
 #if FEATURE_SIMD && TARGET_ARM64
-            // Special slots are allocated for TYP_SIMD and TYP_MASK, because they
+            // Special slots are allocated for TYP_SIMD_ARM64 and TYP_MASK, because they
             // have unknown size and therefore can't share slots with other types.
-            case TYP_SIMD:
+            case TYP_SIMD_ARM64:
             {
                 slot = TEMP_SLOT_COUNT - 1;
                 break;

@@ -160,7 +160,7 @@ internal static class Arm64ScalableMaskTreeTests
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             Arm64ScalableMaskValueNumTests.SetScalableConfiguration(true);
-            var vector = compiler.gtNewSimdVconNode(TYP_SIMD, TYP_LONG, kind, index, 1);
+            var vector = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, TYP_LONG, kind, index, 1);
             var intrinsic = new GenTreeHWIntrinsic(TYP_MASK, NI_Sve_ConvertVectorToMask, requestedType, 0, vector);
             var result = compiler.gtFoldExprConvertVecCnsToMask(intrinsic, vector);
 

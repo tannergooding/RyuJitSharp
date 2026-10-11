@@ -2044,13 +2044,13 @@ internal static unsafe class Arm64EmitterRecordingTests
         {
             ref var regSet = ref EmitterCodeGen(emitter).RegSet;
             regSet.tmpBeginPreAllocateTemps();
-            regSet.tmpPreAllocateTemps(var_types.TYP_SIMD, 1);
+            regSet.tmpPreAllocateTemps(var_types.TYP_SIMD_ARM64, 1);
             regSet.tmpGetNum(-1).tdTempOffs = 2;
             varx = -1;
         }
         else
         {
-            compiler.lvaTable[0].Type = var_types.TYP_SIMD;
+            compiler.lvaTable[0].Type = var_types.TYP_SIMD_ARM64;
             compiler.lvaTable[0].UnknownSizeFrameIndex = 2;
         }
 
@@ -2163,7 +2163,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
-        compiler.lvaTable[0].Type = var_types.TYP_SIMD;
+        compiler.lvaTable[0].Type = var_types.TYP_SIMD_ARM64;
         compiler.lvaTable[0].UnknownSizeFrameIndex = index;
         compiler.unkSizeFrame.nVector = (uint)(index + 1);
         compiler.unkSizeFrame.FinalizeLayout();
@@ -2614,7 +2614,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         using var tls = new JitTls(null);
 #endif
         var emitter = CreateConstantEmitter();
-        var tree = new GenTreeVecCon(var_types.TYP_SIMD);
+        var tree = new GenTreeVecCon(var_types.TYP_SIMD_ARM64);
         tree.SimdScalableVal.BaseType = var_types.TYP_INT;
         tree.SimdScalableVal.Kind = kind;
         tree.SimdScalableVal.Index.i32[0] = index;
@@ -2622,7 +2622,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         var codeGen = EmitterCodeGen(emitter);
         codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask | REG_R5.SingleTypeMask));
 
-        RecordConstantNode(codeGen, REG_V2, var_types.TYP_SIMD, tree);
+        RecordConstantNode(codeGen, REG_V2, var_types.TYP_SIMD_ARM64, tree);
         var instructions = CurrentInstructions(emitter)
             ?? throw new AssertionException("No scalable constant instructions were recorded.");
         var isScalar = kind == SimdScalableKind.SimdScalableScalar;

@@ -20733,7 +20733,7 @@ public partial class Compiler
     /// <summary>Normalize the type of a (known to be) struct class handle.</summary>
     /// <param name="structHnd">The class handle for the struct type of interest.</param>
     /// <param name="simdBaseJitType">if the struct is a simd type, set to the simd base JIT type</param>
-    /// <returns>The JIT type for the struct (e.g. TYP_STRUCT, or TYP_SIMD*).</returns>
+    /// <returns>The JIT type for the struct (e.g. TYP_STRUCT, or TYP_SIMD_ARM64*).</returns>
     /// <remarks>
     ///   <para>This may also modify the compFloatingPointUsed flag if the type is a simd type.</para>
     ///   <para>Normalizing the type involves examining the struct type to determine if it should be modified to one that is handled specially by the JIT, possibly being a candidate for full enregistration, e.g. TYP_SIMD16.</para>

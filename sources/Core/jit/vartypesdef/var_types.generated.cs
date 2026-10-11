@@ -24,18 +24,13 @@ public enum var_types : byte
     TYP_REF,
     TYP_BYREF,
     TYP_STRUCT,
-#if FEATURE_SIMD
     TYP_SIMD8,
     TYP_SIMD12,
     TYP_SIMD16,
-#if TARGET_XARCH
     TYP_SIMD32,
     TYP_SIMD64,
-#elif TARGET_ARM64
-    TYP_SIMD,
-#endif
+    TYP_SIMD_ARM64,
     TYP_MASK,
-#endif
     TYP_UNKNOWN,
     TYP_COUNT,
 }

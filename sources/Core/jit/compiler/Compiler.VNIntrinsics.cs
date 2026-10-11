@@ -97,7 +97,7 @@ public partial class Compiler
         }
 
         assert(elemType is not TYP_STRUCT);
-        return (CORINFO_CLASS_HANDLE)((((nuint)(int)varTypeToSigned(elemType)) << 1) | 1);
+        return (CORINFO_CLASS_HANDLE)((((nuint)var_typesExtensions.ToNativeOrdinal(varTypeToSigned(elemType))) << 1) | 1);
     }
 
     public unsafe void fgValueNumberArrIndexAddr(GenTreeArrAddr arrAddr)

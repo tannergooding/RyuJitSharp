@@ -25,18 +25,13 @@ public partial class Compiler
         varTypeCalleeTrashRegMasks[(int)(TYP_REF)] = SRBM_INT_CALLEE_TRASH;
         varTypeCalleeTrashRegMasks[(int)(TYP_BYREF)] = SRBM_INT_CALLEE_TRASH;
         varTypeCalleeTrashRegMasks[(int)(TYP_STRUCT)] = SRBM_INT_CALLEE_TRASH;
-#if FEATURE_SIMD
         varTypeCalleeTrashRegMasks[(int)(TYP_SIMD8)] = SRBM_FLT_CALLEE_TRASH;
         varTypeCalleeTrashRegMasks[(int)(TYP_SIMD12)] = SRBM_FLT_CALLEE_TRASH;
         varTypeCalleeTrashRegMasks[(int)(TYP_SIMD16)] = SRBM_FLT_CALLEE_TRASH;
-#if TARGET_XARCH
         varTypeCalleeTrashRegMasks[(int)(TYP_SIMD32)] = SRBM_FLT_CALLEE_TRASH;
         varTypeCalleeTrashRegMasks[(int)(TYP_SIMD64)] = SRBM_FLT_CALLEE_TRASH;
-#elif TARGET_ARM64
-        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD)] = SRBM_FLT_CALLEE_TRASH;
-#endif
+        varTypeCalleeTrashRegMasks[(int)(TYP_SIMD_ARM64)] = SRBM_FLT_CALLEE_TRASH;
         varTypeCalleeTrashRegMasks[(int)(TYP_MASK)] = SRBM_MSK_CALLEE_TRASH;
-#endif
         varTypeCalleeTrashRegMasks[(int)(TYP_UNKNOWN)] = SRBM_INT_CALLEE_TRASH;
     }
 #endif

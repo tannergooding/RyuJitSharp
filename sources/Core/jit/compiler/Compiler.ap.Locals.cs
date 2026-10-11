@@ -153,14 +153,14 @@ public partial class Compiler
 
                 int size = tree.Type.Size;
 #if TARGET_ARM64
-                if (tree.Type is TYP_SIMD)
+                if (tree.Type is TYP_SIMD_ARM64)
                 {
                     size = Unsafe.SizeOf<simdscalable_t>();
                 }
 #endif
                 assert(size == assertion.Op2.SimdSize);
 #if TARGET_ARM64
-                if (tree.Type is TYP_SIMD)
+                if (tree.Type is TYP_SIMD_ARM64)
                 {
                     var scalableValue = MemoryMarshal.Read<simdscalable_t>(assertion.Op2.SimdConstant);
                     replacement = gtNewSimdVconNode(tree.Type, scalableValue);

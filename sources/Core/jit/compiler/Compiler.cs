@@ -979,23 +979,26 @@ public partial class Compiler
     }
 #endif
 
-#if FEATURE_SIMD
     /// <summary>Returns the codegen type for a given simd size.</summary>
     /// <param name="size"></param>
     /// <returns></returns>
-    public static var_types GetSimdTypeForSize(int size) => size switch {
-        8 => TYP_SIMD8,
-        12 => TYP_SIMD12,
-        16 => TYP_SIMD16,
-#if TARGET_XARCH
-        32 => TYP_SIMD32,
-        64 => TYP_SIMD64,
-#elif TARGET_ARM64
-        SIZE_UNKNOWN => TYP_SIMD,
-#endif
-        _ => TYP_UNDEF,
-    };
-#endif
+    public static var_types GetSimdTypeForSize(int size)
+    {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new PlatformNotSupportedException("SIMD is not enabled for this target.");
+        }
+
+        return size switch {
+            8 => TYP_SIMD8,
+            12 => TYP_SIMD12,
+            16 => TYP_SIMD16,
+            32 when Configuration.TARGET_XARCH => TYP_SIMD32,
+            64 when Configuration.TARGET_XARCH => TYP_SIMD64,
+            SIZE_UNKNOWN when Configuration.TARGET_ARM64 => TYP_SIMD_ARM64,
+            _ => TYP_UNDEF,
+        };
+    }
 
     [Conditional("DEBUG")]
     public void assertImp([DoesNotReturnIf(false)] bool condition, GenTree? op1 = null, GenTree? op2 = null, [CallerArgumentExpression(nameof(condition))] string conditionExpression = "", [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)

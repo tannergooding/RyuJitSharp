@@ -132,7 +132,7 @@ public sealed partial class LinearScan
                 var vector = tree.AsVecCon();
                 if (!vector.IsAllBitsSet && !vector.IsZero)
                 {
-                    if (tree.Type is TYP_SIMD)
+                    if (tree.Type is TYP_SIMD_ARM64)
                     {
                         ref var value = ref vector.SimdScalableVal;
                         var info = Arm64SimdScalableConstInfo.Decode(value);

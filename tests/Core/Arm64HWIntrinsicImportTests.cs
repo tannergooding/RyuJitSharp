@@ -293,10 +293,10 @@ internal static unsafe class Arm64HWIntrinsicImportTests
                 TYP_DOUBLE => NI_Sve_CreateFalseMaskDouble,
                 _ => throw new AssertionException("Unexpected scalable mask fixture type."),
             };
-            var node = Import(compiler, intrinsic, in sig, baseType, TYP_SIMD, 0) ??
+            var node = Import(compiler, intrinsic, in sig, baseType, TYP_SIMD_ARM64, 0) ??
                 throw new AssertionException("Missing scalable false vector.");
 
-            Assert.That(node.Type, Is.EqualTo(TYP_SIMD));
+            Assert.That(node.Type, Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(node.AsVecCon().SimdScalableVal.BaseType, Is.EqualTo(baseType));
             Assert.That(node.AsVecCon().SimdScalableVal.Kind, Is.EqualTo(SimdScalableKind.SimdScalableRepeated));
             Assert.That(node.AsVecCon().SimdScalableVal.Index.u64[0], Is.Zero);
@@ -312,10 +312,10 @@ internal static unsafe class Arm64HWIntrinsicImportTests
         {
             Push(compiler, compiler.gtNewIconNode(TYP_INT, pattern));
             var sig = Signature(1);
-            var node = Import(compiler, NI_Sve_CreateTrueMaskInt32, in sig, TYP_INT, TYP_SIMD, 0) ??
+            var node = Import(compiler, NI_Sve_CreateTrueMaskInt32, in sig, TYP_INT, TYP_SIMD_ARM64, 0) ??
                 throw new AssertionException("Missing scalable true vector.");
 
-            Assert.That(node.Type, Is.EqualTo(TYP_SIMD));
+            Assert.That(node.Type, Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(node.AsVecCon().SimdScalableVal.BaseType, Is.EqualTo(TYP_INT));
             Assert.That(node.AsVecCon().SimdScalableVal.Kind, Is.EqualTo(SimdScalableKind.SimdScalableRepeated));
             Assert.That(node.AsVecCon().SimdScalableVal.Index.u64[0], Is.EqualTo(0xffffffffUL));

@@ -61,17 +61,17 @@ internal static class Arm64ScalableAssertionTests
             var constant = Constant(TYP_LONG, kind, ulong.MaxValue, 2);
             compiler.fgValueNumberTreeConst(constant);
             var constantVN = constant._vnPair.Liberal;
-            var operandVN = store.VNForExpr(null, TYP_SIMD);
+            var operandVN = store.VNForExpr(null, TYP_SIMD_ARM64);
             var assertion = AssertionDsc.CreateConstLclVarAssertion(
                 compiler, 0, operandVN, constant, constantVN, true);
-            var use = compiler.gtNewLclvNode(TYP_SIMD, 0);
+            var use = compiler.gtNewLclvNode(TYP_SIMD_ARM64, 0);
             use._vnPair.SetBoth(operandVN);
             var statement = local ? null : compiler.gtNewStmt(use);
             var result = compiler.optConstantAssertionProp(assertion, use, statement)
                 ?? throw new InvalidOperationException("Expected a propagated vector constant.");
 
             Assert.That(result, Is.Not.SameAs(use));
-            Assert.That(result.Type, Is.EqualTo(TYP_SIMD));
+            Assert.That(result.Type, Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(result.AsVecCon().SimdScalableVal, Is.EqualTo(constant.SimdScalableVal));
             if (!local)
             {
@@ -105,7 +105,7 @@ internal static class Arm64ScalableAssertionTests
 
     private static GenTreeVecCon Constant(var_types type, SimdScalableKind kind, ulong index, ulong step)
     {
-        var node = new GenTreeVecCon(TYP_SIMD);
+        var node = new GenTreeVecCon(TYP_SIMD_ARM64);
         node.SimdScalableVal.BaseType = type;
         node.SimdScalableVal.Kind = kind;
         node.SimdScalableVal.Index.u64[0] = index;
@@ -117,7 +117,7 @@ internal static class Arm64ScalableAssertionTests
     private static void WithCompiler(Action<Compiler> action, bool local = true)
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
-            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD }];
+            compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD_ARM64 }];
             compiler.lvaCount = 1;
             compiler.optAssertionInit(local);
             action(compiler);

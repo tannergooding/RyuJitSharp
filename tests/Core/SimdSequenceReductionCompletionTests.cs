@@ -126,14 +126,14 @@ internal static unsafe class SimdSequenceReductionCompletionTests
     {
         WithCompiler(compiler =>
         {
-            var result = compiler.gtNewSimdGetIndicesNode(TYP_SIMD, baseType, 0);
+            var result = compiler.gtNewSimdGetIndicesNode(TYP_SIMD_ARM64, baseType, 0);
             if (baseType is TYP_FLOAT or TYP_DOUBLE)
             {
                 var conversion = result.AsHWIntrinsic();
                 Assert.That(conversion.HWIntrinsicId,
                     Is.EqualTo(baseType == TYP_FLOAT ? NI_Sve_ConvertToSingle : NI_Sve_ConvertToDouble));
                 Assert.That(conversion.SimdBaseType, Is.EqualTo(baseType == TYP_FLOAT ? TYP_INT : TYP_LONG));
-                Assert.That(conversion.Type, Is.EqualTo(TYP_SIMD));
+                Assert.That(conversion.Type, Is.EqualTo(TYP_SIMD_ARM64));
                 Assert.That(conversion.SimdSize, Is.Zero);
                 result = conversion.GetOp(1);
                 baseType = baseType == TYP_FLOAT ? TYP_INT : TYP_LONG;
@@ -159,7 +159,7 @@ internal static unsafe class SimdSequenceReductionCompletionTests
             var scalarType = baseType.Size == 8 ? TYP_LONG : TYP_INT;
             var start = constantStart ? Scalar(compiler, baseType, -1) : Local(compiler, scalarType);
             var step = constantStep ? Scalar(compiler, baseType, 3) : Local(compiler, scalarType);
-            var result = compiler.gtNewSimdCreateSequenceNode(TYP_SIMD, start, step, baseType, 0);
+            var result = compiler.gtNewSimdCreateSequenceNode(TYP_SIMD_ARM64, start, step, baseType, 0);
             if (constantStart && constantStep)
             {
                 var value = result.AsVecCon().SimdScalableVal;
@@ -178,7 +178,7 @@ internal static unsafe class SimdSequenceReductionCompletionTests
                 Assert.That(intrinsic.GetOp(1), Is.SameAs(start));
                 Assert.That(intrinsic.GetOp(2), Is.SameAs(step));
             }
-            Assert.That(result.Type, Is.EqualTo(TYP_SIMD));
+            Assert.That(result.Type, Is.EqualTo(TYP_SIMD_ARM64));
         });
     }
 
@@ -191,9 +191,9 @@ internal static unsafe class SimdSequenceReductionCompletionTests
         {
             GenTree start = constants ? compiler.gtNewDconNode(baseType, -0.0) : Local(compiler, baseType);
             GenTree step = constants ? compiler.gtNewDconNode(baseType, 0.0) : Local(compiler, baseType);
-            var result = compiler.gtNewSimdCreateSequenceNode(TYP_SIMD, start, step, baseType, 0);
+            var result = compiler.gtNewSimdCreateSequenceNode(TYP_SIMD_ARM64, start, step, baseType, 0);
             var conversion = baseType == TYP_FLOAT ? NI_Sve_ConvertToSingle : NI_Sve_ConvertToDouble;
-            Assert.That(result.Type, Is.EqualTo(TYP_SIMD));
+            Assert.That(result.Type, Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(result.Oper, Is.EqualTo(GT_HWINTRINSIC));
             Assert.That(Nodes(result).Any(node => node.Oper == GT_HWINTRINSIC
                 && node.AsHWIntrinsic().HWIntrinsicId == conversion), Is.True);

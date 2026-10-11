@@ -116,7 +116,9 @@ public partial class Compiler
     private static unsafe var_types DecodeElemType(CORINFO_CLASS_HANDLE clsHnd)
     {
         var value = (nuint)clsHnd;
-        return (value & 1) != 0 ? (var_types)(value >> 1) : TYP_STRUCT;
+        return (value & 1) != 0
+            ? var_typesExtensions.FromNativeOrdinal(unchecked((int)(value >> 1)))
+            : TYP_STRUCT;
     }
 
     public unsafe void fgValueNumberArrayElemLoad(GenTree loadTree, VNFuncApp addrFunc)
@@ -418,7 +420,7 @@ public partial class Compiler
         }
 
         var memoryVN = fgCurMemoryVN[(int)ByrefExposed];
-        var typeVN = vnStore.VNForIntCon((int)type);
+        var typeVN = vnStore.VNForIntCon(var_typesExtensions.ToNativeOrdinal(type));
         return vnStore.VNForFunc(type, VNF_ByrefExposedLoad, typeVN,
             vnStore.VNNormalValue(pointerVN), memoryVN);
     }
@@ -432,7 +434,7 @@ public partial class Compiler
         }
 
         var memoryVN = fgCurMemoryVN[(int)ByrefExposed];
-        var typeVN = vnStore.VNForIntCon((int)type);
+        var typeVN = vnStore.VNForIntCon(var_typesExtensions.ToNativeOrdinal(type));
         return vnStore.VNForFunc(type, VNF_ByrefExposedLocalLoad, typeVN,
             vnStore.VNForIntCon(lclNum), vnStore.VNForIntPtrCon(unchecked((nint)(nuint)lclOffs)), memoryVN);
     }

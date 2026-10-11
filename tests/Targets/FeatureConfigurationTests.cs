@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -74,6 +75,114 @@ internal static class FeatureConfigurationTests
             Globals.EvaluateUnaryMask(genTreeOps.GT_NOT, false, var_types.TYP_BYTE, 64, ref result, allBits);
             Assert.That(result.RawBits, Is.Zero);
         });
+    }
+
+    [Test]
+    public static void SimdConstantStorageMatchesTheConfiguredTarget()
+    {
+        WithCompiler(compiler =>
+        {
+            var store = new ValueNumStore(compiler);
+            if (!Configuration.FEATURE_SIMD)
+            {
+                _ = Assert.Throws<PlatformNotSupportedException>(() => store.VNForSimd8Con(simd8_t.Zero));
+                return;
+            }
+
+            var fixedVector = simd8_t.AllBitsSet;
+            var fixedVectorVN = store.VNForSimd8Con(fixedVector);
+            Assert.That(store.GetConstantSimd8(fixedVectorVN), Is.EqualTo(fixedVector));
+
+            if (Configuration.TARGET_XARCH)
+            {
+                var wideVector = simd64_t.AllBitsSet;
+                var wideVectorVN = store.VNForSimd64Con(wideVector);
+                Assert.That(store.GetConstantSimd64(wideVectorVN), Is.EqualTo(wideVector));
+            }
+            else
+            {
+                _ = Assert.Throws<PlatformNotSupportedException>(() =>
+                    store.VNForSimd64Con(simd64_t.AllBitsSet));
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                var scalableVector = simdscalable_t.AllBitsSet;
+                var scalableVectorVN = store.VNForSimdScalableCon(scalableVector);
+                Assert.That(store.GetConstantSimdScalable(scalableVectorVN), Is.EqualTo(scalableVector));
+            }
+            else
+            {
+                _ = Assert.Throws<PlatformNotSupportedException>(() =>
+                    store.VNForSimdScalableCon(simdscalable_t.AllBitsSet));
+            }
+        });
+    }
+
+    [Test]
+    public static void NativeVariableTypeOrdinalsRemainTargetSpecific()
+    {
+        WithCompiler(compiler =>
+        {
+            var store = new ValueNumStore(compiler);
+            if (!Configuration.FEATURE_SIMD)
+            {
+                Assert.That(var_typesExtensions.NativeCount, Is.EqualTo(16));
+                AssertNativeOrdinalRoundTrips(store, TYP_INT, TYP_UNKNOWN, TYP_COUNT);
+                return;
+            }
+
+            if (Configuration.TARGET_XARCH)
+            {
+                Assert.That(var_typesExtensions.NativeCount, Is.EqualTo(22));
+                Assert.That(var_typesExtensions.ToNativeOrdinal(TYP_SIMD32), Is.EqualTo(18));
+                Assert.That(var_typesExtensions.ToNativeOrdinal(TYP_SIMD64), Is.EqualTo(19));
+                Assert.That(var_typesExtensions.ToNativeOrdinal(TYP_MASK), Is.EqualTo(20));
+                AssertNativeOrdinalRoundTrips(store, TYP_INT, TYP_SIMD8, TYP_SIMD12, TYP_SIMD16,
+                    TYP_SIMD32, TYP_SIMD64, TYP_MASK, TYP_UNKNOWN, TYP_COUNT);
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                Assert.That(var_typesExtensions.NativeCount, Is.EqualTo(21));
+                Assert.That(var_typesExtensions.ToNativeOrdinal(TYP_SIMD_ARM64), Is.EqualTo(18));
+                Assert.That(var_typesExtensions.ToNativeOrdinal(TYP_MASK), Is.EqualTo(19));
+                AssertNativeOrdinalRoundTrips(store, TYP_INT, TYP_SIMD8, TYP_SIMD12, TYP_SIMD16,
+                    TYP_SIMD_ARM64, TYP_MASK, TYP_UNKNOWN, TYP_COUNT);
+            }
+            else
+            {
+                Assert.That(var_typesExtensions.NativeCount, Is.EqualTo(20));
+                Assert.That(var_typesExtensions.ToNativeOrdinal(TYP_MASK), Is.EqualTo(18));
+                AssertNativeOrdinalRoundTrips(store, TYP_INT, TYP_SIMD8, TYP_SIMD12, TYP_SIMD16,
+                    TYP_MASK, TYP_UNKNOWN, TYP_COUNT);
+            }
+
+            var structEncoding = store.EncodeBitCastType(TYP_STRUCT, new ValueSize(3));
+            Assert.That(store.GetConstantInt32(structEncoding), Is.EqualTo(var_typesExtensions.NativeCount + 3));
+            Assert.That(store.DecodeBitCastType(structEncoding, out var size), Is.EqualTo(TYP_STRUCT));
+            Assert.That(size, Is.EqualTo(3U));
+
+            var simdTypeVN = store.VNForSimdType(16, TYP_INT, TYP_MASK);
+            var simdTypeApp = new VNFuncApp();
+            Assert.That(store.GetVNFunc(simdTypeVN, ref simdTypeApp), Is.True);
+            var encodedTypes = store.GetConstantInt32(simdTypeApp.GetArg(1));
+            Assert.That(encodedTypes & 0xFF, Is.EqualTo(var_typesExtensions.ToNativeOrdinal(TYP_INT)));
+            Assert.That((encodedTypes >> 8) - 1, Is.EqualTo(var_typesExtensions.ToNativeOrdinal(TYP_MASK)));
+        });
+    }
+
+    private static void AssertNativeOrdinalRoundTrips(ValueNumStore store, params var_types[] types)
+    {
+        foreach (var type in types)
+        {
+            var ordinal = var_typesExtensions.ToNativeOrdinal(type);
+            Assert.That(var_typesExtensions.FromNativeOrdinal(ordinal), Is.EqualTo(type));
+
+            var castVN = store.VNForCastOper(type, false);
+            store.GetCastOperFromVN(castVN, out var castType, out var isUnsigned);
+            Assert.That(castType, Is.EqualTo(type));
+            Assert.That(isUnsigned, Is.False);
+        }
     }
 
     private static unsafe void WithCompiler(Action<Compiler> action)

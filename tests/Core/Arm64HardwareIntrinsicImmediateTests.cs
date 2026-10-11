@@ -124,8 +124,8 @@ internal static class Arm64HardwareIntrinsicImmediateTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var node = new GenTreeHWIntrinsic(TYP_SIMD, NI_Sve_SaturatingIncrementBy32BitElementCount,
-                TYP_INT, 0, Operand(REG_V1, TYP_SIMD), Immediate(scale), Immediate(pattern)) {
+            var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_SaturatingIncrementBy32BitElementCount,
+                TYP_INT, 0, Operand(REG_V1, TYP_SIMD_ARM64), Immediate(scale), Immediate(pattern)) {
                 RegNum = REG_V1
             };
             EnableIsa(compiler, node);
@@ -142,8 +142,8 @@ internal static class Arm64HardwareIntrinsicImmediateTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var node = new GenTreeHWIntrinsic(TYP_SIMD, NI_Sve_SaturatingIncrementBy32BitElementCount,
-                TYP_INT, 0, Operand(REG_V1, TYP_SIMD), Operand(REG_R12, TYP_INT), Operand(REG_R14, TYP_INT)) {
+            var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_SaturatingIncrementBy32BitElementCount,
+                TYP_INT, 0, Operand(REG_V1, TYP_SIMD_ARM64), Operand(REG_R12, TYP_INT), Operand(REG_R14, TYP_INT)) {
                 RegNum = REG_V1
             };
             EnableIsa(compiler, node);
@@ -172,8 +172,8 @@ internal static class Arm64HardwareIntrinsicImmediateTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var node = new GenTreeHWIntrinsic(TYP_SIMD, intrinsic, baseType, 0,
-                Operand(REG_V1, TYP_SIMD), Operand(REG_V2, TYP_SIMD), Operand(REG_V3, TYP_SIMD),
+            var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, intrinsic, baseType, 0,
+                Operand(REG_V1, TYP_SIMD_ARM64), Operand(REG_V2, TYP_SIMD_ARM64), Operand(REG_V3, TYP_SIMD_ARM64),
                 Operand(REG_R12, TYP_INT), Operand(REG_R14, TYP_INT)) { RegNum = REG_V1 };
             EnableIsa(compiler, node);
             codeGen.InternalRegisters.Add(node, regMaskTP.CreateFromRegNum(REG_R13, REG_R13.SingleTypeMask));

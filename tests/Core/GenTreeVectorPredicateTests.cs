@@ -76,7 +76,7 @@ internal static class GenTreeVectorPredicateTests
     [Test]
     public static void ScalablePredicatesReadScalableStorage()
     {
-        var node = new GenTreeVecCon(TYP_SIMD);
+        var node = new GenTreeVecCon(TYP_SIMD_ARM64);
 
         Assert.That(node.IsZero, Is.True);
         Assert.That(node.IsAllBitsSet, Is.False);

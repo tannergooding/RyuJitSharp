@@ -148,7 +148,7 @@ internal static unsafe class ArgumentRegisterMappingTests
     [TestCase(TYP_SIMD12)]
     [TestCase(TYP_SIMD16)]
 #if TARGET_ARM64
-    [TestCase(TYP_SIMD)]
+    [TestCase(TYP_SIMD_ARM64)]
 #endif
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
@@ -159,7 +159,7 @@ internal static unsafe class ArgumentRegisterMappingTests
 #if TARGET_ARM64
         var usesFloat = type is TYP_FLOAT or TYP_DOUBLE;
 #if FEATURE_SIMD
-        usesFloat |= type is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD;
+        usesFloat |= type is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD_ARM64;
 #endif
 #else
         var usesFloat = type is TYP_FLOAT or TYP_DOUBLE;

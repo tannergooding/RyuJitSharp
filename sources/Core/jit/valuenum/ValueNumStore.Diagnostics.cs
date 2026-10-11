@@ -260,7 +260,6 @@ public sealed partial class ValueNumStore
                 break;
             }
 
-#if FEATURE_SIMD
             case TYP_SIMD8:
             {
                 var value = GetConstantSimd8(vn);
@@ -282,7 +281,6 @@ public sealed partial class ValueNumStore
                 break;
             }
 
-#if TARGET_XARCH
             case TYP_SIMD32:
             {
                 var value = GetConstantSimd32(vn);
@@ -299,8 +297,8 @@ public sealed partial class ValueNumStore
                     $"0x{value.u64[5]:x16}, 0x{value.u64[6]:x16}, 0x{value.u64[7]:x16}]");
                 break;
             }
-#elif TARGET_ARM64
-            case TYP_SIMD:
+
+            case TYP_SIMD_ARM64:
             {
                 var value = GetConstantSimdScalable(vn);
                 var index = value.Index.u64[0];
@@ -337,7 +335,7 @@ public sealed partial class ValueNumStore
                 }
                 break;
             }
-#endif
+
             case TYP_MASK:
             {
                 var storage = GetConstantSimdMaskValue(vn);
@@ -356,10 +354,8 @@ public sealed partial class ValueNumStore
                     var value = storage.Fixed;
                     jitprintf($"SimdMaskCns[0x{value.u32[0]:x8}, 0x{value.u32[1]:x8}]");
                 }
-
                 break;
             }
-#endif
 
             default:
             {
@@ -474,12 +470,12 @@ public sealed partial class ValueNumStore
         assert(app.FuncIs(VNF_SimdType) && (app.Arity == 2));
         var size = ConstantValue<int>(app.GetArg(0));
         var encodedTypes = ConstantValue<int>(app.GetArg(1));
-        var baseType = (var_types)(encodedTypes & SimdTypeMask);
+        var baseType = var_typesExtensions.FromNativeOrdinal(encodedTypes & SimdTypeMask);
         var auxiliaryType = encodedTypes >> SimdTypeBits;
         jitprintf($"{FuncName(app.Func)}(simd{size}, {NativeTypeName(baseType)}");
         if (auxiliaryType != 0)
         {
-            jitprintf($", aux {NativeTypeName((var_types)(auxiliaryType - 1))}");
+            jitprintf($", aux {NativeTypeName(var_typesExtensions.FromNativeOrdinal(auxiliaryType - 1))}");
         }
         jitprintf(")");
     }
@@ -507,8 +503,11 @@ public sealed partial class ValueNumStore
     {
         var fromType = TypeOfVN(app.GetArg(0));
         var encoded = unchecked((uint)ConstantValue<int>(app.GetArg(1)));
-        var toType = encoded < (uint)TYP_COUNT ? (var_types)encoded : TYP_STRUCT;
-        var size = encoded < (uint)TYP_COUNT ? 0 : encoded - (uint)TYP_COUNT;
+        var nativeCount = unchecked((uint)var_typesExtensions.NativeCount);
+        var toType = encoded < nativeCount
+            ? var_typesExtensions.FromNativeOrdinal(unchecked((int)encoded))
+            : TYP_STRUCT;
+        var size = encoded < nativeCount ? 0 : encoded - nativeCount;
         jitprintf($"BitCast<{NativeTypeName(toType)}");
         if (toType is TYP_STRUCT)
         {

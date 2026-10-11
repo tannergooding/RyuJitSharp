@@ -63,7 +63,7 @@ internal static class LocalTypeQueryTests
     {
         foreach (var type in Enum.GetValues<var_types>())
         {
-            if (type >= TYP_COUNT)
+            if (type >= TYP_SIMD_ARM64)
             {
                 continue;
             }
@@ -93,7 +93,7 @@ internal static class LocalTypeQueryTests
 #if FEATURE_SIMD
                 TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 => TYP_STRUCT,
 #if TARGET_ARM64
-                TYP_SIMD => TYP_STRUCT,
+                TYP_SIMD_ARM64 => TYP_STRUCT,
 #endif
 #endif
                 _ => type,

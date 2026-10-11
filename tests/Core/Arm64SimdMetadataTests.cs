@@ -159,7 +159,7 @@ internal static class Arm64SimdMetadataTests
     [Test]
     public static void ScalableVectorQueriesDoNotUseFixedSimd16Bits()
     {
-        var node = new GenTreeVecCon(TYP_SIMD);
+        var node = new GenTreeVecCon(TYP_SIMD_ARM64);
 
         Assert.That(node.IsZero, Is.True);
         Assert.That(node.IsAllBitsSet, Is.False);
@@ -177,7 +177,7 @@ internal static class Arm64SimdMetadataTests
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
         var node = compiler.gtNewSimdVconNode(
-            TYP_SIMD, baseType, SimdScalableKind.SimdScalableSequence, ulong.MaxValue, ulong.MaxValue - 1);
+            TYP_SIMD_ARM64, baseType, SimdScalableKind.SimdScalableSequence, ulong.MaxValue, ulong.MaxValue - 1);
         var clone = compiler.gtCloneCnsVec(node);
 
         Assert.That(node.SimdScalableVal.Index.u64[0], Is.EqualTo(mask));
@@ -200,7 +200,7 @@ internal static class Arm64SimdMetadataTests
         value.Index.u64[0] = 0x1FF;
         value.Step.u64[0] = 0x100;
 
-        var node = compiler.gtNewSimdVconNode(TYP_SIMD, in value);
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, in value);
 
         Assert.That(node.SimdScalableVal.BaseType, Is.EqualTo(TYP_BYTE));
         Assert.That(node.SimdScalableVal.Kind, Is.EqualTo(SimdScalableKind.SimdScalableSequence));
@@ -214,7 +214,7 @@ internal static class Arm64SimdMetadataTests
     public static void ScalableConstantFactoriesUseRepeatedBytePatterns(byte pattern)
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
-        var constant = compiler.gtNewConWithPattern(TYP_SIMD, pattern)
+        var constant = compiler.gtNewConWithPattern(TYP_SIMD_ARM64, pattern)
             ?? throw new AssertionException("The scalable pattern factory returned no constant.");
         var node = constant.AsVecCon();
 
@@ -222,8 +222,8 @@ internal static class Arm64SimdMetadataTests
         Assert.That(node.SimdScalableVal.Kind, Is.EqualTo(SimdScalableKind.SimdScalableRepeated));
         Assert.That(node.SimdScalableVal.Index.u64[0], Is.EqualTo(pattern));
         Assert.That(node.SimdScalableVal.Step.u64[0], Is.Zero);
-        Assert.That(compiler.gtNewZeroConNode(TYP_SIMD).AsVecCon().IsZero, Is.True);
-        Assert.That(compiler.gtNewAllBitsSetConNode(TYP_SIMD).AsVecCon().IsAllBitsSet, Is.True);
+        Assert.That(compiler.gtNewZeroConNode(TYP_SIMD_ARM64).AsVecCon().IsZero, Is.True);
+        Assert.That(compiler.gtNewAllBitsSetConNode(TYP_SIMD_ARM64).AsVecCon().IsAllBitsSet, Is.True);
     }
 
     [TestCase(nameof(GenTreeVecCon.EvaluateBinaryInPlace))]
@@ -241,7 +241,7 @@ internal static class Arm64SimdMetadataTests
     [TestCase(nameof(GenTreeVecCon.GetFloatingZeroMask))]
     public static void UnportedScalableConsumersFailBeforeReadingFixedWidthStorage(string name)
     {
-        var node = new GenTreeVecCon(TYP_SIMD);
+        var node = new GenTreeVecCon(TYP_SIMD_ARM64);
         TestDelegate operation = name switch {
             nameof(GenTreeVecCon.EvaluateBinaryInPlace) => () => node.EvaluateBinaryInPlace(genTreeOps.GT_ADD, false, TYP_FLOAT, node),
             nameof(GenTreeVecCon.EvaluateBroadcastInPlace) => () => node.EvaluateBroadcastInPlace(TYP_FLOAT, 1.0),
@@ -276,7 +276,7 @@ internal static class Arm64SimdMetadataTests
         var_types baseType, SimdScalableKind kind, ulong indexValue, ulong step, int elementIndex, ulong expected)
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
-        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, indexValue, step);
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, baseType, kind, indexValue, step);
 
         Assert.That(node.GetIntegralVectorConstElement(elementIndex, baseType), Is.EqualTo(expected));
     }
@@ -320,7 +320,7 @@ internal static class Arm64SimdMetadataTests
         SimdScalableKind expectedKind, ulong expectedIndex, ulong expectedStep)
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
-        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, baseType, kind, index, step);
 
         Assert.That(node.TryEvaluateUnaryInPlace(oper, scalar, baseType), Is.True);
         Assert.That(node.SimdScalableVal.BaseType, Is.EqualTo(baseType));
@@ -343,7 +343,7 @@ internal static class Arm64SimdMetadataTests
         genTreeOps oper, var_types baseType, SimdScalableKind kind, ulong index, ulong step)
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
-        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, baseType, kind, index, step);
         var original = node.SimdScalableVal;
 
         Assert.That(node.TryEvaluateUnaryInPlace(oper, false, baseType), Is.False);
@@ -379,7 +379,7 @@ internal static class Arm64SimdMetadataTests
         var_types baseType, SimdScalableKind kind, ulong index, ulong step, string elements)
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
-        var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+        var node = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, baseType, kind, index, step);
         using var stream = new MemoryStream();
         using var writer = new JitTextWriter(stream, leaveOpen: true);
         var previousWriter = Globals.s_jitstdout;
@@ -403,7 +403,7 @@ internal static class Arm64SimdMetadataTests
     {
         var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
         var node = compiler.gtNewSimdVconNode(
-            TYP_SIMD, TYP_ULONG, SimdScalableKind.SimdScalableSequence, 0x1234_5678_90AB_CDEF, 0xFEDC_BA09_8765_4321);
+            TYP_SIMD_ARM64, TYP_ULONG, SimdScalableKind.SimdScalableSequence, 0x1234_5678_90AB_CDEF, 0xFEDC_BA09_8765_4321);
         uint payloadHash = 0;
         foreach (var word in new uint[] { (uint)SimdScalableKind.SimdScalableSequence, (uint)TYP_ULONG,
             0x90AB_CDEF, 0x1234_5678, 0x8765_4321, 0xFEDC_BA09 })

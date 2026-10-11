@@ -199,7 +199,7 @@ internal static unsafe class PatchpointMetadataTests
         }
         compiler.gsShadowVarInfo[0].ShadowCopy = 9;
 #if TARGET_ARM64
-        compiler.lvaTable[8].Type = TYP_SIMD;
+        compiler.lvaTable[8].Type = TYP_SIMD_ARM64;
         compiler.lvaTable[8].lvOnFrame = true;
         compiler.lvaTable[8].lvFramePointerBased = true;
         compiler.gsShadowVarInfo[8].ShadowCopy = BAD_VAR_NUM;

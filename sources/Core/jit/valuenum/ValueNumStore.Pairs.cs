@@ -105,31 +105,31 @@ public sealed partial class ValueNumStore
         if (!size.IsExact)
         {
             assert(varTypeHasUnknownSize(castToType));
-            return VNForIntCon((int)castToType);
+            return VNForIntCon(var_typesExtensions.ToNativeOrdinal(castToType));
         }
 
         var exactSize = size.ExactSize;
         if (castToType is not TYP_STRUCT)
         {
             assert(exactSize == castToType.Size);
-            return VNForIntCon((int)castToType);
+            return VNForIntCon(var_typesExtensions.ToNativeOrdinal(castToType));
         }
 
         assert(exactSize != 0);
-        return VNForIntCon(unchecked((int)((uint)TYP_COUNT + exactSize)));
+        return VNForIntCon(unchecked((int)((uint)var_typesExtensions.NativeCount + exactSize)));
     }
 
     public var_types DecodeBitCastType(ValueNum castToType, out uint size)
     {
         var encoded = unchecked((uint)ConstantValue<int>(castToType));
-        if (encoded < (uint)TYP_COUNT)
+        if (encoded < (uint)var_typesExtensions.NativeCount)
         {
-            var type = (var_types)encoded;
+            var type = var_typesExtensions.FromNativeOrdinal(unchecked((int)encoded));
             size = unchecked((uint)type.Size);
             return type;
         }
 
-        size = encoded - (uint)TYP_COUNT;
+        size = encoded - (uint)var_typesExtensions.NativeCount;
         return TYP_STRUCT;
     }
 

@@ -85,7 +85,7 @@ public sealed partial class Lowering
             return false;
         }
 
-        if (parent.Type is TYP_MASK or TYP_SIMD)
+        if (parent.Type is TYP_MASK or TYP_SIMD_ARM64)
         {
             return false;
         }

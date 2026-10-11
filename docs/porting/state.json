@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the ValueNumStore SIMD constant-storage closure next: replace FEATURE_SIMD/TARGET_XARCH/TARGET_ARM64 compile gates in ValueNumStore.Constants.cs, Storage.cs, and VNAllBitsForType in ValueNumStore.BinaryInterning.cs, preserving vector widths, mask feature checks, and scalable ARM64 constants.",
+    "nextAction": "Universalize ValueNumStore.HardwareConstantConversions.cs: replace FEATURE_SIMD/TARGET_ARM64/TARGET_XARCH compile gates with Configuration checks while preserving scalable ARM64 conversions, xarch fixed-width conversions, and explicit unsupported paths.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize mask arithmetic and vector/mask conversions across ValueNumStore, GenTreeMskCon, and shared SIMD helpers.",
-      "doneWhen": "The mask operation paths compile with masked intrinsics disabled, unsupported calls terminate explicitly, fixed xarch/ARM64 bit layouts and scalable ARM64 behavior are preserved, and focused tests pass.",
-      "validation": "Focused Debug and Release tests passed on x64 and ARM64, feature-disabled browser-Wasm tests passed, and state.json parses with a clean git diff check.",
-      "deferred": "Keep target-specific intrinsic lowering, register allocation, and codegen guards for later dependency-coherent batches."
+      "scope": "Universalize the SIMD var_types union and target-native ordinal encoding, then make ValueNumStore SIMD constant storage and lookup target-aware across Constants.cs, Storage.cs, BinaryInterning.cs, and scalable-vector metadata.",
+      "doneWhen": "The managed type table includes all target SIMD types; native ordinal/count conversions preserve per-target identities at value-number and diagnostic boundaries; fixed-width, scalable, and mask constants retain their storage semantics and unsupported paths terminate explicitly.",
+      "validation": "Release target suite: win-x64 285/285 and browser-wasm 330/330; ARM64 focused SIMD tests 25/25 and full suite 4,077 passed, 6 failed (jump-table, embedded-FMA, and constant-count-immediate expectations), 2 skipped. Debug FeatureConfigurationTests 6/6 on each target. Generated outputs matched integrated files by SHA-256; state.json and diff checks passed.",
+      "deferred": "Continue with HardwareConstantConversions.cs, then SIMD operation dispatch and target-specific intrinsic lowering, register allocation, and codegen guards in dependency-coherent batches."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -65,6 +65,19 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "universal-var-type-ordinals",
+      "native": [
+        "src\\coreclr\\jit\\typelist.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Inputs\\typelist.h",
+        "sources\\Core\\jit\\vartypesdef\\var_typesExtensions.cs",
+        "sources\\Core\\jit\\vartypesdef\\var_types.generated.cs"
+      ],
+      "disposition": "The managed enum is a union of shared, xarch, and ARM64 SIMD types; explicit target-native ordinal/count conversions preserve upstream type identities in value-number encodings.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750"
+    },
     {
       "area": "swift-error-register-lifetime",
       "native": [

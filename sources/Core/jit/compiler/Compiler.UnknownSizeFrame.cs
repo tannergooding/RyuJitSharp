@@ -128,7 +128,7 @@ public partial class Compiler
         assert(varTypeHasUnknownSize(local.Type));
         local.UnknownSizeFrameIndex = local.Type switch
         {
-            TYP_SIMD => unchecked((int)unkSizeFrame.AllocVector()),
+            TYP_SIMD_ARM64 => unchecked((int)unkSizeFrame.AllocVector()),
             TYP_MASK => unchecked((int)unkSizeFrame.AllocMask()),
             _ => throw new UnreachableException(),
         };
@@ -143,7 +143,7 @@ public partial class Compiler
         assert(varTypeHasUnknownSize(temp.tdTempType));
         var offset = temp.tdTempType switch
         {
-            TYP_SIMD => unchecked((int)unkSizeFrame.AllocVector()),
+            TYP_SIMD_ARM64 => unchecked((int)unkSizeFrame.AllocVector()),
             TYP_MASK => unchecked((int)unkSizeFrame.AllocMask()),
             _ => throw new UnreachableException(),
         };

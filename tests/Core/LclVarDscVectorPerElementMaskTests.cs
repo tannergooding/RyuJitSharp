@@ -84,7 +84,7 @@ internal static class LclVarDscVectorPerElementMaskTests
     [TestCase(TYP_BYREF)]
     [TestCase(TYP_STRUCT)]
     [TestCase(TYP_UNKNOWN)]
-    [TestCase(TYP_COUNT)]
+    [TestCase(TYP_SIMD_ARM64)]
 #if FEATURE_SIMD
     [TestCase(TYP_SIMD8)]
     [TestCase(TYP_SIMD12)]
@@ -93,7 +93,7 @@ internal static class LclVarDscVectorPerElementMaskTests
     [TestCase(TYP_SIMD32)]
     [TestCase(TYP_SIMD64)]
 #elif TARGET_ARM64
-    [TestCase(TYP_SIMD)]
+    [TestCase(TYP_SIMD_ARM64)]
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK)]

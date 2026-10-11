@@ -159,11 +159,11 @@ internal static unsafe class Arm64FoldExprDispatchTests
         WithCompiler(compiler =>
         {
             var mask = compiler.gtNewMskConNode(TYP_MASK, TYP_INT, true);
-            var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD, NI_Sve_ConvertMaskToVector,
+            var intrinsic = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_ConvertMaskToVector,
                 TYP_INT, 16, mask);
 
             var result = compiler.gtFoldExpr(intrinsic);
-            Assert.That(result.Type, Is.EqualTo(TYP_SIMD));
+            Assert.That(result.Type, Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(result.AsVecCon().SimdScalableVal.Kind, Is.EqualTo(SimdScalableKind.SimdScalableRepeated));
             Assert.That(result.AsVecCon().SimdScalableVal.Index.u64[0], Is.EqualTo((ulong)uint.MaxValue));
         });

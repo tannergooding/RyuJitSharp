@@ -21,11 +21,11 @@ internal static class Arm64ScalableValueNumTests
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
-            var vn = store.VNZeroForType(TYP_SIMD);
+            var vn = store.VNZeroForType(TYP_SIMD_ARM64);
 
             Assert.That(store.IsVNConstant(vn), Is.True);
-            Assert.That(store.TypeOfVN(vn), Is.EqualTo(TYP_SIMD));
-            Assert.That(store.VNZeroForType(TYP_SIMD), Is.EqualTo(vn));
+            Assert.That(store.TypeOfVN(vn), Is.EqualTo(TYP_SIMD_ARM64));
+            Assert.That(store.VNZeroForType(TYP_SIMD_ARM64), Is.EqualTo(vn));
             Assert.That(store.GetConstantSimdScalable(vn), Is.EqualTo(simdscalable_t.Zero));
         });
     }
@@ -38,10 +38,10 @@ internal static class Arm64ScalableValueNumTests
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
-            var first = new GenTreeVecCon(TYP_SIMD) {
+            var first = new GenTreeVecCon(TYP_SIMD_ARM64) {
                 SimdScalableVal = Value(TYP_LONG, kind, ulong.MaxValue, 2),
             };
-            var second = new GenTreeVecCon(TYP_SIMD) {
+            var second = new GenTreeVecCon(TYP_SIMD_ARM64) {
                 SimdScalableVal = first.SimdScalableVal,
             };
             compiler.fgValueNumberTreeConst(first);
@@ -50,7 +50,7 @@ internal static class Arm64ScalableValueNumTests
             Assert.That(first._vnPair.BothEqual(), Is.True);
             Assert.That(first._vnPair, Is.EqualTo(second._vnPair));
             Assert.That(store.IsVNConstant(first._vnPair.Liberal), Is.True);
-            Assert.That(store.TypeOfVN(first._vnPair.Liberal), Is.EqualTo(TYP_SIMD));
+            Assert.That(store.TypeOfVN(first._vnPair.Liberal), Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(store.GetConstantSimdScalable(first._vnPair.Liberal), Is.EqualTo(first.SimdScalableVal));
         });
     }
@@ -65,7 +65,7 @@ internal static class Arm64ScalableValueNumTests
             var value = Value(TYP_DOUBLE, kind, 0, step);
             var vn = store.VNForSimdScalableCon(value);
 
-            Assert.That(store.VNZeroForType(TYP_SIMD), Is.EqualTo(vn));
+            Assert.That(store.VNZeroForType(TYP_SIMD_ARM64), Is.EqualTo(vn));
             var stored = store.GetConstantSimdScalable(vn);
             Assert.That(stored.BaseType, Is.EqualTo(TYP_DOUBLE));
             Assert.That(stored.Kind, Is.EqualTo(kind));
@@ -91,7 +91,7 @@ internal static class Arm64ScalableValueNumTests
             var vn = store.VNForSimdScalableCon(value);
 
             Assert.That(vn, Is.Not.EqualTo(baseline));
-            Assert.That(vn, Is.Not.EqualTo(store.VNZeroForType(TYP_SIMD)));
+            Assert.That(vn, Is.Not.EqualTo(store.VNZeroForType(TYP_SIMD_ARM64)));
             Assert.That(store.VNForSimdScalableCon(value), Is.EqualTo(vn));
             var stored = store.GetConstantSimdScalable(vn);
             Assert.That(stored.BaseType, Is.EqualTo(type));
@@ -134,7 +134,7 @@ internal static class Arm64ScalableValueNumTests
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             var store = new ValueNumStore(compiler);
-            var scalable = store.VNZeroForType(TYP_SIMD);
+            var scalable = store.VNZeroForType(TYP_SIMD_ARM64);
             var fixedVector = store.VNZeroForType(TYP_SIMD16);
 
             Assert.That(scalable, Is.Not.EqualTo(fixedVector));
@@ -149,9 +149,9 @@ internal static class Arm64ScalableValueNumTests
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             var store = new ValueNumStore(compiler);
-            var operand = store.VNForExpr(null, TYP_SIMD);
-            var complement = store.VNForFunc(TYP_SIMD, VNF_NOT, operand);
-            var result = store.VNForFunc(TYP_SIMD, operation, operand, complement);
+            var operand = store.VNForExpr(null, TYP_SIMD_ARM64);
+            var complement = store.VNForFunc(TYP_SIMD_ARM64, VNF_NOT, operand);
+            var result = store.VNForFunc(TYP_SIMD_ARM64, operation, operand, complement);
 
             Assert.That(store.GetConstantSimdScalable(result),
                 Is.EqualTo(allBits ? simdscalable_t.AllBitsSet : simdscalable_t.Zero));

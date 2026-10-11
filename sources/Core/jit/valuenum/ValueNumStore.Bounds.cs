@@ -33,7 +33,7 @@ public sealed partial class ValueNumStore
     {
         assert(castToType != TYP_STRUCT);
         // Native reserves bit zero for unsigned source interpretation.
-        return VNForIntCon(((int)castToType << 1) | (srcIsUnsigned ? 1 : 0));
+        return VNForIntCon((var_typesExtensions.ToNativeOrdinal(castToType) << 1) | (srcIsUnsigned ? 1 : 0));
     }
 
     public void GetCastOperFromVN(ValueNum vn, out var_types castToType, out bool srcIsUnsigned)
@@ -42,7 +42,7 @@ public sealed partial class ValueNumStore
         var value = GetConstantInt32(vn);
         assert(value >= 0);
         srcIsUnsigned = (value & 1) != 0;
-        castToType = (var_types)(value >> 1);
+        castToType = var_typesExtensions.FromNativeOrdinal(value >> 1);
         assert(VNForCastOper(castToType, srcIsUnsigned) == vn);
     }
 

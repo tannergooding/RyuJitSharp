@@ -414,18 +414,13 @@ public sealed partial class ValueNumStore
         TYP_REF => "ref",
         TYP_BYREF => "byref",
         TYP_STRUCT => "struct",
-#if FEATURE_SIMD
         TYP_SIMD8 => "simd8",
         TYP_SIMD12 => "simd12",
         TYP_SIMD16 => "simd16",
-#if TARGET_XARCH
         TYP_SIMD32 => "simd32",
         TYP_SIMD64 => "simd64",
-#elif TARGET_ARM64
-        TYP_SIMD => "simd",
-#endif
+        TYP_SIMD_ARM64 => "simd",
         TYP_MASK => "mask",
-#endif
         _ => throw new FatalJitException("Unrecognized map value type."),
     };
 

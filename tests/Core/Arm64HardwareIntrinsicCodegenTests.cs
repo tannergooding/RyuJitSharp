@@ -208,8 +208,8 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var node = new GenTreeHWIntrinsic(TYP_SIMD, intrinsic, TYP_INT, 0,
-                Operand(REG_V1, TYP_SIMD), Operand(REG_V2, TYP_SIMD)) { RegNum = REG_V0 };
+            var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, intrinsic, TYP_INT, 0,
+                Operand(REG_V1, TYP_SIMD_ARM64), Operand(REG_V2, TYP_SIMD_ARM64)) { RegNum = REG_V0 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -252,11 +252,11 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var embedded = new GenTreeHWIntrinsic(TYP_SIMD, NI_Sve_Abs, TYP_INT, 0,
-                Operand(REG_V1, TYP_SIMD));
+            var embedded = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_Abs, TYP_INT, 0,
+                Operand(REG_V1, TYP_SIMD_ARM64));
             embedded.Flags |= GTF_CONTAINED | GTF_HW_EM_OP;
-            var node = new GenTreeHWIntrinsic(TYP_SIMD, NI_Sve_ConditionalSelect, TYP_INT, 0,
-                Operand(REG_P1, TYP_MASK), embedded, Operand(falseReg, TYP_SIMD)) { RegNum = target };
+            var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_ConditionalSelect, TYP_INT, 0,
+                Operand(REG_P1, TYP_MASK), embedded, Operand(falseReg, TYP_SIMD_ARM64)) { RegNum = target };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -279,11 +279,11 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var embedded = new GenTreeHWIntrinsic(TYP_SIMD, NI_Sve_FusedMultiplyAdd, TYP_FLOAT, 0,
-                Operand(REG_V1, TYP_SIMD), Operand(REG_V2, TYP_SIMD), Operand(REG_V3, TYP_SIMD));
+            var embedded = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_FusedMultiplyAdd, TYP_FLOAT, 0,
+                Operand(REG_V1, TYP_SIMD_ARM64), Operand(REG_V2, TYP_SIMD_ARM64), Operand(REG_V3, TYP_SIMD_ARM64));
             embedded.Flags |= GTF_CONTAINED | GTF_HW_EM_OP;
-            var node = new GenTreeHWIntrinsic(TYP_SIMD, NI_Sve_ConditionalSelect, TYP_FLOAT, 0,
-                Operand(REG_P1, TYP_MASK), embedded, Operand(target, TYP_SIMD)) { RegNum = target };
+            var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_ConditionalSelect, TYP_FLOAT, 0,
+                Operand(REG_P1, TYP_MASK), embedded, Operand(target, TYP_SIMD_ARM64)) { RegNum = target };
             EnableIsa(compiler, node);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genHWIntrinsic(node)) ??

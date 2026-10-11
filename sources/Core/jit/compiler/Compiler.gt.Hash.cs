@@ -83,7 +83,7 @@ public partial class Compiler
                         {
                             var vector = tree.AsVecCon();
 #if TARGET_ARM64
-                            if (tree.Type is TYP_SIMD)
+                            if (tree.Type is TYP_SIMD_ARM64)
                             {
                                 ref var simdValue = ref vector.SimdScalableVal;
                                 add = genTreeHashAdd((uint)add, (uint)simdValue.Kind);

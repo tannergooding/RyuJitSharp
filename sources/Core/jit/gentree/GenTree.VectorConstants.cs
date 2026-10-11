@@ -13,7 +13,7 @@ public partial class GenTree
         if (Oper.IsCnsVec)
         {
 #if TARGET_ARM64
-            if (Type is TYP_SIMD)
+            if (Type is TYP_SIMD_ARM64)
             {
                 ref var value = ref AsVecCon().SimdScalableVal;
                 assert(baseType == value.BaseType);

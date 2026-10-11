@@ -40,7 +40,7 @@ public partial class Compiler
             }
 
 #if TARGET_ARM64
-            case TYP_SIMD:
+            case TYP_SIMD_ARM64:
             {
                 if (!EvaluateSimdCvtScalableVectorToMask(tree.SimdBaseType, ref mskCon.SimdScalableMaskVal,
                     vecCon.SimdScalableVal))
@@ -76,7 +76,7 @@ public partial class Compiler
 
         if (
 #if TARGET_ARM64
-            (retType != TYP_SIMD) &&
+            (retType != TYP_SIMD_ARM64) &&
 #endif
             GenTreeVecCon.IsHWIntrinsicCreateConstant(tree, ref simdVal))
         {
@@ -436,7 +436,7 @@ public partial class Compiler
                 var mskCon = cnsNode.AsMskCon();
 
 #if TARGET_ARM64
-                if (retType == TYP_SIMD)
+                if (retType == TYP_SIMD_ARM64)
                 {
                     simdscalable_t scalableValue = default;
                     if (EvaluateSimdCvtScalableMaskToVector(simdBaseType, ref scalableValue, mskCon.SimdScalableMaskVal))

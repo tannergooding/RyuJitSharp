@@ -210,7 +210,7 @@ public sealed partial class Rationalizer : Phase
                 if (varTypeIsMask(operand.Type))
                 {
 #if FEATURE_MASKED_HW_INTRINSICS
-                    // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
+                    // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD_ARM64
 
                     var simdBaseType = CompilerInstance.getBaseTypeAndSizeOfSimdType(clsHnd, out var simdSize);
                     assert(simdSize != 0);
@@ -268,7 +268,7 @@ public sealed partial class Rationalizer : Phase
             if (varTypeIsMask(tree.Type))
             {
 #if FEATURE_MASKED_HW_INTRINSICS
-                // No managed call returns TYP_MASK, so convert it from a TYP_SIMD
+                // No managed call returns TYP_MASK, so convert it from a TYP_SIMD_ARM64
 
                 var simdBaseType = CompilerInstance.getBaseTypeAndSizeOfSimdType(call.RetClsHnd, out var simdSize);
                 assert(simdSize != 0);

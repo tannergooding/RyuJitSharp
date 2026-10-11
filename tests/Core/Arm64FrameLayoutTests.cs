@@ -27,7 +27,7 @@ internal static unsafe class Arm64FrameLayoutTests
             compiler.compFloatingPointUsed = scalable;
             if (scalable)
             {
-                compiler.lvaTable[0].Type = TYP_SIMD;
+                compiler.lvaTable[0].Type = TYP_SIMD_ARM64;
             }
 
             var allocator = new LinearScan(compiler);
@@ -209,7 +209,7 @@ internal static unsafe class Arm64FrameLayoutTests
                 compiler.opts.compSupportsISAExactly.AddInstructionSet(InstructionSet_VectorT);
                 compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_OSR);
                 compiler.lvaTable =
-                    [NewLocal(TYP_SIMD), NewLocal(TYP_LONG), compiler.lvaTable[1]];
+                    [NewLocal(TYP_SIMD_ARM64), NewLocal(TYP_LONG), compiler.lvaTable[1]];
                 compiler.lvaCount = 3;
                 compiler.info.compLocalsCount = 1;
                 compiler.lvaOutgoingArgSpaceVar = 2;
@@ -247,7 +247,7 @@ internal static unsafe class Arm64FrameLayoutTests
         WithFrame((compiler, codeGen) => {
             var outgoing = compiler.lvaTable[1];
             compiler.lvaTable = new LclVarDsc[maskLocals + 2];
-            compiler.lvaTable[0] = NewLocal(TYP_SIMD);
+            compiler.lvaTable[0] = NewLocal(TYP_SIMD_ARM64);
             for (var index = 0; index < maskLocals; index++)
             {
                 compiler.lvaTable[index + 1] = NewLocal(TYP_MASK);
@@ -257,7 +257,7 @@ internal static unsafe class Arm64FrameLayoutTests
             compiler.lvaCount = compiler.lvaTable.Length;
             compiler.lvaOutgoingArgSpaceVar = compiler.lvaCount - 1;
             codeGen.RegSet.tmpBeginPreAllocateTemps();
-            codeGen.RegSet.tmpPreAllocateTemps(TYP_SIMD, 1);
+            codeGen.RegSet.tmpPreAllocateTemps(TYP_SIMD_ARM64, 1);
             codeGen.RegSet.tmpPreAllocateTemps(TYP_MASK, 1);
 
             compiler.lvaAssignFrameOffsets(Compiler.FINAL_FRAME_LAYOUT);
@@ -296,7 +296,7 @@ internal static unsafe class Arm64FrameLayoutTests
         Assert.That(size.IsExact, Is.True);
         Assert.That(size.ExactSize, Is.EqualTo(8));
         Assert.That(varTypeHasUnknownSize(TYP_MASK), Is.False);
-        Assert.That(ValueSize.FromJitType(TYP_SIMD).IsExact, Is.False);
+        Assert.That(ValueSize.FromJitType(TYP_SIMD_ARM64).IsExact, Is.False);
     }
 
     [TestCase(1, 1)]

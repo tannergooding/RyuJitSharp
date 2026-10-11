@@ -292,8 +292,8 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         WithCompiler(compiler =>
         {
             var value = Local(compiler, baseType);
-            var result = compiler.gtNewSimdCreateBroadcastNode(TYP_SIMD, value, baseType, 0).AsHWIntrinsic();
-            Assert.That(result.Type, Is.EqualTo(TYP_SIMD));
+            var result = compiler.gtNewSimdCreateBroadcastNode(TYP_SIMD_ARM64, value, baseType, 0).AsHWIntrinsic();
+            Assert.That(result.Type, Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(result.HWIntrinsicId, Is.EqualTo(NI_Vector_Create));
             Assert.That(result.SimdBaseType, Is.EqualTo(baseType));
             Assert.That(result.GetOp(1), Is.SameAs(value));
@@ -310,10 +310,10 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
             GenTree scalar = baseType.Size == 8
                 ? compiler.gtNewLconNode(value)
                 : compiler.gtNewIconNode(TYP_INT, unchecked((int)value));
-            var result = compiler.gtNewSimdCreateBroadcastNode(TYP_SIMD, scalar, baseType, 0).AsVecCon();
+            var result = compiler.gtNewSimdCreateBroadcastNode(TYP_SIMD_ARM64, scalar, baseType, 0).AsVecCon();
             ref var scalable = ref result.SimdScalableVal;
             var expected = unchecked((ulong)value) & (ulong.MaxValue >> (64 - (baseType.Size * 8)));
-            Assert.That(result.Type, Is.EqualTo(TYP_SIMD));
+            Assert.That(result.Type, Is.EqualTo(TYP_SIMD_ARM64));
             Assert.That(scalable.BaseType, Is.EqualTo(baseType));
             Assert.That(scalable.Kind, Is.EqualTo(SimdScalableKind.SimdScalableRepeated));
             Assert.That(scalable.Index.u64[0], Is.EqualTo(expected));
@@ -333,7 +333,7 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
         {
             var value = BitConverter.Int64BitsToDouble(unchecked((long)bits));
             var scalar = compiler.gtNewDconNode(baseType, value);
-            var result = compiler.gtNewSimdCreateBroadcastNode(TYP_SIMD, scalar, baseType, 0).AsVecCon();
+            var result = compiler.gtNewSimdCreateBroadcastNode(TYP_SIMD_ARM64, scalar, baseType, 0).AsVecCon();
             ref var scalable = ref result.SimdScalableVal;
             var expected = baseType == TYP_FLOAT
                 ? unchecked((uint)BitConverter.SingleToInt32Bits((float)value))
@@ -365,12 +365,12 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     {
         WithCompiler(compiler =>
         {
-            GenTree address = vectorAddress ? Local(compiler, TYP_SIMD) : Address(compiler, false);
+            GenTree address = vectorAddress ? Local(compiler, TYP_SIMD_ARM64) : Address(compiler, false);
             var mask = Local(compiler, TYP_MASK);
             var node = vectorAddress
-                ? compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD, id, TYP_LONG, 0, mask, address)
-                : compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD, id, TYP_LONG, 0,
-                    mask, address, Local(compiler, TYP_SIMD));
+                ? compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD_ARM64, id, TYP_LONG, 0, mask, address)
+                : compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD_ARM64, id, TYP_LONG, 0,
+                    mask, address, Local(compiler, TYP_SIMD_ARM64));
             AssertMemoryClassification(node, address, false);
         });
     }
@@ -383,13 +383,13 @@ internal static unsafe class HardwareConstructionClassificationCompletionTests
     {
         WithCompiler(compiler =>
         {
-            GenTree address = vectorAddress ? Local(compiler, TYP_SIMD) : Address(compiler, false);
+            GenTree address = vectorAddress ? Local(compiler, TYP_SIMD_ARM64) : Address(compiler, false);
             var mask = Local(compiler, TYP_MASK);
-            var value = Local(compiler, TYP_SIMD);
+            var value = Local(compiler, TYP_SIMD_ARM64);
             var node = vectorAddress
                 ? compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, id, TYP_LONG, 0, mask, address, value)
                 : compiler.gtNewSimdHWIntrinsicNode(TYP_VOID, id, TYP_LONG, 0,
-                    mask, address, Local(compiler, TYP_SIMD), value);
+                    mask, address, Local(compiler, TYP_SIMD_ARM64), value);
             AssertMemoryClassification(node, address, true);
         });
     }

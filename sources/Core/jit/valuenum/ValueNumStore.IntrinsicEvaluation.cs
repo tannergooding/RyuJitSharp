@@ -37,11 +37,12 @@ public sealed partial class ValueNumStore
 
     public ValueNum VNForSimdType(int simdSize, var_types simdBaseType, var_types auxiliaryType = TYP_UNKNOWN)
     {
-        assert((int)simdBaseType <= SimdTypeMask && (int)auxiliaryType <= SimdTypeMask);
-        var encodedTypes = (int)simdBaseType;
+        var encodedTypes = var_typesExtensions.ToNativeOrdinal(simdBaseType);
+        var auxiliaryTypeOrdinal = var_typesExtensions.ToNativeOrdinal(auxiliaryType);
+        assert(encodedTypes <= SimdTypeMask && auxiliaryTypeOrdinal <= SimdTypeMask);
         if (auxiliaryType is not TYP_UNKNOWN)
         {
-            encodedTypes |= ((int)auxiliaryType + 1) << SimdTypeBits;
+            encodedTypes |= (auxiliaryTypeOrdinal + 1) << SimdTypeBits;
         }
 
         var baseTypeVN = VNForIntCon(encodedTypes);

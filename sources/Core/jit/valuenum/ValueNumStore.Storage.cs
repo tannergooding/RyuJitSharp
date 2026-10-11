@@ -78,18 +78,13 @@ public sealed partial class ValueNumStore
                     TYP_DOUBLE => new double[ChunkSize],
                     TYP_BYREF => new nuint[ChunkSize],
                     TYP_REF => new nuint[3],
-#if FEATURE_SIMD
                     TYP_SIMD8 => new simd8_t[ChunkSize],
                     TYP_SIMD12 => new simd12_t[ChunkSize],
                     TYP_SIMD16 => new simd16_t[ChunkSize],
-#if TARGET_XARCH
                     TYP_SIMD32 => new simd32_t[ChunkSize],
                     TYP_SIMD64 => new simd64_t[ChunkSize],
-#elif TARGET_ARM64
-                    TYP_SIMD => new simdscalable_t[ChunkSize],
-#endif
+                    TYP_SIMD_ARM64 => new simdscalable_t[ChunkSize],
                     TYP_MASK => new simdmaskvalue_t[ChunkSize],
-#endif
                     _ => throw new UnreachableException(),
                 },
                 ChunkExtraAttribs.CEA_Handle => new VNHandle[ChunkSize],

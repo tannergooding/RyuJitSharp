@@ -94,7 +94,7 @@ public ref struct Arm64Classifier
             structSize = structLayout?.Size ?? throw new ArgumentNullException(nameof(structLayout));
 
             // TODO-SVE: We should be able to pass in a Z register.
-            if ((structSize > 16) || (type is TYP_SIMD))
+            if ((structSize > 16) || (type is TYP_SIMD_ARM64))
             {
                 passedByRef = true;
                 slotsNeeded = 1;

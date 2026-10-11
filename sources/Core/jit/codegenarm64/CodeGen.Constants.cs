@@ -142,7 +142,7 @@ public partial class CodeGen
                         break;
                     }
 
-                    case TYP_SIMD:
+                    case TYP_SIMD_ARM64:
                     {
                         var value = vector.SimdScalableVal;
                         var info = Arm64SimdScalableConstInfo.Decode(value);

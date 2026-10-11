@@ -30,7 +30,7 @@ internal static unsafe class FloatingRegisterNameTests
     [TestCase(TYP_SIMD32)]
     [TestCase(TYP_SIMD64)]
 #elif TARGET_ARM64
-    [TestCase(TYP_SIMD)]
+    [TestCase(TYP_SIMD_ARM64)]
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK)]
@@ -89,8 +89,8 @@ internal static unsafe class FloatingRegisterNameTests
     [TestCase(REG_STK, TYP_FLOAT, "STK")]
 #if FEATURE_SIMD
     [TestCase(REG_FP_FIRST, TYP_SIMD16, "d0")]
-    [TestCase(REG_FP_LAST, TYP_SIMD, "d31")]
-    [TestCase(REG_STK, TYP_SIMD, "STK")]
+    [TestCase(REG_FP_LAST, TYP_SIMD_ARM64, "d31")]
+    [TestCase(REG_STK, TYP_SIMD_ARM64, "STK")]
 #endif
 #endif
 #if TARGET_AMD64 || TARGET_ARM64

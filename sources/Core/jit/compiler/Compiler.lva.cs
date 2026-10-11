@@ -294,7 +294,7 @@ public partial class Compiler
 #endif
 
 #if FEATURE_SIMD
-    /// <summary>This is a temp lclVar allocated on the stack as TYP_SIMD.</summary>
+    /// <summary>This is a temp lclVar allocated on the stack as TYP_SIMD_ARM64.</summary>
     /// <remarks>
     ///   <para>It is used to implement intrinsics that require indexed access to the individual fields of the vector, which is not well supported by the hardware.</para>
     ///   <para>It is allocated when/if such situations are encountered during Lowering.</para> 
@@ -2515,7 +2515,7 @@ public partial class Compiler
             var vectorLength = getRuntimeVectorTByteLength();
             var size = varType switch
             {
-                TYP_SIMD => unchecked((int)vectorLength),
+                TYP_SIMD_ARM64 => unchecked((int)vectorLength),
                 TYP_MASK => unchecked((int)(vectorLength / 8)),
                 _ => throw new UnreachableException(),
             };

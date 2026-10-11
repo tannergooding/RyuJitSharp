@@ -29,7 +29,7 @@ public sealed class GenTreeVecCon : GenTree
         TYP_SIMD12 => _simdVal.v64[0].IsAllBitsSet && (_simdVal.u32[2] == uint.MaxValue),
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.v128[0].IsAllBitsSet,
-        TYP_SIMD => _simdScalableVal.IsAllBitsSet,
+        TYP_SIMD_ARM64 => _simdScalableVal.IsAllBitsSet,
 #elif TARGET_WASM
         TYP_SIMD16 => _simdVal.IsAllBitsSet,
 #else
@@ -49,7 +49,7 @@ public sealed class GenTreeVecCon : GenTree
         TYP_SIMD12 => _simdVal.v64[0].IsZero && (_simdVal.u32[2] == 0),
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.v128[0].IsZero,
-        TYP_SIMD => _simdScalableVal.IsZero,
+        TYP_SIMD_ARM64 => _simdScalableVal.IsZero,
 #elif TARGET_WASM
         TYP_SIMD16 => _simdVal.IsZero,
 #else
@@ -81,7 +81,7 @@ public sealed class GenTreeVecCon : GenTree
     {
         get
         {
-            assert(Type == TYP_SIMD);
+            assert(Type == TYP_SIMD_ARM64);
 
             return ref _simdScalableVal;
         }
@@ -110,7 +110,7 @@ public sealed class GenTreeVecCon : GenTree
             }
 
 #if TARGET_ARM64
-            case TYP_SIMD:
+            case TYP_SIMD_ARM64:
             {
                 return left._simdScalableVal == right._simdScalableVal;
             }
@@ -133,7 +133,7 @@ public sealed class GenTreeVecCon : GenTree
     private void RequireFixedSize()
     {
 #if TARGET_ARM64
-        if (Type == TYP_SIMD)
+        if (Type == TYP_SIMD_ARM64)
         {
             throw new FatalJitException(CORJIT_IMPLLIMITATION, "This vector operation requires fixed-width constant storage.");
         }
@@ -353,7 +353,7 @@ public sealed class GenTreeVecCon : GenTree
             }
 
 #if TARGET_ARM64
-            case TYP_SIMD:
+            case TYP_SIMD_ARM64:
             {
                 if (!TryEvaluateUnarySimdScalable(oper, scalar, baseType, out var result, _simdScalableVal))
                 {

@@ -207,7 +207,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
         WithCompiler(false, false, (compiler, _) => {
             compiler.compFloatingPointUsed = true;
             var allocator = new LinearScan(compiler);
-            var node = compiler.gtNewSimdVconNode(TYP_SIMD, baseType, kind, index, step);
+            var node = compiler.gtNewSimdVconNode(TYP_SIMD_ARM64, baseType, kind, index, step);
 
             Assert.That(BuildNode(allocator, node), Is.Zero);
             Assert.That(allocator.intervals.FindAll(interval => interval.isInternal), Has.Count.EqualTo(temporaries));
@@ -965,7 +965,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 (TYP_FLOAT, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
                 (TYP_DOUBLE, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
                 (TYP_SIMD16, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
-                (TYP_SIMD, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
+                (TYP_SIMD_ARM64, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
                 (TYP_MASK, SRBM_ALLMASK, SRBM_MSK_CALLEE_SAVED, SRBM_MSK_CALLEE_TRASH),
             ];
 

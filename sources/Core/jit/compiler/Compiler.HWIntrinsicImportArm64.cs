@@ -329,7 +329,7 @@ public partial class Compiler
                 case NI_Sve_CreateFalseMaskUInt32:
                 case NI_Sve_CreateFalseMaskUInt64:
                 {
-                    if (retType == TYP_SIMD)
+                    if (retType == TYP_SIMD_ARM64)
                     {
                         retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableKind.SimdScalableRepeated, 0);
                         break;
@@ -354,7 +354,7 @@ public partial class Compiler
                     if (op1.Oper.IsIntegralConst)
                     {
                         var pattern = op1.AsIntConCommon().IntegralValue;
-                        if (retType == TYP_SIMD)
+                        if (retType == TYP_SIMD_ARM64)
                         {
                             if ((pattern == (long)SveMaskPattern.SveMaskPatternAll) ||
                                 (pattern == (long)SveMaskPattern.SveMaskPatternLargestPowerOf2))

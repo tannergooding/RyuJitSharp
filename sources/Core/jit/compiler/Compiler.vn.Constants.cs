@@ -67,7 +67,7 @@ public partial class Compiler
             }
 
 #if TARGET_ARM64
-            case TYP_SIMD:
+            case TYP_SIMD_ARM64:
             {
                 tree._vnPair.SetBoth(vnStore.VNForSimdScalableCon(tree.AsVecCon().SimdScalableVal));
                 break;

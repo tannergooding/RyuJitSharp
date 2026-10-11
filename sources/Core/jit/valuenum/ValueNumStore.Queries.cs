@@ -423,7 +423,8 @@ public sealed partial class ValueNumStore
         var succeeded = GetVNFunc(app.GetArg(app.Arity - 1), ref simdType);
         assert(succeeded && simdType.FuncIs(VNF_SimdType) && (simdType.Arity == 2));
         assert(IsVNConstant(simdType.GetArg(0)) && IsVNConstant(simdType.GetArg(1)));
-        simdBaseType = (var_types)(GetConstantInt32(simdType.GetArg(1)) & SimdTypeMask);
+        simdBaseType = var_typesExtensions.FromNativeOrdinal(
+            GetConstantInt32(simdType.GetArg(1)) & SimdTypeMask);
         return GetConstantInt32(simdType.GetArg(0));
     }
 #endif

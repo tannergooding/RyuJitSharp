@@ -23,6 +23,8 @@ internal static class Program
                 "GenerateTables must run from its project directory, which contains GenerateTables.csproj and Inputs.");
         }
 
+        ValidateUniversalVarTypeEntries();
+
         var outputDirectory = Path.Combine(workingDirectory, "Outputs");
         if (Directory.Exists(outputDirectory))
         {
@@ -83,6 +85,59 @@ internal static class Program
 
         GenerateVNFunc();
         GenerateVNFuncExtensions();
+    }
+
+    private static void ValidateUniversalVarTypeEntries()
+    {
+        var requiredTypes = new HashSet<string>(StringComparer.Ordinal) {
+            "SIMD8",
+            "SIMD12",
+            "SIMD16",
+            "SIMD32",
+            "SIMD64",
+            "SIMD_ARM64",
+            "MASK",
+        };
+        var conditionalDepth = 0;
+
+        foreach (var sourceLine in File.ReadLines(@"Inputs\typelist.h"))
+        {
+            var line = sourceLine.AsSpan().Trim();
+            if (line.StartsWith("DEF_TP(", StringComparison.Ordinal))
+            {
+                var nameEnd = line.IndexOf(',');
+                if (nameEnd is -1)
+                {
+                    throw new InvalidDataException($"Invalid variable type entry: '{sourceLine}'");
+                }
+
+                var name = line["DEF_TP(".Length..nameEnd].Trim().ToString();
+                if (requiredTypes.Contains(name))
+                {
+                    if (conditionalDepth != 0)
+                    {
+                        throw new InvalidDataException(
+                            $"Universal SIMD type '{name}' must not be guarded by a target or feature condition.");
+                    }
+
+                    _ = requiredTypes.Remove(name);
+                }
+            }
+            else if (line.StartsWith("#if", StringComparison.Ordinal))
+            {
+                conditionalDepth++;
+            }
+            else if (line.StartsWith("#endif", StringComparison.Ordinal))
+            {
+                conditionalDepth--;
+            }
+        }
+
+        if (requiredTypes.Count != 0)
+        {
+            throw new InvalidDataException(
+                $"The universal variable type list is missing: {string.Join(", ", requiredTypes)}.");
+        }
     }
 
     private static void GenerateApiICorJitInfoNames()

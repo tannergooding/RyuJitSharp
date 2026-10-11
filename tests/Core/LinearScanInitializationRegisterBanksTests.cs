@@ -32,7 +32,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
     [TestCase(TYP_SIMD32, 4)]
     [TestCase(TYP_SIMD64, 4)]
 #elif TARGET_ARM64
-    [TestCase(TYP_SIMD, 4)]
+    [TestCase(TYP_SIMD_ARM64, 4)]
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK, 8)]

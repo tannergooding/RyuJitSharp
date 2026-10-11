@@ -779,7 +779,7 @@ public sealed partial class CodeGen
                 case NI_Vector_CreateScalarUnsafe:
                 {
                     var simdType = Compiler.GetSimdTypeForSize(node.SimdSize);
-                    if (simdType == TYP_SIMD)
+                    if (simdType == TYP_SIMD_ARM64)
                     {
                         emitSize = opt == INS_OPTS_SCALABLE_D ? EA_8BYTE : EA_4BYTE;
                         if (varTypeIsFloating(intrin.BaseType))

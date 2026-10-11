@@ -27,7 +27,7 @@ internal static class RegisterClassificationTests
     [TestCase(TYP_SIMD32, true)]
     [TestCase(TYP_SIMD64, true)]
 #elif TARGET_ARM64
-    [TestCase(TYP_SIMD, true)]
+    [TestCase(TYP_SIMD_ARM64, true)]
 #endif
 #if FEATURE_MASKED_HW_INTRINSICS
     [TestCase(TYP_MASK, false)]

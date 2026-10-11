@@ -421,7 +421,7 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
             var mask = scalable
                 ? store.VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet)
                 : store.VNZeroForType(TYP_MASK);
-            var result = MaskToVector(store, scalable ? TYP_SIMD16 : TYP_SIMD, TYP_INT, mask);
+            var result = MaskToVector(store, scalable ? TYP_SIMD16 : TYP_SIMD_ARM64, TYP_INT, mask);
 
             Assert.That(result, Is.EqualTo(ValueNumStore.NoVN));
         });
@@ -435,9 +435,9 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
         WithStore((_, store) =>
         {
             var scalar = store.VNForGenericCon(baseType, BitConverter.GetBytes(-1L).AsSpan(0, baseType.Size));
-            var vector = store.VNBroadcastForSimdType(TYP_SIMD, baseType, scalar);
-            var mask = VectorToMask(store, TYP_SIMD, baseType, vector);
-            var result = MaskToVector(store, TYP_SIMD, baseType, mask);
+            var vector = store.VNBroadcastForSimdType(TYP_SIMD_ARM64, baseType, scalar);
+            var mask = VectorToMask(store, TYP_SIMD_ARM64, baseType, vector);
+            var result = MaskToVector(store, TYP_SIMD_ARM64, baseType, mask);
 
             Assert.That(result, Is.EqualTo(vector));
             Assert.That(store.GetConstantSimdMaskValue(mask).IsScalable, Is.True);

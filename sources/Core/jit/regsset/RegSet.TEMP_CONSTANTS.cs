@@ -16,7 +16,7 @@ public partial struct RegSet
 #endif
 
 #if TARGET_ARM64 && FEATURE_SIMD
-    // There are two extra slots for temps with unknown size (TYP_SIMD/TYP_MASK)
+    // There are two extra slots for temps with unknown size (TYP_SIMD_ARM64/TYP_MASK)
     public const int TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int)) + 2;
 #else
     public const int TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int));

@@ -17,7 +17,7 @@ public sealed partial class ValueNumStore
         switch (type)
         {
 #if TARGET_ARM64
-            case TYP_SIMD:
+            case TYP_SIMD_ARM64:
             {
                 var value = BroadcastConstantToSimdScalable(baseType, operand);
                 return VNForSimdScalableCon(value);
@@ -48,7 +48,7 @@ public sealed partial class ValueNumStore
     {
         assert(IsVNConstant(operand));
 
-        if (TypeOfVN(operand) == TYP_SIMD)
+        if (TypeOfVN(operand) == TYP_SIMD_ARM64)
         {
             return GetConstantSimdScalable(operand);
         }
@@ -84,11 +84,11 @@ public sealed partial class ValueNumStore
 
         var argument = GetConstantSimdMaskValue(operand);
 #if TARGET_ARM64
-        if (argument.IsScalable && (type != TYP_SIMD))
+        if (argument.IsScalable && (type != TYP_SIMD_ARM64))
         {
             return NoVN;
         }
-        if (type == TYP_SIMD)
+        if (type == TYP_SIMD_ARM64)
         {
             if (!argument.IsScalable)
             {
@@ -134,7 +134,7 @@ public sealed partial class ValueNumStore
         }
 
 #if TARGET_ARM64
-        if (type == TYP_SIMD)
+        if (type == TYP_SIMD_ARM64)
         {
             var argument = GetConstantSimdScalable(operand);
             var result = default(simdmaskscalable_t);

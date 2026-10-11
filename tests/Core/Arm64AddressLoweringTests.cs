@@ -247,7 +247,7 @@ internal static unsafe class Arm64AddressLoweringTests
         });
     }
 
-    [TestCase(TYP_SIMD, true, false)]
+    [TestCase(TYP_SIMD_ARM64, true, false)]
     [TestCase(TYP_MASK, true, false)]
     [TestCase(TYP_LONG, false, false)]
     [TestCase(TYP_LONG, true, true)]
