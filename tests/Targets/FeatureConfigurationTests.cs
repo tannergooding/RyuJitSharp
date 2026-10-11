@@ -52,6 +52,12 @@ internal static class FeatureConfigurationTests
             if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
             {
                 _ = Assert.Throws<PlatformNotSupportedException>(() => store.VNZeroForType(var_types.TYP_MASK));
+                _ = Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    simdmask_t result = default;
+                    var input = default(simdmask_t);
+                    Globals.EvaluateUnaryMask(genTreeOps.GT_NOT, false, var_types.TYP_BYTE, 64, ref result, input);
+                });
                 return;
             }
 
@@ -62,6 +68,11 @@ internal static class FeatureConfigurationTests
             Assert.That(store.GetConstantSimdMask(vn), Is.EqualTo(value));
             Assert.That(store.VNForSimdMaskCon(value), Is.EqualTo(vn));
             Assert.That(store.GetConstantSimdMaskValue(vn).IsScalable, Is.False);
+
+            simdmask_t result = default;
+            var allBits = simdmask_t.AllBitsSet(64);
+            Globals.EvaluateUnaryMask(genTreeOps.GT_NOT, false, var_types.TYP_BYTE, 64, ref result, allBits);
+            Assert.That(result.RawBits, Is.Zero);
         });
     }
 

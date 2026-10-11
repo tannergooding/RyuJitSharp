@@ -61,7 +61,6 @@ public sealed class GenTreeMskCon : GenTree
         }
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, int simdSize)
     {
         simdmask_t result = default;
@@ -75,7 +74,6 @@ public sealed class GenTreeMskCon : GenTree
         EvaluateBinaryMask(oper, scalar, baseType, simdSize, ref result, _simdMaskVal, other._simdMaskVal);
         _simdMaskVal = result;
     }
-#endif
 
     public static bool Equals(GenTreeMskCon left, GenTreeMskCon right)
     {

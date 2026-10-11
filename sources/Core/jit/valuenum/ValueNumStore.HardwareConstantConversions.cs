@@ -74,9 +74,14 @@ public sealed partial class ValueNumStore
     }
 #endif
 
-#if FEATURE_HW_INTRINSICS && FEATURE_MASKED_HW_INTRINSICS
+#if FEATURE_HW_INTRINSICS
     private ValueNum EvaluateSimdCvtMaskToVectorVN(var_types type, var_types baseType, ValueNum operand)
     {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+        }
+
         var argument = GetConstantSimdMaskValue(operand);
 #if TARGET_ARM64
         if (argument.IsScalable && (type != TYP_SIMD))
@@ -123,6 +128,11 @@ public sealed partial class ValueNumStore
 
     private ValueNum EvaluateSimdCvtVectorToMaskVN(var_types type, var_types baseType, ValueNum operand)
     {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+        }
+
 #if TARGET_ARM64
         if (type == TYP_SIMD)
         {

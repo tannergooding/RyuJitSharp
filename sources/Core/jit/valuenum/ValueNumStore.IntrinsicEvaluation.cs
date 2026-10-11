@@ -434,48 +434,42 @@ public sealed partial class ValueNumStore
             var oper = tree.GetOperForHWIntrinsicId(out var scalar);
             if (oper != GT_NONE)
             {
-#if FEATURE_MASKED_HW_INTRINSICS
                 if (type is TYP_MASK)
                 {
+                    if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                    {
+                        throw new PlatformNotSupportedException(
+                            "Masked hardware intrinsics are not enabled for this target.");
+                    }
+
                     var argument = GetConstantSimdMaskValue(arg0VN);
-#if TARGET_ARM64
-                    if (argument.IsScalable)
+                    if (Configuration.TARGET_ARM64 && argument.IsScalable)
                     {
                         return VNForFunc(type, func, arg0VN, resultTypeVN);
                     }
-#endif
+
                     var result = default(simdmask_t);
                     EvaluateUnaryMask(oper, scalar, baseType, simdSize, ref result, argument.Fixed);
                     return VNForSimdMaskCon(result);
                 }
-#endif
                 return EvaluateUnarySimdVN(oper, scalar, type, baseType, arg0VN);
             }
 
             if (tree.IsConvertMaskToVector)
             {
-#if FEATURE_MASKED_HW_INTRINSICS
                 var result = EvaluateSimdCvtMaskToVectorVN(type, baseType, arg0VN);
                 return result != NoVN ? result : VNForFunc(type, func, arg0VN, resultTypeVN);
-#else
-                throw new System.Diagnostics.UnreachableException();
-#endif
             }
 
             if (tree.IsConvertVectorToMask)
             {
-#if FEATURE_MASKED_HW_INTRINSICS
                 var vectorType = Compiler.GetSimdTypeForSize(simdSize);
                 var result = EvaluateSimdCvtVectorToMaskVN(vectorType, baseType, arg0VN);
                 return result != NoVN ? result : VNForFunc(type, func, arg0VN, resultTypeVN);
-#else
-                throw new System.Diagnostics.UnreachableException();
-#endif
             }
 
             switch (id)
             {
-#if FEATURE_MASKED_HW_INTRINSICS || TARGET_WASM
                 case NI_Vector_ExtractMostSignificantBits:
 #if TARGET_XARCH
                 case NI_X86Base_MoveMask:
@@ -485,6 +479,12 @@ public sealed partial class ValueNumStore
                 case NI_PackedSimd_Bitmask:
 #endif
                 {
+                    if (!Configuration.FEATURE_MASKED_HW_INTRINSICS && !Configuration.TARGET_WASM)
+                    {
+                        throw new PlatformNotSupportedException(
+                            "Most-significant-bit extraction is not supported for this target.");
+                    }
+
                     assert(simdSize is 8 or 16
 #if TARGET_XARCH
                         or 32
@@ -497,7 +497,6 @@ public sealed partial class ValueNumStore
                     assert(varTypeIsInt(type) && (count <= 32));
                     return VNForIntCon(unchecked((int)((ulong)mask.RawBits & (ulong)simdmask_t.GetBitMask(count))));
                 }
-#endif
 
 #if TARGET_XARCH
                 case NI_AVX512_MoveMask:
@@ -705,19 +704,23 @@ public sealed partial class ValueNumStore
             if (operation != GT_NONE)
             {
                 assert(operation is not (GT_AND_NOT or GT_OR_NOT or GT_XOR_NOT));
-#if FEATURE_MASKED_HW_INTRINSICS
                 if (type is TYP_MASK)
                 {
+                    if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                    {
+                        throw new PlatformNotSupportedException(
+                            "Masked hardware intrinsics are not enabled for this target.");
+                    }
+
                     if (TypeOfVN(arg0VN) is TYP_MASK)
                     {
                         var left = GetConstantSimdMaskValue(arg0VN);
                         var right = GetConstantSimdMaskValue(arg1VN);
-#if TARGET_ARM64
-                        if (left.IsScalable || right.IsScalable)
+                        if (Configuration.TARGET_ARM64 && (left.IsScalable || right.IsScalable))
                         {
                             return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
                         }
-#endif
+
                         var result = default(simdmask_t);
                         EvaluateBinaryMask(operation, scalar, baseType, simdSize, ref result,
                             left.Fixed, right.Fixed);
@@ -728,7 +731,6 @@ public sealed partial class ValueNumStore
                     var mask = EvaluateSimdCvtVectorToMaskVN(vectorType, baseType, vector);
                     return mask != NoVN ? mask : VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
                 }
-#endif
                 if (operation is GT_LSH or GT_RSH or GT_RSZ)
                 {
 #if TARGET_XARCH

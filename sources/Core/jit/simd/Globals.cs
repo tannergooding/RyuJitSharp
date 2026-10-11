@@ -614,10 +614,18 @@ public static partial class Globals
     }
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
+    private static void EnsureMaskedHardwareIntrinsicsSupported()
+    {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+        }
+    }
+
     public static void EvaluateUnaryMask(genTreeOps oper, bool scalar, var_types baseType, int simdSize,
         ref simdmask_t result, in simdmask_t arg0)
     {
+        EnsureMaskedHardwareIntrinsicsSupported();
         var bitMask = GetMaskEvaluationBitMask(baseType, simdSize);
         var arg0Value = unchecked((ulong)arg0.RawBits) & bitMask;
         ulong resultValue = 0;
@@ -644,6 +652,7 @@ public static partial class Globals
     public static void EvaluateBinaryMask(genTreeOps oper, bool scalar, var_types baseType, int simdSize,
         ref simdmask_t result, in simdmask_t arg0, in simdmask_t arg1)
     {
+        EnsureMaskedHardwareIntrinsicsSupported();
         var bitMask = GetMaskEvaluationBitMask(baseType, simdSize);
         var arg0Value = unchecked((ulong)arg0.RawBits) & bitMask;
         var arg1Value = unchecked((ulong)arg1.RawBits) & bitMask;
@@ -687,20 +696,21 @@ public static partial class Globals
 
     public static void EvaluateSimdCvtMaskToVector(var_types baseType, Span<byte> result, in simdmask_t arg0)
     {
+        EnsureMaskedHardwareIntrinsicsSupported();
+        var isXarch = Configuration.TARGET_XARCH;
+        if (!isXarch && !Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Mask conversions are only supported on xarch and ARM64.");
+        }
+
         var elementSize = GetSimdElementSize(baseType);
         assert(result.Length <= Unsafe.SizeOf<simd_t>());
         var count = result.Length / elementSize;
         var mask = unchecked((ulong)arg0.RawBits);
         for (var index = 0; index < count; index++)
         {
-#if TARGET_XARCH
             // Xarch packs one bit per lane; ARM64 uses one bit per byte of lane storage.
-            var bit = index;
-#elif TARGET_ARM64
-            var bit = index * elementSize;
-#else
-#error Unsupported platform
-#endif
+            var bit = isXarch ? index : index * elementSize;
             var isSet = ((mask >> bit) & 1) != 0;
             result.Slice(index * elementSize, elementSize).Fill(isSet ? byte.MaxValue : (byte)0);
         }
@@ -708,9 +718,18 @@ public static partial class Globals
 
     public static void EvaluateSimdCvtVectorToMask(var_types baseType, ref simdmask_t result, ReadOnlySpan<byte> arg0)
     {
-#if TARGET_XARCH
-        EvaluateExtractMSB(baseType, ref result, arg0);
-#elif TARGET_ARM64
+        EnsureMaskedHardwareIntrinsicsSupported();
+        if (Configuration.TARGET_XARCH)
+        {
+            EvaluateExtractMSB(baseType, ref result, arg0);
+            return;
+        }
+
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Mask conversions are only supported on xarch and ARM64.");
+        }
+
         var elementSize = GetSimdElementSize(baseType);
         assert(arg0.Length <= Unsafe.SizeOf<simd_t>());
         var count = arg0.Length / elementSize;
@@ -726,51 +745,51 @@ public static partial class Globals
         }
 
         result.u64[0] = mask;
-#else
-#error Unsupported platform
-#endif
     }
 
     private static ulong GetMaskEvaluationBitMask(var_types baseType, int simdSize)
     {
         var elementSize = GetSimdElementSize(baseType);
-#if TARGET_XARCH
-        // Mask instructions have an eight-bit minimum even for vectors with fewer lanes.
-        var count = Math.Max(simdSize / elementSize, 8);
-        assert(count is 8 or 16 or 32 or 64);
-        return unchecked((ulong)simdmask_t.GetBitMask(count));
-#elif TARGET_ARM64
-        // Predicate bits are spaced by the element width, across the entire mask storage.
-        switch (elementSize)
+        if (Configuration.TARGET_XARCH)
         {
-            case 1:
-            {
-                return 0xFFFFFFFFFFFFFFFF;
-            }
-
-            case 2:
-            {
-                return 0x5555555555555555;
-            }
-
-            case 4:
-            {
-                return 0x1111111111111111;
-            }
-
-            case 8:
-            {
-                return 0x0101010101010101;
-            }
+            // Mask instructions have an eight-bit minimum even for vectors with fewer lanes.
+            var count = Math.Max(simdSize / elementSize, 8);
+            assert(count is 8 or 16 or 32 or 64);
+            return unchecked((ulong)simdmask_t.GetBitMask(count));
         }
 
-        unreached();
-        return 0;
-#else
-#error Unsupported platform
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            // Predicate bits are spaced by the element width, across the entire mask storage.
+            switch (elementSize)
+            {
+                case 1:
+                {
+                    return 0xFFFFFFFFFFFFFFFF;
+                }
+
+                case 2:
+                {
+                    return 0x5555555555555555;
+                }
+
+                case 4:
+                {
+                    return 0x1111111111111111;
+                }
+
+                case 8:
+                {
+                    return 0x0101010101010101;
+                }
+            }
+
+            unreached();
+            return 0;
+        }
+
+        throw new PlatformNotSupportedException("Mask evaluation is only supported on xarch and ARM64.");
     }
-#endif
 
 #if TARGET_XARCH
     // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>

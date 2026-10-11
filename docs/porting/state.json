@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the remaining mask constant-folding helpers next: remove FEATURE_MASKED_HW_INTRINSICS guards from ValueNumStore.IntrinsicEvaluation.cs, ValueNumStore.HardwareConstantConversions.cs, and simd/Globals.cs; retain explicit unsupported-feature behavior and scalable ARM64 semantics, then test supported and disabled targets.",
+    "nextAction": "Universalize the ValueNumStore SIMD constant-storage closure next: replace FEATURE_SIMD/TARGET_XARCH/TARGET_ARM64 compile gates in ValueNumStore.Constants.cs, Storage.cs, and VNAllBitsForType in ValueNumStore.BinaryInterning.cs, preserving vector widths, mask feature checks, and scalable ARM64 constants.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize mask constant evaluation and conversion paths across ValueNumStore and shared SIMD helpers.",
-      "doneWhen": "Mask constant evaluation and conversion compile with the runtime feature disabled, unsupported calls terminate explicitly, scalable ARM64 evaluation preserves its existing representation, and focused supported/unsupported target tests pass.",
-      "validation": "Run focused Debug and Release value-numbering/intrinsic-evaluation tests on x64 and ARM64, compile and run the disabled-feature path on browser-Wasm, and validate state.json plus git diff --check.",
+      "scope": "Universalize mask arithmetic and vector/mask conversions across ValueNumStore, GenTreeMskCon, and shared SIMD helpers.",
+      "doneWhen": "The mask operation paths compile with masked intrinsics disabled, unsupported calls terminate explicitly, fixed xarch/ARM64 bit layouts and scalable ARM64 behavior are preserved, and focused tests pass.",
+      "validation": "Focused Debug and Release tests passed on x64 and ARM64, feature-disabled browser-Wasm tests passed, and state.json parses with a clean git diff check.",
       "deferred": "Keep target-specific intrinsic lowering, register allocation, and codegen guards for later dependency-coherent batches."
     },
     "parityEvidence": {

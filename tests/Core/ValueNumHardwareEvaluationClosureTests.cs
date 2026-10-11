@@ -151,7 +151,7 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
                 {
                     laneMask |= 1UL << (index * baseType.Size);
                 }
-                var expected = mask.RawBits & laneMask;
+                var expected = mask.RawBits & unchecked((long)laneMask);
 #else
                 var expected = mask.RawBits & simdmask_t.GetBitMask(count);
 #endif
@@ -452,7 +452,7 @@ internal static unsafe class ValueNumHardwareEvaluationClosureTests
             var mask = store.VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet);
             var fixedMask = store.VNZeroForType(TYP_MASK);
             var typeVN = store.VNForSimdType(0, TYP_INT);
-            var node = new GenTreeMskCon(default(simdmask_t));
+            var node = new GenTreeMskCon(default);
             var unary = new GenTreeHWIntrinsic(TYP_MASK, NI_Sve_Not, TYP_INT, 0, node);
             var binary = new GenTreeHWIntrinsic(TYP_MASK, NI_Sve_And, TYP_INT, 0, node, node);
             var unaryResult = store.EvalHWIntrinsicFunUnary(unary, VNF_HWI_Sve_Not, mask, typeVN);
