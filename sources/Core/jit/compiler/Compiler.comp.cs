@@ -1630,7 +1630,10 @@ public partial class Compiler
 
     public unsafe void compInitOptions(JitFlags* jitFlags)
     {
-        opts = new Options();
+        opts = new Options
+        {
+            compUseSoftFP = Configuration.ARM_SOFTFP && Configuration.TARGET_ARM,
+        };
 
         if (compIsForInlining)
         {
@@ -2447,27 +2450,28 @@ public partial class Compiler
         }
 #endif
 
-#if CONFIGURABLE_ARM_ABI
-        opts.compUseSoftFP = jitFlags->IsSet(JitFlags.JIT_FLAG_SOFTFP_ABI);
-
-        var softFPConfig = opts.compUseSoftFP ? 2 : 1;
-        var oldSoftFPConfig = Interlocked.CompareExchange(ref GlobalJitOptions.compUseSoftFPConfigured, softFPConfig, 0);
-
-        if ((oldSoftFPConfig != softFPConfig) && (oldSoftFPConfig != 0))
+        if (Configuration.CONFIGURABLE_ARM_ABI)
         {
-            // There are no current scenarios where the abi can change during the lifetime of a process
-            // that uses the JIT. If such a change occurs, either compFeatureHfa will need to change to a TLS static
-            // or we will need to have some means to reset the flag safely.
-            NO_WAY("SoftFP ABI setting changed during lifetime of process");
-        }
+            opts.compUseSoftFP = jitFlags->IsSet(JitFlags.JIT_FLAG_SOFTFP_ABI);
 
-        GlobalJitOptions.compFeatureHfa = !opts.compUseSoftFP;
-#elif ARM_SOFTFP && TARGET_ARM
-        // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
-        assert(jitFlags->IsSet(JitFlags.JIT_FLAG_SOFTFP_ABI));
-#elif TARGET_ARM
-        assert(!jitFlags->IsSet(JitFlags.JIT_FLAG_SOFTFP_ABI));
-#endif
+            var softFPConfig = opts.compUseSoftFP ? 2 : 1;
+            var oldSoftFPConfig = Interlocked.CompareExchange(ref GlobalJitOptions.compUseSoftFPConfigured, softFPConfig, 0);
+
+            if ((oldSoftFPConfig != softFPConfig) && (oldSoftFPConfig != 0))
+            {
+                // There are no current scenarios where the abi can change during the lifetime of a process
+                // that uses the JIT. If such a change occurs, either compFeatureHfa will need to change to a TLS static
+                // or we will need to have some means to reset the flag safely.
+                NO_WAY("SoftFP ABI setting changed during lifetime of process");
+            }
+
+            GlobalJitOptions.compFeatureHfa = !opts.compUseSoftFP;
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            // The target ABI is fixed. Verify that the VM side agrees with the JIT configuration.
+            assert(jitFlags->IsSet(JitFlags.JIT_FLAG_SOFTFP_ABI) == opts.compUseSoftFP);
+        }
 
         opts.compScopeInfo = opts.compDbgInfo;
 

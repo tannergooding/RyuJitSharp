@@ -32,11 +32,7 @@ public ref struct Arm32Classifier
                 AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
         }
 
-#if CONFIGURABLE_ARM_ABI
         var useSoftFP = comp.opts.compUseSoftFP;
-#else
-        var useSoftFP = Compiler.Options.compUseSoftFP;
-#endif
 
         if (!useSoftFP)
         {

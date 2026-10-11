@@ -63,11 +63,7 @@ public sealed partial class CodeGen
         else if (varTypeIsFloating(_compiler.info.compRetType) ||
             _compiler.IsHfa(_compiler.info.compMethodInfo->args.retTypeClass))
         {
-#if CONFIGURABLE_ARM_ABI
             r0InUse = _compiler.info.compIsVarArgs || _compiler.opts.compUseSoftFP;
-#else
-            r0InUse = _compiler.info.compIsVarArgs || Compiler.Options.compUseSoftFP;
-#endif
         }
         else
         {

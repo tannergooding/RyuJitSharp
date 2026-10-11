@@ -278,7 +278,6 @@ internal static unsafe class AbiHeaderTests
 #endif
 
 #if TARGET_ARM
-#if CONFIGURABLE_ARM_ABI || !ARM_SOFTFP
     [TestCase(CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT, 4, 3, 13, false)]
     [TestCase(CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT, 4, 3, 14, true)]
     [TestCase(CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE, 8, 2, 12, false)]
@@ -286,6 +285,8 @@ internal static unsafe class AbiHeaderTests
     public static void Arm32HfasRequireConsecutiveRegistersAndSpillAsAWhole(
         CorInfoHFAElemType kind, int elementSize, int count, int preceding, bool spill)
     {
+        Assume.That(Configuration.CONFIGURABLE_ARM_ABI || !Configuration.ARM_SOFTFP);
+
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getHFAType = &GetArmHfaType;
         ArmHfaState state = new() {
@@ -294,11 +295,13 @@ internal static unsafe class AbiHeaderTests
         };
         var compiler = NewCompiler();
         compiler.info.compCompHnd = &state.Runtime;
-#if CONFIGURABLE_ARM_ABI
         var oldFeatureHfa = GlobalJitOptions.compFeatureHfa;
-        GlobalJitOptions.compFeatureHfa = true;
+        if (Configuration.CONFIGURABLE_ARM_ABI)
+        {
+            GlobalJitOptions.compFeatureHfa = true;
+        }
+
         compiler.opts.compUseSoftFP = false;
-#endif
         try
         {
             var classifier = new Arm32Classifier(new ClassifierInfo());
@@ -332,9 +335,10 @@ internal static unsafe class AbiHeaderTests
         }
         finally
         {
-#if CONFIGURABLE_ARM_ABI
-            GlobalJitOptions.compFeatureHfa = oldFeatureHfa;
-#endif
+            if (Configuration.CONFIGURABLE_ARM_ABI)
+            {
+                GlobalJitOptions.compFeatureHfa = oldFeatureHfa;
+            }
         }
     }
 
@@ -354,10 +358,10 @@ internal static unsafe class AbiHeaderTests
     [Test]
     public static void Arm32FloatingAllocationBackfillsTheHoleSkippedByADouble()
     {
+        Assume.That(Configuration.CONFIGURABLE_ARM_ABI || !Configuration.ARM_SOFTFP);
+
         var compiler = NewCompiler();
-#if CONFIGURABLE_ARM_ABI
         compiler.opts.compUseSoftFP = false;
-#endif
         var classifier = new Arm32Classifier(new ClassifierInfo());
         var first = classifier.Classify(compiler, TYP_FLOAT, null, WellKnownArg.None);
         var second = classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None);
@@ -370,16 +374,14 @@ internal static unsafe class AbiHeaderTests
         Assert.That(third.Segments[0].Register, Is.EqualTo(REG_F1));
         Assert.That(classifier.StackSize, Is.Zero);
     }
-#endif
 
-#if CONFIGURABLE_ARM_ABI || ARM_SOFTFP
     [Test]
     public static void Arm32DoubleAlignmentSkipsTheOddIntegerRegister()
     {
+        Assume.That(Configuration.CONFIGURABLE_ARM_ABI || Configuration.ARM_SOFTFP);
+
         var compiler = NewCompiler();
-#if CONFIGURABLE_ARM_ABI
         compiler.opts.compUseSoftFP = true;
-#endif
         var classifier = new Arm32Classifier(new ClassifierInfo());
         _ = classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None);
         var aligned = classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None);
@@ -399,13 +401,14 @@ internal static unsafe class AbiHeaderTests
         int preceding, int size, int registerCount, int stackSize)
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
-        vtable.Base.Base.getClassAlignmentRequirement = &FourByteAlignment;
+        vtable.Base.Base.getClassAlignmentRequirement =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, bool, int>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_CLASS_STRUCT_*, byte, int>)&FourByteAlignment;
         ICorJitInfo runtime = new() { lpVtbl = &vtable };
         var compiler = NewCompiler();
         compiler.info.compCompHnd = &runtime;
-#if CONFIGURABLE_ARM_ABI
+        Assume.That(Configuration.CONFIGURABLE_ARM_ABI || Configuration.ARM_SOFTFP);
         compiler.opts.compUseSoftFP = true;
-#endif
         var classifier = new Arm32Classifier(new ClassifierInfo());
 
         for (var i = 0; i < preceding; i++)
@@ -434,8 +437,7 @@ internal static unsafe class AbiHeaderTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static uint FourByteAlignment(ICorJitInfo* runtime, CORINFO_CLASS_HANDLE handle, bool hint) => 4;
-#endif
+    private static int FourByteAlignment(ICorJitInfo* runtime, CORINFO_CLASS_STRUCT_* handle, byte hint) => 4;
 #endif
 
 #if TARGET_RISCV64 || TARGET_LOONGARCH64
@@ -744,6 +746,7 @@ internal static unsafe class AbiHeaderTests
     private static Compiler NewCompiler()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.opts.compUseSoftFP = Configuration.ARM_SOFTFP && Configuration.TARGET_ARM;
         JitTls.Compiler = compiler;
 
         return compiler;

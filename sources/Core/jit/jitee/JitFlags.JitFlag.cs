@@ -36,8 +36,9 @@ public partial struct JitFlags
 
 #if TARGET_ARM
     public const JitFlag JIT_FLAG_RELATIVE_CODE_RELOCS = JitFlag.JIT_FLAG_RELATIVE_CODE_RELOCS;
-    public const JitFlag JIT_FLAG_SOFTFP_ABI = JitFlag.JIT_FLAG_SOFTFP_ABI;
 #endif
+
+    public const JitFlag JIT_FLAG_SOFTFP_ABI = JitFlag.JIT_FLAG_SOFTFP_ABI;
 
     public const JitFlag JIT_FLAG_USE_DISPATCH_HELPERS = JitFlag.JIT_FLAG_USE_DISPATCH_HELPERS;
 
@@ -132,10 +133,10 @@ public partial struct JitFlags
 #if TARGET_ARM
         /// <summary>JIT should generate PC-relative address computations instead of EE relocation records</summary>
         JIT_FLAG_RELATIVE_CODE_RELOCS = 29,
-
-        /// <summary>Enable armel calling convention</summary>
-        JIT_FLAG_SOFTFP_ABI = 30,
 #endif
+
+        /// <summary>Enable the ARM soft-float calling convention</summary>
+        JIT_FLAG_SOFTFP_ABI = 30,
 
         /// <summary>The JIT should use helpers for interface dispatch instead of virtual stub dispatch</summary>
         JIT_FLAG_USE_DISPATCH_HELPERS = 31,

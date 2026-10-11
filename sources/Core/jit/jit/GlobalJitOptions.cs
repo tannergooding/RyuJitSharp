@@ -7,16 +7,24 @@ namespace RyuJitSharp;
 
 public static class GlobalJitOptions
 {
-#if FEATURE_HFA
-#if CONFIGURABLE_ARM_ABI
     // These are safe to have globals as they cannot change once initialized within the process.
     public static int compUseSoftFPConfigured;
 
-    public static bool compFeatureHfa;
-#else
-    public static bool compFeatureHfa => true;
-#endif
-#else
-    public static bool compFeatureHfa => false;
-#endif
+    private static bool s_compFeatureHfa;
+
+    public static bool compFeatureHfa
+    {
+        get
+        {
+            return Configuration.CONFIGURABLE_ARM_ABI ? s_compFeatureHfa : Configuration.FEATURE_HFA;
+        }
+
+        set
+        {
+            if (Configuration.CONFIGURABLE_ARM_ABI)
+            {
+                s_compFeatureHfa = value;
+            }
+        }
+    }
 }

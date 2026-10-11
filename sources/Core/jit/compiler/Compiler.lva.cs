@@ -511,7 +511,7 @@ public partial class Compiler
         {
             ref readonly var abiInfo  = ref lvaGetParameterAbiInfo(i);
             ref var varDsc   = ref lvaGetDesc(i);
-            var preSpill = Options.compUseSoftFP && varTypeIsFloating(varDsc.Type);
+            var preSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc.Type);
             preSpill |= varDsc.Type is TYP_STRUCT;
 
             if (!preSpill)
@@ -2300,11 +2300,7 @@ public partial class Compiler
             }
 #endif
 
-#if CONFIGURABLE_ARM_ABI
             var compUseSoftFP = opts.compUseSoftFP;
-#else
-            var compUseSoftFP = Options.compUseSoftFP;
-#endif
 
             if (info.compIsVarArgs || (compUseSoftFP && varTypeIsFloating(varDsc.Type)))
             {

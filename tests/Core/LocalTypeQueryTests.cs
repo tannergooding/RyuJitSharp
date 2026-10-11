@@ -80,11 +80,7 @@ internal static class LocalTypeQueryTests
         compiler.info.compIsVarArgs = varArgs;
         var expected = type;
 #if TARGET_ARMARCH
-#if CONFIGURABLE_ARM_ABI
         var softFP = compiler.opts.compUseSoftFP;
-#else
-        var softFP = Compiler.Options.compUseSoftFP;
-#endif
         if (softFP || (TargetOS.IsWindows && varArgs))
         {
             expected = type switch {
@@ -107,6 +103,7 @@ internal static class LocalTypeQueryTests
     private static Compiler NewCompiler()
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
+        compiler.opts.compUseSoftFP = Configuration.ARM_SOFTFP && Configuration.TARGET_ARM;
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;
 

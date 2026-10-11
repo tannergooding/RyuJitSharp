@@ -63,6 +63,31 @@ internal static class FeatureConfigurationTests
         Assert.That(Configuration.SWIFT_SUPPORT, Is.EqualTo(supportsSwift));
     }
 
+    [Test]
+    public static void HfaFeatureMatchesTheArmTargetAndAbi()
+    {
+        var supportsHfa = Configuration.TARGET_ARM64 ||
+            (Configuration.TARGET_ARM && (!Configuration.ARM_SOFTFP || Configuration.CONFIGURABLE_ARM_ABI));
+
+        Assert.That(Configuration.FEATURE_HFA, Is.EqualTo(supportsHfa));
+
+        var originalFeatureHfa = GlobalJitOptions.compFeatureHfa;
+        try
+        {
+            GlobalJitOptions.compFeatureHfa = true;
+            Assert.That(GlobalJitOptions.compFeatureHfa,
+                Is.EqualTo(Configuration.CONFIGURABLE_ARM_ABI || supportsHfa));
+
+            GlobalJitOptions.compFeatureHfa = false;
+            Assert.That(GlobalJitOptions.compFeatureHfa,
+                Is.EqualTo(!Configuration.CONFIGURABLE_ARM_ABI && supportsHfa));
+        }
+        finally
+        {
+            GlobalJitOptions.compFeatureHfa = originalFeatureHfa;
+        }
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ValueNumberDumpArgumentsFeatureUsesRuntimeSwitch(bool enabled)

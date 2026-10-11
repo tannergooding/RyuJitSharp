@@ -121,7 +121,6 @@ public partial struct LclVarDsc
         }
     }
 
-#if !FEATURE_HFA_FIELDS_PRESENT
     /// <summary>What kind of an HFA this is (CORINFO_HFA_ELEM_NONE if it is not an HFA).</summary>
     public CorInfoHFAElemType _lvHfaElemKind
     {
@@ -135,7 +134,6 @@ public partial struct LclVarDsc
             _bitfield = (byte)((_bitfield & ~(0x07 << 5)) | (((byte)(value) & 0x07) << 5));
         }
     }
-#endif
 
     /// <summary>true if this is a multireg LclVar struct used in an argument context or if this is a multireg LclVar struct assigned from a multireg call</summary>
     public readonly bool lvIsMultiRegArgOrRet => lvIsMultiRegArg || lvIsMultiRegRet;

@@ -14,6 +14,12 @@ internal static class Configuration
 
     internal static bool FEATURE_VN_DUMP_FUNC_ARGS => GetFeatureSwitch(nameof(FEATURE_VN_DUMP_FUNC_ARGS));
 
+    internal static bool FEATURE_HFA =>
+        TARGET_ARM64 || (TARGET_ARM && (!ARM_SOFTFP || CONFIGURABLE_ARM_ABI));
+
+    // Native CMake enables this only for the runtime-OS-determined universal ARM JIT.
+    internal static bool CONFIGURABLE_ARM_ABI => TARGET_ARM && TARGET_OS_RUNTIMEDETERMINED;
+
     internal static bool FEATURE_REMAP_FUNCTION =>
         TARGET_ARM64 || TARGET_AMD64 || (TARGET_X86 && TARGET_WINDOWS);
 
@@ -49,6 +55,8 @@ internal static class Configuration
     internal static bool TARGET_ARM64 => GetFeatureSwitch(nameof(TARGET_ARM64));
 
     internal static bool TARGET_ARMARCH => GetFeatureSwitch(nameof(TARGET_ARMARCH));
+
+    internal static bool ARM_SOFTFP => GetFeatureSwitch(nameof(ARM_SOFTFP));
 
     internal static bool TARGET_AMD64 => TARGET_XARCH && TARGET_64BIT;
 

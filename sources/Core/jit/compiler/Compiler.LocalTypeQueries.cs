@@ -36,11 +36,7 @@ public partial class Compiler
     public var_types mangleVarArgsType(var_types type)
     {
 #if TARGET_ARMARCH
-#if CONFIGURABLE_ARM_ABI
         var compUseSoftFP = opts.compUseSoftFP;
-#else
-        var compUseSoftFP = Options.compUseSoftFP;
-#endif
         if (compUseSoftFP || (TargetOS.IsWindows && info.compIsVarArgs))
         {
             switch (type)

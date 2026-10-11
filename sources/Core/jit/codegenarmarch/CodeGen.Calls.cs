@@ -105,11 +105,7 @@ public sealed partial class CodeGen
             else
             {
 #if TARGET_ARM
-#if CONFIGURABLE_ARM_ABI
                 var compUseSoftFP = _compiler.opts.compUseSoftFP;
-#else
-                var compUseSoftFP = Compiler.Options.compUseSoftFP;
-#endif
 #endif
 #if TARGET_ARM
                 if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))

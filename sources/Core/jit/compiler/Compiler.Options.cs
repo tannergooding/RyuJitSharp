@@ -398,13 +398,7 @@ public partial class Compiler
         public int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif
 
-#if CONFIGURABLE_ARM_ABI
         public bool compUseSoftFP;
-#elif ARM_SOFTFP
-        public const bool compUseSoftFP = true;
-#else
-        public const bool compUseSoftFP = false;
-#endif
 
         /// <summary>Collect 64 bit counts for PGO data.</summary>
         public bool compCollect64BitCounts;

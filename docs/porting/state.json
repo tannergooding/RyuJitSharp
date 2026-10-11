@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Inspect and universalize FEATURE_HFA and FEATURE_HFA_FIELDS_PRESENT: verify whether the latter is defined anywhere, preserve CONFIGURABLE_ARM_ABI behavior in GlobalJitOptions.cs, and remove any guard whose alternate branch is unreachable.",
+    "nextAction": "Universalize FEATURE_MULTIREG_STRUCT_PROMOTE: verify its target matrix and struct-promotion behavior, replace the preprocessor branch with Configuration, remove the project defines, and validate both enabled and disabled targets.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Remove FEATURE_IJW as a compile-time guard while preserving the x86 Windows-only special-copy argument behavior.",
-      "doneWhen": "No FEATURE_IJW project define or source/test reference remains; its prior TARGET_X86 && FEATURE_IJW behavior is gated by Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS and helper definitions compile universally.",
-      "validation": "FeatureConfigurationTests passed 23/23 in Debug and Release across all nine target RIDs. The linux-x64 matrix runs required EnforceCodeStyleInBuild=false because the normal run fails on the pre-existing IDE0018 diagnostic at Compiler.cs:1705; all other RID runs used normal analyzer settings. Debug GSSecurityPhaseTests passed, with the x86-only case skipped by its runtime assumption on the win-x64 host. The Release Core test build stopped on the unrelated CA1812 diagnostic in tests/Core/DiscretionaryPolicyTests.cs:467. `git diff --check` passed.",
+      "scope": "Universalize FEATURE_HFA and FEATURE_HFA_FIELDS_PRESENT while preserving fixed and runtime-configurable ARM32 ABI behavior.",
+      "doneWhen": "No FEATURE_HFA, FEATURE_HFA_FIELDS_PRESENT, CONFIGURABLE_ARM_ABI, or ARM_SOFTFP preprocessor guards remain; Configuration computes HFA support from the configured target/ABI, and ARM soft-float behavior is available through initialized compiler options and per-RID substitutions.",
+      "validation": "Focused ARM32 target tests passed 10/10 in Debug with CONFIGURABLE_ARM_ABI enabled and 5/5 in Release with fixed ARM_SOFTFP enabled; both runs used the win-x64 test host and linux-arm compiler target, with full analyzers enabled in the final Debug/Release runs. An earlier broad Arm32 filter also selected instruction-format tests and failed 36/472 outside the edited ABI fixtures; the narrowed ABI filter passed. `git diff --check` passed.",
       "deferred": "The repository-wide TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {

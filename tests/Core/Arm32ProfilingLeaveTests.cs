@@ -102,24 +102,20 @@ internal static unsafe class Arm32ProfilingLeaveTests
     [TestCase(TYP_VOID, false, false)]
     [TestCase(TYP_FLOAT, false, false)]
     [TestCase(TYP_FLOAT, true, false)]
-#if CONFIGURABLE_ARM_ABI
     [TestCase(TYP_FLOAT, false, true)]
-#endif
     public static void VoidAndFloatingReturnsFollowTheArm32RegisterAbi(
         var_types returnType, bool isVarArgs, bool useSoftFp)
     {
+        Assume.That(Configuration.CONFIGURABLE_ARM_ABI || (useSoftFp == Configuration.ARM_SOFTFP));
+
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
             CORINFO_METHOD_INFO methodInfo = default;
             PrepareLeave(compiler, codeGen, &methodInfo, returnType, indirect: false, isVarArgs: isVarArgs);
             using var callbacks = new Arm32HelperCallTests.HelperCallbacks(
                 compiler, IAT_VALUE, ARM32_THUMB_BRANCH24, (void*)0x1234);
-#if CONFIGURABLE_ARM_ABI
             compiler.opts.compUseSoftFP = useSoftFp;
-            var softFp = useSoftFp;
-#else
-            var softFp = Compiler.Options.compUseSoftFP;
-#endif
+            var softFp = compiler.opts.compUseSoftFP;
             var r0InUse = (returnType is TYP_FLOAT) && (isVarArgs || softFp);
 
             codeGen.genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
