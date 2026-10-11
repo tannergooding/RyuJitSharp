@@ -16,6 +16,11 @@ public abstract class GenTreeMultiOp : GenTree
     protected GenTreeMultiOp(genTreeOps oper, var_types type, GenTree[] operands)
         : base(oper, type)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Hardware intrinsic nodes are unsupported on this target.");
+        }
+
         assert(oper.IsHWIntrinsic);
         _operands = operands;
 
@@ -25,11 +30,8 @@ public abstract class GenTreeMultiOp : GenTree
         }
     }
 
-#if FEATURE_HW_INTRINSICS
-    public bool IsUserCall => Oper.IsHWIntrinsic && ((Flags & GTF_HW_USER_CALL) != 0);
-#else
-    public bool IsUserCall => false;
-#endif
+    public bool IsUserCall =>
+        Configuration.FEATURE_HW_INTRINSICS && Oper.IsHWIntrinsic && ((Flags & GTF_HW_USER_CALL) != 0);
 
     public new Span<GenTree> Operands => _operands;
 

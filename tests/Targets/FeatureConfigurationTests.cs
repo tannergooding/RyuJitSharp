@@ -50,6 +50,70 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void HardwareIntrinsicNodeConstructionRequiresHardwareIntrinsicSupport()
+    {
+        if (Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return;
+        }
+
+        WithCompiler(_ =>
+        {
+            var exception = Assert.Throws<PlatformNotSupportedException>(
+                () => new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_Create, TYP_INT, 16));
+            Assert.That(exception, Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public static void HardwareIntrinsicImmediateLookupUsesTheRuntimeTarget()
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return;
+        }
+
+        WithCompiler(compiler =>
+        {
+            if (Configuration.TARGET_WASM)
+            {
+                var vector = new GenTreeVecCon(TYP_SIMD16);
+                var immediate = compiler.gtNewIconNode(TYP_INT, 1);
+                var node = new GenTreeHWIntrinsic(TYP_INT, NI_PackedSimd_ExtractScalar, TYP_INT, 16, vector, immediate);
+                Assert.That(node.GetImmOp(), Is.SameAs(immediate));
+                return;
+            }
+
+            var scalar = compiler.gtNewIconNode(TYP_INT, 1);
+            var scalarNode = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_Create, TYP_INT, 16, scalar);
+            var exception = Assert.Throws<PlatformNotSupportedException>(() => scalarNode.GetImmOp());
+            Assert.That(exception, Is.Not.Null);
+        });
+    }
+
+    [Test]
+    public static void Arm64IntrinsicMetadataRejectsOtherTargets()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            return;
+        }
+
+        var id = NI_Sve_ConditionalExtractAfterLastActiveElement;
+        var scalarVariantException = Assert.Throws<PlatformNotSupportedException>(
+            () => HWIntrinsicInfo.HasScalarInputVariant(id));
+        Assert.That(scalarVariantException, Is.Not.Null);
+
+        var tupleTypeException = Assert.Throws<PlatformNotSupportedException>(
+            () => HWIntrinsicInfo.BaseTypeFromValueTupleArg(id));
+        Assert.That(tupleTypeException, Is.Not.Null);
+
+        var variantException = Assert.Throws<PlatformNotSupportedException>(
+            () => HWIntrinsicInfo.GetScalarInputVariant(id));
+        Assert.That(variantException, Is.Not.Null);
+    }
+
+    [Test]
     public static void HardwareIntrinsicFlagBitsDoNotCollideAcrossTargets()
     {
         var flags = Enum.GetValues<HWIntrinsicFlag>();

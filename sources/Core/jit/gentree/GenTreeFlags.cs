@@ -281,11 +281,9 @@ public enum GenTreeFlags
     /// <summary>GT_ALLOCOBJ -- allocation site is part of an empty static pattern</summary>
     GTF_ALLOCOBJ_EMPTY_STATIC = 1 << 31,
 
-#if FEATURE_HW_INTRINSICS
     /// <summary>GT_HWINTRINSIC -- node is used as an operand to an embedded mask</summary>
     GTF_HW_EM_OP = 1 << 28,
 
     /// <summary>GT_HWINTRINSIC -- node is implemented via a user call</summary>
     GTF_HW_USER_CALL = 1 << 29,
-#endif
 }

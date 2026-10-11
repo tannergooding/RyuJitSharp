@@ -2659,12 +2659,12 @@ public partial class Compiler
         }
     }
 
-#if FEATURE_SIMD
     public static int getSIMDVectorLength(uint simdSize, var_types baseType)
     {
         return unchecked((int)(simdSize / (uint)baseType.Size));
     }
 
+#if FEATURE_SIMD
     private unsafe int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
     {
         var baseType = getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);

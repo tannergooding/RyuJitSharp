@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Diagnostics;
 
 namespace RyuJitSharp;
@@ -77,13 +78,14 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         set
         {
             assert(!IsUserCall);
-#if FEATURE_HW_INTRINSICS
+            if (!Configuration.FEATURE_HW_INTRINSICS)
+            {
+                NYI("Hardware-intrinsic user call without hardware-intrinsic support");
+                fatal(CORJIT_IMPLLIMITATION);
+                throw new FatalJitException("Hardware-intrinsic user calls are unsupported on this target.");
+            }
+
             Flags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
-#else
-            NYI("Hardware-intrinsic user call without hardware-intrinsic support");
-            fatal(CORJIT_IMPLLIMITATION);
-            throw new FatalJitException("Hardware-intrinsic user calls are unsupported on this target.");
-#endif
             _methodHandle = value;
         }
     }
@@ -122,18 +124,20 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         }
     }
 
-#if TARGET_XARCH || TARGET_ARM64
     public void CopyOtherRegs(GenTreeHWIntrinsic tree)
     {
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Additional intrinsic registers are unsupported on this target.");
+        }
+
         _otherReg = tree._otherReg;
         _spillFlags = tree._spillFlags;
     }
-#endif
 
-#if TARGET_ARM64
     private bool NeedsConsecutiveRegisters =>
-        (HWIntrinsicInfo.lookupFlags(_hwIntrinsicId) & HW_Flag_NeedsConsecutiveRegisters) != 0;
-#endif
+        Configuration.TARGET_ARM64 &&
+        ((HWIntrinsicInfo.lookupFlags(_hwIntrinsicId) & HW_Flag_NeedsConsecutiveRegisters) != 0);
 
     /// <summary> Get regNumber of i'th position.</summary>
     /// <param name="idx">register position.</param>
@@ -145,15 +149,16 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
             return RegNum;
         }
 
-#if TARGET_ARM64
-        assert(idx < MAX_MULTIREG_COUNT);
-
-        if (NeedsConsecutiveRegisters)
+        if (Configuration.TARGET_ARM64)
         {
-            assert(IsMultiRegNode);
-            return RegNum + idx;
+            assert(idx < MAX_MULTIREG_COUNT);
+
+            if (NeedsConsecutiveRegisters)
+            {
+                assert(IsMultiRegNode);
+                return RegNum + idx;
+            }
         }
-#endif
 
         // should only be used to get otherReg
         assert(idx == 1);
@@ -167,22 +172,23 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     /// <param name="idx">register position.</param>
     public void SetRegNumByIdx(regNumber reg, byte idx)
     {
-#if TARGET_ARM64
-        assert(idx < MAX_MULTIREG_COUNT);
-
-        if (idx == 0)
+        if (Configuration.TARGET_ARM64)
         {
-            RegNum = reg;
-            return;
-        }
+            assert(idx < MAX_MULTIREG_COUNT);
 
-        if (NeedsConsecutiveRegisters)
-        {
-            assert(IsMultiRegNode);
-            assert(reg == (RegNum + idx));
-            return;
+            if (idx == 0)
+            {
+                RegNum = reg;
+                return;
+            }
+
+            if (NeedsConsecutiveRegisters)
+            {
+                assert(IsMultiRegNode);
+                assert(reg == (RegNum + idx));
+                return;
+            }
         }
-#endif
 
         // should only be used to set otherReg
         assert(idx == 1);

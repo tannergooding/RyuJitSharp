@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace RyuJitSharp;
@@ -29,108 +29,113 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         }
     }
 
-#if TARGET_WASM
     public GenTree GetImmOp()
     {
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new PlatformNotSupportedException("Hardware intrinsic immediate operands are only available on WebAssembly.");
+        }
+
         HWIntrinsicInfo.GetImmOpsPositions(HWIntrinsicId, out var imm1Pos, out var imm2Pos);
 
         assert((imm1Pos >= 0) && (imm2Pos < 0));
         return GetOp(imm1Pos);
     }
-#endif
 
     public new ClassLayout GetLayout(Compiler compiler)
     {
         assert(Type is TYP_STRUCT);
 
-        switch (HWIntrinsicId)
+        if (Configuration.TARGET_XARCH)
         {
-#if TARGET_XARCH
-            case NI_X86Base_DivRem:
+            switch (HWIntrinsicId)
             {
-                return compiler.typGetBlkLayout(SimdBaseType.Size * 2);
-            }
+                case NI_X86Base_DivRem:
+                {
+                    return compiler.typGetBlkLayout(SimdBaseType.Size * 2);
+                }
 
-            case NI_X86Base_X64_BigMul:
-            case NI_X86Base_X64_DivRem:
-            {
-                return compiler.typGetBlkLayout(16);
-            }
-#endif
-
-#if TARGET_ARM64
-            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
-            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
-            case NI_AdvSimd_Arm64_LoadPairVector64:
-            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
-            case NI_AdvSimd_Load2xVector64AndUnzip:
-            case NI_AdvSimd_Load2xVector64:
-            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
-            case NI_AdvSimd_LoadAndReplicateToVector64x2:
-            {
-                return compiler.typGetBlkLayout(16);
-            }
-
-            case NI_AdvSimd_Arm64_LoadPairVector128:
-            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
-            case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
-            case NI_AdvSimd_Arm64_Load2xVector128:
-            case NI_AdvSimd_Load4xVector64:
-            case NI_AdvSimd_Load4xVector64AndUnzip:
-            case NI_AdvSimd_LoadAndReplicateToVector64x4:
-            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
-            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
-            {
-                return compiler.typGetBlkLayout(32);
-            }
-
-            case NI_AdvSimd_Load3xVector64AndUnzip:
-            case NI_AdvSimd_Load3xVector64:
-            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
-            case NI_AdvSimd_LoadAndReplicateToVector64x3:
-            {
-                return compiler.typGetBlkLayout(24);
-            }
-
-            case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
-            case NI_AdvSimd_Arm64_Load3xVector128:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
-            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
-            {
-                return compiler.typGetBlkLayout(48);
-            }
-
-            case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
-            case NI_AdvSimd_Arm64_Load4xVector128:
-            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
-            case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
-            {
-                return compiler.typGetBlkLayout(64);
-            }
-
-            case NI_Sve_Load2xVectorAndUnzip:
-            {
-                return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 2u));
-            }
-
-            case NI_Sve_Load3xVectorAndUnzip:
-            {
-                return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 3u));
-            }
-
-            case NI_Sve_Load4xVectorAndUnzip:
-            {
-                return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 4u));
-            }
-#endif
-
-            default:
-            {
-                unreached();
-                return null;
+                case NI_X86Base_X64_BigMul:
+                case NI_X86Base_X64_DivRem:
+                {
+                    return compiler.typGetBlkLayout(16);
+                }
             }
         }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            switch (HWIntrinsicId)
+            {
+                case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+                case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+                case NI_AdvSimd_Arm64_LoadPairVector64:
+                case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+                case NI_AdvSimd_Load2xVector64AndUnzip:
+                case NI_AdvSimd_Load2xVector64:
+                case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+                case NI_AdvSimd_LoadAndReplicateToVector64x2:
+                {
+                    return compiler.typGetBlkLayout(16);
+                }
+
+                case NI_AdvSimd_Arm64_LoadPairVector128:
+                case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+                case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+                case NI_AdvSimd_Arm64_Load2xVector128:
+                case NI_AdvSimd_Load4xVector64:
+                case NI_AdvSimd_Load4xVector64AndUnzip:
+                case NI_AdvSimd_LoadAndReplicateToVector64x4:
+                case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+                case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+                case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+                {
+                    return compiler.typGetBlkLayout(32);
+                }
+
+                case NI_AdvSimd_Load3xVector64AndUnzip:
+                case NI_AdvSimd_Load3xVector64:
+                case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+                case NI_AdvSimd_LoadAndReplicateToVector64x3:
+                {
+                    return compiler.typGetBlkLayout(24);
+                }
+
+                case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+                case NI_AdvSimd_Arm64_Load3xVector128:
+                case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+                case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+                {
+                    return compiler.typGetBlkLayout(48);
+                }
+
+                case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+                case NI_AdvSimd_Arm64_Load4xVector128:
+                case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+                case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+                {
+                    return compiler.typGetBlkLayout(64);
+                }
+
+                case NI_Sve_Load2xVectorAndUnzip:
+                {
+                    return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 2u));
+                }
+
+                case NI_Sve_Load3xVectorAndUnzip:
+                {
+                    return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 3u));
+                }
+
+                case NI_Sve_Load4xVectorAndUnzip:
+                {
+                    return compiler.typGetBlkLayout(unchecked(compiler.getRuntimeVectorTByteLength() * 4u));
+                }
+            }
+        }
+
+        unreached();
+        return null;
     }
 
     public static bool Equals(GenTreeHWIntrinsic op1, GenTreeHWIntrinsic op2)
@@ -140,22 +145,16 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                (op1.AuxiliaryType == op2.AuxiliaryType) && OperandsAreEqual(op1, op2);
     }
 
-#if FEATURE_HW_INTRINSICS
     public bool IsCreate => _hwIntrinsicId is NI_Vector_Create;
-#endif
 
     /// <summary>Does this HWI node have memory load or store semantics?</summary>
     public bool IsMemoryLoadOrStore => IsMemoryLoad() || IsMemoryStore(out _);
 
-    public bool IsBroadcastScalar =>
-#if TARGET_XARCH
-        HWIntrinsicId is NI_X86Base_LoadAndDuplicateToVector128 or NI_X86Base_MoveAndDuplicate or
+    public bool IsBroadcastScalar => Configuration.TARGET_XARCH &&
+        (HWIntrinsicId is NI_X86Base_LoadAndDuplicateToVector128 or NI_X86Base_MoveAndDuplicate or
             NI_AVX_BroadcastScalarToVector128 or NI_AVX_BroadcastScalarToVector256 or
             NI_AVX2_BroadcastScalarToVector128 or NI_AVX2_BroadcastScalarToVector256 or
-            NI_AVX512_BroadcastScalarToVector512;
-#else
-        false;
-#endif
+            NI_AVX512_BroadcastScalarToVector512);
 
     /// <summary>Does this node have memory store or barrier semantics?</summary>
     public bool IsMemoryStoreOrBarrier
@@ -167,12 +166,10 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                 return true;
             }
 
-#if TARGET_XARCH
-            if (HWIntrinsicInfo.HasSpecialSideEffect_Barrier(_hwIntrinsicId))
+            if (Configuration.TARGET_XARCH && HWIntrinsicInfo.HasSpecialSideEffect_Barrier(_hwIntrinsicId))
             {
                 return true;
             }
-#endif
 
             return false;
         }
@@ -194,60 +191,36 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         {
             switch (intrinsicId)
             {
-#if TARGET_XARCH
-                case NI_X86Base_LoadFence:
-                case NI_X86Base_MemoryFence:
-                case NI_X86Base_StoreFence:
-                case NI_X86Serialize_Serialize:
+                case NI_X86Base_LoadFence or NI_X86Base_MemoryFence or NI_X86Base_StoreFence or NI_X86Serialize_Serialize
+                    when Configuration.TARGET_XARCH:
                 {
                     Flags |= GTF_ASG | GTF_GLOB_REF;
                     break;
                 }
 
-                case NI_X86Base_Pause:
-                case NI_X86Base_Prefetch0:
-                case NI_X86Base_Prefetch1:
-                case NI_X86Base_Prefetch2:
-                case NI_X86Base_PrefetchNonTemporal:
+                case NI_X86Base_Pause or NI_X86Base_Prefetch0 or NI_X86Base_Prefetch1 or NI_X86Base_Prefetch2 or
+                    NI_X86Base_PrefetchNonTemporal when Configuration.TARGET_XARCH:
                 {
                     Flags |= GTF_CALL | GTF_GLOB_REF;
                     break;
                 }
 
-                case NI_Vector_op_Division:
+                case NI_Vector_op_Division when Configuration.TARGET_XARCH:
                 {
                     assert(SimdSize is 16 or 32);
                     Flags |= GTF_EXCEPT;
                     break;
                 }
-#endif
-
-#if TARGET_ARM64
-                case NI_ArmBase_Yield:
-                case NI_Sve_GatherPrefetch16Bit:
-                case NI_Sve_GatherPrefetch32Bit:
-                case NI_Sve_GatherPrefetch64Bit:
-                case NI_Sve_GatherPrefetch8Bit:
-                case NI_Sve_Prefetch16Bit:
-                case NI_Sve_Prefetch32Bit:
-                case NI_Sve_Prefetch64Bit:
-                case NI_Sve_Prefetch8Bit:
-                case NI_Sve_GetFfrByte:
-                case NI_Sve_GetFfrDouble:
-                case NI_Sve_GetFfrInt16:
-                case NI_Sve_GetFfrInt32:
-                case NI_Sve_GetFfrInt64:
-                case NI_Sve_GetFfrSByte:
-                case NI_Sve_GetFfrSingle:
-                case NI_Sve_GetFfrUInt16:
-                case NI_Sve_GetFfrUInt32:
-                case NI_Sve_GetFfrUInt64:
-                case NI_Sve_SetFfr:
+                case NI_ArmBase_Yield or NI_Sve_GatherPrefetch16Bit or NI_Sve_GatherPrefetch32Bit or
+                    NI_Sve_GatherPrefetch64Bit or NI_Sve_GatherPrefetch8Bit or NI_Sve_Prefetch16Bit or
+                    NI_Sve_Prefetch32Bit or NI_Sve_Prefetch64Bit or NI_Sve_Prefetch8Bit or NI_Sve_GetFfrByte or
+                    NI_Sve_GetFfrDouble or NI_Sve_GetFfrInt16 or NI_Sve_GetFfrInt32 or NI_Sve_GetFfrInt64 or
+                    NI_Sve_GetFfrSByte or NI_Sve_GetFfrSingle or NI_Sve_GetFfrUInt16 or NI_Sve_GetFfrUInt32 or
+                    NI_Sve_GetFfrUInt64 or NI_Sve_SetFfr when Configuration.TARGET_ARM64:
                 {
                     Flags |= GTF_CALL | GTF_GLOB_REF;
                     break;
                 }
-#endif
 
                 default:
                 {
@@ -263,20 +236,19 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 #if DEBUG
         var newOperandCount = HWIntrinsicInfo.lookupNumArgs(intrinsicId);
         assert((newOperandCount < 0) || (Operands.Length == newOperandCount));
-#if !TARGET_WASM
-        assert(!HWIntrinsicInfo.IsInvalidNodeId(intrinsicId));
-#endif
+        if (!Configuration.TARGET_WASM)
+        {
+            assert(!HWIntrinsicInfo.IsInvalidNodeId(intrinsicId));
+        }
 #endif
 
         _hwIntrinsicId = intrinsicId;
-#if TARGET_XARCH
         var simdBaseType = SimdBaseType;
 
-        if (HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+        if (Configuration.TARGET_XARCH && HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
         {
             SimdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UINT : TYP_INT;
         }
-#endif
     }
 
     /// <summary>Changes the ID and optional leading operands without changing the operand count. Flags remain caller-owned.</summary>
@@ -301,7 +273,6 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 
     public bool IsMemoryLoad([NotNullWhen(true)] out GenTree? addr)
     {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
         var intrinsicId = HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(intrinsicId);
 
@@ -309,16 +280,13 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         {
             switch (intrinsicId)
             {
-#if TARGET_XARCH
                 case NI_X86Base_LoadLow:
                 case NI_X86Base_LoadHigh:
                 {
                     addr = GetOp(2);
                     break;
                 }
-#endif
 
-#if TARGET_ARM64
                 case NI_AdvSimd_LoadAndInsertScalar:
                 case NI_AdvSimd_LoadAndInsertScalarVector64x2:
                 case NI_AdvSimd_LoadAndInsertScalarVector64x3:
@@ -433,7 +401,6 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                     addr = GetOp(2);
                     break;
                 }
-#endif
 
                 default:
                 {
@@ -442,8 +409,7 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                 }
             }
         }
-#if TARGET_XARCH
-        else if (HWIntrinsicInfo.MaybeMemoryLoad(intrinsicId))
+        else if (Configuration.TARGET_XARCH && HWIntrinsicInfo.MaybeMemoryLoad(intrinsicId))
         {
             // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
             // This is generally because they have both vector and pointer overloads, e.g.,
@@ -515,52 +481,52 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                 addr = null;
             }
         }
-#endif
         else
         {
             addr = null;
         }
-#else
-        addr = null;
-#endif
 
         if (addr is not null)
         {
-#if TARGET_ARM64
-            assert(AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend,
-                                 NI_Sve_GatherVectorByteZeroExtendFirstFaulting, NI_Sve_GatherVectorFirstFaulting,
-                                 NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16SignExtendFirstFaulting,
-                                 NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
-                                 NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting,
-                                 NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32SignExtendFirstFaulting,
-                                 NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
-                                 NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting,
-                                 NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorSByteSignExtendFirstFaulting,
-                                 NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
-                                 NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting,
-                                 NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting,
-                                 NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
-                                 NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting,
-                                 NI_Sve_GatherVectorUInt32ZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting));
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend,
+                                     NI_Sve_GatherVectorByteZeroExtendFirstFaulting, NI_Sve_GatherVectorFirstFaulting,
+                                     NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16SignExtendFirstFaulting,
+                                     NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
+                                     NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting,
+                                     NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32SignExtendFirstFaulting,
+                                     NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
+                                     NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting,
+                                     NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorSByteSignExtendFirstFaulting,
+                                     NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
+                                     NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting,
+                                     NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting,
+                                     NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
+                                     NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting,
+                                     NI_Sve_GatherVectorUInt32ZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting));
 
-            assert(AreContiguous(NI_Sve2_GatherVectorByteZeroExtendNonTemporal,
-                                 NI_Sve2_GatherVectorInt16SignExtendNonTemporal,
-                                 NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal,
-                                 NI_Sve2_GatherVectorInt32SignExtendNonTemporal,
-                                 NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal,
-                                 NI_Sve2_GatherVectorNonTemporal, NI_Sve2_GatherVectorSByteSignExtendNonTemporal,
-                                 NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal,
-                                 NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal,
-                                 NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal,
-                                 NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal,
-                                 NI_Sve2_GatherVectorWithByteOffsetsNonTemporal));
+                assert(AreContiguous(NI_Sve2_GatherVectorByteZeroExtendNonTemporal,
+                                     NI_Sve2_GatherVectorInt16SignExtendNonTemporal,
+                                     NI_Sve2_GatherVectorInt16WithByteOffsetsSignExtendNonTemporal,
+                                     NI_Sve2_GatherVectorInt32SignExtendNonTemporal,
+                                     NI_Sve2_GatherVectorInt32WithByteOffsetsSignExtendNonTemporal,
+                                     NI_Sve2_GatherVectorNonTemporal, NI_Sve2_GatherVectorSByteSignExtendNonTemporal,
+                                     NI_Sve2_GatherVectorUInt16WithByteOffsetsZeroExtendNonTemporal,
+                                     NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal,
+                                     NI_Sve2_GatherVectorUInt32WithByteOffsetsZeroExtendNonTemporal,
+                                     NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal,
+                                     NI_Sve2_GatherVectorWithByteOffsetsNonTemporal));
 
-            var isSveGatherLoad = (intrinsicId is >= NI_Sve_GatherVector and <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting);
-            var isSve2GatherLoad = (intrinsicId is >= NI_Sve2_GatherVectorByteZeroExtendNonTemporal and <= NI_Sve2_GatherVectorWithByteOffsetsNonTemporal);
-            assert(varTypeIsI(addr.Type) || (varTypeIsSimd(addr.Type) && (isSveGatherLoad || isSve2GatherLoad)));
-#else
-            assert(varTypeIsI(addr.Type));
-#endif
+                var isSveGatherLoad = (intrinsicId is >= NI_Sve_GatherVector and <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting);
+                var isSve2GatherLoad = (intrinsicId is >= NI_Sve2_GatherVectorByteZeroExtendNonTemporal and <= NI_Sve2_GatherVectorWithByteOffsetsNonTemporal);
+                assert(varTypeIsI(addr.Type) || (varTypeIsSimd(addr.Type) && (isSveGatherLoad || isSve2GatherLoad)));
+            }
+            else
+            {
+                assert(varTypeIsI(addr.Type));
+            }
+
             return true;
         }
         return false;
@@ -571,7 +537,6 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
     /// <returns>Whether this intrinsic may mutate heap state and/or throw a NullReferenceException if the address is "null".</returns>
     public bool IsMemoryStore([NotNullWhen(true)] out GenTree? addr)
     {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
         var intrinsicId = HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(intrinsicId);
 
@@ -579,14 +544,12 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         {
             switch (intrinsicId)
             {
-#if TARGET_XARCH
                 case NI_X86Base_MaskMove:
                 {
                     addr = GetOp(3);
                     break;
                 }
 
-#elif TARGET_ARM64
                 case NI_Sve_StoreAndZip:
                 case NI_Sve_StoreAndZipx2:
                 case NI_Sve_StoreAndZipx3:
@@ -618,7 +581,6 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                     addr = GetOp(2);
                     break;
                 }
-#endif
 
                 default:
                 {
@@ -627,8 +589,8 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                 }
             }
         }
-#if TARGET_XARCH
-        else if (HWIntrinsicInfo.MaybeMemoryStore(intrinsicId) && (category is HW_Category_IMM or HW_Category_Scalar))
+        else if (Configuration.TARGET_XARCH && HWIntrinsicInfo.MaybeMemoryStore(intrinsicId) &&
+                 (category is HW_Category_IMM or HW_Category_Scalar))
         {
             // Some intrinsics (without HW_Category_MemoryStore) also have MemoryStore semantics
 
@@ -659,22 +621,22 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                 addr = null;
             }
         }
-#endif
         else
         {
             addr = null;
         }
-#else
-        addr = null;
-#endif
 
         if (addr is not null)
         {
-#if TARGET_ARM64
-            assert(varTypeIsI(addr.Type) || (varTypeIsSimd(addr.Type) && ((intrinsicId >= NI_Sve_Scatter))));
-#else
-            assert(varTypeIsI(addr.Type));
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(varTypeIsI(addr.Type) || (varTypeIsSimd(addr.Type) && ((intrinsicId >= NI_Sve_Scatter))));
+            }
+            else
+            {
+                assert(varTypeIsI(addr.Type));
+            }
+
             return true;
         }
 
@@ -690,42 +652,21 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         {
             switch (intrinsicId)
             {
-#if TARGET_XARCH
-                case NI_X86Base_Pause:
-                case NI_X86Base_Prefetch0:
-                case NI_X86Base_Prefetch1:
-                case NI_X86Base_Prefetch2:
-                case NI_X86Base_PrefetchNonTemporal:
+                case NI_X86Base_Pause or NI_X86Base_Prefetch0 or NI_X86Base_Prefetch1 or NI_X86Base_Prefetch2 or
+                    NI_X86Base_PrefetchNonTemporal when Configuration.TARGET_XARCH:
                 {
                     return true;
                 }
-#endif
 
-#if TARGET_ARM64
-                case NI_ArmBase_Yield:
-                case NI_Sve_GatherPrefetch16Bit:
-                case NI_Sve_GatherPrefetch32Bit:
-                case NI_Sve_GatherPrefetch64Bit:
-                case NI_Sve_GatherPrefetch8Bit:
-                case NI_Sve_GetFfrByte:
-                case NI_Sve_GetFfrDouble:
-                case NI_Sve_GetFfrInt16:
-                case NI_Sve_GetFfrInt32:
-                case NI_Sve_GetFfrInt64:
-                case NI_Sve_GetFfrSByte:
-                case NI_Sve_GetFfrSingle:
-                case NI_Sve_GetFfrUInt16:
-                case NI_Sve_GetFfrUInt32:
-                case NI_Sve_GetFfrUInt64:
-                case NI_Sve_Prefetch16Bit:
-                case NI_Sve_Prefetch32Bit:
-                case NI_Sve_Prefetch64Bit:
-                case NI_Sve_Prefetch8Bit:
-                case NI_Sve_SetFfr:
+                case NI_ArmBase_Yield or NI_Sve_GatherPrefetch16Bit or NI_Sve_GatherPrefetch32Bit or
+                    NI_Sve_GatherPrefetch64Bit or NI_Sve_GatherPrefetch8Bit or NI_Sve_GetFfrByte or
+                    NI_Sve_GetFfrDouble or NI_Sve_GetFfrInt16 or NI_Sve_GetFfrInt32 or NI_Sve_GetFfrInt64 or
+                    NI_Sve_GetFfrSByte or NI_Sve_GetFfrSingle or NI_Sve_GetFfrUInt16 or NI_Sve_GetFfrUInt32 or
+                    NI_Sve_GetFfrUInt64 or NI_Sve_Prefetch16Bit or NI_Sve_Prefetch32Bit or NI_Sve_Prefetch64Bit or
+                    NI_Sve_Prefetch8Bit or NI_Sve_SetFfr when Configuration.TARGET_ARM64:
                 {
                     return true;
                 }
-#endif
 
                 default:
                 {
@@ -737,4 +678,3 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
         return IsUserCall;
     }
 }
-#endif

@@ -3,13 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
     public static bool HasScalarInputVariant(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Scalar-input intrinsic variants are only available on ARM64.");
+        }
+
         var flags = lookupFlags(id);
 
         return (flags & HW_Flag_HasScalarInputVariant) != 0;
@@ -17,6 +23,11 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool BaseTypeFromValueTupleArg(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Tuple-derived intrinsic base types are only available on ARM64.");
+        }
+
         var flags = lookupFlags(id);
 
         return (flags & HW_Flag_BaseTypeFromValueTupleArg) != 0;
@@ -24,6 +35,11 @@ public readonly partial struct HWIntrinsicInfo
 
     public static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Scalar-input intrinsic variants are only available on ARM64.");
+        }
+
         assert(HasScalarInputVariant(id));
 
         return id switch
@@ -39,11 +55,14 @@ public readonly partial struct HWIntrinsicInfo
             _ => throw new FatalJitException("Unexpected ARM64 scalar-input variant intrinsic."),
         };
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS && TARGET_WASM
     public static int lookupImmUpperBound(NamedIntrinsic intrinsic, int simdSize, var_types simdBaseType)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
+        {
+            throw new PlatformNotSupportedException("Packed SIMD immediate bounds are only available on WebAssembly.");
+        }
+
         switch (intrinsic)
         {
             case NI_PackedSimd_ExtractScalar:
@@ -64,6 +83,11 @@ public readonly partial struct HWIntrinsicInfo
 
     public static void GetImmOpsPositions(NamedIntrinsic id, out int first, out int second)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
+        {
+            throw new PlatformNotSupportedException("Packed SIMD immediate operands are only available on WebAssembly.");
+        }
+
         first = -1;
         second = -1;
 
@@ -90,5 +114,4 @@ public readonly partial struct HWIntrinsicInfo
             }
         }
     }
-#endif
 }
