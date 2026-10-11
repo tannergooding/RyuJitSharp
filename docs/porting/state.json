@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Convert FEATURE_READYTORUN guards in lsra/LinearScan.LocalResolutionDriverVectors.cs to runtime metadata assignments, then validate LSRA local-resolution tests before continuing with the remaining hardware-intrinsic importer guards.",
+    "nextAction": "Convert FEATURE_READYTORUN guards in Compiler.HWIntrinsicImport.cs and Compiler.HWIntrinsicImportXplat.cs to runtime entry-point checks; validate hardware-intrinsic importer tests on xarch, Arm64, and Wasm configurations.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize call argument morphing and ReadyToRun call dispatch across CallArgs.Morph, call lowering, the three non-xarch codegen call backends, and their focused tests; make the Wasm stack-pointer local slot universally available and derive fixed-outgoing-argument, argument-splitting, and Swift switches from substituted target configuration.",
-      "doneWhen": "Target-specific argument insertion and ReadyToRun indirection-cell behavior are selected through runtime configuration, entry-point handling preserves disabled-feature fallback, and all target-derived configuration formulas match the project target matrix.",
-      "validation": "Core call-argument, call-lowering, CFG, P/Invoke, and call-register tests passed 191/192 in Debug on win-x64 (one existing Arm64-only test skipped). Target FeatureConfigurationTests passed 17/17 each for linux-arm64, linux-riscv64, linux-loongarch64, and browser-wasm Debug using RyuJitTargetRuntimeIdentifier on the Windows host. `git diff --check` passed.",
-      "deferred": "FEATURE_READYTORUN guards remain in LSRA local resolution and hardware-intrinsic import, plus broader source/test guards. Remove FEATURE_READYTORUN from DefineConstants only after all source and test guards are converted. Many other TARGET_/FEATURE_ directives remain in scope. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Replace FEATURE_READYTORUN guards around LSRA upper-vector save/restore entry-point metadata with runtime checks and verify emitted intrinsic metadata.",
+      "doneWhen": "Upper-vector save and restore nodes receive IAT_VALUE entry-point metadata when ReadyToRun is enabled and retain their original default metadata when it is disabled.",
+      "validation": "LinearScanLocalResolutionDriverTests passed 21/21 in Debug on win-x64; Arm64LinearScanLocalResolutionTests plus FeatureConfigurationTests passed 39/39 in Debug using RyuJitTargetRuntimeIdentifier=linux-arm64 on the Windows host. `git diff --check` passed.",
+      "deferred": "FEATURE_READYTORUN guards remain in hardware-intrinsic import and the Wasm delegate-constructor test, plus broader source/test guards. Remove FEATURE_READYTORUN from DefineConstants only after all source and test guards are converted. Many other TARGET_/FEATURE_ directives remain in scope. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

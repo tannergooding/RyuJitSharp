@@ -48,10 +48,12 @@ public sealed partial class LinearScan
         var save = new GenTreeIntrinsic(saveType, source, NI_SIMD_UpperSave, methodHandle: null)
         {
             RegNum = spillReg,
-#if FEATURE_READYTORUN
-            EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE },
-#endif
         };
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            save.EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
+        }
+
 #if DEBUG
         save._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
 #endif
@@ -88,9 +90,11 @@ public sealed partial class LinearScan
         source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
 #endif
         var restore = new GenTreeIntrinsic(local.Type, source, NI_SIMD_UpperRestore, methodHandle: null);
-#if FEATURE_READYTORUN
-        restore.EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
-#endif
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            restore.EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
+        }
+
 #if DEBUG
         restore._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
 #endif

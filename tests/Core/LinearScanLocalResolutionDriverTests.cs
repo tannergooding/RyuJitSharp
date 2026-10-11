@@ -404,6 +404,10 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That(saveNode.RegNum, Is.EqualTo(spillRegister));
             Assert.That(upper.physReg, Is.EqualTo(spillRegister));
             Assert.That((saveNode.Flags & GTF_SPILL) != 0, Is.EqualTo(onStack));
+            if (Configuration.FEATURE_READYTORUN)
+            {
+                Assert.That(saveNode.AsIntrinsic().EntryPoint.accessType, Is.EqualTo(InfoAccessType.IAT_VALUE));
+            }
 
             var use = compiler.gtNewLclvNode(TYP_SIMD32, 0);
             var parent = new GenTreeUnOp(GT_NEG, TYP_SIMD32, use);
@@ -418,6 +422,10 @@ internal static class LinearScanLocalResolutionDriverTests
             Assert.That(restoreNode.AsIntrinsic().IntrinsicName, Is.EqualTo(NI_SIMD_UpperRestore));
             Assert.That(restoreNode.Next, Is.SameAs(parent));
             Assert.That((restoreNode.Flags & GTF_NOREG_AT_USE) != 0, Is.EqualTo(onStack));
+            if (Configuration.FEATURE_READYTORUN)
+            {
+                Assert.That(restoreNode.AsIntrinsic().EntryPoint.accessType, Is.EqualTo(InfoAccessType.IAT_VALUE));
+            }
         });
     }
 
