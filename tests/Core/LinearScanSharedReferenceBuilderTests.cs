@@ -220,25 +220,32 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
         });
     }
 
-#if TARGET_AMD64 && FEATURE_MULTIREG_RET
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void MultiDefinitionsPreserveHighRegisterBitsAndFixedMaskOrder(int maskMode)
     {
+        if (!Configuration.TARGET_AMD64 || !Configuration.FEATURE_MULTIREG_RET)
+        {
+            Assert.Ignore("The high-register ABI test requires AMD64 multi-register returns.");
+        }
+
         WithAllocator((compiler, allocator) => {
             var call = compiler.gtNewCallNode(TYP_STRUCT, CT_USER_FUNC, null);
             ref var descriptor = ref CallReturnDescriptor(call);
-            ReturnTypes(ref descriptor)[0] = TYP_FLOAT;
-            ReturnTypes(ref descriptor)[1] = TYP_FLOAT;
+            SetReturnType(ref descriptor, 0, TYP_FLOAT);
+            SetReturnType(ref descriptor, 1, TYP_FLOAT);
 #if DEBUG
             ReturnDescriptorInitialized(ref descriptor) = true;
 #endif
+            var xmm0 = GetXmmMask(0);
+            var xmm1 = GetXmmMask(1);
+            var xmm31 = GetXmmMask(31);
             var candidates = maskMode switch
             {
                 0 => SRBM_NONE,
-                1 => SRBM_XMM0 | SRBM_XMM31,
-                _ => SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM31,
+                1 => xmm0 | xmm31,
+                _ => xmm0 | xmm1 | xmm31,
             };
             ReferenceBuildLocation(allocator) = 4;
 
@@ -252,7 +259,7 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
                 var expected = maskMode switch
                 {
                     0 => AvailableFloatRegs(allocator),
-                    1 => index == 0 ? SRBM_XMM0 : SRBM_XMM31,
+                    1 => index == 0 ? xmm0 : xmm31,
                     _ => candidates,
                 };
                 Assert.That(definitions[index].registerAssignment, Is.EqualTo(expected));
@@ -271,10 +278,21 @@ internal static unsafe class LinearScanSharedReferenceBuilderTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_regType")]
     private static extern ref InlineArrayMaxRetRegCount<var_types> ReturnTypes(ref ReturnTypeDesc descriptor);
 
+    private static void SetReturnType(ref ReturnTypeDesc descriptor, byte index, var_types type)
+    {
+        ref var returnTypes = ref ReturnTypes(ref descriptor);
+        returnTypes[index] = type;
+    }
+
+    private static regMask GetXmmMask(int index)
+    {
+        var register = Enum.Parse<regNumber>($"REG_XMM{index}");
+        return (regMask)regMaskTP.CreateFromRegNum(register, register.SingleTypeMask);
+    }
+
 #if DEBUG
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_inited")]
     private static extern ref bool ReturnDescriptorInitialized(ref ReturnTypeDesc descriptor);
-#endif
 #endif
 
     [TestCase(false)]

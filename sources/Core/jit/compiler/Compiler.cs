@@ -1702,9 +1702,10 @@ public partial class Compiler
         }
 #endif
 
+        var structDesc = default(SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR);
 #if UNIX_AMD64_ABI
         // An 8-byte struct may need to be returned in a floating point registerm, so we always consult the struct "Classifier" routine
-        eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, out var structDesc);
+        eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, out structDesc);
 
         if (structDesc.eightByteCount is 1)
         {
@@ -1806,7 +1807,6 @@ public partial class Compiler
             }
         }
 
-#if TARGET_64BIT
         // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
         //
         // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
@@ -1816,14 +1816,12 @@ public partial class Compiler
         // Since what we have is an 8-byte struct (float + float)  we change useType to TYP_I_IMPL
         // so that the struct is returned instead using an 8-byte integer register.
 
-#if !FEATURE_MULTIREG_RET
-        if ((useType is TYP_UNKNOWN) && (structSize is (2 * sizeof(float))) && IsHfa(clsHnd))
+        if (Configuration.TARGET_64BIT && !Configuration.FEATURE_MULTIREG_RET &&
+            (useType is TYP_UNKNOWN) && (structSize is (2 * sizeof(float))) && IsHfa(clsHnd))
         {
             useType = TYP_I_IMPL;
             howToReturnStruct = SPK_PrimitiveType;
         }
-#endif
-#endif
 
         // Did we change this struct type into a simple "primitive" type?
         if (useType is not TYP_UNKNOWN)
@@ -1837,8 +1835,7 @@ public partial class Compiler
             // See if we can return this struct by value, possibly in multiple registers
             // or if we should return it using a return buffer register
 
-#if FEATURE_MULTIREG_RET
-            if (structSize <= MAX_RET_MULTIREG_BYTES)
+            if (Configuration.FEATURE_MULTIREG_RET && (structSize <= MAX_RET_MULTIREG_BYTES))
             {
                 // Structs that are HFA's are returned in multiple registers
                 if (IsHfa(clsHnd))
@@ -1854,80 +1851,96 @@ public partial class Compiler
                 else
                 {
                     // Not an HFA struct type
-#if UNIX_AMD64_ABI
-                    // The cases of (structDesc.eightByteCount is 1) and (structDesc.eightByteCount is 0)
-                    // should have already been handled
-                    assert(structDesc.eightByteCount > 1);
-
-                    // setup wbPassType and useType indicate that this is returned by value in multiple registers
-                    howToReturnStruct = SPK_ByValue;
-                    useType = TYP_STRUCT;
-
-                    assert(structDesc.passedInRegisters == true);
-#elif TARGET_ARM64
-                    // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
-                    assert(structSize > TARGET_POINTER_SIZE);
-
-                    // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
-                    if (structMightRepresentSimdType(clsHnd) && (getBaseTypeAndSizeOfSimdType(clsHnd, out var simdSize) is not TYP_UNDEF) && (simdSize is SIZE_UNKNOWN))
+                    if (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX)
                     {
-                        howToReturnStruct = SPK_ByReference;
-                        useType = TYP_UNKNOWN;
-                    }
-                    else if (structSize <= (TARGET_POINTER_SIZE * 2))
-                    {
-                        // On ARM64 structs that are 9-16 bytes are returned by value in multiple registers
-                        // setup wbPassType and useType indicate that this is return by value in multiple registers
+                        // The cases of (structDesc.eightByteCount is 1) and (structDesc.eightByteCount is 0)
+                        // should have already been handled
+                        assert(structDesc.eightByteCount > 1);
+
+                        // setup wbPassType and useType indicate that this is returned by value in multiple registers
                         howToReturnStruct = SPK_ByValue;
                         useType = TYP_STRUCT;
+
+                        assert(structDesc.passedInRegisters == true);
                     }
-                    else
+                    else if (Configuration.TARGET_ARM64)
                     {
-                        // a structSize that is 17-32 bytes in size
-                        // Otherwise we return this struct using a return buffer
-                        // setup wbPassType and useType indicate that this is returned using a return buffer register
-                        //  (reference to a return buffer)
-                        howToReturnStruct = SPK_ByReference;
-                        useType = TYP_UNKNOWN;
-                    }
-#elif TARGET_X86
-                    // Only 8-byte structs are return in multiple registers.
-                    // We also only support multireg struct returns on x86 to match the native calling convention.
-                    // So return 8-byte structs only when the calling convention is a native calling convention.
-                    if ((structSize is MAX_RET_MULTIREG_BYTES) && (callConv is not CorInfoCallConvExtension.Managed))
-                    {
-                        // setup wbPassType and useType indicate that this is return by value in multiple registers
-                        howToReturnStruct = SPK_ByValue;
-                        useType = TYP_STRUCT;
-                    }
-                    else
-                    {
-                        // Otherwise we return this struct using a return buffer
-                        // setup wbPassType and useType indicate that this is returned using a return buffer register
-                        //  (reference to a return buffer)
-                        howToReturnStruct = SPK_ByReference;
-                        useType = TYP_UNKNOWN;
-                    }
-#elif TARGET_ARM
-                    // Otherwise we return this struct using a return buffer
-                    // setup wbPassType and useType indicate that this is returned using a return buffer register
-                    //  (reference to a return buffer)
-                    howToReturnStruct = SPK_ByReference;
-                    useType = TYP_UNKNOWN;
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                    // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
-                    howToReturnStruct = SPK_ByValue;
-                    useType = TYP_STRUCT;
-#else
-                    NO_WAY("Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
+                        // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
+                        assert(structSize > TARGET_POINTER_SIZE);
+
+                        // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
+                        var isScalableSimdType = false;
+#if FEATURE_SIMD
+                        isScalableSimdType = structMightRepresentSimdType(clsHnd) &&
+                            (getBaseTypeAndSizeOfSimdType(clsHnd, out var simdSize) is not TYP_UNDEF) &&
+                            (simdSize is SIZE_UNKNOWN);
 #endif
+
+                        if (isScalableSimdType)
+                        {
+                            howToReturnStruct = SPK_ByReference;
+                            useType = TYP_UNKNOWN;
+                        }
+                        else if (structSize <= (TARGET_POINTER_SIZE * 2))
+                        {
+                            // On ARM64 structs that are 9-16 bytes are returned by value in multiple registers
+                            // setup wbPassType and useType indicate that this is return by value in multiple registers
+                            howToReturnStruct = SPK_ByValue;
+                            useType = TYP_STRUCT;
+                        }
+                        else
+                        {
+                            // a structSize that is 17-32 bytes in size
+                            // Otherwise we return this struct using a return buffer
+                            // setup wbPassType and useType indicate that this is returned using a return buffer register
+                            //  (reference to a return buffer)
+                            howToReturnStruct = SPK_ByReference;
+                            useType = TYP_UNKNOWN;
+                        }
+                    }
+                    else if (Configuration.TARGET_X86)
+                    {
+                        // Only 8-byte structs are return in multiple registers.
+                        // We also only support multireg struct returns on x86 to match the native calling convention.
+                        // So return 8-byte structs only when the calling convention is a native calling convention.
+                        if ((structSize is MAX_RET_MULTIREG_BYTES) && (callConv is not CorInfoCallConvExtension.Managed))
+                        {
+                            // setup wbPassType and useType indicate that this is return by value in multiple registers
+                            howToReturnStruct = SPK_ByValue;
+                            useType = TYP_STRUCT;
+                        }
+                        else
+                        {
+                            // Otherwise we return this struct using a return buffer
+                            // setup wbPassType and useType indicate that this is returned using a return buffer register
+                            //  (reference to a return buffer)
+                            howToReturnStruct = SPK_ByReference;
+                            useType = TYP_UNKNOWN;
+                        }
+                    }
+                    else if (Configuration.TARGET_ARM)
+                    {
+                        // Otherwise we return this struct using a return buffer
+                        // setup wbPassType and useType indicate that this is returned using a return buffer register
+                        //  (reference to a return buffer)
+                        howToReturnStruct = SPK_ByReference;
+                        useType = TYP_UNKNOWN;
+                    }
+                    else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                    {
+                        // On LOONGARCH64/RISCV64 struct that is 1-16 bytes is returned by value in one/two register(s)
+                        howToReturnStruct = SPK_ByValue;
+                        useType = TYP_STRUCT;
+                    }
+                    else
+                    {
+                        NO_WAY("Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
+                    }
                 }
             }
-            else // (structSize > MAX_RET_MULTIREG_BYTES)
-#endif
+            else
             {
-                // We have a (large) struct that can't be replaced with a "primitive" type
-                // and can't be returned in multiple registers
+                // We have a struct that cannot be returned in multiple registers.
 
                 // We return this struct using a return buffer register
                 // setup wbPassType and useType indicate that this is returned using a return buffer register

@@ -334,12 +334,10 @@ public partial class GenTree
         assert(this is GenTreeOpCC);
         return Unsafe.As<GenTreeOpCC>(this);
     }
-#if !TARGET_64BIT
     public GenTreeMultiRegOp AsMultiRegOp()
     {
         assert(_oper is GT_MUL_LONG);
         assert(this is GenTreeMultiRegOp);
         return Unsafe.As<GenTreeMultiRegOp>(this);
     }
-#endif
 }

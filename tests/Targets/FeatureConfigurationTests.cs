@@ -26,6 +26,18 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void LongReturnDescriptorUsesTheConfiguredRegisterWidth()
+    {
+        var descriptor = new ReturnTypeDesc();
+        descriptor.InitializeLongReturnType();
+
+        var returnsLongInMultipleRegisters = Configuration.FEATURE_MULTIREG_RET &&
+            (Configuration.TARGET_X86 || Configuration.TARGET_ARM);
+
+        Assert.That(descriptor.IsMultiRegRetType, Is.EqualTo(returnsLongInMultipleRegisters));
+    }
+
+    [Test]
     public static void ArgumentAndSwiftFeaturesMatchTheTargetArchitecture()
     {
         var supportsArgSplit = Configuration.TARGET_ARMARCH ||

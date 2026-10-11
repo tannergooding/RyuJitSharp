@@ -389,13 +389,6 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
 
-    <!-- FEATURE_MULTIREG_RET: Support for returning a single value in more than one register -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);FEATURE_MULTIREG_RET</DefineConstants>
-    
     <!-- FEATURE_MULTIREG_STRUCT_PROMOTE: True when we want to promote fields of a multireg struct into registers -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>

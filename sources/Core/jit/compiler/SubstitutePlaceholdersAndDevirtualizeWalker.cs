@@ -308,7 +308,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
             UpdateInlineReturnExpressionPlaceHolder(ref use, user);
         }
 
-#if DEBUG && FEATURE_MULTIREG_RET
+#if DEBUG
         // Make sure we don't have a tree like so: V05 = (, , , retExpr);
         // Since we only look one level above for the parent for '=' and
         // do not check if there is a series of COMMAs. See above.
@@ -316,7 +316,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
         // leaving an assert in here. This can be fixed by looking ahead
         // when we visit stores similar to AttachStructInlineeToStore.
 
-        if (tree.Oper.IsStore)
+        if (Configuration.FEATURE_MULTIREG_RET && tree.Oper.IsStore)
         {
             var value = tree.Data;
 
@@ -490,7 +490,6 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                 }
             }
 
-#if FEATURE_MULTIREG_RET
             // If an inline was rejected and the call returns a struct, we may
             // have deferred some work when importing call for cases where the
             // struct is returned in multiple registers.
@@ -500,7 +499,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
             //
             // Do the deferred work now.
 
-            if (varTypeIsStruct(call.Type) && call.HasMultiRegRetVal)
+            if (Configuration.FEATURE_MULTIREG_RET && varTypeIsStruct(call.Type) && call.HasMultiRegRetVal)
             {
                 // See assert below, we only look one level above for a store parent.
 
@@ -518,7 +517,6 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                 }
                 _madeChanges = true;
             }
-#endif
         }
     }
 
@@ -537,7 +535,6 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
     public Compiler.fgWalkResult WalkTree(ref GenTree use, GenTree? user)
         => IGenTreeVisitor<SubstitutePlaceholdersAndDevirtualizeWalker>.WalkTree(ref this, ref use, user, _ancestors);
 
-#if FEATURE_MULTIREG_RET
     /// <summary>Update a "STORE(..., inlinee)" tree.</summary>
     /// <param name="store">The store with the inlinee as value</param>
     /// <param name="retClsHnd">The struct handle for the inlinee</param>
@@ -605,5 +602,4 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
         var lcl = _compiler.gtNewLclvNode(varDsc.Type, lclNum);
         return _compiler.gtNewCommaNode(lcl.Type, store, lcl);
     }
-#endif
 }

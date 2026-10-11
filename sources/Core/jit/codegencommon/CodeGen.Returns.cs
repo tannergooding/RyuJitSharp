@@ -302,96 +302,99 @@ public sealed partial class CodeGen
 
         genConsumeRegs(value);
 
-#if FEATURE_MULTIREG_RET
-        if (genIsRegCandidateLocal(actualValue))
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            assert(varTypeIsSimd(_compiler.lvaGetDesc(actualValue.AsLclVarCommon().LclNum).GetRegisterType()));
-            assert(!actualValue.AsLclVar().IsMultiReg);
-#if FEATURE_SIMD
-            genSIMDSplitReturn(value, descriptor);
-#endif
-        }
-        else if ((actualValue.Oper == GT_LCL_VAR) && !actualValue.AsLclVar().IsMultiReg)
-        {
-            var local = actualValue.AsLclVar();
-            assert(_compiler.lvaGetDesc(local.LclNum).lvIsMultiRegRet);
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-            var type = descriptor.GetReturnRegType(0);
-            var offset = unchecked((uint)descriptor.GetReturnFieldOffset(0));
-            var register = descriptor.GetAbiReturnReg(0, _compiler.info.compCallConv);
-
-            Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, unchecked((int)offset));
-            if (descriptor.ReturnRegCount > 1)
+            if (genIsRegCandidateLocal(actualValue))
             {
-                assert(descriptor.ReturnRegCount == 2);
-                assert(unchecked(offset + (uint)type.Size) <=
-                    unchecked((uint)descriptor.GetReturnFieldOffset(1)));
-                type = descriptor.GetReturnRegType(1);
-                offset = unchecked((uint)descriptor.GetReturnFieldOffset(1));
-                register = descriptor.GetAbiReturnReg(1, _compiler.info.compCallConv);
+                assert(varTypeIsSimd(_compiler.lvaGetDesc(actualValue.AsLclVarCommon().LclNum).GetRegisterType()));
+                assert(!actualValue.AsLclVar().IsMultiReg);
+#if FEATURE_SIMD
+                genSIMDSplitReturn(value, descriptor);
+#endif
+            }
+            else if ((actualValue.Oper == GT_LCL_VAR) && !actualValue.AsLclVar().IsMultiReg)
+            {
+                var local = actualValue.AsLclVar();
+                assert(_compiler.lvaGetDesc(local.LclNum).lvIsMultiRegRet);
+#if TARGET_LOONGARCH64 || TARGET_RISCV64
+                var type = descriptor.GetReturnRegType(0);
+                var offset = unchecked((uint)descriptor.GetReturnFieldOffset(0));
+                var register = descriptor.GetAbiReturnReg(0, _compiler.info.compCallConv);
 
                 Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, unchecked((int)offset));
-            }
+                if (descriptor.ReturnRegCount > 1)
+                {
+                    assert(descriptor.ReturnRegCount == 2);
+                    assert(unchecked(offset + (uint)type.Size) <=
+                        unchecked((uint)descriptor.GetReturnFieldOffset(1)));
+                    type = descriptor.GetReturnRegType(1);
+                    offset = unchecked((uint)descriptor.GetReturnFieldOffset(1));
+                    register = descriptor.GetAbiReturnReg(1, _compiler.info.compCallConv);
+
+                    Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, unchecked((int)offset));
+                }
 #else
 #if SWIFT_SUPPORT
-            ReadOnlySpan<int> offsets = default;
-            if (_compiler.info.compCallConv == CorInfoCallConvExtension.Swift)
-            {
-                unsafe
+                ReadOnlySpan<int> offsets = default;
+                if (_compiler.info.compCallConv == CorInfoCallConvExtension.Swift)
                 {
-                    var retType = _compiler.info.compMethodInfo->args.retTypeClass;
-                    ref readonly var lowering = ref _compiler.GetSwiftLowering(retType);
-                    assert(!lowering.byReference && (descriptor.ReturnRegCount == lowering.numLoweredElements));
-                    offsets = lowering.offsets;
+                    unsafe
+                    {
+                        var retType = _compiler.info.compMethodInfo->args.retTypeClass;
+                        ref readonly var lowering = ref _compiler.GetSwiftLowering(retType);
+                        assert(!lowering.byReference && (descriptor.ReturnRegCount == lowering.numLoweredElements));
+                        offsets = lowering.offsets;
+                    }
                 }
-            }
 #endif
-            var offset = 0;
-            for (byte i = 0; i < descriptor.ReturnRegCount; i++)
-            {
-                var type = descriptor.GetReturnRegType(i);
-                var register = descriptor.GetAbiReturnReg(i, _compiler.info.compCallConv);
+                var offset = 0;
+                for (byte i = 0; i < descriptor.ReturnRegCount; i++)
+                {
+                    var type = descriptor.GetReturnRegType(i);
+                    var register = descriptor.GetAbiReturnReg(i, _compiler.info.compCallConv);
 #if SWIFT_SUPPORT
-                if (!offsets.IsEmpty)
-                {
-                    offset = offsets[i];
+                    if (!offsets.IsEmpty)
+                    {
+                        offset = offsets[i];
+                    }
+#endif
+                    Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, offset);
+                    offset += type.Size;
                 }
 #endif
-                Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, local.LclNum, offset);
-                offset += type.Size;
             }
-#endif
+            else
+            {
+                for (byte i = 0; i < descriptor.ReturnRegCount; i++)
+                {
+                    var type = descriptor.GetReturnRegType(i);
+                    var register = descriptor.GetAbiReturnReg(i, _compiler.info.compCallConv);
+                    var fromReg = value.GetRegByIndex(i);
+                    if ((fromReg == REG_NA) && (value.Oper == GT_COPY))
+                    {
+                        fromReg = actualValue.GetRegByIndex(i);
+                    }
+
+                    if (fromReg == REG_NA)
+                    {
+                        var local = actualValue.AsLclVar();
+                        ref var localDesc = ref _compiler.lvaGetDesc(local.LclNum);
+                        assert(localDesc.lvPromoted);
+                        var fieldNumber = localDesc.lvFieldLclStart + i;
+                        assert(_compiler.lvaGetDesc(fieldNumber).lvOnFrame);
+                        Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, fieldNumber, 0);
+                    }
+                    else
+                    {
+                        inst_Mov(type, register, fromReg, canSkip: true);
+                    }
+                }
+            }
         }
         else
         {
-            for (byte i = 0; i < descriptor.ReturnRegCount; i++)
-            {
-                var type = descriptor.GetReturnRegType(i);
-                var register = descriptor.GetAbiReturnReg(i, _compiler.info.compCallConv);
-                var fromReg = value.GetRegByIndex(i);
-                if ((fromReg == REG_NA) && (value.Oper == GT_COPY))
-                {
-                    fromReg = actualValue.GetRegByIndex(i);
-                }
-
-                if (fromReg == REG_NA)
-                {
-                    var local = actualValue.AsLclVar();
-                    ref var localDesc = ref _compiler.lvaGetDesc(local.LclNum);
-                    assert(localDesc.lvPromoted);
-                    var fieldNumber = localDesc.lvFieldLclStart + i;
-                    assert(_compiler.lvaGetDesc(fieldNumber).lvOnFrame);
-                    Emitter.emitIns_R_S(ins_Load(type), type.EmitSize, register, fieldNumber, 0);
-                }
-                else
-                {
-                    inst_Mov(type, register, fromReg, canSkip: true);
-                }
-            }
+            unreached();
         }
-#else
-        unreached();
-#endif
 #endif
     }
 

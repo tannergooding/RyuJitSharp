@@ -46,20 +46,16 @@ public static class LsraGlobals
         {
             tree.RegNum = reg;
         }
-#if !TARGET_64BIT
         else if (tree.Oper.IsMultiRegOp)
         {
             assert(regIdx == 1);
             tree.AsMultiRegOp().OtherReg = reg;
         }
-#endif
-#if FEATURE_MULTIREG_RET
-        else if (tree.Oper is GT_COPY)
+        else if (Configuration.FEATURE_MULTIREG_RET && (tree.Oper is GT_COPY))
         {
             assert(regIdx == 1);
             tree.AsCopyOrReload().SetRegNumByIdx(reg, 1);
         }
-#endif
 #if FEATURE_HW_INTRINSICS
         else if (tree.Oper is GT_HWINTRINSIC)
         {

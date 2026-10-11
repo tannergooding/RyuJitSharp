@@ -82,16 +82,14 @@ public partial class Compiler
         {
             call._entryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
         }
-#if FEATURE_MULTIREG_RET
-        call._returnTypeDesc.Reset();
+        call.ResetReturnType();
         call.ClearOtherRegs();
-#if !TARGET_64BIT
-        if (varTypeIsLong(tree.Type))
+
+        if (Configuration.TARGET_32BIT && varTypeIsLong(tree.Type))
         {
-            call._returnTypeDesc.InitializeLongReturnType();
+            call.InitializeLongReturnType();
         }
-#endif
-#endif
+
         if (call.MayThrow(this))
         {
             call.Flags |= GTF_EXCEPT;

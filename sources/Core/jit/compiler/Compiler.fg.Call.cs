@@ -565,8 +565,8 @@ public partial class Compiler
 
             assert(!call.CanTailCall);
 
-#if FEATURE_MULTIREG_RET
-            if (fgGlobalMorph && call.HasMultiRegRetVal && varTypeIsStruct(call.Type))
+            if (Configuration.FEATURE_MULTIREG_RET && fgGlobalMorph &&
+                call.HasMultiRegRetVal && varTypeIsStruct(call.Type))
             {
                 // Finish the multi-register return spill deferred for a possible tail call.
                 call.Args.ResetFinalArgsAndAbiInfo();
@@ -589,7 +589,6 @@ public partial class Compiler
 
                 return result;
             }
-#endif
         }
 
         if (call.IsSpecialIntrinsic() &&

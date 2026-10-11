@@ -1340,10 +1340,11 @@ public partial class Compiler
         // TailCallInfo or AsyncInfo or UnmgdCallConv
         copy._anonymous1 = tree._anonymous1;
 
-#if FEATURE_MULTIREG_RET
-        copy._returnTypeDesc = tree._returnTypeDesc;
-        copy.CopyOtherRegFlags(tree);
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            copy._returnTypeDesc = tree._returnTypeDesc;
+            copy.CopyOtherRegFlags(tree);
+        }
 
         copy._callMoreFlags = tree._callMoreFlags;
 
@@ -8487,16 +8488,12 @@ public partial class Compiler
         // Initialize gtOtherRegs
         node.ClearOtherRegs();
 
-#if !TARGET_64BIT
-        if (varTypeIsLong(node.Type))
+        if (Configuration.TARGET_32BIT && varTypeIsLong(node.Type))
         {
-#if FEATURE_MULTIREG_RET
             // Initialize Return type descriptor of call node
             assert(node._returnType == node.Type);
-            node._returnTypeDesc.InitializeLongReturnType();
-#endif
+            node.InitializeLongReturnType();
         }
-#endif
 
         return node;
     }
@@ -9433,16 +9430,14 @@ public partial class Compiler
 
         for (var i = 0; i < nArgs; i++)
         {
-            call.Args.PushFront(NewCallArg.CreateForPrimitive(args[i]));
+            _ = call.Args.PushFront(NewCallArg.CreateForPrimitive(args[i]));
             call.Flags |= (args[i].Flags & GTF_ALL_EFFECT);
         }
 
-#if FEATURE_MULTIREG_RET
-        if (varTypeIsStruct(call.Type))
+        if (Configuration.FEATURE_MULTIREG_RET && varTypeIsStruct(call.Type))
         {
             call.InitializeStructReturnType(this, structType, call.UnmanagedCallConv);
         }
-#endif
 
         GenTree result = call;
 
@@ -13836,16 +13831,14 @@ public partial class Compiler
         {
             call._entryPoint.accessType = IAT_VALUE;
         }
-#if FEATURE_MULTIREG_RET
-        call._returnTypeDesc.Reset();
+        call.ResetReturnType();
         call.ClearOtherRegs();
-#if !TARGET_64BIT
-        if (varTypeIsLong(source.Type))
+
+        if (Configuration.TARGET_32BIT && varTypeIsLong(source.Type))
         {
-            call._returnTypeDesc.InitializeLongReturnType();
+            call.InitializeLongReturnType();
         }
-#endif
-#endif
+
         if (call.CallExceptions() != ExceptionSetFlags.None)
         {
             call.Flags |= GTF_EXCEPT;

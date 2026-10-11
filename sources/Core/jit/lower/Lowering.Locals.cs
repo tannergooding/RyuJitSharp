@@ -296,56 +296,58 @@ public sealed partial class Lowering
     {
         var canEnregisterAsMultiReg = false;
         var canEnregisterAsSingleReg = false;
-#if FEATURE_MULTIREG_RET || FEATURE_HW_INTRINSICS
-        ref var descriptor = ref CompilerInstance.lvaGetDesc(node.LclNum);
-        if (descriptor.lvDoNotEnregister)
+        if (Configuration.FEATURE_MULTIREG_RET || Configuration.FEATURE_HW_INTRINSICS)
         {
-            assert(!node.IsMultiReg);
-            return false;
-        }
-
-        if (CompilerInstance.lvaEnregMultiRegVars && descriptor.lvPromoted)
-        {
-            if ((CompilerInstance.lvaGetPromotionType(in descriptor) is Compiler.lvaPromotionType.PROMOTION_TYPE_INDEPENDENT) &&
-                (registerCount == descriptor.lvFieldCnt))
+            ref var descriptor = ref CompilerInstance.lvaGetDesc(node.LclNum);
+            if (descriptor.lvDoNotEnregister)
             {
-                canEnregisterAsMultiReg = true;
-#if FEATURE_SIMD
-                // A Vector3 field can span ABI registers, even when register and field counts match.
-                for (var i = 0; i < descriptor.lvFieldCnt; i++)
+                assert(!node.IsMultiReg);
+                return false;
+            }
+
+            if (CompilerInstance.lvaEnregMultiRegVars && descriptor.lvPromoted)
+            {
+                if ((CompilerInstance.lvaGetPromotionType(in descriptor) is Compiler.lvaPromotionType.PROMOTION_TYPE_INDEPENDENT) &&
+                    (registerCount == descriptor.lvFieldCnt))
                 {
-                    if (CompilerInstance.lvaGetDesc(descriptor.lvFieldLclStart + i).Type is TYP_SIMD12)
+                    canEnregisterAsMultiReg = true;
+#if FEATURE_SIMD
+                    // A Vector3 field can span ABI registers, even when register and field counts match.
+                    for (var i = 0; i < descriptor.lvFieldCnt; i++)
                     {
-                        canEnregisterAsMultiReg = false;
-                        break;
+                        if (CompilerInstance.lvaGetDesc(descriptor.lvFieldLclStart + i).Type is TYP_SIMD12)
+                        {
+                            canEnregisterAsMultiReg = false;
+                            break;
+                        }
                     }
+#endif
+                }
+            }
+            else
+            {
+                canEnregisterAsSingleReg = varTypeIsSimd(node.Type);
+#if TARGET_XARCH
+                if ((node.Oper is GT_STORE_LCL_VAR) && varTypeIsStruct(node.Op1.Type) && (node.Op1.Oper is not GT_CALL))
+                {
+                    canEnregisterAsSingleReg = false;
                 }
 #endif
             }
-        }
-        else
-        {
-            canEnregisterAsSingleReg = varTypeIsSimd(node.Type);
-#if TARGET_XARCH
-            if ((node.Oper is GT_STORE_LCL_VAR) && varTypeIsStruct(node.Op1.Type) && (node.Op1.Oper is not GT_CALL))
+
+            if (canEnregisterAsSingleReg || canEnregisterAsMultiReg)
             {
-                canEnregisterAsSingleReg = false;
+                if (canEnregisterAsMultiReg)
+                {
+                    node.SetMultiReg();
+                }
             }
-#endif
+            else
+            {
+                CompilerInstance.lvaSetVarDoNotEnregister(node.LclNum, DoNotEnregisterReason.BlockOp);
+            }
         }
 
-        if (canEnregisterAsSingleReg || canEnregisterAsMultiReg)
-        {
-            if (canEnregisterAsMultiReg)
-            {
-                node.SetMultiReg();
-            }
-        }
-        else
-        {
-            CompilerInstance.lvaSetVarDoNotEnregister(node.LclNum, DoNotEnregisterReason.BlockOp);
-        }
-#endif
         return canEnregisterAsSingleReg || canEnregisterAsMultiReg;
     }
 
@@ -570,12 +572,13 @@ public sealed partial class Lowering
         var spillNumber = compiler.lvaGrabTemp(true, "Return value temp for a non-enregisterable struct return");
         compiler.lvaSetVarDoNotEnregister(spillNumber, DoNotEnregisterReason.LocalField);
         compiler.lvaSetStruct(spillNumber, call.RetClsHnd, false);
-#if FEATURE_MULTIREG_RET
-        assert(call.ReturnTypeDesc.ReturnRegCount == 1);
-        var offset = call.ReturnTypeDesc.GetReturnFieldOffset(0);
-#else
-        const uint offset = 0;
-#endif
+        var offset = 0;
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            assert(call.ReturnTypeDesc.ReturnRegCount == 1);
+            offset = call.ReturnTypeDesc.GetReturnFieldOffset(0);
+        }
+
         var spill = compiler.gtNewStoreLclFldNode(call.Type, spillNumber, checked((ushort)offset), call);
         BlockRange().InsertAfter(call, spill);
         ContainCheckStoreLoc(spill);

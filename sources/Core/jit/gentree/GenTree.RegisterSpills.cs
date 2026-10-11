@@ -9,19 +9,19 @@ public partial class GenTree
 {
     public var_types GetRegTypeByIndex(int regIndex)
     {
-#if FEATURE_MULTIREG_RET
-        if (IsMultiRegCall)
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            return AsCall().ReturnTypeDesc.GetReturnRegType(checked((byte)regIndex));
+            if (IsMultiRegCall)
+            {
+                return AsCall().ReturnTypeDesc.GetReturnRegType(checked((byte)regIndex));
+            }
+
+            if (Configuration.TARGET_32BIT && Oper.IsMultiRegOp)
+            {
+                return AsMultiRegOp().GetRegType(checked((byte)regIndex));
+            }
         }
 
-#if !TARGET_64BIT
-        if (Oper.IsMultiRegOp)
-        {
-            return AsMultiRegOp().GetRegType(checked((byte)regIndex));
-        }
-#endif
-#endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
         {
@@ -56,19 +56,19 @@ public partial class GenTree
 
     public GenTreeFlags GetRegSpillFlagByIdx(int regIndex)
     {
-#if FEATURE_MULTIREG_RET
-        if (IsMultiRegCall)
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            return AsCall().GetRegSpillFlagByIdx(checked((byte)regIndex));
+            if (IsMultiRegCall)
+            {
+                return AsCall().GetRegSpillFlagByIdx(checked((byte)regIndex));
+            }
+
+            if (Configuration.TARGET_32BIT && Oper.IsMultiRegOp)
+            {
+                return AsMultiRegOp().GetRegSpillFlagByIdx(checked((byte)regIndex));
+            }
         }
 
-#if !TARGET_64BIT
-        if (Oper.IsMultiRegOp)
-        {
-            return AsMultiRegOp().GetRegSpillFlagByIdx(checked((byte)regIndex));
-        }
-#endif
-#endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
         {
@@ -85,21 +85,21 @@ public partial class GenTree
 
     public void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
     {
-#if FEATURE_MULTIREG_RET
-        if (IsMultiRegCall)
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            AsCall().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
-            return;
+            if (IsMultiRegCall)
+            {
+                AsCall().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
+                return;
+            }
+
+            if (Configuration.TARGET_32BIT && Oper.IsMultiRegOp)
+            {
+                AsMultiRegOp().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
+                return;
+            }
         }
 
-#if !TARGET_64BIT
-        if (Oper.IsMultiRegOp)
-        {
-            AsMultiRegOp().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
-            return;
-        }
-#endif
-#endif
 #if FEATURE_HW_INTRINSICS
         if (Oper.IsHWIntrinsic)
         {

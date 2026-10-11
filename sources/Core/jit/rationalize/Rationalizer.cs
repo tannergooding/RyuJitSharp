@@ -155,9 +155,10 @@ public sealed partial class Rationalizer : Phase
                 call.ChangeType(retType);
             }
 
-#if FEATURE_MULTIREG_RET
-            call.InitializeStructReturnType(CompilerInstance, sig.retTypeClass, call.UnmanagedCallConv);
-#endif
+            if (Configuration.FEATURE_MULTIREG_RET)
+            {
+                call.InitializeStructReturnType(CompilerInstance, sig.retTypeClass, call.UnmanagedCallConv);
+            }
 
             var returnType = CompilerInstance.GetReturnTypeForStruct(sig.retTypeClass, call.UnmanagedCallConv, out var howToReturnStruct);
 

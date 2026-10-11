@@ -4361,11 +4361,12 @@ public partial class Compiler
             call.ChangeType(simdReturnType);
         }
 
-#if FEATURE_MULTIREG_RET
-        call.InitializeStructReturnType(this, retClsHnd, call.UnmanagedCallConv);
-        var retTypeDesc = call.ReturnTypeDesc;
-        var retRegCount = retTypeDesc.ReturnRegCount;
-#endif
+        var retRegCount = (byte)1;
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            call.InitializeStructReturnType(this, retClsHnd, call.UnmanagedCallConv);
+            retRegCount = call.ReturnTypeDesc.ReturnRegCount;
+        }
 
         var returnType = GetReturnTypeForStruct(retClsHnd, call.UnmanagedCallConv, out var howToReturnStruct);
 
@@ -4387,8 +4388,7 @@ public partial class Compiler
             return call;
         }
 
-#if FEATURE_MULTIREG_RET
-        if (retRegCount is not 1)
+        if (Configuration.FEATURE_MULTIREG_RET && (retRegCount is not 1))
         {
             // It could be a SIMD returned in several regs.
             assert(varTypeIsStruct(call.Type));
@@ -4410,7 +4410,6 @@ public partial class Compiler
                 return impStoreMultiRegValueToVar(call, retClsHnd, call.UnmanagedCallConv);
             }
         }
-#endif
 
         return call;
     }
@@ -10004,9 +10003,10 @@ public partial class Compiler
                     var call = gtNewHelperCallNode(TYP_STRUCT, CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, gtNewLclVarNode(TYP_BYREF, handleTemp));
                     call._returnType = RuntimeHandleUnderlyingType;
                     call.RetClsHnd = classHandle;
-#if FEATURE_MULTIREG_RET
-                    call.InitializeStructReturnType(this, classHandle, call.UnmanagedCallConv);
-#endif
+                    if (Configuration.FEATURE_MULTIREG_RET)
+                    {
+                        call.InitializeStructReturnType(this, classHandle, call.UnmanagedCallConv);
+                    }
 
                     var resultTmp = lvaGrabTemp(true, "result of REFANYTYPE");
                     lvaSetStruct(resultTmp, classHandle, unsafeValueClsCheck: false);
@@ -10059,9 +10059,10 @@ public partial class Compiler
                     // it could be consumed both as `TYP_STRUCT` and `TYP_REF`.
                     call._returnType = RuntimeHandleUnderlyingType;
 
-#if FEATURE_MULTIREG_RET
-                    call.InitializeStructReturnType(this, tokenType, call.UnmanagedCallConv);
-#endif
+                    if (Configuration.FEATURE_MULTIREG_RET)
+                    {
+                        call.InitializeStructReturnType(this, tokenType, call.UnmanagedCallConv);
+                    }
 
                     call.RetClsHnd = tokenType;
 
@@ -17651,11 +17652,12 @@ public partial class Compiler
         {
             assert(op2 is not null);
 
-#if !FEATURE_MULTIREG_RET
             // For both ARM architectures the HFA native types are maintained as structs.
             // Also on System V AMD64 the multireg structs returns are also left as structs.
-            noway_assert(info.compRetNativeType != TYP_STRUCT);
-#endif
+            if (!Configuration.FEATURE_MULTIREG_RET)
+            {
+                noway_assert(info.compRetNativeType != TYP_STRUCT);
+            }
             op2 = impFixupStructReturnType(op2);
             op1 = gtNewUnaryNode(GT_RETURN, info.compRetType.ActualType, op2);
         }

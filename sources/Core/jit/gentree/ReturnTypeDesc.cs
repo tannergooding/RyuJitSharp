@@ -55,18 +55,22 @@ public struct ReturnTypeDesc
         {
             var result = false;
 
-#if FEATURE_MULTIREG_RET
-            if (MAX_RET_REG_COUNT >= 2)
+            if (Configuration.FEATURE_MULTIREG_RET && (MAX_RET_REG_COUNT >= 2))
             {
 #if DEBUG
                 assert(Debugger.IsAttached || _inited);
 #endif
-                result = ((_regType[0] != TYP_UNKNOWN) && (_regType[1] != TYP_UNKNOWN));
+                result = HasReturnRegType(0) && HasReturnRegType(1);
             }
-#endif
 
             return result;
         }
+    }
+
+    private readonly bool HasReturnRegType(byte index)
+    {
+        assert(index < MAX_RET_REG_COUNT);
+        return _regType[index] != TYP_UNKNOWN;
     }
 
     /// <summary>Get the count of return registers in which the return value is returned.</summary>

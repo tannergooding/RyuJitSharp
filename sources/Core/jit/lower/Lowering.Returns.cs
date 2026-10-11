@@ -27,12 +27,11 @@ public sealed partial class Lowering
         }
         else if (ret.Type is not TYP_VOID)
         {
-#if FEATURE_MULTIREG_RET
-            if (compiler.compMethodReturnsMultiRegRetType && (value.Oper is GT_LCL_VAR))
+            if (Configuration.FEATURE_MULTIREG_RET &&
+                compiler.compMethodReturnsMultiRegRetType && (value.Oper is GT_LCL_VAR))
             {
                 _ = CheckMultiRegLclVar(value.AsLclVar(), compiler.compRetTypeDesc.ReturnRegCount);
             }
-#endif
 #if DEBUG
             if (varTypeIsStruct(ret.Type) != varTypeIsStruct(value.Type))
             {
@@ -135,8 +134,7 @@ public sealed partial class Lowering
             MakeSrcContained(ret, value);
         }
 #endif
-#if FEATURE_MULTIREG_RET
-        if (ret.Type is TYP_STRUCT)
+        if (Configuration.FEATURE_MULTIREG_RET && (ret.Type is TYP_STRUCT))
         {
             var value = GetRetValueRef(ret);
             if (value.Oper is GT_LCL_VAR)
@@ -152,6 +150,5 @@ public sealed partial class Lowering
                 }
             }
         }
-#endif
     }
 }

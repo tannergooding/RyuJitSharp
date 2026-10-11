@@ -103,11 +103,12 @@ internal static unsafe class LinearScanCallBuildingTests
     {
         WithAllocator((compiler, allocator) => {
             var call = compiler.gtNewCallNode(type, CT_USER_FUNC, null);
-#if FEATURE_MULTIREG_RET
-            // The synthetic SIMD struct return uses one floating-point return register.
-            var descriptorType = varTypeIsStruct(type) ? TYP_DOUBLE : type;
-            call._returnTypeDesc.InitializeReturnType(compiler, descriptorType, null, compiler.info.compCallConv);
-#endif
+            if (Configuration.FEATURE_MULTIREG_RET)
+            {
+                // The synthetic SIMD struct return uses one floating-point return register.
+                var descriptorType = varTypeIsStruct(type) ? TYP_DOUBLE : type;
+                call._returnTypeDesc.InitializeReturnType(compiler, descriptorType, null, compiler.info.compCallConv);
+            }
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildCall(allocator, call), Is.Zero);

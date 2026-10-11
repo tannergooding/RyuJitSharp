@@ -230,15 +230,15 @@ public sealed partial class LinearScan
 
         if ((tree.Type is not TYP_VOID) && !value.IsContained)
         {
-#if FEATURE_MULTIREG_RET
-#if TARGET_ARM64
-            if (varTypeIsSimd(tree.Type) && !value.IsMultiRegLclVar)
+            if (Configuration.FEATURE_MULTIREG_RET && Configuration.TARGET_ARM64 &&
+                varTypeIsSimd(tree.Type) && !value.IsMultiRegLclVar)
             {
-                _ = buildUse(value, SRBM_DOUBLERET);
+                var returnRegister = _compiler.compRetTypeDesc.GetAbiReturnReg(0, _compiler.info.compCallConv);
+                _ = buildUse(value, genSingleTypeRegMask(returnRegister));
                 return 1;
             }
-#endif
-            if (varTypeIsStruct(tree.Type))
+
+            if (Configuration.FEATURE_MULTIREG_RET && varTypeIsStruct(tree.Type))
             {
                 if ((value.Oper is GT_LCL_VAR) && !value.IsMultiRegLclVar)
                 {
@@ -304,7 +304,6 @@ public sealed partial class LinearScan
                 }
             }
             else
-#endif
             {
 #if TARGET_X86
                 var candidates = tree.Type switch

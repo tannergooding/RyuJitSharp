@@ -671,20 +671,19 @@ public partial class GenTree
     public int GetRegisterDstCount(Compiler compiler)
     {
         assert(!IsContained);
-#if FEATURE_MULTIREG_RET
-        if (IsMultiRegCall)
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            return AsCall().ReturnTypeDesc.ReturnRegCount;
-        }
+            if (IsMultiRegCall)
+            {
+                return AsCall().ReturnTypeDesc.ReturnRegCount;
+            }
 
-#if TARGET_32BIT
-        if (Oper.IsMultiRegOp)
-        {
-            assert(Oper is GT_MUL_LONG);
-            return 2;
+            if (Configuration.TARGET_32BIT && Oper.IsMultiRegOp)
+            {
+                assert(Oper is GT_MUL_LONG);
+                return 2;
+            }
         }
-#endif
-#endif
 
         if (Oper.IsCopyOrReload)
         {
@@ -716,19 +715,18 @@ public partial class GenTree
     {
         get
         {
-#if FEATURE_MULTIREG_RET
-            if (IsMultiRegCall)
+            if (Configuration.FEATURE_MULTIREG_RET)
             {
-                return true;
-            }
-#endif
+                if (IsMultiRegCall)
+                {
+                    return true;
+                }
 
-#if FEATURE_MULTIREG_RET && TARGET_32BIT
-            if (Oper.IsMultiRegOp)
-            {
-                return AsMultiRegOp().RegCount > 1;
+                if (Configuration.TARGET_32BIT && Oper.IsMultiRegOp)
+                {
+                    return AsMultiRegOp().RegCount > 1;
+                }
             }
-#endif
 
             if (_oper.IsCopyOrReload)
             {
@@ -2051,19 +2049,18 @@ public partial class GenTree
     /// <returns>Returns the number of registers defined by this node.</returns>
     public byte GetMultiRegCount(Compiler comp)
     {
-#if FEATURE_MULTIREG_RET
-        if (IsMultiRegCall)
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            return AsCall().ReturnTypeDesc.ReturnRegCount;
-        }
+            if (IsMultiRegCall)
+            {
+                return AsCall().ReturnTypeDesc.ReturnRegCount;
+            }
 
-#if !TARGET_64BIT
-        if (_oper.IsMultiRegOp)
-        {
-            return AsMultiRegOp().RegCount;
+            if (Configuration.TARGET_32BIT && _oper.IsMultiRegOp)
+            {
+                return AsMultiRegOp().RegCount;
+            }
         }
-#endif
-#endif
 
         if (_oper.IsCopyOrReload)
         {
@@ -2098,19 +2095,18 @@ public partial class GenTree
             return RegNum;
         }
 
-#if FEATURE_MULTIREG_RET
-        if (IsMultiRegCall)
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            return AsCall().GetRegNumByIdx(regIndex);
-        }
+            if (IsMultiRegCall)
+            {
+                return AsCall().GetRegNumByIdx(regIndex);
+            }
 
-#if !TARGET_64BIT
-        if (_oper.IsMultiRegOp)
-        {
-            return AsMultiRegOp().GetRegNumByIdx(regIndex);
+            if (Configuration.TARGET_32BIT && _oper.IsMultiRegOp)
+            {
+                return AsMultiRegOp().GetRegNumByIdx(regIndex);
+            }
         }
-#endif
-#endif
 
         if (_oper.IsCopyOrReload)
         {

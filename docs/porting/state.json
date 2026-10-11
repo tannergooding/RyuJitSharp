@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universalizing the call-node base and register-spill paths, starting with gentree/GenTree.cs; close its FEATURE_MULTIREG_RET branches with the related GenTree partials and validate call-tree tests across the target matrix.",
+    "nextAction": "Continue universalizing FEATURE_MULTIREG_ARGS, starting with Compiler.ArgumentSize.cs, CodeGen.CallArguments.cs, and LinearScan.OperandAndCallUses.cs; add its runtime Configuration value, migrate the related tests, and remove the compile-time define after its dependency closure is universal.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize target/feature branches in gentree/GenTreeCall.cs and its directly required signature-capture, cloning, codegen, and target-configuration paths.",
-      "doneWhen": "GenTreeCall contains no target/feature preprocessor branches; Configuration checks preserve target behavior, call signature snapshots remain available for Debug and Wasm without embedding CORINFO_SIG_INFO in every call node, and unsupported multiregister operations remain terminating.",
-      "validation": "FeatureConfigurationTests passed 20/20 in Debug for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64 using RyuJitTargetRuntimeIdentifier on the Windows host; Release browser-wasm passed 20/20. Focused call/return tests passed 112/112 in Debug on win-x64. `git diff --check` passed.",
-      "deferred": "FEATURE_READYTORUN preprocessor guards and its project DefineConstants entry are removed. The broader TARGET_/FEATURE_ preprocessor migration remains active across the JIT source and test trees. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Universalize FEATURE_MULTIREG_RET across call construction and cloning, GenTree base and spill paths, importer, lowering, LSRA, codegen, rationalization, and the directly affected tests; remove its target-specific DefineConstants and select behavior through Configuration.",
+      "doneWhen": "No FEATURE_MULTIREG_RET preprocessor guards or target-specific compile defines remain; the runtime switch preserves multi-register behavior and explicit unsupported paths, including 32-bit long returns and ABI-specific struct returns.",
+      "validation": "Debug FeatureConfigurationTests passed 21/21 for each of win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64 on the Windows host. Focused call/return tests passed 114/120 on win-x64 with six expected target/feature skips; LinearScanSharedReferenceBuilderTests passed 33/33 for the linux-x64 target. The focused win-x64 run used full analysis; `git diff --check` passed.",
+      "deferred": "The FEATURE_MULTIREG_RET project DefineConstants and source/test preprocessor guards are removed. FEATURE_MULTIREG_ARGS and the broader TARGET_/FEATURE_ preprocessor migration remain active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

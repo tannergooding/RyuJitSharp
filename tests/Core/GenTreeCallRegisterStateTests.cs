@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_MULTIREG_RET
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
@@ -14,6 +13,11 @@ internal static unsafe class GenTreeCallRegisterStateTests
     [Test]
     public static void CopyRegDoesNotCopyPerRegisterSpillFlags()
     {
+        if (!Configuration.FEATURE_MULTIREG_RET)
+        {
+            Assert.Ignore("Per-register call spill flags require multi-register return support.");
+        }
+
         WithCompiler(_ => {
             var source = new GenTreeCall(TYP_STRUCT);
             var destination = new GenTreeCall(TYP_STRUCT);
@@ -29,6 +33,11 @@ internal static unsafe class GenTreeCallRegisterStateTests
     [Test]
     public static void CloningCallCopiesPerRegisterSpillFlags()
     {
+        if (!Configuration.FEATURE_MULTIREG_RET)
+        {
+            Assert.Ignore("Per-register call spill flags require multi-register return support.");
+        }
+
         WithCompiler(compiler => {
             var source = new GenTreeCall(TYP_STRUCT);
             source.SetRegSpillFlagByIdx(GTF_SPILL, 1);
@@ -57,4 +66,3 @@ internal static unsafe class GenTreeCallRegisterStateTests
         }
     }
 }
-#endif

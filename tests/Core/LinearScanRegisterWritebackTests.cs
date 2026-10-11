@@ -90,11 +90,14 @@ internal static unsafe class LinearScanRegisterWritebackTests
     }
 
     [TestCase(false)]
-#if FEATURE_MULTIREG_RET
     [TestCase(true)]
-#endif
     public static void WriteRegistersSelectsTheIndexedResult(bool indexed)
     {
+        if (indexed && !Configuration.FEATURE_MULTIREG_RET)
+        {
+            Assert.Ignore("Indexed call results require multi-register return support.");
+        }
+
         WithAllocator((compiler, allocator) => {
             var source = compiler.gtNewIconNode(TYP_INT, 1);
             var node = new GenTreeCopyOrReload(GT_COPY, TYP_INT, source);
