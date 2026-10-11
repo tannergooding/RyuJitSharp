@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Convert the FEATURE_READYTORUN and TARGET_XARCH guards in rationalize/Rationalizer.cs to Configuration checks; validate the focused rationalizer and target-configuration tests, then continue through the remaining R2R guards.",
+    "nextAction": "Continue ReadyToRun call-pipeline conversion in gentree/CallArgs.Morph.cs and lower/Lowering.Calls.cs; runtime-gate entry-point and indirection-cell behavior, then validate the focused call-argument and lowering tests on x64 and an alternate target.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace FEATURE_READYTORUN in Compiler.LoopInversion.cs with a runtime feature check and add direct coverage for the ReadyToRun static-base helper classification.",
-      "doneWhen": "ReadyToRun static-base helpers are considered shared-static helpers only when ReadyToRun is enabled; existing non-ReadyToRun helper classification is unchanged.",
-      "validation": "LoopHoistingTests passed 27/27 in Debug on win-x64. `git diff --check` passed.",
-      "deferred": "FEATURE_READYTORUN guards remain in rationalization, importer, lowering, codegen, tests, and other compiler files. Remove FEATURE_READYTORUN from DefineConstants only after all source and test guards are converted. The broader target/feature directives remain in scope. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Replace TARGET_XARCH and FEATURE_READYTORUN guards in rationalize/Rationalizer.cs with runtime Configuration checks.",
+      "doneWhen": "Rationalized special-intrinsic flags are emitted only for xarch targets, and call entry-point metadata is copied only when ReadyToRun is enabled.",
+      "validation": "RationalizationTests passed 6/6 in Debug on win-x64; FeatureConfigurationTests passed 16/16 for linux-arm64 Debug using RyuJitTargetRuntimeIdentifier on the Windows host. `git diff --check` passed.",
+      "deferred": "FEATURE_READYTORUN guards remain in call morphing, importer, lowering, codegen, tests, and other compiler files. Remove FEATURE_READYTORUN from DefineConstants only after all source and test guards are converted. The broader target/feature directives remain in scope. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

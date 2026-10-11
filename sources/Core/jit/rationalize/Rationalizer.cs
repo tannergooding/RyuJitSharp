@@ -135,13 +135,11 @@ public sealed partial class Rationalizer : Phase
         // Create the call node
         var call = CompilerInstance.gtNewCallNode(tree.Type, CT_USER_FUNC, callHnd);
 
-        if (isSpecialIntrinsic)
+        if (isSpecialIntrinsic && Configuration.TARGET_XARCH)
         {
-#if TARGET_XARCH
             // Mark this as having been a special intrinsic node
             // This is used on xarch to track that it may need vzeroupper inserted to avoid the perf penalty on some hardware.
             call._callMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
-#endif
         }
 
         var retType = sig.retType.VarType;
@@ -235,9 +233,10 @@ public sealed partial class Rationalizer : Phase
             sigArg = CompilerInstance.info.compCompHnd->getArgNext(sigArg);
         }
 
-#if FEATURE_READYTORUN
-        call._entryPoint = entryPoint;
-#endif
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            call._entryPoint = entryPoint;
+        }
 
         var tmpNum = BAD_VAR_NUM;
 
