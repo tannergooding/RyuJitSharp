@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -109,7 +108,6 @@ public static partial class Globals
             }
         }
     }
-#endif
 
     public static bool EvaluateSimdPatternToMask<TSimd>(var_types baseType, ref simdmask_t result, SveMaskPattern pattern)
         where TSimd : unmanaged

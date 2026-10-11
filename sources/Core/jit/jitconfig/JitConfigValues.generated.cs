@@ -479,8 +479,10 @@ public partial struct JitConfigValues
 #if TARGET_ARM64
 #if DEBUG
     private int _jitSaveFpLrWithCalleeSavedRegisters;
-    private int _jitUseScalableVectorT;
 #endif
+#endif
+#if DEBUG
+    private int _jitUseScalableVectorT;
 #endif
 #if TARGET_LOONGARCH64
 #if DEBUG
@@ -964,8 +966,10 @@ public partial struct JitConfigValues
 #if TARGET_ARM64
 #if DEBUG
     public int JitSaveFpLrWithCalleeSavedRegisters => _jitSaveFpLrWithCalleeSavedRegisters;
-    public int JitUseScalableVectorT => _jitUseScalableVectorT;
 #endif
+#endif
+#if DEBUG
+    public int JitUseScalableVectorT => _jitUseScalableVectorT;
 #endif
 #if TARGET_LOONGARCH64
 #if DEBUG
@@ -1456,8 +1460,10 @@ public partial struct JitConfigValues
 #if TARGET_ARM64
 #if DEBUG
         // _jitSaveFpLrWithCalleeSavedRegisters = unchecked((int)(0xCDCDCDCD));
-        // _jitUseScalableVectorT = unchecked((int)(0xCDCDCDCD));
 #endif
+#endif
+#if DEBUG
+        // _jitUseScalableVectorT = unchecked((int)(0xCDCDCDCD));
 #endif
 #if TARGET_LOONGARCH64
 #if DEBUG
@@ -1972,8 +1978,10 @@ public partial struct JitConfigValues
 #if TARGET_ARM64
 #if DEBUG
         _jitSaveFpLrWithCalleeSavedRegisters = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitSaveFpLrWithCalleeSavedRegisters"u8))), 0);
-        _jitUseScalableVectorT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUseScalableVectorT"u8))), 0);
 #endif
+#endif
+#if DEBUG
+        _jitUseScalableVectorT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUseScalableVectorT"u8))), 0);
 #endif
 #if TARGET_LOONGARCH64
 #if DEBUG

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -32,4 +31,3 @@ public struct simdmaskscalable_t : IEquatable<simdmaskscalable_t>
 
     public override readonly int GetHashCode() => IsZero ? 0 : (int)BaseType ^ Index;
 }
-#endif

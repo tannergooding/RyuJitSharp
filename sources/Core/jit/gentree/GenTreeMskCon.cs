@@ -16,17 +16,18 @@ public sealed class GenTreeMskCon : GenTree
         : base(GT_CNS_MSK, TYP_MASK)
     {
         _simdMaskVal = simdMaskVal;
-#if TARGET_ARM64
-        assert(Unsafe.SizeOf<simdmaskscalable_t>() <= Unsafe.SizeOf<simdmask_t>());
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            assert(Unsafe.SizeOf<simdmaskscalable_t>() <= Unsafe.SizeOf<simdmask_t>());
+        }
     }
 
     public bool IsAllBitsSet => IsAllBitsSetForType(TYP_BYTE);
 
     public bool IsAllBitsSetForType(var_types simdBaseType)
     {
-#if TARGET_ARM64 && DEBUG
-        if (JitConfig.JitUseScalableVectorT != 0)
+#if DEBUG
+        if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
         {
             return SimdScalableMaskVal.IsAllBitsSet(simdBaseType);
         }
@@ -37,17 +38,15 @@ public sealed class GenTreeMskCon : GenTree
 
     public ref simdmask_t SimdMaskVal => ref _simdMaskVal;
 
-#if TARGET_ARM64
     // Native overlays the two byte-sized scalable fields on the eight-byte mask payload.
     public ref simdmaskscalable_t SimdScalableMaskVal => ref Unsafe.As<simdmask_t, simdmaskscalable_t>(ref _simdMaskVal);
-#endif
 
     public bool IsZero
     {
         get
         {
-#if TARGET_ARM64 && DEBUG
-            if (JitConfig.JitUseScalableVectorT != 0)
+#if DEBUG
+            if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
             {
                 return SimdScalableMaskVal.IsZero;
             }
@@ -73,8 +72,8 @@ public sealed class GenTreeMskCon : GenTree
 
     public static bool Equals(GenTreeMskCon left, GenTreeMskCon right)
     {
-#if TARGET_ARM64 && DEBUG
-        if (JitConfig.JitUseScalableVectorT != 0)
+#if DEBUG
+        if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
         {
             return left.SimdScalableMaskVal == right.SimdScalableMaskVal;
         }
@@ -86,9 +85,13 @@ public sealed class GenTreeMskCon : GenTree
     /// <summary>Is the given node a true mask</summary>
     /// <param name="simdBaseType">the base type of the mask</param>
     /// <returns>Returns true if the node is a true mask for the given simdBaseType.</returns>
-#if TARGET_ARM64
     public bool IsTrue(var_types simdBaseType)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            return false;
+        }
+
 #if DEBUG
         if (JitConfig.JitUseScalableVectorT != 0)
         {
@@ -98,8 +101,5 @@ public sealed class GenTreeMskCon : GenTree
 
         return EvaluateSimdMaskToPattern<simd16_t>(simdBaseType, _simdMaskVal) == SveMaskPattern.SveMaskPatternAll;
     }
-#else
-    public bool IsTrue(var_types simdBaseType) => false;
-#endif
 }
 #endif
