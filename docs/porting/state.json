@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Convert FEATURE_READYTORUN guards in Compiler.HWIntrinsicImport.cs and Compiler.HWIntrinsicImportXplat.cs to runtime entry-point checks; validate hardware-intrinsic importer tests on xarch, Arm64, and Wasm configurations.",
+    "nextAction": "Continue the target/feature directive migration in gentree/CallArgs.Morph.cs, replacing its remaining fixed-register, architecture-specific ABI, and Swift compile guards with runtime Configuration checks; resolve any missing target-register symbols explicitly and validate all affected target matrices.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace FEATURE_READYTORUN guards around LSRA upper-vector save/restore entry-point metadata with runtime checks and verify emitted intrinsic metadata.",
-      "doneWhen": "Upper-vector save and restore nodes receive IAT_VALUE entry-point metadata when ReadyToRun is enabled and retain their original default metadata when it is disabled.",
-      "validation": "LinearScanLocalResolutionDriverTests passed 21/21 in Debug on win-x64; Arm64LinearScanLocalResolutionTests plus FeatureConfigurationTests passed 39/39 in Debug using RyuJitTargetRuntimeIdentifier=linux-arm64 on the Windows host. `git diff --check` passed.",
-      "deferred": "FEATURE_READYTORUN guards remain in hardware-intrinsic import and the Wasm delegate-constructor test, plus broader source/test guards. Remove FEATURE_READYTORUN from DefineConstants only after all source and test guards are converted. Many other TARGET_/FEATURE_ directives remain in scope. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Remove the last FEATURE_READYTORUN source/test guards in Compiler.HWIntrinsicImport.cs, Compiler.HWIntrinsicImportXplat.cs, and FlowGraphDelegateConstructorTests; remove the FEATURE_READYTORUN compiler define after confirming no C# preprocessor references remain.",
+      "doneWhen": "ReadyToRun entry-point metadata in intrinsic fallback nodes is runtime-gated, the Wasm delegate-constructor test is configuration-gated, and no FEATURE_READYTORUN preprocessor guards or DefineConstants remain.",
+      "validation": "HWIntrinsicImportClosureTests, HWIntrinsicImportPrerequisiteTests, HWIntrinsicXplatImportTests, and FlowGraphDelegateConstructorTests passed 122/123 on win-x64 Debug (the Wasm-only delegate test was skipped). Browser-Wasm FeatureConfigurationTests and FlowGraphDelegateConstructorTests passed 18/18 after removing the define. Before define removal, the intrinsic-import target matrix passed 43/43 on linux-arm64 and 17/17 each on linux-riscv64, linux-loongarch64, and browser-wasm. A repository-wide C# scan found no remaining FEATURE_READYTORUN preprocessor directive.",
+      "deferred": "The broader TARGET_/FEATURE_ preprocessor migration remains active across the JIT source and test trees. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

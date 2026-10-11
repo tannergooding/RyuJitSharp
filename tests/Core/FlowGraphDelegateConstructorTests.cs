@@ -1,4 +1,3 @@
-#if TARGET_WASM && FEATURE_READYTORUN
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -18,6 +17,11 @@ internal static unsafe class FlowGraphDelegateConstructorTests
     [Test]
     public static void WasmReadyToRunDelegateCtorUsesTheAlternateEntryPoint()
     {
+        if (!Configuration.TARGET_WASM || !Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("The Wasm ReadyToRun delegate-constructor path is unavailable for this target.");
+        }
+
         WithCompiler(compiler => {
             var originalConstructor = (CORINFO_METHOD_HANDLE)0x1110;
             var alternateConstructor = (CORINFO_METHOD_HANDLE)0x2220;
@@ -152,4 +156,3 @@ internal static unsafe class FlowGraphDelegateConstructorTests
         *lookup = ee->AlternateEntryPoint;
     }
 }
-#endif

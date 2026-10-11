@@ -610,9 +610,10 @@ public partial class Compiler
                         op1 = impPopStack().val;
                         retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2);
                         retNode.AsHWIntrinsic().MethodHandle = method;
-#if FEATURE_READYTORUN
-                        retNode.AsHWIntrinsic().EntryPoint = entryPoint;
-#endif
+                        if (Configuration.FEATURE_READYTORUN)
+                        {
+                            retNode.AsHWIntrinsic().EntryPoint = entryPoint;
+                        }
                     }
                     break;
                 }
@@ -1194,9 +1195,11 @@ public partial class Compiler
                         op1 = impSIMDPopStack();
                         retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2);
                         retNode.AsHWIntrinsic().MethodHandle = method;
-#if FEATURE_READYTORUN
-                        retNode.AsHWIntrinsic().EntryPoint = entryPoint;
-#endif
+                        if (Configuration.FEATURE_READYTORUN)
+                        {
+                            retNode.AsHWIntrinsic().EntryPoint = entryPoint;
+                        }
+
                         break;
                     }
 
@@ -1363,9 +1366,11 @@ public partial class Compiler
                 {
                     retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2, op3);
                     retNode.AsHWIntrinsic().MethodHandle = method;
-#if FEATURE_READYTORUN
-                    retNode.AsHWIntrinsic().EntryPoint = entryPoint;
-#endif
+                    if (Configuration.FEATURE_READYTORUN)
+                    {
+                        retNode.AsHWIntrinsic().EntryPoint = entryPoint;
+                    }
+
                     break;
                 }
 #endif

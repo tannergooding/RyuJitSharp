@@ -679,9 +679,11 @@ public partial class Compiler
 #endif
 
             userCall.AsHWIntrinsic().MethodHandle = method;
-#if FEATURE_READYTORUN
-            userCall.AsHWIntrinsic().EntryPoint = entryPoint;
-#endif
+            if (Configuration.FEATURE_READYTORUN)
+            {
+                userCall.AsHWIntrinsic().EntryPoint = entryPoint;
+            }
+
             gtUpdateNodeSideEffects(retNode);
         }
 

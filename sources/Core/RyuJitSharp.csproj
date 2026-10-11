@@ -541,9 +541,6 @@
     <!-- FEATURE_ON_STACK_REPLACEMENT -->
     <DefineConstants>$(DefineConstants);FEATURE_ON_STACK_REPLACEMENT</DefineConstants>
     
-    <!-- FEATURE_READYTORUN -->
-    <DefineConstants>$(DefineConstants);FEATURE_READYTORUN</DefineConstants>
-    
     <!-- FEATURE_STRUCTPROMOTE: JIT Optimization to promote fields of structs into registers -->
     <DefineConstants>$(DefineConstants);FEATURE_STRUCTPROMOTE</DefineConstants>
 
