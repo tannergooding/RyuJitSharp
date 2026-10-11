@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "After universalizing the shared scalable-mask representation and pattern helpers, continue the masked-intrinsics feature migration: add an explicit FEATURE_MASKED_HW_INTRINSICS Configuration substitution per RID, then convert the shared node/type/tree closure before target-specific lowering and codegen.",
+    "nextAction": "After FEATURE_MASKED_HW_INTRINSICS Configuration plumbing is verified, remove its compile guards from shared type/operator metadata and generic tree handling in typelist.h, gtlist.h, gtstructs.h, GenTreeMskCon.cs, and GenTree.cs; regenerate tables before continuing the remaining closure.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
     "parityEvidence": {
