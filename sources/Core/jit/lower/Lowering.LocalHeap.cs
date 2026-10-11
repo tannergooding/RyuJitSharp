@@ -69,28 +69,29 @@ public sealed partial class Lowering
 
     private void ContainCheckNonLocalJmp(GenTreeUnOp node)
     {
-#if TARGET_XARCH
-        var address = node.Op1;
-        if (IsContainableMemoryOp(address) && IsSafeToContainMem(node, address))
+        if (Configuration.TARGET_XARCH)
         {
-            MakeSrcContained(node, address);
+            var address = node.Op1;
+            if (IsContainableMemoryOp(address) && IsSafeToContainMem(node, address))
+            {
+                MakeSrcContained(node, address);
+            }
+            else if (IsSafeToMarkRegOptional(node, address))
+            {
+                MakeSrcRegOptional(node, address);
+            }
+
+            return;
         }
-        else if (IsSafeToMarkRegOptional(node, address))
+
+        if (Configuration.TARGET_ARMARCH ||
+            Configuration.TARGET_RISCV64 ||
+            Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_WASM)
         {
-            MakeSrcRegOptional(node, address);
+            return;
         }
-#elif TARGET_ARM
-        // Native ARM32 nonlocal jump containment is empty.
-#elif TARGET_ARM64
-        // Native ARM64 nonlocal jump containment is empty.
-#elif TARGET_RISCV64
-        // Native RISC-V nonlocal jump containment is empty.
-#elif TARGET_LOONGARCH64
-        // Native LoongArch64 nonlocal jump containment is empty.
-#elif TARGET_WASM
-        // Wasm nonlocal jumps have no containable operands.
-#else
+
         throw new NotImplementedException("Nonlocal jump containment is not ported for this target.");
-#endif
     }
 }

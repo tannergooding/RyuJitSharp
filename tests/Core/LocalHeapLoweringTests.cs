@@ -188,7 +188,7 @@ internal static unsafe class LocalHeapLoweringTests
             var jump = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, address);
             var block = NewBlock(address, jump);
             ContainJump(NewLowering(compiler, block), jump);
-            Assert.That(address.IsContained || address.IsRegOptional, Is.True);
+            Assert.That(address.IsContained || address.IsRegOptional, Is.EqualTo(Configuration.TARGET_XARCH));
         });
     }
 
@@ -201,7 +201,7 @@ internal static unsafe class LocalHeapLoweringTests
             var jump = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, address);
             var block = NewBlock(address, jump);
             ContainJump(NewLowering(compiler, block), jump);
-            Assert.That(address.IsContained, Is.True);
+            Assert.That(address.IsContained, Is.EqualTo(Configuration.TARGET_XARCH));
             Assert.That(address.IsRegOptional, Is.False);
         });
     }
