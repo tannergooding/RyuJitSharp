@@ -101,6 +101,25 @@ internal static unsafe class DivisionLoweringTests
         });
     }
 
+    [Test]
+    public static void DivisionByZeroMarksItsDivisorMultiplyUsedOnWasm()
+    {
+        WithCompiler(compiler => {
+            var dividend = compiler.gtNewLclvNode(TYP_INT, 0);
+            var divisor = compiler.gtNewIconNode(TYP_INT, 0);
+            var div = new GenTreeOp(GT_UDIV, TYP_INT, dividend, divisor);
+            var block = NewBlock(dividend, divisor, div);
+
+            LowerDivOrMod(NewLowering(compiler, block), div);
+
+            var multiplyUsed = Configuration.TARGET_WASM
+                ? LIR.Flags.MultiplyUsed
+                : LIR.Flags.None;
+            Assert.That(dividend._lirFlags & LIR.Flags.MultiplyUsed, Is.EqualTo(LIR.Flags.None));
+            Assert.That(divisor._lirFlags & LIR.Flags.MultiplyUsed, Is.EqualTo(multiplyUsed));
+        });
+    }
+
     private static BasicBlock NewBlock(params GenTree[] nodes)
     {
         var block = new BasicBlock(null, null);

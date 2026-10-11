@@ -57,30 +57,31 @@ public sealed partial class Lowering
 
     private void LowerDivOrMod(GenTreeOp divMod)
     {
-#if TARGET_WASM
-        var exceptions = divMod.Exceptions(CompilerInstance);
-        if ((exceptions & ExceptionSetFlags.ArithmeticException) is not ExceptionSetFlags.None)
+        if (Configuration.TARGET_WASM)
         {
-            SetMultiplyUsed(divMod.Op1
+            var exceptions = divMod.Exceptions(CompilerInstance);
+            if ((exceptions & ExceptionSetFlags.ArithmeticException) is not ExceptionSetFlags.None)
+            {
+                SetMultiplyUsed(divMod.Op1
 #if DEBUG
-                , "LowerDivOrMod op1 (arithmetic exception)"
+                    , "LowerDivOrMod op1 (arithmetic exception)"
 #endif
-            );
-            SetMultiplyUsed(divMod.Op2
+                );
+                SetMultiplyUsed(divMod.Op2
 #if DEBUG
-                , "LowerDivOrMod op2 (arithmetic exception)"
+                    , "LowerDivOrMod op2 (arithmetic exception)"
 #endif
-            );
+                );
+            }
+            else if ((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None)
+            {
+                SetMultiplyUsed(divMod.Op2
+#if DEBUG
+                    , "LowerDivOrMod op2 (divide by zero exception)"
+#endif
+                );
+            }
         }
-        else if ((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None)
-        {
-            SetMultiplyUsed(divMod.Op2
-#if DEBUG
-                , "LowerDivOrMod op2 (divide by zero exception)"
-#endif
-            );
-        }
-#endif
         ContainCheckDivOrMod(divMod);
     }
 
