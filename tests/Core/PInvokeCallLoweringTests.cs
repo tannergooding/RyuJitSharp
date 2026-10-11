@@ -104,6 +104,7 @@ internal static unsafe class PInvokeCallLoweringTests
             call._controlExpr = target;
             block.InsertAtEnd(target);
             block.InsertAtEnd(call);
+            var expectedTarget = Configuration.TARGET_X86 ? call.Args.OutgoingArgsStackSize : 0;
 
             Assert.That(LowerNonvirtPinvokeCall(lowering, call), Is.Null);
             Assert.That(ee->TargetLookups, Is.Zero);
@@ -123,7 +124,7 @@ internal static unsafe class PInvokeCallLoweringTests
                     if (store.LclOffs == 24)
                     {
                         Assert.That(beforeTarget, Is.True);
-                        Assert.That(store.Data.AsIntCon().IconValue, Is.EqualTo((nint)0));
+                        Assert.That(store.Data.AsIntCon().IconValue, Is.EqualTo((nint)expectedTarget));
                         datumStores++;
                     }
                     if (store.LclOffs == 32)

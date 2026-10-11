@@ -18,13 +18,19 @@ internal static class Configuration
 
     internal static bool TARGET_ARMARCH => GetFeatureSwitch(nameof(TARGET_ARMARCH));
 
+    internal static bool TARGET_AMD64 => TARGET_XARCH && TARGET_64BIT;
+
     internal static bool TARGET_LOONGARCH64 => GetFeatureSwitch(nameof(TARGET_LOONGARCH64));
 
     internal static bool TARGET_RISCV64 => GetFeatureSwitch(nameof(TARGET_RISCV64));
 
+    internal static bool TARGET_X86 => TARGET_XARCH && !TARGET_64BIT;
+
     internal static bool TARGET_XARCH => GetFeatureSwitch(nameof(TARGET_XARCH));
 
     internal static bool TARGET_WASM => GetFeatureSwitch(nameof(TARGET_WASM));
+
+    internal static bool UNIX_X86_ABI => GetFeatureSwitch(nameof(UNIX_X86_ABI));
 
     private static bool GetFeatureSwitch(string featureName)
     {

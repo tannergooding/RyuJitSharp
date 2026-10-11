@@ -12,6 +12,7 @@
       <method signature="System.Boolean get_TARGET_RISCV64()" body="stub" value="false" />
       <method signature="System.Boolean get_TARGET_XARCH()" body="stub" value="false" />
       <method signature="System.Boolean get_TARGET_WASM()" body="stub" value="false" />
+      <method signature="System.Boolean get_UNIX_X86_ABI()" body="stub" value="false" />
     </type>
   </assembly>
 </linker>

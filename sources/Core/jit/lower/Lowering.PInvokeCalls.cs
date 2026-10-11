@@ -73,13 +73,18 @@ public sealed partial class Lowering
         if (compiler.opts.ShouldUsePInvokeHelpers)
         {
             var frameAddress = compiler.gtNewLclVarAddrNode(TYP_BYREF, compiler.lvaInlinedPInvokeFrameVar);
-#if TARGET_X86 && !UNIX_X86_ABI
-            var stackBytes = compiler.gtNewIconNode(TYP_INT, call.Args.OutgoingArgsStackSize);
-            var helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN,
-                frameAddress, stackBytes);
-#else
-            var helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN, frameAddress);
-#endif
+            GenTreeCall helper;
+            if (Configuration.TARGET_X86 && !Configuration.UNIX_X86_ABI)
+            {
+                var stackBytes = compiler.gtNewIconNode(TYP_INT, call.Args.OutgoingArgsStackSize);
+                helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN,
+                    frameAddress, stackBytes);
+            }
+            else
+            {
+                helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_BEGIN, frameAddress);
+            }
+
             _ = compiler.fgMorphTree(helper);
             BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, helper));
             _ = LowerNode(helper);
@@ -89,11 +94,9 @@ public sealed partial class Lowering
         GenTree target;
         if (call._callType is CT_INDIRECT)
         {
-#if TARGET_X86
-            target = compiler.gtNewIconNode(TYP_INT, call.Args.OutgoingArgsStackSize);
-#else
-            target = compiler.gtNewIconNode(TYP_I_IMPL, 0);
-#endif
+            target = Configuration.TARGET_X86
+                ? compiler.gtNewIconNode(TYP_INT, call.Args.OutgoingArgsStackSize)
+                : compiler.gtNewIconNode(TYP_I_IMPL, 0);
         }
         else
         {
@@ -112,12 +115,13 @@ public sealed partial class Lowering
             checked((ushort)frameInfo.offsetOfCallTarget), target);
         InsertTreeBeforeAndContainCheck(insertionPoint, targetStore);
 
-#if TARGET_X86
-        var stackPointer = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
-        var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
-            checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
-        InsertTreeBeforeAndContainCheck(insertionPoint, stackPointerStore);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            var stackPointer = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+            var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
+                checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
+            InsertTreeBeforeAndContainCheck(insertionPoint, stackPointerStore);
+        }
 
         var label = new GenTree(GT_LABEL, TYP_I_IMPL);
         var returnAddressStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
