@@ -64,9 +64,7 @@ public sealed partial class ValueNumStore
 #elif TARGET_ARM64
     private Dictionary<simdscalable_t, ValueNum>? _simdScalableCnsMap;
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
     private Dictionary<simdmaskvalue_t, ValueNum>? _simdMaskCnsMap;
-#endif
 
     public ValueNum VNForSimd8Con(in simd8_t value) => VnForConst(value, value, _simd8CnsMap ??= [], TYP_SIMD8);
 
@@ -83,23 +81,24 @@ public sealed partial class ValueNumStore
         => VnForConst(value, value, _simdScalableCnsMap ??= [], TYP_SIMD);
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public ValueNum VNForSimdMaskCon(in simdmask_t value)
     {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+        }
+
         var storage = simdmaskvalue_t.FromFixed(value);
 
         return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
     }
 
-#if TARGET_ARM64
     public ValueNum VNForSimdMaskScalableCon(in simdmaskscalable_t value)
     {
         var storage = simdmaskvalue_t.FromScalable(value);
 
         return VnForConst(storage, storage, _simdMaskCnsMap ??= [], TYP_MASK);
     }
-#endif
-#endif
 
     private T GetVectorConstant<T>(ValueNum vn, var_types type) where T : unmanaged
     {
@@ -121,29 +120,39 @@ public sealed partial class ValueNumStore
     public simdscalable_t GetConstantSimdScalable(ValueNum vn) => GetVectorConstant<simdscalable_t>(vn, TYP_SIMD);
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
-    public simdmaskvalue_t GetConstantSimdMaskValue(ValueNum vn) => GetVectorConstant<simdmaskvalue_t>(vn, TYP_MASK);
+    public simdmaskvalue_t GetConstantSimdMaskValue(ValueNum vn)
+    {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+        }
+
+        return GetVectorConstant<simdmaskvalue_t>(vn, TYP_MASK);
+    }
 
     public simdmask_t GetConstantSimdMask(ValueNum vn)
     {
         var storage = GetConstantSimdMaskValue(vn);
-#if TARGET_ARM64
-        noway_assert(!storage.IsScalable);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            noway_assert(!storage.IsScalable);
+        }
 
         return storage.Fixed;
     }
 
-#if TARGET_ARM64
     public simdmaskscalable_t GetConstantSimdMaskScalable(ValueNum vn)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Scalable mask constants are only supported on ARM64.");
+        }
+
         var storage = GetConstantSimdMaskValue(vn);
         noway_assert(storage.IsScalable);
 
         return storage.Scalable;
     }
-#endif
-#endif
 
     public simd_t GetConstantSimd(ValueNum vn)
     {
@@ -195,9 +204,7 @@ public sealed partial class ValueNumStore
 #elif TARGET_ARM64
         TYP_SIMD => VNForSimdScalableCon(simdscalable_t.Zero),
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         TYP_MASK => VNForSimdMaskCon(simdmask_t.Zero),
-#endif
 #endif
         _ => throw new UnreachableException(),
     };
@@ -231,9 +238,7 @@ public sealed partial class ValueNumStore
                     TYP_SIMD32 => VNForSimd32Con(MemoryMarshal.Read<simd32_t>(value)),
                     TYP_SIMD64 => VNForSimd64Con(MemoryMarshal.Read<simd64_t>(value)),
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
                     TYP_MASK => VNForSimdMaskCon(MemoryMarshal.Read<simdmask_t>(value)),
-#endif
 #endif
                     _ => throw new UnreachableException(),
                 };

@@ -34,9 +34,7 @@ public enum VNFunc
 #if FEATURE_SIMD
     VNF_CNS_VEC,
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
     VNF_CNS_MSK,
-#endif
     VNF_NOT,
     VNF_NOP,
     VNF_NEG,
@@ -127,10 +125,8 @@ public enum VNFunc
     VNF_AND_NOT,
     VNF_OR_NOT,
     VNF_XOR_NOT,
-#if TARGET_ARM64
     VNF_BFIZ,
     VNF_BFX,
-#endif
     VNF_CMP,
     VNF_TEST,
 #if TARGET_XARCH
@@ -141,17 +137,13 @@ public enum VNFunc
     VNF_JCC,
     VNF_SETCC,
     VNF_SELECTCC,
-#if TARGET_ARM64 || TARGET_AMD64
     VNF_CCMP,
-#endif
-#if TARGET_ARM64
     VNF_SELECT_INC,
     VNF_SELECT_INCCC,
     VNF_SELECT_INV,
     VNF_SELECT_INVCC,
     VNF_SELECT_NEG,
     VNF_SELECT_NEGCC,
-#endif
 #if TARGET_RISCV64
     VNF_SH1ADD,
     VNF_SH1ADD_UW,

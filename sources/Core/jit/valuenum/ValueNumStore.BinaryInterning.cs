@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
+
 namespace RyuJitSharp;
 
 public sealed partial class ValueNumStore
@@ -222,12 +224,14 @@ public sealed partial class ValueNumStore
 #elif TARGET_ARM64
             TYP_SIMD => VNForSimdScalableCon(simdscalable_t.AllBitsSet),
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
-#if TARGET_ARM64 && DEBUG
-            TYP_MASK when JitConfig.JitUseScalableVectorT != 0 => VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet),
+            TYP_MASK when !Configuration.FEATURE_MASKED_HW_INTRINSICS
+                => throw new PlatformNotSupportedException(
+                    "Masked hardware intrinsics are not enabled for this target."),
+#if DEBUG
+            TYP_MASK when Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0)
+                => VNForSimdMaskScalableCon(simdmaskscalable_t.AllBitsSet),
 #endif
             TYP_MASK => VNForSimdMaskCon(simdmask_t.AllBitsSet(elementCount)),
-#endif
 #endif
             _ => NoVN,
         };

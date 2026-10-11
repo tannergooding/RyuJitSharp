@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize shared masked-constant value numbering next: trace the VNFunc table input and remove FEATURE_MASKED_HW_INTRINSICS guards from the mask value representation, constant storage/interning, type maps, hashing, and diagnostics; preserve xarch/ARM64 encoding semantics and add enabled/disabled target coverage.",
+    "nextAction": "Universalize the remaining mask constant-folding helpers next: remove FEATURE_MASKED_HW_INTRINSICS guards from ValueNumStore.IntrinsicEvaluation.cs, ValueNumStore.HardwareConstantConversions.cs, and simd/Globals.cs; retain explicit unsupported-feature behavior and scalable ARM64 semantics, then test supported and disabled targets.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize shared masked-constant value-numbering representation and operations, including VNFunc metadata, storage, interning, type maps, hashing, and diagnostics.",
-      "doneWhen": "Masked constants retain their existing identity and bit representation on supported targets; shared value-numbering code compiles when the runtime feature is disabled; generated outputs match their input tables; focused supported/unsupported target tests pass; commit locally.",
-      "validation": "Update each VNFunc/value-numbering table input with generated outputs, run focused Debug and Release value-numbering tests on x64 and ARM64, compile and run the disabled-feature path on browser-Wasm, and validate state.json plus git diff --check.",
+      "scope": "Universalize mask constant evaluation and conversion paths across ValueNumStore and shared SIMD helpers.",
+      "doneWhen": "Mask constant evaluation and conversion compile with the runtime feature disabled, unsupported calls terminate explicitly, scalable ARM64 evaluation preserves its existing representation, and focused supported/unsupported target tests pass.",
+      "validation": "Run focused Debug and Release value-numbering/intrinsic-evaluation tests on x64 and ARM64, compile and run the disabled-feature path on browser-Wasm, and validate state.json plus git diff --check.",
       "deferred": "Keep target-specific intrinsic lowering, register allocation, and codegen guards for later dependency-coherent batches."
     },
     "parityEvidence": {

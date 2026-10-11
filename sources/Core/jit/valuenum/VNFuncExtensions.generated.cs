@@ -35,9 +35,7 @@ public static partial class VNFuncExtensions
 #if FEATURE_SIMD
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CNS_VEC
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CNS_MSK
-#endif
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_NOT
         (ValueNumStore.VNFOpAttrib)0x01, // VNF_NOP
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_NEG
@@ -128,10 +126,8 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_AND_NOT
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_OR_NOT
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_XOR_NOT
-#if TARGET_ARM64
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_BFIZ
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_BFX
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_CMP
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_TEST
 #if TARGET_XARCH
@@ -142,17 +138,13 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_JCC
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_SETCC
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SELECTCC
-#if TARGET_ARM64 || TARGET_AMD64
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_CCMP
-#endif
-#if TARGET_ARM64
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_SELECT_INC
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SELECT_INCCC
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_SELECT_INV
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SELECT_INVCC
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_SELECT_NEG
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SELECT_NEGCC
-#endif
 #if TARGET_RISCV64
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SH1ADD
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SH1ADD_UW

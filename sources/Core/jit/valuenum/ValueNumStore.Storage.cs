@@ -88,9 +88,7 @@ public sealed partial class ValueNumStore
 #elif TARGET_ARM64
                     TYP_SIMD => new simdscalable_t[ChunkSize],
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
                     TYP_MASK => new simdmaskvalue_t[ChunkSize],
-#endif
 #endif
                     _ => throw new UnreachableException(),
                 },

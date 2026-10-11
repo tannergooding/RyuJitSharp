@@ -73,11 +73,10 @@ public partial class Compiler
                 break;
             }
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
             case TYP_MASK:
             {
-#if TARGET_ARM64 && DEBUG
-                if (JitConfig.JitUseScalableVectorT != 0)
+#if DEBUG
+                if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
                 {
                     tree._vnPair.SetBoth(vnStore.VNForSimdMaskScalableCon(tree.AsMskCon().SimdScalableMaskVal));
                     break;
@@ -86,7 +85,6 @@ public partial class Compiler
                 tree._vnPair.SetBoth(vnStore.VNForSimdMaskCon(tree.AsMskCon().SimdMaskVal));
                 break;
             }
-#endif
 #endif
             case TYP_FLOAT:
             {

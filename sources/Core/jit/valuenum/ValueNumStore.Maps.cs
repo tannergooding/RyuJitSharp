@@ -424,9 +424,7 @@ public sealed partial class ValueNumStore
 #elif TARGET_ARM64
         TYP_SIMD => "simd",
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
         TYP_MASK => "mask",
-#endif
 #endif
         _ => throw new FatalJitException("Unrecognized map value type."),
     };

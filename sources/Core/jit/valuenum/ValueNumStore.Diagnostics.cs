@@ -338,18 +338,20 @@ public sealed partial class ValueNumStore
                 break;
             }
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
             case TYP_MASK:
             {
                 var storage = GetConstantSimdMaskValue(vn);
-#if TARGET_ARM64
                 if (storage.IsScalable)
                 {
+                    if (!Configuration.TARGET_ARM64)
+                    {
+                        throw new PlatformNotSupportedException("Scalable mask constants are only supported on ARM64.");
+                    }
+
                     var value = storage.Scalable;
                     jitprintf($"SimdMaskScalableCns[base:{value.BaseType.Name} idx:{value.Index}]");
                 }
                 else
-#endif
                 {
                     var value = storage.Fixed;
                     jitprintf($"SimdMaskCns[0x{value.u32[0]:x8}, 0x{value.u32[1]:x8}]");
@@ -357,7 +359,6 @@ public sealed partial class ValueNumStore
 
                 break;
             }
-#endif
 #endif
 
             default:

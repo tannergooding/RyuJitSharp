@@ -494,13 +494,11 @@ public partial class Compiler
             }
 #endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
             case TYP_MASK:
             {
                 constantTree = gtNewMskConNode(vnStore.GetConstantSimdMask(constantVN));
                 break;
             }
-#endif
 
             case TYP_BYREF:
             {

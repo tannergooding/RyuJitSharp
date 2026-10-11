@@ -102,7 +102,6 @@ public partial class Compiler
                             break;
                         }
 #endif
-#if FEATURE_MASKED_HW_INTRINSICS
                         case GT_CNS_MSK:
                         {
                             var mask = tree.AsMskCon();
@@ -110,7 +109,6 @@ public partial class Compiler
                             add = genTreeHashAdd((uint)add, mask.SimdMaskVal.u32[0]);
                             break;
                         }
-#endif
                         case GT_JMP:
                         {
                             add = (nuint)tree.AsVal().Val1;
