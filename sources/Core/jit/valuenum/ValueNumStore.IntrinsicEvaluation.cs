@@ -211,16 +211,15 @@ public sealed partial class ValueNumStore
                 var rightDouble = GetConstantDouble(right);
                 var result = intrinsic switch {
                     NI_System_Math_Atan2 => Math.Atan2(leftDouble, rightDouble),
-#if TARGET_ARM || TARGET_ARM64
                     // Match the ARM CRT subnormal fixup: https://github.com/dotnet/runtime/issues/12139.
-                    NI_System_Math_Pow => rightDouble == 1.0 ? leftDouble : Math.Pow(leftDouble, rightDouble),
-#else
-                    NI_System_Math_Pow => Math.Pow(leftDouble, rightDouble),
-#endif
-#if TARGET_RISCV64 || TARGET_WASM
-                    NI_System_Math_MaxNative => EvaluateMathMinMaxNative(leftDouble, rightDouble, true),
-                    NI_System_Math_MinNative => EvaluateMathMinMaxNative(leftDouble, rightDouble, false),
-#endif
+                    NI_System_Math_Pow => (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) &&
+                        (rightDouble == 1.0)
+                            ? leftDouble
+                            : Math.Pow(leftDouble, rightDouble),
+                    NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
+                        => EvaluateMathMinMaxNative(leftDouble, rightDouble, true),
+                    NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
+                        => EvaluateMathMinMaxNative(leftDouble, rightDouble, false),
                     _ => throw new InvalidOperationException($"Unsupported binary double intrinsic: {intrinsic}"),
                 };
                 return VNForDoubleCon(result);
@@ -233,75 +232,71 @@ public sealed partial class ValueNumStore
                 var rightSingle = GetConstantSingle(right);
                 var result = intrinsic switch {
                     NI_System_Math_Atan2 => MathF.Atan2(leftSingle, rightSingle),
-#if TARGET_ARM || TARGET_ARM64
-                    NI_System_Math_Pow => rightSingle == 1.0f ? leftSingle : MathF.Pow(leftSingle, rightSingle),
-#else
-                    NI_System_Math_Pow => MathF.Pow(leftSingle, rightSingle),
-#endif
-#if TARGET_RISCV64 || TARGET_WASM
-                    NI_System_Math_MaxNative => EvaluateMathMinMaxNative(leftSingle, rightSingle, true),
-                    NI_System_Math_MinNative => EvaluateMathMinMaxNative(leftSingle, rightSingle, false),
-#endif
+                    NI_System_Math_Pow => (Configuration.TARGET_ARM || Configuration.TARGET_ARM64) &&
+                        (rightSingle == 1.0f)
+                            ? leftSingle
+                            : MathF.Pow(leftSingle, rightSingle),
+                    NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
+                        => EvaluateMathMinMaxNative(leftSingle, rightSingle, true),
+                    NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM
+                        => EvaluateMathMinMaxNative(leftSingle, rightSingle, false),
                     _ => throw new InvalidOperationException($"Unsupported binary float intrinsic: {intrinsic}"),
                 };
                 return VNForFloatCon(result);
             }
 
-#if TARGET_RISCV64
-            assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
-            var leftValue = GetConstantInt64(left);
-            var rightValue = GetConstantInt64(right);
-            var integerResult = intrinsic switch
+            if (Configuration.TARGET_RISCV64)
             {
-                NI_System_Math_Min => leftValue < rightValue ? leftValue : rightValue,
-                NI_System_Math_Max => leftValue > rightValue ? leftValue : rightValue,
-                NI_System_Math_MinUnsigned => unchecked((ulong)leftValue) < unchecked((ulong)rightValue)
-                    ? leftValue : rightValue,
-                NI_System_Math_MaxUnsigned => unchecked((ulong)leftValue) > unchecked((ulong)rightValue)
-                    ? leftValue : rightValue,
-                _ => throw new UnreachableException(),
-            };
+                assert((TypeOfVN(left) == type) && (TypeOfVN(right) == type));
+                var leftValue = GetConstantInt64(left);
+                var rightValue = GetConstantInt64(right);
+                var integerResult = intrinsic switch
+                {
+                    NI_System_Math_Min => leftValue < rightValue ? leftValue : rightValue,
+                    NI_System_Math_Max => leftValue > rightValue ? leftValue : rightValue,
+                    NI_System_Math_MinUnsigned => unchecked((ulong)leftValue) < unchecked((ulong)rightValue)
+                        ? leftValue : rightValue,
+                    NI_System_Math_MaxUnsigned => unchecked((ulong)leftValue) > unchecked((ulong)rightValue)
+                        ? leftValue : rightValue,
+                    _ => throw new UnreachableException(),
+                };
 
-            return type is TYP_LONG or TYP_ULONG
-                ? VNForLongCon(integerResult)
-                : VNForIntCon(unchecked((int)integerResult));
-#else
+                return type is TYP_LONG or TYP_ULONG
+                    ? VNForLongCon(integerResult)
+                    : VNForIntCon(unchecked((int)integerResult));
+            }
+
             throw new UnreachableException();
-#endif
         }
 
         var func = intrinsic switch {
             NI_System_Math_Atan2 => VNF_Atan2,
-#if TARGET_RISCV64
-            NI_System_Math_Max => VNF_MaxInt,
-            NI_System_Math_MaxUnsigned => VNF_MaxInt_UN,
-            NI_System_Math_Min => VNF_MinInt,
-            NI_System_Math_MinUnsigned => VNF_MinInt_UN,
-#endif
-#if TARGET_WASM
-            NI_System_Math_MaxNative => VNF_Max,
-            NI_System_Math_MinNative => VNF_Min,
-#elif TARGET_RISCV64
-            NI_System_Math_MaxNative => VNF_MaxNumber,
-            NI_System_Math_MinNative => VNF_MinNumber,
-#endif
+            NI_System_Math_Max when Configuration.TARGET_RISCV64 => VNF_MaxInt,
+            NI_System_Math_MaxUnsigned when Configuration.TARGET_RISCV64 => VNF_MaxInt_UN,
+            NI_System_Math_Min when Configuration.TARGET_RISCV64 => VNF_MinInt,
+            NI_System_Math_MinUnsigned when Configuration.TARGET_RISCV64 => VNF_MinInt_UN,
+            NI_System_Math_MaxNative when Configuration.TARGET_WASM => VNF_Max,
+            NI_System_Math_MinNative when Configuration.TARGET_WASM => VNF_Min,
+            NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 => VNF_MaxNumber,
+            NI_System_Math_MinNative when Configuration.TARGET_RISCV64 => VNF_MinNumber,
             NI_System_Math_Pow => VNF_Pow,
             _ => throw new InvalidOperationException($"Unsupported binary math intrinsic: {intrinsic}"),
         };
         return VNForFunc(type, func, left, right);
     }
 
-#if TARGET_RISCV64 || TARGET_WASM
     private static T EvaluateMathMinMaxNative<T>(T left, T right, bool maximum)
         where T : IFloatingPointIeee754<T>
     {
+        if (!Configuration.TARGET_RISCV64 && !Configuration.TARGET_WASM)
+        {
+            throw new PlatformNotSupportedException("Native min/max evaluation is only supported on RISC-V and Wasm.");
+        }
+
         if (left != right)
         {
-#if TARGET_WASM
-            if (!T.IsNaN(left))
-#else
-            if (!T.IsNaN(right))
-#endif
+            var isNaN = Configuration.TARGET_WASM ? T.IsNaN(left) : T.IsNaN(right);
+            if (!isNaN)
             {
                 return maximum
                     ? (right < left ? left : right)
@@ -310,10 +305,8 @@ public sealed partial class ValueNumStore
 
             return left;
         }
-
         return T.IsNegative(maximum ? right : left) ? left : right;
     }
-#endif
 
     private byte[] GetSimdArgumentBytes(var_types type, var_types baseType, ValueNum operand)
     {
@@ -423,6 +416,7 @@ public sealed partial class ValueNumStore
     public ValueNum EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic tree, VNFunc func, ValueNum arg0VN,
         ValueNum resultTypeVN)
     {
+        EnsureHardwareIntrinsicsSupported();
         var type = tree.Type;
         var baseType = tree.SimdBaseType;
         var simdSize = tree.SimdSize;
@@ -470,13 +464,10 @@ public sealed partial class ValueNumStore
             switch (id)
             {
                 case NI_Vector_ExtractMostSignificantBits:
-#if TARGET_XARCH
-                case NI_X86Base_MoveMask:
-                case NI_AVX_MoveMask:
-                case NI_AVX2_MoveMask:
-#elif TARGET_WASM
-                case NI_PackedSimd_Bitmask:
-#endif
+                case NI_X86Base_MoveMask when Configuration.TARGET_XARCH:
+                case NI_AVX_MoveMask when Configuration.TARGET_XARCH:
+                case NI_AVX2_MoveMask when Configuration.TARGET_XARCH:
+                case NI_PackedSimd_Bitmask when Configuration.TARGET_WASM:
                 {
                     if (!Configuration.FEATURE_MASKED_HW_INTRINSICS && !Configuration.TARGET_WASM)
                     {
@@ -484,11 +475,7 @@ public sealed partial class ValueNumStore
                             "Most-significant-bit extraction is not supported for this target.");
                     }
 
-                    assert(simdSize is 8 or 16
-#if TARGET_XARCH
-                        or 32
-#endif
-                    );
+                    assert((simdSize is 8 or 16) || (Configuration.TARGET_XARCH && (simdSize == 32)));
                     var input = GetConstantSimd(arg0VN);
                     var mask = default(simdmask_t);
                     EvaluateExtractMSB(baseType, ref mask, input.AsSpan<byte>()[..simdSize]);
@@ -497,8 +484,7 @@ public sealed partial class ValueNumStore
                     return VNForIntCon(unchecked((int)((ulong)mask.RawBits & (ulong)simdmask_t.GetBitMask(count))));
                 }
 
-#if TARGET_XARCH
-                case NI_AVX512_MoveMask:
+                case NI_AVX512_MoveMask when Configuration.TARGET_XARCH:
                 {
                     var count = simdSize / baseType.Size;
                     var mask = unchecked((ulong)GetConstantSimdMask(arg0VN).RawBits &
@@ -512,88 +498,79 @@ public sealed partial class ValueNumStore
                     assert(varTypeIsLong(type));
                     return VNForLongCon(unchecked((long)mask));
                 }
-#endif
 
-#if TARGET_ARM64 || TARGET_XARCH
-#if TARGET_ARM64
-                case NI_ArmBase_LeadingZeroCount:
-#elif TARGET_XARCH
-                case NI_AVX2_LeadingZeroCount:
-#endif
+                case NI_ArmBase_LeadingZeroCount when Configuration.TARGET_ARM64:
+                case NI_AVX2_LeadingZeroCount when Configuration.TARGET_XARCH:
                 {
                     assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
                     return VNForIntCon(BitOperations.LeadingZeroCount(unchecked((uint)GetConstantInt32(arg0VN))));
                 }
-#endif
 
-#if TARGET_ARM64
-                case NI_ArmBase_Arm64_LeadingZeroCount:
+                case NI_ArmBase_Arm64_LeadingZeroCount when Configuration.TARGET_ARM64:
                 {
                     assert(varTypeIsInt(type));
                     return VNForIntCon(BitOperations.LeadingZeroCount(unchecked((ulong)GetConstantInt64(arg0VN))));
                 }
 
-                case NI_ArmBase_ReverseElementBits:
+                case NI_ArmBase_ReverseElementBits when Configuration.TARGET_ARM64:
                 {
                     assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
                     var value = unchecked((uint)GetConstantInt32(arg0VN));
                     return VNForIntCon(unchecked((int)Compiler.ReverseArm64Bits(value)));
                 }
 
-                case NI_ArmBase_Arm64_ReverseElementBits:
+                case NI_ArmBase_Arm64_ReverseElementBits when Configuration.TARGET_ARM64:
                 {
                     assert(varTypeIsLong(type));
                     var value = unchecked((ulong)GetConstantInt64(arg0VN));
                     return VNForLongCon(unchecked((long)Compiler.ReverseArm64Bits(value)));
                 }
 
-                case NI_Vector_ToVector128:
-                case NI_Vector_ToVector128Unsafe:
+                case NI_Vector_ToVector128 when Configuration.TARGET_ARM64:
+                case NI_Vector_ToVector128Unsafe when Configuration.TARGET_ARM64:
                 {
                     var result = default(simd16_t);
                     result.v64[0] = GetConstantSimd8(arg0VN);
                     return VNForSimd16Con(result);
                 }
-#elif TARGET_XARCH
-                case NI_AVX2_X64_LeadingZeroCount:
+
+                case NI_AVX2_X64_LeadingZeroCount when Configuration.TARGET_XARCH:
                 {
                     assert(varTypeIsLong(type));
                     return VNForLongCon(BitOperations.LeadingZeroCount(unchecked((ulong)GetConstantInt64(arg0VN))));
                 }
-#endif
 
-#if TARGET_XARCH
-                case NI_AVX512_LeadingZeroCount:
+                case NI_AVX512_LeadingZeroCount when Configuration.TARGET_XARCH:
                 {
                     return EvaluateUnarySimdVN(GT_LZCNT, false, type, baseType, arg0VN);
                 }
 
-                case NI_AVX2_TrailingZeroCount:
+                case NI_AVX2_TrailingZeroCount when Configuration.TARGET_XARCH:
                 {
                     assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
                     return VNForIntCon(BitOperations.TrailingZeroCount(unchecked((uint)GetConstantInt32(arg0VN))));
                 }
 
-                case NI_AVX2_X64_TrailingZeroCount:
+                case NI_AVX2_X64_TrailingZeroCount when Configuration.TARGET_XARCH:
                 {
                     assert(varTypeIsLong(type));
                     return VNForLongCon(BitOperations.TrailingZeroCount(unchecked((ulong)GetConstantInt64(arg0VN))));
                 }
 
-                case NI_X86Base_PopCount:
+                case NI_X86Base_PopCount when Configuration.TARGET_XARCH:
                 {
                     assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
                     return VNForIntCon(BitOperations.PopCount(unchecked((uint)GetConstantInt32(arg0VN))));
                 }
 
-                case NI_X86Base_X64_PopCount:
+                case NI_X86Base_X64_PopCount when Configuration.TARGET_XARCH:
                 {
                     assert(varTypeIsLong(type));
                     return VNForLongCon(BitOperations.PopCount(unchecked((ulong)GetConstantInt64(arg0VN))));
                 }
 
-                case NI_X86Base_BitScanForward:
-                case NI_X86Base_BitScanReverse:
+                case NI_X86Base_BitScanForward when Configuration.TARGET_XARCH:
+                case NI_X86Base_BitScanReverse when Configuration.TARGET_XARCH:
                 {
                     assert(!varTypeIsSmall(type) && !varTypeIsLong(type));
                     var input = unchecked((uint)GetConstantInt32(arg0VN));
@@ -606,8 +583,8 @@ public sealed partial class ValueNumStore
                     break;
                 }
 
-                case NI_X86Base_X64_BitScanForward:
-                case NI_X86Base_X64_BitScanReverse:
+                case NI_X86Base_X64_BitScanForward when Configuration.TARGET_XARCH:
+                case NI_X86Base_X64_BitScanReverse when Configuration.TARGET_XARCH:
                 {
                     assert(varTypeIsLong(type));
                     var input = unchecked((ulong)GetConstantInt64(arg0VN));
@@ -620,11 +597,10 @@ public sealed partial class ValueNumStore
                     break;
                 }
 
-                case NI_Vector_ToVector256:
-                case NI_Vector_ToVector256Unsafe:
-                case NI_Vector_ToVector512:
-                case NI_Vector_ToVector512Unsafe:
-#endif
+                case NI_Vector_ToVector256 when Configuration.TARGET_XARCH:
+                case NI_Vector_ToVector256Unsafe when Configuration.TARGET_XARCH:
+                case NI_Vector_ToVector512 when Configuration.TARGET_XARCH:
+                case NI_Vector_ToVector512Unsafe when Configuration.TARGET_XARCH:
                 case NI_Vector_AsVector128Unsafe:
                 {
                     var input = GetConstantSimd(arg0VN);
@@ -633,25 +609,19 @@ public sealed partial class ValueNumStore
                     return VNForGenericCon(type, result);
                 }
 
-#if TARGET_ARM64 || TARGET_XARCH
-                case NI_Vector_GetLower:
-#endif
-#if TARGET_XARCH
-                case NI_Vector_GetLower128:
-#endif
+                case NI_Vector_GetLower when Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH:
+                case NI_Vector_GetLower128 when Configuration.TARGET_XARCH:
                 case NI_Vector_AsVector2:
                 {
                     var input = GetConstantSimd(arg0VN);
                     return VNForGenericCon(type, input.AsSpan<byte>()[..type.Size]);
                 }
 
-#if TARGET_ARM64 || TARGET_XARCH
-                case NI_Vector_GetUpper:
+                case NI_Vector_GetUpper when Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH:
                 {
                     var input = GetConstantSimd(arg0VN);
                     return VNForGenericCon(type, input.AsSpan<byte>().Slice(type.Size, type.Size));
                 }
-#endif
 
                 case NI_Vector_AsVector3:
                 {
@@ -672,6 +642,7 @@ public sealed partial class ValueNumStore
     public ValueNum EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic tree, VNFunc func, ValueNum arg0VN,
         ValueNum arg1VN, ValueNum resultTypeVN)
     {
+        EnsureHardwareIntrinsicsSupported();
         var type = tree.Type;
         var baseType = tree.SimdBaseType;
         var simdSize = tree.SimdSize;
@@ -732,31 +703,34 @@ public sealed partial class ValueNumStore
                 }
                 if (operation is GT_LSH or GT_RSH or GT_RSZ)
                 {
-#if TARGET_XARCH
-                    if ((TypeOfVN(arg1VN) is TYP_SIMD16) && !HWIntrinsicInfo.IsVariableShift(id))
+                    if (Configuration.TARGET_XARCH)
                     {
-                        // Xarch reads the lower 64 bits; -1 denotes a shift beyond the element width.
-                        var shift = GetConstantSimd16(arg1VN).u64[0];
-                        if (shift >= (ulong)(baseType.Size * 8))
+                        if ((TypeOfVN(arg1VN) is TYP_SIMD16) && !HWIntrinsicInfo.IsVariableShift(id))
                         {
-                            shift = ulong.MaxValue;
-                        }
+                            // Xarch reads the lower 64 bits; -1 denotes a shift beyond the element width.
+                            var shift = GetConstantSimd16(arg1VN).u64[0];
+                            if (shift >= (ulong)(baseType.Size * 8))
+                            {
+                                shift = ulong.MaxValue;
+                            }
 
-                        arg1VN = baseType.Size == 8
-                            ? VNForLongCon(unchecked((long)shift))
-                            : VNForIntCon(unchecked((int)shift));
+                            arg1VN = baseType.Size == 8
+                                ? VNForLongCon(unchecked((long)shift))
+                                : VNForIntCon(unchecked((int)shift));
+                        }
                     }
-#elif TARGET_ARM64
-                    var auxiliaryType = tree.AuxiliaryType;
-                    if ((auxiliaryType != TYP_UNKNOWN) && (auxiliaryType.Size != baseType.Size))
+                    else if (Configuration.TARGET_ARM64)
                     {
-                        assert(auxiliaryType == TYP_ULONG);
-                        assert(type == TYP_SIMD16);
-                        var argument = GetConstantSimd16(arg1VN);
-                        var narrowed = Compiler.NarrowAndDuplicateSimdLong(baseType, argument);
-                        arg1VN = VNForSimd16Con(narrowed);
+                        var auxiliaryType = tree.AuxiliaryType;
+                        if ((auxiliaryType != TYP_UNKNOWN) && (auxiliaryType.Size != baseType.Size))
+                        {
+                            assert(auxiliaryType == TYP_ULONG);
+                            assert(type == TYP_SIMD16);
+                            var argument = GetConstantSimd16(arg1VN);
+                            var narrowed = Compiler.NarrowAndDuplicateSimdLong(baseType, argument);
+                            arg1VN = VNForSimd16Con(narrowed);
+                        }
                     }
-#endif
                 }
                 return EvaluateBinarySimdVN(operation, scalar, type, baseType, arg0VN, arg1VN);
             }
@@ -774,25 +748,21 @@ public sealed partial class ValueNumStore
                     break;
                 }
 
-#if TARGET_ARM64
-                case NI_AdvSimd_MultiplyByScalar:
-                case NI_AdvSimd_Arm64_MultiplyByScalar:
+                case NI_AdvSimd_MultiplyByScalar when Configuration.TARGET_ARM64:
+                case NI_AdvSimd_Arm64_MultiplyByScalar when Configuration.TARGET_ARM64:
                 {
                     arg1VN = EvaluateSimdGetElementVN(baseType, arg1VN, 0);
                     return EvaluateBinarySimdVN(GT_MUL, false, type, baseType, arg0VN, arg1VN);
                 }
-#endif
 
-#if TARGET_ARM64 || TARGET_XARCH
-                case NI_Vector_WithLower:
-                case NI_Vector_WithUpper:
+                case NI_Vector_WithLower when Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH:
+                case NI_Vector_WithUpper when Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH:
                 {
                     var result = GetSimdArgumentBytes(type, baseType, arg0VN);
                     var input = GetSimdArgumentBytes(Compiler.GetSimdTypeForSize(simdSize / 2), baseType, arg1VN);
                     input.CopyTo(result, id is NI_Vector_WithUpper ? result.Length / 2 : 0);
                     return VNForGenericCon(type, result);
                 }
-#endif
             }
         }
         else if (constant != NoVN)
@@ -974,9 +944,8 @@ public sealed partial class ValueNumStore
 
             switch (id)
             {
-#if TARGET_ARM64
-                case NI_AdvSimd_MultiplyByScalar:
-                case NI_AdvSimd_Arm64_MultiplyByScalar:
+                case NI_AdvSimd_MultiplyByScalar when Configuration.TARGET_ARM64:
+                case NI_AdvSimd_Arm64_MultiplyByScalar when Configuration.TARGET_ARM64:
                 {
                     assert((TypeOfVN(arg0VN) == type) && (TypeOfVN(arg1VN) == TYP_SIMD8));
                     if (!varTypeIsFloating(baseType))
@@ -1028,7 +997,6 @@ public sealed partial class ValueNumStore
                     }
                     break;
                 }
-#endif
 
                 case NI_Vector_op_Equality:
                 case NI_Vector_op_Inequality:
@@ -1115,6 +1083,7 @@ public sealed partial class ValueNumStore
     public ValueNum EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic tree, VNFunc func, ValueNum arg0VN,
         ValueNum arg1VN, ValueNum arg2VN, ValueNum resultTypeVN)
     {
+        EnsureHardwareIntrinsicsSupported();
         var type = tree.Type;
         var baseType = tree.SimdBaseType;
         var simdSize = tree.SimdSize;
@@ -1122,12 +1091,9 @@ public sealed partial class ValueNumStore
 
         switch (id)
         {
-#if TARGET_XARCH || TARGET_WASM
-            case NI_Vector_ConditionalSelect:
-#elif TARGET_ARM64
-            case NI_AdvSimd_BitwiseSelect:
-            case NI_Sve_ConditionalSelect:
-#endif
+            case NI_Vector_ConditionalSelect when Configuration.TARGET_XARCH || Configuration.TARGET_WASM:
+            case NI_AdvSimd_BitwiseSelect when Configuration.TARGET_ARM64:
+            case NI_Sve_ConditionalSelect when Configuration.TARGET_ARM64:
             {
                 if (IsVNConstant(arg0VN))
                 {
@@ -1140,11 +1106,9 @@ public sealed partial class ValueNumStore
                     {
                         return arg1VN;
                     }
-
                     if (IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
                     {
-#if TARGET_ARM64
-                        if (id == NI_Sve_ConditionalSelect)
+                        if (Configuration.TARGET_ARM64 && (id == NI_Sve_ConditionalSelect))
                         {
                             assert(TypeOfVN(arg0VN) == TYP_MASK);
                             assert(type == TYP_SIMD16);
@@ -1157,10 +1121,8 @@ public sealed partial class ValueNumStore
 
                             var trueVN = EvaluateBinarySimdVN(GT_AND, false, type, baseType, arg1VN, maskVN);
                             var falseVN = EvaluateBinarySimdVN(GT_AND_NOT, false, type, baseType, arg2VN, maskVN);
-
                             return EvaluateBinarySimdVN(GT_OR, false, type, baseType, trueVN, falseVN);
                         }
-#endif
 
                         var selected = EvaluateBinarySimdVN(GT_AND, false, type, baseType, arg1VN, arg0VN);
                         var rejected = EvaluateBinarySimdVN(GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
@@ -1196,11 +1158,10 @@ public sealed partial class ValueNumStore
                 break;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_BlendVariable:
-            case NI_AVX_BlendVariable:
-            case NI_AVX2_BlendVariable:
-            case NI_AVX512_BlendVariableMask:
+            case NI_X86Base_BlendVariable when Configuration.TARGET_XARCH:
+            case NI_AVX_BlendVariable when Configuration.TARGET_XARCH:
+            case NI_AVX2_BlendVariable when Configuration.TARGET_XARCH:
+            case NI_AVX512_BlendVariableMask when Configuration.TARGET_XARCH:
             {
                 if (IsVNConstant(arg2VN))
                 {
@@ -1220,7 +1181,6 @@ public sealed partial class ValueNumStore
                 }
                 break;
             }
-#endif
 
             default:
             {
@@ -1230,7 +1190,9 @@ public sealed partial class ValueNumStore
 
         return VNForFunc(type, func, arg0VN, arg1VN, arg2VN, resultTypeVN);
     }
+#endif
 
+#if FEATURE_SIMD
     private ValueNum EvaluateSimdWithElementIntegral(var_types simdType, var_types baseType,
         ValueNum vectorVN, int index, long value)
     {
@@ -1244,10 +1206,8 @@ public sealed partial class ValueNumStore
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
+            case TYP_SIMD32 when Configuration.TARGET_XARCH:
+            case TYP_SIMD64 when Configuration.TARGET_XARCH:
             {
                 var vector = GetConstantSimd(vectorVN);
                 var result = new byte[simdType.Size];

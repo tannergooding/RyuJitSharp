@@ -65,6 +65,7 @@ public sealed partial class Lowering
                 break;
             }
 
+#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
                 if (Configuration.FEATURE_SIMD && !Configuration.TARGET_WASM)
@@ -73,6 +74,7 @@ public sealed partial class Lowering
                 }
                 break;
             }
+#endif
 
             case GT_LCL_VAR:
             case GT_STORE_LCL_VAR:

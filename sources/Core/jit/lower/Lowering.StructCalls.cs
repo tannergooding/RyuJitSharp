@@ -87,6 +87,7 @@ public sealed partial class Lowering
                     break;
                 }
 
+#if FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
                 {
                     if (!Configuration.FEATURE_HW_INTRINSICS)
@@ -104,6 +105,7 @@ public sealed partial class Lowering
                     }
                     break;
                 }
+#endif
 
                 default:
                 {

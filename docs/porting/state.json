@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Resume validation and acceptance of the pending evaluator adapter split in sources/Core/jit/valuenum/ValueNumStore.IntrinsicEvaluation.cs, beginning with the focused value-number closure tests across xarch, ARM64, Wasm, and feature-disabled RISC-V. Keep tree-facing adapters gated until their node dependencies are unioned; later remove the remaining TARGET_XARCH alias guard in HWIntrinsicInfo.LookupId after CORINFO_InstructionSet identities are universalized.",
+    "nextAction": "Inspect the target-conditional CORINFO_InstructionSet declaration and its EE-facing consumers before removing TARGET_XARCH from HWIntrinsicInfo.LookupId. Union managed instruction-set identities and add target-native ordinal translation only where required to preserve the EE contract; then remove the alias gate and validate lookups on xarch, ARM64, Wasm, and feature-disabled RISC-V.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Remove architecture compile gates from HWIntrinsicInfo multi-register and target-specific metadata predicates using universal intrinsic, category, and flag identities.",
-      "doneWhen": "GetMultiRegCount covers union IDs, metadata predicates preserve target behavior through Configuration, and category/flag values are disjoint across targets; unsupported lookups and xarch-only cost access remain explicit.",
-      "validation": "GenerateTables Release build and regeneration succeeded; regenerated HWIntrinsicInfo.generated.cs and HWIntrinsicInfo.IndexMaps.generated.cs matched checked-in sources. Focused Debug and Release HWIntrinsicLookupRangeTests plus FeatureConfigurationTests passed on win-x64, linux-arm64, and browser-wasm (10/10 each); feature-disabled linux-riscv64 FeatureConfigurationTests passed (8/8) in both configurations.",
-      "deferred": "GenTreeHWIntrinsic/GenTreeVecCon adapters remain feature-gated until their node dependencies are unioned. HWIntrinsicInfo.LookupId retains one TARGET_XARCH guard because CORINFO_InstructionSet is still target-conditional; remove it only after preserving the EE-facing instruction-set contract."
+      "scope": "Convert target-architecture branches in ValueNumStore hardware-intrinsic evaluators to Configuration checks and make their shared SIMD helpers available across target builds.",
+      "doneWhen": "Evaluator folding preserves xarch, ARM64, Wasm, and RISC-V semantics through universal IDs and runtime target checks; tree-facing entrypoints remain explicitly feature-guarded until their node types are universal.",
+      "validation": "Focused ValueNumHardwareEvaluationClosureTests and ValueNumIntrinsicEvaluationTests passed on win-x64 in Debug and Release (85/85 each); target closure plus FeatureConfigurationTests passed on linux-arm64 (58/58 each configuration) and browser-wasm (29/29 each); feature-disabled linux-riscv64 FeatureConfigurationTests passed (8/8 each). The Release compiler build passed full analysis with 0 warnings/errors. Full-analysis Release test execution is blocked by unrelated CA1812 in unchanged tests/Core/DiscretionaryPolicyTests.cs:467; the focused Release tests passed with analyzers disabled.",
+      "deferred": "GenTreeHWIntrinsic/GenTreeVecCon evaluator adapters and the related Lowering cases retain FEATURE_HW_INTRINSICS guards because their node types are still conditional. The next bounded identity dependency is CORINFO_InstructionSet for the remaining TARGET_XARCH alias gate in HWIntrinsicInfo.LookupId."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -100,6 +100,24 @@
       "disposition": "Managed category ordinals and architecture-specific flag bits are disjoint universal identities; target-native metadata row order is still selected through the generated maps. Configuration-driven predicates preserve xarch, ARM64, and Wasm behavior, while xarch-only costs reject other targets.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "Focused Debug and Release HWIntrinsicLookupRangeTests plus FeatureConfigurationTests passed on win-x64, linux-arm64, and browser-wasm (10/10 each); feature-disabled linux-riscv64 FeatureConfigurationTests passed (8/8)."
+    },
+    {
+      "area": "universal-hardware-intrinsic-evaluator-branches",
+      "native": [
+        "src\\coreclr\\jit\\valuenum.cpp",
+        "src\\coreclr\\jit\\gentree.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\valuenum\\ValueNumStore.IntrinsicEvaluation.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.SimdIntrinsicHelpers.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.gt.HardwareIntrinsicFolding.cs",
+        "sources\\Core\\jit\\lower\\Lowering.StructCalls.cs",
+        "sources\\Core\\jit\\lower\\Lowering.Validation.cs",
+        "tests\\Core\\ValueNumHardwareEvaluationClosureTests.cs"
+      ],
+      "disposition": "Value-number evaluator target branches use Configuration checks over the universal intrinsic identities. Tree evaluator entrypoints and Lowering cases remain FEATURE_HW_INTRINSICS-gated until the GenTree dependencies are universal; target-independent SIMD helpers are shared by folding and evaluator paths.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Focused evaluator tests passed on win-x64 in Debug/Release (85/85 each), linux-arm64 (58/58 each), and browser-wasm (29/29 each); feature-disabled linux-riscv64 configuration tests passed (8/8 each). Full-analysis Release compiler build passed; full-analysis test build hit unrelated CA1812 in unchanged DiscretionaryPolicyTests.cs."
     },
     {
       "area": "universal-var-type-ordinals",
