@@ -313,9 +313,7 @@ public partial class Compiler
             assert(compCurBB.Kind is BBJ_RETURN);
         }
 
-#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
-        if (gtIsRecursiveCall(call))
-#endif
+        if (Configuration.FEATURE_TAILCALL_OPT_SHARED_RETURN || gtIsRecursiveCall(call))
         {
             compCurBB.SetKindAndTargetEdge(BBJ_RETURN, null);
         }

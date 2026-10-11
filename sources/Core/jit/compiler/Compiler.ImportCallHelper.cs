@@ -172,19 +172,20 @@ public partial class Compiler
             {
                 if (compiler.compIsForInlining)
                 {
-#if FEATURE_TAILCALL_OPT_SHARED_RETURN
-                    // Are we inlining at an implicit tail call site? If so the we can flag
-                    // implicit tail call sites in the inline body. These call sites
-                    // often end up in non BBJ_RETURN blocks, so only flag them when
-                    // we're able to handle shared returns.
-                    assert(compiler.impInlineInfo.iciCall is not null);
-
-                    if (compiler.impInlineInfo.iciCall.IsImplicitTailCall)
+                    if (Configuration.FEATURE_TAILCALL_OPT_SHARED_RETURN)
                     {
-                        JITDUMP("\n (Inline Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
-                        prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
+                        // Are we inlining at an implicit tail call site? If so the we can flag
+                        // implicit tail call sites in the inline body. These call sites
+                        // often end up in non BBJ_RETURN blocks, so only flag them when
+                        // we're able to handle shared returns.
+                        assert(compiler.impInlineInfo.iciCall is not null);
+
+                        if (compiler.impInlineInfo.iciCall.IsImplicitTailCall)
+                        {
+                            JITDUMP("\n (Inline Implicit Tail call: prefixFlags |= PREFIX_TAILCALL_IMPLICIT)");
+                            prefixFlags |= PREFIX_TAILCALL_IMPLICIT;
+                        }
                     }
-#endif
                 }
                 else
                 {

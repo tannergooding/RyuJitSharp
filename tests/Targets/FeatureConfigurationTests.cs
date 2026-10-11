@@ -56,6 +56,7 @@ internal static class FeatureConfigurationTests
         Assert.That(Configuration.FEATURE_FIXED_OUT_ARGS, Is.EqualTo(supportsFixedOutArgs));
         Assert.That(Configuration.FEATURE_FASTTAILCALL, Is.EqualTo(supportsFastTailCall));
         Assert.That(Configuration.FEATURE_TAILCALL_OPT, Is.EqualTo(supportsTailCallOpt));
+        Assert.That(Configuration.FEATURE_TAILCALL_OPT_SHARED_RETURN, Is.EqualTo(supportsTailCallOpt));
         Assert.That(Configuration.SWIFT_SUPPORT, Is.EqualTo(supportsSwift));
     }
 

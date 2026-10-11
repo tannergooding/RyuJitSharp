@@ -32,6 +32,9 @@ internal static class Configuration
     internal static bool FEATURE_TAILCALL_OPT =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 
+    // Shared returns allow implicit tail calls through a call/jump/return-block pattern.
+    internal static bool FEATURE_TAILCALL_OPT_SHARED_RETURN => FEATURE_TAILCALL_OPT;
+
     internal static bool HAS_FIXED_REGISTER_SET => !TARGET_WASM;
 
     internal static bool TARGET_64BIT => GetFeatureSwitch(nameof(TARGET_64BIT));

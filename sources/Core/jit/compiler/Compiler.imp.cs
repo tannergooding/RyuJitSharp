@@ -14383,18 +14383,17 @@ public partial class Compiler
             return false;
         }
 
-#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
-        // the block containing call is marked as BBJ_RETURN
-        // We allow shared ret tail call optimization on recursive calls even under
-        // !FEATURE_TAILCALL_OPT_SHARED_RETURN.
-
-        assert(compCurBB is not null);
-
-        if (!isRecursive && (compCurBB.Kind is not BBJ_RETURN))
+        if (!Configuration.FEATURE_TAILCALL_OPT_SHARED_RETURN)
         {
-            return false;
+            // The block containing call is marked as BBJ_RETURN. Recursive calls may still
+            // use shared returns when shared-return optimization is disabled.
+            assert(compCurBB is not null);
+
+            if (!isRecursive && (compCurBB.Kind is not BBJ_RETURN))
+            {
+                return false;
+            }
         }
-#endif
 
         if (!impIsTailCallILPattern(false, opcode, codeAddrOfNextOpcode, codeEnd, isRecursive) &&
             ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) == 0))
@@ -14458,11 +14457,7 @@ public partial class Compiler
             return false;
         }
 
-#if !FEATURE_TAILCALL_OPT_SHARED_RETURN
-        // If shared ret tail opt is not enabled, we will enable it for recursive methods.
-
-        if (isRecursive)
-#endif
+        if (Configuration.FEATURE_TAILCALL_OPT_SHARED_RETURN || isRecursive)
         {
             // we can actually handle if the ret is in a fallthrough block, as long as that is the only part of the
             // sequence. Make sure we don't go past the end of the IL however.

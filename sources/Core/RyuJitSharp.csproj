@@ -401,18 +401,6 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_TAILCALL_OPT</DefineConstants>
 
-    <!-- FEATURE_TAILCALL_OPT_SHARED_RETURN -->
-    <!--   Enable tail call opt for the following IL pattern -->
-    <!--       call someFunc -->
-    <!--       jmp/jcc RetBlock -->
-    <!--       ... -->
-    <!--    RetBlock: -->
-    <!--       ret -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_TAILCALL_OPT_SHARED_RETURN</DefineConstants>
-    
     <!-- HAS_FIXED_REGISTER_SET -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);HAS_FIXED_REGISTER_SET</DefineConstants>
 

@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize FEATURE_TAILCALL_OPT_SHARED_RETURN in Compiler.fg.Call.cs, Compiler.imp.cs, Compiler.ImportCallHelper.cs, and jit/Globals.cs; derive it from Configuration.FEATURE_TAILCALL_OPT if the project conditions confirm the same target set, then remove its project defines and validate tail-call behavior.",
+    "nextAction": "Universalize FEATURE_REMAP_FUNCTION in codegencommon/CodeGen.GCInfoPublication.cs and codegenloongarch64/CodeGen.GCInfo.cs; derive availability from ARM64, AMD64, and Windows x86 target configuration, remove the project defines, and validate GC-info publication across the target matrix.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize FEATURE_ARG_SPLIT in lowering by compiling the split transformation on every target, gating its invocation with Configuration.FEATURE_ARG_SPLIT and the existing ABI check, and removing its target-specific DefineConstants.",
-      "doneWhen": "No FEATURE_ARG_SPLIT preprocessor guards or target-specific compile defines remain; argument splitting runs only for ABIs selected by compFeatureArgSplit and preserves split register/stack layout.",
-      "validation": "Debug and Release FeatureConfigurationTests each passed 21/21 for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64. CodeGenRegisterArgumentTests passed on win-x64 in Debug (30 passed, one expected skip) and Release (26 passed, one expected skip), compiling the shared lowering sources. The direct Arm64ReturnTypeTests run was blocked at test-project compilation by existing xarch-only emitter test references (missing IF_* / REG_XMM symbols) when targeting win-arm64; no tests ran in that attempt. `git diff --check` passed.",
-      "deferred": "FEATURE_ARG_SPLIT project defines and source guards are removed. The broader TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Universalize FEATURE_TAILCALL_OPT_SHARED_RETURN using the existing target-derived FEATURE_TAILCALL_OPT configuration, removing the feature's target-specific DefineConstants and source guards.",
+      "doneWhen": "No FEATURE_TAILCALL_OPT_SHARED_RETURN preprocessor guards or target-specific compile defines remain; the runtime branches preserve recursive-only behavior when disabled and shared-return behavior when enabled.",
+      "validation": "Debug and Release FeatureConfigurationTests passed 21/21 for each of win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64. Focused Core tail-call behavior tests passed 124/124 in Debug and 109/109 in Release on win-x64. `git diff --check` passed.",
+      "deferred": "FEATURE_TAILCALL_OPT_SHARED_RETURN project defines and source guards are removed. FEATURE_TAILCALL_OPT and the broader TARGET_/FEATURE_ preprocessor migration remain active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

@@ -329,10 +329,6 @@ public partial class Globals
 #endif
 #endif
 
-#if FEATURE_TAILCALL_OPT_SHARED_RETURN && !FEATURE_TAILCALL_OPT
-#error When FEATURE_TAILCALL_OPT_SHARED_RETURN is defined, you must define FEATURE_TAILCALL_OPT as well.
-#endif
-
     public const int CLFLG_REGVAR = 0x00008;
 
     public const int CLFLG_TREETRANS = 0x00100;
