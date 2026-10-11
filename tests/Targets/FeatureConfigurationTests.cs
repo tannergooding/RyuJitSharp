@@ -48,11 +48,14 @@ internal static class FeatureConfigurationTests
         var supportsFixedOutArgs = supportsArgSplit || Configuration.TARGET_AMD64;
         var supportsFastTailCall = supportsFixedOutArgs || Configuration.TARGET_WASM;
         var supportsTailCallOpt = supportsArgSplit || Configuration.TARGET_AMD64;
+        var supportsRemapFunction = Configuration.TARGET_ARM64 || Configuration.TARGET_AMD64 ||
+            (Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS);
         var supportsSwift = Configuration.TARGET_ARM64 ||
             (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX);
 
         Assert.That(Configuration.FEATURE_ARG_SPLIT, Is.EqualTo(supportsArgSplit));
         Assert.That(Configuration.FEATURE_MULTIREG_ARGS, Is.EqualTo(supportsMultiRegArgs));
+        Assert.That(Configuration.FEATURE_REMAP_FUNCTION, Is.EqualTo(supportsRemapFunction));
         Assert.That(Configuration.FEATURE_FIXED_OUT_ARGS, Is.EqualTo(supportsFixedOutArgs));
         Assert.That(Configuration.FEATURE_FASTTAILCALL, Is.EqualTo(supportsFastTailCall));
         Assert.That(Configuration.FEATURE_TAILCALL_OPT, Is.EqualTo(supportsTailCallOpt));

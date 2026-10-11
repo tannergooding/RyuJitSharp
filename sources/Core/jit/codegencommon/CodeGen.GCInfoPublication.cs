@@ -154,12 +154,10 @@ public sealed partial class CodeGen
         GCInfo.gcMakeRegPtrTable(encoder, codeSize, prologSize,
             GCInfo.MakeRegPtrMode.MAKE_REG_PTR_MODE_DO_WORK, ref callCount);
 
-#if FEATURE_REMAP_FUNCTION
-        if (_compiler.opts.compDbgEnC)
+        if (Configuration.FEATURE_REMAP_FUNCTION && _compiler.opts.compDbgEnC)
         {
             NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
         }
-#endif
 
         if (_compiler.opts.IsReversePInvoke)
         {
