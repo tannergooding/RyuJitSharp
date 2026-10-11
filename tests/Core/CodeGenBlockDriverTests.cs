@@ -237,8 +237,8 @@ internal static unsafe class CodeGenBlockDriverTests
             vtable.Base.Base.runWithSPMIErrorTrap = &InvokeCallback;
             vtable.Base.Base.printMethodName = &PrintMethodName;
             vtable.Base.notifyInstructionSetUsage =
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&NotifyInstructionSetUsage;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
             var previousSections = EmitterSections(ref JitConfig);
@@ -311,7 +311,7 @@ internal static unsafe class CodeGenBlockDriverTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet isa,
+    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSetNative isa,
         byte supported, byte preserveNegativeDependency) => supported;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

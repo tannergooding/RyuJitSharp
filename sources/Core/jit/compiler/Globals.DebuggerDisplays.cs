@@ -386,14 +386,17 @@ public static partial class Globals
         {
             var first = true;
             // The native flag range starts at 1 and extends to the last bit in the flags storage.
-            var isaFirst = (CORINFO_InstructionSet)1;
-            var isaLast = (CORINFO_InstructionSet)(sizeof(CORINFO_InstructionSetFlags) * 8 - 1);
+            var isaFirst = 1;
+            var isaLast = sizeof(CORINFO_InstructionSetFlags) * 8 - 1;
 
-            for (var isa = isaFirst; isa <= isaLast; isa = (CORINFO_InstructionSet)((int)isa + 1))
+            for (var nativeOrdinal = isaFirst; nativeOrdinal <= isaLast; nativeOrdinal++)
             {
-                if (isaFlags.HasInstructionSet(isa))
+                if (isaFlags.HasNativeInstructionSetOrdinal(nativeOrdinal))
                 {
-                    jitprintf($"{(first ? "" : " ")}{InstructionSetToString(isa)}");
+                    var name = TryGetManagedInstructionSet(nativeOrdinal, out var isa)
+                        ? InstructionSetToString(isa)
+                        : "UnknownInstructionSet";
+                    jitprintf($"{(first ? "" : " ")}{name}");
                     first = false;
                 }
             }

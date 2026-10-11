@@ -10196,8 +10196,7 @@ public partial struct HWIntrinsicInfo
     ];
 
 #if FEATURE_HW_INTRINSICS
-    private static ReadOnlySpan<ushort> s_isaRangeBounds => [
-#if TARGET_XARCH
+    private static ReadOnlySpan<ushort> s_xarchIsaRangeBounds => [
         65535, 65535, // InstructionSet_ILLEGAL
         153, 311, // InstructionSet_X86Base
         328, 399, // InstructionSet_AVX
@@ -10245,8 +10244,102 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_SHA_X64
         65535, 65535, // InstructionSet_WAITPKG_X64
         65535, 65535, // InstructionSet_X86Serialize_X64
-#elif TARGET_ARM64
+        65535, 65535, // InstructionSet_ArmBase
+        65535, 65535, // InstructionSet_AdvSimd
+        65535, 65535, // InstructionSet_Aes
+        65535, 65535, // InstructionSet_Crc32
+        65535, 65535, // InstructionSet_Dp
+        65535, 65535, // InstructionSet_Rdm
+        65535, 65535, // InstructionSet_Fp16
+        65535, 65535, // InstructionSet_Sha1
+        65535, 65535, // InstructionSet_Sha256
+        65535, 65535, // InstructionSet_Atomics
+        65535, 65535, // InstructionSet_Vector64
+        65535, 65535, // InstructionSet_VectorT
+        65535, 65535, // InstructionSet_Dczva
+        65535, 65535, // InstructionSet_Rcpc
+        65535, 65535, // InstructionSet_Rcpc2
+        65535, 65535, // InstructionSet_Sve
+        65535, 65535, // InstructionSet_Sve2
+        65535, 65535, // InstructionSet_Sha3
+        65535, 65535, // InstructionSet_Sm4
+        65535, 65535, // InstructionSet_SveAes
+        65535, 65535, // InstructionSet_SveSha3
+        65535, 65535, // InstructionSet_SveSm4
+        65535, 65535, // InstructionSet_Cssc
+        65535, 65535, // InstructionSet_ArmBase_Arm64
+        65535, 65535, // InstructionSet_AdvSimd_Arm64
+        65535, 65535, // InstructionSet_Aes_Arm64
+        65535, 65535, // InstructionSet_Crc32_Arm64
+        65535, 65535, // InstructionSet_Dp_Arm64
+        65535, 65535, // InstructionSet_Rdm_Arm64
+        65535, 65535, // InstructionSet_Fp16_Arm64
+        65535, 65535, // InstructionSet_Sha1_Arm64
+        65535, 65535, // InstructionSet_Sha256_Arm64
+        65535, 65535, // InstructionSet_Sve_Arm64
+        65535, 65535, // InstructionSet_Sve2_Arm64
+        65535, 65535, // InstructionSet_Sha3_Arm64
+        65535, 65535, // InstructionSet_Sm4_Arm64
+        65535, 65535, // InstructionSet_SveAes_Arm64
+        65535, 65535, // InstructionSet_SveSha3_Arm64
+        65535, 65535, // InstructionSet_SveSm4_Arm64
+        65535, 65535, // InstructionSet_RiscV64Base
+        65535, 65535, // InstructionSet_Zba
+        65535, 65535, // InstructionSet_Zbb
+        65535, 65535, // InstructionSet_Zbs
+        65535, 65535, // InstructionSet_Zicond
+        65535, 65535, // InstructionSet_WasmBase
+        65535, 65535, // InstructionSet_PackedSimd
+    ];
+
+    private static ReadOnlySpan<ushort> s_arm64IsaRangeBounds => [
         65535, 65535, // InstructionSet_ILLEGAL
+        65535, 65535, // InstructionSet_X86Base
+        65535, 65535, // InstructionSet_AVX
+        65535, 65535, // InstructionSet_AVX2
+        65535, 65535, // InstructionSet_AVX512
+        65535, 65535, // InstructionSet_AVX512v2
+        65535, 65535, // InstructionSet_AVX512v3
+        65535, 65535, // InstructionSet_AVX10v1
+        65535, 65535, // InstructionSet_AVX10v2
+        65535, 65535, // InstructionSet_APX
+        65535, 65535, // InstructionSet_AES
+        65535, 65535, // InstructionSet_AES_V256
+        65535, 65535, // InstructionSet_AES_V512
+        65535, 65535, // InstructionSet_AVX512VP2INTERSECT
+        65535, 65535, // InstructionSet_AVXIFMA
+        65535, 65535, // InstructionSet_AVXVNNI
+        65535, 65535, // InstructionSet_AVX512BMM
+        65535, 65535, // InstructionSet_GFNI
+        65535, 65535, // InstructionSet_GFNI_V256
+        65535, 65535, // InstructionSet_GFNI_V512
+        65535, 65535, // InstructionSet_SHA
+        65535, 65535, // InstructionSet_WAITPKG
+        65535, 65535, // InstructionSet_X86Serialize
+        0, 147, // InstructionSet_Vector128
+        65535, 65535, // InstructionSet_Vector256
+        65535, 65535, // InstructionSet_Vector512
+        65535, 65535, // InstructionSet_VectorT128
+        65535, 65535, // InstructionSet_VectorT256
+        65535, 65535, // InstructionSet_VectorT512
+        65535, 65535, // InstructionSet_AVXVNNIINT
+        65535, 65535, // InstructionSet_AVXVNNIINT_V512
+        65535, 65535, // InstructionSet_X86Base_X64
+        65535, 65535, // InstructionSet_AVX_X64
+        65535, 65535, // InstructionSet_AVX2_X64
+        65535, 65535, // InstructionSet_AVX512_X64
+        65535, 65535, // InstructionSet_AVX512v2_X64
+        65535, 65535, // InstructionSet_AVX512v3_X64
+        65535, 65535, // InstructionSet_AVX10v1_X64
+        65535, 65535, // InstructionSet_AVX10v2_X64
+        65535, 65535, // InstructionSet_AES_X64
+        65535, 65535, // InstructionSet_AVX512VP2INTERSECT_X64
+        65535, 65535, // InstructionSet_AVXIFMA_X64
+        65535, 65535, // InstructionSet_AVXVNNI_X64
+        65535, 65535, // InstructionSet_GFNI_X64
+        65535, 65535, // InstructionSet_SHA_X64
+        65535, 65535, // InstructionSet_WAITPKG_X64
+        65535, 65535, // InstructionSet_X86Serialize_X64
         607, 609, // InstructionSet_ArmBase
         148, 417, // InstructionSet_AdvSimd
         601, 606, // InstructionSet_Aes
@@ -10258,11 +10351,9 @@ public partial struct HWIntrinsicInfo
         660, 663, // InstructionSet_Sha256
         65535, 65535, // InstructionSet_Atomics
         0, 147, // InstructionSet_Vector64
-        0, 147, // InstructionSet_Vector128
         65535, 65535, // InstructionSet_VectorT
         65535, 65535, // InstructionSet_Dczva
         65535, 65535, // InstructionSet_Rcpc
-        65535, 65535, // InstructionSet_VectorT128
         65535, 65535, // InstructionSet_Rcpc2
         673, 976, // InstructionSet_Sve
         977, 1179, // InstructionSet_Sve2
@@ -10288,16 +10379,112 @@ public partial struct HWIntrinsicInfo
         65535, 65535, // InstructionSet_SveAes_Arm64
         65535, 65535, // InstructionSet_SveSha3_Arm64
         65535, 65535, // InstructionSet_SveSm4_Arm64
-#elif TARGET_WASM || TARGET_WASM32
+        65535, 65535, // InstructionSet_RiscV64Base
+        65535, 65535, // InstructionSet_Zba
+        65535, 65535, // InstructionSet_Zbb
+        65535, 65535, // InstructionSet_Zbs
+        65535, 65535, // InstructionSet_Zicond
+        65535, 65535, // InstructionSet_WasmBase
+        65535, 65535, // InstructionSet_PackedSimd
+    ];
+
+    private static ReadOnlySpan<ushort> s_wasmIsaRangeBounds => [
         65535, 65535, // InstructionSet_ILLEGAL
+        65535, 65535, // InstructionSet_X86Base
+        65535, 65535, // InstructionSet_AVX
+        65535, 65535, // InstructionSet_AVX2
+        65535, 65535, // InstructionSet_AVX512
+        65535, 65535, // InstructionSet_AVX512v2
+        65535, 65535, // InstructionSet_AVX512v3
+        65535, 65535, // InstructionSet_AVX10v1
+        65535, 65535, // InstructionSet_AVX10v2
+        65535, 65535, // InstructionSet_APX
+        65535, 65535, // InstructionSet_AES
+        65535, 65535, // InstructionSet_AES_V256
+        65535, 65535, // InstructionSet_AES_V512
+        65535, 65535, // InstructionSet_AVX512VP2INTERSECT
+        65535, 65535, // InstructionSet_AVXIFMA
+        65535, 65535, // InstructionSet_AVXVNNI
+        65535, 65535, // InstructionSet_AVX512BMM
+        65535, 65535, // InstructionSet_GFNI
+        65535, 65535, // InstructionSet_GFNI_V256
+        65535, 65535, // InstructionSet_GFNI_V512
+        65535, 65535, // InstructionSet_SHA
+        65535, 65535, // InstructionSet_WAITPKG
+        65535, 65535, // InstructionSet_X86Serialize
+        0, 141, // InstructionSet_Vector128
+        65535, 65535, // InstructionSet_Vector256
+        65535, 65535, // InstructionSet_Vector512
+        65535, 65535, // InstructionSet_VectorT128
+        65535, 65535, // InstructionSet_VectorT256
+        65535, 65535, // InstructionSet_VectorT512
+        65535, 65535, // InstructionSet_AVXVNNIINT
+        65535, 65535, // InstructionSet_AVXVNNIINT_V512
+        65535, 65535, // InstructionSet_X86Base_X64
+        65535, 65535, // InstructionSet_AVX_X64
+        65535, 65535, // InstructionSet_AVX2_X64
+        65535, 65535, // InstructionSet_AVX512_X64
+        65535, 65535, // InstructionSet_AVX512v2_X64
+        65535, 65535, // InstructionSet_AVX512v3_X64
+        65535, 65535, // InstructionSet_AVX10v1_X64
+        65535, 65535, // InstructionSet_AVX10v2_X64
+        65535, 65535, // InstructionSet_AES_X64
+        65535, 65535, // InstructionSet_AVX512VP2INTERSECT_X64
+        65535, 65535, // InstructionSet_AVXIFMA_X64
+        65535, 65535, // InstructionSet_AVXVNNI_X64
+        65535, 65535, // InstructionSet_GFNI_X64
+        65535, 65535, // InstructionSet_SHA_X64
+        65535, 65535, // InstructionSet_WAITPKG_X64
+        65535, 65535, // InstructionSet_X86Serialize_X64
+        65535, 65535, // InstructionSet_ArmBase
+        65535, 65535, // InstructionSet_AdvSimd
+        65535, 65535, // InstructionSet_Aes
+        65535, 65535, // InstructionSet_Crc32
+        65535, 65535, // InstructionSet_Dp
+        65535, 65535, // InstructionSet_Rdm
+        65535, 65535, // InstructionSet_Fp16
+        65535, 65535, // InstructionSet_Sha1
+        65535, 65535, // InstructionSet_Sha256
+        65535, 65535, // InstructionSet_Atomics
+        65535, 65535, // InstructionSet_Vector64
+        65535, 65535, // InstructionSet_VectorT
+        65535, 65535, // InstructionSet_Dczva
+        65535, 65535, // InstructionSet_Rcpc
+        65535, 65535, // InstructionSet_Rcpc2
+        65535, 65535, // InstructionSet_Sve
+        65535, 65535, // InstructionSet_Sve2
+        65535, 65535, // InstructionSet_Sha3
+        65535, 65535, // InstructionSet_Sm4
+        65535, 65535, // InstructionSet_SveAes
+        65535, 65535, // InstructionSet_SveSha3
+        65535, 65535, // InstructionSet_SveSm4
+        65535, 65535, // InstructionSet_Cssc
+        65535, 65535, // InstructionSet_ArmBase_Arm64
+        65535, 65535, // InstructionSet_AdvSimd_Arm64
+        65535, 65535, // InstructionSet_Aes_Arm64
+        65535, 65535, // InstructionSet_Crc32_Arm64
+        65535, 65535, // InstructionSet_Dp_Arm64
+        65535, 65535, // InstructionSet_Rdm_Arm64
+        65535, 65535, // InstructionSet_Fp16_Arm64
+        65535, 65535, // InstructionSet_Sha1_Arm64
+        65535, 65535, // InstructionSet_Sha256_Arm64
+        65535, 65535, // InstructionSet_Sve_Arm64
+        65535, 65535, // InstructionSet_Sve2_Arm64
+        65535, 65535, // InstructionSet_Sha3_Arm64
+        65535, 65535, // InstructionSet_Sm4_Arm64
+        65535, 65535, // InstructionSet_SveAes_Arm64
+        65535, 65535, // InstructionSet_SveSha3_Arm64
+        65535, 65535, // InstructionSet_SveSm4_Arm64
+        65535, 65535, // InstructionSet_RiscV64Base
+        65535, 65535, // InstructionSet_Zba
+        65535, 65535, // InstructionSet_Zbb
+        65535, 65535, // InstructionSet_Zbs
+        65535, 65535, // InstructionSet_Zicond
         206, 207, // InstructionSet_WasmBase
         142, 205, // InstructionSet_PackedSimd
-        0, 141, // InstructionSet_Vector128
-#else
-#error Unsupported target with hardware-intrinsic support.
-#endif
-
     ];
+
+
 #endif
 
     private static ReadOnlySpan<byte> s_intCosts => [

@@ -150,8 +150,8 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&RecordIsaUsage;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&RecordIsaUsage;
         var context = new IsaContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
 
         WithCompiler(compiler => {
@@ -184,10 +184,10 @@ internal static unsafe class HardwareConditionalSelectLoweringTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte RecordIsaUsage(ICorJitInfo* self, CORINFO_InstructionSet isa,
+    private static byte RecordIsaUsage(ICorJitInfo* self, CORINFO_InstructionSetNative isa,
         byte supported, byte preserveNegativeDependency)
     {
-        if (isa is InstructionSet_AVX)
+        if (isa == (CORINFO_InstructionSetNative)Globals.GetNativeInstructionSetOrdinal(InstructionSet_AVX))
         {
             var context = (IsaContext*)self;
             context->AvxNotifications++;

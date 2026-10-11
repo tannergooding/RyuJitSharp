@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -290,6 +291,15 @@ public static partial class API_ICorJitInfo_NamesExtensions
             var returnType = signature[..(openParen - name.Length - 1)];
             var unmanagedReturnType = returnType == "bool" ? "byte" : returnType;
             var call = $"wrapHnd->{name}({string.Join(", ", arguments)})";
+            var thunkParameterDeclarations = parameterDeclarations.ToArray();
+            var thunkArguments = arguments.ToArray();
+
+            if (name.Equals("notifyInstructionSetUsage", StringComparison.Ordinal))
+            {
+                thunkParameterDeclarations[0] = "CORINFO_InstructionSetNative nativeInstructionSet";
+                thunkArguments[0] = "instructionSet";
+            }
+
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public {signature}");
             _ = builder.AppendLine("    {");
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        wrapComp.CLR_API_Enter(API_{name});");
@@ -312,25 +322,34 @@ public static partial class API_ICorJitInfo_NamesExtensions
 
             _ = thunks.AppendLine("    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]");
             _ = thunks.AppendLine(CultureInfo.InvariantCulture,
-                $"    private static {unmanagedReturnType} Thunk_{name}(ICorJitInfo* self{(parameterDeclarations.Count is 0 ? "" : $", {string.Join(", ", parameterDeclarations)}")})");
+                $"    private static {unmanagedReturnType} Thunk_{name}(ICorJitInfo* self{(thunkParameterDeclarations.Length is 0 ? "" : $", {string.Join(", ", thunkParameterDeclarations)}")})");
             _ = thunks.AppendLine("    {");
             _ = thunks.AppendLine("        try");
             _ = thunks.AppendLine("        {");
 
+            if (name.Equals("notifyInstructionSetUsage", StringComparison.Ordinal))
+            {
+                _ = thunks.AppendLine("            if (!Globals.TryGetManagedInstructionSet((int)nativeInstructionSet, out var instructionSet))");
+                _ = thunks.AppendLine("            {");
+                _ = thunks.AppendLine("                throw new PlatformNotSupportedException($\"Native instruction-set ordinal '{(int)nativeInstructionSet}' is unavailable for this target.\");");
+                _ = thunks.AppendLine("            }");
+                _ = thunks.AppendLine();
+            }
+
             if (returnType == "void")
             {
                 _ = thunks.AppendLine(CultureInfo.InvariantCulture,
-                    $"            GetWrapper(self).{name}({string.Join(", ", arguments)});");
+                    $"            GetWrapper(self).{name}({string.Join(", ", thunkArguments)});");
             }
             else if (returnType == "bool")
             {
                 _ = thunks.AppendLine(CultureInfo.InvariantCulture,
-                    $"            return GetWrapper(self).{name}({string.Join(", ", arguments)}) ? (byte)1 : (byte)0;");
+                    $"            return GetWrapper(self).{name}({string.Join(", ", thunkArguments)}) ? (byte)1 : (byte)0;");
             }
             else
             {
                 _ = thunks.AppendLine(CultureInfo.InvariantCulture,
-                    $"            return GetWrapper(self).{name}({string.Join(", ", arguments)});");
+                    $"            return GetWrapper(self).{name}({string.Join(", ", thunkArguments)});");
             }
 
             _ = thunks.AppendLine("        }");
@@ -1220,9 +1239,7 @@ public partial struct HWIntrinsicInfo
     ];
 
 #if FEATURE_HW_INTRINSICS
-    private static ReadOnlySpan<ushort> s_isaRangeBounds => [
 {{isaRangeBoundsBuilder}}
-    ];
 #endif
 
     private static ReadOnlySpan<byte> s_intCosts => [
@@ -1602,17 +1619,25 @@ public partial struct HWIntrinsicInfo
         var instructionSetSource = File.ReadAllText(@"Outputs\inc\corinfoinstructionset\CORINFO_InstructionSet.generated.cs");
         var builder = new StringBuilder();
 
-        _ = builder.AppendLine("#if TARGET_XARCH");
-        AppendIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "xarch", ["FEATURE_HW_INTRINSICS", "TARGET_XARCH"]);
-        _ = builder.AppendLine("#elif TARGET_ARM64");
-        AppendIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "arm64", ["FEATURE_HW_INTRINSICS", "TARGET_ARM64"]);
-        _ = builder.AppendLine("#elif TARGET_WASM || TARGET_WASM32");
-        AppendIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "wasm", ["FEATURE_HW_INTRINSICS", "TARGET_WASM", "TARGET_WASM32"]);
-        _ = builder.AppendLine("#else");
-        _ = builder.AppendLine("#error Unsupported target with hardware-intrinsic support.");
-        _ = builder.AppendLine("#endif");
+        AppendTargetIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "xarch", "xarch", ["FEATURE_HW_INTRINSICS", "TARGET_XARCH"]);
+        AppendTargetIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "arm64", "arm64", ["FEATURE_HW_INTRINSICS", "TARGET_ARM64"]);
+        AppendTargetIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, "wasm", "wasm", ["FEATURE_HW_INTRINSICS", "TARGET_WASM", "TARGET_WASM32"]);
 
         return builder;
+    }
+
+    private static void AppendTargetIsaRangeBounds(
+        StringBuilder builder,
+        string instructionSetSource,
+        string instructionSetBuilder,
+        string name,
+        string target,
+        HashSet<string> definedSymbols)
+    {
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<ushort> s_{name}IsaRangeBounds => [");
+        AppendIsaRangeBounds(builder, instructionSetSource, instructionSetBuilder, target, definedSymbols);
+        _ = builder.AppendLine("    ];");
+        _ = builder.AppendLine();
     }
 
     private static void AppendIsaRangeBounds(StringBuilder builder, string instructionSetSource, string instructionSetBuilder, string target, HashSet<string> definedSymbols)
@@ -4960,17 +4985,16 @@ public static partial class VNFuncExtensions
         var insSetFlagsBuilder = new StringBuilder();
         var ensureValidBuilder = new StringBuilder();
         var insSetToStringBuilder = new StringBuilder();
-        var fromR2RInsSetBuilder = new StringBuilder();
+        var fromR2RInsSetBuilders = new Dictionary<string, StringBuilder>(StringComparer.Ordinal);
         var r2rInsSetBuilder = new StringBuilder();
 
-        var previousTargetArchInsSet = "";
         var previousTargetArchInsSetFlags = "";
         var previousTargetArchEnsureValid = "";
-        var previousTargetArchInsSetToString = "";
-        var previousTargetArchFromR2RInsSet = "";
         var previousTargetArchR2RInsSet = "";
 
         var addedInsSet = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var managedInstructionSetOrdinals = new Dictionary<string, int>(StringComparer.Ordinal);
+        var nativeInstructionSetOrdinals = new Dictionary<string, Dictionary<string, int>>(StringComparer.Ordinal);
         var definedArchitectures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var instructionSetsByArchitecture = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         var vectorInstructionSets = new List<(string Architecture, string Name)>();
@@ -5074,12 +5098,10 @@ public static partial class VNFuncExtensions
 
                 if (addedInsSetForTargetArch.Add(name))
                 {
-                    _ = AppendIfDefWhenRequired(insSetBuilder, ref previousTargetArchInsSet, targetArch, allowElif: true);
-                    _ = insSetBuilder.AppendLine(CultureInfo.InvariantCulture, $"    InstructionSet_{name},");
-
-                    _ = AppendIfDefWhenRequired(insSetToStringBuilder, ref previousTargetArchInsSetToString, targetArch);
-                    _ = insSetToStringBuilder.AppendLine(CultureInfo.InvariantCulture, $"            InstructionSet_{name} => \"{name}\",");
+                    AddManagedInstructionSet(name);
                 }
+
+                _ = AddNativeInstructionSet(targetArch, name);
 
                 // Prefer the canonical ReadyToRun name when the descriptor also provides an xarch alias.
                 var r2rName = parts[3].Trim();
@@ -5093,8 +5115,13 @@ public static partial class VNFuncExtensions
 
                 if (!string.IsNullOrEmpty(r2rName))
                 {
-                    _ = AppendIfDefWhenRequired(fromR2RInsSetBuilder, ref previousTargetArchFromR2RInsSet, targetArch, allowElif: true);
-                    _ = fromR2RInsSetBuilder.AppendLine(CultureInfo.InvariantCulture, $"            READYTORUN_INSTRUCTION_{r2rName} => InstructionSet_{name},");
+                    if (!fromR2RInsSetBuilders.TryGetValue(targetArch, out var targetFromR2RInsSetBuilder))
+                    {
+                        targetFromR2RInsSetBuilder = new StringBuilder();
+                        fromR2RInsSetBuilders.Add(targetArch, targetFromR2RInsSetBuilder);
+                    }
+
+                    _ = targetFromR2RInsSetBuilder.AppendLine(CultureInfo.InvariantCulture, $"            READYTORUN_INSTRUCTION_{r2rName} => InstructionSet_{name},");
 
                     _ = AppendIfDefWhenRequired(r2rInsSetBuilder, ref previousTargetArchR2RInsSet, targetArch, allowElif: true);
                     _ = r2rInsSetBuilder.AppendLine(CultureInfo.InvariantCulture, $"            READYTORUN_INSTRUCTION_{r2rName} = {r2rValue},");
@@ -5123,26 +5150,27 @@ public static partial class VNFuncExtensions
                 }
 
                 var name = parts[2].Trim();
+                var managedName = $"{name}_{targetArchSuffix}";
+                AddManagedInstructionSet(managedName);
+                _ = AddNativeInstructionSet(targetArchSuffix is "X64" ? "XARCH" : "ARM64", managedName);
 
-                _ = insSetBuilder.AppendLine(CultureInfo.InvariantCulture, $"    InstructionSet_{name}_{targetArchSuffix},");
-
-                if (!AppendIfDefWhenRequired(insSetFlagsBuilder, ref previousTargetArchInsSetFlags, targetArch, allowElif: true))
+                if (!AppendConfigurationWhenRequired(insSetFlagsBuilder, ref previousTargetArchInsSetFlags, targetArch, "        "))
                 {
                     _ = insSetFlagsBuilder.AppendLine();
                 }
 
-                _ = insSetFlagsBuilder.AppendLine(CultureInfo.InvariantCulture, $$"""
+                AppendIndentedLines(insSetFlagsBuilder, $$"""
         if (HasInstructionSet(InstructionSet_{{name}}))
         {
             AddInstructionSet(InstructionSet_{{name}}_{{targetArchSuffix}});
         }
-""");
+""", "    ");
 
-                if (!AppendIfDefWhenRequired(ensureValidBuilder, ref previousTargetArchEnsureValid, targetArch))
+                if (!AppendConfigurationWhenRequired(ensureValidBuilder, ref previousTargetArchEnsureValid, targetArch, "            "))
                 {
                     _ = ensureValidBuilder.AppendLine();
                 }
-                _ = ensureValidBuilder.AppendLine(CultureInfo.InvariantCulture, $$"""
+                AppendIndentedLines(ensureValidBuilder, $$"""
             if (resultFlags.HasInstructionSet(InstructionSet_{{name}}) && !resultFlags.HasInstructionSet(InstructionSet_{{name}}_{{targetArchSuffix}}))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_{{name}});
@@ -5152,10 +5180,7 @@ public static partial class VNFuncExtensions
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_{{name}}_{{targetArchSuffix}});
             }
-""");
-
-                _ = AppendIfDefWhenRequired(insSetToStringBuilder, ref previousTargetArchInsSetToString, targetArch);
-                _ = insSetToStringBuilder.AppendLine(CultureInfo.InvariantCulture, $"            InstructionSet_{name}_{targetArchSuffix} => \"{name}_{targetArchSuffix}\",");
+""", "    ");
 
                 continue;
             }
@@ -5172,17 +5197,17 @@ public static partial class VNFuncExtensions
                 var name = parts[2].Trim();
                 var dependency = parts[3].Trim();
 
-                if (!AppendIfDefWhenRequired(ensureValidBuilder, ref previousTargetArchEnsureValid, targetArch))
+                if (!AppendConfigurationWhenRequired(ensureValidBuilder, ref previousTargetArchEnsureValid, targetArch, "            "))
                 {
                     _ = ensureValidBuilder.AppendLine();
                 }
 
-                _ = ensureValidBuilder.AppendLine(CultureInfo.InvariantCulture, $$"""
+                AppendIndentedLines(ensureValidBuilder, $$"""
             if (resultFlags.HasInstructionSet(InstructionSet_{{name}}) && !resultFlags.HasInstructionSet(InstructionSet_{{dependency}}))
             {
                 resultFlags.RemoveInstructionSet(InstructionSet_{{name}});
             }
-""");
+""", "    ");
 
                 continue;
             }
@@ -5198,11 +5223,38 @@ public static partial class VNFuncExtensions
             }
         }
 
-        _ = AppendIfDefWhenRequired(insSetBuilder, ref previousTargetArchInsSet, "");
-        _ = AppendIfDefWhenRequired(insSetFlagsBuilder, ref previousTargetArchInsSetFlags, "");
-        _ = AppendIfDefWhenRequired(ensureValidBuilder, ref previousTargetArchEnsureValid, "");
-        _ = AppendIfDefWhenRequired(insSetToStringBuilder, ref previousTargetArchInsSetToString, "");
-        _ = AppendIfDefWhenRequired(fromR2RInsSetBuilder, ref previousTargetArchFromR2RInsSet, "");
+        _ = AppendConfigurationWhenRequired(insSetFlagsBuilder, ref previousTargetArchInsSetFlags, "", "        ");
+        _ = AppendConfigurationWhenRequired(ensureValidBuilder, ref previousTargetArchEnsureValid, "", "            ");
+
+        var fromR2RInsSetBuilder = new StringBuilder();
+
+        string[] targetArchitectures = ["XARCH", "ARM64", "RISCV64", "WASM32"];
+
+        foreach (var targetArch in targetArchitectures)
+        {
+            if (!fromR2RInsSetBuilders.TryGetValue(targetArch, out var targetBuilder))
+            {
+                continue;
+            }
+
+            _ = fromR2RInsSetBuilder.AppendLine(CultureInfo.InvariantCulture, $"        if ({GetConfigurationTarget(targetArch)})");
+            _ = fromR2RInsSetBuilder.AppendLine("        {");
+            _ = fromR2RInsSetBuilder.AppendLine("            return r2rSet switch {");
+            _ = fromR2RInsSetBuilder.Append(targetBuilder);
+            _ = fromR2RInsSetBuilder.AppendLine("                _ => InstructionSet_ILLEGAL,");
+            _ = fromR2RInsSetBuilder.AppendLine("            };");
+            _ = fromR2RInsSetBuilder.AppendLine("        }");
+            _ = fromR2RInsSetBuilder.AppendLine();
+        }
+
+        _ = fromR2RInsSetBuilder.AppendLine("        return InstructionSet_ILLEGAL;");
+
+        var nativeInstructionSetMapBuilder = new StringBuilder();
+        AppendNativeInstructionSetMap(nativeInstructionSetMapBuilder, "xarch32", managedInstructionSetOrdinals, nativeInstructionSetOrdinals, "XARCH", excludeX64: true);
+        AppendNativeInstructionSetMap(nativeInstructionSetMapBuilder, "xarch64", managedInstructionSetOrdinals, nativeInstructionSetOrdinals, "XARCH", excludeX64: false);
+        AppendNativeInstructionSetMap(nativeInstructionSetMapBuilder, "arm64", managedInstructionSetOrdinals, nativeInstructionSetOrdinals, "ARM64", excludeX64: false);
+        AppendNativeInstructionSetMap(nativeInstructionSetMapBuilder, "riscv64", managedInstructionSetOrdinals, nativeInstructionSetOrdinals, "RISCV64", excludeX64: false);
+        AppendNativeInstructionSetMap(nativeInstructionSetMapBuilder, "wasm", managedInstructionSetOrdinals, nativeInstructionSetOrdinals, "WASM32", excludeX64: false);
 
         _ = Directory.CreateDirectory(@"Outputs\inc\corinfoinstructionset");
 
@@ -5224,6 +5276,14 @@ public enum CORINFO_InstructionSet
 
     InstructionSet_Vector = 126,
     InstructionSet_NONE = 127,
+}
+
+// Values crossing the EE ABI retain the target's native ordinal encoding.
+public enum CORINFO_InstructionSetNative : int
+{
+    Illegal = 0,
+    Vector = 126,
+    None = 127,
 }
 """);
             
@@ -5250,12 +5310,136 @@ public partial struct CORINFO_InstructionSetFlags
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System;
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
 public partial class Globals
 {
+    // byte.MaxValue marks a managed identity that has no ordinal for that target.
+{{nativeInstructionSetMapBuilder}}
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ReadOnlySpan<byte> GetNativeInstructionSetOrdinals()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return Configuration.TARGET_64BIT ? s_xarch64NativeInstructionSetOrdinals : s_xarch32NativeInstructionSetOrdinals;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return s_arm64NativeInstructionSetOrdinals;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return s_riscv64NativeInstructionSetOrdinals;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return s_wasmNativeInstructionSetOrdinals;
+        }
+
+        return ReadOnlySpan<byte>.Empty;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ReadOnlySpan<byte> GetManagedInstructionSetOrdinals()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return Configuration.TARGET_64BIT ? s_xarch64ManagedInstructionSetOrdinals : s_xarch32ManagedInstructionSetOrdinals;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return s_arm64ManagedInstructionSetOrdinals;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return s_riscv64ManagedInstructionSetOrdinals;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return s_wasmManagedInstructionSetOrdinals;
+        }
+
+        return ReadOnlySpan<byte>.Empty;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryGetNativeInstructionSetOrdinal(CORINFO_InstructionSet instructionSet, out int nativeOrdinal)
+    {
+        if (instructionSet is InstructionSet_ILLEGAL or InstructionSet_Vector or InstructionSet_NONE)
+        {
+            nativeOrdinal = (int)instructionSet;
+            return true;
+        }
+
+        var managedOrdinal = (int)instructionSet;
+        var nativeOrdinals = GetNativeInstructionSetOrdinals();
+
+        if (managedOrdinal >= 0 && managedOrdinal < nativeOrdinals.Length)
+        {
+            var value = GetRvaSpanEntry(nativeOrdinals, managedOrdinal);
+
+            if (value != byte.MaxValue)
+            {
+                nativeOrdinal = value;
+                return true;
+            }
+        }
+
+        nativeOrdinal = 0;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int GetNativeInstructionSetOrdinal(CORINFO_InstructionSet instructionSet)
+    {
+        if (TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal))
+        {
+            return nativeOrdinal;
+        }
+
+        throw new PlatformNotSupportedException($"Instruction set '{InstructionSetToString(instructionSet)}' is unavailable for this target.");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryGetManagedInstructionSet(int nativeOrdinal, out CORINFO_InstructionSet instructionSet)
+    {
+        if (nativeOrdinal is 0 or 126 or 127)
+        {
+            instructionSet = (CORINFO_InstructionSet)nativeOrdinal;
+            return true;
+        }
+
+        var managedOrdinals = GetManagedInstructionSetOrdinals();
+
+        if (nativeOrdinal >= 0 && nativeOrdinal < managedOrdinals.Length)
+        {
+            var value = GetRvaSpanEntry(managedOrdinals, nativeOrdinal);
+
+            if (value != byte.MaxValue)
+            {
+                instructionSet = (CORINFO_InstructionSet)value;
+                return true;
+            }
+        }
+
+        instructionSet = InstructionSet_ILLEGAL;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static CORINFO_InstructionSetNative GetNativeInstructionSet(CORINFO_InstructionSet instructionSet)
+        => (CORINFO_InstructionSetNative)GetNativeInstructionSetOrdinal(instructionSet);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_InstructionSetFlags input)
     {
@@ -5287,13 +5471,118 @@ public partial class Globals
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
     {
-        return r2rSet switch {
 {{fromR2RInsSetBuilder}}
-            _ => InstructionSet_ILLEGAL,
-        };
     }
 }
 """);
+
+        void AddManagedInstructionSet(string name)
+        {
+            if (managedInstructionSetOrdinals.ContainsKey(name))
+            {
+                return;
+            }
+
+            if (managedInstructionSetOrdinals.Count >= 125)
+            {
+                throw new InvalidDataException("The managed instruction-set union exceeds the available CORINFO_InstructionSet values.");
+            }
+
+            var ordinal = managedInstructionSetOrdinals.Count + 1;
+            managedInstructionSetOrdinals.Add(name, ordinal);
+            _ = insSetBuilder.AppendLine(CultureInfo.InvariantCulture, $"    InstructionSet_{name} = {ordinal},");
+            _ = insSetToStringBuilder.AppendLine(CultureInfo.InvariantCulture, $"            InstructionSet_{name} => \"{name}\",");
+        }
+
+        int AddNativeInstructionSet(string targetArch, string name)
+        {
+            if (!nativeInstructionSetOrdinals.TryGetValue(targetArch, out var nativeOrdinals))
+            {
+                nativeOrdinals = CreateNativeInstructionSetOrdinals();
+                nativeInstructionSetOrdinals.Add(targetArch, nativeOrdinals);
+            }
+
+            if (nativeOrdinals.TryGetValue(name, out var existingOrdinal))
+            {
+                return existingOrdinal;
+            }
+
+            if (nativeOrdinals.Count >= 125)
+            {
+                throw new InvalidDataException($"Native instruction-set ordinals exceed the available CORINFO_InstructionSet values for '{targetArch}'.");
+            }
+
+            var ordinal = nativeOrdinals.Count + 1;
+            nativeOrdinals.Add(name, ordinal);
+            return ordinal;
+        }
+
+        static Dictionary<string, int> CreateNativeInstructionSetOrdinals()
+        {
+            return new Dictionary<string, int>(capacity: 0, comparer: StringComparer.OrdinalIgnoreCase);
+        }
+
+        void AppendNativeInstructionSetMap(
+            StringBuilder builder,
+            string targetName,
+            Dictionary<string, int> managedOrdinals,
+            Dictionary<string, Dictionary<string, int>> nativeOrdinals,
+            string targetArch,
+            bool excludeX64)
+        {
+            var managedToNative = Enumerable.Repeat(byte.MaxValue, managedOrdinals.Count + 1).ToArray();
+            managedToNative[0] = 0;
+
+            var nativeToManaged = Enumerable.Repeat(byte.MaxValue, 128).ToArray();
+            nativeToManaged[0] = 0;
+            nativeToManaged[126] = 126;
+            nativeToManaged[127] = 127;
+
+            if (nativeOrdinals.TryGetValue(targetArch, out var targetOrdinals))
+            {
+                foreach (var (name, nativeOrdinal) in targetOrdinals)
+                {
+                    if (excludeX64 && name.EndsWith("_X64", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var managedOrdinal = managedOrdinals[name];
+                    managedToNative[managedOrdinal] = (byte)nativeOrdinal;
+                    nativeToManaged[nativeOrdinal] = (byte)managedOrdinal;
+                }
+            }
+
+            AppendByteMap(builder, $"s_{targetName}NativeInstructionSetOrdinals", managedToNative);
+            AppendByteMap(builder, $"s_{targetName}ManagedInstructionSetOrdinals", nativeToManaged);
+        }
+
+        void AppendByteMap(StringBuilder builder, string name, byte[] values)
+        {
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<byte> {name} => [");
+
+            for (var i = 0; i < values.Length; i += 16)
+            {
+                var count = Math.Min(16, values.Length - i);
+                _ = builder.Append("        ");
+
+                for (var j = 0; j < count; j++)
+                {
+                    if (j > 0)
+                    {
+                        _ = builder.Append(", ");
+                    }
+
+                    var value = values[i + j];
+                    _ = builder.Append(value == byte.MaxValue ? "byte.MaxValue" : value.ToString(CultureInfo.InvariantCulture));
+                }
+
+                _ = builder.AppendLine(",");
+            }
+
+            _ = builder.AppendLine("    ];");
+            _ = builder.AppendLine();
+        }
 
         static bool AppendIfDefWhenRequired(StringBuilder builder, ref string previousTargetArch, string targetArch, bool allowElif = false)
         {
@@ -5327,6 +5616,62 @@ public partial class Globals
             }
 
             return appended;
+        }
+
+        static bool AppendConfigurationWhenRequired(StringBuilder builder, ref string previousTargetArch, string targetArch, string indent)
+        {
+            var appended = false;
+
+            if (!targetArch.Equals(previousTargetArch, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrEmpty(previousTargetArch))
+                {
+                    _ = builder.Append(indent);
+                    _ = builder.AppendLine("}");
+                    _ = builder.AppendLine();
+                }
+
+                if (!string.IsNullOrEmpty(targetArch))
+                {
+                    _ = builder.Append(indent);
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"if ({GetConfigurationTarget(targetArch)})");
+                    _ = builder.Append(indent);
+                    _ = builder.AppendLine("{");
+                }
+
+                previousTargetArch = targetArch;
+                appended = true;
+            }
+
+            return appended;
+        }
+
+        static string GetConfigurationTarget(string targetArch)
+        {
+            return targetArch switch
+            {
+                "AMD64" => "Configuration.TARGET_XARCH && Configuration.TARGET_64BIT",
+                "XARCH" => "Configuration.TARGET_XARCH",
+                "ARM64" => "Configuration.TARGET_ARM64",
+                "RISCV64" => "Configuration.TARGET_RISCV64",
+                "WASM32" => "Configuration.TARGET_WASM",
+                _ => throw new InvalidDataException($"Unsupported instruction-set target '{targetArch}'."),
+            };
+        }
+
+        static void AppendIndentedLines(StringBuilder builder, string lines, string indent)
+        {
+            var normalizedLines = lines.Replace("\r\n", "\n", StringComparison.Ordinal).Trim('\n');
+
+            foreach (var line in normalizedLines.Split('\n'))
+            {
+                if (line.Length > 0)
+                {
+                    _ = builder.Append(indent);
+                }
+
+                _ = builder.AppendLine(line.TrimEnd('\r'));
+            }
         }
 
         static string NormalizeTargetArch(string targetArch)

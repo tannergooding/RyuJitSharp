@@ -32,7 +32,7 @@ internal static unsafe class InstructionSetDependencyTests
         var slot = typeof(ICorDynamicInfo.Vtbl<ICorDynamicInfo>)
             .GetField(nameof(ICorDynamicInfo.Vtbl<>.notifyInstructionSetUsage))
             ?? throw new AssertionException("Missing instruction set usage slot.");
-        Type[] expectedParameters = [typeof(ICorDynamicInfo*), typeof(CORINFO_InstructionSet), typeof(bool), typeof(bool)];
+        Type[] expectedParameters = [typeof(ICorDynamicInfo*), typeof(CORINFO_InstructionSetNative), typeof(bool), typeof(bool)];
         Assert.That(slot.FieldType.GetFunctionPointerParameterTypes(), Is.EqualTo(expectedParameters));
         Assert.That(slot.FieldType.GetFunctionPointerReturnType(), Is.EqualTo(typeof(byte)));
     }
@@ -51,7 +51,7 @@ internal static unsafe class InstructionSetDependencyTests
         Assert.That(((ICorDynamicInfo*)&info)->notifyInstructionSetUsage(InstructionSet_AVX2, supported, preserve),
             Is.EqualTo(supported));
         Assert.That(info.Count, Is.EqualTo(2));
-        Assert.That(info.InstructionSet, Is.EqualTo(InstructionSet_AVX2));
+        Assert.That(info.InstructionSet, Is.EqualTo((CORINFO_InstructionSetNative)Globals.GetNativeInstructionSetOrdinal(InstructionSet_AVX2)));
         Assert.That(info.Supported, Is.EqualTo(supported ? 1 : 0));
         Assert.That(info.Preserve, Is.EqualTo(preserve ? 1 : 0));
     }
@@ -109,13 +109,13 @@ internal static unsafe class InstructionSetDependencyTests
     {
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&Notify;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&Notify;
         return vtable;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported, byte preserve)
+    private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSetNative isa, byte supported, byte preserve)
     {
         var info = (TestJitInfo*)self;
         info->Count++;
@@ -131,7 +131,7 @@ internal static unsafe class InstructionSetDependencyTests
     private struct TestJitInfo
     {
         public ICorJitInfo Interface;
-        public CORINFO_InstructionSet InstructionSet;
+        public CORINFO_InstructionSetNative InstructionSet;
         public int Count;
         public byte Supported;
         public byte Preserve;

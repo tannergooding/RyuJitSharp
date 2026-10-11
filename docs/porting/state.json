@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Inspect the target-conditional CORINFO_InstructionSet declaration and its EE-facing consumers before removing TARGET_XARCH from HWIntrinsicInfo.LookupId. Union managed instruction-set identities and add target-native ordinal translation only where required to preserve the EE contract; then remove the alias gate and validate lookups on xarch, ARM64, Wasm, and feature-disabled RISC-V.",
+    "nextAction": "Replace the remaining FEATURE_HW_INTRINSICS guards in sources/Core/jit/hwintrinsic/HWIntrinsicInfo.cs and its generated tables with Configuration checks, keeping per-target data available in the universal build and preserving explicit unsupported-target failures; validate xarch, ARM64, Wasm, and feature-disabled RISC-V.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Convert target-architecture branches in ValueNumStore hardware-intrinsic evaluators to Configuration checks and make their shared SIMD helpers available across target builds.",
-      "doneWhen": "Evaluator folding preserves xarch, ARM64, Wasm, and RISC-V semantics through universal IDs and runtime target checks; tree-facing entrypoints remain explicitly feature-guarded until their node types are universal.",
-      "validation": "Focused ValueNumHardwareEvaluationClosureTests and ValueNumIntrinsicEvaluationTests passed on win-x64 in Debug and Release (85/85 each); target closure plus FeatureConfigurationTests passed on linux-arm64 (58/58 each configuration) and browser-wasm (29/29 each); feature-disabled linux-riscv64 FeatureConfigurationTests passed (8/8 each). The Release compiler build passed full analysis with 0 warnings/errors. Full-analysis Release test execution is blocked by unrelated CA1812 in unchanged tests/Core/DiscretionaryPolicyTests.cs:467; the focused Release tests passed with analyzers disabled.",
-      "deferred": "GenTreeHWIntrinsic/GenTreeVecCon evaluator adapters and the related Lowering cases retain FEATURE_HW_INTRINSICS guards because their node types are still conditional. The next bounded identity dependency is CORINFO_InstructionSet for the remaining TARGET_XARCH alias gate in HWIntrinsicInfo.LookupId."
+      "scope": "Union managed CORINFO_InstructionSet identities and preserve target-native ordinals at instruction-set flag and EE callback boundaries; make HWIntrinsicInfo ISA lookup ranges target-selected runtime data.",
+      "doneWhen": "Managed instruction-set identities are unconditional, while target maps preserve native flag ordinals, EE callback values, R2R decoding, and HWI lookups on x86/x64, ARM64, RISC-V, and Wasm.",
+      "validation": "InstructionSetOrdinalMappingTests and HWIntrinsicLookupRangeTests passed in Debug on win-x64, win-x86, linux-arm64, and browser-wasm (7/7 each), and linux-riscv64 (5/5); focused Release tests passed on win-x64 (7/7). InstructionSetDependencyTests passed 11/11 on win-x64 Debug. The Release compiler build with RyuJitMeasureClrApiCalls=true passed with 0 warnings/errors. Regenerated instruction-set outputs matched checked-in files.",
+      "deferred": "The remaining FEATURE_HW_INTRINSICS guards in HWIntrinsicInfo are the next batch. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -65,6 +65,29 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "universal-instruction-set-identities",
+      "native": [
+        "src\\coreclr\\tools\\Common\\JitInterface\\ThunkGenerator\\InstructionSetDesc.txt",
+        "src\\coreclr\\inc\\corinfo.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Inputs\\InstructionSetDesc.txt",
+        "sources\\GenerateTables\\Program.cs",
+        "sources\\Core\\inc\\corinfoinstructionset\\CORINFO_InstructionSet.generated.cs",
+        "sources\\Core\\inc\\corinfoinstructionset\\CORINFO_InstructionSetFlags.cs",
+        "sources\\Core\\inc\\corinfoinstructionset\\Globals.generated.cs",
+        "sources\\Core\\inc\\corinfo\\ICorDynamicInfo.cs",
+        "sources\\Core\\inc\\corjit\\ICorJitInfo.cs",
+        "sources\\Core\\jit\\compiler\\WrapICorJitInfo.Vtbl.generated.cs",
+        "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.cs",
+        "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.generated.cs",
+        "tests\\Targets\\InstructionSetOrdinalMappingTests.cs"
+      ],
+      "disposition": "Managed instruction-set identities are a union; generated per-target maps preserve native ordinals for flag storage and EE callbacks. Target-specific HWI ISA ranges are stored independently and selected through Configuration.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Focused mapping and HWI lookup tests passed on x86/x64, ARM64, Wasm, and feature-disabled RISC-V; InstructionSetDependencyTests passed on x64."
+    },
     {
       "area": "universal-hardware-intrinsic-identities",
       "native": [

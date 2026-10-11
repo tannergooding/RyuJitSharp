@@ -21,6 +21,26 @@ public readonly partial struct HWIntrinsicInfo
     }
 
 #if FEATURE_HW_INTRINSICS
+    private static ReadOnlySpan<ushort> GetIsaRangeBounds()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return s_xarchIsaRangeBounds;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return s_arm64IsaRangeBounds;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return s_wasmIsaRangeBounds;
+        }
+
+        throw new PlatformNotSupportedException("Hardware intrinsic lookup ranges are unavailable for this target.");
+    }
+
     public static unsafe NamedIntrinsic LookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, ReadOnlySpan<byte> methodName)
     {
         if (sig->hasThis() || isa is InstructionSet_NONE)
@@ -33,8 +53,7 @@ public readonly partial struct HWIntrinsicInfo
             return LookupIdForIsa(sig, InstructionSet_Vector128, methodName);
         }
 
-#if TARGET_XARCH
-        if (isa is InstructionSet_AVX10v1)
+        if (Configuration.TARGET_XARCH && isa is InstructionSet_AVX10v1)
         {
             var id = LookupIdForIsa(sig, InstructionSet_AVX512, methodName);
 
@@ -46,26 +65,27 @@ public readonly partial struct HWIntrinsicInfo
             id = LookupIdForIsa(sig, InstructionSet_AVX512v2, methodName);
             return id is not NI_Illegal ? id : LookupIdForIsa(sig, InstructionSet_AVX512v3, methodName);
         }
-        else if (isa is InstructionSet_AVX10v1_X64)
+        else if (Configuration.TARGET_XARCH && Configuration.TARGET_64BIT && isa is InstructionSet_AVX10v1_X64)
         {
             return LookupIdForIsa(sig, InstructionSet_AVX512_X64, methodName);
         }
-#endif
 
         return LookupIdForIsa(sig, isa, methodName);
     }
 
     private static unsafe NamedIntrinsic LookupIdForIsa(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, ReadOnlySpan<byte> methodName)
     {
-        var boundsIndex = (int)isa * 2;
+        var isaOrdinal = (int)isa;
+        var isaRangeBounds = GetIsaRangeBounds();
 
-        if ((uint)boundsIndex >= (uint)s_isaRangeBounds.Length)
+        if (isaOrdinal < 0 || isaOrdinal >= (isaRangeBounds.Length / 2))
         {
             return NI_Illegal;
         }
 
-        var rangeLower = (int)GetRvaSpanEntry(s_isaRangeBounds, boundsIndex);
-        var rangeUpper = (int)GetRvaSpanEntry(s_isaRangeBounds, boundsIndex + 1);
+        var boundsIndex = isaOrdinal * 2;
+        var rangeLower = (int)GetRvaSpanEntry(isaRangeBounds, boundsIndex);
+        var rangeUpper = (int)GetRvaSpanEntry(isaRangeBounds, boundsIndex + 1);
 
         if (rangeLower is ushort.MaxValue)
         {

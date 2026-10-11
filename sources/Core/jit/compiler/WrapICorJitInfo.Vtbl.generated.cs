@@ -2499,10 +2499,15 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_notifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
+    private static byte Thunk_notifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSetNative nativeInstructionSet, bool supportEnabled, bool preserveNegativeDependency)
     {
         try
         {
+            if (!Globals.TryGetManagedInstructionSet((int)nativeInstructionSet, out var instructionSet))
+            {
+                throw new PlatformNotSupportedException($"Native instruction-set ordinal '{(int)nativeInstructionSet}' is unavailable for this target.");
+            }
+
             return GetWrapper(self).notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency) ? (byte)1 : (byte)0;
         }
         catch (Exception exception)
