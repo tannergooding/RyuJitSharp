@@ -10,7 +10,21 @@ public class GenTreeOpCC : GenTreeOp
     private GenCondition _condition;
 
     public GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree? op2)
-        : base(oper, type, op1, op2)
+        : base(EnsureConditionalCompareSupported(oper), type, op1, op2)
+    {
+#if TARGET_ARM64
+        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC);
+#elif TARGET_AMD64
+        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP);
+#else
+        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC);
+#endif
+
+        _condition = condition;
+    }
+    internal GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree? op2,
+        GenTree source, NodeThreading threading)
+        : base(EnsureConditionalCompareSupported(oper), type, op1, op2, source, threading)
     {
 #if TARGET_ARM64
         assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC);
@@ -23,19 +37,14 @@ public class GenTreeOpCC : GenTreeOp
         _condition = condition;
     }
 
-    internal GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree? op2,
-        GenTree source, NodeThreading threading)
-        : base(oper, type, op1, op2, source, threading)
+    private static genTreeOps EnsureConditionalCompareSupported(genTreeOps oper)
     {
-#if TARGET_ARM64
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC);
-#elif TARGET_AMD64
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP);
-#else
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC);
-#endif
+        if ((oper is GT_CCMP) && !Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, "GT_CCMP is only supported on x64 and ARM64.");
+        }
 
-        _condition = condition;
+        return oper;
     }
 
     public GenCondition Condition

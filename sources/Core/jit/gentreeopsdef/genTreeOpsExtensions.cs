@@ -53,10 +53,10 @@ public static partial class genTreeOpsExtensions
                 return oper is >= GT_JCC and <= GT_CCMP;
 #elif TARGET_32BIT
                 assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
-                return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_ADD_HI or GT_SUB_HI;
+                return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_ADD_HI or GT_SUB_HI or GT_CCMP;
 #else
                 assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
-                return oper is >= GT_JCC and <= GT_SELECTCC;
+                return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_CCMP;
 #endif
 
             }

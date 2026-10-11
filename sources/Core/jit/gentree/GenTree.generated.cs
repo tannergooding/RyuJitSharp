@@ -337,14 +337,12 @@ public partial class GenTree
         assert(this is GenTreeCC);
         return Unsafe.As<GenTreeCC>(this);
     }
-#if TARGET_ARM64 || TARGET_AMD64
     public GenTreeCCMP AsCCMP()
     {
         assert(_oper is GT_CCMP);
         assert(this is GenTreeCCMP);
         return Unsafe.As<GenTreeCCMP>(this);
     }
-#endif
 #if TARGET_ARM64
     public GenTreeOpCC AsOpCC()
     {

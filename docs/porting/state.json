@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the target/feature conditional-compilation migration. The next blocking closure is GT_CCMP: make GenTreeCCMP and its generated type mapping/clone dispatch compile universally while keeping codegen unsupported on other targets; validate x64 and ARM64 behavior plus x86 compilation.",
+    "nextAction": "Continue the universal target/feature conditional-compilation migration. Next close the feature-gated node metadata in sources/GenerateTables/Inputs/gtlist.h, beginning with FEATURE_SIMD, FEATURE_MASKED_HW_INTRINSICS, and FEATURE_HW_INTRINSICS; include generated operator/type maps and preserve unsupported-target rejection at the appropriate construction, import, and codegen boundaries.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
     "parityEvidence": {

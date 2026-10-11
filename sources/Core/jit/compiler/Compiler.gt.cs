@@ -771,7 +771,6 @@ public partial class Compiler
                     break;
                 }
 
-#if TARGET_AMD64 || TARGET_ARM64
                 case GT_CCMP:
                 {
                     var ccmp = tree.AsCCMP();
@@ -784,7 +783,6 @@ public partial class Compiler
                     );
                     break;
                 }
-#endif
 
                 default:
                 {
@@ -16155,9 +16153,7 @@ public partial class Compiler
                     case GT_JCMP:
                     case GT_JTEST:
                     case GT_SELECTCC:
-#if TARGET_ARM64 || TARGET_AMD64
                     case GT_CCMP:
-#endif
 #if TARGET_ARM64
                     case GT_SELECT_INCCC:
                     case GT_SELECT_INVCC:

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 || TARGET_AMD64
 namespace RyuJitSharp;
 
 public sealed class GenTreeCCMP : GenTreeOpCC
@@ -25,4 +24,3 @@ public sealed class GenTreeCCMP : GenTreeOpCC
         _flagsVal = flagsVal;
     }
 }
-#endif

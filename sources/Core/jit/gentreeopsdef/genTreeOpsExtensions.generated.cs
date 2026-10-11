@@ -142,9 +142,7 @@ public static partial class genTreeOpsExtensions
         GTK_LEAF | GTK_NOVALUE, // GT_JCC
         GTK_LEAF, // GT_SETCC
         GTK_BINOP, // GT_SELECTCC
-#if TARGET_ARM64 || TARGET_AMD64
         GTK_BINOP | GTK_NOVALUE, // GT_CCMP
-#endif
 #if TARGET_ARM64
         GTK_SPECIAL, // GT_SELECT_INC
         GTK_BINOP, // GT_SELECT_INCCC
@@ -336,9 +334,7 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_JCC
         DBK_NOTHIR, // GT_SETCC
         DBK_NOTHIR, // GT_SELECTCC
-#if TARGET_ARM64 || TARGET_AMD64
         DBK_NOTHIR, // GT_CCMP
-#endif
 #if TARGET_ARM64
         DBK_NOTHIR, // GT_SELECT_INC
         DBK_NOTHIR, // GT_SELECT_INCCC
@@ -531,9 +527,7 @@ public static partial class genTreeOpsExtensions
         "JCC", // GT_JCC
         "SETCC", // GT_SETCC
         "SELECTCC", // GT_SELECTCC
-#if TARGET_ARM64 || TARGET_AMD64
         "CCMP", // GT_CCMP
-#endif
 #if TARGET_ARM64
         "SELECT_INC", // GT_SELECT_INC
         "SELECT_INCCC", // GT_SELECT_INCCC
@@ -726,9 +720,7 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeCC), // GT_JCC
         typeof(GenTreeCC), // GT_SETCC
         typeof(GenTreeOpCC), // GT_SELECTCC
-#if TARGET_ARM64 || TARGET_AMD64
         typeof(GenTreeCCMP), // GT_CCMP
-#endif
 #if TARGET_ARM64
         typeof(GenTreeConditional), // GT_SELECT_INC
         typeof(GenTreeOpCC), // GT_SELECT_INCCC

@@ -141,9 +141,7 @@ public enum genTreeOps : byte
     GT_JCC,
     GT_SETCC,
     GT_SELECTCC,
-#if TARGET_ARM64 || TARGET_AMD64
     GT_CCMP,
-#endif
 #if TARGET_ARM64
     GT_SELECT_INC,
     GT_SELECT_INCCC,
