@@ -41,6 +41,30 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void CustomCallArgumentRegistersMatchTheTargetArchitecture()
+    {
+        WithCompiler(compiler =>
+        {
+            Assert.That(CallArgs.GetCustomRegister(compiler, default, WellKnownArg.PInvokeFrame, out _),
+                Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET &&
+                    (Configuration.TARGET_X86 || Configuration.TARGET_ARM)));
+            Assert.That(CallArgs.GetCustomRegister(compiler, default, WellKnownArg.ShiftLow, out _),
+                Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET && Configuration.TARGET_X86));
+            Assert.That(CallArgs.GetCustomRegister(compiler, default, WellKnownArg.R2RIndirectionCell, out _),
+                Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET));
+            Assert.That(CallArgs.GetCustomRegister(compiler, default, WellKnownArg.ValidateIndirectCallTarget, out _),
+                Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET &&
+                    (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)));
+            Assert.That(CallArgs.GetCustomRegister(compiler, default, WellKnownArg.DispatchIndirectCallTarget, out _),
+                Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET &&
+                    (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)));
+            Assert.That(CallArgs.GetCustomRegister(compiler, CorInfoCallConvExtension.Swift,
+                WellKnownArg.SwiftError, out _), Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET &&
+                    Configuration.SWIFT_SUPPORT));
+        });
+    }
+
+    [Test]
     public static void MaskedHardwareIntrinsicsMatchTheTargetArchitecture()
     {
         Assert.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,

@@ -41,6 +41,9 @@ public partial class Globals
     public const regNumber REG_PINVOKE_TCB = REG_ESI;
     public const regNumber REG_PINVOKE_SCRATCH = REG_EAX;
     public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_ECX;
+    public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_NA;
+    public const regNumber REG_SWIFT_ERROR = REG_NA;
+    public const regNumber REG_SWIFT_SELF = REG_NA;
     public const regNumber REG_FLT_CALLEE_SAVED_FIRST = REG_XMM6;
     public const regNumber REG_FLT_CALLEE_SAVED_LAST = REG_XMM7;
 

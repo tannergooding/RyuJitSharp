@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the target/feature directive migration in gentree/CallArgs.Morph.cs, replacing its remaining fixed-register, architecture-specific ABI, and Swift compile guards with runtime Configuration checks; resolve any missing target-register symbols explicitly and validate all affected target matrices.",
+    "nextAction": "Continue universalizing the call tree in gentree/GenTreeCall.cs; replace its remaining TARGET_/FEATURE_ preprocessor branches with Configuration checks, add only necessary unavailable-target member placeholders, and validate call-tree tests across the target matrix.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Remove the last FEATURE_READYTORUN source/test guards in Compiler.HWIntrinsicImport.cs, Compiler.HWIntrinsicImportXplat.cs, and FlowGraphDelegateConstructorTests; remove the FEATURE_READYTORUN compiler define after confirming no C# preprocessor references remain.",
-      "doneWhen": "ReadyToRun entry-point metadata in intrinsic fallback nodes is runtime-gated, the Wasm delegate-constructor test is configuration-gated, and no FEATURE_READYTORUN preprocessor guards or DefineConstants remain.",
-      "validation": "HWIntrinsicImportClosureTests, HWIntrinsicImportPrerequisiteTests, HWIntrinsicXplatImportTests, and FlowGraphDelegateConstructorTests passed 122/123 on win-x64 Debug (the Wasm-only delegate test was skipped). Browser-Wasm FeatureConfigurationTests and FlowGraphDelegateConstructorTests passed 18/18 after removing the define. Before define removal, the intrinsic-import target matrix passed 43/43 on linux-arm64 and 17/17 each on linux-riscv64, linux-loongarch64, and browser-wasm. A repository-wide C# scan found no remaining FEATURE_READYTORUN preprocessor directive.",
-      "deferred": "The broader TARGET_/FEATURE_ preprocessor migration remains active across the JIT source and test trees. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Universalize the remaining target/feature branches in gentree/CallArgs.Morph.cs, add explicit REG_NA aliases for target-unsupported ABI argument registers, and derive fixed-outgoing-argument, split-argument, and Swift switches from target configuration.",
+      "doneWhen": "Call argument placement and custom-register classification preserve each target's previous behavior through runtime checks; the file contains no target/feature preprocessor branches, and unsupported architecture registers cannot be selected.",
+      "validation": "CallArgumentMorphTests passed 77/77 in Debug on win-x64. FeatureConfigurationTests, including custom-register routing, passed 18/18 on win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64 using RyuJitTargetRuntimeIdentifier on the Windows host. `git diff --check` passed.",
+      "deferred": "FEATURE_READYTORUN preprocessor guards and its project DefineConstants entry are removed. The broader TARGET_/FEATURE_ preprocessor migration remains active across the JIT source and test trees. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

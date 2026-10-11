@@ -185,6 +185,9 @@ public static partial class Globals
         SRBM_INT_CALLEE_TRASH & ~(SRBM_ARG_REGS | SRBM_R8 | SRBM_R15);
     public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_R15;
     public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_R9;
+    public const regNumber REG_PINVOKE_FRAME = REG_NA;
+    public const regNumber REG_LNGARG_LO = REG_NA;
+    public const regNumber REG_LNGARG_HI = REG_NA;
 
     public const regNumber REG_FPBASE = REG_FP;
     public const regMask SRBM_FPBASE = SRBM_FP;

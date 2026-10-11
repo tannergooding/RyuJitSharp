@@ -605,28 +605,26 @@ public partial struct CallArgs
         register = REG_NA;
         switch (argument)
         {
-#if HAS_FIXED_REGISTER_SET
-#if TARGET_X86 || TARGET_ARM
-            case WellKnownArg.PInvokeFrame:
+            case WellKnownArg.PInvokeFrame when Configuration.HAS_FIXED_REGISTER_SET &&
+                (Configuration.TARGET_X86 || Configuration.TARGET_ARM):
             {
                 register = REG_PINVOKE_FRAME;
                 return true;
             }
-#endif
-#if TARGET_X86
-            case WellKnownArg.ShiftLow:
+
+            case WellKnownArg.ShiftLow when Configuration.HAS_FIXED_REGISTER_SET && Configuration.TARGET_X86:
             {
                 register = REG_LNGARG_LO;
                 return true;
             }
 
-            case WellKnownArg.ShiftHigh:
+            case WellKnownArg.ShiftHigh when Configuration.HAS_FIXED_REGISTER_SET && Configuration.TARGET_X86:
             {
                 register = REG_LNGARG_HI;
                 return true;
             }
-#endif
-            case WellKnownArg.RetBuffer:
+
+            case WellKnownArg.RetBuffer when Configuration.HAS_FIXED_REGISTER_SET:
             {
                 if (hasFixedRetBuffReg(callConv))
                 {
@@ -637,20 +635,20 @@ public partial struct CallArgs
                 break;
             }
 
-            case WellKnownArg.VirtualStubCell:
+            case WellKnownArg.VirtualStubCell when Configuration.HAS_FIXED_REGISTER_SET:
             {
                 assert(compiler.virtualStubParamInfo is not null);
                 register = compiler.virtualStubParamInfo.Reg;
                 return true;
             }
 
-            case WellKnownArg.R2RIndirectionCell:
+            case WellKnownArg.R2RIndirectionCell when Configuration.HAS_FIXED_REGISTER_SET:
             {
                 register = REG_R2R_INDIRECT_PARAM;
                 return true;
             }
 
-            case WellKnownArg.ValidateIndirectCallTarget:
+            case WellKnownArg.ValidateIndirectCallTarget when Configuration.HAS_FIXED_REGISTER_SET:
             {
 #pragma warning disable CA1508 // Register assignments differ between targets.
                 if (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)
@@ -663,29 +661,26 @@ public partial struct CallArgs
                 break;
             }
 
-#if TARGET_AMD64 || TARGET_ARM64
-            case WellKnownArg.DispatchIndirectCallTarget:
+            case WellKnownArg.DispatchIndirectCallTarget when Configuration.HAS_FIXED_REGISTER_SET &&
+                (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64):
             {
                 register = REG_DISPATCH_INDIRECT_CALL_ADDR;
                 return true;
             }
-#endif
-#if SWIFT_SUPPORT
-            case WellKnownArg.SwiftError:
+
+            case WellKnownArg.SwiftError when Configuration.HAS_FIXED_REGISTER_SET && Configuration.SWIFT_SUPPORT:
             {
                 assert(callConv is CorInfoCallConvExtension.Swift);
                 register = REG_SWIFT_ERROR;
                 return true;
             }
 
-            case WellKnownArg.SwiftSelf:
+            case WellKnownArg.SwiftSelf when Configuration.HAS_FIXED_REGISTER_SET && Configuration.SWIFT_SUPPORT:
             {
                 assert(callConv is CorInfoCallConvExtension.Swift);
                 register = REG_SWIFT_SELF;
                 return true;
             }
-#endif
-#endif
             case WellKnownArg.StackArrayLocal:
             case WellKnownArg.AsyncAwaiter:
             case WellKnownArg.AsyncExecutionContext:

@@ -153,6 +153,11 @@ public partial class Globals
     public const regMask SRBM_PROFILER_ENTER_TRASH = SRBM_NONE;
     public const regNumber REG_PINVOKE_FRAME = REG_R4;
     public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_R0;
+    public const regNumber REG_LNGARG_LO = REG_NA;
+    public const regNumber REG_LNGARG_HI = REG_NA;
+    public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_NA;
+    public const regNumber REG_SWIFT_ERROR = REG_NA;
+    public const regNumber REG_SWIFT_SELF = REG_NA;
     public const regNumber REG_FPBASE = REG_R11;
     public const regNumber REG_SPBASE = REG_SP;
     public const regMask SRBM_SPBASE = SRBM_SP;

@@ -615,6 +615,9 @@ public partial class Globals
     public const regMask SRBM_VALIDATE_INDIRECT_CALL_ADDR = SRBM_RCX;
 
     public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_RAX;
+    public const regNumber REG_PINVOKE_FRAME = REG_NA;
+    public const regNumber REG_LNGARG_LO = REG_NA;
+    public const regNumber REG_LNGARG_HI = REG_NA;
 
     public const regNumber REG_ASYNC_CONTINUATION_RET = REG_RCX;
 
@@ -659,6 +662,9 @@ public partial class Globals
     public const regMask SRBM_SWIFT_ARG_RET_BUFF = SRBM_RAX;
 
     public const int SWIFT_RET_BUFF_ARGNUM = MAX_REG_ARG;
+#else
+    public const regNumber REG_SWIFT_ERROR = REG_NA;
+    public const regNumber REG_SWIFT_SELF = REG_NA;
 #endif
 
 #if UNIX_AMD64_ABI
