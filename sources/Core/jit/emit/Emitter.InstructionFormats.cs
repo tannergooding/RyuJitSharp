@@ -12,8 +12,8 @@ public partial class Emitter
     public insUpdateModes emitInsUpdateMode(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)emitInsModeFmtTab.Length);
-        return (insUpdateModes)emitInsModeFmtTab[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)emitInsModeFmtTab.Length);
+        return (insUpdateModes)emitInsModeFmtTab[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Instruction update modes outside xarch are not implemented.");
 #endif
@@ -71,7 +71,7 @@ public partial class Emitter
     public static bool IsApxNddCompatibleInstruction(instruction ins)
     {
 #if TARGET_XARCH
-        var flags = CodeGen.instInfo[(int)ins];
+        var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
         return (flags & INS_FLAGS_HasNDD) != 0;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "APX instruction classification outside xarch is not implemented.");

@@ -62,7 +62,7 @@ public partial class Emitter
             if ((_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
                 .DoJitStressPromotedEvexEncoding())
             {
-                if (ins >= INS_cmovo && ins <= INS_cmovg)
+                if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_cmovo, INS_cmovg))
                 {
                     return false;
                 }
@@ -149,7 +149,7 @@ public partial class Emitter
             return false;
         }
 
-        if (HasExtendedGPReg(id) || (ins >= INS_imul_16 && ins <= INS_imul_31)
+        if (HasExtendedGPReg(id) || (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_16, INS_imul_31))
             || id.idIsApxPpxContextSet())
         {
             return true;
@@ -231,7 +231,7 @@ public partial class Emitter
         }
         return ins is not (INS_push or INS_pop or INS_movq or INS_movzx or INS_push_hide or
             INS_pop_hide or INS_ret or INS_call or INS_tail_i_jmp) &&
-            !(ins >= INS_i_jmp && ins <= INS_l_jg);
+            !(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_i_jmp, INS_l_jg));
 #else
         return false;
 #endif

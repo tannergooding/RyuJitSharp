@@ -40,24 +40,42 @@ public sealed partial class CodeGen
 #if TARGET_AMD64
         if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
         {
-            const int offset = INS_seto - INS_seto_apx;
-            assert(INS_seto == (INS_seto_apx + offset));
-            assert(INS_setno == (INS_setno_apx + offset));
-            assert(INS_setb == (INS_setb_apx + offset));
-            assert(INS_setae == (INS_setae_apx + offset));
-            assert(INS_sete == (INS_sete_apx + offset));
-            assert(INS_setne == (INS_setne_apx + offset));
-            assert(INS_setbe == (INS_setbe_apx + offset));
-            assert(INS_seta == (INS_seta_apx + offset));
-            assert(INS_sets == (INS_sets_apx + offset));
-            assert(INS_setns == (INS_setns_apx + offset));
-            assert(INS_setp == (INS_setp_apx + offset));
-            assert(INS_setnp == (INS_setnp_apx + offset));
-            assert(INS_setl == (INS_setl_apx + offset));
-            assert(INS_setge == (INS_setge_apx + offset));
-            assert(INS_setle == (INS_setle_apx + offset));
-            assert(INS_setg == (INS_setg_apx + offset));
-            ins = (instruction)(ins - offset);
+            var nativeOrdinalOffset = InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seto) -
+                                      InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seto_apx);
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seto) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seto_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setno) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setno_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setb) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setb_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setae) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setae_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sete) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sete_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setne) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setne_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setbe) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setbe_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seta) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seta_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sets) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sets_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setns) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setns_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setp) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setp_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setnp) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setnp_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setl) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setl_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setge) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setge_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setle) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setle_apx) + nativeOrdinalOffset));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setg) ==
+                   (InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setg_apx) + nativeOrdinalOffset));
+            ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
+                InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) - nativeOrdinalOffset);
         }
 #endif
 

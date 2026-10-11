@@ -10,7 +10,7 @@ public partial class Emitter
 #if TARGET_XARCH
     private static bool IsAvx512OnlyInstruction(instruction ins)
     {
-        return ins >= FIRST_AVX512_INSTRUCTION && ins <= LAST_AVX512_INSTRUCTION;
+        return InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVX512_INSTRUCTION, LAST_AVX512_INSTRUCTION);
     }
 
     private static bool isLowSimdReg(regNumber reg)

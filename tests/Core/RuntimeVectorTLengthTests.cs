@@ -2,7 +2,7 @@
 
 #if TARGET_AMD64 && FEATURE_HW_INTRINSICS
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -12,7 +12,7 @@ internal static class RuntimeVectorTLengthTests
     [TestCase(InstructionSet_VectorT128, 16u)]
     [TestCase(InstructionSet_VectorT256, 32u)]
     [TestCase(InstructionSet_VectorT512, 64u)]
-    public static void UsesReportedCompileTimeWidth(CORINFO_InstructionSet isa, uint expected)
+    public static void UsesReportedCompileTimeWidth(ManagedInstructionSet isa, uint expected)
     {
         CSELiveAcrossCallCostTests.WithCompiler(compiler => {
             compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_VectorT128);

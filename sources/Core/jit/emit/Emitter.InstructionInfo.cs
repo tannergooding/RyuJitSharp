@@ -10,9 +10,9 @@ public partial class Emitter
 #if TARGET_XARCH
     public static insTupleType insTupleTypeInfo(instruction ins)
     {
-        assert((uint)ins < (uint)s_tupleTypes.Length);
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_tupleTypes.Length);
 
-        return s_tupleTypes[(int)ins];
+        return s_tupleTypes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 #endif
 }

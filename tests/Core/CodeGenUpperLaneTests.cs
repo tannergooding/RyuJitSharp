@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.NamedIntrinsic;

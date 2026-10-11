@@ -99,14 +99,14 @@ internal static unsafe class MemoryCompareCallLoweringTests
         bool avx2, bool avx512, int expected)
     {
         WithCompiler(false, (compiler, _, _) => {
-            EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX);
+            EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX);
             if (avx2)
             {
-                EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX2);
+                EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX2);
             }
             if (avx512)
             {
-                EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX512);
+                EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX512);
             }
 
             Assert.That(compiler.GetUnrollThreshold(Compiler.Memcmp), Is.EqualTo(expected));
@@ -114,17 +114,17 @@ internal static unsafe class MemoryCompareCallLoweringTests
         });
     }
 
-    [TestCase(CORINFO_InstructionSet.InstructionSet_AVX2, 32, TYP_SIMD32, true)]
-    [TestCase(CORINFO_InstructionSet.InstructionSet_AVX2, 64, TYP_SIMD32, false)]
-    [TestCase(CORINFO_InstructionSet.InstructionSet_AVX512, 64, TYP_SIMD64, true)]
-    [TestCase(CORINFO_InstructionSet.InstructionSet_AVX512, 128, TYP_SIMD64, false)]
+    [TestCase(ManagedInstructionSet.InstructionSet_AVX2, 32, TYP_SIMD32, true)]
+    [TestCase(ManagedInstructionSet.InstructionSet_AVX2, 64, TYP_SIMD32, false)]
+    [TestCase(ManagedInstructionSet.InstructionSet_AVX512, 64, TYP_SIMD64, true)]
+    [TestCase(ManagedInstructionSet.InstructionSet_AVX512, 128, TYP_SIMD64, false)]
     public static void VectorWidthAndThresholdFollowAvailableInstructionSets(
-        CORINFO_InstructionSet isa, int size, var_types loadType, bool singleLoad)
+        ManagedInstructionSet isa, int size, var_types loadType, bool singleLoad)
     {
         WithCompiler(false, (compiler, block, lowering) => {
-            EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX);
-            EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX2);
-            if (isa is CORINFO_InstructionSet.InstructionSet_AVX512)
+            EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX);
+            EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX2);
+            if (isa is ManagedInstructionSet.InstructionSet_AVX512)
             {
                 EnableIsa(compiler, isa);
             }
@@ -152,14 +152,14 @@ internal static unsafe class MemoryCompareCallLoweringTests
         });
     }
 
-    [TestCase(CORINFO_InstructionSet.InstructionSet_AVX2, 65)]
-    [TestCase(CORINFO_InstructionSet.InstructionSet_AVX512, 129)]
+    [TestCase(ManagedInstructionSet.InstructionSet_AVX2, 65)]
+    [TestCase(ManagedInstructionSet.InstructionSet_AVX512, 129)]
     public static void AvailableInstructionSetsDoNotExceedNativeMaximum(
-        CORINFO_InstructionSet isa, int size)
+        ManagedInstructionSet isa, int size)
     {
         WithCompiler(false, (compiler, block, lowering) => {
-            EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX2);
-            if (isa is CORINFO_InstructionSet.InstructionSet_AVX512)
+            EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX2);
+            if (isa is ManagedInstructionSet.InstructionSet_AVX512)
             {
                 EnableIsa(compiler, isa);
             }
@@ -265,7 +265,7 @@ internal static unsafe class MemoryCompareCallLoweringTests
         throw new InvalidOperationException("Second overlapping load was not produced.");
     }
 
-    private static void EnableIsa(Compiler compiler, CORINFO_InstructionSet isa)
+    private static void EnableIsa(Compiler compiler, ManagedInstructionSet isa)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(isa);
         compiler.opts.compSupportsISAReported.AddInstructionSet(isa);

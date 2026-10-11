@@ -14,15 +14,17 @@ public partial class Emitter
     private bool emitInsIsLoad(instruction ins)
     {
         // Pseudo instructions such as LEA are not represented in the instruction table.
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & LOONGARCH64_LD) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+               ((CodeGen.instInfo[nativeOrdinal] & LOONGARCH64_LD) != 0);
     }
 
     private bool emitInsIsLoadOrStore(instruction ins)
     {
         // Pseudo instructions such as LEA are not represented in the instruction table.
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & (LOONGARCH64_LD | LOONGARCH64_ST)) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+               ((CodeGen.instInfo[nativeOrdinal] & (LOONGARCH64_LD | LOONGARCH64_ST)) != 0);
     }
 
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
@@ -35,14 +37,13 @@ public partial class Emitter
         assert(ins != INS_invalid);
 
         // Register-writing ranges follow the instruction groupings in instrsloongarch64.h.
-        var instructionValue = (int)ins;
-        return ((instructionValue >= (int)INS_mov) && (instructionValue <= (int)INS_jirl)) ||
+        return InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_mov, INS_jirl) ||
                (ins == INS_movfcsr2gr) ||
                (ins == INS_movcf2gr)
 #if FEATURE_SIMD
-               || ((instructionValue >= (int)INS_vpickve2gr_d) && (instructionValue <= (int)INS_vpickve2gr_wu))
-               || ((instructionValue >= (int)INS_vpickve2gr_h) && (instructionValue <= (int)INS_vpickve2gr_bu))
-               || ((instructionValue >= (int)INS_xvpickve2gr_d) && (instructionValue <= (int)INS_xvpickve2gr_wu))
+               || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_d, INS_vpickve2gr_wu)
+               || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_h, INS_vpickve2gr_bu)
+               || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvpickve2gr_d, INS_xvpickve2gr_wu)
 #endif
                ;
     }

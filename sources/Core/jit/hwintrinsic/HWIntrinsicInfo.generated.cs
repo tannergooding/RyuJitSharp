@@ -3365,7 +3365,7 @@ public partial struct HWIntrinsicInfo
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_AVX512_XnorMask
     ];
 
-    private static ReadOnlySpan<CORINFO_InstructionSet> s_XarchInstructionSets => [
+    private static ReadOnlySpan<ManagedInstructionSet> s_XarchInstructionSets => [
         InstructionSet_Vector, // NI_Vector_Abs
         InstructionSet_Vector, // NI_Vector_AddSaturate
         InstructionSet_Vector, // NI_Vector_AndNot
@@ -12971,7 +12971,7 @@ public partial struct HWIntrinsicInfo
         677, 677, 677, 677, 677, 677, 677, 677, 677, 677, // NI_Sve_ReverseElement_Predicates
     ];
 
-    private static ReadOnlySpan<CORINFO_InstructionSet> s_Arm64InstructionSets => [
+    private static ReadOnlySpan<ManagedInstructionSet> s_Arm64InstructionSets => [
         InstructionSet_Vector, // NI_Vector_Abs
         InstructionSet_Vector, // NI_Vector_AddSaturate
         InstructionSet_Vector, // NI_Vector_AndNot
@@ -20847,7 +20847,7 @@ public partial struct HWIntrinsicInfo
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // NI_WasmBase_TrailingZeroCount
     ];
 
-    private static ReadOnlySpan<CORINFO_InstructionSet> s_WasmInstructionSets => [
+    private static ReadOnlySpan<ManagedInstructionSet> s_WasmInstructionSets => [
         InstructionSet_Vector, // NI_Vector_Abs
         InstructionSet_Vector, // NI_Vector_AddSaturate
         InstructionSet_Vector, // NI_Vector_AndNot
@@ -23340,7 +23340,7 @@ public partial struct HWIntrinsicInfo
         }
     }
 
-    private static ReadOnlySpan<CORINFO_InstructionSet> s_instructionSets
+    private static ReadOnlySpan<ManagedInstructionSet> s_instructionSets
     {
         get
         {

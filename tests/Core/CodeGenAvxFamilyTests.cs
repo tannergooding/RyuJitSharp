@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GenTreeFlags;

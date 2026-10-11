@@ -44,7 +44,7 @@ public partial class Emitter
     }
 
     private static bool IsSSEInstruction(instruction ins)
-        => ins >= FIRST_SSE_INSTRUCTION && ins <= LAST_SSE_INSTRUCTION;
+        => InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_SSE_INSTRUCTION);
 
     // APX CFCMOV has no entries in the x86 instruction table.
     private static bool IsCFCMOV(instruction ins)
@@ -75,7 +75,7 @@ public partial class Emitter
     }
 
     private static bool instrIs3opImul(instruction ins)
-        => ins >= INS_imul_AX && ins <= INS_imul_DI;
+        => InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_AX, INS_imul_DI);
 
     private ulong AddX86PrefixIfNeeded(instrDesc id, ulong code, emitAttr size)
     {

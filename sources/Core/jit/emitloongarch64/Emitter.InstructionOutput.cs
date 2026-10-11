@@ -452,14 +452,14 @@ public partial class Emitter
             instruction inverse;
             if (ins is INS_beq or INS_bne or INS_blt or INS_bge or INS_bltu or INS_bgeu)
             {
-                inverse = (instruction)((int)ins ^ 1);
+                inverse = (instruction)(InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) ^ 1);
                 code = emitInsCode(inverse);
                 code |= unchecked((uint)reg1) << 5;
                 code |= unchecked((uint)reg2);
             }
             else if (ins is INS_bceqz or INS_bcnez)
             {
-                inverse = (instruction)((int)ins ^ 1);
+                inverse = (instruction)(InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) ^ 1);
                 code = emitInsCode(inverse);
                 code |= unchecked((uint)reg1) << 5;
             }

@@ -296,7 +296,7 @@ public static partial class API_ICorJitInfo_NamesExtensions
 
             if (name.Equals("notifyInstructionSetUsage", StringComparison.Ordinal))
             {
-                thunkParameterDeclarations[0] = "CORINFO_InstructionSetNative nativeInstructionSet";
+                thunkParameterDeclarations[0] = "CORINFO_InstructionSet nativeInstructionSet";
                 thunkArguments[0] = "instructionSet";
             }
 
@@ -984,7 +984,7 @@ public enum HandleKindIndex
         AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicFlag", "s_XarchFlags", xarchData.Flags);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchFltCosts", xarchData.FloatCosts);
         AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_X64Instructions", xarchData.Instructions);
-        AppendHWIntrinsicArray(arraysBuilder, "CORINFO_InstructionSet", "s_XarchInstructionSets", xarchData.InstructionSets);
+        AppendHWIntrinsicArray(arraysBuilder, "ManagedInstructionSet", "s_XarchInstructionSets", xarchData.InstructionSets);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchIntCosts", xarchData.IntegerCosts);
         AppendHWIntrinsicArray(arraysBuilder, "char", "s_XarchNameData", xarchData.NameData);
         AppendHWIntrinsicArray(arraysBuilder, "int", "s_XarchNameRanges", xarchData.NameRanges);
@@ -995,7 +995,7 @@ public enum HandleKindIndex
         AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicFlag", "s_Arm64Flags", arm64Data.Flags);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64FltCosts", arm64Data.FloatCosts);
         AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_Arm64Instructions", arm64Data.Instructions);
-        AppendHWIntrinsicArray(arraysBuilder, "CORINFO_InstructionSet", "s_Arm64InstructionSets", arm64Data.InstructionSets);
+        AppendHWIntrinsicArray(arraysBuilder, "ManagedInstructionSet", "s_Arm64InstructionSets", arm64Data.InstructionSets);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64IntCosts", arm64Data.IntegerCosts);
         AppendHWIntrinsicArray(arraysBuilder, "char", "s_Arm64NameData", arm64Data.NameData);
         AppendHWIntrinsicArray(arraysBuilder, "int", "s_Arm64NameRanges", arm64Data.NameRanges);
@@ -1006,7 +1006,7 @@ public enum HandleKindIndex
         AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicFlag", "s_WasmFlags", wasmData.Flags);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmFltCosts", wasmData.FloatCosts);
         AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_WasmInstructions", wasmData.Instructions);
-        AppendHWIntrinsicArray(arraysBuilder, "CORINFO_InstructionSet", "s_WasmInstructionSets", wasmData.InstructionSets);
+        AppendHWIntrinsicArray(arraysBuilder, "ManagedInstructionSet", "s_WasmInstructionSets", wasmData.InstructionSets);
         AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmIntCosts", wasmData.IntegerCosts);
         AppendHWIntrinsicArray(arraysBuilder, "char", "s_WasmNameData", wasmData.NameData);
         AppendHWIntrinsicArray(arraysBuilder, "int", "s_WasmNameRanges", wasmData.NameRanges);
@@ -1022,7 +1022,7 @@ public enum HandleKindIndex
         AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_fltCosts",
             "s_XarchFltCosts", "s_Arm64FltCosts", "s_WasmFltCosts");
         AppendTargetHWIntrinsicInstructionProperty(propertiesBuilder);
-        AppendTargetHWIntrinsicProperty(propertiesBuilder, "CORINFO_InstructionSet", "s_instructionSets",
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "ManagedInstructionSet", "s_instructionSets",
             "s_XarchInstructionSets", "s_Arm64InstructionSets", "s_WasmInstructionSets");
         AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_intCosts",
             "s_XarchIntCosts", "s_Arm64IntCosts", "s_WasmIntCosts");
@@ -1275,7 +1275,10 @@ public partial struct HWIntrinsicInfo
         {
             ("X86", ["TARGET_XARCH", "TARGET_X86", "TARGET_32BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
             ("X64", ["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
+            ("ARM", ["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"]),
             ("ARM64", ["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
+            ("LOONGARCH64", ["TARGET_LOONGARCH64", "TARGET_64BIT"]),
+            ("RISCV64", ["TARGET_RISCV64", "TARGET_64BIT"]),
             ("WASM", ["TARGET_WASM", "TARGET_WASM32", "TARGET_32BIT", "FEATURE_SIMD"]),
         };
         var result = new Dictionary<string, Dictionary<string, ushort>>(StringComparer.Ordinal);
@@ -1297,7 +1300,7 @@ public partial struct HWIntrinsicInfo
                 AddOrdinal(match.Groups[1].Value);
             }
 
-            if (name is "ARM64")
+            if (name is "ARM" or "ARM64" or "LOONGARCH64" or "RISCV64")
             {
                 AddOrdinal("INS_lea");
             }
@@ -1317,6 +1320,235 @@ public partial struct HWIntrinsicInfo
         }
 
         return result;
+    }
+
+    private static void GenerateInstructionOrdinalMaps(
+        List<string> instructionNames, Dictionary<string, Dictionary<string, ushort>> targetOrdinals)
+    {
+        var targetNames = new (string ProfileName, string FieldName)[]
+        {
+            ("X86", "x86"),
+            ("X64", "x64"),
+            ("ARM", "arm"),
+            ("ARM64", "arm64"),
+            ("LOONGARCH64", "loongarch64"),
+            ("RISCV64", "riscv64"),
+            ("WASM", "wasm"),
+        };
+        var builder = new StringBuilder();
+
+        _ = builder.AppendLine("""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+internal static class InstructionOrdinalMaps
+{
+    // Ordinal tables use 65535 for instruction identities unavailable on a target.
+""");
+
+        foreach (var (profileName, fieldName) in targetNames)
+        {
+            var ordinals = targetOrdinals[profileName];
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"    private static ReadOnlySpan<ushort> s_{fieldName}Ordinals => [");
+
+            for (var instructionIndex = 0; instructionIndex < instructionNames.Count; instructionIndex++)
+            {
+                if ((instructionIndex % 12) is 0)
+                {
+                    _ = builder.Append("        ");
+                }
+
+                var instructionName = instructionNames[instructionIndex];
+                var value = ordinals.TryGetValue(instructionName, out var ordinal)
+                    ? ordinal.ToString(CultureInfo.InvariantCulture)
+                    : "65535";
+                _ = builder.Append(value);
+
+                var isLastInstruction = instructionIndex == instructionNames.Count - 1;
+
+                if (!isLastInstruction)
+                {
+                    _ = builder.Append(',');
+                }
+
+                if ((instructionIndex % 12) is 11 || instructionIndex == instructionNames.Count - 1)
+                {
+                    _ = builder.AppendLine();
+                }
+                else
+                {
+                    _ = builder.Append(' ');
+                }
+            }
+
+            _ = builder.AppendLine("    ];");
+            _ = builder.AppendLine();
+
+            var nativeInstructionNames = new string[ordinals["INS_none"] + 1];
+            foreach (var (instructionName, ordinal) in ordinals)
+            {
+                nativeInstructionNames[ordinal] = instructionName;
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"    private static ReadOnlySpan<instruction> s_{fieldName}InstructionsByNativeOrdinal => [");
+
+            foreach (var instructionName in nativeInstructionNames)
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {instructionName},");
+            }
+
+            _ = builder.AppendLine("    ];");
+            _ = builder.AppendLine();
+        }
+
+        _ = builder.AppendLine("""
+    private static ReadOnlySpan<ushort> GetCurrentTargetOrdinals()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return Configuration.TARGET_64BIT ? s_x64Ordinals : s_x86Ordinals;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return s_arm64Ordinals;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return s_armOrdinals;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return s_loongarch64Ordinals;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return s_riscv64Ordinals;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return s_wasmOrdinals;
+        }
+
+        throw new PlatformNotSupportedException("Instruction ordinals are unsupported on this target.");
+    }
+
+    private static ReadOnlySpan<instruction> GetCurrentTargetInstructionsByNativeOrdinal()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return Configuration.TARGET_64BIT ? s_x64InstructionsByNativeOrdinal : s_x86InstructionsByNativeOrdinal;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return s_arm64InstructionsByNativeOrdinal;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return s_armInstructionsByNativeOrdinal;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return s_loongarch64InstructionsByNativeOrdinal;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return s_riscv64InstructionsByNativeOrdinal;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return s_wasmInstructionsByNativeOrdinal;
+        }
+
+        throw new PlatformNotSupportedException("Instruction ordinals are unsupported on this target.");
+    }
+
+    internal static bool TryGetNativeInstructionOrdinal(instruction ins, out int ordinal)
+    {
+        var ordinals = GetCurrentTargetOrdinals();
+        var instructionIndex = (int)ins;
+
+        if (instructionIndex < 0 || instructionIndex >= ordinals.Length)
+        {
+            ordinal = 0;
+            return false;
+        }
+
+        var nativeOrdinal = Globals.GetRvaSpanEntry(ordinals, instructionIndex);
+        if (nativeOrdinal is ushort.MaxValue)
+        {
+            ordinal = 0;
+            return false;
+        }
+
+        ordinal = nativeOrdinal;
+        return true;
+    }
+
+    internal static int GetNativeInstructionOrdinal(instruction ins)
+    {
+        if (!TryGetNativeInstructionOrdinal(ins, out var ordinal))
+        {
+            throw new PlatformNotSupportedException($"Instruction '{ins}' is unsupported on this target.");
+        }
+
+        return ordinal;
+    }
+
+    internal static bool IsNativeInstructionOrdinalInRange(instruction ins, instruction first, instruction last)
+    {
+        var instructionOrdinal = GetNativeInstructionOrdinal(ins);
+        return instructionOrdinal >= GetNativeInstructionOrdinal(first) &&
+               instructionOrdinal <= GetNativeInstructionOrdinal(last);
+    }
+
+    internal static bool IsNativeInstructionOrdinalLessThan(instruction ins, instruction upperBound)
+    {
+        return GetNativeInstructionOrdinal(ins) < GetNativeInstructionOrdinal(upperBound);
+    }
+
+    internal static bool IsNativeInstructionOrdinalLessThanOrEqualTo(instruction ins, instruction upperBound)
+    {
+        return GetNativeInstructionOrdinal(ins) <= GetNativeInstructionOrdinal(upperBound);
+    }
+
+    internal static int GetNativeInstructionCount()
+    {
+        return GetNativeInstructionOrdinal(INS_none);
+    }
+
+    internal static instruction GetInstructionFromNativeOrdinal(int ordinal)
+    {
+        var instructions = GetCurrentTargetInstructionsByNativeOrdinal();
+
+        if (ordinal < 0 || ordinal >= instructions.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ordinal));
+        }
+
+        return Globals.GetRvaSpanEntry(instructions, ordinal);
+    }
+}
+""");
+
+        File.WriteAllText(@"Outputs\jit\instr\instruction.Ordinals.generated.cs", builder.ToString());
     }
 
     private static string FormatHardwareIntrinsicByte(ReadOnlySpan<char> value) =>
@@ -1850,7 +2082,30 @@ public partial struct HWIntrinsicInfo
     {
         var instructionSetValues = new Dictionary<string, int>(StringComparer.Ordinal);
         var nextValue = 0;
-        var activeSource = GetActivePreprocessorLines(instructionSetSource, definedSymbols);
+        const string declaration = "public enum ManagedInstructionSet";
+        var declarationIndex = instructionSetSource.IndexOf(declaration, StringComparison.Ordinal);
+
+        if (declarationIndex < 0)
+        {
+            throw new InvalidDataException("The generated instruction-set source does not define ManagedInstructionSet.");
+        }
+
+        var bodyStart = instructionSetSource.IndexOf('{', declarationIndex, StringComparison.Ordinal);
+
+        if (bodyStart < 0)
+        {
+            throw new InvalidDataException("The generated ManagedInstructionSet enum is malformed.");
+        }
+
+        var bodyEnd = instructionSetSource.IndexOf('}', bodyStart, StringComparison.Ordinal);
+
+        if (bodyEnd < 0)
+        {
+            throw new InvalidDataException("The generated ManagedInstructionSet enum is malformed.");
+        }
+
+        var managedInstructionSetSource = instructionSetSource[bodyStart..(bodyEnd + 1)];
+        var activeSource = GetActivePreprocessorLines(managedInstructionSetSource, definedSymbols);
 
         foreach (var line in activeSource.Split('\n'))
         {
@@ -2000,6 +2255,7 @@ public partial struct HWIntrinsicInfo
                 var isDefined = definedSymbols.Contains(symbol);
 
                 if (!isDefined && symbol is not "FEATURE_HW_INTRINSICS" and not "FEATURE_LOOP_ALIGN" and
+                    not "FEATURE_SIMD" and
                     not "FEATURE_ITINSTRUCTION" and not "FEATURE_PLI_INSTRUCTION" and
                     not "TARGET_32BIT" and not "TARGET_64BIT" and not "TARGET_AMD64" and not "TARGET_ARM" and
                     not "TARGET_ARM64" and not "TARGET_ARMARCH" and not "TARGET_LOONGARCH64" and
@@ -2290,19 +2546,38 @@ public partial class Emitter
 
     private static void GenerateInstruction()
     {
-        var builder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
-            var id = parts[0].AsSpan().Trim();
-
-            if (inputFile.Equals("Inputs\\instrsarm64sve.h", StringComparison.Ordinal))
+        var instructionNames = new List<string>();
+        var instructionNameSet = new HashSet<string>(StringComparer.Ordinal);
+        _ = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is 0)
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    INS_sve_{id},");
+                return;
             }
-            else
+
+            var id = parts[0].AsSpan().Trim();
+            var instructionName = inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal)
+                ? $"INS_sve_{id}"
+                : $"INS_{id}";
+            if (instructionNameSet.Add(instructionName))
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    INS_{id},");
+                instructionNames.Add(instructionName);
             }
         });
 
+        if (instructionNameSet.Add("INS_lea"))
+        {
+            instructionNames.Add("INS_lea");
+        }
+
+        instructionNames.Add("INS_none");
+
+        var builder = new StringBuilder();
+        foreach (var instructionName in instructionNames)
+        {
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    {instructionName},");
+        }
+
+        var instructionOrdinals = GenerateTargetInstructionOrdinals();
         _ = Directory.CreateDirectory(@"Outputs\jit\instr");
 
         File.WriteAllText(@"Outputs\jit\instr\instruction.generated.cs", $$"""
@@ -2318,14 +2593,12 @@ namespace RyuJitSharp;
 public enum instruction
 {
 {{builder}}
-#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-    INS_lea,
-#endif
 
-    INS_none,
     INS_count = INS_none,
 }
 """);
+
+        GenerateInstructionOrdinalMaps(instructionNames, instructionOrdinals);
 
         var xarchNameDataBuilder = new StringBuilder();
         var otherNameDataBuilder = new StringBuilder();
@@ -5114,6 +5387,7 @@ public static partial class VNFuncExtensions
         var insSetFlagsBuilder = new StringBuilder();
         var ensureValidBuilder = new StringBuilder();
         var insSetToStringBuilder = new StringBuilder();
+        var nativeInstructionSetEnumBuilder = new StringBuilder();
         var fromR2RInsSetBuilders = new Dictionary<string, StringBuilder>(StringComparer.Ordinal);
         var r2rInsSetBuilder = new StringBuilder();
 
@@ -5393,11 +5667,11 @@ public static partial class VNFuncExtensions
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-global using static RyuJitSharp.CORINFO_InstructionSet;
+global using static RyuJitSharp.ManagedInstructionSet;
 
 namespace RyuJitSharp;
 
-public enum CORINFO_InstructionSet
+public enum ManagedInstructionSet
 {
     InstructionSet_ILLEGAL = 0,
 
@@ -5407,10 +5681,11 @@ public enum CORINFO_InstructionSet
     InstructionSet_NONE = 127,
 }
 
-// Values crossing the EE ABI retain the target's native ordinal encoding.
-public enum CORINFO_InstructionSetNative : int
+// Target-prefixed aliases retain the native ordinals sent across the EE ABI.
+public enum CORINFO_InstructionSet : int
 {
     Illegal = 0,
+{{nativeInstructionSetEnumBuilder}}
     Vector = 126,
     None = 127,
 }
@@ -5502,7 +5777,7 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryGetNativeInstructionSetOrdinal(CORINFO_InstructionSet instructionSet, out int nativeOrdinal)
+    public static bool TryGetNativeInstructionSetOrdinal(ManagedInstructionSet instructionSet, out int nativeOrdinal)
     {
         if (instructionSet is InstructionSet_ILLEGAL or InstructionSet_Vector or InstructionSet_NONE)
         {
@@ -5529,7 +5804,7 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetNativeInstructionSetOrdinal(CORINFO_InstructionSet instructionSet)
+    public static int GetNativeInstructionSetOrdinal(ManagedInstructionSet instructionSet)
     {
         if (TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal))
         {
@@ -5540,11 +5815,11 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryGetManagedInstructionSet(int nativeOrdinal, out CORINFO_InstructionSet instructionSet)
+    public static bool TryGetManagedInstructionSet(int nativeOrdinal, out ManagedInstructionSet instructionSet)
     {
         if (nativeOrdinal is 0 or 126 or 127)
         {
-            instructionSet = (CORINFO_InstructionSet)nativeOrdinal;
+            instructionSet = (ManagedInstructionSet)nativeOrdinal;
             return true;
         }
 
@@ -5556,7 +5831,7 @@ public partial class Globals
 
             if (value != byte.MaxValue)
             {
-                instructionSet = (CORINFO_InstructionSet)value;
+                instructionSet = (ManagedInstructionSet)value;
                 return true;
             }
         }
@@ -5566,8 +5841,8 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static CORINFO_InstructionSetNative GetNativeInstructionSet(CORINFO_InstructionSet instructionSet)
-        => (CORINFO_InstructionSetNative)GetNativeInstructionSetOrdinal(instructionSet);
+    internal static CORINFO_InstructionSet GetNativeInstructionSet(ManagedInstructionSet instructionSet)
+        => (CORINFO_InstructionSet)GetNativeInstructionSetOrdinal(instructionSet);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_InstructionSetFlags input)
@@ -5588,7 +5863,7 @@ public partial class Globals
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string InstructionSetToString(CORINFO_InstructionSet instructionSet)
+    public static string InstructionSetToString(ManagedInstructionSet instructionSet)
     {
         return instructionSet switch {
 {{insSetToStringBuilder}}
@@ -5598,7 +5873,7 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
+    public static ManagedInstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
     {
 {{fromR2RInsSetBuilder}}
     }
@@ -5643,6 +5918,8 @@ public partial class Globals
 
             var ordinal = nativeOrdinals.Count + 1;
             nativeOrdinals.Add(name, ordinal);
+            _ = nativeInstructionSetEnumBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"    InstructionSet_{targetArch}_{name} = {ordinal},");
             return ordinal;
         }
 

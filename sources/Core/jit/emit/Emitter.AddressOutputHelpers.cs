@@ -12,7 +12,7 @@ public partial class Emitter
 #if TARGET_XARCH
     private const ulong EXTENDED_EVEX_PP_BITS = 0x10000000000UL;
 
-    private static bool HasRegularWideForm(instruction ins) => (CodeGen.instInfo[(int)ins] & INS_FLAGS_HasWBit) != 0;
+    private static bool HasRegularWideForm(instruction ins) => (CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & INS_FLAGS_HasWBit) != 0;
 
     private static bool HasCompressedDisplacement(instrDesc id)
     {

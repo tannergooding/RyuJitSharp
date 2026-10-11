@@ -34,7 +34,8 @@ public partial class Emitter
 
         public void idIns(instruction ins)
         {
-            assert(ins is not INS_invalid && ins < INS_count);
+            assert(ins is not INS_invalid &&
+                   (uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)InstructionOrdinalMaps.GetNativeInstructionCount());
             _idIns = ins;
         }
 

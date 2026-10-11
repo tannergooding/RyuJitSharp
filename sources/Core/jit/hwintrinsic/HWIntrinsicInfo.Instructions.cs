@@ -17,7 +17,8 @@ public readonly partial struct HWIntrinsicInfo
         }
 
         var instructionCount = (int)TYP_DOUBLE - (int)TYP_BYTE + 1;
-        var ins = (instruction)s_instructions[(GetTableIndex(id) * instructionCount) + (int)type - (int)TYP_BYTE];
+        var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
+            s_instructions[(GetTableIndex(id) * instructionCount) + (int)type - (int)TYP_BYTE]);
 #if TARGET_X86
         if (ins is INS_movd64)
         {

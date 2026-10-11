@@ -376,7 +376,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
     public bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert) => lpVtbl->convertPInvokeCalliToCall((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), pResolvedToken, fMustConvert) != 0;
 
-    public bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency) => lpVtbl->notifyInstructionSetUsage((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), Globals.GetNativeInstructionSet(instructionSet), supportEnabled, preserveNegativeDependency) != 0;
+    public bool notifyInstructionSetUsage(ManagedInstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency) => lpVtbl->notifyInstructionSetUsage((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), Globals.GetNativeInstructionSet(instructionSet), supportEnabled, preserveNegativeDependency) != 0;
 
     public void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) => lpVtbl->updateEntryPointForTailCall((ICorDynamicInfo*)(Unsafe.AsPointer(ref this)), entryPoint);
 
@@ -529,7 +529,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
         // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
         // preserveNegativeDependency requests that the absence of the instruction set be preserved as a prerequisite.
-        bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency);
+        bool notifyInstructionSetUsage(ManagedInstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency);
 
         // Notify EE that JIT needs an entry-point that is tail-callable.
         // This is used for AOT on x64 to support delay loaded fast tailcalls.
@@ -610,7 +610,7 @@ public unsafe struct ICorDynamicInfo : ICorDynamicInfo.Interface
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_RESOLVED_TOKEN*, bool, byte> convertPInvokeCalliToCall;
 
-        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_InstructionSetNative, bool, bool, byte> notifyInstructionSetUsage;
+        public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_InstructionSet, bool, bool, byte> notifyInstructionSetUsage;
 
         public delegate* unmanaged[MemberFunction]<TSelf*, CORINFO_CONST_LOOKUP*, void> updateEntryPointForTailCall;
 

@@ -59,9 +59,10 @@ public partial class Emitter
 
             default:
             {
-                if ((INS_seto <= ins) && (ins <= INS_setg))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_seto, INS_setg)))
                 {
-                    assert((INS_seto + 0xF) == INS_setg);
+                    assert((InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_setg) -
+                            InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seto)) == 0xF);
                     assert(attr == EA_1BYTE);
                     assert((insEncodeMRreg(id, reg, attr, insCodeMR(ins)) & 0x00FF0000) != 0);
                     size = attr;
@@ -127,7 +128,7 @@ public partial class Emitter
 #if TARGET_AMD64
     public static bool IsApxZuCompatibleInstruction(instruction ins)
     {
-        return (ins >= INS_seto_apx) && (ins <= INS_setg_apx);
+        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_seto_apx, INS_setg_apx));
     }
 #endif
 

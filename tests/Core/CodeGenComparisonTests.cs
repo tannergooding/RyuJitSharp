@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.emitJumpKind;
 using static RyuJitSharp.genTreeOps;

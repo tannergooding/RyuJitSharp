@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;

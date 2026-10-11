@@ -85,13 +85,15 @@ public partial class Emitter
                 }
                 else
                 {
+                    var isIntegerLoad = ins is INS_ld_b or INS_ld_h or INS_ld_w or INS_ld_d or INS_ld_bu or INS_ld_hu or INS_ld_wu;
+                    var isIntegerStore = ins is INS_st_b or INS_st_h or INS_st_w or INS_st_d;
+
                     switch (EA_SIZE(indir.Type.EmitSize))
                     {
                         case EA_1BYTE:
                         {
-                            assert((((int)ins <= (int)INS_ld_wu) && ((int)ins >= (int)INS_ld_b)) ||
-                                   (((int)ins <= (int)INS_st_d) && ((int)ins >= (int)INS_st_b)));
-                            if ((int)ins <= (int)INS_ld_wu)
+                            assert(isIntegerLoad || isIntegerStore);
+                            if (isIntegerLoad)
                             {
                                 ins = varTypeIsUnsigned(indir.Type) ? INS_ldx_bu : INS_ldx_b;
                             }
@@ -104,9 +106,8 @@ public partial class Emitter
                         }
                         case EA_2BYTE:
                         {
-                            assert((((int)ins <= (int)INS_ld_wu) && ((int)ins >= (int)INS_ld_b)) ||
-                                   (((int)ins <= (int)INS_st_d) && ((int)ins >= (int)INS_st_b)));
-                            if ((int)ins <= (int)INS_ld_wu)
+                            assert(isIntegerLoad || isIntegerStore);
+                            if (isIntegerLoad)
                             {
                                 ins = varTypeIsUnsigned(indir.Type) ? INS_ldx_hu : INS_ldx_h;
                             }
@@ -119,12 +120,11 @@ public partial class Emitter
                         }
                         case EA_4BYTE:
                         {
-                            assert(((((int)ins <= (int)INS_ld_wu) && ((int)ins >= (int)INS_ld_b)) ||
-                                    (((int)ins <= (int)INS_st_d) && ((int)ins >= (int)INS_st_b)) ||
-                                    (ins is INS_fst_s or INS_fld_s)));
-                            assert((int)INS_fst_s > (int)INS_st_d);
+                            assert(isIntegerLoad || isIntegerStore || (ins is INS_fst_s or INS_fld_s));
+                            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_fst_s) >
+                                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_st_d));
 
-                            if ((int)ins <= (int)INS_ld_wu)
+                            if (isIntegerLoad)
                             {
                                 ins = varTypeIsUnsigned(indir.Type) ? INS_ldx_wu : INS_ldx_w;
                             }
@@ -145,12 +145,11 @@ public partial class Emitter
                         }
                         case EA_8BYTE:
                         {
-                            assert(((((int)ins <= (int)INS_ld_wu) && ((int)ins >= (int)INS_ld_b)) ||
-                                    (((int)ins <= (int)INS_st_d) && ((int)ins >= (int)INS_st_b)) ||
-                                    (ins is INS_fst_d or INS_fld_d)));
-                            assert((int)INS_fst_d > (int)INS_st_d);
+                            assert(isIntegerLoad || isIntegerStore || (ins is INS_fst_d or INS_fld_d));
+                            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_fst_d) >
+                                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_st_d));
 
-                            if ((int)ins <= (int)INS_ld_wu)
+                            if (isIntegerLoad)
                             {
                                 ins = INS_ldx_d;
                             }

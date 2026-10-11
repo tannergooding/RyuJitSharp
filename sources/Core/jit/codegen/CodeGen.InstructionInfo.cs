@@ -9,25 +9,25 @@ public sealed partial class CodeGen
 {
     public static bool instIsFP(instruction ins)
     {
-        assert((uint)ins < (uint)instInfo.Length);
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);
 #if TARGET_XARCH
-        return (instInfo[(int)ins] & INS_FLAGS_X87Instr) != 0;
+        return (instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & INS_FLAGS_X87Instr) != 0;
 #else
-        return (instInfo[(int)ins] & INST_FP) != 0;
+        return (instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & INST_FP) != 0;
 #endif
     }
 
 #if TARGET_XARCH
     public static bool instHasPseudoName(instruction ins)
     {
-        assert((uint)ins < (uint)instInfo.Length);
-        return (instInfo[(int)ins] & INS_FLAGS_HasPseudoName) != 0;
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);
+        return (instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & INS_FLAGS_HasPseudoName) != 0;
     }
 
     public static int instKMaskBaseSize(instruction ins)
     {
-        assert((uint)ins < (uint)s_kMaskBaseSizes.Length);
-        return s_kMaskBaseSizes[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_kMaskBaseSizes.Length);
+        return s_kMaskBaseSizes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
     public static bool instIsEmbeddedMaskingCompatible(instruction ins)
@@ -53,8 +53,8 @@ public sealed partial class CodeGen
 
     public static byte instSimdElemSize(instruction ins)
     {
-        assert((uint)ins < (uint)instInfo.Length);
-        return (byte)(instInfo[(int)ins] >> InstInfoElemSizeShift);
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);
+        return (byte)(instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] >> InstInfoElemSizeShift);
     }
 #endif
 }

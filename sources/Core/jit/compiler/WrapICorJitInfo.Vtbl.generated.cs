@@ -2499,7 +2499,7 @@ public sealed unsafe partial class WrapICorJitInfo
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Thunk_notifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSetNative nativeInstructionSet, bool supportEnabled, bool preserveNegativeDependency)
+    private static byte Thunk_notifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet nativeInstructionSet, bool supportEnabled, bool preserveNegativeDependency)
     {
         try
         {

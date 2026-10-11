@@ -24,7 +24,7 @@ public partial struct CORINFO_InstructionSetFlags
         }
     }
 
-    public void AddInstructionSet(CORINFO_InstructionSet instructionSet)
+    public void AddInstructionSet(ManagedInstructionSet instructionSet)
     {
         var nativeOrdinal = Globals.GetNativeInstructionSetOrdinal(instructionSet);
         var fieldIndex = nativeOrdinal / BitsPerFlagsField;
@@ -54,7 +54,7 @@ public partial struct CORINFO_InstructionSetFlags
         return (_flags[fieldIndex] & bitMask) != 0;
     }
 
-    public readonly bool HasInstructionSet(CORINFO_InstructionSet instructionSet)
+    public readonly bool HasInstructionSet(ManagedInstructionSet instructionSet)
     {
         var nativeOrdinal = Globals.GetNativeInstructionSetOrdinal(instructionSet);
         var fieldIndex = nativeOrdinal / BitsPerFlagsField;
@@ -64,7 +64,7 @@ public partial struct CORINFO_InstructionSetFlags
 
     public readonly bool IsEmpty() => !((ReadOnlySpan<long>)(_flags)).ContainsAnyExcept(0);
 
-    public void RemoveInstructionSet(CORINFO_InstructionSet instructionSet)
+    public void RemoveInstructionSet(ManagedInstructionSet instructionSet)
     {
         var nativeOrdinal = Globals.GetNativeInstructionSetOrdinal(instructionSet);
         var fieldIndex = nativeOrdinal / BitsPerFlagsField;

@@ -4384,7 +4384,7 @@ public partial class Compiler
     /// <param name="preserveNegativeDependency">Whether an absent ISA must be preserved as a prerequisite.</param>
     /// <returns></returns>
     /// <remarks>The result exactly matches the target machine, except for CoreLib unless preserving negative dependencies.</remarks>
-    private bool compExactlyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
+    private bool compExactlyDependsOn(ManagedInstructionSet isa, bool preserveNegativeDependency = false)
     {
 #if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
         // Non-deterministic intrinsics must notify the EE even if an earlier query cached this ISA.
@@ -4479,7 +4479,7 @@ public partial class Compiler
     /// <param name="isa"></param>
     /// <returns></returns>
     /// <remarks>Use this api when asking the question so that future ISA questions can be asked correctly or when asserting support/nonsupport for an instruction set</remarks>
-    internal bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa)
+    internal bool compIsaSupportedDebugOnly(ManagedInstructionSet isa)
     {
 #if DEBUG && (TARGET_XARCH || TARGET_ARM64)
         return opts.compSupportsISA.HasInstructionSet(isa);
@@ -4684,7 +4684,7 @@ public partial class Compiler
     ///   <para>The result of this api call will match the target machine if the result is true.</para>
     ///   <para>If the result is false, then the target machine may have support for the instruction.</para>
     /// </remarks>
-    internal bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
+    internal bool compOpportunisticallyDependsOn(ManagedInstructionSet isa, bool preserveNegativeDependency = false)
         => (preserveNegativeDependency || opts.compSupportsISA.HasInstructionSet(isa)) && compExactlyDependsOn(isa, preserveNegativeDependency);
 
 #if DEBUG

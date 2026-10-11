@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.var_types;
@@ -527,8 +527,8 @@ internal static unsafe class HWIntrinsicXplatImportTests
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&NotifyInstructionSetUsage;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
         using var tls = new JitTls(&jitInfo);
@@ -573,7 +573,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte NotifyInstructionSetUsage(ICorJitInfo* self,
-        CORINFO_InstructionSetNative isa, byte supported, byte preserveNegativeDependency) => supported;
+        CORINFO_InstructionSet isa, byte supported, byte preserveNegativeDependency) => supported;
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "impXplatIntrinsic")]
     private static extern GenTree? Import(Compiler compiler, NamedIntrinsic intrinsic,

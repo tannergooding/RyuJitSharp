@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.var_types;
@@ -73,7 +73,7 @@ internal static unsafe class IntrinsicEncodingTests
     [TestCase(INS_vpdpbusd, InstructionSet_AVX512v3)]
     [TestCase(INS_vpdpwsud, InstructionSet_AVXVNNIINT_V512)]
     public static void EvexAvailabilityRetainsInstructionSpecificIsaRequirements(
-        instruction instruction, CORINFO_InstructionSet requiredIsa)
+        instruction instruction, ManagedInstructionSet requiredIsa)
     {
         WithCompiler((compiler, codeGen) => {
             var emitter = codeGen.Emitter;
@@ -87,7 +87,7 @@ internal static unsafe class IntrinsicEncodingTests
         });
     }
 
-    private static void EnableIsa(Compiler compiler, CORINFO_InstructionSet isa)
+    private static void EnableIsa(Compiler compiler, ManagedInstructionSet isa)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(isa);
         compiler.opts.compSupportsISAReported.AddInstructionSet(isa);

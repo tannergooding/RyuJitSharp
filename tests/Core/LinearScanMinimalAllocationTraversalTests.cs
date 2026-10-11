@@ -814,9 +814,9 @@ internal static unsafe class LinearScanMinimalAllocationTraversalTests
         compiler.compFloatingPointUsed = true;
         if (evex)
         {
-            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
+            compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
         }
 #if DEBUG
         compiler.fgSafeBasicBlockCreation = true;

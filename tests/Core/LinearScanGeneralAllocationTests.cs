@@ -242,9 +242,9 @@ internal static class LinearScanGeneralAllocationTests
             var codeGen = compiler.codeGen ?? throw new AssertionException("Codegen state is missing.");
             if (evex)
             {
-                compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-                compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-                compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
+                compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
                 CompilerAllMask(compiler) |= SRBM_ALLMASK_EVEX;
                 codeGen.CopyRegisterInfo();
                 allocator = new LinearScan(compiler);

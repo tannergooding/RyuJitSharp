@@ -12,16 +12,17 @@ public partial class Emitter
 {
     private insFormat emitInsFormat(instruction ins)
     {
-        assert((uint)ins < (uint)s_instructionFormats.Length);
-        assert(s_instructionFormats[(int)ins] != IF_NONE);
-        return s_instructionFormats[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_instructionFormats.Length);
+        assert(s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE);
+        return s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
     private bool emitInsIsLoad(instruction ins)
     {
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & CodeGen.LD) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & CodeGen.LD) != 0;
         }
 
         return false;
@@ -29,9 +30,10 @@ public partial class Emitter
 
     private bool emitInsIsLoadOrStore(instruction ins)
     {
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & (CodeGen.LD | CodeGen.ST)) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & (CodeGen.LD | CodeGen.ST)) != 0;
         }
 
         return false;

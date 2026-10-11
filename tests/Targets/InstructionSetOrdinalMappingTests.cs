@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -14,16 +14,16 @@ internal static unsafe class InstructionSetOrdinalMappingTests
     [Test]
     public static void NativeInstructionSetMappingsRoundTripAndPreserveFlagLayout()
     {
-        Assert.That(Enum.GetUnderlyingType(typeof(CORINFO_InstructionSetNative)), Is.EqualTo(typeof(int)));
+        Assert.That(Enum.GetUnderlyingType(typeof(CORINFO_InstructionSet)), Is.EqualTo(typeof(int)));
         Assert.That(sizeof(CORINFO_InstructionSetFlags), Is.EqualTo(16));
 
         var flags = default(CORINFO_InstructionSetFlags);
         long[] expectedFlags = [0, 0];
-        var managedInstructionSets = new HashSet<CORINFO_InstructionSet>();
+        var managedInstructionSets = new HashSet<ManagedInstructionSet>();
         var nativeOrdinals = new HashSet<int>();
         var mappedCount = 0;
 
-        foreach (var instructionSet in Enum.GetValues<CORINFO_InstructionSet>())
+        foreach (var instructionSet in Enum.GetValues<ManagedInstructionSet>())
         {
             if (!Globals.TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal))
             {
@@ -64,15 +64,21 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         Assert.That(flags.GetFlagsRaw()[0], Is.EqualTo(expectedFlags[0]));
         Assert.That(flags.GetFlagsRaw()[1], Is.EqualTo(expectedFlags[1]));
 
-        Assert.That(Globals.TryGetNativeInstructionSetOrdinal((CORINFO_InstructionSet)int.MaxValue, out _), Is.False);
+        Assert.That(Globals.TryGetNativeInstructionSetOrdinal((ManagedInstructionSet)int.MaxValue, out _), Is.False);
         Assert.That(Globals.TryGetManagedInstructionSet(-1, out _), Is.False);
         Assert.That(Globals.TryGetManagedInstructionSet(128, out _), Is.False);
-        _ = Assert.Throws<PlatformNotSupportedException>(() => Globals.GetNativeInstructionSetOrdinal((CORINFO_InstructionSet)int.MaxValue));
+        _ = Assert.Throws<PlatformNotSupportedException>(() => Globals.GetNativeInstructionSetOrdinal((ManagedInstructionSet)int.MaxValue));
     }
 
     [Test]
     public static void KnownNativeInstructionSetOrdinalsRemainTargetStable()
     {
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_XARCH_AVX2, Is.EqualTo(3));
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_XARCH_AVX10v1, Is.EqualTo(7));
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_ARM64_Fp16, Is.EqualTo(7));
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_RISCV64_Zba, Is.EqualTo(2));
+        Assert.That((int)CORINFO_InstructionSet.InstructionSet_WASM32_PackedSimd, Is.EqualTo(2));
+
         if (Configuration.TARGET_XARCH)
         {
             AssertNativeOrdinal(InstructionSet_AVX2, 3);
@@ -99,6 +105,34 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         else if (Configuration.TARGET_WASM)
         {
             AssertNativeOrdinal(InstructionSet_PackedSimd, 2);
+        }
+    }
+
+    [Test]
+    public static void NativeAliasesMatchActiveTargetOrdinals()
+    {
+        var targetPrefix = Configuration.TARGET_XARCH ? "XARCH"
+            : Configuration.TARGET_ARM64 ? "ARM64"
+            : Configuration.TARGET_RISCV64 ? "RISCV64"
+            : Configuration.TARGET_WASM ? "WASM32"
+            : throw new PlatformNotSupportedException("Instruction-set aliases are unavailable for this target.");
+
+        foreach (var instructionSet in Enum.GetValues<ManagedInstructionSet>())
+        {
+            if (!Globals.TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal))
+            {
+                continue;
+            }
+
+            if (instructionSet is InstructionSet_ILLEGAL or InstructionSet_Vector or InstructionSet_NONE)
+            {
+                continue;
+            }
+
+            var managedName = instructionSet.ToString();
+            var nativeAliasName = $"InstructionSet_{targetPrefix}_{managedName["InstructionSet_".Length..]}";
+            Assert.That(Enum.TryParse<CORINFO_InstructionSet>(nativeAliasName, out var nativeAlias), Is.True, nativeAliasName);
+            Assert.That((int)nativeAlias, Is.EqualTo(nativeOrdinal), nativeAliasName);
         }
     }
 
@@ -177,10 +211,10 @@ internal static unsafe class InstructionSetOrdinalMappingTests
     public static void NotifyInstructionSetUsageForwardsNativeOrdinal()
     {
         var instructionSet = InstructionSet_ILLEGAL;
-        var expectedNativeInstructionSet = default(CORINFO_InstructionSetNative);
+        var expectedNativeInstructionSet = default(CORINFO_InstructionSet);
         var foundNativeInstructionSet = false;
 
-        foreach (var candidate in Enum.GetValues<CORINFO_InstructionSet>())
+        foreach (var candidate in Enum.GetValues<ManagedInstructionSet>())
         {
             if (candidate is InstructionSet_ILLEGAL or InstructionSet_Vector or InstructionSet_NONE)
             {
@@ -190,7 +224,7 @@ internal static unsafe class InstructionSetOrdinalMappingTests
             if (Globals.TryGetNativeInstructionSetOrdinal(candidate, out var nativeOrdinal))
             {
                 instructionSet = candidate;
-                expectedNativeInstructionSet = (CORINFO_InstructionSetNative)nativeOrdinal;
+                expectedNativeInstructionSet = (CORINFO_InstructionSet)nativeOrdinal;
                 foundNativeInstructionSet = true;
                 break;
             }
@@ -199,13 +233,13 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         if (!foundNativeInstructionSet)
         {
             Assert.That(Globals.TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal), Is.True);
-            expectedNativeInstructionSet = (CORINFO_InstructionSetNative)nativeOrdinal;
+            expectedNativeInstructionSet = (CORINFO_InstructionSet)nativeOrdinal;
         }
 
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&Notify;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&Notify;
 
         TestJitInfo info = new() { Interface = new() { lpVtbl = &vtable } };
         Assert.That(info.Interface.notifyInstructionSetUsage(instructionSet, true, true), Is.True);
@@ -216,14 +250,14 @@ internal static unsafe class InstructionSetOrdinalMappingTests
         Assert.That(info.Preserve, Is.EqualTo(1));
     }
 
-    private static void AssertNativeOrdinal(CORINFO_InstructionSet instructionSet, int expectedNativeOrdinal)
+    private static void AssertNativeOrdinal(ManagedInstructionSet instructionSet, int expectedNativeOrdinal)
     {
         Assert.That(Globals.TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal), Is.True);
         Assert.That(nativeOrdinal, Is.EqualTo(expectedNativeOrdinal));
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSetNative instructionSet, byte supported, byte preserve)
+    private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSet instructionSet, byte supported, byte preserve)
     {
         var info = (TestJitInfo*)self;
         info->Count++;
@@ -236,7 +270,7 @@ internal static unsafe class InstructionSetOrdinalMappingTests
     private struct TestJitInfo
     {
         public ICorJitInfo Interface;
-        public CORINFO_InstructionSetNative InstructionSet;
+        public CORINFO_InstructionSet InstructionSet;
         public int Count;
         public byte Supported;
         public byte Preserve;

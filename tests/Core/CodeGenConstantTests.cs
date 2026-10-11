@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -352,7 +352,7 @@ internal static unsafe class CodeGenConstantTests
         return value;
     }
 
-    private static void Enable(Compiler compiler, CORINFO_InstructionSet isa)
+    private static void Enable(Compiler compiler, ManagedInstructionSet isa)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(isa);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(isa);

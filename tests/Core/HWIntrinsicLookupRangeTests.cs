@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.var_types;
 
@@ -133,7 +133,7 @@ internal static unsafe class HWIntrinsicLookupRangeTests
             for (var typeValue = (int)TYP_BYTE; typeValue <= (int)TYP_DOUBLE; typeValue++)
             {
                 var instruction = HWIntrinsicInfo.lookupIns(id, (var_types)typeValue, compiler: null);
-                hash = AppendHash(hash, unchecked((uint)(int)instruction));
+                hash = AppendHash(hash, unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(instruction)));
             }
 
             if (Configuration.TARGET_XARCH)

@@ -6,7 +6,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
@@ -546,7 +546,7 @@ internal static unsafe class LinearScanBlockAndStackArgumentTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmFltCalleeTrash")]
     private static extern ref regMask CompilerFloatCalleeTrash(Compiler compiler);
 
-    private static void EnableInstructionSet(Compiler compiler, CORINFO_InstructionSet instructionSet)
+    private static void EnableInstructionSet(Compiler compiler, ManagedInstructionSet instructionSet)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);

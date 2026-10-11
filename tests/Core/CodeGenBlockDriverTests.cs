@@ -237,15 +237,15 @@ internal static unsafe class CodeGenBlockDriverTests
             vtable.Base.Base.runWithSPMIErrorTrap = &InvokeCallback;
             vtable.Base.Base.printMethodName = &PrintMethodName;
             vtable.Base.notifyInstructionSetUsage =
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&NotifyInstructionSetUsage;
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyInstructionSetUsage;
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
             var previousSections = EmitterSections(ref JitConfig);
             var previousMethods = EmitterTests(ref JitConfig);
             if (section == "all")
             {
-                foreach (var isa in new[] { CORINFO_InstructionSet.InstructionSet_APX, CORINFO_InstructionSet.InstructionSet_AVX10v2 })
+                foreach (var isa in new[] { ManagedInstructionSet.InstructionSet_APX, ManagedInstructionSet.InstructionSet_AVX10v2 })
                 {
                     compiler.opts.compSupportsISA.AddInstructionSet(isa);
                     compiler.opts.compSupportsISAExactly.AddInstructionSet(isa);
@@ -311,7 +311,7 @@ internal static unsafe class CodeGenBlockDriverTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSetNative isa,
+    private static byte NotifyInstructionSetUsage(ICorJitInfo* self, CORINFO_InstructionSet isa,
         byte supported, byte preserveNegativeDependency) => supported;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

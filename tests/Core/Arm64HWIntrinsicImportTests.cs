@@ -886,8 +886,8 @@ internal static unsafe class Arm64HWIntrinsicImportTests
         vtable.Base.Base.getFieldInClass = &GetField;
         vtable.Base.Base.getFieldType = &GetFieldType;
         vtable.Base.notifyInstructionSetUsage =
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
-            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&NotifyIsa;
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&NotifyIsa;
         ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
         using var tls = new JitTls(&jitInfo);
@@ -974,7 +974,7 @@ internal static unsafe class Arm64HWIntrinsicImportTests
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte NotifyIsa(ICorJitInfo* self, CORINFO_InstructionSetNative isa, byte supported, byte preserve) => supported;
+    private static byte NotifyIsa(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported, byte preserve) => supported;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsIntrinsicType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 1;

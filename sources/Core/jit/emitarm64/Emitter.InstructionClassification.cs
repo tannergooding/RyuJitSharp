@@ -16,9 +16,10 @@ public partial class Emitter
 
     private static bool emitInsIsCompareArm64(instruction ins)
     {
-        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & Arm64InstInfoCompare) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoCompare) != 0;
         }
 
         return false;
@@ -26,9 +27,10 @@ public partial class Emitter
 
     private static bool emitInsIsVectorLongArm64(instruction ins)
     {
-        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & Arm64InstInfoLong) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoLong) != 0;
         }
 
         return false;
@@ -36,9 +38,10 @@ public partial class Emitter
 
     private static bool emitInsIsVectorNarrowArm64(instruction ins)
     {
-        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & Arm64InstInfoNarrow) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoNarrow) != 0;
         }
 
         return false;
@@ -46,9 +49,10 @@ public partial class Emitter
 
     private static bool emitInsIsVectorWideArm64(instruction ins)
     {
-        if (unchecked((uint)ins) < (uint)CodeGen.instInfo.Length)
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & Arm64InstInfoWide) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoWide) != 0;
         }
 
         return false;

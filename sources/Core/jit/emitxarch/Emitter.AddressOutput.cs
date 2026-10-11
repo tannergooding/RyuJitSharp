@@ -286,7 +286,7 @@ public partial class Emitter
                 }
             }
 #if TARGET_AMD64
-            if ((ins >= INS_imul_08) && (ins <= INS_imul_31))
+            if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_31)))
             {
                 _ = insEncodeReg345(id, inst3opImulReg(ins), size, &code);
             }

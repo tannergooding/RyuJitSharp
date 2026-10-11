@@ -3110,7 +3110,7 @@ public partial class Compiler
     private unsafe bool isIntrinsicType(CORINFO_CLASS_HANDLE clsHnd)
         => info.compCompHnd->isIntrinsicType(clsHnd);
 
-    private unsafe bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool preserveNegativeDependency = false)
+    private unsafe bool notifyInstructionSetUsage(ManagedInstructionSet isa, bool supported, bool preserveNegativeDependency = false)
     {
         JITDUMP($"Notify VM instruction set ({InstructionSetToString(isa)}) {(supported ? "must" : "must not")} be supported{(preserveNegativeDependency ? " (preserve negative dependency)" : "")}.\n");
         return info.compCompHnd->notifyInstructionSetUsage(isa, supported, preserveNegativeDependency);

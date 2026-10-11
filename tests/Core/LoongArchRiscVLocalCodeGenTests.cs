@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.CorJitResult;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;

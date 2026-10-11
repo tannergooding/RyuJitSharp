@@ -10,9 +10,9 @@ public sealed partial class CodeGen
 #if TARGET_XARCH
     public static int instInputSize(instruction ins)
     {
-        assert((uint)ins < (uint)instInfo.Length);
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);
 
-        return (instInfo[(int)ins] & Input_Mask) switch {
+        return (instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & Input_Mask) switch {
             Input_8Bit => 1,
             Input_16Bit => 2,
             Input_32Bit => 4,

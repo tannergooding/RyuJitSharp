@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -686,7 +686,7 @@ internal static unsafe class BinaryArithmeticLoweringTests
 #endif
     }
 
-    private static void Enable(Compiler compiler, CORINFO_InstructionSet isa)
+    private static void Enable(Compiler compiler, ManagedInstructionSet isa)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(isa);
         compiler.opts.compSupportsISAReported.AddInstructionSet(isa);

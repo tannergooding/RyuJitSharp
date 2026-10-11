@@ -816,7 +816,7 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
         for (nuint insertedIndex = 0; insertedIndex < count; insertedIndex++)
         {
             var destination = (nuint)index + insertedIndex;
-            var valueToInsert = inserted[(int)insertedIndex];
+            var valueToInsert = inserted[insertedIndex];
             if (constructInserted)
             {
                 _allocator.construct(ref _data[(int)destination], in valueToInsert);

@@ -19,9 +19,9 @@ public partial class Emitter
 {
     private insFormat emitInsFormat(instruction ins)
     {
-        assert((uint)ins < (uint)s_instructionFormats.Length);
-        assert(s_instructionFormats[(int)ins] != IF_NONE);
-        return s_instructionFormats[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_instructionFormats.Length);
+        assert(s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE);
+        return s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
     private static insSize emitInsSize(insFormat format)

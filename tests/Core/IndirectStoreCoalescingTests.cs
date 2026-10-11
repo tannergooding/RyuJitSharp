@@ -330,9 +330,9 @@ internal static unsafe class IndirectStoreCoalescingTests
     public static void WidenedVectorStoreClearsInactivePayload()
     {
         WithCompiler(optimized: true, compiler => {
-            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
             Assert.That(compiler.GetPreferredVectorByteLength(), Is.EqualTo(32));
 
             var firstAddr = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1000);

@@ -21,7 +21,7 @@ public partial class Emitter
             return false;
         }
 
-        var flags = CodeGen.instInfo[(int)ins];
+        var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
         return (flags & Writes_ZF) != 0;
     }

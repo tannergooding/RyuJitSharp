@@ -38,8 +38,8 @@ internal static unsafe class HWIntrinsicImportPrerequisiteTests
             : LookupIsa(compiler, className, default, default);
 
         Assert.That(isa, Is.EqualTo(x64
-            ? CORINFO_InstructionSet.InstructionSet_X86Base_X64
-            : CORINFO_InstructionSet.InstructionSet_X86Base));
+            ? ManagedInstructionSet.InstructionSet_X86Base_X64
+            : ManagedInstructionSet.InstructionSet_X86Base));
     }
 
     [Test]
@@ -54,12 +54,12 @@ internal static unsafe class HWIntrinsicImportPrerequisiteTests
             : LookupIsa(compiler, className, default, default);
 
         Assert.That(isa, Is.EqualTo(x64
-            ? CORINFO_InstructionSet.InstructionSet_NONE
-            : CORINFO_InstructionSet.InstructionSet_ILLEGAL));
+            ? ManagedInstructionSet.InstructionSet_NONE
+            : ManagedInstructionSet.InstructionSet_ILLEGAL));
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lookupIsa")]
-    private static extern CORINFO_InstructionSet LookupIsa(
+    private static extern ManagedInstructionSet LookupIsa(
         Compiler compiler, ReadOnlySpan<byte> className, ReadOnlySpan<byte> innerClassName, ReadOnlySpan<byte> outerClassName);
 
     [TestCase(0)]

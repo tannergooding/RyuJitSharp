@@ -184,12 +184,17 @@ public partial class Emitter
                 assert((int)INS_jp + delta == (int)INS_l_jp);
                 assert((int)INS_jnp + delta == (int)INS_l_jnp);
                 assert((int)INS_jl + delta == (int)INS_l_jl);
-                assert((int)INS_jge + delta == (int)INS_l_jge);
-                assert((int)INS_jle + delta == (int)INS_l_jle);
-                assert((int)INS_jg + delta == (int)INS_l_jg);
+                assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_jge) + delta ==
+                       InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_l_jge));
+                assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_jle) + delta ==
+                       InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_l_jle));
+                assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_jg) + delta ==
+                       InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_l_jg));
 #pragma warning restore CA1508
 
-                code = (ulong)insCode((instruction)((int)ins + delta));
+                var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);
+                var longJumpInstruction = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal + delta);
+                code = (ulong)insCode(longJumpInstruction);
             }
             else if (ins is INS_push or INS_push_hide)
             {

@@ -15,14 +15,14 @@ public partial class Emitter
 
     public static bool IsAVXVNNIFamilyInstruction(instruction ins)
     {
-        return ((ins >= FIRST_AVXVNNI_INSTRUCTION) && (ins <= LAST_AVXVNNI_INSTRUCTION))
+        return ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNI_INSTRUCTION, LAST_AVXVNNI_INSTRUCTION)))
             || IsAVXVNNIINTInstruction(ins);
     }
 
     public static bool IsAVXVNNIINTInstruction(instruction ins)
     {
-        return ((ins >= FIRST_AVXVNNIINT8_INSTRUCTION) && (ins <= LAST_AVXVNNIINT8_INSTRUCTION))
-            || ((ins >= FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= LAST_AVXVNNIINT16_INSTRUCTION));
+        return ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNIINT8_INSTRUCTION, LAST_AVXVNNIINT8_INSTRUCTION)))
+            || ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNIINT16_INSTRUCTION, LAST_AVXVNNIINT16_INSTRUCTION)));
     }
 
     public static bool Is3OpRmwInstruction(instruction ins)
@@ -47,11 +47,11 @@ public partial class Emitter
 
             default:
             {
-                return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION))
+                return ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_FMA_INSTRUCTION, LAST_FMA_INSTRUCTION)))
                     || IsAVXVNNIFamilyInstruction(ins)
-                    || ((ins >= FIRST_AVX512BMM_INSTRUCTION) && (ins <= LAST_AVX512BMM_INSTRUCTION))
-                    || ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION))
-                    || ((ins >= INS_vfmadd132ph) && (ins <= INS_vfnmsub231sh));
+                    || ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVX512BMM_INSTRUCTION, LAST_AVX512BMM_INSTRUCTION)))
+                    || ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXIFMA_INSTRUCTION, LAST_AVXIFMA_INSTRUCTION)))
+                    || ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfmadd132ph, INS_vfnmsub231sh)));
             }
         }
     }

@@ -41,9 +41,9 @@ public partial class Emitter
     private static bool IsX86ByteRegister(regNumber reg) => reg is REG_EAX or REG_ECX or REG_EDX or REG_EBX;
 #endif
 #if TARGET_AMD64
-    public static bool instrIs3opImul(instruction ins) => (ins >= INS_imul_AX) && (ins <= INS_imul_31);
+    public static bool instrIs3opImul(instruction ins) => (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_AX, INS_imul_31));
 
-    public static bool instrIsExtendedReg3opImul(instruction ins) => (ins >= INS_imul_08) && (ins <= INS_imul_31);
+    public static bool instrIsExtendedReg3opImul(instruction ins) => (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_31));
 #elif TARGET_X86
     public static bool instrIsExtendedReg3opImul(instruction ins) => false;
 #endif

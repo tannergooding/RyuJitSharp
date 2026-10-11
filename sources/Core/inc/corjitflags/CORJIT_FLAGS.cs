@@ -31,7 +31,7 @@ public partial struct CORJIT_FLAGS
         instructionSetFlags.Add(other.instructionSetFlags);
     }
 
-    public void Clear(CORINFO_InstructionSet instructionSet)
+    public void Clear(ManagedInstructionSet instructionSet)
     {
         instructionSetFlags.RemoveInstructionSet(instructionSet);
     }
@@ -58,7 +58,7 @@ public partial struct CORJIT_FLAGS
 
     public readonly bool IsEmpty() => (corJitFlags == 0) && instructionSetFlags.IsEmpty();
 
-    public readonly bool IsSet(CORINFO_InstructionSet instructionSet) => instructionSetFlags.HasInstructionSet(instructionSet);
+    public readonly bool IsSet(ManagedInstructionSet instructionSet) => instructionSetFlags.HasInstructionSet(instructionSet);
 
     public readonly bool IsSet(CorJitFlag flag) => (corJitFlags & (1L << (int)(flag))) != 0;
 
@@ -68,7 +68,7 @@ public partial struct CORJIT_FLAGS
         instructionSetFlags.Reset();
     }
 
-    public void Set(CORINFO_InstructionSet instructionSet)
+    public void Set(ManagedInstructionSet instructionSet)
     {
         instructionSetFlags.AddInstructionSet(instructionSet);
     }

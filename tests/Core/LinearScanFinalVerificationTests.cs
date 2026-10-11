@@ -421,9 +421,9 @@ internal static unsafe class LinearScanFinalVerificationTests
         compiler.compFloatingPointUsed = true;
         if (evex)
         {
-            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
+            compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
         }
         compiler.fgSafeBasicBlockCreation = true;
         compiler.fgSafeFlowEdgeCreation = true;

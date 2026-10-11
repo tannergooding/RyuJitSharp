@@ -2,7 +2,7 @@
 
 #if FEATURE_SIMD && TARGET_AMD64
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 
 namespace RyuJitSharp.UnitTests;
 

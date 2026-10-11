@@ -97,64 +97,64 @@ public partial class Emitter
         {
             case 0:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes1.Length, "ins < ArrLen(insCodes1)");
-                code = ordinaryInsCodes1[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes1.Length, "ins < ArrLen(insCodes1)");
+                code = ordinaryInsCodes1[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 1:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes2.Length, "ins < ArrLen(insCodes2)");
-                code = ordinaryInsCodes2[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes2.Length, "ins < ArrLen(insCodes2)");
+                code = ordinaryInsCodes2[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 2:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes3.Length, "ins < ArrLen(insCodes3)");
-                code = ordinaryInsCodes3[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes3.Length, "ins < ArrLen(insCodes3)");
+                code = ordinaryInsCodes3[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 3:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes4.Length, "ins < ArrLen(insCodes4)");
-                code = ordinaryInsCodes4[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes4.Length, "ins < ArrLen(insCodes4)");
+                code = ordinaryInsCodes4[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 4:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes5.Length, "ins < ArrLen(insCodes5)");
-                code = ordinaryInsCodes5[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes5.Length, "ins < ArrLen(insCodes5)");
+                code = ordinaryInsCodes5[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 5:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes6.Length, "ins < ArrLen(insCodes6)");
-                code = ordinaryInsCodes6[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes6.Length, "ins < ArrLen(insCodes6)");
+                code = ordinaryInsCodes6[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 6:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes7.Length, "ins < ArrLen(insCodes7)");
-                code = ordinaryInsCodes7[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes7.Length, "ins < ArrLen(insCodes7)");
+                code = ordinaryInsCodes7[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 7:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes8.Length, "ins < ArrLen(insCodes8)");
-                code = ordinaryInsCodes8[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes8.Length, "ins < ArrLen(insCodes8)");
+                code = ordinaryInsCodes8[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
 
             case 8:
             {
-                assert(unchecked((uint)ins) < (uint)ordinaryInsCodes9.Length, "ins < ArrLen(insCodes9)");
-                code = ordinaryInsCodes9[(int)ins];
+                assert(unchecked((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)) < (uint)ordinaryInsCodes9.Length, "ins < ArrLen(insCodes9)");
+                code = ordinaryInsCodes9[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
         }

@@ -28,9 +28,9 @@ public static partial class Globals
     public static nuint insCode(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodes.Length);
-        assert(insCodes[(int)ins] != BAD_CODE);
-        return insCodes[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodes.Length);
+        assert(insCodes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE);
+        return insCodes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Opcode lookup outside xarch is not implemented.");
 #endif
@@ -39,9 +39,9 @@ public static partial class Globals
     public static nuint insCodeACC(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesACC.Length);
-        assert(insCodesACC[(int)ins] != BAD_CODE);
-        return insCodesACC[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesACC.Length);
+        assert(insCodesACC[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE);
+        return insCodesACC[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Accumulator opcode lookup outside xarch is not implemented.");
 #endif
@@ -50,9 +50,9 @@ public static partial class Globals
     public static nuint insCodeRR(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesRR.Length);
-        assert(insCodesRR[(int)ins] != BAD_CODE);
-        return insCodesRR[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesRR.Length);
+        assert(insCodesRR[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE);
+        return insCodesRR[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Register opcode lookup outside xarch is not implemented.");
 #endif
@@ -61,9 +61,9 @@ public static partial class Globals
     public static nuint insCodeRM(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesRM.Length);
-        assert(insCodesRM[(int)ins] != BAD_CODE);
-        return (nuint)insCodesRM[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesRM.Length);
+        assert(insCodesRM[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE);
+        return (nuint)insCodesRM[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Register-memory opcode lookup outside xarch is not implemented.");
 #endif
@@ -72,8 +72,8 @@ public static partial class Globals
     public static bool hasCodeRM(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesRM.Length);
-        return insCodesRM[(int)ins] != BAD_CODE;
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesRM.Length);
+        return insCodesRM[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Register-memory opcode lookup outside xarch is not implemented.");
 #endif
@@ -82,9 +82,9 @@ public static partial class Globals
     public static nuint insCodeMI(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesMI.Length);
-        assert(insCodesMI[(int)ins] != BAD_CODE);
-        return (nuint)insCodesMI[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesMI.Length);
+        assert(insCodesMI[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE);
+        return (nuint)insCodesMI[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Memory-immediate opcode lookup outside xarch is not implemented.");
 #endif
@@ -93,8 +93,8 @@ public static partial class Globals
     public static bool hasCodeMI(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesMI.Length);
-        return insCodesMI[(int)ins] != BAD_CODE;
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesMI.Length);
+        return insCodesMI[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Memory-immediate opcode lookup outside xarch is not implemented.");
 #endif
@@ -103,9 +103,9 @@ public static partial class Globals
     public static nuint insCodeMR(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesMR.Length);
-        assert(insCodesMR[(int)ins] != BAD_CODE);
-        return insCodesMR[(int)ins];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesMR.Length);
+        assert(insCodesMR[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE);
+        return insCodesMR[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Memory-register opcode lookup outside xarch is not implemented.");
 #endif
@@ -114,8 +114,8 @@ public static partial class Globals
     public static bool hasCodeMR(instruction ins)
     {
 #if TARGET_XARCH
-        assert((uint)ins < (uint)insCodesMR.Length);
-        return insCodesMR[(int)ins] != BAD_CODE;
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesMR.Length);
+        return insCodesMR[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != BAD_CODE;
 #else
         throw new FatalJitException(CORJIT_SKIPPED, "Memory-register opcode lookup outside xarch is not implemented.");
 #endif

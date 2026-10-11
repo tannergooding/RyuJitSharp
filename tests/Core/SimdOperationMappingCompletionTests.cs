@@ -12,7 +12,7 @@ using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 #if TARGET_XARCH
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 #endif
 
 namespace RyuJitSharp.UnitTests;
@@ -231,7 +231,7 @@ internal static unsafe class SimdOperationMappingCompletionTests
             Is.EqualTo(expected)));
     }
 
-    private static void Enable(Compiler compiler, CORINFO_InstructionSet instructionSet)
+    private static void Enable(Compiler compiler, ManagedInstructionSet instructionSet)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);

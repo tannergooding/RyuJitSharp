@@ -89,9 +89,10 @@ public partial class Emitter
         const byte LD = 2;
         const byte ST = 4;
 
-        if (((int)ins >= 0) && ((uint)ins < (uint)CodeGen.instInfo.Length))
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & (LD | ST)) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & (LD | ST)) != 0;
         }
 
         return false;
@@ -100,17 +101,17 @@ public partial class Emitter
     private bool emitInsIsLoad(instruction ins)
     {
         const byte LD = 2;
-        return ((int)ins >= 0) &&
-            ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-            ((CodeGen.instInfo[(int)ins] & LD) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+            ((CodeGen.instInfo[nativeOrdinal] & LD) != 0);
     }
 
     private bool emitInsIsCompare(instruction ins)
     {
         const byte CMP = 8;
-        return ((int)ins >= 0) &&
-            ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-            ((CodeGen.instInfo[(int)ins] & CMP) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+            ((CodeGen.instInfo[nativeOrdinal] & CMP) != 0);
     }
 
     private bool emitInsWritesToLclVarStackLoc(instrDesc id)

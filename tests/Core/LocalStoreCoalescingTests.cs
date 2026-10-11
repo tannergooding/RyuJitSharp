@@ -202,9 +202,9 @@ internal static unsafe class LocalStoreCoalescingTests
     public static void WidenedVectorLocalStoreClearsInactivePayload()
     {
         WithCompiler(optimized: true, enabled: true, compiler => {
-            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
             Assert.That(compiler.GetPreferredVectorByteLength(), Is.EqualTo(32));
 
             compiler.lvaTable[0].Type = var_types.TYP_STRUCT;

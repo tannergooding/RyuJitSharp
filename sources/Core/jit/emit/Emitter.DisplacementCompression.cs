@@ -12,14 +12,15 @@ public partial class Emitter
 #if TARGET_XARCH
     public static bool hasTupleTypeInfo(instruction ins)
     {
-        assert((uint)ins < (uint)s_tupleTypes.Length);
-        return s_tupleTypes[(int)ins] != INS_TT_NONE;
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_tupleTypes.Length);
+        return s_tupleTypes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != INS_TT_NONE;
     }
 
     public static nint GetInputSizeInBytes(instrDesc id)
     {
-        assert((uint)id.idIns() < (uint)CodeGen.instInfo.Length);
-        var inputSize = CodeGen.instInfo[(int)id.idIns()] & Input_Mask;
+        var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(id.idIns());
+        assert((uint)nativeOrdinal < (uint)CodeGen.instInfo.Length);
+        var inputSize = CodeGen.instInfo[nativeOrdinal] & Input_Mask;
 
         return inputSize switch
         {

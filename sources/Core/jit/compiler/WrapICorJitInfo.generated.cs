@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if MEASURE_CLRAPI_CALLS
+using System.Runtime.CompilerServices;
 using static RyuJitSharp.ICorJitInfo;
 
 namespace RyuJitSharp;
@@ -1384,7 +1385,7 @@ public sealed unsafe partial class WrapICorJitInfo
         return temp;
     }
 
-    public bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
+    public bool notifyInstructionSetUsage(ManagedInstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency)
     {
         wrapComp.CLR_API_Enter(API_notifyInstructionSetUsage);
         bool temp = wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency);

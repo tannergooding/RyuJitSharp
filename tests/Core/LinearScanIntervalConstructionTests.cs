@@ -81,9 +81,9 @@ internal static unsafe class LinearScanIntervalConstructionTests
     public static void MinimalVectorSpillOrMoveMarksAvxInstructionWidth(bool spill)
     {
         WithAllocator((compiler, allocator) => {
-            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX);
             compiler.lvaTable[0].Type = TYP_SIMD32;
             var block = CreateBlocks(compiler, BBJ_RETURN)[0];
             var value = new GenTreeVecCon(TYP_SIMD32);

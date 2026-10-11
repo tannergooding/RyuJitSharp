@@ -87,24 +87,24 @@ public partial class Emitter
 
     private static uint emitInsCode(instruction ins)
     {
-        assert((uint)ins < (uint)insCodes.Length);
-        assert(insCodes[(int)ins] != Globals.BAD_CODE);
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodes.Length);
+        assert(insCodes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != Globals.BAD_CODE);
 
-        return insCodes[(int)ins];
+        return insCodes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
     private static uint emitGetInsMask(instruction ins)
     {
-        assert((uint)ins < (uint)insMasks.Length);
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insMasks.Length);
 
-        return insMasks[(int)ins];
+        return insMasks[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
     private static insDisasmFmt emitGetInsFmt(instruction ins)
     {
-        assert((uint)ins < (uint)insDisasmFormats.Length);
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insDisasmFormats.Length);
 
-        return insDisasmFormats[(int)ins];
+        return insDisasmFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 }
 #endif

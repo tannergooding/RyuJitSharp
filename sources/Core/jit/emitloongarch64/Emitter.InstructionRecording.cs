@@ -98,7 +98,7 @@ public partial class Emitter
         var currentBlock = compiler.compCurBB
             ?? throw new FatalJitException("LoongArch64 jump recording requires a current basic block.");
         assert(target.HasFlag(BBF_HAS_LABEL));
-        assert(INS_bceqz <= ins && ins <= INS_bl);
+        assert(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_bceqz, INS_bl));
 
         var id = emitNewInstrJmp();
         id.idIns(ins);
@@ -405,28 +405,28 @@ public partial class Emitter
     {
         var code = emitInsCode(ins);
 
-        if (ins == INS_mov || (INS_ext_w_b <= ins && ins <= INS_cpucfg))
+        if (ins == INS_mov || (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ext_w_b, INS_cpucfg)))
         {
             assert(isGeneralRegisterOrR0(reg1));
             assert(isGeneralRegisterOrR0(reg2));
             code |= unchecked((uint)reg1);
             code |= unchecked((uint)reg2) << 5;
         }
-        else if (INS_fabs_s <= ins && ins <= INS_fmov_d)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fabs_s, INS_fmov_d))
         {
             assert(isFloatReg(reg1));
             assert(isFloatReg(reg2));
             code |= unchecked((uint)reg1) & 0x1f;
             code |= (unchecked((uint)reg2) & 0x1f) << 5;
         }
-        else if (INS_movgr2fr_w <= ins && ins <= INS_movgr2frh_w)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_movgr2fr_w, INS_movgr2frh_w))
         {
             assert(isFloatReg(reg1));
             assert(isGeneralRegisterOrR0(reg2));
             code |= unchecked((uint)reg1) & 0x1f;
             code |= unchecked((uint)reg2) << 5;
         }
-        else if (INS_movfr2gr_s <= ins && ins <= INS_movfrh2gr_s)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_movfr2gr_s, INS_movfrh2gr_s))
         {
             assert(isGeneralRegisterOrR0(reg1));
             assert(isFloatReg(reg2));
@@ -448,16 +448,16 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
         }
 #if FEATURE_SIMD
-        else if (((INS_vreplgr2vr_b <= ins) && (ins <= INS_vreplgr2vr_d)) ||
-                 ((INS_xvreplgr2vr_b <= ins) && (ins <= INS_xvreplgr2vr_d)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vreplgr2vr_b, INS_vreplgr2vr_d))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvreplgr2vr_b, INS_xvreplgr2vr_d))))
         {
             assert(isVectorRegister(reg1));
             assert(isGeneralRegisterOrR0(reg2));
             code |= unchecked((uint)reg1) & 0x1f;
             code |= unchecked((uint)reg2) << 5;
         }
-        else if (((INS_vclo_b <= ins) && (ins <= INS_vextl_qu_du)) ||
-                 ((INS_xvclo_b <= ins) && (ins <= INS_xvextl_qu_du)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vclo_b, INS_vextl_qu_du))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvclo_b, INS_xvextl_qu_du))))
         {
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -490,7 +490,7 @@ public partial class Emitter
         assert(instOptions == INS_OPTS_NONE);
         var code = emitInsCode(ins);
 
-        if (INS_slli_w <= ins && ins <= INS_rotri_w)
+        if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_slli_w, INS_rotri_w))
         {
             assert(ins is INS_slli_w or INS_srli_w or INS_srai_w or INS_rotri_w);
             assert(isGeneralRegister(reg1));
@@ -500,7 +500,7 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= (unchecked((uint)imm) & 0x1f) << 10;
         }
-        else if (INS_slli_d <= ins && ins <= INS_rotri_d)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_slli_d, INS_rotri_d))
         {
             assert(ins is INS_slli_d or INS_srli_d or INS_srai_d or INS_rotri_d);
             assert(isGeneralRegister(reg1));
@@ -510,9 +510,9 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= (unchecked((uint)imm) & 0x3f) << 10;
         }
-        else if (((INS_addi_w <= ins) && (ins <= INS_xori)) ||
-                 ((INS_ld_b <= ins) && (ins <= INS_ld_wu)) ||
-                 ((INS_st_b <= ins) && (ins <= INS_st_d)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_addi_w, INS_xori))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ld_b, INS_ld_wu))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_st_b, INS_st_d))))
         {
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegisterOrR0(reg2));
@@ -535,7 +535,7 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= (unchecked((uint)imm) & 0xfff) << 10;
         }
-        else if (INS_fld_s <= ins && ins <= INS_fst_d)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fld_s, INS_fst_d))
         {
             assert(ins is INS_fld_s or INS_fld_d or INS_fst_s or INS_fst_d);
             assert(isFloatReg(reg1));
@@ -545,8 +545,8 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= (unchecked((uint)imm) & 0xfff) << 10;
         }
-        else if ((INS_ll_d >= ins && INS_ldptr_w <= ins) ||
-                 (INS_sc_d >= ins && INS_stptr_w <= ins))
+        else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ldptr_w, INS_ll_d)) ||
+                 (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_stptr_w, INS_sc_d)))
         {
             assert(ins is INS_ldptr_w or INS_ldptr_d or INS_ll_w or INS_ll_d or
                 INS_stptr_w or INS_stptr_d or INS_sc_w or INS_sc_d);
@@ -557,7 +557,7 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= (unchecked((uint)imm) & 0x3fff) << 10;
         }
-        else if (INS_beq <= ins && ins <= INS_bgeu)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_beq, INS_bgeu))
         {
             assert(ins is INS_beq or INS_bne or INS_blt or INS_bltu or INS_bge or INS_bgeu);
             assert(isGeneralRegisterOrR0(reg1));
@@ -568,7 +568,7 @@ public partial class Emitter
             code |= unchecked((uint)reg2);
             code |= (unchecked((uint)(imm >> 2)) & 0xffff) << 10;
         }
-        else if (INS_fcmp_caf_s <= ins && ins <= INS_fcmp_sune_s)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fcmp_caf_s, INS_fcmp_sune_s))
         {
             assert(isFloatReg(reg1));
             assert(isFloatReg(reg2));
@@ -616,9 +616,9 @@ public partial class Emitter
         assert(instOptions == INS_OPTS_NONE);
         var code = emitInsCode(ins);
 
-        if (((INS_add_w <= ins) && (ins <= INS_crcc_w_d_w)) ||
-            ((INS_ldx_b <= ins) && (ins <= INS_ldle_d)) ||
-            ((INS_stx_b <= ins) && (ins <= INS_stle_d)))
+        if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_add_w, INS_crcc_w_d_w))) ||
+            ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ldx_b, INS_ldle_d))) ||
+            ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_stx_b, INS_stle_d))))
         {
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegisterOrR0(reg2));
@@ -627,7 +627,7 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= unchecked((uint)reg3) << 10;
         }
-        else if (INS_amswap_w <= ins && ins <= INS_ammin_db_du)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_amswap_w, INS_ammin_db_du))
         {
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegisterOrR0(reg2));
@@ -636,7 +636,7 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 10;
             code |= unchecked((uint)reg3) << 5;
         }
-        else if (INS_fadd_s <= ins && ins <= INS_fcopysign_d)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fadd_s, INS_fcopysign_d))
         {
             assert(isFloatReg(reg1));
             assert(isFloatReg(reg2));
@@ -645,7 +645,7 @@ public partial class Emitter
             code |= (unchecked((uint)reg2) & 0x1f) << 5;
             code |= (unchecked((uint)reg3) & 0x1f) << 10;
         }
-        else if (INS_fldx_s <= ins && ins <= INS_fstle_d)
+        else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fldx_s, INS_fstle_d))
         {
             assert(isFloatReg(reg1));
             assert(isGeneralRegisterOrR0(reg2));
@@ -664,8 +664,8 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= unchecked((uint)reg3) << 10;
         }
-        else if (((INS_vreplve_b <= ins) && (ins <= INS_vreplve_d)) ||
-                 ((INS_xvreplve_b <= ins) && (ins <= INS_xvreplve_d)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vreplve_b, INS_vreplve_d))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvreplve_b, INS_xvreplve_d))))
         {
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -674,8 +674,8 @@ public partial class Emitter
             code |= (unchecked((uint)reg2) & 0x1f) << 5;
             code |= unchecked((uint)reg3) << 10;
         }
-        else if (((INS_vfcmp_caf_s <= ins) && (ins <= INS_vshuf_d)) ||
-                 ((INS_xvfcmp_caf_s <= ins) && (ins <= INS_xvperm_w)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfcmp_caf_s, INS_vshuf_d))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfcmp_caf_s, INS_xvperm_w))))
         {
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
@@ -712,7 +712,7 @@ public partial class Emitter
         assert(instOptions == INS_OPTS_NONE);
         var code = emitInsCode(ins);
 
-        if (INS_alsl_w <= ins && ins <= INS_bytepick_w)
+        if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_alsl_w, INS_bytepick_w))
         {
             assert(ins is INS_alsl_w or INS_alsl_wu or INS_alsl_d or INS_bytepick_w);
             assert(isGeneralRegister(reg1));
@@ -935,8 +935,8 @@ public partial class Emitter
         bool isSigned;
         bool isVectorDestination;
 
-        if (((INS_vseqi_b <= ins) && (ins <= INS_vmini_d)) ||
-            ((INS_xvseqi_b <= ins) && (ins <= INS_xvmin_d)))
+        if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vseqi_b, INS_vmini_d))) ||
+            ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvseqi_b, INS_xvmin_d))))
         {
             immediateMask = 0x1f;
             isSigned = true;
@@ -960,66 +960,66 @@ public partial class Emitter
             isSigned = true;
             isVectorDestination = true;
         }
-        else if (((INS_vld <= ins) && (ins <= INS_vst)) ||
-                 ((INS_xvld <= ins) && (ins <= INS_xvst)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vld, INS_vst))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvld, INS_xvst))))
         {
             immediateMask = 0xfff;
             isSigned = true;
             isVectorDestination = true;
         }
-        else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vpickve2gr_du)) ||
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vinsgr2vr_d, INS_vpickve2gr_du))) ||
                  (ins == INS_xvrepl128vei_d))
         {
             immediateMask = 0x1;
             isSigned = false;
             isVectorDestination = ins is INS_vinsgr2vr_d or INS_vreplvei_d or INS_xvrepl128vei_d;
         }
-        else if (((INS_vpickve2gr_w <= ins) && (ins <= INS_vreplvei_w)) ||
-                 ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve2gr_du)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_w, INS_vreplvei_w))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvinsve0_d, INS_xvpickve2gr_du))))
         {
             immediateMask = 0x3;
             isSigned = false;
             isVectorDestination = ins is INS_vinsgr2vr_w or INS_vreplvei_w or
                 INS_xvinsve0_d or INS_xvinsve0_w or INS_xvinsgr2vr_d;
         }
-        else if (((INS_vslli_b <= ins) && (ins <= INS_vpickve2gr_hu)) ||
-                 ((INS_xvpickve2gr_w <= ins) && (ins <= INS_xvsat_bu)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vslli_b, INS_vpickve2gr_hu))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvpickve2gr_w, INS_xvsat_bu))))
         {
             immediateMask = 0x7;
             isSigned = false;
             isVectorDestination = ins is not (INS_vpickve2gr_h or INS_vpickve2gr_hu or
                 INS_xvpickve2gr_w or INS_xvpickve2gr_wu);
         }
-        else if (((INS_vpickve2gr_b <= ins) && (ins <= INS_vreplvei_b)) ||
-                 ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_b, INS_vreplvei_b))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvslli_h, INS_xvsat_hu))))
         {
             immediateMask = 0xf;
             isSigned = false;
             isVectorDestination = ins is not (INS_vpickve2gr_b or INS_vpickve2gr_bu);
         }
-        else if (((INS_vslei_bu <= ins) && (ins <= INS_vsat_wu)) ||
-                 ((INS_xvslei_bu <= ins) && (ins <= INS_xvsat_wu)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vslei_bu, INS_vsat_wu))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvslei_bu, INS_xvsat_wu))))
         {
             immediateMask = 0x1f;
             isSigned = false;
             isVectorDestination = true;
         }
-        else if (((INS_vslli_d <= ins) && (ins <= INS_vsat_du)) ||
-                 ((INS_xvslli_d <= ins) && (ins <= INS_xvsat_du)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vslli_d, INS_vsat_du))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvslli_d, INS_xvsat_du))))
         {
             immediateMask = 0x3f;
             isSigned = false;
             isVectorDestination = true;
         }
-        else if (((INS_vsrlni_d_q <= ins) && (ins <= INS_vssrarni_du_q)) ||
-                 ((INS_xvsrlni_d_q <= ins) && (ins <= INS_xvssrarni_du_q)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsrlni_d_q, INS_vssrarni_du_q))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsrlni_d_q, INS_xvssrarni_du_q))))
         {
             immediateMask = 0x7f;
             isSigned = false;
             isVectorDestination = true;
         }
-        else if (((INS_vextrins_d <= ins) && (ins <= INS_vpermi_w)) ||
-                 ((INS_xvextrins_d <= ins) && (ins <= INS_xvpermi_q)))
+        else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vextrins_d, INS_vpermi_w))) ||
+                 ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvextrins_d, INS_xvpermi_q))))
         {
             immediateMask = 0xff;
             isSigned = false;

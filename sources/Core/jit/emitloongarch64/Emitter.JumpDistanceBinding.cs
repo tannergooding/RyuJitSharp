@@ -103,13 +103,13 @@ public partial class Emitter
                 }
 
                 var ins = jump.idIns();
-                assert((INS_bceqz <= ins) && (ins <= INS_bl));
-                if (ins < INS_beqz)
+                assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_bceqz, INS_bl)));
+                if (InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThan(ins, INS_beqz))
                 {
                     assert((distance + emitCounts_INS_OPTS_J * sizeof(uint)) < 0x8000000);
                     sizeAdjustment = distance + emitCounts_INS_OPTS_J * sizeof(uint) < 0x8000000 ? 4 : 8;
                 }
-                else if (ins < INS_b)
+                else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThan(ins, INS_b))
                 {
                     if (distance + emitCounts_INS_OPTS_J * sizeof(uint) < 0x200000)
                     {

@@ -166,7 +166,7 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryGetNativeInstructionSetOrdinal(CORINFO_InstructionSet instructionSet, out int nativeOrdinal)
+    public static bool TryGetNativeInstructionSetOrdinal(ManagedInstructionSet instructionSet, out int nativeOrdinal)
     {
         if (instructionSet is InstructionSet_ILLEGAL or InstructionSet_Vector or InstructionSet_NONE)
         {
@@ -193,7 +193,7 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetNativeInstructionSetOrdinal(CORINFO_InstructionSet instructionSet)
+    public static int GetNativeInstructionSetOrdinal(ManagedInstructionSet instructionSet)
     {
         if (TryGetNativeInstructionSetOrdinal(instructionSet, out var nativeOrdinal))
         {
@@ -204,11 +204,11 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryGetManagedInstructionSet(int nativeOrdinal, out CORINFO_InstructionSet instructionSet)
+    public static bool TryGetManagedInstructionSet(int nativeOrdinal, out ManagedInstructionSet instructionSet)
     {
         if (nativeOrdinal is 0 or 126 or 127)
         {
-            instructionSet = (CORINFO_InstructionSet)nativeOrdinal;
+            instructionSet = (ManagedInstructionSet)nativeOrdinal;
             return true;
         }
 
@@ -220,7 +220,7 @@ public partial class Globals
 
             if (value != byte.MaxValue)
             {
-                instructionSet = (CORINFO_InstructionSet)value;
+                instructionSet = (ManagedInstructionSet)value;
                 return true;
             }
         }
@@ -230,8 +230,8 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static CORINFO_InstructionSetNative GetNativeInstructionSet(CORINFO_InstructionSet instructionSet)
-        => (CORINFO_InstructionSetNative)GetNativeInstructionSetOrdinal(instructionSet);
+    internal static CORINFO_InstructionSet GetNativeInstructionSet(ManagedInstructionSet instructionSet)
+        => (CORINFO_InstructionSet)GetNativeInstructionSetOrdinal(instructionSet);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_InstructionSetFlags input)
@@ -882,7 +882,7 @@ public partial class Globals
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string InstructionSetToString(CORINFO_InstructionSet instructionSet)
+    public static string InstructionSetToString(ManagedInstructionSet instructionSet)
     {
         return instructionSet switch {
             InstructionSet_X86Base => "X86Base",
@@ -984,7 +984,7 @@ public partial class Globals
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
+    public static ManagedInstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInstructionSet r2rSet)
     {
         if (Configuration.TARGET_XARCH)
         {

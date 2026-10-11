@@ -14,10 +14,10 @@ public partial class Emitter
         ins is INS_bt or INS_bts or INS_btr or INS_btc;
 
     private static bool IsSSEInstruction(instruction ins) =>
-        ins >= FIRST_SSE_INSTRUCTION && ins <= LAST_SSE_INSTRUCTION;
+        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_SSE_INSTRUCTION);
 
     private static bool IsCFCMOV(instruction ins) =>
-        ins >= FIRST_CFCMOV_INSTRUCTION && ins <= LAST_CFCMOV_INSTRUCTION;
+        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CFCMOV_INSTRUCTION, LAST_CFCMOV_INSTRUCTION);
 
     private static bool IsApxConditionalInstruction(instruction ins) =>
         IsCCMP(ins) || IsCFCMOV(ins) || IsCTEST(ins);
@@ -144,7 +144,7 @@ public partial class Emitter
     private ulong AddRex2Prefix(instruction ins, ulong code)
     {
         assert(IsRex2EncodableInstruction(ins));
-        if (ins >= INS_imul_08 && ins <= INS_imul_15)
+        if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_15))
         {
             code &= 0xFFFFFFFF;
         }

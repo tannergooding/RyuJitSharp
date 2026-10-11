@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -102,8 +102,8 @@ internal static unsafe class Arm64AddressLoweringTests
         WithLowering((compiler, lowering, block) => {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.notifyInstructionSetUsage =
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, bool, bool, byte>)
-                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSetNative, byte, byte, byte>)&Notify;
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, bool, bool, byte>)
+                (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_InstructionSet, byte, byte, byte>)&Notify;
             InstructionSetEE ee = new() { Interface = new ICorJitInfo { lpVtbl = &vtable } };
             compiler.info.compCompHnd = &ee.Interface;
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_Rcpc2);
@@ -152,7 +152,7 @@ internal static unsafe class Arm64AddressLoweringTests
             Assert.That(address.Oper, Is.EqualTo(expected ? GT_LEA : GT_ADD));
             if (expected)
             {
-                Assert.That(ee.InstructionSet, Is.EqualTo((CORINFO_InstructionSetNative)Globals.GetNativeInstructionSetOrdinal(InstructionSet_Rcpc2)));
+                Assert.That(ee.InstructionSet, Is.EqualTo((CORINFO_InstructionSet)Globals.GetNativeInstructionSetOrdinal(InstructionSet_Rcpc2)));
             }
         });
     }
@@ -160,12 +160,12 @@ internal static unsafe class Arm64AddressLoweringTests
     private struct InstructionSetEE
     {
         public ICorJitInfo Interface;
-        public CORINFO_InstructionSetNative InstructionSet;
+        public CORINFO_InstructionSet InstructionSet;
         public int Count;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-    private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSetNative isa, byte supported, byte preserve)
+    private static byte Notify(ICorJitInfo* self, CORINFO_InstructionSet isa, byte supported, byte preserve)
     {
         var ee = (InstructionSetEE*)self;
         ee->Count++;

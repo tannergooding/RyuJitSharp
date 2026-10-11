@@ -79,8 +79,8 @@ internal static unsafe class RationalizationTests
     public static void ConstantShuffleSelectsOneOrBothSourceLanes(bool mixedLanes)
     {
         WithCompiler(compiler => {
-            EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX);
-            EnableIsa(compiler, CORINFO_InstructionSet.InstructionSet_AVX2);
+            EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX);
+            EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX2);
             var values = compiler.gtNewVconNode(TYP_SIMD32);
             var indices = compiler.gtNewVconNode(TYP_SIMD32);
             for (var index = 0; index < 32; index++)
@@ -106,7 +106,7 @@ internal static unsafe class RationalizationTests
         });
     }
 
-    private static void EnableIsa(Compiler compiler, CORINFO_InstructionSet isa)
+    private static void EnableIsa(Compiler compiler, ManagedInstructionSet isa)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(isa);
         compiler.opts.compSupportsISAReported.AddInstructionSet(isa);

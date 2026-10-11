@@ -67,8 +67,11 @@ public sealed partial class CodeGen
             if (value == 0)
             {
                 // CTEST reg,reg is one byte shorter than CCMP reg,0.
-                assert((FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION) == 32);
-                var ctest = ins + (FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION);
+                var instructionOffset = InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CTEST_INSTRUCTION) -
+                                        InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CCMP_INSTRUCTION);
+                assert(instructionOffset == 32);
+                var ctest = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
+                    InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) + instructionOffset);
                 Emitter.emitIns_R_R(ctest, size, srcReg1, srcReg1, opts);
             }
             else

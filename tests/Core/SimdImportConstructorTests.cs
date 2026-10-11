@@ -3,7 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -557,7 +557,7 @@ internal static unsafe class SimdImportConstructorTests
         }
     }
 
-    private static void Enable(Compiler compiler, CORINFO_InstructionSet instructionSet)
+    private static void Enable(Compiler compiler, ManagedInstructionSet instructionSet)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);

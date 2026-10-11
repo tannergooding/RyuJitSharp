@@ -369,7 +369,7 @@ public static partial class Globals
         jitprintf("\n");
     }
 
-    public static void dIsa(CORINFO_InstructionSet isa)
+    public static void dIsa(ManagedInstructionSet isa)
     {
         jitprintf($"===================================================================== dIsa {unchecked(s_dIsaSequence++)}\n");
         jitprintf($"{InstructionSetToString(isa)}\n");

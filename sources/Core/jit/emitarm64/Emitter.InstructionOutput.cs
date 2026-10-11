@@ -2151,12 +2151,16 @@ public partial class Emitter
     private static bool emitInsDestIsOp2Arm64(instruction ins)
     {
         // WR2 is the native instruction-info bit at emitarm64.cpp:1578.
-        return (uint)ins < (uint)CodeGen.instInfo.Length && (CodeGen.instInfo[(int)ins] & 128) != 0;
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+            (CodeGen.instInfo[nativeOrdinal] & 128) != 0;
     }
 
     private static bool emitInsIsStoreArm64(instruction ins)
     {
-        return (uint)ins < (uint)CodeGen.instInfo.Length && (CodeGen.instInfo[(int)ins] & CodeGen.ST) != 0;
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+            (CodeGen.instInfo[nativeOrdinal] & CodeGen.ST) != 0;
     }
 
     private static bool emitInsWritesToLclVarStackLocArm64(instrDesc id)

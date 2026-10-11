@@ -8,7 +8,7 @@ using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.var_types;
 #if TARGET_XARCH
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 #elif TARGET_ARM64
 using static RyuJitSharp.SimdScalableKind;
 #endif

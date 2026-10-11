@@ -19,9 +19,9 @@ internal static unsafe class LinearScanBuildIntervalsTests
         WithCompiler((compiler, _) => {
             if (evex)
             {
-                compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-                compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
-                compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX512);
+                compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+                compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
+                compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX512);
             }
             var allocator = new LinearScan(compiler);
             Assert.That(EvexIsSupported(allocator), Is.EqualTo(evex));

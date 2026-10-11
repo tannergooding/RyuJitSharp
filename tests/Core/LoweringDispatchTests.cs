@@ -111,9 +111,9 @@ internal static unsafe class LoweringDispatchTests
         genTreeOps oper, var_types loadType, bool containmentOnly)
     {
         WithCompiler(compiler => {
-            compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX2);
-            compiler.opts.compSupportsISAReported.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX2);
-            compiler.opts.compSupportsISAExactly.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_AVX2);
+            compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX2);
+            compiler.opts.compSupportsISAReported.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX2);
+            compiler.opts.compSupportsISAExactly.AddInstructionSet(ManagedInstructionSet.InstructionSet_AVX2);
             var address = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0x1234);
             var operand = new GenTreeIndir(GT_IND, loadType, address);
             var operation = new GenTreeUnOp(oper, TYP_INT, operand);

@@ -120,7 +120,7 @@ public sealed partial class Lowering
 #endif
 
 #if TARGET_RISCV64
-        if (CompilerInstance.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zba))
+        if (CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba))
         {
             if (TryLowerShiftAddToShxadd(node, out var next))
             {

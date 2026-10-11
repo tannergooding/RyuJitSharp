@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;

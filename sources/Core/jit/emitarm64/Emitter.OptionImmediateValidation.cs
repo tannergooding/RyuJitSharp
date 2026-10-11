@@ -271,9 +271,10 @@ public partial class Emitter
     {
         // CodeGen.instInfo's ARM64 RSH flag is bit 3 in the pinned instruction table.
         const byte vectorRightShiftFlag = 8;
-        if ((uint)ins < (uint)CodeGen.instInfo.Length)
+        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[(int)ins] & vectorRightShiftFlag) != 0;
+            return (CodeGen.instInfo[nativeOrdinal] & vectorRightShiftFlag) != 0;
         }
         else
         {

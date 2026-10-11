@@ -41,7 +41,7 @@ public readonly partial struct HWIntrinsicInfo
         throw new PlatformNotSupportedException("Hardware intrinsic lookup ranges are unavailable for this target.");
     }
 
-    public static unsafe NamedIntrinsic LookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, ReadOnlySpan<byte> methodName)
+    public static unsafe NamedIntrinsic LookupId(CORINFO_SIG_INFO* sig, ManagedInstructionSet isa, ReadOnlySpan<byte> methodName)
     {
         if (sig->hasThis() || isa is InstructionSet_NONE)
         {
@@ -73,7 +73,7 @@ public readonly partial struct HWIntrinsicInfo
         return LookupIdForIsa(sig, isa, methodName);
     }
 
-    private static unsafe NamedIntrinsic LookupIdForIsa(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, ReadOnlySpan<byte> methodName)
+    private static unsafe NamedIntrinsic LookupIdForIsa(CORINFO_SIG_INFO* sig, ManagedInstructionSet isa, ReadOnlySpan<byte> methodName)
     {
         var isaOrdinal = (int)isa;
         var isaRangeBounds = GetIsaRangeBounds();
@@ -356,7 +356,7 @@ public readonly partial struct HWIntrinsicInfo
         return GetRvaSpanEntry(s_categories, GetTableIndex(id));
     }
 
-    public static CORINFO_InstructionSet lookupIsa(NamedIntrinsic id)
+    public static ManagedInstructionSet lookupIsa(NamedIntrinsic id)
     {
         return GetRvaSpanEntry(s_instructionSets, GetTableIndex(id));
     }

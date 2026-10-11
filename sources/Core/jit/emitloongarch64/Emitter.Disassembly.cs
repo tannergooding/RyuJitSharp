@@ -86,9 +86,9 @@ public partial class Emitter
         var source = (int)((code >> 5) & 0x1f);
         var ins = INS_invalid;
 
-        for (uint index = 1; index < (uint)INS_count; index++)
+        for (var nativeOrdinal = 1; nativeOrdinal < InstructionOrdinalMaps.GetNativeInstructionCount(); nativeOrdinal++)
         {
-            var candidate = (instruction)index;
+            var candidate = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
             if ((code & emitGetInsMask(candidate)) == emitInsCode(candidate))
             {
                 ins = candidate;
@@ -424,15 +424,15 @@ public partial class Emitter
             case insDisasmFmt.DF_S_GRX:
             {
                 var immediate = (int)((code >> 10) & 0xf);
-                if (ins < INS_vpickve2gr_w)
+                if (InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThan(ins, INS_vpickve2gr_w))
                 {
                     immediate &= 1;
                 }
-                else if (ins < INS_vpickve2gr_h)
+                else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThan(ins, INS_vpickve2gr_h))
                 {
                     immediate &= 3;
                 }
-                else if (ins < INS_vpickve2gr_b)
+                else if (InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThan(ins, INS_vpickve2gr_b))
                 {
                     immediate &= 7;
                 }
@@ -590,7 +590,7 @@ public partial class Emitter
             }
             case insDisasmFmt.DF_A_GRX:
             {
-                var mask = ins < INS_xvpickve2gr_w ? 3u : 7u;
+                var mask = InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThan(ins, INS_xvpickve2gr_w) ? 3u : 7u;
                 operands = $"{RegName(destination)}, xr{source}, {(code >> 10) & mask}";
                 break;
             }

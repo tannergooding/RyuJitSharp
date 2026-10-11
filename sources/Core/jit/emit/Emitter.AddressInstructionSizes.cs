@@ -35,7 +35,7 @@ public partial class Emitter
 
     private static bool insIsCMOV(instruction ins)
     {
-        return (ins >= INS_cmovo) && (ins <= INS_cmovg);
+        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_cmovo, INS_cmovg));
     }
 
     public static emitAttr emitDecodeScale(uint ensz)

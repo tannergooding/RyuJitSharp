@@ -8,13 +8,14 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static insFlags prefixFlags(instruction ins) => CodeGen.instInfo[(int)ins];
+    private static insFlags prefixFlags(instruction ins) => CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
     private static bool IsBMIInstruction(instruction ins) =>
-        ins >= FIRST_BMI_INSTRUCTION && ins <= LAST_BMI_INSTRUCTION;
+        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_BMI_INSTRUCTION, LAST_BMI_INSTRUCTION);
 
     private static bool IsJccInstruction(instruction ins) =>
-        ((ins >= INS_jo) && (ins <= INS_jg)) || ((ins >= INS_l_jo) && (ins <= INS_l_jg));
+        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_jo, INS_jg) ||
+        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_l_jo, INS_l_jg);
 
     private static bool IsJmpInstruction(instruction ins) =>
         ins is INS_i_jmp or INS_jmp or INS_l_jmp or INS_tail_i_jmp;
@@ -29,8 +30,8 @@ public partial class Emitter
 #if DEBUG && TARGET_AMD64
         if (isApxOnly)
         {
-            var known = (ins >= INS_push2 && ins <= INS_pop2)
-                || (ins >= FIRST_APX_INSTRUCTION && ins <= LAST_APX_INSTRUCTION)
+            var known = InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_push2, INS_pop2)
+                || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_APX_INSTRUCTION, LAST_APX_INSTRUCTION)
                 || ins is INS_tzcnt_apx or INS_lzcnt_apx or INS_popcnt_apx;
             assert(known);
         }

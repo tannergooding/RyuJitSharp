@@ -122,7 +122,7 @@ public sealed partial class Lowering
         }
 #elif TARGET_RISCV64
         assert(select.Oper is GT_SELECT);
-        assert(CompilerInstance.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zicond));
+        assert(CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zicond));
         assert(varTypeIsIntegralOrI(select.Type));
 
         var conditional = select.AsConditional();

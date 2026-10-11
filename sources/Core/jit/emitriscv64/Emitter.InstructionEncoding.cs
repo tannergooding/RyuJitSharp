@@ -396,7 +396,7 @@ public partial class Emitter
 
     internal static uint insEncodeCRTypeInstr(instruction ins, uint rdRs1, uint rs2)
     {
-        assert((INS_c_mv <= ins) && (ins <= INS_c_add));
+        assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_c_mv, INS_c_add)));
 
         var code = emitInsCode(ins);
         assertCodeLength(code, 16);
@@ -408,7 +408,7 @@ public partial class Emitter
 
     internal static uint insEncodeCATypeInstr(instruction ins, uint rdRs1Rvc, uint rs2Rvc)
     {
-        assert((INS_c_and <= ins) && (ins <= INS_c_subw));
+        assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_c_and, INS_c_subw)));
 
         var code = emitInsCode(ins);
         assertCodeLength(code, 16);

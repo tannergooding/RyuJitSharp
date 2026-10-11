@@ -10,8 +10,8 @@ public partial class Emitter
 #if TARGET_XARCH
     public bool IsEvexEncodableInstruction(instruction ins)
     {
-        var flags = CodeGen.instInfo[(int)ins];
-        var isBmi = ins >= FIRST_BMI_INSTRUCTION && ins <= LAST_BMI_INSTRUCTION;
+        var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+        var isBmi = InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_BMI_INSTRUCTION, LAST_BMI_INSTRUCTION);
         var isKmov = ins is INS_kmovb_gpr or INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr or
             INS_kmovb_msk or INS_kmovw_msk or INS_kmovd_msk or INS_kmovq_msk;
 
@@ -28,8 +28,8 @@ public partial class Emitter
         if ((flags & Encoding_EVEX) != 0)
         {
 #if FEATURE_HW_INTRINSICS
-            if (unchecked((uint)(ins - FIRST_AVXVNNIINT8_INSTRUCTION)) <=
-                (uint)(LAST_AVXVNNIINT16_INSTRUCTION - FIRST_AVXVNNIINT8_INSTRUCTION))
+            if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(
+                ins, FIRST_AVXVNNIINT8_INSTRUCTION, LAST_AVXVNNIINT16_INSTRUCTION))
             {
                 var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
                 return compiler.compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);

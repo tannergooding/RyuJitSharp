@@ -10,15 +10,15 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64InstructionSetLookupTests
 {
-    [TestCase("Vector", CORINFO_InstructionSet.InstructionSet_VectorT)]
-    [TestCase("Vector`1", CORINFO_InstructionSet.InstructionSet_VectorT)]
-    [TestCase("Vector64", CORINFO_InstructionSet.InstructionSet_Vector64)]
-    [TestCase("Vector64`1", CORINFO_InstructionSet.InstructionSet_Vector64)]
-    [TestCase("Vector64WithSuffix", CORINFO_InstructionSet.InstructionSet_Vector64)]
-    [TestCase("Vector128", CORINFO_InstructionSet.InstructionSet_Vector128)]
-    [TestCase("Vector128`1", CORINFO_InstructionSet.InstructionSet_Vector128)]
-    [TestCase("Vector128WithSuffix", CORINFO_InstructionSet.InstructionSet_Vector128)]
-    public static void VectorClassNamesFollowNativePrefixDispatch(string name, CORINFO_InstructionSet expected)
+    [TestCase("Vector", ManagedInstructionSet.InstructionSet_VectorT)]
+    [TestCase("Vector`1", ManagedInstructionSet.InstructionSet_VectorT)]
+    [TestCase("Vector64", ManagedInstructionSet.InstructionSet_Vector64)]
+    [TestCase("Vector64`1", ManagedInstructionSet.InstructionSet_Vector64)]
+    [TestCase("Vector64WithSuffix", ManagedInstructionSet.InstructionSet_Vector64)]
+    [TestCase("Vector128", ManagedInstructionSet.InstructionSet_Vector128)]
+    [TestCase("Vector128`1", ManagedInstructionSet.InstructionSet_Vector128)]
+    [TestCase("Vector128WithSuffix", ManagedInstructionSet.InstructionSet_Vector128)]
+    public static void VectorClassNamesFollowNativePrefixDispatch(string name, ManagedInstructionSet expected)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var className = Encoding.UTF8.GetBytes(name);
@@ -42,7 +42,7 @@ internal static class Arm64InstructionSetLookupTests
 
         Assert.That(
             LookupInstructionSet(compiler, className),
-            Is.EqualTo(CORINFO_InstructionSet.InstructionSet_ILLEGAL));
+            Is.EqualTo(ManagedInstructionSet.InstructionSet_ILLEGAL));
     }
 
     [Test]
@@ -52,26 +52,26 @@ internal static class Arm64InstructionSetLookupTests
 
         Assert.That(
             LookupInstructionSet(compiler, "AdvSimd"u8),
-            Is.EqualTo(CORINFO_InstructionSet.InstructionSet_AdvSimd));
+            Is.EqualTo(ManagedInstructionSet.InstructionSet_AdvSimd));
     }
 
-    [TestCase("AdvSimd", CORINFO_InstructionSet.InstructionSet_AdvSimd_Arm64)]
-    [TestCase("Aes", CORINFO_InstructionSet.InstructionSet_Aes_Arm64)]
-    [TestCase("ArmBase", CORINFO_InstructionSet.InstructionSet_ArmBase_Arm64)]
-    [TestCase("Crc32", CORINFO_InstructionSet.InstructionSet_Crc32_Arm64)]
-    [TestCase("Dp", CORINFO_InstructionSet.InstructionSet_Dp_Arm64)]
-    [TestCase("Rdm", CORINFO_InstructionSet.InstructionSet_Rdm_Arm64)]
-    [TestCase("Sha1", CORINFO_InstructionSet.InstructionSet_Sha1_Arm64)]
-    [TestCase("Sha256", CORINFO_InstructionSet.InstructionSet_Sha256_Arm64)]
-    [TestCase("Sve", CORINFO_InstructionSet.InstructionSet_Sve_Arm64)]
-    [TestCase("Sve2", CORINFO_InstructionSet.InstructionSet_Sve2_Arm64)]
-    [TestCase("Sha3", CORINFO_InstructionSet.InstructionSet_Sha3_Arm64)]
-    [TestCase("Sm4", CORINFO_InstructionSet.InstructionSet_Sm4_Arm64)]
-    [TestCase("SveAes", CORINFO_InstructionSet.InstructionSet_SveAes_Arm64)]
-    [TestCase("SveSha3", CORINFO_InstructionSet.InstructionSet_SveSha3_Arm64)]
-    [TestCase("SveSm4", CORINFO_InstructionSet.InstructionSet_SveSm4_Arm64)]
+    [TestCase("AdvSimd", ManagedInstructionSet.InstructionSet_AdvSimd_Arm64)]
+    [TestCase("Aes", ManagedInstructionSet.InstructionSet_Aes_Arm64)]
+    [TestCase("ArmBase", ManagedInstructionSet.InstructionSet_ArmBase_Arm64)]
+    [TestCase("Crc32", ManagedInstructionSet.InstructionSet_Crc32_Arm64)]
+    [TestCase("Dp", ManagedInstructionSet.InstructionSet_Dp_Arm64)]
+    [TestCase("Rdm", ManagedInstructionSet.InstructionSet_Rdm_Arm64)]
+    [TestCase("Sha1", ManagedInstructionSet.InstructionSet_Sha1_Arm64)]
+    [TestCase("Sha256", ManagedInstructionSet.InstructionSet_Sha256_Arm64)]
+    [TestCase("Sve", ManagedInstructionSet.InstructionSet_Sve_Arm64)]
+    [TestCase("Sve2", ManagedInstructionSet.InstructionSet_Sve2_Arm64)]
+    [TestCase("Sha3", ManagedInstructionSet.InstructionSet_Sha3_Arm64)]
+    [TestCase("Sm4", ManagedInstructionSet.InstructionSet_Sm4_Arm64)]
+    [TestCase("SveAes", ManagedInstructionSet.InstructionSet_SveAes_Arm64)]
+    [TestCase("SveSha3", ManagedInstructionSet.InstructionSet_SveSha3_Arm64)]
+    [TestCase("SveSm4", ManagedInstructionSet.InstructionSet_SveSm4_Arm64)]
     public static void NestedArm64ClassNamesMapEverySupportedInstructionSet(
-        string enclosingClassName, CORINFO_InstructionSet expected)
+        string enclosingClassName, ManagedInstructionSet expected)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 
@@ -88,14 +88,14 @@ internal static class Arm64InstructionSetLookupTests
 
         Assert.That(
             LookupIsa(compiler, "Arm64"u8, Encoding.UTF8.GetBytes(enclosingClassName), default),
-            Is.EqualTo(CORINFO_InstructionSet.InstructionSet_NONE));
+            Is.EqualTo(ManagedInstructionSet.InstructionSet_NONE));
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lookupInstructionSet")]
-    private static extern CORINFO_InstructionSet LookupInstructionSet(Compiler compiler, ReadOnlySpan<byte> className);
+    private static extern ManagedInstructionSet LookupInstructionSet(Compiler compiler, ReadOnlySpan<byte> className);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "lookupIsa")]
-    private static extern CORINFO_InstructionSet LookupIsa(Compiler compiler, ReadOnlySpan<byte> className,
+    private static extern ManagedInstructionSet LookupIsa(Compiler compiler, ReadOnlySpan<byte> className,
         ReadOnlySpan<byte> innerEnclosingClassName, ReadOnlySpan<byte> outerEnclosingClassName);
 }
 #endif

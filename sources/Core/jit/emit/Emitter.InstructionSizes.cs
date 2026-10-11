@@ -10,12 +10,12 @@ public partial class Emitter
 #if TARGET_AMD64
     public static bool IsCTEST(instruction ins)
     {
-        return (ins >= FIRST_CTEST_INSTRUCTION) && (ins <= LAST_CTEST_INSTRUCTION);
+        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CTEST_INSTRUCTION, LAST_CTEST_INSTRUCTION));
     }
 
     public static bool IsSSEOrAVXInstruction(instruction ins)
     {
-        return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
+        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_AVX_INSTRUCTION));
     }
 
     public bool IsSimdVexOrEvexEncodableInstruction(instruction ins)

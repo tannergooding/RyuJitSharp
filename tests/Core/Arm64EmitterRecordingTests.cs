@@ -40,7 +40,7 @@ internal static unsafe class Arm64EmitterRecordingTests
             compiler.compCurBB = new BasicBlock(null, null);
             if (cssc)
             {
-                compiler.opts.compSupportsISA.AddInstructionSet(CORINFO_InstructionSet.InstructionSet_Cssc);
+                compiler.opts.compSupportsISA.AddInstructionSet(ManagedInstructionSet.InstructionSet_Cssc);
             }
 
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() =>

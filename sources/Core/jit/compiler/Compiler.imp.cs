@@ -23238,7 +23238,7 @@ public partial class Compiler
     }
 
 #if FEATURE_HW_INTRINSICS
-    private NamedIntrinsic resolveHardwareIntrinsicId(NamedIntrinsic intrinsic, CORINFO_InstructionSet isa, bool isXplatIntrinsic)
+    private NamedIntrinsic resolveHardwareIntrinsicId(NamedIntrinsic intrinsic, ManagedInstructionSet isa, bool isXplatIntrinsic)
     {
         assert(isa is not InstructionSet_ILLEGAL);
 
@@ -23333,12 +23333,12 @@ public partial class Compiler
         return intrinsic;
     }
 
-    internal bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
+    internal bool compSupportsHWIntrinsic(ManagedInstructionSet isa, bool preserveNegativeDependency = false)
     {
         return compHWIntrinsicDependsOn(isa, preserveNegativeDependency);
     }
 
-    private bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false)
+    private bool compHWIntrinsicDependsOn(ManagedInstructionSet isa, bool preserveNegativeDependency = false)
     {
         _ = compExactlyDependsOn(isa, preserveNegativeDependency);
         return opts.compSupportsISA.HasInstructionSet(isa);
@@ -23353,7 +23353,7 @@ public partial class Compiler
 #endif
     }
 
-    private static CORINFO_InstructionSet lookupVectorIsa(uint size)
+    private static ManagedInstructionSet lookupVectorIsa(uint size)
     {
         switch (size)
         {
@@ -23388,7 +23388,7 @@ public partial class Compiler
         }
     }
 
-    private CORINFO_InstructionSet lookupIsa(ReadOnlySpan<byte> className, ReadOnlySpan<byte> innerEnclosingClassName, ReadOnlySpan<byte> outerEnclosingClassName)
+    private ManagedInstructionSet lookupIsa(ReadOnlySpan<byte> className, ReadOnlySpan<byte> innerEnclosingClassName, ReadOnlySpan<byte> outerEnclosingClassName)
     {
         if (innerEnclosingClassName.IsEmpty)
         {
@@ -23426,7 +23426,7 @@ public partial class Compiler
         return InstructionSet_ILLEGAL;
     }
 
-    private CORINFO_InstructionSet lookupInstructionSet(ReadOnlySpan<byte> className)
+    private ManagedInstructionSet lookupInstructionSet(ReadOnlySpan<byte> className)
     {
 #if TARGET_XARCH
         if (NameEquals(className, "Aes"u8))
@@ -23645,7 +23645,7 @@ public partial class Compiler
     }
 
 #if TARGET_XARCH
-    private static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
+    private static ManagedInstructionSet X64VersionOfIsa(ManagedInstructionSet isa)
     {
         return isa switch {
             InstructionSet_X86Base => InstructionSet_X86Base_X64,
@@ -23670,7 +23670,7 @@ public partial class Compiler
         };
     }
 
-    private static CORINFO_InstructionSet V256VersionOfIsa(CORINFO_InstructionSet isa)
+    private static ManagedInstructionSet V256VersionOfIsa(ManagedInstructionSet isa)
     {
         return isa switch {
             InstructionSet_AES => InstructionSet_AES_V256,
@@ -23679,7 +23679,7 @@ public partial class Compiler
         };
     }
 
-    private static CORINFO_InstructionSet V512VersionOfIsa(CORINFO_InstructionSet isa)
+    private static ManagedInstructionSet V512VersionOfIsa(ManagedInstructionSet isa)
     {
         return isa switch {
             InstructionSet_AVX10v1 => InstructionSet_AVX10v1,
@@ -23694,7 +23694,7 @@ public partial class Compiler
         };
     }
 
-    private static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
+    private static ManagedInstructionSet VLVersionOfIsa(ManagedInstructionSet isa)
     {
         return isa switch {
             InstructionSet_AVX512 or InstructionSet_AVX512v2 or InstructionSet_AVX512v3 or InstructionSet_AVX10v1 => isa,
@@ -23702,7 +23702,7 @@ public partial class Compiler
         };
     }
 #elif TARGET_ARM64
-    private static CORINFO_InstructionSet Arm64VersionOfIsa(CORINFO_InstructionSet isa)
+    private static ManagedInstructionSet Arm64VersionOfIsa(ManagedInstructionSet isa)
     {
         return isa switch
         {

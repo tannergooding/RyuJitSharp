@@ -17,7 +17,7 @@ public sealed partial class CodeGen
 
     private static ReadOnlySpan<char> GetInstructionName(instruction ins)
     {
-        var index = (int)ins;
+        var index = InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);
         assert((uint)index < (uint)(s_instructionNameRanges.Length / 2));
 
         var rangeIndex = index * 2;

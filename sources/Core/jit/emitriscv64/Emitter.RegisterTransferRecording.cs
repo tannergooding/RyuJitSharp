@@ -16,7 +16,7 @@ public partial class Emitter
     {
         var code = emitInsCode(ins);
 
-        if (ins is INS_mov or INS_sext_w or INS_not || (INS_clz <= ins && ins <= INS_rev8))
+        if (ins is INS_mov or INS_sext_w or INS_not || (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_clz, INS_rev8)))
         {
             assert(isGeneralRegisterOrR0(reg1));
             assert(isGeneralRegisterOrR0(reg2));

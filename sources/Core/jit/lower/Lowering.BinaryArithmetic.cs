@@ -192,7 +192,7 @@ public sealed partial class Lowering
             return binOp.Next;
         }
 
-        if (CompilerInstance.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zbs) &&
+        if (CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zbs) &&
             (binOp.Oper is GT_OR or GT_XOR or GT_AND))
         {
             if (op2.Oper.IsIntegralConst)
@@ -240,7 +240,7 @@ public sealed partial class Lowering
         op2 = binOp.Op2;
         if ((binOp.Oper is GT_AND or GT_OR or GT_XOR) && (isOp1Negated || isOp2Negated) &&
             ((isOp1Negated && isOp2Negated) ||
-                CompilerInstance.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zbb)))
+                CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zbb)))
         {
             if (isOp1Negated)
             {
@@ -261,7 +261,7 @@ public sealed partial class Lowering
             if (isOp1Negated != isOp2Negated)
             {
                 assert(CompilerInstance.compOpportunisticallyDependsOn(
-                    CORINFO_InstructionSet.InstructionSet_Zbb));
+                    ManagedInstructionSet.InstructionSet_Zbb));
                 op2.IsContained = false;
                 if (isOp1Negated)
                 {

@@ -147,25 +147,41 @@ public sealed partial class CodeGen
         instruction result;
         if (value == 1)
         {
-            assert(INS_rcl + 1 == INS_rcl_1);
-            assert(INS_rcr + 1 == INS_rcr_1);
-            assert(INS_rol + 1 == INS_rol_1);
-            assert(INS_ror + 1 == INS_ror_1);
-            assert(INS_shl + 1 == INS_shl_1);
-            assert(INS_shr + 1 == INS_shr_1);
-            assert(INS_sar + 1 == INS_sar_1);
-            result = ins + 1;
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcl) + 1 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcl_1));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcr) + 1 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcr_1));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rol) + 1 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rol_1));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_ror) + 1 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_ror_1));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shl) + 1 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shl_1));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shr) + 1 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shr_1));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sar) + 1 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sar_1));
+            result = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
+                InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) + 1);
         }
         else
         {
-            assert(INS_rcl + 2 == INS_rcl_N);
-            assert(INS_rcr + 2 == INS_rcr_N);
-            assert(INS_rol + 2 == INS_rol_N);
-            assert(INS_ror + 2 == INS_ror_N);
-            assert(INS_shl + 2 == INS_shl_N);
-            assert(INS_shr + 2 == INS_shr_N);
-            assert(INS_sar + 2 == INS_sar_N);
-            result = ins + 2;
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcl) + 2 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcl_N));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcr) + 2 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rcr_N));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rol) + 2 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_rol_N));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_ror) + 2 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_ror_N));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shl) + 2 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shl_N));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shr) + 2 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_shr_N));
+            assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sar) + 2 ==
+                   InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sar_N));
+            result = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
+                InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) + 2);
         }
 
         return result;

@@ -36,7 +36,8 @@ public partial class Emitter
 
         public uint idGetEvexAaaContext()
         {
-            assert(idIns() >= FIRST_SSE_INSTRUCTION && idIns() <= LAST_AVX512_INSTRUCTION);
+            assert(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(
+                idIns(), FIRST_SSE_INSTRUCTION, LAST_AVX512_INSTRUCTION));
             return (uint)(_idCustomBits & 7);
         }
 
@@ -48,7 +49,8 @@ public partial class Emitter
 
         public bool idIsEvexZContextSet()
         {
-            assert(idIns() >= FIRST_SSE_INSTRUCTION && idIns() <= LAST_AVX512_INSTRUCTION);
+            assert(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(
+                idIns(), FIRST_SSE_INSTRUCTION, LAST_AVX512_INSTRUCTION));
             return (_idCustomBits & 8) != 0;
         }
 
@@ -72,9 +74,7 @@ public partial class Emitter
 
         public bool idIsEvexZuContextSet()
         {
-#if TARGET_AMD64
-            assert(idIns() >= INS_seto_apx && idIns() <= INS_setg_apx);
-#endif
+            assert(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(idIns(), INS_seto_apx, INS_setg_apx));
             return (_idCustomBits & 0x10) != 0;
         }
 

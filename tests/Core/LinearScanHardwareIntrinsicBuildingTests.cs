@@ -7,7 +7,7 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.LsraGlobals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -455,7 +455,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllMask")]
     private static extern ref regMask CompilerAllMaskRegs(Compiler compiler);
 
-    private static void Enable(Compiler compiler, CORINFO_InstructionSet instructionSet)
+    private static void Enable(Compiler compiler, ManagedInstructionSet instructionSet)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
         compiler.opts.compSupportsISAReported.AddInstructionSet(instructionSet);

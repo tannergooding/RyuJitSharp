@@ -12,7 +12,7 @@ using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 using static RyuJitSharp.CorInfoOptions;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.UnitTests.CodeGenShiftTests;
 
 namespace RyuJitSharp.UnitTests;

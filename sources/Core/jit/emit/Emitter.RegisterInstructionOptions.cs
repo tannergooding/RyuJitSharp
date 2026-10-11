@@ -9,7 +9,7 @@ public partial class Emitter
 {
 #if TARGET_XARCH
 #if TARGET_AMD64
-    public static bool IsCCMP(instruction ins) => (ins >= FIRST_CCMP_INSTRUCTION) && (ins <= LAST_CCMP_INSTRUCTION);
+    public static bool IsCCMP(instruction ins) => (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CCMP_INSTRUCTION, LAST_CCMP_INSTRUCTION));
 #else
     public static bool IsCCMP(instruction ins) => false;
 #endif

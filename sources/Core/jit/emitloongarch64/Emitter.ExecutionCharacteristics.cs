@@ -51,7 +51,7 @@ public partial class Emitter
                         ? PERFSCORE_THROUGHPUT_4C
                         : PERFSCORE_THROUGHPUT_7C;
 
-                    if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
+                    if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ld_b, INS_ld_wu)))
                     {
                         result.insLatency = combinedInstructionCount == 2
                             ? PERFSCORE_LATENCY_5C
@@ -234,14 +234,14 @@ public partial class Emitter
             }
             case DF_G_2R:
             {
-                if ((INS_ext_w_b <= ins) && (ins <= INS_bitrev_d))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ext_w_b, INS_bitrev_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_1C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
                 else
                 {
-                    assert((INS_rdtimel_w <= ins) && (ins <= INS_cpucfg));
+                    assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_rdtimel_w, INS_cpucfg)));
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = ins == INS_cpucfg
                         ? PERFSCORE_THROUGHPUT_1C
@@ -252,17 +252,17 @@ public partial class Emitter
             }
             case DF_G_2R12I:
             {
-                if ((INS_ld_b <= ins) && (ins <= INS_ld_wu))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ld_b, INS_ld_wu)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if ((INS_addi_w <= ins) && (ins <= INS_sltui))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_addi_w, INS_sltui)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_1C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_st_b <= ins) && (ins <= INS_st_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_st_b, INS_st_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_ZERO;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -319,57 +319,59 @@ public partial class Emitter
             }
             case DF_G_3R:
             {
-                if (((INS_add_w <= ins) && (ins <= INS_orn)) || ((INS_sll_w <= ins) && (ins <= INS_sltu)))
+                if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_add_w, INS_orn))) || ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_sll_w, INS_sltu))))
                 {
                     result.insLatency = PERFSCORE_LATENCY_1C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if (((INS_mul_w <= ins) && (ins <= INS_mulw_d_wu)) ||
-                         ((INS_ldx_b <= ins) && (ins <= INS_ldx_wu)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_mul_w, INS_mulw_d_wu))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ldx_b, INS_ldx_wu))))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if ((INS_crc_w_b_w <= ins) && (ins <= INS_crcc_w_d_w))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_crc_w_b_w, INS_crcc_w_d_w)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_1C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if ((INS_ldgt_b <= ins) && (ins <= INS_ldle_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ldgt_b, INS_ldle_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 }
-                else if ((INS_stx_b <= ins) && (ins <= INS_preldx))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_stx_b, INS_preldx)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_ZERO;
-                    result.insThroughput = ins <= INS_stx_d
+                    result.insThroughput = InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThanOrEqualTo(ins, INS_stx_d)
                         ? PERFSCORE_THROUGHPUT_2C
                         : PERFSCORE_THROUGHPUT_1C;
                 }
-                else if ((INS_amcas_b <= ins) && (ins <= INS_ammin_du))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_amcas_b, INS_ammin_du)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_13C;
                     result.insThroughput = 0.0769f;
                 }
-                else if ((INS_amcas_db_b <= ins) && (ins <= INS_ammin_db_du))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_amcas_db_b, INS_ammin_db_du)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_16C;
                     result.insThroughput = 0.0625f;
                 }
                 else
                 {
-                    assert((INS_div_w <= ins) && (ins <= INS_mod_du));
-                    if ((INS_div_w <= ins) && (ins <= INS_mod_wu))
+                    assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_div_w, INS_mod_du)));
+                    if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_div_w, INS_mod_wu)))
                     {
-                        result.insLatency = (ins <= INS_mod_w)
+                        result.insLatency = InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThanOrEqualTo(ins, INS_mod_w)
                             ? (4.0f + 19.0f) / 2
                             : (PERFSCORE_LATENCY_4C + PERFSCORE_LATENCY_20C) / 2;
                         result.insThroughput = (0.08f + 0.25f) / 2;
                     }
                     else
                     {
-                        result.insLatency = ins <= INS_mod_d ? (4.0f + 32.0f) / 2 : (4.0f + 33.0f) / 2;
+                        result.insLatency = InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThanOrEqualTo(ins, INS_mod_d)
+                            ? (4.0f + 32.0f) / 2
+                            : (4.0f + 33.0f) / 2;
                         result.insThroughput = (0.05f + 0.25f) / 2;
                     }
                 }
@@ -459,14 +461,14 @@ public partial class Emitter
                     result.insThroughput = (0.19f + 0.667f) / 2;
                 }
                 else if (id.idInsIs(INS_flogb_s, INS_flogb_d) ||
-                         ((INS_ffint_s_w <= ins) && (ins <= INS_frint_d)))
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ffint_s_w, INS_frint_d))))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
                 else
                 {
-                    assert((INS_fclass_s <= ins) && (ins <= INS_fcvt_d_s));
+                    assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fclass_s, INS_fcvt_d_s)));
                     result.insLatency = PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
@@ -475,17 +477,17 @@ public partial class Emitter
             }
             case DF_F_R2G:
             {
-                if ((INS_fldx_s <= ins) && (ins <= INS_fstx_d))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fldx_s, INS_fstx_d)))
                 {
-                    result.insLatency = ins <= INS_fldx_d
+                    result.insLatency = InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThanOrEqualTo(ins, INS_fldx_d)
                         ? PERFSCORE_LATENCY_5C
                         : PERFSCORE_LATENCY_ZERO;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
                 else
                 {
-                    assert((INS_fldgt_s <= ins) && (ins <= INS_fstle_d));
-                    result.insLatency = ins <= INS_fldle_d
+                    assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fldgt_s, INS_fstle_d)));
+                    result.insLatency = InstructionOrdinalMaps.IsNativeInstructionOrdinalLessThanOrEqualTo(ins, INS_fldle_d)
                         ? PERFSCORE_LATENCY_5C
                         : PERFSCORE_LATENCY_ZERO;
                     result.insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -495,17 +497,17 @@ public partial class Emitter
             }
             case DF_F_3R:
             {
-                if ((INS_fadd_s <= ins) && (ins <= INS_fsub_d))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fadd_s, INS_fsub_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_3C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_fmul_s <= ins) && (ins <= INS_fmul_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fmul_s, INS_fmul_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_5C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if ((INS_fdiv_s <= ins) && (ins <= INS_fdiv_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fdiv_s, INS_fdiv_d)))
                 {
                     result.insLatency = ins == INS_fdiv_s
                         ? (PERFSCORE_LATENCY_6C + PERFSCORE_LATENCY_13C) / 2
@@ -514,12 +516,12 @@ public partial class Emitter
                         ? (0.28f + 0.667f) / 2
                         : (0.2f + 0.667f) / 2;
                 }
-                else if ((INS_fmax_s <= ins) && (ins <= INS_fmina_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fmax_s, INS_fmina_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_fscaleb_s <= ins) && (ins <= INS_fscaleb_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_fscaleb_s, INS_fscaleb_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
@@ -552,26 +554,26 @@ public partial class Emitter
             case DF_S_3R:
             {
                 if (id.idInsIs(INS_vldx, INS_vstx, INS_vfmul_s, INS_vfmul_d) ||
-                    ((INS_vffint_s_l <= ins) && (ins <= INS_vftintrne_w_d)))
+                    ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vffint_s_l, INS_vftintrne_w_d))))
                 {
                     result.insLatency = ins == INS_vstx ? PERFSCORE_LATENCY_ZERO : PERFSCORE_LATENCY_5C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if (((INS_vfcmp_caf_s <= ins) && (ins <= INS_vfcmp_sune_d)) ||
-                         ((INS_vfadd_s <= ins) && (ins <= INS_vfsub_d)) ||
-                         ((INS_vfmax_s <= ins) && (ins <= INS_vfmina_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfcmp_caf_s, INS_vfcmp_sune_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfadd_s, INS_vfsub_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfmax_s, INS_vfmina_d))))
                 {
                     result.insLatency = id.idInsIs(INS_vfadd_s, INS_vfadd_d, INS_vfsub_s, INS_vfsub_d)
                         ? PERFSCORE_LATENCY_3C
                         : PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if (((INS_vseq_b <= ins) && (ins <= INS_vsub_d)) ||
-                         ((INS_vsadd_b <= ins) && (ins <= INS_vssub_du)) ||
-                         ((INS_vavg_b <= ins) && (ins <= INS_vmin_du)) ||
-                         ((INS_vsll_b <= ins) && (ins <= INS_vrotr_d)) ||
-                         ((INS_vpackev_b <= ins) && (ins <= INS_vpickod_d)) ||
-                         ((INS_vand_v <= ins) && (ins <= INS_vorn_v)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vseq_b, INS_vsub_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsadd_b, INS_vssub_du))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vavg_b, INS_vmin_du))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsll_b, INS_vrotr_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpackev_b, INS_vpickod_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vand_v, INS_vorn_v))))
                 {
                     result.insLatency = id.idInsIs(
                         INS_vsle_d, INS_vsle_du, INS_vslt_d, INS_vslt_du, INS_vavg_d, INS_vavg_du, INS_vavgr_d,
@@ -580,12 +582,12 @@ public partial class Emitter
                             : PERFSCORE_LATENCY_1C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if (((INS_vaddwev_h_b <= ins) && (ins <= INS_vaddwod_q_du_d)) ||
-                         ((INS_vhaddw_h_b <= ins) && (ins <= INS_vabsd_du)) ||
-                         ((INS_vsrlr_b <= ins) && (ins <= INS_vsran_w_d)) ||
-                         ((INS_vbitclr_b <= ins) && (ins <= INS_vbitrev_d)) ||
-                         ((INS_vfrstp_b <= ins) && (ins <= INS_vsub_q)) ||
-                         ((INS_vfcvt_h_s <= ins) && (ins <= INS_vfcvt_s_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vaddwev_h_b, INS_vaddwod_q_du_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vhaddw_h_b, INS_vabsd_du))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsrlr_b, INS_vsran_w_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vbitclr_b, INS_vbitrev_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfrstp_b, INS_vsub_q))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfcvt_h_s, INS_vfcvt_s_d))))
                 {
                     result.insLatency = id.idInsIs(
                         INS_vaddwev_q_d, INS_vsubwev_q_d, INS_vaddwod_q_d, INS_vsubwod_q_d, INS_vaddwev_q_du,
@@ -597,8 +599,8 @@ public partial class Emitter
                             : PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if (((INS_vmul_b <= ins) && (ins <= INS_vmaddwod_q_du_d)) ||
-                         ((INS_vsrlrn_b_h <= ins) && (ins <= INS_vssrarn_wu_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vmul_b, INS_vmaddwod_q_du_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsrlrn_b_h, INS_vssrarn_wu_d))))
                 {
                     result.insLatency = id.idInsIs(
                         INS_vmulwev_q_d, INS_vmulwod_q_d, INS_vmulwev_q_du, INS_vmulwod_q_du, INS_vmulwev_q_du_d,
@@ -608,15 +610,15 @@ public partial class Emitter
                             : PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if (((INS_vsigncov_b <= ins) && (ins <= INS_vsigncov_d)) ||
-                         ((INS_vshuf_h <= ins) && (ins <= INS_vshuf_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsigncov_b, INS_vsigncov_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vshuf_h, INS_vshuf_d))))
                 {
                     result.insLatency = PERFSCORE_LATENCY_1C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
                 else
                 {
-                    assert(((INS_vdiv_b <= ins) && (ins <= INS_vmod_du)) || id.idInsIs(INS_vfdiv_s, INS_vfdiv_d));
+                    assert(((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vdiv_b, INS_vmod_du))) || id.idInsIs(INS_vfdiv_s, INS_vfdiv_d));
                     if (id.idInsIs(INS_vdiv_b, INS_vmod_b, INS_vdiv_bu, INS_vmod_bu))
                     {
                         result.insLatency = id.idInsIs(INS_vdiv_b, INS_vmod_b)
@@ -672,24 +674,24 @@ public partial class Emitter
             }
             case DF_S_2R:
             {
-                if (((INS_vclo_b <= ins) && (ins <= INS_vmsknz_b)) ||
-                    ((INS_vexth_h_b <= ins) && (ins <= INS_vextl_qu_du)))
+                if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vclo_b, INS_vmsknz_b))) ||
+                    ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vexth_h_b, INS_vextl_qu_du))))
                 {
-                    result.insLatency = ((INS_vclo_b <= ins) && (ins <= INS_vpcnt_d))
+                    result.insLatency = ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vclo_b, INS_vpcnt_d)))
                         ? PERFSCORE_LATENCY_2C
                         : PERFSCORE_LATENCY_1C;
                     result.insThroughput = id.idInsIs(INS_vpcnt_b, INS_vpcnt_h, INS_vpcnt_w, INS_vpcnt_d)
                         ? PERFSCORE_THROUGHPUT_2C
                         : PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_vflogb_s <= ins) && (ins <= INS_vfclass_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vflogb_s, INS_vfclass_d)))
                 {
                     result.insLatency = id.idInsIs(INS_vfclass_s, INS_vfclass_d)
                         ? PERFSCORE_LATENCY_2C
                         : PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_vfrint_s <= ins) && (ins <= INS_vffint_d_lu))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfrint_s, INS_vffint_d_lu)))
                 {
                     result.insLatency = id.idInsIs(INS_vfcvtl_s_h, INS_vfcvth_s_h, INS_vfcvtl_d_s, INS_vfcvth_d_s)
                         ? PERFSCORE_LATENCY_3C
@@ -698,21 +700,21 @@ public partial class Emitter
                         ? PERFSCORE_THROUGHPUT_4C
                         : PERFSCORE_THROUGHPUT_2C;
                 }
-                else if ((INS_vftint_w_s <= ins) && (ins <= INS_vftintrz_lu_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vftint_w_s, INS_vftintrz_lu_d)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if (((INS_vftintl_l_s <= ins) && (ins <= INS_vftintrneh_l_s)) ||
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vftintl_l_s, INS_vftintrneh_l_s))) ||
                          id.idInsIs(INS_vffintl_d_w, INS_vffinth_d_w) ||
-                         ((INS_vfrecipe_s <= ins) && (ins <= INS_vfrsqrte_d)))
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfrecipe_s, INS_vfrsqrte_d))))
                 {
                     result.insLatency = PERFSCORE_LATENCY_5C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
                 else
                 {
-                    assert((INS_vfsqrt_s <= ins) && (ins <= INS_vfrsqrt_d));
+                    assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vfsqrt_s, INS_vfrsqrt_d)));
                     if (id.idInsIs(INS_vfsqrt_s, INS_vfsqrt_d))
                     {
                         result.insLatency = id.idInsIs(INS_vfsqrt_s) ? (11.0f + 39.0f) / 2 : (8.0f + 36.0f) / 2;
@@ -775,7 +777,7 @@ public partial class Emitter
             }
             case DF_S_2R3IU:
             {
-                if ((INS_vsllwil_h_b <= ins) && (ins <= INS_vsat_bu))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsllwil_h_b, INS_vsat_bu)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -796,9 +798,9 @@ public partial class Emitter
             }
             case DF_S_2R4IU:
             {
-                if ((INS_vsllwil_w_h <= ins) && (ins <= INS_vsat_hu))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsllwil_w_h, INS_vsat_hu)))
                 {
-                    result.insLatency = ((INS_vsrlni_b_h <= ins) && (ins <= INS_vssrarni_bu_h))
+                    result.insLatency = ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsrlni_b_h, INS_vssrarni_bu_h)))
                         ? PERFSCORE_LATENCY_4C
                         : PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -819,8 +821,8 @@ public partial class Emitter
             }
             case DF_S_2R5IU:
             {
-                if (((INS_vslei_bu <= ins) && (ins <= INS_vrotri_w)) ||
-                    ((INS_vmaxi_bu <= ins) && (ins <= INS_vmini_du)))
+                if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vslei_bu, INS_vrotri_w))) ||
+                    ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vmaxi_bu, INS_vmini_du))))
                 {
                     if (id.idInsIs(INS_vsrlri_w, INS_vsrari_w))
                     {
@@ -849,7 +851,7 @@ public partial class Emitter
             }
             case DF_S_2R6IU:
             {
-                if ((INS_vsrlni_w_d <= ins) && (ins <= INS_vsat_du))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vsrlni_w_d, INS_vsat_du)))
                 {
                     result.insLatency = id.idInsIs(
                         INS_vbitclri_d, INS_vbitseti_d, INS_vbitrevi_d, INS_vsat_d, INS_vsat_du)
@@ -859,7 +861,7 @@ public partial class Emitter
                 }
                 else
                 {
-                    assert((INS_vslli_d <= ins) && (ins <= INS_vsrari_d));
+                    assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vslli_d, INS_vsrari_d)));
                     result.insLatency = id.idInsIs(INS_vsrlri_d, INS_vsrari_d)
                         ? PERFSCORE_LATENCY_3C
                         : PERFSCORE_LATENCY_1C;
@@ -880,9 +882,9 @@ public partial class Emitter
             }
             case DF_A_3R:
             {
-                if ((((INS_xvfcmp_caf_s <= ins) && (ins <= INS_xvfcmp_sune_d)) ||
-                     ((INS_xvfadd_s <= ins) && (ins <= INS_xvfsub_d)) ||
-                     ((INS_xvfmax_s <= ins) && (ins <= INS_xvfmina_d)) || (ins == INS_xvperm_w)))
+                if ((((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfcmp_caf_s, INS_xvfcmp_sune_d))) ||
+                     ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfadd_s, INS_xvfsub_d))) ||
+                     ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfmax_s, INS_xvfmina_d))) || (ins == INS_xvperm_w)))
                 {
                     result.insLatency = id.idInsIs(
                         INS_xvfadd_s, INS_xvfadd_d, INS_xvfsub_s, INS_xvfsub_d, INS_xvperm_w)
@@ -890,13 +892,13 @@ public partial class Emitter
                             : PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if (((INS_xvseq_b <= ins) && (ins <= INS_xvsub_d)) ||
-                         ((INS_xvsadd_b <= ins) && (ins <= INS_xvssub_du)) ||
-                         ((INS_xvavg_b <= ins) && (ins <= INS_xvmin_du)) ||
-                         ((INS_xvsll_b <= ins) && (ins <= INS_xvrotr_d)) ||
-                         ((INS_xvpackev_b <= ins) && (ins <= INS_xvorn_v)) ||
-                         ((INS_xvsigncov_b <= ins) && (ins <= INS_xvsigncov_d)) ||
-                         ((INS_xvshuf_h <= ins) && (ins <= INS_xvshuf_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvseq_b, INS_xvsub_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsadd_b, INS_xvssub_du))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvavg_b, INS_xvmin_du))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsll_b, INS_xvrotr_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvpackev_b, INS_xvorn_v))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsigncov_b, INS_xvsigncov_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvshuf_h, INS_xvshuf_d))))
                 {
                     result.insLatency = id.idInsIs(
                         INS_xvsle_d, INS_xvsle_du, INS_xvslt_d, INS_xvslt_du, INS_xvavg_d, INS_xvavg_du,
@@ -909,12 +911,12 @@ public partial class Emitter
                             ? PERFSCORE_THROUGHPUT_2C
                             : PERFSCORE_THROUGHPUT_4C;
                 }
-                else if (((INS_xvaddwev_h_b <= ins) && (ins <= INS_xvaddwod_q_du_d)) ||
-                         ((INS_xvhaddw_h_b <= ins) && (ins <= INS_xvabsd_du)) ||
-                         ((INS_xvsrlr_b <= ins) && (ins <= INS_xvsran_w_d)) ||
-                         ((INS_xvbitclr_b <= ins) && (ins <= INS_xvbitrev_d)) ||
-                         ((INS_xvfrstp_b <= ins) && (ins <= INS_xvsub_q)) ||
-                         ((INS_xvfcvt_h_s <= ins) && (ins <= INS_xvfcvt_s_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvaddwev_h_b, INS_xvaddwod_q_du_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvhaddw_h_b, INS_xvabsd_du))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsrlr_b, INS_xvsran_w_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvbitclr_b, INS_xvbitrev_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfrstp_b, INS_xvsub_q))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfcvt_h_s, INS_xvfcvt_s_d))))
                 {
                     result.insLatency = id.idInsIs(
                         INS_xvaddwev_q_d, INS_xvsubwev_q_d, INS_xvaddwod_q_d, INS_xvsubwod_q_d,
@@ -928,8 +930,8 @@ public partial class Emitter
                             : PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if (((INS_xvmul_b <= ins) && (ins <= INS_xvmaddwod_q_du_d)) ||
-                         ((INS_xvsrlrn_b_h <= ins) && (ins <= INS_xvssrarn_wu_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvmul_b, INS_xvmaddwod_q_du_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsrlrn_b_h, INS_xvssrarn_wu_d))))
                 {
                     result.insLatency = id.idInsIs(
                         INS_xvmulwev_q_d, INS_xvmulwod_q_d, INS_xvmulwev_q_du, INS_xvmulwod_q_du,
@@ -939,8 +941,8 @@ public partial class Emitter
                             : PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if (((INS_xvfmul_s <= ins) && (ins <= INS_xvfmul_d)) ||
-                         ((INS_xvffint_s_l <= ins) && (ins <= INS_xvftintrne_w_d)) ||
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfmul_s, INS_xvfmul_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvffint_s_l, INS_xvftintrne_w_d))) ||
                          (ins == INS_xvldx) || (ins == INS_xvstx))
                 {
                     result.insLatency = id.idInsIs(INS_xvstx)
@@ -950,7 +952,7 @@ public partial class Emitter
                 }
                 else
                 {
-                    assert(((INS_xvdiv_b <= ins) && (ins <= INS_xvmod_du)) ||
+                    assert(((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvdiv_b, INS_xvmod_du))) ||
                            id.idInsIs(INS_xvfdiv_s, INS_xvfdiv_d));
                     if (id.idInsIs(INS_xvdiv_b, INS_xvmod_b, INS_xvdiv_bu, INS_xvmod_bu))
                     {
@@ -987,44 +989,44 @@ public partial class Emitter
             }
             case DF_A_2R:
             {
-                if ((INS_xvclo_b <= ins) && (ins <= INS_xvmsknz_b))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvclo_b, INS_xvmsknz_b)))
                 {
-                    result.insLatency = ((INS_xvclo_b <= ins) && (ins <= INS_xvpcnt_d))
+                    result.insLatency = ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvclo_b, INS_xvpcnt_d)))
                         ? PERFSCORE_LATENCY_2C
                         : PERFSCORE_LATENCY_1C;
                     result.insThroughput = id.idInsIs(INS_xvpcnt_b, INS_xvpcnt_h, INS_xvpcnt_w, INS_xvpcnt_d)
                         ? PERFSCORE_THROUGHPUT_2C
                         : PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_xvflogb_s <= ins) && (ins <= INS_xvfclass_d))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvflogb_s, INS_xvfclass_d)))
                 {
                     result.insLatency = id.idInsIs(INS_xvfclass_s, INS_xvfclass_d)
                         ? PERFSCORE_LATENCY_2C
                         : PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_xvfrint_s <= ins) && (ins <= INS_xvfcvth_d_s))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfrint_s, INS_xvfcvth_d_s)))
                 {
                     result.insLatency = id.idInsIs(INS_xvfcvtl_s_h, INS_xvfcvth_s_h, INS_xvfcvtl_d_s, INS_xvfcvth_d_s)
                         ? PERFSCORE_LATENCY_3C
                         : PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if (((INS_xvfrecipe_s <= ins) && (ins <= INS_xvfrsqrte_d)) ||
-                         ((INS_xvffint_s_w <= ins) && (ins <= INS_xvftintrneh_l_s)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfrecipe_s, INS_xvfrsqrte_d))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvffint_s_w, INS_xvftintrneh_l_s))))
                 {
                     var isFiveCycle =
                         id.idInsIs(INS_xvffintl_d_w, INS_xvffinth_d_w) ||
-                        ((INS_xvftintl_l_s <= ins) && (ins <= INS_xvftintrneh_l_s)) ||
-                        ((INS_xvfrecipe_s <= ins) && (ins <= INS_xvfrsqrte_d));
+                        ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvftintl_l_s, INS_xvftintrneh_l_s))) ||
+                        ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvfrecipe_s, INS_xvfrsqrte_d)));
                     result.insLatency = isFiveCycle ? PERFSCORE_LATENCY_5C : PERFSCORE_LATENCY_4C;
                     result.insThroughput = isFiveCycle
                         ? PERFSCORE_THROUGHPUT_2C
                         : PERFSCORE_THROUGHPUT_4C;
                 }
-                else if ((INS_xvexth_h_b <= ins) && (ins <= INS_xvextl_qu_du))
+                else if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvexth_h_b, INS_xvextl_qu_du)))
                 {
-                    result.insLatency = ((INS_vext2xv_h_b <= ins) && (ins <= INS_xvreplve0_q))
+                    result.insLatency = ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vext2xv_h_b, INS_xvreplve0_q)))
                         ? PERFSCORE_LATENCY_3C
                         : PERFSCORE_LATENCY_1C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_4C;
@@ -1062,7 +1064,7 @@ public partial class Emitter
             }
             case DF_A_RGX:
             {
-                if ((INS_xvldrepl_d <= ins) && (ins <= INS_xvst))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvldrepl_d, INS_xvst)))
                 {
                     result.insLatency = id.idInsIs(INS_xvst)
                         ? PERFSCORE_LATENCY_ZERO
@@ -1103,7 +1105,7 @@ public partial class Emitter
             }
             case DF_A_2R3IU:
             {
-                if ((INS_xvsrlni_b_h <= ins) && (ins <= INS_xvssrarni_bu_h))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsrlni_b_h, INS_xvssrarni_bu_h)))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
@@ -1137,7 +1139,7 @@ public partial class Emitter
             case DF_A_2R4IU:
             case DF_A_2R5I:
             {
-                if ((INS_xvsrlri_h <= ins) && (ins <= INS_xvsat_hu))
+                if ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsrlri_h, INS_xvsat_hu)))
                 {
                     result.insLatency = id.idInsIs(INS_xvsrlri_h, INS_xvsrari_h)
                         ? PERFSCORE_LATENCY_3C
@@ -1146,8 +1148,8 @@ public partial class Emitter
                 }
                 else
                 {
-                    assert(((INS_xvslli_h <= ins) && (ins <= INS_xvrepl128vei_b)) ||
-                           ((INS_xvseqi_b <= ins) && (ins <= INS_xvmini_d)));
+                    assert(((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvslli_h, INS_xvrepl128vei_b))) ||
+                           ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvseqi_b, INS_xvmini_d))));
                     result.insLatency = id.idInsIs(INS_xvslei_d, INS_xvslti_d, INS_xvmaxi_d, INS_xvmini_d)
                         ? PERFSCORE_LATENCY_2C
                         : PERFSCORE_LATENCY_1C;
@@ -1165,23 +1167,23 @@ public partial class Emitter
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
                 else if (id.idInsIs(INS_xvfrstpi_b, INS_xvfrstpi_h, INS_xvsllwil_d_w, INS_xvsllwil_du_wu) ||
-                         ((INS_xvbitclri_w <= ins) && (ins <= INS_xvsat_wu)) ||
-                         ((INS_xvbitclri_d <= ins) && (ins <= INS_xvsat_du)))
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvbitclri_w, INS_xvsat_wu))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvbitclri_d, INS_xvsat_du))))
                 {
                     result.insLatency = PERFSCORE_LATENCY_2C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
-                else if (((INS_xvsrlni_h_w <= ins) && (ins <= INS_xvssrarni_hu_w)) ||
-                         ((INS_xvsrlni_w_d <= ins) && (ins <= INS_xvssrarni_wu_d)))
+                else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsrlni_h_w, INS_xvssrarni_hu_w))) ||
+                         ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvsrlni_w_d, INS_xvssrarni_wu_d))))
                 {
                     result.insLatency = PERFSCORE_LATENCY_4C;
                     result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
                 else
                 {
-                    assert(((INS_xvslei_bu <= ins) && (ins <= INS_xvmini_du)) ||
-                           ((INS_xvslli_w <= ins) && (ins <= INS_xvbsrl_v)) ||
-                           ((INS_xvslli_d <= ins) && (ins <= INS_xvrotri_d)) ||
+                    assert(((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvslei_bu, INS_xvmini_du))) ||
+                           ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvslli_w, INS_xvbsrl_v))) ||
+                           ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvslli_d, INS_xvrotri_d))) ||
                            (ins == INS_xvrotri_w));
                     result.insLatency = id.idInsIs(INS_xvslei_du, INS_xvslti_du, INS_xvmaxi_du, INS_xvmini_du)
                         ? PERFSCORE_LATENCY_2C

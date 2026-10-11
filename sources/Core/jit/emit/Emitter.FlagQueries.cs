@@ -161,21 +161,21 @@ public partial class Emitter
 #if TARGET_XARCH
     public static bool DoesWriteParityFlag(instruction ins)
     {
-        var flags = CodeGen.instInfo[(int)ins];
+        var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
         return (flags & Writes_PF) != 0;
     }
 
     public static bool DoesWriteSignFlag(instruction ins)
     {
-        var flags = CodeGen.instInfo[(int)ins];
+        var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
         return (flags & Writes_SF) != 0;
     }
 
     public static bool DoesResetOverflowAndCarryFlags(instruction ins)
     {
-        var flags = CodeGen.instInfo[(int)ins];
+        var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
         return (flags & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
     }
@@ -212,7 +212,7 @@ public partial class Emitter
 #if TARGET_XARCH
     public static bool emitDoesInsModifyFlags(instruction ins)
     {
-        return (CodeGen.instInfo[(int)ins] &
+        return (CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] &
             (Resets_OF | Resets_SF | Resets_AF | Resets_PF | Resets_CF |
              Undefined_OF | Undefined_SF | Undefined_AF | Undefined_PF | Undefined_CF | Undefined_ZF |
              Writes_OF | Writes_SF | Writes_AF | Writes_PF | Writes_CF | Writes_ZF |

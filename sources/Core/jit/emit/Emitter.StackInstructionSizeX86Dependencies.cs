@@ -10,7 +10,7 @@ public partial class Emitter
 {
     public static bool IsSSEOrAVXInstruction(instruction ins)
     {
-        return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_AVX_INSTRUCTION);
+        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_AVX_INSTRUCTION));
     }
 }
 #endif

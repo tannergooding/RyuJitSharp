@@ -19,8 +19,9 @@ public sealed partial class CodeGen
         var baseType = node.SimdBaseType;
         var attr = Compiler.GetSimdTypeForSize(node.SimdSize).EmitActualSize;
         var form213 = HWIntrinsicInfo.lookupIns(intrinsicId, baseType, _compiler);
-        var form132 = (instruction)((int)form213 - 1);
-        var form231 = (instruction)((int)form213 + 1);
+        var form213Ordinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(form213);
+        var form132 = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(form213Ordinal - 1);
+        var form231 = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(form213Ordinal + 1);
         var op1 = node.GetOp(1);
         var op2 = node.GetOp(2);
         var op3 = node.GetOp(3);

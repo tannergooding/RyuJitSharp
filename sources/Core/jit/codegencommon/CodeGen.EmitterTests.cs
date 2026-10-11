@@ -562,8 +562,11 @@ public sealed partial class CodeGen
         var load = indirForm(TYP_INT, physReg);
 
         // Test all CC codes
-        for (var ins = FIRST_CFCMOV_INSTRUCTION; ins <= LAST_CFCMOV_INSTRUCTION; ins++)
+        for (var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CFCMOV_INSTRUCTION);
+             nativeOrdinal <= InstructionOrdinalMaps.GetNativeInstructionOrdinal(LAST_CFCMOV_INSTRUCTION);
+             nativeOrdinal++)
         {
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
             theEmitter.emitIns_R_R((instruction)ins, EA_8BYTE, REG_RAX, REG_RCX, INS_OPTS_NONE);
             theEmitter.emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_NONE);
 
@@ -607,8 +610,11 @@ public sealed partial class CodeGen
         }
 
         // Test all CC codes
-        for (var ins = INS_cmovo; ins <= INS_cmovg; ins++)
+        var firstConditionCodeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_cmovo);
+        var lastConditionCodeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_cmovg);
+        for (var nativeOrdinal = firstConditionCodeOrdinal; nativeOrdinal <= lastConditionCodeOrdinal; nativeOrdinal++)
         {
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
             theEmitter.emitIns_R_R((instruction)ins, EA_8BYTE, REG_RAX, REG_RCX);
             theEmitter.emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX);
             theEmitter.emitIns_R_R((instruction)ins, EA_8BYTE, REG_R10, REG_RCX);
@@ -658,8 +664,11 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_ccmpe, EA_1BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
 
         // Test all CC codes
-        for (var ins = FIRST_CCMP_INSTRUCTION; ins <= LAST_CCMP_INSTRUCTION; ins++)
+        for (var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CCMP_INSTRUCTION);
+             nativeOrdinal <= InstructionOrdinalMaps.GetNativeInstructionOrdinal(LAST_CCMP_INSTRUCTION);
+             nativeOrdinal++)
         {
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
             theEmitter.emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
         }
 
@@ -680,8 +689,11 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_S(INS_ccmpe, EA_1BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
 
         // Test all CC codes
-        for (var ins = FIRST_CCMP_INSTRUCTION; ins <= LAST_CCMP_INSTRUCTION; ins++)
+        for (var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CCMP_INSTRUCTION);
+             nativeOrdinal <= InstructionOrdinalMaps.GetNativeInstructionOrdinal(LAST_CCMP_INSTRUCTION);
+             nativeOrdinal++)
         {
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
             theEmitter.emitIns_R_S((instruction)ins, EA_4BYTE, REG_RAX, 0, 0, INS_OPTS_EVEX_dfv_cf);
         }
 
@@ -718,7 +730,8 @@ public sealed partial class CodeGen
 
     public void genAmd64EmitterUnitTestsCTEST()
     {
-        assert(FIRST_CTEST_INSTRUCTION - FIRST_CCMP_INSTRUCTION == 32);
+        assert(InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CTEST_INSTRUCTION) -
+               InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CCMP_INSTRUCTION) == 32);
         var theEmitter = Emitter;
         genDefineTempLabel(genCreateTempLabel());
         var physReg = new GenTreePhysReg(REG_EDX) { RegNum = REG_EDX };
@@ -736,8 +749,11 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_cteste, EA_1BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
 
         // Test all CC codes
-        for (var ins = FIRST_CTEST_INSTRUCTION; ins <= LAST_CTEST_INSTRUCTION; ins++)
+        for (var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CTEST_INSTRUCTION);
+             nativeOrdinal <= InstructionOrdinalMaps.GetNativeInstructionOrdinal(LAST_CTEST_INSTRUCTION);
+             nativeOrdinal++)
         {
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
             theEmitter.emitIns_R_R((instruction)ins, EA_4BYTE, REG_RAX, REG_RCX, INS_OPTS_EVEX_dfv_cf);
         }
 

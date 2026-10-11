@@ -3,7 +3,7 @@
 #if TARGET_ARM64
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;

@@ -198,7 +198,7 @@ public sealed partial class CodeGen
     public unsafe void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
         BasicBlock? failBlk = null, regNumber reg2 = REG_R0)
     {
-        assert((ins >= INS_beq) && (ins <= INS_bgeu));
+        assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_beq, INS_bgeu)));
 
         var useThrowHelperBlocks = _compiler.fgUseThrowHelperBlocks();
         var emit = GetEmitter();

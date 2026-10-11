@@ -4,7 +4,7 @@
 using System;
 using NUnit.Framework;
 #if TARGET_AMD64
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 #endif
 using static RyuJitSharp.var_types;
 

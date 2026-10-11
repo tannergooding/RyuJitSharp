@@ -1107,11 +1107,11 @@ public partial class Emitter
 
             default:
             {
-                assert((uint)ins < (uint)insThroughputInfos.Length);
-                assert((uint)ins < (uint)insLatencyInfos.Length);
+                assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insThroughputInfos.Length);
+                assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insLatencyInfos.Length);
 
-                insThroughput = insThroughputInfos[(int)ins];
-                insLatency = insLatencyInfos[(int)ins];
+                insThroughput = insThroughputInfos[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+                insLatency = insLatencyInfos[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
                 break;
             }
         }

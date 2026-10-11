@@ -239,7 +239,7 @@ public sealed partial class Lowering
                 JITDUMP($"Lowering switch {FMT_BB(original.bbNum)}: using jump table expansion\n");
 #if TARGET_64BIT
 #if TARGET_RISCV64
-                if (!compiler.compOpportunisticallyDependsOn(CORINFO_InstructionSet.InstructionSet_Zba) &&
+                if (!compiler.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba) &&
                     (indexType is not TYP_I_IMPL))
 #else
                 if (indexType is not TYP_I_IMPL)

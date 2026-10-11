@@ -9,6 +9,22 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private static bool IsRiscVThreeRegisterInstruction(instruction ins) => ins is
+        INS_add or INS_sub or INS_sll or INS_slt or INS_sltu or INS_xor or INS_srl or INS_sra or INS_or or INS_and or
+        INS_addw or INS_subw or INS_sllw or INS_srlw or INS_sraw or INS_mul or INS_mulh or INS_mulhsu or INS_mulhu or
+        INS_div or INS_divu or INS_rem or INS_remu or INS_mulw or INS_divw or INS_divuw or INS_remw or INS_remuw or
+        INS_fadd_s or INS_fsub_s or INS_fmul_s or INS_fdiv_s or INS_fsgnj_s or INS_fsgnjn_s or INS_fsgnjx_s or
+        INS_fmin_s or INS_fmax_s or INS_feq_s or INS_flt_s or INS_fle_s or
+        INS_fadd_d or INS_fsub_d or INS_fmul_d or INS_fdiv_d or INS_fsgnj_d or INS_fsgnjn_d or INS_fsgnjx_d or
+        INS_fmin_d or INS_fmax_d or INS_feq_d or INS_flt_d or INS_fle_d or
+        INS_lr_w or INS_lr_d or INS_sc_w or INS_sc_d or INS_amoswap_w or INS_amoswap_d or INS_amoadd_w or
+        INS_amoadd_d or INS_amoxor_w or INS_amoxor_d or INS_amoand_w or INS_amoand_d or INS_amoor_w or
+        INS_amoor_d or INS_amomin_w or INS_amomin_d or INS_amomax_w or INS_amomax_d or INS_amominu_w or
+        INS_amominu_d or INS_amomaxu_w or INS_amomaxu_d or
+        INS_sh1add or INS_sh2add or INS_sh3add or INS_add_uw or INS_sh1add_uw or INS_sh2add_uw or INS_sh3add_uw or
+        INS_rol or INS_rolw or INS_ror or INS_rorw or INS_xnor or INS_orn or INS_andn or INS_min or INS_minu or
+        INS_max or INS_maxu or INS_bset or INS_bclr or INS_bext or INS_binv or INS_czero_eqz or INS_czero_nez;
+
     public unsafe void emitIns_R_R_C(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
@@ -282,7 +298,7 @@ public partial class Emitter
             case MajorOpcode.LoadFp:
             case MajorOpcode.Jalr:
             {
-                assert(!(INS_clz <= ins && ins <= INS_rev8)); // Encoded under OP-IMM but do not take an immediate.
+                assert(!InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_clz, INS_rev8)); // Encoded under OP-IMM but do not take an immediate.
                 assert(isGeneralRegisterOrR0(reg2));
                 code |= (unchecked((uint)reg1) & 0x1Fu) << 7; // rd
                 code |= unchecked((uint)reg2) << 15; // rs1
@@ -333,7 +349,7 @@ public partial class Emitter
     private void emitIns_R_I_I_RiscV(instruction ins, emitAttr attr, regNumber reg, nint imm1, nint imm2)
     {
         var code = emitInsCode(ins);
-        if (INS_csrrwi <= ins && ins <= INS_csrrci)
+        if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_csrrwi, INS_csrrci))
         {
             assert(isGeneralRegisterOrR0(reg));
             assert(isValidUimm5(imm1));
@@ -380,149 +396,16 @@ public partial class Emitter
         }
 
         var code = emitInsCode(ins);
-        var instructionValue = (uint)ins;
-        if (((uint)INS_add <= instructionValue && instructionValue <= (uint)INS_and) ||
-            ((uint)INS_mul <= instructionValue && instructionValue <= (uint)INS_remuw) ||
-            ((uint)INS_addw <= instructionValue && instructionValue <= (uint)INS_sraw) ||
-            ((uint)INS_fadd_s <= instructionValue && instructionValue <= (uint)INS_fmax_s) ||
-            ((uint)INS_fadd_d <= instructionValue && instructionValue <= (uint)INS_fmax_d) ||
-            ((uint)INS_feq_s <= instructionValue && instructionValue <= (uint)INS_fle_s) ||
-            ((uint)INS_feq_d <= instructionValue && instructionValue <= (uint)INS_fle_d) ||
-            ((uint)INS_lr_w <= instructionValue && instructionValue <= (uint)INS_amomaxu_d) ||
-            ((uint)INS_sh1add <= instructionValue && instructionValue <= (uint)INS_sh3add_uw) ||
-            ((uint)INS_rol <= instructionValue && instructionValue <= (uint)INS_maxu) ||
-            ((uint)INS_bset <= instructionValue && instructionValue <= (uint)INS_binv) ||
-            ((uint)INS_czero_eqz <= instructionValue && instructionValue <= (uint)INS_czero_nez))
+        if (IsRiscVThreeRegisterInstruction(ins))
         {
-#if DEBUG
-            switch (ins)
-            {
-                case INS_add:
-                case INS_sub:
-                case INS_sll:
-                case INS_slt:
-                case INS_sltu:
-                case INS_xor:
-                case INS_srl:
-                case INS_sra:
-                case INS_or:
-                case INS_and:
-                case INS_addw:
-                case INS_subw:
-                case INS_sllw:
-                case INS_srlw:
-                case INS_sraw:
-                case INS_mul:
-                case INS_mulh:
-                case INS_mulhsu:
-                case INS_mulhu:
-                case INS_div:
-                case INS_divu:
-                case INS_rem:
-                case INS_remu:
-                case INS_mulw:
-                case INS_divw:
-                case INS_divuw:
-                case INS_remw:
-                case INS_remuw:
-                {
-                    break;
-                }
-                case INS_fadd_s:
-                case INS_fsub_s:
-                case INS_fmul_s:
-                case INS_fdiv_s:
-                case INS_fsgnj_s:
-                case INS_fsgnjn_s:
-                case INS_fsgnjx_s:
-                case INS_fmin_s:
-                case INS_fmax_s:
-                case INS_feq_s:
-                case INS_flt_s:
-                case INS_fle_s:
-                case INS_fadd_d:
-                case INS_fsub_d:
-                case INS_fmul_d:
-                case INS_fdiv_d:
-                case INS_fsgnj_d:
-                case INS_fsgnjn_d:
-                case INS_fsgnjx_d:
-                case INS_fmin_d:
-                case INS_fmax_d:
-                case INS_feq_d:
-                case INS_flt_d:
-                case INS_fle_d:
-                {
-                    break;
-                }
-                case INS_lr_w:
-                case INS_lr_d:
-                case INS_sc_w:
-                case INS_sc_d:
-                case INS_amoswap_w:
-                case INS_amoswap_d:
-                case INS_amoadd_w:
-                case INS_amoadd_d:
-                case INS_amoxor_w:
-                case INS_amoxor_d:
-                case INS_amoand_w:
-                case INS_amoand_d:
-                case INS_amoor_w:
-                case INS_amoor_d:
-                case INS_amomin_w:
-                case INS_amomin_d:
-                case INS_amomax_w:
-                case INS_amomax_d:
-                case INS_amominu_w:
-                case INS_amominu_d:
-                case INS_amomaxu_w:
-                case INS_amomaxu_d:
-                {
-                    break;
-                }
-                case INS_sh1add:
-                case INS_sh2add:
-                case INS_sh3add:
-                case INS_add_uw:
-                case INS_sh1add_uw:
-                case INS_sh2add_uw:
-                case INS_sh3add_uw:
-                case INS_rol:
-                case INS_rolw:
-                case INS_ror:
-                case INS_rorw:
-                case INS_xnor:
-                case INS_orn:
-                case INS_andn:
-                case INS_min:
-                case INS_minu:
-                case INS_max:
-                case INS_maxu:
-                case INS_bset:
-                case INS_bclr:
-                case INS_bext:
-                case INS_binv:
-                case INS_czero_eqz:
-                case INS_czero_nez:
-                {
-                    break;
-                }
-                default:
-                {
-                    NYI_RISCV64("illegal ins within emitIns_R_R_R!");
-                    throw new FatalJitException(
-                        CORJIT_SKIPPED, "Illegal instruction within RISC-V three-register instruction recording.");
-                }
-            }
-#endif
             // The source/data register for load-reserved must be empty.
             assert((ins != INS_lr_w && ins != INS_lr_d) || reg2 == REG_R0);
 
             code |= (unchecked((uint)targetReg) & 0x1Fu) << 7;
             code |= (unchecked((uint)reg1) & 0x1Fu) << 15;
             code |= (unchecked((uint)reg2) & 0x1Fu) << 20;
-            if (((uint)INS_fadd_s <= instructionValue && instructionValue <= (uint)INS_fdiv_s) ||
-                ((uint)INS_fadd_d <= instructionValue && instructionValue <= (uint)INS_fdiv_d))
+            if (ins is INS_fadd_s or INS_fsub_s or INS_fmul_s or INS_fdiv_s or
+                INS_fadd_d or INS_fsub_d or INS_fmul_d or INS_fdiv_d)
             {
                 code |= 0x7u << 12;
             }
@@ -531,8 +414,10 @@ public partial class Emitter
                 // Release ordering ends the load-reserved/store-conditional loop.
                 code |= 0b10u << 25;
             }
-            else if (ins is INS_lr_w or INS_lr_d ||
-                     ((uint)INS_amoswap_w <= instructionValue && instructionValue <= (uint)INS_amomaxu_d))
+            else if (ins is INS_lr_w or INS_lr_d or INS_amoswap_w or INS_amoswap_d or INS_amoadd_w or INS_amoadd_d or
+                     INS_amoxor_w or INS_amoxor_d or INS_amoand_w or INS_amoand_d or INS_amoor_w or INS_amoor_d or
+                     INS_amomin_w or INS_amomin_d or INS_amomax_w or INS_amomax_d or INS_amominu_w or INS_amominu_d or
+                     INS_amomaxu_w or INS_amomaxu_d)
             {
                 // Interlocked APIs do not expose acquire/release ordering.
                 code |= 0b11u << 25;

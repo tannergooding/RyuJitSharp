@@ -13,20 +13,22 @@ public partial class Emitter
     {
 #if TARGET_ARM64
         // The encoder-only predicate uses a checked unsigned conversion.
-        return ((int)ins >= 0) && emitInsIsStoreArm64(ins);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out _) && emitInsIsStoreArm64(ins);
 #elif TARGET_RISCV64
         // Pseudo instructions such as LEA are not represented in the instruction table.
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & RISCV64_ST) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+               ((CodeGen.instInfo[nativeOrdinal] & RISCV64_ST) != 0);
 #elif TARGET_LOONGARCH64
         // Pseudo instructions such as LEA are not represented in the instruction table.
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & LOONGARCH64_ST) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+               ((CodeGen.instInfo[nativeOrdinal] & LOONGARCH64_ST) != 0);
 #elif TARGET_ARM
         const byte ST = 4;
-        return ((int)ins >= 0) &&
-               ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & ST) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+               ((CodeGen.instInfo[nativeOrdinal] & ST) != 0);
 #elif TARGET_WASM
         throw new FatalJitException(CORJIT_INTERNALERROR,
             $"Wasm store classification is unreachable for instruction {ins}.");

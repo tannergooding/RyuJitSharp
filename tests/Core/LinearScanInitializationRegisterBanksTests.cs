@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 #if TARGET_XARCH
-using static RyuJitSharp.CORINFO_InstructionSet;
+using static RyuJitSharp.ManagedInstructionSet;
 #endif
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;

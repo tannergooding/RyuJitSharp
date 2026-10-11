@@ -14,14 +14,16 @@ public partial class Emitter
     public bool emitInsIsLoad(instruction ins)
     {
         // Pseudo instructions such as LEA are not represented in the instruction table.
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & RISCV64_LD) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+               ((CodeGen.instInfo[nativeOrdinal] & RISCV64_LD) != 0);
     }
 
     public bool emitInsIsLoadOrStore(instruction ins)
     {
-        return ((uint)ins < (uint)CodeGen.instInfo.Length) &&
-               ((CodeGen.instInfo[(int)ins] & (RISCV64_LD | RISCV64_ST)) != 0);
+        return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
+               (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
+               ((CodeGen.instInfo[nativeOrdinal] & (RISCV64_LD | RISCV64_ST)) != 0);
     }
 
     public bool emitInsWritesToLclVarStackLoc(instrDesc id)
