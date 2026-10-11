@@ -3,6 +3,7 @@
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_InstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
+using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -61,6 +62,99 @@ internal static unsafe class HWIntrinsicLookupRangeTests
         {
             Assert.Fail("The hardware-intrinsic test is running on an unsupported target.");
         }
+    }
+
+    [Test]
+    public static void MetadataTableContentsMatchThePinnedTargetSnapshot()
+    {
+        var count = HWIntrinsicInfo.GetNativeTableEntryCount();
+        var hash = AppendHash(14695981039346656037UL, (uint)count);
+        int expectedCount;
+        ulong expectedHash;
+
+        if (Configuration.TARGET_XARCH)
+        {
+            expectedCount = 836;
+#if DEBUG
+            expectedHash = Configuration.TARGET_64BIT ? 0x3E4B226FF246FC63UL : 0x12753D926736CD8EUL;
+#else
+            expectedHash = Configuration.TARGET_64BIT ? 0x72D2520BCDBCF9B3UL : 0xDCA5B3763809FDE6UL;
+#endif
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            expectedCount = 1209;
+#if DEBUG
+            expectedHash = 0xFE294BA4C807E11BUL;
+#else
+            expectedHash = 0x4ADC8167113A6932UL;
+#endif
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            expectedCount = 208;
+#if DEBUG
+            expectedHash = 0x2631CE8A5AACB2F1UL;
+#else
+            expectedHash = 0xFF4D09D72ECED4A5UL;
+#endif
+        }
+        else
+        {
+            Assert.Fail("The hardware-intrinsic test is running on an unsupported target.");
+            return;
+        }
+
+        for (var tableIndex = 0; tableIndex < count; tableIndex++)
+        {
+            var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
+            hash = AppendHash(hash, unchecked((uint)id));
+            hash = AppendHash(hash, unchecked((uint)HWIntrinsicInfo.lookupCategory(id)));
+            hash = AppendHash(hash, unchecked((uint)HWIntrinsicInfo.lookupFlags(id)));
+            hash = AppendHash(hash, unchecked((uint)HWIntrinsicInfo.lookupIsa(id)));
+            hash = AppendHash(hash, unchecked((uint)HWIntrinsicInfo.lookupNumArgs(id)));
+
+            var hasSimdSize = HWIntrinsicInfo.tryLookupSimdSize(id, out var simdSize);
+            hash = AppendHash(hash, hasSimdSize ? 1u : 0u);
+            if (hasSimdSize)
+            {
+                hash = AppendHash(hash, simdSize);
+            }
+
+#if DEBUG
+            var name = HWIntrinsicInfo.lookupName(id);
+            hash = AppendHash(hash, (uint)name.Length);
+            foreach (var character in name)
+            {
+                hash = AppendHash(hash, character);
+            }
+#endif
+
+            for (var typeValue = (int)TYP_BYTE; typeValue <= (int)TYP_DOUBLE; typeValue++)
+            {
+                var instruction = HWIntrinsicInfo.lookupIns(id, (var_types)typeValue, compiler: null);
+                hash = AppendHash(hash, unchecked((uint)(int)instruction));
+            }
+
+            if (Configuration.TARGET_XARCH)
+            {
+                hash = AppendHash(hash, HWIntrinsicInfo.lookupIntCost(id));
+                hash = AppendHash(hash, HWIntrinsicInfo.lookupFltCost(id));
+            }
+        }
+
+        Assert.That(count, Is.EqualTo(expectedCount));
+        Assert.That(hash, Is.EqualTo(expectedHash), $"HWI table snapshot mismatch: {count} rows, {hash:X16}.");
+    }
+
+    private static ulong AppendHash(ulong hash, uint value)
+    {
+        for (var shift = 0; shift < 32; shift += 8)
+        {
+            hash = unchecked((hash ^ (byte)(value >> shift)) * 1099511628211UL);
+        }
+
+        return hash;
     }
 }
 #endif

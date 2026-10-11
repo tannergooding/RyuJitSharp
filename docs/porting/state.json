@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Replace the remaining FEATURE_HW_INTRINSICS guards in sources/Core/jit/hwintrinsic/HWIntrinsicInfo.cs and its generated tables with Configuration checks, keeping per-target data available in the universal build and preserving explicit unsupported-target failures; validate xarch, ARM64, Wasm, and feature-disabled RISC-V.",
+    "nextAction": "Make the managed instruction identity enum unconditional by generating a union of target instruction identities and explicit per-target ordinal maps; trace and convert instruction-indexed metadata consumers so x86, x64, ARM64, Wasm, and feature-disabled targets preserve their native ordinals.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Union managed CORINFO_InstructionSet identities and preserve target-native ordinals at instruction-set flag and EE callback boundaries; make HWIntrinsicInfo ISA lookup ranges target-selected runtime data.",
-      "doneWhen": "Managed instruction-set identities are unconditional, while target maps preserve native flag ordinals, EE callback values, R2R decoding, and HWI lookups on x86/x64, ARM64, RISC-V, and Wasm.",
-      "validation": "InstructionSetOrdinalMappingTests and HWIntrinsicLookupRangeTests passed in Debug on win-x64, win-x86, linux-arm64, and browser-wasm (7/7 each), and linux-riscv64 (5/5); focused Release tests passed on win-x64 (7/7). InstructionSetDependencyTests passed 11/11 on win-x64 Debug. The Release compiler build with RyuJitMeasureClrApiCalls=true passed with 0 warnings/errors. Regenerated instruction-set outputs matched checked-in files.",
-      "deferred": "The remaining FEATURE_HW_INTRINSICS guards in HWIntrinsicInfo are the next batch. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Replace target-conditioned HWIntrinsicInfo generated payloads with target-specific runtime-selected data while preserving native instruction ordinals and metadata row order.",
+      "doneWhen": "x86, x64, ARM64, and Wasm metadata payloads compile together, are selected through Configuration, and exactly match the current target-preprocessed tables; unsupported-feature access still terminates explicitly.",
+      "validation": "GenerateTables Release build and regeneration passed with 0 warnings/errors. Exhaustive pre-change metadata hashes matched after conversion on win-x86 and win-x64 (836 rows), linux-arm64 (1209 rows), and browser-wasm (208 rows), in Debug and Release; focused HWIntrinsicLookupRangeTests passed 3/3 for each target/configuration. Feature-disabled linux-riscv64 HardwareIntrinsicIdentityMapsRoundTripNativeRows passed 1/1. The full win-x64 Debug test project passed HWI lookup tests 3/3; full Release test compilation remains blocked by pre-existing CA1812 in DiscretionaryPolicyTests.FixedMultiplierPolicy.",
+      "deferred": "The instruction enum and its broader emitter consumers remain target-conditioned and are the next batch; the HWI opcode columns deliberately store target-native ushort ordinals. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -123,6 +123,30 @@
       "disposition": "Managed category ordinals and architecture-specific flag bits are disjoint universal identities; target-native metadata row order is still selected through the generated maps. Configuration-driven predicates preserve xarch, ARM64, and Wasm behavior, while xarch-only costs reject other targets.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "Focused Debug and Release HWIntrinsicLookupRangeTests plus FeatureConfigurationTests passed on win-x64, linux-arm64, and browser-wasm (10/10 each); feature-disabled linux-riscv64 FeatureConfigurationTests passed (8/8)."
+    },
+    {
+      "area": "universal-hwi-native-opcode-ordinals",
+      "native": [
+        "src\\coreclr\\jit\\hwintrinsic.h",
+        "src\\coreclr\\jit\\instrsxarch.h",
+        "src\\coreclr\\jit\\instrsarm64.h",
+        "src\\coreclr\\jit\\instrswasm.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Inputs\\hwintrinsiclist.h",
+        "sources\\GenerateTables\\Inputs\\instrs.h",
+        "sources\\GenerateTables\\Inputs\\instrsxarch.h",
+        "sources\\GenerateTables\\Inputs\\instrsarm64.h",
+        "sources\\GenerateTables\\Inputs\\instrswasm.h",
+        "sources\\GenerateTables\\Program.cs",
+        "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.generated.cs",
+        "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.Instructions.cs",
+        "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.cs",
+        "tests\\Core\\HWIntrinsicLookupRangeTests.cs"
+      ],
+      "disposition": "HWIntrinsicInfo columns and names are emitted as separate target-native RVA spans and selected lazily through Configuration; instruction values are stored as target-native ushort ordinals and converted to the active target's existing instruction enum only at lookup. Per-target selectors keep foreign tables unreachable for linker trimming.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Pre-change table hashes matched on win-x86 (Debug 12753D926736CD8E, Release DCA5B3763809FDE6), win-x64 (Debug 3E4B226FF246FC63, Release 72D2520BCDBCF9B3), linux-arm64 (Debug FE294BA4C807E11B, Release 4ADC8167113A6932), and browser-wasm (Debug 2631CE8A5AACB2F1, Release FF4D09D72ECED4A5)."
     },
     {
       "area": "universal-hardware-intrinsic-evaluator-branches",

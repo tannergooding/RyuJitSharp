@@ -366,7 +366,7 @@ public readonly partial struct HWIntrinsicInfo
         return GetRvaSpanEntry(s_flags, GetTableIndex(id));
     }
 
-    private static bool tryLookupSimdSize(NamedIntrinsic id, out uint simdSize)
+    internal static bool tryLookupSimdSize(NamedIntrinsic id, out uint simdSize)
     {
         var size = GetRvaSpanEntry(s_simdSizes, GetTableIndex(id));
 

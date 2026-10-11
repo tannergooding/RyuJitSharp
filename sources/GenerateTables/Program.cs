@@ -952,251 +952,88 @@ public enum HandleKindIndex
 """);
     }
 
+    private sealed record HWIntrinsicTableData(
+        StringBuilder Categories,
+        StringBuilder Flags,
+        StringBuilder FloatCosts,
+        StringBuilder Instructions,
+        StringBuilder InstructionSets,
+        StringBuilder IntegerCosts,
+        StringBuilder NameData,
+        StringBuilder NameRanges,
+        StringBuilder ArgumentCounts,
+        StringBuilder SimdSizes);
+
     private static void GenerateHWIntrinsicInfo()
     {
         var isaBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
             var isa = parts[0].AsSpan().Trim();
             var name = parts[1].AsSpan().Trim();
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        InstructionSet_{isa}, // NI_{isa}_{name}");
         });
         var isaRangeBoundsBuilder = GenerateIsaRangeBounds(isaBuilder.ToString());
+        var instructionOrdinals = GenerateTargetInstructionOrdinals();
+        var xarchData = GenerateHWIntrinsicTableData("XARCH", instructionOrdinals["X64"]);
+        var arm64Data = GenerateHWIntrinsicTableData("ARM64", instructionOrdinals["ARM64"]);
+        var wasmData = GenerateHWIntrinsicTableData("WASM", instructionOrdinals["WASM"]);
+        var x86Instructions = GenerateTargetHWIntrinsicInstructionOrdinals("XARCH", instructionOrdinals["X86"]);
 
-        var commonNameDataBuilder = new StringBuilder();
-        var xarchNameDataBuilder = new StringBuilder();
-        var otherNameDataBuilder = new StringBuilder();
-        var commonNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
-        var xarchNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
-        var otherNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
-        var commonNameDataLength = 0;
-        var xarchNameDataLength = 0;
-        var otherNameDataLength = 0;
+        var arraysBuilder = new StringBuilder();
+        AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicCategory", "s_XarchCategories", xarchData.Categories);
+        AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicFlag", "s_XarchFlags", xarchData.Flags);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchFltCosts", xarchData.FloatCosts);
+        AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_X64Instructions", xarchData.Instructions);
+        AppendHWIntrinsicArray(arraysBuilder, "CORINFO_InstructionSet", "s_XarchInstructionSets", xarchData.InstructionSets);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchIntCosts", xarchData.IntegerCosts);
+        AppendHWIntrinsicArray(arraysBuilder, "char", "s_XarchNameData", xarchData.NameData);
+        AppendHWIntrinsicArray(arraysBuilder, "int", "s_XarchNameRanges", xarchData.NameRanges);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchNumArgs", xarchData.ArgumentCounts);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_XarchSimdSizes", xarchData.SimdSizes);
 
-        var nameRangesBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
+        AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicCategory", "s_Arm64Categories", arm64Data.Categories);
+        AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicFlag", "s_Arm64Flags", arm64Data.Flags);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64FltCosts", arm64Data.FloatCosts);
+        AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_Arm64Instructions", arm64Data.Instructions);
+        AppendHWIntrinsicArray(arraysBuilder, "CORINFO_InstructionSet", "s_Arm64InstructionSets", arm64Data.InstructionSets);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64IntCosts", arm64Data.IntegerCosts);
+        AppendHWIntrinsicArray(arraysBuilder, "char", "s_Arm64NameData", arm64Data.NameData);
+        AppendHWIntrinsicArray(arraysBuilder, "int", "s_Arm64NameRanges", arm64Data.NameRanges);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64NumArgs", arm64Data.ArgumentCounts);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_Arm64SimdSizes", arm64Data.SimdSizes);
 
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
+        AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicCategory", "s_WasmCategories", wasmData.Categories);
+        AppendHWIntrinsicArray(arraysBuilder, "HWIntrinsicFlag", "s_WasmFlags", wasmData.Flags);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmFltCosts", wasmData.FloatCosts);
+        AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_WasmInstructions", wasmData.Instructions);
+        AppendHWIntrinsicArray(arraysBuilder, "CORINFO_InstructionSet", "s_WasmInstructionSets", wasmData.InstructionSets);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmIntCosts", wasmData.IntegerCosts);
+        AppendHWIntrinsicArray(arraysBuilder, "char", "s_WasmNameData", wasmData.NameData);
+        AppendHWIntrinsicArray(arraysBuilder, "int", "s_WasmNameRanges", wasmData.NameRanges);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmNumArgs", wasmData.ArgumentCounts);
+        AppendHWIntrinsicArray(arraysBuilder, "byte", "s_WasmSimdSizes", wasmData.SimdSizes);
+        AppendHWIntrinsicArray(arraysBuilder, "ushort", "s_X86Instructions", x86Instructions);
 
-            var isCommon = inputFile.Equals(@"Inputs\hwintrinsiclist.h", StringComparison.Ordinal);
-            var isXarch = inputFile.Equals(@"Inputs\hwintrinsiclistxarch.h", StringComparison.Ordinal);
-            var nameValue = name.ToString();
-            var nameDataBuilder = isCommon ? commonNameDataBuilder : isXarch ? xarchNameDataBuilder : otherNameDataBuilder;
-            var nameOffsets = isCommon ? commonNameOffsets : isXarch ? xarchNameOffsets : otherNameOffsets;
-            var nameDataLength = isCommon ? commonNameDataLength : isXarch ? xarchNameDataLength : otherNameDataLength;
-
-            if (!nameOffsets.TryGetValue(nameValue, out var characterIndex))
-            {
-                characterIndex = nameDataLength;
-                nameOffsets.Add(nameValue, characterIndex);
-
-                if (isCommon)
-                {
-                    _ = xarchNameOffsets.TryAdd(nameValue, characterIndex);
-                    _ = otherNameOffsets.TryAdd(nameValue, characterIndex);
-                }
-
-                foreach (var character in name)
-                {
-                    AppendCharacterLiteral(nameDataBuilder, character);
-                    _ = nameDataBuilder.Append(", ");
-                }
-
-                _ = nameDataBuilder.Append("'\\0',");
-                _ = nameDataBuilder.AppendLine(CultureInfo.InvariantCulture, $" // NI_{isa}_{name}");
-                nameDataLength += name.Length + 1;
-
-                if (isCommon)
-                {
-                    commonNameDataLength = nameDataLength;
-                    xarchNameDataLength = nameDataLength;
-                    otherNameDataLength = nameDataLength;
-                }
-                else if (isXarch)
-                {
-                    xarchNameDataLength = nameDataLength;
-                }
-                else
-                {
-                    otherNameDataLength = nameDataLength;
-                }
-            }
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        {characterIndex}, {name.Length}, // NI_{isa}_{name}");
-        });
-
-        var simdSizeBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
-            var simdSize = parts[2].AsSpan().Trim();
-
-            if (simdSize.Equals("-1", StringComparison.Ordinal))
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        unchecked((byte)({simdSize})), // NI_{isa}_{name}");
-            }
-            else
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {simdSize}, // NI_{isa}_{name}");
-            }
-        });
-
-        var numArgsBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
-            var numArgs = parts[3].AsSpan().Trim();
-
-            if (numArgs.Equals("-1", StringComparison.Ordinal))
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        unchecked((byte)({numArgs})), // NI_{isa}_{name}");
-            }
-            else
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {numArgs}, // NI_{isa}_{name}");
-            }
-        });
-
-        var insBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
-
-            var insT1 = parts[4].AsSpan().Trim();
-            var insT2 = parts[5].AsSpan().Trim();
-            var insT3 = parts[6].AsSpan().Trim();
-            var insT4 = parts[7].AsSpan().Trim();
-            var insT5 = parts[8].AsSpan().Trim();
-            var insT6 = parts[9].AsSpan().Trim();
-            var insT7 = parts[10].AsSpan().Trim();
-            var insT8 = parts[11].AsSpan().Trim();
-            var insT9 = parts[12].AsSpan().Trim();
-            var insT10 = parts[13].AsSpan().Trim();
-
-            var hasOpeningBrace = insT1.StartsWith("{", StringComparison.Ordinal);
-            var hasClosingBrace = insT10.EndsWith("}", StringComparison.Ordinal);
-
-            if (hasOpeningBrace != hasClosingBrace)
-            {
-                throw new InvalidDataException($"Invalid instruction mapping format: '{line}'");
-            }
-
-            if (hasOpeningBrace)
-            {
-                insT1 = insT1[1..];
-                insT10 = insT10[..^1];
-            }
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {insT1}, {insT2}, {insT3}, {insT4}, {insT5}, {insT6}, {insT7}, {insT8}, {insT9}, {insT10}, // NI_{isa}_{name}");
-        });
-
-        var intCostBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
-
-            var intCost = (parts.Length is 18) ? parts[14].AsSpan().Trim() : "-1";
-
-            if (intCost.Equals("-1", StringComparison.Ordinal))
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        unchecked((byte)({intCost})), // NI_{isa}_{name}");
-            }
-            else
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {intCost}, // NI_{isa}_{name}");
-            }
-        });
-
-        var fltCostBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
-
-            var fltCost = (parts.Length is 18) ? parts[15].AsSpan().Trim() : "-1";
-
-            if (fltCost.Equals("-1", StringComparison.Ordinal))
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        unchecked((byte)({fltCost})), // NI_{isa}_{name}");
-            }
-            else
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {fltCost}, // NI_{isa}_{name}");
-            }
-        });
-
-        var categoryBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
-
-            var category = parts[(parts.Length is 18) ? 16 : 14].AsSpan().Trim();
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {category}, // NI_{isa}_{name}");
-        });
-
-        var flagsBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 16 and not 18)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var isa = parts[0].AsSpan().Trim();
-            var name = parts[1].AsSpan().Trim();
-
-            var flags = parts[(parts.Length is 18) ? 17 : 15].AsSpan().Trim();
-
-            if ((flags[0] == '(') && (flags[^1] == ')'))
-            {
-                flags = flags[1..^1].Trim();
-            }
-
-            var separator = "        ";
-            var count = 0;
-
-            foreach (var flagRange in flags.Split('|'))
-            {
-                var flag = flags[flagRange].Trim();
-
-                _ = builder.Append(CultureInfo.InvariantCulture, $"{separator}{flag}");
-                separator = " | ";
-                count++;
-            }
-            Debug.Assert(count is not 0);
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $", // NI_{isa}_{name}");
-        });
+        var propertiesBuilder = new StringBuilder();
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "HWIntrinsicCategory", "s_categories",
+            "s_XarchCategories", "s_Arm64Categories", "s_WasmCategories");
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "HWIntrinsicFlag", "s_flags",
+            "s_XarchFlags", "s_Arm64Flags", "s_WasmFlags");
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_fltCosts",
+            "s_XarchFltCosts", "s_Arm64FltCosts", "s_WasmFltCosts");
+        AppendTargetHWIntrinsicInstructionProperty(propertiesBuilder);
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "CORINFO_InstructionSet", "s_instructionSets",
+            "s_XarchInstructionSets", "s_Arm64InstructionSets", "s_WasmInstructionSets");
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_intCosts",
+            "s_XarchIntCosts", "s_Arm64IntCosts", "s_WasmIntCosts");
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "char", "s_nameData",
+            "s_XarchNameData", "s_Arm64NameData", "s_WasmNameData");
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "int", "s_nameRanges",
+            "s_XarchNameRanges", "s_Arm64NameRanges", "s_WasmNameRanges");
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_numArgs",
+            "s_XarchNumArgs", "s_Arm64NumArgs", "s_WasmNumArgs");
+        AppendTargetHWIntrinsicProperty(propertiesBuilder, "byte", "s_simdSizes",
+            "s_XarchSimdSizes", "s_Arm64SimdSizes", "s_WasmSimdSizes");
 
         _ = Directory.CreateDirectory(@"Outputs\jit\hwintrinsic");
 
@@ -1212,65 +1049,352 @@ namespace RyuJitSharp;
 
 public partial struct HWIntrinsicInfo
 {
-#if FEATURE_HW_INTRINSICS && !TARGET_XARCH
-    // hwintrinsiclist.h defines these xarch-only flags as zero for shared entries.
-    private const HWIntrinsicFlag HW_Flag_AvxOnlyCompatible = HW_Flag_NoFlag;
-    private const HWIntrinsicFlag HW_Flag_NoContainment = HW_Flag_NoFlag;
-#endif
-
-    private static ReadOnlySpan<HWIntrinsicCategory> s_categories => [
-{{categoryBuilder}}
-    ];
-
-    private static ReadOnlySpan<HWIntrinsicFlag> s_flags => [
-{{flagsBuilder}}
-    ];
-
-    private static ReadOnlySpan<byte> s_fltCosts => [
-{{fltCostBuilder}}
-    ];
-
-    private static ReadOnlySpan<instruction> s_instructions => [
-{{insBuilder}}
-    ];
-
-    private static ReadOnlySpan<CORINFO_InstructionSet> s_instructionSets => [
-{{isaBuilder}}
-    ];
-
-#if FEATURE_HW_INTRINSICS
+{{arraysBuilder}}
 {{isaRangeBoundsBuilder}}
-#endif
-
-    private static ReadOnlySpan<byte> s_intCosts => [
-{{intCostBuilder}}
-    ];
-
-    private static ReadOnlySpan<char> s_nameData => [
-#if FEATURE_HW_INTRINSICS
-#if TARGET_XARCH
-{{commonNameDataBuilder}}{{xarchNameDataBuilder}}
-#else
-{{commonNameDataBuilder}}{{otherNameDataBuilder}}
-#endif
-#endif
-    ];
-
-    private static ReadOnlySpan<int> s_nameRanges => [
-{{nameRangesBuilder}}
-    ];
-
-    private static ReadOnlySpan<byte> s_numArgs => [
-{{numArgsBuilder}}
-    ];
-
-    private static ReadOnlySpan<byte> s_simdSizes => [
-{{simdSizeBuilder}}
-    ];
+{{propertiesBuilder}}
 }
 """);
 
         GenerateHWIntrinsicIndexMaps();
+    }
+
+    private static HWIntrinsicTableData GenerateHWIntrinsicTableData(
+        string target, Dictionary<string, ushort> instructionOrdinals)
+    {
+        var categories = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var category = parts[(parts.Length is 18) ? 16 : 14].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {category}, // NI_{isa}_{intrinsicName}");
+        });
+
+        var flags = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var rowFlags = parts[(parts.Length is 18) ? 17 : 15].AsSpan().Trim();
+
+            if ((rowFlags[0] == '(') && (rowFlags[^1] == ')'))
+            {
+                rowFlags = rowFlags[1..^1].Trim();
+            }
+
+            var separator = "        ";
+            var count = 0;
+
+            foreach (var flagRange in rowFlags.Split('|'))
+            {
+                var flag = rowFlags[flagRange].Trim();
+
+                if ((target is not "XARCH") &&
+                    (flag.Equals("HW_Flag_AvxOnlyCompatible", StringComparison.Ordinal) ||
+                     flag.Equals("HW_Flag_NoContainment", StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                _ = builder.Append(CultureInfo.InvariantCulture, $"{separator}{flag}");
+                separator = " | ";
+                count++;
+            }
+
+            if (count is 0)
+            {
+                _ = builder.Append("        HW_Flag_NoFlag");
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $", // NI_{isa}_{intrinsicName}");
+        });
+
+        var floatCosts = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var cost = (parts.Length is 18) ? parts[15].AsSpan().Trim() : "-1";
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {FormatHardwareIntrinsicByte(cost)}, // NI_{isa}_{intrinsicName}");
+        });
+
+        var instructions = GenerateTargetHWIntrinsicInstructionOrdinals(target, instructionOrdinals);
+
+        var instructionSets = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        InstructionSet_{isa}, // NI_{isa}_{intrinsicName}");
+        });
+
+        var integerCosts = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var cost = (parts.Length is 18) ? parts[14].AsSpan().Trim() : "-1";
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {FormatHardwareIntrinsicByte(cost)}, // NI_{isa}_{intrinsicName}");
+        });
+
+        var nameData = new StringBuilder();
+        var nameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
+        var nameDataLength = 0;
+        var nameRanges = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var nameValue = intrinsicName.ToString();
+
+            if (!nameOffsets.TryGetValue(nameValue, out var characterIndex))
+            {
+                characterIndex = nameDataLength;
+                nameOffsets.Add(nameValue, characterIndex);
+
+                foreach (var character in intrinsicName)
+                {
+                    AppendCharacterLiteral(nameData, character);
+                    _ = nameData.Append(", ");
+                }
+
+                _ = nameData.Append("'\\0',");
+                _ = nameData.AppendLine(CultureInfo.InvariantCulture, $" // NI_{isa}_{intrinsicName}");
+                nameDataLength += intrinsicName.Length + 1;
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {characterIndex}, {intrinsicName.Length}, // NI_{isa}_{intrinsicName}");
+        });
+
+        var argumentCounts = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var count = parts[3].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {FormatHardwareIntrinsicByte(count)}, // NI_{isa}_{intrinsicName}");
+        });
+
+        var simdSizes = ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var size = parts[2].AsSpan().Trim();
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {FormatHardwareIntrinsicByte(size)}, // NI_{isa}_{intrinsicName}");
+        });
+
+        return new HWIntrinsicTableData(
+            categories,
+            flags,
+            floatCosts,
+            instructions,
+            instructionSets,
+            integerCosts,
+            nameData,
+            nameRanges,
+            argumentCounts,
+            simdSizes);
+    }
+
+    private static StringBuilder ProcessUniqueTargetHardwareIntrinsicList(
+        string target, Action<StringBuilder, string, string, string, string[]> callback)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        return ProcessTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length is not 16 and not 18)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var identity = GetHardwareIntrinsicIdentity(parts);
+            if (!seen.Add(identity))
+            {
+                throw new InvalidDataException($"Duplicate hardware intrinsic table row '{identity}' for {target}.");
+            }
+
+            callback(builder, inputFile, line, prefix, parts);
+        });
+    }
+
+    private static StringBuilder GenerateTargetHWIntrinsicInstructionOrdinals(
+        string target, Dictionary<string, ushort> instructionOrdinals)
+    {
+        return ProcessUniqueTargetHardwareIntrinsicList(target, (builder, inputFile, line, prefix, parts) => {
+            var isa = parts[0].AsSpan().Trim();
+            var intrinsicName = parts[1].AsSpan().Trim();
+            var instructionNames = new string[10];
+            var ordinals = new ushort[10];
+
+            for (var instructionIndex = 0; instructionIndex < instructionNames.Length; instructionIndex++)
+            {
+                instructionNames[instructionIndex] = parts[instructionIndex + 4].Trim();
+            }
+
+            var hasOpeningBrace = instructionNames[0][0] is '{';
+            var hasClosingBrace = instructionNames[^1][^1] is '}';
+
+            if (hasOpeningBrace != hasClosingBrace)
+            {
+                throw new InvalidDataException($"Invalid instruction mapping format: '{line}'");
+            }
+
+            if (hasOpeningBrace)
+            {
+                instructionNames[0] = instructionNames[0][1..];
+                instructionNames[^1] = instructionNames[^1][..^1];
+            }
+
+            for (var instructionIndex = 0; instructionIndex < instructionNames.Length; instructionIndex++)
+            {
+                if (!instructionOrdinals.TryGetValue(instructionNames[instructionIndex], out ordinals[instructionIndex]))
+                {
+                    throw new InvalidDataException(
+                        $"Instruction '{instructionNames[instructionIndex]}' for NI_{isa}_{intrinsicName} is not present in the {target} instruction enum.");
+                }
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        {string.Join(", ", ordinals)}, // NI_{isa}_{intrinsicName}");
+        });
+    }
+
+    private static Dictionary<string, Dictionary<string, ushort>> GenerateTargetInstructionOrdinals()
+    {
+        var instructionBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
+            var instructionName = parts[0].AsSpan().Trim();
+
+            if (inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    INS_sve_{instructionName},");
+            }
+            else
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    INS_{instructionName},");
+            }
+        }).ToString();
+
+        var profiles = new (string Name, string[] DefinedSymbols)[]
+        {
+            ("X86", ["TARGET_XARCH", "TARGET_X86", "TARGET_32BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
+            ("X64", ["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
+            ("ARM64", ["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
+            ("WASM", ["TARGET_WASM", "TARGET_WASM32", "TARGET_32BIT", "FEATURE_SIMD"]),
+        };
+        var result = new Dictionary<string, Dictionary<string, ushort>>(StringComparer.Ordinal);
+
+        foreach (var (name, definedSymbols) in profiles)
+        {
+            var activeSource = GetActivePreprocessorLines(instructionBuilder, new HashSet<string>(definedSymbols, StringComparer.Ordinal));
+            var ordinals = new Dictionary<string, ushort>(StringComparer.Ordinal);
+            var ordinal = 0;
+
+            foreach (var line in activeSource.Split('\n'))
+            {
+                var match = Regex.Match(line, @"^\s*(INS_[A-Za-z0-9_]+)\s*,", RegexOptions.CultureInvariant);
+                if (!match.Success)
+                {
+                    continue;
+                }
+
+                AddOrdinal(match.Groups[1].Value);
+            }
+
+            if (name is "ARM64")
+            {
+                AddOrdinal("INS_lea");
+            }
+
+            AddOrdinal("INS_none");
+            result.Add(name, ordinals);
+
+            void AddOrdinal(string instructionName)
+            {
+                if (!ordinals.TryAdd(instructionName, checked((ushort)ordinal)))
+                {
+                    throw new InvalidDataException($"Duplicate instruction '{instructionName}' for {name}.");
+                }
+
+                ordinal++;
+            }
+        }
+
+        return result;
+    }
+
+    private static string FormatHardwareIntrinsicByte(ReadOnlySpan<char> value) =>
+        value.Equals("-1", StringComparison.Ordinal) ? "unchecked((byte)(-1))" : value.ToString();
+
+    private static void AppendHWIntrinsicArray(
+        StringBuilder builder, string elementType, string name, StringBuilder values)
+    {
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<{elementType}> {name} => [");
+        _ = builder.Append(values);
+        _ = builder.AppendLine("    ];");
+        _ = builder.AppendLine();
+    }
+
+    private static void AppendTargetHWIntrinsicProperty(
+        StringBuilder builder, string elementType, string propertyName,
+        string xarchTable, string arm64Table, string wasmTable)
+    {
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<{elementType}> {propertyName}");
+        _ = builder.AppendLine("    {");
+        _ = builder.AppendLine("        get");
+        _ = builder.AppendLine("        {");
+        _ = builder.AppendLine("            if (!Configuration.FEATURE_HW_INTRINSICS)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine("                throw new PlatformNotSupportedException(\"Hardware-intrinsic metadata is unsupported on this target.\");");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            if (Configuration.TARGET_XARCH)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return {xarchTable};");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            if (Configuration.TARGET_ARM64)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return {arm64Table};");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            if (Configuration.TARGET_WASM)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return {wasmTable};");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            throw new PlatformNotSupportedException(\"Hardware-intrinsic tables are unavailable for this target.\");");
+        _ = builder.AppendLine("        }");
+        _ = builder.AppendLine("    }");
+        _ = builder.AppendLine();
+    }
+
+    private static void AppendTargetHWIntrinsicInstructionProperty(StringBuilder builder)
+    {
+        _ = builder.AppendLine("    private static ReadOnlySpan<ushort> s_instructions");
+        _ = builder.AppendLine("    {");
+        _ = builder.AppendLine("        get");
+        _ = builder.AppendLine("        {");
+        _ = builder.AppendLine("            if (!Configuration.FEATURE_HW_INTRINSICS)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine("                throw new PlatformNotSupportedException(\"Hardware-intrinsic metadata is unsupported on this target.\");");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            if (Configuration.TARGET_XARCH)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine("                return Configuration.TARGET_64BIT ? s_X64Instructions : s_X86Instructions;");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            if (Configuration.TARGET_ARM64)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine("                return s_Arm64Instructions;");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            if (Configuration.TARGET_WASM)");
+        _ = builder.AppendLine("            {");
+        _ = builder.AppendLine("                return s_WasmInstructions;");
+        _ = builder.AppendLine("            }");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine("            throw new PlatformNotSupportedException(\"Hardware-intrinsic tables are unavailable for this target.\");");
+        _ = builder.AppendLine("        }");
+        _ = builder.AppendLine("    }");
+        _ = builder.AppendLine();
     }
 
     private static void GenerateHWIntrinsicIndexMaps()
@@ -1875,7 +1999,12 @@ public partial struct HWIntrinsicInfo
 
                 var isDefined = definedSymbols.Contains(symbol);
 
-                if (!isDefined && symbol is not "FEATURE_HW_INTRINSICS" and not "TARGET_XARCH" and not "TARGET_ARM64" and not "TARGET_RISCV64" and not "TARGET_WASM" and not "TARGET_WASM32")
+                if (!isDefined && symbol is not "FEATURE_HW_INTRINSICS" and not "FEATURE_LOOP_ALIGN" and
+                    not "FEATURE_ITINSTRUCTION" and not "FEATURE_PLI_INSTRUCTION" and
+                    not "TARGET_32BIT" and not "TARGET_64BIT" and not "TARGET_AMD64" and not "TARGET_ARM" and
+                    not "TARGET_ARM64" and not "TARGET_ARMARCH" and not "TARGET_LOONGARCH64" and
+                    not "TARGET_RISCV64" and not "TARGET_WASM" and not "TARGET_WASM32" and
+                    not "TARGET_X86" and not "TARGET_XARCH")
                 {
                     throw new InvalidDataException($"Unknown preprocessor symbol in intrinsic lookup table: '{symbol}'.");
                 }
