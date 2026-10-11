@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universalizing ValueNumStore.IntrinsicEvaluation.cs: replace the FEATURE_HW_INTRINSICS gate and target-specific intrinsic cases with Configuration checks, preserving each target's folding behavior and explicit unsupported paths.",
+    "nextAction": "Continue universalizing HWIntrinsicInfo after the hardware identity union: remove the TARGET_ARM64 and TARGET_XARCH guards from GetMultiRegCount using the union IDs, then convert the adjacent target-dependent metadata predicates to Configuration checks. Validate native row lookups on xarch, ARM64, and Wasm before resuming the evaluator adapter split.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize ValueNumStore's fixed-width and scalable SIMD constant conversions and their direct value-number and Globals evaluator helpers, retaining xarch, ARM64, and masked-intrinsic target semantics.",
-      "doneWhen": "The conversion and evaluator APIs compile without SIMD preprocessor gates, preserve configured target behavior, and throw explicitly when the required feature or architecture is unsupported; focused tests pass and the checkpoint is committed.",
-      "validation": "Focused target tests passed: Debug/Release win-x64 58/58 each; Debug/Release win-arm64 56/56 each; Release browser-wasm 27/27. The test suite's no-SIMD runtime branch is present but unavailable RIDs all configure FEATURE_SIMD=true.",
-      "deferred": "Continue with the remaining FEATURE_HW_INTRINSICS and target-specific intrinsic evaluation gates in ValueNumStore.IntrinsicEvaluation.cs, then proceed through other JIT files by dependency-coherent target/feature slices."
+      "scope": "Remove the remaining target-architecture compile gates from HWIntrinsicInfo metadata queries now that intrinsic identities are universal and native metadata rows are explicitly mapped.",
+      "doneWhen": "HWIntrinsicInfo uses target configuration and native row maps rather than TARGET_XARCH/TARGET_ARM64 branches, while preserving unsupported-target failures and per-target metadata behavior; focused lookup and multi-register tests pass across xarch, ARM64, and Wasm.",
+      "validation": "The prerequisite identity batch passed generated-table regeneration and Debug/Release focused lookup and value-number tests on xarch, ARM64, and Wasm, plus feature-disabled RISC-V configuration tests. Validate this metadata batch at the same target frontier.",
+      "deferred": "The GenTreeHWIntrinsic/GenTreeVecCon tree adapters remain feature-gated until their node type and operation dependencies are unioned; finish the metadata-only evaluator split afterward, then continue the remaining target and feature gates."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -65,6 +65,25 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "universal-hardware-intrinsic-identities",
+      "native": [
+        "src\\coreclr\\jit\\namedintrinsiclist.h",
+        "src\\coreclr\\jit\\hwintrinsiclist.h",
+        "src\\coreclr\\jit\\valuenumfuncs.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Inputs\\namedintrinsiclist.h",
+        "sources\\GenerateTables\\Inputs\\valuenumfuncs.h",
+        "sources\\GenerateTables\\Program.cs",
+        "sources\\Core\\jit\\namedintrinsiclist\\NamedIntrinsic.generated.cs",
+        "sources\\Core\\jit\\valuenum\\VNFunc.generated.cs",
+        "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.IndexMaps.generated.cs"
+      ],
+      "disposition": "Hardware NamedIntrinsic and VNFunc entries use the same deduplicated union order. HWIntrinsicInfo retains target-native row order and translates union IDs through generated forward/reverse maps; foreign-target lookups terminate with PlatformNotSupportedException.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "GenerateTables Release build and regeneration succeeded. Focused Debug/Release FeatureConfigurationTests, ValueNumHardwareEvaluationClosureTests, and HWIntrinsicLookupRangeTests passed on win-x64 (60/60), linux-arm64 (58/58), and browser-wasm (29/29); feature-disabled linux-riscv64 configuration tests passed (7/7) in both configurations."
+    },
     {
       "area": "universal-var-type-ordinals",
       "native": [

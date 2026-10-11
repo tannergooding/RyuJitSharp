@@ -4,6 +4,8 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.NamedIntrinsic;
+using static RyuJitSharp.VNFunc;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -16,6 +18,40 @@ internal static class FeatureConfigurationTests
     {
         Assert.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,
             Is.EqualTo(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64));
+    }
+
+    [Test]
+    public static void HardwareIntrinsicIdentityMapsRoundTripNativeRows()
+    {
+        var unionIdentityCount = (int)NI_HW_INTRINSIC_END - (int)NI_HW_INTRINSIC_START - 1;
+        var unionValueNumberCount = (int)VNF_HWI_INTRINSIC_END - (int)VNF_HWI_INTRINSIC_START - 1;
+
+        Assert.That(unionValueNumberCount, Is.EqualTo(unionIdentityCount));
+
+        for (var unionIndex = 1; unionIndex <= unionIdentityCount; unionIndex++)
+        {
+            var id = (NamedIntrinsic)((int)NI_HW_INTRINSIC_START + unionIndex);
+            var valueNumberFunctionName = $"VNF_HWI_{id.ToString()[3..]}";
+            Assert.That(Enum.TryParse<VNFunc>(valueNumberFunctionName, out var valueNumberFunction), Is.True);
+            Assert.That((int)valueNumberFunction - (int)VNF_HWI_INTRINSIC_START,
+                Is.EqualTo((int)id - (int)NI_HW_INTRINSIC_START));
+        }
+
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            Assert.That(HWIntrinsicInfo.GetNativeTableEntryCount(), Is.Zero);
+            return;
+        }
+
+        var nativeRowCount = HWIntrinsicInfo.GetNativeTableEntryCount();
+        for (var tableIndex = 0; tableIndex < nativeRowCount; tableIndex++)
+        {
+            var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
+            Assert.That(HWIntrinsicInfo.GetNativeTableIndex(id), Is.EqualTo(tableIndex));
+        }
+
+        var unsupportedId = Configuration.TARGET_XARCH ? NI_AdvSimd_Add : NI_AVX2_Add;
+        _ = Assert.Throws<PlatformNotSupportedException>(() => HWIntrinsicInfo.lookupFlags(unsupportedId));
     }
 
     [Test]

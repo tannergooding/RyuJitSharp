@@ -1324,27 +1324,11 @@ public partial class Compiler
             {
                 if (!isIntrinsic)
                 {
-#if TARGET_XARCH
                     // We can't guarantee that all overloads for the xplat intrinsics can be
                     // handled by the AltJit, so limit only the platform specific intrinsics
-                    assert((LAST_NI_Vector + 1) == FIRST_NI_X86Base);
+                    assert(HWIntrinsicInfo.IsCrossPlatformVectorIntrinsic(FIRST_NI_Vector));
 
-                    if (ni <= LAST_NI_Vector)
-#elif TARGET_ARM64
-                    // We can't guarantee that all overloads for the xplat intrinsics can be
-                    // handled by the AltJit, so limit only the platform specific intrinsics
-                    assert((LAST_NI_Vector + 1) == FIRST_NI_AdvSimd);
-
-                    if (ni <= LAST_NI_Vector)
-#elif TARGET_WASM
-                    // We can't guarantee that all overloads for the xplat intrinsics can be
-                    // handled by the AltJit, so limit only the platform specific intrinsics
-                    assert((LAST_NI_Vector + 1) == FIRST_NI_PackedSimd);
-
-                    if (ni <= LAST_NI_Vector)
-#else
-#error Unsupported platform
-#endif
+                    if (HWIntrinsicInfo.IsCrossPlatformVectorIntrinsic(ni))
                     {
                         // Several of the cross-platform vector APIs do not have
                         // all overloads as intrinsic today so they will assert

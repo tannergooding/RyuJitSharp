@@ -189,13 +189,10 @@ ValueNumFuncDef(ADD_UN_OVF, 2, true, false)  // unsigned overflow checking opera
 ValueNumFuncDef(SUB_UN_OVF, 2, false, false)
 ValueNumFuncDef(MUL_UN_OVF, 2, true, false)
 
-#ifdef FEATURE_SIMD
 ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compose a SIMD type
-#endif
 
 // In VN all HW intrinsics encode an extra arg for the base type (except when
 // they are variadic), hence the +1 to the arg count below here.
-#if defined(FEATURE_HW_INTRINSICS)
 ValueNumFuncDef(HWI_INTRINSIC_START, -1, false, false)
 
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
@@ -206,15 +203,12 @@ ValueNumFuncDef(HWI_INTRINSIC_END, -1, false, false)
 
 #define VNF_HWI_FIRST (VNF_HWI_INTRINSIC_START + 1)
 #define VNF_HWI_LAST  (VNF_HWI_INTRINSIC_END - 1)
-#endif // FEATURE_HW_INTRINSICS
 
-#if defined(TARGET_RISCV64)
-    // Signed/Unsigned integer min/max intrinsics
-    ValueNumFuncDef(MinInt, 2, true, false)
-    ValueNumFuncDef(MaxInt, 2, true, false)
-    ValueNumFuncDef(MinInt_UN, 2, true, false)
-    ValueNumFuncDef(MaxInt_UN, 2, true, false)
-#endif // TARGET_RISCV64
+// Signed/Unsigned RISC-V integer min/max intrinsics
+ValueNumFuncDef(MinInt, 2, true, false)
+ValueNumFuncDef(MaxInt, 2, true, false)
+ValueNumFuncDef(MinInt_UN, 2, true, false)
+ValueNumFuncDef(MaxInt_UN, 2, true, false)
 
 // clang-format on
 

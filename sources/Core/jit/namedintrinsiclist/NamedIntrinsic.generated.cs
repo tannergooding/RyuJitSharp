@@ -225,11 +225,9 @@ public enum NamedIntrinsic : ushort
     NI_IsSupported,
     NI_IsHardwareAccelerated,
 
-#if FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 
     // clang-format off
-#if FEATURE_HW_INTRINSICS
     NI_Vector_Abs,
     NI_Vector_AddSaturate,
     NI_Vector_AndNot,
@@ -248,34 +246,18 @@ public enum NamedIntrinsic : ushort
     NI_Vector_AsUInt64,
     NI_Vector_AsVector,
     NI_Vector_AsVector128,
-#if TARGET_XARCH
     NI_Vector_AsVector128Unsafe,
     NI_Vector_AsVector2,
     NI_Vector_AsVector256,
     NI_Vector_AsVector3,
-#elif TARGET_ARM64
-    NI_Vector_AsVector128Unsafe,
-    NI_Vector_AsVector2,
-    NI_Vector_AsVector3,
-#else
-    NI_Vector_AsVector128Unsafe,
-    NI_Vector_AsVector2,
-    NI_Vector_AsVector3,
-#endif
     NI_Vector_AsVector4,
-#if TARGET_XARCH
     NI_Vector_AsVector512,
-#endif
     NI_Vector_Ceiling,
     NI_Vector_ConcatLowerLower,
     NI_Vector_ConcatLowerUpper,
     NI_Vector_ConcatUpperLower,
     NI_Vector_ConcatUpperUpper,
-#if TARGET_XARCH
     NI_Vector_ConditionalSelect,
-#else
-    NI_Vector_ConditionalSelect,
-#endif
     NI_Vector_ConvertToDouble,
     NI_Vector_ConvertToInt32,
     NI_Vector_ConvertToInt32Native,
@@ -289,16 +271,8 @@ public enum NamedIntrinsic : ushort
     NI_Vector_Create,
     NI_Vector_CreateAlternatingSequence,
     NI_Vector_CreateGeometricSequence,
-#if TARGET_XARCH
     NI_Vector_CreateScalar,
     NI_Vector_CreateScalarUnsafe,
-#elif TARGET_ARM64
-    NI_Vector_CreateScalar,
-    NI_Vector_CreateScalarUnsafe,
-#else
-    NI_Vector_CreateScalar,
-    NI_Vector_CreateScalarUnsafe,
-#endif
     NI_Vector_CreateSequence,
     NI_Vector_Dot,
     NI_Vector_Equals,
@@ -306,21 +280,10 @@ public enum NamedIntrinsic : ushort
     NI_Vector_ExtractMostSignificantBits,
     NI_Vector_Floor,
     NI_Vector_FusedMultiplyAdd,
-#if TARGET_XARCH
     NI_Vector_GetElement,
-#elif TARGET_ARM64
-    NI_Vector_GetElement,
-#else
-    NI_Vector_GetElement,
-#endif
-#if TARGET_XARCH
     NI_Vector_GetLower,
     NI_Vector_GetLower128,
     NI_Vector_GetUpper,
-#elif TARGET_ARM64
-    NI_Vector_GetLower,
-    NI_Vector_GetUpper,
-#endif
     NI_Vector_GreaterThan,
     NI_Vector_GreaterThanAll,
     NI_Vector_GreaterThanAny,
@@ -361,11 +324,7 @@ public enum NamedIntrinsic : ushort
     NI_Vector_MinNumber,
     NI_Vector_MultiplyAddEstimate,
     NI_Vector_Narrow,
-#if TARGET_ARM64
     NI_Vector_NarrowWithSaturation,
-#else
-    NI_Vector_NarrowWithSaturation,
-#endif
     NI_Vector_Reverse,
     NI_Vector_Round,
     NI_Vector_ShiftLeft,
@@ -378,29 +337,19 @@ public enum NamedIntrinsic : ushort
     NI_Vector_StoreUnsafe,
     NI_Vector_SubtractSaturate,
     NI_Vector_Sum,
-#if TARGET_XARCH
     NI_Vector_ToScalar,
     NI_Vector_ToVector256,
     NI_Vector_ToVector256Unsafe,
     NI_Vector_ToVector512,
     NI_Vector_ToVector512Unsafe,
-#elif TARGET_ARM64
-    NI_Vector_ToScalar,
-    NI_Vector_ToVector128,
-    NI_Vector_ToVector128Unsafe,
-#else
-    NI_Vector_ToScalar,
-#endif
     NI_Vector_Truncate,
     NI_Vector_UnzipEven,
     NI_Vector_UnzipOdd,
     NI_Vector_WidenLower,
     NI_Vector_WidenUpper,
     NI_Vector_WithElement,
-#if TARGET_XARCH || TARGET_ARM64
     NI_Vector_WithLower,
     NI_Vector_WithUpper,
-#endif
     NI_Vector_ZipLower,
     NI_Vector_ZipUpper,
     NI_Vector_get_AllBitsSet,
@@ -420,11 +369,7 @@ public enum NamedIntrinsic : ushort
     NI_Vector_op_Addition,
     NI_Vector_op_BitwiseAnd,
     NI_Vector_op_BitwiseOr,
-#if TARGET_XARCH
     NI_Vector_op_Division,
-#else
-    NI_Vector_op_Division,
-#endif
     NI_Vector_op_Equality,
     NI_Vector_op_ExclusiveOr,
     NI_Vector_op_Inequality,
@@ -436,8 +381,6 @@ public enum NamedIntrinsic : ushort
     NI_Vector_op_UnaryNegation,
     NI_Vector_op_UnaryPlus,
     NI_Vector_op_UnsignedRightShift,
-#if TARGET_XARCH
-#if FEATURE_HW_INTRINSICS
     NI_X86Base_Abs,
     NI_X86Base_Add,
     NI_X86Base_AddSaturate,
@@ -1121,9 +1064,8 @@ public enum NamedIntrinsic : ushort
     NI_AVX512_ShiftRightMask,
     NI_AVX512_XorMask,
     NI_AVX512_XnorMask,
-#endif
-#elif TARGET_ARM64
-#if FEATURE_HW_INTRINSICS
+    NI_Vector_ToVector128,
+    NI_Vector_ToVector128Unsafe,
     NI_AdvSimd_Abs,
     NI_AdvSimd_AbsSaturate,
     NI_AdvSimd_AbsScalar,
@@ -1649,8 +1591,6 @@ public enum NamedIntrinsic : ushort
     NI_ArmBase_ConvertToDouble,
     NI_ArmBase_ConvertToHalf,
     NI_ArmBase_ConvertToSingle,
-#endif
-#if FEATURE_HW_INTRINSICS
     NI_Sve_Abs,
     NI_Sve_AbsoluteCompareGreaterThan,
     NI_Sve_AbsoluteCompareGreaterThanOrEqual,
@@ -2187,9 +2127,6 @@ public enum NamedIntrinsic : ushort
     NI_Sve_TransposeEven_Predicates,
     NI_Sve_TransposeOdd_Predicates,
     NI_Sve_ReverseElement_Predicates,
-#endif
-#elif TARGET_WASM
-#if FEATURE_HW_INTRINSICS
     NI_PackedSimd_Abs,
     NI_PackedSimd_Add,
     NI_PackedSimd_AddPairwiseWidening,
@@ -2256,15 +2193,9 @@ public enum NamedIntrinsic : ushort
     NI_PackedSimd_ZeroExtendWideningUpper,
     NI_WasmBase_LeadingZeroCount,
     NI_WasmBase_TrailingZeroCount,
-#endif
-#else
-#error Unsupported platform
-#endif
-#endif
     // clang-format on
 
     NI_HW_INTRINSIC_END,
-#endif // FEATURE_HW_INTRINSICS
 
 #if FEATURE_SIMD
     NI_SIMD_UpperRestore,

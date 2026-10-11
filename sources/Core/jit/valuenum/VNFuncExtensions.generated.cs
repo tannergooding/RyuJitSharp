@@ -340,12 +340,8 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_ADD_UN_OVF
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SUB_UN_OVF
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MUL_UN_OVF
-#if FEATURE_SIMD
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SimdType
-#endif
-#if FEATURE_HW_INTRINSICS
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_INTRINSIC_START
-#if FEATURE_HW_INTRINSICS
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_Abs
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_AddSaturate
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_AndNot
@@ -364,34 +360,18 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsUInt64
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector128
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector128Unsafe
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector2
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector256
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector3
-#elif TARGET_ARM64
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector128Unsafe
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector2
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector3
-#else
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector128Unsafe
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector2
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector3
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector4
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_AsVector512
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_Ceiling
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_ConcatLowerLower
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_ConcatLowerUpper
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_ConcatUpperLower
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_ConcatUpperUpper
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Vector_ConditionalSelect
-#else
-        (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Vector_ConditionalSelect
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ConvertToDouble
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ConvertToInt32
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ConvertToInt32Native
@@ -405,16 +385,8 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_Vector_Create
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_CreateAlternatingSequence
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_CreateGeometricSequence
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_CreateScalar
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_CreateScalarUnsafe
-#elif TARGET_ARM64
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_CreateScalar
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_CreateScalarUnsafe
-#else
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_CreateScalar
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_CreateScalarUnsafe
-#endif
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_CreateSequence
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_Dot
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_Equals
@@ -422,21 +394,10 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ExtractMostSignificantBits
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_Floor
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Vector_FusedMultiplyAdd
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_GetElement
-#elif TARGET_ARM64
-        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_GetElement
-#else
-        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_GetElement
-#endif
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_GetLower
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_GetLower128
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_GetUpper
-#elif TARGET_ARM64
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_GetLower
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_GetUpper
-#endif
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_GreaterThan
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_GreaterThanAll
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_GreaterThanAny
@@ -477,11 +438,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_MinNumber
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Vector_MultiplyAddEstimate
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_Narrow
-#if TARGET_ARM64
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_NarrowWithSaturation
-#else
-        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_NarrowWithSaturation
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_Reverse
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_Vector_Round
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_ShiftLeft
@@ -494,29 +451,19 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_Vector_StoreUnsafe
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_SubtractSaturate
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_Sum
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToScalar
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector256
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector256Unsafe
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector512
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector512Unsafe
-#elif TARGET_ARM64
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToScalar
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector128
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector128Unsafe
-#else
-        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToScalar
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_Truncate
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_UnzipEven
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_UnzipOdd
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_WidenLower
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_WidenUpper
         (ValueNumStore.VNFOpAttrib)0x10, // VNF_HWI_Vector_WithElement
-#if TARGET_XARCH || TARGET_ARM64
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_WithLower
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_WithUpper
-#endif
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_ZipLower
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_ZipUpper
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_HWI_Vector_get_AllBitsSet
@@ -536,11 +483,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_op_Addition
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_op_BitwiseAnd
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_op_BitwiseOr
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_op_Division
-#else
-        (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_op_Division
-#endif
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_Vector_op_Equality
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_op_ExclusiveOr
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_Vector_op_Inequality
@@ -552,8 +495,6 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_op_UnaryNegation
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_op_UnaryPlus
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Vector_op_UnsignedRightShift
-#if TARGET_XARCH
-#if FEATURE_HW_INTRINSICS
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_X86Base_Abs
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_X86Base_Add
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_X86Base_AddSaturate
@@ -1237,9 +1178,8 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_AVX512_ShiftRightMask
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_AVX512_XorMask
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_AVX512_XnorMask
-#endif
-#elif TARGET_ARM64
-#if FEATURE_HW_INTRINSICS
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector128
+        (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Vector_ToVector128Unsafe
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_AdvSimd_Abs
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_AdvSimd_AbsSaturate
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_AdvSimd_AbsScalar
@@ -1765,8 +1705,6 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_ArmBase_ConvertToDouble
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_ArmBase_ConvertToHalf
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_ArmBase_ConvertToSingle
-#endif
-#if FEATURE_HW_INTRINSICS
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_Sve_Abs
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_Sve_AbsoluteCompareGreaterThan
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_Sve_AbsoluteCompareGreaterThanOrEqual
@@ -2303,9 +2241,6 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Sve_TransposeEven_Predicates
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_HWI_Sve_TransposeOdd_Predicates
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_Sve_ReverseElement_Predicates
-#endif
-#elif TARGET_WASM
-#if FEATURE_HW_INTRINSICS
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_PackedSimd_Abs
         (ValueNumStore.VNFOpAttrib)0x0E, // VNF_HWI_PackedSimd_Add
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_PackedSimd_AddPairwiseWidening
@@ -2372,19 +2307,11 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_PackedSimd_ZeroExtendWideningUpper
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_WasmBase_LeadingZeroCount
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_HWI_WasmBase_TrailingZeroCount
-#endif
-#else
-#error Unsupported platform
-#endif
-#endif
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWI_INTRINSIC_END
-#endif
-#if TARGET_RISCV64
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MinInt
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MaxInt
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MinInt_UN
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MaxInt_UN
-#endif
     ];
 
 #if DEBUG
@@ -2537,26 +2464,24 @@ public static partial class VNFuncExtensions
         ValueNumStore.SetValidationAttributes(attributes, VNF_ADD_UN_OVF, 2, true, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_SUB_UN_OVF, 2, false, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_MUL_UN_OVF, 2, true, false);
-#if FEATURE_SIMD
         ValueNumStore.SetValidationAttributes(attributes, VNF_SimdType, 2, false, false);
-#endif
-#if FEATURE_HW_INTRINSICS
         ValueNumStore.SetValidationAttributes(attributes, VNF_HWI_INTRINSIC_START, -1, false, false);
-        for (var id = NI_HW_INTRINSIC_START + 1; id < NI_HW_INTRINSIC_END; id++)
+        if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START);
-            var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
-            ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
-                HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);
+            for (var tableIndex = 0; tableIndex < HWIntrinsicInfo.GetNativeTableEntryCount(); tableIndex++)
+            {
+                var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
+                var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START - 1);
+                var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
+                ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
+                    HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);
+            }
         }
         ValueNumStore.SetValidationAttributes(attributes, VNF_HWI_INTRINSIC_END, -1, false, false);
-#endif
-#if TARGET_RISCV64
         ValueNumStore.SetValidationAttributes(attributes, VNF_MinInt, 2, true, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_MaxInt, 2, true, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_MinInt_UN, 2, true, false);
         ValueNumStore.SetValidationAttributes(attributes, VNF_MaxInt_UN, 2, true, false);
-#endif
     }
 #endif
 }

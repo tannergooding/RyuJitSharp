@@ -1252,6 +1252,349 @@ public partial struct HWIntrinsicInfo
     ];
 }
 """);
+
+        GenerateHWIntrinsicIndexMaps();
+    }
+
+    private static void GenerateHWIntrinsicIndexMaps()
+    {
+        var unionNames = GetHardwareIntrinsicNames();
+        var xarchNames = GetHardwareIntrinsicNamesForTarget("XARCH");
+        var arm64Names = GetHardwareIntrinsicNamesForTarget("ARM64");
+        var wasmNames = GetHardwareIntrinsicNamesForTarget("WASM");
+        var builder = new StringBuilder();
+
+        AppendHWIntrinsicIndexMaps(builder, "Xarch", unionNames, xarchNames);
+        AppendHWIntrinsicIndexMaps(builder, "Arm64", unionNames, arm64Names);
+        AppendHWIntrinsicIndexMaps(builder, "Wasm", unionNames, wasmNames);
+
+        File.WriteAllText(@"Outputs\jit\hwintrinsic\HWIntrinsicInfo.IndexMaps.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+using System;
+
+namespace RyuJitSharp;
+
+public partial struct HWIntrinsicInfo
+{
+{{builder}}}
+""");
+    }
+
+    private static void AppendHWIntrinsicIndexMaps(
+        StringBuilder builder, string target, List<string> unionNames, List<string> targetNames)
+    {
+        var targetIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        for (var tableIndex = 0; tableIndex < targetNames.Count; tableIndex++)
+        {
+            if (!targetIndexes.TryAdd(targetNames[tableIndex], tableIndex))
+            {
+                throw new InvalidDataException($"Duplicate hardware intrinsic table row '{targetNames[tableIndex]}' for {target}.");
+            }
+        }
+
+        var unionIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        for (var unionIndex = 0; unionIndex < unionNames.Count; unionIndex++)
+        {
+            if (!unionIndexes.TryAdd(unionNames[unionIndex], unionIndex))
+            {
+                throw new InvalidDataException($"Duplicate hardware intrinsic identity '{unionNames[unionIndex]}'.");
+            }
+        }
+
+        if (targetNames.Count >= ushort.MaxValue || unionNames.Count >= ushort.MaxValue)
+        {
+            throw new InvalidDataException("Hardware intrinsic index maps exceed their ushort encoding.");
+        }
+
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<ushort> s_{target}TableIndexByUnionIndex => [");
+
+        foreach (var intrinsicName in unionNames)
+        {
+            var tableIndex = targetIndexes.TryGetValue(intrinsicName, out var index)
+                ? index.ToString(CultureInfo.InvariantCulture)
+                : "ushort.MaxValue";
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {tableIndex}, // NI_{intrinsicName}");
+        }
+
+        _ = builder.AppendLine("    ];");
+        _ = builder.AppendLine();
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<ushort> s_{target}UnionIndexByTableIndex => [");
+
+        foreach (var intrinsicName in targetNames)
+        {
+            var unionIndex = unionIndexes[intrinsicName];
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {unionIndex}, // NI_{intrinsicName}");
+        }
+
+        _ = builder.AppendLine("    ];");
+        _ = builder.AppendLine();
+    }
+
+    private static List<string> GetHardwareIntrinsicNames()
+    {
+        var names = new List<string>();
+
+        _ = ProcessHWIntrinsicListUnion((builder, inputFile, line, prefix, parts) =>
+            names.Add(GetHardwareIntrinsicIdentity(parts)));
+
+        return names;
+    }
+
+    private static List<string> GetHardwareIntrinsicNamesForTarget(string target)
+    {
+        var names = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        void AddIntrinsic(StringBuilder builder, string inputFile, string line, string prefix, string[] parts)
+        {
+            if (parts.Length is not 16 and not 18)
+            {
+                return;
+            }
+
+            var identity = GetHardwareIntrinsicIdentity(parts);
+            if (seen.Add(identity))
+            {
+                names.Add(identity);
+            }
+        }
+
+        _ = ProcessTargetHardwareIntrinsicList(target, AddIntrinsic);
+
+        return names;
+    }
+
+    private static StringBuilder ProcessTargetHardwareIntrinsicList(
+        string target, Action<StringBuilder, string, string, string, string[]> callback)
+    {
+        var builder = new StringBuilder();
+        _ = builder.Append(ProcessTargetIntrinsicRows(
+            @"Inputs\hwintrinsiclist.h", target, "HARDWARE_INTRINSIC(", callback));
+
+        var targetInput = target switch
+        {
+            "XARCH" => @"Inputs\hwintrinsiclistxarch.h",
+            "ARM64" => @"Inputs\hwintrinsiclistarm64.h",
+            "WASM" => @"Inputs\hwintrinsiclistwasm.h",
+            _ => throw new InvalidDataException($"Unsupported target hardware intrinsic table: {target}."),
+        };
+        _ = builder.Append(ProcessTargetIntrinsicRows(targetInput, target, "HARDWARE_INTRINSIC(", callback));
+
+        if (target is "ARM64")
+        {
+            _ = builder.Append(ProcessTargetIntrinsicRows(
+                @"Inputs\hwintrinsiclistarm64sve.h", target, "HARDWARE_INTRINSIC(", callback));
+        }
+
+        return builder;
+    }
+
+    private static string GetHardwareIntrinsicIdentity(string[] parts)
+    {
+        if (parts.Length is not 16 and not 18)
+        {
+            throw new InvalidDataException("Invalid hardware intrinsic row.");
+        }
+
+        return $"{parts[0].Trim()}_{parts[1].Trim()}";
+    }
+
+    private static StringBuilder ProcessTargetIntrinsicRows(
+        string inputFile, string target, string prefix, Action<StringBuilder, string, string, string, string[]> callback)
+    {
+        var lines = File.ReadAllLines(inputFile);
+        var definedSymbols = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "FEATURE_HW_INTRINSICS",
+            "HARDWARE_INTRINSIC",
+        };
+
+        switch (target)
+        {
+            case "XARCH":
+            {
+                _ = definedSymbols.Add("TARGET_XARCH");
+                _ = definedSymbols.Add("TARGET_64BIT");
+                break;
+            }
+
+            case "ARM64":
+            {
+                _ = definedSymbols.Add("TARGET_ARM64");
+                _ = definedSymbols.Add("TARGET_64BIT");
+                break;
+            }
+
+            case "WASM":
+            {
+                _ = definedSymbols.Add("TARGET_WASM");
+                break;
+            }
+
+            default:
+            {
+                throw new InvalidDataException($"Unsupported target hardware intrinsic table: {target}.");
+            }
+        }
+
+        var builder = new StringBuilder();
+        var branches = new List<(bool ParentActive, bool BranchTaken, bool Active)>();
+        var isActive = true;
+
+        for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        {
+            var line = lines[lineIndex];
+            var trimmedLine = line.AsSpan().Trim();
+
+            if (trimmedLine.StartsWith('#'))
+            {
+                var directiveLine = trimmedLine[1..].Trim();
+
+                if (directiveLine.StartsWith("if ", StringComparison.Ordinal) ||
+                    directiveLine.StartsWith("ifdef ", StringComparison.Ordinal) ||
+                    directiveLine.StartsWith("ifndef ", StringComparison.Ordinal))
+                {
+                    var conditionStart = directiveLine.IndexOf(' ');
+                    var directive = directiveLine[..conditionStart];
+                    var condition = directiveLine[(conditionStart + 1)..].Trim().ToString();
+                    var isConditionMet = directive.SequenceEqual("if")
+                        ? EvaluateTargetIntrinsicCondition(condition, definedSymbols)
+                        : directive.SequenceEqual("ifdef")
+                            ? definedSymbols.Contains(condition)
+                            : !definedSymbols.Contains(condition);
+                    var parentActive = isActive;
+                    isActive = parentActive && isConditionMet;
+                    branches.Add((parentActive, isConditionMet, isActive));
+                }
+                else if (directiveLine.StartsWith("elif ", StringComparison.Ordinal))
+                {
+                    var condition = directiveLine[5..].Trim().ToString();
+                    var branch = branches[^1];
+                    var isConditionMet = !branch.BranchTaken && EvaluateTargetIntrinsicCondition(condition, definedSymbols);
+                    branch.Active = branch.ParentActive && isConditionMet;
+                    branch.BranchTaken |= isConditionMet;
+                    branches[^1] = branch;
+                    isActive = branch.Active;
+                }
+                else if (directiveLine.StartsWith("else", StringComparison.Ordinal))
+                {
+                    var branch = branches[^1];
+                    branch.Active = branch.ParentActive && !branch.BranchTaken;
+                    branch.BranchTaken = true;
+                    branches[^1] = branch;
+                    isActive = branch.Active;
+                }
+                else if (directiveLine.StartsWith("endif", StringComparison.Ordinal))
+                {
+                    branches.RemoveAt(branches.Count - 1);
+                    isActive = branches.Count == 0 || branches[^1].Active;
+                }
+
+                continue;
+            }
+
+            if (isActive && TryExtractMacroContents(lines, ref lineIndex, line, prefix, out var parts))
+            {
+                callback(builder, inputFile, line, prefix, parts);
+            }
+        }
+
+        if (branches.Count is not 0)
+        {
+            throw new InvalidDataException($"Unbalanced preprocessor conditionals in '{inputFile}'.");
+        }
+
+        return builder;
+    }
+
+    private static bool EvaluateTargetIntrinsicCondition(string condition, HashSet<string> definedSymbols)
+    {
+        var normalized = Regex.Replace(condition, @"defined\s*\(\s*(\w+)\s*\)", match =>
+            definedSymbols.Contains(match.Groups[1].Value) ? "1" : "0");
+        var tokens = new List<string>();
+
+        foreach (Match match in Regex.Matches(normalized, @"&&|\|\||!|\(|\)|1|0"))
+        {
+            tokens.Add(match.Value);
+        }
+
+        var tokenIndex = 0;
+        var result = ParseOr();
+
+        if (tokenIndex != tokens.Count)
+        {
+            throw new InvalidDataException($"Unsupported intrinsic-list condition: '{condition}'.");
+        }
+
+        return result;
+
+        bool ParseOr()
+        {
+            var value = ParseAnd();
+
+            while (tokenIndex < tokens.Count && tokens[tokenIndex] is "||")
+            {
+                tokenIndex++;
+                var right = ParseAnd();
+                value |= right;
+            }
+
+            return value;
+        }
+
+        bool ParseAnd()
+        {
+            var value = ParseUnary();
+
+            while (tokenIndex < tokens.Count && tokens[tokenIndex] is "&&")
+            {
+                tokenIndex++;
+                var right = ParseUnary();
+                value &= right;
+            }
+
+            return value;
+        }
+
+        bool ParseUnary()
+        {
+            if (tokenIndex >= tokens.Count)
+            {
+                throw new InvalidDataException($"Incomplete intrinsic-list condition: '{condition}'.");
+            }
+
+            var token = tokens[tokenIndex++];
+
+            if (token is "!")
+            {
+                return !ParseUnary();
+            }
+
+            if (token is "(")
+            {
+                var value = ParseOr();
+
+                if (tokenIndex >= tokens.Count || tokens[tokenIndex++] is not ")")
+                {
+                    throw new InvalidDataException($"Unbalanced intrinsic-list condition: '{condition}'.");
+                }
+
+                return value;
+            }
+
+            if (token is "1" or "0")
+            {
+                return token is "1";
+            }
+
+            throw new InvalidDataException($"Unsupported intrinsic-list condition token '{token}'.");
+        }
     }
 
     private static StringBuilder GenerateIsaRangeBounds(string instructionSetBuilder)
@@ -3409,7 +3752,7 @@ public partial class Globals
 
     private static void GenerateNamedIntrinsic()
     {
-        var builder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
+        var builder = ProcessHWIntrinsicListUnion((builder, inputFile, line, prefix, parts) => {
             if (parts.Length is not 16 and not 18)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -4426,7 +4769,7 @@ public static partial class var_typesExtensions
         var builder2 = ProcessMacroBasedFile(@"Inputs\valuenumfuncs.h", "ValueNumFuncDef(", (builder, inputFile, line, prefix, parts) => {
             if (line.Equals("#include \"hwintrinsiclist.h\"", StringComparison.Ordinal))
             {
-                var hwiBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
+                var hwiBuilder = ProcessHWIntrinsicListUnion((builder, inputFile, line, prefix, parts) => {
                     if (parts.Length is not 16 and not 18)
                     {
                         throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -4436,7 +4779,7 @@ public static partial class var_typesExtensions
                     var name = parts[1].AsSpan().Trim();
 
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    VNF_HWI_{isa}_{name},");
-                });
+                }, ValidateDuplicateHardwareIntrinsicVNAttributes);
 
                 _ = builder.Append(hwiBuilder);
                 return;
@@ -4501,7 +4844,7 @@ public enum VNFunc
         var builder2 = ProcessMacroBasedFile(@"Inputs\valuenumfuncs.h", "ValueNumFuncDef(", (builder, inputFile, line, prefix, parts) => {
             if (line.Equals("#include \"hwintrinsiclist.h\"", StringComparison.Ordinal))
             {
-                var hwiBuilder = ProcessHWIntrinsicList((builder, inputFile, line, prefix, parts) => {
+                var hwiBuilder = ProcessHWIntrinsicListUnion((builder, inputFile, line, prefix, parts) => {
                     if (parts.Length is not 16 and not 18)
                     {
                         throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -4519,7 +4862,7 @@ public enum VNFunc
 
                     _ = builder.AppendLine(CultureInfo.InvariantCulture,
                         $"        (ValueNumStore.VNFOpAttrib)0x{attributes:X2}, // VNF_HWI_{isa}_{name}");
-                });
+                }, ValidateDuplicateHardwareIntrinsicVNAttributes);
 
                 _ = builder.Append(hwiBuilder);
                 return;
@@ -4547,12 +4890,16 @@ public enum VNFunc
             if (line.Equals("#include \"hwintrinsiclist.h\"", StringComparison.Ordinal))
             {
                 _ = builder.AppendLine("""
-        for (var id = NI_HW_INTRINSIC_START + 1; id < NI_HW_INTRINSIC_END; id++)
+        if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START);
-            var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
-            ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
-                HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);
+            for (var tableIndex = 0; tableIndex < HWIntrinsicInfo.GetNativeTableEntryCount(); tableIndex++)
+            {
+                var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
+                var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START - 1);
+                var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
+                ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
+                    HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);
+            }
         }
 """);
                 return;
@@ -5129,6 +5476,51 @@ public partial class Globals
             callback(builder, inputFile, line, prefix, parts);
         }
     });
+
+    private static StringBuilder ProcessHWIntrinsicListUnion(
+        Action<StringBuilder, string, string, string, string[]> callback,
+        Action<string[], string[]>? onDuplicate = null)
+    {
+        var seen = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        var builder = new StringBuilder();
+
+        foreach (var target in new[] { "XARCH", "ARM64", "WASM" })
+        {
+            _ = builder.Append(ProcessTargetHardwareIntrinsicList(target,
+                (targetBuilder, inputFile, line, prefix, parts) =>
+            {
+                var identity = GetHardwareIntrinsicIdentity(parts);
+
+                if (seen.TryGetValue(identity, out var previous))
+                {
+                    onDuplicate?.Invoke(previous, parts);
+                    return;
+                }
+
+                seen.Add(identity, parts);
+                callback(targetBuilder, inputFile, line, prefix, parts);
+            }));
+        }
+
+        return builder;
+    }
+
+    private static void ValidateDuplicateHardwareIntrinsicVNAttributes(string[] previous, string[] duplicate)
+    {
+        var previousNumArgs = previous[3].Trim();
+        var duplicateNumArgs = duplicate[3].Trim();
+        var previousFlags = previous[(previous.Length is 18) ? 17 : 15].Trim();
+        var duplicateFlags = duplicate[(duplicate.Length is 18) ? 17 : 15].Trim();
+        var previousCommutative = previousFlags.Contains("HW_Flag_Commutative", StringComparison.Ordinal);
+        var duplicateCommutative = duplicateFlags.Contains("HW_Flag_Commutative", StringComparison.Ordinal);
+
+        if (!previousNumArgs.Equals(duplicateNumArgs, StringComparison.Ordinal) ||
+            previousCommutative != duplicateCommutative)
+        {
+            var identity = GetHardwareIntrinsicIdentity(previous);
+            throw new InvalidDataException($"Hardware intrinsic VN attributes differ between target rows for '{identity}'.");
+        }
+    }
 
     private static StringBuilder ProcessMacroBasedFile(string inputFile, string prefix, Action<StringBuilder, string, string, string, string[]> callback)
         => ProcessMacroBasedFile(inputFile, [prefix], callback);

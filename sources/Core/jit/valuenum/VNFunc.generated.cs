@@ -340,12 +340,8 @@ public enum VNFunc
     VNF_ADD_UN_OVF,
     VNF_SUB_UN_OVF,
     VNF_MUL_UN_OVF,
-#if FEATURE_SIMD
     VNF_SimdType,
-#endif
-#if FEATURE_HW_INTRINSICS
     VNF_HWI_INTRINSIC_START,
-#if FEATURE_HW_INTRINSICS
     VNF_HWI_Vector_Abs,
     VNF_HWI_Vector_AddSaturate,
     VNF_HWI_Vector_AndNot,
@@ -364,34 +360,18 @@ public enum VNFunc
     VNF_HWI_Vector_AsUInt64,
     VNF_HWI_Vector_AsVector,
     VNF_HWI_Vector_AsVector128,
-#if TARGET_XARCH
     VNF_HWI_Vector_AsVector128Unsafe,
     VNF_HWI_Vector_AsVector2,
     VNF_HWI_Vector_AsVector256,
     VNF_HWI_Vector_AsVector3,
-#elif TARGET_ARM64
-    VNF_HWI_Vector_AsVector128Unsafe,
-    VNF_HWI_Vector_AsVector2,
-    VNF_HWI_Vector_AsVector3,
-#else
-    VNF_HWI_Vector_AsVector128Unsafe,
-    VNF_HWI_Vector_AsVector2,
-    VNF_HWI_Vector_AsVector3,
-#endif
     VNF_HWI_Vector_AsVector4,
-#if TARGET_XARCH
     VNF_HWI_Vector_AsVector512,
-#endif
     VNF_HWI_Vector_Ceiling,
     VNF_HWI_Vector_ConcatLowerLower,
     VNF_HWI_Vector_ConcatLowerUpper,
     VNF_HWI_Vector_ConcatUpperLower,
     VNF_HWI_Vector_ConcatUpperUpper,
-#if TARGET_XARCH
     VNF_HWI_Vector_ConditionalSelect,
-#else
-    VNF_HWI_Vector_ConditionalSelect,
-#endif
     VNF_HWI_Vector_ConvertToDouble,
     VNF_HWI_Vector_ConvertToInt32,
     VNF_HWI_Vector_ConvertToInt32Native,
@@ -405,16 +385,8 @@ public enum VNFunc
     VNF_HWI_Vector_Create,
     VNF_HWI_Vector_CreateAlternatingSequence,
     VNF_HWI_Vector_CreateGeometricSequence,
-#if TARGET_XARCH
     VNF_HWI_Vector_CreateScalar,
     VNF_HWI_Vector_CreateScalarUnsafe,
-#elif TARGET_ARM64
-    VNF_HWI_Vector_CreateScalar,
-    VNF_HWI_Vector_CreateScalarUnsafe,
-#else
-    VNF_HWI_Vector_CreateScalar,
-    VNF_HWI_Vector_CreateScalarUnsafe,
-#endif
     VNF_HWI_Vector_CreateSequence,
     VNF_HWI_Vector_Dot,
     VNF_HWI_Vector_Equals,
@@ -422,21 +394,10 @@ public enum VNFunc
     VNF_HWI_Vector_ExtractMostSignificantBits,
     VNF_HWI_Vector_Floor,
     VNF_HWI_Vector_FusedMultiplyAdd,
-#if TARGET_XARCH
     VNF_HWI_Vector_GetElement,
-#elif TARGET_ARM64
-    VNF_HWI_Vector_GetElement,
-#else
-    VNF_HWI_Vector_GetElement,
-#endif
-#if TARGET_XARCH
     VNF_HWI_Vector_GetLower,
     VNF_HWI_Vector_GetLower128,
     VNF_HWI_Vector_GetUpper,
-#elif TARGET_ARM64
-    VNF_HWI_Vector_GetLower,
-    VNF_HWI_Vector_GetUpper,
-#endif
     VNF_HWI_Vector_GreaterThan,
     VNF_HWI_Vector_GreaterThanAll,
     VNF_HWI_Vector_GreaterThanAny,
@@ -477,11 +438,7 @@ public enum VNFunc
     VNF_HWI_Vector_MinNumber,
     VNF_HWI_Vector_MultiplyAddEstimate,
     VNF_HWI_Vector_Narrow,
-#if TARGET_ARM64
     VNF_HWI_Vector_NarrowWithSaturation,
-#else
-    VNF_HWI_Vector_NarrowWithSaturation,
-#endif
     VNF_HWI_Vector_Reverse,
     VNF_HWI_Vector_Round,
     VNF_HWI_Vector_ShiftLeft,
@@ -494,29 +451,19 @@ public enum VNFunc
     VNF_HWI_Vector_StoreUnsafe,
     VNF_HWI_Vector_SubtractSaturate,
     VNF_HWI_Vector_Sum,
-#if TARGET_XARCH
     VNF_HWI_Vector_ToScalar,
     VNF_HWI_Vector_ToVector256,
     VNF_HWI_Vector_ToVector256Unsafe,
     VNF_HWI_Vector_ToVector512,
     VNF_HWI_Vector_ToVector512Unsafe,
-#elif TARGET_ARM64
-    VNF_HWI_Vector_ToScalar,
-    VNF_HWI_Vector_ToVector128,
-    VNF_HWI_Vector_ToVector128Unsafe,
-#else
-    VNF_HWI_Vector_ToScalar,
-#endif
     VNF_HWI_Vector_Truncate,
     VNF_HWI_Vector_UnzipEven,
     VNF_HWI_Vector_UnzipOdd,
     VNF_HWI_Vector_WidenLower,
     VNF_HWI_Vector_WidenUpper,
     VNF_HWI_Vector_WithElement,
-#if TARGET_XARCH || TARGET_ARM64
     VNF_HWI_Vector_WithLower,
     VNF_HWI_Vector_WithUpper,
-#endif
     VNF_HWI_Vector_ZipLower,
     VNF_HWI_Vector_ZipUpper,
     VNF_HWI_Vector_get_AllBitsSet,
@@ -536,11 +483,7 @@ public enum VNFunc
     VNF_HWI_Vector_op_Addition,
     VNF_HWI_Vector_op_BitwiseAnd,
     VNF_HWI_Vector_op_BitwiseOr,
-#if TARGET_XARCH
     VNF_HWI_Vector_op_Division,
-#else
-    VNF_HWI_Vector_op_Division,
-#endif
     VNF_HWI_Vector_op_Equality,
     VNF_HWI_Vector_op_ExclusiveOr,
     VNF_HWI_Vector_op_Inequality,
@@ -552,8 +495,6 @@ public enum VNFunc
     VNF_HWI_Vector_op_UnaryNegation,
     VNF_HWI_Vector_op_UnaryPlus,
     VNF_HWI_Vector_op_UnsignedRightShift,
-#if TARGET_XARCH
-#if FEATURE_HW_INTRINSICS
     VNF_HWI_X86Base_Abs,
     VNF_HWI_X86Base_Add,
     VNF_HWI_X86Base_AddSaturate,
@@ -1237,9 +1178,8 @@ public enum VNFunc
     VNF_HWI_AVX512_ShiftRightMask,
     VNF_HWI_AVX512_XorMask,
     VNF_HWI_AVX512_XnorMask,
-#endif
-#elif TARGET_ARM64
-#if FEATURE_HW_INTRINSICS
+    VNF_HWI_Vector_ToVector128,
+    VNF_HWI_Vector_ToVector128Unsafe,
     VNF_HWI_AdvSimd_Abs,
     VNF_HWI_AdvSimd_AbsSaturate,
     VNF_HWI_AdvSimd_AbsScalar,
@@ -1765,8 +1705,6 @@ public enum VNFunc
     VNF_HWI_ArmBase_ConvertToDouble,
     VNF_HWI_ArmBase_ConvertToHalf,
     VNF_HWI_ArmBase_ConvertToSingle,
-#endif
-#if FEATURE_HW_INTRINSICS
     VNF_HWI_Sve_Abs,
     VNF_HWI_Sve_AbsoluteCompareGreaterThan,
     VNF_HWI_Sve_AbsoluteCompareGreaterThanOrEqual,
@@ -2303,9 +2241,6 @@ public enum VNFunc
     VNF_HWI_Sve_TransposeEven_Predicates,
     VNF_HWI_Sve_TransposeOdd_Predicates,
     VNF_HWI_Sve_ReverseElement_Predicates,
-#endif
-#elif TARGET_WASM
-#if FEATURE_HW_INTRINSICS
     VNF_HWI_PackedSimd_Abs,
     VNF_HWI_PackedSimd_Add,
     VNF_HWI_PackedSimd_AddPairwiseWidening,
@@ -2372,18 +2307,10 @@ public enum VNFunc
     VNF_HWI_PackedSimd_ZeroExtendWideningUpper,
     VNF_HWI_WasmBase_LeadingZeroCount,
     VNF_HWI_WasmBase_TrailingZeroCount,
-#endif
-#else
-#error Unsupported platform
-#endif
-#endif
     VNF_HWI_INTRINSIC_END,
-#endif
-#if TARGET_RISCV64
     VNF_MinInt,
     VNF_MaxInt,
     VNF_MinInt_UN,
     VNF_MaxInt_UN,
-#endif
     VNF_COUNT,
 }

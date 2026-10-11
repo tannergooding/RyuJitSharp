@@ -89,7 +89,7 @@ public readonly partial struct HWIntrinsicInfo
             {
                 var expectedArgCount = GetRvaSpanEntry(s_numArgs, rangeIndex);
                 assert((expectedArgCount == byte.MaxValue) || (sig->numArgs == expectedArgCount));
-                return (NamedIntrinsic)((int)NI_HW_INTRINSIC_START + rangeIndex + 1);
+                return GetIntrinsicIdForNativeTableIndex(rangeIndex);
             }
         }
 
@@ -120,13 +120,108 @@ public readonly partial struct HWIntrinsicInfo
     private static int GetTableIndex(NamedIntrinsic id)
     {
 #if FEATURE_HW_INTRINSICS
-        assert(id is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END);
-        return id - NI_HW_INTRINSIC_START - 1;
+        var unionIndex = (int)id - (int)NI_HW_INTRINSIC_START - 1;
+
+        if ((uint)unionIndex >= (uint)GetTableIndexByUnionIndex().Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(id), id, "The value is not a hardware intrinsic identity.");
+        }
+
+        var tableIndex = GetRvaSpanEntry(GetTableIndexByUnionIndex(), unionIndex);
+
+        if (tableIndex is ushort.MaxValue)
+        {
+            throw new PlatformNotSupportedException(
+                $"Hardware intrinsic '{id}' is not present in the configured target's native metadata table.");
+        }
+
+        return tableIndex;
 #else
         Globals.NYI("Hardware-intrinsic metadata without hardware-intrinsic support");
         throw new FatalJitException("Hardware-intrinsic metadata is unsupported on this target.");
 #endif
     }
+
+    internal static int GetNativeTableEntryCount()
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return 0;
+        }
+
+        var count = GetUnionIndexByNativeTableIndex().Length;
+        assert(s_categories.Length == count);
+        assert(s_flags.Length == count);
+        assert(s_fltCosts.Length == count);
+        assert(s_instructions.Length == count * 10);
+        assert(s_instructionSets.Length == count);
+        assert(s_intCosts.Length == count);
+        assert(s_nameRanges.Length == count * 2);
+        assert(s_numArgs.Length == count);
+        assert(s_simdSizes.Length == count);
+        return count;
+    }
+
+    internal static int GetNativeTableIndex(NamedIntrinsic id)
+    {
+        return GetTableIndex(id);
+    }
+
+    internal static NamedIntrinsic GetIntrinsicIdForNativeTableIndex(int tableIndex)
+    {
+        var unionIndexes = GetUnionIndexByNativeTableIndex();
+
+        if ((uint)tableIndex >= (uint)unionIndexes.Length)
+        {
+            throw new ArgumentOutOfRangeException(nameof(tableIndex));
+        }
+
+        var unionIndex = GetRvaSpanEntry(unionIndexes, tableIndex);
+        return (NamedIntrinsic)((int)NI_HW_INTRINSIC_START + unionIndex + 1);
+    }
+
+    private static ReadOnlySpan<ushort> GetTableIndexByUnionIndex()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return s_XarchTableIndexByUnionIndex;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return s_Arm64TableIndexByUnionIndex;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return s_WasmTableIndexByUnionIndex;
+        }
+
+        throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+    }
+
+    private static ReadOnlySpan<ushort> GetUnionIndexByNativeTableIndex()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return s_XarchUnionIndexByTableIndex;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return s_Arm64UnionIndexByTableIndex;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return s_WasmUnionIndexByTableIndex;
+        }
+
+        throw new PlatformNotSupportedException("Hardware-intrinsic tables are unavailable for this target.");
+    }
+
+    public static bool IsCrossPlatformVectorIntrinsic(NamedIntrinsic id) =>
+        lookupIsa(id) is InstructionSet_Vector;
 
     public static byte GetMultiRegCount(NamedIntrinsic id)
     {

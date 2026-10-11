@@ -224,7 +224,6 @@ enum NamedIntrinsic : unsigned short
     NI_IsSupported,
     NI_IsHardwareAccelerated,
 
-#if defined(FEATURE_HW_INTRINSICS)
     NI_HW_INTRINSIC_START,
 
     // clang-format off
@@ -234,7 +233,6 @@ enum NamedIntrinsic : unsigned short
     // clang-format on
 
     NI_HW_INTRINSIC_END,
-#endif // FEATURE_HW_INTRINSICS
 
 #if defined(FEATURE_SIMD)
     NI_SIMD_UpperRestore,
