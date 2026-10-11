@@ -26,6 +26,8 @@
     <RyuJitTargetIsArm Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm'))">true</RyuJitTargetIsArm>
     <RyuJitTargetIsArm64 Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsArm64>
     <RyuJitTargetIsArm64 Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm64'))">true</RyuJitTargetIsArm64>
+    <RyuJitTargetIsArmArch Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsArmArch>
+    <RyuJitTargetIsArmArch Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm64'))">true</RyuJitTargetIsArmArch>
     <RyuJitTargetIsLoongArch64 Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsLoongArch64>
     <RyuJitTargetIsLoongArch64 Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-loongarch64'))">true</RyuJitTargetIsLoongArch64>
     <RyuJitTargetIsRiscV64 Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsRiscV64>
@@ -36,11 +38,12 @@
     <RyuJitTargetIsWasm Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-wasm'))">true</RyuJitTargetIsWasm>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != ''">
+  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != ''">
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HAS_ZERO_REG" Value="$(RyuJitFeatureHasZeroReg)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_64BIT" Value="$(RyuJitTargetIs64Bit)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARM" Value="$(RyuJitTargetIsArm)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARM64" Value="$(RyuJitTargetIsArm64)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARMARCH" Value="$(RyuJitTargetIsArmArch)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_LOONGARCH64" Value="$(RyuJitTargetIsLoongArch64)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_RISCV64" Value="$(RyuJitTargetIsRiscV64)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_XARCH" Value="$(RyuJitTargetIsXarch)" />

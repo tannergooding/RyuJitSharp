@@ -12,6 +12,8 @@ internal static class Configuration
 
     internal static bool TARGET_ARM64 => GetFeatureSwitch(nameof(TARGET_ARM64));
 
+    internal static bool TARGET_ARMARCH => GetFeatureSwitch(nameof(TARGET_ARMARCH));
+
     internal static bool TARGET_LOONGARCH64 => GetFeatureSwitch(nameof(TARGET_LOONGARCH64));
 
     internal static bool TARGET_RISCV64 => GetFeatureSwitch(nameof(TARGET_RISCV64));

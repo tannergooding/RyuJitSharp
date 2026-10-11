@@ -120,23 +120,31 @@ public sealed partial class Lowering
 
     private unsafe bool IsCallTargetInRange(void* address)
     {
-#if TARGET_XARCH
-        return true;
-#elif TARGET_ARMARCH
-        var codeGen = CompilerInstance.codeGen;
-        assert(codeGen is not null);
-        return codeGen.validImmForBL((nint)address);
-#elif TARGET_LOONGARCH64
-        return true;
-#elif TARGET_RISCV64
-        return true;
-#elif TARGET_WASM
-        return !CompilerInstance.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS);
-#else
+        if (Configuration.TARGET_XARCH)
+        {
+            return true;
+        }
+
+        if (Configuration.TARGET_ARMARCH)
+        {
+            var codeGen = CompilerInstance.codeGen;
+            assert(codeGen is not null);
+            return codeGen.validImmForBL((nint)address);
+        }
+
+        if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            return true;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return !CompilerInstance.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS);
+        }
+
         NYI("Lowering.IsCallTargetInRange outside supported targets");
         fatal(CORJIT_IMPLLIMITATION);
         return false;
-#endif
     }
 
     private void LegalizeArgPlacement(GenTreeCall call)

@@ -16,10 +16,14 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class PInvokeCallLoweringTests
 {
-#if TARGET_ARM64
     [Test]
     public static void Arm64CallTargetRangeReliesOnRelocationStub()
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            Assert.Ignore("The relocation-stub behavior is specific to ARM64.");
+        }
+
         WithCompiler((compiler, block, lowering, ee) => {
             var codeGen = compiler.codeGen;
             assert(codeGen is not null);
@@ -27,7 +31,6 @@ internal static unsafe class PInvokeCallLoweringTests
             Assert.That(codeGen.validImmForBL(nint.MaxValue), Is.True);
         });
     }
-#endif
 
     [TestCase(InfoAccessType.IAT_VALUE, false, GT_CNS_INT)]
     [TestCase(InfoAccessType.IAT_VALUE, true, GT_NONE)]
