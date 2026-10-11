@@ -74,7 +74,8 @@ public partial class Compiler
 #if TARGET_ARM64
             (retType != TYP_SIMD_ARM64) &&
 #endif
-            GenTreeVecCon.IsHWIntrinsicCreateConstant(tree, ref simdVal))
+            GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                ni, simdBaseType, simdSize, tree.Operands, ref simdVal))
         {
             var vecCon = gtNewVconNode(retType);
 

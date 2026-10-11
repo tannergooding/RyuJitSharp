@@ -25,7 +25,8 @@ public sealed partial class Lowering
         assert(varTypeIsSimd(simdType));
         assert(varTypeIsArithmetic(baseType));
         assert(size != 0);
-        var constant = GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref value);
+        var constant = GenTreeVecCon.IsHWIntrinsicCreateConstant(
+            id, baseType, size, node.Operands, ref value);
         var scalar = HWIntrinsicInfo.IsVectorCreateScalar(id);
         var count = node.Operands.Length;
         if (constant && (count == 1) && IsValidConstForMovImm(node))

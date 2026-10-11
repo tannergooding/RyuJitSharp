@@ -617,7 +617,8 @@ public sealed partial class Lowering
         assert(varTypeIsArithmetic(simdBaseType));
         assert(simdSize != 0);
 
-        var isConstant = GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref simdValue);
+        var isConstant = GenTreeVecCon.IsHWIntrinsicCreateConstant(
+            intrinsicId, simdBaseType, simdSize, node.Operands, ref simdValue);
         var isCreateScalar = HWIntrinsicInfo.IsVectorCreateScalar(intrinsicId);
         var argumentCount = node.Operands.Length;
 

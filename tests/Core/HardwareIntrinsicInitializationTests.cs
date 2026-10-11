@@ -1574,7 +1574,10 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             };
             var node = new GenTreeHWIntrinsic(type, id, TYP_FLOAT, size, compiler.gtNewDconNode(TYP_FLOAT, -0.0));
             var value = simd64_t.AllBitsSet;
-            Assert.That(GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref value), Is.True);
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    id, node.SimdBaseType, node.SimdSize, node.Operands, ref value),
+                Is.True);
             for (var index = 0; index < 16; index++)
             {
                 var filled = (index < size / sizeof(float)) && ((index == 0) || (id != NI_Vector_CreateScalar));
@@ -1621,7 +1624,10 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             var constant = compiler.gtNewIconNode(type is TYP_LONG or TYP_ULONG ? TYP_LONG : Globals.TYP_I_IMPL, (nint)input);
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_Create, type, 16, constant);
             simd64_t value = default;
-            Assert.That(GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref value), Is.True);
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    node.HWIntrinsicId, node.SimdBaseType, node.SimdSize, node.Operands, ref value),
+                Is.True);
             for (var index = 0; index < 16; index++)
             {
                 var shift = index % type.Size * 8;
@@ -1639,7 +1645,10 @@ internal static unsafe class HardwareIntrinsicInitializationTests
                 compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(nanBits)),
                 compiler.gtNewDconNode(TYP_DOUBLE, -0.0));
             simd64_t value = default;
-            Assert.That(GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref value), Is.True);
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    node.HWIntrinsicId, node.SimdBaseType, node.SimdSize, node.Operands, ref value),
+                Is.True);
             Assert.That(value.i64[0], Is.EqualTo(nanBits));
             Assert.That(value.i64[1], Is.EqualTo(long.MinValue));
         });
@@ -1653,7 +1662,10 @@ internal static unsafe class HardwareIntrinsicInitializationTests
                 compiler.gtNewDconNode(TYP_FLOAT, 16777217.0), compiler.gtNewLclvNode(TYP_FLOAT, 0),
                 compiler.gtNewDconNode(TYP_FLOAT, -0.0), compiler.gtNewDconNode(TYP_FLOAT, 42.0));
             var value = simd64_t.AllBitsSet;
-            Assert.That(GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref value), Is.False);
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    node.HWIntrinsicId, node.SimdBaseType, node.SimdSize, node.Operands, ref value),
+                Is.False);
             Assert.That(value.f32[0], Is.EqualTo(16777216.0f));
             Assert.That(value.i32[1], Is.Zero);
             Assert.That(value.i32[2], Is.EqualTo(int.MinValue));
@@ -1669,7 +1681,10 @@ internal static unsafe class HardwareIntrinsicInitializationTests
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_X86Base_Add, TYP_INT, 16,
                 new GenTreeLclVar(TYP_SIMD16, 0), new GenTreeLclVar(TYP_SIMD16, 1));
             var value = simd64_t.AllBitsSet;
-            Assert.That(GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref value), Is.False);
+            Assert.That(
+                GenTreeVecCon.IsHWIntrinsicCreateConstant(
+                    node.HWIntrinsicId, node.SimdBaseType, node.SimdSize, node.Operands, ref value),
+                Is.False);
             Assert.That(value.IsAllBitsSet, Is.True);
         });
     }

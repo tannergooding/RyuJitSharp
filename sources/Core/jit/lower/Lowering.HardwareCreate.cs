@@ -29,7 +29,8 @@ public sealed partial class Lowering
         assert(simdSize != 0);
 
         var op1 = node.GetOp(1);
-        var isConstant = GenTreeVecCon.IsHWIntrinsicCreateConstant(node, ref simdVal);
+        var isConstant = GenTreeVecCon.IsHWIntrinsicCreateConstant(
+            intrinsicId, simdBaseType, simdSize, node.Operands, ref simdVal);
         var isCreateScalar = HWIntrinsicInfo.IsVectorCreateScalar(intrinsicId);
         var argCnt = node.Operands.Length;
 

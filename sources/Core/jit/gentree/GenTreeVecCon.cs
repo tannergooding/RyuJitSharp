@@ -176,18 +176,19 @@ public sealed class GenTreeVecCon : GenTree
         return ElementCount(Type.Size, simdBaseType);
     }
 
-#if FEATURE_HW_INTRINSICS
-    public static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic node, ref simd_t simdVal)
+    public static bool IsHWIntrinsicCreateConstant(
+        NamedIntrinsic intrinsic,
+        var_types simdBaseType,
+        byte simdSize,
+        ReadOnlySpan<GenTree> operands,
+        ref simd_t simdVal)
     {
         if (!Configuration.FEATURE_HW_INTRINSICS)
         {
             throw new PlatformNotSupportedException("Hardware intrinsic constant evaluation is unsupported on this target.");
         }
 
-        var intrinsic = node.HWIntrinsicId;
-        var simdBaseType = node.SimdBaseType;
-        var simdSize = node.SimdSize;
-        var argCount = node.Operands.Length;
+        var argCount = operands.Length;
         var constantCount = 0;
 
         switch (intrinsic)
@@ -197,14 +198,14 @@ public sealed class GenTreeVecCon : GenTree
             case NI_Vector_CreateScalarUnsafe:
             {
                 simdVal = default;
-                if ((argCount == 1) && HandleArgForHWIntrinsicCreate(node.GetOp(1), 0, ref simdVal, simdBaseType))
+                if ((argCount == 1) && HandleArgForHWIntrinsicCreate(operands[0], 0, ref simdVal, simdBaseType))
                 {
                     // Native chooses a broadcast for CreateScalarUnsafe; CreateScalar leaves upper lanes zero.
                     if (intrinsic != NI_Vector_CreateScalar)
                     {
                         for (var index = 1; index < ElementCount(simdSize, simdBaseType); index++)
                         {
-                            _ = HandleArgForHWIntrinsicCreate(node.GetOp(1), index, ref simdVal, simdBaseType);
+                            _ = HandleArgForHWIntrinsicCreate(operands[0], index, ref simdVal, simdBaseType);
                         }
                     }
 
@@ -212,9 +213,9 @@ public sealed class GenTreeVecCon : GenTree
                 }
                 else
                 {
-                    for (var index = 1; index <= argCount; index++)
+                    for (var index = 0; index < argCount; index++)
                     {
-                        if (HandleArgForHWIntrinsicCreate(node.GetOp(index), index - 1, ref simdVal, simdBaseType))
+                        if (HandleArgForHWIntrinsicCreate(operands[index], index, ref simdVal, simdBaseType))
                         {
                             constantCount++;
                         }
@@ -336,7 +337,6 @@ public sealed class GenTreeVecCon : GenTree
 
         return false;
     }
-#endif
 
     public void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, GenTreeVecCon other)
     {
