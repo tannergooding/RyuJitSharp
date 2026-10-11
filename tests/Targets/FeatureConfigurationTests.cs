@@ -43,6 +43,8 @@ internal static class FeatureConfigurationTests
         var supportsArgSplit = Configuration.TARGET_ARMARCH ||
             Configuration.TARGET_LOONGARCH64 ||
             Configuration.TARGET_RISCV64;
+        var supportsMultiRegArgs = supportsArgSplit ||
+            (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX);
         var supportsFixedOutArgs = supportsArgSplit || Configuration.TARGET_AMD64;
         var supportsFastTailCall = supportsFixedOutArgs || Configuration.TARGET_WASM;
         var supportsTailCallOpt = supportsArgSplit || Configuration.TARGET_AMD64;
@@ -50,6 +52,7 @@ internal static class FeatureConfigurationTests
             (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX);
 
         Assert.That(Configuration.FEATURE_ARG_SPLIT, Is.EqualTo(supportsArgSplit));
+        Assert.That(Configuration.FEATURE_MULTIREG_ARGS, Is.EqualTo(supportsMultiRegArgs));
         Assert.That(Configuration.FEATURE_FIXED_OUT_ARGS, Is.EqualTo(supportsFixedOutArgs));
         Assert.That(Configuration.FEATURE_FASTTAILCALL, Is.EqualTo(supportsFastTailCall));
         Assert.That(Configuration.FEATURE_TAILCALL_OPT, Is.EqualTo(supportsTailCallOpt));

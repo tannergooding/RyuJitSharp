@@ -262,8 +262,7 @@ public sealed partial class LinearScan
             var argNode = arg.LateNode
                 ?? throw new FatalJitException("A late call argument must have a lowered node.");
 
-#if FEATURE_MULTIREG_ARGS
-            if (argNode.Oper.IsFieldList)
+            if (Configuration.FEATURE_MULTIREG_ARGS && argNode.Oper.IsFieldList)
             {
                 foreach (var fieldUse in argNode.AsFieldList().Uses)
                 {
@@ -274,7 +273,6 @@ public sealed partial class LinearScan
 
                 continue;
             }
-#endif
 
             if (argNode.Oper.IsPutArgReg)
             {

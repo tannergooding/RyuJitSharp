@@ -22,8 +22,7 @@ public sealed partial class CodeGen
             var argNode = arg.LateNode;
             assert(argNode is not null);
 
-#if FEATURE_MULTIREG_ARGS
-            if (argNode.Oper == GT_FIELD_LIST)
+            if (Configuration.FEATURE_MULTIREG_ARGS && (argNode.Oper == GT_FIELD_LIST))
             {
                 var use = argNode.AsFieldList().Uses.Head;
                 foreach (ref readonly var segment in abiInfo.Segments)
@@ -49,7 +48,6 @@ public sealed partial class CodeGen
                 assert(use is null);
                 continue;
             }
-#endif
             if (abiInfo.HasExactlyOneRegisterSegment)
             {
                 var argReg = abiInfo.Segments[0].Register;

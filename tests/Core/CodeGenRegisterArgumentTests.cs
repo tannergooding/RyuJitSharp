@@ -161,6 +161,42 @@ internal static class CodeGenRegisterArgumentTests
         });
     }
 
+    [Test]
+    public static void FieldListArgumentsPlaceEachRegisterSegmentInOrder()
+    {
+        if (!Configuration.TARGET_AMD64 || !Configuration.FEATURE_MULTIREG_ARGS)
+        {
+            Assert.Ignore("The field-list placement test requires AMD64 multi-register arguments.");
+        }
+
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
+        {
+            var first = PutArg(TYP_INT, REG_RAX);
+            var second = PutArg(TYP_INT, REG_RBX);
+            var fields = new GenTreeFieldList();
+            fields.AddFieldLIR(compiler, first, 0, TYP_INT);
+            fields.AddFieldLIR(compiler, second, 4, TYP_INT);
+
+            var call = new GenTreeCall(TYP_VOID);
+            var argument = call.Args.PushBack(
+                NewCallArg.CreateForStruct(fields, TYP_STRUCT, new ClassLayout(8)));
+            argument.EarlyNode = null;
+            argument.LateNode = fields;
+
+            var firstSegment = AbiPassingSegment.InRegister(REG_R8, 0, 4);
+            var secondSegment = AbiPassingSegment.InRegister(REG_R9, 4, 4);
+            argument.AbiInfo = AbiPassingInformation.FromSegments(compiler, in firstSegment, in secondSegment);
+            call.Args.PushLateBack(argument);
+
+            codeGen.genCallPlaceRegArgs(call);
+
+            var descriptors = Descriptors(codeGen);
+            Assert.That(descriptors, Has.Count.EqualTo(2));
+            AssertMove(descriptors[0], INS_mov, EA_4BYTE, REG_R8, REG_RAX);
+            AssertMove(descriptors[1], INS_mov, EA_4BYTE, REG_R9, REG_RBX);
+        });
+    }
+
     [TestCase(TYP_REF, false, false)]
     [TestCase(TYP_REF, false, true)]
     [TestCase(TYP_REF, true, false)]

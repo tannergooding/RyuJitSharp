@@ -376,19 +376,6 @@
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
 
-    <!-- FEATURE_MULTIREG_ARGS: Support for passing a single argument in more than one register -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS</DefineConstants>
-
-    <!-- FEATURE_MULTIREG_ARGS_OR_RET: Support for passing and/or returning single values in more than one register -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);FEATURE_MULTIREG_ARGS_OR_RET</DefineConstants>
-
     <!-- FEATURE_MULTIREG_STRUCT_PROMOTE: True when we want to promote fields of a multireg struct into registers -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>

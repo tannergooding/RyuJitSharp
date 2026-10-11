@@ -31,34 +31,35 @@ public partial class Compiler
             isHfa = hfaType != TYP_UNDEF;
             var structSize = unchecked((uint)info.compCompHnd->getClassSize(typeHnd));
 
-#if FEATURE_MULTIREG_ARGS
+            if (Configuration.FEATURE_MULTIREG_ARGS)
+            {
 #if TARGET_ARM64
-            if (structSize > MAX_PASS_MULTIREG_BYTES)
-            {
-                return TARGET_POINTER_SIZE;
-            }
-            else if (structSize > (2 * TARGET_POINTER_SIZE))
-            {
-                if (TargetOS.IsWindows && info.compIsVarArgs)
-                {
-                    // Windows ARM64 varargs pass structs in general-purpose registers.
-                    isHfa = false;
-                }
-                if (!isHfa)
+                if (structSize > MAX_PASS_MULTIREG_BYTES)
                 {
                     return TARGET_POINTER_SIZE;
                 }
-            }
+                else if (structSize > (2 * TARGET_POINTER_SIZE))
+                {
+                    if (TargetOS.IsWindows && info.compIsVarArgs)
+                    {
+                        // Windows ARM64 varargs pass structs in general-purpose registers.
+                        isHfa = false;
+                    }
+                    if (!isHfa)
+                    {
+                        return TARGET_POINTER_SIZE;
+                    }
+                }
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
-            if (structSize > MAX_PASS_MULTIREG_BYTES)
-            {
-                return TARGET_POINTER_SIZE;
-            }
+                if (structSize > MAX_PASS_MULTIREG_BYTES)
+                {
+                    return TARGET_POINTER_SIZE;
+                }
 #elif !TARGET_ARM
-            Globals.NYI("unknown target");
-            throw new FatalJitException(CORJIT_SKIPPED, "Unknown target for multi-register arguments.");
+                Globals.NYI("unknown target");
+                throw new FatalJitException(CORJIT_SKIPPED, "Unknown target for multi-register arguments.");
 #endif
-#endif
+            }
             argSize = structSize;
         }
         else

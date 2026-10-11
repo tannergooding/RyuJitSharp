@@ -141,10 +141,14 @@ internal static unsafe class LinearScanOperandAndCallUsesTests
         });
     }
 
-#if FEATURE_MULTIREG_ARGS
     [Test]
     public static void FieldListCallArgumentBuildsAUseForEachRegisterField()
     {
+        if (!Configuration.FEATURE_MULTIREG_ARGS)
+        {
+            Assert.Ignore("Field-list call arguments require multi-register argument support.");
+        }
+
         WithAllocator((compiler, allocator) => {
             var firstValue = compiler.gtNewIconNode(TYP_INT, 29);
             var secondValue = compiler.gtNewIconNode(TYP_INT, 31);
@@ -160,7 +164,7 @@ internal static unsafe class LinearScanOperandAndCallUsesTests
             var fieldList = new GenTreeFieldList();
             fieldList.AddFieldLIR(compiler, firstPutArg, 0, TYP_INT);
             fieldList.AddFieldLIR(compiler, secondPutArg, 4, TYP_INT);
-            var arg = new CallArg(NewCallArg.CreateForPrimitive(fieldList)) {
+            var arg = new CallArg(NewCallArg.CreateForStruct(fieldList, TYP_STRUCT, new ClassLayout(8))) {
                 LateNode = fieldList,
             };
             var call = new GenTreeCall(TYP_VOID);
@@ -172,7 +176,6 @@ internal static unsafe class LinearScanOperandAndCallUsesTests
             Assert.That(secondDefinition.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RDX));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "buildDef")]
     private static extern RefPosition BuildDef(LinearScan allocator, GenTree tree, regMask candidates, int multiRegIndex);

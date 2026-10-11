@@ -14,6 +14,9 @@ internal static class Configuration
 
     internal static bool FEATURE_ARG_SPLIT => TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64;
 
+    internal static bool FEATURE_MULTIREG_ARGS =>
+        FEATURE_ARG_SPLIT || (TARGET_AMD64 && TARGET_UNIX);
+
     internal static bool FEATURE_FIXED_OUT_ARGS =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 
