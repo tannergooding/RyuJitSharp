@@ -128,10 +128,8 @@ public static partial class genTreeOpsExtensions
         GTK_BINOP, // GT_AND_NOT
         GTK_BINOP, // GT_OR_NOT
         GTK_BINOP, // GT_XOR_NOT
-#if TARGET_ARM64
         GTK_BINOP, // GT_BFIZ
         GTK_UNOP | GTK_EXOP, // GT_BFX
-#endif
         GTK_BINOP | GTK_NOVALUE, // GT_CMP
         GTK_BINOP | GTK_NOVALUE, // GT_TEST
 #if TARGET_XARCH
@@ -318,10 +316,8 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_AND_NOT
         DBK_NOTHIR, // GT_OR_NOT
         DBK_NOTHIR, // GT_XOR_NOT
-#if TARGET_ARM64
         DBK_NOTHIR, // GT_BFIZ
         DBK_NOTHIR, // GT_BFX
-#endif
         DBK_NOTHIR, // GT_CMP
         DBK_NOTHIR, // GT_TEST
 #if TARGET_XARCH
@@ -509,10 +505,8 @@ public static partial class genTreeOpsExtensions
         "AND_NOT", // GT_AND_NOT
         "OR_NOT", // GT_OR_NOT
         "XOR_NOT", // GT_XOR_NOT
-#if TARGET_ARM64
         "BFIZ", // GT_BFIZ
         "BFX", // GT_BFX
-#endif
         "CMP", // GT_CMP
         "TEST", // GT_TEST
 #if TARGET_XARCH
@@ -700,10 +694,8 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOp), // GT_AND_NOT
         typeof(GenTreeOp), // GT_OR_NOT
         typeof(GenTreeOp), // GT_XOR_NOT
-#if TARGET_ARM64
         typeof(GenTreeOp), // GT_BFIZ
         typeof(GenTreeBfm), // GT_BFX
-#endif
         typeof(GenTreeOp), // GT_CMP
         typeof(GenTreeOp), // GT_TEST
 #if TARGET_XARCH

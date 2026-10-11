@@ -8869,14 +8869,12 @@ public partial class Compiler
         return node;
     }
 
-#if TARGET_ARM64
     public GenTreeBfm gtNewBfxNode(var_types type, GenTree baseNode, uint offset, uint width)
     {
         var result = new GenTreeBfm(GT_BFX, type, baseNode, null, offset, width);
         result.Flags |= baseNode.Flags & GTF_ALL_EFFECT;
         return result;
     }
-#endif
 
     public GenTreePhysReg gtNewPhysRegNode(regNumber reg, var_types type)
     {
@@ -15697,9 +15695,7 @@ public partial class Compiler
                     case GT_NONLOCAL_JMP:
                     case GT_LEA:
                     case GT_INC_SATURATE:
-#if TARGET_ARM64
                     case GT_BFX:
-#endif
                     case GT_SELECT_INCCC:
                     case GT_SELECT_NEGCC:
                     case GT_RETURN:
@@ -16138,9 +16134,7 @@ public partial class Compiler
                     case GT_AND_NOT:
                     case GT_OR_NOT:
                     case GT_XOR_NOT:
-#if TARGET_ARM64
                     case GT_BFIZ:
-#endif
                     case GT_CMP:
                     case GT_TEST:
 #if TARGET_XARCH

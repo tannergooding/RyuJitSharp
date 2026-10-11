@@ -66,6 +66,39 @@ internal static unsafe class ConditionalCompareAvailabilityTests
         });
     }
 
+    [TestCase(GT_BFIZ)]
+    [TestCase(GT_BFX)]
+    public static void Arm64BitfieldConstructionIsUnsupportedOutsideArm64(genTreeOps oper)
+    {
+        WithCompiler(() =>
+        {
+            var op1 = new GenTreeIntCon(TYP_INT, 1);
+            var op2 = new GenTreeIntCon(TYP_INT, 2);
+            if (Configuration.TARGET_ARM64)
+            {
+                if (oper is GT_BFIZ)
+                {
+                    _ = new GenTreeOp(oper, TYP_INT, op1, op2);
+                }
+                else
+                {
+                    _ = new GenTreeBfm(oper, TYP_INT, op1, null, 0, 8);
+                }
+
+                return;
+            }
+
+            if (oper is GT_BFIZ)
+            {
+                _ = Assert.Throws<FatalJitException>(() => new GenTreeOp(oper, TYP_INT, op1, op2));
+            }
+            else
+            {
+                _ = Assert.Throws<FatalJitException>(() => new GenTreeBfm(oper, TYP_INT, op1, null, 0, 8));
+            }
+        });
+    }
+
     private static void WithCompiler(Action action)
     {
 #if DEBUG

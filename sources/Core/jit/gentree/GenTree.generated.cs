@@ -278,14 +278,12 @@ public partial class GenTree
         assert(this is GenTreeConditional);
         return Unsafe.As<GenTreeConditional>(this);
     }
-#if TARGET_ARM64
     public GenTreeBfm AsBfm()
     {
         assert(_oper is GT_BFX);
         assert(this is GenTreeBfm);
         return Unsafe.As<GenTreeBfm>(this);
     }
-#endif
     public GenTreePutArgStk AsPutArgStk()
     {
         assert(_oper is GT_PUTARG_STK);

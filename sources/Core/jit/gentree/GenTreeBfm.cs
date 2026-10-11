@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed class GenTreeBfm : GenTreeOp
@@ -26,4 +25,3 @@ public sealed class GenTreeBfm : GenTreeOp
 
     public uint GetMask() => unchecked((uint)((ulong.MaxValue >> (64 - (int)_width)) << (int)_offset));
 }
-#endif

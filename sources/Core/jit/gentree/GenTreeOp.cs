@@ -13,7 +13,7 @@ public class GenTreeOp : GenTreeUnOp
     private GenTree? _op2;
 
     internal GenTreeOp(genTreeOps oper, var_types type, GenTree? op1, GenTree? op2)
-        : base(oper, type, op1)
+        : base(EnsureArm64BitfieldSupported(oper), type, op1)
     {
         _op2 = op2;
 
@@ -38,10 +38,20 @@ public class GenTreeOp : GenTreeUnOp
     }
 
     internal GenTreeOp(genTreeOps oper, var_types type, GenTree? op1, GenTree? op2, GenTree source, NodeThreading threading)
-        : base(oper, type, op1, source, threading)
+        : base(EnsureArm64BitfieldSupported(oper), type, op1, source, threading)
     {
         _op2 = op2;
         assert(!oper.IsCompare || varTypeIsIntegral(type));
+    }
+
+    private static genTreeOps EnsureArm64BitfieldSupported(genTreeOps oper)
+    {
+        if ((oper is GT_BFIZ or GT_BFX) && !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, "ARM64 bitfield nodes are only supported on ARM64.");
+        }
+
+        return oper;
     }
 
     public ref GenTree ReturnValueRef()

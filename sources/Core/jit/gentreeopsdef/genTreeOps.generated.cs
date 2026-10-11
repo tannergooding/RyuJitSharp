@@ -127,10 +127,8 @@ public enum genTreeOps : byte
     GT_AND_NOT,
     GT_OR_NOT,
     GT_XOR_NOT,
-#if TARGET_ARM64
     GT_BFIZ,
     GT_BFX,
-#endif
     GT_CMP,
     GT_TEST,
 #if TARGET_XARCH
