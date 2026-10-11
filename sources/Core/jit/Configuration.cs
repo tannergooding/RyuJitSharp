@@ -4,7 +4,11 @@ namespace RyuJitSharp;
 
 internal static class Configuration
 {
+    internal static bool FEATURE_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_HW_INTRINSICS));
+
     internal static bool FEATURE_HAS_ZERO_REG => GetFeatureSwitch(nameof(FEATURE_HAS_ZERO_REG));
+
+    internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
 
     internal static bool TARGET_64BIT => GetFeatureSwitch(nameof(TARGET_64BIT));
 

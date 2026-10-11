@@ -20,13 +20,19 @@ public sealed partial class Lowering
         var compiler = CompilerInstance;
         if (GlobalJitOptions.compFeatureHfa && compiler.IsHfa(call.RetClsHnd))
         {
-#if TARGET_ARM64
-            assert(compiler.GetHfaCount(call.RetClsHnd) == 1);
-#elif TARGET_ARM
-            assert(compiler.GetHfaCount(call.RetClsHnd) <= 2);
-#else
-            throw new NotImplementedException("HFA struct-call lowering is not supported for this target.");
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(compiler.GetHfaCount(call.RetClsHnd) == 1);
+            }
+            else if (Configuration.TARGET_ARM)
+            {
+                assert(compiler.GetHfaCount(call.RetClsHnd) <= 2);
+            }
+            else
+            {
+                throw new NotImplementedException("HFA struct-call lowering is not supported for this target.");
+            }
+
             var hfaType = compiler.GetHfaType(call.RetClsHnd);
             if (call.Type == hfaType)
             {
@@ -67,13 +73,12 @@ public sealed partial class Lowering
 
                 case GT_STOREIND:
                 {
-#if FEATURE_SIMD
-                    if (varTypeIsSimd(user.Type))
+                    if (Configuration.FEATURE_SIMD && varTypeIsSimd(user.Type))
                     {
                         user.ChangeType(returnType);
                         break;
                     }
-#endif
+
                     // The importer separately retypes helper-call results.
                     assert((user.Type is TYP_REF) ||
                         ((user.Type is TYP_I_IMPL) && compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI)));
@@ -82,9 +87,14 @@ public sealed partial class Lowering
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
                 {
+                    if (!Configuration.FEATURE_HW_INTRINSICS)
+                    {
+                        unreached();
+                        break;
+                    }
+
                     if (!varTypeUsesSameRegType(returnType, originalType))
                     {
                         var bitCast = compiler.gtNewBitCastNode(originalType, call);
@@ -94,7 +104,6 @@ public sealed partial class Lowering
                     }
                     break;
                 }
-#endif
 
                 default:
                 {

@@ -12,8 +12,9 @@ public sealed partial class Lowering
     private unsafe void LowerRetStruct(GenTreeUnOp ret)
     {
         var compiler = CompilerInstance;
-#if TARGET_ARM64
-        if (GlobalJitOptions.compFeatureHfa && varTypeIsSimd(ret.Type))
+        if (Configuration.TARGET_ARM64 &&
+            GlobalJitOptions.compFeatureHfa &&
+            varTypeIsSimd(ret.Type))
         {
             if (compiler.info.compRetNativeType is TYP_STRUCT)
             {
@@ -26,7 +27,7 @@ public sealed partial class Lowering
                 assert(compiler.info.compRetNativeType == ret.Type);
             }
         }
-#endif
+
         if (compiler.compMethodReturnsMultiRegRetType)
         {
             return;
@@ -57,13 +58,13 @@ public sealed partial class Lowering
                 else
                 {
                     assert(varTypeUsesIntReg(nativeReturnType));
-#if TARGET_WASM
-                    if ((value.Type.ActualType != nativeReturnType.ActualType) && value.IsIntegralConst(0))
+                    if (Configuration.TARGET_WASM &&
+                        (value.Type.ActualType != nativeReturnType.ActualType) &&
+                        value.IsIntegralConst(0))
                     {
                         var replacement = value.BashToZeroConst(nativeReturnType, NodeThreading.LIR);
                         BlockRange().ReplaceNode(value, replacement);
                     }
-#endif
                 }
                 break;
             }

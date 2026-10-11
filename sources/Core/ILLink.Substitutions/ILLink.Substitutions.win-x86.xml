@@ -1,7 +1,9 @@
 <linker>
   <assembly fullname="RyuJitSharp">
     <type fullname="RyuJitSharp.Configuration">
+      <method signature="System.Boolean get_FEATURE_HW_INTRINSICS()" body="stub" value="true" />
       <method signature="System.Boolean get_FEATURE_HAS_ZERO_REG()" body="stub" value="false" />
+      <method signature="System.Boolean get_FEATURE_SIMD()" body="stub" value="true" />
       <method signature="System.Boolean get_TARGET_64BIT()" body="stub" value="false" />
       <method signature="System.Boolean get_TARGET_ARM()" body="stub" value="false" />
       <method signature="System.Boolean get_TARGET_ARM64()" body="stub" value="false" />

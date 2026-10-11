@@ -54,14 +54,13 @@ public sealed partial class Lowering
         {
             case IAT_VALUE:
             {
-#if TARGET_WASM
-                if (CompilerInstance.IsReadyToRun)
+                if (Configuration.TARGET_WASM && CompilerInstance.IsReadyToRun)
                 {
                     // IAT_VALUE is a callable symbol, not a portable entrypoint cell.
                     call._directCallAddress = address;
                     break;
                 }
-#endif
+
                 if (!IsCallTargetInRange(address) || call.IsTailCallViaJitHelper)
                 {
                     result = AddrGen((nint)address);
@@ -75,10 +74,8 @@ public sealed partial class Lowering
 
             case IAT_PVALUE:
             {
-#if !TARGET_WASM
                 // Reuse the existing indirection-cell argument instead of duplicating its load.
-                if (call.IndirectionCellArgKind is WellKnownArg.None)
-#endif
+                if (!Configuration.TARGET_WASM || call.IndirectionCellArgKind is WellKnownArg.None)
                 {
                     var cellAddress = AddrGen((nint)address);
 #if DEBUG
