@@ -56,6 +56,11 @@ internal static unsafe class CallLoweringTests
     [Test]
     public static void FastTailCallReusesItsReadyToRunIndirectionCell()
     {
+        if (!Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("ReadyToRun is disabled for this target.");
+        }
+
         WithCompiler(compiler => {
             var call = new GenTreeCall(var_types.TYP_VOID) {
                 _callType = gtCallTypes.CT_USER_FUNC,

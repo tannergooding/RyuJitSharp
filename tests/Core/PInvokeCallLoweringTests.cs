@@ -56,13 +56,11 @@ internal static unsafe class PInvokeCallLoweringTests
             Assert.That(block.FirstNode, Is.SameAs(call));
             Assert.That(block.LastNode, Is.SameAs(call));
             Assert.That((nint)call._directCallAddress, Is.EqualTo(aot ? ee->Target : (nint)0));
-#if FEATURE_READYTORUN
-            if (aot)
+            if (Configuration.FEATURE_READYTORUN && aot)
             {
                 Assert.That((nint)call._entryPoint.addr, Is.EqualTo((nint)0));
                 Assert.That(call._entryPoint.accessType, Is.EqualTo(InfoAccessType.IAT_VALUE));
             }
-#endif
             if (accessType is InfoAccessType.IAT_PPVALUE)
             {
                 Assert.That(result?.AsIndir().Addr.Oper, Is.EqualTo(GT_IND));

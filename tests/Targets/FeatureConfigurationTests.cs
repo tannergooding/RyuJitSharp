@@ -26,6 +26,21 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void ArgumentAndSwiftFeaturesMatchTheTargetArchitecture()
+    {
+        var supportsArgSplit = Configuration.TARGET_ARMARCH ||
+            Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64;
+        var supportsFixedOutArgs = supportsArgSplit || Configuration.TARGET_AMD64;
+        var supportsSwift = Configuration.TARGET_ARM64 ||
+            (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX);
+
+        Assert.That(Configuration.FEATURE_ARG_SPLIT, Is.EqualTo(supportsArgSplit));
+        Assert.That(Configuration.FEATURE_FIXED_OUT_ARGS, Is.EqualTo(supportsFixedOutArgs));
+        Assert.That(Configuration.SWIFT_SUPPORT, Is.EqualTo(supportsSwift));
+    }
+
+    [Test]
     public static void MaskedHardwareIntrinsicsMatchTheTargetArchitecture()
     {
         Assert.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,

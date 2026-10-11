@@ -118,10 +118,10 @@ public partial class Compiler
     public int lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
 #endif
 
-#if TARGET_WASM
     /// <summary>lcl var index of Wasm stack pointer arg</summary>
     public int lvaWasmSpArg = BAD_VAR_NUM;
 
+#if TARGET_WASM
     /// <summary>Wasm virtual IP slot</summary>
     public int lvaWasmVirtualIP = BAD_VAR_NUM;
 

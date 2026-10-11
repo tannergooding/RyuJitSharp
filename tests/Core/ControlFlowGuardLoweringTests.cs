@@ -119,10 +119,11 @@ internal static unsafe class ControlFlowGuardLoweringTests
                 _callType = CT_INDIRECT,
                 _controlExpr = target,
             };
-#if FEATURE_READYTORUN
-            call._entryPoint.addr = (void*)0x1234;
-            call._entryPoint.accessType = InfoAccessType.IAT_PVALUE;
-#endif
+            if (Configuration.FEATURE_READYTORUN)
+            {
+                call._entryPoint.addr = (void*)0x1234;
+                call._entryPoint.accessType = InfoAccessType.IAT_PVALUE;
+            }
             block.InsertAtEnd(target);
             block.InsertAtEnd(call);
 
@@ -142,10 +143,11 @@ internal static unsafe class ControlFlowGuardLoweringTests
                 CorInfoHelpFunc.CORINFO_HELP_DISPATCH_INDIRECT_CALL)));
             Assert.That((nint)call._directCallAddress, Is.EqualTo((nint)0x5678));
             Assert.That(call._controlExpr, Is.Null);
-#if FEATURE_READYTORUN
-            Assert.That((nint)call._entryPoint.addr, Is.EqualTo((nint)0));
-            Assert.That(call._entryPoint.accessType, Is.EqualTo(InfoAccessType.IAT_VALUE));
-#endif
+            if (Configuration.FEATURE_READYTORUN)
+            {
+                Assert.That((nint)call._entryPoint.addr, Is.EqualTo((nint)0));
+                Assert.That(call._entryPoint.accessType, Is.EqualTo(InfoAccessType.IAT_VALUE));
+            }
         }));
     }
 #endif

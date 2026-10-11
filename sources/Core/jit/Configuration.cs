@@ -12,6 +12,11 @@ internal static class Configuration
 
     internal static bool FEATURE_HAS_ZERO_REG => GetFeatureSwitch(nameof(FEATURE_HAS_ZERO_REG));
 
+    internal static bool FEATURE_ARG_SPLIT => TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64;
+
+    internal static bool FEATURE_FIXED_OUT_ARGS =>
+        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
+
     internal static bool FEATURE_MULTIREG_RET => GetFeatureSwitch(nameof(FEATURE_MULTIREG_RET));
 
     internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
@@ -45,6 +50,8 @@ internal static class Configuration
     internal static bool TARGET_UNIX => GetFeatureSwitch(nameof(TARGET_UNIX));
 
     internal static bool TARGET_APPLE => GetFeatureSwitch(nameof(TARGET_APPLE));
+
+    internal static bool SWIFT_SUPPORT => TARGET_ARM64 || (TARGET_AMD64 && TARGET_UNIX);
 
     internal static bool TARGET_OS_RUNTIMEDETERMINED => GetFeatureSwitch(nameof(TARGET_OS_RUNTIMEDETERMINED));
 

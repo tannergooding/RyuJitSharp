@@ -192,10 +192,11 @@ public sealed partial class Lowering
                 call._controlExpr = null;
                 call._callMethHnd = Compiler.eeFindHelper(CORINFO_HELP_DISPATCH_INDIRECT_CALL);
                 call.Flags &= ~GTF_CALL_VIRT_KIND_MASK;
-#if FEATURE_READYTORUN
-                call._entryPoint.addr = null;
-                call._entryPoint.accessType = IAT_VALUE;
-#endif
+                if (Configuration.FEATURE_READYTORUN)
+                {
+                    call._entryPoint.addr = null;
+                    call._entryPoint.accessType = IAT_VALUE;
+                }
                 call._controlExpr = LowerDirectCall(call);
                 if (call._controlExpr is not null)
                 {

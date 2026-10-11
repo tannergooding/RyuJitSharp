@@ -15,15 +15,12 @@ public sealed partial class Lowering
         InfoAccessType accessType;
         var helper = call.HelperNum;
 
-#if FEATURE_READYTORUN
-        if (call._entryPoint.addr is not null)
+        if (Configuration.FEATURE_READYTORUN && call._entryPoint.addr is not null)
         {
             accessType = call._entryPoint.accessType;
             address = call._entryPoint.addr;
         }
-        else
-#endif
-        if (call.IsHelperCall())
+        else if (call.IsHelperCall())
         {
             noway_assert(helper is not CORINFO_HELP_UNDEF);
             var lookup = CompilerInstance.compGetHelperFtn(helper);

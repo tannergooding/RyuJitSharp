@@ -28,12 +28,10 @@ public partial struct CallArgs
             var node = argument.EarlyNode;
             assert(node is not null);
             var canEvaluateToTemp = true;
-#if !FEATURE_FIXED_OUT_ARGS
-            if (!argument.AbiInfo.HasAnyRegisterSegment)
+            if (!Configuration.FEATURE_FIXED_OUT_ARGS && !argument.AbiInfo.HasAnyRegisterSegment)
             {
                 canEvaluateToTemp = false;
             }
-#endif
             if ((node.Flags & GTF_ASG) != 0)
             {
                 if (!node.IsValue)
@@ -53,12 +51,10 @@ public partial struct CallArgs
                     {
                         break;
                     }
-#if !FEATURE_FIXED_OUT_ARGS
-                    if (!previous.AbiInfo.HasAnyRegisterSegment)
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS && !previous.AbiInfo.HasAnyRegisterSegment)
                     {
                         continue;
                     }
-#endif
                     if ((previous.EarlyNode is null) || previous.NeedTmp)
                     {
                         continue;
@@ -74,9 +70,8 @@ public partial struct CallArgs
 
             var treatLikeCall = (node.Flags & GTF_CALL) != 0;
             var exceptionFlags = ExceptionSetFlags.None;
-#if FEATURE_FIXED_OUT_ARGS
             // Debug inline throws use helpers and can overwrite the outgoing stack area.
-            if (!treatLikeCall && ((node.Flags & GTF_EXCEPT) != 0) &&
+            if (Configuration.FEATURE_FIXED_OUT_ARGS && !treatLikeCall && ((node.Flags & GTF_EXCEPT) != 0) &&
                 (argumentCount > 1) && compiler.opts.compDbgCode)
             {
                 exceptionFlags = compiler.gtCollectExceptions(node);
@@ -98,7 +93,6 @@ public partial struct CallArgs
                     }
                 }
             }
-#endif
             if (treatLikeCall)
             {
                 if (canEvaluateToTemp)
@@ -119,28 +113,23 @@ public partial struct CallArgs
                     {
                         break;
                     }
-#if !FEATURE_FIXED_OUT_ARGS
-                    if (!previous.AbiInfo.HasAnyRegisterSegment)
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS && !previous.AbiInfo.HasAnyRegisterSegment)
                     {
                         continue;
                     }
-#endif
                     if ((previous.EarlyNode is GenTree previousNode) && ((previousNode.Flags & GTF_ALL_EFFECT) != 0))
                     {
                         SetNeedsTemp(previous);
                     }
-#if FEATURE_FIXED_OUT_ARGS
-                    else if (!previous.AbiInfo.HasAnyRegisterSegment)
+                    else if (Configuration.FEATURE_FIXED_OUT_ARGS && !previous.AbiInfo.HasAnyRegisterSegment)
                     {
                         previous.NeedPlace = true;
                     }
-#if FEATURE_ARG_SPLIT
-                    else if (previous.AbiInfo.IsSplitAcrossRegistersAndStack)
+                    else if (Configuration.FEATURE_FIXED_OUT_ARGS && Configuration.FEATURE_ARG_SPLIT &&
+                        previous.AbiInfo.IsSplitAcrossRegistersAndStack)
                     {
                         previous.NeedPlace = true;
                     }
-#endif
-#endif
                 }
             }
             else if ((node.Flags & GTF_EXCEPT) != 0)
@@ -172,12 +161,10 @@ public partial struct CallArgs
                             {
                                 break;
                             }
-#if !FEATURE_FIXED_OUT_ARGS
-                            if (!previous.AbiInfo.HasAnyRegisterSegment)
+                            if (!Configuration.FEATURE_FIXED_OUT_ARGS && !previous.AbiInfo.HasAnyRegisterSegment)
                             {
                                 continue;
                             }
-#endif
                             if ((previous.EarlyNode is GenTree previousNode) && ((previousNode.Flags & GTF_EXCEPT) != 0))
                             {
                                 SetNeedsTemp(previous);
@@ -191,13 +178,16 @@ public partial struct CallArgs
             }
         }
 
-#if TARGET_WASM
-        var hasRelevantStackArgs = compiler.compLocallocUsed;
-#elif FEATURE_FIXED_OUT_ARGS
-        var hasRelevantStackArgs = HasStackArgs && compiler.compLocallocUsed;
-#else
         var hasRelevantStackArgs = HasStackArgs;
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            hasRelevantStackArgs = compiler.compLocallocUsed;
+        }
+        else if (Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            hasRelevantStackArgs &= compiler.compLocallocUsed;
+        }
+
         if (hasRelevantStackArgs)
         {
             foreach (var argument in EarlyArgs)
@@ -207,12 +197,8 @@ public partial struct CallArgs
                 assert(!compiler.gtTreeContainsOper(node, GT_QMARK));
                 if (!argument.NeedTmp && argument.AbiInfo.HasAnyRegisterSegment)
                 {
-#if !FEATURE_FIXED_OUT_ARGS
-                    if (((node.Flags & GTF_EXCEPT) != 0) ||
+                    if ((!Configuration.FEATURE_FIXED_OUT_ARGS && ((node.Flags & GTF_EXCEPT) != 0)) ||
                         (compiler.compLocallocUsed && compiler.gtTreeContainsOper(node, GT_LCLHEAP)))
-#else
-                    if (compiler.compLocallocUsed && compiler.gtTreeContainsOper(node, GT_LCLHEAP))
-#endif
                     {
                         SetNeedsTemp(argument);
                         continue;
@@ -250,7 +236,11 @@ public partial struct CallArgs
             sortedArgs[argumentCount++] = argument;
         }
 
-#if HAS_FIXED_REGISTER_SET
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            return;
+        }
+
         assert(argumentCount > 0);
         var beginning = 0;
         var end = argumentCount - 1;
@@ -418,7 +408,6 @@ public partial struct CallArgs
 
         assert(beginning == end + 1);
         assert(remaining == 0);
-#endif
     }
 
     public unsafe void AddFinalArgsAndDetermineAbiInfo(Compiler compiler, GenTreeCall call)
@@ -441,11 +430,15 @@ public partial struct CallArgs
 
         // Keep the non-standard argument insertion rules in sync with fast tail-call mapping.
         var addStubCellArg = true;
-#if TARGET_WASM
-        addStubCellArg = false;
-#elif TARGET_X86
-        addStubCellArg = compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            addStubCellArg = false;
+        }
+        else if (Configuration.TARGET_X86)
+        {
+            addStubCellArg = compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+        }
+
         if (call.IsVirtualStub && addStubCellArg && !call.IsTailCallViaJitHelper)
         {
             var stubAddress = compiler.fgGetStubAddrArg(call);
@@ -453,15 +446,9 @@ public partial struct CallArgs
                 NewCallArg.CreateForPrimitive(stubAddress).WithWellKnownArg(WellKnownArg.VirtualStubCell));
         }
 
-#if FEATURE_READYTORUN
-#if TARGET_WASM
-        var needsIndirectionCell = false;
-#elif TARGET_XARCH
-        // Ordinary xarch calls recover the cell from the return address, but fast tail calls cannot.
-        var needsIndirectionCell = call.IsR2RRelativeIndir && !call.IsDelegateInvoke && call.IsFastTailCall;
-#else
-        var needsIndirectionCell = call.IsR2RRelativeIndir && !call.IsDelegateInvoke;
-#endif
+        var needsIndirectionCell = Configuration.FEATURE_READYTORUN && !Configuration.TARGET_WASM &&
+            call.IsR2RRelativeIndir && !call.IsDelegateInvoke &&
+            (!Configuration.TARGET_XARCH || call.IsFastTailCall);
         if (needsIndirectionCell)
         {
             assert(call._entryPoint.addr is not null);
@@ -469,24 +456,23 @@ public partial struct CallArgs
 #if DEBUG
             address.TargetHandle = (nint)call._callMethHnd;
 #endif
-#if TARGET_ARM
-            // LSRA does not yet account for this register kill on non-VSD calls.
-            address.RegNum = REG_R2R_INDIRECT_PARAM;
-            address.Flags |= GTF_DONT_CSE;
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                // LSRA does not yet account for this register kill on non-VSD calls.
+                address.RegNum = REG_R2R_INDIRECT_PARAM;
+                address.Flags |= GTF_DONT_CSE;
+            }
+
             _ = InsertAfterThisOrFirst(
                 NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.R2RIndirectionCell));
         }
-#endif
 
-#if TARGET_WASM
-        if (!call.IsUnmanaged)
+        if (Configuration.TARGET_WASM && !call.IsUnmanaged)
         {
             var stackPointer = compiler.gtNewLclVarNode(TYP_I_IMPL, compiler.lvaWasmSpArg);
             _ = PushFront(NewCallArg.CreateForPrimitive(stackPointer)
                 .WithWellKnownArg(WellKnownArg.WasmShadowStackPointer));
         }
-#endif
 
         var info = new ClassifierInfo {
             CallConv = call.UnmanagedCallConv,

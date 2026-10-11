@@ -213,10 +213,11 @@ public sealed partial class Lowering
                     else
                     {
                         call._directCallAddress = address;
-#if FEATURE_READYTORUN
-                        call._entryPoint.addr = null;
-                        call._entryPoint.accessType = IAT_VALUE;
-#endif
+                        if (Configuration.FEATURE_READYTORUN)
+                        {
+                            call._entryPoint.addr = null;
+                            call._entryPoint.accessType = IAT_VALUE;
+                        }
                     }
                     break;
                 }

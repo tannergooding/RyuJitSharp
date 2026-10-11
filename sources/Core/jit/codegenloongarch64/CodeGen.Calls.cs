@@ -82,8 +82,7 @@ public sealed partial class CodeGen
             {
                 genConsumeReg(target);
             }
-#if FEATURE_READYTORUN
-            else if (call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir)
+            else if (Configuration.FEATURE_READYTORUN && (call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir))
             {
                 assert((call.IsR2RRelativeIndir && (call._entryPoint.accessType is IAT_PVALUE)) ||
                     (call.IsVirtualStubRelativeIndir && (call._entryPoint.accessType is IAT_VALUE)));
@@ -107,8 +106,6 @@ public sealed partial class CodeGen
                     tempReg, callAddressReg, 0);
                 InternalRegisters.Add(call, genRegMask(tempReg));
             }
-#endif
-
             return;
         }
 

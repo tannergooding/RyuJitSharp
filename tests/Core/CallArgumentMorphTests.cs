@@ -306,6 +306,11 @@ internal static unsafe class CallArgumentMorphTests
     public static void ReadyToRunCellsAreAddedOnlyForNonDelegateFastTailCalls(
         bool tailCall, bool delegateInvoke, bool expectedCell)
     {
+        if (!Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("ReadyToRun is disabled for this target.");
+        }
+
         WithCompiler(compiler => {
             var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
             call._entryPoint.accessType = InfoAccessType.IAT_PVALUE;

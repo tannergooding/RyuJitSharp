@@ -50,10 +50,14 @@ internal static unsafe class CodeGenRegisterCallOperandTests
         });
     }
 
-#if FEATURE_READYTORUN
     [Test]
     public static void ReadyToRunCellUsesTheNativeTargetRegister()
     {
+        if (!Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("ReadyToRun is disabled for this target.");
+        }
+
         WithCompiler((compiler, codeGen) =>
         {
             var call = new GenTreeCall(TYP_VOID);
@@ -70,7 +74,6 @@ internal static unsafe class CodeGenRegisterCallOperandTests
             Assert.That(s_assertions, Is.Zero, s_lastAssertion);
         });
     }
-#endif
 
 #if TARGET_AMD64 && SWIFT_SUPPORT
     [TestCase(TYP_LONG)]
