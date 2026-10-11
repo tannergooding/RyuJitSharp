@@ -12,6 +12,8 @@ internal static class Configuration
 
     internal static bool FEATURE_HAS_ZERO_REG => GetFeatureSwitch(nameof(FEATURE_HAS_ZERO_REG));
 
+    // Arm64 Windows uses a split ABI distinct from the usual Arm64 ABI.
+    // ARM32, LoongArch64, and RISC-V64 also use split arguments.
     internal static bool FEATURE_ARG_SPLIT => TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64;
 
     internal static bool FEATURE_MULTIREG_ARGS =>

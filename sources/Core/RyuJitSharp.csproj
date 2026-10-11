@@ -329,14 +329,6 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);ETW_EBP_FRAMED</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);ETW_EBP_FRAMED</DefineConstants>
     
-    <!-- FEATURE_ARG_SPLIT -->
-    <!--   Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from the official Arm64 ABI. -->
-    <!--   Case: splitting 16 byte struct between x7 and stack -->
-    <!--   LoongArch64's ABI supports FEATURE_ARG_SPLIT which splitting 16 byte struct between a7 and stack. -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64' or '$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_ARG_SPLIT</DefineConstants>
-
     <!-- FEATURE_FASTTAILCALL: Tail calls made as epilog+jmp -->
     <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_FASTTAILCALL</DefineConstants>

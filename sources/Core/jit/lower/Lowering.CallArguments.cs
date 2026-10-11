@@ -56,14 +56,12 @@ public sealed partial class Lowering
         }
 #endif
 
-#if FEATURE_ARG_SPLIT
-        if (compFeatureArgSplit() && abiInfo.IsSplitAcrossRegistersAndStack)
+        if (Configuration.FEATURE_ARG_SPLIT && compFeatureArgSplit() && abiInfo.IsSplitAcrossRegistersAndStack)
         {
             SplitArgumentBetweenRegistersAndStack(call, callArg);
             LowerArg(call, callArg);
             return;
         }
-#endif
 
         if (abiInfo.HasAnyRegisterSegment)
         {
