@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
@@ -16,6 +17,19 @@ internal static class TargetConfigurationTests
         Assert.That(TargetArchitecture.IsArmArch, Is.EqualTo(Configuration.TARGET_ARMARCH));
         Assert.That(TargetArchitecture.IsLoongArch64, Is.EqualTo(Configuration.TARGET_LOONGARCH64));
         Assert.That(TargetArchitecture.IsRiscV64, Is.EqualTo(Configuration.TARGET_RISCV64));
+
+        var expectedCpuName = Configuration.TARGET_X86 ? "x86"
+            : Configuration.TARGET_AMD64 ? "x64"
+            : Configuration.TARGET_ARM ? "arm"
+            : Configuration.TARGET_ARM64 ? "arm64"
+            : Configuration.TARGET_LOONGARCH64 ? "loongarch64"
+            : Configuration.TARGET_RISCV64 ? "riscv64"
+            : Configuration.TARGET_WASM && !Configuration.TARGET_64BIT ? "wasm32"
+            : throw new InvalidOperationException("Unsupported target architecture.");
+        Assert.That(Target.TgtCpuName, Is.EqualTo(expectedCpuName));
+        Assert.That(Target.TgtArgOrder, Is.EqualTo(
+            Configuration.TARGET_X86 ? Target.ARG_ORDER_L2R : Target.ARG_ORDER_R2L));
+        Assert.That(Target.TgtUnmanagedArgOrder, Is.EqualTo(Target.ARG_ORDER_R2L));
 
         var configuredArchitectures =
             (TargetArchitecture.IsX86 ? 1 : 0)
