@@ -73,11 +73,7 @@ public partial class Compiler
         {
             assert(block.LastNode is not null);
             switchTree = block.LastNode;
-#if TARGET_WASM
-            assert(switchTree.Oper is GT_SWITCH);
-#else
-            assert(switchTree.Oper is GT_SWITCH_TABLE);
-#endif
+            assert(switchTree.Oper == (Configuration.TARGET_WASM ? GT_SWITCH : GT_SWITCH_TABLE));
         }
         else
         {
@@ -158,14 +154,12 @@ public partial class Compiler
             // A switch with one non-default clause is equivalent to switchVal == 0.
             var switchVal = switchTree.AsUnOp().Op1;
             noway_assert(genActualTypeIsIntOrI(switchVal.Type));
-#if !TARGET_WASM
-            if (block.IsLIR)
+            if (!Configuration.TARGET_WASM && block.IsLIR)
             {
                 var jumpTable = switchTree.AsOp().Op2;
                 assert(jumpTable.Oper is GT_JMPTABLE);
                 block.Remove(jumpTable);
             }
-#endif
             JITDUMP($"\nConverting a switch ({FMT_BB(block.bbNum)}) with only one significant clause " +
                 "besides a default target to a conditional branch. Before:\n");
             DISPNODE(switchTree);

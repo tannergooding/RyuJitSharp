@@ -128,7 +128,7 @@ internal static unsafe class SwitchOptimizationTests
     {
         WithCompiler(NodeThreading.LIR, compiler => {
             var (block, node, _) = CreateSwitch(compiler, [0, 1]);
-            var table = node.AsOp().Op2;
+            var table = node.Oper is GT_SWITCH_TABLE ? node.AsOp().Op2 : null;
             var trueEdge = block.SwitchTargets.Cases[0];
             var falseEdge = block.SwitchTargets.Cases[1];
             CurrentLowering(compiler) = new Lowering(compiler, new LinearScan(compiler));
@@ -140,7 +140,7 @@ internal static unsafe class SwitchOptimizationTests
             Assert.That(block.TrueEdge, Is.SameAs(trueEdge));
             Assert.That(block.FalseEdge, Is.SameAs(falseEdge));
             Assert.That(block.Any(tree => tree.Oper is GT_JMPTABLE or GT_SWITCH_TABLE or GT_JTRUE), Is.False);
-            Assert.That(table.Prev is null && table.Next is null, Is.True);
+            Assert.That(table is null || (table.Prev is null && table.Next is null), Is.True);
             Assert.That(node.Prev is null && node.Next is null, Is.True);
             Assert.That(branch.Prev?.Next, Is.SameAs(branch));
 #if DEBUG
@@ -617,10 +617,18 @@ internal static unsafe class SwitchOptimizationTests
         GenTree node;
         if (block.IsLIR)
         {
-            var table = new GenTree(GT_JMPTABLE, TYP_I_IMPL);
-            node = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, value, table);
-            block.InsertAtEnd(value);
-            block.InsertAtEnd(table);
+            if (Configuration.TARGET_WASM)
+            {
+                node = new GenTreeUnOp(GT_SWITCH, TYP_VOID, value);
+                block.InsertAtEnd(value);
+            }
+            else
+            {
+                var table = new GenTree(GT_JMPTABLE, TYP_I_IMPL);
+                node = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, value, table);
+                block.InsertAtEnd(value);
+                block.InsertAtEnd(table);
+            }
             block.InsertAtEnd(node);
         }
         else
