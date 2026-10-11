@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universalizing the call tree in gentree/GenTreeCall.cs; replace its remaining TARGET_/FEATURE_ preprocessor branches with Configuration checks, add only necessary unavailable-target member placeholders, and validate call-tree tests across the target matrix.",
+    "nextAction": "Continue universalizing the call-node base and register-spill paths, starting with gentree/GenTree.cs; close its FEATURE_MULTIREG_RET branches with the related GenTree partials and validate call-tree tests across the target matrix.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize the remaining target/feature branches in gentree/CallArgs.Morph.cs, add explicit REG_NA aliases for target-unsupported ABI argument registers, and derive fixed-outgoing-argument, split-argument, and Swift switches from target configuration.",
-      "doneWhen": "Call argument placement and custom-register classification preserve each target's previous behavior through runtime checks; the file contains no target/feature preprocessor branches, and unsupported architecture registers cannot be selected.",
-      "validation": "CallArgumentMorphTests passed 77/77 in Debug on win-x64. FeatureConfigurationTests, including custom-register routing, passed 18/18 on win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64 using RyuJitTargetRuntimeIdentifier on the Windows host. `git diff --check` passed.",
+      "scope": "Universalize target/feature branches in gentree/GenTreeCall.cs and its directly required signature-capture, cloning, codegen, and target-configuration paths.",
+      "doneWhen": "GenTreeCall contains no target/feature preprocessor branches; Configuration checks preserve target behavior, call signature snapshots remain available for Debug and Wasm without embedding CORINFO_SIG_INFO in every call node, and unsupported multiregister operations remain terminating.",
+      "validation": "FeatureConfigurationTests passed 20/20 in Debug for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, browser-wasm, linux-riscv64, and linux-loongarch64 using RyuJitTargetRuntimeIdentifier on the Windows host; Release browser-wasm passed 20/20. Focused call/return tests passed 112/112 in Debug on win-x64. `git diff --check` passed.",
       "deferred": "FEATURE_READYTORUN preprocessor guards and its project DefineConstants entry are removed. The broader TARGET_/FEATURE_ preprocessor migration remains active across the JIT source and test trees. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {

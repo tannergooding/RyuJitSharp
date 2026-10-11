@@ -204,7 +204,7 @@ public sealed partial class CodeGen
 #if DEBUG
         if (!call.IsHelperCall())
         {
-            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>(call._callSig);
+            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>(call.CallSigInfo.Value);
         }
         genCheckTailCallEpilogRegisters(call);
 #endif

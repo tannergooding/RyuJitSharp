@@ -355,7 +355,8 @@ internal static unsafe class RiscVCodeGenPortTests
                 _returnType = TYP_VOID,
             };
 #if DEBUG
-            call._callSig.numArgs = 0;
+            call._callSig = new StrongBox<CORINFO_SIG_INFO>();
+            call._callSig.Value.numArgs = 0;
 #endif
             var failure = CaptureFatalJitException(() => codeGen.genCall(call));
 

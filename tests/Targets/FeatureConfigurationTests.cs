@@ -32,12 +32,65 @@ internal static class FeatureConfigurationTests
             Configuration.TARGET_LOONGARCH64 ||
             Configuration.TARGET_RISCV64;
         var supportsFixedOutArgs = supportsArgSplit || Configuration.TARGET_AMD64;
+        var supportsFastTailCall = supportsFixedOutArgs || Configuration.TARGET_WASM;
+        var supportsTailCallOpt = supportsArgSplit || Configuration.TARGET_AMD64;
         var supportsSwift = Configuration.TARGET_ARM64 ||
             (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX);
 
         Assert.That(Configuration.FEATURE_ARG_SPLIT, Is.EqualTo(supportsArgSplit));
         Assert.That(Configuration.FEATURE_FIXED_OUT_ARGS, Is.EqualTo(supportsFixedOutArgs));
+        Assert.That(Configuration.FEATURE_FASTTAILCALL, Is.EqualTo(supportsFastTailCall));
+        Assert.That(Configuration.FEATURE_TAILCALL_OPT, Is.EqualTo(supportsTailCallOpt));
         Assert.That(Configuration.SWIFT_SUPPORT, Is.EqualTo(supportsSwift));
+    }
+
+    [Test]
+    public static void CallTailCallMetadataMatchesTheTargetArchitecture()
+    {
+        WithCompiler(compiler =>
+        {
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callMoreFlags =
+                    GenTreeCallFlags.GTF_CALL_M_TAILCALL |
+                    GenTreeCallFlags.GTF_CALL_M_IMPLICIT_TAILCALL |
+                    GenTreeCallFlags.GTF_CALL_M_TAILCALL_TO_LOOP,
+            };
+            var supportsFastTailCall = Configuration.FEATURE_FASTTAILCALL || Configuration.TARGET_WASM;
+
+            Assert.That(call.GetNonStandardAddedArgCount(compiler),
+                Is.EqualTo(Configuration.TARGET_WASM ? 2 : 0));
+            Assert.That(call.IsFastTailCall, Is.EqualTo(supportsFastTailCall));
+            Assert.That(call.IsImplicitTailCall, Is.EqualTo(Configuration.FEATURE_TAILCALL_OPT));
+            Assert.That(call.IsTailCallConvertibleToLoop, Is.EqualTo(Configuration.FEATURE_TAILCALL_OPT));
+            Assert.That(call.IsTailCallViaJitHelper, Is.False);
+
+            call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_TAILCALL_VIA_JIT_HELPER;
+
+            Assert.That(call.IsTailCallViaJitHelper, Is.EqualTo(Configuration.TARGET_X86));
+            Assert.That(call.IsFastTailCall,
+                Is.EqualTo(supportsFastTailCall && !Configuration.TARGET_X86));
+        });
+    }
+
+    [Test]
+    public static void CallSignatureMetadataSurvivesTreeCloning()
+    {
+        WithCompiler(compiler =>
+        {
+            var callWithoutSignature = new GenTreeCall(TYP_VOID);
+            Assert.That(callWithoutSignature.CallSigInfo.Value.numArgs, Is.Zero);
+
+            var callSig = new StrongBox<CORINFO_SIG_INFO>(default);
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callSig = callSig,
+            };
+
+            var clone = compiler.gtCloneExpr(call).AsCall();
+
+            Assert.That(clone._callSig, Is.SameAs(callSig));
+        });
     }
 
     [Test]

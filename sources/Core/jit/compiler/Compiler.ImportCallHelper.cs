@@ -4016,10 +4016,14 @@ public partial class Compiler
         {
             assert(compiler.compCurBB is not null);
 
-#if DEBUG || TARGET_WASM
-            // In debug we want to be able to register callsites with the EE.
-            call._callSig = sigInfo;
+            var shouldCaptureCallSig = Configuration.TARGET_WASM;
+#if DEBUG
+            shouldCaptureCallSig = true;
 #endif
+            if (shouldCaptureCallSig)
+            {
+                call._callSig = new StrongBox<CORINFO_SIG_INFO>(sigInfo);
+            }
 
             // Final importer checks for calls flagged as tail calls.
             //

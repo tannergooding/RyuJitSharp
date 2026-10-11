@@ -1055,11 +1055,12 @@ public partial class Compiler
     }
 #endif
 
-#if TARGET_XARCH
     /// <summary>Answer the question: Is Vex encoding supported on this target</summary>
     /// <returns></returns>
-    public bool canUseVexEncoding() => compOpportunisticallyDependsOn(InstructionSet_AVX);
+    public bool canUseVexEncoding() =>
+        Configuration.TARGET_XARCH && compOpportunisticallyDependsOn(InstructionSet_AVX);
 
+#if TARGET_XARCH
     /// <summary>Answer the question: Is Evex encoding supported on this target</summary>
     /// <returns></returns>
     public bool canUseEvexEncoding() => compOpportunisticallyDependsOn(InstructionSet_AVX512);

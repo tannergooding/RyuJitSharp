@@ -14,10 +14,11 @@ public sealed class GenTreeCall : GenTree
 {
     internal CallArgs _args;
 
-#if DEBUG || TARGET_WASM
-    // Used to register callsites with the EE
-    internal CORINFO_SIG_INFO _callSig;
-#endif
+    // Avoid embedding the large EE signature in every call node; debug and Wasm callers retain it in a box.
+    internal StrongBox<CORINFO_SIG_INFO>? _callSig;
+
+    internal StrongBox<CORINFO_SIG_INFO> CallSigInfo =>
+        _callSig ??= new StrongBox<CORINFO_SIG_INFO>();
 
     internal _Anonymous1_e__Union _anonymous1;
 
@@ -36,7 +37,6 @@ public sealed class GenTreeCall : GenTree
     /// <summary>Only used for unmanaged calls, which cannot be tail-called</summary>
     internal ref CorInfoCallConvExtension _unmgdCallConv => ref _anonymous1.UnmgdCallConv;
 
-#if FEATURE_MULTIREG_RET
     // TODO-AllArch: enable for all call nodes to unify single-reg and multi-reg returns.
     internal ReturnTypeDesc _returnTypeDesc = new();
 
@@ -45,7 +45,6 @@ public sealed class GenTreeCall : GenTree
     private InlineArrayMaxMultiregCountMinusOne<regNumber> _otherRegs;
 
     private MultiRegSpillFlags _spillFlags;
-#endif
 
     // in addition to gtFlags
     internal GenTreeCallFlags _callMoreFlags;
@@ -354,10 +353,12 @@ public sealed class GenTreeCall : GenTree
     /// <summary>Count non-standard arguments added by morph, excluding those already present during import.</summary>
     public int GetNonStandardAddedArgCount(Compiler compiler)
     {
-#if TARGET_WASM
-        // Managed calls have shadow-stack and portable-entry-point arguments.
-        return IsUnmanaged ? 0 : 2;
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            // Managed calls have shadow-stack and portable-entry-point arguments.
+            return IsUnmanaged ? 0 : 2;
+        }
+
         if (IsUnmanaged && !compiler.opts.ShouldUsePInvokeHelpers)
         {
             return 1;
@@ -366,9 +367,8 @@ public sealed class GenTreeCall : GenTree
         {
             return 1;
         }
-
         return 0;
-#endif
+        return 0;
     }
 
     public GenTree? ControlExpr
@@ -389,14 +389,20 @@ public sealed class GenTreeCall : GenTree
 #nullable restore
 
     /// <summary>whether the call node returns its value in multiple return registers.</summary>
-#if FEATURE_MULTIREG_RET
     public bool HasMultiRegRetVal
     {
         get
         {
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-            return (_type is TYP_STRUCT) && (_returnTypeDesc.ReturnRegCount > 1);
-#else
+            if (!Configuration.FEATURE_MULTIREG_RET)
+            {
+                return false;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            {
+                return (_type is TYP_STRUCT) && (_returnTypeDesc.ReturnRegCount > 1);
+            }
+
             var result = false;
             var type = _type;
 
@@ -405,20 +411,14 @@ public sealed class GenTreeCall : GenTree
                 // Now it is a struct that is returned in registers.
                 result = _returnTypeDesc.IsMultiRegRetType;
             }
-#if TARGET_32BIT
-            else
+            else if (Configuration.TARGET_32BIT)
             {
                 result = varTypeIsLong(type);
             }
-#endif
 
             return result;
-#endif
         }
     }
-#else
-    public bool HasMultiRegRetVal => false;
-#endif
 
     /// <summary>Get the helper identifier for this call or <see cref="CORINFO_HELP_UNDEF" /> if this is not a helper call.</summary>
     public unsafe CorInfoHelpFunc HelperNum
@@ -465,28 +465,24 @@ public sealed class GenTreeCall : GenTree
         }
     }
 
-#if FEATURE_FASTTAILCALL || TARGET_WASM
     public bool IsFastTailCall
     {
         get
         {
-            var result = false;
-
-            if (IsTailCall)
+            if (!Configuration.FEATURE_FASTTAILCALL && !Configuration.TARGET_WASM)
             {
-#if TARGET_X86
-                result = (_callMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER) == 0;
-#else
-                result = true;
-#endif
+                return false;
             }
 
-            return result;
+            if (!IsTailCall)
+            {
+                return false;
+            }
+
+            return !Configuration.TARGET_X86 ||
+                ((_callMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER) == 0);
         }
     }
-#else
-    public bool IsFastTailCall => false;
-#endif
 
     public bool IsFatPointerCandidate
     {
@@ -537,11 +533,8 @@ public sealed class GenTreeCall : GenTree
     }
 
     /// <summary>true if this is marked for opportunistic tail calling.</summary>
-#if FEATURE_TAILCALL_OPT
-    public bool IsImplicitTailCall => (_callMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL) != 0;
-#else
-    public bool IsImplicitTailCall => false;
-#endif
+    public bool IsImplicitTailCall =>
+        Configuration.FEATURE_TAILCALL_OPT && ((_callMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL) != 0);
 
     [MemberNotNullWhen(true, nameof(_inlineCandidateInfo), nameof(_inlineCandidateInfoList))]
     public bool IsInlineCandidate => (Flags & GTF_CALL_INLINE_CANDIDATE) != 0;
@@ -602,19 +595,13 @@ public sealed class GenTreeCall : GenTree
     /// <summary>true implies that tail call flowgraph morhphing has performed final checks and committed to making a tail call.</summary>
     public bool IsTailCall => (_callMoreFlags & GTF_CALL_M_TAILCALL) != 0;
 
-#if FEATURE_TAILCALL_OPT
-    public bool IsTailCallConvertibleToLoop => (_callMoreFlags & GTF_CALL_M_TAILCALL_TO_LOOP) != 0;
-#else
-    public bool IsTailCallConvertibleToLoop => false;
-#endif
+    public bool IsTailCallConvertibleToLoop =>
+        Configuration.FEATURE_TAILCALL_OPT && ((_callMoreFlags & GTF_CALL_M_TAILCALL_TO_LOOP) != 0);
 
     /// <summary>Check whether this is a tailcall dispatched via JIT helper.</summary>
     /// <remarks>We only use this mechanism on x86 as it is faster than our other more general tailcall mechanism.</remarks>
-#if TARGET_X86
-    public bool IsTailCallViaJitHelper => IsTailCall && ((_callMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER) != 0);
-#else
-    public bool IsTailCallViaJitHelper =>false;
-#endif
+    public bool IsTailCallViaJitHelper =>
+        Configuration.TARGET_X86 && IsTailCall && ((_callMoreFlags & GTF_CALL_M_TAILCALL_VIA_JIT_HELPER) != 0);
 
     /// <summary></summary>
     /// <remarks>Note that the distinction of whether tail prefixed or an implicit tail call is maintained on a call node till fgMorphCall() after which it will be either a tail call (i.e. IsTailCall() is true) or a non-tail call.</remarks>
@@ -636,10 +623,9 @@ public sealed class GenTreeCall : GenTree
 
     public bool NeedsNullCheck => (Flags & GTF_CALL_NULLCHECK) != 0;
 
-#if TARGET_XARCH
     public unsafe bool NeedsVzeroupper(Compiler compiler)
     {
-        if (!compiler.canUseVexEncoding())
+        if (!Configuration.TARGET_XARCH || !compiler.canUseVexEncoding())
         {
             return false;
         }
@@ -697,14 +683,12 @@ public sealed class GenTreeCall : GenTree
 
         return needsVzeroupper;
     }
-#endif
 
     public bool NormalizesSmallTypesOnReturn => UnmanagedCallConv is CorInfoCallConvExtension.Managed;
 
-#if SWIFT_SUPPORT
-    public bool HasSwiftErrorHandling => (UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
+    public bool HasSwiftErrorHandling => Configuration.SWIFT_SUPPORT &&
+        (UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
         (Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null);
-#endif
 
     /// <summary>The return type handle of the call if it is a struct; always available</summary>
     public unsafe CORINFO_CLASS_HANDLE RetClsHnd
@@ -722,31 +706,41 @@ public sealed class GenTreeCall : GenTree
 
     public unsafe void InitializeStructReturnType(Compiler comp, CORINFO_CLASS_HANDLE retClsHnd, CorInfoCallConvExtension callConv)
     {
-#if FEATURE_MULTIREG_RET
-        _returnTypeDesc.InitializeStructReturnType(comp, retClsHnd, callConv);
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            _returnTypeDesc.InitializeStructReturnType(comp, retClsHnd, callConv);
+        }
     }
 
     public void InitializeLongReturnType()
     {
-#if FEATURE_MULTIREG_RET
-        _returnTypeDesc.InitializeLongReturnType();
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            _returnTypeDesc.InitializeLongReturnType();
+        }
     }
 
     public void ResetReturnType()
     {
-#if FEATURE_MULTIREG_RET
-        _returnTypeDesc.Reset();
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            _returnTypeDesc.Reset();
+        }
     }
 
     /// <summary>get the type descriptor of return value of the call</summary>
-#if FEATURE_MULTIREG_RET
-    internal ref readonly ReturnTypeDesc ReturnTypeDesc => ref _returnTypeDesc;
-#else
-    public ref readonly ReturnTypeDesc ReturnTypeDesc => ref Unsafe.NullRef<ReturnTypeDesc>();
-#endif
+    public ref readonly ReturnTypeDesc ReturnTypeDesc
+    {
+        get
+        {
+            if (Configuration.FEATURE_MULTIREG_RET)
+            {
+                return ref _returnTypeDesc;
+            }
+
+            return ref Unsafe.NullRef<ReturnTypeDesc>();
+        }
+    }
 
     /// <summary>Returns true if the ABI dictates that this call should get a ret buf arg.</summary>
     /// <remarks>This may be out of sync with gtArgs.HasRetBuffer during import until we actually create the ret buffer.</remarks>
@@ -836,36 +830,50 @@ public sealed class GenTreeCall : GenTree
 
     public void ClearOtherRegs()
     {
-#if FEATURE_MULTIREG_RET
-        Span<regNumber> otherRegs = _otherRegs;
-        otherRegs.Fill(REG_NA);
-        _spillFlags = 0;
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            Span<regNumber> otherRegs = _otherRegs;
+            otherRegs.Fill(REG_NA);
+            _spillFlags = 0;
+        }
     }
 
     public void CopyOtherRegs(GenTreeCall tree)
     {
-#if FEATURE_MULTIREG_RET
-        Span<regNumber> otherRegs = tree._otherRegs;
-        otherRegs.CopyTo(_otherRegs);
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            Span<regNumber> otherRegs = tree._otherRegs;
+            otherRegs.CopyTo(_otherRegs);
+        }
     }
 
     public void CopyOtherRegFlags(GenTreeCall fromCall)
     {
-#if FEATURE_MULTIREG_RET
-        _spillFlags = fromCall._spillFlags;
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            _spillFlags = fromCall._spillFlags;
+        }
     }
 
-#if FEATURE_MULTIREG_RET
-    public GenTreeFlags GetRegSpillFlagByIdx(byte index) => GetMultiRegSpillFlagsByIdx(_spillFlags, index);
+    public GenTreeFlags GetRegSpillFlagByIdx(byte index)
+    {
+        if (!Configuration.FEATURE_MULTIREG_RET)
+        {
+            unreached();
+        }
+
+        return GetMultiRegSpillFlagsByIdx(_spillFlags, index);
+    }
 
     public void SetRegSpillFlagByIdx(GenTreeFlags flags, byte index)
     {
+        if (!Configuration.FEATURE_MULTIREG_RET)
+        {
+            unreached();
+        }
+
         _spillFlags = SetMultiRegSpillFlagsByIdx(_spillFlags, flags, index);
     }
-#endif
 
     public InlineCandidateInfo GetGdvCandidateInfo(byte index)
     {
@@ -896,12 +904,10 @@ public sealed class GenTreeCall : GenTree
         {
             result = RegNum;
         }
-#if FEATURE_MULTIREG_RET
-        else
+        else if (Configuration.FEATURE_MULTIREG_RET)
         {
             result = _otherRegs[idx - 1];
         }
-#endif
 
         return result;
     }
@@ -914,34 +920,35 @@ public sealed class GenTreeCall : GenTree
         {
             RegNum = reg;
         }
-#if FEATURE_MULTIREG_RET
-        else
+        else if (Configuration.FEATURE_MULTIREG_RET)
         {
             _otherRegs[idx - 1] = reg;
             assert(_otherRegs[idx - 1] == reg);
         }
-#else
-        unreached();
-#endif
+        else
+        {
+            unreached();
+        }
     }
 
     public regMaskTP GetOtherRegMask()
     {
         var mask = RBM_NONE;
 
-#if FEATURE_MULTIREG_RET
-        for (var i = 0; i < MAX_RET_REG_COUNT - 1; i++)
+        if (Configuration.FEATURE_MULTIREG_RET)
         {
-            var reg = _otherRegs[i];
-            if (reg != REG_NA)
+            for (var i = 0; i < MAX_RET_REG_COUNT - 1; i++)
             {
-                mask |= regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
-                continue;
-            }
+                var reg = _otherRegs[i];
+                if (reg != REG_NA)
+                {
+                    mask |= regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+                    continue;
+                }
 
-            break;
+                break;
+            }
         }
-#endif
 
         return mask;
     }

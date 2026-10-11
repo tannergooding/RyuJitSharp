@@ -1332,13 +1332,11 @@ public partial class Compiler
 
         copy._args.InternalCopyFrom(compiler, tree._args);
 
-#if DEBUG || TARGET_WASM
         // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
-        // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
+        // we only really need one physical copy of it. Therefore a shallow box reference copy will suffice.
         // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
         // because the inlinee still uses the inliner's memory allocator anyway.)
         copy._callSig = tree._callSig;
-#endif
         // TailCallInfo or AsyncInfo or UnmgdCallConv
         copy._anonymous1 = tree._anonymous1;
 

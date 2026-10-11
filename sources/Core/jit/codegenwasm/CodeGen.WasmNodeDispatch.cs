@@ -1239,7 +1239,7 @@ public sealed partial class CodeGen
 #if DEBUG
         if (!call.IsHelperCall())
         {
-            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>(call._callSig);
+            parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>(call.CallSigInfo.Value);
         }
 #endif
 
@@ -1285,10 +1285,12 @@ public sealed partial class CodeGen
         {
             CORINFO_SIG_INFO sigInfoLocal = default;
             CORINFO_SIG_INFO* sigInfoCall = null;
+            var callSig = call._callSig;
 
-            if ((call._callSig.pSig is not null) || (call._callSig.methodSignature is not null))
+            if ((callSig is not null) &&
+                ((callSig.Value.pSig is not null) || (callSig.Value.methodSignature is not null)))
             {
-                sigInfoLocal = call._callSig;
+                sigInfoLocal = callSig.Value;
                 sigInfoCall = &sigInfoLocal;
             }
 

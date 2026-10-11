@@ -17,9 +17,15 @@ internal static class Configuration
     internal static bool FEATURE_FIXED_OUT_ARGS =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 
+    internal static bool FEATURE_FASTTAILCALL =>
+        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || TARGET_AMD64;
+
     internal static bool FEATURE_MULTIREG_RET => GetFeatureSwitch(nameof(FEATURE_MULTIREG_RET));
 
     internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
+
+    internal static bool FEATURE_TAILCALL_OPT =>
+        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 
     internal static bool HAS_FIXED_REGISTER_SET => !TARGET_WASM;
 

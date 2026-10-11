@@ -328,7 +328,8 @@ internal static unsafe class CodeGenCallInstructionTests
             _returnType = type,
         };
 #if DEBUG
-        call._callSig.numArgs = 3;
+        call._callSig = new StrongBox<CORINFO_SIG_INFO>();
+        call._callSig.Value.numArgs = 3;
 #endif
         return call;
     }
