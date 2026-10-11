@@ -95,12 +95,10 @@ public partial class Compiler
         }
 
         var arg = call.Args.Head;
-#if TARGET_WASM
-        if (arg?.WellKnownArg is WellKnownArg.WasmShadowStackPointer)
+        if (Configuration.TARGET_WASM && (arg?.WellKnownArg is WellKnownArg.WasmShadowStackPointer))
         {
             arg = arg.Next;
         }
-#endif
         ValueNumPair result;
         if (arity == 0)
         {
@@ -155,14 +153,17 @@ public partial class Compiler
         }
 
         call._vnPair = result;
-#if TARGET_WASM
-        if (!unique && (arg is not null))
+        if (Configuration.TARGET_WASM)
         {
-            assert(arg.WellKnownArg is WellKnownArg.WasmPortableEntryPoint);
+            if (!unique && (arg is not null))
+            {
+                assert(arg.WellKnownArg is WellKnownArg.WasmPortableEntryPoint);
+            }
         }
-#else
-        assert(arg is null || unique);
-#endif
+        else
+        {
+            assert(arg is null || unique);
+        }
     }
 
     public unsafe bool fgValueNumberSpecialIntrinsic(GenTreeCall call)

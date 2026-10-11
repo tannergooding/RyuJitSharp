@@ -171,6 +171,36 @@ internal static unsafe class ValueNumCallTests
         });
     }
 
+    [Test]
+    public static void WasmShadowStackArgumentIsSkippedWhenValueNumberingAllocations()
+    {
+        WithStore((compiler, store) =>
+        {
+            var call = Helper(CORINFO_HELP_NEWARR_1_DIRECT, TYP_REF);
+            var shadowStackPointer = Argument(
+                compiler, store, TYP_I_IMPL, store.VNForIntPtrCon(123));
+            var classHandle = Argument(
+                compiler, store, TYP_I_IMPL, store.VNForHandle(456, GTF_ICON_CLASS_HDL));
+            var length = Argument(compiler, store, TYP_INT, store.VNForIntCon(7));
+            if (Configuration.TARGET_WASM)
+            {
+                _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(shadowStackPointer)
+                    .WithWellKnownArg(WellKnownArg.WasmShadowStackPointer));
+            }
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(classHandle));
+            _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(length));
+
+            compiler.fgValueNumberHelperCallFunc(call, VNF_JitNewArr,
+                ValueNumStore.VNPForEmptyExcSet());
+
+            var app = new VNFuncApp();
+            Assert.That(store.GetVNFunc(store.VNNormalValue(call._vnPair.Liberal), ref app), Is.True);
+            Assert.That(app.Func, Is.EqualTo(VNF_JitNewArr));
+            Assert.That(app.GetArg(0), Is.EqualTo(store.VNForHandle(456, GTF_ICON_CLASS_HDL)));
+            Assert.That(app.GetArg(1), Is.EqualTo(store.VNForIntCon(7)));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void CctorHelperMutatesHeapUnlessHoistable(bool hoistable)
