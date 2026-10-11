@@ -70,7 +70,7 @@ internal static class Arm64InstructionCodeTests
         var instructions = 0;
         for (var ordinal = 1; ordinal < Codes(1).Length; ordinal++)
         {
-            var ins = (instruction)ordinal;
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(ordinal);
             if (Format(emitter, ins) != group)
             {
                 continue;
@@ -94,7 +94,7 @@ internal static class Arm64InstructionCodeTests
         var direct = 0;
         for (var ordinal = 1; ordinal < Codes(1).Length; ordinal++)
         {
-            var ins = (instruction)ordinal;
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(ordinal);
             var format = Format(emitter, ins);
             if (format is >= IF_EN9 and <= IF_EN2Q)
             {
@@ -135,15 +135,16 @@ internal static class Arm64InstructionCodeTests
         var codes = Codes(encoding);
         Assert.That(codes.Length, Is.EqualTo(expectedLength));
         Assert.That(codes[0], Is.EqualTo(BAD_CODE));
-        Assert.That((int)INS_invalid, Is.Zero);
-        Assert.That((int)INS_mov, Is.EqualTo(1));
+        Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_invalid), Is.Zero);
+        Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_mov), Is.EqualTo(1));
         if (encoding == 1)
         {
-            Assert.That((int)INS_sm4e, Is.EqualTo(expectedLength - 1));
+            Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sm4e), Is.EqualTo(expectedLength - 1));
             Assert.That(codes[^1], Is.EqualTo(0xCEC08400u));
 #if FEATURE_LOOP_ALIGN
-            Assert.That(codes[(int)INS_align], Is.EqualTo(BAD_CODE));
-            Assert.That((int)INS_eor3, Is.EqualTo((int)INS_align + 1));
+            var alignOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_align);
+            Assert.That(codes[alignOrdinal], Is.EqualTo(BAD_CODE));
+            Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_eor3), Is.EqualTo(alignOrdinal + 1));
 #endif
         }
     }
@@ -169,7 +170,8 @@ internal static class Arm64InstructionCodeTests
             () => result = Code(NewEmitter(), INS_invalid, IF_NONE));
 
         Assert.That(assertions, Is.EqualTo<string[]>([
-            "s_instructionFormats[(int)ins] != IF_NONE", "(code != BAD_CODE)",
+            "s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE",
+            "(code != BAD_CODE)",
         ]));
         Assert.That(result, Is.EqualTo(BAD_CODE));
     }

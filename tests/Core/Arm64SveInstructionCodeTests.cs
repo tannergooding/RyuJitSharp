@@ -87,8 +87,9 @@ internal static class Arm64SveInstructionCodeTests
         };
         Assert.That(codes.Length, Is.EqualTo(length));
         Assert.That(codes[0], Is.EqualTo(BAD_CODE));
-        Assert.That(unchecked((uint)INS_sve_mov - (uint)INS_sve_invalid), Is.EqualTo(1u));
-        Assert.That(unchecked((uint)INS_sve_st1q - (uint)INS_sve_invalid), Is.EqualTo(605u));
+        var invalidOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sve_invalid);
+        Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sve_mov) - invalidOrdinal, Is.EqualTo(1));
+        Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sve_st1q) - invalidOrdinal, Is.EqualTo(605));
     }
 
 #if DEBUG
@@ -109,7 +110,8 @@ internal static class Arm64SveInstructionCodeTests
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
             () => result = Code(NewEmitter(), INS_sve_invalid, IF_NONE));
         Assert.That(assertions, Is.EqualTo<string[]>([
-            "s_instructionFormats[(int)ins] != IF_NONE", "(code != BAD_CODE)",
+            "s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE",
+            "(code != BAD_CODE)",
         ]));
         Assert.That(result, Is.EqualTo(BAD_CODE));
     }

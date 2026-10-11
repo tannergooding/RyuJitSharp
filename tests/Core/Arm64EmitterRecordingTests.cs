@@ -151,7 +151,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That((int)IF_COUNT, Is.EqualTo(599));
         Assert.That(formats.Length, Is.EqualTo(1158));
         Assert.That(flags.Length, Is.EqualTo(formats.Length + 1));
-        Assert.That((int)INS_lea, Is.EqualTo(formats.Length));
+        Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_lea), Is.EqualTo(formats.Length));
         Assert.That(flags[formats.Length], Is.EqualTo((byte)0));
         var rows = new StringBuilder();
         for (var index = 0; index < (int)IF_COUNT; index++)
@@ -160,7 +160,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
         for (var index = 0; index < formats.Length; index++)
         {
-            _ = rows.Append(FormattableString.Invariant($"I {index} {(instruction)index} {(uint)formats[index]} {flags[index]}\n"));
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(index);
+            _ = rows.Append(FormattableString.Invariant($"I {index} {ins} {(uint)formats[index]} {flags[index]}\n"));
         }
 
         // Native macro expansion of emitfmtsarm64{,sve}.h and instrsarm64{,sve}.h
