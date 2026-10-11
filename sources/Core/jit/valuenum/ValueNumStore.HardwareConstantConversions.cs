@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_SIMD
 using System;
 using System.Diagnostics;
 
@@ -13,39 +12,32 @@ public sealed partial class ValueNumStore
 {
     public ValueNum VNBroadcastForSimdType(var_types type, var_types baseType, ValueNum operand)
     {
+        EnsureSimdSupported();
         assert(varTypeIsSimd(type));
-        switch (type)
+        if (type is TYP_SIMD_ARM64)
         {
-#if TARGET_ARM64
-            case TYP_SIMD_ARM64:
-            {
-                var value = BroadcastConstantToSimdScalable(baseType, operand);
-                return VNForSimdScalableCon(value);
-            }
-#endif
+            EnsureArm64SimdSupported();
+            var value = BroadcastConstantToSimdScalable(baseType, operand);
 
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
-            {
-                return VNForGenericCon(type, GetSimdArgumentBytes(type, baseType, operand));
-            }
-
-            default:
-            {
-                throw new UnreachableException();
-            }
+            return VNForSimdScalableCon(value);
         }
+
+        if (type is TYP_SIMD32 or TYP_SIMD64)
+        {
+            EnsureXarchSimdSupported();
+        }
+
+        return type switch {
+            TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64
+                => VNForGenericCon(type, GetSimdArgumentBytes(type, baseType, operand)),
+            _ => throw new UnreachableException(),
+        };
     }
 
-#if TARGET_ARM64
-#if FEATURE_HW_INTRINSICS
     public simdscalable_t GetConstantSimdScalable(var_types baseType, ValueNum operand)
     {
+        EnsureHardwareIntrinsicsSupported();
+        EnsureArm64SimdSupported();
         assert(IsVNConstant(operand));
 
         if (TypeOfVN(operand) == TYP_SIMD_ARM64)
@@ -55,10 +47,10 @@ public sealed partial class ValueNumStore
 
         return BroadcastConstantToSimdScalable(baseType, operand);
     }
-#endif
 
     private simdscalable_t BroadcastConstantToSimdScalable(var_types baseType, ValueNum operand)
     {
+        EnsureArm64SimdSupported();
         assert(IsVNConstant(operand));
         assert(!varTypeIsSimd(TypeOfVN(operand)));
         var index = default(simd8_t);
@@ -72,24 +64,17 @@ public sealed partial class ValueNumStore
             Index = index,
         };
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS
     private ValueNum EvaluateSimdCvtMaskToVectorVN(var_types type, var_types baseType, ValueNum operand)
     {
-        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
-        {
-            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
-        }
+        EnsureHardwareIntrinsicsSupported();
+        EnsureSimdSupported();
+        EnsureMaskedHardwareIntrinsicsAvailable();
 
         var argument = GetConstantSimdMaskValue(operand);
-#if TARGET_ARM64
-        if (argument.IsScalable && (type != TYP_SIMD_ARM64))
+        if (type is TYP_SIMD_ARM64)
         {
-            return NoVN;
-        }
-        if (type == TYP_SIMD_ARM64)
-        {
+            EnsureArm64SimdSupported();
             if (!argument.IsScalable)
             {
                 return NoVN;
@@ -102,20 +87,28 @@ public sealed partial class ValueNumStore
             }
             return VNForSimdScalableCon(result);
         }
-#endif
+
+        if (argument.IsScalable)
+        {
+            return NoVN;
+        }
+
+        if (type is TYP_SIMD32 or TYP_SIMD64)
+        {
+            EnsureXarchSimdSupported();
+        }
 
         switch (type)
         {
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
-#if TARGET_XARCH
             case TYP_SIMD32:
             case TYP_SIMD64:
-#endif
             {
                 var result = new byte[type.Size];
                 EvaluateSimdCvtMaskToVector(baseType, result, argument.Fixed);
+
                 return VNForGenericCon(type, result);
             }
 
@@ -128,14 +121,13 @@ public sealed partial class ValueNumStore
 
     private ValueNum EvaluateSimdCvtVectorToMaskVN(var_types type, var_types baseType, ValueNum operand)
     {
-        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
-        {
-            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
-        }
+        EnsureHardwareIntrinsicsSupported();
+        EnsureSimdSupported();
+        EnsureMaskedHardwareIntrinsicsAvailable();
 
-#if TARGET_ARM64
-        if (type == TYP_SIMD_ARM64)
+        if (type is TYP_SIMD_ARM64)
         {
+            EnsureArm64SimdSupported();
             var argument = GetConstantSimdScalable(operand);
             var result = default(simdmaskscalable_t);
             if (!EvaluateSimdCvtScalableVectorToMask(baseType, ref result, argument))
@@ -144,21 +136,24 @@ public sealed partial class ValueNumStore
             }
             return VNForSimdMaskScalableCon(result);
         }
-#endif
+
+        if (type is TYP_SIMD32 or TYP_SIMD64)
+        {
+            EnsureXarchSimdSupported();
+        }
 
         switch (type)
         {
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
-#if TARGET_XARCH
             case TYP_SIMD32:
             case TYP_SIMD64:
-#endif
             {
                 var argument = GetSimdArgumentBytes(type, baseType, operand);
                 var result = default(simdmask_t);
                 EvaluateSimdCvtVectorToMask(baseType, ref result, argument);
+
                 return VNForSimdMaskCon(result);
             }
 
@@ -168,6 +163,20 @@ public sealed partial class ValueNumStore
             }
         }
     }
-#endif
+
+    private static void EnsureHardwareIntrinsicsSupported()
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Hardware intrinsics are not enabled for this target.");
+        }
+    }
+
+    private static void EnsureMaskedHardwareIntrinsicsAvailable()
+    {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
+        }
+    }
 }
-#endif

@@ -86,6 +86,16 @@ internal static class FeatureConfigurationTests
             if (!Configuration.FEATURE_SIMD)
             {
                 _ = Assert.Throws<PlatformNotSupportedException>(() => store.VNForSimd8Con(simd8_t.Zero));
+                _ = Assert.Throws<PlatformNotSupportedException>(() => store.VNForSimdType(16, TYP_INT));
+                _ = Assert.Throws<PlatformNotSupportedException>(() =>
+                    store.VNBroadcastForSimdType(TYP_SIMD16, TYP_INT, store.VNForIntCon(0)));
+
+                var input = new byte[16];
+                var result = new byte[16];
+                _ = Assert.Throws<PlatformNotSupportedException>(() =>
+                    Globals.EvaluateUnarySimd(genTreeOps.GT_NEG, false, TYP_INT, result, input));
+                _ = Assert.Throws<PlatformNotSupportedException>(() =>
+                    Globals.EvaluateBinarySimd(genTreeOps.GT_ADD, false, TYP_INT, result, input, input, input.Length));
                 return;
             }
 

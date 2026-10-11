@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize ValueNumStore.HardwareConstantConversions.cs: replace FEATURE_SIMD/TARGET_ARM64/TARGET_XARCH compile gates with Configuration checks while preserving scalable ARM64 conversions, xarch fixed-width conversions, and explicit unsupported paths.",
+    "nextAction": "Continue universalizing ValueNumStore.IntrinsicEvaluation.cs: replace the FEATURE_HW_INTRINSICS gate and target-specific intrinsic cases with Configuration checks, preserving each target's folding behavior and explicit unsupported paths.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize the SIMD var_types union and target-native ordinal encoding, then make ValueNumStore SIMD constant storage and lookup target-aware across Constants.cs, Storage.cs, BinaryInterning.cs, and scalable-vector metadata.",
-      "doneWhen": "The managed type table includes all target SIMD types; native ordinal/count conversions preserve per-target identities at value-number and diagnostic boundaries; fixed-width, scalable, and mask constants retain their storage semantics and unsupported paths terminate explicitly.",
-      "validation": "Release target suite: win-x64 285/285 and browser-wasm 330/330; ARM64 focused SIMD tests 25/25 and full suite 4,077 passed, 6 failed (jump-table, embedded-FMA, and constant-count-immediate expectations), 2 skipped. Debug FeatureConfigurationTests 6/6 on each target. Generated outputs matched integrated files by SHA-256; state.json and diff checks passed.",
-      "deferred": "Continue with HardwareConstantConversions.cs, then SIMD operation dispatch and target-specific intrinsic lowering, register allocation, and codegen guards in dependency-coherent batches."
+      "scope": "Universalize ValueNumStore's fixed-width and scalable SIMD constant conversions and their direct value-number and Globals evaluator helpers, retaining xarch, ARM64, and masked-intrinsic target semantics.",
+      "doneWhen": "The conversion and evaluator APIs compile without SIMD preprocessor gates, preserve configured target behavior, and throw explicitly when the required feature or architecture is unsupported; focused tests pass and the checkpoint is committed.",
+      "validation": "Focused target tests passed: Debug/Release win-x64 58/58 each; Debug/Release win-arm64 56/56 each; Release browser-wasm 27/27. The test suite's no-SIMD runtime branch is present but unavailable RIDs all configure FEATURE_SIMD=true.",
+      "deferred": "Continue with the remaining FEATURE_HW_INTRINSICS and target-specific intrinsic evaluation gates in ValueNumStore.IntrinsicEvaluation.cs, then proceed through other JIT files by dependency-coherent target/feature slices."
     },
     "parityEvidence": {
       "corelibCodegen": {

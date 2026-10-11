@@ -12,7 +12,14 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if FEATURE_SIMD
+    private static void EnsureSimdSupported()
+    {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new PlatformNotSupportedException("SIMD is not enabled for this target.");
+        }
+    }
+
     public static bool IsUnaryBitwiseOperation(genTreeOps oper) => oper is GT_LZCNT or GT_NOT;
 
     public static T EvaluateUnaryScalar<T>(genTreeOps oper, T value) where T : unmanaged, IBinaryInteger<T>
@@ -74,14 +81,18 @@ public static partial class Globals
     public static void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType,
         Span<byte> result, ReadOnlySpan<byte> arg0)
     {
+        EnsureSimdSupported();
         assert(result.Length == arg0.Length);
         if (scalar)
         {
-#if TARGET_XARCH
-            arg0.CopyTo(result);
-#elif TARGET_ARM64
-            result.Clear();
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                arg0.CopyTo(result);
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                result.Clear();
+            }
         }
 
         // Do not load signaling NaNs as floating point for bitwise operations.
@@ -189,9 +200,7 @@ public static partial class Globals
             output[index] = EvaluateUnaryScalar(oper, input[index]);
         }
     }
-#endif
 
-#if FEATURE_SIMD
     public static bool IsBinaryBitwiseOperation(genTreeOps oper)
     {
         return oper is GT_AND or GT_AND_NOT or GT_LSH or GT_OR or GT_OR_NOT or
@@ -201,15 +210,18 @@ public static partial class Globals
     public static T EvaluateBinaryScalarRSZ<T>(T arg0, T arg1) where T : unmanaged, IBinaryInteger<T>
     {
         var width = Unsafe.SizeOf<T>() * 8;
-#if TARGET_XARCH || TARGET_ARM64
-        // SIMD overshifts zero the lane rather than masking the count like scalar shifts.
-        if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
         {
-            return T.Zero;
+            // SIMD overshifts zero the lane rather than masking the count like scalar shifts.
+            if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+            {
+                return T.Zero;
+            }
         }
-#else
-        arg1 &= T.CreateTruncating(width - 1);
-#endif
+        else
+        {
+            arg1 &= T.CreateTruncating(width - 1);
+        }
 
         return arg0 >>> int.CreateTruncating(arg1);
     }
@@ -266,14 +278,17 @@ public static partial class Globals
 
             case GT_LSH:
             {
-#if TARGET_XARCH || TARGET_ARM64
-                if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+                if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
                 {
-                    return T.Zero;
+                    if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+                    {
+                        return T.Zero;
+                    }
                 }
-#else
-                arg1 &= T.CreateTruncating(width - 1);
-#endif
+                else
+                {
+                    arg1 &= T.CreateTruncating(width - 1);
+                }
 
                 return arg0 << int.CreateTruncating(arg1);
             }
@@ -320,16 +335,19 @@ public static partial class Globals
 
             case GT_RSH:
             {
-#if TARGET_XARCH || TARGET_ARM64
-                if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+                if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
                 {
-                    // Two shifts give sign fill for signed lanes and zero for unsigned lanes.
-                    arg0 >>= width - 1;
-                    arg1 = T.One;
+                    if ((arg1 < T.Zero) || (arg1 >= T.CreateTruncating(width)))
+                    {
+                        // Two shifts give sign fill for signed lanes and zero for unsigned lanes.
+                        arg0 >>= width - 1;
+                        arg1 = T.One;
+                    }
                 }
-#else
-                arg1 &= T.CreateTruncating(width - 1);
-#endif
+                else
+                {
+                    arg1 &= T.CreateTruncating(width - 1);
+                }
 
                 return arg0 >> int.CreateTruncating(arg1);
             }
@@ -423,15 +441,19 @@ public static partial class Globals
     public static void EvaluateBinarySimd(genTreeOps oper, bool scalar, var_types baseType,
         Span<byte> result, ReadOnlySpan<byte> arg0, ReadOnlySpan<byte> arg1, int simdSize)
     {
+        EnsureSimdSupported();
         assert((result.Length == arg0.Length) && (result.Length == arg1.Length));
         assert((simdSize >= 0) && (simdSize <= result.Length) && ((simdSize % baseType.Size) == 0));
         if (scalar)
         {
-#if TARGET_XARCH
-            arg0.CopyTo(result);
-#elif TARGET_ARM64
-            result.Clear();
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                arg0.CopyTo(result);
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                result.Clear();
+            }
         }
 
         if (IsBinaryBitwiseOperation(oper))
@@ -540,11 +562,10 @@ public static partial class Globals
             output[index] = EvaluateBinaryFloatingScalar(oper, input0[index], input1[index]);
         }
     }
-#endif
 
-#if FEATURE_SIMD
     public static void EvaluateExtractMSB(var_types baseType, ref simdmask_t result, ReadOnlySpan<byte> arg0)
     {
+        EnsureSimdSupported();
         var elementSize = GetSimdElementSize(baseType);
         assert(arg0.Length <= Unsafe.SizeOf<simd_t>());
         var count = arg0.Length / elementSize;
@@ -563,6 +584,7 @@ public static partial class Globals
 
     public static bool ElementsAreAllBitsSetOrZero(ReadOnlySpan<byte> value, var_types baseType, int elementCount)
     {
+        EnsureSimdSupported();
         var elementSize = GetSimdElementSize(baseType);
         assert((elementCount >= 0) && (elementCount <= value.Length / elementSize));
         for (var index = 0; index < elementCount; index++)
@@ -612,10 +634,10 @@ public static partial class Globals
         unreached();
         return 0;
     }
-#endif
 
     private static void EnsureMaskedHardwareIntrinsicsSupported()
     {
+        EnsureSimdSupported();
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
             throw new PlatformNotSupportedException("Masked hardware intrinsics are not enabled for this target.");
@@ -791,7 +813,6 @@ public static partial class Globals
         throw new PlatformNotSupportedException("Mask evaluation is only supported on xarch and ARM64.");
     }
 
-#if TARGET_XARCH
     // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>
     // These correspond to shuffle immediate byte in shufps SSE2 instruction.
     public const byte SHUFFLE_XXXX = 0x00; // 00 00 00 00
@@ -808,5 +829,4 @@ public static partial class Globals
     public const byte SHUFFLE_ZWXY = 0xB1; // 10 11 00 01
     public const byte SHUFFLE_WYZX = 0xD8; // 11 01 10 00
     public const byte SHUFFLE_WWYY = 0xF5; // 11 11 01 01
-#endif
 }

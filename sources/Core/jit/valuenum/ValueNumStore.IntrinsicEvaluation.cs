@@ -31,12 +31,12 @@ public sealed partial class ValueNumStore
         return new(liberal, conservative);
     }
 
-#if FEATURE_SIMD
     private const int SimdTypeBits = 8;
     private const int SimdTypeMask = (1 << SimdTypeBits) - 1;
 
     public ValueNum VNForSimdType(int simdSize, var_types simdBaseType, var_types auxiliaryType = TYP_UNKNOWN)
     {
+        EnsureSimdSupported();
         var encodedTypes = var_typesExtensions.ToNativeOrdinal(simdBaseType);
         var auxiliaryTypeOrdinal = var_typesExtensions.ToNativeOrdinal(auxiliaryType);
         assert(encodedTypes <= SimdTypeMask && auxiliaryTypeOrdinal <= SimdTypeMask);
@@ -49,7 +49,6 @@ public sealed partial class ValueNumStore
         var sizeVN = VNForIntCon(simdSize);
         return VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
     }
-#endif
 
     public ValueNum EvalMathFuncUnary(var_types type, NamedIntrinsic intrinsic, ValueNum argument)
     {
@@ -316,9 +315,9 @@ public sealed partial class ValueNumStore
     }
 #endif
 
-#if FEATURE_SIMD
     private byte[] GetSimdArgumentBytes(var_types type, var_types baseType, ValueNum operand)
     {
+        EnsureSimdSupported();
         if (varTypeIsSimd(TypeOfVN(operand)))
         {
             var input = GetConstantSimd(operand);
@@ -419,7 +418,6 @@ public sealed partial class ValueNumStore
         }
         return true;
     }
-#endif
 
 #if FEATURE_HW_INTRINSICS
     public ValueNum EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic tree, VNFunc func, ValueNum arg0VN,

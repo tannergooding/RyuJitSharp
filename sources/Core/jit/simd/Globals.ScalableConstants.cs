@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 && FEATURE_SIMD
 using System;
 using System.Diagnostics;
 using static RyuJitSharp.SimdScalableKind;
@@ -12,9 +11,19 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    private static void EnsureScalableSimdSupported()
+    {
+        EnsureSimdSupported();
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Scalable SIMD constants are only supported on ARM64.");
+        }
+    }
+
     public static bool EvaluateSimdCvtScalableVectorToMask(
         var_types baseType, ref simdmaskscalable_t result, in simdscalable_t value)
     {
+        EnsureScalableSimdSupported();
         if (value.IsZero)
         {
             result.BaseType = baseType;
@@ -35,6 +44,7 @@ public static partial class Globals
     public static bool EvaluateSimdCvtScalableMaskToVector(
         var_types baseType, ref simdscalable_t result, in simdmaskscalable_t value)
     {
+        EnsureScalableSimdSupported();
         if (value.IsZero)
         {
             result.BaseType = baseType;
@@ -70,6 +80,7 @@ public static partial class Globals
     public static bool TryEvaluateUnarySimdScalable(genTreeOps oper, bool scalar, var_types baseType,
         out simdscalable_t result, in simdscalable_t arg0)
     {
+        EnsureScalableSimdSupported();
         result = default;
         var elementSize = baseType.Size;
         if ((oper == GT_LZCNT) && (elementSize < sizeof(uint)))
@@ -158,4 +169,3 @@ public static partial class Globals
         return true;
     }
 }
-#endif
