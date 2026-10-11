@@ -64,6 +64,26 @@ internal static unsafe class SwitchLoweringTests
         });
     }
 
+    [Test]
+    public static void WasmSwitchRemainsForBrTableLowering()
+    {
+        WithSwitch([0, 1], 2, 2, true, 0.2, (_, lowering, source, node, _) => {
+            var next = LowerSwitch(lowering, node);
+
+            if (Configuration.TARGET_WASM)
+            {
+                Assert.That(next, Is.Null);
+                Assert.That(source.LastNode, Is.SameAs(node));
+                Assert.That(node.Prev?.Oper, Is.EqualTo(GT_LCL_VAR));
+            }
+            else
+            {
+                Assert.That(node.Prev, Is.Null);
+                Assert.That(node.Next, Is.Null);
+            }
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void RepeatedNonDefaultTargetNeedsOnlyTheUnsignedDefaultGuard(bool minopts)

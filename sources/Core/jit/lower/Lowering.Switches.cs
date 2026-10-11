@@ -46,10 +46,12 @@ public sealed partial class Lowering
         }
 
         noway_assert(jumpCount >= 2);
-#if TARGET_WASM
-        // Wasm br_table consumes the switch directly after the degenerate case.
-        return node.Next;
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            // Wasm br_table consumes the switch directly after the degenerate case.
+            return node.Next;
+        }
+
         var use = new LIR.Use(original, ref node.AsUnOp().Op1Ref, node);
         _ = ReplaceWithLclVar(use);
         var indexLocal = node.AsUnOp().Op1;
@@ -64,9 +66,10 @@ public sealed partial class Lowering
         {
             minimumTableCases++;
         }
-#if TARGET_ARM
-        minimumTableCases += 2;
-#endif
+        if (Configuration.TARGET_ARMARCH && !Configuration.TARGET_ARM64)
+        {
+            minimumTableCases += 2;
+        }
 
         // Match Windows native argument construction order and dump-visible IDs.
         var defaultLimit = compiler.gtNewIconNode(indexType.ActualType, jumpCount - 2);
@@ -310,9 +313,7 @@ public sealed partial class Lowering
         original.Remove(node.AsUnOp().Op1);
         original.Remove(node);
         compiler.fgInvalidateDfsTree();
-
         return followingNode;
-#endif
     }
 
     private bool TryLowerSwitchToBitTest(ReadOnlySpan<FlowEdge> jumpTable, int jumpCount, int targetCount,
