@@ -10,6 +10,8 @@ internal static class Configuration
 
     internal static bool FEATURE_HAS_ZERO_REG => GetFeatureSwitch(nameof(FEATURE_HAS_ZERO_REG));
 
+    internal static bool FEATURE_MULTIREG_RET => GetFeatureSwitch(nameof(FEATURE_MULTIREG_RET));
+
     internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
 
     internal static bool HAS_FIXED_REGISTER_SET => !TARGET_WASM;

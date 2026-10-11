@@ -92,8 +92,9 @@ public sealed class GenTreeMultiRegOp : GenTreeOp
 
     public void SetRegSpillFlagByIdx(GenTreeFlags flags, byte idx)
     {
-#if FEATURE_MULTIREG_RET
-        _spillFlags = SetMultiRegSpillFlagsByIdx(_spillFlags, flags, idx);
-#endif
+        if (Configuration.FEATURE_MULTIREG_RET)
+        {
+            _spillFlags = SetMultiRegSpillFlagsByIdx(_spillFlags, flags, idx);
+        }
     }
 }

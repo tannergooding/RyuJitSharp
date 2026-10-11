@@ -15,10 +15,38 @@ namespace RyuJitSharp.UnitTests;
 internal static class FeatureConfigurationTests
 {
     [Test]
+    public static void MultiRegisterReturnFeatureMatchesTheTargetArchitecture()
+    {
+        var supportsMultiRegRet = Configuration.TARGET_ARMARCH ||
+            Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64 ||
+            (Configuration.TARGET_XARCH && (!Configuration.TARGET_64BIT || Configuration.TARGET_UNIX));
+
+        Assert.That(Configuration.FEATURE_MULTIREG_RET, Is.EqualTo(supportsMultiRegRet));
+    }
+
+    [Test]
     public static void MaskedHardwareIntrinsicsMatchTheTargetArchitecture()
     {
         Assert.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,
             Is.EqualTo(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64));
+    }
+
+    [Test]
+    public static void SimdConstantConstructionMatchesTheConfiguredFeature()
+    {
+        WithCompiler(compiler =>
+        {
+            if (Configuration.FEATURE_SIMD)
+            {
+                _ = new GenTreeVecCon(TYP_SIMD8);
+            }
+            else
+            {
+                var exception = Assert.Throws<FatalJitException>(() => new GenTreeVecCon(TYP_SIMD8));
+                Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_IMPLLIMITATION));
+            }
+        });
     }
 
     [Test]

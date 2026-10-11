@@ -5,66 +5,89 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
 public sealed class GenTreeVecCon : GenTree
 {
-    private simd_t _simdVal;
-#if TARGET_ARM64
-    private simdscalable_t _simdScalableVal = simdscalable_t.Zero;
-#endif
+    [StructLayout(LayoutKind.Explicit)]
+    private struct SimdStorage
+    {
+        [FieldOffset(0)]
+        public simd_t Fixed;
+
+        [FieldOffset(0)]
+        public simdscalable_t Scalable;
+    }
+
+    private SimdStorage _simdStorage;
+
+    private ref simd_t _simdVal => ref _simdStorage.Fixed;
+
+    private ref simdscalable_t _simdScalableVal => ref _simdStorage.Scalable;
 
     public GenTreeVecCon(var_types type)
         : base(GT_CNS_VEC, type)
     {
-        assert(varTypeIsSimd(type));
+        var isSimd = varTypeIsSimd(type);
+
+        if (!Configuration.FEATURE_SIMD || !isSimd)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD constants are unsupported on this target.");
+        }
+
+        assert(isSimd);
+
+        if (type is TYP_SIMD_ARM64)
+        {
+            if (!Configuration.TARGET_ARM64)
+            {
+                throw new FatalJitException(CORJIT_IMPLLIMITATION, "Scalable SIMD constants are only supported on ARM64.");
+            }
+
+            _simdScalableVal = simdscalable_t.Zero;
+        }
     }
 
     [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
         Justification = "Invalid SIMD types must terminate compilation.")]
-    public bool IsAllBitsSet => Type switch {
-        TYP_SIMD8 => _simdVal.v64[0].IsAllBitsSet,
-        TYP_SIMD12 => _simdVal.v64[0].IsAllBitsSet && (_simdVal.u32[2] == uint.MaxValue),
-#if TARGET_ARM64
-        TYP_SIMD16 => _simdVal.v128[0].IsAllBitsSet,
-        TYP_SIMD_ARM64 => _simdScalableVal.IsAllBitsSet,
-#elif TARGET_XARCH
-        TYP_SIMD16 => _simdVal.v128[0].IsAllBitsSet,
-#else
-        TYP_SIMD16 => _simdVal.IsAllBitsSet,
-#endif
-#if TARGET_XARCH
-        TYP_SIMD32 => _simdVal.v256[0].IsAllBitsSet,
-        TYP_SIMD64 => _simdVal.IsAllBitsSet,
-#endif
-        _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected SIMD constant type."),
-    };
+    public bool IsAllBitsSet
+    {
+        get
+        {
+            if (Type is TYP_SIMD_ARM64)
+            {
+                RequireScalable();
+                return _simdScalableVal.IsAllBitsSet;
+            }
+
+            RequireFixedSize();
+
+            return _simdVal.AsSpan<byte>()[..Type.Size].IndexOfAnyExcept(byte.MaxValue) is -1;
+        }
+    }
 
     [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
         Justification = "Invalid SIMD types must terminate compilation.")]
-    public bool IsZero => Type switch {
-        TYP_SIMD8 => _simdVal.v64[0].IsZero,
-        TYP_SIMD12 => _simdVal.v64[0].IsZero && (_simdVal.u32[2] == 0),
-#if TARGET_ARM64
-        TYP_SIMD16 => _simdVal.v128[0].IsZero,
-        TYP_SIMD_ARM64 => _simdScalableVal.IsZero,
-#elif TARGET_XARCH
-        TYP_SIMD16 => _simdVal.v128[0].IsZero,
-#else
-        TYP_SIMD16 => _simdVal.IsZero,
-#endif
-#if TARGET_XARCH
-        TYP_SIMD32 => _simdVal.v256[0].IsZero,
-        TYP_SIMD64 => _simdVal.IsZero,
-#endif
-        _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected SIMD constant type."),
-    };
+    public bool IsZero
+    {
+        get
+        {
+            if (Type is TYP_SIMD_ARM64)
+            {
+                RequireScalable();
+                return _simdScalableVal.IsZero;
+            }
 
-#if TARGET_ARM64
+            RequireFixedSize();
+
+            return _simdVal.AsSpan<byte>()[..Type.Size].IndexOfAnyExcept((byte)0) is -1;
+        }
+    }
+
     [SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
         Justification = "Fixed-width consumers must not silently read scalable constants as SIMD16.")]
-#endif
     public ref simd_t SimdVal
     {
         get
@@ -75,17 +98,15 @@ public sealed class GenTreeVecCon : GenTree
         }
     }
 
-#if TARGET_ARM64
     public ref simdscalable_t SimdScalableVal
     {
         get
         {
-            assert(Type == TYP_SIMD_ARM64);
+            RequireScalable();
 
             return ref _simdScalableVal;
         }
     }
-#endif
 
     public static bool Equals(GenTreeVecCon left, GenTreeVecCon right)
     {
@@ -99,21 +120,17 @@ public sealed class GenTreeVecCon : GenTree
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
+            case TYP_SIMD32 when Configuration.TARGET_XARCH:
+            case TYP_SIMD64 when Configuration.TARGET_XARCH:
             {
                 // Compare active bytes, including NaN payloads and signed zero, but not SIMD12 padding.
                 return left._simdVal.AsSpan<byte>()[..left.Type.Size].SequenceEqual(right._simdVal.AsSpan<byte>()[..right.Type.Size]);
             }
 
-#if TARGET_ARM64
-            case TYP_SIMD_ARM64:
+            case TYP_SIMD_ARM64 when Configuration.TARGET_ARM64:
             {
                 return left._simdScalableVal == right._simdScalableVal;
             }
-#endif
 
             default:
             {
@@ -131,12 +148,25 @@ public sealed class GenTreeVecCon : GenTree
 
     private void RequireFixedSize()
     {
-#if TARGET_ARM64
         if (Type == TYP_SIMD_ARM64)
         {
             throw new FatalJitException(CORJIT_IMPLLIMITATION, "This vector operation requires fixed-width constant storage.");
         }
-#endif
+
+        if (!Configuration.FEATURE_SIMD ||
+            ((Type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH) ||
+            (Type is not (TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64)))
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected SIMD constant type.");
+        }
+    }
+
+    private void RequireScalable()
+    {
+        if (!Configuration.TARGET_ARM64 || Type != TYP_SIMD_ARM64)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Scalable SIMD constants are only supported on ARM64.");
+        }
     }
 
     private int GetFixedElementCount(var_types simdBaseType)
@@ -149,6 +179,11 @@ public sealed class GenTreeVecCon : GenTree
 #if FEATURE_HW_INTRINSICS
     public static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic node, ref simd_t simdVal)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Hardware intrinsic constant evaluation is unsupported on this target.");
+        }
+
         var intrinsic = node.HWIntrinsicId;
         var simdBaseType = node.SimdBaseType;
         var simdSize = node.SimdSize;
@@ -199,6 +234,11 @@ public sealed class GenTreeVecCon : GenTree
 
     public static bool HandleArgForHWIntrinsicCreate(GenTree arg, int argIndex, ref simd_t simdVal, var_types baseType)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new PlatformNotSupportedException("Hardware intrinsic constant evaluation is unsupported on this target.");
+        }
+
         switch (baseType)
         {
             case TYP_BYTE:
@@ -248,8 +288,8 @@ public sealed class GenTreeVecCon : GenTree
                     simdVal.i64[argIndex] = arg.AsIntConCommon().IntegralValue;
                     return true;
                 }
-#if !TARGET_64BIT
-                else if ((arg.Oper == GT_LONG) && arg.AsOp().Op1.Oper.IsCnsIntOrI && arg.AsOp().Op2.Oper.IsCnsIntOrI)
+                else if (Configuration.TARGET_32BIT && (arg.Oper == GT_LONG) &&
+                    arg.AsOp().Op1.Oper.IsCnsIntOrI && arg.AsOp().Op2.Oper.IsCnsIntOrI)
                 {
                     var value = (long)arg.AsOp().Op2.AsIntCon().IconValue;
                     value <<= 32;
@@ -257,7 +297,6 @@ public sealed class GenTreeVecCon : GenTree
                     simdVal.i64[argIndex] = value;
                     return true;
                 }
-#endif
 
                 assert(simdVal.i64[argIndex] == 0);
                 break;
@@ -309,10 +348,8 @@ public sealed class GenTreeVecCon : GenTree
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
+            case TYP_SIMD32 when Configuration.TARGET_XARCH:
+            case TYP_SIMD64 when Configuration.TARGET_XARCH:
             {
                 simd_t result = default;
                 var activeValue = _simdVal.AsSpan<byte>()[..Type.Size];
@@ -338,10 +375,8 @@ public sealed class GenTreeVecCon : GenTree
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
+            case TYP_SIMD32 when Configuration.TARGET_XARCH:
+            case TYP_SIMD64 when Configuration.TARGET_XARCH:
             {
                 simd_t result = default;
                 var activeValue = _simdVal.AsSpan<byte>()[..Type.Size];
@@ -351,8 +386,7 @@ public sealed class GenTreeVecCon : GenTree
                 return true;
             }
 
-#if TARGET_ARM64
-            case TYP_SIMD_ARM64:
+            case TYP_SIMD_ARM64 when Configuration.TARGET_ARM64:
             {
                 if (!TryEvaluateUnarySimdScalable(oper, scalar, baseType, out var result, _simdScalableVal))
                 {
@@ -362,8 +396,6 @@ public sealed class GenTreeVecCon : GenTree
 
                 return true;
             }
-#endif
-
             default:
             {
                 unreached();
