@@ -483,7 +483,7 @@ public partial class Compiler
         {
             assert(left.Type is TYP_LONG);
             var and = left.AsOp();
-            if (and.Op2.Oper is not GT_CNS_NATIVELONG)
+            if (!and.Op2.Oper.IsCnsNativeLong)
             {
                 return comparison;
             }

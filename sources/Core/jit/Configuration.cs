@@ -24,6 +24,8 @@ internal static class Configuration
 
     internal static bool TARGET_AMD64 => TARGET_XARCH && TARGET_64BIT;
 
+    internal static bool TARGET_32BIT => !TARGET_64BIT;
+
     internal static bool TARGET_LOONGARCH64 => GetFeatureSwitch(nameof(TARGET_LOONGARCH64));
 
     internal static bool TARGET_RISCV64 => GetFeatureSwitch(nameof(TARGET_RISCV64));

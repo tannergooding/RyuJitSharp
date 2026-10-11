@@ -18,10 +18,8 @@ public static partial class genTreeOpsExtensions
         GT_LE,          // GT_GT
         GT_TEST_NE,     // GT_TEST_EQ
         GT_TEST_EQ,     // GT_TEST_NE
-#if TARGET_XARCH
         GT_BITTEST_NE,  // GT_BITTEST_EQ
         GT_BITTEST_EQ,  // GT_BITTEST_NE
-#endif
     ];
 
     private static ReadOnlySpan<genTreeOps> s_swappedRelops => [
@@ -33,10 +31,8 @@ public static partial class genTreeOpsExtensions
         GT_LT,          // GT_GT
         GT_TEST_EQ,     // GT_TEST_EQ
         GT_TEST_NE,     // GT_TEST_NE
-#if TARGET_XARCH
         GT_BITTEST_EQ,  // GT_BITTEST_EQ
         GT_BITTEST_NE,  // GT_BITTEST_NE
-#endif
     ];
 
     extension(genTreeOps oper)
@@ -57,14 +53,14 @@ public static partial class genTreeOpsExtensions
                     return oper is >= GT_JCC and <= GT_CCMP;
                 }
 
-#if TARGET_32BIT
-                assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
-                return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_ADD_HI or GT_SUB_HI or GT_CCMP;
-#else
+                if (Configuration.TARGET_32BIT)
+                {
+                    assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
+                    return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_ADD_HI or GT_SUB_HI or GT_CCMP;
+                }
+
                 assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
                 return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_CCMP;
-#endif
-
             }
         }
 
@@ -144,11 +140,7 @@ public static partial class genTreeOpsExtensions
 
         public bool IsCnsMsk => Configuration.FEATURE_MASKED_HW_INTRINSICS && (oper is GT_CNS_MSK);
 
-#if FEATURE_SIMD
-        public bool IsCnsVec => oper is GT_CNS_VEC;
-#else
-        public bool IsCnsVec => false;
-#endif
+        public bool IsCnsVec => Configuration.FEATURE_SIMD && (oper is GT_CNS_VEC);
 
         public bool IsCommutative => (oper.Kind & GTK_COMMUTE) != 0;
 
@@ -157,13 +149,10 @@ public static partial class genTreeOpsExtensions
             get
             {
                 // Note that only GT_EQ to GT_GT are HIR nodes, GT_TEST and GT_BITTEST nodes are backend nodes only.
-#if TARGET_XARCH
                 assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE, GT_BITTEST_EQ, GT_BITTEST_NE));
-                return oper is >= GT_EQ and <= GT_BITTEST_NE;
-#else
-                assert(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
-                return oper is >= GT_EQ and <= GT_TEST_NE;
-#endif
+                return Configuration.TARGET_XARCH
+                    ? oper is >= GT_EQ and <= GT_BITTEST_NE
+                    : oper is >= GT_EQ and <= GT_TEST_NE;
             }
         }
 
@@ -175,13 +164,9 @@ public static partial class genTreeOpsExtensions
         {
             get
             {
-#if TARGET_WASM
                 assert(AreContiguous(GT_JCMP, GT_JTEST, GT_JCC));
-                return oper is GT_JTRUE or (>= GT_JCMP and <= GT_JCC) or GT_WASM_JEXCEPT;
-#else
-                assert(AreContiguous(GT_JCMP, GT_JTEST, GT_JCC));
-                return oper is GT_JTRUE or (>= GT_JCMP and <= GT_JCC);
-#endif
+                return oper is GT_JTRUE or (>= GT_JCMP and <= GT_JCC) ||
+                    (Configuration.TARGET_WASM && (oper is GT_WASM_JEXCEPT));
             }
         }
 
@@ -189,18 +174,18 @@ public static partial class genTreeOpsExtensions
         {
             get
             {
-#if FEATURE_SIMD
                 assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC, GT_CNS_MSK));
-                if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                if (Configuration.FEATURE_SIMD)
                 {
-                    return oper is >= GT_CNS_INT and <= GT_CNS_MSK;
+                    if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                    {
+                        return oper is >= GT_CNS_INT and <= GT_CNS_MSK;
+                    }
+
+                    return oper is >= GT_CNS_INT and <= GT_CNS_VEC;
                 }
 
-                return oper is >= GT_CNS_INT and <= GT_CNS_VEC;
-#else
-                assert(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_MSK));
                 return oper is >= GT_CNS_INT and <= GT_CNS_STR;
-#endif
             }
         }
 
@@ -210,11 +195,7 @@ public static partial class genTreeOpsExtensions
 
         public bool IsFieldList => oper is GT_FIELD_LIST;
 
-#if FEATURE_HW_INTRINSICS
-        public bool IsHWIntrinsic => oper is GT_HWINTRINSIC;
-#else
-        public bool IsHWIntrinsic => false;
-#endif
+        public bool IsHWIntrinsic => Configuration.FEATURE_HW_INTRINSICS && (oper is GT_HWINTRINSIC);
 
         public bool IsIndir
         {
@@ -236,11 +217,13 @@ public static partial class genTreeOpsExtensions
 
         public bool IsInitVal => oper is GT_INIT_VAL;
 
-#if TARGET_32BIT
-        public bool IsIntegralConst => oper is GT_CNS_INT or GT_CNS_LNG;
-#else
-        public bool IsIntegralConst => oper is GT_CNS_INT;
-#endif
+        public bool IsIntegralConst => Configuration.TARGET_32BIT
+            ? oper is GT_CNS_INT or GT_CNS_LNG
+            : oper is GT_CNS_INT;
+
+        public bool IsCnsNativeLong => Configuration.TARGET_64BIT
+            ? oper is GT_CNS_INT
+            : oper is GT_CNS_LNG;
 
         public bool IsInvariant => oper.IsConst || (oper is GT_LCL_ADDR or GT_FTN_ADDR);
 
@@ -275,31 +258,16 @@ public static partial class genTreeOpsExtensions
 
         public bool IsLocalStore => oper is GT_STORE_LCL_VAR or GT_STORE_LCL_FLD;
 
-#if TARGET_32BIT
-        public bool IsLong => oper is GT_CNS_LNG;
-#else
-        public bool IsLong => false;
-#endif
+        public bool IsLong => Configuration.TARGET_32BIT && (oper is GT_CNS_LNG);
 
         public bool IsMdArr => oper is GT_MDARR_LENGTH or GT_MDARR_LOWER_BOUND;
 
-#if TARGET_32BIT || TARGET_ARM64
-        public bool IsMul => oper is GT_MUL or GT_MULHI or GT_MUL_LONG;
-#else
-        public bool IsMul => oper is GT_MUL or GT_MULHI;
-#endif
+        public bool IsMul => oper is GT_MUL or GT_MULHI ||
+            ((Configuration.TARGET_32BIT || Configuration.TARGET_ARM64) && (oper is GT_MUL_LONG));
 
-#if FEATURE_HW_INTRINSICS
-        public bool IsMultiOp => oper is GT_HWINTRINSIC;
-#else
-        public bool IsMultiOp => false;
-#endif
+        public bool IsMultiOp => Configuration.FEATURE_HW_INTRINSICS && (oper is GT_HWINTRINSIC);
 
-#if TARGET_32BIT
-        public bool IsMultiRegOp => oper is GT_MUL_LONG;
-#else
-        public bool IsMultiRegOp => false;
-#endif
+        public bool IsMultiRegOp => Configuration.TARGET_32BIT && (oper is GT_MUL_LONG);
 
         public bool IsNonPhiLocal
         {
@@ -319,16 +287,19 @@ public static partial class genTreeOpsExtensions
 
         public bool IsPutArgStk => oper is GT_PUTARG_STK;
 
-#if TARGET_XARCH
         public bool IsRmwMemOp
         {
             get
             {
+                if (!Configuration.TARGET_XARCH)
+                {
+                    return false;
+                }
+
                 assert(AreContiguous(GT_OR, GT_XOR, GT_AND, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
                 return oper is GT_NOT or GT_NEG or GT_ADD or GT_SUB or (>= GT_OR and <= GT_ROR);
             }
         }
-#endif
 
         public bool IsRotate => oper is GT_ROL or GT_ROR;
 
@@ -343,29 +314,26 @@ public static partial class genTreeOpsExtensions
             }
         }
 
-#if TARGET_32BIT
-        public bool IsShiftLong => oper is GT_LSH_HI or GT_RSH_LO;
-#else
-        public bool IsShiftLong => false;
-#endif
+        public bool IsShiftLong => Configuration.TARGET_32BIT && (oper is GT_LSH_HI or GT_RSH_LO);
 
         public bool IsShiftOrRotate
         {
             get
             {
-#if TARGET_32BIT
-                assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
-                var result = oper is (>= GT_LSH and <= GT_ROR) or GT_LSH_HI or GT_RSH_LO;
+                if (Configuration.TARGET_32BIT)
+                {
+                    assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
+                    var longResult = oper is (>= GT_LSH and <= GT_ROR) or GT_LSH_HI or GT_RSH_LO;
 
-                assert(result == (oper.IsShift || oper.IsRotate || oper.IsShiftLong));
-                return result;
-#else
+                    assert(longResult == (oper.IsShift || oper.IsRotate || oper.IsShiftLong));
+                    return longResult;
+                }
+
                 assert(AreContiguous(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
                 var result = oper is >= GT_LSH and <= GT_ROR;
 
                 assert(result == (oper.IsShift || oper.IsRotate));
                 return result;
-#endif
             }
         }
 
@@ -398,13 +366,9 @@ public static partial class genTreeOpsExtensions
         {
             get
             {
-#if TARGET_32BIT
                 assert(AreContiguous(GT_ADD, GT_SUB, GT_MUL));
-                return oper is (>= GT_ADD and <= GT_MUL) or GT_CAST or GT_ADD_HI or GT_SUB_HI;
-#else
-                assert(AreContiguous(GT_ADD, GT_SUB, GT_MUL));
-                return oper is (>= GT_ADD and <= GT_MUL) or GT_CAST;
-#endif
+                return oper is (>= GT_ADD and <= GT_MUL) or GT_CAST ||
+                    (Configuration.TARGET_32BIT && (oper is GT_ADD_HI or GT_SUB_HI));
             }
         }
 

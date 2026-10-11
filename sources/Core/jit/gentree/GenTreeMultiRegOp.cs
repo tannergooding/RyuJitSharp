@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if !TARGET_64BIT
 namespace RyuJitSharp;
 
 public sealed class GenTreeMultiRegOp : GenTreeOp
@@ -98,4 +97,3 @@ public sealed class GenTreeMultiRegOp : GenTreeOp
 #endif
     }
 }
-#endif

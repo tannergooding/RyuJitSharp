@@ -31,9 +31,7 @@ public enum VNFunc
     VNF_CNS_LNG,
     VNF_CNS_DBL,
     VNF_CNS_STR,
-#if FEATURE_SIMD
     VNF_CNS_VEC,
-#endif
     VNF_CNS_MSK,
     VNF_NOT,
     VNF_NOP,
@@ -93,17 +91,14 @@ public enum VNFunc
     VNF_GT,
     VNF_TEST_EQ,
     VNF_TEST_NE,
-#if TARGET_XARCH
     VNF_BITTEST_EQ,
     VNF_BITTEST_NE,
-#endif
     VNF_SELECT,
     VNF_COMMA,
     VNF_QMARK,
     VNF_COLON,
     VNF_INDEX_ADDR,
     VNF_LEA,
-#if !TARGET_64BIT
     VNF_LONG,
     VNF_ADD_LO,
     VNF_ADD_HI,
@@ -111,17 +106,10 @@ public enum VNFunc
     VNF_SUB_HI,
     VNF_LSH_HI,
     VNF_RSH_LO,
-#endif
-#if FEATURE_HW_INTRINSICS
     VNF_HWINTRINSIC,
-#endif
     VNF_INC_SATURATE,
     VNF_MULHI,
-#if !TARGET_64BIT
     VNF_MUL_LONG,
-#elif TARGET_ARM64
-    VNF_MUL_LONG,
-#endif
     VNF_AND_NOT,
     VNF_OR_NOT,
     VNF_XOR_NOT,
@@ -129,9 +117,7 @@ public enum VNFunc
     VNF_BFX,
     VNF_CMP,
     VNF_TEST,
-#if TARGET_XARCH
     VNF_BT,
-#endif
     VNF_JCMP,
     VNF_JTEST,
     VNF_JCC,
@@ -144,7 +130,6 @@ public enum VNFunc
     VNF_SELECT_INVCC,
     VNF_SELECT_NEG,
     VNF_SELECT_NEGCC,
-#if TARGET_RISCV64
     VNF_SH1ADD,
     VNF_SH1ADD_UW,
     VNF_SH2ADD,
@@ -153,12 +138,9 @@ public enum VNFunc
     VNF_SH3ADD_UW,
     VNF_ADD_UW,
     VNF_SLLI_UW,
-#endif
-#if TARGET_RISCV64 || TARGET_XARCH
     VNF_BIT_SET,
     VNF_BIT_CLEAR,
     VNF_BIT_INVERT,
-#endif
     VNF_JTRUE,
     VNF_ARR_ELEM,
     VNF_CALL,
@@ -180,9 +162,7 @@ public enum VNFunc
     VNF_JMPTABLE,
     VNF_SWITCH_TABLE,
     VNF_PHYSREG,
-#if TARGET_WASM
     VNF_FRAME_SIZE,
-#endif
     VNF_RETURNTRAP,
     VNF_PUTARG_REG,
     VNF_PUTARG_STK,

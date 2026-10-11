@@ -8,13 +8,13 @@ namespace RyuJitSharp;
 public sealed class GenTreeLngCon : GenTreeIntConCommon
 {
     public GenTreeLngCon(long val)
-        : base(GT_CNS_NATIVELONG, TYP_LONG)
+        : base(Configuration.TARGET_64BIT ? GT_CNS_INT : GT_CNS_LNG, TYP_LONG)
     {
         LngValue = val;
     }
 
     internal GenTreeLngCon(long val, GenTree source, NodeThreading threading = NodeThreading.None)
-        : base(GT_CNS_NATIVELONG, TYP_LONG, source, threading)
+        : base(Configuration.TARGET_64BIT ? GT_CNS_INT : GT_CNS_LNG, TYP_LONG, source, threading)
     {
         LngValue = val;
     }

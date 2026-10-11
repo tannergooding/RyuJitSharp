@@ -672,7 +672,7 @@ public static partial class Globals
 
     private static void GenerateGenTreeOps()
     {
-        var builder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+        var builder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -697,23 +697,50 @@ namespace RyuJitSharp;
 public enum genTreeOps : byte
 {
 {{builder}}    GT_COUNT,
-
-#if TARGET_64BIT
-    // GT_CNS_NATIVELONG is the gtOper symbol for GT_CNS_LNG or GT_CNS_INT, depending on the target.
-    // For the 64-bit targets we will only use GT_CNS_INT as it used to represent all the possible sizes
-    GT_CNS_NATIVELONG = GT_CNS_INT,
-#else
-    // For the 32-bit targets we use a GT_CNS_LNG to hold a 64-bit integer constant and GT_CNS_INT for all others.
-    // In the future when we retarget the JIT for x86 we should consider eliminating GT_CNS_LNG
-    GT_CNS_NATIVELONG = GT_CNS_LNG,
-#endif
 }
 """);
     }
 
+    private static StringBuilder ProcessGenTreeOpDefinitions(Action<StringBuilder, string, string, string, string[]> callback)
+    {
+        var definitions = new Dictionary<string, string[]>(StringComparer.Ordinal);
+        return ProcessMacroBasedFileUnion(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 5)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].Trim();
+            if (definitions.TryGetValue(name, out var previous))
+            {
+                for (var index = 0; index < parts.Length; index++)
+                {
+                    var currentPart = parts[index].Trim();
+                    var previousPart = previous[index].Trim();
+                    if (currentPart.Equals(previousPart, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var isMulLongStructVariant = (name is "MUL_LONG") && (index is 1) &&
+                        ((currentPart is "GenTreeMultiRegOp" && previousPart is "GenTreeOp") ||
+                         (currentPart is "GenTreeOp" && previousPart is "GenTreeMultiRegOp"));
+                    if (!isMulLongStructVariant)
+                    {
+                        throw new InvalidDataException($"Conflicting GTNODE definitions for '{name}'.");
+                    }
+                }
+                return;
+            }
+
+            definitions.Add(name, parts);
+            callback(builder, inputFile, line, prefix, parts);
+        });
+    }
+
     private static void GenerateGenTreeOpsExtensions()
     {
-        var kindsBuilder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+        var kindsBuilder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -758,7 +785,7 @@ public enum genTreeOps : byte
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $", // GT_{name}");
         });
 
-        var debugKindsBuilder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (Action<StringBuilder, string, string, string, string[]>)((builder, inputFile, line, prefix, parts) => {
+        var debugKindsBuilder = ProcessGenTreeOpDefinitions((Action<StringBuilder, string, string, string, string[]>)((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -801,7 +828,7 @@ public enum genTreeOps : byte
             }
         }));
 
-        var namesBuilder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+        var namesBuilder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -811,7 +838,7 @@ public enum genTreeOps : byte
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        \"{name}\", // GT_{name}");
         });
 
-        var structTypesBuilder = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+        var structTypesBuilder = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -885,7 +912,10 @@ public enum genTreeOps : byte
                     structType = "GenTreeUnOp";
                 }
             }
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        typeof({structType}), // GT_{name}");
+            var structTypeExpression = name.Equals("MUL_LONG", StringComparison.Ordinal)
+                ? "Configuration.TARGET_ARM64 ? typeof(GenTreeOp) : typeof(GenTreeMultiRegOp)"
+                : $"typeof({structType})";
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {structTypeExpression}, // GT_{name}");
         });
 
         _ = Directory.CreateDirectory(@"Outputs\jit\gentreeopsdef");
@@ -5183,7 +5213,7 @@ public static partial class var_typesExtensions
 
     private static void GenerateVNFunc()
     {
-        var builder1 = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+        var builder1 = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -5244,7 +5274,7 @@ public enum VNFunc
 
     private static void GenerateVNFuncExtensions()
     {
-        var builder1 = ProcessMacroBasedFile(@"Inputs\gtlist.h", "GTNODE(", (builder, inputFile, line, prefix, parts) => {
+        var builder1 = ProcessGenTreeOpDefinitions((builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 5)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -6273,6 +6303,13 @@ public partial class Globals
         }
     }
 
+    private static StringBuilder ProcessMacroBasedFileUnion(
+        string inputFile, string prefix, Action<StringBuilder, string, string, string, string[]> callback)
+    {
+        var lines = File.ReadAllLines(inputFile);
+        return ProcessMacroBasedFile(inputFile, lines, [prefix], callback, includeAllConditionalBranches: true);
+    }
+
     private static StringBuilder ProcessMacroBasedFile(string inputFile, string prefix, Action<StringBuilder, string, string, string, string[]> callback)
         => ProcessMacroBasedFile(inputFile, [prefix], callback);
 
@@ -6286,7 +6323,8 @@ public partial class Globals
         string inputFile, ReadOnlySpan<string> lines, ReadOnlySpan<string> prefixes,
         Action<StringBuilder, string, string, string, string[]> callback,
         Action<StringBuilder>? onConditionalRegionStart = null,
-        Action<StringBuilder>? onConditionalRegionEnd = null)
+        Action<StringBuilder>? onConditionalRegionEnd = null,
+        bool includeAllConditionalBranches = false)
     {
         var builder = new StringBuilder();
 
@@ -6350,6 +6388,15 @@ public partial class Globals
                     throw new InvalidDataException($"Invalid line format: '{line}'");
                 }
                 trimmedLine = trimmedLine[bytesConsumed..].Trim();
+
+                if (includeAllConditionalBranches)
+                {
+                    if (directive.Equals("#include ", StringComparison.Ordinal))
+                    {
+                        callback(builder, inputFile, line, "", []);
+                    }
+                    continue;
+                }
 
                 if (skipUntilEndif != 0)
                 {

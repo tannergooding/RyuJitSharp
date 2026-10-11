@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_SIMD
 using System;
 using System.Diagnostics.CodeAnalysis;
 
@@ -30,10 +29,10 @@ public sealed class GenTreeVecCon : GenTree
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.v128[0].IsAllBitsSet,
         TYP_SIMD_ARM64 => _simdScalableVal.IsAllBitsSet,
-#elif TARGET_WASM
-        TYP_SIMD16 => _simdVal.IsAllBitsSet,
-#else
+#elif TARGET_XARCH
         TYP_SIMD16 => _simdVal.v128[0].IsAllBitsSet,
+#else
+        TYP_SIMD16 => _simdVal.IsAllBitsSet,
 #endif
 #if TARGET_XARCH
         TYP_SIMD32 => _simdVal.v256[0].IsAllBitsSet,
@@ -50,10 +49,10 @@ public sealed class GenTreeVecCon : GenTree
 #if TARGET_ARM64
         TYP_SIMD16 => _simdVal.v128[0].IsZero,
         TYP_SIMD_ARM64 => _simdScalableVal.IsZero,
-#elif TARGET_WASM
-        TYP_SIMD16 => _simdVal.IsZero,
-#else
+#elif TARGET_XARCH
         TYP_SIMD16 => _simdVal.v128[0].IsZero,
+#else
+        TYP_SIMD16 => _simdVal.IsZero,
 #endif
 #if TARGET_XARCH
         TYP_SIMD32 => _simdVal.v256[0].IsZero,
@@ -819,4 +818,3 @@ public sealed class GenTreeVecCon : GenTree
         }
     }
 }
-#endif

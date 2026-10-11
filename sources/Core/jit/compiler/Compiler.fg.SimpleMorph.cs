@@ -272,12 +272,12 @@ public partial class Compiler
                 }
 #if !TARGET_ARMARCH
                 else if ((type is TYP_LONG) && opts.OptimizationEnabled
-                    && (op2.Oper is GT_CNS_NATIVELONG) && (op2.AsIntConCommon().IntegralValue is >= 2 and <= 0x3FFFFFFF))
+                    && op2.Oper.IsCnsNativeLong && (op2.AsIntConCommon().IntegralValue is >= 2 and <= 0x3FFFFFFF))
                 {
                     tree.AsOp().Op1 = op1 = fgMorphTree(op1);
                     noway_assert(op1.Type is TYP_LONG);
                     tree.Flags = (tree.Flags & ~GTF_ALL_EFFECT) | (op1.Flags & GTF_ALL_EFFECT);
-                    if (op1.Oper is GT_CNS_NATIVELONG)
+                    if (op1.Oper.IsCnsNativeLong)
                     {
                         tree = gtFoldExpr(tree);
                     }

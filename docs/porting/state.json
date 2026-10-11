@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Unify the generated genTreeOps and VNFunc identity/extension surfaces: trace GTNODE target and feature conditionals in Inputs\\gtlist.h through Program.cs and table consumers, then emit universal definitions without changing target-visible mappings.",
+    "nextAction": "Convert the remaining target/feature branches in GenTreeVecCon's shared node and storage path to Configuration-based runtime branches, preserving fixed-width/scalable behavior and explicit unsupported failures.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Make internal emitter instruction identities unconditional, preserve native target ordinals through generated per-target maps, and separate the managed instruction-set union from the native EE ABI enum.",
-      "doneWhen": "The generator emits the full instruction union, target ordinal maps, and target-prefixed native instruction-set aliases; all instruction-indexed table access, range checks, and native callbacks use the correct target ordinal.",
-      "validation": "GenerateTables Release build and regeneration passed. Focused instruction-set, instruction-ordinal, EE callback, HWI lookup, and ARM64 ISA lookup tests passed in Debug and Release for win-x86, win-x64, linux-arm64, linux-riscv64, and browser-wasm. Per-run totals were 21, 21, 56, 18, and 21 respectively; generated native aliases were checked against every active managed identity.",
-      "deferred": "The remaining target/feature conditionals, universal source inclusion, and full one-assembly build remain open; generated genTreeOps/VNFunc identity and extension surfaces are next. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Union GTNODE genTreeOps identities and the matching base VNFunc prefix, generate aligned universal metadata, and replace target-dependent node predicates and native-long aliases with Configuration-based behavior.",
+      "doneWhen": "The generator emits every GTNODE and matching VNFunc exactly once; target-dependent kind, struct, comparison, constant, and native-long behavior is selected at runtime without changing active-target mappings.",
+      "validation": "GenerateTables Release regeneration passed and all four generated GT/VN files matched their integrated outputs. GenTreeOpsIdentityTests passed Debug and Release (1/1) for win-x86, win-x64, linux-arm64, linux-riscv64, and browser-wasm. Full Debug and Release target suites passed for win-x86 (560/560, 463/463) and win-x64 (341/341, 308/308). The full Debug linux-arm64 suite remains non-green (31 failures, 4,492 passed, 2 skipped of 4,525); the remaining failures include unsupported ARM64 call-descriptor paths and target-mismatched emitter fixtures. ARM64 instruction-table tests passed after converting their ordinal assumptions (792 Debug, 749 Release).",
+      "deferred": "Most target/feature conditionals, universal source inclusion, and the full one-assembly build remain open. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -116,6 +116,20 @@
       "disposition": "The managed instruction enum is the union of target identities. Generated maps translate before native-order table indexing, range checks, and ordinal arithmetic; the native CORINFO_InstructionSet ABI remains a separate target-prefixed alias enum.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "Instruction ordinal round-trip and bounds tests passed in Debug/Release for win-x86, win-x64, linux-arm64, linux-riscv64, and browser-wasm."
+    },
+    {
+      "area": "universal-tree-node-identities",
+      "native": [
+        "src\\coreclr\\jit\\gtlist.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Inputs\\gtlist.h",
+        "sources\\GenerateTables\\Program.cs",
+        "sources\\Core\\jit\\gentreeopsdef\\",
+        "tests\\Targets\\GenTreeOpsIdentityTests.cs"
+      ],
+      "disposition": "Managed genTreeOps and the base VNFunc prefix are unconditional unions of GTNODE rows. The only conflicting row, MUL_LONG, differs by node type on ARM64 and 32-bit targets; metadata selects that type through Configuration while target predicates preserve inactive-node behavior.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750"
     },
     {
       "area": "universal-hardware-intrinsic-identities",

@@ -32,9 +32,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CNS_LNG
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CNS_DBL
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CNS_STR
-#if FEATURE_SIMD
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CNS_VEC
-#endif
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CNS_MSK
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_NOT
         (ValueNumStore.VNFOpAttrib)0x01, // VNF_NOP
@@ -94,17 +92,14 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_GT
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_TEST_EQ
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_TEST_NE
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_BITTEST_EQ
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_BITTEST_NE
-#endif
         (ValueNumStore.VNFOpAttrib)0x0C, // VNF_SELECT
         (ValueNumStore.VNFOpAttrib)0x09, // VNF_COMMA
         (ValueNumStore.VNFOpAttrib)0x09, // VNF_QMARK
         (ValueNumStore.VNFOpAttrib)0x09, // VNF_COLON
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_INDEX_ADDR
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_LEA
-#if !TARGET_64BIT
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_LONG
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_ADD_LO
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_ADD_HI
@@ -112,17 +107,10 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SUB_HI
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_LSH_HI
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_RSH_LO
-#endif
-#if FEATURE_HW_INTRINSICS
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_HWINTRINSIC
-#endif
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_INC_SATURATE
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MULHI
-#if !TARGET_64BIT
         (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MUL_LONG
-#elif TARGET_ARM64
-        (ValueNumStore.VNFOpAttrib)0x0A, // VNF_MUL_LONG
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_AND_NOT
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_OR_NOT
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_XOR_NOT
@@ -130,9 +118,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_BFX
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_CMP
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_TEST
-#if TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_BT
-#endif
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_JCMP
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_JTEST
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_JCC
@@ -145,7 +131,6 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SELECT_INVCC
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_SELECT_NEG
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SELECT_NEGCC
-#if TARGET_RISCV64
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SH1ADD
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SH1ADD_UW
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SH2ADD
@@ -154,12 +139,9 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SH3ADD_UW
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_ADD_UW
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SLLI_UW
-#endif
-#if TARGET_RISCV64 || TARGET_XARCH
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_BIT_SET
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_BIT_CLEAR
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_BIT_INVERT
-#endif
         (ValueNumStore.VNFOpAttrib)0x05, // VNF_JTRUE
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_ARR_ELEM
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_CALL
@@ -181,9 +163,7 @@ public static partial class VNFuncExtensions
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_JMPTABLE
         (ValueNumStore.VNFOpAttrib)0x08, // VNF_SWITCH_TABLE
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_PHYSREG
-#if TARGET_WASM
         (ValueNumStore.VNFOpAttrib)0x00, // VNF_FRAME_SIZE
-#endif
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_RETURNTRAP
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_PUTARG_REG
         (ValueNumStore.VNFOpAttrib)0x04, // VNF_PUTARG_STK

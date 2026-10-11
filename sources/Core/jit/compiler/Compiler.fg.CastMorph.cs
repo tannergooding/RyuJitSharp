@@ -271,7 +271,7 @@ public partial class Compiler
             {
                 var right = operand.AsOp().Op2;
                 var maximumWidth = destinationType is TYP_UINT ? 32 : 31;
-                if ((right.Oper is GT_CNS_NATIVELONG) && ((right.AsIntConCommon().LngValue >> maximumWidth) == 0))
+                if (right.Oper.IsCnsNativeLong && ((right.AsIntConCommon().LngValue >> maximumWidth) == 0))
                 {
                     tree.Flags &= ~GTF_OVERFLOW;
                     tree.SetAllEffectsFlags(operand);

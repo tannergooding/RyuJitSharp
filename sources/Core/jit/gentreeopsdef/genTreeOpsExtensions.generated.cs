@@ -32,9 +32,7 @@ public static partial class genTreeOpsExtensions
         GTK_LEAF, // GT_CNS_LNG
         GTK_LEAF, // GT_CNS_DBL
         GTK_LEAF, // GT_CNS_STR
-#if FEATURE_SIMD
         GTK_LEAF, // GT_CNS_VEC
-#endif
         GTK_LEAF, // GT_CNS_MSK
         GTK_UNOP, // GT_NOT
         GTK_LEAF, // GT_NOP
@@ -94,17 +92,14 @@ public static partial class genTreeOpsExtensions
         GTK_BINOP, // GT_GT
         GTK_BINOP, // GT_TEST_EQ
         GTK_BINOP, // GT_TEST_NE
-#if TARGET_XARCH
         GTK_BINOP, // GT_BITTEST_EQ
         GTK_BINOP, // GT_BITTEST_NE
-#endif
         GTK_SPECIAL, // GT_SELECT
         GTK_BINOP, // GT_COMMA
         GTK_BINOP | GTK_EXOP, // GT_QMARK
         GTK_BINOP, // GT_COLON
         GTK_BINOP | GTK_EXOP, // GT_INDEX_ADDR
         GTK_BINOP | GTK_EXOP, // GT_LEA
-#if !TARGET_64BIT
         GTK_BINOP, // GT_LONG
         GTK_BINOP | GTK_COMMUTE, // GT_ADD_LO
         GTK_BINOP | GTK_COMMUTE, // GT_ADD_HI
@@ -112,17 +107,10 @@ public static partial class genTreeOpsExtensions
         GTK_BINOP, // GT_SUB_HI
         GTK_BINOP, // GT_LSH_HI
         GTK_BINOP, // GT_RSH_LO
-#endif
-#if FEATURE_HW_INTRINSICS
         GTK_SPECIAL, // GT_HWINTRINSIC
-#endif
         GTK_UNOP, // GT_INC_SATURATE
         GTK_BINOP | GTK_COMMUTE, // GT_MULHI
-#if !TARGET_64BIT
         GTK_BINOP | GTK_COMMUTE, // GT_MUL_LONG
-#elif TARGET_ARM64
-        GTK_BINOP | GTK_COMMUTE, // GT_MUL_LONG
-#endif
         GTK_BINOP, // GT_AND_NOT
         GTK_BINOP, // GT_OR_NOT
         GTK_BINOP, // GT_XOR_NOT
@@ -130,9 +118,7 @@ public static partial class genTreeOpsExtensions
         GTK_UNOP | GTK_EXOP, // GT_BFX
         GTK_BINOP | GTK_NOVALUE, // GT_CMP
         GTK_BINOP | GTK_NOVALUE, // GT_TEST
-#if TARGET_XARCH
         GTK_BINOP | GTK_NOVALUE, // GT_BT
-#endif
         GTK_BINOP | GTK_NOVALUE, // GT_JCMP
         GTK_BINOP | GTK_NOVALUE, // GT_JTEST
         GTK_LEAF | GTK_NOVALUE, // GT_JCC
@@ -145,7 +131,6 @@ public static partial class genTreeOpsExtensions
         GTK_BINOP, // GT_SELECT_INVCC
         GTK_SPECIAL, // GT_SELECT_NEG
         GTK_BINOP, // GT_SELECT_NEGCC
-#if TARGET_RISCV64
         GTK_BINOP, // GT_SH1ADD
         GTK_BINOP, // GT_SH1ADD_UW
         GTK_BINOP, // GT_SH2ADD
@@ -154,12 +139,9 @@ public static partial class genTreeOpsExtensions
         GTK_BINOP, // GT_SH3ADD_UW
         GTK_BINOP, // GT_ADD_UW
         GTK_BINOP, // GT_SLLI_UW
-#endif
-#if TARGET_RISCV64 || TARGET_XARCH
         GTK_BINOP, // GT_BIT_SET
         GTK_BINOP, // GT_BIT_CLEAR
         GTK_BINOP, // GT_BIT_INVERT
-#endif
         GTK_UNOP | GTK_NOVALUE, // GT_JTRUE
         GTK_SPECIAL, // GT_ARR_ELEM
         GTK_SPECIAL, // GT_CALL
@@ -181,9 +163,7 @@ public static partial class genTreeOpsExtensions
         GTK_LEAF, // GT_JMPTABLE
         GTK_BINOP | GTK_NOVALUE, // GT_SWITCH_TABLE
         GTK_LEAF, // GT_PHYSREG
-#if TARGET_WASM
         GTK_LEAF, // GT_FRAME_SIZE
-#endif
         GTK_UNOP | GTK_NOVALUE, // GT_RETURNTRAP
         GTK_UNOP, // GT_PUTARG_REG
         GTK_UNOP | GTK_NOVALUE, // GT_PUTARG_STK
@@ -218,9 +198,7 @@ public static partial class genTreeOpsExtensions
         DBK_NONE, // GT_CNS_LNG
         DBK_NONE, // GT_CNS_DBL
         DBK_NONE, // GT_CNS_STR
-#if FEATURE_SIMD
         DBK_NONE, // GT_CNS_VEC
-#endif
         DBK_NONE, // GT_CNS_MSK
         DBK_NONE, // GT_NOT
         DBK_NOCONTAIN, // GT_NOP
@@ -280,17 +258,14 @@ public static partial class genTreeOpsExtensions
         DBK_NONE, // GT_GT
         DBK_NOTHIR, // GT_TEST_EQ
         DBK_NOTHIR, // GT_TEST_NE
-#if TARGET_XARCH
         DBK_NOTHIR, // GT_BITTEST_EQ
         DBK_NOTHIR, // GT_BITTEST_NE
-#endif
         DBK_NONE, // GT_SELECT
         DBK_NOTLIR, // GT_COMMA
         DBK_NOTLIR, // GT_QMARK
         DBK_NOTLIR, // GT_COLON
         DBK_NONE, // GT_INDEX_ADDR
         DBK_NOTHIR, // GT_LEA
-#if !TARGET_64BIT
         DBK_NOTHIR, // GT_LONG
         DBK_NOTHIR, // GT_ADD_LO
         DBK_NOTHIR, // GT_ADD_HI
@@ -298,17 +273,10 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_SUB_HI
         DBK_NOTHIR, // GT_LSH_HI
         DBK_NOTHIR, // GT_RSH_LO
-#endif
-#if FEATURE_HW_INTRINSICS
         DBK_NONE, // GT_HWINTRINSIC
-#endif
         DBK_NOTHIR, // GT_INC_SATURATE
         DBK_NOTHIR, // GT_MULHI
-#if !TARGET_64BIT
         DBK_NOTHIR, // GT_MUL_LONG
-#elif TARGET_ARM64
-        DBK_NOTHIR, // GT_MUL_LONG
-#endif
         DBK_NOTHIR, // GT_AND_NOT
         DBK_NOTHIR, // GT_OR_NOT
         DBK_NOTHIR, // GT_XOR_NOT
@@ -316,9 +284,7 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_BFX
         DBK_NOTHIR, // GT_CMP
         DBK_NOTHIR, // GT_TEST
-#if TARGET_XARCH
         DBK_NOTHIR, // GT_BT
-#endif
         DBK_NOTHIR, // GT_JCMP
         DBK_NOTHIR, // GT_JTEST
         DBK_NOTHIR, // GT_JCC
@@ -331,7 +297,6 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_SELECT_INVCC
         DBK_NOTHIR, // GT_SELECT_NEG
         DBK_NOTHIR, // GT_SELECT_NEGCC
-#if TARGET_RISCV64
         DBK_NOTHIR, // GT_SH1ADD
         DBK_NOTHIR, // GT_SH1ADD_UW
         DBK_NOTHIR, // GT_SH2ADD
@@ -340,12 +305,9 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_SH3ADD_UW
         DBK_NOTHIR, // GT_ADD_UW
         DBK_NOTHIR, // GT_SLLI_UW
-#endif
-#if TARGET_RISCV64 || TARGET_XARCH
         DBK_NOTHIR, // GT_BIT_SET
         DBK_NOTHIR, // GT_BIT_CLEAR
         DBK_NOTHIR, // GT_BIT_INVERT
-#endif
         DBK_NONE, // GT_JTRUE
         DBK_NOTLIR, // GT_ARR_ELEM
         DBK_NOCONTAIN, // GT_CALL
@@ -367,9 +329,7 @@ public static partial class genTreeOpsExtensions
         DBK_NOCONTAIN | DBK_NOTHIR, // GT_JMPTABLE
         DBK_NOTHIR, // GT_SWITCH_TABLE
         DBK_NOTHIR, // GT_PHYSREG
-#if TARGET_WASM
         DBK_NOTHIR, // GT_FRAME_SIZE
-#endif
         DBK_NOTHIR, // GT_RETURNTRAP
         DBK_NOTHIR, // GT_PUTARG_REG
         DBK_NOTHIR, // GT_PUTARG_STK
@@ -405,9 +365,7 @@ public static partial class genTreeOpsExtensions
         "CNS_LNG", // GT_CNS_LNG
         "CNS_DBL", // GT_CNS_DBL
         "CNS_STR", // GT_CNS_STR
-#if FEATURE_SIMD
         "CNS_VEC", // GT_CNS_VEC
-#endif
         "CNS_MSK", // GT_CNS_MSK
         "NOT", // GT_NOT
         "NOP", // GT_NOP
@@ -467,17 +425,14 @@ public static partial class genTreeOpsExtensions
         "GT", // GT_GT
         "TEST_EQ", // GT_TEST_EQ
         "TEST_NE", // GT_TEST_NE
-#if TARGET_XARCH
         "BITTEST_EQ", // GT_BITTEST_EQ
         "BITTEST_NE", // GT_BITTEST_NE
-#endif
         "SELECT", // GT_SELECT
         "COMMA", // GT_COMMA
         "QMARK", // GT_QMARK
         "COLON", // GT_COLON
         "INDEX_ADDR", // GT_INDEX_ADDR
         "LEA", // GT_LEA
-#if !TARGET_64BIT
         "LONG", // GT_LONG
         "ADD_LO", // GT_ADD_LO
         "ADD_HI", // GT_ADD_HI
@@ -485,17 +440,10 @@ public static partial class genTreeOpsExtensions
         "SUB_HI", // GT_SUB_HI
         "LSH_HI", // GT_LSH_HI
         "RSH_LO", // GT_RSH_LO
-#endif
-#if FEATURE_HW_INTRINSICS
         "HWINTRINSIC", // GT_HWINTRINSIC
-#endif
         "INC_SATURATE", // GT_INC_SATURATE
         "MULHI", // GT_MULHI
-#if !TARGET_64BIT
         "MUL_LONG", // GT_MUL_LONG
-#elif TARGET_ARM64
-        "MUL_LONG", // GT_MUL_LONG
-#endif
         "AND_NOT", // GT_AND_NOT
         "OR_NOT", // GT_OR_NOT
         "XOR_NOT", // GT_XOR_NOT
@@ -503,9 +451,7 @@ public static partial class genTreeOpsExtensions
         "BFX", // GT_BFX
         "CMP", // GT_CMP
         "TEST", // GT_TEST
-#if TARGET_XARCH
         "BT", // GT_BT
-#endif
         "JCMP", // GT_JCMP
         "JTEST", // GT_JTEST
         "JCC", // GT_JCC
@@ -518,7 +464,6 @@ public static partial class genTreeOpsExtensions
         "SELECT_INVCC", // GT_SELECT_INVCC
         "SELECT_NEG", // GT_SELECT_NEG
         "SELECT_NEGCC", // GT_SELECT_NEGCC
-#if TARGET_RISCV64
         "SH1ADD", // GT_SH1ADD
         "SH1ADD_UW", // GT_SH1ADD_UW
         "SH2ADD", // GT_SH2ADD
@@ -527,12 +472,9 @@ public static partial class genTreeOpsExtensions
         "SH3ADD_UW", // GT_SH3ADD_UW
         "ADD_UW", // GT_ADD_UW
         "SLLI_UW", // GT_SLLI_UW
-#endif
-#if TARGET_RISCV64 || TARGET_XARCH
         "BIT_SET", // GT_BIT_SET
         "BIT_CLEAR", // GT_BIT_CLEAR
         "BIT_INVERT", // GT_BIT_INVERT
-#endif
         "JTRUE", // GT_JTRUE
         "ARR_ELEM", // GT_ARR_ELEM
         "CALL", // GT_CALL
@@ -554,9 +496,7 @@ public static partial class genTreeOpsExtensions
         "JMPTABLE", // GT_JMPTABLE
         "SWITCH_TABLE", // GT_SWITCH_TABLE
         "PHYSREG", // GT_PHYSREG
-#if TARGET_WASM
         "FRAME_SIZE", // GT_FRAME_SIZE
-#endif
         "RETURNTRAP", // GT_RETURNTRAP
         "PUTARG_REG", // GT_PUTARG_REG
         "PUTARG_STK", // GT_PUTARG_STK
@@ -592,9 +532,7 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeLngCon), // GT_CNS_LNG
         typeof(GenTreeDblCon), // GT_CNS_DBL
         typeof(GenTreeStrCon), // GT_CNS_STR
-#if FEATURE_SIMD
         typeof(GenTreeVecCon), // GT_CNS_VEC
-#endif
         typeof(GenTreeMskCon), // GT_CNS_MSK
         typeof(GenTreeUnOp), // GT_NOT
         typeof(GenTree), // GT_NOP
@@ -654,17 +592,14 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOp), // GT_GT
         typeof(GenTreeOp), // GT_TEST_EQ
         typeof(GenTreeOp), // GT_TEST_NE
-#if TARGET_XARCH
         typeof(GenTreeOp), // GT_BITTEST_EQ
         typeof(GenTreeOp), // GT_BITTEST_NE
-#endif
         typeof(GenTreeConditional), // GT_SELECT
         typeof(GenTreeOp), // GT_COMMA
         typeof(GenTreeQmark), // GT_QMARK
         typeof(GenTreeColon), // GT_COLON
         typeof(GenTreeIndexAddr), // GT_INDEX_ADDR
         typeof(GenTreeAddrMode), // GT_LEA
-#if !TARGET_64BIT
         typeof(GenTreeOp), // GT_LONG
         typeof(GenTreeOp), // GT_ADD_LO
         typeof(GenTreeOp), // GT_ADD_HI
@@ -672,17 +607,10 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOp), // GT_SUB_HI
         typeof(GenTreeOp), // GT_LSH_HI
         typeof(GenTreeOp), // GT_RSH_LO
-#endif
-#if FEATURE_HW_INTRINSICS
         typeof(GenTreeHWIntrinsic), // GT_HWINTRINSIC
-#endif
         typeof(GenTreeUnOp), // GT_INC_SATURATE
         typeof(GenTreeOp), // GT_MULHI
-#if !TARGET_64BIT
-        typeof(GenTreeMultiRegOp), // GT_MUL_LONG
-#elif TARGET_ARM64
-        typeof(GenTreeOp), // GT_MUL_LONG
-#endif
+        Configuration.TARGET_ARM64 ? typeof(GenTreeOp) : typeof(GenTreeMultiRegOp), // GT_MUL_LONG
         typeof(GenTreeOp), // GT_AND_NOT
         typeof(GenTreeOp), // GT_OR_NOT
         typeof(GenTreeOp), // GT_XOR_NOT
@@ -690,9 +618,7 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeBfm), // GT_BFX
         typeof(GenTreeOp), // GT_CMP
         typeof(GenTreeOp), // GT_TEST
-#if TARGET_XARCH
         typeof(GenTreeOp), // GT_BT
-#endif
         typeof(GenTreeOpCC), // GT_JCMP
         typeof(GenTreeOpCC), // GT_JTEST
         typeof(GenTreeCC), // GT_JCC
@@ -705,7 +631,6 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOpCC), // GT_SELECT_INVCC
         typeof(GenTreeConditional), // GT_SELECT_NEG
         typeof(GenTreeOpCC), // GT_SELECT_NEGCC
-#if TARGET_RISCV64
         typeof(GenTreeOp), // GT_SH1ADD
         typeof(GenTreeOp), // GT_SH1ADD_UW
         typeof(GenTreeOp), // GT_SH2ADD
@@ -714,12 +639,9 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeOp), // GT_SH3ADD_UW
         typeof(GenTreeOp), // GT_ADD_UW
         typeof(GenTreeOp), // GT_SLLI_UW
-#endif
-#if TARGET_RISCV64 || TARGET_XARCH
         typeof(GenTreeOp), // GT_BIT_SET
         typeof(GenTreeOp), // GT_BIT_CLEAR
         typeof(GenTreeOp), // GT_BIT_INVERT
-#endif
         typeof(GenTreeUnOp), // GT_JTRUE
         typeof(GenTreeArrElem), // GT_ARR_ELEM
         typeof(GenTreeCall), // GT_CALL
@@ -741,9 +663,7 @@ public static partial class genTreeOpsExtensions
         typeof(GenTree), // GT_JMPTABLE
         typeof(GenTreeOp), // GT_SWITCH_TABLE
         typeof(GenTreePhysReg), // GT_PHYSREG
-#if TARGET_WASM
         typeof(GenTree), // GT_FRAME_SIZE
-#endif
         typeof(GenTreeUnOp), // GT_RETURNTRAP
         typeof(GenTreeUnOp), // GT_PUTARG_REG
         typeof(GenTreePutArgStk), // GT_PUTARG_STK
