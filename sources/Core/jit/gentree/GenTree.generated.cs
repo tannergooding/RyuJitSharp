@@ -272,25 +272,18 @@ public partial class GenTree
         assert(this is GenTreeCmpXchg);
         return Unsafe.As<GenTreeCmpXchg>(this);
     }
-#if TARGET_ARM64
     public GenTreeConditional AsConditional()
     {
         assert(_oper is GT_SELECT or GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG);
         assert(this is GenTreeConditional);
         return Unsafe.As<GenTreeConditional>(this);
     }
+#if TARGET_ARM64
     public GenTreeBfm AsBfm()
     {
         assert(_oper is GT_BFX);
         assert(this is GenTreeBfm);
         return Unsafe.As<GenTreeBfm>(this);
-    }
-#else
-    public GenTreeConditional AsConditional()
-    {
-        assert(_oper is GT_SELECT);
-        assert(this is GenTreeConditional);
-        return Unsafe.As<GenTreeConditional>(this);
     }
 #endif
     public GenTreePutArgStk AsPutArgStk()
@@ -343,21 +336,12 @@ public partial class GenTree
         assert(this is GenTreeCCMP);
         return Unsafe.As<GenTreeCCMP>(this);
     }
-#if TARGET_ARM64
     public GenTreeOpCC AsOpCC()
     {
         assert(_oper is GT_SELECTCC or GT_SELECT_INCCC or GT_JCMP or GT_JTEST or GT_SELECT_INVCC or GT_SELECT_NEGCC);
         assert(this is GenTreeOpCC);
         return Unsafe.As<GenTreeOpCC>(this);
     }
-#else
-    public GenTreeOpCC AsOpCC()
-    {
-        assert(_oper is GT_SELECTCC or GT_JCMP or GT_JTEST);
-        assert(this is GenTreeOpCC);
-        return Unsafe.As<GenTreeOpCC>(this);
-    }
-#endif
 #if !TARGET_64BIT
     public GenTreeMultiRegOp AsMultiRegOp()
     {

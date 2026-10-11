@@ -45,13 +45,19 @@ public static partial class genTreeOpsExtensions
         {
             get
             {
-#if TARGET_ARM64
-                return oper is GT_JCC or GT_SETCC or GT_SELECTCC or GT_CCMP
-                    or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC;
-#elif TARGET_AMD64
-                assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
-                return oper is >= GT_JCC and <= GT_CCMP;
-#elif TARGET_32BIT
+                if (Configuration.TARGET_ARM64)
+                {
+                    return oper is GT_JCC or GT_SETCC or GT_SELECTCC or GT_CCMP
+                        or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC;
+                }
+
+                if (Configuration.TARGET_AMD64)
+                {
+                    assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC, GT_CCMP));
+                    return oper is >= GT_JCC and <= GT_CCMP;
+                }
+
+#if TARGET_32BIT
                 assert(AreContiguous(GT_JCC, GT_SETCC, GT_SELECTCC));
                 return oper is (>= GT_JCC and <= GT_SELECTCC) or GT_ADD_HI or GT_SUB_HI or GT_CCMP;
 #else
@@ -165,7 +171,9 @@ public static partial class genTreeOpsExtensions
             }
         }
 
-        public bool IsConditional => oper is GT_SELECT;
+        public bool IsConditional =>
+            oper is GT_SELECT ||
+            (Configuration.TARGET_ARM64 && (oper is GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG));
 
         public bool IsConditionalJump
         {

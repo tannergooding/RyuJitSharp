@@ -10,10 +10,20 @@ public sealed class GenTreeConditional : GenTreeOp
     private GenTree _cond;
 
     public GenTreeConditional(genTreeOps oper, var_types type, GenTree cond, GenTree op1, GenTree op2)
-        : base(oper, type, op1, op2)
+        : base(EnsureArm64SelectSupported(oper), type, op1, op2)
     {
         assert(oper.IsConditional);
-         _cond = cond;
+        _cond = cond;
+    }
+
+    private static genTreeOps EnsureArm64SelectSupported(genTreeOps oper)
+    {
+        if ((oper is GT_SELECT_INC or GT_SELECT_INV or GT_SELECT_NEG) && !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, "ARM64 conditional-select nodes are only supported on ARM64.");
+        }
+
+        return oper;
     }
 
     public GenTree Cond => _cond;

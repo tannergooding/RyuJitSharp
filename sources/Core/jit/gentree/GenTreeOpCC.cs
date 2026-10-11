@@ -10,38 +10,47 @@ public class GenTreeOpCC : GenTreeOp
     private GenCondition _condition;
 
     public GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree? op2)
-        : base(EnsureConditionalCompareSupported(oper), type, op1, op2)
+        : base(EnsureSupportedOperation(oper), type, op1, op2)
     {
-#if TARGET_ARM64
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC);
-#elif TARGET_AMD64
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP);
-#else
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC);
-#endif
+        assert(IsSupportedOperation(oper));
 
         _condition = condition;
     }
     internal GenTreeOpCC(genTreeOps oper, var_types type, GenCondition condition, GenTree op1, GenTree? op2,
         GenTree source, NodeThreading threading)
-        : base(EnsureConditionalCompareSupported(oper), type, op1, op2, source, threading)
+        : base(EnsureSupportedOperation(oper), type, op1, op2, source, threading)
     {
-#if TARGET_ARM64
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC);
-#elif TARGET_AMD64
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP);
-#else
-        assert(oper is GT_JCMP or GT_JTEST or GT_SELECTCC);
-#endif
+        assert(IsSupportedOperation(oper));
 
         _condition = condition;
     }
 
-    private static genTreeOps EnsureConditionalCompareSupported(genTreeOps oper)
+    private static bool IsSupportedOperation(genTreeOps oper)
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            return oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP
+                or GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC;
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            return oper is GT_JCMP or GT_JTEST or GT_SELECTCC or GT_CCMP;
+        }
+
+        return oper is GT_JCMP or GT_JTEST or GT_SELECTCC;
+    }
+
+    private static genTreeOps EnsureSupportedOperation(genTreeOps oper)
     {
         if ((oper is GT_CCMP) && !Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
         {
             throw new FatalJitException(CORJIT_INTERNALERROR, "GT_CCMP is only supported on x64 and ARM64.");
+        }
+
+        if ((oper is GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC) && !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, "ARM64 conditional-select nodes are only supported on ARM64.");
         }
 
         return oper;

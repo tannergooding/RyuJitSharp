@@ -125,11 +125,9 @@ public partial struct GenTreeUseEdgesList
                         break;
                     }
 
-#if TARGET_ARM64
                     case GT_SELECT_NEG:
                     case GT_SELECT_INV:
                     case GT_SELECT_INC:
-#endif
                     case GT_SELECT:
                     {
                         var conditional = tree.AsConditional();

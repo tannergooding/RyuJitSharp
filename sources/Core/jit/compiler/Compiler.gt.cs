@@ -754,11 +754,9 @@ public partial class Compiler
                 case GT_JCMP:
                 case GT_JTEST:
                 case GT_SELECTCC:
-#if TARGET_ARM64
                 case GT_SELECT_INCCC:
                 case GT_SELECT_INVCC:
                 case GT_SELECT_NEGCC:
-#endif
                 {
                     var opCC = tree.AsOpCC();
                     copy = new GenTreeOpCC(
@@ -992,11 +990,9 @@ public partial class Compiler
                 }
 
                 case GT_SELECT:
-#if TARGET_ARM64
                 case GT_SELECT_INC:
                 case GT_SELECT_INV:
                 case GT_SELECT_NEG:
-#endif
                 {
                     var conditional = tree.AsConditional();
                     copy = new GenTreeConditional(
@@ -3331,11 +3327,11 @@ public partial class Compiler
             {
                 jitprintf($" cond={tree.AsOpCC().Condition.Name}");
             }
-#if TARGET_ARM64
             else if (tree.Oper is GT_SELECT_INCCC or GT_SELECT_INVCC or GT_SELECT_NEGCC)
             {
                 jitprintf($" cond={tree.AsOpCC().Condition.Name}");
             }
+#if TARGET_ARM64
             else if (tree.Oper is GT_CCMP)
             {
                 var ccmp = tree.AsCCMP();
@@ -15703,9 +15699,9 @@ public partial class Compiler
                     case GT_INC_SATURATE:
 #if TARGET_ARM64
                     case GT_BFX:
+#endif
                     case GT_SELECT_INCCC:
                     case GT_SELECT_NEGCC:
-#endif
                     case GT_RETURN:
                     case GT_RETURN_SUSPEND:
                     case GT_PATCHPOINT_FORCED:
@@ -16154,11 +16150,9 @@ public partial class Compiler
                     case GT_JTEST:
                     case GT_SELECTCC:
                     case GT_CCMP:
-#if TARGET_ARM64
                     case GT_SELECT_INCCC:
                     case GT_SELECT_INVCC:
                     case GT_SELECT_NEGCC:
-#endif
 #if TARGET_RISCV64
                     case GT_SH1ADD:
                     case GT_SH1ADD_UW:

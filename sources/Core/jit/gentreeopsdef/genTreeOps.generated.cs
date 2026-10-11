@@ -142,14 +142,12 @@ public enum genTreeOps : byte
     GT_SETCC,
     GT_SELECTCC,
     GT_CCMP,
-#if TARGET_ARM64
     GT_SELECT_INC,
     GT_SELECT_INCCC,
     GT_SELECT_INV,
     GT_SELECT_INVCC,
     GT_SELECT_NEG,
     GT_SELECT_NEGCC,
-#endif
 #if TARGET_RISCV64
     GT_SH1ADD,
     GT_SH1ADD_UW,

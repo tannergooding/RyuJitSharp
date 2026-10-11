@@ -143,14 +143,12 @@ public static partial class genTreeOpsExtensions
         GTK_LEAF, // GT_SETCC
         GTK_BINOP, // GT_SELECTCC
         GTK_BINOP | GTK_NOVALUE, // GT_CCMP
-#if TARGET_ARM64
         GTK_SPECIAL, // GT_SELECT_INC
         GTK_BINOP, // GT_SELECT_INCCC
         GTK_SPECIAL, // GT_SELECT_INV
         GTK_BINOP, // GT_SELECT_INVCC
         GTK_SPECIAL, // GT_SELECT_NEG
         GTK_BINOP, // GT_SELECT_NEGCC
-#endif
 #if TARGET_RISCV64
         GTK_BINOP, // GT_SH1ADD
         GTK_BINOP, // GT_SH1ADD_UW
@@ -335,14 +333,12 @@ public static partial class genTreeOpsExtensions
         DBK_NOTHIR, // GT_SETCC
         DBK_NOTHIR, // GT_SELECTCC
         DBK_NOTHIR, // GT_CCMP
-#if TARGET_ARM64
         DBK_NOTHIR, // GT_SELECT_INC
         DBK_NOTHIR, // GT_SELECT_INCCC
         DBK_NOTHIR, // GT_SELECT_INV
         DBK_NOTHIR, // GT_SELECT_INVCC
         DBK_NOTHIR, // GT_SELECT_NEG
         DBK_NOTHIR, // GT_SELECT_NEGCC
-#endif
 #if TARGET_RISCV64
         DBK_NOTHIR, // GT_SH1ADD
         DBK_NOTHIR, // GT_SH1ADD_UW
@@ -528,14 +524,12 @@ public static partial class genTreeOpsExtensions
         "SETCC", // GT_SETCC
         "SELECTCC", // GT_SELECTCC
         "CCMP", // GT_CCMP
-#if TARGET_ARM64
         "SELECT_INC", // GT_SELECT_INC
         "SELECT_INCCC", // GT_SELECT_INCCC
         "SELECT_INV", // GT_SELECT_INV
         "SELECT_INVCC", // GT_SELECT_INVCC
         "SELECT_NEG", // GT_SELECT_NEG
         "SELECT_NEGCC", // GT_SELECT_NEGCC
-#endif
 #if TARGET_RISCV64
         "SH1ADD", // GT_SH1ADD
         "SH1ADD_UW", // GT_SH1ADD_UW
@@ -721,14 +715,12 @@ public static partial class genTreeOpsExtensions
         typeof(GenTreeCC), // GT_SETCC
         typeof(GenTreeOpCC), // GT_SELECTCC
         typeof(GenTreeCCMP), // GT_CCMP
-#if TARGET_ARM64
         typeof(GenTreeConditional), // GT_SELECT_INC
         typeof(GenTreeOpCC), // GT_SELECT_INCCC
         typeof(GenTreeConditional), // GT_SELECT_INV
         typeof(GenTreeOpCC), // GT_SELECT_INVCC
         typeof(GenTreeConditional), // GT_SELECT_NEG
         typeof(GenTreeOpCC), // GT_SELECT_NEGCC
-#endif
 #if TARGET_RISCV64
         typeof(GenTreeOp), // GT_SH1ADD
         typeof(GenTreeOp), // GT_SH1ADD_UW

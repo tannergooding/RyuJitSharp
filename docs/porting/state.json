@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the universal target/feature conditional-compilation migration. Next close the feature-gated node metadata in sources/GenerateTables/Inputs/gtlist.h, beginning with FEATURE_SIMD, FEATURE_MASKED_HW_INTRINSICS, and FEATURE_HW_INTRINSICS; include generated operator/type maps and preserve unsupported-target rejection at the appropriate construction, import, and codegen boundaries.",
+    "nextAction": "Continue the target/feature conditional-compilation migration. The next blocking closure is the ARM64 bitfield node family GT_BFIZ/GT_BFX: universalize its operator/type metadata and generic node handling, explicitly reject construction off ARM64, and keep bitfield lowering/codegen target-restricted.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
     "parityEvidence": {

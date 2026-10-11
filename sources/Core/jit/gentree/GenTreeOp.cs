@@ -88,10 +88,8 @@ public class GenTreeOp : GenTreeUnOp
         GT_INTRINSIC => true,
         GT_LEA => true,
 
-#if TARGET_ARM64
         GT_SELECT_NEGCC => true,
         GT_SELECT_INCCC => true,
-#endif
 
 #if SWIFT_SUPPORT
         GT_SWIFT_ERROR_RET => Type is TYP_VOID,
