@@ -63,6 +63,22 @@ internal static class FeatureConfigurationTests
         Assert.That(Configuration.SWIFT_SUPPORT, Is.EqualTo(supportsSwift));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ValueNumberDumpArgumentsFeatureUsesRuntimeSwitch(bool enabled)
+    {
+        const string switchName = "RyuJitSharp.FEATURE_VN_DUMP_FUNC_ARGS";
+        AppContext.SetSwitch(switchName, enabled);
+        try
+        {
+            Assert.That(Configuration.FEATURE_VN_DUMP_FUNC_ARGS, Is.EqualTo(enabled));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, false);
+        }
+    }
+
     [Test]
     public static void CallTailCallMetadataMatchesTheTargetArchitecture()
     {

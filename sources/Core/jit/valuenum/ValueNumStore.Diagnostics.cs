@@ -141,10 +141,11 @@ public sealed partial class ValueNumStore
 
                         var arg = funcApp.GetArg(index);
                         jitprintf($"${arg:x}");
-#if FEATURE_VN_DUMP_FUNC_ARGS
-                        jitprintf("=");
-                        vnDump(compiler, arg);
-#endif
+                        if (Configuration.FEATURE_VN_DUMP_FUNC_ARGS)
+                        {
+                            jitprintf("=");
+                            vnDump(compiler, arg);
+                        }
                     }
                     jitprintf(")");
                     break;

@@ -7,6 +7,7 @@
       <method signature="System.Boolean get_FEATURE_MULTIREG_RET()" body="stub" value="true" />
       <method signature="System.Boolean get_FEATURE_SIMD()" body="stub" value="true" />
       <method signature="System.Boolean get_FEATURE_READYTORUN()" body="stub" value="true" />
+      <method signature="System.Boolean get_FEATURE_VN_DUMP_FUNC_ARGS()" body="stub" value="false" />
       <method signature="System.Boolean get_TARGET_64BIT()" body="stub" value="true" />
       <method signature="System.Boolean get_TARGET_ARM()" body="stub" value="false" />
       <method signature="System.Boolean get_TARGET_ARM64()" body="stub" value="true" />

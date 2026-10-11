@@ -521,9 +521,6 @@
     <!-- CSE_INTO_HANDLERS -->
     <!-- <DefineConstants>$(DefineConstants);CSE_INTO_HANDLERS</DefineConstants> -->
 
-    <!-- FEATURE_VN_DUMP_FUNC_ARGS: This controls whether we recursively call vnDump on function arguments. -->
-    <!-- <DefineConstants>$(DefineConstants);FEATURE_VN_DUMP_FUNC_ARGS</DefineConstants> -->
-
     <!-- VERIFY_GC_TABLES -->
     <!-- <DefineConstants>$(DefineConstants);VERIFY_GC_TABLES</DefineConstants> -->
   </PropertyGroup>

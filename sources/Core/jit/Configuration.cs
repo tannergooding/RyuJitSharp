@@ -12,6 +12,8 @@ internal static class Configuration
 
     internal static bool FEATURE_HAS_ZERO_REG => GetFeatureSwitch(nameof(FEATURE_HAS_ZERO_REG));
 
+    internal static bool FEATURE_VN_DUMP_FUNC_ARGS => GetFeatureSwitch(nameof(FEATURE_VN_DUMP_FUNC_ARGS));
+
     internal static bool FEATURE_REMAP_FUNCTION =>
         TARGET_ARM64 || TARGET_AMD64 || (TARGET_X86 && TARGET_WINDOWS);
 
