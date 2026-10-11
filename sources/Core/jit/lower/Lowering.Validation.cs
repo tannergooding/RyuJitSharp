@@ -24,18 +24,20 @@ public sealed partial class Lowering
                 assert(list.IsContained);
                 foreach (var use in list.Uses)
                 {
-#if HAS_FIXED_REGISTER_SET
-                    assert(use.Node.Oper.IsPutArg);
-#endif
+                    if (Configuration.HAS_FIXED_REGISTER_SET)
+                    {
+                        assert(use.Node.Oper.IsPutArg);
+                    }
                 }
                 break;
             }
 
             default:
             {
-#if HAS_FIXED_REGISTER_SET
-                assert(arg.Oper.IsPutArg);
-#endif
+                if (Configuration.HAS_FIXED_REGISTER_SET)
+                {
+                    assert(arg.Oper.IsPutArg);
+                }
                 break;
             }
         }
@@ -63,27 +65,24 @@ public sealed partial class Lowering
                 break;
             }
 
-#if FEATURE_SIMD
             case GT_HWINTRINSIC:
             {
-#if !TARGET_WASM
-                assert(node.Type is not TYP_SIMD12);
-#endif
+                if (Configuration.FEATURE_SIMD && !Configuration.TARGET_WASM)
+                {
+                    assert(node.Type is not TYP_SIMD12);
+                }
                 break;
             }
-#endif
 
             case GT_LCL_VAR:
             case GT_STORE_LCL_VAR:
             {
                 ref var descriptor = ref compiler.lvaGetDesc(node.AsLclVar().LclNum);
-#if FEATURE_SIMD && TARGET_64BIT
-                if (node.Type is TYP_SIMD12)
+                if (Configuration.FEATURE_SIMD && Configuration.TARGET_64BIT && (node.Type is TYP_SIMD12))
                 {
                     assert(compiler.lvaIsFieldOfDependentlyPromotedStruct(in descriptor) ||
                         (compiler.lvaLclStackHomeSize(node.AsLclVar().LclNum) == 12));
                 }
-#endif
                 if (descriptor.lvPromoted)
                 {
                     assert(descriptor.lvDoNotEnregister || ((node.Oper is GT_STORE_LCL_VAR) && descriptor.lvIsMultiRegDest));
@@ -95,14 +94,14 @@ public sealed partial class Lowering
             {
                 var address = node.AsLclVarCommon();
                 ref var descriptor = ref compiler.lvaGetDesc(address.LclNum);
-#if !TARGET_WASM
-                if (((address.Flags & GTF_VAR_DEF) != 0) && descriptor.HasGCPtr)
+                if (!Configuration.TARGET_WASM &&
+                    ((address.Flags & GTF_VAR_DEF) != 0) &&
+                    descriptor.HasGCPtr)
                 {
                     // An uncontained address definition cannot report a tracked
                     // scalar GC local becoming live through the indirect store.
                     assert(address.IsContained || !descriptor.lvTracked || varTypeIsStruct(descriptor.Type));
                 }
-#endif
                 assert(descriptor.lvDoNotEnregister);
                 break;
             }

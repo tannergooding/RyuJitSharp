@@ -10,6 +10,8 @@ internal static class Configuration
 
     internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
 
+    internal static bool HAS_FIXED_REGISTER_SET => !TARGET_WASM;
+
     internal static bool TARGET_64BIT => GetFeatureSwitch(nameof(TARGET_64BIT));
 
     internal static bool TARGET_ARM => GetFeatureSwitch(nameof(TARGET_ARM));

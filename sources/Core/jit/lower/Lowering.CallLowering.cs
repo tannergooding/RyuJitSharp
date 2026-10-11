@@ -88,45 +88,45 @@ public sealed partial class Lowering
 
     private void ContainCheckCallOperands(GenTreeCall call)
     {
-#if TARGET_XARCH
-        var control = call._controlExpr;
-#if TARGET_X86
-        if (call._callType is CT_INDIRECT)
+        if (Configuration.TARGET_XARCH)
         {
-            assert(!call.IsFastTailCall || !call.IsVirtualStub);
+            var control = call._controlExpr;
+            if (Configuration.TARGET_X86 && (call._callType is CT_INDIRECT))
+            {
+                assert(!call.IsFastTailCall || !call.IsVirtualStub);
+            }
+
+            if (control is not null)
+            {
+                assert(control.Type is not TYP_VOID);
+                if (Configuration.TARGET_X86 &&
+                    call.IsVirtualStub &&
+                    (call._callType is CT_INDIRECT) &&
+                    !CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                {
+                    assert(control.Oper.IsIndir);
+                    MakeSrcContained(call, control);
+                }
+                else if (control.Oper.IsIndir && IsSafeToContainMem(call, control))
+                {
+                    control.RegNum = REG_NA;
+                    MakeSrcContained(call, control);
+                }
+            }
+
+            return;
         }
-#endif
-        if (control is not null)
+
+        if (Configuration.TARGET_ARM ||
+            Configuration.TARGET_ARM64 ||
+            Configuration.TARGET_RISCV64 ||
+            Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_WASM)
         {
-            assert(control.Type is not TYP_VOID);
-#if TARGET_X86
-            if (call.IsVirtualStub && (call._callType is CT_INDIRECT) &&
-                !CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-            {
-                assert(control.Oper.IsIndir);
-                MakeSrcContained(call, control);
-            }
-            else
-#endif
-            if (control.Oper.IsIndir && IsSafeToContainMem(call, control))
-            {
-                control.RegNum = REG_NA;
-                MakeSrcContained(call, control);
-            }
+            return;
         }
-#elif TARGET_ARM
-        // Native ARM32 calls have no contained operands.
-#elif TARGET_ARM64
-        // Native ARM64 calls have no contained operands.
-#elif TARGET_RISCV64
-        // Native RISC-V calls have no contained operands.
-#elif TARGET_LOONGARCH64
-        // Native LoongArch64 calls have no contained operands.
-#elif TARGET_WASM
-        // Wasm calls do not contain call operands.
-#else
+
         throw new NotImplementedException("Call operand containment is not ported for this target.");
-#endif
     }
 
     private unsafe GenTree? LowerCall(GenTree node)
@@ -146,59 +146,61 @@ public sealed partial class Lowering
             assert(call._initClsHnd is null);
         }
 
-#if TARGET_AMD64 || TARGET_ARM64
-        GenTree? nextNode;
-        if (call.IsSpecialIntrinsic())
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
         {
-            switch (compiler.lookupNamedIntrinsic(call._callMethHnd))
+            GenTree? nextNode;
+            if (call.IsSpecialIntrinsic())
             {
-                case NI_System_SpanHelpers_Memmove:
+                switch (compiler.lookupNamedIntrinsic(call._callMethHnd))
                 {
-                    if (LowerCallMemmove(call, out nextNode))
+                    case NI_System_SpanHelpers_Memmove:
                     {
-                        return nextNode;
+                        if (LowerCallMemmove(call, out nextNode))
+                        {
+                            return nextNode;
+                        }
+                        break;
                     }
-                    break;
-                }
 
-                case NI_System_SpanHelpers_SequenceEqual:
-                {
-                    if (LowerCallMemcmp(call, out nextNode))
+                    case NI_System_SpanHelpers_SequenceEqual:
                     {
-                        return nextNode;
+                        if (LowerCallMemcmp(call, out nextNode))
+                        {
+                            return nextNode;
+                        }
+                        break;
                     }
-                    break;
-                }
 
-                case NI_System_SpanHelpers_Fill:
-                case NI_System_SpanHelpers_ClearWithoutReferences:
-                {
-                    if (LowerCallMemset(call, out var nextBlock))
+                    case NI_System_SpanHelpers_Fill:
+                    case NI_System_SpanHelpers_ClearWithoutReferences:
                     {
-                        return nextBlock;
+                        if (LowerCallMemset(call, out var nextBlock))
+                        {
+                            return nextBlock;
+                        }
+                        break;
                     }
-                    break;
                 }
             }
+
+            if (call.IsHelperCall(CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, out nextNode))
+            {
+                return nextNode;
+            }
+            if (call.IsHelperCall(CORINFO_HELP_MEMSET) && LowerCallMemset(call, out var nextMemsetBlock))
+            {
+                return nextMemsetBlock;
+            }
         }
-        if (call.IsHelperCall(CORINFO_HELP_MEMCPY) && LowerCallMemmove(call, out nextNode))
-        {
-            return nextNode;
-        }
-        if (call.IsHelperCall(CORINFO_HELP_MEMSET) && LowerCallMemset(call, out var nextMemsetBlock))
-        {
-            return nextMemsetBlock;
-        }
-#endif
 
         call._directCallAddress = null;
         call.ClearOtherRegs();
-#if HAS_FIXED_REGISTER_SET
-        if ((call._callType is CT_INDIRECT) && compiler.opts.Tier0OptimizationEnabled)
+        if (Configuration.HAS_FIXED_REGISTER_SET &&
+            (call._callType is CT_INDIRECT) &&
+            compiler.opts.Tier0OptimizationEnabled)
         {
             OptimizeCallIndirectTargetEvaluation(call);
         }
-#endif
         LowerArgsForCall(call);
 
         GenTree? controlExpr = null;
@@ -280,13 +282,14 @@ public sealed partial class Lowering
             ContainCheckRange(controlRange);
             BlockRange().InsertBefore(call, controlRange);
             call._controlExpr = controlExpr;
-#if TARGET_RISCV64
-            if (controlExpr.Oper.IsCnsIntOrI && !controlExpr.AsIntCon().ImmedValNeedsReloc(compiler) &&
+
+            if (Configuration.TARGET_RISCV64 &&
+                controlExpr.Oper.IsCnsIntOrI &&
+                !controlExpr.AsIntCon().ImmedValNeedsReloc(compiler) &&
                 !call.IsFastTailCall)
             {
                 MakeSrcContained(call, controlExpr);
             }
-#endif
         }
 
         if (compiler.opts.IsCFGEnabled)

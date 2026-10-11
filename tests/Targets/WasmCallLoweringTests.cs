@@ -82,6 +82,27 @@ internal static unsafe class WasmCallLoweringTests
         });
     }
 
+    [Test]
+    public static void NullCheckThisArgumentIsMarkedMultiplyUsedAfterLowering()
+    {
+        WithLowering((compiler, lowering, block) => {
+            var value = compiler.gtNewNull();
+            var call = new GenTreeCall(TYP_VOID);
+            call.Flags |= GenTreeFlags.GTF_CALL_NULLCHECK;
+            var thisArg = call.Args.PushBack(
+                NewCallArg.CreateForPrimitive(value).WithWellKnownArg(WellKnownArg.ThisPointer));
+            var register = regNumberExtensions.MakeWasmReg(0, WasmValueType.I);
+            thisArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
+                compiler, AbiPassingSegment.InRegister(register, 0, TARGET_POINTER_SIZE));
+            block.InsertAtEnd(value);
+            block.InsertAtEnd(call);
+
+            LowerArgsForCall(lowering, call);
+
+            Assert.That(thisArg.Node._lirFlags & LIR.Flags.MultiplyUsed, Is.EqualTo(LIR.Flags.MultiplyUsed));
+        });
+    }
+
     [TestCase(GT_EQ, false, true)]
     [TestCase(GT_EQ, true, true)]
     [TestCase(GT_NE, false, true)]
@@ -166,6 +187,9 @@ internal static unsafe class WasmCallLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerCall")]
     private static extern GenTree? LowerCall(Lowering lowering, GenTree node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerArgsForCall")]
+    private static extern void LowerArgsForCall(Lowering lowering, GenTreeCall call);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ContainCheckCompare")]
     private static extern void ContainCheckCompare(Lowering lowering, GenTreeOp comparison);

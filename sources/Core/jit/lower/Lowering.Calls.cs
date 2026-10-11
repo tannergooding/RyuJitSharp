@@ -75,7 +75,7 @@ public sealed partial class Lowering
             case IAT_PVALUE:
             {
                 // Reuse the existing indirection-cell argument instead of duplicating its load.
-                if (!Configuration.TARGET_WASM || call.IndirectionCellArgKind is WellKnownArg.None)
+                if (Configuration.TARGET_WASM || call.IndirectionCellArgKind is WellKnownArg.None)
                 {
                     var cellAddress = AddrGen((nint)address);
 #if DEBUG

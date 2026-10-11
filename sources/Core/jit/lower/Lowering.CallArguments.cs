@@ -214,8 +214,7 @@ public sealed partial class Lowering
 
     private static void AfterLowerArgsForCall(GenTreeCall call)
     {
-#if TARGET_WASM
-        if (call.NeedsNullCheck)
+        if (Configuration.TARGET_WASM && call.NeedsNullCheck)
         {
             var thisArg = call.Args.ThisArg;
             assert(thisArg is not null);
@@ -225,7 +224,6 @@ public sealed partial class Lowering
 #endif
             );
         }
-#endif
         // Native has no post-processing on non-Wasm targets.
     }
 }
