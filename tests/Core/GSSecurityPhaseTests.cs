@@ -218,10 +218,11 @@ internal static unsafe class GSSecurityPhaseTests
         });
     }
 
-#if TARGET_X86 && FEATURE_IJW
     [Test]
     public static void NonSpecialStructArgumentUsesDirectShadowCopy()
     {
+        Assume.That(Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS);
+
         WithCompiler(2, compiler => {
             compiler.info.compArgsCount = 1;
             var layout = new ClassLayout(24);
@@ -239,7 +240,6 @@ internal static unsafe class GSSecurityPhaseTests
             Assert.That(store.AsLclVar().LclNum, Is.EqualTo(1));
         });
     }
-#endif
 
     private static bool s_indirect;
 

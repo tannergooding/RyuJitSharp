@@ -2253,8 +2253,8 @@ public partial class Compiler
                 lvaSecretStubArg = curVarNum;
             }
 
-#if TARGET_X86 && FEATURE_IJW
-            if ((corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) is not 0)
+            if (Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS &&
+                (corInfoType & CORINFO_TYPE_MOD_COPY_WITH_HELPER) is not 0)
             {
                 var typeWithoutMod = strip(corInfoType);
 
@@ -2264,7 +2264,6 @@ public partial class Compiler
                     recordArgRequiresSpecialCopy(i);
                 }
             }
-#endif
 
             lvaInitVarDsc(ref varDsc, curVarNum, strip(corInfoType), typeHnd, argLst, in methodArgs);
 

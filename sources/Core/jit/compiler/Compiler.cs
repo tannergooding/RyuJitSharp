@@ -165,9 +165,7 @@ public partial class Compiler
     public SwiftLoweringMap? _swiftLoweringCache;
 #endif
 
-#if TARGET_X86 && FEATURE_IJW
     public bool[]? _specialCopyArgs;
-#endif
 
     /// <summary>The value numbers for this compilation.</summary>
     public ValueNumStore? vnStore;

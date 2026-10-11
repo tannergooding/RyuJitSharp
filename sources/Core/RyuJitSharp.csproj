@@ -350,9 +350,6 @@
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_HW_INTRINSICS</DefineConstants>
     
-    <!-- FEATURE_IJW -->
-    <DefineConstants Condition="'$(RyuJitTargetOS)' == 'win'">$(DefineConstants);FEATURE_IJW</DefineConstants>
-
     <!-- FEATURE_IMPLICIT_BYREFS: Support for struct parameters passed via pointers to shadow copies -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>

@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Remove FEATURE_IJW as a compile-time guard: replace TARGET_X86 && FEATURE_IJW guards in Compiler.cs, Compiler.GS.cs, Compiler.lva.cs, Lowering.CallArguments.cs, Compiler.SpecialCopyArgs.cs, and GSSecurityPhaseTests.cs with Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS; remove its project define and merge the guarded helper definitions without changing behavior.",
+    "nextAction": "Inspect and universalize FEATURE_HFA and FEATURE_HFA_FIELDS_PRESENT: verify whether the latter is defined anywhere, preserve CONFIGURABLE_ARM_ABI behavior in GlobalJitOptions.cs, and remove any guard whose alternate branch is unreachable.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize the dormant FEATURE_VN_DUMP_FUNC_ARGS diagnostic as an opt-in runtime switch, defaulting off in untrimmed test hosts and all supported NativeAOT RID substitutions.",
-      "doneWhen": "No FEATURE_VN_DUMP_FUNC_ARGS source guard or project define remains; the Configuration switch gates recursive function-argument expansion in vnDump.",
-      "validation": "FeatureConfigurationTests passed 23/23 in Debug and Release across all nine target RIDs. The linux-x64 matrix runs required EnforceCodeStyleInBuild=false because the normal run fails on the pre-existing IDE0018 diagnostic at Compiler.cs:1705; all other RID runs used normal analyzer settings. All seven NativeAOT substitution XML files parsed and contained exactly one false substitution for the new getter. `git diff --check` passed.",
+      "scope": "Remove FEATURE_IJW as a compile-time guard while preserving the x86 Windows-only special-copy argument behavior.",
+      "doneWhen": "No FEATURE_IJW project define or source/test reference remains; its prior TARGET_X86 && FEATURE_IJW behavior is gated by Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS and helper definitions compile universally.",
+      "validation": "FeatureConfigurationTests passed 23/23 in Debug and Release across all nine target RIDs. The linux-x64 matrix runs required EnforceCodeStyleInBuild=false because the normal run fails on the pre-existing IDE0018 diagnostic at Compiler.cs:1705; all other RID runs used normal analyzer settings. Debug GSSecurityPhaseTests passed, with the x86-only case skipped by its runtime assumption on the win-x64 host. The Release Core test build stopped on the unrelated CA1812 diagnostic in tests/Core/DiscretionaryPolicyTests.cs:467. `git diff --check` passed.",
       "deferred": "The repository-wide TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {

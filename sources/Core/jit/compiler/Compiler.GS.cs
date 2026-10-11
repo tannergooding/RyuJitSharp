@@ -406,13 +406,12 @@ public partial class Compiler
             lvaSetVarDoNotEnregister(lclNum, DoNotEnregisterReason.BlockOp);
         }
 
-#if TARGET_X86 && FEATURE_IJW
-        if ((lclNum < info.compArgsCount) && argRequiresSpecialCopy(lclNum) && (descriptor.Type is TYP_STRUCT))
+        if (Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS &&
+            (lclNum < info.compArgsCount) && argRequiresSpecialCopy(lclNum) && (descriptor.Type is TYP_STRUCT))
         {
             JITDUMP($"arg{lclNum:D2} requires special copy; the x86 special-copy helper is not ported.\n");
             throw new FatalJitException(CORJIT_SKIPPED, "IJW struct-argument shadow copies require the x86 special-copy helper.");
         }
-#endif
 
         var source = gtNewLclvNode(descriptor.Type, lclNum);
         var store = gtNewStoreLclVarNode(shadowLclNum, source);

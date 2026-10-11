@@ -117,14 +117,15 @@ public sealed partial class Lowering
             LowerArg(call, arg);
         }
 
-#if TARGET_X86 && FEATURE_IJW
-        LowerSpecialCopyArgs(call);
-#endif
+        if (Configuration.TARGET_X86 && Configuration.TARGET_WINDOWS)
+        {
+            LowerSpecialCopyArgs(call);
+        }
+
         LegalizeArgPlacement(call);
         AfterLowerArgsForCall(call);
     }
 
-#if TARGET_X86 && FEATURE_IJW
     private unsafe void LowerSpecialCopyArgs(GenTreeCall call)
     {
         var compiler = CompilerInstance;
@@ -208,7 +209,6 @@ public sealed partial class Lowering
         BlockRange().Remove(destinationPlaceholder);
         BlockRange().Remove(sourcePlaceholder);
     }
-#endif
 
     private static void AfterLowerArgsForCall(GenTreeCall call)
     {
