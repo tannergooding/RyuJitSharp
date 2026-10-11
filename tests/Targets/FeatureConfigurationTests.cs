@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.HWIntrinsicFlag;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.VNFunc;
 using static RyuJitSharp.var_types;
@@ -18,6 +19,33 @@ internal static class FeatureConfigurationTests
     {
         Assert.That(Configuration.FEATURE_MASKED_HW_INTRINSICS,
             Is.EqualTo(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64));
+    }
+
+    [Test]
+    public static void HardwareIntrinsicFlagBitsDoNotCollideAcrossTargets()
+    {
+        var flags = Enum.GetValues<HWIntrinsicFlag>();
+
+        for (var index = 0; index < flags.Length; index++)
+        {
+            var flag = flags[index];
+            if (flag is HW_Flag_NoFlag or HW_Flag_SpecialSideEffectMask)
+            {
+                continue;
+            }
+
+            var value = (ulong)flag;
+            Assert.That(value & (value - 1), Is.Zero, $"{flag} must be a single bit.");
+
+            for (var otherIndex = index + 1; otherIndex < flags.Length; otherIndex++)
+            {
+                var otherFlag = flags[otherIndex];
+                if (otherFlag is not (HW_Flag_NoFlag or HW_Flag_SpecialSideEffectMask))
+                {
+                    Assert.That(otherFlag, Is.Not.EqualTo(flag), $"{flag} collides with {otherFlag}.");
+                }
+            }
+        }
     }
 
     [Test]

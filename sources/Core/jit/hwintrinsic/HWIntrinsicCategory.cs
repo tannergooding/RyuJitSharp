@@ -9,75 +9,43 @@ namespace RyuJitSharp;
 
 public enum HWIntrinsicCategory : byte
 {
-#if TARGET_XARCH
     // Simple SIMD intrinsics
     // - take Vector128/256<T> parameters
     // - return a Vector128/256<T>
     // - the codegen of overloads can be determined by intrinsicID and base type of returned vector
-    HW_Category_SimpleSIMD,
+    HW_Category_SimpleSIMD = 0,
 
     // IMM intrinsics
     // - some SIMD intrinsics requires immediate value (i.e. imm8) to generate instruction
-    HW_Category_IMM,
+    HW_Category_IMM = 1,
 
     // Scalar intrinsics
     // - operate over general purpose registers, like crc32, lzcnt, popcnt, etc.
-    HW_Category_Scalar,
+    HW_Category_Scalar = 2,
 
     // SIMD scalar
     // - operate over vector registers(XMM), but just compute on the first element
-    HW_Category_SIMDScalar,
+    HW_Category_SIMDScalar = 3,
 
     // Memory access intrinsics
     // - e.g., Avx.Load, Avx.Store, Sse.LoadAligned
-    HW_Category_MemoryLoad,
-    HW_Category_MemoryStore,
+    HW_Category_MemoryLoad = 4,
+    HW_Category_MemoryStore = 5,
 
     // Helper intrinsics
     // - do not directly correspond to a instruction, such as Avx.SetAllVector256
-    HW_Category_Helper,
+    HW_Category_Helper = 6,
 
     // Special intrinsics
     // - have to be addressed specially
-    HW_Category_Special
-#elif TARGET_ARM64
+    HW_Category_Special = 7,
+
     // Most of the Arm64 intrinsic fall into SIMD category:
     // - vector or scalar intrinsics that operate on one-or-many SIMD registers
-    HW_Category_SIMD,
-
-    // Scalar intrinsics operate on general purpose registers (e.g. cls, clz, rbit)
-    HW_Category_Scalar,
-
-    // Memory access intrinsics
-    HW_Category_MemoryLoad,
-    HW_Category_MemoryStore,
+    HW_Category_SIMD = 8,
 
     // These are Arm64 that share some features in a given category (e.g. immediate operand value range)
-    HW_Category_ShiftLeftByImmediate,
-    HW_Category_ShiftRightByImmediate,
-    HW_Category_SIMDByIndexedElement,
-
-    // Helper intrinsics
-    // - do not directly correspond to a instruction, such as Vector64.AllBitsSet
-    HW_Category_Helper,
-
-    // Special intrinsics
-    // - have to be addressed specially
-    HW_Category_Special
-#elif TARGET_WASM
-    HW_Category_SIMD,
-    HW_Category_IMM,
-    // Wasm has no scalar intrinsic category, but keeps it for table consistency.
-    HW_Category_Scalar,
-    HW_Category_MemoryLoad,
-    HW_Category_MemoryStore,
-    HW_Category_Helper,
-    HW_Category_Special
-#elif TARGET_ARM
-    // Arm32 does not enable FEATURE_HW_INTRINSICS, so it has no intrinsic categories.
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-    // These targets do not enable FEATURE_HW_INTRINSICS, so they have no intrinsic categories.
-#else
-#error Unsupported platform
-#endif
+    HW_Category_ShiftLeftByImmediate = 9,
+    HW_Category_ShiftRightByImmediate = 10,
+    HW_Category_SIMDByIndexedElement = 11,
 }

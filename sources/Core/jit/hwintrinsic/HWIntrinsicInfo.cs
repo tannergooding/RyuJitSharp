@@ -229,7 +229,6 @@ public readonly partial struct HWIntrinsicInfo
 
         switch (id)
         {
-#if TARGET_ARM64
             case NI_AdvSimd_Arm64_LoadPairScalarVector64:
             case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector64:
@@ -274,16 +273,13 @@ public readonly partial struct HWIntrinsicInfo
             {
                 return 4;
             }
-#endif
 
-#if TARGET_XARCH
             case NI_X86Base_DivRem:
             case NI_X86Base_X64_BigMul:
             case NI_X86Base_X64_DivRem:
             {
                 return 2;
             }
-#endif
 
             default:
             {
@@ -299,34 +295,33 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool IsMaybeCommutative(NamedIntrinsic id)
     {
-#if TARGET_XARCH
-        return (lookupFlags(id) & HW_Flag_MaybeCommutative) != 0;
-#else
-        _ = lookupFlags(id);
-        return false;
-#endif
+        var flags = lookupFlags(id);
+        return Configuration.TARGET_XARCH && ((flags & HW_Flag_MaybeCommutative) != 0);
     }
 
     public static bool CanBenefitFromConstantProp(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_CanBenefitFromConstantProp) != 0;
 
     public static bool HasImmediateOperand(NamedIntrinsic id)
     {
-#if TARGET_ARM64 || TARGET_WASM
-        return (lookupFlags(id) & HW_Flag_HasImmediateOperand) != 0;
-#elif TARGET_XARCH
-        return lookupCategory(id) == HW_Category_IMM;
-#else
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
+        {
+            return (lookupFlags(id) & HW_Flag_HasImmediateOperand) != 0;
+        }
+
+        if (Configuration.TARGET_XARCH)
+        {
+            return lookupCategory(id) == HW_Category_IMM;
+        }
+
         return false;
-#endif
     }
 
     public static bool HasSpecialSideEffect_Barrier(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_SpecialSideEffect_Barrier) != 0;
 
     public static bool IsInvalidNodeId(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_InvalidNodeId) != 0;
 
-#if TARGET_XARCH
-    public static bool NeedsNormalizeSmallTypeToInt(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_NormalizeSmallTypeToInt) != 0;
-#endif
+    public static bool NeedsNormalizeSmallTypeToInt(NamedIntrinsic id) =>
+        Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_NormalizeSmallTypeToInt) != 0);
 
     public static int lookupNumArgs(NamedIntrinsic id)
     {
@@ -418,30 +413,34 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool IsFloatingPointUsed(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_NoFloatingPointUsed) == 0;
 
-#if TARGET_XARCH
     public static bool AvxOnlyCompatible(NamedIntrinsic id) =>
-        (lookupFlags(id) & HW_Flag_AvxOnlyCompatible) != 0;
+        Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_AvxOnlyCompatible) != 0);
 
-    public static bool IsVariableShift(NamedIntrinsic id) => id is NI_AVX2_ShiftLeftLogicalVariable or
+    public static bool IsVariableShift(NamedIntrinsic id) => Configuration.TARGET_XARCH && (id is NI_AVX2_ShiftLeftLogicalVariable or
         NI_AVX2_ShiftRightArithmeticVariable or NI_AVX2_ShiftRightLogicalVariable or
-        NI_AVX512_ShiftLeftLogicalVariable or NI_AVX512_ShiftRightArithmeticVariable or NI_AVX512_ShiftRightLogicalVariable;
-#else
-    public static bool IsVariableShift(NamedIntrinsic id) => false;
-#endif
+        NI_AVX512_ShiftLeftLogicalVariable or NI_AVX512_ShiftRightArithmeticVariable or NI_AVX512_ShiftRightLogicalVariable);
 
     public static bool ReturnsScalarT(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsScalarT) != 0;
 
-#if TARGET_XARCH
     public static byte lookupFltCost(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new PlatformNotSupportedException("Floating-point intrinsic costs are only defined for xarch.");
+        }
+
         return GetRvaSpanEntry(s_fltCosts, GetTableIndex(id));
     }
 
     public static byte lookupIntCost(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new PlatformNotSupportedException("Integer intrinsic costs are only defined for xarch.");
+        }
+
         return GetRvaSpanEntry(s_intCosts, GetTableIndex(id));
     }
-#endif
 
 #if DEBUG
     public static string lookupName(NamedIntrinsic id)
@@ -450,17 +449,25 @@ public readonly partial struct HWIntrinsicInfo
     }
 #endif
 
-#if TARGET_XARCH
     public static bool MaybeMemoryLoad(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         var flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryLoad) != 0;
     }
 
     public static bool MaybeMemoryStore(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         var flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryStore) != 0;
     }
-#endif
 }

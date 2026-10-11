@@ -50,8 +50,8 @@ public enum HWIntrinsicFlag : ulong
     // The intrinsic returns result in multiple registers.
     HW_Flag_MultiReg = 0x200,
 
-    // The below is for defining platform-specific flags
-#if TARGET_XARCH
+    // The below are platform-specific flags. Their values are disjoint so metadata can include every target.
+
     // Full range IMM intrinsic
     // - the immediate value is valid on the full range of imm8 (0-255)
     HW_Flag_FullRangeIMM = 0x400,
@@ -110,83 +110,64 @@ public enum HWIntrinsicFlag : ulong
 
     // The base type of this intrinsic needs to be normalized to int/uint unless it is long/ulong.
     HW_Flag_NormalizeSmallTypeToInt = 0x4000000,
-#elif TARGET_ARM64
+
     // The intrinsic has an immediate operand
     // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
-    HW_Flag_HasImmediateOperand = 0x400,
+    HW_Flag_HasImmediateOperand = 0x400000000,
 
     // The intrinsic has read/modify/write semantics in multiple-operands form.
-    HW_Flag_HasRMWSemantics = 0x800,
+    HW_Flag_HasRMWSemantics = 0x800000000,
 
     // The intrinsic operates on the lower part of a SIMD register
     // - the upper part of the source registers are ignored
     // - the upper part of the destination register is zeroed
-    HW_Flag_SIMDScalar = 0x1000,
+    HW_Flag_SIMDScalar = 0x1000000000,
 
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x2000,
+    HW_Flag_SupportsContainment = 0x2000000000,
 
     // The intrinsic needs consecutive registers
-    HW_Flag_NeedsConsecutiveRegisters = 0x4000,
+    HW_Flag_NeedsConsecutiveRegisters = 0x4000000000,
 
     // The intrinsic uses scalable registers
-    HW_Flag_Scalable = 0x8000,
-
-    // Returns Per-Element Mask
-    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
-    // this output can be used as a per-element mask
-    HW_Flag_ReturnsPerElementMask = 0x10000,
+    HW_Flag_Scalable = 0x8000000000,
 
     // The intrinsic uses a mask in arg1 to select elements present in the result
-    HW_Flag_ExplicitMaskedOperation = 0x20000,
+    HW_Flag_ExplicitMaskedOperation = 0x10000000000,
 
     // The intrinsic uses a mask in arg1 (either explicitly, embedded or optionally embedded) to select elements present
     // in the result, and must use a low register.
-    HW_Flag_LowMaskedOperation = 0x40000,
+    HW_Flag_LowMaskedOperation = 0x20000000000,
 
     // The intrinsic can optionally use a mask in arg1 to select elements present in the result, which is not present in
     // the API call
-    HW_Flag_OptionalEmbeddedMaskedOperation = 0x80000,
+    HW_Flag_OptionalEmbeddedMaskedOperation = 0x40000000000,
 
     // The intrinsic uses a mask in arg1 to select elements present in the result, which is not present in the API call
-    HW_Flag_EmbeddedMaskedOperation = 0x100000,
+    HW_Flag_EmbeddedMaskedOperation = 0x80000000000,
 
     // The intrinsic comes in both vector and scalar variants. During the import stage if the basetype is scalar,
     // then the intrinsic should be switched to a scalar only version.
-    HW_Flag_HasScalarInputVariant = 0x200000,
+    HW_Flag_HasScalarInputVariant = 0x100000000000,
 
     // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
-    HW_Flag_LowVectorOperation = 0x400000,
+    HW_Flag_LowVectorOperation = 0x200000000000,
 
     // The intrinsic uses a mask in arg1 to select elements present in the result, which zeros inactive elements
     // (instead of merging).
-    HW_Flag_ZeroingMaskedOperation = 0x800000,
+    HW_Flag_ZeroingMaskedOperation = 0x400000000000,
 
     // The intrinsic has an overload where the base type is extracted from a ValueTuple of SIMD types
     // (HW_Flag_BaseTypeFrom{First, Second}Arg must also be set to denote the position of the ValueTuple)
-    HW_Flag_BaseTypeFromValueTupleArg = 0x1000000,
+    HW_Flag_BaseTypeFromValueTupleArg = 0x800000000000,
 
     // The intrinsic is a reduce operation.
-    HW_Flag_ReduceOperation = 0x2000000,
+    HW_Flag_ReduceOperation = 0x1000000000000,
 
     // This intrinsic could be implemented with another intrinsic when it is operating on operands that are all of
     // type TYP_MASK, and this other intrinsic will produces a value of this type. Used in morph to convert vector
     // operations into mask operations when the intrinsic is operating on mask vectors (mainly bitwise operations).
-    HW_Flag_HasAllMaskVariant = 0x4000000,
-
-#elif TARGET_WASM
-    HW_Flag_SupportsContainment = 0x400,
-    HW_Flag_ReturnsPerElementMask = 0x800,
-    HW_Flag_HasImmediateOperand = 0x1000,
-
-#elif TARGET_ARM
-    // Arm32 does not enable FEATURE_HW_INTRINSICS, so it has no target-specific flags.
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-    // These targets do not enable FEATURE_HW_INTRINSICS, so they have no target-specific flags.
-
-#else
-#error Unsupported platform
-#endif
+    HW_Flag_HasAllMaskVariant = 0x2000000000000,
 
     // The intrinsic has some barrier special side effect that should be tracked
     HW_Flag_SpecialSideEffect_Barrier = 0x8000000,
