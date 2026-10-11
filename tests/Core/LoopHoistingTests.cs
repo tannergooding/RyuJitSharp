@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
+using static RyuJitSharp.CorInfoHelpFunc;
+using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -34,6 +36,26 @@ internal static unsafe class LoopHoistingTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitNoHoist")]
     private static extern ref int NoHoist(ref JitConfigValues config);
 #endif
+
+    [TestCase(CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE)]
+    [TestCase(CORINFO_HELP_READYTORUN_GCSTATIC_BASE)]
+    [TestCase(CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE)]
+    [TestCase(CORINFO_HELP_READYTORUN_THREADSTATIC_BASE)]
+    [TestCase(CORINFO_HELP_READYTORUN_THREADSTATIC_BASE_NOCTOR)]
+    [TestCase(CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE)]
+    public static void ReadyToRunStaticBaseHelpersAreSharedStaticHelpers(CorInfoHelpFunc helper)
+    {
+        WithCompiler(_ =>
+        {
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _callType = CT_HELPER,
+                _callMethHnd = Compiler.eeFindHelper(helper),
+            };
+
+            Assert.That(Compiler.IsSharedStaticHelper(call), Is.EqualTo(Configuration.FEATURE_READYTORUN));
+        });
+    }
 
     [Test]
     public static void NoLoopsDoesNotAccessSideEffectAnalysis()

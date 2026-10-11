@@ -7158,9 +7158,8 @@ public partial class Compiler
         }
         else
         {
-#if FEATURE_READYTORUN
             // Only NativeAOT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
-            if (IsNativeAot)
+            if (Configuration.FEATURE_READYTORUN && IsNativeAot)
             {
                 CORINFO_RESOLVED_TOKEN resolvedToken = default;
 
@@ -7178,7 +7177,6 @@ public partial class Compiler
                 return impReadyToRunHelperToTree(resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
                     TYP_BYREF, ctxTree);
             }
-#endif
 
             // Conservatively report generic-context use for collectible shared generic code.
             lvaGenericsContextInUse = true;
@@ -7225,13 +7223,13 @@ public partial class Compiler
     /// <returns>The call node corresponding to the shared class constructor helper.</returns>
     public unsafe GenTreeCall? fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
     {
-#if TARGET_WASM
-        // Wasm does not support dynamically created helpers
-        return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            // Wasm does not support dynamically created helpers
+            return fgGetStaticsCCtorHelper(cls, CORINFO_HELP_INITCLASS);
+        }
 
-#if FEATURE_READYTORUN
-        if (IsAot)
+        if (Configuration.FEATURE_READYTORUN && IsAot)
         {
             var resolvedToken = new CORINFO_RESOLVED_TOKEN {
                 hClass = cls,
@@ -7239,7 +7237,6 @@ public partial class Compiler
             fgSetPreferredInitCctor();
             return impReadyToRunHelperToTree(resolvedToken, _preferredInitCctor, TYP_BYREF);
         }
-#endif
 
         // Call the shared non gc static helper, as its the fastest
         return fgGetStaticsCCtorHelper(cls, info.compCompHnd->getSharedCCtorHelper(cls));
@@ -9487,16 +9484,14 @@ public partial class Compiler
             targetMethodHnd = ldftnToken._token.hMethod;
         }
 
-#if FEATURE_READYTORUN
-#if TARGET_WASM
+        var isReadyToRun = Configuration.FEATURE_READYTORUN && IsAot;
+        var isNativeAot = isReadyToRun && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+
         // Wasm can't use the dynamically composed ReadyToRun delegate constructor helpers,
         // so ReadyToRun uses GetDelegateCtor below, like the JIT.
-        if (IsAot && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-#else
-        if (IsAot)
-#endif
+        if (isReadyToRun && (!Configuration.TARGET_WASM || isNativeAot))
         {
-            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            if (isNativeAot)
             {
                 if (ldftnToken is not null)
                 {
@@ -9546,8 +9541,7 @@ public partial class Compiler
                     JITDUMP("not optimized, NATIVEAOT no ldftnToken\n");
                 }
             }
-#if !TARGET_WASM
-            else if ((oper is GT_FTN_ADDR) && (ldftnToken is not null))
+            else if (!Configuration.TARGET_WASM && (oper is GT_FTN_ADDR) && (ldftnToken is not null))
             {
                 JITDUMP("optimized\n");
 
@@ -9570,17 +9564,13 @@ public partial class Compiler
                 assert(!entryPoint.lookupKind.needsRuntimeLookup);
                 call._entryPoint = entryPoint.constLookup;
             }
-            else
+            else if (!Configuration.TARGET_WASM)
             {
                 // ReadyToRun has this optimization for a non-virtual function pointers only for now.
                 JITDUMP("not optimized, R2R virtual case\n");
             }
-#endif
         }
         else if (targetMethodHnd is not null)
-#else
-        if (targetMethodHnd is not null)
-#endif
         {
             var ctorData = new DelegateCtorArgs {
                 method = info.compMethodHnd,
@@ -9597,15 +9587,13 @@ public partial class Compiler
 
                 call._callMethHnd = alternateCtor;
 
-#if FEATURE_READYTORUN
-                if (IsAot)
+                if (Configuration.FEATURE_READYTORUN && IsAot)
                 {
                     // The importer computed the entry point for the original constructor.
                     CORINFO_CONST_LOOKUP entryPoint;
                     info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
                     call._entryPoint = entryPoint;
                 }
-#endif
 
                 var lastArg = null as CallArg;
 

@@ -67,14 +67,12 @@ public partial class Compiler
             }
         }
 
-#if FEATURE_READYTORUN
-        if (IsAot)
+        if (Configuration.FEATURE_READYTORUN && IsAot)
         {
             CORINFO_CONST_LOOKUP entryPoint;
             info.compCompHnd->getFunctionEntryPoint(newMethod, &entryPoint);
             call._entryPoint = entryPoint;
         }
-#endif
         method = newMethod;
         exactContext = newExactContext;
         call._callMethHnd = newMethod;

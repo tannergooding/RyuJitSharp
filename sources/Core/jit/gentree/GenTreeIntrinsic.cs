@@ -12,10 +12,8 @@ public sealed class GenTreeIntrinsic : GenTreeOp
     // Method handle of the method which is treated as an intrinsic.
     private readonly unsafe CORINFO_METHOD_HANDLE _methodHandle;
 
-#if FEATURE_READYTORUN
     // Call target lookup info for method call from a Ready To Run module
     private CORINFO_CONST_LOOKUP _entryPoint;
-#endif // FEATURE_READYTORUN
 
     public unsafe GenTreeIntrinsic(var_types type, GenTree op1, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
         : base(GT_INTRINSIC, type, op1, op2: null)
@@ -33,20 +31,28 @@ public sealed class GenTreeIntrinsic : GenTreeOp
         _methodHandle = methodHandle;
     }
 
-#if FEATURE_READYTORUN
     public CORINFO_CONST_LOOKUP EntryPoint
     {
         get
         {
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new System.PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+            }
+
             return _entryPoint;
         }
 
         set
         {
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new System.PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+            }
+
             _entryPoint = value;
         }
     }
-#endif
 
     public NamedIntrinsic IntrinsicName => _intrinsicName;
 

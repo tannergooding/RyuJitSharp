@@ -12,9 +12,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
 {
     private unsafe CORINFO_METHOD_HANDLE _methodHandle;
 
-#if FEATURE_READYTORUN
     private CORINFO_CONST_LOOKUP _entryPoint;
-#endif
 
     private regNumber _otherReg;
     private MultiRegSpillFlags _spillFlags;   
@@ -48,22 +46,30 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
         }
     }
 
-#if FEATURE_READYTORUN
     public unsafe CORINFO_CONST_LOOKUP EntryPoint
     {
         get
         {
             assert(Debugger.IsAttached || IsUserCall);
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+            }
+
             return _entryPoint;
         }
 
         set
         {
             assert(IsUserCall);
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new PlatformNotSupportedException("ReadyToRun intrinsic entry points are unsupported.");
+            }
+
             _entryPoint = value;
         }
     }
-#endif
 
     public bool IsSimd => _simdSize != 0;
 

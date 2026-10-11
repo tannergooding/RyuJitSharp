@@ -33,6 +33,124 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void ReadyToRunFeatureIsAvailableOnEveryTarget()
+    {
+        Assert.That(Configuration.FEATURE_READYTORUN, Is.True);
+    }
+
+    [Test]
+    public static unsafe void ReadyToRunIntrinsicEntryPointRoundTrips()
+    {
+        if (!Configuration.FEATURE_READYTORUN || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return;
+        }
+
+        WithCompiler(compiler =>
+        {
+            var operand = compiler.gtNewIconNode(TYP_INT, 1);
+            var entryPoint = new CORINFO_CONST_LOOKUP
+            {
+                accessType = InfoAccessType.IAT_PVALUE,
+                addr = (void*)1,
+            };
+            var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_Create, TYP_INT, 16, operand)
+            {
+                MethodHandle = default,
+                EntryPoint = entryPoint,
+            };
+            Assert.That(node.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)node.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+
+            var copy = compiler.gtCloneExpr(node).AsHWIntrinsic();
+            Assert.That(copy.HWIntrinsicId, Is.EqualTo(node.HWIntrinsicId));
+            Assert.That((nint)copy.MethodHandle, Is.EqualTo((nint)node.MethodHandle));
+            Assert.That(copy.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)copy.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+            Assert.That(copy.GetOp(1), Is.Not.SameAs(operand));
+        });
+    }
+
+    [Test]
+    public static unsafe void ReadyToRunTreeEntryPointMetadataRoundTrips()
+    {
+        if (!Configuration.FEATURE_READYTORUN)
+        {
+            return;
+        }
+
+        WithCompiler(compiler =>
+        {
+            var operand = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            var entryPoint = new CORINFO_CONST_LOOKUP
+            {
+                accessType = InfoAccessType.IAT_PVALUE,
+                addr = (void*)1,
+            };
+
+            var intrinsic = new GenTreeIntrinsic(TYP_INT, operand, NI_Vector_Create, default)
+            {
+                EntryPoint = entryPoint,
+            };
+            Assert.That(intrinsic.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)intrinsic.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+            var intrinsicCopy = compiler.gtCloneExpr(intrinsic).AsIntrinsic();
+            Assert.That(intrinsicCopy.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)intrinsicCopy.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+
+            var allocation = new GenTreeAllocObj(TYP_REF, operand, default, false, default)
+            {
+                EntryPoint = entryPoint,
+            };
+            Assert.That(allocation.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)allocation.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+            var allocationCopy = compiler.gtCloneExpr(allocation).AsAllocObj();
+            Assert.That(allocationCopy.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)allocationCopy.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+
+            var functionPointer = new GenTreeFptrVal(TYP_I_IMPL, default)
+            {
+                EntryPoint = entryPoint,
+            };
+            Assert.That(functionPointer.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)functionPointer.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+            var functionPointerCopy = compiler.gtCloneFtnAddr(functionPointer);
+            Assert.That(functionPointerCopy.EntryPoint.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)functionPointerCopy.EntryPoint.addr, Is.EqualTo((nint)entryPoint.addr));
+
+            var fieldAddress = new GenTreeFieldAddr(TYP_I_IMPL, null, default, 0)
+            {
+                FieldLookup = entryPoint,
+            };
+            Assert.That(fieldAddress.FieldLookup.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)fieldAddress.FieldLookup.addr, Is.EqualTo((nint)entryPoint.addr));
+            Assert.That(fieldAddress.IsOffsetKnown, Is.False);
+            var fieldAddressCopy = compiler.gtCloneFieldAddr(fieldAddress);
+            Assert.That(fieldAddressCopy.FieldLookup.accessType, Is.EqualTo(entryPoint.accessType));
+            Assert.That((nint)fieldAddressCopy.FieldLookup.addr, Is.EqualTo((nint)entryPoint.addr));
+
+            var call = new GenTreeCall(TYP_VOID)
+            {
+                _entryPoint = entryPoint,
+            };
+            Assert.That(call.IsR2RRelativeIndir, Is.True);
+            var callCopy = compiler.gtCloneExpr(call).AsCall();
+            Assert.That(callCopy.IsR2RRelativeIndir, Is.True);
+
+            if (Configuration.TARGET_ARMARCH || Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
+            {
+                Assert.That(call.IndirectionCellArgKind, Is.EqualTo(WellKnownArg.R2RIndirectionCell));
+            }
+            else if (Configuration.TARGET_XARCH)
+            {
+                call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_TAILCALL;
+                var expectedArgumentKind = call.IsFastTailCall ? WellKnownArg.R2RIndirectionCell : WellKnownArg.None;
+                Assert.That(call.IndirectionCellArgKind, Is.EqualTo(expectedArgumentKind));
+            }
+        });
+    }
+
+    [Test]
     public static void SimdConstantConstructionMatchesTheConfiguredFeature()
     {
         WithCompiler(compiler =>

@@ -215,10 +215,8 @@ public sealed class GenTreeCall : GenTree
     // CT_USER_FUNC or CT_HELPER
     internal unsafe CORINFO_METHOD_HANDLE _callMethHnd;
 
-#if FEATURE_READYTORUN
     /// <summary>Call target lookup info for method call from a Ready To Run module</summary>
     internal CORINFO_CONST_LOOKUP _entryPoint;
-#endif
 
 #if DEBUG
     internal GenTreeCallDebugFlags _callDebugFlags;
@@ -293,12 +291,12 @@ public sealed class GenTreeCall : GenTree
                 return false;
             }
 
-#if FEATURE_READYTORUN
-            if ((c1._entryPoint.accessType != c2._entryPoint.accessType) || (c1._entryPoint.addr != c2._entryPoint.addr))
+            if (Configuration.FEATURE_READYTORUN &&
+                ((c1._entryPoint.accessType != c2._entryPoint.accessType) ||
+                 (c1._entryPoint.addr != c2._entryPoint.addr)))
             {
                 return false;
             }
-#endif
             if (c1.IsHelperCall())
             {
                 var helper = c1.HelperNum;
@@ -566,11 +564,7 @@ public sealed class GenTreeCall : GenTree
     /// <summary>true if VM has flagged this method as CORINFO_FLG_PINVOKE.</summary>
     public bool IsPInvoke => (_callMoreFlags & GTF_CALL_M_PINVOKE) != 0;
 
-#if FEATURE_READYTORUN
-    public bool IsR2RRelativeIndir => _entryPoint.accessType is IAT_PVALUE;
-#else
-    public bool IsR2RRelativeIndir => false;
-#endif
+    public bool IsR2RRelativeIndir => Configuration.FEATURE_READYTORUN && (_entryPoint.accessType is IAT_PVALUE);
 
     public WellKnownArg IndirectionCellArgKind
     {
@@ -581,17 +575,15 @@ public sealed class GenTreeCall : GenTree
                 return WellKnownArg.VirtualStubCell;
             }
 
-#if TARGET_ARMARCH || TARGET_RISCV64 || TARGET_LOONGARCH64
-            if (IsR2RRelativeIndir && !IsDelegateInvoke)
+            if ((Configuration.TARGET_ARMARCH || Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64) &&
+                IsR2RRelativeIndir && !IsDelegateInvoke)
             {
                 return WellKnownArg.R2RIndirectionCell;
             }
-#elif TARGET_XARCH
-            if (IsR2RRelativeIndir && IsFastTailCall)
+            else if (Configuration.TARGET_XARCH && IsR2RRelativeIndir && IsFastTailCall)
             {
                 return WellKnownArg.R2RIndirectionCell;
             }
-#endif
             return WellKnownArg.None;
         }
     }
@@ -1040,12 +1032,11 @@ public sealed class GenTreeCall : GenTree
                 {
                     result = true;
                 }
-#if FEATURE_READYTORUN
-                else if (call.IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR))
+                else if (Configuration.FEATURE_READYTORUN &&
+                         call.IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR))
                 {
                     result = true;
                 }
-#endif
             }
         }
 

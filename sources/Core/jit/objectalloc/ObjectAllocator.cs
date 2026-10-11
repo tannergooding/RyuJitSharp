@@ -188,14 +188,19 @@ public sealed partial class ObjectAllocator : Phase
         var helper = allocObj.NewHelper;
         var helperHasSideEffects = allocObj.NewHelperHasSideEffects;
 
-#if FEATURE_READYTORUN
-        var entryPoint = allocObj.EntryPoint;
+        var hasReadyToRun = Configuration.FEATURE_READYTORUN;
+        var entryPoint = default(CORINFO_CONST_LOOKUP);
 
-        if (helper is CORINFO_HELP_READYTORUN_NEW)
+        if (hasReadyToRun)
         {
-            arg = null;
+            entryPoint = allocObj.EntryPoint;
+
+            if (helper is CORINFO_HELP_READYTORUN_NEW)
+            {
+                arg = null;
+            }
         }
-#endif
+
         // Native fgMorphIntoHelperCall uses ChangeOper here. Replace the CLR
         // node instead, leaving its owner responsible for installing this call.
         var helperCall = arg is null
@@ -207,17 +212,18 @@ public sealed partial class ObjectAllocator : Phase
             helperCall._callMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
         }
 
-#if FEATURE_READYTORUN
-        if (entryPoint.addr is not null)
+        if (hasReadyToRun)
         {
-            assert(compiler.IsAot);
-            helperCall._entryPoint = entryPoint;
+            if (entryPoint.addr is not null)
+            {
+                assert(compiler.IsAot);
+                helperCall._entryPoint = entryPoint;
+            }
+            else
+            {
+                assert(helper is not CORINFO_HELP_READYTORUN_NEW);
+            }
         }
-        else
-        {
-            assert(helper is not CORINFO_HELP_READYTORUN_NEW);
-        }
-#endif
         return helperCall;
     }
 }

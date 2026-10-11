@@ -78,9 +78,10 @@ public partial class Compiler
 #if UNIX_X86_ABI
         call.Flags |= GTF_CALL_POP_ARGS;
 #endif
-#if FEATURE_READYTORUN
-        call._entryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
-#endif
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            call._entryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
+        }
 #if FEATURE_MULTIREG_RET
         call._returnTypeDesc.Reset();
         call.ClearOtherRegs();

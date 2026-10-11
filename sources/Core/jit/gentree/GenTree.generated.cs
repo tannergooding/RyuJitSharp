@@ -166,14 +166,12 @@ public partial class GenTree
         assert(this is GenTreeIndexAddr);
         return Unsafe.As<GenTreeIndexAddr>(this);
     }
-#if FEATURE_HW_INTRINSICS
     public GenTreeMultiOp AsMultiOp()
     {
         assert(_oper is GT_HWINTRINSIC);
         assert(this is GenTreeMultiOp);
         return Unsafe.As<GenTreeMultiOp>(this);
     }
-#endif
     public GenTreeBoundsChk AsBoundsChk()
     {
         assert(_oper is GT_BOUNDS_CHECK);
@@ -294,14 +292,12 @@ public partial class GenTree
         assert(this is GenTreePhysReg);
         return Unsafe.As<GenTreePhysReg>(this);
     }
-#if FEATURE_HW_INTRINSICS
     public GenTreeHWIntrinsic AsHWIntrinsic()
     {
         assert(_oper is GT_HWINTRINSIC);
         assert(this is GenTreeHWIntrinsic);
         return Unsafe.As<GenTreeHWIntrinsic>(this);
     }
-#endif
     public GenTreeAllocObj AsAllocObj()
     {
         assert(_oper is GT_ALLOCOBJ);

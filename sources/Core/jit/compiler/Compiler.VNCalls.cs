@@ -108,14 +108,12 @@ public partial class Compiler
         else
         {
             ValueNumPair first;
-#if FEATURE_READYTORUN
-            if (useEntryPoint)
+            if (Configuration.FEATURE_READYTORUN && useEntryPoint)
             {
                 var address = vnStore.VNForHandle((nint)call._entryPoint.addr, GTF_ICON_FTN_ADDR);
                 first = new(address, address);
             }
             else
-#endif
             {
                 assert(!useEntryPoint);
                 vnStore.VNPUnpackExc(arg!.Node._vnPair, out first, out var argExceptions);
@@ -544,19 +542,20 @@ public partial class Compiler
                             call.Args.GetUserArgByIndex(0)!.Node._vnPair), new(address, address)));
                     break;
                 }
-#if FEATURE_READYTORUN
                 case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
                 case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
                 case CORINFO_HELP_READYTORUN_THREADSTATIC_BASE:
                 case CORINFO_HELP_READYTORUN_NONGCTHREADSTATIC_BASE:
                 case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
                 {
-                    var address = vnStore.VNForHandle((nint)call._entryPoint.addr, GTF_ICON_FTN_ADDR);
-                    exceptions = vnStore.VNPExcSetSingleton(vnStore.VNPairForFunc(
-                        TYP_REF, VNF_R2RClassInitExc, new(address, address)));
+                    if (Configuration.FEATURE_READYTORUN)
+                    {
+                        var address = vnStore.VNForHandle((nint)call._entryPoint.addr, GTF_ICON_FTN_ADDR);
+                        exceptions = vnStore.VNPExcSetSingleton(vnStore.VNPairForFunc(
+                            TYP_REF, VNF_R2RClassInitExc, new(address, address)));
+                    }
                     break;
                 }
-#endif
                 case CORINFO_HELP_GET_GCSTATIC_BASE:
                 case CORINFO_HELP_GET_NONGCSTATIC_BASE:
                 case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:

@@ -11,9 +11,7 @@ public sealed class GenTreeFptrVal : GenTree
 
     private bool _fptrDelegateTarget;
 
-#if FEATURE_READYTORUN
     private CORINFO_CONST_LOOKUP _entryPoint;
-#endif
 
     public unsafe GenTreeFptrVal(var_types type, CORINFO_METHOD_HANDLE meth)
         : base (GT_FTN_ADDR, type)
@@ -36,18 +34,26 @@ public sealed class GenTreeFptrVal : GenTree
         }
     }
 
-#if FEATURE_READYTORUN
     public CORINFO_CONST_LOOKUP EntryPoint
     {
         get
         {
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new System.PlatformNotSupportedException("ReadyToRun function-pointer entry points are unsupported.");
+            }
+
             return _entryPoint;
         }
 
         set
         {
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new System.PlatformNotSupportedException("ReadyToRun function-pointer entry points are unsupported.");
+            }
+
             _entryPoint = value;
         }
     }
-#endif
 }

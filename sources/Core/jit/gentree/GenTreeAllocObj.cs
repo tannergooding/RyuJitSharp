@@ -12,9 +12,7 @@ public sealed class GenTreeAllocObj : GenTreeUnOp
     private bool _newHelperHasSideEffects;
     private unsafe CORINFO_CLASS_HANDLE _clsHnd;
 
-#if FEATURE_READYTORUN
     private CORINFO_CONST_LOOKUP _entryPoint;
-#endif
 
     public unsafe GenTreeAllocObj(var_types type, GenTree op1, CorInfoHelpFunc newHelper, bool newHelperHasSideEffects, CORINFO_CLASS_HANDLE clsHnd)
         : base(GT_ALLOCOBJ, type, op1)
@@ -26,20 +24,28 @@ public sealed class GenTreeAllocObj : GenTreeUnOp
 
     public unsafe CORINFO_CLASS_HANDLE ClsHnd => _clsHnd;
 
-#if FEATURE_READYTORUN
     public CORINFO_CONST_LOOKUP EntryPoint
     {
         get
         {
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new System.PlatformNotSupportedException("ReadyToRun allocation entry points are unsupported.");
+            }
+
             return _entryPoint;
         }
 
         set
         {
+            if (!Configuration.FEATURE_READYTORUN)
+            {
+                throw new System.PlatformNotSupportedException("ReadyToRun allocation entry points are unsupported.");
+            }
+
             _entryPoint = value;
         }
     }
-#endif
 
     public CorInfoHelpFunc NewHelper => _newHelper;
 

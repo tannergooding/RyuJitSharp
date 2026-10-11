@@ -439,18 +439,12 @@ public partial class Compiler
 
                     var isTailCall = canTailCall && (tailCallFlags is not 0);
 
-#if FEATURE_READYTORUN
-                    CORINFO_CONST_LOOKUP entryPoint;
+                    var entryPoint = default(CORINFO_CONST_LOOKUP);
 
-                    if (compiler.IsAot && (callInfo.kind is CORINFO_CALL))
+                    if (Configuration.FEATURE_READYTORUN && compiler.IsAot && (callInfo.kind is CORINFO_CALL))
                     {
                         entryPoint = callInfo.codePointerLookup.constLookup;
                     }
-                    else
-                    {
-                        entryPoint = new CORINFO_CONST_LOOKUP();
-                    }
-#endif
 
                     var intrinsicCall = Intrinsic(compiler, mflags, isReadonlyCall, isTailCall, ref entryPoint, out ni, out isSpecialIntrinsic);
 
@@ -568,8 +562,7 @@ public partial class Compiler
                             }
                         }
 
-#if FEATURE_READYTORUN
-                        if (compiler.IsAot)
+                        if (Configuration.FEATURE_READYTORUN && compiler.IsAot)
                         {
                             // Null check is sometimes needed for ready to run to handle
                             // non-virtual <-> virtual changes between versions
@@ -578,7 +571,6 @@ public partial class Compiler
                                 call.Flags |= GTF_CALL_NULLCHECK;
                             }
                         }
-#endif
 
                         break;
                     }
@@ -673,14 +665,12 @@ public partial class Compiler
                             compiler.addFatPointerCandidate(indCall);
                         }
 
-#if FEATURE_READYTORUN
-                        if (compiler.IsAot)
+                        if (Configuration.FEATURE_READYTORUN && compiler.IsAot)
                         {
                             // Null check is needed for ready to run to handle
                             // non-virtual <-> virtual changes between versions
                             indCall.Flags |= GTF_CALL_NULLCHECK;
                         }
-#endif
 
                         // Since we are jumping over some code, check that its OK to skip that code
                         assert((sigInfo.callConv & CORINFO_CALLCONV_MASK) is not CORINFO_CALLCONV_VARARG and not CORINFO_CALLCONV_NATIVEVARARG);
@@ -728,12 +718,10 @@ public partial class Compiler
                             call.Flags |= GTF_CALL_NULLCHECK;
                         }
 
-#if FEATURE_READYTORUN
-                        if (compiler.IsAot)
+                        if (Configuration.FEATURE_READYTORUN && compiler.IsAot)
                         {
                             call._entryPoint = callInfo.codePointerLookup.constLookup;
                         }
-#endif
                         break;
                     }
 
@@ -3738,12 +3726,13 @@ public partial class Compiler
                             {
                                 ni = isMax ? NI_System_Math_MaxUnsigned : NI_System_Math_MinUnsigned;
                             }
-                            retNode = new GenTreeIntrinsic(TYP_I_IMPL, op1, op2, ni, null)
+                            var minMax = new GenTreeIntrinsic(TYP_I_IMPL, op1, op2, ni, null);
+                            if (Configuration.FEATURE_READYTORUN)
                             {
-#if FEATURE_READYTORUN
-                                EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE },
-#endif
-                            };
+                                minMax.EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
+                            }
+
+                            retNode = minMax;
                         }
 #endif
                     }
@@ -3790,12 +3779,13 @@ public partial class Compiler
                             // which don't specify what kind of NaN is returned if both arguments are NaN. RISC-V returns quiet
                             // canonical NaN in this case.
                             ni = isMax ? NI_System_Math_MaxNative : NI_System_Math_MinNative;
-                            GenTree minMax = new GenTreeIntrinsic(callType, op1, op2, ni, null)
+                            var minMaxIntrinsic = new GenTreeIntrinsic(callType, op1, op2, ni, null);
+                            if (Configuration.FEATURE_READYTORUN)
                             {
-#if FEATURE_READYTORUN
-                                EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE },
-#endif
-                            };
+                                minMaxIntrinsic.EntryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
+                            }
+
+                            GenTree minMax = minMaxIntrinsic;
 
                             if (!isNative)
                             {

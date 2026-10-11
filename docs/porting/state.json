@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universal-compilation migration from the remaining feature-gated compiler surfaces; start with GenTreeJitIntrinsic's FEATURE_READYTORUN entry-point field and accessors, then trace the shared Configuration/substitution dependency before converting its consumers.",
+    "nextAction": "Convert the FEATURE_READYTORUN and TARGET_XARCH guards in rationalize/Rationalizer.cs to Configuration checks; validate the focused rationalizer and target-configuration tests, then continue through the remaining R2R guards.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Expose GenTreeHWIntrinsic on all targets by runtime-gating construction and converting its target-specific layout, side-effect, memory-classification, and register paths; make shared GenTreeJitIntrinsic/GenTreeMultiOp feature and target gates runtime checks, and add cross-target regression coverage.",
-      "doneWhen": "The primary GenTreeHWIntrinsic type and shared base paths compile for feature-disabled, xarch, ARM64, and Wasm configurations; unsupported operations fail explicitly; xarch/ARM64/Wasm behavior remains covered by focused and full target tests.",
-      "validation": "FeatureConfigurationTests passed 13/13 in Debug and Release for linux-riscv64, linux-arm64, and browser-wasm, plus Debug win-x64. Full Target.UnitTests passed with analyzers enabled: win-x86 Debug 565/565 and Release 468/468; win-x64 Debug 347/347 and Release 314/314. HardwareIntrinsicInitializationTests passed with analyzers disabled: Debug 475/475 and Release 471/471. `git diff --check` passed.",
-      "deferred": "Other target/feature conditionals and the full one-assembly build remain open. GenTreeJitIntrinsic still has FEATURE_READYTORUN-specific storage/accessors, whose shared Configuration/substitution dependency is the next batch. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Replace FEATURE_READYTORUN in Compiler.LoopInversion.cs with a runtime feature check and add direct coverage for the ReadyToRun static-base helper classification.",
+      "doneWhen": "ReadyToRun static-base helpers are considered shared-static helpers only when ReadyToRun is enabled; existing non-ReadyToRun helper classification is unchanged.",
+      "validation": "LoopHoistingTests passed 27/27 in Debug on win-x64. `git diff --check` passed.",
+      "deferred": "FEATURE_READYTORUN guards remain in rationalization, importer, lowering, codegen, tests, and other compiler files. Remove FEATURE_READYTORUN from DefineConstants only after all source and test guards are converted. The broader target/feature directives remain in scope. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

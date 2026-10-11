@@ -444,9 +444,10 @@ public partial class Compiler
                         fieldAddrCopy.MayOverlap = fieldAddr.MayOverlap;
                         fieldAddrCopy.IsSpanLength = fieldAddr.IsSpanLength;
 
-#if FEATURE_READYTORUN
-                        fieldAddrCopy.FieldLookup = fieldAddr.FieldLookup;
-#endif
+                        if (Configuration.FEATURE_READYTORUN)
+                        {
+                            fieldAddrCopy.FieldLookup = fieldAddr.FieldLookup;
+                        }
 
                         var indirCopy = (tree.Oper is GT_BLK) ? gtNewBlkIndir(fieldAddrCopy, tree.AsBlk().Layout) : gtNewIndir(tree.Type, fieldAddrCopy);
                         impAnnotateFieldIndir(indirCopy);
@@ -610,17 +611,19 @@ public partial class Compiler
                 case GT_INTRINSIC:
                 {
                     var intrinsic = tree.AsIntrinsic();
-                    copy = new GenTreeIntrinsic(
+                    var intrinsicCopy = new GenTreeIntrinsic(
                         intrinsic.Type,
                         intrinsic.Op1,
                         intrinsic.Op2,
                         intrinsic.IntrinsicName,
                         intrinsic.MethodHandle
-                    ) {
-#if FEATURE_READYTORUN
-                        EntryPoint = intrinsic.EntryPoint,
-#endif
-                    };
+                    );
+                    if (Configuration.FEATURE_READYTORUN)
+                    {
+                        intrinsicCopy.EntryPoint = intrinsic.EntryPoint;
+                    }
+
+                    copy = intrinsicCopy;
                     break;
                 }
 
@@ -999,9 +1002,13 @@ public partial class Compiler
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
                 {
+                    if (!Configuration.FEATURE_HW_INTRINSICS)
+                    {
+                        throw new PlatformNotSupportedException("Hardware intrinsic tree cloning is unsupported on this target.");
+                    }
+
                     var hwintrinsic = tree.AsHWIntrinsic();
                     var operands = hwintrinsic.Operands.ToArray();
                     var hwintrinsicCopy = new GenTreeHWIntrinsic(
@@ -1015,14 +1022,16 @@ public partial class Compiler
                     if (hwintrinsic.IsUserCall)
                     {
                         hwintrinsicCopy.MethodHandle = hwintrinsic.MethodHandle;
-#if FEATURE_READYTORUN
-                        hwintrinsicCopy.EntryPoint = hwintrinsic.EntryPoint;
-#endif
+                        if (Configuration.FEATURE_READYTORUN)
+                        {
+                            hwintrinsicCopy.EntryPoint = hwintrinsic.EntryPoint;
+                        }
                     }
                     hwintrinsicCopy.AuxiliaryType = hwintrinsic.AuxiliaryType;
-#if TARGET_XARCH || TARGET_ARM64
-                    hwintrinsicCopy.CopyOtherRegs(hwintrinsic);
-#endif
+                    if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
+                    {
+                        hwintrinsicCopy.CopyOtherRegs(hwintrinsic);
+                    }
 
                     for (var i = 0; i < operands.Length; i++)
                     {
@@ -1032,8 +1041,6 @@ public partial class Compiler
                     copy = hwintrinsicCopy;
                     break;
                 }
-#endif
-
                 case GT_ARR_ELEM:
                 {
                     var arrElem = tree.AsArrElem();
@@ -1224,9 +1231,10 @@ public partial class Compiler
                         allocObj.ClsHnd
                     );
 
-#if FEATURE_READYTORUN
-                    allocObjCopy.EntryPoint = allocObj.EntryPoint;
-#endif
+                    if (Configuration.FEATURE_READYTORUN)
+                    {
+                        allocObjCopy.EntryPoint = allocObj.EntryPoint;
+                    }
 
                     copy = allocObjCopy;
                     break;
@@ -1362,9 +1370,10 @@ public partial class Compiler
         copy._controlExpr = compiler.gtCloneExpr(tree._controlExpr);
         copy._callMethHnd = tree._callMethHnd;
 
-#if FEATURE_READYTORUN
-        copy._entryPoint = tree._entryPoint;
-#endif
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            copy._entryPoint = tree._entryPoint;
+        }
 
 #if DEBUG
         copy._callDebugFlags = tree._callDebugFlags;
@@ -1410,9 +1419,10 @@ public partial class Compiler
         fieldAddrCopy.MayOverlap = fieldAddr.MayOverlap;
         fieldAddrCopy.IsSpanLength = fieldAddr.IsSpanLength;
 
-#if FEATURE_READYTORUN
-        fieldAddrCopy.FieldLookup = fieldAddr.FieldLookup;
-#endif
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            fieldAddrCopy.FieldLookup = fieldAddr.FieldLookup;
+        }
 
         fieldAddrCopy.Op1 = gtCloneExpr(fieldAddr.FldObj);
         return fieldAddrCopy;
@@ -1423,9 +1433,10 @@ public partial class Compiler
         var fptrValCopy = gtNewFptrValNode(fptrVal.Type, fptrVal.FptrMethod);
 
         fptrValCopy.FptrDelegateTarget = fptrVal.FptrDelegateTarget;
-#if FEATURE_READYTORUN
-        fptrValCopy.EntryPoint = fptrVal.EntryPoint;
-#endif
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            fptrValCopy.EntryPoint = fptrVal.EntryPoint;
+        }
 
         return fptrValCopy;
     }
@@ -2827,16 +2838,14 @@ public partial class Compiler
             {
                 gtfType = " stub";
             }
-#if FEATURE_READYTORUN
-            else if (call.IsR2RRelativeIndir)
+            else if (Configuration.FEATURE_READYTORUN && call.IsR2RRelativeIndir)
             {
                 gtfType = " r2r_ind";
             }
-            else if ((tree.Flags & GTF_TLS_GET_ADDR) is not 0)
+            else if (Configuration.FEATURE_READYTORUN && (tree.Flags & GTF_TLS_GET_ADDR) is not 0)
             {
                 gtfType = " _tls_get_addr";
             }
-#endif
             else if ((tree.Flags & GTF_CALL_UNMANAGED) is not 0)
             {
                 gtfType = $" unman{(((tree.Flags & GTF_CALL_POP_ARGS) is not 0) ? " popargs" : "")}";
@@ -8301,10 +8310,10 @@ public partial class Compiler
         var helper = CORINFO_HELP_UNDEF;
         var opHandle = impTokenToHandle(resolvedToken, mustRestoreHandle: true, useParent);
 
-#if FEATURE_READYTORUN
-        var lookup = new CORINFO_CONST_LOOKUP();
+        var hasReadyToRun = Configuration.FEATURE_READYTORUN;
+        var lookup = default(CORINFO_CONST_LOOKUP);
 
-        if (IsAot)
+        if (hasReadyToRun && IsAot)
         {
             helper = CORINFO_HELP_READYTORUN_NEW;
 
@@ -8313,7 +8322,6 @@ public partial class Compiler
                 usingReadyToRunHelper = info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, callerHandle, &lookup);
             }
         }
-#endif
 
         if (!usingReadyToRunHelper && (opHandle is null))
         {
@@ -8341,13 +8349,11 @@ public partial class Compiler
 
         var allocObj = gtNewAllocObjNode(TYP_REF, opHandle, helper, helperHasSideEffects, resolvedToken.hClass);
 
-#if FEATURE_READYTORUN
-        if (usingReadyToRunHelper)
+        if (hasReadyToRun && usingReadyToRunHelper)
         {
             assert(lookup.addr is not null);
             allocObj.EntryPoint = lookup;
         }
-#endif
 
         return allocObj;
     }
@@ -8502,14 +8508,12 @@ public partial class Compiler
     {
         var call = gtNewCallNode(type, CT_USER_FUNC, handle, di);
 
-#if FEATURE_READYTORUN
-        if (IsReadyToRun)
+        if (Configuration.FEATURE_READYTORUN && IsReadyToRun)
         {
             CORINFO_CONST_LOOKUP entryPoint;
             info.compCompHnd->getFunctionEntryPoint(handle, &entryPoint);
             call._entryPoint = entryPoint;
         }
-#endif
 
         return call;
     }
@@ -9497,14 +9501,12 @@ public partial class Compiler
     /// <returns>New CT_HELPER node</returns>
     public unsafe GenTreeCall gtNewRuntimeLookupHelperCallNode(in CORINFO_RUNTIME_LOOKUP runtimeLookup, GenTree ctxTree, void* compileTimeHandle)
     {
-#if FEATURE_READYTORUN
-        if (IsAot && (runtimeLookup.indirections == CORINFO_USEHELPER))
+        if (Configuration.FEATURE_READYTORUN && IsAot && (runtimeLookup.indirections == CORINFO_USEHELPER))
         {
             var call = gtNewHelperCallNode(TYP_I_IMPL, runtimeLookup.helper, ctxTree);
             call._entryPoint = runtimeLookup.helperEntryPoint;
             return call;
         }
-#endif
 
         // Call the helper
         // - Setup argNode with the pointer to the signature returned by the lookup
@@ -13832,9 +13834,10 @@ public partial class Compiler
 #if DEBUG
         call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
 #endif
-#if FEATURE_READYTORUN
-        call._entryPoint.accessType = IAT_VALUE;
-#endif
+        if (Configuration.FEATURE_READYTORUN)
+        {
+            call._entryPoint.accessType = IAT_VALUE;
+        }
 #if FEATURE_MULTIREG_RET
         call._returnTypeDesc.Reset();
         call.ClearOtherRegs();

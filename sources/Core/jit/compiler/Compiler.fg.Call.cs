@@ -599,11 +599,8 @@ public partial class Compiler
         }
 
         if (((call._callMoreFlags & (GTF_CALL_M_SPECIAL_INTRINSIC | GTF_CALL_M_LDVIRTFTN_INTERFACE)) == 0) &&
-            (call.IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR)
-#if FEATURE_READYTORUN
-                || call.IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR)
-#endif
-            ))
+            (call.IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+             (Configuration.FEATURE_READYTORUN && call.IsHelperCall(CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR))))
         {
             assert(fgMorphStmt is not null);
             if (call == fgMorphStmt.RootNode)

@@ -139,8 +139,7 @@ public partial class Compiler
             address = obj;
         }
 
-#if FEATURE_READYTORUN
-        if (field.FieldLookup.addr is not null)
+        if (Configuration.FEATURE_READYTORUN && field.FieldLookup.addr is not null)
         {
             if (field.FieldLookup.accessType is not IAT_PVALUE)
             {
@@ -156,7 +155,6 @@ public partial class Compiler
                 address.HasOrderingSideEffect = true;
             }
         }
-#endif
         FieldSeq? fields = null;
         if ((objectType is TYP_REF) && !field.MayOverlap)
         {

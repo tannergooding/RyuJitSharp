@@ -213,13 +213,11 @@ public partial class Compiler
             var method = function.FptrMethod;
             CORINFO_CONST_LOOKUP address;
 
-#if FEATURE_READYTORUN
-            if (function.EntryPoint.addr is not null)
+            if (Configuration.FEATURE_READYTORUN && function.EntryPoint.addr is not null)
             {
                 address = function.EntryPoint;
             }
             else
-#endif
             {
                 info.compCompHnd->getFunctionFixedEntryPoint(method, !function.FptrDelegateTarget, &address);
             }

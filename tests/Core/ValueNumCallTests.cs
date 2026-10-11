@@ -110,10 +110,14 @@ internal static unsafe class ValueNumCallTests
         });
     }
 
-#if FEATURE_READYTORUN
     [Test]
     public static void ReadyToRunAllocationUsesEntryPointIdentity()
     {
+        if (!Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("ReadyToRun is disabled for this target.");
+        }
+
         WithStore((compiler, store) =>
         {
             var call = Helper(CORINFO_HELP_READYTORUN_NEW, TYP_REF);
@@ -128,16 +132,18 @@ internal static unsafe class ValueNumCallTests
             Assert.That(store.TypeOfVN(app.GetArg(1)), Is.EqualTo(TYP_REF));
         });
     }
-#endif
 
     [TestCase(false, false)]
     [TestCase(true, false)]
-#if FEATURE_READYTORUN
     [TestCase(false, true)]
     [TestCase(true, true)]
-#endif
     public static void StackArrayArgumentSelectsLocalAllocationFunction(bool stackArgument, bool readyToRun)
     {
+        if (readyToRun && !Configuration.FEATURE_READYTORUN)
+        {
+            Assert.Ignore("ReadyToRun is disabled for this target.");
+        }
+
         WithStore((compiler, store) =>
         {
             var call = Helper(readyToRun ? CORINFO_HELP_READYTORUN_NEWARR_1 : CORINFO_HELP_NEWARR_1_DIRECT, TYP_REF);

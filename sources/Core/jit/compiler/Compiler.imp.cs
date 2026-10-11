@@ -2183,7 +2183,6 @@ public partial class Compiler
         return true;
     }
 
-#if FEATURE_READYTORUN
     /// <summary>build and import castclass/isinst</summary>
     /// <param name="op1">value to cast</param>
     /// <param name="op2">type handle for type to cast to</param>
@@ -2345,8 +2344,6 @@ public partial class Compiler
         }
         return gtNewLclvNode(qmarkResult.Type, result);
     }
-#endif
-
     /// <summary>do more detailed checks to determine if a method can be inlined, and collect information that will be needed later</summary>
     /// <param name="call">inline candidate</param>
     /// <param name="candidateIndex">index of inline candidate in the call's inline candidate list</param>
@@ -4711,8 +4708,7 @@ public partial class Compiler
 
             if (!exactContextNeedsRuntimeLookup)
             {
-#if FEATURE_READYTORUN
-                if (IsAot)
+                if (Configuration.FEATURE_READYTORUN && IsAot)
                 {
                     instParam = gtNewIconEmbHndNode(callInfo.instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
 
@@ -4723,7 +4719,6 @@ public partial class Compiler
                     }
                 }
                 else
-#endif
                 {
                     instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
                     info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
@@ -4760,8 +4755,7 @@ public partial class Compiler
             }
             else if (!exactContextNeedsRuntimeLookup)
             {
-#if FEATURE_READYTORUN
-                if (IsAot)
+                if (Configuration.FEATURE_READYTORUN && IsAot)
                 {
                     instParam = gtNewIconEmbHndNode(callInfo.instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
 
@@ -4772,7 +4766,6 @@ public partial class Compiler
                     }
                 }
                 else
-#endif
                 {
                     instParam = gtNewIconEmbClsHndNode(exactClassHandle);
                     info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
@@ -8998,10 +8991,13 @@ public partial class Compiler
                     switch (fieldInfo.fieldAccessor)
                     {
                         case CORINFO_FIELD_INSTANCE:
-#if FEATURE_READYTORUN
                         case CORINFO_FIELD_INSTANCE_WITH_BASE:
-#endif
                         {
+                            if ((fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_WITH_BASE) && !Configuration.FEATURE_READYTORUN)
+                            {
+                                unreached();
+                            }
+
                             // If the object is a struct, what we really want is
                             // for the field to operate on the address of the struct.
                             assert(obj is not null);
@@ -9022,12 +9018,10 @@ public partial class Compiler
 
                             op1 = gtNewFieldAddrNode(obj, resolvedToken.hField, fieldInfo.offset);
 
-#if FEATURE_READYTORUN
-                            if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
+                            if (Configuration.FEATURE_READYTORUN && (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE))
                             {
                                 op1.AsFieldAddr().FieldLookup = fieldInfo.fieldLookup;
                             }
-#endif
                             if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
                             {
                                 op1.AsFieldAddr().MayOverlap = true;
@@ -9264,10 +9258,13 @@ public partial class Compiler
                     switch (fieldInfo.fieldAccessor)
                     {
                         case CORINFO_FIELD_INSTANCE:
-#if FEATURE_READYTORUN
                         case CORINFO_FIELD_INSTANCE_WITH_BASE:
-#endif
                         {
+                            if ((fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_WITH_BASE) && !Configuration.FEATURE_READYTORUN)
+                            {
+                                unreached();
+                            }
+
                             // We will create STOREIND/STOREBLK(FIELD_ADDR(obj, fld), data).
                             // The required IL evaluation order is obj -> data -> nullcheck(obj) -> store.
                             // Take care not to reorder the data with the null check.
@@ -9361,10 +9358,13 @@ public partial class Compiler
                     switch (fieldInfo.fieldAccessor)
                     {
                         case CORINFO_FIELD_INSTANCE:
-#if FEATURE_READYTORUN
                         case CORINFO_FIELD_INSTANCE_WITH_BASE:
-#endif
                         {
+                            if ((fieldInfo.fieldAccessor is CORINFO_FIELD_INSTANCE_WITH_BASE) && !Configuration.FEATURE_READYTORUN)
+                            {
+                                unreached();
+                            }
+
                             var mayOverlap = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass));
 
                             if (expandAddrInline)
@@ -9410,12 +9410,10 @@ public partial class Compiler
                                 assert(obj is not null);
                                 op1 = gtNewFieldAddrNode(obj, resolvedToken.hField, fieldInfo.offset);
 
-#if FEATURE_READYTORUN
-                                if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
+                                if (Configuration.FEATURE_READYTORUN && (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE))
                                 {
                                     op1.AsFieldAddr().FieldLookup = fieldInfo.fieldLookup;
                                 }
-#endif
                                 op1.AsFieldAddr().MayOverlap = mayOverlap;
                             }
 
@@ -9617,13 +9615,11 @@ public partial class Compiler
 
                                 if (((fieldInfo.fieldFlags & flagsToCheck) == flagsToCheck) && !eeIsSharedInst(info.compClassHnd))
                                 {
-#if FEATURE_READYTORUN
-                                    if (IsAot)
+                                    if (Configuration.FEATURE_READYTORUN && IsAot)
                                     {
                                         // Need to restore array classes before creating array objects on the heap
                                         op1 = impTokenToHandle(resolvedToken, mustRestoreHandle: true);
                                     }
-#endif
                                     assert(op1 is not null);
                                     op1 = gtNewHelperCallNode(TYP_REF, CORINFO_HELP_NEWARR_1_MAYBEFROZEN, op1, op2);
                                     isFrozenAllocator = true;
@@ -9634,10 +9630,9 @@ public partial class Compiler
 
                     var helper = CORINFO_HELP_UNDEF;
 
-#if FEATURE_READYTORUN
                     var usingReadyToRunHelper = false;
 
-                    if (IsAot && !isFrozenAllocator)
+                    if (Configuration.FEATURE_READYTORUN && IsAot && !isFrozenAllocator)
                     {
                         helper = CORINFO_HELP_READYTORUN_NEWARR_1;
                         op1 = impReadyToRunHelperToTree(resolvedToken, helper, TYP_REF, op2);
@@ -9662,7 +9657,6 @@ public partial class Compiler
                     }
 
                     if (!usingReadyToRunHelper && !isFrozenAllocator)
-#endif
                     {
                         assert(op1 is not null);
 
@@ -9903,10 +9897,9 @@ public partial class Compiler
                     else
                     {
 
-#if FEATURE_READYTORUN
                         var usingReadyToRunHelper = false;
 
-                        if (IsAot)
+                        if (Configuration.FEATURE_READYTORUN && IsAot)
                         {
                             var opLookup = impReadyToRunHelperToTree(resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF, op1);
                             usingReadyToRunHelper = opLookup is not null;
@@ -9933,7 +9926,6 @@ public partial class Compiler
                         }
 
                         if (!usingReadyToRunHelper)
-#endif
                         {
                             assert(op1 is not null);
                             assert(op2 is not null);
@@ -11653,8 +11645,7 @@ public partial class Compiler
             {
                 var usingReadyToRunHelper = false;
 
-#if FEATURE_READYTORUN
-                if (compiler.IsAot)
+                if (Configuration.FEATURE_READYTORUN && compiler.IsAot)
                 {
                     var opLookup = compiler.impReadyToRunHelperToTree(resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST, TYP_REF, op1);
 
@@ -11684,7 +11675,6 @@ public partial class Compiler
                 }
 
                 if (!usingReadyToRunHelper)
-#endif
                 {
                     assert(op2 is not null);
 
@@ -12055,8 +12045,7 @@ public partial class Compiler
 
         // Wasm lacks the dynamic-helper thunks used by the ReadyToRun fast path;
         // use CORINFO_HELP_VIRTUAL_FUNC_PTR instead.
-#if FEATURE_READYTORUN && !TARGET_WASM
-        else if (IsAot)
+        else if (Configuration.FEATURE_READYTORUN && !Configuration.TARGET_WASM && IsAot)
         {
             if (!callInfo.exactContextNeedsRuntimeLookup)
             {
@@ -12071,8 +12060,6 @@ public partial class Compiler
                 call = gtNewRuntimeLookupHelperCallNode(callInfo.codePointerLookup.runtimeLookup, ctxTree, null);
             }
         }
-#endif
-
         if (call is null)
         {
             // Get the exact descriptor for the static callsite
@@ -12691,9 +12678,7 @@ public partial class Compiler
 
             case CORINFO_FIELD_STATIC_TLS_MANAGED:
             {
-#if FEATURE_READYTORUN
-                if (!IsAot)
-#endif // FEATURE_READYTORUN
+                if (!Configuration.FEATURE_READYTORUN || !IsAot)
                 {
                     if (fieldInfo.helper is CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
                                          or CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2
@@ -12712,8 +12697,7 @@ public partial class Compiler
 
             case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
             {
-#if FEATURE_READYTORUN
-                if (IsAot)
+                if (Configuration.FEATURE_READYTORUN && IsAot)
                 {
                     var callFlags = GTF_EMPTY;
 
@@ -12759,7 +12743,6 @@ public partial class Compiler
                     }
                 }
                 else
-#endif
                 {
                     op1 = fgGetStaticsCCtorHelper(resolvedToken.hClass, fieldInfo.helper, typeIndex);
                     isHoistable |= (op1.Flags & GTF_CALL_HOISTABLE) is not 0;
@@ -12771,7 +12754,11 @@ public partial class Compiler
 
             case CORINFO_FIELD_STATIC_RELOCATABLE:
             {
-#if FEATURE_READYTORUN
+                if (!Configuration.FEATURE_READYTORUN)
+                {
+                    unreached();
+                }
+
                 assert(fieldKind == FieldSeq.FieldKind.SimpleStatic);
 
                 var fldAddr = unchecked((nint)(fieldInfo.fieldLookup.addr));
@@ -12789,15 +12776,16 @@ public partial class Compiler
                 var offset = gtNewIconNode(fieldInfo.offset, innerFldSeq);
                 isHoistable = true;
                 op1 = gtNewBinaryNode(GT_ADD, TYP_I_IMPL, op1, offset);
-#else
-                unreached();
-#endif
                 break;
             }
 
             case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
             {
-#if FEATURE_READYTORUN
+                if (!Configuration.FEATURE_READYTORUN)
+                {
+                    unreached();
+                }
+
                 assert(IsAot);
                 assert(!compIsForInlining);
 
@@ -12822,9 +12810,6 @@ public partial class Compiler
                 call._entryPoint = fieldInfo.fieldLookup;
 
                 op1 = gtNewBinaryNode(GT_ADD, call.Type, call, gtNewIconNode(fieldInfo.offset, innerFldSeq));
-#else
-                unreached();
-#endif
                 break;
             }
 
@@ -13395,6 +13380,11 @@ public partial class Compiler
             return null;
         }
 
+        if (!Configuration.FEATURE_READYTORUN && newArrayCall.IsHelperCall(CORINFO_HELP_READYTORUN_NEWARR_1))
+        {
+            return null;
+        }
+
         // Verify that it is one of the new array helpers.
         var isMDArray = false;
 
@@ -13405,9 +13395,7 @@ public partial class Compiler
             case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
-#if FEATURE_READYTORUN
             case CORINFO_HELP_READYTORUN_NEWARR_1:
-#endif
             {
                 break;
             }
@@ -13565,8 +13553,7 @@ public partial class Compiler
             // Make sure there are exactly two arguments:  the array class and the number of elements.
             GenTree arrayLengthNode;
 
-#if FEATURE_READYTORUN
-            if (newArrayCall.IsHelperCall(CORINFO_HELP_READYTORUN_NEWARR_1) ||
+            if ((Configuration.FEATURE_READYTORUN && newArrayCall.IsHelperCall(CORINFO_HELP_READYTORUN_NEWARR_1)) ||
                 newArrayCall.IsHelperCall(CORINFO_HELP_NEWARR_1_MAYBEFROZEN))
             {
                 // Array length is 1st argument for readytorun helper
@@ -13575,7 +13562,6 @@ public partial class Compiler
                 arrayLengthNode = callArg0.Node;
             }
             else
-#endif
             {
                 // Array length is 2nd argument for regular helper
                 var callArg1 = newArrayCall.Args.GetArgByIndex(1);
@@ -14310,7 +14296,6 @@ public partial class Compiler
         }
     }
 
-#if FEATURE_READYTORUN
     /// <summary>Checks whether a tree is a cast helper eligible to to be profiled and then optimized with PGO data</summary>
     /// <param name="tree">the tree object to check</param>
     /// <returns>true if the tree is a cast helper eligible to be profiled</returns>
@@ -14378,8 +14363,6 @@ public partial class Compiler
             }
         }
     }
-#endif
-
     public unsafe bool impIsImplicitTailCallCandidate(OPCODE opcode, byte* codeAddrOfNextOpcode, byte* codeEnd, int prefixFlags, bool isRecursive)
     {
 #if FEATURE_TAILCALL_OPT
@@ -15551,12 +15534,10 @@ public partial class Compiler
             {
                 var fptrVal = gtNewFptrValNode(TYP_I_IMPL, callInfo.hMethod);
 
-#if FEATURE_READYTORUN
-                if (IsAot)
+                if (Configuration.FEATURE_READYTORUN && IsAot)
                 {
                     fptrVal.EntryPoint = callInfo.codePointerLookup.constLookup;
                 }
-#endif
                 op1 = fptrVal;
                 break;
             }
@@ -17015,9 +16996,13 @@ public partial class Compiler
         }
     }
 
-#if FEATURE_READYTORUN
     public unsafe GenTreeCall? impReadyToRunHelperToTree(in CORINFO_RESOLVED_TOKEN resolvedToken, CorInfoHelpFunc helper, var_types type, GenTree? arg1 = null)
     {
+        if (!Configuration.FEATURE_READYTORUN)
+        {
+            return null;
+        }
+
         CORINFO_CONST_LOOKUP lookup;
 
         fixed (CORINFO_RESOLVED_TOKEN* pResolvedToken = &resolvedToken)
@@ -17039,7 +17024,6 @@ public partial class Compiler
         }
         return op1;
     }
-#endif
 
     // Similar to impImportBlockPending, but assumes that block has already been imported once and is being
     // reimported for some reason.  It specifically does *not* look at stackState to set the EntryState
@@ -18015,12 +17999,10 @@ public partial class Compiler
             return gtNewRuntimeLookupHelperCallNode(runtimeLookup, ctxTree, compileTimeHandle);
         }
 
-#if FEATURE_READYTORUN
-        if (runtimeLookup.indirections is CORINFO_USENULL)
+        if (Configuration.FEATURE_READYTORUN && (runtimeLookup.indirections is CORINFO_USENULL))
         {
             return gtNewIconNode(TYP_I_IMPL, 0);
         }
-#endif
 
         if (runtimeLookup.testForNull)
         {
@@ -20129,8 +20111,7 @@ public partial class Compiler
 #endif
         }
 
-#if FEATURE_READYTORUN
-        if (IsAot)
+        if (Configuration.FEATURE_READYTORUN && IsAot)
         {
             // For R2R, getCallInfo triggers bookkeeping on the zap
             // side and acquires the actual symbol to call so we need to call it here.
@@ -20143,7 +20124,6 @@ public partial class Compiler
             call._callMoreFlags &= ~GTF_CALL_M_VIRTSTUB_REL_INDIRECT;
             call._entryPoint = derivedCallInfo.codePointerLookup.constLookup;
         }
-#endif
 
 #if DEBUG
         if (verbose)
