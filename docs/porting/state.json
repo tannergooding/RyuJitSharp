@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Remove the always-defined FEATURE_USE_ASM_GC_WRITE_BARRIERS conditional under TARGET_X86 in Compiler.HelperCallKillSet.cs and its csproj define; preserve the x86 EAX/EDX kill mask.",
+    "nextAction": "Universalize dormant FEATURE_VN_DUMP_FUNC_ARGS in valuenum/ValueNumStore.Diagnostics.cs with a runtime switch defaulted off by each RID substitution; replace its source guard and remove the commented csproj define.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Remove FEATURE_VN_TRACE_APPLY_SELECTORS preprocessor guards from value-number map selector tracing because the project always defined it; preserve its Debug-only verbose tracing guard.",
-      "doneWhen": "No FEATURE_VN_TRACE_APPLY_SELECTORS source guards or project define remain, and map simplification behavior and Debug tracing match the prior always-enabled build.",
-      "validation": "ValueNumMapTests and ValueNumMemoryAccessTests passed 37/37 in Debug and 15/15 in Release on win-x64. `git diff --check` passed.",
-      "deferred": "FEATURE_VN_TRACE_APPLY_SELECTORS was unconditionally defined, so removing its guards preserves existing behavior. The broader TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Remove FEATURE_USE_ASM_GC_WRITE_BARRIERS because the project always defined it; preserve the x86 helper-call kill mask and remove the unreachable test expectations.",
+      "doneWhen": "No FEATURE_USE_ASM_GC_WRITE_BARRIERS preprocessor guards or project define remain, and x86 write-barrier helpers continue to kill EAX and EDX.",
+      "validation": "Debug and Release win-x86 FeatureConfigurationTests passed 21/21 each, compiling the x86 implementation. The focused Core unit-test project could not compile for win-x86 because unrelated test files reference architecture-specific symbols absent on x86 (for example SRBM_LNGRET and REG_R8); no tests ran in that attempt. `git diff --check` passed.",
+      "deferred": "FEATURE_USE_ASM_GC_WRITE_BARRIERS was unconditionally defined, so its alternate callee-trash branch was unreachable. The broader TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {

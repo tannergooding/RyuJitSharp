@@ -496,9 +496,6 @@
     <!-- FEATURE_ON_STACK_REPLACEMENT -->
     <DefineConstants>$(DefineConstants);FEATURE_ON_STACK_REPLACEMENT</DefineConstants>
     
-    <!-- FEATURE_USE_ASM_GC_WRITE_BARRIERS -->
-    <DefineConstants>$(DefineConstants);FEATURE_USE_ASM_GC_WRITE_BARRIERS</DefineConstants>
-
     <!-- FUNC_INFO_LOGGING: Support dumping function info to a file. In retail, only NYIs, with no function name, are dumped -->
     <DefineConstants>$(DefineConstants);FUNC_INFO_LOGGING</DefineConstants>
 

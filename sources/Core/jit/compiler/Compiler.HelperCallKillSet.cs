@@ -181,11 +181,7 @@ public partial class Compiler
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             {
 #if TARGET_X86
-#if FEATURE_USE_ASM_GC_WRITE_BARRIERS
                 return new regMaskTP(SRBM_EAX | SRBM_EDX);
-#else
-                return new regMaskTP(calleeTrash);
-#endif
 #elif TARGET_ARM
                 return new regMaskTP(SRBM_R0 | SRBM_R3 | SRBM_LR | SRBM_R12);
 #elif TARGET_LOONGARCH64
