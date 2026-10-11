@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="RyuJitSharp">
+    <type fullname="RyuJitSharp.Configuration">
+      <method signature="System.Boolean get_FEATURE_HAS_ZERO_REG()" body="stub" value="true" />
+    </type>
+  </assembly>
+</linker>

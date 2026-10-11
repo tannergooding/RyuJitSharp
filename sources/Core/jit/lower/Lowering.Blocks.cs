@@ -424,9 +424,10 @@ public sealed partial class Lowering
             }
             else if (fill == 0)
             {
-#if FEATURE_HAS_ZERO_REG
-                source.IsContained = true;
-#endif
+                if (Configuration.FEATURE_HAS_ZERO_REG)
+                {
+                    source.IsContained = true;
+                }
             }
 #if TARGET_64BIT
             else if (size >= REGSIZE_BYTES)
@@ -450,9 +451,10 @@ public sealed partial class Lowering
         {
             // A GC-safe helper could observe a torn GC pointer, including in a stack destination.
             block._kind = GenTreeBlk.BlkOpKindLoop;
-#if FEATURE_HAS_ZERO_REG
-            source.IsContained = true;
-#endif
+            if (Configuration.FEATURE_HAS_ZERO_REG)
+            {
+                source.IsContained = true;
+            }
         }
         else
         {

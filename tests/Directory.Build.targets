@@ -12,6 +12,20 @@
 
   <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.targets" />
 
+  <!-- Untrimmed test hosts do not apply NativeAOT substitutions, so provide the target feature value in their runtimeconfig. -->
+  <PropertyGroup>
+    <RyuJitTestTargetRuntimeIdentifier Condition="'$(RyuJitTargetRuntimeIdentifier)' != ''">$(RyuJitTargetRuntimeIdentifier)</RyuJitTestTargetRuntimeIdentifier>
+    <RyuJitTestTargetRuntimeIdentifier Condition="'$(RyuJitTestTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' != ''">$(TargetRuntimeIdentifier)</RyuJitTestTargetRuntimeIdentifier>
+    <RyuJitTestTargetRuntimeIdentifier Condition="'$(RyuJitTestTargetRuntimeIdentifier)' == '' and '$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</RyuJitTestTargetRuntimeIdentifier>
+    <RyuJitTestTargetRuntimeIdentifier Condition="'$(RyuJitTestTargetRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</RyuJitTestTargetRuntimeIdentifier>
+    <RyuJitFeatureHasZeroReg Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitFeatureHasZeroReg>
+    <RyuJitFeatureHasZeroReg Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm64')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-loongarch64')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-riscv64'))">true</RyuJitFeatureHasZeroReg>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != ''">
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HAS_ZERO_REG" Value="$(RyuJitFeatureHasZeroReg)" />
+  </ItemGroup>
+
   <Target Name="GetRyuJitCompileConstants" BeforeTargets="CoreCompile">
     <MSBuild Projects="@(ProjectReference)" Targets="GetRyuJitCompileConstants" Properties="Configuration=$(Configuration)">
       <Output TaskParameter="TargetOutputs" ItemName="_RyuJitCompileConstants" />
