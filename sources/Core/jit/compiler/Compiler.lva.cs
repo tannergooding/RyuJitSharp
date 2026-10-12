@@ -293,14 +293,12 @@ public partial class Compiler
     public int lvaFfrRegister = BAD_VAR_NUM;
 #endif
 
-#if FEATURE_SIMD
     /// <summary>This is a temp lclVar allocated on the stack as TYP_SIMD_ARM64.</summary>
     /// <remarks>
     ///   <para>It is used to implement intrinsics that require indexed access to the individual fields of the vector, which is not well supported by the hardware.</para>
     ///   <para>It is allocated when/if such situations are encountered during Lowering.</para> 
     /// </remarks>
     public int lvaSimdInitTempVarNum = BAD_VAR_NUM;
-#endif
 
     /// <summary>The highest frame layout state that we've completed.</summary>
     /// <remarks>During frame layout calculations, this is the level we are currently computing.</remarks>
@@ -1171,9 +1169,13 @@ public partial class Compiler
         return false;
     }
 
-#if FEATURE_SIMD
     public bool lvaMapSimd12ToSimd16(int varNum)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD12 local widening is unsupported on this target.");
+        }
+
         ref var descriptor = ref lvaGetDesc(varNum);
         assert(descriptor.Type is TYP_SIMD12);
         if (lvaLclStackHomeSize(varNum) != 16)
@@ -1187,10 +1189,8 @@ public partial class Compiler
             ref var parent = ref lvaGetDesc(descriptor.lvParentLcl);
             return (parent.lvFieldCnt == 1) && (lvaLclStackHomeSize(descriptor.lvParentLcl) == 16);
         }
-
         return true;
     }
-#endif
 
     /// <summary>Determine whether this var should be reported as tracked for GC purposes.</summary>
     /// <param name="varDsc">the LclVarDsc for the var in question.</param>
@@ -1597,9 +1597,13 @@ public partial class Compiler
         return lclNum;
     }
 
-#if FEATURE_SIMD
     public int getSIMDInitTempVarNum(var_types simdType)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD initialization temps are unsupported on this target.");
+        }
+
         if (lvaSimdInitTempVarNum == BAD_VAR_NUM)
         {
             JITDUMP($"Allocating SIMDInitTempVar as {simdType.Name}\n");
@@ -1613,7 +1617,6 @@ public partial class Compiler
         }
         return lvaSimdInitTempVarNum;
     }
-#endif
 
     public bool lvaHasAnySwiftStackParamToReassemble()
     {
@@ -2537,16 +2540,14 @@ public partial class Compiler
             return roundUp(varDsc.lvExactSize, TARGET_POINTER_SIZE);
         }
 
-#if FEATURE_SIMD && !TARGET_64BIT
         // For 32-bit architectures, we make local variable simd12 types 16 bytes instead of just 12. We can't do
         // this for arguments, which must be passed according the defined ABI. We don't want to do this for
         // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
         // (Note that for 64-bits, we are already rounding up to 16.)
-        if (varDsc.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && Configuration.TARGET_32BIT && (varDsc.Type is TYP_SIMD12))
         {
             return 16;
         }
-#endif
 
         return roundUp(varDsc.lvExactSize, TARGET_POINTER_SIZE);
     }
@@ -2709,7 +2710,16 @@ public partial class Compiler
 
         var structSize = info.compCompHnd->getClassSize(clsHnd);
 
-#if FEATURE_SIMD
+        if (!Configuration.FEATURE_SIMD)
+        {
+            return false;
+        }
+
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD type classification is unsupported on this target.");
+        }
+
 #if TARGET_ARM64
         var maxSize = compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
 
@@ -2718,9 +2728,6 @@ public partial class Compiler
 
 #endif
         return (structSize >= GetMinVectorByteLength()) && (structSize <= maxSize);
-#else
-        return false;
-#endif
     }
 
     /// <summary>Set the type of a local to a struct, given its type handle.</summary>

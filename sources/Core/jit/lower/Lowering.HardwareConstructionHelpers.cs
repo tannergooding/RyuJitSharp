@@ -7,17 +7,21 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_SIMD
     private GenTree InsertNewSimdCreateScalarUnsafeNode(var_types simdType, GenTree operand, var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD lowering is unsupported on this target.");
+        }
+
         assert(varTypeIsSimd(simdType));
 
-#if TARGET_XARCH || TARGET_ARM64
-        if (varTypeIsFloating(simdBaseType) && !operand.Oper.IsCnsFltOrDbl)
+        if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM64) &&
+            varTypeIsFloating(simdBaseType) &&
+            !operand.Oper.IsCnsFltOrDbl)
         {
             return operand;
         }
-#endif
 
         var result = CompilerInstance.gtNewSimdCreateScalarUnsafeNode(simdType, operand, simdBaseType, simdSize);
         BlockRange().InsertAfter(operand, result);
@@ -30,7 +34,6 @@ public sealed partial class Lowering
         _ = LowerNode(result);
         return result;
     }
-#endif
 
     private GenTreeLclVar ReplaceWithLclVar(LIR.Use use, int tempNum = BAD_VAR_NUM)
     {

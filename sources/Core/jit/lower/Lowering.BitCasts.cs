@@ -32,9 +32,7 @@ public sealed partial class Lowering
         assert(node.Type.Size == operand.Type.ActualType.Size);
         var changed = false;
         var isConstant = operand.Oper is GT_CNS_INT or GT_CNS_DBL;
-#if FEATURE_SIMD
-        isConstant |= operand.Oper is GT_CNS_VEC;
-#endif
+        isConstant |= Configuration.FEATURE_SIMD && (operand.Oper is GT_CNS_VEC);
         if (isConstant)
         {
             Span<byte> bits = stackalloc byte[SimdStorageSize];
@@ -45,12 +43,10 @@ public sealed partial class Lowering
                 assert(IntPtr.Size >= operand.Type.ActualType.Size);
                 MemoryMarshal.Write(bits, in value);
             }
-#if FEATURE_SIMD
-            else if (operand.Oper is GT_CNS_VEC)
+            else if (Configuration.FEATURE_SIMD && (operand.Oper is GT_CNS_VEC))
             {
                 operand.AsVecCon().SimdVal.AsSpan<byte>()[..operand.Type.Size].CopyTo(bits);
             }
-#endif
             else if (operand.Type is TYP_FLOAT)
             {
                 var value = (float)operand.AsDblCon().DconVal;

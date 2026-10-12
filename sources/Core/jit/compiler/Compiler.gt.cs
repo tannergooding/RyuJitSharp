@@ -10713,52 +10713,6 @@ public partial class Compiler
 #endif
     }
 
-    /// <summary>Creates a new simd CreateScalarUnsafe node</summary>
-    /// <param name="type">The return type of SIMD node being created</param>
-    /// <param name="op1">The value of element 0 of the simd value</param>
-    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
-    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
-    /// <returns>The created CreateScalarUnsafe node</returns>
-    /// <remarks>This API is unsafe as it leaves the upper-bits of the vector undefined</remarks>
-    public GenTree gtNewSimdCreateScalarUnsafeNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
-    {
-        if (op1.Oper.IsConst)
-        {
-            // Since the upper bits are considered non-deterministic and we can therefore
-            // set them to anything, we broadcast the value.
-            //
-            // We do this as it simplifies the logic and allows certain code paths to
-            // have better codegen, such as for 0, AllBitsSet, or certain small constants
-
-            var vecCon = gtNewVconNode(type);
-
-            if (op1.Oper.IsIntegralConst)
-            {
-                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsIntConCommon().IntegralValue);
-            }
-            else
-            {
-                assert(op1.Oper.IsCnsFltOrDbl);
-                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsDblCon().DconVal);
-            }
-            return vecCon;
-        }
-
-#if TARGET_XARCH
-        var hwIntrinsicId = NI_Vector_CreateScalarUnsafe;
-#elif TARGET_ARM64
-        var hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
-            ? NI_Vector_Create
-            : NI_Vector_CreateScalarUnsafe;
-#elif TARGET_WASM
-        var hwIntrinsicId = NI_Vector_CreateScalarUnsafe;
-#else
-#error Unsupported platform
-#endif
-
-        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
-    }
-
 #if FEATURE_MASKED_HW_INTRINSICS
     /// <summary>Convert a HW intrinsic mask node to a vector</summary>
     /// <param name="type">The type of the node to convert to</param>

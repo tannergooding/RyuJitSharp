@@ -86,12 +86,9 @@ public sealed partial class Lowering
         else if (addr.Oper.IsCnsIntOrI)
         {
             var icon = addr.AsIntConCommon();
-#if FEATURE_SIMD
-            if (((node.Type is not TYP_SIMD12) || !icon.ImmedValNeedsReloc(CompilerInstance)) &&
+            if ((!Configuration.FEATURE_SIMD || (node.Type is not TYP_SIMD12) ||
+                 !icon.ImmedValNeedsReloc(CompilerInstance)) &&
                 icon.FitsInAddrBase(CompilerInstance))
-#else
-            if (icon.FitsInAddrBase(CompilerInstance))
-#endif
             {
                 MakeSrcContained(node, addr);
             }
@@ -105,12 +102,10 @@ public sealed partial class Lowering
         {
             return;
         }
-#if FEATURE_SIMD
-        if (node.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (node.Type is TYP_SIMD12))
         {
             return;
         }
-#endif
 
         var addr = node.Addr;
         if ((addr.Oper is GT_LEA) && IsInvariantInRange(addr, node))
@@ -164,9 +159,10 @@ public sealed partial class Lowering
         {
             return;
         }
-#if FEATURE_SIMD
-        NYI_RISCV64("ContainCheckIndir-SIMD");
-#endif
+        if (Configuration.FEATURE_SIMD)
+        {
+            NYI_RISCV64("ContainCheckIndir-SIMD");
+        }
 
         var addr = node.Addr;
         if ((addr.Oper is GT_LEA) && IsSafeToContainMem(node, addr))
@@ -188,9 +184,10 @@ public sealed partial class Lowering
             return;
         }
 
-#if FEATURE_SIMD
-        NYI_LOONGARCH64("ContainCheckIndir-SIMD");
-#endif
+        if (Configuration.FEATURE_SIMD)
+        {
+            NYI_LOONGARCH64("ContainCheckIndir-SIMD");
+        }
 
         var addr = node.Addr;
         if ((addr.Oper is GT_LEA) && IsInvariantInRange(addr, node))

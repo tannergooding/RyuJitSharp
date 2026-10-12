@@ -7,14 +7,14 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if TARGET_RISCV64 && FEATURE_SIMD
-    private void LowerSIMD(GenTreeSIMD simdNode)
+#if TARGET_RISCV64
+    private void LowerSIMD(GenTree simdNode)
     {
         NYI_RISCV64("LowerSIMD");
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD lowering is not ported.");
     }
 
-    private void ContainCheckSIMD(GenTreeSIMD simdNode)
+    private void ContainCheckSIMD(GenTree simdNode)
     {
         NYI_RISCV64("ContainCheckSIMD");
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD containment is not ported.");

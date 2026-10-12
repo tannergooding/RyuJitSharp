@@ -176,10 +176,7 @@ public sealed partial class Lowering
             else if (src.Oper is GT_CNS_INT)
             {
                 assert(src.IsIntegralConst(0), "expected an INIT_VAL for non-zero init.");
-                var retypeZeroToRegType = false;
-#if FEATURE_SIMD
-                retypeZeroToRegType = varTypeIsSimd(localRegisterType);
-#endif
+                var retypeZeroToRegType = Configuration.FEATURE_SIMD && varTypeIsSimd(localRegisterType);
 #if TARGET_WASM
                 retypeZeroToRegType |= localRegisterType != src.Type;
 #endif
@@ -281,15 +278,14 @@ public sealed partial class Lowering
 
     private void WidenSIMD12IfNecessary(GenTreeLclVarCommon node)
     {
-#if FEATURE_SIMD
-        if ((node.Type is TYP_SIMD12) && CompilerInstance.lvaMapSimd12ToSimd16(node.LclNum))
+        if (Configuration.FEATURE_SIMD && (node.Type is TYP_SIMD12) &&
+            CompilerInstance.lvaMapSimd12ToSimd16(node.LclNum))
         {
             JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
             DISPNODE(node);
             JITDUMP("============\n");
             node.Type = TYP_SIMD16;
         }
-#endif
     }
 
     private bool CheckMultiRegLclVar(GenTreeLclVar node, int registerCount)
@@ -311,17 +307,18 @@ public sealed partial class Lowering
                     (registerCount == descriptor.lvFieldCnt))
                 {
                     canEnregisterAsMultiReg = true;
-#if FEATURE_SIMD
-                    // A Vector3 field can span ABI registers, even when register and field counts match.
-                    for (var i = 0; i < descriptor.lvFieldCnt; i++)
+                    if (Configuration.FEATURE_SIMD)
                     {
-                        if (CompilerInstance.lvaGetDesc(descriptor.lvFieldLclStart + i).Type is TYP_SIMD12)
+                        // A Vector3 field can span ABI registers, even when register and field counts match.
+                        for (var i = 0; i < descriptor.lvFieldCnt; i++)
                         {
-                            canEnregisterAsMultiReg = false;
-                            break;
+                            if (CompilerInstance.lvaGetDesc(descriptor.lvFieldLclStart + i).Type is TYP_SIMD12)
+                            {
+                                canEnregisterAsMultiReg = false;
+                                break;
+                            }
                         }
                     }
-#endif
                 }
             }
             else
@@ -433,42 +430,46 @@ public sealed partial class Lowering
         }
 
         ref var descriptor = ref CompilerInstance.lvaGetDesc(storeLoc.LclNum);
-#if FEATURE_SIMD
+        if (Configuration.FEATURE_SIMD)
+        {
 #if TARGET_ARM64
-        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
-        {
-            if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+            if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
             {
-                MakeSrcContained(storeLoc, source);
+                if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+                {
+                    MakeSrcContained(storeLoc, source);
+                }
+
+                return;
             }
-            return;
-        }
 #elif TARGET_ARM
-        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
-        {
-            if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+            if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
             {
-                MakeSrcContained(storeLoc, source);
+                if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+                {
+                    MakeSrcContained(storeLoc, source);
+                }
+
+                return;
             }
-            return;
-        }
 #elif TARGET_RISCV64
-        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
-        {
-            if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+            if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
             {
-                MakeSrcContained(storeLoc, source);
+                if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
+                {
+                    MakeSrcContained(storeLoc, source);
+                }
+
+                return;
             }
-            return;
-        }
 #else
-        if (varTypeIsSimd(storeLoc.Type))
-        {
-            assert(!source.Oper.IsCnsIntOrI);
-            return;
+            if (varTypeIsSimd(storeLoc.Type))
+            {
+                assert(!source.Oper.IsCnsIntOrI);
+                return;
+            }
+#endif
         }
-#endif
-#endif
 #if TARGET_ARM64
         if (IsContainableImmed(storeLoc, source))
         {
@@ -522,8 +523,7 @@ public sealed partial class Lowering
         }
 
         ref var descriptor = ref CompilerInstance.lvaGetDesc(storeLoc.LclNum);
-#if FEATURE_SIMD
-        if (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (storeLoc.Type is TYP_SIMD8 or TYP_SIMD12))
         {
             if ((source.IsIntegralConst(0) || source.IsVectorZero) && descriptor.lvDoNotEnregister)
             {
@@ -531,7 +531,6 @@ public sealed partial class Lowering
             }
             return;
         }
-#endif
         if (IsContainableImmed(storeLoc, source))
         {
             MakeSrcContained(storeLoc, source);

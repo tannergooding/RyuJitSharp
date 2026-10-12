@@ -89,6 +89,62 @@ public partial class Compiler
         return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
     }
 
+    /// <summary>Creates a new simd CreateScalarUnsafe node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The value of element 0 of the simd value</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created CreateScalarUnsafe node</returns>
+    /// <remarks>This API is unsafe as it leaves the upper-bits of the vector undefined</remarks>
+    public GenTree gtNewSimdCreateScalarUnsafeNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+        }
+
+        if (op1.Oper.IsConst)
+        {
+            // Since the upper bits are considered non-deterministic and we can therefore
+            // set them to anything, we broadcast the value.
+            //
+            // We do this as it simplifies the logic and allows certain code paths to
+            // have better codegen, such as for 0, AllBitsSet, or certain small constants.
+            var vecCon = gtNewVconNode(type);
+
+            if (op1.Oper.IsIntegralConst)
+            {
+                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsIntConCommon().IntegralValue);
+            }
+            else
+            {
+                assert(op1.Oper.IsCnsFltOrDbl);
+                vecCon.EvaluateBroadcastInPlace(simdBaseType, op1.AsDblCon().DconVal);
+            }
+
+            return vecCon;
+        }
+
+        NamedIntrinsic hwIntrinsicId;
+
+        if (Configuration.TARGET_ARM64)
+        {
+            hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
+                ? NI_Vector_Create
+                : NI_Vector_CreateScalarUnsafe;
+        }
+        else if (Configuration.TARGET_XARCH || Configuration.TARGET_WASM)
+        {
+            hwIntrinsicId = NI_Vector_CreateScalarUnsafe;
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
+    }
+
     /// <summary>Creates a new simd ToScalar node.</summary>
     /// <param name="type">The return type of SIMD node being created.</param>
     /// <param name="op1">The SIMD operand.</param>
