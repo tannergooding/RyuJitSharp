@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Convert `regNumberExtensions` name formatting and register bounds/sentinels to runtime `Configuration` dispatch using qualified enum values. Keep each target's switch table separate to avoid duplicate numeric cases; defer mask-table behavior until its width and upper-bank storage closure is ready.",
+    "nextAction": "Trace `s_masks` and `regMaskTP` storage from `regNumberExtensions.SingleTypeMask` through upper-bank mask operations and LSRA consumers; establish the complete width/storage dependency closure before runtime-dispatching the register-mask table.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Emit target-qualified `regNumber` identities and explicit target-local count/sentinel values from all seven architecture register headers, retaining the current target-selected members for existing consumers until their runtime-dispatch migrations.",
-      "doneWhen": "Every target header's definitions and aliases are available with an architecture suffix and retain their native ordinal; sentinel values are explicit per target; representative collisions, aliases, and all target counts are tested; existing target-specific register behavior is unchanged.",
-      "validation": "`dotnet run --no-restore` passed from `sources\\GenerateTables`; the reviewed generated enum SHA256 matched the checked-in generated file. The combined `AbiPassingSegmentStorageTests` and `RegNumberIdentityTests` suite passed 5/5 under Release for win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-arm64, browser-wasm, linux-arm, linux-riscv64, and linux-loongarch64. `RegNumberIdentityTests` compares every current target enum name and alias against its target-qualified union member. The prior storage batch's additional Core and Debug ABI matrix remains recorded in its commit context.",
-      "deferred": "Continue the remaining target/feature preprocessor migration in dependency-coherent batches. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Move register-name formatting and bounds/sentinel handling to runtime `Configuration` dispatch using target-qualified enum values. Generate separate fixed-register switch tables for each architecture, and preserve Wasm local-name formatting; leave the target-specific register-mask table unchanged.",
+      "doneWhen": "Every supported target reports the same register names and sentinel behavior as before; each generated fixed-register switch uses only its target-qualified identities; Wasm index formatting and the non-Wasm unsupported-helper failure remain explicit; target-mask generation is unchanged.",
+      "validation": "`dotnet run --no-restore` passed from `sources\\GenerateTables`; the generated register-extension output SHA256 matched the checked-in file. All 360 fixed-register name entries match the previous target-specific maps, and the generated register-mask table is unchanged. Focused Release register-name and identity tests passed 4/4 on each of win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-arm64, browser-wasm, linux-arm, linux-riscv64, and linux-loongarch64. The full-analyzer run remains blocked by IDE2002/IDE0059/IDE0058 diagnostics in unchanged `Compiler.gt*.cs` files.",
+      "deferred": "Register-mask table width and upper-bank storage remain a separate dependency-coherent batch. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -699,6 +699,29 @@
       "disposition": "Generated target-qualified enum members and explicit per-target count sentinels preserve native ordinals and aliases. Existing target-selected enum members remain temporarily for unmigrated consumers; the register-mask tables and their target-specific storage are explicitly deferred to a separate dependency-coherent batch.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "Generator output was regenerated and compared byte-for-byte with the checked-in enum. The combined storage and register identity fixtures passed 5/5 in Release for all ten supported test-target RIDs; the identity fixture compares every current target enum name and alias."
+    },
+    {
+      "area": "universal-register-name-dispatch",
+      "native": [
+        "src\\coreclr\\jit\\registerx86.h",
+        "src\\coreclr\\jit\\registeramd64.h",
+        "src\\coreclr\\jit\\registerarm.h",
+        "src\\coreclr\\jit\\registerarm64.h",
+        "src\\coreclr\\jit\\registerloongarch64.h",
+        "src\\coreclr\\jit\\registerriscv64.h",
+        "src\\coreclr\\jit\\registerwasm.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Program.cs",
+        "sources\\Core\\jit\\target\\regNumberExtensions.cs",
+        "sources\\Core\\jit\\target\\regNumberExtensions.RegisterNames.cs",
+        "sources\\Core\\jit\\target\\regNumberExtensions.generated.cs",
+        "sources\\Core\\jit\\targetwasm\\regNumberExtensions.Wasm.cs",
+        "tests\\Core\\RegNumberNameTests.cs"
+      ],
+      "disposition": "Register-name interpretation uses runtime target configuration because equal numeric values from different register enums carry no architecture tag. Generated fixed-register switches remain target-qualified and separate; Wasm keeps its type-bit/index formatting. The mask table remains target-specific and unchanged.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Generated register-extension output matched the checked-in file byte-for-byte. All 360 fixed-register name entries match the previous target-specific maps, the mask table is unchanged, and focused Release tests passed 4/4 for all ten target RIDs."
     }
   ],
   "generatorInputMapping": {

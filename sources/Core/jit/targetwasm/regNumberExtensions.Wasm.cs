@@ -4,16 +4,10 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 #if TARGET_WASM
-using System;
-
 namespace RyuJitSharp;
 
 public static partial class regNumberExtensions
 {
-    private const int WASM_REG_TYPE_BITS = 3;
-    private const int WASM_REG_TYPE_SHIFT = 32 - WASM_REG_TYPE_BITS;
-    private const uint WASM_REG_TYPE_MASK = uint.MaxValue << WASM_REG_TYPE_SHIFT;
-
     public static regNumber MakeWasmReg(uint index, var_types type)
     {
         return MakeWasmReg(index, TypeToWasmValueType(type));
@@ -96,35 +90,11 @@ public static partial class regNumberExtensions
         return (type is WasmValueType.F32) || (type is WasmValueType.F64) || (type is WasmValueType.V128);
     }
 
-    public static string GetWasmRegName(regNumber reg)
-    {
-        if (reg is REG_NA)
-        {
-            return "NA";
-        }
-
-        ReadOnlySpan<string> names = [
-            "$0", "$1", "$2", "$3", "$4", "$5", "$6", "$7", "$8", "$9",
-            "$10", "$11", "$12", "$13", "$14", "$15", "$16", "$17", "$18", "$19",
-        ];
-        var index = UnpackWasmReg(reg, out _);
-        if (index < (uint)names.Length)
-        {
-            return names[(int)index];
-        }
-
-        return "$<too large to print>";
-    }
-
     private static WasmValueType InvalidWasmType()
     {
         unreached();
         return WasmValueType.Invalid;
     }
 
-    extension(regNumber regNum)
-    {
-        public string Name => GetWasmRegName(regNum);
-    }
 }
 #endif

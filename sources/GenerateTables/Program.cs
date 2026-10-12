@@ -14,6 +14,16 @@ namespace RyuJitSharp;
 
 internal static class Program
 {
+    private static readonly (string Target, string InputFile)[] s_registerTargetHeaders = [
+        ("X86", @"Inputs\registerx86.h"),
+        ("AMD64", @"Inputs\registeramd64.h"),
+        ("ARM", @"Inputs\registerarm.h"),
+        ("ARM64", @"Inputs\registerarm64.h"),
+        ("LOONGARCH64", @"Inputs\registerloongarch64.h"),
+        ("RISCV64", @"Inputs\registerriscv64.h"),
+        ("WASM", @"Inputs\registerwasm.h"),
+    ];
+
     public static void Main()
     {
         var workingDirectory = Environment.CurrentDirectory;
@@ -4727,18 +4737,9 @@ public enum regNumber : uint
     private static StringBuilder ProcessTargetQualifiedRegisterNumbers()
     {
         var builder = new StringBuilder();
-        var targetHeaders = new (string Target, string InputFile)[] {
-            ("X86", @"Inputs\registerx86.h"),
-            ("AMD64", @"Inputs\registeramd64.h"),
-            ("ARM", @"Inputs\registerarm.h"),
-            ("ARM64", @"Inputs\registerarm64.h"),
-            ("LOONGARCH64", @"Inputs\registerloongarch64.h"),
-            ("RISCV64", @"Inputs\registerriscv64.h"),
-            ("WASM", @"Inputs\registerwasm.h"),
-        };
         var prefixes = new[] { "REGDEF(", "REGALIAS(" };
 
-        foreach (var (target, inputFile) in targetHeaders)
+        foreach (var (target, inputFile) in s_registerTargetHeaders)
         {
             var registerBases = ReadRegisterBaseValues(inputFile);
             var stackRegister = -1;
@@ -4831,17 +4832,34 @@ public enum regNumber : uint
 
     private static void GenerateRegNumberExtensions()
     {
-        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 4 and not 5)
+        var namesBuilder = new StringBuilder();
+
+        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        {
+            if (target is "WASM")
             {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
+                continue;
             }
 
-            var name = parts[0].AsSpan().Trim();
-            var sname = parts[3].AsSpan().Trim();
+            var targetBuilder = ProcessMacroBasedFileUnion(inputFile, "REGDEF(", (output, _, line, _, parts) => {
+                if (parts.Length is not 4 and not 5)
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        REG_{name} => {sname},");
-        }, includeRegAlias: false);
+                var name = parts[0].AsSpan().Trim();
+                var sname = parts[3].AsSpan().Trim();
+
+                _ = output.AppendLine(CultureInfo.InvariantCulture, $"        REG_{name}_{target} => {sname},");
+            });
+
+            _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"    private static string GetName{target}(regNumber regNum) => regNum switch");
+            _ = namesBuilder.AppendLine("    {");
+            _ = namesBuilder.Append(targetBuilder);
+            _ = namesBuilder.AppendLine("        _ => throw new FatalJitException(\"Invalid register number.\"),");
+            _ = namesBuilder.AppendLine("    };");
+            _ = namesBuilder.AppendLine();
+        }
 
         var masksBuilder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
             if (parts.Length is not 4 and not 5)
@@ -4867,10 +4885,7 @@ namespace RyuJitSharp;
 
 public static partial class regNumberExtensions
 {
-    private static string GetName(regNumber regNum) => regNum switch
-    {
-{{builder}}        _ => throw new FatalJitException("Invalid register number."),
-    };
+{{namesBuilder}}
 
     private static ReadOnlySpan<regMask> s_masks => [
 {{masksBuilder}}    ];

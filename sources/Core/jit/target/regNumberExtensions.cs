@@ -52,20 +52,8 @@ public static partial class regNumberExtensions
 #else
         public bool IsMskReg => false;
 #endif
-
-        public string Name
-        {
-            get
-            {
-                if (regNum is REG_NA)
-                {
-                    return "NA";
-                }
-
-                assert((uint)regNum < (uint)REG_COUNT);
-                return GetName(regNum);
-            }
-        }
 #endif
+
+        public string Name => GetName(regNum);
     }
 }
