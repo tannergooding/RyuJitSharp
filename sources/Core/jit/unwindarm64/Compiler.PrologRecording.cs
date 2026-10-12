@@ -13,70 +13,70 @@ public partial class Compiler
     {
         short dwarfReg = reg switch
         {
-            REG_R0 => 0,
-            REG_R1 => 1,
-            REG_R2 => 2,
-            REG_R3 => 3,
-            REG_R4 => 4,
-            REG_R5 => 5,
-            REG_R6 => 6,
-            REG_R7 => 7,
-            REG_R8 => 8,
-            REG_R9 => 9,
-            REG_R10 => 10,
-            REG_R11 => 11,
-            REG_R12 => 12,
-            REG_R13 => 13,
-            REG_R14 => 14,
-            REG_R15 => 15,
-            REG_R16 => 16,
-            REG_R17 => 17,
-            REG_R18 => 18,
-            REG_R19 => 19,
-            REG_R20 => 20,
-            REG_R21 => 21,
-            REG_R22 => 22,
-            REG_R23 => 23,
-            REG_R24 => 24,
-            REG_R25 => 25,
-            REG_R26 => 26,
-            REG_R27 => 27,
-            REG_R28 => 28,
-            REG_R29 => 29,
-            REG_R30 => 30,
-            REG_SP => 31,
-            REG_V0 => 64,
-            REG_V1 => 65,
-            REG_V2 => 66,
-            REG_V3 => 67,
-            REG_V4 => 68,
-            REG_V5 => 69,
-            REG_V6 => 70,
-            REG_V7 => 71,
-            REG_V8 => 72,
-            REG_V9 => 73,
-            REG_V10 => 74,
-            REG_V11 => 75,
-            REG_V12 => 76,
-            REG_V13 => 77,
-            REG_V14 => 78,
-            REG_V15 => 79,
-            REG_V16 => 80,
-            REG_V17 => 81,
-            REG_V18 => 82,
-            REG_V19 => 83,
-            REG_V20 => 84,
-            REG_V21 => 85,
-            REG_V22 => 86,
-            REG_V23 => 87,
-            REG_V24 => 88,
-            REG_V25 => 89,
-            REG_V26 => 90,
-            REG_V27 => 91,
-            REG_V28 => 92,
-            REG_V29 => 93,
-            REG_V30 => 94,
-            REG_V31 => 95,
+            REG_R0_ARM64 => 0,
+            REG_R1_ARM64 => 1,
+            REG_R2_ARM64 => 2,
+            REG_R3_ARM64 => 3,
+            REG_R4_ARM64 => 4,
+            REG_R5_ARM64 => 5,
+            REG_R6_ARM64 => 6,
+            REG_R7_ARM64 => 7,
+            REG_R8_ARM64 => 8,
+            REG_R9_ARM64 => 9,
+            REG_R10_ARM64 => 10,
+            REG_R11_ARM64 => 11,
+            REG_R12_ARM64 => 12,
+            REG_R13_ARM64 => 13,
+            REG_R14_ARM64 => 14,
+            REG_R15_ARM64 => 15,
+            REG_R16_ARM64 => 16,
+            REG_R17_ARM64 => 17,
+            REG_R18_ARM64 => 18,
+            REG_R19_ARM64 => 19,
+            REG_R20_ARM64 => 20,
+            REG_R21_ARM64 => 21,
+            REG_R22_ARM64 => 22,
+            REG_R23_ARM64 => 23,
+            REG_R24_ARM64 => 24,
+            REG_R25_ARM64 => 25,
+            REG_R26_ARM64 => 26,
+            REG_R27_ARM64 => 27,
+            REG_R28_ARM64 => 28,
+            REG_R29_ARM64 => 29,
+            REG_R30_ARM64 => 30,
+            REG_SP_ARM64 => 31,
+            REG_V0_ARM64 => 64,
+            REG_V1_ARM64 => 65,
+            REG_V2_ARM64 => 66,
+            REG_V3_ARM64 => 67,
+            REG_V4_ARM64 => 68,
+            REG_V5_ARM64 => 69,
+            REG_V6_ARM64 => 70,
+            REG_V7_ARM64 => 71,
+            REG_V8_ARM64 => 72,
+            REG_V9_ARM64 => 73,
+            REG_V10_ARM64 => 74,
+            REG_V11_ARM64 => 75,
+            REG_V12_ARM64 => 76,
+            REG_V13_ARM64 => 77,
+            REG_V14_ARM64 => 78,
+            REG_V15_ARM64 => 79,
+            REG_V16_ARM64 => 80,
+            REG_V17_ARM64 => 81,
+            REG_V18_ARM64 => 82,
+            REG_V19_ARM64 => 83,
+            REG_V20_ARM64 => 84,
+            REG_V21_ARM64 => 85,
+            REG_V22_ARM64 => 86,
+            REG_V23_ARM64 => 87,
+            REG_V24_ARM64 => 88,
+            REG_V25_ARM64 => 89,
+            REG_V26_ARM64 => 90,
+            REG_V27_ARM64 => 91,
+            REG_V28_ARM64 => 92,
+            REG_V29_ARM64 => 93,
+            REG_V30_ARM64 => 94,
+            REG_V31_ARM64 => 95,
             _ => DWARF_REG_ILLEGAL,
         };
 
@@ -147,14 +147,14 @@ public partial class Compiler
         var pu = funCurrentFunc().GetUnwindInfo();
         if (offset == 0)
         {
-            assert(reg == REG_FP);
+            assert(reg == REG_FP_ARM64);
             // set_fp: 11100001, mov r29, sp.
             pu.AddCode(0xE1);
         }
         else
         {
             // add_fp: 11100010 | xxxxxxxx, add r29, sp, #x * 8.
-            assert(reg == REG_FP);
+            assert(reg == REG_FP_ARM64);
             assert((offset % 8) == 0);
             var x = offset / 8;
             assert(x <= 0xFF);
@@ -212,29 +212,29 @@ public partial class Compiler
         var z = offset / 8;
         assert(0 <= z && z <= 0x3F);
 
-        if (reg1 == REG_FP)
+        if (reg1 == REG_FP_ARM64)
         {
             // save_fplr: 01zzzzzz.
-            assert(reg2 == REG_LR);
+            assert(reg2 == REG_LR_ARM64);
             pu.AddCode(unchecked((byte)(0x40 | (byte)z)));
         }
-        else if (reg2 == REG_LR)
+        else if (reg2 == REG_LR_ARM64)
         {
             // save_lrpair: 1101011x | xxzzzzzz.
-            assert(REG_R19 <= reg1 && reg1 <= REG_R27);
-            var x = unchecked((byte)(reg1 - REG_R19));
+            assert(REG_R19_ARM64 <= reg1 && reg1 <= REG_R27_ARM64);
+            var x = unchecked((byte)(reg1 - REG_R19_ARM64));
             assert((x % 2) == 0);
             x /= 2;
             assert(0 <= x && x <= 0x7);
 
             pu.AddCode(unchecked((byte)(0xD6 | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
         }
-        else if ((reg1 >= REG_INT_FIRST) && (reg1 <= REG_LR))
+        else if ((reg1 >= REG_INT_FIRST) && (reg1 <= REG_LR_ARM64))
         {
             // save_regp: 110010xx | xxzzzzzz.
             assert(reg1 + 1 == reg2);
-            assert(REG_R19 <= reg1 && reg1 <= REG_R27);
-            var x = unchecked((byte)(reg1 - REG_R19));
+            assert(REG_R19_ARM64 <= reg1 && reg1 <= REG_R27_ARM64);
+            var x = unchecked((byte)(reg1 - REG_R19_ARM64));
             assert(0 <= x && x <= 0xF);
 
             pu.AddCode(unchecked((byte)(0xC8 | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
@@ -243,8 +243,8 @@ public partial class Compiler
         {
             // save_fregp: 1101100x | xxzzzzzz.
             assert(reg1 + 1 == reg2);
-            assert(REG_V8 <= reg1 && reg1 <= REG_V14);
-            var x = unchecked((byte)(reg1 - REG_V8));
+            assert(REG_V8_ARM64 <= reg1 && reg1 <= REG_V14_ARM64);
+            var x = unchecked((byte)(reg1 - REG_V8_ARM64));
             assert(0 <= x && x <= 0x7);
 
             pu.AddCode(unchecked((byte)(0xD8 | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
@@ -273,35 +273,35 @@ public partial class Compiler
 #endif
 
         var pu = funCurrentFunc().GetUnwindInfo();
-        if (reg1 == REG_FP)
+        if (reg1 == REG_FP_ARM64)
         {
             // save_fplr_x: 10zzzzzz.
             assert(-512 <= offset);
             var z = unchecked((-offset) / 8 - 1);
             assert(0 <= z && z <= 0x3F);
-            assert(reg2 == REG_LR);
+            assert(reg2 == REG_LR_ARM64);
 
             pu.AddCode(unchecked((byte)(0x80 | (byte)z)));
         }
-        else if ((reg1 == REG_R19) && (-256 <= offset))
+        else if ((reg1 == REG_R19_ARM64) && (-256 <= offset))
         {
             // save_r19r20_x: 001zzzzz. Unlike other pre-indexed codes, Z is not biased.
             // Upstream includes -256 in this branch even though the asserted Z limit is 31.
             var z = unchecked(-offset) / 8;
             assert(0 <= z && z <= 0x1F);
-            assert(reg2 == REG_R20);
+            assert(reg2 == REG_R20_ARM64);
 
             pu.AddCode(unchecked((byte)(0x20 | (byte)z)));
         }
-        else if ((reg1 >= REG_INT_FIRST) && (reg1 <= REG_LR))
+        else if ((reg1 >= REG_INT_FIRST) && (reg1 <= REG_LR_ARM64))
         {
             // save_regp_x: 110011xx | xxzzzzzz.
             assert(-512 <= offset);
             var z = unchecked((-offset) / 8 - 1);
             assert(0 <= z && z <= 0x3F);
             assert(reg1 + 1 == reg2);
-            assert(REG_R19 <= reg1 && reg1 <= REG_R27);
-            var x = unchecked((byte)(reg1 - REG_R19));
+            assert(REG_R19_ARM64 <= reg1 && reg1 <= REG_R27_ARM64);
+            var x = unchecked((byte)(reg1 - REG_R19_ARM64));
             assert(0 <= x && x <= 0xF);
 
             pu.AddCode(unchecked((byte)(0xCC | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
@@ -313,8 +313,8 @@ public partial class Compiler
             var z = unchecked((-offset) / 8 - 1);
             assert(0 <= z && z <= 0x3F);
             assert(reg1 + 1 == reg2);
-            assert(REG_V8 <= reg1 && reg1 <= REG_V14);
-            var x = unchecked((byte)(reg1 - REG_V8));
+            assert(REG_V8_ARM64 <= reg1 && reg1 <= REG_V14_ARM64);
+            var x = unchecked((byte)(reg1 - REG_V8_ARM64));
             assert(0 <= x && x <= 0x7);
 
             pu.AddCode(unchecked((byte)(0xDA | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
@@ -344,11 +344,11 @@ public partial class Compiler
         assert(0 <= z && z <= 0x3F);
         var pu = funCurrentFunc().GetUnwindInfo();
 
-        if ((reg >= REG_INT_FIRST) && (reg <= REG_LR))
+        if ((reg >= REG_INT_FIRST) && (reg <= REG_LR_ARM64))
         {
             // save_reg: 110100xx | xxzzzzzz.
-            assert(REG_R19 <= reg && reg <= REG_LR);
-            var x = unchecked((byte)(reg - REG_R19));
+            assert(REG_R19_ARM64 <= reg && reg <= REG_LR_ARM64);
+            var x = unchecked((byte)(reg - REG_R19_ARM64));
             assert(0 <= x && x <= 0xF);
 
             pu.AddCode(unchecked((byte)(0xD0 | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
@@ -356,8 +356,8 @@ public partial class Compiler
         else
         {
             // save_freg: 1101110x | xxzzzzzz.
-            assert(REG_V8 <= reg && reg <= REG_V15);
-            var x = unchecked((byte)(reg - REG_V8));
+            assert(REG_V8_ARM64 <= reg && reg <= REG_V15_ARM64);
+            var x = unchecked((byte)(reg - REG_V8_ARM64));
             assert(0 <= x && x <= 0x7);
 
             pu.AddCode(unchecked((byte)(0xDC | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
@@ -388,11 +388,11 @@ public partial class Compiler
         var z = unchecked((-offset) / 8 - 1);
         assert(0 <= z && z <= 0x1F);
 
-        if ((reg >= REG_INT_FIRST) && (reg <= REG_LR))
+        if ((reg >= REG_INT_FIRST) && (reg <= REG_LR_ARM64))
         {
             // save_reg_x: 1101010x | xxxzzzzz.
-            assert(REG_R19 <= reg && reg <= REG_LR);
-            var x = unchecked((byte)(reg - REG_R19));
+            assert(REG_R19_ARM64 <= reg && reg <= REG_LR_ARM64);
+            var x = unchecked((byte)(reg - REG_R19_ARM64));
             assert(0 <= x && x <= 0xF);
 
             pu.AddCode(unchecked((byte)(0xD4 | (byte)(x >> 3))), unchecked((byte)((byte)(x << 5) | (byte)z)));
@@ -400,8 +400,8 @@ public partial class Compiler
         else
         {
             // save_freg_x: 11011110 | xxxzzzzz.
-            assert(REG_V8 <= reg && reg <= REG_V15);
-            var x = unchecked((byte)(reg - REG_V8));
+            assert(REG_V8_ARM64 <= reg && reg <= REG_V15_ARM64);
+            var x = unchecked((byte)(reg - REG_V8_ARM64));
             assert(0 <= x && x <= 0x7);
 
             pu.AddCode(0xDE, unchecked((byte)((byte)(x << 5) | (byte)z)));

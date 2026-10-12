@@ -16,9 +16,9 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64UnwindRecordingTests
 {
-    [TestCase(REG_R0)]
-    [TestCase(REG_LR)]
-    [TestCase(REG_V31)]
+    [TestCase(REG_R0_ARM64)]
+    [TestCase(REG_LR_ARM64)]
+    [TestCase(REG_V31_ARM64)]
     public static void ReturnNeedsNoAdditionalUnwindCode(regNumber reg)
     {
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
@@ -60,31 +60,31 @@ internal static class Arm64UnwindRecordingTests
 
                 case 1:
                 {
-                    compiler.unwindSetFrameReg(REG_FP, 8);
+                    compiler.unwindSetFrameReg(REG_FP_ARM64, 8);
                     break;
                 }
 
                 case 2:
                 {
-                    compiler.unwindSaveRegPair(REG_FP, REG_LR, 504);
+                    compiler.unwindSaveRegPair(REG_FP_ARM64, REG_LR_ARM64, 504);
                     break;
                 }
 
                 case 3:
                 {
-                    compiler.unwindSaveRegPairPreindexed(REG_FP, REG_LR, -512);
+                    compiler.unwindSaveRegPairPreindexed(REG_FP_ARM64, REG_LR_ARM64, -512);
                     break;
                 }
 
                 case 4:
                 {
-                    compiler.unwindSaveReg(REG_V15, 504);
+                    compiler.unwindSaveReg(REG_V15_ARM64, 504);
                     break;
                 }
 
                 case 5:
                 {
-                    compiler.unwindSaveRegPreindexed(REG_LR, -256);
+                    compiler.unwindSaveRegPreindexed(REG_LR_ARM64, -256);
                     break;
                 }
 
@@ -122,22 +122,22 @@ internal static class Arm64UnwindRecordingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         for (var index = 0; index < 31; index++)
         {
-            Assert.That(compiler.mapRegNumToDwarfReg((regNumber)((int)REG_R0 + index)), Is.EqualTo(index));
+            Assert.That(compiler.mapRegNumToDwarfReg((regNumber)((int)REG_R0_ARM64 + index)), Is.EqualTo(index));
         }
 
-        Assert.That(compiler.mapRegNumToDwarfReg(REG_SP), Is.EqualTo(31));
+        Assert.That(compiler.mapRegNumToDwarfReg(REG_SP_ARM64), Is.EqualTo(31));
         for (var index = 0; index < 32; index++)
         {
-            Assert.That(compiler.mapRegNumToDwarfReg((regNumber)((int)REG_V0 + index)), Is.EqualTo(64 + index));
+            Assert.That(compiler.mapRegNumToDwarfReg((regNumber)((int)REG_V0_ARM64 + index)), Is.EqualTo(64 + index));
         }
     }
 
-    [TestCase(false, REG_R19, REG_R20, 0)]
-    [TestCase(false, REG_FP, REG_LR, 504)]
-    [TestCase(false, REG_V14, REG_V15, 504)]
-    [TestCase(true, REG_R19, REG_R20, -256)]
-    [TestCase(true, REG_FP, REG_LR, -512)]
-    [TestCase(true, REG_V14, REG_V15, -8)]
+    [TestCase(false, REG_R19_ARM64, REG_R20_ARM64, 0)]
+    [TestCase(false, REG_FP_ARM64, REG_LR_ARM64, 504)]
+    [TestCase(false, REG_V14_ARM64, REG_V15_ARM64, 504)]
+    [TestCase(true, REG_R19_ARM64, REG_R20_ARM64, -256)]
+    [TestCase(true, REG_FP_ARM64, REG_LR_ARM64, -512)]
+    [TestCase(true, REG_V14_ARM64, REG_V15_ARM64, -8)]
     public static void CfiPairSavesPreserveAdjustmentAndRegisterRecordOrder(
         bool preindexed, regNumber first, regNumber second, int offset)
     {
@@ -168,11 +168,11 @@ internal static class Arm64UnwindRecordingTests
         });
     }
 
-    [TestCase(false, REG_R19, 0)]
-    [TestCase(false, REG_LR, 504)]
-    [TestCase(false, REG_V15, 504)]
-    [TestCase(true, REG_R19, -256)]
-    [TestCase(true, REG_V8, -8)]
+    [TestCase(false, REG_R19_ARM64, 0)]
+    [TestCase(false, REG_LR_ARM64, 504)]
+    [TestCase(false, REG_V15_ARM64, 504)]
+    [TestCase(true, REG_R19_ARM64, -256)]
+    [TestCase(true, REG_V8_ARM64, -8)]
     public static void CfiSingleSavesPreserveAdjustmentAndRelativeOffset(
         bool preindexed, regNumber reg, int offset)
     {
@@ -211,11 +211,11 @@ internal static class Arm64UnwindRecordingTests
             group.igFlags = InsGroupFlags.Epilog;
 
             compiler.unwindAllocStack(16);
-            compiler.unwindSetFrameReg(REG_FP, 0);
-            compiler.unwindSaveRegPair(REG_FP, REG_LR, 0);
-            compiler.unwindSaveRegPairPreindexed(REG_R19, REG_R20, -256);
-            compiler.unwindSaveReg(REG_V8, 0);
-            compiler.unwindSaveRegPreindexed(REG_LR, -256);
+            compiler.unwindSetFrameReg(REG_FP_ARM64, 0);
+            compiler.unwindSaveRegPair(REG_FP_ARM64, REG_LR_ARM64, 0);
+            compiler.unwindSaveRegPairPreindexed(REG_R19_ARM64, REG_R20_ARM64, -256);
+            compiler.unwindSaveReg(REG_V8_ARM64, 0);
+            compiler.unwindSaveRegPreindexed(REG_LR_ARM64, -256);
 
             Assert.That(compiler.funCurrentFunc().cfiCodes, Is.Empty);
         });

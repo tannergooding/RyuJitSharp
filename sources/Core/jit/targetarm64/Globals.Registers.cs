@@ -10,19 +10,19 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    public const regNumber REG_FIRST = REG_R0;
-    public const regNumber REG_INT_FIRST = REG_R0;
-    public const regNumber REG_INT_LAST = REG_ZR;
+    public const regNumber REG_FIRST = REG_R0_ARM64;
+    public const regNumber REG_INT_FIRST = REG_R0_ARM64;
+    public const regNumber REG_INT_LAST = REG_ZR_ARM64;
     public const int REG_INT_COUNT = (int)REG_INT_LAST - (int)REG_INT_FIRST + 1;
 
     public static regNumber REG_NEXT(regNumber reg) => reg + 1;
 
     public static regNumber REG_PREV(regNumber reg) => reg - 1;
 
-    public const regNumber REG_FP_FIRST = REG_V0;
-    public const regNumber REG_FP_LAST = REG_V31;
-    public const regNumber FIRST_FP_ARGREG = REG_V0;
-    public const regNumber LAST_FP_ARGREG = REG_V15;
+    public const regNumber REG_FP_FIRST = REG_V0_ARM64;
+    public const regNumber REG_FP_LAST = REG_V31_ARM64;
+    public const regNumber FIRST_FP_ARGREG = REG_V0_ARM64;
+    public const regNumber LAST_FP_ARGREG = REG_V15_ARM64;
 
     public const regMask SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS =
         SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 | SRBM_V4 | SRBM_V5 | SRBM_V6 | SRBM_V7 |
@@ -31,11 +31,11 @@ public static partial class Globals
         SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 | SRBM_V4 | SRBM_V5 | SRBM_V6 | SRBM_V7;
     public const regMask SRBM_SVE_INDEXED_D_ELEMENT_ALLOWED_REGS = SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS;
 
-    public const regNumber REG_PREDICATE_FIRST = REG_P0;
-    public const regNumber REG_PREDICATE_LAST = REG_P15;
-    public const regNumber REG_PREDICATE_LOW_LAST = REG_P7;
-    public const regNumber REG_PREDICATE_HIGH_FIRST = REG_P8;
-    public const regNumber REG_PREDICATE_HIGH_LAST = REG_P15;
+    public const regNumber REG_PREDICATE_FIRST = REG_P0_ARM64;
+    public const regNumber REG_PREDICATE_LAST = REG_P15_ARM64;
+    public const regNumber REG_PREDICATE_LOW_LAST = REG_P7_ARM64;
+    public const regNumber REG_PREDICATE_HIGH_FIRST = REG_P8_ARM64;
+    public const regNumber REG_PREDICATE_HIGH_LAST = REG_P15_ARM64;
     public const regNumber REG_MASK_FIRST = REG_PREDICATE_FIRST;
     public const regNumber REG_MASK_LAST = REG_PREDICATE_LAST;
 
@@ -101,57 +101,57 @@ public static partial class Globals
     public const regMask SRBM_ENC_CALLEE_SAVED = SRBM_NONE;
 
     public static ReadOnlySpan<regNumber> REG_VAR_ORDER => [
-        REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5,
-        REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,
-        REG_R11, REG_R13, REG_R14,
-        REG_R12, REG_R15, REG_IP0, REG_IP1,
-        REG_R19, REG_R20, REG_R21, REG_R22, REG_R23, REG_R24,
-        REG_R25, REG_R26, REG_R27, REG_R28, REG_LR,
+        REG_R0_ARM64, REG_R1_ARM64, REG_R2_ARM64, REG_R3_ARM64, REG_R4_ARM64, REG_R5_ARM64,
+        REG_R6_ARM64, REG_R7_ARM64, REG_R8_ARM64, REG_R9_ARM64, REG_R10_ARM64,
+        REG_R11_ARM64, REG_R13_ARM64, REG_R14_ARM64,
+        REG_R12_ARM64, REG_R15_ARM64, REG_IP0_ARM64, REG_IP1_ARM64,
+        REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, REG_R22_ARM64, REG_R23_ARM64, REG_R24_ARM64,
+        REG_R25_ARM64, REG_R26_ARM64, REG_R27_ARM64, REG_R28_ARM64, REG_LR_ARM64,
     ];
 
     public static ReadOnlySpan<regNumber> REG_VAR_ORDER_FLT => [
-        REG_V16, REG_V17, REG_V18, REG_V19,
-        REG_V20, REG_V21, REG_V22, REG_V23,
-        REG_V24, REG_V25, REG_V26, REG_V27,
-        REG_V28, REG_V29, REG_V30, REG_V31,
-        REG_V7, REG_V6, REG_V5, REG_V4,
-        REG_V8, REG_V9, REG_V10, REG_V11,
-        REG_V12, REG_V13, REG_V14, REG_V15,
-        REG_V3, REG_V2, REG_V1, REG_V0,
+        REG_V16_ARM64, REG_V17_ARM64, REG_V18_ARM64, REG_V19_ARM64,
+        REG_V20_ARM64, REG_V21_ARM64, REG_V22_ARM64, REG_V23_ARM64,
+        REG_V24_ARM64, REG_V25_ARM64, REG_V26_ARM64, REG_V27_ARM64,
+        REG_V28_ARM64, REG_V29_ARM64, REG_V30_ARM64, REG_V31_ARM64,
+        REG_V7_ARM64, REG_V6_ARM64, REG_V5_ARM64, REG_V4_ARM64,
+        REG_V8_ARM64, REG_V9_ARM64, REG_V10_ARM64, REG_V11_ARM64,
+        REG_V12_ARM64, REG_V13_ARM64, REG_V14_ARM64, REG_V15_ARM64,
+        REG_V3_ARM64, REG_V2_ARM64, REG_V1_ARM64, REG_V0_ARM64,
     ];
 
-    public const regNumber REG_DEFAULT_HELPER_CALL_TARGET = REG_R12;
+    public const regNumber REG_DEFAULT_HELPER_CALL_TARGET = REG_R12_ARM64;
     public const regMask SRBM_DEFAULT_HELPER_CALL_TARGET = SRBM_R12;
     public const regMask SRBM_GSCOOKIE_TMP = SRBM_IP0 | SRBM_IP1;
-    public const regNumber REG_SHIFT = REG_NA;
+    public const regNumber REG_SHIFT = REG_NA_ARM64;
     public const regMask SRBM_SHIFT = SRBM_ALLINT;
-    public const regNumber REG_SCRATCH = REG_R9;
-    public const regNumber REG_OPT_RSVD = REG_IP1;
+    public const regNumber REG_SCRATCH = REG_R9_ARM64;
+    public const regNumber REG_OPT_RSVD = REG_IP1_ARM64;
     public const regMask SRBM_OPT_RSVD = SRBM_IP1;
-    public const regNumber REG_ZERO_INIT_FRAME_REG1 = REG_R9;
-    public const regNumber REG_ZERO_INIT_FRAME_REG2 = REG_R10;
-    public const regNumber REG_ZERO_INIT_FRAME_SIMD = REG_V16;
+    public const regNumber REG_ZERO_INIT_FRAME_REG1 = REG_R9_ARM64;
+    public const regNumber REG_ZERO_INIT_FRAME_REG2 = REG_R10_ARM64;
+    public const regNumber REG_ZERO_INIT_FRAME_SIMD = REG_V16_ARM64;
 
-    public const regNumber REG_EXCEPTION_OBJECT = REG_R0;
+    public const regNumber REG_EXCEPTION_OBJECT = REG_R0_ARM64;
     public const regMask SRBM_EXCEPTION_OBJECT = SRBM_R0;
-    public const regNumber REG_JUMP_THUNK_PARAM = REG_R12;
+    public const regNumber REG_JUMP_THUNK_PARAM = REG_R12_ARM64;
     public const regMask SRBM_JUMP_THUNK_PARAM = SRBM_R12;
-    public const regNumber REG_WRITE_BARRIER_DST = REG_R14;
+    public const regNumber REG_WRITE_BARRIER_DST = REG_R14_ARM64;
     public const regMask SRBM_WRITE_BARRIER_DST = SRBM_R14;
-    public const regNumber REG_WRITE_BARRIER_SRC = REG_R15;
+    public const regNumber REG_WRITE_BARRIER_SRC = REG_R15_ARM64;
     public const regMask SRBM_WRITE_BARRIER_SRC = SRBM_R15;
     public const regMask SRBM_CALLEE_TRASH_NOGC =
         SRBM_R12 | SRBM_R15 | SRBM_IP0 | SRBM_IP1 | SRBM_DEFAULT_HELPER_CALL_TARGET;
     public const regMask SRBM_CALLEE_TRASH_WRITEBARRIER = SRBM_CALLEE_TRASH_NOGC;
     public const regMask SRBM_CALLEE_GCTRASH_WRITEBARRIER = SRBM_CALLEE_TRASH_NOGC;
     public const regMask SRBM_SECRET_STUB_PARAM = SRBM_R12;
-    public const regNumber REG_R2R_INDIRECT_PARAM = REG_R11;
+    public const regNumber REG_R2R_INDIRECT_PARAM = REG_R11_ARM64;
     public const regMask SRBM_R2R_INDIRECT_PARAM = SRBM_R11;
-    public const regNumber REG_INDIRECT_CALL_TARGET_REG = REG_IP0;
+    public const regNumber REG_INDIRECT_CALL_TARGET_REG = REG_IP0_ARM64;
 
-    public const regNumber REG_PROFILER_ENTER_ARG_FUNC_ID = REG_R10;
+    public const regNumber REG_PROFILER_ENTER_ARG_FUNC_ID = REG_R10_ARM64;
     public const regMask SRBM_PROFILER_ENTER_ARG_FUNC_ID = SRBM_R10;
-    public const regNumber REG_PROFILER_ENTER_ARG_CALLER_SP = REG_R11;
+    public const regNumber REG_PROFILER_ENTER_ARG_CALLER_SP = REG_R11_ARM64;
     public const regMask SRBM_PROFILER_ENTER_ARG_CALLER_SP = SRBM_R11;
     public const regNumber REG_PROFILER_LEAVE_ARG_FUNC_ID = REG_PROFILER_ENTER_ARG_FUNC_ID;
     public const regMask SRBM_PROFILER_LEAVE_ARG_FUNC_ID = SRBM_PROFILER_ENTER_ARG_FUNC_ID;
@@ -166,10 +166,10 @@ public static partial class Globals
 
     public const regMask SRBM_ASYNC_CONTINUATION_RET = SRBM_R2;
 
-    public const regNumber REG_INTRET = REG_R0;
+    public const regNumber REG_INTRET = REG_R0_ARM64;
     public const regMask SRBM_INTRET = SRBM_R0;
     public const regMask SRBM_LNGRET = SRBM_R0;
-    public const regNumber REG_INTRET_1 = REG_R1;
+    public const regNumber REG_INTRET_1 = REG_R1_ARM64;
     public const regMask SRBM_INTRET_1 = SRBM_R1;
     public const regMask SRBM_FLOATRET = SRBM_V0;
     public const regMask SRBM_DOUBLERET = SRBM_V0;
@@ -182,36 +182,36 @@ public static partial class Globals
     public const regMask SRBM_INTERFACELOOKUP_FOR_SLOT_RETURN = SRBM_R15;
     public const regMask SRBM_VALIDATE_INDIRECT_CALL_TRASH =
         SRBM_INT_CALLEE_TRASH & ~(SRBM_ARG_REGS | SRBM_R8 | SRBM_R15);
-    public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_R15;
-    public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_R9;
-    public const regNumber REG_PINVOKE_FRAME = REG_NA;
-    public const regNumber REG_LNGARG_LO = REG_NA;
-    public const regNumber REG_LNGARG_HI = REG_NA;
+    public const regNumber REG_VALIDATE_INDIRECT_CALL_ADDR = REG_R15_ARM64;
+    public const regNumber REG_DISPATCH_INDIRECT_CALL_ADDR = REG_R9_ARM64;
+    public const regNumber REG_PINVOKE_FRAME = REG_NA_ARM64;
+    public const regNumber REG_LNGARG_LO = REG_NA_ARM64;
+    public const regNumber REG_LNGARG_HI = REG_NA_ARM64;
 
-    public const regNumber REG_FPBASE = REG_FP;
+    public const regNumber REG_FPBASE = REG_FP_ARM64;
     public const regMask SRBM_FPBASE = SRBM_FP;
     public const string STR_FPBASE = "fp";
-    public const regNumber REG_SPBASE = REG_SP;
+    public const regNumber REG_SPBASE = REG_SP_ARM64;
     public const regMask SRBM_SPBASE = SRBM_ZR;
     public const string STR_SPBASE = "sp";
     public const int FIRST_ARG_STACK_OFFS = 2 * REGSIZE_BYTES;
 
     public const regMask SRBM_ARG_RET_BUFF = SRBM_R8;
     public const int RET_BUFF_ARGNUM = 8;
-    public const regNumber REG_ARG_FIRST = REG_R0;
-    public const regNumber REG_ARG_LAST = REG_R7;
-    public const regNumber REG_ARG_FP_FIRST = REG_V0;
-    public const regNumber REG_ARG_FP_LAST = REG_V7;
+    public const regNumber REG_ARG_FIRST = REG_R0_ARM64;
+    public const regNumber REG_ARG_LAST = REG_R7_ARM64;
+    public const regNumber REG_ARG_FP_FIRST = REG_V0_ARM64;
+    public const regNumber REG_ARG_FP_LAST = REG_V7_ARM64;
     public const int INIT_ARG_STACK_SLOT = 0;
 
-    public const regNumber REG_ARG_0 = REG_R0;
-    public const regNumber REG_ARG_1 = REG_R1;
-    public const regNumber REG_ARG_2 = REG_R2;
-    public const regNumber REG_ARG_3 = REG_R3;
-    public const regNumber REG_ARG_4 = REG_R4;
-    public const regNumber REG_ARG_5 = REG_R5;
-    public const regNumber REG_ARG_6 = REG_R6;
-    public const regNumber REG_ARG_7 = REG_R7;
+    public const regNumber REG_ARG_0 = REG_R0_ARM64;
+    public const regNumber REG_ARG_1 = REG_R1_ARM64;
+    public const regNumber REG_ARG_2 = REG_R2_ARM64;
+    public const regNumber REG_ARG_3 = REG_R3_ARM64;
+    public const regNumber REG_ARG_4 = REG_R4_ARM64;
+    public const regNumber REG_ARG_5 = REG_R5_ARM64;
+    public const regNumber REG_ARG_6 = REG_R6_ARM64;
+    public const regNumber REG_ARG_7 = REG_R7_ARM64;
     public const regMask SRBM_ARG_0 = SRBM_R0;
     public const regMask SRBM_ARG_1 = SRBM_R1;
     public const regMask SRBM_ARG_2 = SRBM_R2;
@@ -221,14 +221,14 @@ public static partial class Globals
     public const regMask SRBM_ARG_6 = SRBM_R6;
     public const regMask SRBM_ARG_7 = SRBM_R7;
 
-    public const regNumber REG_FLTARG_0 = REG_V0;
-    public const regNumber REG_FLTARG_1 = REG_V1;
-    public const regNumber REG_FLTARG_2 = REG_V2;
-    public const regNumber REG_FLTARG_3 = REG_V3;
-    public const regNumber REG_FLTARG_4 = REG_V4;
-    public const regNumber REG_FLTARG_5 = REG_V5;
-    public const regNumber REG_FLTARG_6 = REG_V6;
-    public const regNumber REG_FLTARG_7 = REG_V7;
+    public const regNumber REG_FLTARG_0 = REG_V0_ARM64;
+    public const regNumber REG_FLTARG_1 = REG_V1_ARM64;
+    public const regNumber REG_FLTARG_2 = REG_V2_ARM64;
+    public const regNumber REG_FLTARG_3 = REG_V3_ARM64;
+    public const regNumber REG_FLTARG_4 = REG_V4_ARM64;
+    public const regNumber REG_FLTARG_5 = REG_V5_ARM64;
+    public const regNumber REG_FLTARG_6 = REG_V6_ARM64;
+    public const regNumber REG_FLTARG_7 = REG_V7_ARM64;
     public const regMask SRBM_FLTARG_0 = SRBM_V0;
     public const regMask SRBM_FLTARG_1 = SRBM_V1;
     public const regMask SRBM_FLTARG_2 = SRBM_V2;
@@ -251,13 +251,13 @@ public static partial class Globals
     public const int LDC_SIZE_SMALL = 4;
     public const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = 512;
 
-    public const regNumber REG_SWIFT_ERROR = REG_R21;
+    public const regNumber REG_SWIFT_ERROR = REG_R21_ARM64;
     public const regMask SRBM_SWIFT_ERROR = SRBM_R21;
-    public const regNumber REG_SWIFT_SELF = REG_R20;
+    public const regNumber REG_SWIFT_SELF = REG_R20_ARM64;
     public const regMask SRBM_SWIFT_SELF = SRBM_R20;
-    public static ReadOnlySpan<regNumber> REG_SWIFT_INTRET_ORDER => [REG_R0, REG_R1, REG_R2, REG_R3];
-    public static ReadOnlySpan<regNumber> REG_SWIFT_FLOATRET_ORDER => [REG_V0, REG_V1, REG_V2, REG_V3];
-    public const regNumber REG_UNKBASE = REG_R19;
+    public static ReadOnlySpan<regNumber> REG_SWIFT_INTRET_ORDER => [REG_R0_ARM64, REG_R1_ARM64, REG_R2_ARM64, REG_R3_ARM64];
+    public static ReadOnlySpan<regNumber> REG_SWIFT_FLOATRET_ORDER => [REG_V0_ARM64, REG_V1_ARM64, REG_V2_ARM64, REG_V3_ARM64];
+    public const regNumber REG_UNKBASE = REG_R19_ARM64;
     public const regMask SRBM_UNKBASE = SRBM_R19;
 }
 #endif
