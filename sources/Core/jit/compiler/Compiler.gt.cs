@@ -8672,17 +8672,11 @@ public partial class Compiler
         }
     }
 
-#if TARGET_WASM
     // Wasm init-class helpers return void*; preserve that call_indirect signature even though the value is unused.
-    public const var_types HelperInitClassRetType = TYP_I_IMPL;
+    public static var_types HelperInitClassRetType => Configuration.TARGET_WASM ? TYP_I_IMPL : TYP_VOID;
 
     // Wasm unbox helpers return byref. Using void on other targets avoids code size with no semantic benefit.
-    public const var_types HelperUnboxDiscardedRetType = TYP_BYREF;
-#else
-    public const var_types HelperInitClassRetType = TYP_VOID;
-
-    public const var_types HelperUnboxDiscardedRetType = TYP_VOID;
-#endif
+    public static var_types HelperUnboxDiscardedRetType => Configuration.TARGET_WASM ? TYP_BYREF : TYP_VOID;
 
     /// <summary>Helper to create a call helper node.</summary>
     /// <param name="type">Type of the node</param>

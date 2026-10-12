@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue in `Compiler.gt.cs` at the `TARGET_WASM` branch for `HelperInitClassRetType` and `HelperUnboxDiscardedRetType`; inspect their call sites for constant-expression dependencies before converting the target-specific declarations.",
+    "nextAction": "Continue in `Compiler.gt.cs::gtNewPhysRegNode`; inspect the `REG_FFR` identity and register-validity contract before replacing its ARM64 assertion guard with a runtime target check.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize the SIMD constant-construction paths in `Compiler.gt.cs`, including all-bits-set scalable constants, generic xarch vector widths, scalable constant cloning, and the `gtNewSimdVconNode` helper closure.",
-      "doneWhen": "`gtNewAllBitsSetConNode`, `gtNewGenericCon`, and `gtCloneCnsVec` select target-specific vector representations through runtime `Configuration` checks, all constructor helpers compile universally, and unsupported target/type combinations still terminate explicitly.",
-      "validation": "`Arm64SimdMetadataTests` passed 99/99 in Debug and 82/82 in Release for win-arm64. `UniversalSimdStorageTests` passed in Debug and Release for win-x64 (31/31), win-x86 (31/31), linux-arm64 (25 passed, 4 skipped), browser-wasm (18 passed, 4 skipped), and linux-riscv64 (8 passed, 10 skipped). The default analyzer run stopped before tests on IDE0059 diagnostics at unchanged `Compiler.gt.cs` lines 7818 (`rev`) and 9045 (`simd12ToSimd16Widening`); focused tests passed with `RunAnalyzers=false` and `GenerateDocumentationFile=false`.",
+      "scope": "Universalize the Wasm-specific helper return type selection in `Compiler.gt.cs` and verify that init-class and unbox helper node signatures remain target-correct.",
+      "doneWhen": "`HelperInitClassRetType` and `HelperUnboxDiscardedRetType` are selected through `Configuration.TARGET_WASM`, all existing call sites retain their correct types, and targeted tests pass for Wasm and non-Wasm configurations.",
+      "validation": "`CompilerHelperReturnTypeTests` passed 1/1 in Debug and Release for win-x64 and browser-wasm. Focused tests used `RunAnalyzers=false` and `GenerateDocumentationFile=false` because the default analyzer run stops on IDE0059 diagnostics at unchanged `Compiler.gt.cs` lines 7818 (`rev`) and 9045 (`simd12ToSimd16Widening`).",
       "deferred": "The remaining target/feature branches in `Compiler.gt.cs` and the rest of the universal-compilation migration; universal compilation is not complete."
     },
     "parityEvidence": {
