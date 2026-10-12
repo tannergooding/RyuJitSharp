@@ -10,10 +10,10 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue consumer-first register-alias migration through the remaining ARM64 SVE tests: replace generated register aliases with `_ARM64` identities in `tests/Core/Arm64SveImmediateRecordingTests.cs`, `tests/Core/Arm64SveInstructionOutputTests.cs`, `tests/Core/Arm64SveDisassemblyTests.cs`, and `tests/Core/Arm64SveExecutionCharacteristicsTests.cs`, then run focused ARM64 Debug/Release tests. Keep generated aliases until all consumers are converted.",
+    "nextAction": "Continue register-alias migration with the next ten smallest remaining ARM64 test consumers: qualify generated register identities in `tests/Core/Arm64CodeGenFunctionEntryTests.cs`, `tests/Core/Arm64CodeGenNonLocalJumpTests.cs`, `tests/Core/Arm64CodeGenNullCheckTests.cs`, `tests/Core/Arm64EmitterExecutionMemoryTests.cs`, `tests/Core/Arm64Simd12IndirectLoadTests.cs`, `tests/Core/Arm64IndirectLoadStoreTests.cs`, `tests/Core/Arm64CodeGenInitializationTests.cs`, `tests/Core/Arm64CodeGenProfilingEntryTests.cs`, `tests/Core/Arm64CodeGenSwitchTableTests.cs`, and `tests/Core/Arm64CodeGenSimdUpperSaveTests.cs`, then run focused ARM64 Debug/Release tests. Keep generated aliases until all consumers are converted, and leave `Arm64CodeGenAsyncResumeInfoTests.cs` deferred with `genAsyncResumeInfo`.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Qualify target-specific register identities across the remaining ARM64 SVE recording, output, disassembly, and execution-characteristic tests.",
+      "scope": "Qualify target-specific register identities across the remaining ARM64 SVE immediate-recording, instruction-output, disassembly, and execution-characteristic tests.",
       "doneWhen": "All generated ARM64 register aliases in these four SVE test files use `_ARM64` identities while preserving descriptor values, register ordinals, and test behavior.",
       "validation": "Pending.",
       "deferred": "Migrate remaining source and test consumers before changing the register generator or removing aliases. Continue target/feature preprocessor migration by coherent subsystem. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
