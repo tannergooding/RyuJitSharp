@@ -194,21 +194,26 @@ public partial class Emitter
     private static (int Word, int RegisterMaskSize, int RegisterMaskAlignment, int DoubleAlignment) NativeStaticLayout()
     {
 #if TARGET_32BIT && TARGET_ARM && REGMASK_BITS_64
-#if TARGET_WINDOWS
-        // emit.h packs ARM32 structures to four-byte alignment for MSVC.
-        return (4, 8, 4, 4);
-#elif TARGET_UNIX
-        // ARM Unix uses the ABI's natural eight-byte alignment for double and regMaskSmall.
-        return (4, 8, 8, 8);
+        if (Configuration.TARGET_WINDOWS)
+        {
+            // emit.h packs ARM32 structures to four-byte alignment for MSVC.
+            return (4, 8, 4, 4);
+        }
+        if (Configuration.TARGET_UNIX)
+        {
+            // ARM Unix uses the ABI's natural eight-byte alignment for double and regMaskSmall.
+            return (4, 8, 8, 8);
+        }
+#elif TARGET_64BIT && REGMASK_BITS_64 && HAS_MORE_THAN_64_REGISTERS
+        if (Configuration.TARGET_WINDOWS && (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64))
+        {
+            // target.h: two 64-bit register-mask words; emit.h:2484-2525 adds a
+            // second-GC-return bitfield on ARM64. Windows places the following
+            // bool bitfield in another storage unit, making that descriptor 80 bytes.
+            return (8, 16, 8, 8);
+        }
 #endif
-#elif TARGET_64BIT && REGMASK_BITS_64 && HAS_MORE_THAN_64_REGISTERS && ((TARGET_AMD64 && WINDOWS_AMD64_ABI && !MULTIREG_HAS_SECOND_GC_RET) || (TARGET_ARM64 && TARGET_WINDOWS && MULTIREG_HAS_SECOND_GC_RET))
-        // target.h: two 64-bit register-mask words; emit.h:2484-2525 adds a
-        // second-GC-return bitfield on ARM64. Windows places the following
-        // bool bitfield in another storage unit, making that descriptor 80 bytes.
-        return (8, 16, 8, 8);
-#else
         throw new FatalJitException(CORJIT_SKIPPED, "Native emitter layout reporting requires the target-specific pointer, register-mask and descriptor layouts.");
-#endif
     }
 
     private static void PrintDescriptor(string name, int size)

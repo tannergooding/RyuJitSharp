@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Convert the remaining TARGET_WINDOWS/TARGET_UNIX guards in jit/emit/Emitter.StaticStatistics.cs and jit/emit/Emitter.DescriptorSizes.cs to Configuration branches; preserve the platform-specific statistics and descriptor-size behavior.",
+    "nextAction": "Universalize the next ten smallest remaining TARGET_/FEATURE_ guarded C# files, beginning with sources/Core/jit/target/Globals.SimpleReturnAliases.cs and continuing by file size.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize FEATURE_ON_STACK_REPLACEMENT across compiler paths, JIT configuration generation, test runtime switches, and RID substitutions.",
-      "doneWhen": "No FEATURE_ON_STACK_REPLACEMENT project define or preprocessor guard remains; runtime configuration controls OSR and partial-compilation paths and the TC_OnStackReplacement default, with every supported RID substitution preserving the currently enabled feature.",
-      "validation": "GenerateTables completed and regenerated JitConfigValues.generated.cs; all seven substitution XML files parsed. The runtime-switch test passed 2/2 for win-x64 with full analyzers and 2/2 for linux-x64 with analyzers disabled (the full-analyzer Linux build stops at unrelated IDE0018 in Compiler.cs:1703). Patchpoint/frame tests passed 48/48 in Debug win-x64, 35/35 in Release win-x64, and 46/46 in both Debug and Release linux-x64. A broader Linux filter also selected CodeGenOSRFrameTests and failed two AdditionalSavesUseReservedTier0SlotsInDescendingRegisterOrder assertions (expected REG_R12); this target-specific test discrepancy remains untriaged. Full-analyzer Release was blocked by the unrelated existing CA1812 diagnostic in DiscretionaryPolicyTests.FixedMultiplierPolicy. `git diff --check` passed.",
+      "scope": "Replace the TARGET_WINDOWS/TARGET_UNIX branches in emitter static-layout reporting and ARM64 call-descriptor sizing with Configuration checks.",
+      "doneWhen": "The Windows, Unix, and unsupported-layout behavior is preserved without OS preprocessor branches in Emitter.StaticStatistics.cs or Emitter.DescriptorSizes.cs.",
+      "validation": "The x64 static-layout test passed 1/1 with EMITTER_STATS and full analyzers. The Windows ARM64 static-layout regression passed 1/1 with EMITTER_STATS and full analyzers; the ARM64 Core build with EMITTER_STATS succeeded with 0 warnings/errors. Target configuration tests passed 27/27 for win-arm64 (RunAnalyzers=false).",
       "deferred": "The repository-wide TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {

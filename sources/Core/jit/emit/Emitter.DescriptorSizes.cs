@@ -379,13 +379,13 @@ public partial class Emitter
 #if TARGET_ARM64
     private static int Arm64CallDescriptorSize()
     {
-#if TARGET_WINDOWS
-        // MSVC gives the GCtype and following bool bitfields separate storage
-        // units at offsets 68 and 72, rounding the complete descriptor to 80.
-        return 80;
-#else
+        if (Configuration.TARGET_WINDOWS)
+        {
+            // MSVC gives the GCtype and following bool bitfields separate storage
+            // units at offsets 68 and 72, rounding the complete descriptor to 80.
+            return 80;
+        }
         throw new PlatformNotSupportedException("The ARM64 call descriptor layout is not established for this ABI.");
-#endif
     }
 #endif
 }
