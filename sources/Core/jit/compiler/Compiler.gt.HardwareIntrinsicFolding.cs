@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics.X86;
@@ -12,9 +11,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_MASKED_HW_INTRINSICS
     public GenTree gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic tree, GenTreeVecCon vecCon)
     {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new InvalidOperationException("Mask conversion folding is not supported on this target.");
+        }
+
         assert(tree.IsConvertVectorToMask);
         assert((vecCon == tree.GetOp(1)) || (vecCon == tree.GetOp(2)));
         assert(varTypeIsMask(tree.Type));
@@ -25,18 +28,15 @@ public partial class Compiler
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
+            case TYP_SIMD32 when Configuration.TARGET_XARCH:
+            case TYP_SIMD64 when Configuration.TARGET_XARCH:
             {
                 EvaluateSimdCvtVectorToMask(tree.SimdBaseType, ref mskCon.SimdMaskVal,
                     vecCon.SimdVal.AsSpan<byte>()[..vecCon.Type.Size]);
                 break;
             }
 
-#if TARGET_ARM64
-            case TYP_SIMD_ARM64:
+            case TYP_SIMD_ARM64 when Configuration.TARGET_ARM64:
             {
                 if (!EvaluateSimdCvtScalableVectorToMask(tree.SimdBaseType, ref mskCon.SimdScalableMaskVal,
                     vecCon.SimdScalableVal))
@@ -45,8 +45,6 @@ public partial class Compiler
                 }
                 break;
             }
-#endif
-
             default:
             {
                 unreached();
@@ -56,7 +54,23 @@ public partial class Compiler
 
         return mskCon;
     }
+
+    public GenTreeMskCon gtNewSimdFalseMaskByteNode()
+    {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new InvalidOperationException("Scalable-vector mask folding requires an ARM64 target.");
+        }
+
+#if DEBUG
+        if (JitConfig.JitUseScalableVectorT != 0)
+        {
+            return gtNewMskConNode(TYP_MASK, TYP_BYTE, false);
+        }
 #endif
+
+        return gtNewMskConNode(simdmask_t.Zero);
+    }
 
     public GenTree gtFoldExprHWIntrinsic(GenTreeHWIntrinsic tree)
     {
@@ -70,10 +84,7 @@ public partial class Compiler
 
         simd_t simdVal = default;
 
-        if (
-#if TARGET_ARM64
-            (retType != TYP_SIMD_ARM64) &&
-#endif
+        if ((!Configuration.TARGET_ARM64 || (retType != TYP_SIMD_ARM64)) &&
             GenTreeVecCon.IsHWIntrinsicCreateConstant(
                 ni, simdBaseType, simdSize, tree.Operands, ref simdVal))
         {
@@ -120,89 +131,104 @@ public partial class Compiler
             }
         }
 
-#if FEATURE_MASKED_HW_INTRINSICS
-        // Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
-        if (tree.IsConvertMaskToVector)
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            var op = op1;
-
-            if (op.Oper.IsHWIntrinsic)
+            // Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
+            if (tree.IsConvertMaskToVector)
             {
-                uint simdBaseTypeSize = simdBaseType.Size;
-                var cvtOp = op.AsHWIntrinsic();
+                var op = op1;
 
-                if (cvtOp.IsConvertVectorToMask)
+                if (op.Oper.IsHWIntrinsic)
                 {
-                    if (cvtOp.SimdBaseType.Size == simdBaseTypeSize)
+                    uint simdBaseTypeSize = simdBaseType.Size;
+                    var cvtOp = op.AsHWIntrinsic();
+
+                    if (cvtOp.IsConvertVectorToMask)
                     {
-                        // We need the operand to be the same kind of mask; otherwise
-                        // the bitwise operation can differ in how it performs
+                        if (cvtOp.SimdBaseType.Size == simdBaseTypeSize)
+                        {
+                            // We need the operand to be the same kind of mask; otherwise
+                            // the bitwise operation can differ in how it performs
 
-#if TARGET_XARCH
-                        var vectorNode = cvtOp.GetOp(1);
-#elif TARGET_ARM64
-                        var vectorNode = cvtOp.GetOp(2);
-#else
-#error Unsupported hardware-intrinsic folding target
-#endif
+                            GenTree vectorNode;
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                vectorNode = cvtOp.GetOp(1);
+                            }
+                            else if (Configuration.TARGET_ARM64)
+                            {
+                                vectorNode = cvtOp.GetOp(2);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(
+                                    "Mask conversion folding is not supported on this target.");
+                            }
 
-                        DEBUG_DESTROY_NODE(op);
-                        DEBUG_DESTROY_NODE(tree);
-                        return vectorNode;
+                            DEBUG_DESTROY_NODE(op);
+                            DEBUG_DESTROY_NODE(tree);
+                            return vectorNode;
+                        }
+                    }
+                }
+            }
+
+            // Fold ConvertVectorToMask(ConvertMaskToVector(mask)) to mask
+            if (tree.IsConvertVectorToMask)
+            {
+                var op = op1;
+                var tryHandle = false;
+
+                if (Configuration.TARGET_XARCH)
+                {
+                    tryHandle = op.Oper.IsHWIntrinsic;
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    assert(op.Oper.IsHWIntrinsic && op.AsHWIntrinsic().HWIntrinsicId == NI_Sve_ConversionTrueMask);
+                    op = op2 ?? throw new InvalidOperationException();
+                    tryHandle = op.Oper.IsHWIntrinsic;
+                }
+
+                if (tryHandle)
+                {
+                    uint simdBaseTypeSize = simdBaseType.Size;
+                    var cvtOp = op.AsHWIntrinsic();
+
+                    if (cvtOp.IsConvertMaskToVector)
+                    {
+                        if (cvtOp.SimdBaseType.Size == simdBaseTypeSize)
+                        {
+                            // We need the operand to be the same kind of mask; otherwise
+                            // the bitwise operation can differ in how it performs
+
+                            var maskNode = cvtOp.GetOp(1);
+
+                            if (Configuration.TARGET_ARM64)
+                            {
+                                DEBUG_DESTROY_NODE(op1);
+                            }
+                            DEBUG_DESTROY_NODE(op);
+                            DEBUG_DESTROY_NODE(tree);
+                            return maskNode;
+                        }
                     }
                 }
             }
         }
-
-        // Fold ConvertVectorToMask(ConvertMaskToVector(mask)) to mask
-        if (tree.IsConvertVectorToMask)
+        else
         {
-            var op = op1;
-#if TARGET_XARCH
-            var tryHandle = op.Oper.IsHWIntrinsic;
-#elif TARGET_ARM64
-            assert(op.Oper.IsHWIntrinsic && op.AsHWIntrinsic().HWIntrinsicId == NI_Sve_ConversionTrueMask);
-            op = op2 ?? throw new InvalidOperationException();
-            var tryHandle = op.Oper.IsHWIntrinsic;
-#else
-            var tryHandle = false;
-#endif
-            if (tryHandle)
-            {
-                uint simdBaseTypeSize = simdBaseType.Size;
-                var cvtOp = op.AsHWIntrinsic();
-
-                if (cvtOp.IsConvertMaskToVector)
-                {
-                    if (cvtOp.SimdBaseType.Size == simdBaseTypeSize)
-                    {
-                        // We need the operand to be the same kind of mask; otherwise
-                        // the bitwise operation can differ in how it performs
-
-                        var maskNode = cvtOp.GetOp(1);
-
-#if TARGET_ARM64
-                        DEBUG_DESTROY_NODE(op1);
-#endif
-                        DEBUG_DESTROY_NODE(op);
-                        DEBUG_DESTROY_NODE(tree);
-                        return maskNode;
-                    }
-                }
-            }
+            assert(!tree.IsConvertMaskToVector);
+            assert(!tree.IsConvertVectorToMask);
         }
-#else
-        assert(!tree.IsConvertMaskToVector);
-        assert(!tree.IsConvertVectorToMask);
-#endif
 
         var oper = tree.GetOperForHWIntrinsicId(out var isScalar);
 
         // We shouldn't find AND_NOT nodes since it should only be produced in lowering
         assert(oper != GT_AND_NOT);
 
-#if FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
-        if (GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(oper))
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_XARCH &&
+            GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(oper))
         {
             // Comparisons that produce masks lead to more verbose trees than
             // necessary in many scenarios due to requiring a CvtMaskToVector
@@ -326,8 +352,8 @@ public partial class Compiler
                 }
             }
         }
-#elif FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
-        if ((HWIntrinsicInfo.lookupFlags(ni) & HW_Flag_HasAllMaskVariant) != 0)
+        else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 &&
+                 ((HWIntrinsicInfo.lookupFlags(ni) & HW_Flag_HasAllMaskVariant) != 0))
         {
             var maskVariant = HWIntrinsicInfo.GetMaskVariant(ni);
             assert(opCount == HWIntrinsicInfo.lookupNumArgs(maskVariant));
@@ -374,8 +400,6 @@ public partial class Compiler
                 op3 = null;
             }
         }
-#endif
-
         GenTree? cnsNode = null;
         GenTree? otherNode = null;
 
@@ -412,13 +436,11 @@ public partial class Compiler
         {
             if (oper != GT_NONE)
             {
-#if FEATURE_MASKED_HW_INTRINSICS
-                if (varTypeIsMask(retType))
+                if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeIsMask(retType))
                 {
                     cnsNode.AsMskCon().EvaluateUnaryInPlace(oper, isScalar, simdBaseType, simdSize);
                 }
                 else
-#endif
                 {
                     if (!cnsNode.AsVecCon().TryEvaluateUnaryInPlace(oper, isScalar, simdBaseType))
                     {
@@ -427,13 +449,11 @@ public partial class Compiler
                 }
                 resultNode = cnsNode;
             }
-#if FEATURE_MASKED_HW_INTRINSICS
-            else if (tree.IsConvertMaskToVector)
+            else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && tree.IsConvertMaskToVector)
             {
                 var mskCon = cnsNode.AsMskCon();
 
-#if TARGET_ARM64
-                if (retType == TYP_SIMD_ARM64)
+                if (Configuration.TARGET_ARM64 && retType == TYP_SIMD_ARM64)
                 {
                     simdscalable_t scalableValue = default;
                     if (EvaluateSimdCvtScalableMaskToVector(simdBaseType, ref scalableValue, mskCon.SimdScalableMaskVal))
@@ -442,7 +462,6 @@ public partial class Compiler
                     }
                 }
                 else
-#endif
                 {
                     simd_t maskVector = default;
                     EvaluateSimdCvtMaskToVector(simdBaseType, maskVector.AsSpan<byte>()[..SimdStorageSize],
@@ -453,50 +472,42 @@ public partial class Compiler
                     resultNode = vector;
                 }
             }
-#if TARGET_XARCH
-            else if (tree.IsConvertVectorToMask)
+            else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_XARCH &&
+                     tree.IsConvertVectorToMask)
             {
                 resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode.AsVecCon());
             }
-#endif
-#endif
             else
             {
                 switch (ni)
                 {
                     case NI_Vector_ExtractMostSignificantBits:
-#if TARGET_XARCH
-                    case NI_X86Base_MoveMask:
-                    case NI_AVX_MoveMask:
-                    case NI_AVX2_MoveMask:
-#elif TARGET_WASM
-                    case NI_PackedSimd_Bitmask:
-#endif
+                    case NI_X86Base_MoveMask when Configuration.TARGET_XARCH:
+                    case NI_AVX_MoveMask when Configuration.TARGET_XARCH:
+                    case NI_AVX2_MoveMask when Configuration.TARGET_XARCH:
+                    case NI_PackedSimd_Bitmask when Configuration.TARGET_WASM:
                     {
                         simdmask_t simdMaskVal = default;
 
                         switch (simdSize)
                         {
-#if TARGET_ARM64
-                            case 8:
+                            case 8 when Configuration.TARGET_ARM64:
                             {
                                 EvaluateExtractMSB(simdBaseType, ref simdMaskVal, cnsNode.AsVecCon().SimdVal.AsSpan<byte>()[..8]);
                                 break;
                             }
-#endif
+
                             case 16:
                             {
                                 EvaluateExtractMSB(simdBaseType, ref simdMaskVal, cnsNode.AsVecCon().SimdVal.AsSpan<byte>()[..16]);
                                 break;
                             }
 
-#if TARGET_XARCH
-                            case 32:
+                            case 32 when Configuration.TARGET_XARCH:
                             {
                                 EvaluateExtractMSB(simdBaseType, ref simdMaskVal, cnsNode.AsVecCon().SimdVal.AsSpan<byte>()[..32]);
                                 break;
                             }
-#endif
 
                             default:
                             {
@@ -515,8 +526,7 @@ public partial class Compiler
                         break;
                     }
 
-#if TARGET_XARCH
-                    case NI_AVX512_MoveMask:
+                    case NI_AVX512_MoveMask when Configuration.TARGET_XARCH:
                     {
                         var mskCns = cnsNode.AsMskCon();
 
@@ -535,14 +545,9 @@ public partial class Compiler
                         }
                         break;
                     }
-#endif
 
-#if !TARGET_WASM
-#if TARGET_ARM64
-                    case NI_ArmBase_LeadingZeroCount:
-#elif TARGET_XARCH
-                    case NI_AVX2_LeadingZeroCount:
-#endif
+                    case NI_ArmBase_LeadingZeroCount when Configuration.TARGET_ARM64:
+                    case NI_AVX2_LeadingZeroCount when Configuration.TARGET_XARCH:
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
@@ -553,10 +558,8 @@ public partial class Compiler
                         resultNode = cnsNode;
                         break;
                     }
-#endif
 
-#if TARGET_ARM64
-                    case NI_ArmBase_Arm64_LeadingZeroCount:
+                    case NI_ArmBase_Arm64_LeadingZeroCount when Configuration.TARGET_ARM64:
                     {
                         assert(varTypeIsInt(retType));
 
@@ -568,8 +571,8 @@ public partial class Compiler
                         resultNode = cnsNode;
                         break;
                     }
-#elif TARGET_XARCH
-                    case NI_AVX2_X64_LeadingZeroCount:
+
+                    case NI_AVX2_X64_LeadingZeroCount when Configuration.TARGET_XARCH:
                     {
                         assert(varTypeIsLong(retType));
 
@@ -580,24 +583,15 @@ public partial class Compiler
                         resultNode = cnsNode;
                         break;
                     }
-#endif
 
                     case NI_Vector_AsVector3:
                     case NI_Vector_AsVector128Unsafe:
-#if TARGET_XARCH
-                    case NI_Vector_AsVector2:
-                    case NI_Vector_GetLower:
-                    case NI_Vector_GetLower128:
-                    case NI_Vector_ToVector256Unsafe:
-                    case NI_Vector_ToVector512Unsafe:
-#elif TARGET_ARM64
-                    case NI_Vector_GetLower:
-                    case NI_Vector_ToVector128Unsafe:
-#elif TARGET_WASM
-                    case NI_Vector_AsVector2:
-#else
-#error Unsupported hardware-intrinsic folding target
-#endif
+                    case NI_Vector_AsVector2 when Configuration.TARGET_XARCH || Configuration.TARGET_WASM:
+                    case NI_Vector_GetLower when Configuration.TARGET_XARCH || Configuration.TARGET_ARM64:
+                    case NI_Vector_GetLower128 when Configuration.TARGET_XARCH:
+                    case NI_Vector_ToVector128Unsafe when Configuration.TARGET_ARM64:
+                    case NI_Vector_ToVector256Unsafe when Configuration.TARGET_XARCH:
+                    case NI_Vector_ToVector512Unsafe when Configuration.TARGET_XARCH:
                     {
                         // These are all going to a smaller type taking the lowest bits
                         // or are unsafely going to a larger type, so we just need to retype
@@ -608,8 +602,7 @@ public partial class Compiler
                         break;
                     }
 
-#if TARGET_ARM64
-                    case NI_Vector_ToVector128:
+                    case NI_Vector_ToVector128 when Configuration.TARGET_ARM64:
                     {
                         assert(retType == TYP_SIMD16);
                         assert(cnsNode.Type == TYP_SIMD8);
@@ -619,8 +612,8 @@ public partial class Compiler
                         resultNode = cnsNode;
                         break;
                     }
-#elif TARGET_XARCH
-                    case NI_Vector_ToVector256:
+
+                    case NI_Vector_ToVector256 when Configuration.TARGET_XARCH:
                     {
                         assert(retType == TYP_SIMD32);
                         assert((cnsNode.Type == TYP_SIMD16));
@@ -631,7 +624,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_Vector_ToVector512:
+                    case NI_Vector_ToVector512 when Configuration.TARGET_XARCH:
                     {
                         assert(retType == TYP_SIMD64);
 
@@ -649,39 +642,34 @@ public partial class Compiler
                         resultNode = cnsNode;
                         break;
                     }
-#endif
 
-#if TARGET_ARM64
-                    case NI_Vector_GetUpper:
+                    case NI_Vector_GetUpper when Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH:
                     {
-                        assert(retType == TYP_SIMD8);
-                        assert(cnsNode.Type == TYP_SIMD16);
-                        cnsNode.AsVecCon().SimdVal.v64[0] = cnsNode.AsVecCon().SimdVal.v64[1];
-
-                        cnsNode.Type = retType;
-                        resultNode = cnsNode;
-                        break;
-                    }
-#elif TARGET_XARCH
-                    case NI_Vector_GetUpper:
-                    {
-                        if (retType == TYP_SIMD16)
+                        if (Configuration.TARGET_ARM64)
                         {
-                            assert((cnsNode.Type == TYP_SIMD32));
-                            cnsNode.AsVecCon().SimdVal.v128[0] = cnsNode.AsVecCon().SimdVal.v256[0].v128[1];
+                            assert(retType == TYP_SIMD8);
+                            assert(cnsNode.Type == TYP_SIMD16);
+                            cnsNode.AsVecCon().SimdVal.v64[0] = cnsNode.AsVecCon().SimdVal.v64[1];
                         }
                         else
                         {
-                            assert(retType == TYP_SIMD32);
-                            assert((cnsNode.Type == TYP_SIMD64));
-                            cnsNode.AsVecCon().SimdVal.v256[0] = cnsNode.AsVecCon().SimdVal.v256[1];
+                            if (retType == TYP_SIMD16)
+                            {
+                                assert((cnsNode.Type == TYP_SIMD32));
+                                cnsNode.AsVecCon().SimdVal.v128[0] = cnsNode.AsVecCon().SimdVal.v256[0].v128[1];
+                            }
+                            else
+                            {
+                                assert(retType == TYP_SIMD32);
+                                assert((cnsNode.Type == TYP_SIMD64));
+                                cnsNode.AsVecCon().SimdVal.v256[0] = cnsNode.AsVecCon().SimdVal.v256[1];
+                            }
                         }
 
                         cnsNode.Type = retType;
                         resultNode = cnsNode;
                         break;
                     }
-#endif
 
                     case NI_Vector_ToScalar:
                     {
@@ -709,8 +697,7 @@ public partial class Compiler
                         break;
                     }
 
-#if TARGET_ARM64
-                    case NI_ArmBase_ReverseElementBits:
+                    case NI_ArmBase_ReverseElementBits when Configuration.TARGET_ARM64:
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
@@ -720,7 +707,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_ArmBase_Arm64_ReverseElementBits:
+                    case NI_ArmBase_Arm64_ReverseElementBits when Configuration.TARGET_ARM64:
                     {
                         assert(varTypeIsLong(retType));
 
@@ -729,10 +716,8 @@ public partial class Compiler
                         resultNode = cnsNode;
                         break;
                     }
-#endif
 
-#if TARGET_XARCH
-                    case NI_AVX2_TrailingZeroCount:
+                    case NI_AVX2_TrailingZeroCount when Configuration.TARGET_XARCH:
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
@@ -744,7 +729,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_AVX2_X64_TrailingZeroCount:
+                    case NI_AVX2_X64_TrailingZeroCount when Configuration.TARGET_XARCH:
                     {
                         assert(varTypeIsLong(retType));
 
@@ -756,7 +741,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_X86Base_PopCount:
+                    case NI_X86Base_PopCount when Configuration.TARGET_XARCH:
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
@@ -768,7 +753,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_X86Base_X64_PopCount:
+                    case NI_X86Base_X64_PopCount when Configuration.TARGET_XARCH:
                     {
                         assert(varTypeIsLong(retType));
 
@@ -780,7 +765,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_X86Base_BitScanForward:
+                    case NI_X86Base_BitScanForward when Configuration.TARGET_XARCH:
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
@@ -798,7 +783,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_X86Base_X64_BitScanForward:
+                    case NI_X86Base_X64_BitScanForward when Configuration.TARGET_XARCH:
                     {
                         assert(varTypeIsLong(retType));
 
@@ -816,7 +801,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_X86Base_BitScanReverse:
+                    case NI_X86Base_BitScanReverse when Configuration.TARGET_XARCH:
                     {
                         assert(!varTypeIsSmall(retType) && !varTypeIsLong(retType));
 
@@ -834,7 +819,7 @@ public partial class Compiler
                         break;
                     }
 
-                    case NI_X86Base_X64_BitScanReverse:
+                    case NI_X86Base_X64_BitScanReverse when Configuration.TARGET_XARCH:
                     {
                         assert(varTypeIsLong(retType));
 
@@ -851,7 +836,6 @@ public partial class Compiler
                         resultNode = cnsNode;
                         break;
                     }
-#endif
 
                     default:
                     {
@@ -867,8 +851,7 @@ public partial class Compiler
             {
                 if (oper != GT_NONE)
                 {
-#if FEATURE_MASKED_HW_INTRINSICS
-                    if (varTypeIsMask(retType))
+                    if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeIsMask(retType))
                     {
                         if (varTypeIsMask(cnsNode.Type))
                         {
@@ -881,12 +864,10 @@ public partial class Compiler
                         }
                     }
                     else
-#endif
                     {
                         if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
                         {
-#if TARGET_XARCH
-                            if ((otherNode.Type == TYP_SIMD16))
+                            if (Configuration.TARGET_XARCH && (otherNode.Type == TYP_SIMD16))
                             {
                                 if (!HWIntrinsicInfo.IsVariableShift(ni))
                                 {
@@ -909,16 +890,17 @@ public partial class Compiler
                                     otherNode.AsVecCon().EvaluateBroadcastInPlace(simdBaseType, shiftAmount);
                                 }
                             }
-#elif TARGET_ARM64
-                            var auxType = tree.AuxiliaryType;
-                            if ((auxType != TYP_UNKNOWN) && (auxType.Size != simdBaseType.Size))
+                            if (Configuration.TARGET_ARM64)
                             {
-                                assert(auxType == TYP_ULONG);
-                                assert(tree.Type == TYP_SIMD16);
-                                ref var shiftValue = ref otherNode.AsVecCon().SimdVal.v128[0];
-                                shiftValue = NarrowAndDuplicateSimdLong(simdBaseType, shiftValue);
+                                var auxType = tree.AuxiliaryType;
+                                if ((auxType != TYP_UNKNOWN) && (auxType.Size != simdBaseType.Size))
+                                {
+                                    assert(auxType == TYP_ULONG);
+                                    assert(tree.Type == TYP_SIMD16);
+                                    ref var shiftValue = ref otherNode.AsVecCon().SimdVal.v128[0];
+                                    shiftValue = NarrowAndDuplicateSimdLong(simdBaseType, shiftValue);
+                                }
                             }
-#endif
                         }
 
                         if (otherNode.Oper.IsIntegralConst)
@@ -970,9 +952,8 @@ public partial class Compiler
                             break;
                         }
 
-#if TARGET_ARM64
-                        case NI_AdvSimd_MultiplyByScalar:
-                        case NI_AdvSimd_Arm64_MultiplyByScalar:
+                        case NI_AdvSimd_MultiplyByScalar when Configuration.TARGET_ARM64:
+                        case NI_AdvSimd_Arm64_MultiplyByScalar when Configuration.TARGET_ARM64:
                         {
                             otherNode.Type = retType;
 
@@ -993,10 +974,8 @@ public partial class Compiler
                             resultNode = cnsNode;
                             break;
                         }
-#endif
 
-#if TARGET_ARM64
-                        case NI_Vector_WithLower:
+                        case NI_Vector_WithLower when Configuration.TARGET_ARM64:
                         {
                             assert(retType == TYP_SIMD16);
                             assert(cnsNode.Type == TYP_SIMD16);
@@ -1006,7 +985,7 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector_WithUpper:
+                        case NI_Vector_WithUpper when Configuration.TARGET_ARM64:
                         {
                             assert(retType == TYP_SIMD16);
                             assert(cnsNode.Type == TYP_SIMD16);
@@ -1015,8 +994,8 @@ public partial class Compiler
                             resultNode = cnsNode;
                             break;
                         }
-#elif TARGET_XARCH
-                        case NI_Vector_WithLower:
+
+                        case NI_Vector_WithLower when Configuration.TARGET_XARCH:
                         {
                             assert((cnsNode.Type == retType));
 
@@ -1036,7 +1015,7 @@ public partial class Compiler
                             break;
                         }
 
-                        case NI_Vector_WithUpper:
+                        case NI_Vector_WithUpper when Configuration.TARGET_XARCH:
                         {
                             assert((cnsNode.Type == retType));
 
@@ -1055,7 +1034,6 @@ public partial class Compiler
                             resultNode = cnsNode;
                             break;
                         }
-#endif
 
                         case NI_Vector_op_Equality:
                         {
@@ -1596,15 +1574,14 @@ public partial class Compiler
 
                 switch (ni)
                 {
-#if TARGET_ARM64
-                    case NI_Sve_ConvertVectorToMask:
+                    case NI_Sve_ConvertVectorToMask when Configuration.TARGET_ARM64:
                     {
                         resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode.AsVecCon());
                         break;
                     }
 
-                    case NI_AdvSimd_MultiplyByScalar:
-                    case NI_AdvSimd_Arm64_MultiplyByScalar:
+                    case NI_AdvSimd_MultiplyByScalar when Configuration.TARGET_ARM64:
+                    case NI_AdvSimd_Arm64_MultiplyByScalar when Configuration.TARGET_ARM64:
                     {
                         if (!varTypeIsFloating(simdBaseType))
                         {
@@ -1658,7 +1635,6 @@ public partial class Compiler
                         }
                         break;
                     }
-#endif
 
                     case NI_Vector_op_Equality:
                     {
@@ -1702,11 +1678,8 @@ public partial class Compiler
             assert((opCount == 3) && (op2 is not null) && (op3 is not null));
             switch (ni)
             {
-#if TARGET_XARCH || TARGET_WASM
-                case NI_Vector_ConditionalSelect:
-#elif TARGET_ARM64
-                case NI_AdvSimd_BitwiseSelect:
-#endif
+                case NI_Vector_ConditionalSelect when Configuration.TARGET_XARCH || Configuration.TARGET_WASM:
+                case NI_AdvSimd_BitwiseSelect when Configuration.TARGET_ARM64:
                 {
                     assert(!varTypeIsMask(retType));
                     assert(!varTypeIsMask(op1.Type));
@@ -1746,9 +1719,8 @@ public partial class Compiler
                     break;
                 }
 
-#if TARGET_ARM64
-                case NI_Sve_ConditionalSelect:
-                case NI_Sve_ConditionalSelect_Predicates:
+                case NI_Sve_ConditionalSelect when Configuration.TARGET_ARM64:
+                case NI_Sve_ConditionalSelect_Predicates when Configuration.TARGET_ARM64:
                 {
                     assert(varTypeIsMask(op1.Type));
 
@@ -1808,7 +1780,6 @@ public partial class Compiler
                     }
                     break;
                 }
-#endif
 
                 case NI_Vector_WithElement:
                 {
@@ -1841,10 +1812,9 @@ public partial class Compiler
                     break;
                 }
 
-#if TARGET_XARCH
-                case NI_AVX_Compare:
-                case NI_AVX_CompareScalar:
-                case NI_AVX512_CompareMask:
+                case NI_AVX_Compare when Configuration.TARGET_XARCH:
+                case NI_AVX_CompareScalar when Configuration.TARGET_XARCH:
+                case NI_AVX512_CompareMask when Configuration.TARGET_XARCH:
                 {
                     if (!op3.Oper.IsCnsIntOrI)
                     {
@@ -1933,10 +1903,10 @@ public partial class Compiler
                     return gtFoldExprHWIntrinsic(tree);
                 }
 
-                case NI_X86Base_BlendVariable:
-                case NI_AVX_BlendVariable:
-                case NI_AVX2_BlendVariable:
-                case NI_AVX512_BlendVariableMask:
+                case NI_X86Base_BlendVariable when Configuration.TARGET_XARCH:
+                case NI_AVX_BlendVariable when Configuration.TARGET_XARCH:
+                case NI_AVX2_BlendVariable when Configuration.TARGET_XARCH:
+                case NI_AVX512_BlendVariableMask when Configuration.TARGET_XARCH:
                 {
                     if (!op3.Oper.IsConst)
                     {
@@ -1990,8 +1960,6 @@ public partial class Compiler
 
                     break;
                 }
-#endif
-
                 default:
                 {
                     break;
@@ -1999,14 +1967,12 @@ public partial class Compiler
             }
         }
 
-#if FEATURE_MASKED_HW_INTRINSICS
-        if (varTypeIsMask(retType) && !varTypeIsMask(resultNode.Type))
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeIsMask(retType) &&
+            !varTypeIsMask(resultNode.Type))
         {
             resultNode = gtNewSimdCvtVectorToMaskNode(retType, resultNode, simdBaseType, simdSize);
             return gtFoldExprHWIntrinsic(resultNode.AsHWIntrinsic());
         }
-#endif
-
         if ((resultNode != tree) && resultNode.Oper.IsConst)
         {
             fgUpdateConstTreeValueNumber(resultNode);
@@ -2019,15 +1985,13 @@ public partial class Compiler
     }
 }
 
-#if TARGET_ARM64
 public readonly partial struct HWIntrinsicInfo
 {
     public static NamedIntrinsic GetMaskVariant(NamedIntrinsic id)
     {
         assert((lookupFlags(id) & HW_Flag_HasAllMaskVariant) != 0);
 
-        return id switch
-        {
+        return id switch {
             NI_Sve_And => NI_Sve_And_Predicates,
             NI_Sve_BitwiseClear => NI_Sve_BitwiseClear_Predicates,
             NI_Sve_Xor => NI_Sve_Xor_Predicates,
@@ -2044,5 +2008,3 @@ public readonly partial struct HWIntrinsicInfo
         };
     }
 }
-#endif
-#endif

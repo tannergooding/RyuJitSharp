@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
+using System;
 using System.Runtime.Intrinsics.X86;
 
 namespace RyuJitSharp;
@@ -13,6 +13,11 @@ public readonly partial struct HWIntrinsicInfo
     public static NamedIntrinsic lookupIdForFloatComparisonMode(
         NamedIntrinsic intrinsic, FloatComparisonMode comparison, var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new InvalidOperationException("Floating-point comparison intrinsics require an xarch target.");
+        }
+
         assert(varTypeIsFloating(simdBaseType));
         assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
@@ -281,4 +286,3 @@ public readonly partial struct HWIntrinsicInfo
         }
     }
 }
-#endif

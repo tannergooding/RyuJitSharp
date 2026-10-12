@@ -34,16 +34,5 @@ public partial class Compiler
         return mask;
     }
 
-    public GenTreeMskCon gtNewSimdFalseMaskByteNode()
-    {
-#if DEBUG
-        if (JitConfig.JitUseScalableVectorT != 0)
-        {
-            return gtNewMskConNode(TYP_MASK, TYP_BYTE, false);
-        }
-#endif
-
-        return gtNewMskConNode(simdmask_t.Zero);
-    }
 }
 #endif

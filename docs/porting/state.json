@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universalizing `Compiler.gtFoldExpr` at its `FEATURE_HW_INTRINSICS` dispatch to `gtFoldExprHWIntrinsic`.",
+    "nextAction": "Continue universalizing the target-width branches in `Compiler.gtFoldExprBinaryConstLng` and `gtBashTreeToConstLng`, preserving field-sequence and constant-node representation, then proceed in source order.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize ABI-location diagnostics in `gtPrintABILocation`, including fixed-register mask versus single-register formatting, fixed versus stack argument labels, and xarch register-list formatting.",
-      "doneWhen": "All target/feature branches in ABI-location printing use runtime configuration while preserving target-specific text and register grouping.",
-      "validation": "`CompilerTargetConfigurationTests` and `FeatureConfigurationTests` passed in Debug and Release for win-x64 (63/1 skipped), win-x86 (65/1), linux-arm64 (60/3), linux-arm (54/9), linux-loongarch64 (52/9), linux-riscv64 (52/9), and browser-wasm (60/4). Formatting and `git diff --check` passed. EnforceCodeStyleInBuild was disabled because full-analyzer builds report pre-existing IDE2002/IDE0059 diagnostics in untouched sections.",
-      "deferred": "Continue at `Compiler.gtFoldExpr`'s HWI dispatch, then migrate the remaining compiler and other source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
+      "scope": "Universalize `gtFoldExpr` hardware-intrinsic dispatch and its folding helper family, including target-specific intrinsic-operation mapping, mask folding, and xarch floating-comparison remapping.",
+      "doneWhen": "HWI folding and its operation-mapping dependencies compile in the universal build; their target/feature branches use runtime configuration while preserving each target's existing fold behavior.",
+      "validation": "`CompilerTargetConfigurationTests` and `FeatureConfigurationTests` passed in Debug and Release for win-x64 (64/1 skipped), win-x86 (66/1), linux-arm64 (61/3), linux-arm (55/9), linux-loongarch64 (53/9), linux-riscv64 (53/9), and browser-wasm (61/4). Formatting and `git diff --check` passed. Full-analysis test compilation remains blocked by pre-existing IDE2002/IDE0059 diagnostics in unrelated or unchanged sections; this target matrix disabled EnforceCodeStyleInBuild. This validates target builds and focused behavior, not generated-code parity.",
+      "deferred": "Continue with target-width constant folding in `Compiler.gtFoldExprBinaryConstLng` and `gtBashTreeToConstLng`, then migrate remaining target/feature conditionals. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -269,13 +269,16 @@
         "sources\\Core\\jit\\valuenum\\ValueNumStore.IntrinsicEvaluation.cs",
         "sources\\Core\\jit\\compiler\\Compiler.SimdIntrinsicHelpers.cs",
         "sources\\Core\\jit\\compiler\\Compiler.gt.HardwareIntrinsicFolding.cs",
+        "sources\\Core\\jit\\gentree\\GenTreeHWIntrinsic.Operations.cs",
+        "sources\\Core\\jit\\hwintrinsic\\HWIntrinsicInfo.FloatComparison.cs",
         "sources\\Core\\jit\\lower\\Lowering.StructCalls.cs",
         "sources\\Core\\jit\\lower\\Lowering.Validation.cs",
-        "tests\\Core\\ValueNumHardwareEvaluationClosureTests.cs"
+        "tests\\Core\\ValueNumHardwareEvaluationClosureTests.cs",
+        "tests\\Targets\\CompilerTargetConfigurationTests.cs"
       ],
-      "disposition": "Value-number evaluator target branches use Configuration checks over the universal intrinsic identities. Tree evaluator entrypoints and Lowering cases remain FEATURE_HW_INTRINSICS-gated until the GenTree dependencies are universal; target-independent SIMD helpers are shared by folding and evaluator paths.",
+      "disposition": "Value-number evaluator target branches and `gtFoldExpr` HWI dispatch use Configuration checks over universal intrinsic identities. The folding operation map and xarch float-comparison remapping are available in the universal build, with target algorithms guarded at runtime. Other tree evaluator entrypoints and Lowering cases remain FEATURE_HW_INTRINSICS-gated while their dependencies are migrated.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
-      "validation": "Focused evaluator tests passed on win-x64 in Debug/Release (85/85 each), linux-arm64 (58/58 each), and browser-wasm (29/29 each); feature-disabled linux-riscv64 configuration tests passed (8/8 each). Full-analysis Release compiler build passed; full-analysis test build hit unrelated CA1812 in unchanged DiscretionaryPolicyTests.cs."
+      "validation": "Focused evaluator tests passed on win-x64 in Debug/Release (85/85 each), linux-arm64 (58/58 each), and browser-wasm (29/29 each); feature-disabled linux-riscv64 configuration tests passed (8/8 each). HWI folding and operation-mapping tests passed in Debug/Release for all seven target RIDs. Full-analysis test compilation hit existing IDE2002/IDE0059 diagnostics outside the changed helper code."
     },
     {
       "area": "universal-var-type-ordinals",

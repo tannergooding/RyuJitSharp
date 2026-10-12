@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS
 namespace RyuJitSharp;
 
 public sealed partial class GenTreeHWIntrinsic
@@ -17,40 +16,34 @@ public sealed partial class GenTreeHWIntrinsic
         {
             case NI_Vector_op_Equality:
             case NI_Vector_op_Inequality:
-#if TARGET_XARCH
-            case NI_AVX512_CompareEqualMask:
-            case NI_AVX512_CompareNotEqualMask:
-#endif
+            case NI_AVX512_CompareEqualMask when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareNotEqualMask when Configuration.TARGET_XARCH:
             {
                 // Floating equality must treat positive and negative zero alike.
                 return constant.IsZero && !varTypeIsFloating(baseType);
             }
 
-#if TARGET_ARM64
-            case NI_AdvSimd_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareEqualScalar:
+            case NI_AdvSimd_CompareEqual when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareEqual when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareEqualScalar when Configuration.TARGET_ARM64:
             {
                 return constant.IsZero;
             }
 
-            case NI_AdvSimd_CompareGreaterThan:
-            case NI_AdvSimd_CompareGreaterThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareGreaterThan:
-            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
-            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+            case NI_AdvSimd_CompareGreaterThan when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_CompareGreaterThanOrEqual when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareGreaterThan when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareGreaterThanScalar when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar when Configuration.TARGET_ARM64:
             {
                 return constant.IsZero && !varTypeIsUnsigned(baseType);
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_Insert:
+            case NI_X86Base_Insert when Configuration.TARGET_XARCH:
             {
                 return (baseType is TYP_FLOAT) && constant.IsZero;
             }
-#endif
 
             case NI_Vector_Shuffle:
             case NI_Vector_ShuffleNative:
@@ -61,16 +54,14 @@ public sealed partial class GenTreeHWIntrinsic
                 return IsUserCall && (operand == GetOp(2));
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_Xor:
-            case NI_AVX_Xor:
-            case NI_AVX2_Xor:
-            case NI_AVX512_Xor:
+            case NI_X86Base_Xor when Configuration.TARGET_XARCH:
+            case NI_AVX_Xor when Configuration.TARGET_XARCH:
+            case NI_AVX2_Xor when Configuration.TARGET_XARCH:
+            case NI_AVX512_Xor when Configuration.TARGET_XARCH:
             {
                 assert(Operands.Length == 2);
                 return constant.IsVectorAllBitsSet;
             }
-#endif
             default:
             {
                 return false;
@@ -127,100 +118,83 @@ public sealed partial class GenTreeHWIntrinsic
     public static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, out bool isScalar)
     {
         isScalar = false;
-#if !TARGET_WASM
+        if (Configuration.TARGET_WASM)
+        {
+            return GT_NONE;
+        }
+
         switch (id)
         {
-#if TARGET_XARCH
-            case NI_X86Base_And:
-            case NI_AVX_And:
-            case NI_AVX2_And:
-            case NI_AVX512_And:
-            case NI_AVX512_AndMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_And:
-            case NI_Sve_And:
-#endif
+            case NI_X86Base_And when Configuration.TARGET_XARCH:
+            case NI_AVX_And when Configuration.TARGET_XARCH:
+            case NI_AVX2_And when Configuration.TARGET_XARCH:
+            case NI_AVX512_And when Configuration.TARGET_XARCH:
+            case NI_AVX512_AndMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_And when Configuration.TARGET_ARM64:
+            case NI_Sve_And when Configuration.TARGET_ARM64:
             {
                 return GT_AND;
             }
 
-#if TARGET_XARCH
-            case NI_AVX512_NotMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_Not:
-            case NI_Sve_Not:
-#endif
+            case NI_AVX512_NotMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_Not when Configuration.TARGET_ARM64:
+            case NI_Sve_Not when Configuration.TARGET_ARM64:
             {
                 return GT_NOT;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_Xor:
-            case NI_AVX_Xor:
-            case NI_AVX2_Xor:
-            case NI_AVX512_Xor:
-            case NI_AVX512_XorMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_Xor:
-            case NI_Sve_Xor:
-#endif
+            case NI_X86Base_Xor when Configuration.TARGET_XARCH:
+            case NI_AVX_Xor when Configuration.TARGET_XARCH:
+            case NI_AVX2_Xor when Configuration.TARGET_XARCH:
+            case NI_AVX512_Xor when Configuration.TARGET_XARCH:
+            case NI_AVX512_XorMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_Xor when Configuration.TARGET_ARM64:
+            case NI_Sve_Xor when Configuration.TARGET_ARM64:
             {
                 return GT_XOR;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_Or:
-            case NI_AVX_Or:
-            case NI_AVX2_Or:
-            case NI_AVX512_Or:
-            case NI_AVX512_OrMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_Or:
-            case NI_Sve_Or:
-#endif
+            case NI_X86Base_Or when Configuration.TARGET_XARCH:
+            case NI_AVX_Or when Configuration.TARGET_XARCH:
+            case NI_AVX2_Or when Configuration.TARGET_XARCH:
+            case NI_AVX512_Or when Configuration.TARGET_XARCH:
+            case NI_AVX512_OrMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_Or when Configuration.TARGET_ARM64:
+            case NI_Sve_Or when Configuration.TARGET_ARM64:
             {
                 return GT_OR;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_AndNot:
-            case NI_AVX_AndNot:
-            case NI_AVX2_AndNotVector:
-            case NI_AVX512_AndNot:
-            case NI_AVX512_AndNotMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_BitwiseClear:
-            case NI_Sve_BitwiseClear:
-#endif
+            case NI_X86Base_AndNot when Configuration.TARGET_XARCH:
+            case NI_AVX_AndNot when Configuration.TARGET_XARCH:
+            case NI_AVX2_AndNotVector when Configuration.TARGET_XARCH:
+            case NI_AVX512_AndNot when Configuration.TARGET_XARCH:
+            case NI_AVX512_AndNotMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_BitwiseClear when Configuration.TARGET_ARM64:
+            case NI_Sve_BitwiseClear when Configuration.TARGET_ARM64:
             {
                 return GT_AND_NOT;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_Add:
-            case NI_AVX_Add:
-            case NI_AVX2_Add:
-            case NI_AVX512_Add:
-#elif TARGET_ARM64
-            case NI_AdvSimd_Add:
-            case NI_AdvSimd_Arm64_Add:
-            case NI_Sve_Add:
-#endif
+            case NI_X86Base_Add when Configuration.TARGET_XARCH:
+            case NI_AVX_Add when Configuration.TARGET_XARCH:
+            case NI_AVX2_Add when Configuration.TARGET_XARCH:
+            case NI_AVX512_Add when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_Add when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_Add when Configuration.TARGET_ARM64:
+            case NI_Sve_Add when Configuration.TARGET_ARM64:
             {
                 return GT_ADD;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_AddScalar:
-            case NI_AVX512_AddScalar:
+            case NI_X86Base_AddScalar when Configuration.TARGET_XARCH:
+            case NI_AVX512_AddScalar when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_ADD;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_AddScalar:
+            case NI_AdvSimd_AddScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -228,31 +202,24 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_ADD;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_Divide:
-            case NI_AVX_Divide:
-            case NI_AVX512_Divide:
-#elif TARGET_ARM64
-            case NI_AdvSimd_Arm64_Divide:
-            case NI_Sve_Divide:
-#endif
+            case NI_X86Base_Divide when Configuration.TARGET_XARCH:
+            case NI_AVX_Divide when Configuration.TARGET_XARCH:
+            case NI_AVX512_Divide when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_Arm64_Divide when Configuration.TARGET_ARM64:
+            case NI_Sve_Divide when Configuration.TARGET_ARM64:
             {
                 return GT_DIV;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_DivideScalar:
-            case NI_AVX512_DivideScalar:
+            case NI_X86Base_DivideScalar when Configuration.TARGET_XARCH:
+            case NI_AVX512_DivideScalar when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_DIV;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_DivideScalar:
+            case NI_AdvSimd_DivideScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -260,25 +227,20 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_DIV;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_MultiplyLow:
-            case NI_AVX_Multiply:
-            case NI_AVX2_MultiplyLow:
-            case NI_AVX512_MultiplyLow:
-#elif TARGET_ARM64
-            case NI_AdvSimd_Multiply:
-            case NI_AdvSimd_Arm64_Multiply:
-            case NI_Sve_Multiply:
-#endif
+            case NI_X86Base_MultiplyLow when Configuration.TARGET_XARCH:
+            case NI_AVX_Multiply when Configuration.TARGET_XARCH:
+            case NI_AVX2_MultiplyLow when Configuration.TARGET_XARCH:
+            case NI_AVX512_MultiplyLow when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_Multiply when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_Multiply when Configuration.TARGET_ARM64:
+            case NI_Sve_Multiply when Configuration.TARGET_ARM64:
             {
                 return GT_MUL;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_Multiply:
-            case NI_AVX512_Multiply:
+            case NI_X86Base_Multiply when Configuration.TARGET_XARCH:
+            case NI_AVX512_Multiply when Configuration.TARGET_XARCH:
             {
                 if (varTypeIsFloating(simdBaseType))
                 {
@@ -286,19 +248,15 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_NONE;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_MultiplyScalar:
-            case NI_AVX512_MultiplyScalar:
+            case NI_X86Base_MultiplyScalar when Configuration.TARGET_XARCH:
+            case NI_AVX512_MultiplyScalar when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_MUL;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_MultiplyScalar:
+            case NI_AdvSimd_MultiplyScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -306,18 +264,16 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_MUL;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_Negate:
-            case NI_AdvSimd_Arm64_Negate:
-            case NI_Sve_Negate:
+            case NI_AdvSimd_Negate when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_Negate when Configuration.TARGET_ARM64:
+            case NI_Sve_Negate when Configuration.TARGET_ARM64:
             {
                 return GT_NEG;
             }
 
-            case NI_AdvSimd_NegateScalar:
-            case NI_AdvSimd_Arm64_NegateScalar:
+            case NI_AdvSimd_NegateScalar when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_NegateScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -325,38 +281,31 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_NEG;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_AVX512_RotateLeft:
-            case NI_AVX512_RotateLeftVariable:
+            case NI_AVX512_RotateLeft when Configuration.TARGET_XARCH:
+            case NI_AVX512_RotateLeftVariable when Configuration.TARGET_XARCH:
             {
                 return GT_ROL;
             }
 
-            case NI_AVX512_RotateRight:
-            case NI_AVX512_RotateRightVariable:
+            case NI_AVX512_RotateRight when Configuration.TARGET_XARCH:
+            case NI_AVX512_RotateRightVariable when Configuration.TARGET_XARCH:
             {
                 return GT_ROR;
             }
-#endif // TARGET_XARCH
 
-#if TARGET_XARCH
-            case NI_X86Base_ShiftLeftLogical:
-            case NI_AVX2_ShiftLeftLogical:
-            case NI_AVX2_ShiftLeftLogicalVariable:
-            case NI_AVX512_ShiftLeftLogical:
-            case NI_AVX512_ShiftLeftLogicalVariable:
-#elif TARGET_ARM64
-            case NI_AdvSimd_ShiftLeftLogical:
-            case NI_Sve_ShiftLeftLogical:
-#endif
+            case NI_X86Base_ShiftLeftLogical when Configuration.TARGET_XARCH:
+            case NI_AVX2_ShiftLeftLogical when Configuration.TARGET_XARCH:
+            case NI_AVX2_ShiftLeftLogicalVariable when Configuration.TARGET_XARCH:
+            case NI_AVX512_ShiftLeftLogical when Configuration.TARGET_XARCH:
+            case NI_AVX512_ShiftLeftLogicalVariable when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_ShiftLeftLogical when Configuration.TARGET_ARM64:
+            case NI_Sve_ShiftLeftLogical when Configuration.TARGET_ARM64:
             {
                 return GT_LSH;
             }
 
-#if TARGET_ARM64
-            case NI_AdvSimd_ShiftLeftLogicalScalar:
+            case NI_AdvSimd_ShiftLeftLogicalScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -364,24 +313,19 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_LSH;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_ShiftRightArithmetic:
-            case NI_AVX2_ShiftRightArithmetic:
-            case NI_AVX2_ShiftRightArithmeticVariable:
-            case NI_AVX512_ShiftRightArithmetic:
-            case NI_AVX512_ShiftRightArithmeticVariable:
-#elif TARGET_ARM64
-            case NI_AdvSimd_ShiftRightArithmetic:
-            case NI_Sve_ShiftRightArithmetic:
-#endif
+            case NI_X86Base_ShiftRightArithmetic when Configuration.TARGET_XARCH:
+            case NI_AVX2_ShiftRightArithmetic when Configuration.TARGET_XARCH:
+            case NI_AVX2_ShiftRightArithmeticVariable when Configuration.TARGET_XARCH:
+            case NI_AVX512_ShiftRightArithmetic when Configuration.TARGET_XARCH:
+            case NI_AVX512_ShiftRightArithmeticVariable when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_ShiftRightArithmetic when Configuration.TARGET_ARM64:
+            case NI_Sve_ShiftRightArithmetic when Configuration.TARGET_ARM64:
             {
                 return GT_RSH;
             }
 
-#if TARGET_ARM64
-            case NI_AdvSimd_ShiftRightArithmeticScalar:
+            case NI_AdvSimd_ShiftRightArithmeticScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -389,24 +333,19 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_RSH;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_ShiftRightLogical:
-            case NI_AVX2_ShiftRightLogical:
-            case NI_AVX2_ShiftRightLogicalVariable:
-            case NI_AVX512_ShiftRightLogical:
-            case NI_AVX512_ShiftRightLogicalVariable:
-#elif TARGET_ARM64
-            case NI_AdvSimd_ShiftRightLogical:
-            case NI_Sve_ShiftRightLogical:
-#endif
+            case NI_X86Base_ShiftRightLogical when Configuration.TARGET_XARCH:
+            case NI_AVX2_ShiftRightLogical when Configuration.TARGET_XARCH:
+            case NI_AVX2_ShiftRightLogicalVariable when Configuration.TARGET_XARCH:
+            case NI_AVX512_ShiftRightLogical when Configuration.TARGET_XARCH:
+            case NI_AVX512_ShiftRightLogicalVariable when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_ShiftRightLogical when Configuration.TARGET_ARM64:
+            case NI_Sve_ShiftRightLogical when Configuration.TARGET_ARM64:
             {
                 return GT_RSZ;
             }
 
-#if TARGET_ARM64
-            case NI_AdvSimd_ShiftRightLogicalScalar:
+            case NI_AdvSimd_ShiftRightLogicalScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -414,33 +353,26 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_RSZ;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_Subtract:
-            case NI_AVX_Subtract:
-            case NI_AVX2_Subtract:
-            case NI_AVX512_Subtract:
-#elif TARGET_ARM64
-            case NI_AdvSimd_Subtract:
-            case NI_AdvSimd_Arm64_Subtract:
-            case NI_Sve_Subtract:
-#endif
+            case NI_X86Base_Subtract when Configuration.TARGET_XARCH:
+            case NI_AVX_Subtract when Configuration.TARGET_XARCH:
+            case NI_AVX2_Subtract when Configuration.TARGET_XARCH:
+            case NI_AVX512_Subtract when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_Subtract when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_Subtract when Configuration.TARGET_ARM64:
+            case NI_Sve_Subtract when Configuration.TARGET_ARM64:
             {
                 return GT_SUB;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_SubtractScalar:
-            case NI_AVX512_SubtractScalar:
+            case NI_X86Base_SubtractScalar when Configuration.TARGET_XARCH:
+            case NI_AVX512_SubtractScalar when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_SUB;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_SubtractScalar:
+            case NI_AdvSimd_SubtractScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -448,31 +380,24 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_SUB;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareEqual:
-            case NI_AVX_CompareEqual:
-            case NI_AVX2_CompareEqual:
-            case NI_AVX512_CompareEqualMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_CompareEqual:
-            case NI_AdvSimd_Arm64_CompareEqual:
-#endif
+            case NI_X86Base_CompareEqual when Configuration.TARGET_XARCH:
+            case NI_AVX_CompareEqual when Configuration.TARGET_XARCH:
+            case NI_AVX2_CompareEqual when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareEqualMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_CompareEqual when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareEqual when Configuration.TARGET_ARM64:
             {
                 return GT_EQ;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareScalarEqual:
+            case NI_X86Base_CompareScalarEqual when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_EQ;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_Arm64_CompareEqualScalar:
+            case NI_AdvSimd_Arm64_CompareEqualScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -480,31 +405,24 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_EQ;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareGreaterThan:
-            case NI_AVX_CompareGreaterThan:
-            case NI_AVX2_CompareGreaterThan:
-            case NI_AVX512_CompareGreaterThanMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_CompareGreaterThan:
-            case NI_AdvSimd_Arm64_CompareGreaterThan:
-#endif
+            case NI_X86Base_CompareGreaterThan when Configuration.TARGET_XARCH:
+            case NI_AVX_CompareGreaterThan when Configuration.TARGET_XARCH:
+            case NI_AVX2_CompareGreaterThan when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareGreaterThanMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_CompareGreaterThan when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareGreaterThan when Configuration.TARGET_ARM64:
             {
                 return GT_GT;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareScalarGreaterThan:
+            case NI_X86Base_CompareScalarGreaterThan when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_GT;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
+            case NI_AdvSimd_Arm64_CompareGreaterThanScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -512,30 +430,23 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_GT;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareGreaterThanOrEqual:
-            case NI_AVX_CompareGreaterThanOrEqual:
-            case NI_AVX512_CompareGreaterThanOrEqualMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_CompareGreaterThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-#endif
+            case NI_X86Base_CompareGreaterThanOrEqual when Configuration.TARGET_XARCH:
+            case NI_AVX_CompareGreaterThanOrEqual when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareGreaterThanOrEqualMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_CompareGreaterThanOrEqual when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual when Configuration.TARGET_ARM64:
             {
                 return GT_GE;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareScalarGreaterThanOrEqual:
+            case NI_X86Base_CompareScalarGreaterThanOrEqual when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_GE;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
+            case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -543,31 +454,24 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_GE;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareLessThan:
-            case NI_AVX_CompareLessThan:
-            case NI_AVX2_CompareLessThan:
-            case NI_AVX512_CompareLessThanMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_CompareLessThan:
-            case NI_AdvSimd_Arm64_CompareLessThan:
-#endif
+            case NI_X86Base_CompareLessThan when Configuration.TARGET_XARCH:
+            case NI_AVX_CompareLessThan when Configuration.TARGET_XARCH:
+            case NI_AVX2_CompareLessThan when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareLessThanMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_CompareLessThan when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareLessThan when Configuration.TARGET_ARM64:
             {
                 return GT_LT;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareScalarLessThan:
+            case NI_X86Base_CompareScalarLessThan when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_LT;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_Arm64_CompareLessThanScalar:
+            case NI_AdvSimd_Arm64_CompareLessThanScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -575,30 +479,23 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_LT;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareLessThanOrEqual:
-            case NI_AVX_CompareLessThanOrEqual:
-            case NI_AVX512_CompareLessThanOrEqualMask:
-#elif TARGET_ARM64
-            case NI_AdvSimd_CompareLessThanOrEqual:
-            case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
-#endif
+            case NI_X86Base_CompareLessThanOrEqual when Configuration.TARGET_XARCH:
+            case NI_AVX_CompareLessThanOrEqual when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareLessThanOrEqualMask when Configuration.TARGET_XARCH:
+            case NI_AdvSimd_CompareLessThanOrEqual when Configuration.TARGET_ARM64:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqual when Configuration.TARGET_ARM64:
             {
                 return GT_LE;
             }
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareScalarLessThanOrEqual:
+            case NI_X86Base_CompareScalarLessThanOrEqual when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_LE;
             }
-#endif
 
-#if TARGET_ARM64
-            case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar when Configuration.TARGET_ARM64:
             {
                 if (simdBaseType.Size != 8)
                 {
@@ -606,31 +503,24 @@ public sealed partial class GenTreeHWIntrinsic
                 }
                 return GT_LE;
             }
-#endif
 
-#if TARGET_XARCH
-            case NI_X86Base_CompareNotEqual:
-            case NI_AVX_CompareNotEqual:
-            case NI_AVX512_CompareNotEqualMask:
+            case NI_X86Base_CompareNotEqual when Configuration.TARGET_XARCH:
+            case NI_AVX_CompareNotEqual when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareNotEqualMask when Configuration.TARGET_XARCH:
             {
                 return GT_NE;
             }
 
-            case NI_X86Base_CompareScalarNotEqual:
+            case NI_X86Base_CompareScalarNotEqual when Configuration.TARGET_XARCH:
             {
                 isScalar = true;
                 return GT_NE;
             }
-#endif
 
             default:
             {
                 return GT_NONE;
             }
         }
-#else
-        return GT_NONE;
-#endif
     }
 }
-#endif

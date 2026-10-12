@@ -3888,12 +3888,10 @@ public partial class Compiler
             return gtFoldExprConditional(tree);
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (tree.Oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && tree.Oper.IsHWIntrinsic)
         {
             return gtFoldExprHWIntrinsic(tree.AsHWIntrinsic());
         }
-#endif
 
         return tree;
     }

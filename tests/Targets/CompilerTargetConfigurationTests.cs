@@ -523,6 +523,20 @@ internal static unsafe class CompilerTargetConfigurationTests
     }
 
     [Test]
+    public static void HardwareIntrinsicOperationMappingUsesConfiguredTarget()
+    {
+        var xarchOperation = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(
+            NI_AVX2_And, TYP_INT, out var xarchIsScalar);
+        Assert.That(xarchOperation, Is.EqualTo(Configuration.TARGET_XARCH ? GT_AND : GT_NONE));
+        Assert.That(xarchIsScalar, Is.False);
+
+        var arm64Operation = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(
+            NI_AdvSimd_AddScalar, TYP_INT, out var arm64IsScalar);
+        Assert.That(arm64Operation, Is.EqualTo(Configuration.TARGET_ARM64 ? GT_ADD : GT_NONE));
+        Assert.That(arm64IsScalar, Is.EqualTo(Configuration.TARGET_ARM64));
+    }
+
+    [Test]
     public static void MaskConversionsUseTheTargetIntrinsic()
     {
         if (!Configuration.FEATURE_MASKED_HW_INTRINSICS ||
