@@ -19,11 +19,6 @@ public partial class Emitter
         return (value >> 12) == 0;
     }
 
-    public static bool isValidSimm12(nint value)
-    {
-        return (-2048 <= value) && (value < 2048);
-    }
-
     public static bool isGeneralRegister(regNumber reg)
     {
         return (reg >= Globals.REG_INT_FIRST) && (reg <= Globals.REG_INT_LAST);

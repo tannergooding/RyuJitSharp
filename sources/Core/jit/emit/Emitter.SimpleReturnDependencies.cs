@@ -117,11 +117,6 @@ public partial class Emitter
         emitIns_J_cond_la(ins, target, reg, REG_ZERO);
     }
 
-    public static bool isValidSimm12(nint value)
-    {
-        return (-2048 <= value) && (value < 2048);
-    }
-
     public void emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
     {
         if (!canSkip || dstReg != srcReg)

@@ -34,6 +34,11 @@ public partial class Emitter
         return (offset & unchecked((uint)(CODE_ALIGN - 1))) == 0;
     }
 
+    public static bool isValidSimm12(nint value)
+    {
+        return (-2048 <= value) && (value < 2048);
+    }
+
     private int _debugInfoSize;
 
     protected int emitInsCount;

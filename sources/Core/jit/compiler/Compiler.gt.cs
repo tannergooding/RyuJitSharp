@@ -7771,17 +7771,18 @@ public partial class Compiler
             return false;
         }
 
-#if TARGET_X86
-        if (!varTypeUsesIntReg(tree.Type))
+        if (Configuration.TARGET_X86)
         {
-            return false;
-        }
+            if (!varTypeUsesIntReg(tree.Type))
+            {
+                return false;
+            }
 
-        if (varTypeIsLong(tree.Type))
-        {
-            return false;
+            if (varTypeIsLong(tree.Type))
+            {
+                return false;
+            }
         }
-#endif
 
         return true;
     }
@@ -7801,23 +7802,25 @@ public partial class Compiler
 
         var naturalMul = 0;
 
-#if TARGET_ARM64
-        // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
-        //
-        //   *(ulong*)(data + index * 8); - can be optimized
-        //   *(ulong*)(data + index * 7); - can not be optimized
-        //     *(int*)(data + index * 2); - can not be optimized
-        //
-        naturalMul = type.Size;
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+            //
+            //   *(ulong*)(data + index * 8); - can be optimized
+            //   *(ulong*)(data + index * 7); - can not be optimized
+            //     *(int*)(data + index * 2); - can not be optimized
+            //
+            naturalMul = type.Size;
+        }
 
         assert(codeGen is not null);
 
         if (codeGen.genCreateAddrMode(addr.AsOp(), fold: false, naturalMul, out var rev, out var baseAddr, out var idx, out var mul, out var cns))
         {
-#if TARGET_ARM64
-            assert((mul is 0 or 1) || (mul == naturalMul));
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert((mul is 0 or 1) || (mul == naturalMul));
+            }
 
             // We can form a complex addressing mode, so mark each of the interior
             // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
@@ -7828,171 +7831,188 @@ public partial class Compiler
             var addrModeCostEx = 0;
             var addrModeCostSz = 0;
 
-#if TARGET_WASM
-            // Only "base + cns" is an addressing mode on Wasm. The constant folds into the memarg, which grows by
-            // the size of its ULEB encoding.
-            //
-            assert((baseAddr is not null) && (idx is null));
-
-            addrModeCostEx += baseAddr!.CostEx;
-            addrModeCostSz += baseAddr!.CostSz;
-
-            for (var value = unchecked((nuint)cns); value >= 0x80; value >>= 7)
+            if (Configuration.TARGET_WASM)
             {
-                addrModeCostSz++;
+                // Only "base + cns" is an addressing mode on Wasm. The constant folds into the memarg, which grows by
+                // the size of its ULEB encoding.
+                //
+                assert((baseAddr is not null) && (idx is null));
+
+                addrModeCostEx += baseAddr!.CostEx;
+                addrModeCostSz += baseAddr!.CostSz;
+
+                for (var value = unchecked((nuint)cns); value >= 0x80; value >>= 7)
+                {
+                    addrModeCostSz++;
+                }
             }
-#else
-#if TARGET_XARCH
-            // addrmodeCount is the count of items that we used to form
-            // an addressing mode.  The maximum value is 4 when we have
-            // all of these:   { base, idx, cns, mul }
-            //
-            var addrmodeCount = 0;
-#endif
-
-            if (baseAddr is not null)
+            else
             {
-                addrModeCostEx += baseAddr.CostEx;
-                addrModeCostSz += baseAddr.CostSz;
+                // addrmodeCount is the count of items that we used to form
+                // an addressing mode.  The maximum value is 4 when we have
+                // all of these:   { base, idx, cns, mul }
+                //
+                var addrmodeCount = 0;
 
-#if TARGET_XARCH
-                addrmodeCount++;
-#elif TARGET_ARM
-                if ((baseAddr.Oper is GT_LCL_VAR) && ((idx is null) || (cns is 0)))
+                if (baseAddr is not null)
                 {
-                    addrModeCostSz -= 1;
-                }
-#endif
-            }
+                    addrModeCostEx += baseAddr.CostEx;
+                    addrModeCostSz += baseAddr.CostSz;
 
-            if (idx is not null)
-            {
-                addrModeCostEx += idx.CostEx;
-                addrModeCostSz += idx.CostSz;
-
-#if TARGET_XARCH
-                addrmodeCount++;
-#elif TARGET_ARM
-                if (mul > 0)
-                {
-                    addrModeCostSz += 2;
-                }
-#endif
-            }
-
-            if (cns is not 0)
-            {
-#if TARGET_XARCH
-                if (FitsInI8(cns))
-                {
-                    addrModeCostSz += 1;
-                }
-                else
-                {
-                    addrModeCostSz += 4;
-                }
-
-                addrmodeCount++;
-#elif TARGET_ARM
-                if (cns >= 128) // small offsets fits into a 16-bit instruction
-                {
-                    if (cns < 4096) // medium offsets require a 32-bit instruction
+                    if (Configuration.TARGET_XARCH)
                     {
-                        if (!varTypeIsFloating(type))
+                        addrmodeCount++;
+                    }
+                    else if (Configuration.TARGET_ARM)
+                    {
+                        if ((baseAddr.Oper is GT_LCL_VAR) && ((idx is null) || (cns is 0)))
+                        {
+                            addrModeCostSz -= 1;
+                        }
+                    }
+                }
+
+                if (idx is not null)
+                {
+                    addrModeCostEx += idx.CostEx;
+                    addrModeCostSz += idx.CostSz;
+
+                    if (Configuration.TARGET_XARCH)
+                    {
+                        addrmodeCount++;
+                    }
+                    else if (Configuration.TARGET_ARM)
+                    {
+                        if (mul > 0)
                         {
                             addrModeCostSz += 2;
                         }
                     }
-                    else
+                }
+
+                if (cns is not 0)
+                {
+                    if (Configuration.TARGET_XARCH)
                     {
-                        addrModeCostEx += 2; // Very large offsets require movw/movt instructions
-                        addrModeCostSz += 8;
-                    }
-                }
-#elif TARGET_ARM64
-                if (cns >= (4096 * type.Size))
-                {
-                    addrModeCostEx += 1;
-                    addrModeCostSz += 4;
-                }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                if (!Emitter.isValidSimm12(cns))
-                {
-                    // TODO-LoongArch64-CQ: tune for LoongArch64.
-                    // TODO-RISCV64-CQ: tune for RISCV64.
-                    addrModeCostEx += 1;
-                    addrModeCostSz += 4;
-                }
-#else
-#error "Unknown TARGET"
-#endif
-            }
-
-#if TARGET_XARCH
-            if (mul is not 0)
-            {
-                addrmodeCount++;
-            }
-
-            // When we form a complex addressing mode we can reduced the costs
-            // associated with the interior GT_ADD and GT_LSH nodes:
-            //
-            //                      GT_ADD      -- reduce this interior GT_ADD by (-3,-3)
-            //                      /   \       --
-            //                  GT_ADD  'cns'   -- reduce this interior GT_ADD by (-2,-2)
-            //                  /   \           --
-            //               'base'  GT_LSL     -- reduce this interior GT_LSL by (-1,-1)
-            //                      /   \       --
-            //                   'idx'  'mul'
-            //
-            if (addrmodeCount > 1)
-            {
-                // The number of interior GT_ADD and GT_LSL will always be one less than addrmodeCount
-                //
-                addrmodeCount--;
-
-                var tmp = addr;
-                while (addrmodeCount > 0)
-                {
-                    // decrement the gtCosts for the interior GT_ADD or GT_LSH node by the remaining addrmodeCount
-
-                    tmp.SetCosts((uint)(tmp.CostEx - addrmodeCount), (uint)(tmp.CostSz - addrmodeCount));
-                    addrmodeCount--;
-
-                    if (addrmodeCount > 0)
-                    {
-                        var tmpOp = tmp.AsOp();
-
-                        var tmpOp1 = tmpOp.Op1;
-                        var tmpOp2 = tmpOp.Op2;
-
-                        if ((tmpOp1 != baseAddr) && (tmpOp1.Oper is GT_ADD))
+                        if (FitsInI8(cns))
                         {
-                            tmp = tmpOp1;
-                        }
-                        else if (tmpOp2.Oper is GT_LSH)
-                        {
-                            tmp = tmpOp2;
-                        }
-                        else if (tmpOp1.Oper is GT_LSH)
-                        {
-                            tmp = tmpOp1;
-                        }
-                        else if (tmpOp2.Oper is GT_ADD)
-                        {
-                            tmp = tmpOp2;
+                            addrModeCostSz += 1;
                         }
                         else
                         {
-                            // We can very rarely encounter a tree that has a GT_COMMA node
-                            // that is difficult to walk, so we just early out without decrementing.
-                            addrmodeCount = 0;
+                            addrModeCostSz += 4;
+                        }
+
+                        addrmodeCount++;
+                    }
+                    else if (Configuration.TARGET_ARM)
+                    {
+                        if (cns >= 128) // small offsets fits into a 16-bit instruction
+                        {
+                            if (cns < 4096) // medium offsets require a 32-bit instruction
+                            {
+                                if (!varTypeIsFloating(type))
+                                {
+                                    addrModeCostSz += 2;
+                                }
+                            }
+                            else
+                            {
+                                addrModeCostEx += 2; // Very large offsets require movw/movt instructions
+                                addrModeCostSz += 8;
+                            }
+                        }
+                    }
+                    else if (Configuration.TARGET_ARM64)
+                    {
+                        if (cns >= (4096 * type.Size))
+                        {
+                            addrModeCostEx += 1;
+                            addrModeCostSz += 4;
+                        }
+                    }
+                    else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                    {
+                        if (!Emitter.isValidSimm12(cns))
+                        {
+                            // TODO-LoongArch64-CQ: tune for LoongArch64.
+                            // TODO-RISCV64-CQ: tune for RISCV64.
+                            addrModeCostEx += 1;
+                            addrModeCostSz += 4;
+                        }
+                    }
+                    else
+                    {
+                        unreached();
+                    }
+                }
+
+                if (Configuration.TARGET_XARCH)
+                {
+                    if (mul is not 0)
+                    {
+                        addrmodeCount++;
+                    }
+
+                    // When we form a complex addressing mode we can reduced the costs
+                    // associated with the interior GT_ADD and GT_LSH nodes:
+                    //
+                    //                      GT_ADD      -- reduce this interior GT_ADD by (-3,-3)
+                    //                      /   \       --
+                    //                  GT_ADD  'cns'   -- reduce this interior GT_ADD by (-2,-2)
+                    //                  /   \           --
+                    //               'base'  GT_LSL     -- reduce this interior GT_LSL by (-1,-1)
+                    //                      /   \       --
+                    //                   'idx'  'mul'
+                    //
+                    if (addrmodeCount > 1)
+                    {
+                        // The number of interior GT_ADD and GT_LSL will always be one less than addrmodeCount
+                        //
+                        addrmodeCount--;
+
+                        var tmp = addr;
+                        while (addrmodeCount > 0)
+                        {
+                            // decrement the gtCosts for the interior GT_ADD or GT_LSH node by the remaining addrmodeCount
+
+                            tmp.SetCosts((uint)(tmp.CostEx - addrmodeCount), (uint)(tmp.CostSz - addrmodeCount));
+                            addrmodeCount--;
+
+                            if (addrmodeCount > 0)
+                            {
+                                var tmpOp = tmp.AsOp();
+
+                                var tmpOp1 = tmpOp.Op1;
+                                var tmpOp2 = tmpOp.Op2;
+
+                                if ((tmpOp1 != baseAddr) && (tmpOp1.Oper is GT_ADD))
+                                {
+                                    tmp = tmpOp1;
+                                }
+                                else if (tmpOp2.Oper is GT_LSH)
+                                {
+                                    tmp = tmpOp2;
+                                }
+                                else if (tmpOp1.Oper is GT_LSH)
+                                {
+                                    tmp = tmpOp1;
+                                }
+                                else if (tmpOp2.Oper is GT_ADD)
+                                {
+                                    tmp = tmpOp2;
+                                }
+                                else
+                                {
+                                    // We can very rarely encounter a tree that has a GT_COMMA node
+                                    // that is difficult to walk, so we just early out without decrementing.
+                                    addrmodeCount = 0;
+                                }
+                            }
                         }
                     }
                 }
             }
-#endif
-#endif
 
             assert(addr.Oper is GT_ADD);
             assert(!addr.HasOverflowCheck);
@@ -8018,63 +8038,68 @@ public partial class Compiler
             gtWalkOp(ref op1, ref op2, baseAddr, false);
 
             // op1 and op2 are now descendents of the root GT_ADD of the addressing mode.
-#if TARGET_XARCH
-            // Walk the operands again (the third operand is unused in this case).
-            // This time we will only consider adds with constant op2's, since
-            // we have already found either a non-ADD op1 or a non-constant op2.
-            // NOTE: we don't support ADD(op1, cns) addressing for ARM/ARM64 yet so
-            // this walk makes no sense there.
-            gtWalkOp(ref op1, ref op2, null, true);
-            assert(op2 is not null);
+            if (Configuration.TARGET_XARCH)
+            {
+                // Walk the operands again (the third operand is unused in this case).
+                // This time we will only consider adds with constant op2's, since
+                // we have already found either a non-ADD op1 or a non-constant op2.
+                // NOTE: we don't support ADD(op1, cns) addressing for ARM/ARM64 yet so
+                // this walk makes no sense there.
+                gtWalkOp(ref op1, ref op2, null, true);
+                assert(op2 is not null);
 
-            // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
-            // gtWalkOp on both operands of the original GT_ADD.
-            // This is not done for ARMARCH. Though the stated reason is that we don't try to create a
-            // scaled index, in fact we actually do create them (even base + index*scale + offset).
+                // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
+                // gtWalkOp on both operands of the original GT_ADD.
+                // This is not done for ARMARCH. Though the stated reason is that we don't try to create a
+                // scaled index, in fact we actually do create them (even base + index*scale + offset).
 
-            // At this point, 'op2' may itself be an ADD of a constant that should be folded
-            // into the addressing mode.
-            // Walk op2 looking for non-overflow GT_ADDs of constants.
-            gtWalkOp(ref op2, ref op1, null, true);
-#endif
+                // At this point, 'op2' may itself be an ADD of a constant that should be folded
+                // into the addressing mode.
+                // Walk op2 looking for non-overflow GT_ADDs of constants.
+                gtWalkOp(ref op2, ref op1, null, true);
+            }
 
             var noCSE = (op2 is not null) && (op2.Oper is GT_LSH or GT_MUL);
 
-#if TARGET_RISCV64
-            noCSE &= compOpportunisticallyDependsOn(InstructionSet_Zba);
-#else
-            noCSE &= (mul > 1);
-#endif
+            if (Configuration.TARGET_RISCV64)
+            {
+                noCSE &= compOpportunisticallyDependsOn(InstructionSet_Zba);
+            }
+            else
+            {
+                noCSE &= (mul > 1);
+            }
 
             if (noCSE)
             {
                 assert(op2 is not null);
                 op2.Flags |= GTF_ADDRMODE_NO_CSE;
 
-#if TARGET_RISCV64
-                // RISC-V addressing mode follows the form: (base + index*scale) + offset.
-                // To emit sh1/2/3add.uw, GT_ADD + GT_LSH/MUL + GT_CAST(zero-extend) nodes are required (Zba extension).
-                // Disabling CSE for GT_CAST prevents breaking the pattern and ensures emitting sh1/2/3add.uw.
-                // Note that emitting sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
-                //
-                // Example:
-                //      ADD
-                //      |- ADD
-                //      |  |- LCL_VAR       (base)
-                //      |  |- LSH (or MUL)  (index * scale)
-                //      |     |- GT_CAST    (index, CSE must be disabled here to emit sh1/2/3add.uw)
-                //      |        |- OP1     (CSE/ConstCSE allowed here)
-                //      |     |- CNS_INT    (scale)
-                //      |- CNS_INT          (offset)
-
-                var index = op2.AsOp().Op1;
-
-                if ((index is not null) && (index.Oper is GT_CAST))
+                if (Configuration.TARGET_RISCV64)
                 {
-                    assert(index.Type is TYP_I_IMPL);
-                    index.Flags |= GTF_ADDRMODE_NO_CSE;
+                    // RISC-V addressing mode follows the form: (base + index*scale) + offset.
+                    // To emit sh1/2/3add.uw, GT_ADD + GT_LSH/MUL + GT_CAST(zero-extend) nodes are required (Zba extension).
+                    // Disabling CSE for GT_CAST prevents breaking the pattern and ensures emitting sh1/2/3add.uw.
+                    // Note that emitting sh1/2/3add instructions (without .uw) don't require a GT_CAST node.
+                    //
+                    // Example:
+                    //      ADD
+                    //      |- ADD
+                    //      |  |- LCL_VAR       (base)
+                    //      |  |- LSH (or MUL)  (index * scale)
+                    //      |     |- GT_CAST    (index, CSE must be disabled here to emit sh1/2/3add.uw)
+                    //      |        |- OP1     (CSE/ConstCSE allowed here)
+                    //      |     |- CNS_INT    (scale)
+                    //      |- CNS_INT          (offset)
+
+                    var index = op2.AsOp().Op1;
+
+                    if ((index is not null) && (index.Oper is GT_CAST))
+                    {
+                        assert(index.Type is TYP_I_IMPL);
+                        index.Flags |= GTF_ADDRMODE_NO_CSE;
+                    }
                 }
-#endif
             }
 
             // Finally, adjust the costs on the parenting COMMAs.

@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universal target migration in `compiler/Compiler.gt.cs::gtIsLikelyRegVar` and `gtMarkAddrMode`. Replace the x86-only local heuristic and address-mode cost branches with `Configuration` checks while preserving each target's addressing and cost semantics.",
+    "nextAction": "Continue universal target migration in `compiler/Compiler.gt.cs::gtNewAllBitsSetConNode`; inspect the ARM64 SIMD constant-construction dependency closure before replacing its target guard with a runtime check.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize special-local debug naming in `Compiler.gt.cs::gtGetLclVarNameInfo` and union the local-number fields needed by its target-specific branches.",
-      "doneWhen": "ARM64 FFR, fixed outgoing-argument, x86 localloc stack-pointer, and Wasm stack-pointer names remain target/feature-specific through `Configuration` checks with the existing precedence and sentinel behavior.",
-      "validation": "Debug `LocalNodeCostsPreserveNativeRegisterMemoryAndNormalizationRules` passed 11/11 and Release passed 11/11 on x64. `FeatureConfigurationTests` passed 30/30 in both Debug and Release for target RIDs win-x86, win-arm, win-arm64, browser-wasm, and linux-riscv64; these builds cover the debug-only name method and unconditional local fields across the target configurations.",
-      "deferred": "The remaining `Compiler.gt.cs` target/feature branches, including register heuristics and address-mode cost logic, plus SIMD codegen, register allocation, emitter/generated metadata, and other universal-compilation work."
+      "scope": "Universalize `Compiler.gt.cs::gtIsLikelyRegVar` and `gtMarkAddrMode`, and make the shared signed-12-bit immediate predicate available from the common emitter.",
+      "doneWhen": "The x86 local heuristic and xarch, ARM32, ARM64, Wasm, LoongArch64, and RISC-V64 address-mode costs and CSE behavior use runtime `Configuration` checks without changing their existing rules.",
+      "validation": "`AddressModeCostTargetTests` passed 2/2 in Debug and Release for win-x64, win-x86, win-arm, win-arm64, browser-wasm, linux-riscv64, and linux-loongarch64. `SignedTwelveBitImmediateTests` passed 7/7 in Debug and Release for linux-riscv64 and linux-loongarch64. Moved the identical `isValidSimm12` implementation from the LoongArch/RISC-V-only partials into common `Emitter.cs` so the universal compiler can reference it.",
+      "deferred": "The remaining target/feature branches in `Compiler.gt.cs` and the rest of the universal-compilation migration; universal compilation is not complete."
     },
     "parityEvidence": {
       "corelibCodegen": {
