@@ -38,21 +38,24 @@ public partial class Compiler
         assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
         assert(codeGen is not null);
         offset += isFpBased ? codeGen.genCallerSPtoFPdelta : codeGen.genCallerSPtoInitialSPdelta;
-#if FEATURE_ON_STACK_REPLACEMENT
-        if (forRootFrame && opts.IsOSR)
+        if (Configuration.FEATURE_ON_STACK_REPLACEMENT)
         {
+            if (forRootFrame && opts.IsOSR)
+            {
 #if TARGET_AMD64
-            // TotalFrameSize accounts for the popped OSR pseudo return address, so the
-            // root caller-SP adjustment is TotalFrameSize plus one register.
-            var adjustment = info.compPatchpointInfo->TotalFrameSize + REGSIZE_BYTES;
+                // TotalFrameSize accounts for the popped OSR pseudo return address, so the
+                // root caller-SP adjustment is TotalFrameSize plus one register.
+                var adjustment = info.compPatchpointInfo->TotalFrameSize + REGSIZE_BYTES;
 #else
-            var adjustment = info.compPatchpointInfo->TotalFrameSize;
+                var adjustment = info.compPatchpointInfo->TotalFrameSize;
 #endif
-            offset -= adjustment;
+                offset -= adjustment;
+            }
         }
-#else
-        assert(!opts.IsOSR);
-#endif
+        else
+        {
+            assert(!opts.IsOSR);
+        }
 
         return offset;
     }

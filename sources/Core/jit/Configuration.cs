@@ -43,6 +43,8 @@ internal static class Configuration
 
     internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
 
+    internal static bool FEATURE_ON_STACK_REPLACEMENT => GetFeatureSwitch(nameof(FEATURE_ON_STACK_REPLACEMENT));
+
     internal static bool FEATURE_TAILCALL_OPT =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 

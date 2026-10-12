@@ -237,12 +237,10 @@ public partial class Compiler
 
     public bool compShouldPoisonFrame()
     {
-#if FEATURE_ON_STACK_REPLACEMENT
-        if (opts.IsOSR)
+        if (Configuration.FEATURE_ON_STACK_REPLACEMENT && opts.IsOSR)
         {
             return false;
         }
-#endif
         return !info.compInitMem && opts.compDbgCode;
     }
 
@@ -1074,8 +1072,11 @@ public partial class Compiler
     {
         var whyNot = "";
 
-#if FEATURE_ON_STACK_REPLACEMENT
-        if (compLocallocSeen)
+        if (!Configuration.FEATURE_ON_STACK_REPLACEMENT)
+        {
+            whyNot = "OSR feature not defined in build";
+        }
+        else if (compLocallocSeen)
         {
             whyNot = "OSR can't handle localloc";
         }
@@ -1091,9 +1092,6 @@ public partial class Compiler
         {
             whyNot = "OSR can't handle modifiable this";
         }
-#else
-        whyNot = "OSR feature not defined in build";
-#endif
 
         reason = whyNot;
         return whyNot.Length == 0;

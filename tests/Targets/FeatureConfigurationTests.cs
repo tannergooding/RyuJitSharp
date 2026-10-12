@@ -102,6 +102,23 @@ internal static class FeatureConfigurationTests
 
     [TestCase(false)]
     [TestCase(true)]
+    public static void OnStackReplacementFeatureUsesRuntimeSwitch(bool enabled)
+    {
+        const string switchName = "RyuJitSharp.FEATURE_ON_STACK_REPLACEMENT";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, enabled);
+        try
+        {
+            Assert.That(Configuration.FEATURE_ON_STACK_REPLACEMENT, Is.EqualTo(enabled));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
+        }
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
     public static void ValueNumberDumpArgumentsFeatureUsesRuntimeSwitch(bool enabled)
     {
         const string switchName = "RyuJitSharp.FEATURE_VN_DUMP_FUNC_ARGS";

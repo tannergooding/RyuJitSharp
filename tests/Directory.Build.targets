@@ -70,6 +70,7 @@
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_SIMD" Value="$(RyuJitFeatureSimd)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_READYTORUN" Value="$(RyuJitFeatureReadyToRun)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_VN_DUMP_FUNC_ARGS" Value="$(RyuJitFeatureVnDumpFuncArgs)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_ON_STACK_REPLACEMENT" Value="true" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.ARM_SOFTFP" Value="$(RyuJitFeatureArmSoftFp)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_64BIT" Value="$(RyuJitTargetIs64Bit)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARM" Value="$(RyuJitTargetIsArm)" />

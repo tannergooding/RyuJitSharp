@@ -6227,17 +6227,22 @@ public partial class Compiler
         // Get the tree list started
         impBeginTreeList();
 
-#if FEATURE_ON_STACK_REPLACEMENT
-        var enableOSR = !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement > 0);
-        var enablePartialCompilation = opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation > 0);
+        var featureOnStackReplacement = Configuration.FEATURE_ON_STACK_REPLACEMENT;
+        var enableOSR = featureOnStackReplacement && !opts.compDbgCode &&
+            opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement > 0);
+        var enablePartialCompilation = featureOnStackReplacement &&
+            opts.jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0) && (JitConfig.TC_PartialCompilation > 0);
 
 #if DEBUG
-        // Optionally suppress patchpoints by method hash
-        s_jitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange);
+        if (featureOnStackReplacement)
+        {
+            // Optionally suppress patchpoints by method hash
+            s_jitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange);
 
-        var inRange = s_jitEnablePatchpointRange.Contains(impInlineRoot.info.compMethodHash());
-        enableOSR &= inRange;
-        enablePartialCompilation &= inRange;
+            var inRange = s_jitEnablePatchpointRange.Contains(impInlineRoot.info.compMethodHash());
+            enableOSR &= inRange;
+            enablePartialCompilation &= inRange;
+        }
 #endif
 
         if (enableOSR)
@@ -6503,7 +6508,6 @@ public partial class Compiler
                 return;
             }
         }
-#endif
 
         // Walk the opcodes that comprise the basic block
 

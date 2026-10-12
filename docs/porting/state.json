@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Remove the always-enabled FEATURE_ON_STACK_REPLACEMENT preprocessor guards from the JIT and its generated JitConfigValues surface; update the generator input/source as required, then validate the affected configuration and compiler paths.",
+    "nextAction": "Convert the remaining TARGET_WINDOWS/TARGET_UNIX guards in jit/emit/Emitter.StaticStatistics.cs and jit/emit/Emitter.DescriptorSizes.cs to Configuration branches; preserve the platform-specific statistics and descriptor-size behavior.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize FEATURE_MULTIREG_STRUCT_PROMOTE while preserving target-specific multi-register struct parameter promotion.",
-      "doneWhen": "No FEATURE_MULTIREG_STRUCT_PROMOTE project define or preprocessor guard remains; the runtime Configuration predicate matches the existing architecture matrix and both enabled and disabled target behavior are covered.",
-      "validation": "StructPromotionTests passed 26/26 in Debug and 22/22 in Release for both win-x64 (feature disabled) and linux-x64 (feature enabled); the target-matrix test passed 1/1 for each target. Full-analyzer Debug win-x64 passed 26/26. Full-analyzer Release win-x64 was blocked by the unrelated existing CA1812 diagnostic in DiscretionaryPolicyTests.FixedMultiplierPolicy; Linux full-analyzer runs had previously hit unrelated IDE0018/CA1823 diagnostics. `git diff --check` passed.",
+      "scope": "Universalize FEATURE_ON_STACK_REPLACEMENT across compiler paths, JIT configuration generation, test runtime switches, and RID substitutions.",
+      "doneWhen": "No FEATURE_ON_STACK_REPLACEMENT project define or preprocessor guard remains; runtime configuration controls OSR and partial-compilation paths and the TC_OnStackReplacement default, with every supported RID substitution preserving the currently enabled feature.",
+      "validation": "GenerateTables completed and regenerated JitConfigValues.generated.cs; all seven substitution XML files parsed. The runtime-switch test passed 2/2 for win-x64 with full analyzers and 2/2 for linux-x64 with analyzers disabled (the full-analyzer Linux build stops at unrelated IDE0018 in Compiler.cs:1703). Patchpoint/frame tests passed 48/48 in Debug win-x64, 35/35 in Release win-x64, and 46/46 in both Debug and Release linux-x64. A broader Linux filter also selected CodeGenOSRFrameTests and failed two AdditionalSavesUseReservedTier0SlotsInDescendingRegisterOrder assertions (expected REG_R12); this target-specific test discrepancy remains untriaged. Full-analyzer Release was blocked by the unrelated existing CA1812 diagnostic in DiscretionaryPolicyTests.FixedMultiplierPolicy. `git diff --check` passed.",
       "deferred": "The repository-wide TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {

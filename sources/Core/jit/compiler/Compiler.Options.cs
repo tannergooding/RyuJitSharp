@@ -159,11 +159,8 @@ public partial class Compiler
             }
         }
 
-#if FEATURE_ON_STACK_REPLACEMENT
-        public readonly unsafe bool IsOSR => jitFlags->IsSet(JitFlags.JIT_FLAG_OSR);
-#else
-        public readonly bool IsOSR => false;
-#endif
+        public readonly unsafe bool IsOSR =>
+            Configuration.FEATURE_ON_STACK_REPLACEMENT && jitFlags->IsSet(JitFlags.JIT_FLAG_OSR);
 
         public readonly unsafe bool IsTier0 => jitFlags->IsSet(JitFlags.JIT_FLAG_TIER0);
 

@@ -415,11 +415,7 @@ public partial struct JitConfigValues
     private unsafe byte* _jitGuardedDevirtualizationRange;
     private int _jitRandomGuardedDevirtualization;
 #endif
-#if FEATURE_ON_STACK_REPLACEMENT
     private int _tC_OnStackReplacement;
-#else
-    private int _tC_OnStackReplacement;
-#endif
     private int _tC_OnStackReplacement_InitialCounter;
     private int _tC_PartialCompilation;
 #if DEBUG
@@ -902,11 +898,7 @@ public partial struct JitConfigValues
     public unsafe byte* JitGuardedDevirtualizationRange => _jitGuardedDevirtualizationRange;
     public int JitRandomGuardedDevirtualization => _jitRandomGuardedDevirtualization;
 #endif
-#if FEATURE_ON_STACK_REPLACEMENT
     public int TC_OnStackReplacement => _tC_OnStackReplacement;
-#else
-    public int TC_OnStackReplacement => _tC_OnStackReplacement;
-#endif
     public int TC_OnStackReplacement_InitialCounter => _tC_OnStackReplacement_InitialCounter;
     public int TC_PartialCompilation => _tC_PartialCompilation;
 #if DEBUG
@@ -1396,11 +1388,7 @@ public partial struct JitConfigValues
         jitHost->freeStringConfigValue(_jitGuardedDevirtualizationRange);
         // _jitRandomGuardedDevirtualization = unchecked((int)(0xCDCDCDCD));
 #endif
-#if FEATURE_ON_STACK_REPLACEMENT
         // _tC_OnStackReplacement = unchecked((int)(0xCDCDCDCD));
-#else
-        // _tC_OnStackReplacement = unchecked((int)(0xCDCDCDCD));
-#endif
         // _tC_OnStackReplacement_InitialCounter = unchecked((int)(0xCDCDCDCD));
         // _tC_PartialCompilation = unchecked((int)(0xCDCDCDCD));
 #if DEBUG
@@ -1913,11 +1901,7 @@ public partial struct JitConfigValues
         _jitGuardedDevirtualizationRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitGuardedDevirtualizationRange"u8))));
         _jitRandomGuardedDevirtualization = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRandomGuardedDevirtualization"u8))), 0);
 #endif
-#if FEATURE_ON_STACK_REPLACEMENT
-        _tC_OnStackReplacement = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("TC_OnStackReplacement"u8))), 1);
-#else
-        _tC_OnStackReplacement = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("TC_OnStackReplacement"u8))), 0);
-#endif
+        _tC_OnStackReplacement = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("TC_OnStackReplacement"u8))), Configuration.FEATURE_ON_STACK_REPLACEMENT ? 1 : 0);
         _tC_OnStackReplacement_InitialCounter = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("TC_OnStackReplacement_InitialCounter"u8))), 1000);
         _tC_PartialCompilation = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("TC_PartialCompilation"u8))), 0);
 #if DEBUG
