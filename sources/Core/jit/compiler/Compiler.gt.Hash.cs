@@ -78,8 +78,7 @@ public partial class Compiler
                             break;
                         }
 
-#if FEATURE_SIMD
-                        case GT_CNS_VEC:
+                        case GT_CNS_VEC when Configuration.FEATURE_SIMD:
                         {
                             var vector = tree.AsVecCon();
 #if TARGET_ARM64
@@ -101,7 +100,6 @@ public partial class Compiler
                             }
                             break;
                         }
-#endif
                         case GT_CNS_MSK:
                         {
                             var mask = tree.AsMskCon();

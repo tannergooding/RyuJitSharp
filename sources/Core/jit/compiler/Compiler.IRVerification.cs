@@ -343,13 +343,11 @@ public partial class Compiler
                 !IsIntrinsicImplementedByUserCall(tree.AsIntrinsic().IntrinsicName);
         }
 
-#if FEATURE_SIMD || FEATURE_HW_INTRINSICS
         if (tree.Oper.IsMultiOp)
         {
             var multiOp = tree.AsMultiOp();
             return (multiOp.Operands.Length == 2) && !multiOp.IsUserCall;
         }
-#endif
         return false;
 #endif
     }

@@ -12,7 +12,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD
+#if FEATURE_HW_INTRINSICS
     private unsafe GenTree? impXplatIntrinsic(
         NamedIntrinsic intrinsic,
         CORINFO_CLASS_HANDLE clsHnd,

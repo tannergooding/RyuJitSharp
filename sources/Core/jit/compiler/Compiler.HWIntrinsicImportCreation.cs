@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD
+#if FEATURE_HW_INTRINSICS
     private GenTree? impSimdCreate(
         NamedIntrinsic intrinsic, in CORINFO_SIG_INFO sig, var_types simdBaseType, var_types retType, byte simdSize)
     {

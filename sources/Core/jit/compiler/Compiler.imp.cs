@@ -99,9 +99,7 @@ public partial class Compiler
 
         assert(ilArgCnt == inlineInfo.argCnt);
 
-#if FEATURE_SIMD
-        var foundSimdType = inlineInfo.hasSimdTypeArgLocalOrReturn;
-#endif
+        var foundSimdType = Configuration.FEATURE_SIMD && inlineInfo.hasSimdTypeArgLocalOrReturn;
 
         // We have typeless opcodes, get type information from the signature
         var thisArg = call.Args.ThisArg;
@@ -117,7 +115,6 @@ public partial class Compiler
             lclVarEntry.lclTypeHandle = isValueClassThis ? NO_CLASS_HANDLE : sigThisClass;
             lclVarEntry.lclHasLdlocaOp = false;
 
-#if FEATURE_SIMD
             // We always want to check isSIMDClass, since we want to set foundSIMDType (to increase
             // the inlining multiplier) for anything in that assembly.
             // But we only need to normalize it if it is a TYP_STRUCT
@@ -126,7 +123,6 @@ public partial class Compiler
             {
                 foundSimdType = true;
             }
-#endif
 
             var thisArgNode = thisArg.EarlyNode;
             assert(thisArgNode is not null);
@@ -172,7 +168,6 @@ public partial class Compiler
 
             var sigType = TypeHandleToVarType(argSigJitType, argSigClass);
 
-#if FEATURE_SIMD
             // If this is a SIMD class (i.e. in the SIMD assembly), then we will consider that we've
             // found a SIMD type, even if this may not be a type we recognize (the assumption is that
             // it is likely to use a SIMD type, and therefore we want to increase the inlining multiplier).
@@ -180,7 +175,6 @@ public partial class Compiler
             {
                 foundSimdType = true;
             }
-#endif
 
             ref var lclVarEntry = ref lclVarInfo[i];
             lclVarEntry.lclHasLdlocaOp = false;
@@ -386,24 +380,20 @@ public partial class Compiler
                 }
             }
 
-#if FEATURE_SIMD
             if (!foundSimdType && varTypeIsStruct(type) && IsSimdOrHwSimdClass(sigClass))
             {
                 foundSimdType = true;
             }
-#endif
 
             localsSig = info.compCompHnd->getArgNext(localsSig);
         }
 
-#if FEATURE_SIMD
         if (!foundSimdType && (call.RetClsHnd is not null) && IsSimdOrHwSimdClass(call.RetClsHnd))
         {
             foundSimdType = true;
         }
 
         inlineInfo.hasSimdTypeArgLocalOrReturn = foundSimdType;
-#endif
     }
 
     /// <summary>record information about an inline candidate argument</summary>
@@ -429,12 +419,10 @@ public partial class Compiler
             {
                 argInfo.argIsByRefToStructLocal = true;
 
-#if FEATURE_SIMD
-                if (varTypeIsSimd(varDsc.Type))
+                if (Configuration.FEATURE_SIMD && varTypeIsSimd(varDsc.Type))
                 {
                     pInlineInfo.hasSimdTypeArgLocalOrReturn = true;
                 }
-#endif
             }
 
             // Spilling code relies on correct aliasability annotations.
@@ -11332,8 +11320,7 @@ public partial class Compiler
             var op1 = compiler.impPopStack().val;
             compiler.assertImp((op1.Type.ActualType is TYP_I_IMPL) || (op1.Type is TYP_BYREF), op1);
 
-#if FEATURE_SIMD
-            if (isLdobj && varTypeIsSimd(lclTyp))
+            if (Configuration.FEATURE_SIMD && isLdobj && varTypeIsSimd(lclTyp))
             {
                 var addr = op1.EffectiveVal;
 
@@ -11347,7 +11334,6 @@ public partial class Compiler
                     }
                 }
             }
-#endif
 
             op1 = compiler.gtNewLoadValueNode(lclTyp, op1, layout, impPrefixFlagsToIndirFlags(prefixFlags));
             compiler.impPushOnStack(op1, tiRetVal);
@@ -12956,7 +12942,6 @@ public partial class Compiler
 
                 if (info.compCompHnd->getStaticFieldContent(field, &inlineLargeStructBuffer.e0, totalSize))
                 {
-#if FEATURE_SIMD
                     // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
                     var simdWidth = GetSimdTypeSizeInBytes(fieldClsHnd);
 
@@ -12990,7 +12975,6 @@ public partial class Compiler
                             return vecCon;
                         }
                     }
-#endif
 
                     if (HasNonZeroStaticFieldContent(largeStructBuffer, totalSize))
                     {
@@ -18253,12 +18237,16 @@ public partial class Compiler
 #endif
     }
 
-#if FEATURE_SIMD
     /// <summary>Creates a new Vector128.CreateScalar node for a System.Half value</summary>
     /// <param name="op1">The System.Half value</param>
     /// <returns>The Vector128.CreateScalar node that contains op1</returns>
     public GenTree impSimdCreateScalarHalf(GenTree op1)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+        }
+
         int op1Tmp;
 
         if (op1.Oper is not GT_LCL_VAR)
@@ -18281,6 +18269,11 @@ public partial class Compiler
     /// <returns>The System.Half value extracted from op1</returns>
     public unsafe GenTree impSimdToScalarHalf(GenTree op1, CORINFO_CLASS_HANDLE halfClsHnd)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD Half operations are unsupported on this target.");
+        }
+
         assert(IsSystemHalfClass(halfClsHnd));
 
         var resTmp = lvaGrabTemp(shortLifetime: true, "System.Half tmp");
@@ -18292,7 +18285,6 @@ public partial class Compiler
         _ = impAppendTree(op1, CHECK_SPILL_ALL, impCurStmtDI);
         return gtNewLclvNode(TYP_STRUCT, resTmp);
     }
-#endif
 
     /// <summary>Spill all trees referencing the given local.</summary>
     /// <param name="lclNum">The local's number</param>
@@ -18624,10 +18616,9 @@ public partial class Compiler
 
                 var simdOp = impPopStack().val;
 
-#if FEATURE_SIMD
                 var addr = simdOp.EffectiveVal;
 
-                if (addr.IsLclVarAddr)
+                if (Configuration.FEATURE_SIMD && addr.IsLclVarAddr)
                 {
                     var toTypeHnd = sig.sigInst.methInst[1];
                     var toType = TypeHandleToVarType(toTypeHnd);
@@ -18643,7 +18634,6 @@ public partial class Compiler
                         }
                     }
                 }
-#endif
 
                 return simdOp;
             }
@@ -18792,12 +18782,10 @@ public partial class Compiler
                 {
                     addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, GTF_IND_MUST_PRESERVE_FLAGS, out indirFlags);
 
-#if FEATURE_SIMD
-                    if (varTypeIsSimd(toType) && addr.IsLclVarAddr)
+                    if (Configuration.FEATURE_SIMD && varTypeIsSimd(toType) && addr.IsLclVarAddr)
                     {
                         lvaGetDesc(addr.AsLclFld().LclNum).lvIsBitcastToSimd = true;
                     }
-#endif
                 }
 
                 if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) < info.compCompHnd->getClassAlignmentRequirement(toTypeHnd))
@@ -20610,15 +20598,11 @@ public partial class Compiler
             inlineResult.Note(InlineObservation.CALLEE_CLASS_VALUETYPE);
         }
 
-#if FEATURE_SIMD
-
         // Note if this method is has simd args or return value
-        if ((inlineInfo is not null) && inlineInfo.hasSimdTypeArgLocalOrReturn)
+        if (Configuration.FEATURE_SIMD && (inlineInfo is not null) && inlineInfo.hasSimdTypeArgLocalOrReturn)
         {
             inlineResult.Note(InlineObservation.CALLEE_HAS_SIMD);
         }
-
-#endif
 
         // Roughly classify callsite frequency.
         var frequency = InlineCallsiteFrequency.UNUSED;
@@ -20726,8 +20710,7 @@ public partial class Compiler
         var structType = TYP_STRUCT;
         simdBaseJitType = TYP_UNDEF;
 
-#if FEATURE_SIMD
-        if (structMightRepresentSimdType(structHnd))
+        if (Configuration.FEATURE_SIMD && structMightRepresentSimdType(structHnd))
         {
             var simdBaseType = getBaseTypeAndSizeOfSimdType(structHnd, out var sizeBytes);
 
@@ -20742,7 +20725,6 @@ public partial class Compiler
                 compFloatingPointUsed = true;
             }
         }
-#endif
 
         return structType;
     }

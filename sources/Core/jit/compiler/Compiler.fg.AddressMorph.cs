@@ -65,12 +65,10 @@ public partial class Compiler
             indexAddress.AddAllEffectsFlags(indexAddress.Index);
             return indexAddress;
         }
-#if FEATURE_SIMD
-        if (varTypeIsStruct(elementType))
+        if (Configuration.FEATURE_SIMD && varTypeIsStruct(elementType))
         {
             elementType = impNormStructType(elementClass);
         }
-#endif
         if (elementType is not TYP_STRUCT)
         {
             elementClass = NO_CLASS_HANDLE;

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_SIMD
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -46,4 +45,3 @@ public partial class Compiler
         }
     }
 }
-#endif

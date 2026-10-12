@@ -77,6 +77,44 @@ internal static unsafe class HWIntrinsicDispatchTests
     }
 
     [Test]
+    public static void ScalarIntrinsicImportsWhenSimdIsDisabled()
+    {
+        var featureName = $"RyuJitSharp.{nameof(Configuration.FEATURE_SIMD)}";
+        var wasEnabled = Configuration.FEATURE_SIMD;
+        AppContext.SetSwitch(featureName, false);
+
+        try
+        {
+            Assert.That(Configuration.FEATURE_SIMD, Is.False);
+            WithImporter(compiler => {
+                CORINFO_SIG_INFO pauseSig = new() {
+                    args = (CORINFO_ARG_LIST_STRUCT_*)1, retType = CORINFO_TYPE_VOID
+                };
+                var pause = Import(compiler, NI_X86Base_Pause, in pauseSig);
+                Assert.That(pause, Is.TypeOf<GenTreeHWIntrinsic>());
+                Assert.That(pause!.Type, Is.EqualTo(TYP_VOID));
+
+                var operand = new GenTreeLclVar(TYP_INT, 0);
+                Push(compiler, operand);
+                s_argumentTypes[0] = CORINFO_TYPE_INT;
+                CORINFO_SIG_INFO sig = new() {
+                    args = (CORINFO_ARG_LIST_STRUCT_*)1, numArgs = 1, retType = CORINFO_TYPE_INT
+                };
+
+                var result = Import(compiler, NI_X86Base_BitScanForward, in sig);
+
+                Assert.That(result, Is.TypeOf<GenTreeHWIntrinsic>());
+                Assert.That(result!.AsHWIntrinsic().GetOp(1), Is.SameAs(operand));
+                Assert.That(compiler.impStackHeight, Is.Zero);
+            });
+        }
+        finally
+        {
+            AppContext.SetSwitch(featureName, wasEnabled);
+        }
+    }
+
+    [Test]
     public static void CrcUsesPreciseSecondArgumentTypeAndSignatureOrder()
     {
         WithImporter(compiler => {

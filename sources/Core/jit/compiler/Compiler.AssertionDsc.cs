@@ -480,10 +480,14 @@ public partial class Compiler
                 ConstantOp1(comp, lclNum, vn), new(comp, cns, ConstantVN(comp, cnsVN)));
         }
 
-#if FEATURE_SIMD
         public static AssertionDsc CreateConstLclVarAssertion(Compiler comp, int lclNum, ValueNum vn,
             GenTreeVecCon cns, ValueNum cnsVN, bool equals)
         {
+            if (!Configuration.FEATURE_SIMD)
+            {
+                throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD assertions are unsupported on this target.");
+            }
+
             assert(varTypeIsSimd(cns.Type));
             // Own the active bytes: later node mutations must not change an assertion.
             byte[] payload;
@@ -501,7 +505,6 @@ public partial class Compiler
             return new(equals ? optAssertionKind.OAK_EQUAL : optAssertionKind.OAK_NOT_EQUAL,
                 ConstantOp1(comp, lclNum, vn), new(comp, optOp2Kind.O2K_CONST_VEC, ConstantVN(comp, cnsVN), simdValue: payload));
         }
-#endif
 
         public static AssertionDsc CreateLclNonNullAssertion(Compiler comp, int lclNum)
         {

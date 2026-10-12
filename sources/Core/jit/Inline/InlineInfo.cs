@@ -46,9 +46,7 @@ public sealed class InlineInfo
 
     public bool thisDereferencedFirst;
 
-#if FEATURE_SIMD
     public bool hasSimdTypeArgLocalOrReturn;
-#endif
 
     /// <summary>The GT_CALL node to be inlined.</summary>
     public GenTreeCall? iciCall;

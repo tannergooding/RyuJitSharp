@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD && !TARGET_XARCH
+#if FEATURE_HW_INTRINSICS && !TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Compiler

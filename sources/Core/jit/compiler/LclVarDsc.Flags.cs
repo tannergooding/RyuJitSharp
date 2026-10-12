@@ -66,9 +66,7 @@ public partial struct LclVarDsc
 	    StructDoubleAlign = 1L << 46,
 #endif
 
-#if FEATURE_SIMD
         IsBitcastToSimd = 1L << 50,
-#endif
 
 #if FEATURE_IMPLICIT_BYREFS
         IsImplicitByRef = 1L << 48,

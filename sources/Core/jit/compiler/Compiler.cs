@@ -231,12 +231,9 @@ public partial class Compiler
         return codeGen.Emitter;
     }
 
-#if FEATURE_SIMD
     /// <summary>Have we identified any simd types?</summary>
     /// <remarks>This is currently used by struct promotion to avoid getting type information for a struct field to see if it is a simd type, if we haven't seen any simd types or operations in the method.</remarks>
     public bool _usesSimdTypes;
-
-#endif
 
     /// <summary>The Compiler instance for the inlinee</summary>
     public Compiler? InlineeCompiler;
@@ -962,7 +959,6 @@ public partial class Compiler
         }
     }
 
-#if FEATURE_SIMD
     private bool UsesSimdTypes
     {
         get
@@ -975,7 +971,6 @@ public partial class Compiler
             _usesSimdTypes = value;
         }
     }
-#endif
 
     /// <summary>Returns the codegen type for a given simd size.</summary>
     /// <param name="size"></param>
@@ -1479,9 +1474,7 @@ public partial class Compiler
     public unsafe CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index)
         => info.compCompHnd->getMethodInstantiationArgument(ftn, index);
 
-#if FEATURE_SIMD
     public int GetMinVectorByteLength() => (int)(TYP_SIMD8.EmitSize);
-#endif
 
     /// <summary>Get the "primitive" type that is used for a struct of size 'structSize'.</summary>
     /// <param name="structSize">the size of the struct type, cannot be zero</param>
@@ -1867,12 +1860,10 @@ public partial class Compiler
                         assert(structSize > TARGET_POINTER_SIZE);
 
                         // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
-                        var isScalableSimdType = false;
-#if FEATURE_SIMD
-                        isScalableSimdType = structMightRepresentSimdType(clsHnd) &&
+                        var isScalableSimdType = Configuration.FEATURE_SIMD &&
+                            structMightRepresentSimdType(clsHnd) &&
                             (getBaseTypeAndSizeOfSimdType(clsHnd, out var simdSize) is not TYP_UNDEF) &&
                             (simdSize is SIZE_UNKNOWN);
-#endif
 
                         if (isScalableSimdType)
                         {
@@ -2042,13 +2033,11 @@ public partial class Compiler
         return result;
     }
 
-#if FEATURE_SIMD
     public unsafe int GetSimdTypeSizeInBytes(CORINFO_CLASS_HANDLE typeHnd)
     {
         _ = getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
         return sizeBytes;
     }
-#endif
 
     public unsafe CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, int index)
         => info.compCompHnd->getTypeInstantiationArgument(cls, index);
@@ -2175,7 +2164,7 @@ public partial class Compiler
 
     public unsafe bool IsSimdOrHwSimdClass(CORINFO_CLASS_HANDLE clsHnd)
     {
-        return IsSimdClass(clsHnd) || IsHwSimdClass(clsHnd);
+        return Configuration.FEATURE_SIMD && (IsSimdClass(clsHnd) || IsHwSimdClass(clsHnd));
     }
 
     public unsafe bool isSpanClass(CORINFO_CLASS_HANDLE clsHnd)
@@ -2364,11 +2353,12 @@ public partial class Compiler
     /// <returns></returns>
     public bool structSizeMightRepresentSimdType(nint structSize)
     {
-#if FEATURE_SIMD
+        if (!Configuration.FEATURE_SIMD)
+        {
+            return false;
+        }
+
         return (structSize >= GetMinVectorByteLength()) && (structSize <= GetMaxVectorByteLength());
-#else
-        return false;
-#endif
     }
 
     public bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
@@ -2386,12 +2376,10 @@ public partial class Compiler
     {
         assert(size > 0);
 
-#if FEATURE_SIMD
-        if (roundDownSimdSize(size) > 0)
+        if (Configuration.FEATURE_SIMD && (roundDownSimdSize(size) > 0))
         {
             return GetSimdTypeForSize(roundDownSimdSize(size));
         }
-#endif
 
         // Keep the signed shift and minimum: a high-bit input has a negative nearestPow2.
         var nearestPow2 = unchecked(1 << BitOperations.Log2(size));
@@ -2435,8 +2423,8 @@ public partial class Compiler
     public var_types roundDownMaxType(uint size, bool conservative)
     {
         var result = roundDownMaxType(size);
-#if FEATURE_SIMD && TARGET_XARCH
-        if (conservative)
+#if TARGET_XARCH
+        if (Configuration.FEATURE_SIMD && conservative)
         {
             if (result == TYP_SIMD32)
             {
@@ -2452,7 +2440,11 @@ public partial class Compiler
     /// <returns></returns>
     public int roundDownSimdSize(uint size)
     {
-#if FEATURE_SIMD
+        if (!Configuration.FEATURE_SIMD)
+        {
+            return 0;
+        }
+
 #if FEATURE_HW_INTRINSICS && TARGET_XARCH
         var maxSize = GetPreferredVectorByteLength();
         assert(maxSize is (>= XMM_REGSIZE_BYTES and <= ZMM_REGSIZE_BYTES));
@@ -2471,11 +2463,8 @@ public partial class Compiler
         assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
         return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
 #else
-        assert(!"roundDownSIMDSize unimplemented on target arch");
+        assert(false, "roundDownSIMDSize unimplemented on target arch");
         unreached();
-        return 0;
-#endif
-#else
         return 0;
 #endif
     }
@@ -2511,7 +2500,11 @@ public partial class Compiler
     /// <remarks>It's only supposed to be used for scenarios where we can perform an overlapped load/store.</remarks>
     public int roundUpSimdSize(int size)
     {
-#if FEATURE_SIMD
+        if (!Configuration.FEATURE_SIMD)
+        {
+            return 0;
+        }
+
 #if FEATURE_HW_INTRINSICS && TARGET_XARCH
         var unsignedSize = unchecked((uint)size);
         var maxSize = GetPreferredVectorByteLength();
@@ -2536,11 +2529,8 @@ public partial class Compiler
         assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"roundUpSimdSize unimplemented on target arch");
+        assert(false, "roundUpSimdSize unimplemented on target arch");
         unreached();
-        return 0;
-#endif
-#else
         return 0;
 #endif
     }
@@ -2676,9 +2666,13 @@ public partial class Compiler
         return unchecked((int)(simdSize / (uint)baseType.Size));
     }
 
-#if FEATURE_SIMD
     private unsafe int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new PlatformNotSupportedException("SIMD is not enabled for this target.");
+        }
+
         var baseType = getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
 
         return getSIMDVectorLength(unchecked((uint)sizeBytes), baseType);
@@ -2695,6 +2689,11 @@ public partial class Compiler
     internal unsafe var_types getBaseTypeAndSizeOfSimdType(CORINFO_CLASS_HANDLE typeHnd, out int sizeBytes)
     {
         sizeBytes = 0;
+
+        if (!Configuration.FEATURE_SIMD)
+        {
+            return TYP_UNDEF;
+        }
 
         if ((typeHnd is null) || !isIntrinsicType(typeHnd))
         {
@@ -2972,7 +2971,6 @@ public partial class Compiler
 
     private unsafe var_types getBaseTypeOfSimdType(CORINFO_CLASS_HANDLE typeHnd)
         => getBaseTypeAndSizeOfSimdType(typeHnd, out _);
-#endif
 
     private unsafe string getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, out string namespaceName)
     {
@@ -3014,8 +3012,7 @@ public partial class Compiler
         {
             // Match the unroller's supported ISA width, not the preferred vector width.
 #if TARGET_AMD64 || TARGET_ARM64
-#if FEATURE_SIMD
-            if (canUseSimd)
+            if (Configuration.FEATURE_SIMD && canUseSimd)
             {
 #if TARGET_AMD64
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
@@ -3030,7 +3027,6 @@ public partial class Compiler
 #endif
                 return 32;
             }
-#endif
             return 16;
 #else
             return 0;
@@ -3040,8 +3036,7 @@ public partial class Compiler
         var maxRegSize = REGSIZE_BYTES;
         var threshold = maxRegSize;
 
-#if FEATURE_SIMD
-        if (canUseSimd)
+        if (Configuration.FEATURE_SIMD && canUseSimd)
         {
             maxRegSize = GetPreferredVectorByteLength();
 
@@ -3058,14 +3053,13 @@ public partial class Compiler
 #endif
         }
 #if TARGET_XARCH
-        else
+        else if (Configuration.FEATURE_SIMD)
         {
             // Compatibility with previous logic: we used to allow memset:128/memcpy:64
             // on AMD64 (and 64/32 on x86) for cases where we don't use SIMD
             // see https://github.com/dotnet/runtime/issues/83297
             threshold *= 2;
         }
-#endif
 #endif
 
         if (type is Memset)

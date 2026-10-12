@@ -29,7 +29,7 @@ public partial class Compiler
             return null;
         }
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD
+#if FEATURE_HW_INTRINSICS
         var category = HWIntrinsicInfo.lookupCategory(intrinsic);
         _ = HWIntrinsicInfo.lookupIsa(intrinsic);
         var numArgs = (int)sig.numArgs;
@@ -765,7 +765,7 @@ public partial class Compiler
 #endif
     }
 
-#if FEATURE_HW_INTRINSICS && FEATURE_SIMD
+#if FEATURE_HW_INTRINSICS
     private unsafe var_types getBaseTypeFromArgIfNeeded(
         NamedIntrinsic intrinsic, in CORINFO_SIG_INFO sig, var_types simdBaseType)
     {

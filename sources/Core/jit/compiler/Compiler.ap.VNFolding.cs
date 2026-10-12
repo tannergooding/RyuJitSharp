@@ -478,13 +478,9 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
+            case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 when Configuration.FEATURE_SIMD:
 #if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
+            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD:
 #endif
             {
                 var vector = gtNewVconNode(tree.Type);
@@ -492,7 +488,6 @@ public partial class Compiler
                 constantTree = vector;
                 break;
             }
-#endif
 
             case TYP_MASK:
             {

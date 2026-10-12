@@ -1924,9 +1924,7 @@ public partial class Compiler
         }
 #endif
 
-#if FEATURE_SIMD
         assert(_usesSimdTypes == false);
-#endif
 
         lvaEnregEHVars = compEnregLocals && (JitConfig.EnableEHWriteThru != 0);
         lvaEnregMultiRegVars = compEnregLocals && (JitConfig.EnableMultiRegLocals != 0);
@@ -3987,9 +3985,12 @@ public partial class Compiler
             // We only have access to info.compFullName in DEBUG builds.
             flogf(compJitFuncInfoFile, $"{info.compFullName}\n");
             flogf(compJitFuncInfoFile, ""); // flush
-#elif FEATURE_SIMD
-            compJitFuncInfoFile.WriteLine($" {eeGetMethodFullName(info.compMethodHnd)}");
-            compJitFuncInfoFile.Flush();
+#else
+            if (Configuration.FEATURE_SIMD)
+            {
+                compJitFuncInfoFile.WriteLine($" {eeGetMethodFullName(info.compMethodHnd)}");
+                compJitFuncInfoFile.Flush();
+            }
 #endif
         }
 #endif

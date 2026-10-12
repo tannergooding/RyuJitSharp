@@ -892,12 +892,10 @@ public partial class Compiler
             }
         }
 
-#if FEATURE_SIMD
         if (InlineeCompiler.UsesSimdTypes)
         {
             UsesSimdTypes = true;
         }
-#endif
 
         // Update unmanaged call details
         info.compUnmanagedCallCountWithGCTransition += InlineeCompiler.info.compUnmanagedCallCountWithGCTransition;

@@ -326,6 +326,11 @@ public sealed partial class ValueNumStore
 #if FEATURE_HW_INTRINSICS
     public bool IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            return false;
+        }
+
         HashSet<ValueNum> knownMasks = [];
         return IsVectorPerElementMask(vn, simdBaseType, simdSize, knownMasks, 0);
     }

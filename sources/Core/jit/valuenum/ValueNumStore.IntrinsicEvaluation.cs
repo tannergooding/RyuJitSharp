@@ -1136,7 +1136,7 @@ public sealed partial class ValueNumStore
                 break;
             }
 
-            case NI_Vector_WithElement:
+            case NI_Vector_WithElement when Configuration.FEATURE_SIMD:
             {
                 if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
                 {
@@ -1192,7 +1192,6 @@ public sealed partial class ValueNumStore
     }
 #endif
 
-#if FEATURE_SIMD
     private ValueNum EvaluateSimdWithElementIntegral(var_types simdType, var_types baseType,
         ValueNum vectorVN, int index, long value)
     {
@@ -1244,5 +1243,4 @@ public sealed partial class ValueNumStore
 
         return VNForGenericCon(simdType, result);
     }
-#endif
 }

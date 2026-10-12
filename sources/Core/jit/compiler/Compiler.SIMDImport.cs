@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_SIMD
     private GenTree impSIMDPopStack()
     {
         var tree = impPopStack().val;
@@ -54,6 +53,5 @@ public partial class Compiler
 
         return arg;
     }
-#endif
 #endif
 }

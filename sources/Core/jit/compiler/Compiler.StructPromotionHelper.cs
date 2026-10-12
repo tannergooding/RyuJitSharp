@@ -52,13 +52,9 @@ public partial class Compiler
             // Analyze this type from scratch.
             structPromotionInfo = new lvaStructPromotionInfo(typeHnd);
 
-#if FEATURE_SIMD
             // getMaxVectorByteLength() represents the size of the largest primitive type that we can struct promote.
-            var maxSize = MAX_NumOfFieldsInPromotableStruct * int.Max(_compiler.GetMaxVectorByteLength(), sizeof(double));
-#else
-            // sizeof(double) represents the size of the largest primitive type that we can struct promote.
-            var maxSize = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
-#endif
+            var maxVectorByteLength = Configuration.FEATURE_SIMD ? _compiler.GetMaxVectorByteLength() : 0;
+            var maxSize = MAX_NumOfFieldsInPromotableStruct * int.Max(maxVectorByteLength, sizeof(double));
 
             // lvaStructFieldInfo.fldOffset is byte-sized and offsets start from 0, so the max size can be 256
             assert((byte)(maxSize - 1) == (maxSize - 1));
@@ -577,8 +573,7 @@ public partial class Compiler
 
                 fieldVarDsc.lvIsRegArg = varDsc.lvIsRegArg;
 
-#if FEATURE_SIMD
-                if (varTypeIsSimd(fieldInfo.fldType))
+                if (Configuration.FEATURE_SIMD && varTypeIsSimd(fieldInfo.fldType))
                 {
                     // We will not recursively promote this, so mark it as 'lvRegStruct' (note that we wouldn't
                     // be promoting this if we didn't think it could be enregistered.
@@ -598,8 +593,6 @@ public partial class Compiler
                         }
                     }
                 }
-#endif
-
 #if DEBUG
                 // This temporary should not be converted to a double in stress mode,
                 // because we introduce assigns to it after the stress conversion
@@ -671,8 +664,7 @@ public partial class Compiler
             {
                 var className = _compiler.getClassNameFromMetadata(node.simdTypeHnd, out var namespaceName);
 
-#if FEATURE_SIMD
-                if (namespaceName is "System.Runtime.Intrinsics" or "System.Numerics")
+                if (Configuration.FEATURE_SIMD && (namespaceName is "System.Runtime.Intrinsics" or "System.Numerics"))
                 {
                     var simdBaseType = _compiler.getBaseTypeAndSizeOfSimdType(node.simdTypeHnd, out var simdSize);
 
@@ -681,8 +673,6 @@ public partial class Compiler
                         return GetSimdTypeForSize(simdSize);
                     }
                 }
-#endif
-
 #if TARGET_64BIT
                 // Vector64<T> was historically promotable as a long when SIMD is not in use.
                 if ((namespaceName is "System.Runtime.Intrinsics") && (className is "Vector64`1"))

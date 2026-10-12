@@ -1274,9 +1274,10 @@ public partial class Compiler
                                     var elementSize = simdBaseType.Size;
                                     var countNode = compiler.gtNewIconNode(TYP_INT, simdSize / elementSize);
 
-#if FEATURE_SIMD
-                                    countNode.Flags |= GTF_ICON_SIMD_COUNT;
-#endif
+                                    if (Configuration.FEATURE_SIMD)
+                                    {
+                                        countNode.Flags |= GTF_ICON_SIMD_COUNT;
+                                    }
 
                                     return countNode;
                                 }

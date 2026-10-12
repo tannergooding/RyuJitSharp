@@ -11,6 +11,112 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    public GenTreeHWIntrinsic gtNewSimdHWIntrinsicNode(
+        var_types type,
+        NamedIntrinsic hwIntrinsicId,
+        var_types simdBaseType,
+        byte simdSize,
+        params GenTree[] operands)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD hardware intrinsics are unsupported on this target.");
+        }
+
+        return new GenTreeHWIntrinsic(type, hwIntrinsicId, simdBaseType, simdSize, operands);
+    }
+
+    public GenTreeHWIntrinsic gtNewScalarHWIntrinsicNode(
+        var_types type,
+        NamedIntrinsic hwIntrinsicId,
+        params GenTree[] operands)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Hardware intrinsics are unsupported on this target.");
+        }
+
+        return new GenTreeHWIntrinsic(type, hwIntrinsicId, TYP_UNKNOWN, simdSize: 0, operands);
+    }
+
+    /// <summary>Creates a new simd CreateScalar node</summary>
+    /// <param name="type">The return type of SIMD node being created</param>
+    /// <param name="op1">The value of element 0 of the simd value</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
+    /// <returns>The created CreateScalar node</returns>
+    public GenTree gtNewSimdCreateScalarNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+        }
+
+        if (op1.Oper.IsConst)
+        {
+            var vecCon = gtNewVconNode(type);
+
+            if (op1.Oper.IsIntegralConst)
+            {
+                vecCon.SetElementIntegral(simdBaseType, 0, op1.AsIntConCommon().IntegralValue);
+            }
+            else
+            {
+                assert(op1.Oper.IsCnsFltOrDbl);
+                vecCon.SetElementFloating(simdBaseType, 0, op1.AsDblCon().DconVal);
+            }
+
+            return vecCon;
+        }
+
+        NamedIntrinsic hwIntrinsicId;
+
+        if (Configuration.TARGET_ARM64)
+        {
+            hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
+                ? NI_Vector_Create
+                : NI_Vector_CreateScalar;
+        }
+        else if (Configuration.TARGET_XARCH || Configuration.TARGET_WASM)
+        {
+            hwIntrinsicId = NI_Vector_CreateScalar;
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar creation is unsupported on this target.");
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
+    }
+
+    /// <summary>Creates a new simd ToScalar node.</summary>
+    /// <param name="type">The return type of SIMD node being created.</param>
+    /// <param name="op1">The SIMD operand.</param>
+    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic.</param>
+    /// <param name="simdSize">The size of the SIMD type of the intrinsic.</param>
+    /// <returns>The created node that has the ToScalar implementation.</returns>
+    public GenTree gtNewSimdToScalarNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar extraction is unsupported on this target.");
+        }
+
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD scalar extraction is unsupported on this target.");
+        }
+
+        assert(varTypeIsArithmetic(type));
+
+        assert(op1 is not null);
+        assert(varTypeIsSimd(op1.Type));
+
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        return gtNewSimdHWIntrinsicNode(type, NI_Vector_ToScalar, simdBaseType, simdSize, op1);
+    }
+
     internal static TSimd NarrowAndDuplicateSimdLong<TSimd>(var_types baseType, in TSimd value)
         where TSimd : unmanaged
     {

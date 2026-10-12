@@ -397,13 +397,11 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_SIMD
-            case GT_CNS_VEC:
+            case GT_CNS_VEC when Configuration.FEATURE_SIMD:
             {
                 copy = gtCloneCnsVec(tree.AsVecCon());
                 break;
             }
-#endif
 
             case GT_CNS_MSK:
             {
@@ -534,7 +532,6 @@ public partial class Compiler
         return gtNewMskConNode(mskCon.SimdMaskVal);
     }
 
-#if FEATURE_SIMD
     public GenTreeVecCon gtCloneCnsVec(GenTreeVecCon vecCon)
     {
         var vecConClone = gtNewVconNode(vecCon.Type);
@@ -549,7 +546,6 @@ public partial class Compiler
         vecConClone.SimdVal = vecCon.SimdVal;
         return vecConClone;
     }
-#endif
 
     /// <summary>Create a copy of `tree`</summary>
     /// <param name="tree">GenTree to create a copy of</param>
@@ -894,13 +890,11 @@ public partial class Compiler
                     break;
                 }
 
-#if FEATURE_SIMD
-                case GT_CNS_VEC:
+                case GT_CNS_VEC when Configuration.FEATURE_SIMD:
                 {
                     copy = compiler.gtCloneCnsVec(tree.AsVecCon());
                     break;
                 }
-#endif
 
                 case GT_CNS_MSK:
                 {
@@ -1665,12 +1659,10 @@ public partial class Compiler
                         }
                     }
 
-#if FEATURE_SIMD
-                    if ((tree.Flags & GTF_ICON_SIMD_COUNT) is not 0)
+                    if (Configuration.FEATURE_SIMD && ((tree.Flags & GTF_ICON_SIMD_COUNT) is not 0))
                     {
                         jitprintf(" vector element count");
                     }
-#endif
 
                     if (tree.IsReuseRegVal)
                     {
@@ -1729,8 +1721,7 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_SIMD
-            case GT_CNS_VEC:
+            case GT_CNS_VEC when Configuration.FEATURE_SIMD:
             {
                 var vecCon = tree.AsVecCon();
 
@@ -1899,7 +1890,6 @@ public partial class Compiler
                 }
                 break;
             }
-#endif
 
             case GT_CNS_MSK:
             {
@@ -3304,10 +3294,8 @@ public partial class Compiler
                     NI_System_Object_GetType => " objGetType",
                     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant => " isKnownConst",
                     NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier => " WriteBarrier",
-#if FEATURE_SIMD
-                    NI_SIMD_UpperRestore => " simdUpperRestore",
-                    NI_SIMD_UpperSave => " simdUpperSave",
-#endif
+                    NI_SIMD_UpperRestore when Configuration.FEATURE_SIMD => " simdUpperRestore",
+                    NI_SIMD_UpperSave when Configuration.FEATURE_SIMD => " simdUpperSave",
                     _ => "",
                 };
 
@@ -8242,14 +8230,12 @@ public partial class Compiler
             return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0xFF);
         }
 #endif
-#if FEATURE_SIMD
-        if (varTypeIsSimd(type))
+        if (Configuration.FEATURE_SIMD && varTypeIsSimd(type))
         {
             var allBitsSet = gtNewVconNode(type);
             allBitsSet.SimdVal = simd_t.AllBitsSet;
             return allBitsSet;
         }
-#endif
 
         switch (type)
         {
@@ -8663,13 +8649,9 @@ public partial class Compiler
                 return (val is 0) ? gtNewNull() : gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)(val));
             }
 
-#if FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
+            case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 when Configuration.FEATURE_SIMD:
 #if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
+            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD:
 #endif
             {
                 assert(cnsVal.Length == type.Size);
@@ -8678,7 +8660,6 @@ public partial class Compiler
                 Unsafe.CopyBlockUnaligned(ref vecCon.SimdVal.u8[0], in cnsVal[0], type.Size);
                 return vecCon;
             }
-#endif
 
             default:
             {
@@ -9057,10 +9038,8 @@ public partial class Compiler
             ref var varDsc = ref lvaGetDesc(lclNum);
 
             var simd12ToSimd16Widening = false;
-#if FEATURE_SIMD
             // We can additionally have a simd12 that was widened to a simd16, generally as part of lowering
-            simd12ToSimd16Widening = (type is TYP_SIMD16) && (varDsc.Type == TYP_SIMD12);
-#endif
+            simd12ToSimd16Widening = Configuration.FEATURE_SIMD && (type is TYP_SIMD16) && (varDsc.Type == TYP_SIMD12);
             assert((type == varDsc.Type) || simd12ToSimd16Widening ||
                    (lvaIsImplicitByRefLocal(lclNum) && fgGlobalMorph &&
                     (varDsc.Type == lvaGetImplicitByRefParamType())));
@@ -9326,13 +9305,9 @@ public partial class Compiler
                 return gtNewDconNode(type, 1.0);
             }
 
-#if FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
+            case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 when Configuration.FEATURE_SIMD:
 #if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
+            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD:
 #endif
             {
                 var vecCon = gtNewVconNode(type);
@@ -9347,7 +9322,6 @@ public partial class Compiler
                 }
                 return vecCon;
             }
-#endif
 
             default:
             {
@@ -9530,16 +9504,6 @@ public partial class Compiler
     }
 
 #if FEATURE_HW_INTRINSICS
-    public GenTreeHWIntrinsic gtNewSimdHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicId, var_types simdBaseType, byte simdSize, params GenTree[] operands)
-    {
-        return new GenTreeHWIntrinsic(type, hwIntrinsicId, simdBaseType, simdSize, operands);
-    }
-
-    public GenTreeHWIntrinsic gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicId, params GenTree[] operands)
-    {
-        return new GenTreeHWIntrinsic(type, hwIntrinsicId, TYP_UNKNOWN, simdSize: 0, operands);
-    }
-
     public GenTree gtNewSimdAbsNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
     {
         assert(varTypeIsSimd(type));
@@ -10747,45 +10711,6 @@ public partial class Compiler
 #else
 #error Unsupported platform
 #endif
-    }
-
-    /// <summary>Creates a new simd CreateScalar node</summary>
-    /// <param name="type">The return type of SIMD node being created</param>
-    /// <param name="op1">The value of element 0 of the simd value</param>
-    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic</param>
-    /// <param name="simdSize">The size of the SIMD type of the intrinsic</param>
-    /// <returns>The created CreateScalar node</returns>
-    public GenTree gtNewSimdCreateScalarNode( var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
-    {
-        if (op1.Oper.IsConst)
-        {
-            var vecCon = gtNewVconNode(type);
-
-            if (op1.Oper.IsIntegralConst)
-            {
-                vecCon.SetElementIntegral(simdBaseType, 0, op1.AsIntConCommon().IntegralValue);
-            }
-            else
-            {
-                assert(op1.Oper.IsCnsFltOrDbl);
-                vecCon.SetElementFloating(simdBaseType, 0, op1.AsDblCon().DconVal);
-            }
-            return vecCon;
-        }
-
-#if TARGET_XARCH
-        var hwIntrinsicId = NI_Vector_CreateScalar;
-#elif TARGET_ARM64
-        var hwIntrinsicId = ((simdSize is 8) && (simdBaseType.Size is 8))
-            ? NI_Vector_Create
-            : NI_Vector_CreateScalar;
-#elif TARGET_WASM
-        var hwIntrinsicId = NI_Vector_CreateScalar;
-#else
-#error Unsupported platform
-#endif
-
-        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicId, simdBaseType, simdSize, op1);
     }
 
     /// <summary>Creates a new simd CreateScalarUnsafe node</summary>
@@ -12644,28 +12569,6 @@ public partial class Compiler
 #endif
     }
 
-    /// <summary>Creates a new simd ToScalar node.</summary>
-    /// <param name="type">The return type of SIMD node being created.</param>
-    /// <param name="op1">The SIMD operand.</param>
-    /// <param name="simdBaseType">The base type of SIMD type of the intrinsic.</param>
-    /// <param name="simdSize">The size of the SIMD type of the intrinsic.</param>
-    /// <returns>The created node that has the ToScalar implementation.</returns>
-    public GenTree gtNewSimdToScalarNode(var_types type, GenTree op1, var_types simdBaseType, byte simdSize)
-    {
-        assert(varTypeIsArithmetic(type));
-
-        assert(op1 is not null);
-        assert(varTypeIsSimd(op1.Type));
-
-        assert(varTypeIsArithmetic(simdBaseType));
-
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_WASM
-        return gtNewSimdHWIntrinsicNode(type, NI_Vector_ToScalar, simdBaseType, simdSize, op1);
-#else
-#error Unsupported platform
-#endif
-    }
-
     /// <summary>Creates a new simd Truncate node</summary>
     /// <param name="type">The type of the node</param>
     /// <param name="op1">The node to truncate</param>
@@ -13768,7 +13671,6 @@ public partial class Compiler
         return new GenTreeUnOp(oper, type, op1);
     }
 
-#if FEATURE_SIMD
     public GenTreeVecCon gtNewVconNode(var_types type)
     {
 #if TARGET_ARM64
@@ -13807,7 +13709,6 @@ public partial class Compiler
 
         return node;
     }
-#endif
 #endif
 
     /// <summary>Create an unthreaded helper-call replacement, preserving the source's value numbers and logical identity.</summary>
@@ -13957,13 +13858,9 @@ public partial class Compiler
                 return gtNewZeroConNode(type);
             }
 
-#if FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
+            case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 when Configuration.FEATURE_SIMD:
 #if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
+            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD:
 #endif
             {
                 var node = gtNewVconNode(type);
@@ -13972,11 +13869,10 @@ public partial class Compiler
             }
 
 #if TARGET_ARM64
-            case TYP_SIMD_ARM64:
+            case TYP_SIMD_ARM64 when Configuration.FEATURE_SIMD:
             {
                 return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, pattern);
             }
-#endif
 #endif
             default:
             {
@@ -13994,19 +13890,15 @@ public partial class Compiler
             return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0);
         }
 #endif
-#if FEATURE_SIMD
-        if (varTypeIsSimd(type))
+        if (Configuration.FEATURE_SIMD && varTypeIsSimd(type))
         {
             return gtNewVconNode(type);
         }
-#endif
 
-#if FEATURE_SIMD
-        if (type is TYP_MASK)
+        if (Configuration.FEATURE_SIMD && (type is TYP_MASK))
         {
             return gtNewMskConNode(default);
         }
-#endif
 
         type = type.ActualType;
 
@@ -14780,8 +14672,7 @@ public partial class Compiler
                     return CommonCns(dblCon, costEx, costSz);
                 }
 
-#if FEATURE_SIMD
-                case GT_CNS_VEC:
+                case GT_CNS_VEC when Configuration.FEATURE_SIMD:
                 {
                     var vecCon = tree.AsVecCon();
 
@@ -14838,7 +14729,6 @@ public partial class Compiler
 #endif
                     return CommonCns(vecCon, costEx, costSz);
                 }
-#endif
 
 #if FEATURE_MASKED_HW_INTRINSICS
                 case GT_CNS_MSK:
@@ -15509,9 +15399,8 @@ public partial class Compiler
                                 break;
                             }
 
-#if FEATURE_SIMD
-                            case NI_SIMD_UpperRestore:
-                            case NI_SIMD_UpperSave:
+                            case NI_SIMD_UpperRestore when Configuration.FEATURE_SIMD:
+                            case NI_SIMD_UpperSave when Configuration.FEATURE_SIMD:
                             {
 #if TARGET_XARCH
                                 // UpperSave:    vextractf128 xmm0, ymm1, 1
@@ -15529,7 +15418,6 @@ public partial class Compiler
 #endif
                                 break;
                             }
-#endif
                         }
 
                         level++;
@@ -16752,7 +16640,7 @@ public partial class Compiler
         return level;
     }
 
-#if FEATURE_SIMD || FEATURE_HW_INTRINSICS
+#if FEATURE_HW_INTRINSICS
     /// <summary>Calculate the costs for a MultiOp.</summary>
     /// <param name="multiOp">The MultiOp tree in question</param>
     /// <returns>The Sethi "complexity" for this tree (the idealized number of registers needed to evaluate it).</returns>

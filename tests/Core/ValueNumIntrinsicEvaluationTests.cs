@@ -253,6 +253,50 @@ internal static unsafe class ValueNumIntrinsicEvaluationTests
         });
     }
 
+    [Test]
+    public static void RuntimeDisabledSimdKeepsVectorElementSymbolicAndRejectsVectorMask()
+    {
+        WithStore(store => {
+            var featureName = $"RyuJitSharp.{nameof(Configuration.FEATURE_SIMD)}";
+            var wasEnabled = Configuration.FEATURE_SIMD;
+            AppContext.SetSwitch(featureName, true);
+
+            try
+            {
+                var vectorBytes = new byte[TYP_SIMD16.Size];
+                var vectorVN = store.VNForGenericCon(TYP_SIMD16, vectorBytes);
+                var resultTypeVN = store.VNForSimdType(16, TYP_INT);
+                Assert.That(store.IsVectorPerElementMask(vectorVN, TYP_INT, 16), Is.True);
+
+                var tree = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_WithElement, TYP_INT, 16,
+                    new GenTreeVecCon(TYP_SIMD16), new GenTreeLclVar(TYP_INT, 0), new GenTreeLclVar(TYP_INT, 1));
+                var indexVN = store.VNForIntCon(1);
+                var elementVN = store.VNForIntCon(42);
+
+                AppContext.SetSwitch(featureName, false);
+                Assert.That(store.IsVectorPerElementMask(vectorVN, TYP_INT, 16), Is.False);
+
+                if (Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    var result = store.EvalHWIntrinsicFunTernary(tree, VNFunc.VNF_HWI_Vector_WithElement,
+                        vectorVN, indexVN, elementVN, resultTypeVN);
+                    var app = new VNFuncApp();
+
+                    Assert.That(store.GetVNFunc(result, ref app), Is.True);
+                    Assert.That(app.Func, Is.EqualTo(VNFunc.VNF_HWI_Vector_WithElement));
+                    Assert.That(app.GetArg(0), Is.EqualTo(vectorVN));
+                    Assert.That(app.GetArg(1), Is.EqualTo(indexVN));
+                    Assert.That(app.GetArg(2), Is.EqualTo(elementVN));
+                    Assert.That(app.GetArg(3), Is.EqualTo(resultTypeVN));
+                }
+            }
+            finally
+            {
+                AppContext.SetSwitch(featureName, wasEnabled);
+            }
+        });
+    }
+
     [TestCase(0x00000000u, 0x00000000u)]
     [TestCase(0x80000000u, 0x80000000u)]
     [TestCase(0x00000001u, 0x00000001u)]

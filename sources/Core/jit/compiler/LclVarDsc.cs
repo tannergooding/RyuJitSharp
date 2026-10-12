@@ -836,7 +836,6 @@ public partial struct LclVarDsc
     }
 #endif
 
-#if FEATURE_SIMD
     /// <summary>This struct local has been bitcast to a SIMD type.</summary>
     public bool lvIsBitcastToSimd
     {
@@ -850,7 +849,6 @@ public partial struct LclVarDsc
             _flags = (_flags & ~Flags.IsBitcastToSimd) | (value ? Flags.IsBitcastToSimd : Flags.None);
         }
     }
-#endif
 
 #if FEATURE_IMPLICIT_BYREFS
     /// <summary>Set if the local appears as a last use that will be passed as an implicit byref.</summary>
@@ -1183,11 +1181,7 @@ public partial struct LclVarDsc
     }
 #endif
 
-#if FEATURE_SIMD
     public readonly bool IsBitcastToSimd() => lvIsBitcastToSimd;
-#else
-    public readonly bool IsBitcastToSimd() => false;
-#endif
 
 #if FEATURE_HW_INTRINSICS
     public readonly bool IsVectorPerElementMask(var_types simdBaseType)

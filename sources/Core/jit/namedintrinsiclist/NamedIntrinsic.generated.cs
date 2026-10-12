@@ -2197,10 +2197,8 @@ public enum NamedIntrinsic : ushort
 
     NI_HW_INTRINSIC_END,
 
-#if FEATURE_SIMD
     NI_SIMD_UpperRestore,
     NI_SIMD_UpperSave,
-#endif // FEATURE_SIMD
 
     //
     // Special Import Intrinsics

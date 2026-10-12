@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the remaining `FEATURE_SIMD` compiler closure in `Compiler.SIMDImport.cs`, `Compiler.SimdTypeUtilities.cs`, and the related value-numbering files; replace their compile-time branches with runtime configuration and follow dependencies only as needed.",
+    "nextAction": "Universalize the remaining `FEATURE_SIMD` lowering closure, starting with `lower/Lowering.BitCasts.cs` and its shared SIMD helper dependencies; replace guards with runtime configuration and preserve explicit unsupported-target failures.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize `FEATURE_SIMD` compiler import, shared SIMD type utilities, and their value-numbering dependencies.",
-      "doneWhen": "These compiler operations compile without `FEATURE_SIMD` symbols and preserve enabled/disabled runtime behavior across supported target configurations.",
-      "validation": "Run focused importer/value-numbering tests on SIMD-enabled and disabled target RIDs in Debug and Release. Full analysis currently reports the pre-existing IDE0018 at `Compiler.cs:1703`; validate the changed paths with analyzers disabled until that unrelated baseline issue is resolved.",
-      "deferred": "Remaining SIMD lowering/codegen guards, `FEATURE_HW_INTRINSICS` APIs still required by the vector-mask helper, and other TARGET_/FEATURE_ migrations."
+      "scope": "Universalize remaining `FEATURE_SIMD` lowering control flow, beginning with `lower/Lowering.BitCasts.cs` and its shared SIMD helper dependencies.",
+      "doneWhen": "These lowering paths compile without `FEATURE_SIMD` symbols, preserve enabled-target behavior, and terminate unsupported operations explicitly.",
+      "validation": "Run focused Core tests with x64 and linux-riscv64 target configurations in Debug and Release, then run full analysis as the baseline permits.",
+      "deferred": "Remaining SIMD codegen, register-allocation, emitter/generated-metadata guards, `FEATURE_HW_INTRINSICS` closure, and all other TARGET_/FEATURE_ migrations."
     },
     "parityEvidence": {
       "corelibCodegen": {
