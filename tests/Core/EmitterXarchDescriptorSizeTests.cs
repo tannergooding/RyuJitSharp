@@ -65,7 +65,6 @@ internal static class EmitterXarchDescriptorSizeTests
         Assert.That(Size(CreateEmitter(), descriptor), Is.EqualTo(expected));
     }
 
-#if FEATURE_LOOP_ALIGN
     [Test]
     public static void AlignmentFormatUsesItsNativeDescriptorLayout()
     {
@@ -87,7 +86,6 @@ internal static class EmitterXarchDescriptorSizeTests
 #endif
             ));
     }
-#endif
 
 #if TARGET_AMD64
     [Test]

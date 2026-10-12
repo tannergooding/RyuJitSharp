@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the remaining `FEATURE_LOOP_ALIGN` closure: replace its runtime-source compile guards with `Configuration.FEATURE_LOOP_ALIGN`, add per-RID substitutions, and preserve its enabled xarch/ARM64 behavior across generated instruction and emitter metadata.",
+    "nextAction": "Start the remaining `FEATURE_SIMD` closure by identifying shared declarations and generated tables behind its 284 production-source guards; replace compile-time feature branches with `Configuration.FEATURE_SIMD` while preserving per-RID SIMD behavior.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize loop-alignment feature gating, its instruction identities and metadata, emitter descriptor creation/output, and JIT configuration values while preserving native xarch/ARM64 support.",
-      "doneWhen": "Runtime-source `FEATURE_LOOP_ALIGN` directives are removed, generated outputs match their inputs, and the feature remains enabled only for xarch and ARM64 with matching behavior across target RIDs.",
-      "validation": "Regenerate affected tables and compare the output; run focused loop-alignment and instruction-metadata tests with full analyzers in Debug and Release using a win-x64 test host across supported target RIDs, including feature-enabled xarch/ARM64 and feature-disabled ARM32, Wasm, LoongArch, and RISC-V.",
+      "scope": "Replace `FEATURE_SIMD` compile-time guards with runtime configuration across shared SIMD types, operations, generated metadata, and their tests.",
+      "doneWhen": "Production and generated source no longer depends on `FEATURE_SIMD` compilation symbols; per-RID SIMD configuration, enabled and disabled behavior, and shared declaration identities are validated.",
+      "validation": "Regenerate affected tables; run focused Core Debug and Release tests with full analyzers and target-configuration tests for SIMD-enabled xarch/ARM64/Wasm and SIMD-disabled ARM32, LoongArch, and RISC-V.",
       "deferred": "Other TARGET_/FEATURE_ migrations, other target-native type families, and generated-code parity capture remain outside this feature-gating batch."
     },
     "parityEvidence": {
@@ -522,6 +522,28 @@
       ],
       "disposition": "The managed compiler retains GetLayoutNum/GetLayoutByNum as internal per-compiler identity tokens for zero-object value numbering and diagnostics; native uses pointer identity. This is an implementation mapping, not an observable JIT/EE difference.",
       "sourceCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605"
+    },
+    {
+      "area": "universal-loop-alignment-feature",
+      "native": [
+        "src\\coreclr\\jit\\emit.cpp",
+        "src\\coreclr\\jit\\emit.h",
+        "src\\coreclr\\jit\\jitconfigvalues.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\Configuration.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.LoopAlignment.cs",
+        "sources\\Core\\jit\\codegenlinear\\CodeGen.BlockEnd.cs",
+        "sources\\Core\\jit\\emit\\Emitter.LoopAlignmentRecording.cs",
+        "sources\\Core\\jit\\emit\\Emitter.LoopAlignmentAdjustment.cs",
+        "sources\\Core\\jit\\emit\\Emitter.LoopAlignmentPadding.cs",
+        "sources\\Core\\jit\\emit\\Emitter.DescriptorSizes.cs",
+        "sources\\Core\\jit\\emit\\Emitter.instrDescAlign.cs",
+        "sources\\GenerateTables\\Program.cs"
+      ],
+      "disposition": "Loop alignment is selected at runtime and enabled only for xarch and ARM64. The xarch path retains 15-byte descriptor chunks and its zero-sized remainder; ARM64 retains four-byte padding descriptors. Descriptor logical sizes use the configured target, and unsupported targets fail with CORJIT_SKIPPED.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Affected generated instruction/configuration outputs matched GenerateTables/Outputs. Focused x64 loop-alignment tests passed 76/76 in Debug with full analyzers and 71/71 in Release with analyzers disabled. FeatureConfigurationTests passed 28/28 in Debug and Release across win-x64, win-x86, win-arm64, osx-arm64, linux-x64, linux-arm64, linux-arm, browser-wasm, linux-loongarch64, and linux-riscv64; full analyzers were used except for Linux x64 and Debug browser/LoongArch/RISC-V runs. ARM64 late-disassembly Release tests passed 33/33. Full-analyzer Core Release test compilation remains blocked by CA1812 in EmitterLoopAlignmentClosureTests.View and DiscretionaryPolicyTests.FixedMultiplierPolicy; Linux x64 Debug full analysis is blocked by IDE0018 at Compiler.cs:1703."
     }
   ],
   "generatorInputMapping": {

@@ -1186,8 +1186,6 @@ public sealed partial class CodeGen
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
-#if FEATURE_LOOP_ALIGN
-#endif
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
@@ -1798,9 +1796,7 @@ public sealed partial class CodeGen
         0, // tbx_2regs
         0, // tbx_3regs
         0, // tbx_4regs
-#if FEATURE_LOOP_ALIGN
         0, // align
-#endif
         0, // eor3
         0, // bcax
         0, // sm3ss1
@@ -2639,8 +2635,6 @@ public sealed partial class CodeGen
 #elif TARGET_ARM64
 #if !TARGET_ARM64
 #error Unexpected target type
-#endif
-#if FEATURE_LOOP_ALIGN
 #endif
 #if !TARGET_ARM64
 #error Unexpected target type

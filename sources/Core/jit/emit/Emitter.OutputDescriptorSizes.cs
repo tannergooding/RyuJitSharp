@@ -57,12 +57,10 @@ public partial class Emitter
         {
             return SMALL_IDSC_SIZE;
         }
-#if FEATURE_LOOP_ALIGN
-        if (id.idIns() == INS_align)
+        if (Configuration.FEATURE_LOOP_ALIGN && (id.idIns() == INS_align))
         {
             return DescriptorSizes.Align;
         }
-#endif
         return INSTR_DESC_SIZE;
     }
 

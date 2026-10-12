@@ -186,12 +186,10 @@ public sealed partial class CodeGen
                 $"with weight {FMT_WT(block.bbWeight)}\n");
             needLabel = true;
         }
-#if FEATURE_LOOP_ALIGN
-        if (Emitter.emitEndsWithAlignInstr())
+        if (Configuration.FEATURE_LOOP_ALIGN && Emitter.emitEndsWithAlignInstr())
         {
             needLabel = true;
         }
-#endif
         if (needLabel)
         {
             block.bbEmitCookie = Emitter.emitAddLabel(_gcInfo.gcVarPtrSetCur, _gcInfo.gcRegGCrefSetCur,

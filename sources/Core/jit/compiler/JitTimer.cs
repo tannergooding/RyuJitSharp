@@ -105,9 +105,12 @@ public sealed class JitTimer
                 streamWriter.Write("\"Loops\",");
                 streamWriter.Write("\"Loops Cloned\",");
 
-#if DEBUG && FEATURE_LOOP_ALIGN
-                streamWriter.Write("\"Alignment Candidates\",");
-                streamWriter.Write("\"Loops Aligned\",");
+#if DEBUG
+                if (Configuration.FEATURE_LOOP_ALIGN)
+                {
+                    streamWriter.Write("\"Alignment Candidates\",");
+                    streamWriter.Write("\"Loops Aligned\",");
+                }
 #endif
                 for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
                 {
@@ -277,9 +280,12 @@ public sealed class JitTimer
             streamWriter.Write($"{compiler.Metrics.LoopsFoundDuringOpts},");
             streamWriter.Write($"{compiler.Metrics.LoopsCloned},");
 
-#if DEBUG && FEATURE_LOOP_ALIGN
-            streamWriter.Write($"{compiler.Metrics.LoopAlignmentCandidates},");
-            streamWriter.Write($"{compiler.Metrics.LoopsAligned},");
+#if DEBUG
+            if (Configuration.FEATURE_LOOP_ALIGN)
+            {
+                streamWriter.Write($"{compiler.Metrics.LoopAlignmentCandidates},");
+                streamWriter.Write($"{compiler.Metrics.LoopsAligned},");
+            }
 #endif
 
             var totCycles = 0UL;

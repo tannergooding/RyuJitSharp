@@ -6327,9 +6327,7 @@ public sealed partial class CodeGen
         3578, 3, // INS_tbx_2regs
         3578, 3, // INS_tbx_3regs
         3578, 3, // INS_tbx_4regs
-#if FEATURE_LOOP_ALIGN
         3582, 5, // INS_align
-#endif
         3588, 4, // INS_eor3
         3593, 4, // INS_bcax
         3598, 6, // INS_sm3ss1

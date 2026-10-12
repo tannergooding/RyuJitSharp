@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_LOOP_ALIGN
     private bool shouldAlignLoop(FlowGraphNaturalLoop loop, BasicBlock top)
     {
         if (loop.Child is not null)
@@ -162,5 +161,4 @@ public partial class Compiler
         JITDUMP($"Found {Metrics.LoopAlignmentCandidates} candidates for loop alignment\n");
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
-#endif
 }

@@ -101,13 +101,11 @@ internal static class Arm64InstructionCodeTests
                 continue;
             }
 
-#if FEATURE_LOOP_ALIGN
             if (ins == INS_align)
             {
                 Assert.That(Codes(1)[ordinal], Is.EqualTo(BAD_CODE));
                 continue;
             }
-#endif
 
             Assert.That(Codes(1)[ordinal], Is.Not.EqualTo(BAD_CODE), $"{ins}: {format}");
             Assert.That(Code(emitter, ins, format), Is.EqualTo(Codes(1)[ordinal]), $"{ins}: {format}");
@@ -117,11 +115,7 @@ internal static class Arm64InstructionCodeTests
         Assert.That(direct, Is.EqualTo(357));
     }
 
-#if FEATURE_LOOP_ALIGN
     [TestCase(1, 552)]
-#else
-    [TestCase(1, 551)]
-#endif
     [TestCase(2, 194)]
     [TestCase(3, 80)]
     [TestCase(4, 48)]
@@ -141,11 +135,9 @@ internal static class Arm64InstructionCodeTests
         {
             Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_sm4e), Is.EqualTo(expectedLength - 1));
             Assert.That(codes[^1], Is.EqualTo(0xCEC08400u));
-#if FEATURE_LOOP_ALIGN
             var alignOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_align);
             Assert.That(codes[alignOrdinal], Is.EqualTo(BAD_CODE));
             Assert.That(InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_eor3), Is.EqualTo(alignOrdinal + 1));
-#endif
         }
     }
 
@@ -176,7 +168,6 @@ internal static class Arm64InstructionCodeTests
         Assert.That(result, Is.EqualTo(BAD_CODE));
     }
 
-#if FEATURE_LOOP_ALIGN
     [Test]
     public static void AlignmentPlaceholderPreservesTheNativeBadOpcodeAssertion()
     {
@@ -187,7 +178,6 @@ internal static class Arm64InstructionCodeTests
         Assert.That(assertions, Is.EqualTo<string[]>(["(code != BAD_CODE)"]));
         Assert.That(result, Is.EqualTo(BAD_CODE));
     }
-#endif
 #endif
 
     private static IEnumerable<TestCaseData> EncodingGroups()

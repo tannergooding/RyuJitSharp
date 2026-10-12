@@ -262,9 +262,7 @@ internal static unsafe class EmitterMethodStatisticsTests
         var previousAddressModeDescriptors = TotalAddressModeDescriptors(null);
         var previousConstantAddressModeDescriptors = TotalConstantAddressModeDescriptors(null);
 #endif
-#if FEATURE_LOOP_ALIGN
         var previousAlignmentDescriptors = TotalAlignmentDescriptors(null);
-#endif
 
         try
         {
@@ -278,9 +276,7 @@ internal static unsafe class EmitterMethodStatisticsTests
             TotalAddressModeDescriptors(null) = 0;
             TotalConstantAddressModeDescriptors(null) = 0;
 #endif
-#if FEATURE_LOOP_ALIGN
             TotalAlignmentDescriptors(null) = 0;
-#endif
 
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             var emitter = new AllocationEmitter(new CodeGen(compiler));
@@ -297,9 +293,7 @@ internal static unsafe class EmitterMethodStatisticsTests
             _ = emitter.AllocateAddressModeDescriptor(emitAttr.EA_4BYTE);
             _ = emitter.AllocateConstantAddressModeDescriptor(emitAttr.EA_4BYTE);
 #endif
-#if FEATURE_LOOP_ALIGN
             _ = emitter.AllocateAlignmentDescriptor();
-#endif
 
             Assert.That(TotalBasicDescriptors(null), Is.EqualTo(1u));
             Assert.That(TotalJumpDescriptors(null), Is.EqualTo(1u));
@@ -314,17 +308,13 @@ internal static unsafe class EmitterMethodStatisticsTests
 #if TARGET_XARCH
                 + 2
 #endif
-#if FEATURE_LOOP_ALIGN
                 + 1
-#endif
             )));
 #if TARGET_XARCH
             Assert.That(TotalAddressModeDescriptors(null), Is.EqualTo(1u));
             Assert.That(TotalConstantAddressModeDescriptors(null), Is.EqualTo(1u));
 #endif
-#if FEATURE_LOOP_ALIGN
             Assert.That(TotalAlignmentDescriptors(null), Is.EqualTo(1u));
-#endif
         }
         finally
         {
@@ -339,9 +329,7 @@ internal static unsafe class EmitterMethodStatisticsTests
             TotalAddressModeDescriptors(null) = previousAddressModeDescriptors;
             TotalConstantAddressModeDescriptors(null) = previousConstantAddressModeDescriptors;
 #endif
-#if FEATURE_LOOP_ALIGN
             TotalAlignmentDescriptors(null) = previousAlignmentDescriptors;
-#endif
         }
     }
 
@@ -540,12 +528,10 @@ internal static unsafe class EmitterMethodStatisticsTests
         }
 #endif
 
-#if FEATURE_LOOP_ALIGN
         public instrDesc AllocateAlignmentDescriptor()
         {
             return NewAlignmentDescriptor(this);
         }
-#endif
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocAnyInstr")]
         private static extern T Allocate<T>(Emitter emitter, nuint size, emitAttr attr)
@@ -585,10 +571,8 @@ internal static unsafe class EmitterMethodStatisticsTests
         private static extern instrDescCnsAmd NewConstantAddressModeDescriptor(Emitter emitter, emitAttr attr);
 #endif
 
-#if FEATURE_LOOP_ALIGN
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitAllocInstrAlign")]
         private static extern instrDescAlign NewAlignmentDescriptor(Emitter emitter);
-#endif
     }
 
     private static void Begin(Emitter emitter)
@@ -676,10 +660,8 @@ internal static unsafe class EmitterMethodStatisticsTests
     private static extern ref uint TotalConstantAddressModeDescriptors(Emitter? emitter);
 #endif
 
-#if FEATURE_LOOP_ALIGN
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitTotalIDescAlignCnt")]
     private static extern ref uint TotalAlignmentDescriptors(Emitter? emitter);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "emitSmallCns")]
     private static extern ref uint[] SmallCnsBuckets(Emitter? emitter);

@@ -53,6 +53,8 @@
     <RyuJitFeatureHwIntrinsics Condition="'$(RyuJitFeatureHwIntrinsics)' == ''">false</RyuJitFeatureHwIntrinsics>
     <RyuJitFeatureMaskedHwIntrinsics Condition="'$(RyuJitTargetIsXarch)' == 'true' or '$(RyuJitTargetIsArm64)' == 'true'">true</RyuJitFeatureMaskedHwIntrinsics>
     <RyuJitFeatureMaskedHwIntrinsics Condition="'$(RyuJitFeatureMaskedHwIntrinsics)' == ''">false</RyuJitFeatureMaskedHwIntrinsics>
+    <RyuJitFeatureLoopAlign Condition="'$(RyuJitTargetIsXarch)' == 'true' or '$(RyuJitTargetIsArm64)' == 'true'">true</RyuJitFeatureLoopAlign>
+    <RyuJitFeatureLoopAlign Condition="'$(RyuJitFeatureLoopAlign)' == ''">false</RyuJitFeatureLoopAlign>
     <RyuJitFeatureMultiRegRet Condition="'$(RyuJitTargetIsArmArch)' == 'true' or '$(RyuJitTargetIsLoongArch64)' == 'true' or '$(RyuJitTargetIsRiscV64)' == 'true'">true</RyuJitFeatureMultiRegRet>
     <RyuJitFeatureMultiRegRet Condition="'$(RyuJitTargetIsXarch)' == 'true' and '$(RyuJitTargetIs64Bit)' == 'true' and '$(RyuJitTargetIsUnix)' == 'true'">true</RyuJitFeatureMultiRegRet>
     <RyuJitFeatureMultiRegRet Condition="'$(RyuJitTargetIsXarch)' == 'true' and '$(RyuJitTargetIs64Bit)' != 'true'">true</RyuJitFeatureMultiRegRet>
@@ -62,12 +64,13 @@
     <RyuJitFeatureArmSoftFp Condition="'$(RyuJitFeatureArmSoftFp)' == ''">false</RyuJitFeatureArmSoftFp>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitUnixX86Abi)' != ''">
+  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureLoopAlign)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitUnixX86Abi)' != ''">
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HW_INTRINSICS" Value="$(RyuJitFeatureHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_MASKED_HW_INTRINSICS" Value="$(RyuJitFeatureMaskedHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HAS_ZERO_REG" Value="$(RyuJitFeatureHasZeroReg)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_MULTIREG_RET" Value="$(RyuJitFeatureMultiRegRet)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_SIMD" Value="$(RyuJitFeatureSimd)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_LOOP_ALIGN" Value="$(RyuJitFeatureLoopAlign)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_READYTORUN" Value="$(RyuJitFeatureReadyToRun)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_VN_DUMP_FUNC_ARGS" Value="$(RyuJitFeatureVnDumpFuncArgs)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_ON_STACK_REPLACEMENT" Value="true" />

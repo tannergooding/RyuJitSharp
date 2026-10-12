@@ -38,21 +38,31 @@ public partial class Emitter
 #else
         internal const int WasmMemargLane = Full + 8;
 #endif
+        internal static int Align
+        {
+            get
+            {
 #if DEBUG
-#if TARGET_X86 || TARGET_ARM
-        internal const int Align = 28;
+                if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
+                {
+                    return 28;
+                }
+                return 48;
 #else
-        internal const int Align = 48;
+#if LATE_DISASM
+                if (Configuration.TARGET_ARM64)
+                {
+                    return 48;
+                }
 #endif
-#elif TARGET_ARM64 && LATE_DISASM
-        internal const int Align = 48;
-#else
-#if TARGET_X86 || TARGET_ARM
-        internal const int Align = 24;
-#else
-        internal const int Align = 40;
+                if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
+                {
+                    return 24;
+                }
+                return 40;
 #endif
-#endif
+            }
+        }
 #if TARGET_X86 || TARGET_ARM || (TARGET_WASM && !HOST_64BIT)
         internal const int DebugPrefix = 4;
 #if TARGET_WASM
@@ -247,12 +257,10 @@ public partial class Emitter
         {
             return ConstantDescriptorSizes.Displacement;
         }
-#if FEATURE_LOOP_ALIGN
-        if (descriptor.idIns() == INS_align)
+        if (Configuration.FEATURE_LOOP_ALIGN && (descriptor.idIns() == INS_align))
         {
             return DescriptorSizes.Align;
         }
-#endif
 
         return INSTR_DESC_SIZE;
 #elif TARGET_ARM

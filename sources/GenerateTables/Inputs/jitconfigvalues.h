@@ -369,11 +369,7 @@ RELEASE_CONFIG_INTEGER(RichDebugInfo, "RichDebugInfo", 0) // If 1, keep rich deb
 
 CONFIG_STRING(WriteRichDebugInfoFile, "WriteRichDebugInfoFile") // Write rich debug info in JSON format to this file
 
-#if FEATURE_LOOP_ALIGN
 RELEASE_CONFIG_INTEGER(JitAlignLoops, "JitAlignLoops", 1) // If set, align inner loops
-#else
-RELEASE_CONFIG_INTEGER(JitAlignLoops, "JitAlignLoops", 0)
-#endif
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate
 // fallback to main JIT on hitting a NYI.

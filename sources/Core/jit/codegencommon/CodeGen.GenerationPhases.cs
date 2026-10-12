@@ -181,9 +181,10 @@ public sealed partial class CodeGen
 #if !TARGET_WASM
         Emitter.emitJumpDistBind();
 #endif
-#if FEATURE_LOOP_ALIGN
-        Emitter.emitLoopAlignAdjustments();
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            Emitter.emitLoopAlignAdjustments();
+        }
     }
 
     internal unsafe void genEmitMachineCode()

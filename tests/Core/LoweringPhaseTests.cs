@@ -153,7 +153,6 @@ internal static unsafe class LoweringPhaseTests
     }
 #endif
 
-#if FEATURE_LOOP_ALIGN
     [TestCase(false)]
     [TestCase(true)]
     public static void LoopAlignmentWithoutNaturalLoopsLeavesGraphUnchanged(bool enabled)
@@ -167,7 +166,6 @@ internal static unsafe class LoweringPhaseTests
             Assert.That(compiler.placeLoopAlignInstructions(), Is.EqualTo(PhaseStatus.MODIFIED_NOTHING));
         });
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoPhase")]
     private static extern PhaseStatus DoPhase(Lowering lowering);

@@ -36,9 +36,7 @@ internal static class InstructionOptionIdentityTests
             AssertOption(insOpts.INS_OPTS_8B, 16);
             AssertOption(insOpts.INS_OPTS_SCALABLE_B, 24);
             AssertOption(insOpts.INS_OPTS_D_TO_H, 51);
-#if FEATURE_LOOP_ALIGN
             AssertOption(insOpts.INS_OPTS_ALIGN, 52);
-#endif
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {

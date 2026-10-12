@@ -21,11 +21,12 @@ public partial class Emitter
         emitCurIGfreeBase = null;
         emitIGbuffSize = 0;
 
-#if FEATURE_LOOP_ALIGN
-        emitLastAlignedIg = null;
-        emitLastLoopStart = null;
-        emitLastLoopEnd = null;
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            emitLastAlignedIg = null;
+            emitLastLoopStart = null;
+            emitLastLoopEnd = null;
+        }
 
         emitHasFramePtr = hasFramePtr;
 #if DEBUG
@@ -57,12 +58,13 @@ public partial class Emitter
         emitForceNewIG = false;
         emitContainsRemovableJmpCandidates = false;
 
-#if FEATURE_LOOP_ALIGN
-        emitAlignList = null;
-        emitAlignLastGroup = null;
-        emitAlignLast = null;
-        emitCurIGAlignList = null;
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            emitAlignList = null;
+            emitAlignLastGroup = null;
+            emitAlignLast = null;
+            emitCurIGAlignList = null;
+        }
 
         assert(VarSetOps.IsEmpty(_compiler, emitThisGCrefVars));
         assert(VarSetOps.IsEmpty(_compiler, emitInitGCrefVars));

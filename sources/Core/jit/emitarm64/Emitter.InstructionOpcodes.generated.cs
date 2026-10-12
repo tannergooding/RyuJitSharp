@@ -552,9 +552,7 @@ public partial class Emitter
         unchecked((uint)(0x0E003000)), // INS_tbx_2regs
         unchecked((uint)(0x0E005000)), // INS_tbx_3regs
         unchecked((uint)(0x0E007000)), // INS_tbx_4regs
-#if FEATURE_LOOP_ALIGN
         unchecked((uint)(BAD_CODE)), // INS_align
-#endif
         unchecked((uint)(0xCE000000)), // INS_eor3
         unchecked((uint)(0xCE200000)), // INS_bcax
         unchecked((uint)(0xCE400000)), // INS_sm3ss1
@@ -768,8 +766,6 @@ public partial class Emitter
         unchecked((uint)(0x2EA0C400)), // INS_fminnmp
         unchecked((uint)(0x2EA0F400)), // INS_fminp
         unchecked((uint)(0x0E20BC00)), // INS_addp
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
     private static ReadOnlySpan<uint> ordinaryInsCodes3 => [
@@ -856,8 +852,6 @@ public partial class Emitter
         unchecked((uint)(0x0DFFC000)), // INS_ld2r
         unchecked((uint)(0x0DDFE000)), // INS_ld3r
         unchecked((uint)(0x0DFFE000)), // INS_ld4r
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
     private static ReadOnlySpan<uint> ordinaryInsCodes4 => [
@@ -912,8 +906,6 @@ public partial class Emitter
         unchecked((uint)(0x2F00D000)), // INS_sqrdmlah
         unchecked((uint)(0x2F00F000)), // INS_sqrdmlsh
         unchecked((uint)(0x0F00D000)), // INS_sqrdmulh
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
     private static ReadOnlySpan<uint> ordinaryInsCodes5 => [
@@ -936,8 +928,6 @@ public partial class Emitter
         unchecked((uint)(0x98000000)), // INS_ldrsw
         unchecked((uint)(0x0F00F400)), // INS_fmov
         unchecked((uint)(0x0F001400)), // INS_orr
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
     private static ReadOnlySpan<uint> ordinaryInsCodes6 => [
@@ -956,8 +946,6 @@ public partial class Emitter
         unchecked((uint)(0x0DBF0000)), // INS_st2
         unchecked((uint)(0x0D9F2000)), // INS_st3
         unchecked((uint)(0x0DBF2000)), // INS_st4
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
     private static ReadOnlySpan<uint> ordinaryInsCodes7 => [
@@ -966,8 +954,6 @@ public partial class Emitter
 #endif
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0x4E001C00)), // INS_mov
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
     private static ReadOnlySpan<uint> ordinaryInsCodes8 => [
@@ -976,8 +962,6 @@ public partial class Emitter
 #endif
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0x5E000400)), // INS_mov
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
     private static ReadOnlySpan<uint> ordinaryInsCodes9 => [
@@ -986,8 +970,6 @@ public partial class Emitter
 #endif
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0x6E000400)), // INS_mov
-#if FEATURE_LOOP_ALIGN
-#endif
     ];
 
 #endif

@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_LOOP_ALIGN && TARGET_AMD64
+#if TARGET_AMD64
 using System;
 #if DEBUG
 using System.IO;

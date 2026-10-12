@@ -45,15 +45,13 @@ public partial class Emitter
 
         if (emitCurIGnonEmpty())
         {
-#if FEATURE_LOOP_ALIGN
-            if (!currIGWasNonEmpty && (emitAlignLastGroup is not null) &&
+            if (Configuration.FEATURE_LOOP_ALIGN && !currIGWasNonEmpty && (emitAlignLastGroup is not null) &&
                 (emitAlignLastGroup.idaLoopHeadPredIG is not null) &&
                 (emitAlignLastGroup.idaLoopHeadPredIG.igNext == emitCurIG))
             {
                 // Padding displaced the loop head into the next group; keep nested-loop alignment removal accurate.
                 emitAlignLastGroup.idaLoopHeadPredIG = emitCurIG;
             }
-#endif
             emitNxtIG();
         }
         else

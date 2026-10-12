@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_LOOP_ALIGN
 using System.Numerics;
 #if DEBUG
 using System.Globalization;
@@ -179,18 +178,20 @@ public partial class Emitter
         if (compiler.opts.compJitAlignLoopAdaptive)
         {
             var maxPaddingBytes = 1u << (maxLoopBlocksAllowed - (int)minBlocksNeededForLoop + 1);
-#if TARGET_XARCH
-            maxPaddingBytes--;
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                maxPaddingBytes--;
+            }
             var paddingBytes = unchecked((uint)-(int)offset) & (alignmentBoundary - 1);
 
             if (paddingBytes > maxPaddingBytes)
             {
-#if TARGET_XARCH
-                alignmentBoundary >>= 1;
-                maxPaddingBytes = 1u << (maxLoopBlocksAllowed - (int)minBlocksNeededForLoop + 1);
-                paddingBytes = unchecked((uint)-(int)offset) & (alignmentBoundary - 1);
-#endif
+                if (Configuration.TARGET_XARCH)
+                {
+                    alignmentBoundary >>= 1;
+                    maxPaddingBytes = 1u << (maxLoopBlocksAllowed - (int)minBlocksNeededForLoop + 1);
+                    paddingBytes = unchecked((uint)-(int)offset) & (alignmentBoundary - 1);
+                }
 
                 if (paddingBytes == 0)
                 {
@@ -252,4 +253,3 @@ public partial class Emitter
         return paddingToAdd;
     }
 }
-#endif

@@ -354,10 +354,6 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64'">$(DefineConstants);FEATURE_IMPLICIT_BYREFS</DefineConstants>
     
-    <!-- FEATURE_LOOP_ALIGN -->
-    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_LOOP_ALIGN</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_LOOP_ALIGN</DefineConstants>
-
     <!-- FEATURE_MASKED_HW_INTRINSICS -->
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>

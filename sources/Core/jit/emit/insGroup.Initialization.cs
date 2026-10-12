@@ -33,9 +33,7 @@ public sealed partial class insGroup
     public uint igFuncIdx;
     public ushort igSize;
 
-#if FEATURE_LOOP_ALIGN
     public insGroup? igLoopBackEdge;
-#endif
 
     public regMask igGCregs;
     public Emitter.instrDesc[]? igData;

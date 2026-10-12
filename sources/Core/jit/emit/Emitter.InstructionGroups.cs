@@ -82,9 +82,10 @@ public partial class Emitter
         ig.igLastIns = null;
 #endif
 
-#if FEATURE_LOOP_ALIGN
-        ig.igLoopBackEdge = null;
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            ig.igLoopBackEdge = null;
+        }
 
 #if DEBUG
         ig.lastGeneratedBlock = null;

@@ -56,8 +56,7 @@ public partial class Emitter
         {
             case IF_NONE:
             {
-#if FEATURE_LOOP_ALIGN
-                if (ins == INS_align)
+                if (Configuration.FEATURE_LOOP_ALIGN && (ins == INS_align))
                 {
                     sz = DescriptorSizes.Align;
                     if (ig.endsWithAlignInstr())
@@ -70,7 +69,6 @@ public partial class Emitter
                     }
                     break;
                 }
-#endif
                 if (ins == INS_nop)
                 {
                     dst = emitOutputNOP(dst, id.idCodeSize());
@@ -1328,8 +1326,8 @@ public partial class Emitter
                 emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (nuint)(dst - *dp), ig);
             }
         }
-#if FEATURE_LOOP_ALIGN
-        if (emitLastAlignedIg is not null && (emitCurIG == emitLastAlignedIg || emitCurIG.IsBefore(emitLastAlignedIg)))
+        if (Configuration.FEATURE_LOOP_ALIGN && emitLastAlignedIg is not null &&
+            ((emitCurIG == emitLastAlignedIg) || emitCurIG.IsBefore(emitLastAlignedIg)))
         {
             var diff = (int)id.idCodeSize() - checked((int)(dst - *dp));
             assert(diff >= 0);
@@ -1348,7 +1346,6 @@ public partial class Emitter
             }
             assert(id.idCodeSize() == (uint)(dst - *dp));
         }
-#endif
 #if DEBUG
         if (_compiler.compDebugBreak)
         {

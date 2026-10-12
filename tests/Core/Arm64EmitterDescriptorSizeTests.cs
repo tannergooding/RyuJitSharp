@@ -132,7 +132,6 @@ internal static class Arm64EmitterDescriptorSizeTests
         Assert.That(Size(CreateEmitter(), Descriptor(INS_b, format)), Is.EqualTo(48));
     }
 
-#if FEATURE_LOOP_ALIGN
     [Test]
     public static void AlignmentStorageIncludesTheDebugField()
     {
@@ -144,7 +143,6 @@ internal static class Arm64EmitterDescriptorSizeTests
 #endif
             ));
     }
-#endif
 
     private static FlagDescriptor Descriptor(instruction instruction, Emitter.insFormat format)
     {

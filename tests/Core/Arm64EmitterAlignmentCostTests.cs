@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && FEATURE_LOOP_ALIGN && (DEBUG || LATE_DISASM)
+#if TARGET_ARM64 && (DEBUG || LATE_DISASM)
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;

@@ -588,9 +588,7 @@ public partial class Emitter
         IF_DV_3C, // tbx_2regs
         IF_DV_3C, // tbx_3regs
         IF_DV_3C, // tbx_4regs
-#if FEATURE_LOOP_ALIGN
         IF_SN_0A, // align
-#endif
         IF_DV_4B, // eor3
         IF_DV_4B, // bcax
         IF_DV_4B, // sm3ss1

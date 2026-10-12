@@ -127,7 +127,6 @@ internal static class EmitterLabelTests
         });
     }
 
-#if FEATURE_LOOP_ALIGN
     [Test]
     public static void CallPaddingInAnEmptyGroupMovesTheAlignmentPredecessor()
     {
@@ -151,8 +150,6 @@ internal static class EmitterLabelTests
             Assert.That(emptyGroup.igLastIns?.idIns(), Is.EqualTo(INS_int3));
         });
     }
-
-#endif
 
     internal static Emitter.instrDesc RecordCallDescriptor(Emitter emitter, bool noGc)
     {

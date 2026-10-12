@@ -84,9 +84,10 @@ public partial class Emitter
         PrintDescriptor("instrDescCnsAmd       ", ConstantDescriptorSizes.ConstantAddressMode);
 #endif
         PrintDescriptor("instrDescCnsDsp       ", ConstantDescriptorSizes.ConstantDisplacement);
-#if FEATURE_LOOP_ALIGN
-        PrintDescriptor("instrDescAlign        ", DescriptorSizes.Align);
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            PrintDescriptor("instrDescAlign        ", DescriptorSizes.Align);
+        }
         PrintDescriptor("instrDescJmp          ", DescriptorSizes.Jump);
 #if !TARGET_ARM64
         PrintDescriptor("instrDescLbl          ", DescriptorSizes.Label);
@@ -111,9 +112,10 @@ public partial class Emitter
         PrintCapacity("instrDescCnsAmd        per IG buffer", igBuffSize, ConstantDescriptorSizes.ConstantAddressMode);
 #endif
         PrintCapacity("instrDescCnsDsp        per IG buffer", igBuffSize, ConstantDescriptorSizes.ConstantDisplacement);
-#if FEATURE_LOOP_ALIGN
-        PrintCapacity("instrDescAlign         per IG buffer", igBuffSize, DescriptorSizes.Align);
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            PrintCapacity("instrDescAlign         per IG buffer", igBuffSize, DescriptorSizes.Align);
+        }
         PrintCapacity("instrDescJmp           per IG buffer", igBuffSize, DescriptorSizes.Jump);
 #if !TARGET_ARM64
         PrintCapacity("instrDescLbl           per IG buffer", igBuffSize, DescriptorSizes.Label);
@@ -164,9 +166,10 @@ public partial class Emitter
         AddField(ref group, "igFuncIdx          ", sizeof(uint), sizeof(uint), print);
         AddField(ref group, "igFlags            ", sizeof(ushort), sizeof(ushort), print);
         AddField(ref group, "igSize             ", sizeof(ushort), sizeof(ushort), print);
-#if FEATURE_LOOP_ALIGN
-        AddField(ref group, "igLoopBackEdge     ", word, word, print);
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            AddField(ref group, "igLoopBackEdge     ", word, word, print);
+        }
 #if REGMASK_BITS_64
         AddField(ref group, "igGCregs           ", sizeof(ulong), regMaskAlignment, print);
 #endif

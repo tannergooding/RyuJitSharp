@@ -3908,10 +3908,11 @@ public partial class Compiler
         }
 #endif
 
-#if FEATURE_LOOP_ALIGN
-        // Place loop alignment instructions
-        DoPhase(this, PHASE_ALIGN_LOOPS, placeLoopAlignInstructions);
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            // Place loop alignment instructions
+            DoPhase(this, PHASE_ALIGN_LOOPS, placeLoopAlignInstructions);
+        }
 
         // The common phase checks and dumps are no longer relevant past this point.
         activePhaseChecks = PhaseChecks.CHECK_NONE;
@@ -4244,7 +4245,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    codeGen.ShouldAlignLoops = JitConfig.JitAlignLoops == 1;
+                    codeGen.ShouldAlignLoops = Configuration.FEATURE_LOOP_ALIGN && (JitConfig.JitAlignLoops == 1);
                 }
 
 #if DEBUG

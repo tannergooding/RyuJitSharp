@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_LOOP_ALIGN
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -15,6 +14,7 @@ public partial class Emitter
             return;
         }
 
+        EnsureLoopAlignmentTargetSupported();
         var compiler = _compiler ?? throw new FatalJitException("Loop-alignment adjustment requires an active compiler.");
         JITDUMP("*************** In emitLoopAlignAdjustments()\n");
         JITDUMP($"compJitAlignLoopAdaptive       = {(compiler.opts.compJitAlignLoopAdaptive ? "true" : "false")}\n");
@@ -69,51 +69,63 @@ public partial class Emitter
                     alignInstr.removeAlignFlags();
                 }
 
-#if TARGET_XARCH
-                if (compiler.opts.compJitAlignLoopAdaptive)
+                if (Configuration.TARGET_XARCH && compiler.opts.compJitAlignLoopAdaptive)
                 {
-                    assert(actualPaddingNeeded < MAX_ENCODED_SIZE);
-                    alignInstr.idCodeSize(actualPaddingNeeded);
+                    assert(actualPaddingNeeded < MAX_XARCH_ALIGN_INSTR_SIZE);
+                    alignInstr.idSetXarchCodeSize(actualPaddingNeeded);
                 }
                 else
-#endif
                 {
                     var paddingToAdjust = actualPaddingNeeded;
 #if DEBUG
-#if TARGET_XARCH
-                    var instructionsToAdjust = unchecked((int)((compiler.opts.compJitAlignLoopBoundary
-                        + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE));
-#elif TARGET_ARM64
-                    var instructionsToAdjust = unchecked((ushort)((compiler.opts.compJitAlignLoopBoundary >> 1)
-                        / INSTR_ENCODED_SIZE));
-                    if (!compiler.opts.compJitAlignLoopAdaptive)
+                    int instructionsToAdjust;
+                    if (Configuration.TARGET_XARCH)
                     {
-                        instructionsToAdjust = unchecked((ushort)(compiler.opts.compJitAlignLoopBoundary
-                            / INSTR_ENCODED_SIZE));
+                        instructionsToAdjust = unchecked((int)((compiler.opts.compJitAlignLoopBoundary
+                            + (MAX_XARCH_ALIGN_INSTR_SIZE - 1)) / MAX_XARCH_ALIGN_INSTR_SIZE));
                     }
-#endif
+                    else
+                    {
+                        var arm64InstructionsToAdjust = unchecked((ushort)((compiler.opts.compJitAlignLoopBoundary >> 1)
+                            / INSTR_ENCODED_SIZE));
+                        if (!compiler.opts.compJitAlignLoopAdaptive)
+                        {
+                            arm64InstructionsToAdjust = unchecked((ushort)(compiler.opts.compJitAlignLoopBoundary
+                                / INSTR_ENCODED_SIZE));
+                        }
+                        instructionsToAdjust = arm64InstructionsToAdjust;
+                    }
 #endif
                     for (var current = alignInstr;
                         (current is not null) && ReferenceEquals(current.idaIG, containingIG);
                         current = current.idaNext)
                     {
-#if TARGET_XARCH
-                        var newPadding = System.Math.Min(paddingToAdjust, MAX_ENCODED_SIZE);
-                        current.idCodeSize(newPadding);
-#elif TARGET_ARM64
-                        var newPadding = System.Math.Min(paddingToAdjust, INSTR_ENCODED_SIZE);
-                        if (newPadding == 0)
+                        uint newPadding;
+                        if (Configuration.TARGET_XARCH)
                         {
-                            current.idInsOpt(INS_OPTS_NONE);
+                            newPadding = System.Math.Min(paddingToAdjust, MAX_XARCH_ALIGN_INSTR_SIZE);
+                            current.idSetXarchCodeSize(newPadding);
                         }
+                        else
+                        {
+                            newPadding = System.Math.Min(paddingToAdjust, INSTR_ENCODED_SIZE);
+#if TARGET_ARMARCH
+                            if (newPadding == 0)
+                            {
+                                current.idInsOpt(INS_OPTS_NONE);
+                            }
 #endif
+                        }
                         paddingToAdjust -= newPadding;
 #if DEBUG
-#if TARGET_XARCH
-                        instructionsToAdjust--;
-#elif TARGET_ARM64
-                        instructionsToAdjust = unchecked((ushort)(instructionsToAdjust - 1));
-#endif
+                        if (Configuration.TARGET_XARCH)
+                        {
+                            instructionsToAdjust--;
+                        }
+                        else
+                        {
+                            instructionsToAdjust = unchecked((ushort)(instructionsToAdjust - 1));
+                        }
 #endif
                     }
 
@@ -158,4 +170,3 @@ public partial class Emitter
 #endif
     }
 }
-#endif

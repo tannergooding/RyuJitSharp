@@ -196,11 +196,7 @@ public partial struct JitConfigValues
 #if DEBUG
     private unsafe byte* _writeRichDebugInfoFile;
 #endif
-#if FEATURE_LOOP_ALIGN
     private int _jitAlignLoops;
-#else
-    private int _jitAlignLoops;
-#endif
     private int _altJitAssertOnNYI;
     private int _enableEHWriteThru;
     private int _enableMultiRegLocals;
@@ -679,11 +675,7 @@ public partial struct JitConfigValues
 #if DEBUG
     public unsafe byte* WriteRichDebugInfoFile => _writeRichDebugInfoFile;
 #endif
-#if FEATURE_LOOP_ALIGN
     public int JitAlignLoops => _jitAlignLoops;
-#else
-    public int JitAlignLoops => _jitAlignLoops;
-#endif
     public int AltJitAssertOnNYI => _altJitAssertOnNYI;
     public int EnableEHWriteThru => _enableEHWriteThru;
     public int EnableMultiRegLocals => _enableMultiRegLocals;
@@ -1169,11 +1161,7 @@ public partial struct JitConfigValues
 #if DEBUG
         jitHost->freeStringConfigValue(_writeRichDebugInfoFile);
 #endif
-#if FEATURE_LOOP_ALIGN
         // _jitAlignLoops = unchecked((int)(0xCDCDCDCD));
-#else
-        // _jitAlignLoops = unchecked((int)(0xCDCDCDCD));
-#endif
         // _altJitAssertOnNYI = unchecked((int)(0xCDCDCDCD));
         // _enableEHWriteThru = unchecked((int)(0xCDCDCDCD));
         // _enableMultiRegLocals = unchecked((int)(0xCDCDCDCD));
@@ -1679,11 +1667,14 @@ public partial struct JitConfigValues
 #if DEBUG
         _writeRichDebugInfoFile = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("WriteRichDebugInfoFile"u8))));
 #endif
-#if FEATURE_LOOP_ALIGN
-        _jitAlignLoops = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAlignLoops"u8))), 1);
-#else
-        _jitAlignLoops = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAlignLoops"u8))), 0);
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            _jitAlignLoops = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitAlignLoops"u8))), 1);
+        }
+        else
+        {
+            _jitAlignLoops = 0;
+        }
         _altJitAssertOnNYI = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("AltJitAssertOnNYI"u8))), 1);
         _enableEHWriteThru = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableEHWriteThru"u8))), 1);
         _enableMultiRegLocals = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableMultiRegLocals"u8))), 1);

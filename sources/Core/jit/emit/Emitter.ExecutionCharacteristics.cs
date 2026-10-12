@@ -120,28 +120,29 @@ public partial class Emitter
             {
                 assert(memFmt == IF_NONE);
 
-#if FEATURE_LOOP_ALIGN
+                if (Configuration.FEATURE_LOOP_ALIGN)
+                {
 #if DEBUG
-                var skipAlign = id.idCodeSize() == 0 || ((instrDescAlign)id).isPlacedAfterJmp;
+                    var skipAlign = id.idCodeSize() == 0 || ((instrDescAlign)id).isPlacedAfterJmp;
 #else
-                var skipAlign = id.idCodeSize() == 0;
-                if (!skipAlign)
-                {
-                    throw new FatalJitException(CORJIT_SKIPPED,
-                        "Non-debug alignment performance scoring requires the native debug-only placement metadata.");
-                }
+                    var skipAlign = id.idCodeSize() == 0;
+                    if (!skipAlign)
+                    {
+                        throw new FatalJitException(CORJIT_SKIPPED,
+                            "Non-debug alignment performance scoring requires the native debug-only placement metadata.");
+                    }
 #endif
-                if (skipAlign)
-                {
-                    // Either we're not going to generate 'align' instruction, or the 'align'
-                    // instruction is placed immediately after unconditional jmp.
-                    // In both cases, don't count for PerfScore.
 
-                    insThroughput = PERFSCORE_THROUGHPUT_ZERO;
-                    insLatency = PERFSCORE_LATENCY_ZERO;
-                    break;
+                    if (skipAlign)
+                    {
+                        // Either we're not going to generate 'align' instruction, or the 'align'
+                        // instruction is placed immediately after unconditional jmp.
+                        // In both cases, don't count for PerfScore.
+                        insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                        insLatency = PERFSCORE_LATENCY_ZERO;
+                        break;
+                    }
                 }
-#endif
 
                 insThroughput = PERFSCORE_THROUGHPUT_4X;
                 insLatency = PERFSCORE_LATENCY_ZERO;

@@ -46,7 +46,6 @@ public sealed partial class CodeGen
             }
         }
 #endif
-#if FEATURE_LOOP_ALIGN
         void SetLoopAlignBackEdge(BasicBlock source, BasicBlock target)
         {
             if (target.isLoopAlign && Emitter.emitSetLoopBackEdge(target) && !source.IsLast)
@@ -56,8 +55,7 @@ public sealed partial class CodeGen
                 source.Next.SetFlags(BBF_HAS_LABEL);
             }
         }
-#endif
-#if FEATURE_LOOP_ALIGN && (DEBUG || (TARGET_ARM64 && LATE_DISASM))
+#if DEBUG || LATE_DISASM
         var removedJmp = false;
 #endif
         switch (block.Kind)
@@ -138,8 +136,11 @@ public sealed partial class CodeGen
                         instGen(INS_nop);
                     }
 #endif
-#if FEATURE_LOOP_ALIGN && (DEBUG || (TARGET_ARM64 && LATE_DISASM))
-                    removedJmp = true;
+#if DEBUG || LATE_DISASM
+                    if (Configuration.FEATURE_LOOP_ALIGN)
+                    {
+                        removedJmp = true;
+                    }
 #endif
                     break;
                 }
@@ -149,9 +150,10 @@ public sealed partial class CodeGen
 #else
                 inst_JMP(EJ_jmp, block.Target);
 #endif
-#if FEATURE_LOOP_ALIGN
-                SetLoopAlignBackEdge(block, block.Target);
-#endif
+                if (Configuration.FEATURE_LOOP_ALIGN)
+                {
+                    SetLoopAlignBackEdge(block, block.Target);
+                }
 #if TARGET_WASM
                 if (block.IsLast || _compiler.bbIsFuncletBeg(block.Next))
                 {
@@ -163,10 +165,11 @@ public sealed partial class CodeGen
 
             case BBJ_COND:
             {
-#if FEATURE_LOOP_ALIGN
-                SetLoopAlignBackEdge(block, block.TrueTarget);
-                SetLoopAlignBackEdge(block, block.FalseTarget);
-#endif
+                if (Configuration.FEATURE_LOOP_ALIGN)
+                {
+                    SetLoopAlignBackEdge(block, block.TrueTarget);
+                    SetLoopAlignBackEdge(block, block.FalseTarget);
+                }
                 break;
             }
 
@@ -175,23 +178,25 @@ public sealed partial class CodeGen
                 throw new FatalJitException("Unexpected block kind at the end of code generation.");
             }
         }
-#if FEATURE_LOOP_ALIGN
-        if (block.hasAlign)
+        if (Configuration.FEATURE_LOOP_ALIGN)
         {
-            assert(ShouldAlignLoops);
-            assert(!block.isBBCallFinallyPairTail);
-            assert(block.Kind != BBJ_CALLFINALLY);
-            Emitter.emitLoopAlignment(
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
-                (block.Kind == BBJ_ALWAYS) && !removedJmp
+            if (block.hasAlign)
+            {
+                assert(ShouldAlignLoops);
+                assert(!block.isBBCallFinallyPairTail);
+                assert(block.Kind != BBJ_CALLFINALLY);
+                Emitter.emitLoopAlignment(
+#if DEBUG || LATE_DISASM
+                    (block.Kind == BBJ_ALWAYS) && !removedJmp
 #endif
-            );
+                    );
+            }
+
+            if (!block.IsLast && block.Next.isLoopAlign && _compiler.opts.compJitHideAlignBehindJmp)
+            {
+                Emitter.emitConnectAlignInstrWithCurIG();
+            }
         }
-        if (!block.IsLast && block.Next.isLoopAlign && _compiler.opts.compJitHideAlignBehindJmp)
-        {
-            Emitter.emitConnectAlignInstrWithCurIG();
-        }
-#endif
     }
 
 #if TARGET_WASM

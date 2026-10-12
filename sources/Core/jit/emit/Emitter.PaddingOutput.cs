@@ -147,7 +147,6 @@ public partial class Emitter
 #endif
     }
 
-#if FEATURE_LOOP_ALIGN
     public unsafe byte* emitOutputAlign(insGroup ig, instrDesc id, byte* dst)
     {
 #if !TARGET_XARCH
@@ -200,6 +199,4 @@ public partial class Emitter
         return emitOutputNOP(dst, paddingToAdd);
 #endif
     }
-#endif
-
 }

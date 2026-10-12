@@ -22,13 +22,11 @@ internal static class Arm64DeclarationTests
         Assert.That((uint)option, Is.EqualTo(expected));
     }
 
-#if FEATURE_LOOP_ALIGN
     [Test]
     public static void LoopAlignmentOptionPreservesNativeValue()
     {
         Assert.That((uint)INS_OPTS_ALIGN, Is.EqualTo(52u));
     }
-#endif
 
     [Test]
     public static void InstructionFlagsPreserveNativeValues()

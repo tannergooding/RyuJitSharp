@@ -193,13 +193,11 @@ public partial class Emitter
                 separator = ", ";
             }
 
-#if FEATURE_LOOP_ALIGN
-            if (ig.igLoopBackEdge is not null)
+            if (Configuration.FEATURE_LOOP_ALIGN && (ig.igLoopBackEdge is not null))
             {
                 jitprintf($"{separator}loop=IG{ig.igLoopBackEdge.GetDisplayId():D2}");
                 separator = ", ";
             }
-#endif
 
             if (jitdump)
             {

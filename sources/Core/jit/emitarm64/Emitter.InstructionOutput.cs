@@ -1348,8 +1348,7 @@ public partial class Emitter
                 case IF_SN_0A:
                 {
                     var skipIns = false;
-#if FEATURE_LOOP_ALIGN
-                    if (id.idIns() == INS_align)
+                    if (Configuration.FEATURE_LOOP_ALIGN && (id.idIns() == INS_align))
                     {
                         if (!ig.endsWithAlignInstr() || id.idIsEmptyAlign())
                         {
@@ -1361,7 +1360,7 @@ public partial class Emitter
                             assert(id.idIsEmptyAlign());
                         }
 #endif
-                        sz = DescriptorSizes.Align;
+                        sz = (nuint)DescriptorSizes.Align;
                         ins = INS_nop;
 #if DEBUG
                         var alignInstr = (instrDescAlign)id;
@@ -1373,7 +1372,6 @@ public partial class Emitter
                         }
 #endif
                     }
-#endif
                     if (!skipIns)
                     {
                         code = emitInsCode(ins, fmt);

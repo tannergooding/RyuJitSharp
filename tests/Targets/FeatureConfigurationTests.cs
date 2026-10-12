@@ -15,6 +15,14 @@ namespace RyuJitSharp.UnitTests;
 internal static class FeatureConfigurationTests
 {
     [Test]
+    public static void LoopAlignmentFeatureMatchesTheTargetArchitecture()
+    {
+        var supportsLoopAlignment = Configuration.TARGET_XARCH || Configuration.TARGET_ARM64;
+
+        Assert.That(Configuration.FEATURE_LOOP_ALIGN, Is.EqualTo(supportsLoopAlignment));
+    }
+
+    [Test]
     public static void MultiRegisterReturnFeatureMatchesTheTargetArchitecture()
     {
         var supportsMultiRegRet = Configuration.TARGET_ARMARCH ||

@@ -139,9 +139,10 @@ public partial class Emitter
             WriteEmitterDescriptorCount(output, "Total instrDescCnsAmd:", emitTotalIDescCnsAmdCnt);
 #endif
             WriteEmitterDescriptorCount(output, "Total instrDescCnsDsp:", emitTotalIDescCnsDspCnt);
-#if FEATURE_LOOP_ALIGN
-            WriteEmitterDescriptorCount(output, "Total instrDescAlign:", emitTotalIDescAlignCnt);
-#endif
+            if (Configuration.FEATURE_LOOP_ALIGN)
+            {
+                WriteEmitterDescriptorCount(output, "Total instrDescAlign:", emitTotalIDescAlignCnt);
+            }
             WriteEmitterDescriptorCount(output, "Total instrDescJmp:", emitTotalIDescJmpCnt);
 #if !TARGET_ARM64
             WriteEmitterDescriptorCount(output, "Total instrDescLbl:", emitTotalIDescLblCnt);

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_LOOP_ALIGN
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -13,15 +12,29 @@ public partial class Emitter
         public instrDescAlign? idaNext;
         public insGroup? idaIG;
         public insGroup? idaLoopHeadPredIG;
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
+#if DEBUG || LATE_DISASM
         public bool isPlacedAfterJmp;
 #endif
 
-#if TARGET_XARCH || TARGET_ARM64
-        public override int NativeLogicalSize => DescriptorSizes.Align;
+        public override int NativeLogicalSize =>
+            Configuration.TARGET_XARCH || Configuration.TARGET_ARM64
+                ? DescriptorSizes.Align
+                : throw new System.PlatformNotSupportedException("Align descriptor size is not yet ported for this target.");
+
+        public void idSetXarchCodeSize(uint size)
+        {
+            if (!Configuration.TARGET_XARCH)
+            {
+                throw new FatalJitException(CorJitResult.CORJIT_SKIPPED,
+                    "Xarch alignment padding is unsupported on this target.");
+            }
+#if TARGET_XARCH
+            idCodeSize(size);
 #else
-        public override int NativeLogicalSize => throw new System.PlatformNotSupportedException("Align descriptor size is not yet ported for this target.");
+            throw new FatalJitException(CorJitResult.CORJIT_SKIPPED,
+                "Xarch alignment padding storage is not available on this target.");
 #endif
+        }
 
         public insGroup? loopHeadIG()
         {
@@ -37,4 +50,3 @@ public partial class Emitter
         }
     }
 }
-#endif

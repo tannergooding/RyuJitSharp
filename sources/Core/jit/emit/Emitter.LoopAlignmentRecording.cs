@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_LOOP_ALIGN
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM64
+    private const uint MAX_XARCH_ALIGN_INSTR_SIZE = 15;
     private const uint INSTR_ENCODED_SIZE = 4;
-#endif
+
     public bool emitEndsWithAlignInstr()
     {
         assert(emitCurIG is not null);
@@ -19,9 +18,11 @@ public partial class Emitter
 
     public void emitConnectAlignInstrWithCurIG()
     {
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+        EnsureLoopAlignmentTargetSupported();
         assert(_compiler is not null);
         assert(emitCurIG is not null);
         assert(emitAlignLastGroup is not null);
@@ -39,48 +40,55 @@ public partial class Emitter
     }
 
     public void emitLoopAlignment(
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
+#if DEBUG || LATE_DISASM
         bool isPlacedBehindJmp
 #endif
         )
     {
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+        EnsureLoopAlignmentTargetSupported();
         assert(_compiler is not null);
         uint paddingBytes;
-#if TARGET_XARCH
-        if ((_compiler.opts.compJitAlignLoopBoundary > 16) && !_compiler.opts.compJitAlignLoopAdaptive)
+        if (Configuration.TARGET_XARCH)
         {
-            paddingBytes = _compiler.opts.compJitAlignLoopBoundary;
+            if ((_compiler.opts.compJitAlignLoopBoundary > 16) && !_compiler.opts.compJitAlignLoopAdaptive)
+            {
+                paddingBytes = _compiler.opts.compJitAlignLoopBoundary;
+                emitLongLoopAlign(paddingBytes
+#if DEBUG || LATE_DISASM
+                    , isPlacedBehindJmp
+#endif
+                    );
+            }
+            else
+            {
+                emitCheckAlignFitInCurIG(1);
+                paddingBytes = MAX_XARCH_ALIGN_INSTR_SIZE;
+                emitLoopAlign(paddingBytes, true
+#if DEBUG || LATE_DISASM
+                    , isPlacedBehindJmp
+#endif
+                    );
+            }
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            paddingBytes = _compiler.opts.compJitAlignLoopAdaptive
+                ? (uint)_compiler.opts.compJitAlignLoopBoundary >> 1
+                : _compiler.opts.compJitAlignLoopBoundary;
             emitLongLoopAlign(paddingBytes
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
+#if DEBUG || LATE_DISASM
                 , isPlacedBehindJmp
 #endif
                 );
         }
         else
         {
-            emitCheckAlignFitInCurIG(1);
-            paddingBytes = MAX_ENCODED_SIZE;
-            emitLoopAlign(paddingBytes, true
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
-                , isPlacedBehindJmp
-#endif
-                );
+            throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "Loop alignment is unsupported on this target.");
         }
-#elif TARGET_ARM64
-        paddingBytes = _compiler.opts.compJitAlignLoopAdaptive
-            ? (uint)_compiler.opts.compJitAlignLoopBoundary >> 1
-            : _compiler.opts.compJitAlignLoopBoundary;
-        emitLongLoopAlign(paddingBytes
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
-            , isPlacedBehindJmp
-#endif
-            );
-#else
-#error Unsupported loop-alignment target
-#endif
 
         assert(emitLastIns is not null);
         assert(emitLastIns.idIns() == INS_align);
@@ -223,7 +231,7 @@ public partial class Emitter
 
     private void emitCheckAlignFitInCurIG(uint nAlignInstr)
     {
-        var instrDescSize = unchecked(nAlignInstr * ((nuint)_debugInfoSize + DescriptorSizes.Align));
+        var instrDescSize = unchecked(nAlignInstr * ((nuint)_debugInfoSize + (nuint)DescriptorSizes.Align));
         if (unchecked(emitCurIGfreeNext + instrDescSize) >= emitCurIGfreeEndp)
         {
             emitForceNewIG = true;
@@ -231,11 +239,12 @@ public partial class Emitter
     }
 
     private void emitLoopAlign(uint paddingBytes, bool isFirstAlign
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
+#if DEBUG || LATE_DISASM
         , bool isPlacedBehindJmp
 #endif
         )
     {
+        EnsureLoopAlignmentTargetSupported();
         assert(emitCurIG is not null);
         var alignInstrInNewIG = emitForceNewIG;
         if (!alignInstrInNewIG)
@@ -253,12 +262,15 @@ public partial class Emitter
             assert(emitCurIG.endsWithAlignInstr());
         }
 
-#if TARGET_XARCH
-        assert(paddingBytes <= MAX_ENCODED_SIZE);
-        id.idCodeSize(paddingBytes);
-#elif TARGET_ARM64
-        assert(paddingBytes == INSTR_ENCODED_SIZE);
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(paddingBytes <= MAX_XARCH_ALIGN_INSTR_SIZE);
+            id.idSetXarchCodeSize(paddingBytes);
+        }
+        else
+        {
+            assert(paddingBytes == INSTR_ENCODED_SIZE);
+        }
         id.idaIG = emitCurIG;
         if (isFirstAlign)
         {
@@ -269,7 +281,7 @@ public partial class Emitter
         {
             id.idaLoopHeadPredIG = null;
         }
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
+#if DEBUG || LATE_DISASM
         id.isPlacedAfterJmp = isPlacedBehindJmp;
 #endif
         id.idaNext = emitCurIGAlignList;
@@ -279,31 +291,37 @@ public partial class Emitter
     }
 
     private void emitLongLoopAlign(uint alignmentBoundary
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
+#if DEBUG || LATE_DISASM
         , bool isPlacedBehindJmp
 #endif
         )
     {
-#if TARGET_XARCH
-        var nPaddingBytes = unchecked(alignmentBoundary - 1);
-        var nAlignInstr = unchecked(nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-        var insAlignCount = nPaddingBytes / MAX_ENCODED_SIZE;
-        var lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
-        var paddingBytes = MAX_ENCODED_SIZE;
-#elif TARGET_ARM64
-        var nAlignInstr = alignmentBoundary / INSTR_ENCODED_SIZE;
-        var insAlignCount = nAlignInstr;
-        var paddingBytes = INSTR_ENCODED_SIZE;
-#else
-#error Unsupported loop-alignment target
-#endif
+        EnsureLoopAlignmentTargetSupported();
+        uint nAlignInstr;
+        uint insAlignCount;
+        uint paddingBytes;
+        uint lastInsAlignSize = 0;
+        if (Configuration.TARGET_XARCH)
+        {
+            var nPaddingBytes = unchecked(alignmentBoundary - 1);
+            nAlignInstr = unchecked(nPaddingBytes + (MAX_XARCH_ALIGN_INSTR_SIZE - 1)) / MAX_XARCH_ALIGN_INSTR_SIZE;
+            insAlignCount = nPaddingBytes / MAX_XARCH_ALIGN_INSTR_SIZE;
+            lastInsAlignSize = nPaddingBytes % MAX_XARCH_ALIGN_INSTR_SIZE;
+            paddingBytes = MAX_XARCH_ALIGN_INSTR_SIZE;
+        }
+        else
+        {
+            nAlignInstr = alignmentBoundary / INSTR_ENCODED_SIZE;
+            insAlignCount = nAlignInstr;
+            paddingBytes = INSTR_ENCODED_SIZE;
+        }
         emitCheckAlignFitInCurIG(nAlignInstr);
 
         var isFirstAlign = true;
         while (insAlignCount != 0)
         {
             emitLoopAlign(paddingBytes, isFirstAlign
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
+#if DEBUG || LATE_DISASM
                 , isPlacedBehindJmp
 #endif
                 );
@@ -311,14 +329,23 @@ public partial class Emitter
             isFirstAlign = false;
         }
 
-#if TARGET_XARCH
-        // Native also records the zero-sized remainder when padding is a multiple of 15.
-        emitLoopAlign(lastInsAlignSize, isFirstAlign
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
-            , isPlacedBehindJmp
+        if (Configuration.TARGET_XARCH)
+        {
+            // Native also records the zero-sized remainder when padding is a multiple of 15.
+            emitLoopAlign(lastInsAlignSize, isFirstAlign
+#if DEBUG || LATE_DISASM
+                , isPlacedBehindJmp
 #endif
-            );
-#endif
+                );
+        }
+    }
+
+    private static void EnsureLoopAlignmentTargetSupported()
+    {
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CorJitResult.CORJIT_SKIPPED, "Loop alignment is unsupported on this target.");
+        }
     }
 
     private static instrDescAlign? emitAlignInNextIG(instrDescAlign alignInstr)
@@ -332,4 +359,3 @@ public partial class Emitter
         return alignInstr.idaNext;
     }
 }
-#endif

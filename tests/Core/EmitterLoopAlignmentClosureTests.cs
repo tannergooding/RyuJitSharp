@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if FEATURE_LOOP_ALIGN
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 #if TARGET_ARM64
@@ -31,7 +30,6 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
 
         Assert.That(View.Total(emitter), Is.EqualTo(37));
     }
-#endif
 
     [TestCase(0u, 0u)]
     [TestCase(28u, 4u)]
@@ -128,6 +126,7 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
             JitTls.Compiler = previousCompiler;
         }
     }
+#endif
 #endif
 
 #if DEBUG && TARGET_AMD64
@@ -283,4 +282,3 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
         public static extern ref int Total(Emitter emitter);
     }
 }
-#endif

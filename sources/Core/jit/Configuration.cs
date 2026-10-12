@@ -43,6 +43,8 @@ internal static class Configuration
 
     internal static bool FEATURE_SIMD => GetFeatureSwitch(nameof(FEATURE_SIMD));
 
+    internal static bool FEATURE_LOOP_ALIGN => GetFeatureSwitch(nameof(FEATURE_LOOP_ALIGN));
+
     internal static bool FEATURE_ON_STACK_REPLACEMENT => GetFeatureSwitch(nameof(FEATURE_ON_STACK_REPLACEMENT));
 
     internal static bool FEATURE_TAILCALL_OPT =>

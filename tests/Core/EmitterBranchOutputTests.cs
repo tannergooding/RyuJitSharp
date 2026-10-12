@@ -65,7 +65,6 @@ internal static unsafe class EmitterBranchOutputTests
         });
     }
 
-#if FEATURE_LOOP_ALIGN
     [TestCase(0u, "")]
     [TestCase(7u, "0F1F8000000000")]
     [TestCase(15u, "0F1F80000000000F1F840000000000")]
@@ -93,7 +92,6 @@ internal static unsafe class EmitterBranchOutputTests
             Assert.That(compiler.Metrics.LoopsAligned, Is.EqualTo(initialCount + 1));
         });
     }
-#endif
 
     [TestCase(INS_jmp, 0, "EB03")]
     [TestCase(INS_jne, 0, "7504")]
@@ -508,7 +506,6 @@ internal static unsafe class EmitterBranchOutputTests
 
         public static emitLclVarAddr Local(instrDesc descriptor) => descriptor.idAddr().iiaLclVar;
 
-#if FEATURE_LOOP_ALIGN
         public static instrDesc Align(insGroup group, uint padding)
         {
             var descriptor = new instrDescAlign();
@@ -520,7 +517,6 @@ internal static unsafe class EmitterBranchOutputTests
 #endif
             return descriptor;
         }
-#endif
 
         public static ref insGroup? Target(instrDesc descriptor) => ref ((instrDescJmp)descriptor).idjTargetIG;
         public static ref bool KeepLong(instrDesc descriptor) => ref ((instrDescJmp)descriptor).idjKeepLong;

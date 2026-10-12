@@ -1303,10 +1303,10 @@ public partial struct HWIntrinsicInfo
 
         var profiles = new (string Name, string[] DefinedSymbols)[]
         {
-            ("X86", ["TARGET_XARCH", "TARGET_X86", "TARGET_32BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
-            ("X64", ["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
+            ("X86", ["TARGET_XARCH", "TARGET_X86", "TARGET_32BIT", "FEATURE_SIMD"]),
+            ("X64", ["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT", "FEATURE_SIMD"]),
             ("ARM", ["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"]),
-            ("ARM64", ["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT", "FEATURE_LOOP_ALIGN", "FEATURE_SIMD"]),
+            ("ARM64", ["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT", "FEATURE_SIMD"]),
             ("LOONGARCH64", ["TARGET_LOONGARCH64", "TARGET_64BIT"]),
             ("RISCV64", ["TARGET_RISCV64", "TARGET_64BIT"]),
             ("WASM", ["TARGET_WASM", "TARGET_WASM32", "TARGET_32BIT", "FEATURE_SIMD"]),
@@ -2284,8 +2284,7 @@ public partial struct HWIntrinsicInfo
 
                 var isDefined = definedSymbols.Contains(symbol);
 
-                if (!isDefined && symbol is not "FEATURE_HW_INTRINSICS" and not "FEATURE_LOOP_ALIGN" and
-                    not "FEATURE_SIMD" and
+                if (!isDefined && symbol is not "FEATURE_HW_INTRINSICS" and not "FEATURE_SIMD" and
                     not "FEATURE_ITINSTRUCTION" and not "FEATURE_PLI_INSTRUCTION" and
                     not "TARGET_32BIT" and not "TARGET_64BIT" and not "TARGET_AMD64" and not "TARGET_ARM" and
                     not "TARGET_ARM64" and not "TARGET_ARMARCH" and not "TARGET_LOONGARCH64" and
@@ -3859,7 +3858,19 @@ namespace RyuJitSharp;
             {
                 var value = parts[2].AsSpan().Trim();
 
-                if (value.Equals("0xffffffff", StringComparison.OrdinalIgnoreCase))
+                if (name.Equals("jitAlignLoops", StringComparison.Ordinal))
+                {
+                    _ = builder.AppendLine("        if (Configuration.FEATURE_LOOP_ALIGN)");
+                    _ = builder.AppendLine("        {");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                        $"            _{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), {value});");
+                    _ = builder.AppendLine("        }");
+                    _ = builder.AppendLine("        else");
+                    _ = builder.AppendLine("        {");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            _{name} = 0;");
+                    _ = builder.AppendLine("        }");
+                }
+                else if (value.Equals("0xffffffff", StringComparison.OrdinalIgnoreCase))
                 {
                     _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        _{name} = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference({key}u8))), unchecked((int)({value})));");
                 }

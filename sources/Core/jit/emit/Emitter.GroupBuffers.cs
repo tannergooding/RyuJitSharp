@@ -49,9 +49,10 @@ public partial class Emitter
         emitCurIGinsCnt = 0;
         emitCurIGsize = 0;
         assert(emitCurIGjmpList is null);
-#if FEATURE_LOOP_ALIGN
-        assert(emitCurIGAlignList is null);
-#endif
+        if (Configuration.FEATURE_LOOP_ALIGN)
+        {
+            assert(emitCurIGAlignList is null);
+        }
 
         if (emitCurIGfreeBase is null)
         {
@@ -247,8 +248,7 @@ public partial class Emitter
         }
 #endif
 
-#if FEATURE_LOOP_ALIGN
-        if (emitCurIGAlignList is not null)
+        if (Configuration.FEATURE_LOOP_ALIGN && (emitCurIGAlignList is not null))
         {
             instrDescAlign? list = null;
             instrDescAlign? last = null;
@@ -288,7 +288,6 @@ public partial class Emitter
             emitAlignLast = last;
             emitAlignLastGroup = list;
         }
-#endif
 
         if (emitCurIGjmpList is not null)
         {

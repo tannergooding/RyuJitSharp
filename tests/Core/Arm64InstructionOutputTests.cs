@@ -119,7 +119,6 @@ internal static unsafe class Arm64InstructionOutputTests
         Assert.That(buffer[4], Is.EqualTo(0xA5));
     }
 
-#if FEATURE_LOOP_ALIGN
     [TestCase(false)]
     [TestCase(true)]
     public static void EmptyAlignmentSkipsEncodingAndCommitsAnUnchangedCursor(bool hasAlign)
@@ -144,7 +143,6 @@ internal static unsafe class Arm64InstructionOutputTests
         Assert.That((nuint)cursor, Is.EqualTo((nuint)(buffer + 4)));
         Assert.That(new ReadOnlySpan<byte>(buffer, 12).ToArray(), Is.All.EqualTo(0xA5));
     }
-#endif
 
     [TestCase(0x79800000u, EA_4BYTE, 0x00400000u)]
     [TestCase(0x79800000u, EA_8BYTE, 0u)]
@@ -357,7 +355,6 @@ internal static unsafe class Arm64InstructionOutputTests
             return id;
         }
 
-#if FEATURE_LOOP_ALIGN
         internal static instrDesc EmptyAlignment()
         {
             var id = new instrDescAlign();
@@ -367,7 +364,6 @@ internal static unsafe class Arm64InstructionOutputTests
 
             return id;
         }
-#endif
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitOutputInstrArm64")]

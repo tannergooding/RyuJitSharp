@@ -139,7 +139,6 @@ public partial class Emitter
 
     private bool emitContainsRemovableJmpCandidates;
 
-#if FEATURE_LOOP_ALIGN
     /// <summary>list of align instructions in current IG</summary>
     private instrDescAlign? emitCurIGAlignList;
 
@@ -161,7 +160,6 @@ public partial class Emitter
     /// <summary>Points to the most recent added align instruction.</summary>
     /// <remarks>If there are multiple align instructions like in arm64 or non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.</remarks>
     private instrDescAlign? emitAlignLastGroup;
-#endif
 
     /// <summary>forward jumps present?</summary>
     private bool emitFwdJumps;

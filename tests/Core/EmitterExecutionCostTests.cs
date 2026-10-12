@@ -101,7 +101,6 @@ internal static class EmitterExecutionCostTests
             Assert.That(emitter.insEvaluateExecutionCost(removed), Is.Zero);
             Assert.That(emitter.insEvaluateExecutionCost(branch), Is.EqualTo(2.0f));
 
-#if FEATURE_LOOP_ALIGN
             var zeroAlign = View.Align(0, false);
             var emittedAlign = View.Align(8, false);
             Assert.That(emitter.insEvaluateExecutionCost(zeroAlign), Is.Zero);
@@ -110,7 +109,6 @@ internal static class EmitterExecutionCostTests
             Assert.That(emitter.insEvaluateExecutionCost(placedAfterJump), Is.Zero);
 #endif
             Assert.That(emitter.insEvaluateExecutionCost(emittedAlign), Is.EqualTo(0.25f));
-#endif
         });
     }
 
@@ -196,7 +194,6 @@ internal static class EmitterExecutionCostTests
             return id;
         }
 
-#if FEATURE_LOOP_ALIGN
         public static instrDesc Align(uint padding, bool placedAfterJump)
         {
             var id = new instrDescAlign();
@@ -208,7 +205,6 @@ internal static class EmitterExecutionCostTests
 #endif
             return id;
         }
-#endif
     }
 }
 #endif

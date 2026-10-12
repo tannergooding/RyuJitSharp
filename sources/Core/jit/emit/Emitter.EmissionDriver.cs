@@ -41,10 +41,11 @@ public partial class Emitter
         if (actualSize != estimatedSize)
         {
             noway_assert(estimatedSize >= actualSize);
-#if FEATURE_LOOP_ALIGN
-            assert(emitCurIG is not null);
-            assert((id.idIns() != INS_align) && ((emitLastAlignedIg is null) || emitCurIG.IsAfter(emitLastAlignedIg)));
-#endif
+            if (Configuration.FEATURE_LOOP_ALIGN)
+            {
+                assert(emitCurIG is not null);
+                assert((id.idIns() != INS_align) && ((emitLastAlignedIg is null) || emitCurIG.IsAfter(emitLastAlignedIg)));
+            }
 #if DEBUG || DEBUG_EMIT
             if (compiler.verbose)
             {

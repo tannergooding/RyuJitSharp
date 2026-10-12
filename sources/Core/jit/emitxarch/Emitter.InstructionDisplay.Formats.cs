@@ -693,8 +693,7 @@ public partial class Emitter
 
             case IF_NONE:
             {
-#if FEATURE_LOOP_ALIGN
-                if (ins == INS_align)
+                if (Configuration.FEATURE_LOOP_ALIGN && (ins == INS_align))
                 {
                     var align = (instrDescAlign)id;
                     jitprintf($"[{align.idCodeSize()} bytes");
@@ -705,7 +704,6 @@ public partial class Emitter
                     }
                     jitprintf("]");
                 }
-#endif
                 break;
             }
 

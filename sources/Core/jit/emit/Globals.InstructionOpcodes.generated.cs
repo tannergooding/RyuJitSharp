@@ -1191,8 +1191,6 @@ public static partial class Globals
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
-#if FEATURE_LOOP_ALIGN
-#endif
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
@@ -1278,8 +1276,6 @@ public static partial class Globals
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
-#if FEATURE_LOOP_ALIGN
-#endif
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
@@ -1352,8 +1348,6 @@ public static partial class Globals
 #elif TARGET_ARM64
 #if !TARGET_ARM64
 #error Unexpected target type
-#endif
-#if FEATURE_LOOP_ALIGN
 #endif
 #if !TARGET_ARM64
 #error Unexpected target type
@@ -2464,8 +2458,6 @@ public static partial class Globals
 #elif TARGET_ARM64
 #if !TARGET_ARM64
 #error Unexpected target type
-#endif
-#if FEATURE_LOOP_ALIGN
 #endif
 #if !TARGET_ARM64
 #error Unexpected target type
@@ -3579,8 +3571,6 @@ public static partial class Globals
 #elif TARGET_ARM64
 #if !TARGET_ARM64
 #error Unexpected target type
-#endif
-#if FEATURE_LOOP_ALIGN
 #endif
 #if !TARGET_ARM64
 #error Unexpected target type
@@ -4743,8 +4733,6 @@ public static partial class Globals
 #elif TARGET_ARM64
 #if !TARGET_ARM64
 #error Unexpected target type
-#endif
-#if FEATURE_LOOP_ALIGN
 #endif
 #if !TARGET_ARM64
 #error Unexpected target type

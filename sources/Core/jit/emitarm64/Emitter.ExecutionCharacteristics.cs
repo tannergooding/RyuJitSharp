@@ -17,14 +17,12 @@ public partial class Emitter
     private const float PERFSCORE_THROUGHPUT_6X = 1.0f / 6.0f;
     private const float PERFSCORE_THROUGHPUT_7C = 7.0f;
 
-#if FEATURE_LOOP_ALIGN
     private static bool emitAlignIsPlacedAfterJmpArm64(instrDesc id)
     {
 #if DEBUG || LATE_DISASM
         return ((instrDescAlign)id).isPlacedAfterJmp;
 #endif
     }
-#endif
 
     // Latencies and throughput follow the Arm Cortex-A55 Software Optimization Guide:
     // https://static.docs.arm.com/epm128372/20/arm_cortex_a55_software_optimization_guide_v2.pdf
@@ -940,8 +938,7 @@ public partial class Emitter
 
             case IF_SN_0A: // nop, yield, align
             {
-#if FEATURE_LOOP_ALIGN
-                if (id.idIns() == INS_align)
+                if (Configuration.FEATURE_LOOP_ALIGN && (id.idIns() == INS_align))
                 {
                     if ((id.idInsOpt() == INS_OPTS_NONE) || emitAlignIsPlacedAfterJmpArm64(id))
                     {
@@ -954,9 +951,7 @@ public partial class Emitter
                         break;
                     }
                 }
-                else
-#endif
-                if (ins == INS_yield)
+                else if (ins == INS_yield)
                 {
                     // @ToDo - find out the actual latency, match x86/x64 for now
                     result.insThroughput = PERFSCORE_THROUGHPUT_140C;

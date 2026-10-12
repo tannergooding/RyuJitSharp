@@ -165,7 +165,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
 
         // Native macro expansion of emitfmtsarm64{,sve}.h and instrsarm64{,sve}.h
-        // at 33baf8ee337b20dd0f184b69a6f09be92850bf9e, with FEATURE_LOOP_ALIGN.
+        // at 33baf8ee337b20dd0f184b69a6f09be92850bf9e, with loop alignment enabled.
         Assert.That(Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(rows.ToString()))),
             Is.EqualTo("bcb51ded8b656135816235dc66868ac85a812c2cee5ec70239b7fef278ce6f35"));
     }

@@ -421,7 +421,6 @@ internal static unsafe class LoopDiscoveryTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_jitLoopInversionSizeLimit")]
     private static extern ref int InversionSizeLimit(ref JitConfigValues config);
 
-#if FEATURE_LOOP_ALIGN
     [TestCase(7, false, false, false)]
     [TestCase(8, false, false, true)]
     [TestCase(9, false, false, true)]
@@ -510,7 +509,6 @@ internal static unsafe class LoopDiscoveryTests
 
         return blocks;
     }
-#endif
 
     private static BasicBlock[] CreateGraph(Compiler compiler, int[][] successors)
     {

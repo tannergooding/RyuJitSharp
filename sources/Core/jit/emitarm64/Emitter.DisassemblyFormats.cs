@@ -1455,8 +1455,7 @@ public partial class Emitter
             case IF_PC_0A: // PC_0A   ................ ................
             case IF_SN_0A: // SN_0A   ................ ................
             {
-#if FEATURE_LOOP_ALIGN
-                if (ins == INS_align)
+                if (Configuration.FEATURE_LOOP_ALIGN && (ins == INS_align))
                 {
                     instrDescAlign alignInstrId = (instrDescAlign)id;
                     jitprintf($"[{(id.idIsEmptyAlign() ? 0 : INSTR_ENCODED_SIZE)} bytes");
@@ -1469,7 +1468,6 @@ public partial class Emitter
                     }
                     jitprintf("]");
                 }
-#endif
                 break;
             }
 

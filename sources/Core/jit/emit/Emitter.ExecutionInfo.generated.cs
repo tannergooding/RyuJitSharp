@@ -1186,8 +1186,6 @@ public partial class Emitter
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
-#if FEATURE_LOOP_ALIGN
-#endif
 #if !TARGET_ARM64
 #error Unexpected target type
 #endif
@@ -2385,8 +2383,6 @@ public partial class Emitter
 #elif TARGET_ARM64
 #if !TARGET_ARM64
 #error Unexpected target type
-#endif
-#if FEATURE_LOOP_ALIGN
 #endif
 #if !TARGET_ARM64
 #error Unexpected target type
