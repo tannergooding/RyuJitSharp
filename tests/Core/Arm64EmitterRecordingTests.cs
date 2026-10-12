@@ -212,16 +212,16 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(INS_br, REG_R0, IF_BR_1A)]
-    [TestCase(INS_ret, REG_LR, IF_BR_1A)]
-    [TestCase(INS_dczva, REG_R2, IF_SR_1A)]
-    [TestCase(INS_autiza, REG_R3, IF_PC_1A)]
-    [TestCase(INS_autizb, REG_R4, IF_PC_1A)]
-    [TestCase(INS_paciza, REG_R5, IF_PC_1A)]
-    [TestCase(INS_pacizb, REG_R6, IF_PC_1A)]
-    [TestCase(INS_xpacd, REG_R7, IF_PC_1A)]
-    [TestCase(INS_xpaci, REG_R8, IF_PC_1A)]
-    [TestCase(INS_mrs_tpid0, REG_R9, IF_SR_1A)]
+    [TestCase(INS_br, REG_R0_ARM64, IF_BR_1A)]
+    [TestCase(INS_ret, REG_LR_ARM64, IF_BR_1A)]
+    [TestCase(INS_dczva, REG_R2_ARM64, IF_SR_1A)]
+    [TestCase(INS_autiza, REG_R3_ARM64, IF_PC_1A)]
+    [TestCase(INS_autizb, REG_R4_ARM64, IF_PC_1A)]
+    [TestCase(INS_paciza, REG_R5_ARM64, IF_PC_1A)]
+    [TestCase(INS_pacizb, REG_R6_ARM64, IF_PC_1A)]
+    [TestCase(INS_xpacd, REG_R7_ARM64, IF_PC_1A)]
+    [TestCase(INS_xpaci, REG_R8_ARM64, IF_PC_1A)]
+    [TestCase(INS_mrs_tpid0, REG_R9_ARM64, IF_SR_1A)]
     public static void UnaryRecordingPreservesNativeFormats(instruction ins, regNumber reg, Emitter.insFormat format)
     {
         var emitter = CreateEmitter();
@@ -250,7 +250,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         Emitter.insFormat format, long encoded, insOpts option)
     {
         var emitter = CreateEmitter();
-        emitter.emitIns_R_I(ins, size, REG_R0, (nint)immediate);
+        emitter.emitIns_R_I(ins, size, REG_R0_ARM64, (nint)immediate);
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(expectedIns));
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
@@ -271,7 +271,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         long encoded, insOpts expectedOption)
     {
         var emitter = CreateEmitter();
-        emitter.emitIns_R_I(ins, size, REG_V0, (nint)immediate, option);
+        emitter.emitIns_R_I(ins, size, REG_V0_ARM64, (nint)immediate, option);
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(expectedIns));
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DV_1B));
@@ -301,12 +301,12 @@ internal static unsafe class Arm64EmitterRecordingTests
                     }
                     case 1:
                     {
-                        emitter.emitIns_R(INS_nop, EA_8BYTE, REG_R0);
+                        emitter.emitIns_R(INS_nop, EA_8BYTE, REG_R0_ARM64);
                         break;
                     }
                     default:
                     {
-                        emitter.emitIns_R_I(INS_nop, EA_8BYTE, REG_R0, 0);
+                        emitter.emitIns_R_I(INS_nop, EA_8BYTE, REG_R0_ARM64, 0);
                         break;
                     }
                 }
@@ -341,7 +341,7 @@ internal static unsafe class Arm64EmitterRecordingTests
             }
 
             var emitter = CreateEmitter();
-            RecordFloat(emitter, INS_fmov, size, REG_V0, value, option);
+            RecordFloat(emitter, INS_fmov, size, REG_V0_ARM64, value, option);
             var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
@@ -358,7 +358,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void FloatingCompareRecordingAcceptsBothZeroSigns(instruction ins, ulong bits)
     {
         var emitter = CreateEmitter();
-        RecordFloat(emitter, ins, EA_8BYTE, REG_V0, BitConverter.UInt64BitsToDouble(bits), INS_OPTS_NONE);
+        RecordFloat(emitter, ins, EA_8BYTE, REG_V0_ARM64, BitConverter.UInt64BitsToDouble(bits), INS_OPTS_NONE);
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(ins));
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DV_1C));
@@ -375,7 +375,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         {
             var emitter = CreateEmitter();
             var error = Assert.Throws<FatalJitException>(() =>
-                RecordFloat(emitter, INS_nop, EA_8BYTE, REG_V0, 1.0, INS_OPTS_NONE));
+                RecordFloat(emitter, INS_nop, EA_8BYTE, REG_V0_ARM64, 1.0, INS_OPTS_NONE));
             Assert.That(error, Has.Property(nameof(FatalJitException.Result))
                 .EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
             Assert.That(GroupSize(emitter), Is.Zero);
@@ -405,13 +405,13 @@ internal static unsafe class Arm64EmitterRecordingTests
             foreach (var immediate in new[] { 0, 1, 32768, 65535 })
             {
                 var emitter = CreateEmitter();
-                RecordShifted(emitter, ins, size, REG_R19, immediate, shift, INS_OPTS_LSL);
+                RecordShifted(emitter, ins, size, REG_R19_ARM64, immediate, shift, INS_OPTS_LSL);
                 var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
                 Assert.That(descriptor.idIns(), Is.EqualTo(ins == INS_mov ? INS_movz : ins));
                 Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DI_1B));
                 Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
                 Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
-                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R19));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R19_ARM64));
                 Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)(immediate | ((shift / 16) << 16))));
                 Assert.That(GroupSize(emitter), Is.EqualTo(4));
             }
@@ -423,7 +423,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         var error = Assert.Throws<FatalJitException>(() =>
-            RecordShifted(emitter, INS_nop, EA_8BYTE, REG_R0, 1, 16, INS_OPTS_LSL));
+            RecordShifted(emitter, INS_nop, EA_8BYTE, REG_R0_ARM64, 1, 16, INS_OPTS_LSL));
         Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
@@ -451,7 +451,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void PairImmediateScalarRecording(instruction ins, emitAttr size, int imm,
         insOpts opt, Emitter.insFormat format)
     {
-        CheckPair(ins, size, REG_R19, REG_R20, imm, opt, format, imm, ins);
+        CheckPair(ins, size, REG_R19_ARM64, REG_R20_ARM64, imm, opt, format, imm, ins);
     }
 
     [TestCase(INS_add, 1, INS_add, 1, INS_OPTS_NONE)]
@@ -466,7 +466,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         instruction expectedIns, int expectedImm, insOpts expectedOpt)
     {
         var emitter = CreateEmitter();
-        RecordPair(emitter, ins, EA_8BYTE, REG_R19, REG_R20, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordPair(emitter, ins, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(expectedIns));
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_DI_2A));
@@ -485,36 +485,36 @@ internal static unsafe class Arm64EmitterRecordingTests
     [TestCase(INS_orr, EA_8BYTE, 4103)]
     public static void PairImmediateLogicalRecording(instruction ins, emitAttr size, int encoded)
     {
-        CheckPair(ins, size, REG_R19, REG_R20, 255, INS_OPTS_NONE, IF_DI_2C, encoded, ins);
+        CheckPair(ins, size, REG_R19_ARM64, REG_R20_ARM64, 255, INS_OPTS_NONE, IF_DI_2C, encoded, ins);
     }
 
-    [TestCase(INS_mov, EA_4BYTE, REG_V19, REG_R20, 3, INS_OPTS_NONE, IF_DV_2C)]
-    [TestCase(INS_mov, EA_4BYTE, REG_V19, REG_V20, 3, INS_OPTS_NONE, IF_DV_2E)]
-    [TestCase(INS_mov, EA_4BYTE, REG_R19, REG_V20, 3, INS_OPTS_NONE, IF_DV_2B)]
-    [TestCase(INS_dup, EA_4BYTE, REG_V19, REG_V20, 3, INS_OPTS_NONE, IF_DV_2E)]
-    [TestCase(INS_dup, EA_8BYTE, REG_V19, REG_V20, 3, INS_OPTS_2S, IF_DV_2D)]
-    [TestCase(INS_ins, EA_1BYTE, REG_V19, REG_ZR, 15, INS_OPTS_NONE, IF_DV_2C)]
-    [TestCase(INS_umov, EA_8BYTE, REG_R19, REG_V20, 1, INS_OPTS_NONE, IF_DV_2B)]
-    [TestCase(INS_smov, EA_2BYTE, REG_R19, REG_V20, 7, INS_OPTS_NONE, IF_DV_2B)]
-    [TestCase(INS_shl, EA_16BYTE, REG_V19, REG_V20, 31, INS_OPTS_4S, IF_DV_2O)]
-    [TestCase(INS_sshr, EA_8BYTE, REG_V19, REG_V20, 64, INS_OPTS_NONE, IF_DV_2N)]
-    [TestCase(INS_sqshl, EA_2BYTE, REG_V19, REG_V20, 15, INS_OPTS_NONE, IF_DV_2N)]
-    [TestCase(INS_uqshl, EA_16BYTE, REG_V19, REG_V20, 15, INS_OPTS_8H, IF_DV_2O)]
-    [TestCase(INS_sqrshrn, EA_2BYTE, REG_V19, REG_V20, 16, INS_OPTS_NONE, IF_DV_2N)]
-    [TestCase(INS_sqshrun, EA_8BYTE, REG_V19, REG_V20, 16, INS_OPTS_4H, IF_DV_2O)]
-    [TestCase(INS_shrn, EA_8BYTE, REG_V19, REG_V20, 16, INS_OPTS_4H, IF_DV_2O)]
-    [TestCase(INS_sxtl, EA_8BYTE, REG_V19, REG_V20, 0, INS_OPTS_4H, IF_DV_2O)]
-    [TestCase(INS_uxtl2, EA_16BYTE, REG_V19, REG_V20, 0, INS_OPTS_8H, IF_DV_2O)]
-    [TestCase(INS_shrn2, EA_16BYTE, REG_V19, REG_V20, 16, INS_OPTS_8H, IF_DV_2O)]
+    [TestCase(INS_mov, EA_4BYTE, REG_V19_ARM64, REG_R20_ARM64, 3, INS_OPTS_NONE, IF_DV_2C)]
+    [TestCase(INS_mov, EA_4BYTE, REG_V19_ARM64, REG_V20_ARM64, 3, INS_OPTS_NONE, IF_DV_2E)]
+    [TestCase(INS_mov, EA_4BYTE, REG_R19_ARM64, REG_V20_ARM64, 3, INS_OPTS_NONE, IF_DV_2B)]
+    [TestCase(INS_dup, EA_4BYTE, REG_V19_ARM64, REG_V20_ARM64, 3, INS_OPTS_NONE, IF_DV_2E)]
+    [TestCase(INS_dup, EA_8BYTE, REG_V19_ARM64, REG_V20_ARM64, 3, INS_OPTS_2S, IF_DV_2D)]
+    [TestCase(INS_ins, EA_1BYTE, REG_V19_ARM64, REG_ZR_ARM64, 15, INS_OPTS_NONE, IF_DV_2C)]
+    [TestCase(INS_umov, EA_8BYTE, REG_R19_ARM64, REG_V20_ARM64, 1, INS_OPTS_NONE, IF_DV_2B)]
+    [TestCase(INS_smov, EA_2BYTE, REG_R19_ARM64, REG_V20_ARM64, 7, INS_OPTS_NONE, IF_DV_2B)]
+    [TestCase(INS_shl, EA_16BYTE, REG_V19_ARM64, REG_V20_ARM64, 31, INS_OPTS_4S, IF_DV_2O)]
+    [TestCase(INS_sshr, EA_8BYTE, REG_V19_ARM64, REG_V20_ARM64, 64, INS_OPTS_NONE, IF_DV_2N)]
+    [TestCase(INS_sqshl, EA_2BYTE, REG_V19_ARM64, REG_V20_ARM64, 15, INS_OPTS_NONE, IF_DV_2N)]
+    [TestCase(INS_uqshl, EA_16BYTE, REG_V19_ARM64, REG_V20_ARM64, 15, INS_OPTS_8H, IF_DV_2O)]
+    [TestCase(INS_sqrshrn, EA_2BYTE, REG_V19_ARM64, REG_V20_ARM64, 16, INS_OPTS_NONE, IF_DV_2N)]
+    [TestCase(INS_sqshrun, EA_8BYTE, REG_V19_ARM64, REG_V20_ARM64, 16, INS_OPTS_4H, IF_DV_2O)]
+    [TestCase(INS_shrn, EA_8BYTE, REG_V19_ARM64, REG_V20_ARM64, 16, INS_OPTS_4H, IF_DV_2O)]
+    [TestCase(INS_sxtl, EA_8BYTE, REG_V19_ARM64, REG_V20_ARM64, 0, INS_OPTS_4H, IF_DV_2O)]
+    [TestCase(INS_uxtl2, EA_16BYTE, REG_V19_ARM64, REG_V20_ARM64, 0, INS_OPTS_8H, IF_DV_2O)]
+    [TestCase(INS_shrn2, EA_16BYTE, REG_V19_ARM64, REG_V20_ARM64, 16, INS_OPTS_8H, IF_DV_2O)]
     public static void PairImmediateVectorRecording(instruction ins, emitAttr size,
         regNumber reg1, regNumber reg2, int imm, insOpts opt, Emitter.insFormat format)
     {
         CheckPair(ins, size, reg1, reg2, imm, opt, format, imm, ins);
     }
 
-    [TestCase(INS_mvn, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_ROR, IF_DR_2F,
+    [TestCase(INS_mvn, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_ROR, IF_DR_2F,
         "insOptsNone(id.idInsOpt()) || insOptsAluShift(id.idInsOpt())")]
-    [TestCase(INS_dup, EA_4BYTE, REG_V19, REG_R20, INS_OPTS_NONE, IF_DV_2C,
+    [TestCase(INS_dup, EA_4BYTE, REG_V19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DV_2C,
         "isValidVectorDatasize(datasize)")]
     public static void PairImmediateNativeDiagnosticRestrictions(instruction ins, emitAttr size,
         regNumber reg1, regNumber reg2, insOpts opt, Emitter.insFormat format, string condition)
@@ -530,23 +530,23 @@ internal static unsafe class Arm64EmitterRecordingTests
 #endif
     }
 
-    [TestCase(INS_ldrsb, EA_8BYTE, REG_R19, 255, INS_OPTS_NONE, IF_LS_2B, 255)]
-    [TestCase(INS_ldursb, EA_4BYTE, REG_R19, -256, INS_OPTS_NONE, IF_LS_2C, -256)]
-    [TestCase(INS_ldrsh, EA_8BYTE, REG_R19, 8190, INS_OPTS_NONE, IF_LS_2B, 4095)]
-    [TestCase(INS_ldursh, EA_8BYTE, REG_R19, 3, INS_OPTS_NONE, IF_LS_2C, 3)]
-    [TestCase(INS_ldrsw, EA_8BYTE, REG_R19, 16380, INS_OPTS_NONE, IF_LS_2B, 4095)]
-    [TestCase(INS_ldursw, EA_8BYTE, REG_R19, -4, INS_OPTS_NONE, IF_LS_2C, -4)]
-    [TestCase(INS_ldrb, EA_1BYTE, REG_R19, 0, INS_OPTS_NONE, IF_LS_2A, 0)]
-    [TestCase(INS_strh, EA_2BYTE, REG_R19, 3, INS_OPTS_NONE, IF_LS_2C, 3)]
-    [TestCase(INS_ldr, EA_8BYTE, REG_R19, 32760, INS_OPTS_NONE, IF_LS_2B, 4095)]
-    [TestCase(INS_ldr, EA_8BYTE, REG_R19, 8, INS_OPTS_PRE_INDEX, IF_LS_2C, 8)]
-    [TestCase(INS_str, EA_8BYTE, REG_R19, -8, INS_OPTS_POST_INDEX, IF_LS_2C, -8)]
-    [TestCase(INS_ldr, EA_16BYTE, REG_V19, 65520, INS_OPTS_NONE, IF_LS_2B, 4095)]
-    [TestCase(INS_str, EA_1BYTE, REG_V19, 255, INS_OPTS_NONE, IF_LS_2B, 255)]
-    [TestCase(INS_ldurb, EA_1BYTE, REG_R19, -1, INS_OPTS_NONE, IF_LS_2C, -1)]
-    [TestCase(INS_stlurh, EA_2BYTE, REG_R19, -2, INS_OPTS_NONE, IF_LS_2C, -2)]
-    [TestCase(INS_ldapur, EA_8BYTE, REG_R19, -8, INS_OPTS_NONE, IF_LS_2C, -8)]
-    [TestCase(INS_stur, EA_8BYTE, REG_R19, -8, INS_OPTS_NONE, IF_LS_2C, -8)]
+    [TestCase(INS_ldrsb, EA_8BYTE, REG_R19_ARM64, 255, INS_OPTS_NONE, IF_LS_2B, 255)]
+    [TestCase(INS_ldursb, EA_4BYTE, REG_R19_ARM64, -256, INS_OPTS_NONE, IF_LS_2C, -256)]
+    [TestCase(INS_ldrsh, EA_8BYTE, REG_R19_ARM64, 8190, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_ldursh, EA_8BYTE, REG_R19_ARM64, 3, INS_OPTS_NONE, IF_LS_2C, 3)]
+    [TestCase(INS_ldrsw, EA_8BYTE, REG_R19_ARM64, 16380, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_ldursw, EA_8BYTE, REG_R19_ARM64, -4, INS_OPTS_NONE, IF_LS_2C, -4)]
+    [TestCase(INS_ldrb, EA_1BYTE, REG_R19_ARM64, 0, INS_OPTS_NONE, IF_LS_2A, 0)]
+    [TestCase(INS_strh, EA_2BYTE, REG_R19_ARM64, 3, INS_OPTS_NONE, IF_LS_2C, 3)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19_ARM64, 32760, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19_ARM64, 8, INS_OPTS_PRE_INDEX, IF_LS_2C, 8)]
+    [TestCase(INS_str, EA_8BYTE, REG_R19_ARM64, -8, INS_OPTS_POST_INDEX, IF_LS_2C, -8)]
+    [TestCase(INS_ldr, EA_16BYTE, REG_V19_ARM64, 65520, INS_OPTS_NONE, IF_LS_2B, 4095)]
+    [TestCase(INS_str, EA_1BYTE, REG_V19_ARM64, 255, INS_OPTS_NONE, IF_LS_2B, 255)]
+    [TestCase(INS_ldurb, EA_1BYTE, REG_R19_ARM64, -1, INS_OPTS_NONE, IF_LS_2C, -1)]
+    [TestCase(INS_stlurh, EA_2BYTE, REG_R19_ARM64, -2, INS_OPTS_NONE, IF_LS_2C, -2)]
+    [TestCase(INS_ldapur, EA_8BYTE, REG_R19_ARM64, -8, INS_OPTS_NONE, IF_LS_2C, -8)]
+    [TestCase(INS_stur, EA_8BYTE, REG_R19_ARM64, -8, INS_OPTS_NONE, IF_LS_2C, -8)]
     public static void PairImmediateMemoryRecording(instruction ins, emitAttr size, regNumber reg,
         int imm, insOpts opt, Emitter.insFormat format, int expectedImm)
     {
@@ -566,14 +566,14 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void PairImmediateStructureRecording(instruction ins, emitAttr size, insOpts opt,
         int imm, Emitter.insFormat format)
     {
-        CheckPair(ins, size, REG_V19, REG_SPBASE, imm, opt, format, imm, ins);
+        CheckPair(ins, size, REG_V19_ARM64, REG_SPBASE, imm, opt, format, imm, ins);
     }
 
     [Test]
     public static void PairImmediateTlsRecordingPreservesUnscaledToken()
     {
         var emitter = CreateEmitter();
-        RecordPair(emitter, INS_ldr, EA_8BYTE | EA_CNS_TLSGD_RELOC, REG_R19, REG_SPBASE,
+        RecordPair(emitter, INS_ldr, EA_8BYTE | EA_CNS_TLSGD_RELOC, REG_R19_ARM64, REG_SPBASE,
             0x12345, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_2A));
@@ -588,8 +588,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         compiler.info.compMatchedVM = false;
 
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R19, 0x1234);
-        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R19, 0,
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R19_ARM64, 0x1234);
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19_ARM64, REG_R19_ARM64, 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
 
         var instructions = CurrentInstructions(emitter);
@@ -623,8 +623,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         JitTls.Compiler = compiler;
 #endif
 
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R19, 0x1234);
-        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R19, 0,
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R19_ARM64, 0x1234);
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19_ARM64, REG_R19_ARM64, 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
 
         var instructions = CurrentInstructions(emitter);
@@ -646,8 +646,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
     }
 
-    [TestCase(false, REG_R19, REG_R21)]
-    [TestCase(true, REG_R21, REG_R19)]
+    [TestCase(false, REG_R19_ARM64, REG_R21_ARM64)]
+    [TestCase(true, REG_R21_ARM64, REG_R19_ARM64)]
     public static void AdjacentLoadsCombineInAddressOrder(bool descending, regNumber firstExpected, regNumber secondExpected)
     {
         var emitter = CreateEmitter(optimized: true);
@@ -656,9 +656,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         JitTls.Compiler = EmitterCompiler(emitter);
 #endif
 
-        RecordPair(emitter, INS_ldr, EA_4BYTE, REG_R19, REG_R20, descending ? 4 : 0,
+        RecordPair(emitter, INS_ldr, EA_4BYTE, REG_R19_ARM64, REG_R20_ARM64, descending ? 4 : 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
-        RecordPair(emitter, INS_ldr, EA_4BYTE, REG_R21, REG_R20, descending ? 0 : 4,
+        RecordPair(emitter, INS_ldr, EA_4BYTE, REG_R21_ARM64, REG_R20_ARM64, descending ? 0 : 4,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
 
         var instructions = CurrentInstructions(emitter);
@@ -668,7 +668,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(pair.idInsFmt(), Is.EqualTo(IF_LS_3B));
         Assert.That(pair.idReg1(), Is.EqualTo(firstExpected));
         Assert.That(pair.idReg2(), Is.EqualTo(secondExpected));
-        Assert.That(pair.idReg3(), Is.EqualTo(REG_R20));
+        Assert.That(pair.idReg3(), Is.EqualTo(REG_R20_ARM64));
         Assert.That(Emitter.emitGetInsSC(pair), Is.EqualTo((nint)0));
     }
 
@@ -681,17 +681,17 @@ internal static unsafe class Arm64EmitterRecordingTests
         JitTls.Compiler = EmitterCompiler(emitter);
 #endif
 
-        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R20, 0,
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
-        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R21, REG_R20, 0,
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R21_ARM64, REG_R20_ARM64, 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
 
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(2));
         Assert.That(instructions[0].idIns(), Is.EqualTo(INS_ldr));
         Assert.That(instructions[1].idIns(), Is.EqualTo(INS_mov));
-        Assert.That(instructions[1].idReg1(), Is.EqualTo(REG_R21));
-        Assert.That(instructions[1].idReg2(), Is.EqualTo(REG_R19));
+        Assert.That(instructions[1].idReg1(), Is.EqualTo(REG_R21_ARM64));
+        Assert.That(instructions[1].idReg2(), Is.EqualTo(REG_R19_ARM64));
         Assert.That(instructions[1].idOpSize(), Is.EqualTo(EA_8BYTE));
     }
 
@@ -705,9 +705,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         JitTls.Compiler = EmitterCompiler(emitter);
 #endif
 
-        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_R20, 0,
+        RecordPair(emitter, INS_ldr, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, 0,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
-        RecordPair(emitter, ins, EA_8BYTE, REG_R20, REG_R20, immediate,
+        RecordPair(emitter, ins, EA_8BYTE, REG_R20_ARM64, REG_R20_ARM64, immediate,
             INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
 
         var instructions = CurrentInstructions(emitter);
@@ -716,18 +716,18 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(postIndexed.idIns(), Is.EqualTo(INS_ldr));
         Assert.That(postIndexed.idInsFmt(), Is.EqualTo(IF_LS_2C));
         Assert.That(postIndexed.idInsOpt(), Is.EqualTo(INS_OPTS_POST_INDEX));
-        Assert.That(postIndexed.idReg1(), Is.EqualTo(REG_R19));
-        Assert.That(postIndexed.idReg2(), Is.EqualTo(REG_R20));
+        Assert.That(postIndexed.idReg1(), Is.EqualTo(REG_R19_ARM64));
+        Assert.That(postIndexed.idReg2(), Is.EqualTo(REG_R20_ARM64));
         Assert.That(Emitter.emitGetInsSC(postIndexed), Is.EqualTo((nint)expectedOffset));
     }
 
-    [TestCase(INS_nop, 1, false, false, REG_R20)]
+    [TestCase(INS_nop, 1, false, false, REG_R20_ARM64)]
     public static void PairImmediateDependenciesRemainExplicit(instruction ins, int imm,
         bool optimized, bool reloc, regNumber reg2)
     {
         var emitter = CreateEmitter(optimized, reloc);
         var error = Assert.Throws<FatalJitException>(() =>
-            RecordPair(emitter, ins, EA_8BYTE, REG_R19, reg2, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
+            RecordPair(emitter, ins, EA_8BYTE, REG_R19_ARM64, reg2, imm, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
         Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
@@ -742,8 +742,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
         Assert.That(id.idOpSize(), Is.EqualTo(size));
         Assert.That(id.idInsOpt(), Is.EqualTo(opt));
-        Assert.That(id.idReg1(), Is.EqualTo(reg1 == REG_SPBASE ? REG_ZR : reg1));
-        Assert.That(id.idReg2(), Is.EqualTo(reg2 == REG_SPBASE ? REG_ZR : reg2));
+        Assert.That(id.idReg1(), Is.EqualTo(reg1 == REG_SPBASE ? REG_ZR_ARM64 : reg1));
+        Assert.That(id.idReg2(), Is.EqualTo(reg2 == REG_SPBASE ? REG_ZR_ARM64 : reg2));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)expectedImm));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
@@ -752,22 +752,22 @@ internal static unsafe class Arm64EmitterRecordingTests
     private static extern void RecordPair(Emitter emitter, instruction ins, emitAttr attr,
         regNumber reg1, regNumber reg2, nint imm, insOpts opt, insScalableOpts sopt);
 
-    [TestCase(INS_mov, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
-    [TestCase(INS_mov, EA_4BYTE, REG_R19, REG_ZR, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
-    [TestCase(INS_mov, EA_8BYTE, REG_SPBASE, REG_R20, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
-    [TestCase(INS_mov, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
-    [TestCase(INS_sxtw, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
-    [TestCase(INS_sxtb, EA_4BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
-    [TestCase(INS_sxth, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
-    [TestCase(INS_uxtb, EA_4BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
-    [TestCase(INS_uxth, EA_4BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
-    [TestCase(INS_fmov, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
-    [TestCase(INS_fmov, EA_4BYTE, REG_V0, REG_R20, INS_OPTS_NONE, IF_DV_2I, INS_OPTS_4BYTE_TO_S)]
-    [TestCase(INS_fmov, EA_8BYTE, REG_V0, REG_R20, INS_OPTS_NONE, IF_DV_2I, INS_OPTS_8BYTE_TO_D)]
-    [TestCase(INS_fmov, EA_4BYTE, REG_R19, REG_V1, INS_OPTS_NONE, IF_DV_2H, INS_OPTS_S_TO_4BYTE)]
-    [TestCase(INS_fmov, EA_8BYTE, REG_R19, REG_V1, INS_OPTS_NONE, IF_DV_2H, INS_OPTS_D_TO_8BYTE)]
-    [TestCase(INS_fmov, EA_4BYTE, REG_R19, REG_V1, INS_OPTS_D_TO_4BYTE, IF_DV_2H, INS_OPTS_D_TO_4BYTE)]
-    [TestCase(INS_mov, EA_8BYTE, REG_R19, REG_V1, INS_OPTS_NONE, IF_DV_2B, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_4BYTE, REG_R19_ARM64, REG_ZR_ARM64, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, REG_SPBASE, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_mov, EA_8BYTE, REG_R19_ARM64, REG_SPBASE, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_sxtw, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_sxtb, EA_4BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_sxth, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_uxtb, EA_4BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_uxth, EA_4BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2H, INS_OPTS_NONE)]
+    [TestCase(INS_fmov, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_fmov, EA_4BYTE, REG_V0_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DV_2I, INS_OPTS_4BYTE_TO_S)]
+    [TestCase(INS_fmov, EA_8BYTE, REG_V0_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DV_2I, INS_OPTS_8BYTE_TO_D)]
+    [TestCase(INS_fmov, EA_4BYTE, REG_R19_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2H, INS_OPTS_S_TO_4BYTE)]
+    [TestCase(INS_fmov, EA_8BYTE, REG_R19_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2H, INS_OPTS_D_TO_8BYTE)]
+    [TestCase(INS_fmov, EA_4BYTE, REG_R19_ARM64, REG_V1_ARM64, INS_OPTS_D_TO_4BYTE, IF_DV_2H, INS_OPTS_D_TO_4BYTE)]
+    [TestCase(INS_mov, EA_8BYTE, REG_R19_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2B, INS_OPTS_NONE)]
     public static void MoveRecordingPreservesNativeFormats(instruction ins, emitAttr size,
         regNumber dst, regNumber src, insOpts opt, Emitter.insFormat format, insOpts expectedOpt)
     {
@@ -778,72 +778,72 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
         Assert.That(id.idInsOpt(), Is.EqualTo(expectedOpt));
         Assert.That(id.idOpSize(), Is.EqualTo(size));
-        Assert.That(id.idReg1(), Is.EqualTo(dst == REG_SPBASE ? REG_ZR : dst));
-        Assert.That(id.idReg2(), Is.EqualTo(src == REG_SPBASE ? REG_ZR : src));
+        Assert.That(id.idReg1(), Is.EqualTo(dst == REG_SPBASE ? REG_ZR_ARM64 : dst));
+        Assert.That(id.idReg2(), Is.EqualTo(src == REG_SPBASE ? REG_ZR_ARM64 : src));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(INS_dup, EA_16BYTE, REG_V0, REG_R20, INS_OPTS_4S, IF_DV_2C, INS_OPTS_4S)]
-    [TestCase(INS_abs, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
-    [TestCase(INS_abs, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
-    [TestCase(INS_not, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_16B)]
-    [TestCase(INS_mvn, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2M, INS_OPTS_8B)]
-    [TestCase(INS_neg, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
-    [TestCase(INS_neg, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
-    [TestCase(INS_mvn, EA_4BYTE, REG_R19, REG_ZR, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
-    [TestCase(INS_negs, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
-    [TestCase(INS_sxtl, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_8B, IF_DV_2O, INS_OPTS_8B)]
-    [TestCase(INS_cls, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
-    [TestCase(INS_clz, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
-    [TestCase(INS_rev32, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
-    [TestCase(INS_rev32, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_8H, IF_DV_2M, INS_OPTS_8H)]
-    [TestCase(INS_rbit, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_16B, IF_DV_2M, INS_OPTS_16B)]
-    [TestCase(INS_cnt, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_16B, IF_DV_2M, INS_OPTS_16B)]
-    [TestCase(INS_addv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2T, INS_OPTS_4S)]
-    [TestCase(INS_rev64, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
-    [TestCase(INS_sqxtn, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
-    [TestCase(INS_xtn, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2M, INS_OPTS_2S)]
-    [TestCase(INS_sqxtn2, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
-    [TestCase(INS_ldar, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
-    [TestCase(INS_ldarb, EA_1BYTE, REG_R19, REG_R20, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
-    [TestCase(INS_stlrh, EA_2BYTE, REG_ZR, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
-    [TestCase(INS_ldr, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
-    [TestCase(INS_fcmp, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2K, INS_OPTS_NONE)]
-    [TestCase(INS_fcvtzs, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
-    [TestCase(INS_fcvtzs, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
-    [TestCase(INS_fcvtzs, EA_8BYTE, REG_R19, REG_V1, INS_OPTS_D_TO_8BYTE, IF_DV_2H, INS_OPTS_D_TO_8BYTE)]
-    [TestCase(INS_fcvtl, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2A, INS_OPTS_2S)]
-    [TestCase(INS_fcvtn2, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
-    [TestCase(INS_fcvtxn, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_2S, IF_DV_2A, INS_OPTS_2S)]
-    [TestCase(INS_fcvtxn, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
-    [TestCase(INS_fcvtxn2, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
-    [TestCase(INS_scvtf, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
-    [TestCase(INS_scvtf, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
-    [TestCase(INS_scvtf, EA_8BYTE, REG_V0, REG_R20, INS_OPTS_8BYTE_TO_D, IF_DV_2I, INS_OPTS_8BYTE_TO_D)]
-    [TestCase(INS_fsqrt, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
-    [TestCase(INS_fsqrt, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
-    [TestCase(INS_faddp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D, IF_DV_2Q, INS_OPTS_2D)]
-    [TestCase(INS_fmaxv, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2R, INS_OPTS_4S)]
-    [TestCase(INS_addp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D, IF_DV_2S, INS_OPTS_2D)]
-    [TestCase(INS_fcvt, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_D_TO_S, IF_DV_2J, INS_OPTS_D_TO_S)]
-    [TestCase(INS_cmeq, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
-    [TestCase(INS_cmeq, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
-    [TestCase(INS_frecpe, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
-    [TestCase(INS_frecpe, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
-    [TestCase(INS_aesd, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_16B, IF_DV_2P, INS_OPTS_16B)]
-    [TestCase(INS_sha1h, EA_4BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2U, INS_OPTS_NONE)]
-    [TestCase(INS_sha256su0, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2U, INS_OPTS_4S)]
-    [TestCase(INS_sha512su0, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_2D, IF_DV_2V, INS_OPTS_2D)]
-    [TestCase(INS_sm4e, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2V, INS_OPTS_4S)]
-    [TestCase(INS_ld2, EA_16BYTE, REG_V0, REG_SPBASE, INS_OPTS_4S, IF_LS_2D, INS_OPTS_4S)]
-    [TestCase(INS_st1, EA_8BYTE, REG_V0, REG_R20, INS_OPTS_1D, IF_LS_2D, INS_OPTS_1D)]
-    [TestCase(INS_ld4r, EA_16BYTE, REG_V0, REG_R20, INS_OPTS_4S, IF_LS_2D, INS_OPTS_4S)]
-    [TestCase(INS_urecpe, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
-    [TestCase(INS_frecpx, EA_8BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
-    [TestCase(INS_sadalp, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2T, INS_OPTS_4S)]
-    [TestCase(INS_sqabs, EA_16BYTE, REG_V0, REG_V1, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
-    [TestCase(INS_sqabs, EA_2BYTE, REG_V0, REG_V1, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
-    [TestCase(INS_pacia, EA_8BYTE, REG_R19, REG_SPBASE, INS_OPTS_NONE, IF_PC_2A, INS_OPTS_NONE)]
+    [TestCase(INS_dup, EA_16BYTE, REG_V0_ARM64, REG_R20_ARM64, INS_OPTS_4S, IF_DV_2C, INS_OPTS_4S)]
+    [TestCase(INS_abs, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_abs, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_not, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2M, INS_OPTS_16B)]
+    [TestCase(INS_mvn, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_2S, IF_DV_2M, INS_OPTS_8B)]
+    [TestCase(INS_neg, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_neg, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_mvn, EA_4BYTE, REG_R19_ARM64, REG_ZR_ARM64, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_negs, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2E, INS_OPTS_NONE)]
+    [TestCase(INS_sxtl, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_8B, IF_DV_2O, INS_OPTS_8B)]
+    [TestCase(INS_cls, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_clz, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_rev32, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_DR_2G, INS_OPTS_NONE)]
+    [TestCase(INS_rev32, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_8H, IF_DV_2M, INS_OPTS_8H)]
+    [TestCase(INS_rbit, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_16B, IF_DV_2M, INS_OPTS_16B)]
+    [TestCase(INS_cnt, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_16B, IF_DV_2M, INS_OPTS_16B)]
+    [TestCase(INS_addv, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2T, INS_OPTS_4S)]
+    [TestCase(INS_rev64, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_sqxtn, EA_4BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_xtn, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_2S, IF_DV_2M, INS_OPTS_2S)]
+    [TestCase(INS_sqxtn2, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_ldar, EA_8BYTE, REG_R19_ARM64, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_ldarb, EA_1BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_stlrh, EA_2BYTE, REG_ZR_ARM64, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19_ARM64, REG_SPBASE, INS_OPTS_NONE, IF_LS_2A, INS_OPTS_NONE)]
+    [TestCase(INS_fcmp, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2K, INS_OPTS_NONE)]
+    [TestCase(INS_fcvtzs, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_fcvtzs, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_fcvtzs, EA_8BYTE, REG_R19_ARM64, REG_V1_ARM64, INS_OPTS_D_TO_8BYTE, IF_DV_2H, INS_OPTS_D_TO_8BYTE)]
+    [TestCase(INS_fcvtl, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_2S, IF_DV_2A, INS_OPTS_2S)]
+    [TestCase(INS_fcvtn2, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_fcvtxn, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_2S, IF_DV_2A, INS_OPTS_2S)]
+    [TestCase(INS_fcvtxn, EA_4BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_fcvtxn2, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_scvtf, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_scvtf, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_scvtf, EA_8BYTE, REG_V0_ARM64, REG_R20_ARM64, INS_OPTS_8BYTE_TO_D, IF_DV_2I, INS_OPTS_8BYTE_TO_D)]
+    [TestCase(INS_fsqrt, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_fsqrt, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_faddp, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_2D, IF_DV_2Q, INS_OPTS_2D)]
+    [TestCase(INS_fmaxv, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2R, INS_OPTS_4S)]
+    [TestCase(INS_addp, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_2D, IF_DV_2S, INS_OPTS_2D)]
+    [TestCase(INS_fcvt, EA_4BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_D_TO_S, IF_DV_2J, INS_OPTS_D_TO_S)]
+    [TestCase(INS_cmeq, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_cmeq, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_frecpe, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_frecpe, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_aesd, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_16B, IF_DV_2P, INS_OPTS_16B)]
+    [TestCase(INS_sha1h, EA_4BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2U, INS_OPTS_NONE)]
+    [TestCase(INS_sha256su0, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2U, INS_OPTS_4S)]
+    [TestCase(INS_sha512su0, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_2D, IF_DV_2V, INS_OPTS_2D)]
+    [TestCase(INS_sm4e, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2V, INS_OPTS_4S)]
+    [TestCase(INS_ld2, EA_16BYTE, REG_V0_ARM64, REG_SPBASE, INS_OPTS_4S, IF_LS_2D, INS_OPTS_4S)]
+    [TestCase(INS_st1, EA_8BYTE, REG_V0_ARM64, REG_R20_ARM64, INS_OPTS_1D, IF_LS_2D, INS_OPTS_1D)]
+    [TestCase(INS_ld4r, EA_16BYTE, REG_V0_ARM64, REG_R20_ARM64, INS_OPTS_4S, IF_LS_2D, INS_OPTS_4S)]
+    [TestCase(INS_urecpe, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2A, INS_OPTS_4S)]
+    [TestCase(INS_frecpx, EA_8BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2G, INS_OPTS_NONE)]
+    [TestCase(INS_sadalp, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2T, INS_OPTS_4S)]
+    [TestCase(INS_sqabs, EA_16BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_4S, IF_DV_2M, INS_OPTS_4S)]
+    [TestCase(INS_sqabs, EA_2BYTE, REG_V0_ARM64, REG_V1_ARM64, INS_OPTS_NONE, IF_DV_2L, INS_OPTS_NONE)]
+    [TestCase(INS_pacia, EA_8BYTE, REG_R19_ARM64, REG_SPBASE, INS_OPTS_NONE, IF_PC_2A, INS_OPTS_NONE)]
     public static void RegisterPairRecordingPreservesNativeFormats(instruction ins, emitAttr size,
         regNumber dst, regNumber src, insOpts opt, Emitter.insFormat format, insOpts expectedOpt)
     {
@@ -855,15 +855,15 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(id.idInsOpt(), Is.EqualTo(expectedOpt));
         Assert.That(id.idOpSize(), Is.EqualTo(size));
         Assert.That(id.idReg1(), Is.EqualTo(dst));
-        Assert.That(id.idReg2(), Is.EqualTo(src == REG_SPBASE ? REG_ZR : src));
+        Assert.That(id.idReg2(), Is.EqualTo(src == REG_SPBASE ? REG_ZR_ARM64 : src));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
-    [TestCase(false, false, EA_8BYTE, REG_R19, 4)]
-    [TestCase(false, true, EA_4BYTE, REG_R19, 0)]
-    [TestCase(true, false, EA_8BYTE, REG_R19, 0)]
-    [TestCase(true, false, EA_4BYTE, REG_R19, 4)]
-    [TestCase(true, false, EA_16BYTE, REG_V0, 0)]
+    [TestCase(false, false, EA_8BYTE, REG_R19_ARM64, 4)]
+    [TestCase(false, true, EA_4BYTE, REG_R19_ARM64, 0)]
+    [TestCase(true, false, EA_8BYTE, REG_R19_ARM64, 0)]
+    [TestCase(true, false, EA_4BYTE, REG_R19_ARM64, 4)]
+    [TestCase(true, false, EA_16BYTE, REG_V0_ARM64, 0)]
     public static void MoveElisionPreservesOptimizationAndClearingRules(
         bool optimized, bool canSkip, emitAttr size, regNumber reg, int expectedSize)
     {
@@ -885,7 +885,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MoveElisionHonorsExplicitExtensionAndFloatPermission(instruction ins)
     {
         var emitter = CreateEmitter();
-        var reg = ins == INS_fmov ? REG_V0 : REG_R19;
+        var reg = ins == INS_fmov ? REG_V0_ARM64 : REG_R19_ARM64;
         RecordMove(emitter, ins, EA_8BYTE, reg, reg, true, INS_OPTS_NONE);
         Assert.That(GroupSize(emitter), Is.Zero);
     }
@@ -902,9 +902,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         using var tls = new JitTls(null);
         JitTls.Compiler = EmitterCompiler(emitter);
 #endif
-        RecordMove(emitter, INS_mov, size, REG_R19, REG_R20, false, INS_OPTS_NONE);
-        RecordMove(emitter, INS_mov, size, opposite ? REG_R20 : REG_R19,
-            opposite ? REG_R19 : REG_R20, false, INS_OPTS_NONE);
+        RecordMove(emitter, INS_mov, size, REG_R19_ARM64, REG_R20_ARM64, false, INS_OPTS_NONE);
+        RecordMove(emitter, INS_mov, size, opposite ? REG_R20_ARM64 : REG_R19_ARM64,
+            opposite ? REG_R19_ARM64 : REG_R20_ARM64, false, INS_OPTS_NONE);
         Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
     }
 
@@ -922,10 +922,10 @@ internal static unsafe class Arm64EmitterRecordingTests
 #endif
         compiler.opts.compMinOpts = true;
         compiler.opts.canUseAllOpts = false;
-        RecordRegisters(emitter, ins, size, REG_R19, REG_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordRegisters(emitter, ins, size, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
         compiler.opts.compMinOpts = false;
         compiler.opts.canUseAllOpts = true;
-        RecordMove(emitter, INS_mov, EA_4BYTE, REG_R19, REG_R19, false, INS_OPTS_NONE);
+        RecordMove(emitter, INS_mov, EA_4BYTE, REG_R19_ARM64, REG_R19_ARM64, false, INS_OPTS_NONE);
         Assert.That(GroupSize(emitter), Is.EqualTo(expectedSize));
     }
 
@@ -937,11 +937,11 @@ internal static unsafe class Arm64EmitterRecordingTests
         using var tls = new JitTls(null);
         JitTls.Compiler = EmitterCompiler(emitter);
 #endif
-        RecordMove(emitter, INS_mov, EA_8BYTE, REG_R19, REG_R20, false, INS_OPTS_NONE);
+        RecordMove(emitter, INS_mov, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, false, INS_OPTS_NONE);
         ForceNewGroup(emitter) = true;
-        Assert.That(RedundantMove(emitter, INS_mov, EA_8BYTE, REG_R19, REG_R20, false), Is.False);
-        Assert.That(RedundantMove(emitter, INS_sve_movprfx, EA_16BYTE, REG_V0, REG_V0, false), Is.False);
-        Assert.That(RedundantMove(emitter, INS_sve_movprfx, EA_16BYTE, REG_V0, REG_V0, true), Is.True);
+        Assert.That(RedundantMove(emitter, INS_mov, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, false), Is.False);
+        Assert.That(RedundantMove(emitter, INS_sve_movprfx, EA_16BYTE, REG_V0_ARM64, REG_V0_ARM64, false), Is.False);
+        Assert.That(RedundantMove(emitter, INS_sve_movprfx, EA_16BYTE, REG_V0_ARM64, REG_V0_ARM64, true), Is.True);
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
@@ -949,23 +949,23 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MoveAliasesPreserveZeroAddAndSeparateDependencies()
     {
         var emitter = CreateEmitter();
-        RecordPair(emitter, INS_add, EA_8BYTE, REG_R19, REG_R20, 0, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordPair(emitter, INS_add, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, 0, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No zero-add alias was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(INS_mov));
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_DR_2E));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
 
         var sve = CreateEmitter();
-        RecordMove(sve, INS_sve_movprfx, EA_SCALABLE, REG_V0, REG_V1, false, INS_OPTS_SCALABLE_B);
+        RecordMove(sve, INS_sve_movprfx, EA_SCALABLE, REG_V0_ARM64, REG_V1_ARM64, false, INS_OPTS_SCALABLE_B);
         var move = LastInstruction(sve) ?? throw new AssertionException("No SVE move-prefix instruction was recorded.");
         Assert.That(move.idIns(), Is.EqualTo(INS_sve_movprfx));
         Assert.That(move.idInsFmt(), Is.EqualTo(IF_SVE_BI_2A));
         Assert.That(move.idInsOpt(), Is.EqualTo(INS_OPTS_NONE));
-        Assert.That(move.idReg1(), Is.EqualTo(REG_V0));
-        Assert.That(move.idReg2(), Is.EqualTo(REG_V1));
+        Assert.That(move.idReg1(), Is.EqualTo(REG_V0_ARM64));
+        Assert.That(move.idReg2(), Is.EqualTo(REG_V1_ARM64));
 
         var pairError = Assert.Throws<FatalJitException>(() =>
-            RecordRegisters(sve, INS_nop, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
+            RecordRegisters(sve, INS_nop, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
         Assert.That(pairError!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(LastInstruction(sve), Is.SameAs(move));
         Assert.That(GroupSize(sve), Is.EqualTo(4));
@@ -1036,9 +1036,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         bool vector, insOpts opt, Emitter.insFormat format, insOpts expectedOpt)
     {
         var emitter = CreateEmitter();
-        var reg1 = vector ? REG_V19 : REG_R19;
-        var reg2 = vector ? REG_V20 : REG_R20;
-        var reg3 = ins == INS_mov ? reg2 : vector ? REG_V21 : REG_R21;
+        var reg1 = vector ? REG_V19_ARM64 : REG_R19_ARM64;
+        var reg2 = vector ? REG_V20_ARM64 : REG_R20_ARM64;
+        var reg3 = ins == INS_mov ? reg2 : vector ? REG_V21_ARM64 : REG_R21_ARM64;
         RecordThree(emitter, ins, size, reg1, reg2, reg3, opt, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No three-register instruction was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
@@ -1060,12 +1060,12 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeRegisterRmwPreservesCopyBeforeUpdate(instruction ins, insOpts opt, bool sameSource)
     {
         var emitter = CreateEmitter();
-        RecordThree(emitter, ins, EA_16BYTE, REG_V19, sameSource ? REG_V19 : REG_V20,
-            REG_V21, opt, INS_SCALABLE_OPTS_NONE);
+        RecordThree(emitter, ins, EA_16BYTE, REG_V19_ARM64, sameSource ? REG_V19_ARM64 : REG_V20_ARM64,
+            REG_V21_ARM64, opt, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No RMW operation was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19_ARM64));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21_ARM64));
         Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
     }
 
@@ -1075,12 +1075,12 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeRegisterStructuresPreservePostIndexAndSpEncoding(instruction ins, insOpts opt)
     {
         var emitter = CreateEmitter();
-        RecordThree(emitter, ins, EA_8BYTE, REG_V19, REG_SPBASE, REG_R20, opt, INS_SCALABLE_OPTS_NONE);
+        RecordThree(emitter, ins, EA_8BYTE, REG_V19_ARM64, REG_SPBASE, REG_R20_ARM64, opt, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No post-indexed structure was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3F));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
-        Assert.That(id.idReg3(), Is.EqualTo(REG_R20));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19_ARM64));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR_ARM64));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_R20_ARM64));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
@@ -1089,7 +1089,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         var error = Assert.Throws<FatalJitException>(() =>
-            RecordThree(emitter, ins, EA_8BYTE, REG_R19, REG_R20, REG_R21, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
+            RecordThree(emitter, ins, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE));
         Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
@@ -1098,45 +1098,45 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeRegisterForwardingPreservesStoreAliasAndIgnoredFlags()
     {
         var emitter = CreateEmitter();
-        RecordRegisters(emitter, INS_stadd, EA_8BYTE, REG_R19, REG_R20, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordRegisters(emitter, INS_stadd, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
         var atomic = LastInstruction(emitter) ?? throw new AssertionException("No store-add alias was recorded.");
         Assert.That(atomic.idIns(), Is.EqualTo(INS_ldadd));
-        Assert.That(atomic.idReg1(), Is.EqualTo(REG_R19));
-        Assert.That(atomic.idReg2(), Is.EqualTo(REG_ZR));
-        Assert.That(atomic.idReg3(), Is.EqualTo(REG_R20));
+        Assert.That(atomic.idReg1(), Is.EqualTo(REG_R19_ARM64));
+        Assert.That(atomic.idReg2(), Is.EqualTo(REG_ZR_ARM64));
+        Assert.That(atomic.idReg3(), Is.EqualTo(REG_R20_ARM64));
 
-        RecordRegistersWithFlags(emitter, INS_neg, EA_8BYTE, REG_R19, REG_R20, insFlags.INS_FLAGS_DONT_CARE);
+        RecordRegistersWithFlags(emitter, INS_neg, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, insFlags.INS_FLAGS_DONT_CARE);
         var unary = LastInstruction(emitter) ?? throw new AssertionException("No flags-forwarded pair was recorded.");
         Assert.That(unary.idInsFmt(), Is.EqualTo(IF_DR_2E));
         Assert.That(GroupSize(emitter), Is.EqualTo(8));
     }
 
-    [TestCase(INS_ldrb, EA_1BYTE, REG_R19, INS_OPTS_NONE, -1, true)]
-    [TestCase(INS_ldrb, EA_1BYTE, REG_R19, INS_OPTS_NONE, 0, true)]
-    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_NONE, -1, false)]
-    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_LSL, -1, true)]
-    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_UXTW, 0, false)]
-    [TestCase(INS_ldr, EA_8BYTE, REG_R19, INS_OPTS_SXTW, 3, true)]
-    [TestCase(INS_ldrh, EA_2BYTE, REG_R19, INS_OPTS_NONE, -1, false)]
-    [TestCase(INS_ldrh, EA_2BYTE, REG_R19, INS_OPTS_UXTW, 1, true)]
-    [TestCase(INS_ldrsw, EA_8BYTE, REG_R19, INS_OPTS_SXTW, 2, true)]
-    [TestCase(INS_ldrsb, EA_8BYTE, REG_R19, INS_OPTS_LSL, -1, true)]
-    [TestCase(INS_ldr, EA_16BYTE, REG_V19, INS_OPTS_LSL, -1, true)]
-    [TestCase(INS_str, EA_4BYTE, REG_V19, INS_OPTS_UXTX, 0, false)]
-    [TestCase(INS_str, EA_16BYTE, REG_V19, INS_OPTS_SXTX, 4, true)]
+    [TestCase(INS_ldrb, EA_1BYTE, REG_R19_ARM64, INS_OPTS_NONE, -1, true)]
+    [TestCase(INS_ldrb, EA_1BYTE, REG_R19_ARM64, INS_OPTS_NONE, 0, true)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19_ARM64, INS_OPTS_NONE, -1, false)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19_ARM64, INS_OPTS_LSL, -1, true)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19_ARM64, INS_OPTS_UXTW, 0, false)]
+    [TestCase(INS_ldr, EA_8BYTE, REG_R19_ARM64, INS_OPTS_SXTW, 3, true)]
+    [TestCase(INS_ldrh, EA_2BYTE, REG_R19_ARM64, INS_OPTS_NONE, -1, false)]
+    [TestCase(INS_ldrh, EA_2BYTE, REG_R19_ARM64, INS_OPTS_UXTW, 1, true)]
+    [TestCase(INS_ldrsw, EA_8BYTE, REG_R19_ARM64, INS_OPTS_SXTW, 2, true)]
+    [TestCase(INS_ldrsb, EA_8BYTE, REG_R19_ARM64, INS_OPTS_LSL, -1, true)]
+    [TestCase(INS_ldr, EA_16BYTE, REG_V19_ARM64, INS_OPTS_LSL, -1, true)]
+    [TestCase(INS_str, EA_4BYTE, REG_V19_ARM64, INS_OPTS_UXTX, 0, false)]
+    [TestCase(INS_str, EA_16BYTE, REG_V19_ARM64, INS_OPTS_SXTX, 4, true)]
     public static void ThreeRegisterExtendedMemoryPreservesNaturalAndExplicitScale(instruction ins,
         emitAttr size, regNumber reg, insOpts opt, int shift, bool scaled)
     {
         var emitter = CreateEmitter();
-        RecordExtended(emitter, ins, size, reg, REG_SPBASE, REG_R20, opt, shift);
+        RecordExtended(emitter, ins, size, reg, REG_SPBASE, REG_R20_ARM64, opt, shift);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No extended-register memory operand was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3A));
         Assert.That(id.idOpSize(), Is.EqualTo(size));
         Assert.That(id.idInsOpt(), Is.EqualTo(opt));
         Assert.That(id.idReg1(), Is.EqualTo(reg));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
-        Assert.That(id.idReg3(), Is.EqualTo(REG_R20));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR_ARM64));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_R20_ARM64));
         Assert.That(id.idReg3Scaled(), Is.EqualTo(scaled));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
@@ -1145,11 +1145,11 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeRegisterMemoryDelegatesToExtendedRecording()
     {
         var emitter = CreateEmitter();
-        RecordThree(emitter, INS_ldr, EA_8BYTE, REG_R19, REG_SPBASE, REG_R20,
+        RecordThree(emitter, INS_ldr, EA_8BYTE, REG_R19_ARM64, REG_SPBASE, REG_R20_ARM64,
             INS_OPTS_LSL, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No three-register memory load was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3A));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR_ARM64));
         Assert.That(id.idReg3Scaled(), Is.True);
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
@@ -1196,9 +1196,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         bool vector, int imm, insOpts opt, Emitter.insFormat format)
     {
         var emitter = CreateEmitter();
-        var reg1 = vector ? REG_V19 : REG_R19;
-        var reg2 = vector ? REG_V20 : REG_R20;
-        var reg3 = vector ? (opt is INS_OPTS_8H or INS_OPTS_4H || size == EA_2BYTE ? REG_V15 : REG_V31) : REG_R21;
+        var reg1 = vector ? REG_V19_ARM64 : REG_R19_ARM64;
+        var reg2 = vector ? REG_V20_ARM64 : REG_R20_ARM64;
+        var reg3 = vector ? (opt is INS_OPTS_8H or INS_OPTS_4H || size == EA_2BYTE ? REG_V15_ARM64 : REG_V31_ARM64) : REG_R21_ARM64;
         RecordThreeImmediate(emitter, ins, size, reg1, reg2, reg3, imm, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No three-register/immediate instruction was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
@@ -1224,11 +1224,11 @@ internal static unsafe class Arm64EmitterRecordingTests
         bool vector, int imm, insOpts opt, int scaled)
     {
         var emitter = CreateEmitter();
-        RecordThreeImmediate(emitter, ins, size, vector ? REG_V19 : REG_R19,
-            vector ? REG_V20 : REG_R20, REG_SPBASE, imm, opt, vector ? EA_UNKNOWN : EA_BYREF, INS_SCALABLE_OPTS_NONE);
+        RecordThreeImmediate(emitter, ins, size, vector ? REG_V19_ARM64 : REG_R19_ARM64,
+            vector ? REG_V20_ARM64 : REG_R20_ARM64, REG_SPBASE, imm, opt, vector ? EA_UNKNOWN : EA_BYREF, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No load/store pair was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(imm == 0 ? IF_LS_3B : IF_LS_3C));
-        Assert.That(id.idReg3(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_ZR_ARM64));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)scaled));
         Assert.That(id.idGCrefReg2(), Is.EqualTo(vector ? GCInfo.GCtype.GCT_NONE : GCInfo.GCtype.GCT_BYREF));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
@@ -1241,12 +1241,12 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeImmediateSpSourceSelectsExtendedEncoding(instruction ins)
     {
         var emitter = CreateEmitter();
-        RecordThreeImmediate(emitter, ins, EA_8BYTE, REG_R19, REG_SPBASE, REG_R20, 0,
+        RecordThreeImmediate(emitter, ins, EA_8BYTE, REG_R19_ARM64, REG_SPBASE, REG_R20_ARM64, 0,
             INS_OPTS_NONE, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No SP arithmetic was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_DR_3C));
         Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR_ARM64));
     }
 
     [TestCase(INS_ld1)]
@@ -1254,11 +1254,11 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeImmediateStructuresPreservePostIndex(instruction ins)
     {
         var emitter = CreateEmitter();
-        RecordThreeImmediate(emitter, ins, EA_2BYTE, REG_V19, REG_SPBASE, REG_R20, 7,
+        RecordThreeImmediate(emitter, ins, EA_2BYTE, REG_V19_ARM64, REG_SPBASE, REG_R20_ARM64, 7,
             INS_OPTS_POST_INDEX, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No indexed structure was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3G));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR_ARM64));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)7));
     }
 
@@ -1267,12 +1267,12 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeImmediateRmwPreservesCopyBeforeShift(bool sameSource)
     {
         var emitter = CreateEmitter();
-        RecordThreeImmediate(emitter, INS_sli, EA_16BYTE, REG_V19, sameSource ? REG_V19 : REG_V20,
-            REG_V21, 7, INS_OPTS_16B, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
+        RecordThreeImmediate(emitter, INS_sli, EA_16BYTE, REG_V19_ARM64, sameSource ? REG_V19_ARM64 : REG_V20_ARM64,
+            REG_V21_ARM64, 7, INS_OPTS_16B, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No RMW shift was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(INS_sli));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19_ARM64));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21_ARM64));
         Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
     }
 
@@ -1282,7 +1282,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ThreeImmediateDependenciesNowRecord(instruction ins, Emitter.insFormat format)
     {
         var emitter = CreateEmitter();
-        RecordThree(emitter, ins, EA_8BYTE, REG_R19, REG_R20, REG_R21, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+        RecordThree(emitter, ins, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No forwarded instruction was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
@@ -1295,7 +1295,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void LocalPairRecordingPreservesAddressesAndGc(int first, int second, emitAttr attr2)
     {
         var emitter = CreateEmitter();
-        RecordLocalPair(emitter, INS_ldp, EA_GCREF, attr2, REG_R19, REG_R20, REG_SPBASE,
+        RecordLocalPair(emitter, INS_ldp, EA_GCREF, attr2, REG_R19_ARM64, REG_R20_ARM64, REG_SPBASE,
             16, first, second, 24, 40
 #if DEBUG
             , 101, 202
@@ -1303,7 +1303,7 @@ internal static unsafe class Arm64EmitterRecordingTests
             );
         var id = LastInstruction(emitter) ?? throw new AssertionException("No local pair was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_3C));
-        Assert.That(id.idReg3(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_ZR_ARM64));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)2));
         Assert.That(id.idIsLclVarPair(), Is.EqualTo(first != -1 && second != -1));
         Assert.That(id.idIsLclVar(), Is.EqualTo(first != -1 || second != -1));
@@ -1352,7 +1352,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void LocalPairRecordingPreservesVectorScale(int imm, int scaled)
     {
         var emitter = CreateEmitter();
-        RecordLocalPair(emitter, INS_stp, EA_16BYTE, EA_16BYTE, REG_V19, REG_V20, REG_SPBASE,
+        RecordLocalPair(emitter, INS_stp, EA_16BYTE, EA_16BYTE, REG_V19_ARM64, REG_V20_ARM64, REG_SPBASE,
             imm, 3, 4, 0, 16
 #if DEBUG
             , 0, 16
@@ -1361,8 +1361,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         var id = LastInstruction(emitter) ?? throw new AssertionException("No vector local pair was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(imm == 0 ? IF_LS_3B : IF_LS_3C));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)scaled));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_V20));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19_ARM64));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V20_ARM64));
         Assert.That(id.idGCrefReg2(), Is.EqualTo(GCInfo.GCtype.GCT_NONE));
         Assert.That(id.idIsLclVarPair(), Is.True);
     }
@@ -1377,7 +1377,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         var error = Assert.Catch(() => RecordThreeImmediate(emitter, ins, size,
-            REG_V19, REG_V20, REG_V16, 0, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
+            REG_V19_ARM64, REG_V20_ARM64, REG_V16_ARM64, 0, opt, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
         if (ins == INS_mul)
         {
             Assert.That(error, Is.TypeOf<FatalJitException>());
@@ -1389,9 +1389,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(GroupSize(emitter), Is.Zero);
     }
 
-    [TestCase(INS_ldp, REG_R19, REG_R19, REG_R21, 8, INS_OPTS_NONE, "reg1 != reg2")]
-    [TestCase(INS_stp, REG_R19, REG_R20, REG_R19, 8, INS_OPTS_PRE_INDEX, "reg1 != reg3")]
-    [TestCase(INS_ldpsw, REG_R19, REG_R20, REG_R21, 256, INS_OPTS_NONE, "Instruction cannot be encoded")]
+    [TestCase(INS_ldp, REG_R19_ARM64, REG_R19_ARM64, REG_R21_ARM64, 8, INS_OPTS_NONE, "reg1 != reg2")]
+    [TestCase(INS_stp, REG_R19_ARM64, REG_R20_ARM64, REG_R19_ARM64, 8, INS_OPTS_PRE_INDEX, "reg1 != reg3")]
+    [TestCase(INS_ldpsw, REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, 256, INS_OPTS_NONE, "Instruction cannot be encoded")]
     public static void ImmediatePairRejectsReservedEncoding(instruction ins, regNumber reg1,
         regNumber reg2, regNumber reg3, int imm, insOpts opt, string condition)
     {
@@ -1408,7 +1408,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         var error = Assert.Throws<FatalJitException>(() => RecordThreeImmediate(emitter, INS_nop,
-            EA_8BYTE, REG_R19, REG_R20, REG_R21, 0, INS_OPTS_NONE, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
+            EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, 0, INS_OPTS_NONE, EA_UNKNOWN, INS_SCALABLE_OPTS_NONE));
         Assert.That(error!.Result, Is.EqualTo(CORJIT_RECOVERABLEERROR));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
@@ -1452,15 +1452,15 @@ internal static unsafe class Arm64EmitterRecordingTests
         var emitter = CreateEmitter();
         var vector = format != IF_DI_2D;
         var memory = format == IF_LS_2G;
-        var reg1 = vector ? REG_V19 : REG_R19;
-        var reg2 = memory ? REG_SPBASE : vector ? REG_V20 : REG_R20;
+        var reg1 = vector ? REG_V19_ARM64 : REG_R19_ARM64;
+        var reg2 = memory ? REG_SPBASE : vector ? REG_V20_ARM64 : REG_R20_ARM64;
         var opt = memory ? INS_OPTS_POST_INDEX : INS_OPTS_NONE;
         RecordTwoImmediates(emitter, ins, size, reg1, reg2, imm1, imm2, opt);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No two-immediate instruction was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
         Assert.That(id.idReg1(), Is.EqualTo(reg1));
-        Assert.That(id.idReg2(), Is.EqualTo(memory ? REG_ZR : reg2));
+        Assert.That(id.idReg2(), Is.EqualTo(memory ? REG_ZR_ARM64 : reg2));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)encoded));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
@@ -1470,11 +1470,11 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MultioperandInsertCopiesBeforeUpdating(bool sameSource)
     {
         var emitter = CreateEmitter();
-        RecordThreeTwoImmediates(emitter, INS_ins, EA_8BYTE, REG_V19, sameSource ? REG_V19 : REG_V20,
-            REG_V21, 1, 0, INS_OPTS_NONE);
+        RecordThreeTwoImmediates(emitter, INS_ins, EA_8BYTE, REG_V19_ARM64, sameSource ? REG_V19_ARM64 : REG_V20_ARM64,
+            REG_V21_ARM64, 1, 0, INS_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No element insertion was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_DV_2F));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21_ARM64));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)16));
         Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
     }
@@ -1493,10 +1493,10 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         var vector = format != IF_DR_4A;
-        var reg1 = vector ? REG_V19 : REG_R19;
-        var reg2 = vector ? REG_V20 : REG_R20;
-        var reg3 = vector ? REG_V21 : REG_R21;
-        var reg4 = vector ? REG_V22 : REG_R22;
+        var reg1 = vector ? REG_V19_ARM64 : REG_R19_ARM64;
+        var reg2 = vector ? REG_V20_ARM64 : REG_R20_ARM64;
+        var reg3 = vector ? REG_V21_ARM64 : REG_R21_ARM64;
+        var reg4 = vector ? REG_V22_ARM64 : REG_R22_ARM64;
         RecordFour(emitter, ins, size, reg1, reg2, reg3, reg4, opt, INS_SCALABLE_OPTS_NONE);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No four-register instruction was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
@@ -1520,28 +1520,28 @@ internal static unsafe class Arm64EmitterRecordingTests
         insOpts opt, emitAttr copySize, bool immediate, bool sameSource)
     {
         var emitter = CreateEmitter();
-        var reg2 = sameSource ? REG_V19 : REG_V20;
+        var reg2 = sameSource ? REG_V19_ARM64 : REG_V20_ARM64;
         if (immediate)
         {
-            RecordFourImmediate(emitter, ins, size, REG_V19, reg2, REG_V21, REG_V15,
+            RecordFourImmediate(emitter, ins, size, REG_V19_ARM64, reg2, REG_V21_ARM64, REG_V15_ARM64,
                 size == EA_2BYTE || opt == INS_OPTS_4H ? 7 : 3, opt);
         }
         else
         {
-            RecordFour(emitter, ins, size, REG_V19, reg2, REG_V21, REG_V15, opt, INS_SCALABLE_OPTS_NONE);
+            RecordFour(emitter, ins, size, REG_V19_ARM64, reg2, REG_V21_ARM64, REG_V15_ARM64, opt, INS_SCALABLE_OPTS_NONE);
         }
         var id = LastInstruction(emitter) ?? throw new AssertionException("No four-operand RMW operation was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_V19));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_V21));
-        Assert.That(id.idReg3(), Is.EqualTo(REG_V15));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_V19_ARM64));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_V21_ARM64));
+        Assert.That(id.idReg3(), Is.EqualTo(REG_V15_ARM64));
         Assert.That(GroupSize(emitter), Is.EqualTo(sameSource ? 4 : 8));
         if (!sameSource)
         {
             var copy = CurrentInstructions(emitter)[0];
             Assert.That(copy.idIns(), Is.EqualTo(INS_mov));
             Assert.That(copy.idOpSize(), Is.EqualTo(copySize));
-            Assert.That(copy.idReg1(), Is.EqualTo(REG_V19));
+            Assert.That(copy.idReg1(), Is.EqualTo(REG_V19_ARM64));
             Assert.That(copy.idReg2(), Is.EqualTo(reg2));
         }
     }
@@ -1563,15 +1563,15 @@ internal static unsafe class Arm64EmitterRecordingTests
             var emitter = CreateEmitter();
             if (registers == 1)
             {
-                RecordCondition(emitter, ins, EA_8BYTE, REG_R19, condition);
+                RecordCondition(emitter, ins, EA_8BYTE, REG_R19_ARM64, condition);
             }
             else if (registers == 2)
             {
-                RecordPairCondition(emitter, ins, EA_8BYTE, REG_R19, REG_ZR, condition);
+                RecordPairCondition(emitter, ins, EA_8BYTE, REG_R19_ARM64, REG_ZR_ARM64, condition);
             }
             else
             {
-                RecordThreeCondition(emitter, ins, EA_8BYTE, REG_R19, REG_ZR, REG_R20, condition);
+                RecordThreeCondition(emitter, ins, EA_8BYTE, REG_R19_ARM64, REG_ZR_ARM64, REG_R20_ARM64, condition);
             }
             var id = LastInstruction(emitter) ?? throw new AssertionException("No conditional instruction was recorded.");
             Assert.That(id.idInsFmt(), Is.EqualTo(format));
@@ -1590,7 +1590,7 @@ internal static unsafe class Arm64EmitterRecordingTests
             for (uint flags = 0; flags < 32; flags++)
             {
                 var emitter = CreateEmitter();
-                RecordFlagsCondition(emitter, ins, EA_8BYTE, REG_R19, REG_R20, (insCFlags)flags, condition);
+                RecordFlagsCondition(emitter, ins, EA_8BYTE, REG_R19_ARM64, REG_R20_ARM64, (insCFlags)flags, condition);
                 var id = LastInstruction(emitter) ?? throw new AssertionException("No conditional register comparison was recorded.");
                 Assert.That(id.idInsFmt(), Is.EqualTo(IF_DR_2I));
                 Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)(((flags & 15) << 4) | (uint)condition)));
@@ -1610,7 +1610,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         foreach (var condition in Enum.GetValues<insCond>())
         {
             var emitter = CreateEmitter();
-            RecordImmediateCondition(emitter, ins, EA_8BYTE, REG_R19, imm, insCFlags.INS_FLAGS_NZCV, condition);
+            RecordImmediateCondition(emitter, ins, EA_8BYTE, REG_R19_ARM64, imm, insCFlags.INS_FLAGS_NZCV, condition);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No conditional immediate comparison was recorded.");
             Assert.That(id.idIns(), Is.EqualTo(expected));
             Assert.That(id.idInsFmt(), Is.EqualTo(IF_DI_1F));
@@ -1656,19 +1656,19 @@ internal static unsafe class Arm64EmitterRecordingTests
                 case 0:
                 {
                     RecordThreeTwoImmediates(emitter, INS_nop, EA_8BYTE,
-                        REG_V19, REG_V20, REG_V21, 0, 0, INS_OPTS_NONE);
+                        REG_V19_ARM64, REG_V20_ARM64, REG_V21_ARM64, 0, 0, INS_OPTS_NONE);
                     break;
                 }
                 case 1:
                 {
                     RecordFour(emitter, INS_nop, EA_8BYTE,
-                        REG_V19, REG_V20, REG_V21, REG_V22, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
+                        REG_V19_ARM64, REG_V20_ARM64, REG_V21_ARM64, REG_V22_ARM64, INS_OPTS_NONE, INS_SCALABLE_OPTS_NONE);
                     break;
                 }
                 default:
                 {
                     RecordFourImmediate(emitter, INS_nop, EA_8BYTE,
-                        REG_V19, REG_V20, REG_V21, REG_V22, 0, INS_OPTS_NONE);
+                        REG_V19_ARM64, REG_V20_ARM64, REG_V21_ARM64, REG_V22_ARM64, 0, INS_OPTS_NONE);
                     break;
                 }
             }
@@ -1684,7 +1684,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateEmitter();
         var error = Assert.Catch(() => RecordImmediateCondition(emitter, INS_ccmp, EA_8BYTE,
-            REG_R19, imm, insCFlags.INS_FLAGS_NONE, insCond.INS_COND_EQ));
+            REG_R19_ARM64, imm, insCFlags.INS_FLAGS_NONE, insCond.INS_COND_EQ));
         Assert.That(error, Has.Message.Contains("ccmp/ccmn imm5"));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
@@ -1694,7 +1694,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void ConditionalCodeRejectsReservedValues(int condition)
     {
         var emitter = CreateEmitter();
-        var error = Assert.Catch(() => RecordCondition(emitter, INS_cset, EA_8BYTE, REG_R19, (insCond)condition));
+        var error = Assert.Catch(() => RecordCondition(emitter, INS_cset, EA_8BYTE, REG_R19_ARM64, (insCond)condition));
         Assert.That(error, Has.Message.Contains("isValidImmCond"));
         Assert.That(GroupSize(emitter), Is.Zero);
     }
@@ -1770,33 +1770,33 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var descriptor = RecordingEmitter.Basic(INS_nop, IF_DR_4A);
         Unsafe.As<Emitter.instrDesc.idAddrUnion, ulong>(ref descriptor.idAddr()) =
-            ((ulong)REG_R19 << 35) | ((ulong)REG_R28 << 42);
-        Assert.That(fourth ? descriptor.idReg4() : descriptor.idReg3(), Is.EqualTo(fourth ? REG_R28 : REG_R19));
+            ((ulong)REG_R19_ARM64 << 35) | ((ulong)REG_R28_ARM64 << 42);
+        Assert.That(fourth ? descriptor.idReg4() : descriptor.idReg3(), Is.EqualTo(fourth ? REG_R28_ARM64 : REG_R19_ARM64));
     }
 
-    [TestCase(IF_DR_3A, REG_R2, REG_R3)]
-    [TestCase(IF_DR_3B, REG_LR, REG_R0)]
-    [TestCase(IF_DR_4A, REG_R0, REG_LR)]
+    [TestCase(IF_DR_3A, REG_R2_ARM64, REG_R3_ARM64)]
+    [TestCase(IF_DR_3B, REG_LR_ARM64, REG_R0_ARM64)]
+    [TestCase(IF_DR_4A, REG_R0_ARM64, REG_LR_ARM64)]
     public static void SanityChecksUseThirdAndFourthRegisters(
         Emitter.insFormat format, regNumber third, regNumber fourth)
     {
         var descriptor = RecordingEmitter.Basic(INS_nop, format);
         descriptor.idOpSize(EA_8BYTE);
-        descriptor.idReg1(REG_R0);
-        descriptor.idReg2(REG_R1);
+        descriptor.idReg1(REG_R0_ARM64);
+        descriptor.idReg2(REG_R1_ARM64);
         Unsafe.As<Emitter.instrDesc.idAddrUnion, ulong>(ref descriptor.idAddr()) =
             ((ulong)third << 35) | ((ulong)fourth << 42);
         CheckSanity(CreateEmitter(), descriptor);
     }
 
-    [TestCase(IF_BI_1A, EA_4BYTE, REG_LR, REG_R0)]
-    [TestCase(IF_BR_1A, EA_8BYTE, REG_R0, REG_R0)]
-    [TestCase(IF_DR_2A, EA_8BYTE, REG_ZR, REG_R0)]
-    [TestCase(IF_DR_2G, EA_8BYTE, REG_ZR, REG_ZR)]
-    [TestCase(IF_DV_1C, EA_4BYTE, REG_V31, REG_R0)]
-    [TestCase(IF_DV_2G, EA_2BYTE, REG_V0, REG_V31)]
-    [TestCase(IF_PC_2A, EA_8BYTE, REG_LR, REG_ZR)]
-    [TestCase(IF_SR_1A, EA_8BYTE, REG_R0, REG_R0)]
+    [TestCase(IF_BI_1A, EA_4BYTE, REG_LR_ARM64, REG_R0_ARM64)]
+    [TestCase(IF_BR_1A, EA_8BYTE, REG_R0_ARM64, REG_R0_ARM64)]
+    [TestCase(IF_DR_2A, EA_8BYTE, REG_ZR_ARM64, REG_R0_ARM64)]
+    [TestCase(IF_DR_2G, EA_8BYTE, REG_ZR_ARM64, REG_ZR_ARM64)]
+    [TestCase(IF_DV_1C, EA_4BYTE, REG_V31_ARM64, REG_R0_ARM64)]
+    [TestCase(IF_DV_2G, EA_2BYTE, REG_V0_ARM64, REG_V31_ARM64)]
+    [TestCase(IF_PC_2A, EA_8BYTE, REG_LR_ARM64, REG_ZR_ARM64)]
+    [TestCase(IF_SR_1A, EA_8BYTE, REG_R0_ARM64, REG_R0_ARM64)]
     public static void SanityChecksAcceptNativeRegisterClasses(
         Emitter.insFormat format, emitAttr size, regNumber reg1, regNumber reg2)
     {
@@ -1852,12 +1852,12 @@ internal static unsafe class Arm64EmitterRecordingTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "isValidVectorShiftAmount")]
     private static extern bool IsValidVectorShift(Emitter? emitter, nint shift, emitAttr size, bool right);
 
-    [TestCase(IF_LARGEADR, REG_R0, 8u)]
-    [TestCase(IF_LARGEJMP, REG_R0, 8u)]
-    [TestCase(IF_LARGELDC, REG_R0, 8u)]
-    [TestCase(IF_LARGELDC, REG_V0, 12u)]
-    [TestCase(IF_LARGELDC, REG_V31, 12u)]
-    [TestCase(IF_SN_0A, REG_R0, 4u)]
+    [TestCase(IF_LARGEADR, REG_R0_ARM64, 8u)]
+    [TestCase(IF_LARGEJMP, REG_R0_ARM64, 8u)]
+    [TestCase(IF_LARGELDC, REG_R0_ARM64, 8u)]
+    [TestCase(IF_LARGELDC, REG_V0_ARM64, 12u)]
+    [TestCase(IF_LARGELDC, REG_V31_ARM64, 12u)]
+    [TestCase(IF_SN_0A, REG_R0_ARM64, 4u)]
     public static void DescriptorCodeSizesFollowFormatAndRegisterClass(Emitter.insFormat format, regNumber reg, uint size)
     {
         var descriptor = RecordingEmitter.Basic(INS_nop, format);
@@ -1933,23 +1933,23 @@ internal static unsafe class Arm64EmitterRecordingTests
     private static extern ref uint[] FormatCounts(Emitter? emitter);
 #endif
 
-    [TestCase(false, INS_ldr, EA_8BYTE, REG_R4, 0, 0, false, IF_LS_2A, 0)]
-    [TestCase(false, INS_ldrb, EA_4BYTE, REG_R4, 4094, 1, false, IF_LS_2B, 4095)]
-    [TestCase(false, INS_ldrsb, EA_8BYTE, REG_R4, -256, 0, true, IF_LS_2C, -256)]
-    [TestCase(false, INS_ldrh, EA_4BYTE, REG_R4, 8190, 0, false, IF_LS_2B, 4095)]
-    [TestCase(false, INS_ldrsh, EA_8BYTE, REG_R4, 3, 0, false, IF_LS_2C, 3)]
-    [TestCase(false, INS_ldrsw, EA_8BYTE, REG_R4, 16380, 0, false, IF_LS_2B, 4095)]
-    [TestCase(false, INS_ldr, EA_GCREF, REG_R4, 32760, 0, false, IF_LS_2B, 4095)]
-    [TestCase(false, INS_ldr, EA_16BYTE, REG_V4, 65520, 0, false, IF_LS_2B, 4095)]
-    [TestCase(false, INS_lea, EA_8BYTE, REG_R4, -4095, 0, true, IF_DI_2A, 4095)]
-    [TestCase(false, INS_lea, EA_8BYTE, REG_R4, 4090, 5, false, IF_DI_2A, 4095)]
-    [TestCase(false, INS_str, EA_8BYTE, REG_R4, 8, 0, false, IF_LS_2B, 1)]
-    [TestCase(true, INS_strb, EA_4BYTE, REG_R4, 0, 0, false, IF_LS_2A, 0)]
-    [TestCase(true, INS_strh, EA_4BYTE, REG_R4, -256, 0, true, IF_LS_2C, -256)]
-    [TestCase(true, INS_str, EA_4BYTE, REG_R4, 16380, 0, false, IF_LS_2B, 4095)]
-    [TestCase(true, INS_str, EA_BYREF, REG_R4, 32760, 0, false, IF_LS_2B, 4095)]
-    [TestCase(true, INS_str, EA_16BYTE, REG_V4, 65520, 0, false, IF_LS_2B, 4095)]
-    [TestCase(true, INS_str, EA_16BYTE, REG_V4, 255, 0, false, IF_LS_2C, 255)]
+    [TestCase(false, INS_ldr, EA_8BYTE, REG_R4_ARM64, 0, 0, false, IF_LS_2A, 0)]
+    [TestCase(false, INS_ldrb, EA_4BYTE, REG_R4_ARM64, 4094, 1, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldrsb, EA_8BYTE, REG_R4_ARM64, -256, 0, true, IF_LS_2C, -256)]
+    [TestCase(false, INS_ldrh, EA_4BYTE, REG_R4_ARM64, 8190, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldrsh, EA_8BYTE, REG_R4_ARM64, 3, 0, false, IF_LS_2C, 3)]
+    [TestCase(false, INS_ldrsw, EA_8BYTE, REG_R4_ARM64, 16380, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldr, EA_GCREF, REG_R4_ARM64, 32760, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_ldr, EA_16BYTE, REG_V4_ARM64, 65520, 0, false, IF_LS_2B, 4095)]
+    [TestCase(false, INS_lea, EA_8BYTE, REG_R4_ARM64, -4095, 0, true, IF_DI_2A, 4095)]
+    [TestCase(false, INS_lea, EA_8BYTE, REG_R4_ARM64, 4090, 5, false, IF_DI_2A, 4095)]
+    [TestCase(false, INS_str, EA_8BYTE, REG_R4_ARM64, 8, 0, false, IF_LS_2B, 1)]
+    [TestCase(true, INS_strb, EA_4BYTE, REG_R4_ARM64, 0, 0, false, IF_LS_2A, 0)]
+    [TestCase(true, INS_strh, EA_4BYTE, REG_R4_ARM64, -256, 0, true, IF_LS_2C, -256)]
+    [TestCase(true, INS_str, EA_4BYTE, REG_R4_ARM64, 16380, 0, false, IF_LS_2B, 4095)]
+    [TestCase(true, INS_str, EA_BYREF, REG_R4_ARM64, 32760, 0, false, IF_LS_2B, 4095)]
+    [TestCase(true, INS_str, EA_16BYTE, REG_V4_ARM64, 65520, 0, false, IF_LS_2B, 4095)]
+    [TestCase(true, INS_str, EA_16BYTE, REG_V4_ARM64, 255, 0, false, IF_LS_2C, 255)]
     public static void LocalStackRecordingPreservesFrameAndMetadata(bool store, instruction ins, emitAttr attr,
         regNumber reg, int frameOffset, int localOffset, bool fpBased, Emitter.insFormat format, int immediate)
     {
@@ -1968,7 +1968,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(id.idIns(), Is.EqualTo(expectedIns));
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
         Assert.That(id.idReg1(), Is.EqualTo(reg));
-        Assert.That(id.idReg2(), Is.EqualTo(fpBased ? REG_FPBASE : REG_ZR));
+        Assert.That(id.idReg2(), Is.EqualTo(fpBased ? REG_FPBASE : REG_ZR_ARM64));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)immediate));
         Assert.That(id.idGCref(), Is.EqualTo(attr == EA_GCREF ? GCInfo.GCtype.GCT_GCREF :
             attr == EA_BYREF ? GCInfo.GCtype.GCT_BYREF : GCInfo.GCtype.GCT_NONE));
@@ -1996,19 +1996,19 @@ internal static unsafe class Arm64EmitterRecordingTests
         var emitter = CreateLocalStackEmitter(offset, fpBased);
         if (ins is INS_ldp or INS_ldnp)
         {
-            RecordLocalLoadPair(emitter, ins, EA_GCREF, secondAttr, REG_R4, REG_R5, 0, 0);
+            RecordLocalLoadPair(emitter, ins, EA_GCREF, secondAttr, REG_R4_ARM64, REG_R5_ARM64, 0, 0);
         }
         else
         {
-            RecordLocalStorePair(emitter, ins, EA_GCREF, secondAttr, REG_R4, REG_R5, 0, 0);
+            RecordLocalStorePair(emitter, ins, EA_GCREF, secondAttr, REG_R4_ARM64, REG_R5_ARM64, 0, 0);
         }
 
         var id = LastInstruction(emitter) ?? throw new AssertionException("No local pair was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
         Assert.That(id.idInsFmt(), Is.EqualTo(format));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_R4));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_R5));
-        Assert.That(id.idReg3(), Is.EqualTo(reserved ? REG_OPT_RSVD : fpBased ? REG_FPBASE : REG_ZR));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_R4_ARM64));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_R5_ARM64));
+        Assert.That(id.idReg3(), Is.EqualTo(reserved ? REG_OPT_RSVD : fpBased ? REG_FPBASE : REG_ZR_ARM64));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)immediate));
         Assert.That(id.idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
         Assert.That(id.idGCrefReg2(), Is.EqualTo(secondAttr == EA_GCREF ? GCInfo.GCtype.GCT_GCREF :
@@ -2026,10 +2026,10 @@ internal static unsafe class Arm64EmitterRecordingTests
         }
     }
 
-    [TestCase(false, false, REG_V4, IF_SVE_IE_2A)]
-    [TestCase(false, true, REG_P1, IF_SVE_ID_2A)]
-    [TestCase(true, false, REG_P1, IF_SVE_JG_2A)]
-    [TestCase(true, true, REG_V4, IF_SVE_JH_2A)]
+    [TestCase(false, false, REG_V4_ARM64, IF_SVE_IE_2A)]
+    [TestCase(false, true, REG_P1_ARM64, IF_SVE_ID_2A)]
+    [TestCase(true, false, REG_P1_ARM64, IF_SVE_JG_2A)]
+    [TestCase(true, true, REG_V4_ARM64, IF_SVE_JH_2A)]
     public static void LocalStackRecordingScalableLocalsAndTemps(bool store, bool temp,
         regNumber reg, Emitter.insFormat format)
     {
@@ -2096,11 +2096,11 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void LocalStackRecordingImmediateWrapper(instruction ins, int immediate)
     {
         var emitter = CreateEmitter();
-        RecordFlexibleImmediate(emitter, ins, EA_8BYTE, REG_R4, REG_R5, immediate);
+        RecordFlexibleImmediate(emitter, ins, EA_8BYTE, REG_R4_ARM64, REG_R5_ARM64, immediate);
         var id = LastInstruction(emitter) ?? throw new AssertionException("No immediate instruction was recorded.");
         Assert.That(id.idIns(), Is.EqualTo(ins));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_R4));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_R5));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_R4_ARM64));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_R5_ARM64));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
@@ -2119,16 +2119,16 @@ internal static unsafe class Arm64EmitterRecordingTests
         regSet.tmpGetNum(-1).tdTempOffs = 16;
         if (store)
         {
-            RecordLocalStore(emitter, INS_str, EA_8BYTE, REG_R4, -1, 8);
+            RecordLocalStore(emitter, INS_str, EA_8BYTE, REG_R4_ARM64, -1, 8);
         }
         else
         {
-            RecordLocalLoad(emitter, INS_ldr, EA_8BYTE, REG_R4, -1, 8);
+            RecordLocalLoad(emitter, INS_ldr, EA_8BYTE, REG_R4_ARM64, -1, 8);
         }
 
         var id = LastInstruction(emitter) ?? throw new AssertionException("No spill-temp access was recorded.");
         Assert.That(id.idInsFmt(), Is.EqualTo(IF_LS_2B));
-        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(id.idReg2(), Is.EqualTo(REG_ZR_ARM64));
         Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)3));
         Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(-1));
         Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(8));
@@ -2144,11 +2144,11 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.opts.canUseAllOpts = true;
         if (store)
         {
-            RecordLocalStore(emitter, expected, EA_8BYTE, REG_R4, 0, 0);
+            RecordLocalStore(emitter, expected, EA_8BYTE, REG_R4_ARM64, 0, 0);
         }
         else
         {
-            RecordLocalLoad(emitter, expected, EA_8BYTE, REG_R4, 0, 0);
+            RecordLocalLoad(emitter, expected, EA_8BYTE, REG_R4_ARM64, 0, 0);
         }
 
         var instruction = LastInstruction(emitter) ?? throw new AssertionException("No local stack access was recorded.");
@@ -2168,14 +2168,14 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.lvaTable[0].UnknownSizeFrameIndex = index;
         compiler.unkSizeFrame.nVector = (uint)(index + 1);
         compiler.unkSizeFrame.FinalizeLayout();
-        RecordLocalLoad(emitter, INS_lea, EA_8BYTE, REG_R4, 0, 0);
+        RecordLocalLoad(emitter, INS_lea, EA_8BYTE, REG_R4_ARM64, 0, 0);
         Assert.That(GroupSize(emitter), Is.EqualTo(recordedSize));
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(recordedSize / 4));
         if (index == 31)
         {
             Assert.That(instructions[0].idIns(), Is.EqualTo(INS_sve_addvl));
-            Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_R4));
+            Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_R4_ARM64));
             Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_UNKBASE));
             Assert.That(Emitter.emitGetInsSC(instructions[0]), Is.EqualTo(-(nint)32));
         }
@@ -2183,7 +2183,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         {
             Assert.That(instructions[1].idIns(), Is.EqualTo(INS_sve_rdvl));
             Assert.That(instructions[2].idIns(), Is.EqualTo(INS_madd));
-            Assert.That(instructions[2].idReg1(), Is.EqualTo(REG_R4));
+            Assert.That(instructions[2].idReg1(), Is.EqualTo(REG_R4_ARM64));
         }
     }
 
@@ -2197,27 +2197,27 @@ internal static unsafe class Arm64EmitterRecordingTests
         var emitter = CreateLocalStackEmitter(offset, fpBased);
         if (store)
         {
-            RecordLocalStore(emitter, ins, EA_8BYTE, REG_R4, 0, 0);
+            RecordLocalStore(emitter, ins, EA_8BYTE, REG_R4_ARM64, 0, 0);
         }
         else
         {
-            RecordLocalLoad(emitter, ins, EA_8BYTE, REG_R4, 0, 0);
+            RecordLocalLoad(emitter, ins, EA_8BYTE, REG_R4_ARM64, 0, 0);
         }
 
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(2));
         Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_OPT_RSVD));
         Assert.That(instructions[1].idInsFmt(), Is.EqualTo(format));
-        Assert.That(instructions[1].idReg1(), Is.EqualTo(REG_R4));
-        Assert.That(instructions[1].idReg2(), Is.EqualTo(fpBased ? REG_FPBASE : REG_ZR));
+        Assert.That(instructions[1].idReg1(), Is.EqualTo(REG_R4_ARM64));
+        Assert.That(instructions[1].idReg2(), Is.EqualTo(fpBased ? REG_FPBASE : REG_ZR_ARM64));
         Assert.That(instructions[1].idIsLclVar(), Is.True);
         Assert.That(GroupSize(emitter), Is.EqualTo(8));
     }
 
-    [TestCase(false, REG_V4, IF_SVE_IE_2A)]
-    [TestCase(false, REG_P1, IF_SVE_ID_2A)]
-    [TestCase(true, REG_V4, IF_SVE_JH_2A)]
-    [TestCase(true, REG_P1, IF_SVE_JG_2A)]
+    [TestCase(false, REG_V4_ARM64, IF_SVE_IE_2A)]
+    [TestCase(false, REG_P1_ARM64, IF_SVE_ID_2A)]
+    [TestCase(true, REG_V4_ARM64, IF_SVE_JH_2A)]
+    [TestCase(true, REG_P1_ARM64, IF_SVE_JG_2A)]
     public static void MaterializationScalableAccessUsesFixedFrameAddress(bool store,
         regNumber reg, Emitter.insFormat format)
     {
@@ -2254,7 +2254,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         var address = CurrentInstructions(emitter)[0];
         Assert.That(address.idIns(), Is.EqualTo(INS_add));
         Assert.That(address.idReg1(), Is.EqualTo(REG_OPT_RSVD));
-        Assert.That(address.idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(address.idReg2(), Is.EqualTo(REG_ZR_ARM64));
         Assert.That(Emitter.emitGetInsSC(address), Is.EqualTo((nint)24));
     }
 
@@ -2272,7 +2272,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateLocalStackEmitter(0, false);
         var codeGen = EmitterCodeGen(emitter);
-        codeGen.instGen_Set_Reg_To_Imm(size, REG_R4, unchecked((nint)value));
+        codeGen.instGen_Set_Reg_To_Imm(size, REG_R4_ARM64, unchecked((nint)value));
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(count));
         Assert.That(instructions[0].idIns(), Is.EqualTo(first));
@@ -2280,10 +2280,10 @@ internal static unsafe class Arm64EmitterRecordingTests
         for (var index = 0; index < instructions.Count; index++)
         {
             var id = instructions[index];
-            Assert.That(id.idReg1(), Is.EqualTo(REG_R4));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_R4_ARM64));
             if (value == 0)
             {
-                Assert.That(id.idReg2(), Is.EqualTo(REG_ZR));
+                Assert.That(id.idReg2(), Is.EqualTo(REG_ZR_ARM64));
                 continue;
             }
 
@@ -2304,27 +2304,27 @@ internal static unsafe class Arm64EmitterRecordingTests
 
         var mask = size == EA_8BYTE ? ulong.MaxValue : uint.MaxValue;
         Assert.That(reconstructed & mask, Is.EqualTo(unchecked((ulong)value) & mask));
-        Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(REG_R4.SingleTypeMask)));
+        Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(REG_R4_ARM64.SingleTypeMask)));
         Assert.That(GroupSize(emitter), Is.EqualTo(count * 4));
     }
 
-    [TestCase(0, REG_R5, 1)]
+    [TestCase(0, REG_R5_ARM64, 1)]
     [TestCase(4095, REG_SPBASE, 1)]
-    [TestCase(0x12345678, REG_R5, 3)]
+    [TestCase(0x12345678, REG_R5_ARM64, 3)]
     [TestCase(0x12345678, REG_SPBASE, 3)]
     public static void MaterializationBasePlusImmediatePreservesSpOperand(int immediate, regNumber baseReg, int count)
     {
         var emitter = CreateLocalStackEmitter(0, false);
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Base_Plus_Imm(EA_8BYTE, REG_R4, baseReg, immediate);
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Base_Plus_Imm(EA_8BYTE, REG_R4_ARM64, baseReg, immediate);
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(count));
         var add = instructions[^1];
         Assert.That(add.idIns(), Is.EqualTo(immediate == 0 ? INS_mov : INS_add));
-        Assert.That(add.idReg1(), Is.EqualTo(REG_R4));
-        Assert.That(add.idReg2(), Is.EqualTo(baseReg == REG_SPBASE ? REG_ZR : baseReg));
+        Assert.That(add.idReg1(), Is.EqualTo(REG_R4_ARM64));
+        Assert.That(add.idReg2(), Is.EqualTo(baseReg == REG_SPBASE ? REG_ZR_ARM64 : baseReg));
         if (count > 1)
         {
-            Assert.That(add.idReg3(), Is.EqualTo(REG_R4));
+            Assert.That(add.idReg3(), Is.EqualTo(REG_R4_ARM64));
         }
     }
 
@@ -2337,7 +2337,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         var emitter = CreateLocalStackEmitter(0, false);
         var compiler = EmitterCompiler(emitter) ?? throw new AssertionException("Missing compiler.");
         compiler.opts.compReloc = reloc;
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R4, (nint)address
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE | EA_CNS_RELOC_FLG, REG_R4_ARM64, (nint)address
 #if DEBUG
             , targetHandle: 0x4321, gtFlags: GTF_ICON_CLASS_HDL
 #endif
@@ -2351,7 +2351,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         {
             Assert.That((nint)first.idAddr().iiaAddr, Is.EqualTo((nint)address));
             Assert.That(instructions[1].idIns(), Is.EqualTo(INS_add));
-            Assert.That(instructions[1].idReg2(), Is.EqualTo(REG_R4));
+            Assert.That(instructions[1].idReg2(), Is.EqualTo(REG_R4_ARM64));
             Assert.That(instructions[1].idIsCnsReloc(), Is.True);
             Assert.That((nint)instructions[1].idAddr().iiaAddr, Is.EqualTo((nint)address));
 #if DEBUG
@@ -2366,7 +2366,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MaterializationAdrDoesNotAddAPageOffsetInstruction()
     {
         var emitter = CreateLocalStackEmitter(0, false);
-        emitter.emitIns_R_AI(INS_adr, EA_8BYTE | EA_DSP_RELOC_FLG, REG_R4, 0x12345678);
+        emitter.emitIns_R_AI(INS_adr, EA_8BYTE | EA_DSP_RELOC_FLG, REG_R4_ARM64, 0x12345678);
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(1));
         Assert.That(instructions[0].idInsFmt(), Is.EqualTo(IF_DI_1E));
@@ -2378,7 +2378,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MaterializationBitmaskUsesASingleMove()
     {
         var emitter = CreateLocalStackEmitter(0, false);
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4, unchecked((nint)0x00ff00ff00ff00ff));
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4_ARM64, unchecked((nint)0x00ff00ff00ff00ff));
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(1));
         Assert.That(instructions[0].idIns(), Is.EqualTo(INS_mov));
@@ -2389,11 +2389,11 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MaterializationZeroPreservesNativeFlagHandling()
     {
         var emitter = CreateLocalStackEmitter(0, false);
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4, 0, insFlags.INS_FLAGS_SET);
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4_ARM64, 0, insFlags.INS_FLAGS_SET);
         var instructions = CurrentInstructions(emitter);
         Assert.That(instructions, Has.Count.EqualTo(1));
         Assert.That(instructions[0].idIns(), Is.EqualTo(INS_mov));
-        Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_ZR));
+        Assert.That(instructions[0].idReg2(), Is.EqualTo(REG_ZR_ARM64));
     }
 
 #if DEBUG
@@ -2402,7 +2402,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     public static void MaterializationHalfwordCookiesBelongOnlyToTheLowHalfword(long value)
     {
         var emitter = CreateLocalStackEmitter(0, false);
-        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4, (nint)value,
+        EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R4_ARM64, (nint)value,
             targetHandle: 0x4321, gtFlags: GTF_ICON_CLASS_HDL);
         foreach (var id in CurrentInstructions(emitter))
         {
@@ -2418,7 +2418,7 @@ internal static unsafe class Arm64EmitterRecordingTests
     {
         var emitter = CreateLocalStackEmitter(0, false);
         Assert.That(() => EmitterCodeGen(emitter).instGen_Set_Reg_To_Imm(
-            EA_8BYTE, REG_R4, 1, insFlags.INS_FLAGS_SET),
+            EA_8BYTE, REG_R4_ARM64, 1, insFlags.INS_FLAGS_SET),
             Throws.Exception.With.Message.Contains("canEncode"));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
@@ -2443,13 +2443,13 @@ internal static unsafe class Arm64EmitterRecordingTests
         var value = BitConverter.UInt64BitsToDouble(bits);
         var tree = compiler.gtNewDconNode(type, value);
         var codeGen = EmitterCodeGen(emitter);
-        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask));
+        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3_ARM64.SingleTypeMask));
         compiler.opts.compCodeOpt = Compiler.SMALL_CODE;
-        RecordConstantNode(codeGen, REG_V2, type, tree);
+        RecordConstantNode(codeGen, REG_V2_ARM64, type, tree);
 
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing constant.");
         Assert.That(descriptor.idIns(), Is.EqualTo(expected));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2_ARM64));
         if (expected == INS_ldr)
         {
             var section = emitter.emitConsDsc.dsdList ?? throw new AssertionException("Missing constant data.");
@@ -2458,7 +2458,7 @@ internal static unsafe class Arm64EmitterRecordingTests
             Assert.That(section.dsDataType, Is.EqualTo(type));
             Assert.That(section.Data, Is.EqualTo(type == var_types.TYP_FLOAT
                 ? BitConverter.GetBytes((float)value) : BitConverter.GetBytes(value)));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3_ARM64));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_LARGELDC));
         }
         else
@@ -2484,15 +2484,15 @@ internal static unsafe class Arm64EmitterRecordingTests
         using var tls = new JitTls(null);
 #endif
         var emitter = CreateConstantEmitter();
-        var tree = new GenTreeVecCon(type) { RegNum = REG_V3 };
+        var tree = new GenTreeVecCon(type) { RegNum = REG_V3_ARM64 };
         tree.SimdVal.AsSpan<uint>().Fill(bits);
         var targetType = type == var_types.TYP_SIMD12 ? var_types.TYP_SIMD16 : type;
-        RecordConstantNode(EmitterCodeGen(emitter), REG_V2, targetType, tree);
+        RecordConstantNode(EmitterCodeGen(emitter), REG_V2_ARM64, targetType, tree);
 
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing vector constant.");
         Assert.That(descriptor.idIns(), Is.EqualTo(expected));
         Assert.That(descriptor.idInsOpt(), Is.EqualTo(option));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2_ARM64));
         Assert.That(emitter.emitConsDsc.dsdList, Is.Null);
     }
 
@@ -2509,9 +2509,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         tree.SimdVal.AsSpan<uint>().Fill(0x12);
         tree.SimdVal.u32[type == var_types.TYP_SIMD8 ? 1 : 3] = 0x13;
         var codeGen = EmitterCodeGen(emitter);
-        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask));
+        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3_ARM64.SingleTypeMask));
         var targetType = type == var_types.TYP_SIMD8 ? type : var_types.TYP_SIMD16;
-        RecordConstantNode(codeGen, REG_V2, targetType, tree);
+        RecordConstantNode(codeGen, REG_V2_ARM64, targetType, tree);
 
         var section = emitter.emitConsDsc.dsdList ?? throw new AssertionException("Missing vector data.");
         Assert.That(section.Data, Is.EqualTo(tree.SimdVal.AsSpan<byte>()[..(int)targetType.Size].ToArray()));
@@ -2519,8 +2519,8 @@ internal static unsafe class Arm64EmitterRecordingTests
         Assert.That(section.dsDataType, Is.EqualTo(targetType));
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing vector load.");
         Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2));
-        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_V2_ARM64));
+        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R3_ARM64));
     }
 
     [TestCase(var_types.TYP_INT, 0L, false, GCInfo.GCtype.GCT_NONE)]
@@ -2540,11 +2540,11 @@ internal static unsafe class Arm64EmitterRecordingTests
         compiler.opts.compReloc = reloc;
         var tree = new GenTreeIntCon(type, (nint)value);
         var codeGen = EmitterCodeGen(emitter);
-        RecordConstantNode(codeGen, REG_R4, type, tree);
+        RecordConstantNode(codeGen, REG_R4_ARM64, type, tree);
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing integer constant.");
         Assert.That(descriptor.idGCref(), Is.EqualTo(gcType));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R4));
-        Assert.That((codeGen.RegSet.rsGetModifiedRegsMask() & new regMaskTP(REG_R4.SingleTypeMask)) != RBM_NONE, Is.True);
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R4_ARM64));
+        Assert.That((codeGen.RegSet.rsGetModifiedRegsMask() & new regMaskTP(REG_R4_ARM64.SingleTypeMask)) != RBM_NONE, Is.True);
     }
 
     [TestCase(false)]
@@ -2560,7 +2560,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         var tree = new GenTreeIntCon(TYP_I_IMPL, 0x1234) {
             Flags = GTF_ICON_TLS_HDL | GTF_ICON_TLSGD_OFFSET,
         };
-        RecordConstantNode(EmitterCodeGen(emitter), REG_R4, TYP_I_IMPL, tree);
+        RecordConstantNode(EmitterCodeGen(emitter), REG_R4_ARM64, TYP_I_IMPL, tree);
         Assert.That(CurrentInstructions(emitter), Has.Count.EqualTo(reloc ? 0 : 1));
     }
 
@@ -2594,7 +2594,7 @@ internal static unsafe class Arm64EmitterRecordingTests
         emitter.emitIns(INS_nop);
         var handle = Compiler.eeFindJitDataOffs(64);
         RecordConstantAddress(emitter, INS_ldr, EA_8BYTE | (reloc ? EA_DSP_RELOC_FLG : 0),
-            REG_R4, REG_R4, handle, 4);
+            REG_R4_ARM64, REG_R4_ARM64, handle, 4);
         var keepLong = cold || reloc || forceLong;
         RecordingEmitter.CheckConstantAddress(emitter, keepLong, reloc, (nint)handle);
     }
@@ -2621,9 +2621,9 @@ internal static unsafe class Arm64EmitterRecordingTests
         tree.SimdScalableVal.Index.i32[0] = index;
         tree.SimdScalableVal.Step.i32[0] = step;
         var codeGen = EmitterCodeGen(emitter);
-        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3.SingleTypeMask | REG_R5.SingleTypeMask));
+        codeGen.InternalRegisters.Add(tree, new regMaskTP(REG_R3_ARM64.SingleTypeMask | REG_R5_ARM64.SingleTypeMask));
 
-        RecordConstantNode(codeGen, REG_V2, var_types.TYP_SIMD_ARM64, tree);
+        RecordConstantNode(codeGen, REG_V2_ARM64, var_types.TYP_SIMD_ARM64, tree);
         var instructions = CurrentInstructions(emitter)
             ?? throw new AssertionException("No scalable constant instructions were recorded.");
         var isScalar = kind == SimdScalableKind.SimdScalableScalar;
@@ -2644,7 +2644,7 @@ internal static unsafe class Arm64EmitterRecordingTests
             Assert.That(BitConverter.ToInt64(data.Data), Is.EqualTo((long)expected));
             Assert.That(data.dsSize, Is.EqualTo(8));
             Assert.That(data.dsDataType, Is.EqualTo(var_types.TYP_LONG));
-            Assert.That(load.idReg1(), Is.EqualTo(i == 0 ? REG_R3 : REG_R5));
+            Assert.That(load.idReg1(), Is.EqualTo(i == 0 ? REG_R3_ARM64 : REG_R5_ARM64));
             Assert.That(load.idReg2(), Is.EqualTo(load.idReg1()));
             section = data.dsNext;
         }
@@ -2657,7 +2657,7 @@ internal static unsafe class Arm64EmitterRecordingTests
             SimdScalableKind.SimdScalableScalar => INS_ins,
             _ => throw new AssertionException($"Unexpected scalable constant kind: {kind}."),
         }));
-        Assert.That(operation.idReg1(), Is.EqualTo(REG_V2));
+        Assert.That(operation.idReg1(), Is.EqualTo(REG_V2_ARM64));
         if (isScalar)
         {
             Assert.That(instructions[0].idIns(), Is.EqualTo(INS_sve_mov));
@@ -2676,11 +2676,11 @@ internal static unsafe class Arm64EmitterRecordingTests
         simdmask_t value = default;
         value.u64[0] = bits;
         var tree = new GenTreeMskCon(value);
-        RecordConstantNode(EmitterCodeGen(emitter), REG_P1, var_types.TYP_MASK, tree);
+        RecordConstantNode(EmitterCodeGen(emitter), REG_P1_ARM64, var_types.TYP_MASK, tree);
 
         var id = LastInstruction(emitter) ?? throw new AssertionException("No predicate instruction was recorded.");
         Assert.That(CurrentInstructions(emitter), Has.Count.EqualTo(1));
-        Assert.That(id.idReg1(), Is.EqualTo(REG_P1));
+        Assert.That(id.idReg1(), Is.EqualTo(REG_P1_ARM64));
         Assert.That(id.idOpSize(), Is.EqualTo(EA_SCALABLE));
         if (bits == 0)
         {

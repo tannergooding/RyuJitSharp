@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the generated register-enum closure: remove target-selected aliases and target/feature preprocessor branches from `sources/Core/jit/target/regNumber.generated.cs`; update `sources/GenerateTables/Program.cs` and its inputs together, then migrate remaining consumers to target-qualified identities or runtime dispatch without changing register ordinals.",
+    "nextAction": "Continue consumer-first register-alias migration: replace target-selected register names with `_ARM64` identities in `sources/Core/jit/targetarm64/Globals.Registers.cs` and `sources/Core/jit/unwindarm64/Compiler.PrologRecording.cs` where qualified constants exist, then run focused ARM64 register/prolog tests. Keep generated aliases until all consumers are converted.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Remove target-selected register enum aliases through the register table generator and migrate their remaining consumers.",
-      "doneWhen": "The register enum generator and checked-in output no longer select identities by target/feature preprocessor branches; remaining consumers use target-qualified identities or runtime dispatch while preserving native ordinals and supported-RID behavior.",
+      "scope": "Qualify ARM64 `regNumber` identities in the target register tables and ARM64 unwind prolog recording path.",
+      "doneWhen": "Both target-specific implementation files use `_ARM64` identities for every generated register alias while preserving register ordinals and unwind behavior; aliases remain available for unmigrated consumers.",
       "validation": "Pending.",
-      "deferred": "Continue target/feature preprocessor migration by coherent subsystem after this batch. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
+      "deferred": "Migrate remaining source and test consumers before changing the register generator or removing aliases. Continue target/feature preprocessor migration by coherent subsystem. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
