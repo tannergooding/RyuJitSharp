@@ -26,41 +26,7 @@ public partial class Emitter
 
     public static bool isModImmConst(int value)
     {
-        var unsignedValue = unchecked((uint)value);
-        var imm8 = unsignedValue & 0xffu;
-        if (imm8 == unsignedValue)
-        {
-            return true;
-        }
-
-        var imm32A = (imm8 << 16) | imm8;
-        if (imm32A == unsignedValue)
-        {
-            return true;
-        }
-
-        var imm32B = imm32A << 8;
-        if (imm32B == unsignedValue)
-        {
-            return true;
-        }
-
-        if ((imm32A | imm32B) == unsignedValue)
-        {
-            return true;
-        }
-
-        var mask32 = 0xffu;
-        for (var encode = 31; encode >= 8; encode--)
-        {
-            mask32 <<= 1;
-            if ((unsignedValue & ~mask32) == 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return TargetCostEstimation.IsArm32ModifiedImmediate(value);
     }
 
     public static int encodeModImmConst(int value)

@@ -69,6 +69,9 @@ internal static unsafe class LocalMorphTests
     {
         WithCompiler(compiler =>
         {
+            var costProbe = compiler.gtNewIconNode(TYP_INT, 1);
+            _ = compiler.gtSetEvalOrder(costProbe);
+
             CallArgs arguments = default;
             for (var i = 0; i < 6; i++)
             {
@@ -85,7 +88,12 @@ internal static unsafe class LocalMorphTests
             _ = compiler.gtSetCallArgsOrder(ref arguments, late, ref execution, ref size);
 
             Assert.That(execution, Is.EqualTo(250 + (6 * (late ? 1 : 1 + IND_COST_EX))));
-            Assert.That(size, Is.EqualTo(250 + (6 * (late ? 2 : 1))));
+            var expectedSizePerArgument = costProbe.CostSz;
+            if ((late == Configuration.TARGET_XARCH) && (expectedSizePerArgument is not 0))
+            {
+                expectedSizePerArgument++;
+            }
+            Assert.That(size, Is.EqualTo(250 + (6 * expectedSizePerArgument)));
         });
     }
 

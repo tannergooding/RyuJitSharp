@@ -45,9 +45,7 @@ public partial class Emitter
 
     public static int SizeOfSLEB128(long value)
     {
-        var signAdjustedValue = unchecked((ulong)(value ^ (value >> 63))) | 1UL;
-        var significantBits = 1 + 6 + 64 - BitOperations.LeadingZeroCount(signAdjustedValue);
-        return (significantBits * 37) >> 8;
+        return TargetCostEstimation.SizeOfWasmSleb128(value);
     }
 
     public static byte GetWasmValueTypeCode(WasmValueType type)

@@ -39,23 +39,7 @@ public unsafe partial class Emitter
 
     public static bool emitIns_valid_imm_for_mov(long imm, emitAttr size)
     {
-        if (canEncodeHalfwordImm(imm, size))
-        {
-            return true;
-        }
-
-        var notOfImm = NOT_helper(imm, getBitWidth(size));
-        if (canEncodeHalfwordImm(notOfImm, size))
-        {
-            return true;
-        }
-
-        if (canEncodeBitMaskImm(imm, size))
-        {
-            return true;
-        }
-
-        return false;
+        return TargetCostEstimation.IsArm64MoveImmediate(imm, size);
     }
 
     public static bool emitIns_valid_imm_for_movi(long imm, emitAttr elementSize)
@@ -88,26 +72,12 @@ public unsafe partial class Emitter
 
     public static bool emitIns_valid_imm_for_fmov(double immDbl)
     {
-        if (canEncodeFloatImm8(immDbl))
-        {
-            return true;
-        }
-
-        return false;
+        return TargetCostEstimation.IsArm64FloatImmediate(immDbl);
     }
 
     public static bool emitIns_valid_imm_for_add(long imm, emitAttr size = EA_8BYTE)
     {
-        if (unsigned_abs(imm) <= 0x0fff)
-        {
-            return true;
-        }
-        else if (canEncodeWithShiftImmBy12(imm))
-        {
-            return true;
-        }
-
-        return false;
+        return TargetCostEstimation.IsArm64AddImmediate(imm);
     }
 
     public static bool emitIns_valid_imm_for_cmp(long imm, emitAttr size)
@@ -127,24 +97,7 @@ public unsafe partial class Emitter
 
     private static bool canEncodeWithShiftImmBy12(long imm)
     {
-        if (imm < 0)
-        {
-            imm = unchecked(-imm);
-        }
-
-        if (imm < 0)
-        {
-            return false;
-        }
-
-        if ((imm & 0x0fff) != 0)
-        {
-            return false;
-        }
-
-        imm >>= 12;
-
-        return imm <= 0x0fff;
+        return TargetCostEstimation.CanEncodeArm64ShiftedAddImmediate(imm);
     }
 
     private static uint getBitWidth(emitAttr size)
@@ -246,33 +199,19 @@ public unsafe partial class Emitter
 
     private static bool canEncodeHalfwordImm(long imm, emitAttr size, halfwordImm* wbHWI = null)
     {
-        assert((size == EA_4BYTE) || (size == EA_8BYTE));
-
-        var immWidth = size == EA_8BYTE ? 64 : 32;
-        var maxHW = size == EA_8BYTE ? 4 : 2;
-        var immMask = ulong.MaxValue >> (64 - immWidth);
-        var value = normalizeImm64(imm, size);
-
-        for (var hw = 0; hw < maxHW; hw++)
+        var canEncode = TargetCostEstimation.TryEncodeArm64HalfwordImmediate(
+            imm,
+            size,
+            out var halfwordIndex,
+            out var immediateValue);
+        if (canEncode && (wbHWI != null))
         {
-            var curMask = 0xffffUL << (hw * 16);
-            var checkBits = immMask & ~curMask;
-
-            if ((value & checkBits) == 0)
-            {
-                if (wbHWI != null)
-                {
-                    var val = ((value & curMask) >> (hw * 16)) & 0xFFFF;
-                    wbHWI->immHW = (uint)hw;
-                    wbHWI->immVal = (uint)val;
-                    assert(value == unchecked((ulong)emitDecodeHalfwordImm(*wbHWI, size)));
-                }
-
-                return true;
-            }
+            wbHWI->immHW = halfwordIndex;
+            wbHWI->immVal = immediateValue;
+            assert(normalizeImm64(imm, size) == unchecked((ulong)emitDecodeHalfwordImm(*wbHWI, size)));
         }
 
-        return false;
+        return canEncode;
     }
 
     private static ulong ROR_helper(ulong value, int sh, int width)
@@ -292,175 +231,37 @@ public unsafe partial class Emitter
 
     private static bool canEncodeBitMaskImm(long imm, emitAttr size, bitMaskImm* wbBMI = null)
     {
-        var immWidth = getBitWidth(size);
-        var maxLen = size switch
+        var canEncode = TargetCostEstimation.TryEncodeArm64BitMaskImmediate(
+            imm,
+            size,
+            out var immediateN,
+            out var immediateR,
+            out var immediateS);
+        if (canEncode && (wbBMI != null))
         {
-            EA_1BYTE => 3,
-            EA_2BYTE => 4,
-            EA_4BYTE => 5,
-            EA_8BYTE => 6,
-            _ => 0,
-        };
-        assert(maxLen != 0);
-
-        var value = normalizeImm64(imm, size);
-        for (var len = 1; len <= maxLen; len++)
-        {
-            var elemWidth = 1 << len;
-            var elemMask = ulong.MaxValue >> (64 - elemWidth);
-            var tempImm = value;
-            var elemVal = tempImm & elemMask;
-
-            if ((elemVal == 0) || (elemVal == elemMask))
-            {
-                continue;
-            }
-
-            var checkedBits = elemWidth;
-            while (checkedBits < immWidth)
-            {
-                tempImm >>= elemWidth;
-                var nextElem = tempImm & elemMask;
-                if (nextElem != elemVal)
-                {
-                    break;
-                }
-
-                checkedBits += elemWidth;
-            }
-
-            if (checkedBits == immWidth)
-            {
-                // A rotated run of ones has exactly two transitions between zero and one.
-                var elemRor = ROR_helper(elemVal, 1, elemWidth);
-                var elemRorXor = elemVal ^ elemRor;
-                var bitCount = 0;
-                var oneBit = 1UL;
-                var R = (uint)elemWidth;
-                uint S = 0;
-                var incr = -1;
-
-                for (var bitNum = 0; bitNum < elemWidth; bitNum++)
-                {
-                    if (incr == -1)
-                    {
-                        R--;
-                    }
-                    if (bitCount == 1)
-                    {
-                        S = unchecked(S + (uint)incr);
-                    }
-
-                    if ((oneBit & elemRorXor) != 0)
-                    {
-                        bitCount++;
-                        if (bitCount == 1)
-                        {
-                            var toZeros = (oneBit & elemVal) != 0;
-                            if (toZeros)
-                            {
-                                S = (uint)elemWidth;
-                                incr = -1;
-                            }
-                            else
-                            {
-                                S = 0;
-                                incr = 1;
-                            }
-                        }
-                        else
-                        {
-                            incr = 0;
-                            if (bitCount > 2)
-                            {
-                                return false;
-                            }
-                        }
-                    }
-
-                    oneBit <<= 1;
-                }
-
-                assert(bitCount == 2);
-                if (bitCount != 2)
-                {
-                    return false;
-                }
-
-                assert(S > 0);
-                assert(S < elemWidth);
-                assert(R < elemWidth);
-                if (wbBMI != null)
-                {
-                    S--;
-                    if (len == 6)
-                    {
-                        wbBMI->immN = 1;
-                    }
-                    else
-                    {
-                        wbBMI->immN = 0;
-                        // Above S-1, complement the unused bits and leave the
-                        // element-width marker clear (emitarm64.cpp N:R:S encoding).
-                        var upperBitsOfS = (uint)(64 - (1 << (len + 1)));
-                        S |= upperBitsOfS;
-                    }
-                    wbBMI->immR = R;
-                    wbBMI->immS = S;
-                    assert(value == unchecked((ulong)emitDecodeBitMaskImm(*wbBMI, size)));
-                }
-
-                return true;
-            }
+            wbBMI->immN = immediateN;
+            wbBMI->immR = immediateR;
+            wbBMI->immS = immediateS;
+            assert(normalizeImm64(imm, size) == unchecked((ulong)emitDecodeBitMaskImm(*wbBMI, size)));
         }
 
-        return false;
+        return canEncode;
     }
 
     private static bool canEncodeFloatImm8(double immDbl, floatImm8* wbFPI = null)
     {
-        var canEncode = false;
-        var val = immDbl;
-        var sign = 0;
-        if (val < 0.0)
+        var canEncode = TargetCostEstimation.TryEncodeArm64FloatImmediate(
+            immDbl,
+            out var sign,
+            out var exponent,
+            out var mantissa);
+        if (canEncode && (wbFPI != null))
         {
-            val = -val;
-            sign = 1;
-        }
-
-        var exp = 0;
-        while ((val < 1.0) && (exp >= -4))
-        {
-            val *= 2.0;
-            exp--;
-        }
-
-        while ((val >= 2.0) && (exp <= 5))
-        {
-            val *= 0.5;
-            exp++;
-        }
-
-        exp += 3;
-        val *= 16.0;
-        var ival = unchecked((int)val);
-
-        if ((exp >= 0) && (exp <= 7))
-        {
-            if (val == (double)ival)
-            {
-                canEncode = true;
-                if (wbFPI != null)
-                {
-                    ival -= 16;
-                    assert((ival >= 0) && (ival <= 15));
-                    wbFPI->immSign = (uint)sign;
-                    wbFPI->immExp = (uint)(exp ^ 4);
-                    wbFPI->immMant = (uint)ival;
-                    var imm8 = wbFPI->immFPIVal;
-                    assert((imm8 >= 0) && (imm8 <= 0xff));
-                }
-            }
+            wbFPI->immSign = sign;
+            wbFPI->immExp = exponent;
+            wbFPI->immMant = mantissa;
+            var imm8 = wbFPI->immFPIVal;
+            assert((imm8 >= 0) && (imm8 <= 0xff));
         }
 
         return canEncode;

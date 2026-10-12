@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "In `Compiler.gt.cs::gtSetCallArgsOrder`, replace the two `TARGET_XARCH` preprocessor branches in call-argument size-cost accumulation with `Configuration.TARGET_XARCH`; preserve each target's existing cost formula and run the focused cost-order tests across xarch and non-xarch targets.",
+    "nextAction": "Continue universalizing target-specific node cloning in `Compiler.gt.cs::gtCloneExpr`, starting with `GT_STOREIND.RmwStatus` and the 32-bit-only `GT_MUL_LONG` clone, then the Swift/Wasm leaf cases.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace target preprocessor branches in `Compiler.gt.cs::gtNewConWithPattern` and `gtNewZeroConNode` with runtime `Configuration` checks without enabling vector types unsupported by the active target.",
-      "doneWhen": "Pattern constants retain the configured vector-capacity fill and zero padding, ARM64 scalable zero construction remains ARM64-specific, target-focused tests pass, and the validated batch is committed locally.",
-      "validation": "`CompilerTargetConfigurationTests` and `Arm64SimdMetadataTests` passed for win-x64 (Debug/Release 13 passed, 1 skip each), linux-arm64 (Debug 109 passed/3 skips; Release 92 passed/3 skips), browser-wasm (8 passed/4 skips each), and linux-riscv64 (3 passed/9 skips each).",
-      "deferred": "Remaining target/feature guards elsewhere in the compiler, generated tables, tests, and architecture backends; debug-only compile guards and `genAsyncResumeInfo` are outside this batch."
+      "scope": "Universalize `gtSetEvalOrder` special-node target costs and the indirect-store, MinOpts, and multi-operand ordering helpers. Preserve ARM virtual-stub and xarch call costs, HWI feature gating, xarch/x86 intrinsic costs, and Wasm's source-order constraint.",
+      "doneWhen": "All target/feature preprocessor branches in the eval-order and multi-operand-order region use runtime configuration without changing formulas or node behavior; focused target tests pass and the batch is committed locally.",
+      "validation": "`CompilerTargetConfigurationTests` passed in Debug and Release for win-x64 (32/1 skipped), win-x86 (33/1), linux-arm64 (29/3), linux-arm (22/9), linux-loongarch64 (21/9), linux-riscv64 (21/9), and browser-wasm (28/4). The new indirect-store reversal regression passed across all seven targets. Formatting and `git diff --check` passed. EnforceCodeStyleInBuild was disabled because full-analyzer builds report pre-existing IDE2002/IDE0059 diagnostics in untouched sections.",
+      "deferred": "Continue at `Compiler.gtCloneExpr` target-specific node cloning, then migrate the remaining compiler and other source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -544,6 +544,78 @@
       "disposition": "Loop alignment is selected at runtime and enabled only for xarch and ARM64. The xarch path retains 15-byte descriptor chunks and its zero-sized remainder; ARM64 retains four-byte padding descriptors. Descriptor logical sizes use the configured target, and unsupported targets fail with CORJIT_SKIPPED.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "Affected generated instruction/configuration outputs matched GenerateTables/Outputs. Focused x64 loop-alignment tests passed 76/76 in Debug with full analyzers and 71/71 in Release with analyzers disabled. FeatureConfigurationTests passed 28/28 in Debug and Release across win-x64, win-x86, win-arm64, osx-arm64, linux-x64, linux-arm64, linux-arm, browser-wasm, linux-loongarch64, and linux-riscv64; full analyzers were used except for Linux x64 and Debug browser/LoongArch/RISC-V runs. ARM64 late-disassembly Release tests passed 33/33. Full-analyzer Core Release test compilation remains blocked by CA1812 in EmitterLoopAlignmentClosureTests.View and DiscretionaryPolicyTests.FixedMultiplierPolicy; Linux x64 Debug full analysis is blocked by IDE0018 at Compiler.cs:1703."
+    },
+    {
+      "area": "universal-leaf-constant-costs",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp",
+        "src\\coreclr\\jit\\emitarm.cpp",
+        "src\\coreclr\\jit\\emitarm64.cpp",
+        "src\\coreclr\\jit\\emitriscv64.cpp",
+        "src\\coreclr\\jit\\emitwasm.cpp",
+        "src\\coreclr\\jit\\gentree.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.TargetCostEstimation.cs",
+        "sources\\Core\\jit\\emit\\Emitter.ArmImmediatePredicates.cs",
+        "sources\\Core\\jit\\emitarm64\\Emitter.ImmediatePredicates.cs",
+        "sources\\Core\\jit\\emitriscv64\\Emitter.ImmediateLoadDependencies.cs",
+        "sources\\Core\\jit\\emitriscv64\\Emitter.instrDesc.LoadImmediate.cs",
+        "sources\\Core\\jit\\emitwasm\\Emitter.WasmSizing.cs",
+        "sources\\Core\\jit\\gentree\\GenTreeIntConCommon.cs"
+      ],
+      "disposition": "Leaf constant costs use runtime target dispatch. Shared ARM predicates and RISC-V count planning are reused by the corresponding emitter helpers; Wasm SLEB sizing is shared with emission. Relocation checks preserve x86 and relative32 behavior. No observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Focused target tests passed in Debug and Release for win-x64, win-x86, linux-arm, linux-arm64, linux-riscv64, and browser-wasm. After adding the ARM64 floating constant-cost regression, `CompilerTargetConfigurationTests` passed 13/3 skipped in both Debug and Release on linux-arm64. Full-analyzer validation remains blocked by unrelated existing IDE2002/IDE0059 diagnostics."
+    },
+    {
+      "area": "universal-cast-costs",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs"
+      ],
+      "disposition": "GT_CAST costs dispatch at runtime across ARM32/ARM64, xarch, LoongArch/RISC-V, and Wasm. Existing xarch width-specific and opportunistic-instruction-set formulas and the six-point overflow adjustment are preserved; unsupported targets fail explicitly. No observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Integer and floating cast-cost regressions passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm."
+    },
+    {
+      "area": "universal-unary-costs",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs"
+      ],
+      "disposition": "Math.Abs, saturating, common math, upper-SIMD save/restore, and floating negation costs now use runtime target selection while retaining their previous formulas. The existing FEATURE_SIMD runtime guard remains on upper-SIMD cases; no observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Targeted unary-cost regressions passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm."
+    },
+    {
+      "area": "universal-scalar-binary-costs",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs"
+      ],
+      "disposition": "Local-store and scalar binary costs now use runtime target/feature selection. Target-width long adjustments, ARM and xarch floating formulas, binary intrinsic availability, Swift return handling, and Wasm operand-order behavior are retained. Unsupported operator cases still fail through the existing unreached path; no observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Floating arithmetic, long multiplication, and floating comparison cost regressions passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm."
+    },
+    {
+      "area": "universal-special-node-costs",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs"
+      ],
+      "disposition": "ARM and xarch call-cost adjustments, HWI feature dispatch and xarch intrinsic costs, the x86 long-vector adjustment, Wasm indirect-store handling, and multi-operand reversal now use runtime configuration. Existing formulas and explicit unsupported-operator failure behavior remain unchanged; no observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "CompilerTargetConfigurationTests passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm, including the indirect-store reversal regression."
     }
   ],
   "generatorInputMapping": {

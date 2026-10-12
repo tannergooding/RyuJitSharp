@@ -2144,7 +2144,7 @@ public partial class Compiler
         }
 
         const bool topOnly = true;
-        const bool isLIR   = true;
+        const bool isLIR = true;
         gtDispTree(node, ref indentStack, "", topOnly, isLIR);
 
         static void DisplayOperand(GenTree operand, string message, IndentInfo operandArc, ref IndentStack indentStack, int prefixIndent)
@@ -3674,7 +3674,7 @@ public partial class Compiler
     public StringBuilder gtPrintABILocation(StringBuilder stringBuilder, in AbiPassingInformation abiInfo)
     {
         var firstReg = REG_NA;
-        var lastReg  = REG_NA;
+        var lastReg = REG_NA;
 
         foreach (ref readonly var segment in abiInfo.Segments)
         {
@@ -3692,7 +3692,7 @@ public partial class Compiler
                     if (firstReg == REG_NA)
                     {
                         firstReg = reg;
-                        lastReg  = reg;
+                        lastReg = reg;
                     }
                     else if (REG_NEXT(lastReg) == reg)
                     {
@@ -3702,7 +3702,7 @@ public partial class Compiler
                     {
                         PrintRegs(stringBuilder, firstReg, lastReg);
                         firstReg = reg;
-                        lastReg  = reg;
+                        lastReg = reg;
                     }
                 }
 #else
@@ -7450,7 +7450,7 @@ public partial class Compiler
             if (lclNumIsTrueCSE(lclNum))
             {
                 kind = "cse";
-                num  = lclNum - optCSEstart;
+                num = lclNum - optCSEstart;
             }
             else if (Configuration.TARGET_ARM64 && (lclNum == lvaFfrRegister))
             {
@@ -7463,7 +7463,7 @@ public partial class Compiler
                 // Currently any new LclVar's introduced after the CSE phase
                 // are believed to be created by the "rationalizer" that is what is meant by the "rat" prefix.
                 kind = "rat";
-                num  = lclNum - (optCSEstart + optCSEcount);
+                num = lclNum - (optCSEstart + optCSEcount);
             }
             else if (lclNum == info.compLvFrameListRoot)
             {
@@ -7540,7 +7540,7 @@ public partial class Compiler
 
         ilKind = kind;
         ilName = name;
-        ilNum  = num;
+        ilNum = num;
     }
 #endif
 
@@ -9009,7 +9009,7 @@ public partial class Compiler
             }
         }
 
-        var  lclVar = gtNewLclvNode(type, lclNum);
+        var lclVar = gtNewLclvNode(type, lclNum);
 
         if (varDsc.IsAddressExposed)
         {
@@ -11732,7 +11732,7 @@ public partial class Compiler
                 if (isScalar)
                 {
                     simdSize = 8;
-                    type     = TYP_SIMD8;
+                    type = TYP_SIMD8;
 
                     op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
                     op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
@@ -11979,7 +11979,7 @@ public partial class Compiler
                 if (isScalar)
                 {
                     simdSize = 8;
-                    type     = TYP_SIMD8;
+                    type = TYP_SIMD8;
 
                     op1 = gtNewSimdCreateScalarUnsafeNode(type, op1, simdBaseType, simdSize);
                     op2 = gtNewSimdCreateScalarUnsafeNode(type, op2, simdBaseType, simdSize);
@@ -14297,16 +14297,19 @@ public partial class Compiler
 
                 costEx += node.CostEx;
 
-#if TARGET_XARCH
-                var nodeCostSz = node.CostSz;
-
-                if (nodeCostSz is not 0)
+                if (Configuration.TARGET_XARCH)
                 {
-                    costSz += nodeCostSz + 1;
+                    var nodeCostSz = node.CostSz;
+
+                    if (nodeCostSz is not 0)
+                    {
+                        costSz += nodeCostSz + 1;
+                    }
                 }
-#else
-                costSz += node.CostSz;
-#endif
+                else
+                {
+                    costSz += node.CostSz;
+                }
             }
         }
         else
@@ -14325,16 +14328,19 @@ public partial class Compiler
                     costEx += nodeCostEx + IND_COST_EX;
                 }
 
-#if TARGET_XARCH
-                costSz += node.CostSz;
-#else
-                var nodeCostSz = node.CostSz;
-
-                if (nodeCostSz is not 0)
+                if (Configuration.TARGET_XARCH)
                 {
-                    costSz += nodeCostSz + 1;
+                    costSz += node.CostSz;
                 }
-#endif
+                else
+                {
+                    var nodeCostSz = node.CostSz;
+
+                    if (nodeCostSz is not 0)
+                    {
+                        costSz += nodeCostSz + 1;
+                    }
+                }
             }
         }
 
@@ -14364,11 +14370,6 @@ public partial class Compiler
             return gtSetEvalOrderMinOpts(tree);
         }
 
-#if TARGET_ARM
-        var codeGen = this.codeGen
-            ?? throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM32 cost estimation requires a target code generator.");
-#endif
-
         // TODO-LoongArch64-CQ: tune the costs.
         // TODO-RISCV64-CQ: tune the costs.
 
@@ -14382,233 +14383,271 @@ public partial class Compiler
             {
                 case GT_CNS_STR:
                 {
-#if TARGET_ARM
-                    // Uses movw/movt
-                    costEx = 2;
-                    costSz = 8;
-#elif TARGET_ARM64
-                    // Uses movz/movk
-                    costEx = 4;
-                    costSz = 16;
-#elif TARGET_AMD64
-                    costEx = 2;
-                    costSz = 10;
-#elif TARGET_X86
-                    costEx = 1;
-                    costSz = 4;
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                    costEx = IND_COST_EX + 2;
-                    costSz = 4;
-#elif TARGET_WASM
-                    costEx = IND_COST_EX + 2;
-                    costSz = 7;
-#endif
+                    if (Configuration.TARGET_ARM)
+                    {
+                        // Uses movw/movt
+                        costEx = 2;
+                        costSz = 8;
+                    }
+                    else if (Configuration.TARGET_ARM64)
+                    {
+                        // Uses movz/movk
+                        costEx = 4;
+                        costSz = 16;
+                    }
+                    else if (Configuration.TARGET_AMD64)
+                    {
+                        costEx = 2;
+                        costSz = 10;
+                    }
+                    else if (Configuration.TARGET_X86)
+                    {
+                        costEx = 1;
+                        costSz = 4;
+                    }
+                    else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                    {
+                        costEx = IND_COST_EX + 2;
+                        costSz = 4;
+                    }
+                    else if (Configuration.TARGET_WASM)
+                    {
+                        costEx = IND_COST_EX + 2;
+                        costSz = 7;
+                    }
+                    else
+                    {
+                        throw new FatalJitException(CORJIT_IMPLLIMITATION,
+                            "String constant costs are unsupported on this target.");
+                    }
 
                     return CommonCns(tree, costEx, costSz);
                 }
 
-#if TARGET_32BIT
-                case GT_CNS_LNG:
+                case GT_CNS_LNG when !Configuration.TARGET_64BIT:
                 {
                     var lngCon = tree.AsLngCon();
                     var lconVal = lngCon.LconValue;
 
-#if TARGET_ARM
-                    if (lconVal is 0)
+                    if (Configuration.TARGET_ARM)
                     {
-                        costEx = 1;
-                        costSz = 1;
-                    }
-                    else
-                    {
-                        var loVal = lngCon.LoVal;
-                        var hiVal = lngCon.HiVal;
-
-                        // Minimum of one instruction to setup hiVal, and one instruction to setup loVal
-                        costEx = 1 + 1;
-                        costSz = 4 + 4;
-
-                        if (!codeGen.validImmForInstr(INS_mov, hiVal) &&
-                            !codeGen.validImmForInstr(INS_mvn, hiVal))
+                        if (lconVal is 0)
                         {
-                            // Needs extra instruction: movw/movt
-                            costEx += 1;
-                            costSz += 4;
+                            costEx = 1;
+                            costSz = 1;
                         }
+                        else
+                        {
+                            var loVal = lngCon.LoVal;
+                            var hiVal = lngCon.HiVal;
 
-                        if (!codeGen.validImmForInstr(INS_mov, loVal) &&
-                            !codeGen.validImmForInstr(INS_mvn, loVal))
-                        {
-                            // Needs extra instruction: movw/movt
-                            costEx += 1;
-                            costSz += 4;
-                        }
-                    }
-#elif TARGET_X86
-                    if (FitsInI32(lconVal))
-                    {
-                        if (FitsInI8(lconVal))
-                        {
+                            // Minimum of one instruction to setup hiVal, and one instruction to setup loVal
                             costEx = 1 + 1;
-                            costSz = 1 + 1;
+                            costSz = 4 + 4;
+
+                            if (!TargetCostEstimation.IsArm32MoveImmediate(hiVal))
+                            {
+                                // Needs extra instruction: movw/movt
+                                costEx += 1;
+                                costSz += 4;
+                            }
+
+                            if (!TargetCostEstimation.IsArm32MoveImmediate(loVal))
+                            {
+                                // Needs extra instruction: movw/movt
+                                costEx += 1;
+                                costSz += 4;
+                            }
+                        }
+                    }
+                    else if (Configuration.TARGET_X86)
+                    {
+                        if (FitsInI32(lconVal))
+                        {
+                            if (FitsInI8(lconVal))
+                            {
+                                costEx = 1 + 1;
+                                costSz = 1 + 1;
+                            }
+                            else
+                            {
+                                costEx = 1 + 1;
+                                costSz = 4 + 1;
+                            }
                         }
                         else
                         {
                             costEx = 1 + 1;
-                            costSz = 4 + 1;
+                            costSz = 4 + 4;
                         }
+                    }
+                    else if (Configuration.TARGET_WASM)
+                    {
+                        costEx = 1;
+                        costSz = 1 + TargetCostEstimation.SizeOfWasmSleb128(lconVal);
                     }
                     else
                     {
-                        costEx = 1 + 1;
-                        costSz = 4 + 4;
+                        throw new FatalJitException(CORJIT_IMPLLIMITATION,
+                            "32-bit long constant costs are unsupported on this target.");
                     }
-#elif TARGET_WASM
-                    costEx = 1;
-                    costSz = 1 + Emitter.SizeOfSLEB128(lconVal);
-#endif
+
                     return CommonCns(lngCon, costEx, costSz);
                 }
-#endif
 
                 case GT_CNS_INT:
                 {
                     var intCon = tree.AsIntCon();
                     var iconVal = intCon.IconValue;
 
-#if TARGET_ARM
-                    if (intCon.ImmedValNeedsReloc(this))
+                    if (Configuration.TARGET_ARM)
                     {
-                        costEx = 2;
-                        costSz = 8;
-                    }
-                    else if (codeGen.validImmForInstr(INS_add, iconVal))
-                    {
-                        // Typically included with parent oper
-                        costEx = 1;
-                        costSz = 2;
-                    }
-                    else if (codeGen.validImmForInstr(INS_mov, iconVal) ||
-                             codeGen.validImmForInstr(INS_mvn, iconVal))
-                    {
-                        // Uses mov or mvn
-                        costEx = 1;
-                        costSz = 4;
-                    }
-                    else
-                    {
-                        // Needs movw/movt
-                        costEx = 2;
-                        costSz = 8;
-                    }
-#elif TARGET_ARM64
-                    var size = intCon.Type.ActualType.EmitSize;
-
-                    if (intCon.ImmedValNeedsReloc(this))
-                    {
-                        costEx = 2;
-                        costSz = 8;
-                    }
-                    else if (Emitter.emitIns_valid_imm_for_add(iconVal, size))
-                    {
-                        costEx = 1;
-                        costSz = 2;
-                    }
-                    else if (Emitter.emitIns_valid_imm_for_mov(iconVal, size))
-                    {
-                        costEx = 1;
-                        costSz = 4;
-                    }
-                    else
-                    {
-                        // Count MOVZ/MOVN plus MOVK halfwords, retaining native's
-                        // four-instruction starting estimate for either width.
-                        var preferMovz = false;
-                        var preferMovn = false;
-                        var instructionCount = 4;
-
-                        for (var i = (size is EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+                        if (intCon.ImmedValNeedsReloc(this))
                         {
-                            var halfword = unchecked((ushort)(iconVal >> i));
-                            if (!preferMovn && (halfword is 0x0000))
-                            {
-                                preferMovz = true;
-                                instructionCount--;
-                            }
-                            else if (!preferMovz && (halfword is 0xffff))
-                            {
-                                preferMovn = true;
-                                instructionCount--;
-                            }
+                            costEx = 2;
+                            costSz = 8;
                         }
-
-                        costEx = (byte)instructionCount;
-                        costSz = (byte)(4 * instructionCount);
-                    }
-#elif TARGET_XARCH
-                    if (intCon.ImmedValNeedsReloc(this))
-                    {
-                        costEx = 1;
-                        costSz = 4;
-                    }
-                    else if (FitsInI8(iconVal))
-                    {
-                        costEx = 1;
-                        costSz = 1;
-                    }
-#if TARGET_AMD64
-                    else if (!FitsInI32(iconVal))
-                    {
-                        costEx = 2;
-                        costSz = 10;
-
-                        if (intCon.IsIconHandle())
+                        else if (TargetCostEstimation.IsArm32AddImmediate(iconVal))
                         {
-                            // A sort of a hint for CSE to try harder for class handles
-                            costEx += 1;
+                            // Typically included with parent oper
+                            costEx = 1;
+                            costSz = 2;
                         }
-                    }
-#endif
-                    else
-                    {
-                        costEx = 1;
-                        costSz = 4;
-                    }
-#elif TARGET_LOONGARCH64
-                    costEx = 1;
-                    costSz = 4;
-#elif TARGET_RISCV64
-                    if (intCon.ImmedValNeedsReloc(this) ||
-                        intCon.AddrNeedsReloc(this))
-                    {
-                        // auipc + addi
-                        costEx = 2;
-                        costSz = 8;
-                    }
-                    else
-                    {
-                        var size = intCon.Type.EmitActualSize;
-                        var instructionCount = Emitter.emitLoadImmediate(false, size, REG_NA, iconVal);
-                        assert(instructionCount is not 0);
-
-                        if (instructionCount == -1)
+                        else if (TargetCostEstimation.IsArm32MoveImmediate(iconVal))
                         {
-                            // Cannot emit code in a 5 instruction sequence
-                            // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
-
-                            costEx = 1 + IND_COST_EX;
-                            costSz = 16;
+                            // Uses mov or mvn
+                            costEx = 1;
+                            costSz = 4;
                         }
                         else
                         {
-                            costEx = instructionCount;
-                            costSz = 4 * instructionCount;
+                            // Needs movw/movt
+                            costEx = 2;
+                            costSz = 8;
                         }
                     }
-#elif TARGET_WASM
-                    costEx = 1;
-                    costSz = 1 + Emitter.SizeOfSLEB128((long)iconVal);
-#endif
+                    else if (Configuration.TARGET_ARM64)
+                    {
+                        var size = intCon.Type.ActualType.EmitSize;
+
+                        if (intCon.ImmedValNeedsReloc(this))
+                        {
+                            costEx = 2;
+                            costSz = 8;
+                        }
+                        else if (TargetCostEstimation.IsArm64AddImmediate(iconVal))
+                        {
+                            costEx = 1;
+                            costSz = 2;
+                        }
+                        else if (TargetCostEstimation.IsArm64MoveImmediate(iconVal, size))
+                        {
+                            costEx = 1;
+                            costSz = 4;
+                        }
+                        else
+                        {
+                            // Count MOVZ/MOVN plus MOVK halfwords, retaining native's
+                            // four-instruction starting estimate for either width.
+                            var preferMovz = false;
+                            var preferMovn = false;
+                            var instructionCount = 4;
+
+                            for (var i = (size is EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+                            {
+                                var halfword = unchecked((ushort)(iconVal >> i));
+                                if (!preferMovn && (halfword is 0x0000))
+                                {
+                                    preferMovz = true;
+                                    instructionCount--;
+                                }
+                                else if (!preferMovz && (halfword is 0xffff))
+                                {
+                                    preferMovn = true;
+                                    instructionCount--;
+                                }
+                            }
+
+                            costEx = (byte)instructionCount;
+                            costSz = (byte)(4 * instructionCount);
+                        }
+                    }
+                    else if (Configuration.TARGET_XARCH)
+                    {
+                        if (intCon.ImmedValNeedsReloc(this))
+                        {
+                            costEx = 1;
+                            costSz = 4;
+                        }
+                        else if (FitsInI8(iconVal))
+                        {
+                            costEx = 1;
+                            costSz = 1;
+                        }
+                        else if (Configuration.TARGET_AMD64 && !FitsInI32(iconVal))
+                        {
+                            costEx = 2;
+                            costSz = 10;
+
+                            if (intCon.IsIconHandle())
+                            {
+                                // A sort of a hint for CSE to try harder for class handles
+                                costEx += 1;
+                            }
+                        }
+                        else
+                        {
+                            costEx = 1;
+                            costSz = 4;
+                        }
+                    }
+                    else if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        costEx = 1;
+                        costSz = 4;
+                    }
+                    else if (Configuration.TARGET_RISCV64)
+                    {
+                        if (intCon.ImmedValNeedsReloc(this) ||
+                            intCon.AddrNeedsReloc(this))
+                        {
+                            // auipc + addi
+                            costEx = 2;
+                            costSz = 8;
+                        }
+                        else
+                        {
+                            var size = intCon.Type.EmitActualSize;
+                            var instructionCount = TargetCostEstimation.GetRiscVLoadImmediateInstructionCount(
+                                size,
+                                iconVal);
+                            assert(instructionCount is not 0);
+
+                            if (instructionCount == -1)
+                            {
+                                // Cannot emit code in a 5 instruction sequence
+                                // Create a 8-byte constant(8) and load it with auipc(4) + ld(4)
+
+                                costEx = 1 + IND_COST_EX;
+                                costSz = 16;
+                            }
+                            else
+                            {
+                                costEx = instructionCount;
+                                costSz = 4 * instructionCount;
+                            }
+                        }
+                    }
+                    else if (Configuration.TARGET_WASM)
+                    {
+                        costEx = 1;
+                        costSz = 1 + TargetCostEstimation.SizeOfWasmSleb128((long)iconVal);
+                    }
+                    else
+                    {
+                        throw new FatalJitException(CORJIT_IMPLLIMITATION,
+                            "Integer constant costs are unsupported on this target.");
+                    }
 
                     return CommonCns(intCon, costEx, costSz);
                 }
@@ -14617,57 +14656,71 @@ public partial class Compiler
                 {
                     var dblCon = tree.AsDblCon();
 
-#if TARGET_XARCH
-                    if (dblCon.IsPositiveZero || dblCon.IsAllBitsSet)
+                    if (Configuration.TARGET_XARCH)
                     {
-                        // Zero:       vxorps   xmm0, xmm0, xmm0
-                        // AllBitsSet: vpcmpeqd xmm0, xmm0, xmm0
+                        if (dblCon.IsPositiveZero || dblCon.IsAllBitsSet)
+                        {
+                            // Zero:       vxorps   xmm0, xmm0, xmm0
+                            // AllBitsSet: vpcmpeqd xmm0, xmm0, xmm0
 
-                        costEx = 1;
-                        costSz = 4;
+                            costEx = 1;
+                            costSz = 4;
+                        }
+                        else
+                        {
+                            // float:  vmovss xmm0, [reloc @RWD00]
+                            // double: vmovsd xmm0, [reloc @RWD00]
+
+                            costEx = FLT_IND_COST_EX;
+                            costSz = 8;
+                        }
                     }
-                    else
+                    else if (Configuration.TARGET_ARM)
                     {
-                        // float:  vmovss xmm0, [reloc @RWD00]
-                        // double: vmovsd xmm0, [reloc @RWD00]
+                        if (dblCon.Type is TYP_FLOAT)
+                        {
+                            costEx = 1 + 2;
+                            costSz = 2 + 4;
+                        }
+                        else
+                        {
+                            costEx = 1 + 4;
+                            costSz = 2 + 8;
+                        }
+                    }
+                    else if (Configuration.TARGET_ARM64)
+                    {
+                        if (dblCon.IsPositiveZero || TargetCostEstimation.IsArm64FloatImmediate(dblCon.DconVal))
+                        {
+                            // Zero and certain other immediates can be specially created with a single instruction
+                            // These can be cheaply reconstituted but still take up 4-bytes of native codegen
 
-                        costEx = FLT_IND_COST_EX;
+                            costEx = 1;
+                            costSz = 2;
+                        }
+                        else
+                        {
+                            // We load the constant from memory and so will take the same cost as GT_IND
+
+                            costEx = IND_COST_EX;
+                            costSz = 2;
+                        }
+                    }
+                    else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                    {
+                        costEx = 2;
                         costSz = 8;
                     }
-#elif TARGET_ARM
-                    if (dblCon.Type is TYP_FLOAT)
+                    else if (Configuration.TARGET_WASM)
                     {
-                        costEx = 1 + 2;
-                        costSz = 2 + 4;
+                        costEx = 2;
+                        costSz = (dblCon.Type is TYP_FLOAT) ? 5 : 9;
                     }
                     else
                     {
-                        costEx = 1 + 4;
-                        costSz = 2 + 8;
+                        throw new FatalJitException(CORJIT_IMPLLIMITATION,
+                            "Floating-point constant costs are unsupported on this target.");
                     }
-#elif TARGET_ARM64
-                    if (dblCon.IsPositiveZero || Emitter.emitIns_valid_imm_for_fmov(dblCon.DconVal))
-                    {
-                        // Zero and certain other immediates can be specially created with a single instruction
-                        // These can be cheaply reconstituted but still take up 4-bytes of native codegen
-                        
-                        costEx = 1;
-                        costSz = 2;
-                    }
-                    else
-                    {
-                        // We load the constant from memory and so will take the same cost as GT_IND
-                        
-                        costEx = IND_COST_EX;
-                        costSz = 2;
-                    }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                    costEx = 2;
-                    costSz = 8;
-#elif TARGET_WASM
-                    costEx = 2;
-                    costSz = (dblCon.Type is TYP_FLOAT) ? 5 : 9;
-#endif
 
                     return CommonCns(dblCon, costEx, costSz);
                 }
@@ -14676,96 +14729,100 @@ public partial class Compiler
                 {
                     var vecCon = tree.AsVecCon();
 
-#if TARGET_XARCH
-                    if (vecCon.IsZero)
+                    if (Configuration.TARGET_XARCH)
                     {
-                        // vxorps xmm0, xmm0, xmm0
-                        costEx = 1;
-                        costSz = 4;
-                    }
-                    else if (vecCon.IsAllBitsSet)
-                    {
-                        if (vecCon.Type is TYP_SIMD64)
+                        if (vecCon.IsZero)
                         {
-                            // vpternlogd xmm0, xmm0, xmm0, -1
-                            costEx = 1;
-                            costSz = 7;
-                        }
-                        else
-                        {
-                            // vpcmpeqd xmm0, xmm0, xmm0
+                            // vxorps xmm0, xmm0, xmm0
                             costEx = 1;
                             costSz = 4;
                         }
+                        else if (vecCon.IsAllBitsSet)
+                        {
+                            if (vecCon.Type is TYP_SIMD64)
+                            {
+                                // vpternlogd xmm0, xmm0, xmm0, -1
+                                costEx = 1;
+                                costSz = 7;
+                            }
+                            else
+                            {
+                                // vpcmpeqd xmm0, xmm0, xmm0
+                                costEx = 1;
+                                costSz = 4;
+                            }
+                        }
+                        else
+                        {
+                            // vmovups xmm0, [reloc @RWD00]
+
+                            costEx = FLT_IND_COST_EX;
+                            costSz = 8;
+
+                            if (vecCon.Type is TYP_SIMD64)
+                            {
+                                costEx += 2;
+                                costSz += 2;
+                            }
+                            else if (vecCon.Type is TYP_SIMD32)
+                            {
+                                costEx += 1;
+                            }
+                        }
                     }
                     else
                     {
-                        // vmovups xmm0, [reloc @RWD00]
-
-                        costEx = FLT_IND_COST_EX;
-                        costSz = 8;
-
-                        if (vecCon.Type is TYP_SIMD64)
+                        if (vecCon.IsAllBitsSet || vecCon.IsZero)
                         {
-                            costEx += 2;
-                            costSz += 2;
+                            costEx = 1;
+                            costSz = 2;
                         }
-                        else if (vecCon.Type is TYP_SIMD32)
+                        else
                         {
-                            costEx += 1;
+                            costEx = IND_COST_EX;
+                            costSz = 2;
                         }
                     }
-#else
-                    if (vecCon.IsAllBitsSet || vecCon.IsZero)
-                    {
-                        costEx = 1;
-                        costSz = 2;
-                    }
-                    else
-                    {
-                        costEx = IND_COST_EX;
-                        costSz = 2;
-                    }
-#endif
                     return CommonCns(vecCon, costEx, costSz);
                 }
 
-#if FEATURE_MASKED_HW_INTRINSICS
-                case GT_CNS_MSK:
+                case GT_CNS_MSK when Configuration.FEATURE_MASKED_HW_INTRINSICS:
                 {
                     var mskCon = tree.AsMskCon();
 
-#if TARGET_XARCH
-                    if (mskCon.IsZero || mskCon.IsAllBitsSet)
+                    if (Configuration.TARGET_XARCH)
                     {
-                        // Zero:       kxorq  k1, k1, k1
-                        // AllBitsSet: kxnorq k1, k1, k1
+                        if (mskCon.IsZero || mskCon.IsAllBitsSet)
+                        {
+                            // Zero:       kxorq  k1, k1, k1
+                            // AllBitsSet: kxnorq k1, k1, k1
 
-                        costEx = 1;
-                        costSz = 5;
+                            costEx = 1;
+                            costSz = 5;
+                        }
+                        else
+                        {
+                            // kmovq k1, [reloc @RWD00]
+                            costEx = IND_COST_EX;
+                            costSz = 9;
+                        }
                     }
                     else
                     {
-                        // kmovq k1, [reloc @RWD00]
-                        costEx = IND_COST_EX;
-                        costSz = 9;
+                        if (mskCon.IsAllBitsSet || mskCon.IsZero)
+                        {
+                            costEx = 1;
+                            costSz = 2;
+                        }
+                        else
+                        {
+                            costEx = IND_COST_EX;
+                            costSz = 2;
+                        }
                     }
-#else
-                    if (mskCon.IsAllBitsSet || mskCon.IsZero)
-                    {
-                        costEx = 1;
-                        costSz = 2;
-                    }
-                    else
-                    {
-                        costEx = IND_COST_EX;
-                        costSz = 2;
-                    }
-#endif
 
                     return CommonCns(mskCon, costEx, costSz);
                 }
-#endif
 
                 case GT_LCL_VAR:
                 {
@@ -14879,368 +14936,390 @@ public partial class Compiler
 
                     case GT_CAST:
                     {
-#if TARGET_ARM
-                        costEx = 1;
-                        costSz = 1;
-
-                        if (varTypeIsFloating(unOp.Type) || varTypeIsFloating(op1.Type))
+                        if (Configuration.TARGET_ARM)
                         {
-                            costEx = 3;
-                            costSz = 4;
-                        }
-#elif TARGET_ARM64
-                        costEx = 1;
-                        costSz = 2;
+                            costEx = 1;
+                            costSz = 1;
 
-                        if (varTypeIsFloating(unOp.Type) || varTypeIsFloating(op1.Type))
-                        {
-                            costEx = 2;
-                            costSz = 4;
-                        }
-#elif TARGET_XARCH
-                        costEx = 1;
-                        costSz = 2;
-
-                        if (varTypeIsFloating(unOp.Type))
-                        {
-                            if (varTypeIsFloating(op1.Type))
+                            if (varTypeIsFloating(unOp.Type) || varTypeIsFloating(op1.Type))
                             {
-                                // float:  vcvtss2sd xmm0, xmm1
-                                // double: vcvtsd2ss xmm0, xmm1
-
-                                costEx = 4;
+                                costEx = 3;
                                 costSz = 4;
                             }
-                            else if (varTypeIsLong(op1.Type))
+                        }
+                        else if (Configuration.TARGET_ARM64)
+                        {
+                            costEx = 1;
+                            costSz = 2;
+
+                            if (varTypeIsFloating(unOp.Type) || varTypeIsFloating(op1.Type))
                             {
-#if TARGET_AMD64
-                                if (unOp.IsUnsigned)
+                                costEx = 2;
+                                costSz = 4;
+                            }
+                        }
+                        else if (Configuration.TARGET_XARCH)
+                        {
+                            costEx = 1;
+                            costSz = 2;
+
+                            if (varTypeIsFloating(unOp.Type))
+                            {
+                                if (varTypeIsFloating(op1.Type))
+                                {
+                                    // float:  vcvtss2sd xmm0, xmm1
+                                    // double: vcvtsd2ss xmm0, xmm1
+
+                                    costEx = 4;
+                                    costSz = 4;
+                                }
+                                else if (varTypeIsLong(op1.Type))
+                                {
+                                    if (Configuration.TARGET_AMD64)
+                                    {
+                                        if (unOp.IsUnsigned)
+                                        {
+                                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                            {
+                                                // vxorps     xmm0, xmm0, xmm0
+                                                // vcvtusi2s* xmm0, xmm0, rcx
+
+                                                costEx = 1 + 5; // 6
+                                                costSz = 4 + 6; // 10
+                                            }
+                                            else
+                                            {
+                                                // vxorps    xmm0, xmm0, xmm0
+                                                // mov       rdx, rcx
+                                                // shr       rdx, 1
+                                                // mov       eax, ecx
+                                                // and       eax, 1
+                                                // or        rax, rdx
+                                                // test      rcx, rcx
+                                                // cmovns    rax, rcx
+                                                // vcvtsi2s* xmm0, rax
+                                                // jns       LABEL
+                                                // vadds*    xmm0, xmm0
+
+                                                costEx = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 5 + 2 + 4; // 19
+                                                costSz = 4 + 3 + 3 + 2 + 3 + 3 + 3 + 4 + 5 + 2 + 4; // 36
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // vxorps    xmm0, xmm0, xmm0
+                                            // vcvtsi2s* xmm0, xmm0, rcx
+
+                                            costEx = 1 + 5; // 6
+                                            costSz = 4 + 5; // 9
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                        {
+                                            // uint: vmovq      xmm0, [mem]
+                                            //           vcvtuqq2p* xmm0, xmm0
+                                            //
+                                            // signed:   vmovq      xmm0, [mem]
+                                            //           vcvtqq2p*  xmm0, xmm0
+
+                                            costEx = FLT_IND_COST_EX + 4; // 4 + FLT_IND_COST_EX
+                                            costSz = 6 + 6;               // 12
+                                        }
+                                        else if (unOp.IsUnsigned)
+                                        {
+                                            // uint float:  call CORINFO_HELP_ULNG2FLT
+                                            //          double: call CORINFO_HELP_ULNG2DBL
+                                            //
+                                            // signed   float:  call CORINFO_HELP_LNG2FLT
+                                            //          double: call CORINFO_HELP_LNG2DBL
+
+                                            costEx = 5 + (3 * IND_COST_EX); // CALL
+                                            costSz = 5;                     // 5
+
+                                            level++;
+                                        }
+                                    }
+                                }
+                                else if (unOp.IsUnsigned)
                                 {
                                     if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                                     {
                                         // vxorps     xmm0, xmm0, xmm0
-                                        // vcvtusi2s* xmm0, xmm0, rcx
+                                        // vcvtusi2s* xmm0, xmm0, ecx
 
                                         costEx = 1 + 5; // 6
                                         costSz = 4 + 6; // 10
                                     }
                                     else
                                     {
-                                        // vxorps    xmm0, xmm0, xmm0
-                                        // mov       rdx, rcx
-                                        // shr       rdx, 1
-                                        // mov       eax, ecx
-                                        // and       eax, 1
-                                        // or        rax, rdx
-                                        // test      rcx, rcx
-                                        // cmovns    rax, rcx
-                                        // vcvtsi2s* xmm0, rax
-                                        // jns       LABEL
-                                        // vadds*    xmm0, xmm0
+                                        if (Configuration.TARGET_AMD64)
+                                        {
+                                            // vxorps    xmm0, xmm0, xmm0
+                                            // vcvtsi2s* xmm0, xmm0, rax
 
-                                        costEx = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 5 + 2 + 4; // 19
-                                        costSz = 4 + 3 + 3 + 2 + 3 + 3 + 3 + 4 + 5 + 2 + 4; // 36
+                                            costEx = 1 + 5; // 6
+                                            costSz = 4 + 5; // 9
+                                        }
+                                        else
+                                        {
+                                            // vxorps    xmm0, xmm0, xmm0
+                                            // vcvtsi2sd xmm0, xmm0, ecx
+                                            // vaddsd    xmm1, xmm0, [@RWD00]
+                                            // vblendvpd xmm0, xmm0, xmm1, xmm0
+                                            // ...
+
+                                            costEx = 1 + 5 + (4 + FLT_IND_COST_EX) + 1; // 10 + FLT_IND_COST_EX
+                                            costSz = 4 + 4 + 8 + 6;                     // 22
+
+                                            if (unOp.Type is TYP_FLOAT)
+                                            {
+                                                // ...
+                                                // vcvtpd2ps xmm0, xmm0
+
+                                                costEx += 5; // 15 + FLT_IND_COST_EX
+                                                costSz += 4; // 26
+                                            }
+                                        }
                                     }
                                 }
                                 else
                                 {
                                     // vxorps    xmm0, xmm0, xmm0
-                                    // vcvtsi2s* xmm0, xmm0, rcx
+                                    // vcvtsi2s* xmm0, xmm0, ecx
 
                                     costEx = 1 + 5; // 6
-                                    costSz = 4 + 5; // 9
+                                    costSz = 4 + 4; // 8
                                 }
-#else
-                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                                {
-                                    // uint: vmovq      xmm0, [mem]
-                                    //           vcvtuqq2p* xmm0, xmm0
-                                    //
-                                    // signed:   vmovq      xmm0, [mem]
-                                    //           vcvtqq2p*  xmm0, xmm0
-
-                                    costEx = FLT_IND_COST_EX + 4; // 4 + FLT_IND_COST_EX
-                                    costSz = 6 + 6;               // 12
-                                }
-                                else if (unOp.IsUnsigned)
-                                {
-                                    // uint float:  call CORINFO_HELP_ULNG2FLT
-                                    //          double: call CORINFO_HELP_ULNG2DBL
-                                    //
-                                    // signed   float:  call CORINFO_HELP_LNG2FLT
-                                    //          double: call CORINFO_HELP_LNG2DBL
-
-                                    costEx = 5 + (3 * IND_COST_EX); // CALL
-                                    costSz = 5;                     // 5
-
-                                    level++;
-                                }
-#endif
                             }
-                            else if (unOp.IsUnsigned)
+                            else if (varTypeIsFloating(op1.Type))
                             {
-                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                var dstType = unOp.AsCast().CastType;
+
+                                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
                                 {
-                                    // vxorps     xmm0, xmm0, xmm0
-                                    // vcvtusi2s* xmm0, xmm0, ecx
-
-                                    costEx = 1 + 5; // 6
-                                    costSz = 4 + 6; // 10
-                                }
-                                else
-                                {
-#if TARGET_AMD64
-                                    // vxorps    xmm0, xmm0, xmm0
-                                    // vcvtsi2s* xmm0, xmm0, rax
-
-                                    costEx = 1 + 5; // 6
-                                    costSz = 4 + 5; // 9
-#else
-                                    // vxorps    xmm0, xmm0, xmm0
-                                    // vcvtsi2sd xmm0, xmm0, ecx
-                                    // vaddsd    xmm1, xmm0, [@RWD00]
-                                    // vblendvpd xmm0, xmm0, xmm1, xmm0
-                                    // ...
-
-                                    costEx = 1 + 5 + (4 + FLT_IND_COST_EX) + 1; // 10 + FLT_IND_COST_EX
-                                    costSz = 4 + 4 + 8 + 6;                     // 22
-
-                                    if (unOp.Type is TYP_FLOAT)
+                                    if (Configuration.TARGET_X86 && varTypeIsLong(dstType))
                                     {
-                                        // ...
-                                        // vcvtpd2ps xmm0, xmm0
+                                        // uint: vcvttp*2uqqs xmm0, xmm0
+                                        //           vmovq        [mem], xmm0
+                                        //
+                                        // signed:   vcvttp*2qqs  xmm0, xmm0
+                                        //           vmovq        [mem], xmm0
 
-                                        costEx += 5; // 15 + FLT_IND_COST_EX
-                                        costSz += 4; // 26
+                                        costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
+                                        costSz = 6 + 6;               // 12
+
+                                        if (op1.Type is TYP_FLOAT)
+                                        {
+                                            // vector widening float->long instructions take 1 extra cycle
+                                            // compared to same-size conversion
+                                            costEx += 1;
+                                        }
                                     }
-#endif
-                                }
-                            }
-                            else
-                            {
-                                // vxorps    xmm0, xmm0, xmm0
-                                // vcvtsi2s* xmm0, xmm0, ecx
-
-                                costEx = 1 + 5; // 6
-                                costSz = 4 + 4; // 8
-                            }
-                        }
-                        else if (varTypeIsFloating(op1.Type))
-                        {
-                            var dstType = unOp.AsCast().CastType;
-
-                            if (compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
-                            {
-#if (TARGET_X86)
-                                if (varTypeIsLong(dstType))
-                                {
-                                    // uint: vcvttp*2uqqs xmm0, xmm0
-                                    //           vmovq        [mem], xmm0
-                                    //
-                                    // signed:   vcvttp*2qqs  xmm0, xmm0
-                                    //           vmovq        [mem], xmm0
-
-                                    costEx = 4 + FLT_IND_COST_EX; // 4 + FLT_IND_COST_EX
-                                    costSz = 6 + 6;               // 12
-
-                                    if (op1.Type is TYP_FLOAT)
+                                    else
                                     {
-                                        // vector widening float->long instructions take 1 extra cycle
-                                        // compared to same-size conversion
-                                        costEx += 1;
+                                        // uint: vcvtts*2usis eax, xmm0
+                                        // signed:   vcvtts*2sis  eax, xmm0
+
+                                        costEx = 7;
+                                        costSz = 6;
                                     }
                                 }
-                                else
-#endif
+                                else if (varTypeIsLong(dstType))
                                 {
-                                    // uint: vcvtts*2usis eax, xmm0
-                                    // signed:   vcvtts*2sis  eax, xmm0
+                                    if (Configuration.TARGET_AMD64)
+                                    {
+                                        if (varTypeIsUnsigned(dstType))
+                                        {
+                                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                            {
+                                                // vxorps      xmm1, xmm1, xmm1
+                                                // vmaxs*      xmm0, xmm0, xmm1
+                                                // vcvtts*2usi rax, xmm0
 
-                                    costEx = 7;
-                                    costSz = 6;
+                                                costEx = 1 + 4 + 7; // 12
+                                                costSz = 4 + 4 + 6; // 14
+                                            }
+                                            else
+                                            {
+                                                // vxorps     xmm1, xmm1, xmm1
+                                                // vmaxs*     xmm1, xmm0, xmm1
+                                                // vmovs*     xmm2, [reloc @RWD00]
+                                                // vsubs*     xmm3, xmm0, xmm2
+                                                // vcvtts*2si rax, xmm1
+                                                // vcvtts*2si rcx, xmm3
+                                                // mov        rdx, rax
+                                                // sar        rdx, 63
+                                                // and        rcx, rdx
+                                                // mov        rdx, -1
+                                                // or         rax, rcx
+                                                // vucomis*   xmm0, xmm2
+                                                // cmovae     rax, rdx
+
+                                                costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 7 + 7 + 1 + 1 + 1 + 1 + 1 + 3 +
+                                                         1;                                                  // 32 + FLT_IND_COST_EX
+                                                costSz = 4 + 4 + 8 + 4 + 5 + 5 + 3 + 4 + 3 + 10 + 3 + 4 + 4; // 61
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // vcmpords*  xmm1, xmm0, xmm0
+                                            // vandp*     xmm1, xmm1, xmm0
+                                            // mov        rax, 0x7FFFFFFFFFFFFFFF
+                                            // vcvtts*2si rcx, xmm1
+                                            // vucomis*   xmm0, [reloc @RWD00]
+                                            // cmovb      rax, rcx
+
+                                            costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                            costSz = 5 + 4 + 10 + 5 + 8 + 4;                    // 36
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                                        {
+                                            if (varTypeIsUnsigned(dstType))
+                                            {
+                                                // vxorps       xmm1, xmm1, xmm1
+                                                // vmaxs*       xmm0, xmm0, xmm1
+                                                // vcvttp*2uqq  xmm0, xmm0
+                                                // vmovq        [mem], xmm0
+
+                                                costEx = 1 + 4 + 4 + FLT_IND_COST_EX; // 9 + FLT_IND_COST_EX
+                                                costSz = 4 + 4 + 6 + 6;               // 20
+                                            }
+                                            else
+                                            {
+                                                // vcmpords*    k1, xmm0, xmm0
+                                                // vcmpge_oqs*  k2, xmm0, qword ptr [@RWD00]
+                                                // vcvttp*2qq   xmm0 {k1}{z}, xmm0
+                                                // vpblendmq    xmm0 {k2}, xmm0, qword ptr [@RWD08] {1to2}
+                                                // vmovq        [mem], xmm0
+
+                                                costEx = 4 + (4 + FLT_IND_COST_EX) + 4 + (1 + FLT_IND_COST_EX) +
+                                                         FLT_IND_COST_EX;     // 13 + (3 * FLT_IND_COST_EX)
+                                                costSz = 7 + 11 + 6 + 10 + 6; // 40
+                                            }
+
+                                            if (op1.Type is TYP_FLOAT)
+                                            {
+                                                // vector widening float->long instructions take 1 extra cycle
+                                                // compared to same-size conversion
+                                                costEx += 1;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            // uint: ...
+                                            //           call CORINFO_HELP_DBL2ULNG
+                                            //
+                                            // signed:   ...
+                                            //           call CORINFO_HELP_DBL2ULNG
+
+                                            costEx = 5 + (3 * IND_COST_EX); // CALL
+                                            costSz = 5;                     // 5
+
+                                            level++;
+
+                                            if (op1.Type is TYP_FLOAT)
+                                            {
+                                                // vcvtss2sd xmm0, xmm0, xmm0
+                                                // ...
+
+                                                costEx += 4; // 4 + CALL
+                                                costSz += 4; // 9
+                                            }
+                                        }
+                                    }
                                 }
-                            }
-                            else if (varTypeIsLong(dstType))
-                            {
-#if (TARGET_AMD64)
-                                if (varTypeIsUnsigned(dstType))
+                                else if (varTypeIsUnsigned(dstType))
                                 {
                                     if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                                     {
                                         // vxorps      xmm1, xmm1, xmm1
                                         // vmaxs*      xmm0, xmm0, xmm1
-                                        // vcvtts*2usi rax, xmm0
+                                        // vcvtts*2usi eax, xmm0
 
                                         costEx = 1 + 4 + 7; // 12
                                         costSz = 4 + 4 + 6; // 14
                                     }
                                     else
                                     {
-                                        // vxorps     xmm1, xmm1, xmm1
-                                        // vmaxs*     xmm1, xmm0, xmm1
-                                        // vmovs*     xmm2, [reloc @RWD00]
-                                        // vsubs*     xmm3, xmm0, xmm2
-                                        // vcvtts*2si rax, xmm1
-                                        // vcvtts*2si rcx, xmm3
-                                        // mov        rdx, rax
-                                        // sar        rdx, 63
-                                        // and        rcx, rdx
-                                        // mov        rdx, -1
-                                        // or         rax, rcx
-                                        // vucomis*   xmm0, xmm2
-                                        // cmovae     rax, rdx
+                                        if (Configuration.TARGET_AMD64)
+                                        {
+                                            // vxorps     xmm1, xmm1, xmm1
+                                            // vmaxss     xmm1, xmm0, xmm1
+                                            // mov        eax, 0xFFFFFFFF
+                                            // vcvtts*2si rcx, xmm1
+                                            // vucomis*   xmm0, [reloc @RWD00]
+                                            // cmovb      eax, ecx
 
-                                        costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 7 + 7 + 1 + 1 + 1 + 1 + 1 + 3 +
-                                                 1;                                                  // 32 + FLT_IND_COST_EX
-                                        costSz = 4 + 4 + 8 + 4 + 5 + 5 + 3 + 4 + 3 + 10 + 3 + 4 + 4; // 61
+                                            costEx = 1 + 4 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                            costSz = 4 + 4 + 5 + 5 + 8 + 3;                     // 29
+                                        }
+                                        else
+                                        {
+                                            // vxorps     xmm1, xmm1, xmm1
+                                            // vmaxs*     xmm1, xmm0, xmm1
+                                            // vmovs*     xmm2, [@RWD00]
+                                            // ...
+                                            // vsubs*     xmm3, xmm0, xmm2
+                                            // vcvttp*2dq xmm1, xmm1
+                                            // vcvttp*2dq xmm3, xmm3
+                                            // vblendvp*  xmm1, xmm1, xmm3, xmm1
+                                            // mov        eax, 0xFFFFFFFF
+                                            // vmovd      edx, xmm1
+                                            // vucomis*   xmm0, xmm2
+                                            // cmovb      eax, edx
+
+                                            costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 4 + 4 + 1 + 1 + 3 + 3 + 1; // 26 + FLT_IND_COST_EX
+                                            costSz = 4 + 4 + 8 + 4 + 4 + 4 + 6 + 5 + 4 + 4 + 3;               // 50
+
+                                            if (op1.Type is TYP_DOUBLE)
+                                            {
+                                                // ...
+                                                // vroundsd xmm3, xmm0, xmm0, 3
+                                                // ...
+
+                                                costEx += 8; // 34 + FLT_IND_COST_EX
+                                                costSz += 6; // 56
+                                            }
+                                        }
                                     }
                                 }
                                 else
                                 {
                                     // vcmpords*  xmm1, xmm0, xmm0
                                     // vandp*     xmm1, xmm1, xmm0
-                                    // mov        rax, 0x7FFFFFFFFFFFFFFF
-                                    // vcvtts*2si rcx, xmm1
-                                    // vucomis*   xmm0, [reloc @RWD00]
-                                    // cmovb      rax, rcx
-
-                                    costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
-                                    costSz = 5 + 4 + 10 + 5 + 8 + 4;                    // 36
-                                }
-#else
-                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                                {
-                                    if (varTypeIsUnsigned(dstType))
-                                    {
-                                        // vxorps       xmm1, xmm1, xmm1
-                                        // vmaxs*       xmm0, xmm0, xmm1
-                                        // vcvttp*2uqq  xmm0, xmm0
-                                        // vmovq        [mem], xmm0
-
-                                        costEx = 1 + 4 + 4 + FLT_IND_COST_EX; // 9 + FLT_IND_COST_EX
-                                        costSz = 4 + 4 + 6 + 6;               // 20
-                                    }
-                                    else
-                                    {
-                                        // vcmpords*    k1, xmm0, xmm0
-                                        // vcmpge_oqs*  k2, xmm0, qword ptr [@RWD00]
-                                        // vcvttp*2qq   xmm0 {k1}{z}, xmm0
-                                        // vpblendmq    xmm0 {k2}, xmm0, qword ptr [@RWD08] {1to2}
-                                        // vmovq        [mem], xmm0
-
-                                        costEx = 4 + (4 + FLT_IND_COST_EX) + 4 + (1 + FLT_IND_COST_EX) +
-                                                 FLT_IND_COST_EX;     // 13 + (3 * FLT_IND_COST_EX)
-                                        costSz = 7 + 11 + 6 + 10 + 6; // 40
-                                    }
-
-                                    if (op1.Type is TYP_FLOAT)
-                                    {
-                                        // vector widening float->long instructions take 1 extra cycle
-                                        // compared to same-size conversion
-                                        costEx += 1;
-                                    }
-                                }
-                                else
-                                {
-                                    // uint: ...
-                                    //           call CORINFO_HELP_DBL2ULNG
-                                    //
-                                    // signed:   ...
-                                    //           call CORINFO_HELP_DBL2ULNG
-
-                                    costEx = 5 + (3 * IND_COST_EX); // CALL
-                                    costSz = 5;                     // 5
-
-                                    level++;
-
-                                    if (op1.Type is TYP_FLOAT)
-                                    {
-                                        // vcvtss2sd xmm0, xmm0, xmm0
-                                        // ...
-
-                                        costEx += 4; // 4 + CALL
-                                        costSz += 4; // 9
-                                    }
-                                }
-#endif
-                            }
-                            else if (varTypeIsUnsigned(dstType))
-                            {
-                                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                                {
-                                    // vxorps      xmm1, xmm1, xmm1
-                                    // vmaxs*      xmm0, xmm0, xmm1
-                                    // vcvtts*2usi eax, xmm0
-
-                                    costEx = 1 + 4 + 7; // 12
-                                    costSz = 4 + 4 + 6; // 14
-                                }
-                                else
-                                {
-#if (TARGET_AMD64)
-                                    // vxorps     xmm1, xmm1, xmm1
-                                    // vmaxss     xmm1, xmm0, xmm1
-                                    // mov        eax, 0xFFFFFFFF
-                                    // vcvtts*2si rcx, xmm1
+                                    // mov        eax, 0x7FFFFFFF
+                                    // vcvtts*2si ecx, xmm1
                                     // vucomis*   xmm0, [reloc @RWD00]
                                     // cmovb      eax, ecx
 
-                                    costEx = 1 + 4 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
-                                    costSz = 4 + 4 + 5 + 5 + 8 + 3;                     // 29
-#else
-                                    // vxorps     xmm1, xmm1, xmm1
-                                    // vmaxs*     xmm1, xmm0, xmm1
-                                    // vmovs*     xmm2, [@RWD00]
-                                    // ...
-                                    // vsubs*     xmm3, xmm0, xmm2
-                                    // vcvttp*2dq xmm1, xmm1
-                                    // vcvttp*2dq xmm3, xmm3
-                                    // vblendvp*  xmm1, xmm1, xmm3, xmm1
-                                    // mov        eax, 0xFFFFFFFF
-                                    // vmovd      edx, xmm1
-                                    // vucomis*   xmm0, xmm2
-                                    // cmovb      eax, edx
-
-                                    costEx = 1 + 4 + FLT_IND_COST_EX + 4 + 4 + 4 + 1 + 1 + 3 + 3 + 1; // 26 + FLT_IND_COST_EX
-                                    costSz = 4 + 4 + 8 + 4 + 4 + 4 + 6 + 5 + 4 + 4 + 3;               // 50
-
-                                    if (op1.Type is TYP_DOUBLE)
-                                    {
-                                        // ...
-                                        // vroundsd xmm3, xmm0, xmm0, 3
-                                        // ...
-
-                                        costEx += 8; // 34 + FLT_IND_COST_EX
-                                        costSz += 6; // 56
-                                    }
-#endif
+                                    costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
+                                    costSz = 5 + 4 + 5 + 4 + 8 + 3;                     // 29
                                 }
                             }
-                            else
-                            {
-                                // vcmpords*  xmm1, xmm0, xmm0
-                                // vandp*     xmm1, xmm1, xmm0
-                                // mov        eax, 0x7FFFFFFF
-                                // vcvtts*2si ecx, xmm1
-                                // vucomis*   xmm0, [reloc @RWD00]
-                                // cmovb      eax, ecx
-
-                                costEx = 4 + 1 + 1 + 7 + (3 + FLT_IND_COST_EX) + 1; // 17 + FLT_IND_COST_EX
-                                costSz = 5 + 4 + 5 + 4 + 8 + 3;                     // 29
-                            }
                         }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                        costEx = 1;
-                        costSz = 4;
-#elif TARGET_WASM
-                        // TODO-WASM: Determine if we need a better costing model for casts.
-                        // Some operations may use 2-byte opcodes, and some operations may need
-                        // multiple wasm instructions.
-                        costEx = 2;
-                        costSz = varTypeIsFloating(op1.Type) && !varTypeIsFloating(unOp.Type) ? 2 : 1;
-#else
-#error "Unknown TARGET"
-#endif
+                        else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                        {
+                            costEx = 1;
+                            costSz = 4;
+                        }
+                        else if (Configuration.TARGET_WASM)
+                        {
+                            // TODO-WASM: Determine if we need a better costing model for casts.
+                            // Some operations may use 2-byte opcodes, and some operations may need
+                            // multiple wasm instructions.
+                            costEx = 2;
+                            costSz = varTypeIsFloating(op1.Type) && !varTypeIsFloating(unOp.Type) ? 2 : 1;
+                        }
+                        else
+                        {
+                            throw new FatalJitException(CORJIT_IMPLLIMITATION,
+                                "Cast cost estimation is unsupported on this target.");
+                        }
 
                         if (unOp.HasOverflowCheck)
                         {
@@ -15274,14 +15353,17 @@ public partial class Compiler
 
                             case NI_System_Math_Abs:
                             {
-#if TARGET_XARCH
-                                // vandp* xmm0, xmm0, [reloc @RWD00]
-                                costEx = 1 + FLT_IND_COST_EX;
-                                costSz = 8;
-#else
-                                costEx = 5;
-                                costSz = 15;
-#endif
+                                if (Configuration.TARGET_XARCH)
+                                {
+                                    // vandp* xmm0, xmm0, [reloc @RWD00]
+                                    costEx = 1 + FLT_IND_COST_EX;
+                                    costSz = 8;
+                                }
+                                else
+                                {
+                                    costEx = 5;
+                                    costSz = 15;
+                                }
                                 break;
                             }
 
@@ -15290,15 +15372,18 @@ public partial class Compiler
                             case NI_PRIMITIVE_SaturateToUInt8:
                             case NI_PRIMITIVE_SaturateToUInt16:
                             {
-#if TARGET_ARM
-                                // Single SSAT/USAT instruction.
-                                costEx = 1;
-                                costSz = 4;
-#else
-                                // Other targets normalize, materialize bounds, and branch/move for each bound.
-                                costEx = 7;
-                                costSz = 28;
-#endif
+                                if (Configuration.TARGET_ARM)
+                                {
+                                    // Single SSAT/USAT instruction.
+                                    costEx = 1;
+                                    costSz = 4;
+                                }
+                                else
+                                {
+                                    // Other targets normalize, materialize bounds, and branch/move for each bound.
+                                    costEx = 7;
+                                    costSz = 28;
+                                }
                                 break;
                             }
 
@@ -15342,49 +15427,52 @@ public partial class Compiler
                                 }
                                 else
                                 {
-#if TARGET_XARCH
-                                    switch (intrinsicName)
+                                    if (Configuration.TARGET_XARCH)
                                     {
-                                        case NI_System_Math_Ceiling:
-                                        case NI_System_Math_Floor:
-                                        case NI_System_Math_Round:
-                                        case NI_System_Math_Truncate:
+                                        switch (intrinsicName)
                                         {
-                                            // Ceiling:  vrounds* xmm0, xmm0, xmm0, 10
-                                            // Floor:    vrounds* xmm0, xmm0, xmm0,  9
-                                            // Round:    vrounds* xmm0, xmm0, xmm0,  4
-                                            // Truncate: vrounds* xmm0, xmm0, xmm0, 11
+                                            case NI_System_Math_Ceiling:
+                                            case NI_System_Math_Floor:
+                                            case NI_System_Math_Round:
+                                            case NI_System_Math_Truncate:
+                                            {
+                                                // Ceiling:  vrounds* xmm0, xmm0, xmm0, 10
+                                                // Floor:    vrounds* xmm0, xmm0, xmm0,  9
+                                                // Round:    vrounds* xmm0, xmm0, xmm0,  4
+                                                // Truncate: vrounds* xmm0, xmm0, xmm0, 11
 
-                                            costEx = 8;
-                                            costSz = 6;
-                                            break;
-                                        }
+                                                costEx = 8;
+                                                costSz = 6;
+                                                break;
+                                            }
 
-                                        case NI_System_Math_Sqrt:
-                                        {
-                                            // vsqrts* xmm0, xmm0, xmm0
-                                            costEx = (byte)((unOp.Type is TYP_FLOAT) ? 12 : 16);
-                                            costSz = 4;
-                                            break;
-                                        }
+                                            case NI_System_Math_Sqrt:
+                                            {
+                                                // vsqrts* xmm0, xmm0, xmm0
+                                                costEx = (byte)((unOp.Type is TYP_FLOAT) ? 12 : 16);
+                                                costSz = 4;
+                                                break;
+                                            }
 
-                                        default:
-                                        {
-                                            // There are other non user call intrinsics, but they are
-                                            // specially imported as HWIntrinsic nodes or are non unary,
-                                            // so should never be encountered here.
+                                            default:
+                                            {
+                                                // There are other non user call intrinsics, but they are
+                                                // specially imported as HWIntrinsic nodes or are non unary,
+                                                // so should never be encountered here.
 
-                                            costEx = 1;
-                                            costSz = 4;
+                                                costEx = 1;
+                                                costSz = 4;
 
-                                            unreached();
-                                            break;
+                                                unreached();
+                                                break;
+                                            }
                                         }
                                     }
-#else
-                                    costEx = 3;
-                                    costSz = 4;
-#endif
+                                    else
+                                    {
+                                        costEx = 3;
+                                        costSz = 4;
+                                    }
                                 }
                                 break;
                             }
@@ -15402,20 +15490,23 @@ public partial class Compiler
                             case NI_SIMD_UpperRestore when Configuration.FEATURE_SIMD:
                             case NI_SIMD_UpperSave when Configuration.FEATURE_SIMD:
                             {
-#if TARGET_XARCH
-                                // UpperSave:    vextractf128 xmm0, ymm1, 1
-                                // UpperRestore: vinsertf128  ymm1, xmm0, 1
+                                if (Configuration.TARGET_XARCH)
+                                {
+                                    // UpperSave:    vextractf128 xmm0, ymm1, 1
+                                    // UpperRestore: vinsertf128  ymm1, xmm0, 1
 
-                                costEx = 3;
-                                costSz = 6;
-#else
-                                // TODO-CQ: 1 Ex/Sz isn't necessarily "accurate" but it is what the previous
-                                // cost was computed as, in gtSetMultiOpOrder, when this was handled by the
-                                // older SIMD intrinsic support.
+                                    costEx = 3;
+                                    costSz = 6;
+                                }
+                                else
+                                {
+                                    // TODO-CQ: 1 Ex/Sz isn't necessarily "accurate" but it is what the previous
+                                    // cost was computed as, in gtSetMultiOpOrder, when this was handled by the
+                                    // older SIMD intrinsic support.
 
-                                costEx = 1;
-                                costSz = 1;
-#endif
+                                    costEx = 1;
+                                    costSz = 1;
+                                }
                                 break;
                             }
                         }
@@ -15430,14 +15521,12 @@ public partial class Compiler
                         costEx = 1;
                         costSz = 1;
 
-#if TARGET_XARCH
-                        if (varTypeIsFloating(unOp.Type))
+                        if (Configuration.TARGET_XARCH && varTypeIsFloating(unOp.Type))
                         {
                             // vxorp* xmm0, xmm0, [reloc @RWD00]
                             costEx += FLT_IND_COST_EX;
                             costSz += 7;
                         }
-#endif
                         // We need to ensure that -x is evaluated before x or else
                         // we get burned while adjusting genFPstkLevel in x*-x where
                         // the rhs x is the last use of the enregistered x.
@@ -15537,21 +15626,17 @@ public partial class Compiler
 
                         costEx += 1;
                         costSz += 1;
-#if TARGET_ARM
-                        if (varTypeIsFloating(unOp.Type))
+                        if (Configuration.TARGET_ARM && varTypeIsFloating(unOp.Type))
                         {
                             costSz += 2;
                         }
-#endif
 
-#if !TARGET_64BIT
-                        if (unOp.Type is TYP_LONG)
+                        if (!Configuration.TARGET_64BIT && (unOp.Type is TYP_LONG))
                         {
                             // Operations on longs are more expensive.
                             costEx += 3;
                             costSz += 3;
                         }
-#endif
                         break;
                     }
 
@@ -15577,9 +15662,7 @@ public partial class Compiler
                     case GT_RETURN_SUSPEND:
                     case GT_PATCHPOINT_FORCED:
                     case GT_RETFILT:
-#if SWIFT_SUPPORT
-                    case GT_SWIFT_ERROR_RET:
-#endif
+                    case GT_SWIFT_ERROR_RET when Configuration.SWIFT_SUPPORT:
                     case GT_RETURNTRAP:
                     case GT_PUTARG_REG:
                     case GT_PUTARG_STK:
@@ -15643,17 +15726,22 @@ public partial class Compiler
                     {
                         if (varTypeIsFloating(binOp.Type))
                         {
-#if TARGET_XARCH
-                            // vdivs* xmm0, xmm0, xmm0
-                            costEx = (byte)((binOp.Type is TYP_FLOAT) ? 11 : 14);
-                            costSz = 4;
-#else
-                            costEx = 36;
-                            costSz = 4;
-#endif
-#if TARGET_ARM
-                            costSz += 2;
-#endif
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                // vdivs* xmm0, xmm0, xmm0
+                                costEx = (byte)((binOp.Type is TYP_FLOAT) ? 11 : 14);
+                                costSz = 4;
+                            }
+                            else
+                            {
+                                costEx = 36;
+                                costSz = 4;
+                            }
+
+                            if (Configuration.TARGET_ARM)
+                            {
+                                costSz += 2;
+                            }
                         }
                         else
                         {
@@ -15661,12 +15749,10 @@ public partial class Compiler
                             costEx = 20;
                             costSz = 3;
 
-#if !TARGET_64BIT
-                            if (binOp.Type is TYP_LONG)
+                            if (!Configuration.TARGET_64BIT && (binOp.Type is TYP_LONG))
                             {
                                 costSz += 3;
                             }
-#endif
 
                             // Encourage the first operand to be evaluated (into EAX/EDX) first */
                             level += 3;
@@ -15678,17 +15764,22 @@ public partial class Compiler
                     {
                         if (varTypeIsFloating(binOp.Type))
                         {
-#if TARGET_XARCH
-                            // vmuls* xmm0, xmm0, xmm0
-                            costEx = 4;
-                            costSz = 4;
-#else
-                            costEx = 5;
-                            costSz = 4;
-#endif
-#if TARGET_ARM
-                            costSz += 2;
-#endif
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                // vmuls* xmm0, xmm0, xmm0
+                                costEx = 4;
+                                costSz = 4;
+                            }
+                            else
+                            {
+                                costEx = 5;
+                                costSz = 4;
+                            }
+
+                            if (Configuration.TARGET_ARM)
+                            {
+                                costSz += 2;
+                            }
                         }
                         else
                         {
@@ -15696,13 +15787,11 @@ public partial class Compiler
                             costEx = 4;
                             costSz = 3;
 
-#if !TARGET_64BIT
-                            if (binOp.Type is TYP_LONG)
+                            if (!Configuration.TARGET_64BIT && (binOp.Type is TYP_LONG))
                             {
                                 costEx += 3;
                                 costSz += 3;
                             }
-#endif
 
                             if (binOp.HasOverflowCheck)
                             {
@@ -15710,8 +15799,8 @@ public partial class Compiler
                                 costSz += 3;
                             }
 
-#if TARGET_X86
-                            if ((binOp.Type is TYP_LONG) || binOp.HasOverflowCheck)
+                            if (Configuration.TARGET_X86 &&
+                                ((binOp.Type is TYP_LONG) || binOp.HasOverflowCheck))
                             {
                                 // We use imulEAX for TYP_LONG and overflow multiplications
                                 // Encourage the first operand to be evaluated (into EAX/EDX) first */
@@ -15720,7 +15809,6 @@ public partial class Compiler
                                 // The 64-bit imul instruction costs more
                                 costEx += 4;
                             }
-#endif
                         }
                         break;
                     }
@@ -15730,32 +15818,35 @@ public partial class Compiler
                     {
                         if (varTypeIsFloating(binOp.Type))
                         {
-#if TARGET_XARCH
-                            // add: vadds* xmm0, xmm0, xmm0
-                            // sub: vsubs* xmm0, xmm0, xmm0
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                // add: vadds* xmm0, xmm0, xmm0
+                                // sub: vsubs* xmm0, xmm0, xmm0
 
-                            costEx = 4;
-                            costSz = 4;
-#else
-                            costEx = 5;
-                            costSz = 4;
-#endif
-#if TARGET_ARM
-                            costSz += 2;
-#endif
+                                costEx = 4;
+                                costSz = 4;
+                            }
+                            else
+                            {
+                                costEx = 5;
+                                costSz = 4;
+                            }
+
+                            if (Configuration.TARGET_ARM)
+                            {
+                                costSz += 2;
+                            }
                         }
                         else
                         {
                             costEx = 1;
                             costSz = 1;
 
-#if !TARGET_64BIT
-                            if (binOp.Type is TYP_LONG)
+                            if (!Configuration.TARGET_64BIT && (binOp.Type is TYP_LONG))
                             {
                                 costEx += 3;
                                 costSz += 3;
                             }
-#endif
 
                             if (binOp.HasOverflowCheck)
                             {
@@ -15775,20 +15866,17 @@ public partial class Compiler
                         costEx = 1;
                         costSz = 1;
 
-#if !TARGET_64BIT
-                        if (binOp.Type is TYP_LONG)
+                        if (!Configuration.TARGET_64BIT && (binOp.Type is TYP_LONG))
                         {
                             costEx += 3;
                             costSz += 3;
                         }
-#endif
 
                         if (!op2.Oper.IsCnsIntOrI)
                         {
                             // Variable sized shifts are more expensive and use REG_SHIFT
                             costEx += 3;
-#if !TARGET_64BIT
-                            if (binOp.Type is TYP_LONG)
+                            if (!Configuration.TARGET_64BIT && (binOp.Type is TYP_LONG))
                             {
                                 // Variable sized LONG shifts require the use of a helper call
                                 level += 5;
@@ -15797,7 +15885,6 @@ public partial class Compiler
                                 costEx += 3 * IND_COST_EX;
                                 costSz += 4;
                             }
-#endif
                         }
                         break;
                     }
@@ -15811,18 +15898,21 @@ public partial class Compiler
                     {
                         if (varTypeIsFloating(op1.Type))
                         {
-#if TARGET_XARCH
-                            // vucomis* xmm0, xmm1
-                            costEx = 3;
-                            costSz = 4;
-#else
-                            costEx = 1;
-                            costSz = 1;
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                // vucomis* xmm0, xmm1
+                                costEx = 3;
+                                costSz = 4;
+                            }
+                            else
+                            {
+                                costEx = 1;
+                                costSz = 1;
 
-                            // TODO-CQ: This is a historical artifact from when the x87 FPU was used it should be properly adjusted for all platforms
-                            level++;
-                            lvl2++;
-#endif
+                                // TODO-CQ: This is a historical artifact from when the x87 FPU was used it should be properly adjusted for all platforms
+                                level++;
+                                lvl2++;
+                            }
                         }
                         else
                         {
@@ -15872,27 +15962,18 @@ public partial class Compiler
                                 break;
                             }
 
-#if TARGET_RISCV64
-                            case NI_System_Math_Max:
-                            case NI_System_Math_MaxUnsigned:
-                            case NI_System_Math_MaxNative:
-                            case NI_System_Math_Min:
-                            case NI_System_Math_MinUnsigned:
-                            case NI_System_Math_MinNative:
+                            case NI_System_Math_Max when Configuration.TARGET_RISCV64:
+                            case NI_System_Math_MaxUnsigned when Configuration.TARGET_RISCV64:
+                            case NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
+                            case NI_System_Math_Min when Configuration.TARGET_RISCV64:
+                            case NI_System_Math_MinUnsigned when Configuration.TARGET_RISCV64:
+                            case NI_System_Math_MinNative when Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM:
                             {
+                                // Wasm lowers these to native min/max instructions, including the
+                                // float-to-small-int saturation clamp.
                                 level++;
                                 break;
                             }
-#elif TARGET_WASM
-                            // Wasm lowers these to native min/max instructions, including the
-                            // float-to-small-int saturation clamp.
-                            case NI_System_Math_MaxNative:
-                            case NI_System_Math_MinNative:
-                            {
-                                level++;
-                                break;
-                            }
-#endif
 
                             default:
                             {
@@ -15904,12 +15985,15 @@ public partial class Compiler
                         costEx = 1;
                         costSz = 1;
 
-#if TARGET_ARM
-                        assert(!varTypeIsFloating(binOp.Type));
-#endif
-#if !TARGET_64BIT
-                        assert(!varTypeIsLong(binOp.Type));
-#endif
+                        if (Configuration.TARGET_ARM)
+                        {
+                            assert(!varTypeIsFloating(binOp.Type));
+                        }
+
+                        if (!Configuration.TARGET_64BIT)
+                        {
+                            assert(!varTypeIsLong(binOp.Type));
+                        }
                         break;
                     }
 
@@ -15941,12 +16025,10 @@ public partial class Compiler
                             costEx = 1 + (2 * IND_COST_EX);
                             costSz = 1 + (2 * 2);
 
-#if TARGET_ARM
-                            if (varTypeIsFloating(indir.Type))
+                            if (Configuration.TARGET_ARM && varTypeIsFloating(indir.Type))
                             {
                                 costSz += 2;
                             }
-#endif
                         }
                         else
                         {
@@ -15959,14 +16041,12 @@ public partial class Compiler
                             costSz += 1;
                         }
 
-#if !TARGET_64BIT
-                        if (indir.Type is TYP_LONG)
+                        if (!Configuration.TARGET_64BIT && (indir.Type is TYP_LONG))
                         {
                             // Operations on longs are more expensive.
                             costEx += 3;
                             costSz += 3;
                         }
-#endif
 
                         // TODO-ASG-Cleanup: this logic emulated the ASG case below. See how of much of it can be deleted.
                         if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
@@ -15986,35 +16066,27 @@ public partial class Compiler
                     case GT_AND:
                     case GT_TEST_EQ:
                     case GT_TEST_NE:
-#if TARGET_XARCH
-                    case GT_BITTEST_EQ:
-                    case GT_BITTEST_NE:
-#endif
+                    case GT_BITTEST_EQ when Configuration.TARGET_XARCH:
+                    case GT_BITTEST_NE when Configuration.TARGET_XARCH:
                     case GT_QMARK:
                     case GT_COLON:
                     case GT_LEA:
-#if !TARGET_64BIT
-                    case GT_LONG:
-                    case GT_ADD_LO:
-                    case GT_ADD_HI:
-                    case GT_SUB_LO:
-                    case GT_SUB_HI:
-                    case GT_LSH_HI:
-                    case GT_RSH_LO:
-#endif
+                    case GT_LONG when !Configuration.TARGET_64BIT:
+                    case GT_ADD_LO when !Configuration.TARGET_64BIT:
+                    case GT_ADD_HI when !Configuration.TARGET_64BIT:
+                    case GT_SUB_LO when !Configuration.TARGET_64BIT:
+                    case GT_SUB_HI when !Configuration.TARGET_64BIT:
+                    case GT_LSH_HI when !Configuration.TARGET_64BIT:
+                    case GT_RSH_LO when !Configuration.TARGET_64BIT:
                     case GT_MULHI:
-#if !TARGET_64BIT || TARGET_ARM64
-                    case GT_MUL_LONG:
-#endif
+                    case GT_MUL_LONG when !Configuration.TARGET_64BIT || Configuration.TARGET_ARM64:
                     case GT_AND_NOT:
                     case GT_OR_NOT:
                     case GT_XOR_NOT:
                     case GT_BFIZ:
                     case GT_CMP:
                     case GT_TEST:
-#if TARGET_XARCH
-                    case GT_BT:
-#endif
+                    case GT_BT when Configuration.TARGET_XARCH:
                     case GT_JCMP:
                     case GT_JTEST:
                     case GT_SELECTCC:
@@ -16022,19 +16094,17 @@ public partial class Compiler
                     case GT_SELECT_INCCC:
                     case GT_SELECT_INVCC:
                     case GT_SELECT_NEGCC:
-#if TARGET_RISCV64
-                    case GT_SH1ADD:
-                    case GT_SH1ADD_UW:
-                    case GT_SH2ADD:
-                    case GT_SH2ADD_UW:
-                    case GT_SH3ADD:
-                    case GT_SH3ADD_UW:
-                    case GT_ADD_UW:
-                    case GT_SLLI_UW:
-                    case GT_BIT_SET:
-                    case GT_BIT_CLEAR:
-                    case GT_BIT_INVERT:
-#endif
+                    case GT_SH1ADD when Configuration.TARGET_RISCV64:
+                    case GT_SH1ADD_UW when Configuration.TARGET_RISCV64:
+                    case GT_SH2ADD when Configuration.TARGET_RISCV64:
+                    case GT_SH2ADD_UW when Configuration.TARGET_RISCV64:
+                    case GT_SH3ADD when Configuration.TARGET_RISCV64:
+                    case GT_SH3ADD_UW when Configuration.TARGET_RISCV64:
+                    case GT_ADD_UW when Configuration.TARGET_RISCV64:
+                    case GT_SLLI_UW when Configuration.TARGET_RISCV64:
+                    case GT_BIT_SET when Configuration.TARGET_RISCV64:
+                    case GT_BIT_CLEAR when Configuration.TARGET_RISCV64:
+                    case GT_BIT_INVERT when Configuration.TARGET_RISCV64:
                     case GT_PATCHPOINT:
                     case GT_SWIFT_ERROR_RET:
                     case GT_SWITCH_TABLE:
@@ -16147,12 +16217,11 @@ public partial class Compiler
 
                             default:
                             {
-#if TARGET_WASM
-                                // For WASM if we can't swap the operands or swap the operator, don't swap.
-#else
-                                // Mark the operand's evaluation order to be swapped.
-                                tree.Flags ^= GTF_REVERSE_OPS;
-#endif
+                                if (!Configuration.TARGET_WASM)
+                                {
+                                    // Mark the operand's evaluation order to be swapped.
+                                    tree.Flags ^= GTF_REVERSE_OPS;
+                                }
                                 break;
                             }
                         }
@@ -16227,30 +16296,32 @@ public partial class Compiler
                                 costSz += controlExpr.CostSz;
                             }
                         }
-#if TARGET_ARM
-                        if (call.IsVirtualStub)
+                        if (Configuration.TARGET_ARM)
                         {
-                            // We generate movw/movt/ldr
-                            costEx += (1 + IND_COST_EX);
-                            costSz += 8;
-
-                            if ((call._callMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) is not 0)
+                            if (call.IsVirtualStub)
                             {
-                                // Must use R12 for the ldr target -- REG_JUMP_THUNK_PARAM
-                                costSz += 2;
-                            }
-                        }
-                        else if (!IsAot)
-                        {
-                            costEx += 2;
-                            costSz += 6;
-                        }
-                        costSz += 2;
-#endif
+                                // We generate movw/movt/ldr
+                                costEx += (1 + IND_COST_EX);
+                                costSz += 8;
 
-#if TARGET_XARCH
-                        costSz += 3;
-#endif
+                                if ((call._callMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) is not 0)
+                                {
+                                    // Must use R12 for the ldr target -- REG_JUMP_THUNK_PARAM
+                                    costSz += 2;
+                                }
+                            }
+                            else if (!IsAot)
+                            {
+                                costEx += 2;
+                                costSz += 6;
+                            }
+                            costSz += 2;
+                        }
+
+                        if (Configuration.TARGET_XARCH)
+                        {
+                            costSz += 3;
+                        }
                     }
 
                     level += 1;
@@ -16266,12 +16337,10 @@ public partial class Compiler
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
+                case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                 {
                     return gtSetMultiOpOrder(tree.AsMultiOp());
                 }
-#endif
 
                 case GT_ARR_ELEM:
                 {
@@ -16426,9 +16495,12 @@ public partial class Compiler
     {
         assert(store.Oper is GT_STORE_BLK or GT_STOREIND);
 
-#if TARGET_WASM
-        allowReversal = false;
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            allowReversal = false;
+            return;
+        }
+
         var addr = store.Addr;
         var data = store.Data;
 
@@ -16462,7 +16534,6 @@ public partial class Compiler
 
         allowReversal = false;
         store.IsReverseOp = true;
-#endif
     }
 
     /// <summary>A MinOpts specific version of gtSetEvalOrder. We don't need to set costs, but we're looking for opportunities to swap operands.</summary>
@@ -16589,13 +16660,12 @@ public partial class Compiler
                     }
                     else
                     {
-
-#if TARGET_WASM
                         // For WASM if we can't swap the operands or swap the operator, don't swap.
-#else
-                        // Mark the operand's evaluation order to be swapped.
-                        tree.Flags ^= GTF_REVERSE_OPS;
-#endif
+                        if (!Configuration.TARGET_WASM)
+                        {
+                            // Mark the operand's evaluation order to be swapped.
+                            tree.Flags ^= GTF_REVERSE_OPS;
+                        }
                     }
                 }
             }
@@ -16629,18 +16699,15 @@ public partial class Compiler
 
             level = 3;
         }
-#if FEATURE_HW_INTRINSICS
-        else if (oper.IsHWIntrinsic)
+        else if (Configuration.FEATURE_HW_INTRINSICS && oper.IsHWIntrinsic)
         {
             return gtSetMultiOpOrder(tree.AsMultiOp());
         }
-#endif
 
         // NOTE: we skip many operators here in order to maintain a good trade-off between CQ and TP.
         return level;
     }
 
-#if FEATURE_HW_INTRINSICS
     /// <summary>Calculate the costs for a MultiOp.</summary>
     /// <param name="multiOp">The MultiOp tree in question</param>
     /// <returns>The Sethi "complexity" for this tree (the idealized number of registers needed to evaluate it).</returns>
@@ -16655,8 +16722,7 @@ public partial class Compiler
         var opCount = multiOp.Operands.Length;
         var addrOp = null as GenTree;
 
-#if FEATURE_HW_INTRINSICS
-        if ((multiOp.Oper is GT_HWINTRINSIC) && optsEnabled)
+        if (Configuration.FEATURE_HW_INTRINSICS && (multiOp.Oper is GT_HWINTRINSIC) && optsEnabled)
         {
             var hwTree = multiOp.AsHWIntrinsic();
             var intrinsicId = hwTree.HWIntrinsicId;
@@ -16664,713 +16730,711 @@ public partial class Compiler
             var simdBaseType = hwTree.SimdBaseType;
             var simdSize = hwTree.SimdSize;
 
-#if TARGET_XARCH
-            if ((retType is TYP_SIMD64) || (simdSize is 64))
+            if (Configuration.TARGET_XARCH)
             {
-                costSz = 6;
-            }
-            else
-            {
-                costSz = 4;
-            }
-
-            var isLoad = hwTree.IsMemoryLoad(out addrOp);
-
-            if (isLoad || hwTree.IsMemoryStore(out addrOp))
-            {
-                assert(addrOp is not null);
-                costEx = FLT_IND_COST_EX;
-
-                if (simdSize is not 16)
+                if ((retType is TYP_SIMD64) || (simdSize is 64))
                 {
-                    if (simdSize is 32)
-                    {
-                        costEx += 1;
-                    }
-                    else
-                    {
-                        costEx += 2;
-                    }
+                    costSz = 6;
+                }
+                else
+                {
+                    costSz = 4;
                 }
 
-                if (!isLoad)
+                var isLoad = hwTree.IsMemoryLoad(out addrOp);
+
+                if (isLoad || hwTree.IsMemoryStore(out addrOp))
                 {
-                    costEx += 2;
-                }
+                    assert(addrOp is not null);
+                    costEx = FLT_IND_COST_EX;
 
-                switch (intrinsicId)
-                {
-                    case NI_X86Base_StoreAlignedNonTemporal:
-                    case NI_X86Base_StoreNonTemporal:
-                    case NI_X86Base_X64_StoreNonTemporal:
-                    case NI_AVX_StoreAlignedNonTemporal:
-                    case NI_AVX512_StoreAlignedNonTemporal:
+                    if (simdSize is not 16)
                     {
-                        costEx += 38;
-                        break;
-                    }
-
-                    case NI_AVX_MaskStore:
-                    case NI_AVX2_MaskStore:
-                    {
-                        costEx += 5;
-                        break;
-                    }
-
-                    case NI_AVX2_GatherVector128:
-                    case NI_AVX2_GatherVector256:
-                    case NI_AVX2_GatherMaskVector128:
-                    case NI_AVX2_GatherMaskVector256:
-                    {
-                        if (varTypeIsLong(simdBaseType))
+                        if (simdSize is 32)
                         {
-                            costEx += (byte)((simdSize is 16) ? 13 : 14);
+                            costEx += 1;
                         }
                         else
                         {
-                            costEx += (byte)((simdSize is 16) ? 15 : 16);
+                            costEx += 2;
                         }
-                        break;
                     }
 
-                    case NI_AVX2_MultiplyNoFlags:
-                    case NI_AVX2_X64_MultiplyNoFlags:
+                    if (!isLoad)
                     {
-                        costEx = 4 + IND_COST_EX;
-                        break;
+                        costEx += 2;
                     }
 
-                    case NI_AVX512_CompressStoreMask:
-                    case NI_AVX512_ExpandLoadMask:
-                    case NI_AVX512_MaskLoadMask:
-                    case NI_AVX512_MaskLoadAlignedMask:
-                    case NI_AVX512_MaskStoreMask:
-                    case NI_AVX512_MaskStoreAlignedMask:
-                    {
-                        costEx += 3;
-                        break;
-                    }
-
-                    default:
-                    {
-                        // The default costing is correct
-                        break;
-                    }
-                }
-
-                // Can we form an addressing mode with this indirection?
-                level = gtSetEvalOrder(addrOp);
-
-                if (gtGetAddrNodeCost(addrOp, retType, false, out var addrCostEx, out var addrCostSz))
-                {
-                    costEx += addrCostEx;
-                    costSz += addrCostSz;
-                }
-                else
-                {
-                    addrOp = null;
-                }
-            }
-            else
-            {
-                if (varTypeUsesIntReg(simdBaseType))
-                {
-                    costEx = HWIntrinsicInfo.lookupIntCost(intrinsicId);
-                }
-                else
-                {
-                    costEx = HWIntrinsicInfo.lookupFltCost(intrinsicId);
-                }
-
-                if (costEx == byte.MaxValue)
-                {
                     switch (intrinsicId)
                     {
-                        case NI_Vector_ConditionalSelect:
+                        case NI_X86Base_StoreAlignedNonTemporal:
+                        case NI_X86Base_StoreNonTemporal:
+                        case NI_X86Base_X64_StoreNonTemporal:
+                        case NI_AVX_StoreAlignedNonTemporal:
+                        case NI_AVX512_StoreAlignedNonTemporal:
                         {
-                            // We either become `(o2 & op1) | (op3 & ~op1)`
-                            // or we get optimized into some kind of single
-                            // instruction variant, so average the cost at 2
-
-                            costEx = 2;
-                            costSz *= 2;
+                            costEx += 38;
                             break;
                         }
 
-                        case NI_Vector_Create:
+                        case NI_AVX_MaskStore:
+                        case NI_AVX2_MaskStore:
                         {
-                            // We shouldn't have "all constants" as they get transformed to CNS_VEC
-
-                            if (opCount is 1)
-                            {
-                                // We will end up as a broadcast
-                                costEx = (byte)((simdSize is 16) ? 1 : 3);
-                            }
-                            else
-                            {
-                                // We will end up as a sequence of opCount inserts
-
-                                costEx = (byte)(opCount);
-                                costSz *= (byte)(opCount);
-
-                                if (varTypeIsIntegral(simdBaseType))
-                                {
-                                    costEx *= 4;
-                                }
-                            }
+                            costEx += 5;
                             break;
                         }
 
-                        case NI_Vector_CreateScalar:
-                        case NI_Vector_CreateScalarUnsafe:
-                        {
-                            // We shouldn't have "all constants" as they get transformed to CNS_VEC
-
-                            if (varTypeIsIntegral(simdBaseType))
-                            {
-                                costEx = 3;
-
-#if TARGET_X86
-                                if (varTypeIsLong(simdBaseType))
-                                {
-                                    costEx += 4;
-                                    costSz *= 2;
-                                }
-#endif
-                            }
-                            else
-                            {
-                                costEx = 1;
-                            }
-                            break;
-                        }
-
-                        case NI_Vector_Dot:
-                        {
-                            var elementCount = 16 / simdBaseType.Size;
-
-                            if (varTypeIsIntegral(simdBaseType))
-                            {
-                                // We have a multiply, 0-2 additions to reduce down to
-                                // V128 and then log2(V128<T>.Count) add operations
-
-                                costEx = (byte)(5 + (3 * int.Log2(elementCount)));
-                                costSz += costSz * int.Log2(elementCount);
-                            }
-                            else
-                            {
-                                costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 9 : 13);
-                            }
-
-                            if (simdSize is not 16)
-                            {
-                                if (simdSize is 32)
-                                {
-                                    costEx += 1;
-                                }
-                                else
-                                {
-                                    costEx += 2;
-                                }
-                            }
-                            break;
-                        }
-
-                        case NI_Vector_ExtractMostSignificantBits:
-                        {
-                            costEx = 3;
-
-                            if (simdSize is not 16)
-                            {
-                                if (simdSize is 32)
-                                {
-                                    costEx += 2;
-                                }
-                                else
-                                {
-                                    // Convert vector to mask, then extract
-                                    costEx += 3;
-                                    costSz += 6;
-                                }
-                            }
-                            break;
-                        }
-
-                        case NI_Vector_GetElement:
-                        {
-                            var op2 = hwTree.GetOp(2);
-
-                            if (op2.Oper.IsConst)
-                            {
-                                // We can extract the value, possibly
-                                // after extracting a particular V128
-
-                                if (varTypeIsIntegral(simdBaseType))
-                                {
-                                    costEx = 4;
-                                }
-                                else
-                                {
-                                    costEx = 1;
-                                }
-
-                                if (op2.AsIntCon().IconValue >= (16 / simdBaseType.Size))
-                                {
-                                    costEx += 3;
-                                    costSz *= 2;
-                                }
-                            }
-                            else
-                            {
-                                // We need a spill + load
-                                costEx = FLT_IND_COST_EX;
-
-                                if (simdSize is not 16)
-                                {
-                                    if (simdSize is 32)
-                                    {
-                                        costEx += 1;
-                                    }
-                                    else
-                                    {
-                                        costEx += 2;
-                                    }
-                                }
-
-                                if (varTypeIsIntegral(simdBaseType))
-                                {
-                                    costEx += IND_COST_EX + 1;
-                                    costSz += 4;
-
-                                    if (varTypeIsSmall(simdBaseType))
-                                    {
-                                        costEx += 1;
-                                        costSz += 1;
-                                    }
-                                }
-                                else
-                                {
-                                    costEx = FLT_IND_COST_EX + 2;
-                                    costSz += 6;
-                                }
-                            }
-                            break;
-                        }
-
-                        case NI_Vector_GetLower:
-                        case NI_Vector_GetLower128:
-                        {
-                            costEx = 1;
-                            break;
-                        }
-
-                        case NI_Vector_GetUpper:
-                        {
-                            costEx = 3;
-                            break;
-                        }
-
-                        case NI_Vector_Shuffle:
-                        case NI_Vector_ShuffleNative:
-                        case NI_Vector_ShuffleNativeFallback:
-                        case NI_Vector_CreateGeometricSequence:
-                        {
-                            // These are likely becoming calls
-                            costEx = 5 + (3 * IND_COST_EX);
-                            costSz = 5;
-                            break;
-                        }
-
-                        case NI_Vector_ToScalar:
-                        {
-                            costEx = (byte)(varTypeIsIntegral(simdBaseType) ? 3 : 1);
-                            break;
-                        }
-
-                        case NI_Vector_ToVector256:
-                        case NI_Vector_ToVector256Unsafe:
-                        case NI_Vector_ToVector512:
-                        case NI_Vector_ToVector512Unsafe:
-                        {
-                            costEx = 1;
-                            break;
-                        }
-
-                        case NI_Vector_WithElement:
-                        {
-                            var op2 = hwTree.GetOp(2);
-
-                            if (op2.Oper.IsConst)
-                            {
-                                // We can insert the value, possibly
-                                // after extracting a particular V128,
-                                // and then reinserting the V128 as well
-
-                                if (varTypeIsIntegral(simdBaseType))
-                                {
-                                    costEx = 4;
-                                }
-                                else
-                                {
-                                    costEx = 1;
-                                }
-
-                                if (op2.AsIntCon().IconValue >= (16 / simdBaseType.Size))
-                                {
-                                    costEx += 6;
-                                    costSz *= 3;
-                                }
-                            }
-                            else
-                            {
-                                // We need a spill + write + load
-                                costEx = FLT_IND_COST_EX;
-
-                                if (simdSize is not 16)
-                                {
-                                    if (simdSize is 32)
-                                    {
-                                        costEx += 1;
-                                    }
-                                    else
-                                    {
-                                        costEx += 2;
-                                    }
-                                }
-
-                                if (varTypeIsIntegral(simdBaseType))
-                                {
-                                    costEx += IND_COST_EX + IND_COST_EX + 1;
-                                    costSz += 8;
-
-                                    if (varTypeIsSmall(simdBaseType))
-                                    {
-                                        costEx += 2;
-                                        costSz += 2;
-                                    }
-                                }
-                                else
-                                {
-                                    costEx = FLT_IND_COST_EX + FLT_IND_COST_EX + 2;
-                                    costSz += 12;
-                                }
-                            }
-                            break;
-                        }
-
-                        case NI_Vector_WithLower:
-                        case NI_Vector_WithUpper:
-                        {
-                            costEx = 3;
-                            break;
-                        }
-
-                        case NI_Vector_op_Division:
-                        {
-                            // We generate a fairly complex sequence involving
-                            // comparisons, two branches, conversions, and a fp
-                            // division
-
-                            costEx = 46;
-                            costSz = (costSz * 11) + 4;
-                            break;
-                        }
-
-                        case NI_Vector_op_Equality:
-                        case NI_Vector_op_Inequality:
-                        {
-                            // We emit a simd compare, get mask, integer compare,
-                            // and a branch or setcc
-
-                            if (varTypeIsIntegral(simdBaseType))
-                            {
-                                costEx = 6;
-                                costSz = (costSz * 2) + 3;
-                            }
-                            else
-                            {
-                                costEx = 9;
-                                costSz = (costSz * 2) + 3;
-                            }
-                            break;
-                        }
-
-                        case NI_X86Base_Divide:
-                        case NI_X86Base_DivideScalar:
-                        case NI_AVX_Divide:
-                        case NI_AVX512_Divide:
-                        case NI_AVX512_DivideScalar:
-                        case NI_AVX10v1_DivideScalar:
-                        {
-                            costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 14 : 11);
-                            break;
-                        }
-
-                        case NI_X86Base_DotProduct:
-                        {
-                            costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 9 : 13);
-                            break;
-                        }
-
-                        case NI_X86Base_LoadFence:
-                        {
-                            costEx = 4;
-                            break;
-                        }
-
-                        case NI_X86Base_MemoryFence:
-                        {
-                            costEx = 33;
-                            break;
-                        }
-
-                        case NI_X86Base_MultiplyLow:
-                        case NI_AVX2_MultiplyLow:
-                        {
-                            costEx = (byte)(varTypeIsInt(simdBaseType) ? 10 : 5);
-                            break;
-                        }
-
-                        case NI_X86Base_Pause:
-                        {
-                            costEx = 140;
-                            break;
-                        }
-
-                        case NI_X86Base_Prefetch0:
-                        case NI_X86Base_Prefetch1:
-                        case NI_X86Base_Prefetch2:
-                        case NI_X86Base_PrefetchNonTemporal:
-                        {
-                            costEx = 1;
-                            break;
-                        }
-
-                        case NI_X86Base_Sqrt:
-                        case NI_X86Base_SqrtScalar:
-                        case NI_AVX_Sqrt:
-                        case NI_AVX512_Sqrt:
-                        case NI_AVX512_SqrtScalar:
-                        case NI_AVX10v1_SqrtScalar:
-                        {
-                            costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 16 : 12);
-                            break;
-                        }
-
-                        case NI_X86Base_StoreFence:
-                        {
-                            costEx = 6;
-                            break;
-                        }
-
-                        case NI_AVX_TestC:
-                        case NI_AVX_TestNotZAndNotC:
-                        case NI_AVX_TestZ:
-                        {
-                            costEx = (byte)((simdSize is 16) ? 3 : 5);
-                            break;
-                        }
-
-                        case NI_AVX512_AlignRight32:
-                        case NI_AVX512_AlignRight64:
-                        {
-                            costEx = (byte)((simdSize is 16) ? 1 : 3);
-                            break;
-                        }
-
-                        case NI_AVX512_ConvertToVector128Byte:
-                        case NI_AVX512_ConvertToVector128ByteWithSaturation:
-                        case NI_AVX512_ConvertToVector128Int16:
-                        case NI_AVX512_ConvertToVector128Int16WithSaturation:
-                        case NI_AVX512_ConvertToVector128Int32WithSaturation:
-                        case NI_AVX512_ConvertToVector128SByte:
-                        case NI_AVX512_ConvertToVector128SByteWithSaturation:
-                        case NI_AVX512_ConvertToVector128UInt16:
-                        case NI_AVX512_ConvertToVector128UInt16WithSaturation:
-                        case NI_AVX512_ConvertToVector128UInt32WithSaturation:
-                        case NI_AVX512_ConvertToVector256Byte:
-                        case NI_AVX512_ConvertToVector256ByteWithSaturation:
-                        case NI_AVX512_ConvertToVector256Int16:
-                        case NI_AVX512_ConvertToVector256Int16WithSaturation:
-                        case NI_AVX512_ConvertToVector256Int32WithSaturation:
-                        case NI_AVX512_ConvertToVector256SByte:
-                        case NI_AVX512_ConvertToVector256SByteWithSaturation:
-                        case NI_AVX512_ConvertToVector256UInt16:
-                        case NI_AVX512_ConvertToVector256UInt16WithSaturation:
-                        case NI_AVX512_ConvertToVector256UInt32WithSaturation:
-                        {
-                            costEx = (byte)((simdSize is 16) ? 2 : 4);
-                            break;
-                        }
-
-                        case NI_AVX512_ConvertToVector128Int32:
-                        {
-                            costEx = (byte)((simdSize is 16) ? 1 : 3);
-                            break;
-                        }
-
-                        case NI_AVX512_ConvertToVector128Double:
-                        case NI_AVX512_ConvertToVector256Double:
-                        case NI_AVX512_ConvertToVector512Double:
+                        case NI_AVX2_GatherVector128:
+                        case NI_AVX2_GatherVector256:
+                        case NI_AVX2_GatherMaskVector128:
+                        case NI_AVX2_GatherMaskVector256:
                         {
                             if (varTypeIsLong(simdBaseType))
                             {
-                                costEx = 4;
+                                costEx += (byte)((simdSize is 16) ? 13 : 14);
                             }
                             else
                             {
-                                costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
+                                costEx += (byte)((simdSize is 16) ? 15 : 16);
                             }
                             break;
                         }
 
-                        case NI_AVX512_ConvertToVector128Int64:
-                        case NI_AVX512_ConvertToVector128Int64WithTruncation:
+                        case NI_AVX2_MultiplyNoFlags:
+                        case NI_AVX2_X64_MultiplyNoFlags:
                         {
-                            if (simdBaseType == TYP_DOUBLE)
-                            {
-                                costEx = 4;
-                            }
-                            else
-                            {
-                                costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
-                            }
+                            costEx = 4 + IND_COST_EX;
                             break;
                         }
 
-                        case NI_AVX512_ConvertToVector128Single:
-                        case NI_AVX512_ConvertToVector256Single:
-                        case NI_AVX512_ConvertToVector512Single:
+                        case NI_AVX512_CompressStoreMask:
+                        case NI_AVX512_ExpandLoadMask:
+                        case NI_AVX512_MaskLoadMask:
+                        case NI_AVX512_MaskLoadAlignedMask:
+                        case NI_AVX512_MaskStoreMask:
+                        case NI_AVX512_MaskStoreAlignedMask:
                         {
-                            if (varTypeIsLong(simdBaseType))
-                            {
-                                costEx = (byte)((simdSize is 16) ? 5 : 7);
-                            }
-                            else
-                            {
-                                costEx = 4;
-                            }
-                            break;
-                        }
-
-                        case NI_AVX512_ConvertToVector128UInt32:
-                        case NI_AVX512_ConvertToVector128UInt32WithTruncation:
-                        case NI_AVX512_ConvertToVector256Int32:
-                        case NI_AVX512_ConvertToVector256Int32WithTruncation:
-                        case NI_AVX512_ConvertToVector256UInt32:
-                        case NI_AVX512_ConvertToVector256UInt32WithTruncation:
-                        case NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation:
-                        case NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation:
-                        {
-                            if (varTypeIsIntegral(simdBaseType))
-                            {
-                                costEx = (byte)((simdSize is 16) ? 1 : 3);
-                            }
-                            else if (simdBaseType == TYP_DOUBLE)
-                            {
-                                costEx = (byte)((simdSize is 16) ? 5 : 7);
-                            }
-                            else
-                            {
-                                costEx = 4;
-                            }
-                            break;
-                        }
-
-                        case NI_AVX512_ConvertToVector128UInt64:
-                        case NI_AVX512_ConvertToVector128UInt64WithTruncation:
-                        case NI_AVX512_ConvertToVector256Int64:
-                        case NI_AVX512_ConvertToVector256Int64WithTruncation:
-                        case NI_AVX512_ConvertToVector256UInt64:
-                        case NI_AVX512_ConvertToVector256UInt64WithTruncation:
-                        case NI_AVX512_ConvertToVector512Int64:
-                        case NI_AVX512_ConvertToVector512Int64WithTruncation:
-                        case NI_AVX512_ConvertToVector512UInt64:
-                        case NI_AVX512_ConvertToVector512UInt64WithTruncation:
-                        case NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation:
-                        case NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation:
-                        {
-                            if (simdBaseType == TYP_FLOAT)
-                            {
-                                costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
-                            }
-                            else
-                            {
-                                costEx = 4;
-                            }
-                            break;
-                        }
-
-                        case NI_AVX512_DetectConflicts:
-                        {
-                            if (simdSize is 16)
-                            {
-                                costEx = (byte)(varTypeIsLong(simdBaseType) ? 4 : 11);
-                            }
-                            else if (simdSize is 32)
-                            {
-                                costEx = (byte)(varTypeIsLong(simdBaseType) ? 13 : 16);
-                            }
-                            else
-                            {
-                                costEx = (byte)(varTypeIsLong(simdBaseType) ? 17 : 26);
-                            }
-                            break;
-                        }
-
-                        case NI_AVX512_Reciprocal14:
-                        case NI_AVX512_Reciprocal14Scalar:
-                        case NI_AVX512_ReciprocalSqrt14:
-                        case NI_AVX512_ReciprocalSqrt14Scalar:
-                        {
-                            if (simdBaseType == TYP_FLOAT)
-                            {
-                                costEx = (byte)((simdSize is 64) ? 7 : 4);
-                            }
-                            else
-                            {
-                                costEx = 4;
-                            }
-                            break;
-                        }
-
-                        case NI_X86Serialize_Serialize:
-                        {
-                            costEx = 105;
-                            break;
-                        }
-
-                        case NI_AVX_PTEST:
-                        {
-                            if (varTypeIsIntegral(simdBaseType))
-                            {
-                                costEx = (byte)((simdSize is 16) ? 4 : 6);
-                            }
-                            else
-                            {
-                                costEx = (byte)((simdSize is 16) ? 3 : 5);
-                            }
-                            break;
-                        }
-
-                        case NI_AVX512_ConvertMaskToVector:
-                        {
-                            costEx = (byte)(varTypeIsSmall(simdBaseType) ? 3 : 1);
+                            costEx += 3;
                             break;
                         }
 
                         default:
                         {
-                            NO_WAY("Unhandled costing for HWIntrinsic");
-                            costEx = (byte)(varTypeIsIntegral(simdBaseType) ? 1 : 4);
+                            // The default costing is correct
                             break;
+                        }
+                    }
+
+                    // Can we form an addressing mode with this indirection?
+                    level = gtSetEvalOrder(addrOp);
+
+                    if (gtGetAddrNodeCost(addrOp, retType, false, out var addrCostEx, out var addrCostSz))
+                    {
+                        costEx += addrCostEx;
+                        costSz += addrCostSz;
+                    }
+                    else
+                    {
+                        addrOp = null;
+                    }
+                }
+                else
+                {
+                    if (varTypeUsesIntReg(simdBaseType))
+                    {
+                        costEx = HWIntrinsicInfo.lookupIntCost(intrinsicId);
+                    }
+                    else
+                    {
+                        costEx = HWIntrinsicInfo.lookupFltCost(intrinsicId);
+                    }
+
+                    if (costEx == byte.MaxValue)
+                    {
+                        switch (intrinsicId)
+                        {
+                            case NI_Vector_ConditionalSelect:
+                            {
+                                // We either become `(o2 & op1) | (op3 & ~op1)`
+                                // or we get optimized into some kind of single
+                                // instruction variant, so average the cost at 2
+
+                                costEx = 2;
+                                costSz *= 2;
+                                break;
+                            }
+
+                            case NI_Vector_Create:
+                            {
+                                // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                                if (opCount is 1)
+                                {
+                                    // We will end up as a broadcast
+                                    costEx = (byte)((simdSize is 16) ? 1 : 3);
+                                }
+                                else
+                                {
+                                    // We will end up as a sequence of opCount inserts
+
+                                    costEx = (byte)(opCount);
+                                    costSz *= (byte)(opCount);
+
+                                    if (varTypeIsIntegral(simdBaseType))
+                                    {
+                                        costEx *= 4;
+                                    }
+                                }
+                                break;
+                            }
+
+                            case NI_Vector_CreateScalar:
+                            case NI_Vector_CreateScalarUnsafe:
+                            {
+                                // We shouldn't have "all constants" as they get transformed to CNS_VEC
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx = 3;
+
+                                    if (Configuration.TARGET_X86 && varTypeIsLong(simdBaseType))
+                                    {
+                                        costEx += 4;
+                                        costSz *= 2;
+                                    }
+                                }
+                                else
+                                {
+                                    costEx = 1;
+                                }
+                                break;
+                            }
+
+                            case NI_Vector_Dot:
+                            {
+                                var elementCount = 16 / simdBaseType.Size;
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    // We have a multiply, 0-2 additions to reduce down to
+                                    // V128 and then log2(V128<T>.Count) add operations
+
+                                    costEx = (byte)(5 + (3 * int.Log2(elementCount)));
+                                    costSz += costSz * int.Log2(elementCount);
+                                }
+                                else
+                                {
+                                    costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 9 : 13);
+                                }
+
+                                if (simdSize is not 16)
+                                {
+                                    if (simdSize is 32)
+                                    {
+                                        costEx += 1;
+                                    }
+                                    else
+                                    {
+                                        costEx += 2;
+                                    }
+                                }
+                                break;
+                            }
+
+                            case NI_Vector_ExtractMostSignificantBits:
+                            {
+                                costEx = 3;
+
+                                if (simdSize is not 16)
+                                {
+                                    if (simdSize is 32)
+                                    {
+                                        costEx += 2;
+                                    }
+                                    else
+                                    {
+                                        // Convert vector to mask, then extract
+                                        costEx += 3;
+                                        costSz += 6;
+                                    }
+                                }
+                                break;
+                            }
+
+                            case NI_Vector_GetElement:
+                            {
+                                var op2 = hwTree.GetOp(2);
+
+                                if (op2.Oper.IsConst)
+                                {
+                                    // We can extract the value, possibly
+                                    // after extracting a particular V128
+
+                                    if (varTypeIsIntegral(simdBaseType))
+                                    {
+                                        costEx = 4;
+                                    }
+                                    else
+                                    {
+                                        costEx = 1;
+                                    }
+
+                                    if (op2.AsIntCon().IconValue >= (16 / simdBaseType.Size))
+                                    {
+                                        costEx += 3;
+                                        costSz *= 2;
+                                    }
+                                }
+                                else
+                                {
+                                    // We need a spill + load
+                                    costEx = FLT_IND_COST_EX;
+
+                                    if (simdSize is not 16)
+                                    {
+                                        if (simdSize is 32)
+                                        {
+                                            costEx += 1;
+                                        }
+                                        else
+                                        {
+                                            costEx += 2;
+                                        }
+                                    }
+
+                                    if (varTypeIsIntegral(simdBaseType))
+                                    {
+                                        costEx += IND_COST_EX + 1;
+                                        costSz += 4;
+
+                                        if (varTypeIsSmall(simdBaseType))
+                                        {
+                                            costEx += 1;
+                                            costSz += 1;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        costEx = FLT_IND_COST_EX + 2;
+                                        costSz += 6;
+                                    }
+                                }
+                                break;
+                            }
+
+                            case NI_Vector_GetLower:
+                            case NI_Vector_GetLower128:
+                            {
+                                costEx = 1;
+                                break;
+                            }
+
+                            case NI_Vector_GetUpper:
+                            {
+                                costEx = 3;
+                                break;
+                            }
+
+                            case NI_Vector_Shuffle:
+                            case NI_Vector_ShuffleNative:
+                            case NI_Vector_ShuffleNativeFallback:
+                            case NI_Vector_CreateGeometricSequence:
+                            {
+                                // These are likely becoming calls
+                                costEx = 5 + (3 * IND_COST_EX);
+                                costSz = 5;
+                                break;
+                            }
+
+                            case NI_Vector_ToScalar:
+                            {
+                                costEx = (byte)(varTypeIsIntegral(simdBaseType) ? 3 : 1);
+                                break;
+                            }
+
+                            case NI_Vector_ToVector256:
+                            case NI_Vector_ToVector256Unsafe:
+                            case NI_Vector_ToVector512:
+                            case NI_Vector_ToVector512Unsafe:
+                            {
+                                costEx = 1;
+                                break;
+                            }
+
+                            case NI_Vector_WithElement:
+                            {
+                                var op2 = hwTree.GetOp(2);
+
+                                if (op2.Oper.IsConst)
+                                {
+                                    // We can insert the value, possibly
+                                    // after extracting a particular V128,
+                                    // and then reinserting the V128 as well
+
+                                    if (varTypeIsIntegral(simdBaseType))
+                                    {
+                                        costEx = 4;
+                                    }
+                                    else
+                                    {
+                                        costEx = 1;
+                                    }
+
+                                    if (op2.AsIntCon().IconValue >= (16 / simdBaseType.Size))
+                                    {
+                                        costEx += 6;
+                                        costSz *= 3;
+                                    }
+                                }
+                                else
+                                {
+                                    // We need a spill + write + load
+                                    costEx = FLT_IND_COST_EX;
+
+                                    if (simdSize is not 16)
+                                    {
+                                        if (simdSize is 32)
+                                        {
+                                            costEx += 1;
+                                        }
+                                        else
+                                        {
+                                            costEx += 2;
+                                        }
+                                    }
+
+                                    if (varTypeIsIntegral(simdBaseType))
+                                    {
+                                        costEx += IND_COST_EX + IND_COST_EX + 1;
+                                        costSz += 8;
+
+                                        if (varTypeIsSmall(simdBaseType))
+                                        {
+                                            costEx += 2;
+                                            costSz += 2;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        costEx = FLT_IND_COST_EX + FLT_IND_COST_EX + 2;
+                                        costSz += 12;
+                                    }
+                                }
+                                break;
+                            }
+
+                            case NI_Vector_WithLower:
+                            case NI_Vector_WithUpper:
+                            {
+                                costEx = 3;
+                                break;
+                            }
+
+                            case NI_Vector_op_Division:
+                            {
+                                // We generate a fairly complex sequence involving
+                                // comparisons, two branches, conversions, and a fp
+                                // division
+
+                                costEx = 46;
+                                costSz = (costSz * 11) + 4;
+                                break;
+                            }
+
+                            case NI_Vector_op_Equality:
+                            case NI_Vector_op_Inequality:
+                            {
+                                // We emit a simd compare, get mask, integer compare,
+                                // and a branch or setcc
+
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx = 6;
+                                    costSz = (costSz * 2) + 3;
+                                }
+                                else
+                                {
+                                    costEx = 9;
+                                    costSz = (costSz * 2) + 3;
+                                }
+                                break;
+                            }
+
+                            case NI_X86Base_Divide:
+                            case NI_X86Base_DivideScalar:
+                            case NI_AVX_Divide:
+                            case NI_AVX512_Divide:
+                            case NI_AVX512_DivideScalar:
+                            case NI_AVX10v1_DivideScalar:
+                            {
+                                costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 14 : 11);
+                                break;
+                            }
+
+                            case NI_X86Base_DotProduct:
+                            {
+                                costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 9 : 13);
+                                break;
+                            }
+
+                            case NI_X86Base_LoadFence:
+                            {
+                                costEx = 4;
+                                break;
+                            }
+
+                            case NI_X86Base_MemoryFence:
+                            {
+                                costEx = 33;
+                                break;
+                            }
+
+                            case NI_X86Base_MultiplyLow:
+                            case NI_AVX2_MultiplyLow:
+                            {
+                                costEx = (byte)(varTypeIsInt(simdBaseType) ? 10 : 5);
+                                break;
+                            }
+
+                            case NI_X86Base_Pause:
+                            {
+                                costEx = 140;
+                                break;
+                            }
+
+                            case NI_X86Base_Prefetch0:
+                            case NI_X86Base_Prefetch1:
+                            case NI_X86Base_Prefetch2:
+                            case NI_X86Base_PrefetchNonTemporal:
+                            {
+                                costEx = 1;
+                                break;
+                            }
+
+                            case NI_X86Base_Sqrt:
+                            case NI_X86Base_SqrtScalar:
+                            case NI_AVX_Sqrt:
+                            case NI_AVX512_Sqrt:
+                            case NI_AVX512_SqrtScalar:
+                            case NI_AVX10v1_SqrtScalar:
+                            {
+                                costEx = (byte)((simdBaseType == TYP_DOUBLE) ? 16 : 12);
+                                break;
+                            }
+
+                            case NI_X86Base_StoreFence:
+                            {
+                                costEx = 6;
+                                break;
+                            }
+
+                            case NI_AVX_TestC:
+                            case NI_AVX_TestNotZAndNotC:
+                            case NI_AVX_TestZ:
+                            {
+                                costEx = (byte)((simdSize is 16) ? 3 : 5);
+                                break;
+                            }
+
+                            case NI_AVX512_AlignRight32:
+                            case NI_AVX512_AlignRight64:
+                            {
+                                costEx = (byte)((simdSize is 16) ? 1 : 3);
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertToVector128Byte:
+                            case NI_AVX512_ConvertToVector128ByteWithSaturation:
+                            case NI_AVX512_ConvertToVector128Int16:
+                            case NI_AVX512_ConvertToVector128Int16WithSaturation:
+                            case NI_AVX512_ConvertToVector128Int32WithSaturation:
+                            case NI_AVX512_ConvertToVector128SByte:
+                            case NI_AVX512_ConvertToVector128SByteWithSaturation:
+                            case NI_AVX512_ConvertToVector128UInt16:
+                            case NI_AVX512_ConvertToVector128UInt16WithSaturation:
+                            case NI_AVX512_ConvertToVector128UInt32WithSaturation:
+                            case NI_AVX512_ConvertToVector256Byte:
+                            case NI_AVX512_ConvertToVector256ByteWithSaturation:
+                            case NI_AVX512_ConvertToVector256Int16:
+                            case NI_AVX512_ConvertToVector256Int16WithSaturation:
+                            case NI_AVX512_ConvertToVector256Int32WithSaturation:
+                            case NI_AVX512_ConvertToVector256SByte:
+                            case NI_AVX512_ConvertToVector256SByteWithSaturation:
+                            case NI_AVX512_ConvertToVector256UInt16:
+                            case NI_AVX512_ConvertToVector256UInt16WithSaturation:
+                            case NI_AVX512_ConvertToVector256UInt32WithSaturation:
+                            {
+                                costEx = (byte)((simdSize is 16) ? 2 : 4);
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertToVector128Int32:
+                            {
+                                costEx = (byte)((simdSize is 16) ? 1 : 3);
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertToVector128Double:
+                            case NI_AVX512_ConvertToVector256Double:
+                            case NI_AVX512_ConvertToVector512Double:
+                            {
+                                if (varTypeIsLong(simdBaseType))
+                                {
+                                    costEx = 4;
+                                }
+                                else
+                                {
+                                    costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
+                                }
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertToVector128Int64:
+                            case NI_AVX512_ConvertToVector128Int64WithTruncation:
+                            {
+                                if (simdBaseType == TYP_DOUBLE)
+                                {
+                                    costEx = 4;
+                                }
+                                else
+                                {
+                                    costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
+                                }
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertToVector128Single:
+                            case NI_AVX512_ConvertToVector256Single:
+                            case NI_AVX512_ConvertToVector512Single:
+                            {
+                                if (varTypeIsLong(simdBaseType))
+                                {
+                                    costEx = (byte)((simdSize is 16) ? 5 : 7);
+                                }
+                                else
+                                {
+                                    costEx = 4;
+                                }
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertToVector128UInt32:
+                            case NI_AVX512_ConvertToVector128UInt32WithTruncation:
+                            case NI_AVX512_ConvertToVector256Int32:
+                            case NI_AVX512_ConvertToVector256Int32WithTruncation:
+                            case NI_AVX512_ConvertToVector256UInt32:
+                            case NI_AVX512_ConvertToVector256UInt32WithTruncation:
+                            case NI_AVX10v2_ConvertToVectorInt32WithTruncatedSaturation:
+                            case NI_AVX10v2_ConvertToVectorUInt32WithTruncatedSaturation:
+                            {
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx = (byte)((simdSize is 16) ? 1 : 3);
+                                }
+                                else if (simdBaseType == TYP_DOUBLE)
+                                {
+                                    costEx = (byte)((simdSize is 16) ? 5 : 7);
+                                }
+                                else
+                                {
+                                    costEx = 4;
+                                }
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertToVector128UInt64:
+                            case NI_AVX512_ConvertToVector128UInt64WithTruncation:
+                            case NI_AVX512_ConvertToVector256Int64:
+                            case NI_AVX512_ConvertToVector256Int64WithTruncation:
+                            case NI_AVX512_ConvertToVector256UInt64:
+                            case NI_AVX512_ConvertToVector256UInt64WithTruncation:
+                            case NI_AVX512_ConvertToVector512Int64:
+                            case NI_AVX512_ConvertToVector512Int64WithTruncation:
+                            case NI_AVX512_ConvertToVector512UInt64:
+                            case NI_AVX512_ConvertToVector512UInt64WithTruncation:
+                            case NI_AVX10v2_ConvertToVectorInt64WithTruncatedSaturation:
+                            case NI_AVX10v2_ConvertToVectorUInt64WithTruncatedSaturation:
+                            {
+                                if (simdBaseType == TYP_FLOAT)
+                                {
+                                    costEx = (byte)((retType == TYP_SIMD16) ? 5 : 7);
+                                }
+                                else
+                                {
+                                    costEx = 4;
+                                }
+                                break;
+                            }
+
+                            case NI_AVX512_DetectConflicts:
+                            {
+                                if (simdSize is 16)
+                                {
+                                    costEx = (byte)(varTypeIsLong(simdBaseType) ? 4 : 11);
+                                }
+                                else if (simdSize is 32)
+                                {
+                                    costEx = (byte)(varTypeIsLong(simdBaseType) ? 13 : 16);
+                                }
+                                else
+                                {
+                                    costEx = (byte)(varTypeIsLong(simdBaseType) ? 17 : 26);
+                                }
+                                break;
+                            }
+
+                            case NI_AVX512_Reciprocal14:
+                            case NI_AVX512_Reciprocal14Scalar:
+                            case NI_AVX512_ReciprocalSqrt14:
+                            case NI_AVX512_ReciprocalSqrt14Scalar:
+                            {
+                                if (simdBaseType == TYP_FLOAT)
+                                {
+                                    costEx = (byte)((simdSize is 64) ? 7 : 4);
+                                }
+                                else
+                                {
+                                    costEx = 4;
+                                }
+                                break;
+                            }
+
+                            case NI_X86Serialize_Serialize:
+                            {
+                                costEx = 105;
+                                break;
+                            }
+
+                            case NI_AVX_PTEST:
+                            {
+                                if (varTypeIsIntegral(simdBaseType))
+                                {
+                                    costEx = (byte)((simdSize is 16) ? 4 : 6);
+                                }
+                                else
+                                {
+                                    costEx = (byte)((simdSize is 16) ? 3 : 5);
+                                }
+                                break;
+                            }
+
+                            case NI_AVX512_ConvertMaskToVector:
+                            {
+                                costEx = (byte)(varTypeIsSmall(simdBaseType) ? 3 : 1);
+                                break;
+                            }
+
+                            default:
+                            {
+                                NO_WAY("Unhandled costing for HWIntrinsic");
+                                costEx = (byte)(varTypeIsIntegral(simdBaseType) ? 1 : 4);
+                                break;
+                            }
                         }
                     }
                 }
             }
-#endif
         }
-#endif
 
         // The binary case is special because of GTF_REVERSE_OPS.
         if (opCount is 2)
@@ -17420,17 +17484,14 @@ public partial class Compiler
             }
 
             // We want the more complex tree to be evaluated first.
-#if TARGET_WASM
             // Wasm's stack-machine codegen requires operands to be evaluated in source order, so it
             // cannot honor GTF_REVERSE_OPS here. A future commutative-intrinsic path could swap
             // operands physically to retain the CQ benefit.
-#else
-            if ((level < lvl2) && !multiOp.AsHWIntrinsic().IsUserCall && gtCanSwapOrder(op1, op2))
+            if (!Configuration.TARGET_WASM && (level < lvl2) && !multiOp.AsHWIntrinsic().IsUserCall && gtCanSwapOrder(op1, op2))
             {
                 multiOp.IsReverseOp ^= true;
                 (level, lvl2) = (lvl2, level);
             }
-#endif
 
             if (level < 1)
             {
@@ -17486,7 +17547,6 @@ public partial class Compiler
         }
         return level;
     }
-#endif
 
     /// <summary>A wrapper for gtSetEvalOrder and gtComputeFPlvls</summary>
     /// <param name="stmt"></param>

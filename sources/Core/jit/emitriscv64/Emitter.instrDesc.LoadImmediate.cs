@@ -10,7 +10,7 @@ public partial class Emitter
 {
     protected sealed class instrDescLoadImm : instrDescCns
     {
-        public const int absMaxInsCount = 8;
+        public const int absMaxInsCount = TargetCostEstimation.RiscVAbsoluteMaxImmediateInstructionCount;
 
         public instruction[] ins = new instruction[absMaxInsCount];
         public int[] values = new int[absMaxInsCount];

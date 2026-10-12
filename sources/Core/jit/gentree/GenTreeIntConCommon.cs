@@ -165,20 +165,22 @@ public abstract class GenTreeIntConCommon : GenTree
 #endif
     }
 
+#endif
+
     public unsafe bool AddrNeedsReloc(Compiler comp)
     {
-#if TARGET_X86
-        return comp.opts.compReloc && IsIconHandle();
-#else
+        if (Configuration.TARGET_X86)
+        {
+            return comp.opts.compReloc && IsIconHandle();
+        }
+
         if (comp.opts.compReloc)
         {
             return IsIconHandle() && (comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32);
         }
 
         return comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32;
-#endif
     }
-#endif
 
     public new bool IsIntegralConst(nint value)
     {

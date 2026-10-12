@@ -18,13 +18,14 @@ public partial class Emitter
         assert(!EA_IS_RELOC(size));
         assert(!doEmit || isGeneralRegister(reg));
 
+        if (!doEmit)
+        {
+            return TargetCostEstimation.GetRiscVLoadImmediateInstructionCount(size, immediate);
+        }
+
         if (isValidSimm12(immediate))
         {
-            if (doEmit)
-            {
-                getCurrentEmitter().emitIns_R_R_I(INS_addi, size, reg, REG_R0, immediate & 0xFFF);
-            }
-
+            getCurrentEmitter().emitIns_R_R_I(INS_addi, size, reg, REG_R0, immediate & 0xFFF);
             return 1;
         }
 
@@ -52,8 +53,8 @@ public partial class Emitter
             x = BitOperations.TrailingZeroCount(immBits);
         }
 
-        const int absMaxInsCount = instrDescLoadImm.absMaxInsCount;
-        const int prefMaxInsCount = 5;
+        const int absMaxInsCount = TargetCostEstimation.RiscVAbsoluteMaxImmediateInstructionCount;
+        const int prefMaxInsCount = TargetCostEstimation.RiscVPreferredMaxImmediateInstructionCount;
         assert(prefMaxInsCount <= absMaxInsCount);
 
         var insCountLimit = prefMaxInsCount;
