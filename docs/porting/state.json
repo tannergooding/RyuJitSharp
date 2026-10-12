@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue in `Compiler.gt.cs::gtNewLconNode`; preserve its target-width choice between `GenTreeIntCon` and `GenTreeLngCon` when replacing the `TARGET_64BIT` guard with runtime selection.",
+    "nextAction": "Continue in `Compiler.gt.cs::gtNewOneConNode`; replace its `TARGET_XARCH` guard for SIMD32/SIMD64 constant cases with runtime target selection while preserving target-specific type availability.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Expose ARM64 FFR's existing register ordinal to universal compiler code, then universalize `Compiler.gt.cs::gtNewPhysRegNode` and its debug validation without changing target register counts.",
-      "doneWhen": "`regNumber.generated.cs` has one unconditional `REG_FFR` alias after target-specific count sentinels, generated register tables/counts remain unchanged, and the physical-register factory accepts FFR only on ARM64.",
-      "validation": "`GenerateTables` succeeded in Release and its output exactly matched `regNumber.generated.cs`; only the original ARM64 enum entry moved to an unconditional ordinal-81 alias after `REG_COUNT`/`REG_NA`. `IRVerificationTests.PhysicalRegisterFactoryPreservesTheSourceRegister` passed 1/1 in Debug for win-x64, exercising non-ARM64 rejection. `CompilerHelperReturnTypeTests|Arm64SimdMetadataTests` passed across win-x64, win-x86, win-arm, win-arm64, browser-wasm, linux-riscv64, and linux-loongarch64 in Debug and Release; win-arm64 totals were 101/101 and 84/84, and every other target passed 1/1. Focused tests used analyzer/documentation fast-mode overrides because the default Core analyzer run is blocked by IDE0059 diagnostics at unchanged compiler lines 7818 and 9045.",
+      "scope": "Replace the target-width guard in `Compiler.gt.cs::gtNewLconNode` and target-architecture guard in `gtTypeForNullCheck` with runtime selection, preserving 32/64-bit constant representations and xarch null-check types.",
+      "doneWhen": "`gtNewLconNode` creates `GenTreeIntCon` only for 64-bit targets and `GenTreeLngCon` otherwise; `gtTypeForNullCheck` returns `TYP_INT` for 8-byte xarch values and retains the size-based mapping elsewhere.",
+      "validation": "`CompilerTargetConfigurationTests` passed 2/2 in Debug and Release for win-x64, win-x86, and linux-arm64, covering both target widths and xarch/non-xarch null-check typing. Focused runs used analyzer/documentation fast-mode overrides because the default Core analyzer run is blocked by IDE0059 diagnostics in unchanged compiler code.",
       "deferred": "The remaining target/feature branches in `Compiler.gt.cs` and the rest of the universal-compilation migration; universal compilation is not complete."
     },
     "parityEvidence": {

@@ -9050,11 +9050,12 @@ public partial class Compiler
 
     public GenTreeIntConCommon gtNewLconNode(long value)
     {
-#if TARGET_64BIT
-        return new GenTreeIntCon(TYP_LONG, (nint)(value));
-#else
+        if (Configuration.TARGET_64BIT)
+        {
+            return new GenTreeIntCon(TYP_LONG, (nint)(value));
+        }
+
         return new GenTreeLngCon(value);
-#endif
     }
 
     public GenTreeUnOp gtNewLoadValueNode(var_types type, GenTree addr, GenTreeFlags indirFlags = GTF_EMPTY)
@@ -9256,12 +9257,11 @@ public partial class Compiler
         }
 
         var size = tree.Type.Size;
-#if TARGET_XARCH
-        if (size == 8)
+        if (Configuration.TARGET_XARCH && (size == 8))
         {
             return TYP_INT;
         }
-#endif
+
         ReadOnlySpan<var_types> typesBySize = [TYP_UNDEF, TYP_BYTE, TYP_SHORT, TYP_UNDEF, TYP_INT,
             TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_LONG];
         assert((size < typesBySize.Length) && (typesBySize[size] is not TYP_UNDEF));
