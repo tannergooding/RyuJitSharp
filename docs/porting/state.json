@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Change `GenerateRegNumber` and its register-header inputs to emit a target-qualified union of all architecture register identities, then migrate the shared register tables and generic sentinels without changing any target-local ordinal.",
+    "nextAction": "Convert `regNumberExtensions` name formatting and register bounds/sentinels to runtime `Configuration` dispatch using qualified enum values. Keep each target's switch table separate to avoid duplicate numeric cases; defer mask-table behavior until its width and upper-bank storage closure is ready.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Make register storage target-neutral for the universal ABI classifier family by changing the generated `regNumber` backing type to `uint`, preserving native numeric ordinals and Wasm's 29-bit index plus 3-bit type encoding; keep managed ABI segment storage compact.",
-      "doneWhen": "The generator and generated enum use one `uint` backing type, fixed-target and Wasm identities round-trip unchanged, `AbiPassingSegment` remains 16 bytes, and Debug/Release target tests pass for x64, ARM64, and Wasm.",
-      "validation": "Generated `regNumber` output reviewed and regenerated from the template; generator scratch output was removed. `Unsafe.SizeOf` tests confirm a 4-byte `regNumber` and 16-byte `AbiPassingSegment`, and high-bit Wasm register values round-trip through a segment. Focused Release ABI suites passed: Core win-x64 126/126; Target win-x64 41/41, win-x86 46/46, win-arm64/linux-arm64/osx-arm64 67/67 each, linux-x64 74/74, browser-wasm 31/31, linux-riscv64 40/40, linux-loongarch64 41/41. Debug Target suites passed for win-x64 41/41, win-arm64 67/67, and browser-wasm 31/31. Full-analyzer Core Release test is blocked by pre-existing IDE2002/IDE0059 diagnostics in unchanged `Compiler.gt*.cs` files.",
+      "scope": "Emit target-qualified `regNumber` identities and explicit target-local count/sentinel values from all seven architecture register headers, retaining the current target-selected members for existing consumers until their runtime-dispatch migrations.",
+      "doneWhen": "Every target header's definitions and aliases are available with an architecture suffix and retain their native ordinal; sentinel values are explicit per target; representative collisions, aliases, and all target counts are tested; existing target-specific register behavior is unchanged.",
+      "validation": "`dotnet run --no-restore` passed from `sources\\GenerateTables`; the reviewed generated enum SHA256 matched the checked-in generated file. The combined `AbiPassingSegmentStorageTests` and `RegNumberIdentityTests` suite passed 5/5 under Release for win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-arm64, browser-wasm, linux-arm, linux-riscv64, and linux-loongarch64. `RegNumberIdentityTests` compares every current target enum name and alias against its target-qualified union member. The prior storage batch's additional Core and Debug ABI matrix remains recorded in its commit context.",
       "deferred": "Continue the remaining target/feature preprocessor migration in dependency-coherent batches. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
@@ -671,6 +671,34 @@
       "disposition": "Register-mask targets, single-register targets, fixed-out-argument targets, and xarch now select their existing ABI-location output at runtime. Register enumeration and printed diagnostic strings remain unchanged.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "CompilerTargetConfigurationTests and FeatureConfigurationTests passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm."
+    },
+    {
+      "area": "target-qualified-register-identities",
+      "native": [
+        "src\\coreclr\\jit\\register.h",
+        "src\\coreclr\\jit\\registerx86.h",
+        "src\\coreclr\\jit\\registeramd64.h",
+        "src\\coreclr\\jit\\registerarm.h",
+        "src\\coreclr\\jit\\registerarm64.h",
+        "src\\coreclr\\jit\\registerloongarch64.h",
+        "src\\coreclr\\jit\\registerriscv64.h",
+        "src\\coreclr\\jit\\registerwasm.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Inputs\\register.h",
+        "sources\\GenerateTables\\Inputs\\registerx86.h",
+        "sources\\GenerateTables\\Inputs\\registeramd64.h",
+        "sources\\GenerateTables\\Inputs\\registerarm.h",
+        "sources\\GenerateTables\\Inputs\\registerarm64.h",
+        "sources\\GenerateTables\\Inputs\\registerloongarch64.h",
+        "sources\\GenerateTables\\Inputs\\registerriscv64.h",
+        "sources\\GenerateTables\\Inputs\\registerwasm.h",
+        "sources\\GenerateTables\\Program.cs",
+        "sources\\Core\\jit\\target\\regNumber.generated.cs"
+      ],
+      "disposition": "Generated target-qualified enum members and explicit per-target count sentinels preserve native ordinals and aliases. Existing target-selected enum members remain temporarily for unmigrated consumers; the register-mask tables and their target-specific storage are explicitly deferred to a separate dependency-coherent batch.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Generator output was regenerated and compared byte-for-byte with the checked-in enum. The combined storage and register identity fixtures passed 5/5 in Release for all ten supported test-target RIDs; the identity fixture compares every current target enum name and alias."
     }
   ],
   "generatorInputMapping": {

@@ -4669,6 +4669,8 @@ public enum regMask : long
 
     private static void GenerateRegNumber()
     {
+        var targetQualifiedBuilder = ProcessTargetQualifiedRegisterNumbers();
+
         var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
             if (parts.Length is not 2 and not 4 and not 5)
             {
@@ -4707,6 +4709,8 @@ namespace RyuJitSharp;
 
 public enum regNumber : uint
 {
+    // Target-qualified identities preserve each target's native register ordinals.
+{{targetQualifiedBuilder}}
 {{builder}}    REG_COUNT,
 
     REG_NA = REG_COUNT,
@@ -4718,6 +4722,111 @@ public enum regNumber : uint
     REG_FFR = 81,
 }
 """);
+    }
+
+    private static StringBuilder ProcessTargetQualifiedRegisterNumbers()
+    {
+        var builder = new StringBuilder();
+        var targetHeaders = new (string Target, string InputFile)[] {
+            ("X86", @"Inputs\registerx86.h"),
+            ("AMD64", @"Inputs\registeramd64.h"),
+            ("ARM", @"Inputs\registerarm.h"),
+            ("ARM64", @"Inputs\registerarm64.h"),
+            ("LOONGARCH64", @"Inputs\registerloongarch64.h"),
+            ("RISCV64", @"Inputs\registerriscv64.h"),
+            ("WASM", @"Inputs\registerwasm.h"),
+        };
+        var prefixes = new[] { "REGDEF(", "REGALIAS(" };
+
+        foreach (var (target, inputFile) in targetHeaders)
+        {
+            var registerBases = ReadRegisterBaseValues(inputFile);
+            var stackRegister = -1;
+
+            var targetBuilder = ProcessMacroBasedFileUnion(inputFile, prefixes, (output, _, line, _, parts) => {
+                if (parts.Length is not 2 and not 4 and not 5)
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                var name = parts[0].AsSpan().Trim().ToString();
+
+                if (parts.Length is 2)
+                {
+                    var realName = parts[1].AsSpan().Trim().ToString();
+                    _ = output.AppendLine(
+                        CultureInfo.InvariantCulture,
+                        $"    REG_{name}_{target} = REG_{realName}_{target},");
+                }
+                else
+                {
+                    var registerNumber = ParseRegisterOrdinal(parts[1].AsSpan().Trim(), registerBases, inputFile);
+                    _ = output.AppendLine(
+                        CultureInfo.InvariantCulture,
+                        $"    REG_{name}_{target} = {registerNumber},");
+
+                    if (name.Equals("STK", StringComparison.Ordinal))
+                    {
+                        stackRegister = registerNumber;
+                    }
+                }
+            });
+
+            if (stackRegister < 0)
+            {
+                throw new InvalidDataException($"Register header '{inputFile}' does not define REG_STK.");
+            }
+
+            _ = builder.Append(targetBuilder);
+
+            var registerCount = checked(stackRegister + 1);
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_COUNT_{target} = {registerCount},");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_NA_{target} = REG_COUNT_{target},");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    ACTUAL_REG_COUNT_{target} = REG_COUNT_{target} - 1,");
+        }
+
+        return builder;
+    }
+
+    private static Dictionary<string, int> ReadRegisterBaseValues(string inputFile)
+    {
+        var baseValues = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        foreach (var line in File.ReadLines(inputFile))
+        {
+            var parts = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if ((parts.Length is 3) &&
+                parts[0].Equals("#define", StringComparison.Ordinal) &&
+                parts[1].EndsWith("BASE", StringComparison.Ordinal) &&
+                int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            {
+                baseValues.Add(parts[1], value);
+            }
+        }
+
+        return baseValues;
+    }
+
+    private static int ParseRegisterOrdinal(
+        ReadOnlySpan<char> expression, Dictionary<string, int> baseValues, string inputFile)
+    {
+        var ordinal = expression.ToString();
+        var terms = ordinal.Split('+', StringSplitOptions.TrimEntries);
+
+        if ((terms.Length is 1) &&
+            int.TryParse(terms[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            return value;
+        }
+
+        if ((terms.Length is 2) &&
+            int.TryParse(terms[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var offset) &&
+            baseValues.TryGetValue(terms[1], out var baseValue))
+        {
+            return checked(offset + baseValue);
+        }
+
+        throw new InvalidDataException($"Invalid register ordinal '{ordinal}' in '{inputFile}'.");
     }
 
     private static void GenerateRegNumberExtensions()

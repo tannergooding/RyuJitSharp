@@ -19,6 +19,7 @@
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
     <Compile Include="..\Core\ArithmeticMorphTests.cs" Link="ArithmeticMorphTests.cs" />
     <Compile Include="..\Core\AbiPassingSegmentStorageTests.cs" Link="AbiPassingSegmentStorageTests.cs" />
+    <Compile Include="..\Core\RegNumberIdentityTests.cs" Link="RegNumberIdentityTests.cs" />
     <Compile Include="..\Core\AbiShadowSpaceTests.cs" Link="AbiShadowSpaceTests.cs" />
     <Compile Include="..\Core\AsyncResumeCodeGenTestSupport.cs" Link="AsyncResumeCodeGenTestSupport.cs" />
     <Compile Include="..\Core\AsyncResumeTableTargetTests.cs" Link="AsyncResumeTableTargetTests.cs" />
