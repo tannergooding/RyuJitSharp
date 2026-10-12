@@ -54,8 +54,6 @@ public partial class Globals
 
     public const regNumber REG_LNGRET_HI = REG_R1;
 
-    public const regNumber REG_FLOATRET = REG_F0;
-
     public const int MAX_HFA_RET_SLOTS = 8;
 
     public const int LBL_DIST_SMALL_MAX_NEG = 0;

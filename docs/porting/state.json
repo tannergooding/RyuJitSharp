@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize `target/Globals.SimpleReturnAliases.cs` and the target-specific branches in `target/regNumberExtensions.FloatNames.cs` through runtime Configuration and target-qualified register identities; preserve ARM32 double-register names, xarch SIMD name selection, and lazy debug-name initialization.",
+    "nextAction": "Universalize the generated register-enum closure: remove target-selected aliases and target/feature preprocessor branches from `sources/Core/jit/target/regNumber.generated.cs`; update `sources/GenerateTables/Program.cs` and its inputs together, then migrate remaining consumers to target-qualified identities or runtime dispatch without changing register ordinals.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize target-specific simple return-register aliases and debug floating-register name formatting through runtime Configuration.",
-      "doneWhen": "The simple return aliases and float-name helpers contain no target/feature preprocessor branches; target register names, ARM32 double-register diagnostics, xarch SIMD name selection, and lazy debug-only initialization are preserved and focused tests pass.",
+      "scope": "Remove target-selected register enum aliases through the register table generator and migrate their remaining consumers.",
+      "doneWhen": "The register enum generator and checked-in output no longer select identities by target/feature preprocessor branches; remaining consumers use target-qualified identities or runtime dispatch while preserving native ordinals and supported-RID behavior.",
       "validation": "Pending.",
       "deferred": "Continue target/feature preprocessor migration by coherent subsystem after this batch. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
@@ -815,6 +815,35 @@
       "disposition": "Argument-register tables, membership predicates, and mapping helpers dispatch through Configuration using target-qualified register identities. ABI order and widths, ARM32 double-register pairing, fixed return-buffer indices, and x86 floating-argument assertion continuations are preserved; unsupported fixed-register paths terminate explicitly.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "FeatureConfigurationTests, ArgumentRegisterMappingTests, and FixedReturnBufferMaskTests passed with analyzers disabled in Debug and Release for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, and browser-wasm (41-89 tests per target, no failures or skips). The full-analyzer run was blocked only by existing IDE2002/IDE0059/IDE0058 diagnostics in untouched Compiler.gt*.cs files; no changed files were flagged after the CA1065 property-exception handling was corrected."
+    },
+    {
+      "area": "universal-return-aliases-and-float-names",
+      "native": [
+        "src\\coreclr\\jit\\target.h",
+        "src\\coreclr\\jit\\targetx86.h",
+        "src\\coreclr\\jit\\targetamd64.h",
+        "src\\coreclr\\jit\\targetarm.h",
+        "src\\coreclr\\jit\\targetarm64.h",
+        "src\\coreclr\\jit\\targetloongarch64.h",
+        "src\\coreclr\\jit\\targetriscv64.h",
+        "src\\coreclr\\jit\\targetwasm.h",
+        "src\\coreclr\\jit\\registerarm.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\target\\Globals.SimpleReturnAliases.cs",
+        "sources\\Core\\jit\\target\\regNumberExtensions.FloatNames.cs",
+        "sources\\Core\\jit\\targetamd64\\Globals.cs",
+        "sources\\Core\\jit\\targetarm\\Globals.cs",
+        "sources\\Core\\jit\\targetarm64\\Globals.Registers.cs",
+        "sources\\Core\\jit\\targetx86\\Globals.cs",
+        "sources\\Core\\jit\\targetwasm\\Globals.cs",
+        "tests\\Core\\FloatingRegisterNameTests.cs",
+        "tests\\Targets\\FeatureConfigurationTests.cs",
+        "tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj"
+      ],
+      "disposition": "The floating return-register alias now selects the same target-qualified register through Configuration, retaining the existing not-available value on x86 and Wasm. Debug float names preserve ARM32 double-register spellings, ARM64/LoongArch register names, xarch SIMD prefixes, and lazy diagnostic-name initialization. No observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "FeatureConfigurationTests and FloatingRegisterNameTests passed with analyzers disabled in Debug and Release for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, and browser-wasm (33-59 selected tests per target, no failures or skips). Full-analyzer validation was blocked only by existing IDE2002/IDE0059/IDE0058 diagnostics in untouched Compiler.gt*.cs files; the changed files had no analyzer diagnostics."
     }
   ],
   "generatorInputMapping": {

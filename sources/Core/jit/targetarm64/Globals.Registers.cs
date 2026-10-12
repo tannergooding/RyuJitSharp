@@ -171,7 +171,6 @@ public static partial class Globals
     public const regMask SRBM_LNGRET = SRBM_R0;
     public const regNumber REG_INTRET_1 = REG_R1;
     public const regMask SRBM_INTRET_1 = SRBM_R1;
-    public const regNumber REG_FLOATRET = REG_V0;
     public const regMask SRBM_FLOATRET = SRBM_V0;
     public const regMask SRBM_DOUBLERET = SRBM_V0;
 

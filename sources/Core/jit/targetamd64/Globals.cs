@@ -459,8 +459,6 @@ public partial class Globals
     public const regMask SRBM_LNGRET_1 = SRBM_RDX;
 #endif
 
-    public const regNumber REG_FLOATRET = REG_XMM0;
-
     public const regMask SRBM_FLOATRET = SRBM_XMM0;
 
     public const regNumber REG_DOUBLERET = REG_XMM0;

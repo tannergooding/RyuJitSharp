@@ -7,6 +7,7 @@ using static RyuJitSharp.Globals;
 using static RyuJitSharp.HWIntrinsicFlag;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.VNFunc;
+using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
@@ -41,6 +42,21 @@ internal static class FeatureConfigurationTests
             Is.EqualTo(Configuration.REGMASK_BITS_32 ? "{0:X8}" : "{0:X4}"));
         Assert.That(REG_MASK_ALL_FMT,
             Is.EqualTo(Configuration.REGMASK_BITS_32 ? "{0:X8}" : "{0:X16}"));
+    }
+
+    [Test]
+    public static void FloatingReturnRegisterAliasMatchesTheRuntimeTarget()
+    {
+        var expected =
+            Configuration.TARGET_X86 || Configuration.TARGET_WASM ? regNumberExtensions.NotAvailable :
+            Configuration.TARGET_AMD64 ? REG_XMM0_AMD64 :
+            Configuration.TARGET_ARM ? REG_F0_ARM :
+            Configuration.TARGET_ARM64 ? REG_V0_ARM64 :
+            Configuration.TARGET_LOONGARCH64 ? REG_F0_LOONGARCH64 :
+            Configuration.TARGET_RISCV64 ? REG_FA0_RISCV64 :
+            throw new FatalJitException("Invalid target architecture.");
+
+        Assert.That(REG_FLOATRET, Is.EqualTo(expected));
     }
 
     [Test]

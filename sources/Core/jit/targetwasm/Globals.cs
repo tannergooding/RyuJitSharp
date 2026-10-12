@@ -155,8 +155,6 @@ public partial class Globals
 
     public const regNumber REG_INTRET = REG_NA;
 
-    public const regNumber REG_FLOATRET = REG_NA;
-
     public const string STR_FPBASE = "";
 
     public const string STR_SPBASE = "";
