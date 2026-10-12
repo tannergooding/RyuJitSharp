@@ -6189,7 +6189,6 @@ public partial class Compiler
         return objClass;
     }
 
-#if FEATURE_HW_INTRINSICS
     /// <summary>Returns intrinsic ID based on the oper, base type, and simd size</summary>
     /// <param name="oper">The oper for which to get the intrinsic ID</param>
     /// <param name="op1">The first operand on which oper is executed</param>
@@ -6217,19 +6216,18 @@ public partial class Compiler
         assert(IsFullVectorOperand(op1) || varTypeIsFloating(op1.Type));
         assert(op2 is not null);
 
-#if TARGET_XARCH
-        if (simdSize is 32 or 64)
+        if (Configuration.TARGET_XARCH && (simdSize is 32 or 64))
         {
             assert(!isScalar);
         }
         else
-#endif
         {
-#if TARGET_ARM64
-        assert(!isScalar || (simdSize is 8));
-        // TODO-SVE: Add scalable length support
-        assert(simdSize is 8 or 16);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(!isScalar || (simdSize is 8));
+                // TODO-SVE: Add scalable length support
+                assert(simdSize is 8 or 16);
+            }
 
             assert(!isScalar || varTypeIsFloating(simdBaseType));
         }
@@ -6242,43 +6240,48 @@ public partial class Compiler
             {
                 assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
-#if TARGET_XARCH
-                if (simdSize is 64)
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = NI_AVX512_Add;
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (simdSize is 64)
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_Add;
+                        id = NI_AVX512_Add;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_Add;
+                        }
+                        else
+                        {
+                            id = NI_AVX_Add;
+                        }
                     }
                     else
                     {
-                        id = NI_AVX_Add;
+                        id = isScalar ? NI_X86Base_AddScalar : NI_X86Base_Add;
                     }
                 }
-                else
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = isScalar ? NI_X86Base_AddScalar : NI_X86Base_Add;
+                    if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                    {
+                        id = NI_AdvSimd_AddScalar;
+                    }
+                    else if (simdBaseType == TYP_DOUBLE)
+                    {
+                        id = NI_AdvSimd_Arm64_Add;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_Add;
+                    }
                 }
-#elif TARGET_ARM64
-                if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                else if (Configuration.TARGET_WASM)
                 {
-                    id = NI_AdvSimd_AddScalar;
+                    id = NI_PackedSimd_Add;
                 }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    id = NI_AdvSimd_Arm64_Add;
-                }
-                else
-                {
-                    id = NI_AdvSimd_Add;
-                }
-#elif TARGET_WASM
-                id = NI_PackedSimd_Add;
-#endif
                 break;
             }
 
@@ -6287,32 +6290,37 @@ public partial class Compiler
                 assert(!isScalar);
                 assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
-#if TARGET_XARCH
-                if (simdSize is 64)
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = NI_AVX512_And;
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (simdSize is 64)
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_And;
+                        id = NI_AVX512_And;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_And;
+                        }
+                        else
+                        {
+                            id = NI_AVX_And;
+                        }
                     }
                     else
                     {
-                        id = NI_AVX_And;
+                        id = NI_X86Base_And;
                     }
                 }
-                else
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = NI_X86Base_And;
+                    id = NI_AdvSimd_And;
                 }
-#elif TARGET_ARM64
-                id = NI_AdvSimd_And;
-#elif TARGET_WASM
-                id = NI_PackedSimd_And;
-#endif
+                else if (Configuration.TARGET_WASM)
+                {
+                    id = NI_PackedSimd_And;
+                }
                 break;
             }
 
@@ -6329,75 +6337,82 @@ public partial class Compiler
                     break;
                 }
 
-#if TARGET_XARCH
-                if (simdSize is 64)
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = NI_AVX512_AndNot;
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (simdSize is 64)
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_AndNotVector;
+                        id = NI_AVX512_AndNot;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_AndNotVector;
+                        }
+                        else
+                        {
+                            id = NI_AVX_AndNot;
+                        }
                     }
                     else
                     {
-                        id = NI_AVX_AndNot;
+                        id = NI_X86Base_AndNot;
                     }
                 }
-                else
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = NI_X86Base_AndNot;
-                }
-#elif TARGET_ARM64
-                // TODO-SVE: Add scalable length support
-                assert(simdSize is 8 or 16);
+                    // TODO-SVE: Add scalable length support
+                    assert(simdSize is 8 or 16);
 
-                id = NI_AdvSimd_BitwiseClear;
-#elif TARGET_WASM
-                id = NI_PackedSimd_AndNot;
-#endif
+                    id = NI_AdvSimd_BitwiseClear;
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    id = NI_PackedSimd_AndNot;
+                }
                 break;
             }
 
             case GT_DIV:
             {
-#if TARGET_XARCH
-                assert(varTypeIsFloating(simdBaseType) || !varTypeIsLong(simdBaseType));
-#else
-                assert(varTypeIsFloating(simdBaseType));
-#endif
+                assert(varTypeIsFloating(simdBaseType) ||
+                    (Configuration.TARGET_XARCH && !varTypeIsLong(simdBaseType)));
                 assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
-#if TARGET_XARCH
-                if (varTypeIsFloating(simdBaseType))
+                if (Configuration.TARGET_XARCH)
                 {
-                    if (simdSize is 64)
+                    if (varTypeIsFloating(simdBaseType))
                     {
-                        id = NI_AVX512_Divide;
+                        if (simdSize is 64)
+                        {
+                            id = NI_AVX512_Divide;
+                        }
+                        else if (simdSize is 32)
+                        {
+                            id = NI_AVX_Divide;
+                        }
+                        else
+                        {
+                            id = isScalar ? NI_X86Base_DivideScalar : NI_X86Base_Divide;
+                        }
                     }
-                    else if (simdSize is 32)
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    if ((simdSize is 8) && (isScalar || (simdBaseType is TYP_DOUBLE)))
                     {
-                        id = NI_AVX_Divide;
+                        id = NI_AdvSimd_DivideScalar;
                     }
                     else
                     {
-                        id = isScalar ? NI_X86Base_DivideScalar : NI_X86Base_Divide;
+                        id = NI_AdvSimd_Arm64_Divide;
                     }
                 }
-#elif TARGET_ARM64
-                if ((simdSize is 8) && (isScalar || (simdBaseType is TYP_DOUBLE)))
+                else if (Configuration.TARGET_WASM)
                 {
-                    id = NI_AdvSimd_DivideScalar;
+                    id = NI_PackedSimd_Divide;
                 }
-                else
-                {
-                    id = NI_AdvSimd_Arm64_Divide;
-                }
-#elif TARGET_WASM
-                id = NI_PackedSimd_Divide;
-#endif
                 break;
             }
 
@@ -6407,116 +6422,126 @@ public partial class Compiler
                 assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
-#if TARGET_XARCH
-                if (varTypeIsByte(simdBaseType))
+                if (Configuration.TARGET_XARCH)
                 {
-                    break;
-                }
-
-                if (varTypeIsInt(op2.Type))
-                {
-                    if (simdSize is 64)
+                    if (varTypeIsByte(simdBaseType))
                     {
-                        id = NI_AVX512_ShiftLeftLogical;
+                        break;
                     }
-                    else if (simdSize is 32)
+
+                    if (varTypeIsInt(op2.Type))
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_ShiftLeftLogical;
+                        if (simdSize is 64)
+                        {
+                            id = NI_AVX512_ShiftLeftLogical;
+                        }
+                        else if (simdSize is 32)
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_ShiftLeftLogical;
+                        }
+                        else
+                        {
+                            id = NI_X86Base_ShiftLeftLogical;
+                        }
+                    }
+                    else if ((simdSize is 64) || varTypeIsShort(simdBaseType))
+                    {
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            id = NI_AVX512_ShiftLeftLogicalVariable;
+                        }
+                    }
+                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        id = NI_AVX2_ShiftLeftLogicalVariable;
+                    }
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    if ((simdSize is 8) && (simdBaseType.Size is 8))
+                    {
+                        id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftLeftLogicalScalar : NI_AdvSimd_ShiftLogicalScalar;
                     }
                     else
                     {
-                        id = NI_X86Base_ShiftLeftLogical;
+                        id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftLeftLogical : NI_AdvSimd_ShiftLogical;
                     }
                 }
-                else if ((simdSize is 64) || varTypeIsShort(simdBaseType))
+                else if (Configuration.TARGET_WASM)
                 {
-                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                    {
-                        id = NI_AVX512_ShiftLeftLogicalVariable;
-                    }
+                    id = NI_PackedSimd_ShiftLeft;
                 }
-                else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    id = NI_AVX2_ShiftLeftLogicalVariable;
-                }
-#elif TARGET_ARM64
-                if ((simdSize is 8) && (simdBaseType.Size is 8))
-                {
-                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftLeftLogicalScalar : NI_AdvSimd_ShiftLogicalScalar;
-                }
-                else
-                {
-                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftLeftLogical : NI_AdvSimd_ShiftLogical;
-                }
-#elif TARGET_WASM
-                id = NI_PackedSimd_ShiftLeft;
-#endif
                 break;
             }
 
             case GT_MUL:
             {
-#if TARGET_XARCH
-                assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
+                if (Configuration.TARGET_XARCH)
+                {
+                    assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
-                if (simdSize is 64)
-                {
-                    if (varTypeIsFloating(simdBaseType))
+                    if (simdSize is 64)
                     {
-                        id = NI_AVX512_Multiply;
+                        if (varTypeIsFloating(simdBaseType))
+                        {
+                            id = NI_AVX512_Multiply;
+                        }
+                        else if (!varTypeIsByte(simdBaseType))
+                        {
+                            id = NI_AVX512_MultiplyLow;
+                        }
+                    }
+                    else if (varTypeIsLong(simdBaseType))
+                    {
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            id = NI_AVX512_MultiplyLow;
+                        }
+                    }
+                    else if (simdSize is 32)
+                    {
+                        if (varTypeIsFloating(simdBaseType))
+                        {
+                            id = NI_AVX_Multiply;
+                        }
+                        else if (!varTypeIsByte(simdBaseType))
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_MultiplyLow;
+                        }
+                    }
+                    else if (varTypeIsFloating(simdBaseType))
+                    {
+                        id = isScalar ? NI_X86Base_MultiplyScalar : NI_X86Base_Multiply;
                     }
                     else if (!varTypeIsByte(simdBaseType))
                     {
-                        id = NI_AVX512_MultiplyLow;
+                        id = NI_X86Base_MultiplyLow;
                     }
                 }
-                else if (varTypeIsLong(simdBaseType))
+                else if (Configuration.TARGET_ARM64)
                 {
-                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    if ((simdSize is 8) && (isScalar || (simdBaseType is TYP_DOUBLE)))
                     {
-                        id = NI_AVX512_MultiplyLow;
+                        id = NI_AdvSimd_MultiplyScalar;
                     }
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsFloating(simdBaseType))
+                    else if (simdBaseType is TYP_DOUBLE)
                     {
-                        id = NI_AVX_Multiply;
+                        id = IsFullVectorOperand(op2) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
                     }
-                    else if (!varTypeIsByte(simdBaseType))
+                    else if (!varTypeIsLong(simdBaseType))
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_MultiplyLow;
+                        id = IsFullVectorOperand(op2) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
                     }
                 }
-                else if (varTypeIsFloating(simdBaseType))
+                else if (Configuration.TARGET_WASM)
                 {
-                    id = isScalar ? NI_X86Base_MultiplyScalar : NI_X86Base_Multiply;
+                    if (!varTypeIsByte(simdBaseType))
+                    {
+                        id = NI_PackedSimd_Multiply;
+                    }
                 }
-                else if (!varTypeIsByte(simdBaseType))
-                {
-                    id = NI_X86Base_MultiplyLow;
-                }
-#elif TARGET_ARM64
-                if ((simdSize is 8) && (isScalar || (simdBaseType is TYP_DOUBLE)))
-                {
-                    id = NI_AdvSimd_MultiplyScalar;
-                }
-                else if (simdBaseType is TYP_DOUBLE)
-                {
-                    id = IsFullVectorOperand(op2) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Arm64_MultiplyByScalar;
-                }
-                else if (!varTypeIsLong(simdBaseType))
-                {
-                    id = IsFullVectorOperand(op2) ? NI_AdvSimd_Multiply : NI_AdvSimd_MultiplyByScalar;
-                }
-#elif TARGET_WASM
-                if (!varTypeIsByte(simdBaseType))
-                {
-                    id = NI_PackedSimd_Multiply;
-                }
-#endif
                 break;
             }
 
@@ -6534,12 +6559,11 @@ public partial class Compiler
                 assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
-#if TARGET_XARCH
-                if (!varTypeIsSmall(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (Configuration.TARGET_XARCH && !varTypeIsSmall(simdBaseType) &&
+                    compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     id = varTypeIsInt(op2.Type) ? NI_AVX512_RotateLeft : NI_AVX512_RotateLeftVariable;
                 }
-#endif // TARGET_XARCH
                 break;
             }
 
@@ -6549,12 +6573,11 @@ public partial class Compiler
                 assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
-#if TARGET_XARCH
-                if (!varTypeIsSmall(simdBaseType) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (Configuration.TARGET_XARCH && !varTypeIsSmall(simdBaseType) &&
+                    compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     id = varTypeIsInt(op2.Type) ? NI_AVX512_RotateRight : NI_AVX512_RotateRightVariable;
                 }
-#endif // TARGET_XARCH
                 break;
             }
 
@@ -6564,54 +6587,59 @@ public partial class Compiler
                 assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
-#if TARGET_XARCH
-                if (varTypeIsByte(simdBaseType))
+                if (Configuration.TARGET_XARCH)
                 {
-                    break;
-                }
+                    if (varTypeIsByte(simdBaseType))
+                    {
+                        break;
+                    }
 
-                if (varTypeIsInt(op2.Type))
-                {
-                    if ((simdSize is 64) || (simdBaseType.Size is 8))
+                    if (varTypeIsInt(op2.Type))
+                    {
+                        if ((simdSize is 64) || (simdBaseType.Size is 8))
+                        {
+                            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                            {
+                                id = NI_AVX512_ShiftRightArithmetic;
+                            }
+                        }
+                        else if (simdSize is 32)
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_ShiftRightArithmetic;
+                        }
+                        else
+                        {
+                            id = NI_X86Base_ShiftRightArithmetic;
+                        }
+                    }
+                    else if ((simdSize is 64) || varTypeIsShort(simdBaseType) || (simdBaseType.Size is 8))
                     {
                         if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
                         {
-                            id = NI_AVX512_ShiftRightArithmetic;
+                            id = NI_AVX512_ShiftRightArithmeticVariable;
                         }
                     }
-                    else if (simdSize is 32)
+                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_ShiftRightArithmetic;
+                        id = NI_AVX2_ShiftRightArithmeticVariable;
+                    }
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    if ((simdSize is 8) && (simdBaseType.Size is 8))
+                    {
+                        id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftRightArithmeticScalar : NI_AdvSimd_ShiftArithmeticScalar;
                     }
                     else
                     {
-                        id = NI_X86Base_ShiftRightArithmetic;
+                        id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftRightArithmetic : NI_AdvSimd_ShiftArithmetic;
                     }
                 }
-                else if ((simdSize is 64) || varTypeIsShort(simdBaseType) || (simdBaseType.Size is 8))
+                else if (Configuration.TARGET_WASM)
                 {
-                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                    {
-                        id = NI_AVX512_ShiftRightArithmeticVariable;
-                    }
+                    id = NI_PackedSimd_ShiftRightArithmetic;
                 }
-                else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    id = NI_AVX2_ShiftRightArithmeticVariable;
-                }
-#elif TARGET_ARM64
-                if ((simdSize is 8) && (simdBaseType.Size is 8))
-                {
-                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftRightArithmeticScalar : NI_AdvSimd_ShiftArithmeticScalar;
-                }
-                else
-                {
-                    id = op2.Oper.IsCnsIntOrI ? NI_AdvSimd_ShiftRightArithmetic : NI_AdvSimd_ShiftArithmetic;
-                }
-#elif TARGET_WASM
-                id = NI_PackedSimd_ShiftRightArithmetic;
-#endif
                 break;
             }
 
@@ -6621,51 +6649,56 @@ public partial class Compiler
                 assert(IsFullVectorOperand(op2) || varTypeIsInt(op2.Type));
                 assert(varTypeIsIntegral(simdBaseType));
 
-#if TARGET_XARCH
-                if (varTypeIsByte(simdBaseType))
+                if (Configuration.TARGET_XARCH)
                 {
-                    break;
-                }
-
-                if (varTypeIsInt(op2.Type))
-                {
-                    if (simdSize is 64)
+                    if (varTypeIsByte(simdBaseType))
                     {
-                        id = NI_AVX512_ShiftRightLogical;
+                        break;
                     }
-                    else if (simdSize is 32)
+
+                    if (varTypeIsInt(op2.Type))
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_ShiftRightLogical;
+                        if (simdSize is 64)
+                        {
+                            id = NI_AVX512_ShiftRightLogical;
+                        }
+                        else if (simdSize is 32)
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_ShiftRightLogical;
+                        }
+                        else
+                        {
+                            id = NI_X86Base_ShiftRightLogical;
+                        }
+                    }
+                    else if ((simdSize is 64) || varTypeIsShort(simdBaseType))
+                    {
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                        {
+                            id = NI_AVX512_ShiftRightLogicalVariable;
+                        }
+                    }
+                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                    {
+                        id = NI_AVX2_ShiftRightLogicalVariable;
+                    }
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    if ((simdSize is 8) && (simdBaseType.Size is 8))
+                    {
+                        id = varTypeIsInt(op2.Type) ? NI_AdvSimd_ShiftRightLogicalScalar : NI_AdvSimd_ShiftLogicalScalar;
                     }
                     else
                     {
-                        id = NI_X86Base_ShiftRightLogical;
+                        id = varTypeIsInt(op2.Type) ? NI_AdvSimd_ShiftRightLogical : NI_AdvSimd_ShiftLogical;
                     }
                 }
-                else if ((simdSize is 64) || varTypeIsShort(simdBaseType))
+                else if (Configuration.TARGET_WASM)
                 {
-                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                    {
-                        id = NI_AVX512_ShiftRightLogicalVariable;
-                    }
+                    id = NI_PackedSimd_ShiftRightLogical;
                 }
-                else if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    id = NI_AVX2_ShiftRightLogicalVariable;
-                }
-#elif TARGET_ARM64
-                if ((simdSize is 8) && (simdBaseType.Size is 8))
-                {
-                    id = varTypeIsInt(op2.Type) ? NI_AdvSimd_ShiftRightLogicalScalar : NI_AdvSimd_ShiftLogicalScalar;
-                }
-                else
-                {
-                    id = varTypeIsInt(op2.Type) ? NI_AdvSimd_ShiftRightLogical : NI_AdvSimd_ShiftLogical;
-                }
-#elif TARGET_WASM
-                id = NI_PackedSimd_ShiftRightLogical;
-#endif
                 break;
             }
 
@@ -6673,43 +6706,48 @@ public partial class Compiler
             {
                 assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
 
-#if TARGET_XARCH
-                if (simdSize is 64)
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = NI_AVX512_Subtract;
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (simdSize is 64)
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_Subtract;
+                        id = NI_AVX512_Subtract;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_Subtract;
+                        }
+                        else
+                        {
+                            id = NI_AVX_Subtract;
+                        }
                     }
                     else
                     {
-                        id = NI_AVX_Subtract;
+                        id = isScalar ? NI_X86Base_SubtractScalar : NI_X86Base_Subtract;
                     }
                 }
-                else
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = isScalar ? NI_X86Base_SubtractScalar : NI_X86Base_Subtract;
+                    if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                    {
+                        id = NI_AdvSimd_SubtractScalar;
+                    }
+                    else if (simdBaseType == TYP_DOUBLE)
+                    {
+                        id = NI_AdvSimd_Arm64_Subtract;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_Subtract;
+                    }
                 }
-#elif TARGET_ARM64
-                if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                else if (Configuration.TARGET_WASM)
                 {
-                    id = NI_AdvSimd_SubtractScalar;
+                    id = NI_PackedSimd_Subtract;
                 }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    id = NI_AdvSimd_Arm64_Subtract;
-                }
-                else
-                {
-                    id = NI_AdvSimd_Subtract;
-                }
-#elif TARGET_WASM
-                id = NI_PackedSimd_Subtract;
-#endif
                 break;
             }
 
@@ -6731,6 +6769,7 @@ public partial class Compiler
         return id;
     }
 
+#if FEATURE_HW_INTRINSICS
     /// <summary>Returns intrinsic ID based on the oper, base type, and simd size</summary>
     /// <param name="oper">The oper for which to get the intrinsic ID</param>
     /// <param name="type">The return type of the comparison</param>

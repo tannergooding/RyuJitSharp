@@ -45,6 +45,7 @@
     <Compile Include="..\Core\HWIntrinsicLookupRangeTests.cs" Link="HWIntrinsicLookupRangeTests.cs" />
     <Compile Include="..\Core\HWIntrinsicXplatImportTests.cs" Link="HWIntrinsicXplatImportTests.cs" />
     <Compile Include="..\Core\ImporterCallTests.cs" Link="ImporterCallTests.cs" />
+    <Compile Include="..\Core\SimdOperationMappingCompletionTests.cs" Link="SimdOperationMappingCompletionTests.cs" />
     <Compile Include="..\Core\LocalReferenceAccountingTargetTests.cs" Link="LocalReferenceAccountingTargetTests.cs" />
     <Compile Include="..\Core\LateDisassemblyBackendTests.cs" Link="LateDisassemblyBackendTests.cs" />
     <Compile Include="..\Core\QmarkExpansionTests.cs" Link="QmarkExpansionTests.cs" />

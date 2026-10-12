@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the shared hardware-intrinsic ID migration in `compiler/Compiler.gt.cs::GetHWIntrinsicIdForBinOp`. OR/XOR selection is now runtime-targeted in `Compiler.SimdIntrinsicHelpers.cs`; convert the remaining operator mappings and then remove the helper's `FEATURE_HW_INTRINSICS` guard after resolving its dependency closure.",
+    "nextAction": "Continue the shared hardware-intrinsic ID migration in `compiler/Compiler.gt.cs::GetHWIntrinsicIdForCmpOp`. Convert comparison mappings to runtime target checks while preserving xarch, Arm64, and Wasm selection; then resolve its `FEATURE_HW_INTRINSICS` dependency guard.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
       "scope": "Universalize target-specific binary SIMD intrinsic-ID selection and make `Compiler.gt.cs::GetHWIntrinsicIdForBinOp` available to universal compilation.",
       "doneWhen": "All operator mappings preserve xarch, Arm64, and Wasm intrinsic selection through runtime target checks; unsupported SIMD targets terminate explicitly; the helper compiles without `FEATURE_HW_INTRINSICS`.",
-      "validation": "Add focused intrinsic-ID coverage and run Debug/Release target-frontier tests. The memcmp batch passed 26 tests with 3 expected Arm64 skips on x64, 3/3 on Arm64, and 30/30 RISC-V feature-configuration tests. Full analyzer builds currently stop at the unrelated existing IDE0059 in `Compiler.gt.cs:8988`; keep this gap visible and do not fix it as part of the batch.",
+      "validation": "Completed `GetHWIntrinsicIdForBinOp` mappings with direct selector tests: x64 Debug/Release passed 47/47, Arm64 passed 12/12, and browser-wasm passed 153/153. Arm64 and feature-disabled RISC-V `FeatureConfigurationTests` passed 30/30 in Debug/Release. The broader x64 HWI filter passed 183 Debug and 182 Release tests after excluding the unrelated `GatherImmediateRejectsInvalidScaleWithoutPopping` assertion-path failure (NullReferenceException in `Globals.HashString`). Full analyzer builds still stop at the unrelated IDE0059 in `Compiler.gt.cs:8988`.",
       "deferred": "Remaining SIMD codegen, register-allocation, emitter/generated-metadata guards, and other TARGET_/FEATURE_ migrations; do not claim universal compilation is complete."
     },
     "parityEvidence": {
