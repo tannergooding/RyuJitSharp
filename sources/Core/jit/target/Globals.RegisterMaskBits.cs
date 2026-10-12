@@ -11,47 +11,53 @@ public static partial class Globals
 {
     internal static uint PopCount(SingleTypeRegSet value)
     {
-#if REGMASK_BITS_32
-        return (uint)BitOperations.PopCount(unchecked((uint)value));
-#else
+        if (Configuration.REGMASK_BITS_32)
+        {
+            return (uint)BitOperations.PopCount(unchecked((uint)value));
+        }
+
         return (uint)BitOperations.PopCount(unchecked((ulong)value));
-#endif
     }
 
     internal static uint PopCount(regMaskTP value)
     {
         var result = PopCount(value.Lower);
-#if HAS_MORE_THAN_64_REGISTERS
-        result += PopCount(value.Upper);
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            result += PopCount(value.Upper);
+        }
+
         return result;
     }
 
     internal static uint BitScanForward(SingleTypeRegSet value)
     {
-#if REGMASK_BITS_32
-        var bits = unchecked((uint)value);
-#else
-        var bits = unchecked((ulong)value);
-#endif
-        assert(bits != 0, conditionExpression: "value != 0");
+        if (Configuration.REGMASK_BITS_32)
+        {
+            var bits = unchecked((uint)value);
+            assert(bits != 0, conditionExpression: "value != 0");
 
-        return (uint)BitOperations.TrailingZeroCount(bits);
+            return (uint)BitOperations.TrailingZeroCount(bits);
+        }
+
+        var bits64 = unchecked((ulong)value);
+        assert(bits64 != 0, conditionExpression: "value != 0");
+
+        return (uint)BitOperations.TrailingZeroCount(bits64);
     }
 
     internal static uint BitScanForward(regMaskTP mask)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        if (mask.Lower != SRBM_NONE)
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
         {
-            return BitScanForward(mask.Lower);
-        }
-        else
-        {
+            if (mask.Lower != SRBM_NONE)
+            {
+                return BitScanForward(mask.Lower);
+            }
+
             return 64 + BitScanForward(mask.Upper);
         }
-#else
+
         return BitScanForward(mask.Lower);
-#endif
     }
 }

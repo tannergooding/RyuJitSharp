@@ -59,6 +59,12 @@ internal static class Configuration
 
     internal static bool HAS_FIXED_REGISTER_SET => !TARGET_WASM;
 
+    internal static bool HAS_MORE_THAN_64_REGISTERS => TARGET_AMD64 || TARGET_ARM64;
+
+    internal static bool REGMASK_BITS_32 => TARGET_X86 || TARGET_WASM;
+
+    internal static bool REGMASK_BITS_64 => !REGMASK_BITS_32;
+
     internal static bool CPU_LOAD_STORE_ARCH =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM;
 

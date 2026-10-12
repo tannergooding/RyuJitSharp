@@ -4,11 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Numerics;
-#if REGMASK_BITS_32
-using BitShapeRegBits = System.UInt32;
-#else
-using BitShapeRegBits = System.UInt64;
-#endif
 
 namespace RyuJitSharp;
 
@@ -46,42 +41,49 @@ public static partial class Globals
 
     public static regMaskTP genFindLowestBit(regMaskTP value)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        if (value.Lower != SRBM_NONE)
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
         {
-            var lower = unchecked((BitShapeRegBits)value.Lower);
+            if (value.Lower != SRBM_NONE)
+            {
+                var lower = GetScalarBits(value.Lower);
 
-            return new regMaskTP(unchecked((regMask)genFindLowestBit(lower)));
+                return new regMaskTP(unchecked((regMask)genFindLowestBit(lower)));
+            }
+
+            var upper = unchecked((ulong)value.Upper);
+
+            return new regMaskTP(SRBM_NONE, unchecked((regMask)genFindLowestBit(upper)));
         }
 
-        var upper = unchecked((BitShapeRegBits)value.Upper);
+        var lowerBits = GetScalarBits(value.Lower);
 
-        return new regMaskTP(SRBM_NONE, unchecked((regMask)genFindLowestBit(upper)));
-#else
-        var lower = unchecked((BitShapeRegBits)value.Lower);
-
-        return new regMaskTP(unchecked((regMask)genFindLowestBit(lower)));
-#endif
+        return new regMaskTP(unchecked((regMask)genFindLowestBit(lowerBits)));
     }
 
     public static bool genMaxOneBit(regMaskTP value)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        if (value.Lower == SRBM_NONE)
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
         {
-            return genMaxOneBit(unchecked((BitShapeRegBits)value.Upper));
+            if (value.Lower == SRBM_NONE)
+            {
+                return genMaxOneBit(unchecked((ulong)value.Upper));
+            }
+
+            if (value.Upper == SRBM_NONE)
+            {
+                return genMaxOneBit(GetScalarBits(value.Lower));
+            }
+
+            return false;
         }
 
-        if (value.Upper == SRBM_NONE)
-        {
-            return genMaxOneBit(unchecked((BitShapeRegBits)value.Lower));
-        }
-
-        return false;
-#else
-        return genMaxOneBit(unchecked((BitShapeRegBits)value.Lower));
-#endif
+        return genMaxOneBit(GetScalarBits(value.Lower));
     }
+
+    private static ulong GetScalarBits(SingleTypeRegSet value) =>
+        Configuration.REGMASK_BITS_32
+            ? unchecked((uint)value)
+            : unchecked((ulong)value);
 
     // Managed counterpart of the genExactlyOneBit<regMaskTP> instantiation.
     public static bool genExactlyOneBit(regMaskTP value)

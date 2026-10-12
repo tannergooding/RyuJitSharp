@@ -22,6 +22,12 @@
     <Compile Include="..\Core\RegNumberIdentityTests.cs" Link="RegNumberIdentityTests.cs" />
     <Compile Include="..\Core\RegNumberNameTests.cs" Link="RegNumberNameTests.cs" />
     <Compile Include="..\Core\RegMaskIdentityTests.cs" Link="RegMaskIdentityTests.cs" />
+    <Compile Include="..\Core\RegMaskRuntimeTests.cs" Link="RegMaskRuntimeTests.cs" />
+    <Compile Include="..\Core\RegisterMaskBitOperationsTests.cs" Link="RegisterMaskBitOperationsTests.cs" />
+    <Compile Include="..\Core\RegisterMaskConstructionTests.cs" Link="RegisterMaskConstructionTests.cs" />
+    <Compile Include="..\Core\RegisterMaskNumericOperationsTests.cs" Link="RegisterMaskNumericOperationsTests.cs" />
+    <Compile Include="..\Core\SharedBitShapeTests.cs" Link="SharedBitShapeTests.cs" />
+    <Compile Include="..\Core\TypedRegisterMaskTests.cs" Link="TypedRegisterMaskTests.cs" />
     <Compile Include="..\Core\AbiShadowSpaceTests.cs" Link="AbiShadowSpaceTests.cs" />
     <Compile Include="..\Core\AsyncResumeCodeGenTestSupport.cs" Link="AsyncResumeCodeGenTestSupport.cs" />
     <Compile Include="..\Core\AsyncResumeTableTargetTests.cs" Link="AsyncResumeTableTargetTests.cs" />

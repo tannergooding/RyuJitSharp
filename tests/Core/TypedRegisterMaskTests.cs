@@ -111,7 +111,7 @@ internal static unsafe class TypedRegisterMaskTests
         Assert.That(regNextOfType(reg, type), Is.EqualTo(expected));
     }
 
-    [TestCase((regNumber)255, TYP_INT, REG_INT_FIRST)]
+    [TestCase((regNumber)255, TYP_INT, REG_NA)]
     [TestCase((regNumber)((int)REG_FP_FIRST - 1), TYP_FLOAT, REG_FP_FIRST)]
     [TestCase(REG_INT_FIRST, TYP_FLOAT, (regNumber)((int)REG_INT_FIRST + 1))]
     [TestCase(REG_FP_FIRST, TYP_INT, REG_NA)]

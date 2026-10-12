@@ -4965,15 +4965,7 @@ public enum regNumber : uint
             _ = namesBuilder.AppendLine();
         }
 
-        var masksBuilder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 4 and not 5)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        SRBM_{name}, // REG_{name}");
-        }, includeRegAlias: false);
+        var masksBuilder = ProcessTargetQualifiedRegisterMaskTables();
 
         _ = Directory.CreateDirectory(@"Outputs\jit\target");
 
@@ -4991,10 +4983,86 @@ public static partial class regNumberExtensions
 {
 {{namesBuilder}}
 
-    private static ReadOnlySpan<regMask> s_masks => [
-{{masksBuilder}}    ];
+{{masksBuilder}}
 }
 """);
+    }
+
+    private static StringBuilder ProcessTargetQualifiedRegisterMaskTables()
+    {
+        var builder = new StringBuilder();
+
+        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        {
+            var registerBases = ReadRegisterBaseValues(inputFile);
+            var registerMasks = new SortedDictionary<int, string>();
+            var stackRegister = -1;
+
+            _ = ProcessMacroBasedFileUnion(inputFile, "REGDEF(", (_, _, line, _, parts) => {
+                if (parts.Length is not 4 and not 5)
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                var name = parts[0].AsSpan().Trim().ToString();
+                var registerNumber = ParseRegisterOrdinal(parts[1].AsSpan().Trim(), registerBases, inputFile);
+                if (!registerMasks.TryAdd(registerNumber, name))
+                {
+                    throw new InvalidDataException(
+                        $"Duplicate register ordinal '{registerNumber}' in '{inputFile}'.");
+                }
+
+                if (name.Equals("STK", StringComparison.Ordinal))
+                {
+                    stackRegister = registerNumber;
+                }
+            });
+
+            if ((stackRegister < 0) || (registerMasks.Keys.Max() != stackRegister))
+            {
+                throw new InvalidDataException($"Register header '{inputFile}' does not end with REG_STK.");
+            }
+
+            _ = builder.AppendLine(
+                CultureInfo.InvariantCulture,
+                $"    private static ReadOnlySpan<regMask> s_masks_{target} => [");
+
+            for (var registerNumber = 0; registerNumber <= stackRegister; registerNumber++)
+            {
+                if (registerMasks.TryGetValue(registerNumber, out var name))
+                {
+                    _ = builder.AppendLine(
+                        CultureInfo.InvariantCulture,
+                        $"        SRBM_{name}_{target}, // REG_{name}_{target}");
+                }
+                else
+                {
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        SRBM_NONE_{target}, // unused register ordinal {registerNumber}");
+                }
+            }
+
+            _ = builder.AppendLine("    ];");
+            _ = builder.AppendLine();
+        }
+
+        _ = builder.AppendLine("    private static ReadOnlySpan<regMask> s_masks");
+        _ = builder.AppendLine("    {");
+        _ = builder.AppendLine("        get");
+        _ = builder.AppendLine("        {");
+
+        foreach (var (target, _) in s_registerTargetHeaders)
+        {
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            if (Configuration.TARGET_{target})");
+            _ = builder.AppendLine("            {");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return s_masks_{target};");
+            _ = builder.AppendLine("            }");
+        }
+
+        _ = builder.AppendLine("            throw new FatalJitException(\"Invalid target architecture.\");");
+        _ = builder.AppendLine("        }");
+        _ = builder.AppendLine("    }");
+
+        return builder;
     }
 
     private static void GenerateSmOpcode()
@@ -5212,27 +5280,7 @@ public static partial class SM_OPCODEExtensions
 
     private static void GenerateTargetGlobals()
     {
-        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 2 and not 4 and not 5)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-
-            if (parts.Length is 2)
-            {
-                var realName = parts[1].AsSpan().Trim();
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public static regMaskTP RBM_{name} => RBM_{realName};");
-            }
-            else
-            {
-                var rnum = parts[1].AsSpan().Trim();
-                var mask = parts[2].AsSpan().Trim();
-
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public static regMaskTP RBM_{name} => regMaskTP.CreateFromRegNum((regNumber)({rnum}), (regMask)({mask}));");
-            }
-        }, includeRegAlias: true);
+        var builder = ProcessTargetQualifiedRegisterMaskFactories();
 
         _ = Directory.CreateDirectory(@"Outputs\jit\target");
 
@@ -5250,6 +5298,87 @@ public static partial class Globals
 {{builder}}
 }
 """);
+    }
+
+    private static StringBuilder ProcessTargetQualifiedRegisterMaskFactories()
+    {
+        var builder = new StringBuilder();
+        var targetRegisterNames = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var registerNameOrder = new List<string>();
+        var prefixes = new[] { "REGDEF(", "REGALIAS(" };
+
+        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        {
+            var targetRegisterNameSet = new HashSet<string>(StringComparer.Ordinal);
+            var targetBuilder = ProcessMacroBasedFileUnion(inputFile, prefixes, (output, sourceFile, line, prefix, parts) => {
+                if (prefix is "REGALIAS(")
+                {
+                    if (parts.Length != 2)
+                    {
+                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                    }
+                }
+                else if (parts.Length is not 4 and not 5)
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                var name = parts[0].AsSpan().Trim().ToString();
+                if (!targetRegisterNameSet.Add(name))
+                {
+                    throw new InvalidDataException($"Duplicate register mask '{name}' in '{inputFile}'.");
+                }
+
+                if (!targetRegisterNames.TryGetValue(name, out var targets))
+                {
+                    targets = [];
+                    targetRegisterNames.Add(name, targets);
+                    registerNameOrder.Add(name);
+                }
+
+                targets.Add(target);
+
+                if (prefix is "REGALIAS(")
+                {
+                    var realName = parts[1].AsSpan().Trim();
+                    _ = output.AppendLine(
+                        CultureInfo.InvariantCulture,
+                        $"    public static regMaskTP RBM_{name}_{target} => RBM_{realName}_{target};");
+                }
+                else
+                {
+                    _ = output.AppendLine(
+                        CultureInfo.InvariantCulture,
+                        $"    public static regMaskTP RBM_{name}_{target} => regMaskTP.CreateFromRegNum(REG_{name}_{target}, SRBM_{name}_{target});");
+                }
+            });
+
+            _ = builder.Append(targetBuilder);
+        }
+
+        foreach (var name in registerNameOrder)
+        {
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public static regMaskTP RBM_{name}");
+            _ = builder.AppendLine("    {");
+            _ = builder.AppendLine("        get");
+            _ = builder.AppendLine("        {");
+
+            foreach (var target in targetRegisterNames[name])
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            if (Configuration.TARGET_{target})");
+                _ = builder.AppendLine("            {");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return RBM_{name}_{target};");
+                _ = builder.AppendLine("            }");
+            }
+
+            _ = builder.AppendLine(
+                CultureInfo.InvariantCulture,
+                $"            throw new FatalJitException(\"Register mask '{name}' is not available for the configured target.\");");
+            _ = builder.AppendLine("        }");
+            _ = builder.AppendLine("    }");
+        }
+
+        return builder;
     }
 
     private static void GenerateVarTypes()

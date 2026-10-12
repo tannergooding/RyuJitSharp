@@ -66,6 +66,39 @@ internal static class RegMaskIdentityTests
         Assert.That(SRBM_STK_WASM, Is.EqualTo((regMask)0));
     }
 
+    [Test]
+    public static void TargetQualifiedTablesAndFactoriesMatchTheCurrentRegisterSet()
+    {
+        var suffix = $"_{GetTargetSuffix()}";
+        var checkedEntries = 0;
+
+        foreach (var maskName in Enum.GetNames<regMask>())
+        {
+            if (!maskName.StartsWith("SRBM_", StringComparison.Ordinal) ||
+                !maskName.EndsWith(suffix, StringComparison.Ordinal) ||
+                maskName.StartsWith("SRBM_NONE_", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var registerName = $"REG_{maskName[5..^suffix.Length]}{suffix}";
+            var register = Enum.Parse<regNumber>(registerName);
+            var scalarMask = Enum.Parse<regMask>(maskName);
+            var expectedFullMask = Configuration.HAS_MORE_THAN_64_REGISTERS && ((int)register >= 64)
+                ? new regMaskTP(SRBM_NONE, scalarMask)
+                : new regMaskTP(scalarMask);
+            var factoryName = $"RBM_{registerName[4..^suffix.Length]}";
+            var factory = typeof(Globals).GetProperty(factoryName);
+
+            Assert.That(register.SingleTypeMask, Is.EqualTo(scalarMask), registerName);
+            Assert.That(Globals.genRegMask(register), Is.EqualTo(expectedFullMask), registerName);
+            Assert.That(factory?.GetValue(null), Is.EqualTo(expectedFullMask), factoryName);
+            checkedEntries++;
+        }
+
+        Assert.That(checkedEntries, Is.GreaterThan(0));
+    }
+
     private static string GetTargetSuffix()
     {
         if (Configuration.TARGET_X86)

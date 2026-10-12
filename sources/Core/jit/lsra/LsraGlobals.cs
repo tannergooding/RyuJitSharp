@@ -56,12 +56,10 @@ public static class LsraGlobals
             assert(regIdx == 1);
             tree.AsCopyOrReload().SetRegNumByIdx(reg, 1);
         }
-#if FEATURE_HW_INTRINSICS
-        else if (tree.Oper is GT_HWINTRINSIC)
+        else if (Configuration.FEATURE_HW_INTRINSICS && (tree.Oper is GT_HWINTRINSIC))
         {
             tree.AsHWIntrinsic().SetRegNumByIdx(reg, checked((byte)regIdx));
         }
-#endif
         else if (tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR)
         {
             tree.AsLclVar().SetRegNumByIdx(reg, checked((byte)regIdx));
@@ -77,12 +75,14 @@ public static class LsraGlobals
 
     public static bool genMaxOneBit(SingleTypeRegSet registers)
     {
-#if TARGET_X86
-        var bits = unchecked((uint)registers);
-#else
-        var bits = unchecked((ulong)registers);
-#endif
-        return (bits & unchecked(bits - 1)) == 0;
+        if (Configuration.TARGET_X86)
+        {
+            var bits32 = unchecked((uint)registers);
+            return (bits32 & unchecked(bits32 - 1)) == 0;
+        }
+
+        var bits64 = unchecked((ulong)registers);
+        return (bits64 & unchecked(bits64 - 1)) == 0;
     }
 
     public static bool genExactlyOneBit(SingleTypeRegSet registers)
@@ -99,19 +99,23 @@ public static class LsraGlobals
     {
         assert(genExactlyOneBit(registers));
 
-#if TARGET_X86
-        var reg = (regNumber)BitOperations.Log2(unchecked((uint)registers));
-#else
-        var reg = (regNumber)BitOperations.Log2(unchecked((ulong)registers));
-#endif
+        regNumber reg;
+        if (Configuration.TARGET_X86)
+        {
+            reg = (regNumber)BitOperations.Log2(unchecked((uint)registers));
+        }
+        else
+        {
+            reg = (regNumber)BitOperations.Log2(unchecked((ulong)registers));
+        }
+
         assert(genSingleTypeRegMask(reg) == registers);
 
-#if HAS_MORE_THAN_64_REGISTERS
-        if (varTypeIsMask(registerType))
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS && varTypeIsMask(registerType))
         {
             reg = (regNumber)(64 + (int)reg);
         }
-#endif
+
         return reg;
     }
 
@@ -122,12 +126,11 @@ public static class LsraGlobals
             return TYP_INT;
         }
 
-#if (TARGET_XARCH || TARGET_ARM64) && FEATURE_SIMD
-        if (varTypeUsesMaskReg(type))
+        if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM64) &&
+            Configuration.FEATURE_SIMD && varTypeUsesMaskReg(type))
         {
             return TYP_MASK;
         }
-#endif
 
         assert(varTypeUsesFloatReg(type));
         return TYP_FLOAT;
