@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the next ten smallest remaining TARGET_/FEATURE_ guarded C# files, beginning with sources/Core/jit/target/Globals.SimpleReturnAliases.cs and continuing by file size.",
+    "nextAction": "Commit the validated target-width signed-size and universal simd_t representation batches locally; then reconcile the insFlags metadata and emission-request flag aliases against pinned e23d559 before removing their remaining target guards.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace the TARGET_WINDOWS/TARGET_UNIX branches in emitter static-layout reporting and ARM64 call-descriptor sizing with Configuration checks.",
-      "doneWhen": "The Windows, Unix, and unsupported-layout behavior is preserved without OS preprocessor branches in Emitter.StaticStatistics.cs or Emitter.DescriptorSizes.cs.",
-      "validation": "The x64 static-layout test passed 1/1 with EMITTER_STATS and full analyzers. The Windows ARM64 static-layout regression passed 1/1 with EMITTER_STATS and full analyzers; the ARM64 Core build with EMITTER_STATS succeeded with 0 warnings/errors. Target configuration tests passed 27/27 for win-arm64 (RunAnalyzers=false).",
-      "deferred": "The repository-wide TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Unify target_ssize_t and simd_t storage while preserving target-width arithmetic and overflow policy, native SIMD logical capacities, active vector payloads, typed VN identity, and compiler output.",
+      "doneWhen": "All target-sized arithmetic and SIMD-capacity consumers use explicit target semantics; focused regressions pass across the relevant target RIDs in Debug and Release.",
+      "validation": "TargetSignedSizeTests and UniversalSimdStorageTests passed with full analyzers in Debug and Release using a win-x64 test host with win-x64, win-x86, linux-arm64, browser-wasm, and linux-riscv64 target configurations. Unsupported SIMD cases skipped explicitly. Generated-code parity capture remains deferred; source review uses pinned e23d559ac0db234786d68bd5135fed6ad9621750.",
+      "deferred": "Remaining TARGET_/FEATURE_ migrations, target-native alias families, full-storage generic helpers with no simd_t callers, and generated-code parity capture are outside this bounded representation batch."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -65,6 +65,32 @@
     }
   },
   "sourceMap": [
+    {
+      "area": "universal-target-signed-size",
+      "native": [
+        "src\\coreclr\\jit\\target.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\target\\Aliases.cs",
+        "sources\\Core\\jit\\target\\Target.SignedSize.cs"
+      ],
+      "disposition": "target_ssize_t has universal long storage. Runtime target-width conversion/addition helpers preserve primitive overflow policy; the dependent array, field, VN, and decomposed-address consumers retain their target arithmetic and constant identities. No observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "TargetSignedSizeTests passed with full analyzers in Debug and Release using a win-x64 test host and win-x64, win-x86, linux-arm64, browser-wasm, and linux-riscv64 target configurations. Generated-code parity capture remains deferred; source review uses pinned e23d559ac0db234786d68bd5135fed6ad9621750."
+    },
+    {
+      "area": "universal-simd-storage",
+      "native": [
+        "src\\coreclr\\jit\\simd.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\simd\\Aliases.cs",
+        "sources\\Core\\jit\\simd\\Globals.cs"
+      ],
+      "disposition": "Managed simd_t uses universal simd64_t storage while SimdStorageSize preserves native logical capacities (64 bytes on xarch, 32 on ARM64, 16 otherwise). Active vector payloads and typed VN identity remain limited to the native type size; this is an internal representation change, not an observable deviation.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "UniversalSimdStorageTests passed with full analyzers in Debug and Release using a win-x64 test host and win-x64, win-x86, linux-arm64, browser-wasm, and linux-riscv64 target configurations. Unsupported SIMD cases skipped explicitly. Generated-code parity capture remains deferred."
+    },
     {
       "area": "universal-instruction-set-identities",
       "native": [

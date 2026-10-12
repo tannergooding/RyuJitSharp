@@ -4,7 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -38,7 +37,7 @@ public sealed partial class Lowering
 #endif
         if (isConstant)
         {
-            Span<byte> bits = stackalloc byte[Unsafe.SizeOf<simd_t>()];
+            Span<byte> bits = stackalloc byte[SimdStorageSize];
             assert(bits.Length >= operand.Type.ActualType.Size);
             if (operand.Oper is GT_CNS_INT)
             {
@@ -49,7 +48,7 @@ public sealed partial class Lowering
 #if FEATURE_SIMD
             else if (operand.Oper is GT_CNS_VEC)
             {
-                MemoryMarshal.Write(bits, in operand.AsVecCon().SimdVal);
+                operand.AsVecCon().SimdVal.AsSpan<byte>()[..operand.Type.Size].CopyTo(bits);
             }
 #endif
             else if (operand.Type is TYP_FLOAT)

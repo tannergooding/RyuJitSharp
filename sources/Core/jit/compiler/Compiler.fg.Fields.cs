@@ -23,7 +23,8 @@ public partial class Compiler
                 {
                     break;
                 }
-                if (!CheckedOps.TryAdd(totalOffset, unchecked((target_ssize_t)offset.AsIntCon().IconValue), out totalOffset))
+                if (!Target.TryAddSignedSize(totalOffset,
+                    Target.CastToSignedSize((long)offset.AsIntCon().IconValue), out totalOffset))
                 {
                     return;
                 }
@@ -35,16 +36,13 @@ public partial class Compiler
             }
 
             var field = address.AsFieldAddr();
-#if TARGET_64BIT
-            var fieldOffset = unchecked((target_ssize_t)(uint)field.FldOffset);
-#else
-            if (field.FldOffset < 0)
+            if (Configuration.TARGET_32BIT && (field.FldOffset < 0))
             {
                 return;
             }
-            var fieldOffset = (target_ssize_t)field.FldOffset;
-#endif
-            if (!CheckedOps.TryAdd(totalOffset, fieldOffset, out totalOffset))
+            var fieldOffset = Configuration.TARGET_64BIT
+                ? (long)unchecked((uint)field.FldOffset) : field.FldOffset;
+            if (!Target.TryAddSignedSize(totalOffset, fieldOffset, out totalOffset))
             {
                 return;
             }

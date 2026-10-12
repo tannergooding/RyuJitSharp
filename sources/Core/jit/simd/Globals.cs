@@ -12,6 +12,9 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    // Native simd_t capacity is target-specific even though managed storage is universally 64 bytes.
+    internal static int SimdStorageSize => Configuration.TARGET_XARCH ? 64 : Configuration.TARGET_ARM64 ? 32 : 16;
+
     private static void EnsureSimdSupported()
     {
         if (!Configuration.FEATURE_SIMD)
@@ -567,7 +570,7 @@ public static partial class Globals
     {
         EnsureSimdSupported();
         var elementSize = GetSimdElementSize(baseType);
-        assert(arg0.Length <= Unsafe.SizeOf<simd_t>());
+        assert(arg0.Length <= SimdStorageSize);
         var count = arg0.Length / elementSize;
         ulong mask = 0;
         for (var index = 0; index < count; index++)
@@ -726,7 +729,7 @@ public static partial class Globals
         }
 
         var elementSize = GetSimdElementSize(baseType);
-        assert(result.Length <= Unsafe.SizeOf<simd_t>());
+        assert(result.Length <= SimdStorageSize);
         var count = result.Length / elementSize;
         var mask = unchecked((ulong)arg0.RawBits);
         for (var index = 0; index < count; index++)
@@ -753,7 +756,7 @@ public static partial class Globals
         }
 
         var elementSize = GetSimdElementSize(baseType);
-        assert(arg0.Length <= Unsafe.SizeOf<simd_t>());
+        assert(arg0.Length <= SimdStorageSize);
         var count = arg0.Length / elementSize;
         ulong mask = 0;
         for (var index = 0; index < count; index++)

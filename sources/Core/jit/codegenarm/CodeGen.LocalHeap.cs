@@ -25,7 +25,7 @@ public sealed partial class CodeGen
         BasicBlock? endLabel = null;
         uint stackAdjustment = 0;
         var regTmp = REG_NA;
-        const target_ssize_t IllegalLastTouchDelta = -1;
+        const int IllegalLastTouchDelta = -1;
         var lastTouchDelta = IllegalLastTouchDelta;
 
         noway_assert(IsFramePointerUsed);
@@ -87,7 +87,7 @@ public sealed partial class CodeGen
             {
                 Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, regCnt, REG_SP, 0, INS_FLAGS_DONT_CARE);
                 inst_RV_IV(INS_sub, REG_SP, unchecked((nint)amount), EA_PTRSIZE);
-                lastTouchDelta = unchecked((target_ssize_t)amount);
+                lastTouchDelta = unchecked((int)amount);
                 goto ALLOC_DONE;
             }
 

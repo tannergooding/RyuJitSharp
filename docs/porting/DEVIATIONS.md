@@ -511,6 +511,17 @@ existing mapping, matching the pinned native guard.
 
 ##### SIMD values and masks
 
+`simd_t` uses one physical `simd64_t` representation. `Globals.SimdStorageSize`
+retains native logical capacity: 64 bytes on xarch, 32 on ARM64 (including
+scalable-value storage), and 16 otherwise. Capacity checks and target-wide
+mask/pattern fills use that logical size; bitcast lowering copies only the
+operand's active bytes. ARM64 wide-shift narrowing uses the native `simd16_t`
+view rather than inferring its evaluation width from universal storage.
+Fixed-size structs retain physical equality/hash semantics; vector tree
+equality, hashing, VN keys and emitted constants retain their typed active
+payloads, including SIMD12's 12 bytes, NaN bits and signed zero. This changes
+internal storage, not the permitted vector types or observable compiler output.
+
 HWI creation-constant helpers accept the existing maximum-width `simd_t` by
 reference instead of templating over native SIMD storage structs. They preserve
 native lane order, full output zeroing for creation candidates and untouched

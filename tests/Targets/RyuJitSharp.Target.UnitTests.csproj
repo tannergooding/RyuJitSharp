@@ -51,6 +51,7 @@
     <Compile Include="..\Core\SysVX64ClassifierTests.cs" Link="SysVX64ClassifierTests.cs" />
     <Compile Include="..\Core\ValueNumBinaryFoldingTests.cs" Link="ValueNumBinaryFoldingTests.cs" />
     <Compile Include="..\Core\ValueNumExceptionTests.cs" Link="ValueNumExceptionTests.cs" />
+    <Compile Include="..\Core\UniversalSimdStorageTests.cs" Link="UniversalSimdStorageTests.cs" />
     <Compile Include="..\Core\ValueNumHardwareEvaluationClosureTests.cs" Link="ValueNumHardwareEvaluationClosureTests.cs" />
   </ItemGroup>
 

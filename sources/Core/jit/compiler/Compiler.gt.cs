@@ -13967,7 +13967,7 @@ public partial class Compiler
 #endif
             {
                 var node = gtNewVconNode(type);
-                node.SimdVal.AsSpan<byte>().Fill(pattern);
+                node.SimdVal.AsSpan<byte>()[..SimdStorageSize].Fill(pattern);
                 return node;
             }
 
@@ -14283,7 +14283,7 @@ public partial class Compiler
 
                     if (!intCon.IsIconHandle())
                     {
-                        offset += unchecked((target_ssize_t)intCon.IconValue);
+                        offset = Target.AddSignedSize(offset, Target.CastToSignedSize((long)intCon.IconValue));
 
                         if (includeFieldSeq)
                         {
@@ -14301,7 +14301,7 @@ public partial class Compiler
 
                     if (!intCon.IsIconHandle())
                     {
-                        offset += unchecked((target_ssize_t)intCon.IconValue);
+                        offset = Target.AddSignedSize(offset, Target.CastToSignedSize((long)intCon.IconValue));
 
                         if (includeFieldSeq)
                         {
@@ -14323,7 +14323,7 @@ public partial class Compiler
                 {
                     break;
                 }
-                offset += addrMode.Offset;
+                offset = Target.AddSignedSize(offset, addrMode.Offset);
 
                 assert(addrMode.BaseAddress is not null);
                 addr = addrMode.BaseAddress;

@@ -3,8 +3,5 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_64BIT
+// Storage is universal; conversions and arithmetic must still use the target width.
 global using target_ssize_t = long;
-#else
-global using target_ssize_t = int;
-#endif

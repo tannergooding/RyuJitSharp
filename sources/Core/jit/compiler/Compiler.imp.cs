@@ -12962,7 +12962,7 @@ public partial class Compiler
 
                     if (simdWidth > 0)
                     {
-                        assert((totalSize <= sizeof(simd_t)) && (totalSize <= LargeStructBufferSize));
+                        assert((totalSize <= SimdStorageSize) && (totalSize <= LargeStructBufferSize));
                         var simdType = GetSimdTypeForSize(simdWidth);
 
                         var hwAccelerated = true;

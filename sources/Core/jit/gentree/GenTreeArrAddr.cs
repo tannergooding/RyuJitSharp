@@ -58,9 +58,9 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
         var elemSizeUnsigned = ElemType is TYP_STRUCT
             ? compiler.typGetObjLayout(ElemClassHandle).Size
             : (uint)ElemType.Size;
-        assert((ulong)elemSizeUnsigned <= (ulong)target_ssize_t.MaxValue);
-        var elemSize = (target_ssize_t)elemSizeUnsigned;
-        var constIndexOffset = offset - firstElemOffset;
+        assert((ulong)elemSizeUnsigned <= (ulong)Target.SignedSizeMaxValue);
+        var elemSize = Configuration.TARGET_64BIT ? (long)elemSizeUnsigned : (int)elemSizeUnsigned;
+        var constIndexOffset = Target.SubtractSignedSize(offset, firstElemOffset);
         assert((constIndexOffset % elemSize) == 0);
         var constIndex = constIndexOffset / elemSize;
         assert(compiler.vnStore is not null);
@@ -72,9 +72,19 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
         }
         else if (store.IsVNConstant(scaledIndexVN))
         {
-            var index = store.CoercedConstantValue<target_ssize_t>(scaledIndexVN);
-            noway_assert((elemSize > 0) && ((index % elemSize) == 0));
-            indexVN = store.VNForPtrSizeIntCon(unchecked((index / elemSize) + constIndex));
+            if (Configuration.TARGET_64BIT)
+            {
+                var index = store.CoercedConstantValue<long>(scaledIndexVN);
+                noway_assert((elemSize > 0) && ((index % elemSize) == 0));
+                indexVN = store.VNForPtrSizeIntCon(unchecked((index / elemSize) + constIndex));
+            }
+            else
+            {
+                var index = store.CoercedConstantValue<int>(scaledIndexVN);
+                var elemSize32 = unchecked((int)elemSize);
+                noway_assert((elemSize32 > 0) && ((index % elemSize32) == 0));
+                indexVN = store.VNForPtrSizeIntCon(unchecked((index / elemSize32) + (int)constIndex));
+            }
         }
         else
         {
@@ -151,7 +161,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
                 case GT_CNS_INT:
                 {
                     assert(!tree.AsIntCon().ImmedValNeedsReloc(compiler));
-                    offset = unchecked(offset + (inputMul * (target_ssize_t)tree.AsIntCon().IconValue));
+                    offset = Target.CastToSignedSize(unchecked(offset + (inputMul * (long)tree.AsIntCon().IconValue)));
                     return;
                 }
 
@@ -162,7 +172,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
                     ParseArrayAddressWork(op.Op1, compiler, inputMul, ref array, ref indexVN, ref offset);
                     if (tree.Oper is GT_SUB)
                     {
-                        inputMul = unchecked(-inputMul);
+                        inputMul = Target.CastToSignedSize(unchecked(-inputMul));
                     }
                     ParseArrayAddressWork(op.Op2, compiler, inputMul, ref array, ref indexVN, ref offset);
                     return;
@@ -180,26 +190,26 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
                         if ((op.Op2.Oper is GT_CNS_INT) && (op.Op2.AsIntCon().FieldSeq is null))
                         {
                             assert(!op.Op2.AsIntCon().ImmedValNeedsReloc(compiler));
-                            subMul = unchecked((target_ssize_t)op.Op2.AsIntConCommon().IconValue);
+                            subMul = Target.CastToSignedSize((long)op.Op2.AsIntConCommon().IconValue);
                             nonConst = op.Op1;
                         }
                         else
                         {
                             assert(!op.Op1.AsIntCon().ImmedValNeedsReloc(compiler));
-                            subMul = unchecked((target_ssize_t)op.Op1.AsIntConCommon().IconValue);
+                            subMul = Target.CastToSignedSize((long)op.Op1.AsIntConCommon().IconValue);
                             nonConst = op.Op2;
                         }
                     }
                     else if (op.Op2.Oper.IsCnsIntOrI)
                     {
                         assert(!op.Op2.AsIntCon().ImmedValNeedsReloc(compiler));
-                        subMul = unchecked((target_ssize_t)op.Op2.AsIntConCommon().IconValue);
+                        subMul = Target.CastToSignedSize((long)op.Op2.AsIntConCommon().IconValue);
                         nonConst = op.Op1;
                     }
 
                     if (nonConst is not null)
                     {
-                        ParseArrayAddressWork(nonConst, compiler, unchecked(inputMul * subMul),
+                        ParseArrayAddressWork(nonConst, compiler, Target.CastToSignedSize(unchecked(inputMul * subMul)),
                             ref array, ref indexVN, ref offset);
                         return;
                     }
@@ -212,9 +222,9 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
                     if (op.Op2.Oper.IsCnsIntOrI)
                     {
                         assert(!op.Op2.AsIntCon().ImmedValNeedsReloc(compiler));
-                        var shift = unchecked((target_ssize_t)op.Op2.AsIntConCommon().IconValue);
-                        var subMul = (target_ssize_t)1 << unchecked((int)shift);
-                        ParseArrayAddressWork(op.Op1, compiler, unchecked(inputMul * subMul),
+                        var shift = unchecked((int)op.Op2.AsIntConCommon().IconValue);
+                        var subMul = Configuration.TARGET_64BIT ? 1L << shift : 1 << shift;
+                        ParseArrayAddressWork(op.Op1, compiler, Target.CastToSignedSize(unchecked(inputMul * subMul)),
                             ref array, ref indexVN, ref offset);
                         return;
                     }

@@ -59,7 +59,7 @@ public partial class Compiler
                                     GenTreeFlags flags, int expectedUses)
         {
             _address = address;
-            _addressBaseOffset = baseOffset;
+            _addressBaseOffset = Target.CastToSignedSize(baseOffset);
             _addressBaseFieldSeq = fieldSeq;
             _indirFlags = flags;
             _usesLeft = expectedUses;
@@ -136,7 +136,7 @@ public partial class Compiler
 
             _usesLeft--;
             var address = _usesLeft == 0 ? _address : compiler.gtCloneExpr(_address);
-            var fullOffset = unchecked(_addressBaseOffset + offset);
+            var fullOffset = Target.CastToSignedSize(unchecked(_addressBaseOffset + offset));
             if ((fullOffset != 0) || (_addressBaseFieldSeq is not null))
             {
                 var offsetNode = compiler.gtNewIconNode(TYP_I_IMPL, unchecked((nint)fullOffset));

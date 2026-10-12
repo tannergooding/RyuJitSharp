@@ -9,11 +9,7 @@ public sealed partial class ValueNumStore
 {
     public ValueNum VNForPtrSizeIntCon(target_ssize_t value)
     {
-#if TARGET_64BIT
-        return VNForLongCon(value);
-#else
-        return VNForIntCon(value);
-#endif
+        return Configuration.TARGET_64BIT ? VNForLongCon(value) : VNForIntCon(unchecked((int)value));
     }
 
     public ValueNumPair VNPairForFunc(var_types type, VNFunc func)

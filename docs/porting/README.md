@@ -61,6 +61,17 @@ NaNs and signed zero, and error propagation. Managed objects must not invalidate
 native pointer lifetimes or JIT/EE layout and calling-convention contracts.
 Review collection substitutions for ordering and equality changes.
 
+`target_ssize_t` uses universal `long` storage, not universal 64-bit arithmetic.
+Use `Target.CastToSignedSize` at target-width conversion and unchecked arithmetic
+boundaries; its 32-bit result is sign-extended. `Target.AddSignedSize` retains
+the build's overflow-checking policy, while `Target.TryAddSignedSize` detects
+overflow at the configured target width. Shifts and type-sensitive VN constant
+coercion must select primitive `int` or `long` operations through `Configuration`.
+Keep the array parser's explicit `VNForLongCon` multiplier identities separate
+from `VNForPtrSizeIntCon`, which selects `TYP_INT` or `TYP_LONG` at runtime.
+`TargetSignedSizeTests` in the Target test project covers this representation
+closure; run it in Debug and Release with both 32-bit and 64-bit target RIDs.
+
 Native cross-kind node bashing is intentionally replaced by whole-node
 replacement in C#. Update callers, owning uses, cached aliases and LIR links
 as required; do not treat unchanged physical object identity as a porting goal.

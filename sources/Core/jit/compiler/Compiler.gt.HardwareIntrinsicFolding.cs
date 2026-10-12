@@ -445,7 +445,8 @@ public partial class Compiler
 #endif
                 {
                     simd_t maskVector = default;
-                    EvaluateSimdCvtMaskToVector(simdBaseType, maskVector.AsSpan<byte>(), mskCon.SimdMaskVal);
+                    EvaluateSimdCvtMaskToVector(simdBaseType, maskVector.AsSpan<byte>()[..SimdStorageSize],
+                        mskCon.SimdMaskVal);
 
                     var vector = gtNewVconNode(retType);
                     vector.SimdVal = maskVector;
@@ -914,8 +915,8 @@ public partial class Compiler
                             {
                                 assert(auxType == TYP_ULONG);
                                 assert(tree.Type == TYP_SIMD16);
-                                otherNode.AsVecCon().SimdVal =
-                                    NarrowAndDuplicateSimdLong(simdBaseType, otherNode.AsVecCon().SimdVal);
+                                ref var shiftValue = ref otherNode.AsVecCon().SimdVal.v128[0];
+                                shiftValue = NarrowAndDuplicateSimdLong(simdBaseType, shiftValue);
                             }
 #endif
                         }

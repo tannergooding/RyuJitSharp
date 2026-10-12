@@ -204,12 +204,12 @@ public sealed partial class ValueNumStore
             // Handles and the null reference are bases, not offsets.
             if (IsVNConstantNonHandle(app.GetArg(0)) && (app.GetArg(0) != VNForNull()))
             {
-                offset = unchecked(offset + (target_ssize_t)GetConstantInt64(app.GetArg(0)));
+                offset = Target.CastToSignedSize(unchecked(offset + GetConstantInt64(app.GetArg(0))));
                 vn = app.GetArg(1);
             }
             else if (IsVNConstantNonHandle(app.GetArg(1)) && (app.GetArg(1) != VNForNull()))
             {
-                offset = unchecked(offset + (target_ssize_t)GetConstantInt64(app.GetArg(1)));
+                offset = Target.CastToSignedSize(unchecked(offset + GetConstantInt64(app.GetArg(1))));
                 vn = app.GetArg(0);
             }
             else

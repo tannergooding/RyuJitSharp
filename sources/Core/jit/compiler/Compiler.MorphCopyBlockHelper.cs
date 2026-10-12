@@ -475,7 +475,7 @@ public partial class Compiler
                     }
                 }
 
-                var fullOffset = unchecked(addressBaseOffset + offset);
+                var fullOffset = Target.CastToSignedSize(unchecked(addressBaseOffset + offset));
                 if ((fullOffset != 0) || (addressBaseFields is not null))
                 {
                     var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, (nint)fullOffset);
