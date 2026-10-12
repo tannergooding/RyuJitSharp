@@ -26,11 +26,11 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var left = Register(compiler, TYP_LONG, REG_R0);
-            var right = Register(compiler, TYP_LONG, REG_R1);
+            var left = Register(compiler, TYP_LONG, REG_R0_ARM64);
+            var right = Register(compiler, TYP_LONG, REG_R1_ARM64);
             var tree = new GenTreeOp(GT_ADD, TYP_LONG, left, right)
             {
-                RegNum = REG_R2,
+                RegNum = REG_R2_ARM64,
             };
 
             codeGen.genConsumeOperands(tree);
@@ -38,7 +38,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
 
             var descriptor = Descriptors(codeGen.Emitter).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2_ARM64));
         });
     }
 
@@ -48,24 +48,24 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var register = Register(compiler, TYP_LONG, REG_R0);
+            var register = Register(compiler, TYP_LONG, REG_R0_ARM64);
             var immediate = compiler.gtNewIconNode(TYP_LONG, 7);
             immediate.IsContained = true;
             var src1 = immediateIsFirst ? immediate : register;
             var src2 = immediateIsFirst ? register : immediate;
             var tree = new GenTreeOp(GT_ADD, TYP_LONG, src1, src2)
             {
-                RegNum = REG_R2,
+                RegNum = REG_R2_ARM64,
             };
 
             var result = codeGen.Emitter.emitInsTernary(INS_add, EA_8BYTE, tree, src1, src2);
 
-            Assert.That(result, Is.EqualTo(REG_R2));
+            Assert.That(result, Is.EqualTo(REG_R2_ARM64));
             var descriptor = Descriptors(codeGen.Emitter).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_DI_2A));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0_ARM64));
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(7));
         });
     }
@@ -76,16 +76,16 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var addend = Register(compiler, TYP_LONG, REG_R0);
-            var left = Register(compiler, TYP_LONG, REG_R1);
-            var right = Register(compiler, TYP_LONG, REG_R2);
+            var addend = Register(compiler, TYP_LONG, REG_R0_ARM64);
+            var left = Register(compiler, TYP_LONG, REG_R1_ARM64);
+            var right = Register(compiler, TYP_LONG, REG_R2_ARM64);
             var multiply = new GenTreeOp(GT_MUL, TYP_LONG, left, right)
             {
                 IsContained = true,
             };
             var tree = new GenTreeOp(oper, TYP_LONG, addend, multiply)
             {
-                RegNum = REG_R3,
+                RegNum = REG_R3_ARM64,
             };
 
             codeGen.genConsumeOperands(tree);
@@ -93,7 +93,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
 
             var descriptor = Descriptors(codeGen.Emitter).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3_ARM64));
         });
     }
 
@@ -102,8 +102,8 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var left = Register(compiler, TYP_LONG, REG_R0);
-            var shiftedValue = Register(compiler, TYP_LONG, REG_R1);
+            var left = Register(compiler, TYP_LONG, REG_R0_ARM64);
+            var shiftedValue = Register(compiler, TYP_LONG, REG_R1_ARM64);
             var amount = compiler.gtNewIconNode(TYP_INT, 7);
             amount.IsContained = true;
             var shift = new GenTreeOp(GT_LSH, TYP_LONG, shiftedValue, amount)
@@ -112,7 +112,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
             };
             var tree = new GenTreeOp(GT_ADD, TYP_LONG, left, shift)
             {
-                RegNum = REG_R2,
+                RegNum = REG_R2_ARM64,
                 Flags = GTF_SET_FLAGS,
             };
 
@@ -130,8 +130,8 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var left = Register(compiler, TYP_LONG, REG_R0);
-            var rotatedValue = Register(compiler, TYP_LONG, REG_R1);
+            var left = Register(compiler, TYP_LONG, REG_R0_ARM64);
+            var rotatedValue = Register(compiler, TYP_LONG, REG_R1_ARM64);
             var amount = compiler.gtNewIconNode(TYP_INT, 11);
             amount.IsContained = true;
             var rotate = new GenTreeOp(GT_ROR, TYP_LONG, rotatedValue, amount)
@@ -140,7 +140,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
             };
             var tree = new GenTreeOp(GT_XOR, TYP_LONG, left, rotate)
             {
-                RegNum = REG_R2,
+                RegNum = REG_R2_ARM64,
             };
 
             codeGen.genConsumeOperands(tree);
@@ -158,14 +158,14 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var left = Register(compiler, TYP_LONG, REG_R0);
-            var castOperand = Register(compiler, TYP_INT, REG_R1);
+            var left = Register(compiler, TYP_LONG, REG_R0_ARM64);
+            var castOperand = Register(compiler, TYP_INT, REG_R1_ARM64);
             var castType = isUnsigned ? TYP_UBYTE : TYP_BYTE;
             var cast = compiler.gtNewCastNode(TYP_LONG, castOperand, isUnsigned, castType);
             cast.IsContained = true;
             var tree = new GenTreeOp(GT_ADD, TYP_LONG, left, cast)
             {
-                RegNum = REG_R2,
+                RegNum = REG_R2_ARM64,
                 Flags = GTF_SET_FLAGS,
             };
 
@@ -184,13 +184,13 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.compReloc = true;
-            var left = Register(compiler, TYP_LONG, REG_R0);
+            var left = Register(compiler, TYP_LONG, REG_R0_ARM64);
             var offset = compiler.gtNewIconNode(TYP_LONG, 8);
             offset.Flags |= GTF_ICON_SECREL_OFFSET;
             offset.IsContained = true;
             var tree = new GenTreeOp(GT_ADD, TYP_LONG, left, offset)
             {
-                RegNum = REG_R1,
+                RegNum = REG_R1_ARM64,
             };
 
             codeGen.genConsumeOperands(tree);
@@ -205,8 +205,8 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
             Assert.That(descriptors[1].idIsCnsReloc(), Is.False);
             foreach (var descriptor in descriptors)
             {
-                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1));
-                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1_ARM64));
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0_ARM64));
                 Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
                 Assert.That(descriptor.idIsTlsGD(), Is.True);
                 Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo(offset.IconValue));

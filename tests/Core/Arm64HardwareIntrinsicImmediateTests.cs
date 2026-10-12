@@ -26,7 +26,7 @@ internal static class Arm64HardwareIntrinsicImmediateTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AdvSimd_ShiftLeftLogical, TYP_INT, 16,
-                Operand(REG_V1, TYP_SIMD16), Immediate(shift)) { RegNum = REG_V0 };
+                Operand(REG_V1_ARM64, TYP_SIMD16), Immediate(shift)) { RegNum = REG_V0_ARM64 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -34,8 +34,8 @@ internal static class Arm64HardwareIntrinsicImmediateTests
             Assert.That(id.idIns(), Is.EqualTo(INS_shl));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_16BYTE));
             Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_4S));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_V0));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_V1));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_V0_ARM64));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_V1_ARM64));
             Assert.That(id.idSmallCns(), Is.EqualTo(shift));
         });
     }
@@ -47,7 +47,7 @@ internal static class Arm64HardwareIntrinsicImmediateTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AdvSimd_ShiftRightLogical, TYP_UINT, 16,
-                Operand(REG_V1, TYP_SIMD16), Immediate(shift)) { RegNum = REG_V0 };
+                Operand(REG_V1_ARM64, TYP_SIMD16), Immediate(shift)) { RegNum = REG_V0_ARM64 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -62,11 +62,11 @@ internal static class Arm64HardwareIntrinsicImmediateTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var immediate = Operand(REG_R12, TYP_INT);
+            var immediate = Operand(REG_R12_ARM64, TYP_INT);
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AdvSimd_ShiftLeftLogical, TYP_INT, 16,
-                Operand(REG_V1, TYP_SIMD16), immediate) { RegNum = REG_V0 };
+                Operand(REG_V1_ARM64, TYP_SIMD16), immediate) { RegNum = REG_V0_ARM64 };
             EnableIsa(compiler, node);
-            codeGen.InternalRegisters.Add(node, regMaskTP.CreateFromRegNum(REG_R13, REG_R13.SingleTypeMask));
+            codeGen.InternalRegisters.Add(node, regMaskTP.CreateFromRegNum(REG_R13_ARM64, REG_R13_ARM64.SingleTypeMask));
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genHWIntrinsic(node)) ??
                 throw new AssertionException("Missing address-recorder dependency failure.");
@@ -81,7 +81,7 @@ internal static class Arm64HardwareIntrinsicImmediateTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_LONG, NI_AdvSimd_Extract, TYP_LONG, 16,
-                Operand(REG_V1, TYP_SIMD16), Operand(REG_R12, TYP_INT)) { RegNum = REG_R0 };
+                Operand(REG_V1_ARM64, TYP_SIMD16), Operand(REG_R12_ARM64, TYP_INT)) { RegNum = REG_R0_ARM64 };
             EnableIsa(compiler, node);
 
             codeGen.genHWIntrinsic(node);
@@ -91,7 +91,7 @@ internal static class Arm64HardwareIntrinsicImmediateTests
             var branch = (Emitter.instrDescJmp)descriptors[0];
             Assert.That(branch.idIns(), Is.EqualTo(INS_cbnz));
             Assert.That(branch.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(branch.idReg1(), Is.EqualTo(REG_R12));
+            Assert.That(branch.idReg1(), Is.EqualTo(REG_R12_ARM64));
             Assert.That(branch.idjTarget, Is.Not.Null);
         });
     }
@@ -125,8 +125,8 @@ internal static class Arm64HardwareIntrinsicImmediateTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_SaturatingIncrementBy32BitElementCount,
-                TYP_INT, 0, Operand(REG_V1, TYP_SIMD_ARM64), Immediate(scale), Immediate(pattern)) {
-                RegNum = REG_V1
+                TYP_INT, 0, Operand(REG_V1_ARM64, TYP_SIMD_ARM64), Immediate(scale), Immediate(pattern)) {
+                RegNum = REG_V1_ARM64
             };
             EnableIsa(compiler, node);
 
@@ -143,11 +143,11 @@ internal static class Arm64HardwareIntrinsicImmediateTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_SaturatingIncrementBy32BitElementCount,
-                TYP_INT, 0, Operand(REG_V1, TYP_SIMD_ARM64), Operand(REG_R12, TYP_INT), Operand(REG_R14, TYP_INT)) {
-                RegNum = REG_V1
+                TYP_INT, 0, Operand(REG_V1_ARM64, TYP_SIMD_ARM64), Operand(REG_R12_ARM64, TYP_INT), Operand(REG_R14_ARM64, TYP_INT)) {
+                RegNum = REG_V1_ARM64
             };
             EnableIsa(compiler, node);
-            codeGen.InternalRegisters.Add(node, regMaskTP.CreateFromRegNum(REG_R13, REG_R13.SingleTypeMask));
+            codeGen.InternalRegisters.Add(node, regMaskTP.CreateFromRegNum(REG_R13_ARM64, REG_R13_ARM64.SingleTypeMask));
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genHWIntrinsic(node)) ??
                 throw new AssertionException("Missing address-recorder dependency failure.");
@@ -155,12 +155,12 @@ internal static class Arm64HardwareIntrinsicImmediateTests
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(3));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_sub));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R12));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R14));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R12_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R14_ARM64));
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_orr));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R12));
-            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R12));
-            Assert.That(descriptors[2].idReg3(), Is.EqualTo(REG_R14));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R12_ARM64));
+            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R12_ARM64));
+            Assert.That(descriptors[2].idReg3(), Is.EqualTo(REG_R14_ARM64));
         });
     }
 
@@ -173,19 +173,19 @@ internal static class Arm64HardwareIntrinsicImmediateTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, intrinsic, baseType, 0,
-                Operand(REG_V1, TYP_SIMD_ARM64), Operand(REG_V2, TYP_SIMD_ARM64), Operand(REG_V3, TYP_SIMD_ARM64),
-                Operand(REG_R12, TYP_INT), Operand(REG_R14, TYP_INT)) { RegNum = REG_V1 };
+                Operand(REG_V1_ARM64, TYP_SIMD_ARM64), Operand(REG_V2_ARM64, TYP_SIMD_ARM64), Operand(REG_V3_ARM64, TYP_SIMD_ARM64),
+                Operand(REG_R12_ARM64, TYP_INT), Operand(REG_R14_ARM64, TYP_INT)) { RegNum = REG_V1_ARM64 };
             EnableIsa(compiler, node);
-            codeGen.InternalRegisters.Add(node, regMaskTP.CreateFromRegNum(REG_R13, REG_R13.SingleTypeMask));
+            codeGen.InternalRegisters.Add(node, regMaskTP.CreateFromRegNum(REG_R13_ARM64, REG_R13_ARM64.SingleTypeMask));
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genHWIntrinsic(node)) ??
                 throw new AssertionException("Missing address-recorder dependency failure.");
             Assert.That(failure.Message, Is.EqualTo("ARM64 emitIns_R_L recording is not ported."));
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R14));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R14_ARM64));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_orr));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R12));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R12_ARM64));
         });
     }
 }

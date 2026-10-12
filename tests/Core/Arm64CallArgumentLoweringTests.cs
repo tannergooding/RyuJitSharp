@@ -41,7 +41,7 @@ internal static unsafe class Arm64CallArgumentLoweringTests
             var call = new GenTreeCall(TYP_VOID);
             var argument = call.Args.PushBack(NewCallArg.CreateForStruct(originalFields, TYP_STRUCT, new ClassLayout(16)));
             argument.AbiInfo = new AbiPassingInformation(2);
-            argument.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(REG_R0, 0, 8);
+            argument.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(REG_R0_ARM64, 0, 8);
             argument.AbiInfo.Segments[1] = AbiPassingSegment.OnStack(32, 8, 8);
             if (late)
             {
@@ -64,7 +64,7 @@ internal static unsafe class Arm64CallArgumentLoweringTests
             Assert.That(argument.AbiInfo.Segments[0].StackOffset, Is.EqualTo(32));
             Assert.That(argument.AbiInfo.Segments[0].Size, Is.EqualTo(8));
             Assert.That(registerArgument.AbiInfo.HasExactlyOneRegisterSegment, Is.True);
-            Assert.That(registerArgument.AbiInfo.Segments[0].Register, Is.EqualTo(REG_R0));
+            Assert.That(registerArgument.AbiInfo.Segments[0].Register, Is.EqualTo(REG_R0_ARM64));
             Assert.That(registerArgument.AbiInfo.Segments[0].Offset, Is.Zero);
             Assert.That(stackFields.Uses.Head?.Node, Is.SameAs(second));
             Assert.That(stackFields.Uses.Head?.Offset, Is.EqualTo((ushort)0));
