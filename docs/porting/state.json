@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universal target migration in `compiler/Compiler.gt.cs::gtNewAllBitsSetConNode`; inspect the ARM64 SIMD constant-construction dependency closure before replacing its target guard with a runtime check.",
+    "nextAction": "Continue in `Compiler.gt.cs` at the `TARGET_WASM` branch for `HelperInitClassRetType` and `HelperUnboxDiscardedRetType`; inspect their call sites for constant-expression dependencies before converting the target-specific declarations.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize `Compiler.gt.cs::gtIsLikelyRegVar` and `gtMarkAddrMode`, and make the shared signed-12-bit immediate predicate available from the common emitter.",
-      "doneWhen": "The x86 local heuristic and xarch, ARM32, ARM64, Wasm, LoongArch64, and RISC-V64 address-mode costs and CSE behavior use runtime `Configuration` checks without changing their existing rules.",
-      "validation": "`AddressModeCostTargetTests` passed 2/2 in Debug and Release for win-x64, win-x86, win-arm, win-arm64, browser-wasm, linux-riscv64, and linux-loongarch64. `SignedTwelveBitImmediateTests` passed 7/7 in Debug and Release for linux-riscv64 and linux-loongarch64. Moved the identical `isValidSimm12` implementation from the LoongArch/RISC-V-only partials into common `Emitter.cs` so the universal compiler can reference it.",
+      "scope": "Universalize the SIMD constant-construction paths in `Compiler.gt.cs`, including all-bits-set scalable constants, generic xarch vector widths, scalable constant cloning, and the `gtNewSimdVconNode` helper closure.",
+      "doneWhen": "`gtNewAllBitsSetConNode`, `gtNewGenericCon`, and `gtCloneCnsVec` select target-specific vector representations through runtime `Configuration` checks, all constructor helpers compile universally, and unsupported target/type combinations still terminate explicitly.",
+      "validation": "`Arm64SimdMetadataTests` passed 99/99 in Debug and 82/82 in Release for win-arm64. `UniversalSimdStorageTests` passed in Debug and Release for win-x64 (31/31), win-x86 (31/31), linux-arm64 (25 passed, 4 skipped), browser-wasm (18 passed, 4 skipped), and linux-riscv64 (8 passed, 10 skipped). The default analyzer run stopped before tests on IDE0059 diagnostics at unchanged `Compiler.gt.cs` lines 7818 (`rev`) and 9045 (`simd12ToSimd16Widening`); focused tests passed with `RunAnalyzers=false` and `GenerateDocumentationFile=false`.",
       "deferred": "The remaining target/feature branches in `Compiler.gt.cs` and the rest of the universal-compilation migration; universal compilation is not complete."
     },
     "parityEvidence": {

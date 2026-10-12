@@ -534,15 +534,13 @@ public partial class Compiler
 
     public GenTreeVecCon gtCloneCnsVec(GenTreeVecCon vecCon)
     {
-        var vecConClone = gtNewVconNode(vecCon.Type);
-#if TARGET_ARM64
-        if (vecCon.Type == TYP_SIMD_ARM64)
+        if (Configuration.TARGET_ARM64 && (vecCon.Type == TYP_SIMD_ARM64))
         {
-            vecConClone.SimdScalableVal = vecCon.SimdScalableVal;
-
-            return vecConClone;
+            var scalableValue = vecCon.SimdScalableVal;
+            return gtNewSimdVconNode(vecCon.Type, in scalableValue);
         }
-#endif
+
+        var vecConClone = gtNewVconNode(vecCon.Type);
         vecConClone.SimdVal = vecCon.SimdVal;
         return vecConClone;
     }
@@ -8233,12 +8231,10 @@ public partial class Compiler
 
     public GenTree gtNewAllBitsSetConNode(var_types type)
     {
-#if TARGET_ARM64
-        if (type == TYP_SIMD_ARM64)
+        if (Configuration.TARGET_ARM64 && (type == TYP_SIMD_ARM64))
         {
             return gtNewSimdVconNode(type, TYP_BYTE, SimdScalableKind.SimdScalableRepeated, 0xFF);
         }
-#endif
         if (Configuration.FEATURE_SIMD && varTypeIsSimd(type))
         {
             var allBitsSet = gtNewVconNode(type);
@@ -8659,9 +8655,7 @@ public partial class Compiler
             }
 
             case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 when Configuration.FEATURE_SIMD:
-#if TARGET_XARCH
-            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD:
-#endif
+            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH:
             {
                 assert(cnsVal.Length == type.Size);
                 var vecCon = gtNewVconNode(type);
@@ -13621,13 +13615,14 @@ public partial class Compiler
 
     public GenTreeVecCon gtNewVconNode(var_types type)
     {
-#if TARGET_ARM64
-        assert(type != TYP_SIMD_ARM64);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            assert(type != TYP_SIMD_ARM64);
+        }
+
         return new GenTreeVecCon(type);
     }
 
-#if TARGET_ARM64
     public GenTreeVecCon gtNewSimdVconNode(var_types type, in simdscalable_t value)
     {
         assert(type == TYP_SIMD_ARM64);
@@ -13654,10 +13649,8 @@ public partial class Compiler
         };
         value.Index.u64[0] = index & elementMask;
         value.Step.u64[0] = step & elementMask;
-
         return node;
     }
-#endif
 
     /// <summary>Create an unthreaded helper-call replacement, preserving the source's value numbers and logical identity.</summary>
     /// <remarks>The owner must install the replacement. Argument morphing belongs to the caller.</remarks>

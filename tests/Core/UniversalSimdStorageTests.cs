@@ -160,6 +160,32 @@ internal static unsafe class UniversalSimdStorageTests
         });
     }
 
+    [TestCase(TYP_SIMD32)]
+    [TestCase(TYP_SIMD64)]
+    public static void GenericConstantPreservesXarchVectorWidths(var_types type)
+    {
+        WithCompiler(compiler =>
+        {
+            var bytes = new byte[type.Size];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = (byte)i;
+            }
+
+            if (Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH)
+            {
+                var vector = compiler.gtNewGenericCon(type, bytes).AsVecCon();
+
+                Assert.That(vector.Type, Is.EqualTo(type));
+                Assert.That(vector.SimdVal.AsSpan<byte>()[..type.Size].ToArray(), Is.EqualTo(bytes));
+            }
+            else
+            {
+                Assert.Throws<FatalJitException>(() => compiler.gtNewGenericCon(type, bytes));
+            }
+        });
+    }
+
 #if FEATURE_SIMD
     [TestCase(TYP_SIMD8, TYP_DOUBLE)]
     [TestCase(TYP_DOUBLE, TYP_SIMD8)]
