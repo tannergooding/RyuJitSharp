@@ -72,6 +72,13 @@ from `VNForPtrSizeIntCon`, which selects `TYP_INT` or `TYP_LONG` at runtime.
 `TargetSignedSizeTests` in the Target test project covers this representation
 closure; run it in Debug and Release with both 32-bit and 64-bit target RIDs.
 
+The emitter's `insFlags` is a target-neutral 32-bit request enum with distinct
+`NOT_SET`, `SET`, and `DONT_CARE` states; `DONT_CARE` must remain distinct from
+`NOT_SET` for ARM instruction selection. Xarch opcode metadata uses the separate
+64-bit `insInfoFlags` bitmask. Keep the generated `CodeGen.instInfo` element
+type synchronized with the `GenerateTables` template, and do not use opcode
+metadata as an emission request.
+
 Native cross-kind node bashing is intentionally replaced by whole-node
 replacement in C#. Update callers, owning uses, cached aliases and LIR links
 as required; do not treat unchanged physical object identity as a porting goal.

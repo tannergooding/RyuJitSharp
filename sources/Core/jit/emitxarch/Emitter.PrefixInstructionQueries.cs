@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static insFlags prefixFlags(instruction ins) => CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+    private static insInfoFlags prefixFlags(instruction ins) => CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
     private static bool IsBMIInstruction(instruction ins) =>
         InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_BMI_INSTRUCTION, LAST_BMI_INSTRUCTION);

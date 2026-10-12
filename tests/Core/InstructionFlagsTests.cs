@@ -1,7 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using NUnit.Framework;
-using static RyuJitSharp.insFlags;
+using static RyuJitSharp.insInfoFlags;
 using static RyuJitSharp.instruction;
 
 namespace RyuJitSharp.UnitTests;
@@ -22,11 +22,13 @@ internal static class InstructionFlagsTests
     [Test]
     public static void FlagsTableCoversEveryInstructionWithTheFullNativeBitWidth()
     {
-        Assert.That(CodeGen.instInfo.Length, Is.EqualTo((int)INS_count));
-        insFlags usedFlags = 0;
-        for (instruction ins = 0; ins < INS_count; ins++)
+        var nativeInstructionCount = InstructionOrdinalMaps.GetNativeInstructionCount();
+        Assert.That(CodeGen.instInfo.Length, Is.EqualTo(nativeInstructionCount));
+        insInfoFlags usedFlags = 0;
+        for (var nativeOrdinal = 0; nativeOrdinal < nativeInstructionCount; nativeOrdinal++)
         {
-            usedFlags |= CodeGen.instInfo[(int)ins];
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
+            usedFlags |= CodeGen.instInfo[nativeOrdinal];
             _ = Emitter.DoesWriteZeroFlagForResult(ins);
         }
 
@@ -42,7 +44,7 @@ internal static class InstructionFlagsTests
     [TestCase(INS_addps, Input_32Bit | KMask_Base4 | REX_W0_EVEX | Encoding_VEX | Encoding_EVEX |
         INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsAvxCommutative)]
     [TestCase(INS_movdqa32, REX_W0_EVEX | Encoding_VEX | Encoding_EVEX | Encoding_REX2 | INS_FLAGS_HasPseudoName)]
-    public static void TableEntriesPreserveAllNativeFlags(instruction ins, insFlags expected)
+    public static void TableEntriesPreserveAllNativeFlags(instruction ins, insInfoFlags expected)
     {
         Assert.That(CodeGen.instInfo[(int)ins], Is.EqualTo(expected));
     }

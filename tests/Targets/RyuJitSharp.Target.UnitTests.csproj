@@ -39,6 +39,7 @@
     <Compile Include="..\Core\GenTreeCallRegisterStateTests.cs" Link="GenTreeCallRegisterStateTests.cs" />
     <Compile Include="..\Core\FuncletCreationTargetTests.cs" Link="FuncletCreationTargetTests.cs" />
     <Compile Include="..\Core\HWIntrinsicCodegenClassificationTests.cs" Link="HWIntrinsicCodegenClassificationTests.cs" />
+    <Compile Include="..\Core\InstructionFlagModelTests.cs" Link="InstructionFlagModelTests.cs" />
     <Compile Include="..\Core\InstructionSetDependencyTests.cs" Link="InstructionSetDependencyTests.cs" />
     <Compile Include="..\Core\HWIntrinsicLookupRangeTests.cs" Link="HWIntrinsicLookupRangeTests.cs" />
     <Compile Include="..\Core\HWIntrinsicXplatImportTests.cs" Link="HWIntrinsicXplatImportTests.cs" />

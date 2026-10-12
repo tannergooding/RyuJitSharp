@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 public sealed partial class CodeGen
 {
 #if TARGET_XARCH
-    internal static ReadOnlySpan<insFlags> instInfo => [
+    internal static ReadOnlySpan<insInfoFlags> instInfo => [
 #if TARGET_XARCH
 #if !TARGET_XARCH
 #error Unexpected target type

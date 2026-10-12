@@ -2875,7 +2875,7 @@ namespace RyuJitSharp;
 public sealed partial class CodeGen
 {
 #if TARGET_XARCH
-    internal static ReadOnlySpan<insFlags> instInfo => [
+    internal static ReadOnlySpan<insInfoFlags> instInfo => [
 {{flagsBuilder}}
     ];
 #elif TARGET_ARM64

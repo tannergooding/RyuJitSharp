@@ -205,14 +205,16 @@ internal static class ArmEmitterPredicateTests
         Assert.That(Emitter.isDoubleReg(reg), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_FLAGS_SET, true)]
-    [TestCase(INS_FLAGS_NOT_SET, false)]
-    public static void FlagPredicatesPreserveNativeValues(insFlags flags, bool expectedSet)
+    [TestCase(INS_FLAGS_SET, true, false, INS_FLAGS_SET, INS_FLAGS_SET)]
+    [TestCase(INS_FLAGS_NOT_SET, false, true, INS_FLAGS_NOT_SET, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_FLAGS_DONT_CARE, true, true, INS_FLAGS_NOT_SET, INS_FLAGS_SET)]
+    public static void FlagPredicatesPreserveNativeValues(
+        insFlags flags, bool expectedMaySet, bool expectedMayNotSet, insFlags expectedMustSet, insFlags expectedMustNotSet)
     {
-        Assert.That(Emitter.insSetsFlags(flags), Is.EqualTo(expectedSet));
-        Assert.That(Emitter.insDoesNotSetFlags(flags), Is.EqualTo(!expectedSet));
-        Assert.That(Emitter.insMustSetFlags(flags), Is.EqualTo(expectedSet ? INS_FLAGS_SET : INS_FLAGS_NOT_SET));
-        Assert.That(Emitter.insMustNotSetFlags(flags), Is.EqualTo(expectedSet ? INS_FLAGS_SET : INS_FLAGS_NOT_SET));
+        Assert.That(Emitter.insSetsFlags(flags), Is.EqualTo(expectedMaySet));
+        Assert.That(Emitter.insDoesNotSetFlags(flags), Is.EqualTo(expectedMayNotSet));
+        Assert.That(Emitter.insMustSetFlags(flags), Is.EqualTo(expectedMustSet));
+        Assert.That(Emitter.insMustNotSetFlags(flags), Is.EqualTo(expectedMustNotSet));
     }
 
     [TestCase(INS_OPTS_NONE, true, false)]

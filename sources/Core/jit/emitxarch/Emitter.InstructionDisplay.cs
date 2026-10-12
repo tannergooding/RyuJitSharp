@@ -315,6 +315,6 @@ public partial class Emitter
     }
 
     private static bool emitInstHasPseudoName(instruction ins) =>
-        (prefixFlags(ins) & insFlags.INS_FLAGS_HasPseudoName) != 0;
+        (prefixFlags(ins) & insInfoFlags.INS_FLAGS_HasPseudoName) != 0;
 }
 #endif
