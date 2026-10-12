@@ -264,19 +264,20 @@ public partial class Compiler
     public void lvaAssignVirtualFrameOffsetsToArgs()
     {
         var relativeZero = 0;
-#if TARGET_ARM
-        assert(codeGen is not null);
-        var prespilled = codeGen.RegSet.rsMaskPreSpillRegs(true);
-        JITDUMP("Prespill regs is ");
-#if DEBUG
-        if (verbose)
+        if (Configuration.TARGET_ARM)
         {
-            dspRegMask(prespilled);
+            assert(codeGen is not null);
+            var prespilled = codeGen.RegSet.rsMaskPreSpillRegs(true);
+            JITDUMP("Prespill regs is ");
+#if DEBUG
+            if (verbose)
+            {
+                dspRegMask(prespilled);
+            }
+#endif
+            JITDUMP("\n");
+            relativeZero = BitOperations.PopCount(unchecked((ulong)prespilled.IntRegSet)) * TARGET_POINTER_SIZE;
         }
-#endif
-        JITDUMP("\n");
-        relativeZero = BitOperations.PopCount(unchecked((ulong)prespilled.IntRegSet)) * TARGET_POINTER_SIZE;
-#endif
 
         for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
@@ -310,25 +311,28 @@ public partial class Compiler
         {
             if (!segment.IsPassedOnStack)
             {
-#if WINDOWS_AMD64_ABI
-                if (AbiPassingInformation.GetShadowSpaceCallerOffsetForReg(segment.Register, out offset))
+                if (Configuration.WINDOWS_AMD64_ABI)
                 {
-                    return true;
+                    if (AbiPassingInformation.GetShadowSpaceCallerOffsetForReg(segment.Register, out offset))
+                    {
+                        return true;
+                    }
                 }
-#elif TARGET_ARM
-                assert(codeGen is not null);
-                var prespills = codeGen.RegSet.rsMaskPreSpillRegs(true);
-                if ((prespills & genRegMask(segment.Register)) != RBM_NONE)
+                else if (Configuration.TARGET_ARM)
                 {
-                    var higherMask = new regMaskTP(unchecked((regMask)~((1UL << (int)segment.Register) - 1)));
-                    var higherPrespills = prespills & higherMask;
-                    offset = -BitOperations.PopCount(unchecked((ulong)higherPrespills.IntRegSet))
-                        * TARGET_POINTER_SIZE;
-                    offset -= segment.Offset;
+                    assert(codeGen is not null);
+                    var prespills = codeGen.RegSet.rsMaskPreSpillRegs(true);
+                    if ((prespills & genRegMask(segment.Register)) != RBM_NONE)
+                    {
+                        var higherMask = new regMaskTP(unchecked((regMask)~((1UL << (int)segment.Register) - 1)));
+                        var higherPrespills = prespills & higherMask;
+                        offset = -BitOperations.PopCount(unchecked((ulong)higherPrespills.IntRegSet))
+                            * TARGET_POINTER_SIZE;
+                        offset -= segment.Offset;
 
-                    return true;
+                        return true;
+                    }
                 }
-#endif
 
                 continue;
             }
@@ -380,17 +384,20 @@ public partial class Compiler
     public bool lvaParamHasLocalStackSpace(int lclNum)
     {
         ref var dsc = ref lvaGetDesc(lclNum);
-#if SWIFT_SUPPORT
-        if ((info.compCallConv == CorInfoCallConvExtension.Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
-            !lvaGetParameterAbiInfo(lclNum).HasExactlyOneStackSegment)
+        if (Configuration.SWIFT_SUPPORT
+            && (info.compCallConv == CorInfoCallConvExtension.Swift)
+            && !lvaIsImplicitByRefLocal(lclNum)
+            && !lvaGetParameterAbiInfo(lclNum).HasExactlyOneStackSegment)
         {
             return true;
         }
-#endif
-#if WINDOWS_AMD64_ABI
-        var paramLclNum = dsc.lvIsStructField ? dsc.lvParentLcl : lclNum;
-        return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, out _);
-#else
+
+        if (Configuration.WINDOWS_AMD64_ABI)
+        {
+            var paramLclNum = dsc.lvIsStructField ? dsc.lvParentLcl : lclNum;
+            return !lvaGetRelativeOffsetToCallerAllocatedSpaceForParameter(paramLclNum, out _);
+        }
+
         if (!dsc.lvIsRegArg)
         {
             return false;
@@ -409,9 +416,7 @@ public partial class Compiler
 
             return false;
         }
-
         return true;
-#endif
     }
 
     [SuppressMessage("Maintainability", "CA1508:Avoid dead conditional code",

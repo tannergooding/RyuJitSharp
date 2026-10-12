@@ -49,6 +49,36 @@ internal static unsafe class ArmArchStackArgumentTests
         });
     }
 
+    [Test]
+    public static void PreSpilledArgumentRegistersShiftCallerStackOffsets()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            Assert.Ignore("Pre-spilled parameter registers are specific to ARM32.");
+        }
+
+        WithStackArea((compiler, codeGen) =>
+        {
+            compiler.lvaCount = 1;
+            compiler.lvaTable =
+            [
+                new() { Type = TYP_I_IMPL, lvIsParam = true, lvOnFrame = true, RegNum = REG_STK },
+            ];
+            compiler.info.compArgsCount = 1;
+            compiler.info.compArgOrder = Target.ArgOrder.ARG_ORDER_R2L;
+            compiler.lvaParameterPassingInfo =
+            [
+                AbiPassingInformation.FromSegment(compiler, false,
+                    AbiPassingSegment.OnStack(0, 0, TARGET_POINTER_SIZE)),
+            ];
+            codeGen.RegSet.rsMaskPreSpillRegArg = Mask(REG_R0) | Mask(REG_R1);
+
+            compiler.lvaAssignVirtualFrameOffsetsToArgs();
+
+            Assert.That(compiler.lvaTable[0].StackOffset, Is.EqualTo(2 * TARGET_POINTER_SIZE));
+        });
+    }
+
     [TestCase(TYP_BYTE, REG_R1)]
     [TestCase(TYP_USHORT, REG_R2)]
     [TestCase(TYP_INT, REG_R3)]
