@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the universal-compilation migration at `Compiler.gt.cs::gtCloneCnsInt`'s `LATE_DISASM` branch; identify its runtime configuration/substitution contract before changing the icon-handle cloning behavior.",
+    "nextAction": "Continue the `LATE_DISASM` runtime migration at `codegen/CodeGen.cs::_cgDisasm`, `CodeGen.Disassembler`, and `genGenerateCode`, including the `ICodeGen` contract and disassembler dependency closure without enabling unsupported backends.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize `UNIX_X86_ABI` call-pop-args handling in `Compiler.gtNewCallNode` and `gtNewHelperCallNode`.",
-      "doneWhen": "Both methods use runtime ABI configuration and preserve the `GTF_CALL_POP_ARGS` flag for the same call kinds on Unix x86 only.",
-      "validation": "In Debug and Release, `CompilerTargetConfigurationTests` passed on all eight target configurations using a win-x64 test host and per-target `RyuJitTargetRuntimeIdentifier` runtime configuration: win-x64 (36 passed, 1 skipped), win-x86 (38, 1), linux-x86 (38, 1), linux-arm64 (33, 3), linux-arm (27, 9), linux-loongarch64 (25, 9), linux-riscv64 (25, 9), and browser-wasm (33, 4). The call-pop-args regression covers indirect calls, helper calls, and helper-call replacements. This validates both UNIX_X86_ABI=true and false configurations.",
-      "deferred": "Proceed to the next target/feature conditional in `Compiler.gt.cs` and then continue through remaining source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
+      "scope": "Universalize the `LATE_DISASM` gate in `Compiler.gtCloneCnsInt` and supply its Debug/Release/ARM64 opt-in runtime configuration and AOT substitution.",
+      "doneWhen": "Integer-constant cloning uses runtime `Configuration.LATE_DISASM` while preserving handle cloning and Debug target-cookie behavior; test hosts and NativeAOT substitutions receive the same value as the existing build policy.",
+      "validation": "In Debug and Release, `CompilerTargetConfigurationTests` passed on all eight target configurations using a win-x64 test host and per-target `RyuJitTargetRuntimeIdentifier`: win-x64 (38 passed, 1 skipped), win-x86 (40, 1), linux-x86 (40, 1), linux-arm64 (35, 3), linux-arm (29, 9), linux-loongarch64 (27, 9), linux-riscv64 (27, 9), and browser-wasm (35, 4). The Release linux-arm64 late-disassembly opt-in test passed (2/2). Generated NativeAOT substitution XML parsed and produced true for Debug win-x64, false for Release win-x64, and true for Release linux-arm64 with the opt-in. `IlcArg` evaluation includes both the RID and generated policy substitutions. No full NativeAOT publish was run.",
+      "deferred": "Continue the remaining `LATE_DISASM` implementation and dependency closure after this cloning branch. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
       "corelibCodegen": {

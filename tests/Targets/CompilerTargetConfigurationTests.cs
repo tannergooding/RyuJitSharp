@@ -94,6 +94,41 @@ internal static unsafe class CompilerTargetConfigurationTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void IntegerConstantCloningUsesConfiguredLateDisassembly(bool isHandle)
+    {
+        WithCompiler(compiler => {
+            var original = new GenTreeIntCon(TYP_INT, 123) {
+                CompileTimeHandle = 456,
+            };
+
+            if (isHandle)
+            {
+                original.Flags |= GTF_ICON_STATIC_HDL;
+            }
+
+#if DEBUG
+            original.TargetHandle = 789;
+#endif
+
+            var copy = compiler.gtCloneCnsInt(original);
+
+            Assert.That(copy, Is.Not.SameAs(original));
+            Assert.That(copy.Type, Is.EqualTo(original.Type));
+            Assert.That(copy.IconVal, Is.EqualTo(original.IconVal));
+            Assert.That(copy.CompileTimeHandle, Is.EqualTo(original.CompileTimeHandle));
+            var preservesHandle = Configuration.LATE_DISASM && isHandle;
+            Assert.That(copy.IsIconHandle(), Is.EqualTo(preservesHandle));
+            Assert.That(copy.IconHandleFlag, Is.EqualTo(preservesHandle ? original.IconHandleFlag : GenTreeFlags.GTF_EMPTY));
+
+#if DEBUG
+            var expectedTargetHandle = (Configuration.LATE_DISASM && isHandle) ? 0 : original.TargetHandle;
+            Assert.That(copy.TargetHandle, Is.EqualTo(expectedTargetHandle));
+#endif
+        });
+    }
+
     [Test]
     public static void NullCheckTypeUsesTheTargetArchitecture()
     {

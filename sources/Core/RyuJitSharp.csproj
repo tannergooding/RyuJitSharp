@@ -59,6 +59,7 @@
     <RyuJitTargetRuntimeIdentifier Condition="'$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' != ''">$(TargetRuntimeIdentifier)</RyuJitTargetRuntimeIdentifier>
     <RyuJitTargetRuntimeIdentifier Condition="'$(RyuJitTargetRuntimeIdentifier)' == ''">$(RyuJitHostRuntimeIdentifier)</RyuJitTargetRuntimeIdentifier>
     <RyuJitSubstitutionsFile>$(MSBuildProjectDirectory)\ILLink.Substitutions\ILLink.Substitutions.$(RyuJitTargetRuntimeIdentifier).xml</RyuJitSubstitutionsFile>
+    <RyuJitLateDisasmSubstitutionsFile>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\ILLink.Substitutions.LATE_DISASM.$(RyuJitTargetRuntimeIdentifier).xml</RyuJitLateDisasmSubstitutionsFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -67,16 +68,24 @@
 
   <ItemGroup Condition="'$(PublishAot)' == 'true'">
     <IlcArg Include="--substitution:&quot;$(RyuJitSubstitutionsFile)&quot;" />
+    <IlcArg Include="--substitution:&quot;$(RyuJitLateDisasmSubstitutionsFile)&quot;" />
   </ItemGroup>
 
-  <Target Name="ValidateRyuJitSubstitutions" BeforeTargets="PrepareForPublish" Condition="'$(PublishAot)' == 'true'">
+  <Target Name="ValidateRyuJitSubstitutions" BeforeTargets="PrepareForPublish" DependsOnTargets="WriteRyuJitLateDisasmSubstitution" Condition="'$(PublishAot)' == 'true'">
     <Error Condition="!Exists('$(RyuJitSubstitutionsFile)')" Text="No ILLink substitutions are defined for RyuJit target RID '$(RyuJitTargetRuntimeIdentifier)'." />
+    <Error Condition="!Exists('$(RyuJitLateDisasmSubstitutionsFile)')" Text="No LATE_DISASM substitution was generated for RyuJit target RID '$(RyuJitTargetRuntimeIdentifier)'." />
+  </Target>
+
+  <Target Name="WriteRyuJitLateDisasmSubstitution" BeforeTargets="PrepareForPublish" Condition="'$(PublishAot)' == 'true'">
+    <MakeDir Directories="$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)" />
+    <WriteLinesToFile File="$(RyuJitLateDisasmSubstitutionsFile)" Lines="@(RyuJitLateDisasmSubstitutionLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
 
   <!-- ILC tracks the response-file timestamp, not the external substitutions file itself. -->
   <Target Name="TrackRyuJitSubstitutionChanges"
           BeforeTargets="IlcCompile"
-          Inputs="$(RyuJitSubstitutionsFile)"
+          DependsOnTargets="WriteRyuJitLateDisasmSubstitution"
+          Inputs="$(RyuJitSubstitutionsFile);$(RyuJitLateDisasmSubstitutionsFile)"
           Outputs="$(IntermediateOutputPath)ILLink.Substitutions.$(RyuJitTargetRuntimeIdentifier).stamp"
           Condition="'$(PublishAot)' == 'true'">
     <Touch Files="@(ManagedBinary->'%(IlcRspFile)')" AlwaysCreate="true" />
@@ -465,6 +474,22 @@
   <PropertyGroup Condition="'$(RyuJitEnableArm64LateDisasm)' == 'true' and '$(RyuJitTargetArchitecture)' == 'arm64'">
     <DefineConstants>$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <RyuJitFeatureLateDisasm Condition="'$(Configuration)' == 'Debug' and ('$(RyuJitTargetIsArmarch)' == 'true' or '$(RyuJitTargetIsXarch)' == 'true')">true</RyuJitFeatureLateDisasm>
+    <RyuJitFeatureLateDisasm Condition="'$(RyuJitTargetArchitecture)' == 'arm64' and '$(RyuJitEnableArm64LateDisasm)' == 'true'">true</RyuJitFeatureLateDisasm>
+    <RyuJitFeatureLateDisasm Condition="'$(RyuJitFeatureLateDisasm)' == ''">false</RyuJitFeatureLateDisasm>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RyuJitLateDisasmSubstitutionLine Include="&lt;linker&gt;" />
+    <RyuJitLateDisasmSubstitutionLine Include="  &lt;assembly fullname=&quot;RyuJitSharp&quot;&gt;" />
+    <RyuJitLateDisasmSubstitutionLine Include="    &lt;type fullname=&quot;RyuJitSharp.Configuration&quot;&gt;" />
+    <RyuJitLateDisasmSubstitutionLine Include="      &lt;method signature=&quot;System.Boolean get_LATE_DISASM()&quot; body=&quot;stub&quot; value=&quot;$(RyuJitFeatureLateDisasm)&quot; /&gt;" />
+    <RyuJitLateDisasmSubstitutionLine Include="    &lt;/type&gt;" />
+    <RyuJitLateDisasmSubstitutionLine Include="  &lt;/assembly&gt;" />
+    <RyuJitLateDisasmSubstitutionLine Include="&lt;/linker&gt;" />
+  </ItemGroup>
 
   <PropertyGroup>
     <!-- EMIT_GENERATE_GCINFO: Required GC liveness and metadata support in all configurations. -->

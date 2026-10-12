@@ -502,14 +502,12 @@ public partial class Compiler
     {
         var intConCopy = null as GenTreeIntCon;
 
-#if LATE_DISASM
-        if (intCon.IsIconHandle())
+        if (Configuration.LATE_DISASM && intCon.IsIconHandle())
         {
             intConCopy = gtNewIconHandleNode(intCon.IconVal, intCon.Flags, intCon.FieldSeq);
             intConCopy.Type = intCon.Type;
         }
         else
-#endif
         {
             intConCopy = new GenTreeIntCon(intCon.Type, intCon.IconVal, intCon.FieldSeq);
 #if DEBUG
