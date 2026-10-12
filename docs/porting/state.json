@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue target-specific migration in `compiler/Compiler.gt.cs::gtGetIndNodeCost`. Convert its architecture-specific cost branches to `Configuration` checks while preserving each target's costs and fallback behavior.",
+    "nextAction": "Continue target-specific local-name migration in `compiler/Compiler.gt.cs::gtGetLclVarNameInfo`. Convert its ARM64, fixed-outgoing-args, and Wasm special-local branches to `Configuration` checks while preserving output precedence.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize the shared comparison, unary, and lookup SIMD intrinsic-ID selectors in `Compiler.gt.cs`, including the EVEX capability helpers needed to compile them on every target.",
-      "doneWhen": "The comparison, unary, and lookup selectors preserve xarch, Arm64, and Wasm behavior through runtime target checks, the EVEX helpers return false off xarch, and the selector family compiles without `FEATURE_HW_INTRINSICS`.",
-      "validation": "Direct selector tests passed in Debug/Release: x64 48/48, Arm64 13/13, and browser-wasm 154/154. Feature-disabled linux-riscv64 `FeatureConfigurationTests` passed 30/30 in Debug/Release, compiling the unguarded selector family. The full Release analyzer build remains blocked by the unrelated IDE0059 on the `simd12ToSimd16Widening` assignment in `Compiler.gt.cs`.",
+      "scope": "Universalize the AMD64-specific floating-local size adjustment in `Compiler.gt.cs::gtGetLclVarNodeCost`.",
+      "doneWhen": "Floating local cost adjustments remain enabled only for AMD64 through a runtime target predicate; other targets retain their existing costs.",
+      "validation": "The `LocalNodeCostsPreserveNativeRegisterMemoryAndNormalizationRules` tests passed 11/11 in x64 Debug/Release. FeatureConfigurationTests passed 30/30 in Debug/Release for win-x86, confirming the non-AMD64 xarch configuration compiles. The full Release analyzer build remains blocked by the unrelated IDE0059 on the `simd12ToSimd16Widening` assignment in `Compiler.gt.cs`.",
       "deferred": "Remaining SIMD codegen, register-allocation, emitter/generated-metadata guards, and other TARGET_/FEATURE_ migrations; do not claim universal compilation is complete."
     },
     "parityEvidence": {

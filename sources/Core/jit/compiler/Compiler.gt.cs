@@ -7285,8 +7285,7 @@ public partial class Compiler
             costEx = 1 + IND_COST_EX;
             costSz = 3;
         }
-#if TARGET_XARCH
-        else if (!varTypeUsesIntReg(node.Type))
+        else if (Configuration.TARGET_XARCH && !varTypeUsesIntReg(node.Type))
         {
             assert(varTypeIsFloating(node.Type) || varTypeIsSimdOrMask(node.Type));
 
@@ -7306,13 +7305,11 @@ public partial class Compiler
                 costSz = 4;
             }
         }
-#elif TARGET_ARM
-        else if (varTypeIsFloating(node.Type))
+        else if (Configuration.TARGET_ARM && varTypeIsFloating(node.Type))
         {
             costEx = IND_COST_EX;
             costSz = 4;
         }
-#endif
         else
         {
             costEx = IND_COST_EX;
@@ -7393,9 +7390,8 @@ public partial class Compiler
             costSz = 2;
         }
 
-#if TARGET_AMD64
         // Floating locals have larger encodings, including an additional byte for memory accesses.
-        if (varTypeIsFloating(node.Type))
+        if (Configuration.TARGET_AMD64 && varTypeIsFloating(node.Type))
         {
             costSz += 1;
 
@@ -7404,7 +7400,6 @@ public partial class Compiler
                 costSz += 1;
             }
         }
-#endif
     }
 
 #if DEBUG
