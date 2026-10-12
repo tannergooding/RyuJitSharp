@@ -450,10 +450,6 @@
     <!-- DUMP_GC_TABLES -->
     <DefineConstants>$(DefineConstants);DUMP_GC_TABLES</DefineConstants>
 
-    <!-- LATE_DISAM -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
-    
     <!-- LOOP_HOIST_STATS: Collect loop hoisting stats. -->
     <DefineConstants>$(DefineConstants);LOOP_HOIST_STATS</DefineConstants>
 
@@ -466,13 +462,6 @@
     <!-- TRACK_LSRA_STATS: Collect LSRA stats -->
     <DefineConstants>$(DefineConstants);TRACK_LSRA_STATS</DefineConstants>
     
-    <!-- USE_COREDISTOOLS -->
-    <DefineConstants Condition="'$(RyuJitTargetIsArmarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(RyuJitEnableArm64LateDisasm)' == 'true' and '$(RyuJitTargetArchitecture)' == 'arm64'">
-    <DefineConstants>$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

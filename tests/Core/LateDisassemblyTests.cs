@@ -124,9 +124,7 @@ internal static unsafe class LateDisassemblyTests
             Relocations(ref disassembler) = [];
             Diffable(ref disassembler) = true;
             Output(ref disassembler) = output;
-#if USE_COREDISTOOLS
             Decoder(ref disassembler) = 1;
-#endif
 
             disassembler.disInit(compiler);
             Assert.That(HasName(ref disassembler), Is.False);
@@ -136,9 +134,7 @@ internal static unsafe class LateDisassemblyTests
             Assert.That(Relocations(ref disassembler), Is.Null);
             Assert.That(Diffable(ref disassembler), Is.False);
             Assert.That(Output(ref disassembler), Is.Null);
-#if USE_COREDISTOOLS
             Assert.That(Decoder(ref disassembler), Is.EqualTo((nuint)0));
-#endif
             disassembler.disDone();
             disassembler.disDone();
 
@@ -148,10 +144,10 @@ internal static unsafe class LateDisassemblyTests
         });
     }
 
-#if USE_COREDISTOOLS
     [Test]
     public static void CleanupRejectsMissingFinishExportWithoutDiscardingItsHandle()
     {
+        Assume.That(Configuration.LATE_DISASM);
         var disassembler = default(Disassembler);
         Decoder(ref disassembler) = 1;
 
@@ -160,7 +156,6 @@ internal static unsafe class LateDisassemblyTests
         Assert.That(exception?.Message, Does.Contain("FinishDisasm"));
         Assert.That(Decoder(ref disassembler), Is.EqualTo((nuint)1));
     }
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hasName")]
     private static extern ref bool HasName(ref Disassembler disassembler);
@@ -183,10 +178,8 @@ internal static unsafe class LateDisassemblyTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_disAsmFile")]
     private static extern ref StreamWriter? Output(ref Disassembler disassembler);
 
-#if USE_COREDISTOOLS
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_corDisasm")]
     private static extern ref nuint Decoder(ref Disassembler disassembler);
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "dspAddr")]
     private static extern nuint DisplayAddress(ref Disassembler disassembler, nuint address);

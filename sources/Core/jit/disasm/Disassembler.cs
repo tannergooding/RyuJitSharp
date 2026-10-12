@@ -27,9 +27,7 @@ public partial struct Disassembler
     private nuint _coldCodeSize;
     private nuint _totalCodeSize;
     private nuint _startAddr;
-#if USE_COREDISTOOLS
     private nuint _corDisasm;
-#endif
 
     private readonly nuint dspAddr(nuint addr)
     {
@@ -52,10 +50,7 @@ public partial struct Disassembler
         _relocationMap = null;
         _diffable = false;
         _disAsmFile = null;
-
-#if USE_COREDISTOOLS
         _corDisasm = 0;
-#endif
     }
 
     public void disDone()
@@ -65,9 +60,7 @@ public partial struct Disassembler
             return;
         }
 
-#if USE_COREDISTOOLS
         DoneCoredistoolsDisasm();
-#endif
     }
 
     private readonly unsafe byte* disGetLinearAddr(nuint offset)
@@ -121,9 +114,10 @@ public partial struct Disassembler
             return;
         }
 
-#if USE_COREDISTOOLS
-        _ = InitCoredistoolsDisasm();
-#endif
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARMARCH)
+        {
+            _ = InitCoredistoolsDisasm();
+        }
 
 #if DEBUG
         _diffable = compiler.opts.dspDiffable;

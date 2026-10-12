@@ -13,7 +13,6 @@ namespace RyuJitSharp;
 
 public partial struct Disassembler
 {
-#if USE_COREDISTOOLS
     // Match PAL errors for missing process paths and Unix dlopen/dlsym failures.
     private const uint ErrorInternalError = 0x0000054F;
     private const uint ErrorModuleNotFound = 0x0000007E;
@@ -153,7 +152,6 @@ public partial struct Disassembler
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [DllImport("kernel32.dll", EntryPoint = "GetProcAddress", ExactSpelling = true, SetLastError = true)]
     private static extern nint GetProcAddress(nint library, nint symbolName);
-#endif
 
 #if DEBUG
     internal static unsafe StreamWriter? OpenLateDisassemblyFile(byte* fileName)
@@ -189,13 +187,13 @@ public partial struct Disassembler
 #pragma warning disable IDE0251
     private unsafe void DisasmBuffer(StreamWriter output, bool printit)
     {
-#if USE_COREDISTOOLS
-        DisasmBufferCoredistools(output, printit);
-#elif USE_MSVCDIS
-        DisasmBufferMsvc(output, printit);
-#else
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARMARCH)
+        {
+            DisasmBufferCoredistools(output, printit);
+            return;
+        }
+
         throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires the native decoder and symbol callbacks.");
-#endif
     }
 #pragma warning restore IDE0251
 }

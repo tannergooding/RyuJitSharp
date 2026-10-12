@@ -51,7 +51,6 @@ internal static unsafe class LateDisassemblyBackendTests
     }
 #endif
 
-#if USE_COREDISTOOLS
     private static readonly List<(nuint Address, nuint Bytes, nuint Size)> s_calls = [];
     private static bool s_failDecode;
     private static nuint s_finished;
@@ -61,6 +60,13 @@ internal static unsafe class LateDisassemblyBackendTests
     [Test]
     public static void CoreDisToolsArchitectureUsesRuntimeTargetConfiguration()
     {
+        if (Configuration.TARGET_WASM)
+        {
+            var failure = Assert.Throws<FatalJitException>(() => GetCoreDisTargetForCurrentTarget());
+            Assert.That(failure?.Message, Is.EqualTo("CoreDisTools does not support this JIT target."));
+            return;
+        }
+
         var expected = Configuration.TARGET_ARM64 ? CoreDisTarget.Arm64 :
             Configuration.TARGET_ARM ? CoreDisTarget.Thumb :
             Configuration.TARGET_X86 ? CoreDisTarget.X86 :
@@ -70,6 +76,20 @@ internal static unsafe class LateDisassemblyBackendTests
             throw new AssertionException("The current target has no CoreDisTools architecture.");
 
         Assert.That(GetCoreDisTargetForCurrentTarget(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void UnsupportedTargetsRejectLateDisassemblyWithoutANativeDecoder()
+    {
+        Assume.That(!Configuration.TARGET_XARCH && !Configuration.TARGET_ARMARCH);
+        var disassembler = default(Disassembler);
+        using var output = new StreamWriter(Stream.Null);
+
+        var failure = Assert.Throws<FatalJitException>(() =>
+            DisasmBuffer(ref disassembler, output, printit: false));
+
+        Assert.That(failure?.Message,
+            Is.EqualTo("Late disassembly requires the native decoder and symbol callbacks."));
     }
 
     [TestCase(false)]
@@ -147,15 +167,18 @@ internal static unsafe class LateDisassemblyBackendTests
             CoreBuffer(ref disassembler, output, true);
             output.Flush();
             var text = Encoding.UTF8.GetString(stream.ToArray());
-#if TARGET_ARM64
-            Assert.That(s_calls.Count, Is.EqualTo(50));
-            Assert.That(s_calls[^1], Is.EqualTo(((nuint)196, (nuint)cold, (nuint)12)));
-            Assert.That(text, Does.StartWith("0: ab ab ab ab\n"));
-            Assert.That(text, Does.EndWith("c4: cd cd cd cd\nToo many failures\n"));
-#else
-            Assert.That(s_calls.Count, Is.EqualTo(2));
-            Assert.That(text, Is.Empty);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                Assert.That(s_calls.Count, Is.EqualTo(50));
+                Assert.That(s_calls[^1], Is.EqualTo(((nuint)196, (nuint)cold, (nuint)12)));
+                Assert.That(text, Does.StartWith("0: ab ab ab ab\n"));
+                Assert.That(text, Does.EndWith("c4: cd cd cd cd\nToo many failures\n"));
+            }
+            else
+            {
+                Assert.That(s_calls.Count, Is.EqualTo(2));
+                Assert.That(text, Is.Empty);
+            }
             Assert.That(s_outputBufferClearCount, Is.EqualTo(s_calls.Count));
         }
         finally
@@ -177,11 +200,11 @@ internal static unsafe class LateDisassemblyBackendTests
         s_PtrFinishDisasm = &Finish;
         try
         {
-            disassembler.disDone();
+            CoreDone(ref disassembler);
             Assert.That(s_finished, Is.EqualTo((nuint)123));
             Assert.That(Decoder(ref disassembler), Is.EqualTo((nuint)0));
             s_finished = 0;
-            disassembler.disDone();
+            CoreDone(ref disassembler);
             Assert.That(s_finished, Is.EqualTo((nuint)0));
         }
         finally
@@ -236,9 +259,14 @@ internal static unsafe class LateDisassemblyBackendTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DisasmBufferCoredistools")]
     private static extern void CoreBuffer(ref Disassembler disassembler, StreamWriter output, bool printit);
 
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DisasmBuffer")]
+    private static extern void DisasmBuffer(ref Disassembler disassembler, StreamWriter output, bool printit);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "DoneCoredistoolsDisasm")]
+    private static extern void CoreDone(ref Disassembler disassembler);
+
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_corDisasm")]
     private static extern ref nuint Decoder(ref Disassembler disassembler);
-#endif
 
 #if TARGET_XARCH || TARGET_ARM64
     [TestCase(false)]
