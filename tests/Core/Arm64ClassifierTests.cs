@@ -102,15 +102,15 @@ internal static unsafe class Arm64ClassifierTests
         });
 
         var secret = classifier.Classify(compiler, TYP_I_IMPL, null, WellKnownArg.SecretStubParam);
-        Assert.That(secret.Segments[0].Register, Is.EqualTo(REG_R12));
+        Assert.That(secret.Segments[0].Register, Is.EqualTo(REG_R12_ARM64));
 
         var retBuffer = classifier.Classify(compiler, TYP_I_IMPL, null, WellKnownArg.RetBuffer);
         Assert.That(retBuffer.Segments[0].Register,
-            Is.EqualTo(hasFixedRetBuffReg(CorInfoCallConvExtension.Managed) ? REG_R8 : REG_R0));
+            Is.EqualTo(hasFixedRetBuffReg(CorInfoCallConvExtension.Managed) ? REG_R8_ARM64 : REG_R0_ARM64));
 
         var firstOrdinary = classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None);
         Assert.That(firstOrdinary.Segments[0].Register,
-            Is.EqualTo(hasFixedRetBuffReg(CorInfoCallConvExtension.Managed) ? REG_R0 : REG_R1));
+            Is.EqualTo(hasFixedRetBuffReg(CorInfoCallConvExtension.Managed) ? REG_R0_ARM64 : REG_R1_ARM64));
         Assert.That(classifier.StackSize, Is.Zero);
     }
 
@@ -124,9 +124,9 @@ internal static unsafe class Arm64ClassifierTests
         });
 
         var retBuffer = classifier.Classify(compiler, TYP_I_IMPL, null, WellKnownArg.RetBuffer);
-        Assert.That(retBuffer.Segments[0].Register, Is.EqualTo(REG_R0));
+        Assert.That(retBuffer.Segments[0].Register, Is.EqualTo(REG_R0_ARM64));
         Assert.That(classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None).Segments[0].Register,
-            Is.EqualTo(REG_R1));
+            Is.EqualTo(REG_R1_ARM64));
     }
 #endif
 
@@ -138,20 +138,20 @@ internal static unsafe class Arm64ClassifierTests
 
         var pair = classifier.Classify(compiler, TYP_STRUCT, new ClassLayout(13), WellKnownArg.None);
         Assert.That(pair.NumSegments, Is.EqualTo(2));
-        Assert.That(pair.Segments[0].Register, Is.EqualTo(REG_R0));
+        Assert.That(pair.Segments[0].Register, Is.EqualTo(REG_R0_ARM64));
         Assert.That(pair.Segments[0].Size, Is.EqualTo(8));
-        Assert.That(pair.Segments[1].Register, Is.EqualTo(REG_R1));
+        Assert.That(pair.Segments[1].Register, Is.EqualTo(REG_R1_ARM64));
         Assert.That(pair.Segments[1].Offset, Is.EqualTo(8));
         Assert.That(pair.Segments[1].Size, Is.EqualTo(5));
 
         var large = classifier.Classify(compiler, TYP_STRUCT, new ClassLayout(24), WellKnownArg.None);
         Assert.That(large.IsPassedByReference, Is.True);
-        Assert.That(large.Segments[0].Register, Is.EqualTo(REG_R2));
+        Assert.That(large.Segments[0].Register, Is.EqualTo(REG_R2_ARM64));
         Assert.That(large.Segments[0].Size, Is.EqualTo(8));
 
         var simd = classifier.Classify(compiler, TYP_SIMD_ARM64, new ClassLayout(16), WellKnownArg.None);
         Assert.That(simd.IsPassedByReference, Is.True);
-        Assert.That(simd.Segments[0].Register, Is.EqualTo(REG_R3));
+        Assert.That(simd.Segments[0].Register, Is.EqualTo(REG_R3_ARM64));
     }
 
     [Test]
@@ -190,7 +190,7 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None).Segments[0].StackOffset,
             Is.EqualTo(16));
         Assert.That(classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None).Segments[0].Register,
-            Is.EqualTo(REG_V0));
+            Is.EqualTo(REG_V0_ARM64));
         Assert.That(classifier.StackSize, Is.EqualTo(24));
     }
 
@@ -211,7 +211,7 @@ internal static unsafe class Arm64ClassifierTests
         Assert.That(overflow.Segments[0].Size, Is.EqualTo(4));
         Assert.That(overflow.Segments[0].StackSize, Is.EqualTo(compAppleArm64Abi() ? 4 : 8));
         Assert.That(classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None).Segments[0].Register,
-            Is.EqualTo(REG_R0));
+            Is.EqualTo(REG_R0_ARM64));
         Assert.That(classifier.StackSize, Is.EqualTo(8));
     }
 
@@ -229,7 +229,7 @@ internal static unsafe class Arm64ClassifierTests
 
         var pair = classifier.Classify(compiler, TYP_STRUCT, new ClassLayout(13), WellKnownArg.None);
         Assert.That(pair.IsSplitAcrossRegistersAndStack, Is.True);
-        Assert.That(pair.Segments[0].Register, Is.EqualTo(REG_R7));
+        Assert.That(pair.Segments[0].Register, Is.EqualTo(REG_R7_ARM64));
         Assert.That(pair.Segments[1].StackOffset, Is.Zero);
         Assert.That(pair.Segments[1].Offset, Is.EqualTo(8));
         Assert.That(pair.Segments[1].Size, Is.EqualTo(5));
@@ -245,9 +245,9 @@ internal static unsafe class Arm64ClassifierTests
         var classifier = new Arm64Classifier(new ClassifierInfo { IsVarArgs = true });
         var value = classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None);
 
-        Assert.That(value.Segments[0].Register, Is.EqualTo(REG_R0));
+        Assert.That(value.Segments[0].Register, Is.EqualTo(REG_R0_ARM64));
         Assert.That(classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None).Segments[0].Register,
-            Is.EqualTo(REG_R1));
+            Is.EqualTo(REG_R1_ARM64));
     }
 #endif
 

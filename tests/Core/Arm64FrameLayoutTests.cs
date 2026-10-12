@@ -100,8 +100,8 @@ internal static unsafe class Arm64FrameLayoutTests
         });
     }
 
-    [TestCase(REG_R0, -64)]
-    [TestCase(REG_R7, -8)]
+    [TestCase(REG_R0_ARM64, -64)]
+    [TestCase(REG_R7_ARM64, -8)]
     public static void VarargsRegistersUseTheIncomingHomeArea(regNumber register, int callerSpOffset)
     {
         WithFrame((compiler, codeGen) => {
@@ -155,7 +155,7 @@ internal static unsafe class Arm64FrameLayoutTests
             compiler.lvaParameterPassingInfo =
             [
                 AbiPassingInformation.FromSegments(compiler,
-                    AbiPassingSegment.InRegister(REG_R7, 0, 8), AbiPassingSegment.OnStack(0, 8, 8)),
+                    AbiPassingSegment.InRegister(REG_R7_ARM64, 0, 8), AbiPassingSegment.OnStack(0, 8, 8)),
             ];
 
             Assert.That(compiler.lvaParamHasLocalStackSpace(0), Is.False);
@@ -333,7 +333,7 @@ internal static unsafe class Arm64FrameLayoutTests
                 lvOnFrame = true,
                 lvFramePointerBased = true,
                 StackOffset = 16,
-                RegNum = REG_STK,
+                RegNum = REG_STK_ARM64,
             }];
             compiler.lvaParameterPassingInfo = [AbiPassingInformation.FromSegment(compiler, false,
                 AbiPassingSegment.OnStack(0, 0, 8))];
@@ -370,7 +370,7 @@ internal static unsafe class Arm64FrameLayoutTests
 
     private static LclVarDsc NewLocal(var_types type)
     {
-        return new LclVarDsc { Type = type, lvOnFrame = true, lvFramePointerBased = true, RegNum = REG_STK };
+        return new LclVarDsc { Type = type, lvOnFrame = true, lvFramePointerBased = true, RegNum = REG_STK_ARM64 };
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]

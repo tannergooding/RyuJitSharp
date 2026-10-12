@@ -179,11 +179,11 @@ internal static unsafe class Arm64LongJumpOutputTests
         });
     }
 
-    [TestCase(EA_4BYTE, REG_R3, REG_NA, 0xB0000003u, 0xB9402063u, 0u, 8)]
-    [TestCase(EA_8BYTE, REG_R3, REG_NA, 0xB0000003u, 0xF9401063u, 0u, 8)]
-    [TestCase(EA_4BYTE, REG_V2, REG_R9, 0xB0000009u, 0xB9402129u, 0x1E270122u, 12)]
-    [TestCase(EA_8BYTE, REG_V2, REG_R9, 0xB0000009u, 0xF9401129u, 0x9E670122u, 12)]
-    [TestCase(EA_16BYTE, REG_V2, REG_R9, 0xB0000009u, 0x91008129u, 0x4C407122u, 12)]
+    [TestCase(EA_4BYTE, REG_R3_ARM64, REG_NA, 0xB0000003u, 0xB9402063u, 0u, 8)]
+    [TestCase(EA_8BYTE, REG_R3_ARM64, REG_NA, 0xB0000003u, 0xF9401063u, 0u, 8)]
+    [TestCase(EA_4BYTE, REG_V2_ARM64, REG_R9_ARM64, 0xB0000009u, 0xB9402129u, 0x1E270122u, 12)]
+    [TestCase(EA_8BYTE, REG_V2_ARM64, REG_R9_ARM64, 0xB0000009u, 0xF9401129u, 0x9E670122u, 12)]
+    [TestCase(EA_16BYTE, REG_V2_ARM64, REG_R9_ARM64, 0xB0000009u, 0x91008129u, 0x4C407122u, 12)]
     public static void LongDataLoadsPreserveScalarAndVectorInstructionSequences(
         emitAttr size, regNumber destination, regNumber scratch, uint first, uint second, uint third, int length)
     {
@@ -211,11 +211,11 @@ internal static unsafe class Arm64LongJumpOutputTests
         });
     }
 
-    [TestCase(REG_R3, EA_4BYTE, 0x18000103u)]
-    [TestCase(REG_R3, EA_8BYTE, 0x58000103u)]
-    [TestCase(REG_V2, EA_4BYTE, 0x1C000102u)]
-    [TestCase(REG_V2, EA_8BYTE, 0x5C000102u)]
-    [TestCase(REG_V2, EA_16BYTE, 0x9C000102u)]
+    [TestCase(REG_R3_ARM64, EA_4BYTE, 0x18000103u)]
+    [TestCase(REG_R3_ARM64, EA_8BYTE, 0x58000103u)]
+    [TestCase(REG_V2_ARM64, EA_4BYTE, 0x1C000102u)]
+    [TestCase(REG_V2_ARM64, EA_8BYTE, 0x5C000102u)]
+    [TestCase(REG_V2_ARM64, EA_16BYTE, 0x9C000102u)]
     public static void ShortLiteralLoadsUseTheSelectedDataChunkAndEncodedRegister(
         regNumber destination, emitAttr size, uint expected)
     {
@@ -253,7 +253,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             offsets[0] = 0;
             chunks[0] = new AllocMemChunk { block = code + 4096 + 32, size = 64 };
             SetDataChunks(emitter, offsets, chunks, 1, 64);
-            var id = View.Data(INS_adr, IF_LARGEADR, EA_8BYTE, REG_R3, REG_NA,
+            var id = View.Data(INS_adr, IF_LARGEADR, EA_8BYTE, REG_R3_ARM64, REG_NA,
                 shortAddress: false, relocatable: true);
 
             var end = Output(emitter, null, code + 16, id);
@@ -285,7 +285,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             chunks[0] = new AllocMemChunk { block = shortAddress ? code + 48 : code + 4096 + 32, size = 32 };
             SetDataChunks(emitter, offsets, chunks, 1, 32);
             var id = View.Data(INS_adr, shortAddress ? IF_DI_1E : IF_LARGEADR, EA_8BYTE,
-                REG_R3, REG_NA, shortAddress);
+                REG_R3_ARM64, REG_NA, shortAddress);
 
             var end = Output(emitter, null, code + 16, id);
 
@@ -393,7 +393,7 @@ internal static unsafe class Arm64LongJumpOutputTests
         public static instrDescJmp Jump(instruction ins, insFormat format, emitAttr size, bool shortJump,
             uint target, int immediate = 0, bool keepLong = false)
         {
-            var id = Create(ins, format, size, REG_R3, REG_NA, immediate);
+            var id = Create(ins, format, size, REG_R3_ARM64, REG_NA, immediate);
             id.idjShort = shortJump;
             id.idjKeepLong = keepLong;
             id.idjTargetIG = new insGroup { igOffs = target };

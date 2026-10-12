@@ -326,9 +326,9 @@ internal static unsafe class Arm64InstructionOutputTests
             id.idInsFmt(format);
             id.idOpSize(size);
             id.idInsOpt(INS_OPTS_NONE);
-            id.idReg1(REG_R0);
-            id.idReg2(REG_R1);
-            id.idReg3(REG_R2);
+            id.idReg1(REG_R0_ARM64);
+            id.idReg2(REG_R1_ARM64);
+            id.idReg3(REG_R2_ARM64);
             id.idSmallCns(0);
 
             return id;
@@ -342,7 +342,7 @@ internal static unsafe class Arm64InstructionOutputTests
             id.idInsFmt(format);
             id.idOpSize(size);
             id.idInsOpt(INS_OPTS_NONE);
-            id.idReg1(REG_R3);
+            id.idReg1(REG_R3_ARM64);
             if (isBound)
             {
                 id.idSetIsBound();

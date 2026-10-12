@@ -66,14 +66,14 @@ internal static unsafe class Arm64EmitterLabelTests
             compiler.fgFirstColdBlock = target;
         }
 
-        emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, target, regNumber.REG_R5);
+        emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, target, regNumber.REG_R5_ARM64);
 
         var descriptor = LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No block label address was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(INS_adr));
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_LARGEADR));
         Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_R5));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_R5_ARM64));
         Assert.That(descriptor.idjTarget, Is.SameAs(target));
         Assert.That(descriptor.idjTargetIG, Is.Null);
         Assert.That(descriptor.idIsBound(), Is.False);
@@ -92,14 +92,14 @@ internal static unsafe class Arm64EmitterLabelTests
         compiler.compCurBB = new BasicBlock(null, null);
         var target = new insGroup();
 
-        emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, target, regNumber.REG_R5);
+        emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, target, regNumber.REG_R5_ARM64);
 
         var descriptor = LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No instruction-group label address was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(INS_adr));
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_LARGEADR));
         Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_R5));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_R5_ARM64));
         Assert.That(descriptor.idjTarget, Is.Null);
         Assert.That(descriptor.idjTargetIG, Is.SameAs(target));
         Assert.That(descriptor.idIsBound(), Is.True);
@@ -117,7 +117,7 @@ internal static unsafe class Arm64EmitterLabelTests
     public static void JumpListDiagnosticDisplaysArm64LargeAddressRegisters(Emitter.insFormat format, instruction ins)
     {
         var (_, emitter) = CreateEmitter();
-        var descriptor = LabelEmitter.LargeAddressJump(emitter, format, ins, regNumber.REG_R5);
+        var descriptor = LabelEmitter.LargeAddressJump(emitter, format, ins, regNumber.REG_R5_ARM64);
 
         var diagnostic = Arm64SveInstructionSanityTests.Capture(emitter.emitDispJumpList).Output;
 
