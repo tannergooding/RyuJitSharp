@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universalizing target-specific constant diagnostics in `Compiler.gtDispConst`, beginning with the `TARGET_64BIT` icon formatting branch and then the target-specific SIMD constant cases.",
+    "nextAction": "Continue universalizing `Compiler.gtFoldExpr` at its `FEATURE_HW_INTRINSICS` dispatch to `gtFoldExprHWIntrinsic`.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize target-specific node cloning in `Compiler.gtCloneExpr` and its `GenTreeStoreInd` metadata contract. Preserve xarch RMW status cloning, 32-bit `GT_MUL_LONG` cloning, and Swift/Wasm leaf node support.",
-      "doneWhen": "All target/feature preprocessor branches in the cloning region use runtime configuration; the universal store-indirect node preserves the prior per-target RMW status behavior, and target clone regressions pass.",
-      "validation": "`CompilerTargetConfigurationTests` and `FeatureConfigurationTests` passed in Debug and Release for win-x64 (63/1 skipped), win-x86 (65/1), linux-arm64 (60/3), linux-arm (54/9), linux-loongarch64 (52/9), linux-riscv64 (52/9), and browser-wasm (60/4). The new xarch RMW-status and 32-bit `GT_MUL_LONG` clone regressions passed on their applicable targets. Formatting and `git diff --check` passed. EnforceCodeStyleInBuild was disabled because full-analyzer builds report pre-existing IDE2002/IDE0059 diagnostics in untouched sections.",
-      "deferred": "Continue at the target-specific constant diagnostics in `Compiler.gtDispConst`, then migrate the remaining compiler and other source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
+      "scope": "Universalize ABI-location diagnostics in `gtPrintABILocation`, including fixed-register mask versus single-register formatting, fixed versus stack argument labels, and xarch register-list formatting.",
+      "doneWhen": "All target/feature branches in ABI-location printing use runtime configuration while preserving target-specific text and register grouping.",
+      "validation": "`CompilerTargetConfigurationTests` and `FeatureConfigurationTests` passed in Debug and Release for win-x64 (63/1 skipped), win-x86 (65/1), linux-arm64 (60/3), linux-arm (54/9), linux-loongarch64 (52/9), linux-riscv64 (52/9), and browser-wasm (60/4). Formatting and `git diff --check` passed. EnforceCodeStyleInBuild was disabled because full-analyzer builds report pre-existing IDE2002/IDE0059 diagnostics in untouched sections.",
+      "deferred": "Continue at `Compiler.gtFoldExpr`'s HWI dispatch, then migrate the remaining compiler and other source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -632,6 +632,42 @@
       "disposition": "Store-indirect cloning, 32-bit GT_MUL_LONG cloning, and Swift/Wasm leaf cloning now use runtime configuration. CPU_LOAD_STORE_ARCH is derived from the target, and RMW status remains observable only on xarch while the universal node shape carries the storage needed by xarch.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "CompilerTargetConfigurationTests and FeatureConfigurationTests passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm. RMW status and 32-bit long-multiply clone regressions cover their applicable targets."
+    },
+    {
+      "area": "universal-compiler-diagnostics",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs"
+      ],
+      "disposition": "Integer-width, xarch SIMD-width, ARM64 scalable-vector, Swift, and Wasm diagnostic paths now use runtime configuration. Target-specific dump formatting and node-name behavior are retained; no observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Targeted target-configuration and feature tests passed in Debug and Release for all seven RIDs. Focused Core diagnostic tests passed on win-x64; the Core test project remains unbuildable for linux-arm64 because unrelated test files reference xarch-only identities."
+    },
+    {
+      "area": "universal-tree-node-diagnostics",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs"
+      ],
+      "disposition": "Target-specific node flags, call-convention labels, intrinsic names, conditional-compare flags, and HWI dumps now use runtime configuration. The disabled `verbose && false` internal-register dump was removed; no target-visible output changes are accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "CompilerTargetConfigurationTests and FeatureConfigurationTests passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm."
+    },
+    {
+      "area": "universal-abi-location-diagnostics",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs"
+      ],
+      "disposition": "Register-mask targets, single-register targets, fixed-out-argument targets, and xarch now select their existing ABI-location output at runtime. Register enumeration and printed diagnostic strings remain unchanged.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "CompilerTargetConfigurationTests and FeatureConfigurationTests passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm."
     }
   ],
   "generatorInputMapping": {

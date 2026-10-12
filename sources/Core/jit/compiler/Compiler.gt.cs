@@ -1589,8 +1589,7 @@ public partial class Compiler
                     {
                         jitprintf($" {dspIconVal}");
                     }
-#if TARGET_64BIT
-                    else if ((iconVal & unchecked((long)(0xFFFFFFFF_00000000))) is not 0)
+                    else if (Configuration.TARGET_64BIT && ((iconVal & unchecked((long)(0xFFFFFFFF_00000000))) is not 0))
                     {
                         if (dspIconVal >= 0)
                         {
@@ -1601,7 +1600,6 @@ public partial class Compiler
                             jitprintf($" -0x{unchecked((nuint)(-dspIconVal)):x}");
                         }
                     }
-#endif
                     else
                     {
                         if (dspIconVal >= 0)
@@ -1738,22 +1736,19 @@ public partial class Compiler
                         break;
                     }
 
-#if TARGET_XARCH
-                    case TYP_SIMD32:
+                    case TYP_SIMD32 when Configuration.TARGET_XARCH:
                     {
                         jitprintf($"<0x{vecCon.SimdVal.u64[0]:x16}, 0x{vecCon.SimdVal.u64[1]:x16}, 0x{vecCon.SimdVal.u64[2]:x16}, 0x{vecCon.SimdVal.u64[3]:x16}>");
                         break;
                     }
 
-                    case TYP_SIMD64:
+                    case TYP_SIMD64 when Configuration.TARGET_XARCH:
                     {
                         jitprintf($"<0x{vecCon.SimdVal.u64[0]:x16}, 0x{vecCon.SimdVal.u64[1]:x16}, 0x{vecCon.SimdVal.u64[2]:x16}, 0x{vecCon.SimdVal.u64[3]:x16}, 0x{vecCon.SimdVal.u64[4]:x16}, 0x{vecCon.SimdVal.u64[5]:x16}, 0x{vecCon.SimdVal.u64[6]:x16}, 0x{vecCon.SimdVal.u64[7]:x16}>");
                         break;
                     }
-#endif
 
-#if TARGET_ARM64
-                    case TYP_SIMD_ARM64:
+                    case TYP_SIMD_ARM64 when Configuration.TARGET_ARM64:
                     {
                         var simdValue = vecCon.SimdScalableVal;
                         var baseType = simdValue.BaseType;
@@ -1873,7 +1868,6 @@ public partial class Compiler
                         jitprintf("...>");
                         break;
                     }
-#endif
 
                     default:
                     {
@@ -2004,14 +1998,10 @@ public partial class Compiler
             case GT_FTN_ENTRY:
             case GT_MEMORYBARRIER:
             case GT_JMPTABLE:
-#if SWIFT_SUPPORT
-            case GT_SWIFT_ERROR:
-#endif
+            case GT_SWIFT_ERROR when Configuration.SWIFT_SUPPORT:
             case GT_GCPOLL:
-#if TARGET_WASM
-            case GT_WASM_THROW_REF:
-            case GT_WASM_JEXCEPT:
-#endif
+            case GT_WASM_THROW_REF when Configuration.TARGET_WASM:
+            case GT_WASM_JEXCEPT when Configuration.TARGET_WASM:
             {
                 break;
             }
@@ -2444,9 +2434,7 @@ public partial class Compiler
                 }
 
                 case GT_MUL:
-#if !TARGET_64BIT
-                case GT_MUL_LONG:
-#endif
+                case GT_MUL_LONG when !Configuration.TARGET_64BIT:
                 {
                     if ((tree.Flags & GTF_MUL_64RSLT) is not 0)
                     {
@@ -2725,23 +2713,10 @@ public partial class Compiler
                 }
             }
 
-#if HAS_FIXED_REGISTER_SET
-            // for tracking down problems in reguse prediction or liveness tracking
-            if (verbose && false)
-            {
-                ref var internalRegisters = ref JitTls.Compiler.codeGen.InternalRegisters;
-
-                jitprintf(" RR=");
-                dspRegMask(internalRegisters.GetAll(tree));
-                jitprintf("\n");
-            }
-#endif
         }
     }
 
-#if TARGET_X86
-    private static string GetCallConvName(CorInfoCallConvExtension callConv) => callConv switch
-    {
+    private static string GetCallConvName(CorInfoCallConvExtension callConv) => callConv switch {
         CorInfoCallConvExtension.Managed => "Managed",
         CorInfoCallConvExtension.C => "C",
         CorInfoCallConvExtension.Stdcall => "Stdcall",
@@ -2752,7 +2727,6 @@ public partial class Compiler
         CorInfoCallConvExtension.FastcallMemberFunction => "FastcallMemberFunction",
         _ => "UnknownCallConv",
     };
-#endif
 
     public void gtDispNodeName(GenTree tree)
     {
@@ -2831,9 +2805,10 @@ public partial class Compiler
             else if ((tree.Flags & GTF_CALL_UNMANAGED) is not 0)
             {
                 gtfType = $" unman{(((tree.Flags & GTF_CALL_POP_ARGS) is not 0) ? " popargs" : "")}";
-#if TARGET_X86
-                gtfType += $" {GetCallConvName(call.UnmanagedCallConv)}";
-#endif
+                if (Configuration.TARGET_X86)
+                {
+                    gtfType += $" {GetCallConvName(call.UnmanagedCallConv)}";
+                }
             }
 
             buf = $" {callType}{ctType}{gtfType}";
@@ -3022,7 +2997,7 @@ public partial class Compiler
         gtDispTree(tree, ref indentStack, msg, topOnly, isLIR);
     }
 
-#if DEBUG && TARGET_ARM64
+#if DEBUG
     private static readonly string[] s_insCflagsNames =
     [
         "0", "v", "c", "cv", "z", "zv", "zc", "zcv",
@@ -3265,17 +3240,15 @@ public partial class Compiler
                     NI_System_Math_Log => " log",
                     NI_System_Math_Log2 => " log2",
                     NI_System_Math_Log10 => " log10",
-#if TARGET_RISCV64
-                    NI_System_Math_Max => " max",
-                    NI_System_Math_MaxNative => " maxNative",
-                    NI_System_Math_MaxUnsigned => " maxuint",
-                    NI_System_Math_Min => " min",
-                    NI_System_Math_MinNative => " minNative",
-                    NI_System_Math_MinUnsigned => " minuint",
-                    NI_PRIMITIVE_LeadingZeroCount => " leadingZeroCount",
-                    NI_PRIMITIVE_TrailingZeroCount => " trailingZeroCount",
-                    NI_PRIMITIVE_PopCount => " popCount",
-#endif
+                    NI_System_Math_Max when Configuration.TARGET_RISCV64 => " max",
+                    NI_System_Math_MaxNative when Configuration.TARGET_RISCV64 => " maxNative",
+                    NI_System_Math_MaxUnsigned when Configuration.TARGET_RISCV64 => " maxuint",
+                    NI_System_Math_Min when Configuration.TARGET_RISCV64 => " min",
+                    NI_System_Math_MinNative when Configuration.TARGET_RISCV64 => " minNative",
+                    NI_System_Math_MinUnsigned when Configuration.TARGET_RISCV64 => " minuint",
+                    NI_PRIMITIVE_LeadingZeroCount when Configuration.TARGET_RISCV64 => " leadingZeroCount",
+                    NI_PRIMITIVE_TrailingZeroCount when Configuration.TARGET_RISCV64 => " trailingZeroCount",
+                    NI_PRIMITIVE_PopCount when Configuration.TARGET_RISCV64 => " popCount",
                     NI_System_Math_Pow => " pow",
                     NI_System_Math_Round => " round",
                     NI_System_Math_Sin => " sin",
@@ -3310,13 +3283,11 @@ public partial class Compiler
             {
                 jitprintf($" cond={tree.AsOpCC().Condition.Name}");
             }
-#if TARGET_ARM64
-            else if (tree.Oper is GT_CCMP)
+            else if (Configuration.TARGET_ARM64 && (tree.Oper is GT_CCMP))
             {
                 var ccmp = tree.AsCCMP();
                 jitprintf($" cond={ccmp.Condition.Name} flags={InsCflagsToString(ccmp.FlagsVal)}");
             }
-#endif
             gtDispCommonEndLine(tree);
 
             if (!topOnly && !tree.Oper.IsLeaf && (tree is GenTreeUnOp unOp))
@@ -3487,8 +3458,7 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 var hwintrinsic = tree.AsHWIntrinsic();
                 jitprintf($" {hwintrinsic.SimdSize}");
@@ -3520,7 +3490,6 @@ public partial class Compiler
                 }
                 break;
             }
-#endif
 
             case GT_ARR_ELEM:
             {
@@ -3675,14 +3644,36 @@ public partial class Compiler
         {
             if (segment.IsPassedInRegister)
             {
-#if HAS_FIXED_REGISTER_SET
-                var regMsk = segment.RegisterMask;
-
-                while (regMsk != SRBM_NONE)
+                if (Configuration.HAS_FIXED_REGISTER_SET)
                 {
-                    var regIdx = (int)(long.TrailingZeroCount((long)(regMsk)));
-                    var reg = (regNumber)(regIdx + segment.RegisterMaskBase);
-                    regMsk &= (regMask)(~(1L << regIdx));
+                    var regMsk = segment.RegisterMask;
+
+                    while (regMsk != SRBM_NONE)
+                    {
+                        var regIdx = (int)(long.TrailingZeroCount((long)(regMsk)));
+                        var reg = (regNumber)(regIdx + segment.RegisterMaskBase);
+                        regMsk &= (regMask)(~(1L << regIdx));
+
+                        if (firstReg == REG_NA)
+                        {
+                            firstReg = reg;
+                            lastReg = reg;
+                        }
+                        else if (REG_NEXT(lastReg) == reg)
+                        {
+                            lastReg = reg;
+                        }
+                        else
+                        {
+                            PrintRegs(stringBuilder, firstReg, lastReg);
+                            firstReg = reg;
+                            lastReg = reg;
+                        }
+                    }
+                }
+                else
+                {
+                    var reg = segment.Register;
 
                     if (firstReg == REG_NA)
                     {
@@ -3700,35 +3691,19 @@ public partial class Compiler
                         lastReg = reg;
                     }
                 }
-#else
-                var reg = segment.Register;
-
-                if (firstReg == REG_NA)
-                {
-                    firstReg = reg;
-                    lastReg  = reg;
-                }
-                else if (REG_NEXT(lastReg) == reg)
-                {
-                    lastReg = reg;
-                }
-                else
-                {
-                    PrintRegs(stringBuilder, firstReg, lastReg);
-                    firstReg = reg;
-                    lastReg  = reg;
-                }
-#endif
             }
             else
             {
                 PrintRegs(stringBuilder, firstReg, lastReg);
 
-#if FEATURE_FIXED_OUT_ARGS
-                _ = stringBuilder.Append(CultureInfo.InvariantCulture, $" out+{segment.StackOffset:x2}");
-#else
-                _ = stringBuilder.Append(" STK");
-#endif
+                if (Configuration.FEATURE_FIXED_OUT_ARGS)
+                {
+                    _ = stringBuilder.Append(CultureInfo.InvariantCulture, $" out+{segment.StackOffset:x2}");
+                }
+                else
+                {
+                    _ = stringBuilder.Append(" STK");
+                }
             }
         }
 
@@ -3744,10 +3719,11 @@ public partial class Compiler
 
             var printSeparately = firstReg == lastReg;
 
-#if TARGET_XARCH
-            // No numeric arg regs, always print separately
-            printSeparately = true;
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                // No numeric arg regs, always print separately.
+                printSeparately = true;
+            }
 
             if (printSeparately)
             {
