@@ -99,7 +99,7 @@ public partial class Emitter
 
         id.idSetIsNoGC(parameters.isJump || parameters.noSafePoint || emitNoGChelper(parameters.methHnd));
         id.idIns(INS_jirl);
-        id.idInsOpt(INS_OPTS_C);
+        id.idInsOpt(INS_OPTS_C_LOONGARCH64);
 
         if (parameters.callType == EC_INDIR_R)
         {

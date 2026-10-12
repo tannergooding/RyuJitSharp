@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Unify the target-specific `insOpts` declarations in `sources\\Core\\jit\\instr\\insOpts.cs`, `insOpts.OtherTargets.cs`, and `insOpts.Arm64.cs`; disambiguate architecture-only options while preserving native values, widths, and `FEATURE_LOOP_ALIGN` behavior.",
+    "nextAction": "Universalize the remaining `FEATURE_LOOP_ALIGN` closure: replace its runtime-source compile guards with `Configuration.FEATURE_LOOP_ALIGN`, add per-RID substitutions, and preserve its enabled xarch/ARM64 behavior across generated instruction and emitter metadata.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Separate xarch instruction-encoding metadata from the emitter's cross-target flag-request enum without changing instruction metadata, ARM flag selection, descriptor packing, or target emission behavior.",
-      "doneWhen": "The xarch metadata table and generator use a distinct 64-bit metadata type; emission requests have one target-neutral type; focused tests pass across xarch, ARM32/64, Wasm, LoongArch, and RISC-V target configurations.",
-      "validation": "The GenerateTables output exactly matched the integrated generated table after the element-type change. InstructionFlagModelTests and the relevant ARM predicate/declaration tests passed with full analyzers in Debug and Release using a win-x64 test host and win-x64, win-x86, linux-arm, linux-arm64, browser-wasm, linux-loongarch64, and linux-riscv64 target configurations; 97 selected test cases passed per configuration with no skips.",
-      "deferred": "Remaining TARGET_/FEATURE_ migrations, other target-native type families, and generated-code parity capture are outside this bounded flag-model batch."
+      "scope": "Universalize loop-alignment feature gating, its instruction identities and metadata, emitter descriptor creation/output, and JIT configuration values while preserving native xarch/ARM64 support.",
+      "doneWhen": "Runtime-source `FEATURE_LOOP_ALIGN` directives are removed, generated outputs match their inputs, and the feature remains enabled only for xarch and ARM64 with matching behavior across target RIDs.",
+      "validation": "Regenerate affected tables and compare the output; run focused loop-alignment and instruction-metadata tests with full analyzers in Debug and Release using a win-x64 test host across supported target RIDs, including feature-enabled xarch/ARM64 and feature-disabled ARM32, Wasm, LoongArch, and RISC-V.",
+      "deferred": "Other TARGET_/FEATURE_ migrations, other target-native type families, and generated-code parity capture remain outside this feature-gating batch."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -153,11 +153,37 @@
         "sources\\Core\\jit\\instr\\insFlags.cs",
         "sources\\Core\\jit\\instr\\insInfoFlags.cs",
         "sources\\GenerateTables\\Program.cs",
-        "sources\\Core\\jit\\codegen\\CodeGen.InstructionFlags.generated.cs"
+        "sources\\Core\\jit\\codegen\\CodeGen.InstructionFlags.generated.cs",
+        "tests\\Core\\InstructionFlagsTests.cs"
       ],
       "disposition": "The target-neutral emitter request enum is separate from xarch opcode metadata. Emission states use uint values 0/1/2, keeping DONT_CARE distinct for ARM selection; xarch metadata remains a 64-bit bitmask with unchanged values. No observable deviation is accepted.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
-      "validation": "The generated instruction table matched the generator output. InstructionFlagModelTests plus ARM32 predicate and ARM64 declaration tests passed with full analyzers in Debug and Release for win-x64, win-x86, linux-arm, linux-arm64, browser-wasm, linux-loongarch64, and linux-riscv64 (97 selected cases per configuration; no skips)."
+      "validation": "The generated instruction table matched the generator output. InstructionFlagModelTests plus ARM32 predicate and ARM64 declaration tests passed with full analyzers in Debug and Release for win-x64, win-x86, linux-arm, linux-arm64, browser-wasm, linux-loongarch64, and linux-riscv64 (97 selected cases per configuration; no skips). The corrected focused x64 InstructionFlagsTests passed in Debug with full analyzers and Release with analyzers disabled; full-analyzer Release was blocked by unrelated CA1812 in tests/Core/DiscretionaryPolicyTests.cs."
+    },
+    {
+      "area": "universal-instruction-option-identities",
+      "native": [
+        "src\\coreclr\\jit\\instr.h",
+        "src\\coreclr\\jit\\instrsxarch.h",
+        "src\\coreclr\\jit\\instrsarm.h",
+        "src\\coreclr\\jit\\instrsarm64.h",
+        "src\\coreclr\\jit\\instrsloongarch64.h",
+        "src\\coreclr\\jit\\instrsriscv64.h",
+        "src\\coreclr\\jit\\instrswasm.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\instr\\insOpts.cs",
+        "sources\\Core\\jit\\emit\\",
+        "sources\\Core\\jit\\emitloongarch64\\",
+        "sources\\Core\\jit\\emitriscv64\\",
+        "tests\\Core\\InstructionOptionIdentityTests.cs",
+        "tests\\Core\\RiscVCodeGenPortTests.cs",
+        "tests\\Core\\LoongArchRiscVLocalCodeGenTests.cs",
+        "tests\\Targets\\LoongArchEmitterClassifierTests.cs"
+      ],
+      "disposition": "The managed uint enum unions xarch bit flags, ARM32/64 option identities, and backend descriptor options. LoongArch/RISC-V I, C, and RELOC identities have suffixed names because their native ordinals differ; shared RC/RL values remain unchanged. INS_OPTS_ALIGN retains value 52, while its use remains guarded by FEATURE_LOOP_ALIGN until that feature-gating batch. No observable deviation is accepted.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "InstructionOptionIdentityTests and Arm64DeclarationTests passed with full analyzers in Debug and Release using a win-x64 host across win-x64, win-x86, linux-arm, linux-arm64, browser-wasm, linux-loongarch64, and linux-riscv64; all selected runs had no failures or skips (11 tests on linux-arm64, one on each other target). LoongArchEmitterClassifierTests also passed 45/45 in Debug and 38/38 in Release with full analyzers. The focused x64 Core emitter tests passed 45/45 in Debug with full analyzers and Release with analyzers disabled; full-analyzer Release was blocked by unrelated CA1812 in tests/Core/DiscretionaryPolicyTests.cs. The Core test project could not be used for LoongArch/RISC-V tests because unrelated x64-only fixtures fail compilation for those targets."
     },
     {
       "area": "universal-tree-node-identities",

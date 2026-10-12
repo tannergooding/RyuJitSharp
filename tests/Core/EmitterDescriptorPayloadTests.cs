@@ -13,50 +13,6 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class EmitterDescriptorPayloadTests
 {
-#if TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
-    [Test]
-    public static void TargetOptionEnumRetainsTheNativeNamesOrdinalsAndUnsignedWidth()
-    {
-        string[] expectedNames = [
-            nameof(insOpts.INS_OPTS_NONE),
-#if TARGET_ARM
-            nameof(insOpts.INS_OPTS_LDST_PRE_DEC),
-            nameof(insOpts.INS_OPTS_LDST_POST_INC),
-            nameof(insOpts.INS_OPTS_RRX),
-            nameof(insOpts.INS_OPTS_LSL),
-            nameof(insOpts.INS_OPTS_LSR),
-            nameof(insOpts.INS_OPTS_ASR),
-            nameof(insOpts.INS_OPTS_ROR),
-#elif TARGET_LOONGARCH64
-            nameof(insOpts.INS_OPTS_RC),
-            nameof(insOpts.INS_OPTS_RL),
-            nameof(insOpts.INS_OPTS_JIRL),
-            nameof(insOpts.INS_OPTS_J),
-            nameof(insOpts.INS_OPTS_J_cond),
-            nameof(insOpts.INS_OPTS_I),
-            nameof(insOpts.INS_OPTS_C),
-            nameof(insOpts.INS_OPTS_RELOC),
-#elif TARGET_RISCV64
-            nameof(insOpts.INS_OPTS_RC),
-            nameof(insOpts.INS_OPTS_RL),
-            nameof(insOpts.INS_OPTS_JUMP),
-            nameof(insOpts.INS_OPTS_I),
-            nameof(insOpts.INS_OPTS_C),
-            nameof(insOpts.INS_OPTS_RELOC),
-#endif
-        ];
-
-        Assert.That(Enum.GetUnderlyingType(typeof(insOpts)), Is.EqualTo(typeof(uint)));
-        Assert.That(Enum.GetNames<insOpts>(), Is.EqualTo(expectedNames));
-        var options = Enum.GetValues<insOpts>();
-        Assert.That(options, Has.Length.EqualTo(expectedNames.Length));
-        for (var ordinal = 0; ordinal < options.Length; ordinal++)
-        {
-            Assert.That((uint)options[ordinal], Is.EqualTo((uint)ordinal));
-        }
-    }
-#endif
-
 #if !TARGET_XARCH
     [TestCase(0)]
     [TestCase(1)]

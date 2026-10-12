@@ -95,14 +95,14 @@ public partial class Emitter
                     : PERFSCORE_LATENCY_3C;
                 result.insThroughput = combinedInstructionCount == 2 ? 5.5f : PERFSCORE_THROUGHPUT_5C;
             }
-            else if (id.idInsOpt() == INS_OPTS_I)
+            else if (id.idInsOpt() == INS_OPTS_I_LOONGARCH64)
             {
                 result.insLatency = PERFSCORE_LATENCY_1C * combinedInstructionCount;
                 result.insThroughput = combinedInstructionCount < 3
                     ? PERFSCORE_THROUGHPUT_4C * combinedInstructionCount
                     : (PERFSCORE_THROUGHPUT_4C * (combinedInstructionCount - 1)) + PERFSCORE_THROUGHPUT_1C;
             }
-            else if (id.idInsOpt() == INS_OPTS_C)
+            else if (id.idInsOpt() == INS_OPTS_C_LOONGARCH64)
             {
                 assert(combinedInstructionCount is 2 or 4);
                 result.insLatency = combinedInstructionCount == 2
@@ -110,7 +110,7 @@ public partial class Emitter
                     : PERFSCORE_LATENCY_4C;
                 result.insThroughput = combinedInstructionCount == 2 ? 3.5f : 10.5f;
             }
-            else if (id.idInsOpt() == INS_OPTS_RELOC)
+            else if (id.idInsOpt() == INS_OPTS_RELOC_LOONGARCH64)
             {
                 result.insLatency = id.idIsCnsReloc() ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_5C;
                 result.insThroughput = id.idIsCnsReloc()

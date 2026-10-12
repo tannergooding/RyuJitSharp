@@ -759,7 +759,7 @@ public partial class Emitter
 
     private unsafe byte* emitOutputInstr_OptsI(byte* dst, instrDesc id, out instruction ins)
     {
-        assert(id.idInsOpt() == INS_OPTS_I);
+        assert(id.idInsOpt() == INS_OPTS_I_RISCV64);
         var idli = (instrDescLoadImm)id;
         var numberOfInstructions = GetLoadImmediateNumberOfInstructions(idli);
         ins = idli.ins[numberOfInstructions - 1];
@@ -896,7 +896,7 @@ public partial class Emitter
 
         switch (id.idInsOpt())
         {
-            case INS_OPTS_RELOC:
+            case INS_OPTS_RELOC_RISCV64:
             {
                 dst = emitOutputInstr_OptsReloc(dst, id, out ins);
                 descriptorSize = (nuint)INSTR_DESC_SIZE;
@@ -920,13 +920,13 @@ public partial class Emitter
                 descriptorSize = (nuint)DescriptorSizes.Jump;
                 break;
             }
-            case INS_OPTS_C:
+            case INS_OPTS_C_RISCV64:
             {
                 dst = emitOutputInstr_OptsC(dst, id, out descriptorSize);
                 ins = INS_nop;
                 break;
             }
-            case INS_OPTS_I:
+            case INS_OPTS_I_RISCV64:
             {
                 dst = emitOutputInstr_OptsI(dst, id, out ins);
                 descriptorSize = (nuint)DescriptorSizes.RiscVLoadImmediate;

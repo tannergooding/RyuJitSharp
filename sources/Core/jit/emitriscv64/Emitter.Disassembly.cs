@@ -152,7 +152,7 @@ public partial class Emitter
         }
 
         jitprintf("      ");
-        var willPrintLoadImmediate = (addr != null) && (id?.idInsOpt() == INS_OPTS_I) && !compiler.opts.disDiffable;
+        var willPrintLoadImmediate = (addr != null) && (id?.idInsOpt() == INS_OPTS_I_RISCV64) && !compiler.opts.disDiffable;
 
         switch (GetMajorOpcode(code))
         {
@@ -682,7 +682,7 @@ public partial class Emitter
         var rs1 = (code >> 15) & 0x1f;
         var rd = (code >> 7) & 0x1f;
         var immediate = unchecked((int)code) >> 20;
-        var callHasRelocOffset = noAddress && (id?.idInsOpt() == INS_OPTS_C) && (id?.idIsCallRegPtr() == false);
+        var callHasRelocOffset = noAddress && (id?.idInsOpt() == INS_OPTS_C_RISCV64) && (id?.idIsCallRegPtr() == false);
 
         if ((immediate == 0) && (rs1 == (uint)REG_RA) && (rd == (uint)REG_ZERO))
         {
@@ -1235,12 +1235,12 @@ public partial class Emitter
                     emitDispIns_OptsJumpRiscV64(id);
                     break;
                 }
-                case INS_OPTS_C:
+                case INS_OPTS_C_RISCV64:
                 {
                     emitDispIns_OptsCRiscV64(id);
                     break;
                 }
-                case INS_OPTS_I:
+                case INS_OPTS_I_RISCV64:
                 {
                     emitDispIns_OptsIRiscV64(id);
                     break;
@@ -1255,7 +1255,7 @@ public partial class Emitter
                     emitDispIns_OptsRlRiscV64(id);
                     break;
                 }
-                case INS_OPTS_RELOC:
+                case INS_OPTS_RELOC_RISCV64:
                 {
                     emitDispIns_OptsRelocRiscV64(id);
                     break;
@@ -1272,7 +1272,7 @@ public partial class Emitter
 
         emitDispInsInstrNumRiscV64(id);
         var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
-        var printLoadImmediate = (id.idInsOpt() == INS_OPTS_I) && !compiler.opts.disDiffable;
+        var printLoadImmediate = (id.idInsOpt() == INS_OPTS_I_RISCV64) && !compiler.opts.disDiffable;
         var instructionBytes = code + writeableOffset;
         nuint instructionSize;
         for (nuint i = 0; i < size; i += instructionSize, instructionBytes += instructionSize, offset += (uint)instructionSize)

@@ -25,7 +25,7 @@ public partial class Emitter
         var immediateBuildingCost = ((codeSize / sizeof(uint)) - 1) * PERFSCORE_LATENCY_1C;
         var ins = id.idIns();
         assert(ins != INS_invalid);
-        if ((ins == INS_lea) || (id.idInsOpt() == INS_OPTS_I))
+        if ((ins == INS_lea) || (id.idInsOpt() == INS_OPTS_I_RISCV64))
         {
             result.insLatency += immediateBuildingCost;
             result.insThroughput += immediateBuildingCost;
