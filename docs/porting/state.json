@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Start the remaining `FEATURE_SIMD` closure by identifying shared declarations and generated tables behind its 284 production-source guards; replace compile-time feature branches with `Configuration.FEATURE_SIMD` while preserving per-RID SIMD behavior.",
+    "nextAction": "Continue the remaining `FEATURE_SIMD` compiler closure in `Compiler.SIMDImport.cs`, `Compiler.SimdTypeUtilities.cs`, and the related value-numbering files; replace their compile-time branches with runtime configuration and follow dependencies only as needed.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace `FEATURE_SIMD` compile-time guards with runtime configuration across shared SIMD types, operations, generated metadata, and their tests.",
-      "doneWhen": "Production and generated source no longer depends on `FEATURE_SIMD` compilation symbols; per-RID SIMD configuration, enabled and disabled behavior, and shared declaration identities are validated.",
-      "validation": "Regenerate affected tables; run focused Core Debug and Release tests with full analyzers and target-configuration tests for SIMD-enabled xarch/ARM64/Wasm and SIMD-disabled ARM32, LoongArch, and RISC-V.",
-      "deferred": "Other TARGET_/FEATURE_ migrations, other target-native type families, and generated-code parity capture remain outside this feature-gating batch."
+      "scope": "Universalize `FEATURE_SIMD` compiler import, shared SIMD type utilities, and their value-numbering dependencies.",
+      "doneWhen": "These compiler operations compile without `FEATURE_SIMD` symbols and preserve enabled/disabled runtime behavior across supported target configurations.",
+      "validation": "Run focused importer/value-numbering tests on SIMD-enabled and disabled target RIDs in Debug and Release. Full analysis currently reports the pre-existing IDE0018 at `Compiler.cs:1703`; validate the changed paths with analyzers disabled until that unrelated baseline issue is resolved.",
+      "deferred": "Remaining SIMD lowering/codegen guards, `FEATURE_HW_INTRINSICS` APIs still required by the vector-mask helper, and other TARGET_/FEATURE_ migrations."
     },
     "parityEvidence": {
       "corelibCodegen": {

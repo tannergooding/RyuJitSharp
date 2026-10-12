@@ -847,12 +847,10 @@ public partial class GenTree
                     result = true;
                 }
 
-#if FEATURE_SIMD
-                else if (_oper.IsCnsVec)
+                else if (Configuration.FEATURE_SIMD && _oper.IsCnsVec)
                 {
                     result = true;
                 }
-#endif
                 else if (_oper.IsCnsMsk)
                 {
                     result = true;
@@ -886,7 +884,8 @@ public partial class GenTree
             else if (_type is TYP_VOID)
             {
                 // These are the only operators which can produce either VOID or non-VOID results.
-                assert((oper is GT_NOP or GT_COMMA) || oper.IsCall || oper.IsCompare || oper.IsLong || oper.IsHWIntrinsic || oper.IsCnsVec || oper.IsCnsMsk);
+                assert((oper is GT_NOP or GT_COMMA) || oper.IsCall || oper.IsCompare || oper.IsLong || oper.IsHWIntrinsic ||
+                    (Configuration.FEATURE_SIMD && oper.IsCnsVec) || oper.IsCnsMsk);
                 result = false;
             }
 
@@ -949,23 +948,16 @@ public partial class GenTree
                 }
             }
 #endif
+
             return false;
         }
     }
 
-#if FEATURE_SIMD
-    public bool IsVectorAllBitsSet => _oper.IsCnsVec && AsVecCon().IsAllBitsSet;
+    public bool IsVectorAllBitsSet => Configuration.FEATURE_SIMD && _oper.IsCnsVec && AsVecCon().IsAllBitsSet;
 
-    public bool IsVectorCreate => _oper.IsHWIntrinsic && AsHWIntrinsic().IsCreate;
+    public bool IsVectorCreate => Configuration.FEATURE_SIMD && _oper.IsHWIntrinsic && AsHWIntrinsic().IsCreate;
 
-    public bool IsVectorZero => _oper.IsCnsVec && AsVecCon().IsZero;
-#else
-    public bool IsVectorAllBitsSet => false;
-
-    public bool IsVectorCreate => false;
-
-    public bool IsVectorZero => false;
-#endif
+    public bool IsVectorZero => Configuration.FEATURE_SIMD && _oper.IsCnsVec && AsVecCon().IsZero;
 
     public bool IsZeroForSelect => IsVectorZero || IsMaskZero;
 
@@ -1308,9 +1300,7 @@ public partial class GenTree
                 GT_CNS_DBL => op1.AsDblCon().IsBitwiseEqual(op2.AsDblCon()),
                 GT_CNS_STR => (op1.AsStrCon().SconCpx == op2.AsStrCon().SconCpx) &&
                               (op1.AsStrCon().ScpHnd == op2.AsStrCon().ScpHnd),
-#if FEATURE_SIMD
-                GT_CNS_VEC => GenTreeVecCon.Equals(op1.AsVecCon(), op2.AsVecCon()),
-#endif
+                GT_CNS_VEC when Configuration.FEATURE_SIMD => GenTreeVecCon.Equals(op1.AsVecCon(), op2.AsVecCon()),
                 GT_CNS_MSK => GenTreeMskCon.Equals(op1.AsMskCon(), op2.AsMskCon()),
                 _ => false,
             };
@@ -2619,15 +2609,17 @@ public partial class GenTree
 
     public bool IsTrueMask(var_types simdBaseType) => _oper.IsCnsMsk && AsMskCon().IsTrue(simdBaseType);
 
-#if FEATURE_SIMD
-    public bool IsVectorBroadcast(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsBroadcast(simdBaseType);
-#else
-    public bool IsVectorBroadcast(var_types simdBaseType) => false;
-#endif
+    public bool IsVectorBroadcast(var_types simdBaseType)
+        => Configuration.FEATURE_SIMD && _oper.IsCnsVec && AsVecCon().IsBroadcast(simdBaseType);
 
     public bool IsVectorPerElementMask(Compiler compiler, var_types simdBaseType, byte simdSize)
     {
-#if FEATURE_SIMD
+        if (!Configuration.FEATURE_SIMD)
+        {
+            return false;
+        }
+
+#if FEATURE_HW_INTRINSICS
         // Keep in sync with ValueNumStore.IsVectorPerElementMask.
         var elementCount = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
         if (!varTypeIsSimd(Type) || (Type.Size != simdSize))
@@ -2700,19 +2692,14 @@ public partial class GenTree
             }
         }
 #endif
-
         return false;
     }
 
-#if FEATURE_SIMD
-    public bool IsVectorNaN(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNaN(simdBaseType);
+    public bool IsVectorNaN(var_types simdBaseType)
+        => Configuration.FEATURE_SIMD && _oper.IsCnsVec && AsVecCon().IsNaN(simdBaseType);
 
-    public bool IsVectorNegativeZero(var_types simdBaseType) => _oper.IsCnsVec && AsVecCon().IsNegativeZero(simdBaseType);
-#else
-    public bool IsVectorNaN(var_types simdBaseType) => false;
-
-    public bool IsVectorNegativeZero(var_types simdBaseType) => false;
-#endif
+    public bool IsVectorNegativeZero(var_types simdBaseType)
+        => Configuration.FEATURE_SIMD && _oper.IsCnsVec && AsVecCon().IsNegativeZero(simdBaseType);
 
     /// <summary>Check whether the operation may throw.</summary>
     /// <param name="comp">Compiler instance</param>

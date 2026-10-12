@@ -574,7 +574,7 @@ public partial class Compiler
             "GTSTRUCT_3_SPECIAL(",
         ];
 
-        var asNodeBuilder = ProcessMacroBasedFile(@"Inputs\gtstructs.h", prefixes, (builder, inputFile, line, prefix, parts) => {
+        var asNodeBuilder = ProcessMacroBasedFileUnion(@"Inputs\gtstructs.h", prefixes, (builder, inputFile, line, prefix, parts) => {
             if (parts.Length is < 2)
             {
                 throw new InvalidDataException($"Invalid line format: '{line}'");
@@ -6319,6 +6319,13 @@ public partial class Globals
     {
         var lines = File.ReadAllLines(inputFile);
         return ProcessMacroBasedFile(inputFile, lines, [prefix], callback, includeAllConditionalBranches: true);
+    }
+
+    private static StringBuilder ProcessMacroBasedFileUnion(
+        string inputFile, ReadOnlySpan<string> prefixes, Action<StringBuilder, string, string, string, string[]> callback)
+    {
+        var lines = File.ReadAllLines(inputFile);
+        return ProcessMacroBasedFile(inputFile, lines, prefixes, callback, includeAllConditionalBranches: true);
     }
 
     private static StringBuilder ProcessMacroBasedFile(string inputFile, string prefix, Action<StringBuilder, string, string, string, string[]> callback)

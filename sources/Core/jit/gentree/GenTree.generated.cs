@@ -80,14 +80,12 @@ public partial class GenTree
         assert(this is GenTreeStrCon);
         return Unsafe.As<GenTreeStrCon>(this);
     }
-#if FEATURE_SIMD
     public GenTreeVecCon AsVecCon()
     {
         assert(_oper is GT_CNS_VEC);
         assert(this is GenTreeVecCon);
         return Unsafe.As<GenTreeVecCon>(this);
     }
-#endif
     public GenTreeMskCon AsMskCon()
     {
         assert(_oper is GT_CNS_MSK);

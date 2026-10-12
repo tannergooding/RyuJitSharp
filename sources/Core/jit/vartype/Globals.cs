@@ -45,20 +45,12 @@ public partial class Globals
 
     public static bool varTypeIsSimd(var_types v)
     {
-#if FEATURE_SIMD
-        return (v.Classification & VTF_VEC) != 0;
-#else
-        return false;
-#endif
+        return Configuration.FEATURE_SIMD && (v.Classification & VTF_VEC) != 0;
     }
 
     public static bool varTypeIsMask(var_types v)
     {
-#if FEATURE_SIMD
-        return Configuration.FEATURE_MASKED_HW_INTRINSICS && (v == TYP_MASK);
-#else
-        return false;
-#endif
+        return Configuration.FEATURE_SIMD && Configuration.FEATURE_MASKED_HW_INTRINSICS && (v == TYP_MASK);
     }
 
     public static bool varTypeIsSimdOrMask(var_types vt) => varTypeIsSimd(vt) || varTypeIsMask(vt);

@@ -33,6 +33,26 @@ internal static class FeatureConfigurationTests
         Assert.That(Configuration.FEATURE_MULTIREG_RET, Is.EqualTo(supportsMultiRegRet));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void SimdTypeClassificationUsesTheRuntimeFeatureSwitch(bool enabled)
+    {
+        const string switchName = "RyuJitSharp.FEATURE_SIMD";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, enabled);
+        try
+        {
+            Assert.That(Configuration.FEATURE_SIMD, Is.EqualTo(enabled));
+            Assert.That(varTypeIsSimd(TYP_SIMD8), Is.EqualTo(enabled));
+            Assert.That(varTypeIsMask(TYP_MASK),
+                Is.EqualTo(enabled && Configuration.FEATURE_MASKED_HW_INTRINSICS));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
+        }
+    }
+
     [Test]
     public static void LongReturnDescriptorUsesTheConfiguredRegisterWidth()
     {
@@ -346,7 +366,8 @@ internal static class FeatureConfigurationTests
         {
             if (Configuration.FEATURE_SIMD)
             {
-                _ = new GenTreeVecCon(TYP_SIMD8);
+                var vector = new GenTreeVecCon(TYP_SIMD8);
+                Assert.That(vector.AsVecCon(), Is.SameAs(vector));
             }
             else
             {
