@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -149,6 +150,34 @@ internal static unsafe class WasmEmitterOutputTests
 
             Assert.That(zeroRegisterFailure?.Message, Does.Contain("no architectural integer zero register"));
             Assert.That(floatingRegistersFailure?.Message, Does.Contain("no architectural floating-point registers"));
+        });
+    }
+
+    [Test]
+    public static void NativeGenericContextEmissionAdaptersFailExplicitlyOnWasm()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var loadMethod = typeof(CodeGen).GetMethod(
+                "genLoadGenericContextArgFromStack",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new AssertionException("Native generic-context loading is unavailable.");
+            var storeMethod = typeof(CodeGen).GetMethod(
+                "genStoreGenericContextArgXarch",
+                BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new AssertionException("xarch generic-context storage is unavailable.");
+
+            var loadFailure = Assert.Throws<TargetInvocationException>(
+                () => loadMethod.Invoke(codeGen, [REG_NA, 0]));
+            var storeFailure = Assert.Throws<TargetInvocationException>(
+                () => storeMethod.Invoke(codeGen, [REG_NA, (nint)0]));
+
+            Assert.That(loadFailure?.InnerException, Is.TypeOf<FatalJitException>());
+            Assert.That(loadFailure?.InnerException?.Message,
+                Does.Contain("Native generic-context loading is unavailable on Wasm."));
+            Assert.That(storeFailure?.InnerException, Is.TypeOf<FatalJitException>());
+            Assert.That(storeFailure?.InnerException?.Message,
+                Does.Contain("xarch generic-context storage is unavailable."));
         });
     }
 

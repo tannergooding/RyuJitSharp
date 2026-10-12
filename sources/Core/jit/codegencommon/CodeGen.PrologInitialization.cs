@@ -353,20 +353,24 @@ public sealed partial class CodeGen
 
     private void genLoadGenericContextArgFromStack(regNumber reg, int stackOffset)
     {
-#if !TARGET_WASM
-        Emitter.emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(), stackOffset);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Native generic-context loading is unavailable on Wasm.");
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Native generic-context loading is unavailable on Wasm.");
+        }
+
+        var frameReg = IsFramePointerUsed ? REG_FPBASE : REG_SPBASE;
+        Emitter.emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, frameReg, stackOffset);
     }
 
     private void genStoreGenericContextArgXarch(regNumber reg, nint offset)
     {
-#if TARGET_XARCH
-        Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(), offset);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "xarch generic-context storage is unavailable.");
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "xarch generic-context storage is unavailable.");
+        }
+
+        var frameReg = IsFramePointerUsed ? REG_FPBASE : REG_SPBASE;
+        Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, frameReg, offset);
     }
 
     private bool genIsContextArgPrespilledForProfiling(int contextArg)
