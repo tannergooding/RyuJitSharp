@@ -576,11 +576,13 @@ public partial class Compiler
 
     public void lvaAssignFrameOffsetsToPromotedStructs()
     {
-#if UNIX_AMD64_ABI || TARGET_ARM || TARGET_X86 || TARGET_WASM
-        var mustProcessParams = true;
-#else
-        var mustProcessParams = opts.IsOSR || (info.compCallConv == CorInfoCallConvExtension.Swift);
-#endif
+        var mustProcessParams = Configuration.UNIX_AMD64_ABI
+            || Configuration.TARGET_ARM
+            || Configuration.TARGET_X86
+            || Configuration.TARGET_WASM
+            || opts.IsOSR
+            || (info.compCallConv == CorInfoCallConvExtension.Swift);
+
         for (var lclNum = 0; lclNum < lvaCount; lclNum++)
         {
             ref var dsc = ref lvaGetDesc(lclNum);

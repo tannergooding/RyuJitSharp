@@ -100,6 +100,8 @@ internal static class Configuration
 
     internal static bool TARGET_UNIX => GetFeatureSwitch(nameof(TARGET_UNIX));
 
+    internal static bool UNIX_AMD64_ABI => TARGET_AMD64 && TARGET_UNIX;
+
     internal static bool TARGET_APPLE => GetFeatureSwitch(nameof(TARGET_APPLE));
 
     internal static bool SWIFT_SUPPORT => TARGET_ARM64 || (TARGET_AMD64 && TARGET_UNIX);
