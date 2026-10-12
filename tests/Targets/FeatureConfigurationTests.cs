@@ -88,6 +88,18 @@ internal static class FeatureConfigurationTests
         }
     }
 
+    [Test]
+    public static void MultiregStructPromotionFeatureMatchesTheTargetArchitecture()
+    {
+        var supportsMultiRegStructPromotion = Configuration.TARGET_ARM64 ||
+            Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64 ||
+            Configuration.TARGET_WASM ||
+            (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX);
+
+        Assert.That(Configuration.FEATURE_MULTIREG_STRUCT_PROMOTE, Is.EqualTo(supportsMultiRegStructPromotion));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void ValueNumberDumpArgumentsFeatureUsesRuntimeSwitch(bool enabled)

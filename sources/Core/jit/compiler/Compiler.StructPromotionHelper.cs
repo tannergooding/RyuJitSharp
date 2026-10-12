@@ -432,10 +432,10 @@ public partial class Compiler
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
             else if (varDsc.lvIsParam && !_compiler.lvaIsImplicitByRefLocal(lclNum) && !IsArmHfaParameter(lclNum))
             {
-#if FEATURE_MULTIREG_STRUCT_PROMOTE
                 // Is this a variable holding a value with exactly two fields passed in
                 // multiple registers?
-                if (varDsc.lvIsMultiRegArg || IsSysVMultiRegType(varDsc.Layout))
+                if (Configuration.FEATURE_MULTIREG_STRUCT_PROMOTE &&
+                    (varDsc.lvIsMultiRegArg || IsSysVMultiRegType(varDsc.Layout)))
                 {
                     if ((structPromotionInfo.fieldCnt != 2) &&
                         ((structPromotionInfo.fieldCnt != 1) || !varTypeIsSimd(structPromotionInfo.fields[0].fldType)))
@@ -452,7 +452,6 @@ public partial class Compiler
 #endif
                 }
                 else
-#endif
                 {
                     // TODO-PERF - Implement struct promotion for incoming single-register structs.
                     //             Also the implementation of jmp uses the 4 byte move to store

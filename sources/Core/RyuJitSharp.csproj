@@ -362,13 +362,6 @@
     <DefineConstants Condition="'$(RyuJitTargetIsXarch)' == 'true'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MASKED_HW_INTRINSICS</DefineConstants>
 
-    <!-- FEATURE_MULTIREG_STRUCT_PROMOTE: True when we want to promote fields of a multireg struct into registers -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'arm64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'loongarch64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x64' and '$(RyuJitTargetIsUnix)' == 'true'">$(DefineConstants);FEATURE_MULTIREG_STRUCT_PROMOTE</DefineConstants>
-    
     <!-- FEATURE_MULTITHREADING -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);FEATURE_MULTITHREADING</DefineConstants>
 

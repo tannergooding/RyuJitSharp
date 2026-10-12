@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize FEATURE_MULTIREG_STRUCT_PROMOTE: verify its target matrix and struct-promotion behavior, replace the preprocessor branch with Configuration, remove the project defines, and validate both enabled and disabled targets.",
+    "nextAction": "Remove the always-enabled FEATURE_ON_STACK_REPLACEMENT preprocessor guards from the JIT and its generated JitConfigValues surface; update the generator input/source as required, then validate the affected configuration and compiler paths.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize FEATURE_HFA and FEATURE_HFA_FIELDS_PRESENT while preserving fixed and runtime-configurable ARM32 ABI behavior.",
-      "doneWhen": "No FEATURE_HFA, FEATURE_HFA_FIELDS_PRESENT, CONFIGURABLE_ARM_ABI, or ARM_SOFTFP preprocessor guards remain; Configuration computes HFA support from the configured target/ABI, and ARM soft-float behavior is available through initialized compiler options and per-RID substitutions.",
-      "validation": "Focused ARM32 target tests passed 10/10 in Debug with CONFIGURABLE_ARM_ABI enabled and 5/5 in Release with fixed ARM_SOFTFP enabled; both runs used the win-x64 test host and linux-arm compiler target, with full analyzers enabled in the final Debug/Release runs. An earlier broad Arm32 filter also selected instruction-format tests and failed 36/472 outside the edited ABI fixtures; the narrowed ABI filter passed. `git diff --check` passed.",
+      "scope": "Universalize FEATURE_MULTIREG_STRUCT_PROMOTE while preserving target-specific multi-register struct parameter promotion.",
+      "doneWhen": "No FEATURE_MULTIREG_STRUCT_PROMOTE project define or preprocessor guard remains; the runtime Configuration predicate matches the existing architecture matrix and both enabled and disabled target behavior are covered.",
+      "validation": "StructPromotionTests passed 26/26 in Debug and 22/22 in Release for both win-x64 (feature disabled) and linux-x64 (feature enabled); the target-matrix test passed 1/1 for each target. Full-analyzer Debug win-x64 passed 26/26. Full-analyzer Release win-x64 was blocked by the unrelated existing CA1812 diagnostic in DiscretionaryPolicyTests.FixedMultiplierPolicy; Linux full-analyzer runs had previously hit unrelated IDE0018/CA1823 diagnostics. `git diff --check` passed.",
       "deferred": "The repository-wide TARGET_/FEATURE_ preprocessor migration remains active. genAsyncResumeInfo remains deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {

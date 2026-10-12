@@ -157,6 +157,23 @@ internal static unsafe class StructPromotionTests
     }
 
     [Test]
+    public static void MultiregisterParametersPromoteOnlyOnSupportedTargets()
+    {
+        WithCompiler((compiler, _) => {
+            compiler.lvaEnregMultiRegVars = true;
+            compiler.lvaTable[0].lvIsParam = true;
+            compiler.lvaTable[0].lvIsMultiRegArg = true;
+
+            Assert.That(Promote(compiler),
+                Is.EqualTo(Configuration.FEATURE_MULTIREG_STRUCT_PROMOTE
+                    ? PhaseStatus.MODIFIED_EVERYTHING
+                    : PhaseStatus.MODIFIED_NOTHING));
+            Assert.That(compiler.lvaTable[0].lvPromoted,
+                Is.EqualTo(Configuration.FEATURE_MULTIREG_STRUCT_PROMOTE));
+        });
+    }
+
+    [Test]
     public static void CustomLayoutsRemainUnpromoted()
     {
         WithCompiler((compiler, metadata) => {
@@ -217,6 +234,8 @@ internal static unsafe class StructPromotionTests
                 vtable.Base.Base.getClassAttribs = &GetClassAttributes;
                 vtable.Base.Base.getClassSize = &GetClassSize;
                 vtable.Base.Base.getTypeLayout = &GetTypeLayout;
+                vtable.Base.Base.getHFAType = &GetNoHfaType;
+                vtable.Base.Base.getSystemVAmd64PassStructInRegisterDescriptor = &GetSystemVDescriptor;
 #if DEBUG
                 vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
 #endif
@@ -246,6 +265,24 @@ internal static unsafe class StructPromotionTests
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static int GetClassSize(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type) => 16;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CorInfoHFAElemType GetNoHfaType(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type)
+        => CorInfoHFAElemType.CORINFO_HFA_ELEM_NONE;
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte GetSystemVDescriptor(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type,
+        SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* descriptor)
+    {
+        *descriptor = new SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
+        {
+            passedInRegisters = true,
+            eightByteCount = 2,
+        };
+        descriptor->eightByteClassifications[0] = SystemVClassificationType.SystemVClassificationTypeInteger;
+        descriptor->eightByteClassifications[1] = SystemVClassificationType.SystemVClassificationTypeInteger;
+        return 1;
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static GetTypeLayoutResult GetTypeLayout(ICorJitInfo* self, CORINFO_CLASS_STRUCT_* type,
