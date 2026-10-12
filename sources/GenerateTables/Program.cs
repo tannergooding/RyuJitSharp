@@ -4676,6 +4676,10 @@ public enum regMask : long
             }
 
             var name = parts[0].AsSpan().Trim();
+            if (name.SequenceEqual("FFR"))
+            {
+                return;
+            }
 
             if (parts.Length is 2)
             {
@@ -4713,6 +4717,9 @@ public enum regNumber : byte
 
     // everything but REG_STK (only real regs)
     ACTUAL_REG_COUNT = REG_COUNT - 1,
+
+    // registerarm64.h defines FFR as 1 + NBASE (80); keep the alias after the count sentinels.
+    REG_FFR = 81,
 }
 """);
     }

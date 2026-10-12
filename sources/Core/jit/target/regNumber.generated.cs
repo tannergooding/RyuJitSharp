@@ -270,7 +270,6 @@ public enum regNumber : byte
     REG_P14 = 14+PBASE,
     REG_P15 = 15+PBASE,
     REG_SP = 0+NBASE,
-    REG_FFR = 1+NBASE,
     REG_STK = 2+NBASE,
 #elif TARGET_LOONGARCH64
     REG_R0 = 0,
@@ -418,4 +417,7 @@ public enum regNumber : byte
 
     // everything but REG_STK (only real regs)
     ACTUAL_REG_COUNT = REG_COUNT - 1,
+
+    // registerarm64.h defines FFR as 1 + NBASE (80); keep the alias after the count sentinels.
+    REG_FFR = 81,
 }

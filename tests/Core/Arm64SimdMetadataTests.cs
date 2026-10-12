@@ -208,6 +208,15 @@ internal static class Arm64SimdMetadataTests
         Assert.That(node.SimdScalableVal.Step.u64[0], Is.Zero);
     }
 
+    [Test]
+    public static void PhysicalRegisterFactoryAcceptsFfr()
+    {
+        var compiler = JitTls.Compiler ?? throw new AssertionException("The fixture compiler is not initialized.");
+        var node = compiler.gtNewPhysRegNode(REG_FFR, TYP_MASK);
+
+        Assert.That(node.SrcReg, Is.EqualTo(REG_FFR));
+    }
+
     [TestCase((byte)0)]
     [TestCase((byte)0x3C)]
     [TestCase(byte.MaxValue)]

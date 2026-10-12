@@ -88,11 +88,16 @@ internal static class IRVerificationTests
             Assert.That(node.Type, Is.EqualTo(TYP_I_IMPL));
             Assert.That(node.SrcReg, Is.EqualTo(REG_SPBASE));
 
-#if TARGET_ARM64
-            Assert.That(genIsValidIntReg(REG_FFR), Is.False);
-            var ffrNode = compiler.gtNewPhysRegNode(REG_FFR, TYP_MASK);
-            Assert.That(ffrNode.SrcReg, Is.EqualTo(REG_FFR));
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                Assert.That(genIsValidIntReg(REG_FFR), Is.False);
+                var ffrNode = compiler.gtNewPhysRegNode(REG_FFR, TYP_MASK);
+                Assert.That(ffrNode.SrcReg, Is.EqualTo(REG_FFR));
+            }
+            else
+            {
+                Assert.That(() => compiler.gtNewPhysRegNode(REG_FFR, TYP_MASK), Throws.Exception);
+            }
 
             Assert.That(() => compiler.gtNewPhysRegNode(REG_NA, TYP_I_IMPL), Throws.Exception);
         });

@@ -8845,11 +8845,8 @@ public partial class Compiler
 
     public GenTreePhysReg gtNewPhysRegNode(regNumber reg, var_types type)
     {
-#if TARGET_ARM64
-        assert(genIsValidIntReg(reg) || (reg is REG_SPBASE) || (reg is REG_FFR));
-#else
-        assert(genIsValidIntReg(reg) || (reg is REG_SPBASE));
-#endif
+        assert(genIsValidIntReg(reg) || (reg is REG_SPBASE) ||
+            (Configuration.TARGET_ARM64 && (reg is REG_FFR)));
         return new GenTreePhysReg(reg, type);
     }
 
