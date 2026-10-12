@@ -268,11 +268,17 @@ internal static unsafe class LateDisassemblyBackendTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_corDisasm")]
     private static extern ref nuint Decoder(ref Disassembler disassembler);
 
-#if TARGET_XARCH || TARGET_ARM64
+    private static void AssumeMsvcTarget()
+    {
+        Assume.That(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64);
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void MsvcTwoPassWalkAssignsByteLabelsAndOnlyInstallsCallbacksForOutput(bool printit)
     {
+        AssumeMsvcTarget();
+
         var hot = stackalloc byte[8];
         var disassembler = default(Disassembler);
         Hot(ref disassembler) = (nuint)hot;
@@ -282,11 +288,7 @@ internal static unsafe class LateDisassemblyBackendTests
         Diffable(ref disassembler) = true;
         var decoder = new FakeMsvc
         {
-#if TARGET_XARCH
-            Kind = MsTermination.JmpNear,
-#else
-            Kind = MsTermination.Bra,
-#endif
+            Kind = Configuration.TARGET_XARCH ? MsTermination.JmpNear : MsTermination.Bra,
             BranchTarget = 4,
         };
         using var stream = new MemoryStream();
@@ -296,9 +298,11 @@ internal static unsafe class LateDisassemblyBackendTests
 
         Assert.That(decoder.Addresses, Is.EqualTo(new ulong[] { 0, 4, 0, 4 }));
         List<string> events = [];
-#if TARGET_64BIT
-        events.Add("address64");
-#endif
+        if (Configuration.TARGET_64BIT)
+        {
+            events.Add("address64");
+        }
+
         events.Add("client");
         if (printit)
         {
@@ -314,6 +318,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [Test]
     public static void MsvcByteLabelNumberingWrapsAt256LikeNative()
     {
+        AssumeMsvcTarget();
+
         var hot = stackalloc byte[1028];
         var disassembler = default(Disassembler);
         Hot(ref disassembler) = (nuint)hot;
@@ -335,6 +341,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [Test]
     public static void MsvcDecodeFailureReportsBytesEvenDuringLabelDiscovery()
     {
+        AssumeMsvcTarget();
+
         var bytes = stackalloc byte[4] { 0x11, 0x22, 0x33, 0x44 };
         var disassembler = default(Disassembler);
         var decoder = new FakeMsvc { DecodedSize = 0 };
@@ -344,19 +352,24 @@ internal static unsafe class LateDisassemblyBackendTests
         output.Flush();
         var text = Encoding.UTF8.GetString(stream.ToArray());
         Assert.That(text, Does.StartWith("MSVCDIS can't disassemble instruction @ offset 10 (0x0a)!!!\n"));
-#if TARGET_ARM64
-        Assert.That(size, Is.EqualTo((nuint)4));
-        Assert.That(text, Does.EndWith("44332211h\n"));
-#else
-        Assert.That(size, Is.EqualTo((nuint)1));
-        Assert.That(text, Does.EndWith("11h\n"));
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            Assert.That(size, Is.EqualTo((nuint)4));
+            Assert.That(text, Does.EndWith("44332211h\n"));
+        }
+        else
+        {
+            Assert.That(size, Is.EqualTo((nuint)1));
+            Assert.That(text, Does.EndWith("11h\n"));
+        }
     }
 
     [TestCase(false)]
     [TestCase(true)]
     public static void MsvcCallLabelsExcludeRelocations(bool relocated)
     {
+        AssumeMsvcTarget();
+
         var bytes = stackalloc byte[8];
         var disassembler = default(Disassembler);
         Hot(ref disassembler) = (nuint)bytes;
@@ -366,11 +379,7 @@ internal static unsafe class LateDisassemblyBackendTests
         Relocations(ref disassembler) = relocated ? new() { [(nuint)(bytes + 1)] = 0x1234 } : [];
         var decoder = new FakeMsvc
         {
-#if TARGET_XARCH
-            Kind = MsTermination.CallNear32,
-#else
-            Kind = MsTermination.Call,
-#endif
+            Kind = Configuration.TARGET_XARCH ? MsTermination.CallNear32 : MsTermination.Call,
             BranchTarget = 4,
         };
         using var stream = new MemoryStream();
@@ -384,17 +393,15 @@ internal static unsafe class LateDisassemblyBackendTests
     [TestCase(ulong.MaxValue, 1)]
     public static void MsvcLabelDiscoveryUsesTheBackendNilSentinel(ulong nil, byte expected)
     {
+        AssumeMsvcTarget();
+
         var bytes = stackalloc byte[4];
         var disassembler = default(Disassembler);
         TotalSize(ref disassembler) = 4;
         Labels(ref disassembler) = new byte[4];
         var decoder = new FakeMsvc
         {
-#if TARGET_XARCH
-            Kind = MsTermination.JmpNear,
-#else
-            Kind = MsTermination.Bra,
-#endif
+            Kind = Configuration.TARGET_XARCH ? MsTermination.JmpNear : MsTermination.Bra,
             Nil = nil,
             BranchTarget = 0,
         };
@@ -409,6 +416,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [TestCase(true)]
     public static void MsvcAddressCallbackFormatsLocalLabelsWithoutDisplacement(bool diffable)
     {
+        AssumeMsvcTarget();
+
         var disassembler = default(Disassembler);
         TotalSize(ref disassembler) = 8;
         Labels(ref disassembler) = [0, 0, 0, 0, 7, 0, 0, 0];
@@ -416,11 +425,7 @@ internal static unsafe class LateDisassemblyBackendTests
         Diffable(ref disassembler) = diffable;
         var decoder = new FakeMsvc
         {
-#if TARGET_XARCH
-            Kind = MsTermination.JmpShort,
-#else
-            Kind = MsTermination.Bra,
-#endif
+            Kind = Configuration.TARGET_XARCH ? MsTermination.JmpShort : MsTermination.Bra,
         };
         ulong displacement = 123;
         var text = stackalloc char[64];
@@ -428,28 +433,22 @@ internal static unsafe class LateDisassemblyBackendTests
 
         Assert.That(result, Is.EqualTo((nuint)1));
         Assert.That(displacement, Is.Zero);
-#if TARGET_XARCH
-        Assert.That(new string(text), Is.EqualTo("short L_07"));
-#else
-        Assert.That(new string(text), Is.EqualTo("L_07"));
-#endif
+        Assert.That(new string(text), Is.EqualTo(Configuration.TARGET_XARCH ? "short L_07" : "L_07"));
     }
 
     [TestCase(false)]
     [TestCase(true)]
     public static void MsvcUnannotatedAddressPreservesDisplacementAndDiffableReturnValue(bool diffable)
     {
+        AssumeMsvcTarget();
+
         var disassembler = default(Disassembler);
         Target(ref disassembler) = 9;
         TotalSize(ref disassembler) = 8;
         Diffable(ref disassembler) = diffable;
         var decoder = new FakeMsvc
         {
-#if TARGET_XARCH
-            Kind = MsTermination.JmpNear,
-#else
-            Kind = MsTermination.Bra,
-#endif
+            Kind = Configuration.TARGET_XARCH ? MsTermination.JmpNear : MsTermination.Bra,
         };
         ulong displacement = 123;
         var text = stackalloc char[64];
@@ -467,6 +466,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [TestCase(true)]
     public static void MsvcFixupFormatsRelocatedImmediateAndClearsOnlySuccessfulDisplacement(bool diffable)
     {
+        AssumeMsvcTarget();
+
         var bytes = stackalloc byte[8];
         var disassembler = default(Disassembler);
         Hot(ref disassembler) = (nuint)bytes;
@@ -493,6 +494,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [TestCase(0xFFFFFF7Fu)]
     public static void MsvcIndirectRegisterRelativeOperandDeclinesWithoutMutatingDisplacement(uint disp)
     {
+        AssumeMsvcTarget();
+
         var disassembler = default(Disassembler);
         var decoder = new FakeMsvc { Kind = MsTermination.CallInd };
         uint displacement = 123;
@@ -510,6 +513,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [TestCase(0xFFFFFF7Fu, true)]
     public static void MsvcDeferredNameIsReadOnlyForNonByteDisplacements(uint disp, bool annotated)
     {
+        AssumeMsvcTarget();
+
         var disassembler = default(Disassembler);
         HasName(ref disassembler) = true;
         var decoder = new FakeMsvc { Kind = MsTermination.CallInd, DeferredName = "callee" };
@@ -528,6 +533,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [Test]
     public static void MsvcByteDisplayTruncationPreservesNativeNullInclusiveWidth()
     {
+        AssumeMsvcTarget();
+
         var bytes = stackalloc byte[4];
         var disassembler = default(Disassembler);
         Labels(ref disassembler) = new byte[4];
@@ -536,13 +543,7 @@ internal static unsafe class LateDisassemblyBackendTests
         using var output = new StreamWriter(stream, leaveOpen: true);
         _ = MsInstruction(ref disassembler, decoder, 0xA, 0, bytes, 4, output, false, true, true, true);
         output.Flush();
-#if TARGET_ARM64
-        const int indent = 8;
-#elif TARGET_AMD64
-        const int indent = 30;
-#else
-        const int indent = 24;
-#endif
+        var indent = Configuration.TARGET_ARM64 ? 8 : Configuration.TARGET_AMD64 ? 30 : 24;
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo($"00A  {new string('A', indent - 4)}...  nop\n"));
     }
 
@@ -550,6 +551,8 @@ internal static unsafe class LateDisassemblyBackendTests
     [TestCase("AA BB CC DD EE FF GGGG HH II")]
     public static void MsvcByteWrappingPreservesNativeWholeRemainderLastSpaceSearch(string byteText)
     {
+        AssumeMsvcTarget();
+
         var bytes = stackalloc byte[4];
         var decoder = new FakeMsvc { ByteText = byteText, BytesMax = 18 };
         using var stream = new MemoryStream();
@@ -563,11 +566,12 @@ internal static unsafe class LateDisassemblyBackendTests
         Assert.That(Encoding.UTF8.GetString(stream.ToArray()), Is.EqualTo(expected));
     }
 
-#if TARGET_ARM64
     [TestCase(true)]
     [TestCase(false)]
     public static void MsvcArm64FallthroughUsesDecodedAddressOrExistingTarget(bool isAddress)
     {
+        Assume.That(Configuration.TARGET_ARM64);
+
         var bytes = stackalloc byte[8];
         var disassembler = default(Disassembler);
         TotalSize(ref disassembler) = 8;
@@ -581,10 +585,8 @@ internal static unsafe class LateDisassemblyBackendTests
         using var stream = new MemoryStream();
         using var output = new StreamWriter(stream);
         _ = MsInstruction(ref disassembler, decoder, 0, 0, bytes, 8, output, true, false, false, false);
-
         Assert.That(Labels(ref disassembler)?[isAddress ? 6 : 4], Is.EqualTo(1));
     }
-#endif
 
     private sealed class FakeMsvc : MsDisassembler
     {
@@ -707,10 +709,6 @@ internal static unsafe class LateDisassemblyBackendTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_totalCodeSize")]
     private static extern ref nuint TotalSize(ref Disassembler disassembler);
-#endif
-
-#if DEBUG
-#endif
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_hotCodeBlock")]
     private static extern ref nuint Hot(ref Disassembler disassembler);

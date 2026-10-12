@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH || TARGET_ARM64
 using System;
 using System.IO;
 
@@ -12,13 +11,7 @@ namespace RyuJitSharp;
 public partial struct Disassembler
 {
     private const nuint MAX_CLASSNAME_LENGTH = 1024;
-#if TARGET_ARM64
-    private const int CCH_INDENT = 8;
-#elif TARGET_AMD64
-    private const int CCH_INDENT = 30;
-#else
-    private const int CCH_INDENT = 24;
-#endif
+    private static int CCH_INDENT => Configuration.TARGET_ARM64 ? 8 : Configuration.TARGET_AMD64 ? 30 : 24;
     private static nuint s_cchBytesMax = nuint.MaxValue;
 
     private unsafe nuint CbDisassemble(MsDisassembler pdis, nuint offs, ulong addr,
@@ -30,20 +23,23 @@ public partial struct Disassembler
         {
             DumpMsCallback($"CbDisassemble offs {offs} addr {addr}\n");
             pfile.Write($"MSVCDIS can't disassemble instruction @ offset {offs} (0x{offs:x2})!!!\n");
-#if TARGET_ARM64
-            pfile.Write($"{*(uint*)pb:X8}h\n");
+            if (Configuration.TARGET_ARM64)
+            {
+                pfile.Write($"{*(uint*)pb:X8}h\n");
 
-            return 4;
-#else
+                return 4;
+            }
+
             pfile.Write($"{*pb:X2}h\n");
 
             return 1;
-#endif
         }
 
-#if TARGET_ARM64
-        assert(cb == 4);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            assert(cb == 4);
+        }
+
         _curOffset = unchecked((nuint)addr);
         _instSize = cb;
         _target = unchecked((nuint)pdis.Target);
@@ -52,14 +48,11 @@ public partial struct Disassembler
         {
             switch (pdis.Termination)
             {
-#if TARGET_XARCH
                 case MsTermination.CallNear16:
                 case MsTermination.CallNear32:
                 case MsTermination.CallFar:
-#else
                 case MsTermination.Call:
                 case MsTermination.CallCc:
-#endif
                 {
                     var absoluteAddr = (nuint)disGetLinearAddr(unchecked((nuint)pdis.AddressAddress(1)));
                     if (GetRelocationMap().ContainsKey(absoluteAddr))
@@ -67,25 +60,23 @@ public partial struct Disassembler
                         break;
                     }
 
-#if TARGET_XARCH
-                    goto case MsTermination.JmpShort;
-#else
+                    if (Configuration.TARGET_XARCH)
+                    {
+                        goto case MsTermination.JmpShort;
+                    }
+
                     goto case MsTermination.Bra;
-#endif
                 }
 
-#if TARGET_XARCH
                 case MsTermination.JmpShort:
                 case MsTermination.JmpNear:
                 case MsTermination.JmpFar:
                 case MsTermination.JmpCcShort:
                 case MsTermination.JmpCcNear:
-#else
                 case MsTermination.Bra:
                 case MsTermination.BraCase:
                 case MsTermination.BraCc:
                 case MsTermination.BraCcCase:
-#endif
                 {
                     // Preserve the backend's addrNil sentinel; do not assume it is zero.
                     if ((ulong)_target != pdis.NilAddress && _target < _totalCodeSize)
@@ -97,8 +88,7 @@ public partial struct Disassembler
 
                 case MsTermination.FallThrough:
                 {
-#if TARGET_ARM64
-                    if (pdis.Decode(out var instruction))
+                    if (Configuration.TARGET_ARM64 && pdis.Decode(out var instruction))
                     {
                         if (instruction.IsAddress)
                         {
@@ -113,7 +103,6 @@ public partial struct Disassembler
                             SetLabel(_target, 1);
                         }
                     }
-#endif
                     break;
                 }
 
@@ -150,11 +139,11 @@ public partial struct Disassembler
 
                 assert(s_cchBytesMax < MAX_CLASSNAME_LENGTH);
                 var bytes = pdis.FormatBytes(MAX_CLASSNAME_LENGTH, out var cchBytes);
-                if (cchBytes > CCH_INDENT)
+                if (cchBytes > (nuint)CCH_INDENT)
                 {
                     // The native four-character memcpy includes the terminating null.
                     bytes = string.Concat(bytes.AsSpan(0, CCH_INDENT - 4), "...");
-                    cchBytes = CCH_INDENT;
+                    cchBytes = (nuint)CCH_INDENT;
                 }
 
                 pfile.Write($"  {bytes}");
@@ -234,13 +223,11 @@ public partial struct Disassembler
 
     private unsafe void DisasmBufferMsvc(StreamWriter pfile, bool printit)
     {
-#if TARGET_X86
-        var pdis = NewMsDisassembler(MsArchitecture.X86);
-#elif TARGET_AMD64
-        var pdis = NewMsDisassembler(MsArchitecture.X8664);
-#else
-        var pdis = NewMsDisassembler(MsArchitecture.Arm64);
-#endif
+        var architecture = Configuration.TARGET_X86 ? MsArchitecture.X86 :
+            Configuration.TARGET_AMD64 ? MsArchitecture.X8664 :
+            Configuration.TARGET_ARM64 ? MsArchitecture.Arm64 :
+            throw new FatalJitException(CORJIT_SKIPPED, "MSVCDIS does not support this JIT target.");
+        var pdis = NewMsDisassembler(architecture);
         if (pdis is null)
         {
             assert(false, "out of memory in disassembler?");
@@ -252,9 +239,11 @@ public partial struct Disassembler
 
     private unsafe void DisasmBufferMsvc(MsDisassembler pdis, StreamWriter pfile, bool printit)
     {
-#if TARGET_64BIT
-        pdis.SetAddress64(true);
-#endif
+        if (Configuration.TARGET_64BIT)
+        {
+            pdis.SetAddress64(true);
+        }
+
         pdis.SetClient(ref this);
 
         nuint ibCur = 0;
@@ -308,4 +297,3 @@ public partial struct Disassembler
         _labels[checked((int)offset)] = value;
     }
 }
-#endif

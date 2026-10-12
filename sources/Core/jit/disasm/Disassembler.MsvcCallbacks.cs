@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH || TARGET_ARM64
 using System.Diagnostics;
 using System.Globalization;
 
@@ -25,52 +24,49 @@ public partial struct Disassembler
 
         switch (terminationType)
         {
-#if TARGET_XARCH
             case MsTermination.JmpShort:
             case MsTermination.JmpCcShort:
-            {
-                assert(_target < _totalCodeSize);
-                pdis.WriteCallbackText(wz, cchMax, $"short L_{Label(_target):D2}");
-                retval = 1;
-                break;
-            }
-
             case MsTermination.JmpNear:
             case MsTermination.JmpCcNear:
-#else
             case MsTermination.Bra:
             case MsTermination.BraCase:
             case MsTermination.BraCc:
             case MsTermination.BraCcCase:
             case MsTermination.BraCcInd:
             case MsTermination.BraInd:
-#endif
             {
                 if (_target < _totalCodeSize)
                 {
-                    pdis.WriteCallbackText(wz, cchMax, $"L_{Label(_target):D2}");
+                    var prefix = Configuration.TARGET_XARCH &&
+                        terminationType is MsTermination.JmpShort or MsTermination.JmpCcShort
+                            ? "short "
+                            : string.Empty;
+                    pdis.WriteCallbackText(wz, cchMax, $"{prefix}L_{Label(_target):D2}");
                     retval = 1;
                 }
                 break;
             }
 
-#if TARGET_XARCH
             case MsTermination.CallNear16:
             case MsTermination.CallNear32:
-#else
             case MsTermination.Call:
             case MsTermination.CallCc:
             case MsTermination.CallCcInd:
             case MsTermination.CallInd:
-#endif
             {
+                if (!Configuration.TARGET_ARM64 &&
+                    terminationType is MsTermination.CallCcInd or MsTermination.CallInd)
+                {
+                    goto default;
+                }
+
                 if (_target < _totalCodeSize)
                 {
-#if TARGET_XARCH
-                    pdis.WriteCallbackText(wz, cchMax, $"short L_{Label(_target):D2}");
-#else
-                    pdis.WriteCallbackText(wz, cchMax, $"L_{Label(_target):D2}");
-#endif
+                    var prefix = Configuration.TARGET_XARCH &&
+                        terminationType is MsTermination.CallNear16 or MsTermination.CallNear32
+                            ? "short "
+                            : string.Empty;
+                    pdis.WriteCallbackText(wz, cchMax, $"{prefix}L_{Label(_target):D2}");
                     retval = 1;
                     break;
                 }
@@ -85,19 +81,22 @@ public partial struct Disassembler
                 break;
             }
 
-#if TARGET_AMD64 || TARGET_ARM64
             case MsTermination.FallThrough:
             {
-#if TARGET_ARM64
-                if (pdis.Decode(out var instruction) && instruction.IsAddress && addr < (ulong)_totalCodeSize)
+                if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
+                {
+                    goto default;
+                }
+
+                if (Configuration.TARGET_ARM64 && pdis.Decode(out var instruction) &&
+                    instruction.IsAddress && addr < (ulong)_totalCodeSize)
                 {
                     pdis.WriteCallbackText(wz, cchMax, $"L_{Label((nuint)addr):D2}");
                     retval = 1;
                 }
-#endif
+
                 break;
             }
-#endif
 
             default:
             {
@@ -134,22 +133,29 @@ public partial struct Disassembler
 
         switch (terminationType)
         {
-#if TARGET_ARM64
             case MsTermination.Unknown:
             {
-                return 0;
+                if (Configuration.TARGET_ARM64)
+                {
+                    return 0;
+                }
+
+                goto default;
             }
-#endif
             case MsTermination.FallThrough:
             {
-#if TARGET_XARCH
-                assert(addr > pdis.Address);
-#endif
+                if (Configuration.TARGET_XARCH)
+                {
+                    assert(addr > pdis.Address);
+                }
+
                 if (anyReloc)
                 {
-#if TARGET_ARM64
-                    assert(addr > pdis.Address);
-#endif
+                    if (Configuration.TARGET_ARM64)
+                    {
+                        assert(addr > pdis.Address);
+                    }
+
                     pdis.WriteCallbackText(wz, cchMax, $"{dspAddr(targetAddr):X}h");
                     break;
                 }
@@ -157,33 +163,27 @@ public partial struct Disassembler
                 return 0;
             }
 
-#if TARGET_XARCH
             case MsTermination.JmpInd:
             case MsTermination.JmpShort:
             case MsTermination.JmpCcShort:
             case MsTermination.JmpNear:
             case MsTermination.JmpCcNear:
-#else
             case MsTermination.BraInd:
             case MsTermination.BraCcInd:
             case MsTermination.Bra:
             case MsTermination.BraCase:
             case MsTermination.BraCc:
             case MsTermination.BraCcCase:
-#endif
             case MsTermination.Trap:
             case MsTermination.TrapCc:
             {
                 return 0;
             }
 
-#if TARGET_XARCH
             case MsTermination.CallNear16:
             case MsTermination.CallNear32:
-#else
             case MsTermination.Call:
             case MsTermination.CallCc:
-#endif
             {
                 if (anyReloc)
                 {
@@ -199,10 +199,13 @@ public partial struct Disassembler
             }
 
             case MsTermination.CallInd:
-#if TARGET_ARM64
             case MsTermination.CallCcInd:
-#endif
             {
+                if (terminationType == MsTermination.CallCcInd && !Configuration.TARGET_ARM64)
+                {
+                    goto default;
+                }
+
                 assert(addr > pdis.Address);
                 _ = addr - pdis.Address;
 
@@ -246,34 +249,29 @@ public partial struct Disassembler
                     return 1;
                 }
 
-#if TARGET_XARCH
-                _ = (*disGetLinearAddr(_curOffset) == 0x66) ? 3 : 2;
-#else
-                // TODO-ARM64-Bug?: The pinned source uses the x86 opcode size here.
-                _ = 2;
-#endif
+                _ = Configuration.TARGET_XARCH && *disGetLinearAddr(_curOffset) == 0x66 ? 3 : 2;
                 return 0;
             }
 
-#if TARGET_XARCH
             case MsTermination.CallNear16:
             case MsTermination.CallNear32:
             case MsTermination.JmpInd:
-#else
             case MsTermination.Call:
             case MsTermination.CallCc:
             case MsTermination.BraInd:
             case MsTermination.BraCcInd:
-#endif
             {
                 break;
             }
 
             case MsTermination.CallInd:
-#if TARGET_ARM64
             case MsTermination.CallCcInd:
-#endif
             {
+                if (terminationType == MsTermination.CallCcInd && !Configuration.TARGET_ARM64)
+                {
+                    goto default;
+                }
+
                 if (unchecked((sbyte)disp) == unchecked((int)disp))
                 {
                     _ = 2;
@@ -335,4 +333,3 @@ public partial struct Disassembler
         return address.ToString($"X{sizeof(nuint) * 2}", CultureInfo.InvariantCulture);
     }
 }
-#endif
