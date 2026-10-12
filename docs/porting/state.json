@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the `TARGET_ARM64` and `TARGET_XARCH` branches in `Compiler.gt.cs::gtGetAddrNodeCost` using runtime configuration, preserving volatile address-mode handling and constant-address cost behavior, then continue in source order.",
+    "nextAction": "Universalize the `UNIX_X86_ABI` branches in `Compiler.gt.cs::gtNewCallNode` and `gtNewHelperCallNode` using runtime configuration, preserving call-pop-args flag behavior.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize target-width branches in `Compiler.gtFoldExprBinaryConstLng` and `gtBashTreeToConstLng`, including field-sequence handling and constant-node creation.",
-      "doneWhen": "Both methods use runtime target-width configuration instead of TARGET_64BIT preprocessor branches while preserving overflow behavior, field-sequence semantics, and target-specific node representations.",
-      "validation": "The focused `LongConstantAdditionFoldingUsesTargetRepresentationAndFieldSequences` test passed in Debug and Release for win-x64. The target test project built successfully in Debug and Release for win-x86 and linux-arm. The win-x86 runtime test could not execute because the .NET 11.0.0-rc.1 x86 runtime is not installed; broader builds were also blocked for linux-loongarch64 by unavailable runtime packs (NU1101). This verifies x64 behavior and 32-bit compilation, but not 32-bit runtime behavior.",
+      "scope": "Universalize `TARGET_ARM64` volatile-address-mode handling and `TARGET_XARCH` constant-address costs in `Compiler.gtGetAddrNodeCost`.",
+      "doneWhen": "The helper uses runtime target configuration and preserves ARM64 volatile barrier costs, xarch constant-address costs, and other targets' existing behavior.",
+      "validation": "In Debug and Release, `AddressModeCostTargetTests` and `CompilerTargetConfigurationTests` passed on all seven target configurations using a win-x64 test host and the per-target `RyuJitTargetRuntimeIdentifier` runtime configuration: win-x64 (39 passed, 1 skipped), win-x86 (41, 1), linux-arm64 (36, 3), linux-arm (30, 9), linux-loongarch64 (28, 9), linux-riscv64 (28, 9), and browser-wasm (36, 4). This matrix also revalidated the target-width folding regression. Formatting and JSON checks pass.",
       "deferred": "Proceed to the next target/feature conditional in `Compiler.gt.cs` and then continue through remaining source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {

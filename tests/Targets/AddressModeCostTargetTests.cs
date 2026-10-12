@@ -52,6 +52,45 @@ internal static unsafe class AddressModeCostTargetTests
         });
     }
 
+    [Test]
+    public static void VolatileAddressModeUsesConfiguredArm64Rules()
+    {
+        WithCompiler(compiler => {
+            var baseType = Configuration.TARGET_WASM ? TYP_REF : TYP_LONG;
+            var addressType = Configuration.TARGET_WASM ? TYP_BYREF : TYP_LONG;
+            var displacementType = Configuration.TARGET_WASM ? TYP_I_IMPL : TYP_LONG;
+            compiler.lvaTable[0].Type = baseType;
+
+            var baseAddress = compiler.gtNewLclvNode(baseType, 0);
+            baseAddress.SetCosts(3, 6);
+
+            var displacement = compiler.gtNewIconNode(displacementType, 4);
+            var address = new GenTreeOp(GT_ADD, addressType, baseAddress, displacement);
+            address.SetCosts(4, 4);
+
+            var includesAddrCost = compiler.gtGetAddrNodeCost(address, TYP_LONG, isVolatile: true, out var costEx, out var costSz);
+
+            Assert.That(includesAddrCost, Is.EqualTo(!Configuration.TARGET_ARM64));
+            Assert.That(costEx, Is.EqualTo(Configuration.TARGET_ARM64 ? 0 : 3));
+            Assert.That(costSz, Is.EqualTo(Configuration.TARGET_ARM64 ? 0 : Configuration.TARGET_XARCH ? 7 : Configuration.TARGET_ARM ? 5 : 6));
+        });
+    }
+
+    [Test]
+    public static void ConstantAddressCostIsXarchSpecific()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            address.SetCosts(4, 7);
+
+            var includesAddrCost = compiler.gtGetAddrNodeCost(address, TYP_LONG, isVolatile: false, out var costEx, out var costSz);
+
+            Assert.That(includesAddrCost, Is.EqualTo(Configuration.TARGET_XARCH));
+            Assert.That(costEx, Is.EqualTo(Configuration.TARGET_XARCH ? 3 : 0));
+            Assert.That(costSz, Is.EqualTo(Configuration.TARGET_XARCH ? 7 : 0));
+        });
+    }
+
     private static void WithCompiler(Action<Compiler> action)
     {
 #if DEBUG

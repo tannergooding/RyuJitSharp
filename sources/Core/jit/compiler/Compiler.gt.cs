@@ -5475,14 +5475,12 @@ public partial class Compiler
             // See if we can form a complex addressing mode.
             var doAddrMode = true;
 
-#if TARGET_ARM64
-            if (isVolatile)
+            if (Configuration.TARGET_ARM64 && isVolatile)
             {
                 // For volatile store/loads when address is contained we always emit `dmb`
                 // if it's not - we emit one-way barriers i.e. ldar/stlr
                 doAddrMode = false;
             }
-#endif
 
             if (doAddrMode && gtMarkAddrMode(addr, ref costEx, ref costSz, type))
             {
@@ -5494,8 +5492,7 @@ public partial class Compiler
             // Indirection of an enregister LCL_VAR, don't increase costEx/costSz.
             includesAddrCost = true;
         }
-#if TARGET_XARCH
-        else if (addr.Oper.IsCnsIntOrI)
+        else if (Configuration.TARGET_XARCH && addr.Oper.IsCnsIntOrI)
         {
             // Indirection of a CNS_INT, subtract 1 from costEx makes costEx 3 for x86 and 4 for amd64.
 
@@ -5504,7 +5501,6 @@ public partial class Compiler
 
             includesAddrCost = true;
         }
-#endif
 
         return includesAddrCost;
     }
