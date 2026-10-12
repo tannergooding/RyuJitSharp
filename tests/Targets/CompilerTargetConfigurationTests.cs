@@ -79,6 +79,22 @@ internal static unsafe class CompilerTargetConfigurationTests
     }
 
     [Test]
+    public static void CallPopArgsFlagUsesConfiguredUnixX86Abi()
+    {
+        WithCompiler(compiler => {
+            var helperHandle = Compiler.eeFindHelper(CorInfoHelpFunc.CORINFO_HELP_THROW);
+            var indirectCall = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_INDIRECT, null);
+            var helperCall = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_HELPER, helperHandle);
+            var source = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
+            var helperReplacement = compiler.gtNewHelperCallNode(source, CorInfoHelpFunc.CORINFO_HELP_THROW);
+
+            Assert.That(indirectCall.CallerPop, Is.EqualTo(Configuration.UNIX_X86_ABI));
+            Assert.That(helperCall.CallerPop, Is.EqualTo(Configuration.UNIX_X86_ABI));
+            Assert.That(helperReplacement.CallerPop, Is.EqualTo(Configuration.UNIX_X86_ABI));
+        });
+    }
+
+    [Test]
     public static void NullCheckTypeUsesTheTargetArchitecture()
     {
         WithCompiler(compiler => {

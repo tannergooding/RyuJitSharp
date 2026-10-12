@@ -8415,12 +8415,10 @@ public partial class Compiler
         };
         node.Flags |= (GTF_CALL | GTF_GLOB_REF);
 
-#if UNIX_X86_ABI
-        if (callType is CT_INDIRECT or CT_HELPER)
+        if (Configuration.UNIX_X86_ABI && (callType is CT_INDIRECT or CT_HELPER))
         {
             node.Flags |= GTF_CALL_POP_ARGS;
         }
-#endif
 
         node.ClearInlineInfo();
 
@@ -13703,9 +13701,11 @@ public partial class Compiler
         };
         call.ClearInlineInfo();
 
-#if UNIX_X86_ABI
-        call.Flags |= GTF_CALL_POP_ARGS;
-#endif
+        if (Configuration.UNIX_X86_ABI)
+        {
+            call.Flags |= GTF_CALL_POP_ARGS;
+        }
+
 #if DEBUG
         call._inlineObservation = InlineObservation.CALLSITE_IS_CALL_TO_HELPER;
 #endif

@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the `UNIX_X86_ABI` branches in `Compiler.gt.cs::gtNewCallNode` and `gtNewHelperCallNode` using runtime configuration, preserving call-pop-args flag behavior.",
+    "nextAction": "Continue the universal-compilation migration at `Compiler.gt.cs::gtCloneCnsInt`'s `LATE_DISASM` branch; identify its runtime configuration/substitution contract before changing the icon-handle cloning behavior.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize `TARGET_ARM64` volatile-address-mode handling and `TARGET_XARCH` constant-address costs in `Compiler.gtGetAddrNodeCost`.",
-      "doneWhen": "The helper uses runtime target configuration and preserves ARM64 volatile barrier costs, xarch constant-address costs, and other targets' existing behavior.",
-      "validation": "In Debug and Release, `AddressModeCostTargetTests` and `CompilerTargetConfigurationTests` passed on all seven target configurations using a win-x64 test host and the per-target `RyuJitTargetRuntimeIdentifier` runtime configuration: win-x64 (39 passed, 1 skipped), win-x86 (41, 1), linux-arm64 (36, 3), linux-arm (30, 9), linux-loongarch64 (28, 9), linux-riscv64 (28, 9), and browser-wasm (36, 4). This matrix also revalidated the target-width folding regression. Formatting and JSON checks pass.",
+      "scope": "Universalize `UNIX_X86_ABI` call-pop-args handling in `Compiler.gtNewCallNode` and `gtNewHelperCallNode`.",
+      "doneWhen": "Both methods use runtime ABI configuration and preserve the `GTF_CALL_POP_ARGS` flag for the same call kinds on Unix x86 only.",
+      "validation": "In Debug and Release, `CompilerTargetConfigurationTests` passed on all eight target configurations using a win-x64 test host and per-target `RyuJitTargetRuntimeIdentifier` runtime configuration: win-x64 (36 passed, 1 skipped), win-x86 (38, 1), linux-x86 (38, 1), linux-arm64 (33, 3), linux-arm (27, 9), linux-loongarch64 (25, 9), linux-riscv64 (25, 9), and browser-wasm (33, 4). The call-pop-args regression covers indirect calls, helper calls, and helper-call replacements. This validates both UNIX_X86_ABI=true and false configurations.",
       "deferred": "Proceed to the next target/feature conditional in `Compiler.gt.cs` and then continue through remaining source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
