@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public enum insSveMovOpts : uint
@@ -12,4 +11,3 @@ public enum insSveMovOpts : uint
     INS_SVE_MOV_OPTS_ZEROING,
     INS_SVE_MOV_OPTS_MERGING,
 }
-#endif

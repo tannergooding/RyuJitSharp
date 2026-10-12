@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Commit the validated target-width signed-size and universal simd_t representation batches locally; then reconcile the insFlags metadata and emission-request flag aliases against pinned e23d559 before removing their remaining target guards.",
+    "nextAction": "Reconcile `sources\\Core\\jit\\instr\\insFlags.cs` and its ARM overrides with pinned e23d559: separate xarch opcode metadata from emission-request flags while preserving target widths, sentinels, and call-site defaults before removing dependent guards.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
       "scope": "Unify target_ssize_t and simd_t storage while preserving target-width arithmetic and overflow policy, native SIMD logical capacities, active vector payloads, typed VN identity, and compiler output.",
