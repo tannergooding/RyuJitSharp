@@ -751,7 +751,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
                 Assert.That(descriptor.idIns(), Is.EqualTo(INS_ld));
                 Assert.That(descriptor.idReg1(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
                 Assert.That(descriptor.idReg2(), Is.EqualTo(REG_DEFAULT_HELPER_CALL_TARGET));
-                Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC_RISCV64));
+                Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RISCV64_RELOC));
                 Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
                 Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)context.Address));
                 Assert.That(instructionBuffer[^1].idIns(), Is.EqualTo(INS_jalr));

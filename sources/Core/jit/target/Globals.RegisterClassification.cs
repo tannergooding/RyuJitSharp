@@ -17,6 +17,6 @@ public static partial class Globals
         EnsureFixedRegisterSet();
 
         return !Configuration.TARGET_XARCH ||
-            (reg <= (Configuration.TARGET_X86 ? REG_EBX_X86 : REG_EBX_AMD64));
+            (reg <= (Configuration.TARGET_X86 ? REG_X86_EBX : REG_X64_EBX));
     }
 }

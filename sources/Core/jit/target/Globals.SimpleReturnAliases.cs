@@ -15,27 +15,27 @@ public partial class Globals
 
             if (Configuration.TARGET_AMD64)
             {
-                return REG_XMM0_AMD64;
+                return REG_X64_XMM0;
             }
 
             if (Configuration.TARGET_ARM)
             {
-                return REG_F0_ARM;
+                return REG_ARM32_F0;
             }
 
             if (Configuration.TARGET_ARM64)
             {
-                return REG_V0_ARM64;
+                return REG_ARM64_V0;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                return REG_F0_LOONGARCH64;
+                return REG_LOONGARCH64_F0;
             }
 
             if (Configuration.TARGET_RISCV64)
             {
-                return REG_FA0_RISCV64;
+                return REG_RISCV64_FA0;
             }
 
             return UnsupportedTargetValue<regNumber>("Floating-point return register is not supported for this target.");

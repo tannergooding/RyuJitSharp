@@ -237,9 +237,9 @@ internal static unsafe class PatchpointMetadataTests
             codeGen.RegSet.rsClearRegsModified();
 #if TARGET_ARM64
             codeGen.SetSaveFpLrWithAllCalleeSavedRegisters(saveFpLr);
-            var saved = RBM_R19 | RBM_R20;
-            codeGen.RegSet.rsSetRegsModified(saved | RBM_R0);
-            var expectedSaves = saveFpLr ? saved | RBM_FP | RBM_LR : saved;
+            var saved = RBM_ARM64_R19 | RBM_ARM64_R20;
+            codeGen.RegSet.rsSetRegsModified(saved | RBM_ARM64_R0);
+            var expectedSaves = saveFpLr ? saved | RBM_ARM64_FP | RBM_ARM64_LR : saved;
 #else
             var saved = RBM_S1;
             codeGen.RegSet.rsSetRegsModified(saved | RBM_A0);

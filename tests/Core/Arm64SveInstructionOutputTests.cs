@@ -14,33 +14,33 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class Arm64SveInstructionOutputTests
 {
-    [TestCase(REG_V0_ARM64, 4, 0, 0u)]
-    [TestCase(REG_V31_ARM64, 4, 0, 31u)]
-    [TestCase(REG_V31_ARM64, 18, 16, 0x70000u)]
-    [TestCase(REG_V31_ARM64, 19, 16, 0xF0000u)]
-    [TestCase(REG_V17_ARM64, 9, 5, 0x220u)]
-    [TestCase(REG_V31_ARM64, 20, 16, 0x1F0000u)]
+    [TestCase(REG_ARM64_V0, 4, 0, 0u)]
+    [TestCase(REG_ARM64_V31, 4, 0, 31u)]
+    [TestCase(REG_ARM64_V31, 18, 16, 0x70000u)]
+    [TestCase(REG_ARM64_V31, 19, 16, 0xF0000u)]
+    [TestCase(REG_ARM64_V17, 9, 5, 0x220u)]
+    [TestCase(REG_ARM64_V31, 20, 16, 0x1F0000u)]
     public static void VectorFieldsUseTheNativeBankOffsetAndFieldMask(regNumber reg, int hi, int lo, uint expected)
     {
         Assert.That(Vector(null, reg, hi, lo), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_P0_ARM64, 3, 0, 0u)]
-    [TestCase(REG_P15_ARM64, 3, 0, 15u)]
-    [TestCase(REG_P15_ARM64, 12, 10, 0x1C00u)]
-    [TestCase(REG_P15_ARM64, 13, 10, 0x3C00u)]
-    [TestCase(REG_P15_ARM64, 3, 1, 14u)]
-    [TestCase(REG_P15_ARM64, 2, 0, 7u)]
+    [TestCase(REG_ARM64_P0, 3, 0, 0u)]
+    [TestCase(REG_ARM64_P15, 3, 0, 15u)]
+    [TestCase(REG_ARM64_P15, 12, 10, 0x1C00u)]
+    [TestCase(REG_ARM64_P15, 13, 10, 0x3C00u)]
+    [TestCase(REG_ARM64_P15, 3, 1, 14u)]
+    [TestCase(REG_ARM64_P15, 2, 0, 7u)]
     public static void PredicateFieldsPreserveNativeTruncation(regNumber reg, int hi, int lo, uint expected)
     {
         Assert.That(Predicate(null, reg, hi, lo), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R0_ARM64, 4, 0, 0u)]
-    [TestCase(REG_ZR_ARM64, 4, 0, 31u)]
-    [TestCase(REG_R19_ARM64, 9, 5, 0x260u)]
-    [TestCase(REG_R28_ARM64, 20, 16, 0x1C0000u)]
-    [TestCase(REG_R15_ARM64, 17, 16, 0x30000u)]
+    [TestCase(REG_ARM64_R0, 4, 0, 0u)]
+    [TestCase(REG_ARM64_ZR, 4, 0, 31u)]
+    [TestCase(REG_ARM64_R19, 9, 5, 0x260u)]
+    [TestCase(REG_ARM64_R28, 20, 16, 0x1C0000u)]
+    [TestCase(REG_ARM64_R15, 17, 16, 0x30000u)]
     public static void IntegerFieldsUseTheNativeMask(regNumber reg, int hi, int lo, uint expected)
     {
         Assert.That(Integer(null, reg, hi, lo), Is.EqualTo(expected));
@@ -114,9 +114,9 @@ internal static unsafe class Arm64SveInstructionOutputTests
         Assert.That(actual, Is.EqualTo(expected));
     }
 
-    [TestCase(REG_V0_ARM64, 0u)]
-    [TestCase(REG_V2_ARM64, 0x40u)]
-    [TestCase(REG_V30_ARM64, 0x3C0u)]
+    [TestCase(REG_ARM64_V0, 0u)]
+    [TestCase(REG_ARM64_V2, 0x40u)]
+    [TestCase(REG_ARM64_V30, 0x3C0u)]
     public static void EvenVectorPairRegisterEncodesHalfTheBankIndex(regNumber reg, uint expected)
     {
         Assert.That(EvenVector(null, reg), Is.EqualTo(expected));
@@ -349,8 +349,8 @@ internal static unsafe class Arm64SveInstructionOutputTests
         var id = OutputEmitter.Descriptor(format);
         id.idIns(ins);
         id.idInsOpt(INS_OPTS_SCALABLE_S);
-        id.idReg2(format is IF_SVE_AA_3A or IF_SVE_BV_2B ? REG_P0_ARM64 : REG_V31_ARM64);
-        id.idReg3(REG_V31_ARM64);
+        id.idReg2(format is IF_SVE_AA_3A or IF_SVE_BV_2B ? REG_ARM64_P0 : REG_ARM64_V31);
+        id.idReg3(REG_ARM64_V31);
         var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
         var end = Output(emitter, buffer + 4, id);
@@ -421,7 +421,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     public static void OddPairRegisterAssertsBeforeNativeDivision()
     {
         uint result = 0;
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = EvenVector(null, REG_V31_ARM64));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = EvenVector(null, REG_ARM64_V31));
         Assert.That(assertions, Is.EqualTo<string[]>(["ureg % 2 == 0"]));
         Assert.That(result, Is.EqualTo(0x3C0u));
     }
@@ -475,8 +475,8 @@ internal static unsafe class Arm64SveInstructionOutputTests
             id.idInsFmt(format);
             id.idOpSize(EA_SCALABLE);
             id.idInsOpt(INS_OPTS_SCALABLE_B);
-            id.idReg1(REG_V0_ARM64);
-            id.idReg2(REG_V31_ARM64);
+            id.idReg1(REG_ARM64_V0);
+            id.idReg2(REG_ARM64_V31);
             id.idSmallCns(0);
 
             return id;

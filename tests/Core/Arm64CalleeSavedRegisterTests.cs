@@ -41,11 +41,11 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
 #endif
 
 #if DEBUG
-    [TestCase(TYP_REF, REG_R19_ARM64, true, true, 1, true)]
-    [TestCase(TYP_BYREF, REG_R20_ARM64, true, true, 1, true)]
-    [TestCase(TYP_REF, REG_R19_ARM64, true, false, 0, false)]
-    [TestCase(TYP_REF, REG_R0_ARM64, true, true, 1, false)]
-    [TestCase(TYP_REF, REG_R19_ARM64, false, true, 0, false)]
+    [TestCase(TYP_REF, REG_ARM64_R19, true, true, 1, true)]
+    [TestCase(TYP_BYREF, REG_ARM64_R20, true, true, 1, true)]
+    [TestCase(TYP_REF, REG_ARM64_R19, true, false, 0, false)]
+    [TestCase(TYP_REF, REG_ARM64_R0, true, true, 1, false)]
+    [TestCase(TYP_REF, REG_ARM64_R19, false, true, 0, false)]
     public static void PInvokeRequiresCalleeSavedGcRootsToBeSpilled(
         var_types type, regNumber reg, bool unmanaged, bool hasRoot, int expectedAssertions,
         bool expectedCalleeSavedAssertion)
@@ -160,19 +160,19 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             selection switch
             {
                 0 => ([], []),
-                1 => ([REG_R19_ARM64], [(REG_R19_ARM64, REG_NA_ARM64, false)]),
-                2 => ([REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, REG_R22_ARM64],
-                    [(REG_R19_ARM64, REG_R20_ARM64, false), (REG_R21_ARM64, REG_R22_ARM64, true)]),
-                3 => ([REG_R19_ARM64, REG_R21_ARM64, REG_R22_ARM64, REG_R24_ARM64],
-                    [(REG_R19_ARM64, REG_NA_ARM64, false), (REG_R21_ARM64, REG_R22_ARM64, false), (REG_R24_ARM64, REG_NA_ARM64, false)]),
-                4 => ([REG_R28_ARM64, REG_FP_ARM64, REG_LR_ARM64],
-                    [(REG_R28_ARM64, REG_NA_ARM64, false), (REG_FP_ARM64, REG_LR_ARM64, false)]),
-                5 => ([REG_V8_ARM64, REG_V9_ARM64, REG_V10_ARM64, REG_V11_ARM64],
-                    [(REG_V8_ARM64, REG_V9_ARM64, false), (REG_V10_ARM64, REG_V11_ARM64, true)]),
-                6 => ([REG_R19_ARM64, REG_R20_ARM64, REG_V8_ARM64, REG_V9_ARM64],
-                    [(REG_R19_ARM64, REG_R20_ARM64, false), (REG_V8_ARM64, REG_V9_ARM64, false)]),
-                7 => ([REG_R27_ARM64, REG_R28_ARM64, REG_FP_ARM64, REG_LR_ARM64],
-                    [(REG_R27_ARM64, REG_R28_ARM64, false), (REG_FP_ARM64, REG_LR_ARM64, true)]),
+                1 => ([REG_ARM64_R19], [(REG_ARM64_R19, REG_ARM64_NA, false)]),
+                2 => ([REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_R21, REG_ARM64_R22],
+                    [(REG_ARM64_R19, REG_ARM64_R20, false), (REG_ARM64_R21, REG_ARM64_R22, true)]),
+                3 => ([REG_ARM64_R19, REG_ARM64_R21, REG_ARM64_R22, REG_ARM64_R24],
+                    [(REG_ARM64_R19, REG_ARM64_NA, false), (REG_ARM64_R21, REG_ARM64_R22, false), (REG_ARM64_R24, REG_ARM64_NA, false)]),
+                4 => ([REG_ARM64_R28, REG_ARM64_FP, REG_ARM64_LR],
+                    [(REG_ARM64_R28, REG_ARM64_NA, false), (REG_ARM64_FP, REG_ARM64_LR, false)]),
+                5 => ([REG_ARM64_V8, REG_ARM64_V9, REG_ARM64_V10, REG_ARM64_V11],
+                    [(REG_ARM64_V8, REG_ARM64_V9, false), (REG_ARM64_V10, REG_ARM64_V11, true)]),
+                6 => ([REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_V8, REG_ARM64_V9],
+                    [(REG_ARM64_R19, REG_ARM64_R20, false), (REG_ARM64_V8, REG_ARM64_V9, false)]),
+                7 => ([REG_ARM64_R27, REG_ARM64_R28, REG_ARM64_FP, REG_ARM64_LR],
+                    [(REG_ARM64_R27, REG_ARM64_R28, false), (REG_ARM64_FP, REG_ARM64_LR, true)]),
                 _ => throw new AssertionException("Unknown register-pair case."),
             };
         List<(regNumber First, regNumber Second, bool UseSaveNextPair)> stack = [];
@@ -188,26 +188,26 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     [Test]
     public static void RegisterCountIncludesBothMaskBanks()
     {
-        var mask = new regMaskTP(SRBM_R19_ARM64 | SRBM_V8_ARM64, SRBM_P8_ARM64 | SRBM_P9_ARM64);
+        var mask = new regMaskTP(SRBM_ARM64_R19 | SRBM_ARM64_V8, SRBM_ARM64_P8 | SRBM_ARM64_P9);
 
         Assert.That(CountRegisters(null, mask), Is.EqualTo(4));
     }
 #endif
 
-    [TestCase(REG_R19_ARM64, REG_R20_ARM64, 0, 16, true)]
-    [TestCase(REG_R19_ARM64, REG_R20_ARM64, 0, 496, true)]
-    [TestCase(REG_R19_ARM64, REG_R20_ARM64, 0, 512, false)]
-    [TestCase(REG_R19_ARM64, REG_R20_ARM64, 8, 16, false)]
-    [TestCase(REG_R19_ARM64, REG_R20_ARM64, -512, 0, false)]
-    [TestCase(REG_R19_ARM64, REG_R20_ARM64, 504, 0, false)]
-    [TestCase(REG_V8_ARM64, REG_V9_ARM64, 0, 16, true)]
-    [TestCase(REG_V8_ARM64, REG_V9_ARM64, 8, 512, false)]
+    [TestCase(REG_ARM64_R19, REG_ARM64_R20, 0, 16, true)]
+    [TestCase(REG_ARM64_R19, REG_ARM64_R20, 0, 496, true)]
+    [TestCase(REG_ARM64_R19, REG_ARM64_R20, 0, 512, false)]
+    [TestCase(REG_ARM64_R19, REG_ARM64_R20, 8, 16, false)]
+    [TestCase(REG_ARM64_R19, REG_ARM64_R20, -512, 0, false)]
+    [TestCase(REG_ARM64_R19, REG_ARM64_R20, 504, 0, false)]
+    [TestCase(REG_ARM64_V8, REG_ARM64_V9, 0, 16, true)]
+    [TestCase(REG_ARM64_V8, REG_ARM64_V9, 8, 512, false)]
     public static void PairRestoreUsesSignedScaledOffsetsAndNativePostIndexLimit(
         regNumber first, regNumber second, int offset, int delta, bool folded)
     {
         WithCodeGen((_, codeGen) =>
         {
-            RestorePair(codeGen, first, second, REG_SPBASE, offset, delta, false, REG_IP1_ARM64, null, false);
+            RestorePair(codeGen, first, second, REG_SPBASE, offset, delta, false, REG_ARM64_IP1, null, false);
             var descriptors = Descriptors(codeGen);
             var separateAdjustment = delta != 0 && !folded;
 
@@ -217,7 +217,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             Assert.That(load.idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(load.idReg1(), Is.EqualTo(first));
             Assert.That(load.idReg2(), Is.EqualTo(second));
-            Assert.That(load.idReg3(), Is.EqualTo(REG_ZR_ARM64));
+            Assert.That(load.idReg3(), Is.EqualTo(REG_ARM64_ZR));
             Assert.That(load.idInsOpt(), Is.EqualTo(folded ? INS_OPTS_POST_INDEX : INS_OPTS_NONE));
             Assert.That(Emitter.emitGetInsSC(load), Is.EqualTo((nint)((folded ? delta : offset) / 8)));
             if (separateAdjustment)
@@ -227,17 +227,17 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         });
     }
 
-    [TestCase(REG_R19_ARM64, 0, 240, true)]
-    [TestCase(REG_R19_ARM64, 0, 256, false)]
-    [TestCase(REG_R19_ARM64, 8, 16, false)]
-    [TestCase(REG_R19_ARM64, 0, 0, false)]
-    [TestCase(REG_V8_ARM64, 0, 240, true)]
+    [TestCase(REG_ARM64_R19, 0, 240, true)]
+    [TestCase(REG_ARM64_R19, 0, 256, false)]
+    [TestCase(REG_ARM64_R19, 8, 16, false)]
+    [TestCase(REG_ARM64_R19, 0, 0, false)]
+    [TestCase(REG_ARM64_V8, 0, 240, true)]
     public static void SingleRestoreUsesUnscaledPostIndexLimitAndSeparateAdjustment(
         regNumber reg, int offset, int delta, bool folded)
     {
         WithCodeGen((_, codeGen) =>
         {
-            RestoreSingle(codeGen, reg, REG_SPBASE, offset, delta, REG_IP1_ARM64, null, false);
+            RestoreSingle(codeGen, reg, REG_SPBASE, offset, delta, REG_ARM64_IP1, null, false);
             var descriptors = Descriptors(codeGen);
             var separateAdjustment = delta != 0 && !folded;
 
@@ -246,7 +246,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             Assert.That(load.idIns(), Is.EqualTo(INS_ldr));
             Assert.That(load.idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(load.idReg1(), Is.EqualTo(reg));
-            Assert.That(load.idReg2(), Is.EqualTo(REG_ZR_ARM64));
+            Assert.That(load.idReg2(), Is.EqualTo(REG_ARM64_ZR));
             Assert.That(load.idInsOpt(), Is.EqualTo(folded ? INS_OPTS_POST_INDEX : INS_OPTS_NONE));
             if (folded)
             {
@@ -269,8 +269,8 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         {
             codeGen.genReverseAndPairCalleeSavedRegisters = reverse;
             regNumber[] registers = floats
-                ? [REG_V8_ARM64, REG_V9_ARM64, REG_V10_ARM64, REG_V11_ARM64, REG_V13_ARM64]
-                : [REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, REG_R22_ARM64, REG_R24_ARM64];
+                ? [REG_ARM64_V8, REG_ARM64_V9, REG_ARM64_V10, REG_ARM64_V11, REG_ARM64_V13]
+                : [REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_R21, REG_ARM64_R22, REG_ARM64_R24];
 
             RestoreGroup(codeGen, Mask(registers), REG_SPBASE, 0, 48, false);
             var descriptors = Descriptors(codeGen);
@@ -300,7 +300,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         WithCodeGen((_, codeGen) =>
         {
             codeGen.genReverseAndPairCalleeSavedRegisters = reverse;
-            RestoreGroup(codeGen, Mask(REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, REG_R22_ARM64), REG_SPBASE, 32, 32, false);
+            RestoreGroup(codeGen, Mask(REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_R21, REG_ARM64_R22), REG_SPBASE, 32, 32, false);
             var descriptors = Descriptors(codeGen);
 
             Assert.That(descriptors, Has.Count.EqualTo(2));
@@ -308,8 +308,8 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)2));
             Assert.That(descriptors[1].idInsOpt(), Is.EqualTo(INS_OPTS_POST_INDEX));
             Assert.That(Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)4));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(reverse ? REG_R20_ARM64 : REG_R21_ARM64));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(reverse ? REG_R22_ARM64 : REG_R19_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(reverse ? REG_ARM64_R20 : REG_ARM64_R21));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(reverse ? REG_ARM64_R22 : REG_ARM64_R19));
         });
     }
 
@@ -322,7 +322,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     {
         WithCodeGen((_, codeGen) =>
         {
-            SavePair(codeGen, REG_R19_ARM64, REG_R20_ARM64, offset, delta, false, REG_IP0_ARM64, null);
+            SavePair(codeGen, REG_ARM64_R19, REG_ARM64_R20, offset, delta, false, REG_ARM64_IP0, null);
             var descriptor = Descriptors(codeGen)[0];
 
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
@@ -348,7 +348,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     {
         WithCodeGen((_, codeGen) =>
         {
-            SaveSingle(codeGen, REG_R19_ARM64, offset, delta, REG_IP0_ARM64, null);
+            SaveSingle(codeGen, REG_ARM64_R19, offset, delta, REG_ARM64_IP0, null);
             var descriptor = Descriptors(codeGen)[0];
 
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
@@ -378,11 +378,11 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         WithCodeGen((_, codeGen) =>
         {
             codeGen.genReverseAndPairCalleeSavedRegisters = reverse;
-            SaveGroup(codeGen, Mask(REG_R19_ARM64, REG_R20_ARM64, REG_R21_ARM64, REG_R22_ARM64, REG_R24_ARM64), 0, 8);
+            SaveGroup(codeGen, Mask(REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_R21, REG_ARM64_R22, REG_ARM64_R24), 0, 8);
 
             var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(reverse ? INS_str : INS_stp));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(reverse ? REG_R24_ARM64 : REG_R19_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(reverse ? REG_ARM64_R24 : REG_ARM64_R19));
             Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)1));
 #if DEBUG
             if (reverse)
@@ -401,21 +401,21 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         WithCodeGen((_, codeGen) =>
         {
             codeGen.Emitter.emitIns_R_R_R_I(restore ? INS_ldp : INS_stp, EA_8BYTE,
-                REG_R19_ARM64, REG_R20_ARM64, REG_SPBASE, 0);
+                REG_ARM64_R19, REG_ARM64_R20, REG_SPBASE, 0);
             if (restore)
             {
-                RestorePair(codeGen, REG_R21_ARM64, REG_R22_ARM64, REG_SPBASE, 16, 0, true, REG_IP1_ARM64, null, true);
+                RestorePair(codeGen, REG_ARM64_R21, REG_ARM64_R22, REG_SPBASE, 16, 0, true, REG_ARM64_IP1, null, true);
             }
             else
             {
-                SavePair(codeGen, REG_R21_ARM64, REG_R22_ARM64, 16, 0, true, REG_IP0_ARM64, null);
+                SavePair(codeGen, REG_ARM64_R21, REG_ARM64_R22, 16, 0, true, REG_ARM64_IP0, null);
             }
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(restore ? INS_ldp : INS_stp));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R21_ARM64));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R22_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_R21));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_R22));
             Assert.That(Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)2));
         });
     }
@@ -430,7 +430,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             compiler.unwindBegProlog();
             var zeroed = stackalloc bool[1];
             *zeroed = true;
-            StackAdjustment(codeGen, -amount, REG_R9_ARM64, zeroed, true);
+            StackAdjustment(codeGen, -amount, REG_ARM64_R9, zeroed, true);
 
             Assert.That(*zeroed, Is.EqualTo(amount == 16));
             var descriptors = Descriptors(codeGen);
@@ -441,23 +441,23 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             else
             {
                 Assert.That(descriptors, Has.Count.EqualTo(2));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R9_ARM64));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R9));
                 Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_sub));
-                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_R9_ARM64));
+                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_ARM64_R9));
             }
         });
     }
 
-    [TestCase(0, 0, false, false, false, 1, INS_stp, REG_FP_ARM64, -16)]
-    [TestCase(496, 0, false, false, false, 2, INS_sub, REG_ZR_ARM64, 512)]
-    [TestCase(32, 16, false, false, false, 2, INS_sub, REG_ZR_ARM64, 48)]
-    [TestCase(512, 0, false, false, false, 3, INS_sub, REG_ZR_ARM64, 528)]
-    [TestCase(512, 0, false, true, false, 3, INS_stp, REG_R19_ARM64, -16)]
-    [TestCase(512, 512, false, false, false, 3, INS_stp, REG_FP_ARM64, -16)]
-    [TestCase(0, 0, true, true, false, 4, INS_stp, REG_R19_ARM64, -32)]
-    [TestCase(32, 16, true, false, false, 4, INS_sub, REG_ZR_ARM64, 48)]
-    [TestCase(512, 0, true, false, false, 5, INS_stp, REG_FP_ARM64, -16)]
-    [TestCase(0, 0, true, false, true, 5, INS_stp, REG_FP_ARM64, -16)]
+    [TestCase(0, 0, false, false, false, 1, INS_stp, REG_ARM64_FP, -16)]
+    [TestCase(496, 0, false, false, false, 2, INS_sub, REG_ARM64_ZR, 512)]
+    [TestCase(32, 16, false, false, false, 2, INS_sub, REG_ARM64_ZR, 48)]
+    [TestCase(512, 0, false, false, false, 3, INS_sub, REG_ARM64_ZR, 528)]
+    [TestCase(512, 0, false, true, false, 3, INS_stp, REG_ARM64_R19, -16)]
+    [TestCase(512, 512, false, false, false, 3, INS_stp, REG_ARM64_FP, -16)]
+    [TestCase(0, 0, true, true, false, 4, INS_stp, REG_ARM64_R19, -32)]
+    [TestCase(32, 16, true, false, false, 4, INS_sub, REG_ARM64_ZR, 48)]
+    [TestCase(512, 0, true, false, false, 5, INS_stp, REG_ARM64_FP, -16)]
+    [TestCase(0, 0, true, false, true, 5, INS_stp, REG_ARM64_FP, -16)]
     public static void PushPreservesAllFiveFrameChoicesWhileRecordingUnwind(
         int localSize, int outgoingSize, bool saveFrameAtTop, bool extraPair, bool enc, int expectedFrameType,
         instruction expected, regNumber first, int immediate)
@@ -474,10 +474,10 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             compiler.lvaOutgoingArgSpaceSize.Value = outgoingSize;
             if (extraPair)
             {
-                codeGen.RegSet.rsSetRegsModified(Mask(REG_R19_ARM64, REG_R20_ARM64));
+                codeGen.RegSet.rsSetRegsModified(Mask(REG_ARM64_R19, REG_ARM64_R20));
             }
             var zeroed = true;
-            codeGen.genPushCalleeSavedRegisters(REG_R19_ARM64, ref zeroed);
+            codeGen.genPushCalleeSavedRegisters(REG_ARM64_R19, ref zeroed);
 
             var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
@@ -486,8 +486,8 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 Is.EqualTo((nint)(expected == INS_stp ? immediate / 8 : immediate)));
             Assert.That(zeroed, Is.True);
             Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(extraPair
-                ? Mask(REG_R19_ARM64, REG_R20_ARM64, REG_FP_ARM64, REG_LR_ARM64)
-                : Mask(REG_FP_ARM64, REG_LR_ARM64)));
+                ? Mask(REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_FP, REG_ARM64_LR)
+                : Mask(REG_ARM64_FP, REG_ARM64_LR)));
             Assert.That(compiler.compFrameInfo.frameType, Is.EqualTo(expectedFrameType));
             Assert.That(compiler.compFrameInfo.calleeSaveSpOffset, Is.GreaterThanOrEqualTo(0));
             Assert.That(compiler.compFrameInfo.calleeSaveSpDelta % 16, Is.Zero);
@@ -507,12 +507,12 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             compiler.info.compIsVarArgs = true;
             var zeroed = true;
 
-            codeGen.genPushCalleeSavedRegisters(REG_R19_ARM64, ref zeroed);
+            codeGen.genPushCalleeSavedRegisters(REG_ARM64_R19, ref zeroed);
 
             var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_stp));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_FP_ARM64));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_LR_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_FP));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_LR));
             Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_PRE_INDEX));
             Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)(-80 / 8)));
             Assert.That(zeroed, Is.True);
@@ -531,19 +531,19 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             compiler.compLclFrameSize = 4096;
             var zeroed = true;
 
-            codeGen.genPushCalleeSavedRegisters(REG_R19_ARM64, ref zeroed);
+            codeGen.genPushCalleeSavedRegisters(REG_ARM64_R19, ref zeroed);
 
             var descriptors = Descriptors(codeGen);
             var probeIndex = descriptors.FindIndex(id => id.idIns() == INS_ldr);
             var frameSaveIndex = descriptors.FindIndex(id =>
-                (id.idIns() == INS_stp) && (id.idReg1() == REG_FP_ARM64) && (id.idReg2() == REG_LR_ARM64));
+                (id.idIns() == INS_stp) && (id.idReg1() == REG_ARM64_FP) && (id.idReg2() == REG_ARM64_LR));
             Assert.That(probeIndex, Is.GreaterThanOrEqualTo(0));
             Assert.That(probeIndex, Is.LessThan(frameSaveIndex));
             Assert.That(descriptors.Count(id => id.idIns() == INS_ldr), Is.EqualTo(1));
             Assert.That(descriptors.Take(probeIndex + 1).All(id =>
-                (id.idReg1() != REG_R19_ARM64) && (id.idReg2() != REG_R19_ARM64) && (id.idReg3() != REG_R19_ARM64)), Is.True,
+                (id.idReg1() != REG_ARM64_R19) && (id.idReg2() != REG_ARM64_R19) && (id.idReg3() != REG_ARM64_R19)), Is.True,
                 "The stack probe must use REG_SCRATCH instead of the incoming init register.");
-            Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(Mask(REG_FP_ARM64, REG_LR_ARM64)));
+            Assert.That(SavedMask(ref codeGen.RegSet), Is.EqualTo(Mask(REG_ARM64_FP, REG_ARM64_LR)));
             Assert.That(zeroed, Is.False);
             Assert.That(compiler.compFrameInfo.frameType, Is.EqualTo(3));
         });
@@ -596,19 +596,19 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
             var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(expected == INS_ldp ? REG_FP_ARM64 : REG_ZR_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(expected == INS_ldp ? REG_ARM64_FP : REG_ARM64_ZR));
             Assert.That(compiler.compFrameInfo.frameType, Is.EqualTo(frameType));
         });
     }
 
-    [TestCase(false, REG_V8_ARM64, INS_stp)]
-    [TestCase(true, REG_FP_ARM64, INS_ldp)]
+    [TestCase(false, REG_ARM64_V8, INS_stp)]
+    [TestCase(true, REG_ARM64_FP, INS_ldp)]
     public static void WholeSaveRestoreHelpersKeepTheNativeRegisterBankOrder(
         bool restore, regNumber expectedFirst, instruction expected)
     {
         WithCodeGen((_, codeGen) =>
         {
-            var mask = Mask(REG_R19_ARM64, REG_R20_ARM64, REG_V8_ARM64, REG_V9_ARM64, REG_FP_ARM64, REG_LR_ARM64);
+            var mask = Mask(REG_ARM64_R19, REG_ARM64_R20, REG_ARM64_V8, REG_ARM64_V9, REG_ARM64_FP, REG_ARM64_LR);
             if (restore)
             {
                 RestoreHelp(codeGen, mask, 0, 0);
@@ -659,8 +659,8 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     {
         Assert.That(descriptor.idIns(), Is.EqualTo(expected));
         Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
-        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ZR_ARM64));
-        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ZR_ARM64));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_ZR));
+        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_ZR));
         Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)delta));
     }
 

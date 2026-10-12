@@ -23,10 +23,10 @@ internal static unsafe class Arm64RegisterConsumptionTests
         WithCompiler((compiler, codeGen) =>
         {
             var value = compiler.gtNewIconNode(type, 0);
-            value.RegNum = REG_R0_ARM64;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0_ARM64, type);
+            value.RegNum = REG_ARM64_R0;
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R0, type);
 
-            Assert.That(codeGen.genConsumeReg(value), Is.EqualTo(REG_R0_ARM64));
+            Assert.That(codeGen.genConsumeReg(value), Is.EqualTo(REG_ARM64_R0));
 
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur.IsEmpty, Is.True);
@@ -41,11 +41,11 @@ internal static unsafe class Arm64RegisterConsumptionTests
         {
             var left = compiler.gtNewIconNode(TYP_BYREF, 0);
             var right = compiler.gtNewIconNode(TYP_BYREF, 0);
-            left.RegNum = REG_R0_ARM64;
-            right.RegNum = REG_R1_ARM64;
+            left.RegNum = REG_ARM64_R0;
+            right.RegNum = REG_ARM64_R1;
             var pair = new GenTreeOp(oper, TYP_I_IMPL, left, right) { IsContained = true };
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0_ARM64, TYP_BYREF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R1_ARM64, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R0, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R1, TYP_BYREF);
 #if DEBUG
             var useNumber = 0;
             codeGen.genNumberOperandUse(pair, ref useNumber);
@@ -65,7 +65,7 @@ internal static unsafe class Arm64RegisterConsumptionTests
         WithCompiler((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0);
-            address.RegNum = REG_R0_ARM64;
+            address.RegNum = REG_ARM64_R0;
             var cast = new GenTreeCast(TYP_I_IMPL, address, false, TYP_I_IMPL) { IsContained = true };
             GenTree operand = cast;
             if (bitfield)
@@ -74,7 +74,7 @@ internal static unsafe class Arm64RegisterConsumptionTests
                 shift.IsContained = true;
                 operand = new GenTreeOp(GT_BFIZ, TYP_I_IMPL, cast, shift) { IsContained = true };
             }
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0_ARM64, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R0, TYP_BYREF);
 
             codeGen.genConsumeRegs(operand);
 
@@ -88,7 +88,7 @@ internal static unsafe class Arm64RegisterConsumptionTests
     {
         WithCompiler((compiler, codeGen) =>
         {
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0_ARM64, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R0, TYP_BYREF);
             if (indexed)
             {
                 compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT }];
@@ -100,12 +100,12 @@ internal static unsafe class Arm64RegisterConsumptionTests
             else
             {
                 var value = compiler.gtNewIconNode(TYP_BYREF, 0);
-                value.RegNum = REG_R0_ARM64;
+                value.RegNum = REG_ARM64_R0;
                 codeGen.genUnspillRegIfNeeded(value);
             }
 
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
-                Is.EqualTo(regMaskTP.CreateFromRegNum(REG_R0_ARM64, REG_R0_ARM64.SingleTypeMask)));
+                Is.EqualTo(regMaskTP.CreateFromRegNum(REG_ARM64_R0, REG_ARM64_R0.SingleTypeMask)));
         });
     }
 

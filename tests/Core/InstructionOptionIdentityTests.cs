@@ -45,18 +45,18 @@ internal static class InstructionOptionIdentityTests
             AssertOption(insOpts.INS_OPTS_JIRL, 3);
             AssertOption(insOpts.INS_OPTS_J, 4);
             AssertOption(insOpts.INS_OPTS_J_cond, 5);
-            AssertOption(insOpts.INS_OPTS_I_LOONGARCH64, 6);
-            AssertOption(insOpts.INS_OPTS_C_LOONGARCH64, 7);
-            AssertOption(insOpts.INS_OPTS_RELOC_LOONGARCH64, 8);
+            AssertOption(insOpts.INS_OPTS_LOONGARCH64_I, 6);
+            AssertOption(insOpts.INS_OPTS_LOONGARCH64_C, 7);
+            AssertOption(insOpts.INS_OPTS_LOONGARCH64_RELOC, 8);
         }
         else if (Configuration.TARGET_RISCV64)
         {
             AssertOption(insOpts.INS_OPTS_RC, 1);
             AssertOption(insOpts.INS_OPTS_RL, 2);
             AssertOption(insOpts.INS_OPTS_JUMP, 3);
-            AssertOption(insOpts.INS_OPTS_I_RISCV64, 4);
-            AssertOption(insOpts.INS_OPTS_C_RISCV64, 5);
-            AssertOption(insOpts.INS_OPTS_RELOC_RISCV64, 6);
+            AssertOption(insOpts.INS_OPTS_RISCV64_I, 4);
+            AssertOption(insOpts.INS_OPTS_RISCV64_C, 5);
+            AssertOption(insOpts.INS_OPTS_RISCV64_RELOC, 6);
         }
         else if (!Configuration.TARGET_WASM)
         {

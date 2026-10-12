@@ -23,9 +23,9 @@ internal static unsafe class Arm64ByteSwapTargetTests
         WithCodeGen((compiler, codeGen) =>
         {
             var operand = compiler.gtNewIconNode(type, 0);
-            operand.RegNum = REG_R0_ARM64;
+            operand.RegNum = REG_ARM64_R0;
             var tree = compiler.gtNewUnaryNode(GT_BSWAP, type, operand);
-            tree.RegNum = REG_R1_ARM64;
+            tree.RegNum = REG_ARM64_R1;
 
             codeGen.genCodeForBswap(tree);
 
@@ -33,8 +33,8 @@ internal static unsafe class Arm64ByteSwapTargetTests
                 ?? throw new AssertionException("Missing byte-reverse instruction.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_rev));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_R0));
             Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
         });
     }
@@ -45,9 +45,9 @@ internal static unsafe class Arm64ByteSwapTargetTests
         WithCodeGen((compiler, codeGen) =>
         {
             var operand = compiler.gtNewIconNode(TYP_INT, 0);
-            operand.RegNum = REG_R0_ARM64;
+            operand.RegNum = REG_ARM64_R0;
             var tree = compiler.gtNewUnaryNode(GT_BSWAP16, TYP_INT, operand);
-            tree.RegNum = REG_R1_ARM64;
+            tree.RegNum = REG_ARM64_R1;
 
             codeGen.genCodeForBswap(tree);
 
@@ -55,8 +55,8 @@ internal static unsafe class Arm64ByteSwapTargetTests
                 ?? throw new AssertionException("Missing byte-swap normalization.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_uxth));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(8));
         });
     }
@@ -67,9 +67,9 @@ internal static unsafe class Arm64ByteSwapTargetTests
         WithCodeGen((compiler, codeGen) =>
         {
             var operand = compiler.gtNewIconNode(TYP_INT, 0);
-            operand.RegNum = REG_R0_ARM64;
+            operand.RegNum = REG_ARM64_R0;
             var tree = compiler.gtNewUnaryNode(GT_BSWAP16, TYP_INT, operand);
-            tree.RegNum = REG_R1_ARM64;
+            tree.RegNum = REG_ARM64_R1;
             var cast = compiler.gtNewCastNode(TYP_INT, tree, false, TYP_USHORT);
             tree.Next = cast;
             cast.Prev = tree;
@@ -80,8 +80,8 @@ internal static unsafe class Arm64ByteSwapTargetTests
                 ?? throw new AssertionException("Missing byte-reverse instruction.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_rev16));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_R0));
             Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(4));
         }, minopts: false);
     }

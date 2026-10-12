@@ -76,8 +76,8 @@ internal static class RegMaskRuntimeTests
             Assert.Ignore("ARM32-specific register behavior.");
         }
 
-        var first = REG_F0_ARM;
-        var second = REG_F1_ARM;
+        var first = REG_ARM32_F0;
+        var second = REG_ARM32_F1;
         var pair = first.SingleTypeMask | second.SingleTypeMask;
 
         Assert.That(genSingleTypeRegMask(first, TYP_DOUBLE), Is.EqualTo(pair));
@@ -94,6 +94,6 @@ internal static class RegMaskRuntimeTests
             Assert.Ignore("Wasm-specific fixed-register behavior.");
         }
 
-        Assert.Throws<System.PlatformNotSupportedException>(() => genSingleTypeRegMask(REG_STK_WASM, TYP_INT));
+        Assert.Throws<System.PlatformNotSupportedException>(() => genSingleTypeRegMask(REG_WASM_STK, TYP_INT));
     }
 }

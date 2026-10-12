@@ -24,11 +24,11 @@ internal static unsafe class SharedLocalVariableSpillTests
     private const regNumber ReferenceRegister = REG_RCX;
     private const regNumber ByrefRegister = REG_R8;
 #else
-    private const regNumber IntegerRegister = REG_R0;
-    private const regNumber FloatRegister = REG_V0;
-    private const regNumber UnrelatedRegister = REG_R1;
-    private const regNumber ReferenceRegister = REG_R2;
-    private const regNumber ByrefRegister = REG_R3;
+    private const regNumber IntegerRegister = REG_ARM64_R0;
+    private const regNumber FloatRegister = REG_ARM64_V0;
+    private const regNumber UnrelatedRegister = REG_ARM64_R1;
+    private const regNumber ReferenceRegister = REG_ARM64_R2;
+    private const regNumber ByrefRegister = REG_ARM64_R3;
 #endif
 
 #if TARGET_AMD64

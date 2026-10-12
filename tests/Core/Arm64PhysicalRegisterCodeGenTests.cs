@@ -25,8 +25,8 @@ internal static class Arm64PhysicalRegisterCodeGenTests
     {
         Arm64CalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-            var source = REG_R1_ARM64;
-            var target = REG_R2_ARM64;
+            var source = REG_ARM64_R1;
+            var target = REG_ARM64_R2;
             var tree = new GenTreePhysReg(source, type) { RegNum = target };
             codeGen.GCInfo.gcMarkRegPtrVal(source, type);
 
@@ -52,7 +52,7 @@ internal static class Arm64PhysicalRegisterCodeGenTests
     {
         Arm64CalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-            var tree = new GenTreePhysReg(REG_FFR, TYP_MASK) { RegNum = REG_P0_ARM64 };
+            var tree = new GenTreePhysReg(REG_FFR, TYP_MASK) { RegNum = REG_ARM64_P0 };
             codeGen.genCodeForPhysReg(tree);
 
             var descriptors = CurrentDescriptors(codeGen.Emitter)
@@ -61,7 +61,7 @@ internal static class Arm64PhysicalRegisterCodeGenTests
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_sve_rdffr));
             Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_SVE_DH_1A));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_SCALABLE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_P0_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_P0));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
         });

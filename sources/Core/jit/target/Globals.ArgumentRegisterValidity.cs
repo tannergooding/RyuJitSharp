@@ -25,7 +25,7 @@ public static partial class Globals
 
         if (Configuration.TARGET_X86)
         {
-            return (reg >= REG_XMM0_X86) && (reg <= REG_XMM3_X86);
+            return (reg >= REG_X86_XMM0) && (reg <= REG_X86_XMM3);
         }
 
         var registers = FltArgRegs;

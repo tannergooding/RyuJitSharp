@@ -28,7 +28,7 @@ internal static class GSCookieTemporaryMaskTests
 #elif TARGET_ARM
         var expected = new regMaskTP(SRBM_R12 | SRBM_LR);
 #elif TARGET_ARM64
-        var expected = new regMaskTP(SRBM_IP0 | SRBM_IP1);
+        var expected = new regMaskTP(SRBM_ARM64_IP0 | SRBM_ARM64_IP1);
 #else
         var expected = new regMaskTP(SRBM_T0 | SRBM_T1);
 #endif

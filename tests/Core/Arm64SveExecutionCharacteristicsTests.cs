@@ -66,7 +66,7 @@ internal static class Arm64SveExecutionCharacteristicsTests
         Arm64SveDisassemblyTests.WithEmitter(emitter =>
         {
             var id = Arm64SveDisassemblyTests.View.Descriptor(format, ins, INS_OPTS_SCALABLE_S,
-                REG_V0_ARM64, REG_P7_ARM64, REG_V1_ARM64, REG_V31_ARM64);
+                REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31);
             var score = new Emitter.insExecutionCharacteristics
             {
                 insLatency = -1024.0f,
@@ -92,7 +92,7 @@ internal static class Arm64SveExecutionCharacteristicsTests
         Arm64SveDisassemblyTests.WithEmitter(emitter =>
         {
             var id = Arm64SveDisassemblyTests.View.Descriptor(format, INS_sve_add, INS_OPTS_SCALABLE_S,
-                REG_V0_ARM64, REG_P7_ARM64, REG_V1_ARM64, REG_V31_ARM64);
+                REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31);
             var score = new Emitter.insExecutionCharacteristics
             {
                 insMemoryAccessKind = Emitter.PerfScoreMemoryAccessKind.Write,
@@ -122,7 +122,7 @@ internal static class Arm64SveExecutionCharacteristicsTests
         Arm64SveDisassemblyTests.WithEmitter(emitter =>
         {
             var id = Arm64SveDisassemblyTests.View.Descriptor(format, ins, INS_OPTS_SCALABLE_S,
-                REG_V0_ARM64, REG_P7_ARM64, REG_R2_ARM64, REG_R3_ARM64, EA_SCALABLE);
+                REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_R2, REG_ARM64_R3, EA_SCALABLE);
             var score = emitter.getInsExecutionCharacteristics(id);
 
             Assert.That(score.insLatency, Is.EqualTo(latency));

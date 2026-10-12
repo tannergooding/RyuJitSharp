@@ -14,67 +14,67 @@ public static partial class regNumberExtensions
     {
         if (Configuration.TARGET_AMD64)
         {
-            if (regNum == REG_NA_AMD64)
+            if (regNum == REG_X64_NA)
             {
                 return "NA";
             }
 
-            assert((uint)regNum < (uint)REG_COUNT_AMD64, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
-            return GetNameAMD64(regNum);
+            assert((uint)regNum < (uint)REG_X64_COUNT, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
+            return GetNameX64(regNum);
         }
 
         if (Configuration.TARGET_X86)
         {
-            if (regNum == REG_NA_X86)
+            if (regNum == REG_X86_NA)
             {
                 return "NA";
             }
 
-            assert((uint)regNum < (uint)REG_COUNT_X86, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
+            assert((uint)regNum < (uint)REG_X86_COUNT, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
             return GetNameX86(regNum);
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            if (regNum == REG_NA_ARM64)
+            if (regNum == REG_ARM64_NA)
             {
                 return "NA";
             }
 
-            assert((uint)regNum < (uint)REG_COUNT_ARM64, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
+            assert((uint)regNum < (uint)REG_ARM64_COUNT, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
             return GetNameARM64(regNum);
         }
 
         if (Configuration.TARGET_ARM)
         {
-            if (regNum == REG_NA_ARM)
+            if (regNum == REG_ARM32_NA)
             {
                 return "NA";
             }
 
-            assert((uint)regNum < (uint)REG_COUNT_ARM, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
-            return GetNameARM(regNum);
+            assert((uint)regNum < (uint)REG_ARM32_COUNT, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
+            return GetNameARM32(regNum);
         }
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            if (regNum == REG_NA_LOONGARCH64)
+            if (regNum == REG_LOONGARCH64_NA)
             {
                 return "NA";
             }
 
-            assert((uint)regNum < (uint)REG_COUNT_LOONGARCH64, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
+            assert((uint)regNum < (uint)REG_LOONGARCH64_COUNT, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
             return GetNameLOONGARCH64(regNum);
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            if (regNum == REG_NA_RISCV64)
+            if (regNum == REG_RISCV64_NA)
             {
                 return "NA";
             }
 
-            assert((uint)regNum < (uint)REG_COUNT_RISCV64, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
+            assert((uint)regNum < (uint)REG_RISCV64_COUNT, conditionExpression: "(unsigned)reg < ArrLen(regNames)");
             return GetNameRISCV64(regNum);
         }
 
@@ -98,7 +98,7 @@ public static partial class regNumberExtensions
 
     private static string GetWasmRegNameCore(regNumber reg)
     {
-        if (reg == REG_NA_WASM)
+        if (reg == REG_WASM_NA)
         {
             return "NA";
         }

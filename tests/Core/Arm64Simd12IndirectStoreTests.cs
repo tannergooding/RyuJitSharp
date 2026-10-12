@@ -22,13 +22,13 @@ internal static unsafe class Arm64Simd12IndirectStoreTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0);
-            address.RegNum = REG_R2_ARM64;
+            address.RegNum = REG_ARM64_R2;
             var data = new GenTreeVecCon(TYP_SIMD12)
             {
-                RegNum = REG_V1_ARM64,
+                RegNum = REG_ARM64_V1,
             };
             var store = new GenTreeStoreInd(TYP_SIMD12, address, data);
-            codeGen.InternalRegisters.Add(store, RBM_R10_ARM64);
+            codeGen.InternalRegisters.Add(store, RBM_ARM64_R10);
 
             codeGen.genCodeForStoreInd(store);
 
@@ -37,19 +37,19 @@ internal static unsafe class Arm64Simd12IndirectStoreTests
 
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R2));
 
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R10_ARM64));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_R10));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(2));
 
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R10_ARM64));
-            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_ARM64_R10));
+            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_ARM64_R2));
             // A 4-byte store encodes an 8-byte offset as two words.
             Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(2));
             Assert.That(store.Addr, Is.SameAs(address));
@@ -63,9 +63,9 @@ internal static unsafe class Arm64Simd12IndirectStoreTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0);
-            address.RegNum = REG_R2_ARM64;
+            address.RegNum = REG_ARM64_R2;
             var data = compiler.gtNewIconNode(TYP_INT, 7);
-            data.RegNum = REG_R3_ARM64;
+            data.RegNum = REG_ARM64_R3;
             var store = new GenTreeStoreInd(TYP_INT, address, data);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForStoreInd(store)) ??

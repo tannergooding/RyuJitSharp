@@ -19,8 +19,8 @@ internal static unsafe class Arm64CodeGenNullCheckTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_REF, 7);
-            address.RegNum = REG_R3_ARM64;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R3_ARM64, TYP_REF);
+            address.RegNum = REG_ARM64_R3;
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R3, TYP_REF);
 
             var tree = new GenTreeIndir(GT_NULLCHECK, TYP_LONG, address);
             codeGen.genCodeForNullCheck(tree);
@@ -29,8 +29,8 @@ internal static unsafe class Arm64CodeGenNullCheckTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ZR_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_ZR));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R3));
         });
     }
 }

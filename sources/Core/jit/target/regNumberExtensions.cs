@@ -33,10 +33,10 @@ public static partial class regNumberExtensions
             if (Configuration.TARGET_ARM)
             {
                 assert(
-                    type is TYP_DOUBLE ? ((regNum - REG_F0_ARM) % 2) == 0 : type is TYP_FLOAT or TYP_STRUCT,
+                    type is TYP_DOUBLE ? ((regNum - REG_ARM32_F0) % 2) == 0 : type is TYP_FLOAT or TYP_STRUCT,
                     conditionExpression:
                         "type is TYP_DOUBLE ? ((regNum - REG_F0) % 2) == 0 : type is TYP_FLOAT or TYP_STRUCT");
-                assert(regNum is >= REG_F0_ARM and <= REG_F31_ARM);
+                assert(regNum is >= REG_ARM32_F0 and <= REG_ARM32_F31);
             }
 
             var mask = regNum.SingleTypeMask;
@@ -64,37 +64,37 @@ public static partial class regNumberExtensions
         {
             if (Configuration.TARGET_X86)
             {
-                return REG_NA_X86;
+                return REG_X86_NA;
             }
 
             if (Configuration.TARGET_AMD64)
             {
-                return REG_NA_AMD64;
+                return REG_X64_NA;
             }
 
             if (Configuration.TARGET_ARM)
             {
-                return REG_NA_ARM;
+                return REG_ARM32_NA;
             }
 
             if (Configuration.TARGET_ARM64)
             {
-                return REG_NA_ARM64;
+                return REG_ARM64_NA;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                return REG_NA_LOONGARCH64;
+                return REG_LOONGARCH64_NA;
             }
 
             if (Configuration.TARGET_RISCV64)
             {
-                return REG_NA_RISCV64;
+                return REG_RISCV64_NA;
             }
 
             if (Configuration.TARGET_WASM)
             {
-                return REG_NA_WASM;
+                return REG_WASM_NA;
             }
 
             throw new FatalJitException("Invalid target architecture.");
@@ -107,37 +107,37 @@ public static partial class regNumberExtensions
         {
             if (Configuration.TARGET_X86)
             {
-                return REG_EDI_X86;
+                return REG_X86_EDI;
             }
 
             if (Configuration.TARGET_AMD64)
             {
-                return REG_R31_AMD64;
+                return REG_X64_R31;
             }
 
             if (Configuration.TARGET_ARM)
             {
-                return REG_LR_ARM;
+                return REG_ARM32_LR;
             }
 
             if (Configuration.TARGET_ARM64)
             {
-                return REG_ZR_ARM64;
+                return REG_ARM64_ZR;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                return REG_S8_LOONGARCH64;
+                return REG_LOONGARCH64_S8;
             }
 
             if (Configuration.TARGET_RISCV64)
             {
-                return REG_T6_RISCV64;
+                return REG_RISCV64_T6;
             }
 
             if (Configuration.TARGET_WASM)
             {
-                return REG_NA_WASM;
+                return REG_WASM_NA;
             }
 
             throw new FatalJitException("Invalid target architecture.");
@@ -150,37 +150,37 @@ public static partial class regNumberExtensions
         {
             if (Configuration.TARGET_X86)
             {
-                return REG_XMM7_X86;
+                return REG_X86_XMM7;
             }
 
             if (Configuration.TARGET_AMD64)
             {
-                return REG_XMM31_AMD64;
+                return REG_X64_XMM31;
             }
 
             if (Configuration.TARGET_ARM)
             {
-                return REG_F31_ARM;
+                return REG_ARM32_F31;
             }
 
             if (Configuration.TARGET_ARM64)
             {
-                return REG_V31_ARM64;
+                return REG_ARM64_V31;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                return REG_F31_LOONGARCH64;
+                return REG_LOONGARCH64_F31;
             }
 
             if (Configuration.TARGET_RISCV64)
             {
-                return REG_FT11_RISCV64;
+                return REG_RISCV64_FT11;
             }
 
             if (Configuration.TARGET_WASM)
             {
-                return REG_NA_WASM;
+                return REG_WASM_NA;
             }
 
             throw new FatalJitException("Invalid target architecture.");
@@ -193,37 +193,37 @@ public static partial class regNumberExtensions
         {
             if (Configuration.TARGET_X86)
             {
-                return REG_K7_X86;
+                return REG_X86_K7;
             }
 
             if (Configuration.TARGET_AMD64)
             {
-                return REG_K7_AMD64;
+                return REG_X64_K7;
             }
 
             if (Configuration.TARGET_ARM64)
             {
-                return REG_P15_ARM64;
+                return REG_ARM64_P15;
             }
 
             if (Configuration.TARGET_ARM)
             {
-                return REG_NA_ARM;
+                return REG_ARM32_NA;
             }
 
             if (Configuration.TARGET_LOONGARCH64)
             {
-                return REG_NA_LOONGARCH64;
+                return REG_LOONGARCH64_NA;
             }
 
             if (Configuration.TARGET_RISCV64)
             {
-                return REG_NA_RISCV64;
+                return REG_RISCV64_NA;
             }
 
             if (Configuration.TARGET_WASM)
             {
-                return REG_NA_WASM;
+                return REG_WASM_NA;
             }
 
             throw new FatalJitException("Invalid target architecture.");
@@ -231,7 +231,7 @@ public static partial class regNumberExtensions
     }
 
     internal static bool IsValidArmDoubleRegister(regNumber regNum) =>
-        Configuration.TARGET_ARM && regNum.IsFltReg && (((int)regNum - (int)REG_F0_ARM) & 1) is 0;
+        Configuration.TARGET_ARM && regNum.IsFltReg && (((int)regNum - (int)REG_ARM32_F0) & 1) is 0;
 
     // These tags match WasmValueType; the top three register bits carry the value type.
     private const uint WASM_VALUE_TYPE_I32 = 1;
@@ -265,32 +265,32 @@ public static partial class regNumberExtensions
     {
         if (Configuration.TARGET_X86)
         {
-            return regNum is >= REG_EAX_X86 and <= REG_EDI_X86;
+            return regNum is >= REG_X86_EAX and <= REG_X86_EDI;
         }
 
         if (Configuration.TARGET_AMD64)
         {
-            return regNum is >= REG_RAX_AMD64 and <= REG_R31_AMD64;
+            return regNum is >= REG_X64_RAX and <= REG_X64_R31;
         }
 
         if (Configuration.TARGET_ARM)
         {
-            return regNum is >= REG_R0_ARM and <= REG_LR_ARM;
+            return regNum is >= REG_ARM32_R0 and <= REG_ARM32_LR;
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            return regNum is >= REG_R0_ARM64 and <= REG_ZR_ARM64;
+            return regNum is >= REG_ARM64_R0 and <= REG_ARM64_ZR;
         }
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            return regNum is >= REG_R0_LOONGARCH64 and <= REG_S8_LOONGARCH64;
+            return regNum is >= REG_LOONGARCH64_R0 and <= REG_LOONGARCH64_S8;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            return regNum is >= REG_R0_RISCV64 and <= REG_T6_RISCV64;
+            return regNum is >= REG_RISCV64_R0 and <= REG_RISCV64_T6;
         }
 
         return false;
@@ -300,32 +300,32 @@ public static partial class regNumberExtensions
     {
         if (Configuration.TARGET_X86)
         {
-            return regNum is >= REG_XMM0_X86 and <= REG_XMM7_X86;
+            return regNum is >= REG_X86_XMM0 and <= REG_X86_XMM7;
         }
 
         if (Configuration.TARGET_AMD64)
         {
-            return regNum is >= REG_XMM0_AMD64 and <= REG_XMM31_AMD64;
+            return regNum is >= REG_X64_XMM0 and <= REG_X64_XMM31;
         }
 
         if (Configuration.TARGET_ARM)
         {
-            return regNum is >= REG_F0_ARM and <= REG_F31_ARM;
+            return regNum is >= REG_ARM32_F0 and <= REG_ARM32_F31;
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            return regNum is >= REG_V0_ARM64 and <= REG_V31_ARM64;
+            return regNum is >= REG_ARM64_V0 and <= REG_ARM64_V31;
         }
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            return regNum is >= REG_F0_LOONGARCH64 and <= REG_F31_LOONGARCH64;
+            return regNum is >= REG_LOONGARCH64_F0 and <= REG_LOONGARCH64_F31;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            return regNum is >= REG_FT0_RISCV64 and <= REG_FT11_RISCV64;
+            return regNum is >= REG_RISCV64_FT0 and <= REG_RISCV64_FT11;
         }
 
         return false;
@@ -335,17 +335,17 @@ public static partial class regNumberExtensions
     {
         if (Configuration.TARGET_X86)
         {
-            return regNum is >= REG_K0_X86 and <= REG_K7_X86;
+            return regNum is >= REG_X86_K0 and <= REG_X86_K7;
         }
 
         if (Configuration.TARGET_AMD64)
         {
-            return regNum is >= REG_K0_AMD64 and <= REG_K7_AMD64;
+            return regNum is >= REG_X64_K0 and <= REG_X64_K7;
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            return regNum is >= REG_P0_ARM64 and <= REG_P15_ARM64;
+            return regNum is >= REG_ARM64_P0 and <= REG_ARM64_P15;
         }
 
         return false;

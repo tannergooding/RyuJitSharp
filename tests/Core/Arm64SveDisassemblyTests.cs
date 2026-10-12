@@ -33,7 +33,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(format, ins, opt, REG_V0_ARM64, REG_P7_ARM64, REG_V1_ARM64, REG_V31_ARM64);
+            var id = View.Descriptor(format, ins, opt, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31);
             AssertOutput(emitter, id, expected);
         });
     }
@@ -62,8 +62,8 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(format, ins, opt, REG_V0_ARM64, REG_V1_ARM64, REG_V31_ARM64,
-                REG_V2_ARM64, immediate: immediate);
+            var id = View.Descriptor(format, ins, opt, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V31,
+                REG_ARM64_V2, immediate: immediate);
             AssertOutput(emitter, id, expected);
         });
     }
@@ -75,7 +75,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_CW_4A, ins, INS_OPTS_SCALABLE_S,
-                REG_V0_ARM64, REG_P7_ARM64, REG_V1_ARM64, REG_V31_ARM64);
+                REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31);
             AssertOutput(emitter, id, expected);
         });
     }
@@ -89,7 +89,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_CZ_4A, ins, INS_OPTS_SCALABLE_B,
-                REG_P0_ARM64, REG_P7_ARM64, REG_P1_ARM64, REG_P15_ARM64);
+                REG_ARM64_P0, REG_ARM64_P7, REG_ARM64_P1, REG_ARM64_P15);
             AssertOutput(emitter, id, expected);
         });
     }
@@ -101,7 +101,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_AH_3A, INS_sve_movprfx, INS_OPTS_SCALABLE_S,
-                REG_V0_ARM64, REG_P7_ARM64, REG_V1_ARM64, REG_V31_ARM64);
+                REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31);
             id.idPredicateReg2Merge(merge);
             AssertOutput(emitter, id, expected);
         });
@@ -114,7 +114,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_DE_1A, INS_sve_ptrue, INS_OPTS_SCALABLE_S,
-                REG_P0_ARM64, REG_P0_ARM64, REG_P0_ARM64, REG_P0_ARM64);
+                REG_ARM64_P0, REG_ARM64_P0, REG_ARM64_P0, REG_ARM64_P0);
             id.idSvePattern(pattern);
             AssertOutput(emitter, id, expected);
         });
@@ -127,7 +127,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_BL_1A, INS_sve_cntw, INS_OPTS_NONE,
-                REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_8BYTE, multiplier);
+                REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE, multiplier);
             id.idSvePattern(SVE_PATTERN_VL4);
             AssertOutput(emitter, id, expected);
         });
@@ -144,7 +144,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(format, ins, INS_OPTS_SCALABLE_S,
-                REG_V31_ARM64, REG_P7_ARM64, REG_R2_ARM64, REG_R3_ARM64, immediate: immediate);
+                REG_ARM64_V31, REG_ARM64_P7, REG_ARM64_R2, REG_ARM64_R3, immediate: immediate);
             AssertOutput(emitter, id, expected);
         });
     }
@@ -156,7 +156,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_DO_2A, INS_sve_sqincp, INS_OPTS_SCALABLE_S,
-                REG_R0_ARM64, REG_P1_ARM64, REG_R0_ARM64, REG_R0_ARM64, size);
+                REG_ARM64_R0, REG_ARM64_P1, REG_ARM64_R0, REG_ARM64_R0, size);
             AssertOutput(emitter, id, expected);
         });
     }
@@ -168,7 +168,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_DL_2A, INS_sve_cntp, INS_OPTS_SCALABLE_S,
-                REG_R0_ARM64, REG_P8_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_8BYTE);
+                REG_ARM64_R0, REG_ARM64_P8, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE);
             id.idVectorLength4x(four);
             AssertOutput(emitter, id, expected);
         });
@@ -180,7 +180,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_BB_2A, INS_sve_addvl, INS_OPTS_NONE,
-                REG_ZR_ARM64, REG_ZR_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_8BYTE, -16);
+                REG_ARM64_ZR, REG_ARM64_ZR, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE, -16);
             AssertOutput(emitter, id, "sp, sp, #-16");
         });
     }
@@ -192,7 +192,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_EB_1A, INS_sve_dup, INS_OPTS_SCALABLE_S,
-                REG_V0_ARM64, REG_V0_ARM64, REG_V0_ARM64, REG_V0_ARM64, immediate: 7);
+                REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, immediate: 7);
             id.idHasShift(shift);
             AssertOutput(emitter, id, expected);
         });
@@ -204,7 +204,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_SVE_DQ_0A, INS_sve_setffr, INS_OPTS_NONE,
-                REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64);
+                REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0);
             AssertOutput(emitter, id, "");
         });
     }
@@ -215,7 +215,7 @@ internal static class Arm64SveDisassemblyTests
         WithEmitter(emitter =>
         {
             var id = View.Descriptor(IF_EN5A, INS_ldr, INS_OPTS_NONE,
-                REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64);
+                REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0);
             var (output, assertions) = Capture(() => Display(emitter, id));
 
             Assert.That(output, Is.EqualTo("unexpected format IF_EN5A"));

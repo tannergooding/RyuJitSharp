@@ -30,8 +30,8 @@ internal static unsafe class Arm64EmitterCallAllocationTests
             compiler.lvaTrackedCountInSizeTUnits = 1;
             compiler.info.compMatchedVM = false;
             codeGen.GCInfo.gcVarPtrSetCur = [0];
-            codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_R19_ARM64);
-            codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_R20_ARM64);
+            codeGen.GCInfo.gcRegGCrefSetCur = new regMaskTP(SRBM_ARM64_R19);
+            codeGen.GCInfo.gcRegByrefSetCur = new regMaskTP(SRBM_ARM64_R20);
             var parameters = new EmitCallParams
             {
                 callType = EC_FUNC_TOKEN,
@@ -44,8 +44,8 @@ internal static unsafe class Arm64EmitterCallAllocationTests
             codeGen.genEmitCallWithCurrentGC(ref parameters);
 
             Assert.That(parameters.ptrVars, Is.SameAs(codeGen.GCInfo.gcVarPtrSetCur));
-            Assert.That(parameters.gcrefRegs, Is.EqualTo(new regMaskTP(SRBM_R19_ARM64)));
-            Assert.That(parameters.byrefRegs, Is.EqualTo(new regMaskTP(SRBM_R20_ARM64)));
+            Assert.That(parameters.gcrefRegs, Is.EqualTo(new regMaskTP(SRBM_ARM64_R19)));
+            Assert.That(parameters.byrefRegs, Is.EqualTo(new regMaskTP(SRBM_ARM64_R20)));
             Assert.That(parameters.argSize, Is.EqualTo((nint)0));
             Assert.That(parameters.isJump, Is.EqualTo(jump));
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
@@ -96,8 +96,8 @@ internal static unsafe class Arm64EmitterCallAllocationTests
     public static void LiveScratchByrefAndAsyncStateRequireLargeCalls(bool scratch, bool byref, bool asyncReturn)
     {
         var descriptor = Direct(CreateEmitter(), 0, [0],
-            new regMaskTP(scratch ? SRBM_R0_ARM64 : SRBM_NONE),
-            new regMaskTP(byref ? SRBM_R19_ARM64 : SRBM_NONE), EA_BYREF, EA_UNKNOWN, asyncReturn);
+            new regMaskTP(scratch ? SRBM_ARM64_R0 : SRBM_NONE),
+            new regMaskTP(byref ? SRBM_ARM64_R19 : SRBM_NONE), EA_BYREF, EA_UNKNOWN, asyncReturn);
         Assert.That(descriptor.idIsLargeCall(), Is.EqualTo(scratch || byref || asyncReturn));
         Assert.That(descriptor.idGCref(), Is.EqualTo(GCT_BYREF));
         if (descriptor.idIsLargeCall())
@@ -122,8 +122,8 @@ internal static unsafe class Arm64EmitterCallAllocationTests
     [Test]
     public static void CalleeSavedGcRegistersRoundTripThroughBothFiveBitFields()
     {
-        var mask = SRBM_R19_ARM64 | SRBM_R20_ARM64 | SRBM_R21_ARM64 | SRBM_R22_ARM64 | SRBM_R23_ARM64 |
-            SRBM_R24_ARM64 | SRBM_R25_ARM64 | SRBM_R26_ARM64 | SRBM_R27_ARM64 | SRBM_R28_ARM64;
+        var mask = SRBM_ARM64_R19 | SRBM_ARM64_R20 | SRBM_ARM64_R21 | SRBM_ARM64_R22 | SRBM_ARM64_R23 |
+            SRBM_ARM64_R24 | SRBM_ARM64_R25 | SRBM_ARM64_R26 | SRBM_ARM64_R27 | SRBM_ARM64_R28;
         var descriptor = Direct(CreateEmitter(), 0, [0], new regMaskTP(mask), default, EA_UNKNOWN, EA_UNKNOWN, false);
         Assert.That(descriptor.idIsLargeCall(), Is.False);
         Assert.That((uint)descriptor.idReg1(), Is.EqualTo(31u));

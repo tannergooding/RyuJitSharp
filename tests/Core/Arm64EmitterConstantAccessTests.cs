@@ -49,8 +49,8 @@ internal static unsafe class Arm64EmitterConstantAccessTests
     public static void LocalAndTlsFlagsPreserveConstantAndRegisterState()
     {
         var descriptor = AccessEmitter.Constant(31, false);
-        descriptor.idReg1(REG_R19_ARM64);
-        descriptor.idReg2(REG_R28_ARM64);
+        descriptor.idReg1(REG_ARM64_R19);
+        descriptor.idReg2(REG_ARM64_R28);
         Assert.That(IsLocal(descriptor), Is.False);
         Assert.That(IsTls(descriptor), Is.False);
 
@@ -60,8 +60,8 @@ internal static unsafe class Arm64EmitterConstantAccessTests
         SetTls(descriptor);
         Assert.That(IsTls(descriptor), Is.True);
         Assert.That(IsLocal(descriptor), Is.True);
-        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R19_ARM64));
-        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R28_ARM64));
+        Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R19));
+        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_R28));
         Assert.That(ReadConstant(null, descriptor), Is.EqualTo((nint)31));
     }
 
@@ -74,8 +74,8 @@ internal static unsafe class Arm64EmitterConstantAccessTests
         var descriptor = AccessEmitter.Constant(value, !Emitter.instrDesc.fitsInSmallCns(value));
         descriptor.idInsFmt(format);
         descriptor.idOpSize(EA_8BYTE);
-        descriptor.idReg1(REG_R0_ARM64);
-        descriptor.idReg2(REG_R1_ARM64);
+        descriptor.idReg1(REG_ARM64_R0);
+        descriptor.idReg2(REG_ARM64_R1);
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         var emitter = new Emitter(new CodeGen(compiler));
         emitter.emitBegCG(compiler, default);

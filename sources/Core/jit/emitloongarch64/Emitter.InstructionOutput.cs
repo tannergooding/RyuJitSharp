@@ -27,7 +27,7 @@ public partial class Emitter
 
         switch (id.idInsOpt())
         {
-            case INS_OPTS_RELOC_LOONGARCH64:
+            case INS_OPTS_LOONGARCH64_RELOC:
             {
                 var reg = id.idReg1();
                 emitOutputLoongArch64Instruction(dst, 0x1a000000 | unchecked((uint)reg));
@@ -43,7 +43,7 @@ public partial class Emitter
                 ins = secondInstruction;
                 break;
             }
-            case INS_OPTS_I_LOONGARCH64:
+            case INS_OPTS_LOONGARCH64_I:
             {
                 EmitOutputLoongArch64Immediate(dst, id);
                 dstRW += id.idCodeSize();
@@ -79,7 +79,7 @@ public partial class Emitter
                 descriptorSize = (nuint)DescriptorSizes.Jump;
                 break;
             }
-            case INS_OPTS_C_LOONGARCH64:
+            case INS_OPTS_LOONGARCH64_C:
             {
                 descriptorSize = id.idIsLargeCall()
                     ? (nuint)instrDescCGCA.NativeSize

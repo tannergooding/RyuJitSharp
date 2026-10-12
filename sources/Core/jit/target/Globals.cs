@@ -30,13 +30,13 @@ public static partial class Globals
         assert(hasFixedRetBuffReg(callConv));
         if (Configuration.TARGET_ARM64)
         {
-            return REG_R8_ARM64;
+            return REG_ARM64_R8;
         }
 
         if (Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT)
         {
             assert(callConv is CorInfoCallConvExtension.Swift);
-            return REG_RAX_AMD64;
+            return REG_X64_RAX;
         }
 
         return regNumberExtensions.NotAvailable;
@@ -47,13 +47,13 @@ public static partial class Globals
         assert(hasFixedRetBuffReg(callConv));
         if (Configuration.TARGET_ARM64)
         {
-            return new regMaskTP(SRBM_R8_ARM64);
+            return new regMaskTP(SRBM_ARM64_R8);
         }
 
         if (Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT)
         {
             assert(callConv == CorInfoCallConvExtension.Swift, "callConv == CorInfoCallConvExtension::Swift");
-            return new regMaskTP(SRBM_RAX_AMD64);
+            return new regMaskTP(SRBM_X64_RAX);
         }
 
         return RBM_NONE;
@@ -88,15 +88,15 @@ public static partial class Globals
         {
             if (Configuration.TARGET_ARM64)
             {
-                result |= new regMaskTP(SRBM_R20_ARM64);
+                result |= new regMaskTP(SRBM_ARM64_R20);
                 // SwiftError is initially marked as a register argument, then excluded from allocation.
-                result |= new regMaskTP(SRBM_R21_ARM64);
+                result |= new regMaskTP(SRBM_ARM64_R21);
             }
             else if (Configuration.TARGET_AMD64)
             {
-                result |= new regMaskTP(SRBM_R13_AMD64);
+                result |= new regMaskTP(SRBM_X64_R13);
                 // SwiftError is initially marked as a register argument, then excluded from allocation.
-                result |= new regMaskTP(SRBM_R12_AMD64);
+                result |= new regMaskTP(SRBM_X64_R12);
             }
             else
             {
@@ -302,7 +302,7 @@ public static partial class Globals
 
     public static bool genIsValidIntOrFakeReg(regNumber reg)
     {
-        return genIsValidIntReg(reg) || (Configuration.TARGET_ARM64 && (reg is REG_SP_ARM64));
+        return genIsValidIntReg(reg) || (Configuration.TARGET_ARM64 && (reg is REG_ARM64_SP));
     }
 
     public static bool genIsValidDoubleReg(regNumber reg) =>

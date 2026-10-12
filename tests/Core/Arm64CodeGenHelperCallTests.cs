@@ -83,7 +83,7 @@ internal static unsafe class Arm64CodeGenHelperCallTests
 #endif
 
             var data = compiler.gtNewIconNode(TYP_INT, 1);
-            data.RegNum = REG_R3_ARM64;
+            data.RegNum = REG_ARM64_R3;
             var tree = new GenTreeUnOp(GT_RETURNTRAP, TYP_VOID, data);
 
             codeGen.genCodeForReturnTrap(tree);
@@ -92,7 +92,7 @@ internal static unsafe class Arm64CodeGenHelperCallTests
             Assert.That(descriptors.Select(descriptor => descriptor.idIns()).ToArray(),
                 Is.EqualTo((instruction[])[INS_cmp, INS_beq, INS_bl]));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
         });
     }
 }

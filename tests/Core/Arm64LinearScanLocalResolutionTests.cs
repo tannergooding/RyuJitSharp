@@ -77,19 +77,19 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     {
         WithLocals(1, (compiler, allocator, block) => {
             compiler.lvaTable[0].Type = TYP_SIMD16;
-            var local = new Interval(TYP_SIMD16, SRBM_V8_ARM64) {
+            var local = new Interval(TYP_SIMD16, SRBM_ARM64_V8) {
                 isLocalVar = true,
                 varNum = 0,
-                physReg = REG_V8_ARM64,
+                physReg = REG_ARM64_V8,
             };
-            var upper = new Interval(TYP_DOUBLE, SRBM_V9_ARM64) {
+            var upper = new Interval(TYP_DOUBLE, SRBM_ARM64_V9) {
                 isUpperVector = true,
                 relatedInterval = local,
             };
             var call = new GenTreeCall(TYP_VOID);
             block.InsertAtEnd(call);
             var reference = new RefPosition((uint)block.bbNum, 2, call, RefType.RefTypeUpperVectorSave) {
-                registerAssignment = SRBM_V9_ARM64,
+                registerAssignment = SRBM_ARM64_V9,
                 spillAfter = spillToMemory,
             };
             reference.setInterval(upper);
@@ -100,9 +100,9 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             Assert.Multiple(() => {
                 Assert.That(save.Oper, Is.EqualTo(GT_INTRINSIC));
                 Assert.That(save.Type, Is.EqualTo(TYP_DOUBLE));
-                Assert.That(save.RegNum, Is.EqualTo(REG_V9_ARM64));
+                Assert.That(save.RegNum, Is.EqualTo(REG_ARM64_V9));
                 Assert.That((save.Flags & GTF_SPILL) != 0, Is.EqualTo(spillToMemory));
-                Assert.That(upper.physReg, Is.EqualTo(spillToMemory ? REG_NA : REG_V9_ARM64));
+                Assert.That(upper.physReg, Is.EqualTo(spillToMemory ? REG_NA : REG_ARM64_V9));
             });
         });
     }
@@ -113,23 +113,23 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     {
         WithLocals(1, (compiler, allocator, block) => {
             compiler.lvaTable[0].Type = TYP_SIMD16;
-            var local = new Interval(TYP_SIMD16, SRBM_V8_ARM64) {
+            var local = new Interval(TYP_SIMD16, SRBM_ARM64_V8) {
                 isLocalVar = true,
                 isSpilled = spillToMemory,
                 varNum = 0,
-                physReg = REG_V8_ARM64,
+                physReg = REG_ARM64_V8,
             };
-            var upper = new Interval(TYP_DOUBLE, SRBM_V9_ARM64) {
+            var upper = new Interval(TYP_DOUBLE, SRBM_ARM64_V9) {
                 isUpperVector = true,
                 relatedInterval = local,
-                physReg = spillToMemory ? REG_NA : REG_V9_ARM64,
+                physReg = spillToMemory ? REG_NA : REG_ARM64_V9,
             };
             var load = compiler.gtNewLclvNode(TYP_SIMD16, 0);
             var user = new GenTreeLclVar(TYP_SIMD16, 0, load);
             block.InsertAtEnd(load);
             block.InsertAtEnd(user);
             var reference = new RefPosition((uint)block.bbNum, 2, load, RefType.RefTypeUpperVectorRestore) {
-                registerAssignment = SRBM_V9_ARM64,
+                registerAssignment = SRBM_ARM64_V9,
             };
             reference.setInterval(upper);
 
@@ -139,7 +139,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             Assert.Multiple(() => {
                 Assert.That(restore.Oper, Is.EqualTo(GT_INTRINSIC));
                 Assert.That(restore.Type, Is.EqualTo(TYP_SIMD16));
-                Assert.That(restore.RegNum, Is.EqualTo(REG_V9_ARM64));
+                Assert.That(restore.RegNum, Is.EqualTo(REG_ARM64_V9));
                 Assert.That((restore.Flags & GTF_SPILLED) != 0, Is.EqualTo(spillToMemory));
                 Assert.That(restore.Flags & GTF_NOREG_AT_USE, Is.EqualTo(GTF_EMPTY));
             });
@@ -163,13 +163,13 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
                 SetOps.AddElemD(compiler, CandidateVars(allocator), index);
                 SetOps.AddElemD(compiler, live, index);
                 compiler.lvaTable[index].lvLRACandidate = true;
-                allocator.localVarIntervals[index] = new Interval(TYP_INT, SRBM_R0_ARM64 | SRBM_R1_ARM64) {
+                allocator.localVarIntervals[index] = new Interval(TYP_INT, SRBM_ARM64_R0 | SRBM_ARM64_R1) {
                     isLocalVar = true,
                     isSplit = true,
                     varNum = (uint)index,
                 };
-                allocator.setOutVarRegForBB((uint)source.bbNum, (uint)index, index == 0 ? REG_R0_ARM64 : REG_R1_ARM64);
-                allocator.setInVarRegForBB((uint)target.bbNum, (uint)index, index == 0 ? REG_R1_ARM64 : REG_R0_ARM64);
+                allocator.setOutVarRegForBB((uint)source.bbNum, (uint)index, index == 0 ? REG_ARM64_R0 : REG_ARM64_R1);
+                allocator.setInVarRegForBB((uint)target.bbNum, (uint)index, index == 0 ? REG_ARM64_R1 : REG_ARM64_R0);
             }
 
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin, live,
@@ -235,14 +235,14 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
         });
     }
 
-    [TestCase(TYP_INT, REG_STK_ARM64, REG_R0_ARM64, GT_LCL_VAR)]
-    [TestCase(TYP_INT, REG_R0_ARM64, REG_STK_ARM64, GT_LCL_VAR)]
-    [TestCase(TYP_INT, REG_R0_ARM64, REG_R1_ARM64, GT_COPY)]
-    [TestCase(TYP_REF, REG_R0_ARM64, REG_R1_ARM64, GT_COPY)]
-    [TestCase(TYP_DOUBLE, REG_V0_ARM64, REG_V1_ARM64, GT_COPY)]
-    [TestCase(TYP_MASK, REG_STK_ARM64, REG_P1_ARM64, GT_LCL_VAR)]
-    [TestCase(TYP_MASK, REG_P0_ARM64, REG_STK_ARM64, GT_LCL_VAR)]
-    [TestCase(TYP_MASK, REG_P0_ARM64, REG_P1_ARM64, GT_COPY)]
+    [TestCase(TYP_INT, REG_ARM64_STK, REG_ARM64_R0, GT_LCL_VAR)]
+    [TestCase(TYP_INT, REG_ARM64_R0, REG_ARM64_STK, GT_LCL_VAR)]
+    [TestCase(TYP_INT, REG_ARM64_R0, REG_ARM64_R1, GT_COPY)]
+    [TestCase(TYP_REF, REG_ARM64_R0, REG_ARM64_R1, GT_COPY)]
+    [TestCase(TYP_DOUBLE, REG_ARM64_V0, REG_ARM64_V1, GT_COPY)]
+    [TestCase(TYP_MASK, REG_ARM64_STK, REG_ARM64_P1, GT_LCL_VAR)]
+    [TestCase(TYP_MASK, REG_ARM64_P0, REG_ARM64_STK, GT_LCL_VAR)]
+    [TestCase(TYP_MASK, REG_ARM64_P0, REG_ARM64_P1, GT_COPY)]
     public static void JoinResolutionMovesLocalBetweenStackAndRegisters(
         var_types type, regNumber from, regNumber to, genTreeOps expected)
     {
@@ -252,7 +252,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
             compiler.lvaTable[0].Type = type;
             compiler.compFloatingPointUsed = type is TYP_DOUBLE or TYP_MASK;
-            var interval = new Interval(type, genSingleTypeRegMask(from == REG_STK_ARM64 ? to : from)) {
+            var interval = new Interval(type, genSingleTypeRegMask(from == REG_ARM64_STK ? to : from)) {
                 isLocalVar = true,
                 isSpilled = true,
                 varNum = 0,
@@ -280,10 +280,10 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
         WithLocals(1, (compiler, allocator, _) => {
             var call = new GenTreeCall(TYP_STRUCT);
             var reference = new RefPosition(1, 1, call, RefType.RefTypeDef) {
-                registerAssignment = SRBM_R1_ARM64,
+                registerAssignment = SRBM_ARM64_R1,
                 multiRegIdx = 1,
             };
-            var interval = new Interval(TYP_LONG, SRBM_R1_ARM64);
+            var interval = new Interval(TYP_LONG, SRBM_ARM64_R1);
             reference.setInterval(interval);
             call._returnTypeDesc.InitializeReturnType(compiler, TYP_LONG, null,
                 CorInfoCallConvExtension.Managed);
@@ -292,7 +292,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
 
             WriteRegisters(allocator, reference, call);
 
-            Assert.That(call.GetRegNumByIdx(1), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(call.GetRegNumByIdx(1), Is.EqualTo(REG_ARM64_R1));
         });
     }
 
@@ -303,7 +303,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             compiler.lvaTable[0].lvIsParam = true;
             compiler.lvaTable[0].lvIsRegArg = true;
             compiler.lvaTable[0].lvLRACandidate = true;
-            var interval = new Interval(TYP_INT, SRBM_R0_ARM64) {
+            var interval = new Interval(TYP_INT, SRBM_ARM64_R0) {
                 isLocalVar = true,
                 varNum = 0,
             };
@@ -315,7 +315,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             SetOps.AddElemD(compiler, CandidateVars(allocator), 0);
             allocator.initVarRegMaps();
             var parameter = new RefPosition(0, 0, null, RefType.RefTypeParamDef) {
-                registerAssignment = SRBM_R0_ARM64,
+                registerAssignment = SRBM_ARM64_R0,
             };
             parameter.setInterval(interval);
             interval.firstRefPosition = parameter;
@@ -326,9 +326,9 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             allocator.resolveRegistersWithLocals();
 
             Assert.Multiple(() => {
-                Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_R0_ARM64));
-                Assert.That(compiler.lvaTable[0].ArgInitReg, Is.EqualTo(REG_R0_ARM64));
-                Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_R0_ARM64));
+                Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_ARM64_R0));
+                Assert.That(compiler.lvaTable[0].ArgInitReg, Is.EqualTo(REG_ARM64_R0));
+                Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_R0));
             });
         });
     }
@@ -339,9 +339,9 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
         WithLocals(0, (compiler, allocator, block) => {
             var constant = compiler.gtNewIconNode(TYP_INT, 7);
             block.InsertAtEnd(constant);
-            var interval = new Interval(TYP_INT, SRBM_R0_ARM64);
+            var interval = new Interval(TYP_INT, SRBM_ARM64_R0);
             var definition = new RefPosition((uint)block.bbNum, 2, constant, RefType.RefTypeDef) {
-                registerAssignment = SRBM_R0_ARM64,
+                registerAssignment = SRBM_ARM64_R0,
             };
             definition.setInterval(interval);
             interval.firstRefPosition = definition;
@@ -351,7 +351,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
 
             ResolveMinimal(allocator);
 
-            Assert.That(constant.RegNum, Is.EqualTo(REG_R0_ARM64));
+            Assert.That(constant.RegNum, Is.EqualTo(REG_ARM64_R0));
         }, enableLocals: false);
     }
 

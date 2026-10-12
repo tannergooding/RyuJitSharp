@@ -277,7 +277,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
             compiler.info.compNeedsConsecutiveRegisters = true;
             var allocator = CreateAllocator(compiler);
             var interval = NewInterval(allocator, TYP_FLOAT);
-            var reference = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, null, SRBM_V0);
+            var reference = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, null, SRBM_ARM64_V0);
             reference.needsConsecutive = true;
             var selector = GetSelector(allocator);
             InvokeSelector(selector, "reset", interval, reference);
@@ -285,7 +285,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
             InvokeSelector(selector, "try_PREV_REG_OPT");
 
             Assert.That(GetSelectorField<bool>(selector, "_found"), Is.False);
-            Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_candidates"), Is.EqualTo(SRBM_V0));
+            Assert.That(GetSelectorField<SingleTypeRegSet>(selector, "_candidates"), Is.EqualTo(SRBM_ARM64_V0));
         });
     }
 #endif

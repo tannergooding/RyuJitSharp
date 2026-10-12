@@ -238,7 +238,7 @@ public partial class Emitter
         id.idIns(ins);
         assert(ireg != REG_R0);
         id.idReg1(ireg);
-        id.idInsOpt(INS_OPTS_RELOC_LOONGARCH64);
+        id.idInsOpt(INS_OPTS_LOONGARCH64_RELOC);
 
         if (EA_IS_GCREF(attr))
         {

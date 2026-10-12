@@ -30,7 +30,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
         WithCompiler(false, false, (compiler, _) => {
             var profilerTrash = new regMaskTP(
                 (SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH) &
-                ~(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_FP_ARM64),
+                ~(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_ARM64_FP),
                 SRBM_MSK_CALLEE_TRASH);
 
             Assert.Multiple(() => {
@@ -155,13 +155,13 @@ internal static unsafe class Arm64LinearScanConstructionTests
             });
 
             Assert.That(BuildCall(allocator, call), Is.EqualTo(1));
-            var expected = AvailableIntRegs(allocator) & SRBM_INT_CALLEE_TRASH & ~SRBM_LR_ARM64;
+            var expected = AvailableIntRegs(allocator) & SRBM_INT_CALLEE_TRASH & ~SRBM_ARM64_LR;
             if (needsCookie)
             {
                 expected &= ~SRBM_GSCOOKIE_TMP;
             }
             Assert.That(definition.nextRefPosition?.registerAssignment, Is.EqualTo(expected));
-            Assert.That(definition.nextRefPosition?.registerAssignment & SRBM_LR_ARM64, Is.EqualTo(SRBM_NONE));
+            Assert.That(definition.nextRefPosition?.registerAssignment & SRBM_ARM64_LR, Is.EqualTo(SRBM_NONE));
         });
     }
 
@@ -303,7 +303,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             ReferenceBuildLocation(allocator) = 2;
             BuildRefPositionsForNode(allocator, constant, 2);
             var definition = allocator.refPositions[^1];
-            definition.registerAssignment = SRBM_R0_ARM64;
+            definition.registerAssignment = SRBM_ARM64_R0;
             definition.needsConsecutive = consecutive;
             StressMask(allocator) = 0x08;
             var negate = new GenTreeUnOp(GT_NEG, TYP_INT, constant);
@@ -313,7 +313,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
 
             var use = definition.nextRefPosition
                 ?? throw new AssertionException("Missing use of consecutive definition.");
-            Assert.That(use.registerAssignment & SRBM_R0_ARM64, Is.EqualTo(SRBM_NONE));
+            Assert.That(use.registerAssignment & SRBM_ARM64_R0, Is.EqualTo(SRBM_NONE));
             Assert.That(definition.getInterval().hasConflictingDefUse, Is.EqualTo(!consecutive));
         });
     }
@@ -441,15 +441,15 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
-    [TestCase(SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64 | SRBM_V4_ARM64, 2u, SRBM_V0_ARM64 | SRBM_V1_ARM64,
-        SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64)]
-    [TestCase(SRBM_V0_ARM64 | SRBM_V31_ARM64, 2u, SRBM_V31_ARM64, SRBM_V0_ARM64 | SRBM_V31_ARM64)]
-    [TestCase(SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V30_ARM64 | SRBM_V31_ARM64, 3u, SRBM_V30_ARM64 | SRBM_V31_ARM64,
-        SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V30_ARM64 | SRBM_V31_ARM64)]
-    [TestCase(SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64 | SRBM_V29_ARM64 | SRBM_V30_ARM64 | SRBM_V31_ARM64, 4u,
-        SRBM_V29_ARM64 | SRBM_V30_ARM64 | SRBM_V31_ARM64,
-        SRBM_V0_ARM64 | SRBM_V29_ARM64 | SRBM_V30_ARM64 | SRBM_V31_ARM64)]
-    [TestCase(SRBM_V0_ARM64 | SRBM_V2_ARM64 | SRBM_V4_ARM64, 2u, SRBM_NONE, SRBM_NONE)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V4, 2u, SRBM_ARM64_V0 | SRBM_ARM64_V1,
+        SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V31, 2u, SRBM_ARM64_V31, SRBM_ARM64_V0 | SRBM_ARM64_V31)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V30 | SRBM_ARM64_V31, 3u, SRBM_ARM64_V30 | SRBM_ARM64_V31,
+        SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V30 | SRBM_ARM64_V31)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31, 4u,
+        SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31,
+        SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V2 | SRBM_ARM64_V4, 2u, SRBM_NONE, SRBM_NONE)]
     public static void ConsecutiveCandidateStartsStayInFloatBank(
         regMask candidates, uint count, regMask starts, regMask all)
     {
@@ -461,8 +461,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
-    [TestCase(REG_V0_ARM64, SRBM_V0_ARM64 | SRBM_V31_ARM64)]
-    [TestCase(REG_V1_ARM64, SRBM_V0_ARM64)]
+    [TestCase(REG_ARM64_V0, SRBM_ARM64_V0 | SRBM_ARM64_V31)]
+    [TestCase(REG_ARM64_V1, SRBM_ARM64_V0)]
     public static void ConsecutiveReuseUsesNativePredecessorBit(
         regNumber assignedNext, regMask expected)
     {
@@ -483,7 +483,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             next.assignedReg = assignedRegister;
             next.isActive = true;
 
-            var candidates = SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V31_ARM64;
+            var candidates = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V31;
             Assert.That(GetConsecutiveCandidates(allocator, candidates, definitions[0], out var busy),
                 Is.EqualTo(expected));
             Assert.That(busy, Is.EqualTo(SRBM_NONE));
@@ -506,13 +506,13 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 position => position.treeNode == load && position.refType is RefType.RefTypeDef);
             var first = definitions[0];
             var second = definitions[1];
-            first.registerAssignment = SRBM_V31_ARM64;
+            first.registerAssignment = SRBM_ARM64_V31;
 
-            Assert.That(CanAssignNext(allocator, first, REG_V31_ARM64), Is.True);
-            AssignConsecutive(allocator, first, REG_V31_ARM64);
+            Assert.That(CanAssignNext(allocator, first, REG_ARM64_V31), Is.True);
+            AssignConsecutive(allocator, first, REG_ARM64_V31);
             Assert.Multiple(() => {
-                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0_ARM64));
-                Assert.That(ConsecutiveInUse(allocator), Is.EqualTo(SRBM_V31_ARM64 | SRBM_V0_ARM64));
+                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_ARM64_V0));
+                Assert.That(ConsecutiveInUse(allocator), Is.EqualTo(SRBM_ARM64_V31 | SRBM_ARM64_V0));
             });
         });
     }
@@ -539,16 +539,16 @@ internal static unsafe class Arm64LinearScanConstructionTests
             upper.isUpperVector = true;
             upper.relatedInterval = local;
             var restore = allocator.newRefPosition(upper, 1, RefType.RefTypeUpperVectorRestore,
-                load, SRBM_V31_ARM64 | SRBM_V0_ARM64 | SRBM_V3_ARM64);
+                load, SRBM_ARM64_V31 | SRBM_ARM64_V0 | SRBM_ARM64_V3);
             restore.needsConsecutive = true;
             NextConsecutiveMap(allocator)[first] = restore;
             NextConsecutiveMap(allocator)[restore] = second;
-            first.registerAssignment = SRBM_V31_ARM64;
+            first.registerAssignment = SRBM_ARM64_V31;
 
-            AssignConsecutive(allocator, first, REG_V31_ARM64);
+            AssignConsecutive(allocator, first, REG_ARM64_V31);
             Assert.Multiple(() => {
-                Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_V3_ARM64));
-                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0_ARM64));
+                Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_ARM64_V3));
+                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_ARM64_V0));
             });
         });
     }
@@ -568,15 +568,15 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var definitions = allocator.refPositions.FindAll(position =>
                 position.treeNode == load && position.refType is RefType.RefTypeDef);
             var nextInterval = definitions[1].getInterval();
-            var register = allocator.physRegs[(int)REG_V0_ARM64];
-            register.init(REG_V0_ARM64);
+            var register = allocator.physRegs[(int)REG_ARM64_V0];
+            register.init(REG_ARM64_V0);
             nextInterval.assignedReg = register;
             nextInterval.isActive = true;
             register.assignedInterval = nextInterval;
 
-            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31_ARM64), Is.True);
-            InUse(allocator) = new regMaskTP(SRBM_V0_ARM64);
-            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31_ARM64), Is.False);
+            Assert.That(CanAssignNext(allocator, definitions[0], REG_ARM64_V31), Is.True);
+            InUse(allocator) = new regMaskTP(SRBM_ARM64_V0);
+            Assert.That(CanAssignNext(allocator, definitions[0], REG_ARM64_V31), Is.False);
         });
     }
 
@@ -613,15 +613,15 @@ internal static unsafe class Arm64LinearScanConstructionTests
             {
                 occupied = NewInterval(allocator, TYP_SIMD16);
                 occupiedDefinition = allocator.newRefPosition(occupied, 1, RefType.RefTypeDef,
-                    new GenTreeVecCon(TYP_SIMD16), SRBM_V0_ARM64);
+                    new GenTreeVecCon(TYP_SIMD16), SRBM_ARM64_V0);
             }
             var firstInterval = NewInterval(allocator, TYP_SIMD16);
             var secondInterval = NewInterval(allocator, TYP_SIMD16);
             var address = new GenTreeIntCon(TYP_I_IMPL, 0x1000);
             var first = allocator.newRefPosition(
-                firstInterval, 2, RefType.RefTypeDef, address, SRBM_V31_ARM64 | SRBM_V0_ARM64);
+                firstInterval, 2, RefType.RefTypeDef, address, SRBM_ARM64_V31 | SRBM_ARM64_V0);
             var second = allocator.newRefPosition(
-                secondInterval, 2, RefType.RefTypeDef, address, SRBM_V0_ARM64 | SRBM_V1_ARM64);
+                secondInterval, 2, RefType.RefTypeDef, address, SRBM_ARM64_V0 | SRBM_ARM64_V1);
             first.needsConsecutive = true;
             first.regCount = 2;
             second.needsConsecutive = true;
@@ -630,17 +630,17 @@ internal static unsafe class Arm64LinearScanConstructionTests
             if (occupied is not null)
             {
                 occupiedUse = allocator.newRefPosition(occupied, 4, RefType.RefTypeUse,
-                    new GenTreeVecCon(TYP_SIMD16), SRBM_V0_ARM64);
+                    new GenTreeVecCon(TYP_SIMD16), SRBM_ARM64_V0);
             }
             var lastInterval = NewInterval(allocator, TYP_INT);
             var last = allocator.newRefPosition(lastInterval, 6, RefType.RefTypeDef,
-                new GenTreeIntCon(TYP_INT, 1), SRBM_R0_ARM64);
+                new GenTreeIntCon(TYP_INT, 1), SRBM_ARM64_R0);
 
             AllocateRegisters(allocator);
             Assert.Multiple(() => {
-                Assert.That(first.registerAssignment, Is.EqualTo(SRBM_V31_ARM64));
-                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0_ARM64));
-                Assert.That(last.registerAssignment, Is.EqualTo(SRBM_R0_ARM64));
+                Assert.That(first.registerAssignment, Is.EqualTo(SRBM_ARM64_V31));
+                Assert.That(second.registerAssignment, Is.EqualTo(SRBM_ARM64_V0));
+                Assert.That(last.registerAssignment, Is.EqualTo(SRBM_ARM64_R0));
                 Assert.That(ConsecutiveInUse(allocator), Is.EqualTo(SRBM_NONE));
                 if (spillNextRegister)
                 {
@@ -680,20 +680,20 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var local = NewInterval(allocator, TYP_SIMD16);
             local.isLocalVar = true;
             local.varNum = 0;
-            local.physReg = REG_V0_ARM64;
+            local.physReg = REG_ARM64_V0;
             local.isPartiallySpilled = true;
             var upper = NewInterval(allocator, TYP_DOUBLE);
             upper.isUpperVector = true;
             upper.relatedInterval = local;
             var restore = allocator.newRefPosition(upper, 2, RefType.RefTypeUpperVectorRestore,
-                new GenTreeVecCon(TYP_SIMD16), SRBM_V3_ARM64);
+                new GenTreeVecCon(TYP_SIMD16), SRBM_ARM64_V3);
             restore.setRegOptional(true);
 
             AllocateRegisters(allocator);
             Assert.Multiple(() => {
-                Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_V3_ARM64));
-                Assert.That(upper.physReg, Is.EqualTo(REG_V3_ARM64));
-                Assert.That(upper.assignedReg, Is.SameAs(allocator.physRegs[(int)REG_V3_ARM64]));
+                Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_ARM64_V3));
+                Assert.That(upper.physReg, Is.EqualTo(REG_ARM64_V3));
+                Assert.That(upper.assignedReg, Is.SameAs(allocator.physRegs[(int)REG_ARM64_V3]));
                 Assert.That(local.isPartiallySpilled, Is.False);
             });
         });
@@ -715,16 +715,16 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 position.treeNode == load && position.refType is RefType.RefTypeDef &&
                 position.regCount == 2) ?? throw new AssertionException("Missing first vector definition.");
 
-            SetRegInUse(allocator, REG_V1_ARM64, TYP_FLOAT);
-            SetRegInUse(allocator, REG_V2_ARM64, TYP_FLOAT);
-            Assert.That(GetConsecutiveCandidates(allocator, SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64 | SRBM_V3_ARM64,
+            SetRegInUse(allocator, REG_ARM64_V1, TYP_FLOAT);
+            SetRegInUse(allocator, REG_ARM64_V2, TYP_FLOAT);
+            Assert.That(GetConsecutiveCandidates(allocator, SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V3,
                 first, out var busy), Is.EqualTo(SRBM_NONE));
-            Assert.That(busy, Is.EqualTo(SRBM_V0_ARM64 | SRBM_V2_ARM64));
+            Assert.That(busy, Is.EqualTo(SRBM_ARM64_V0 | SRBM_ARM64_V2));
         });
     }
 
-    [TestCase(SRBM_V31_ARM64 | SRBM_V0_ARM64, SRBM_V31_ARM64)]
-    [TestCase(SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64, SRBM_V0_ARM64)]
+    [TestCase(SRBM_ARM64_V31 | SRBM_ARM64_V0, SRBM_ARM64_V31)]
+    [TestCase(SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2, SRBM_ARM64_V0)]
     public static void AllocatorSelectsOnlyCompleteFreeSequences(regMask candidates, regMask expected)
     {
         WithCompiler(false, false, (compiler, codeGen) => {
@@ -733,7 +733,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             codeGen.RegSet.rsClearRegsModified();
             var allocator = new LinearScan(compiler);
             BlockInfo(allocator) = [new LsraBlockInfo()];
-            for (var register = REG_V0_ARM64; register <= REG_V31_ARM64; register++)
+            for (var register = REG_ARM64_V0; register <= REG_ARM64_V31; register++)
             {
                 allocator.physRegs[(int)register].init(register);
             }
@@ -752,7 +752,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             Assert.That(first.isFixedRegRef, Is.False);
             var selected = AllocateConsecutive(allocator, first.getInterval(), first, true);
             Assert.Multiple(() => {
-                Assert.That(selected, Is.EqualTo(expected == SRBM_V31_ARM64 ? REG_V31_ARM64 : REG_V0_ARM64));
+                Assert.That(selected, Is.EqualTo(expected == SRBM_ARM64_V31 ? REG_ARM64_V31 : REG_ARM64_V0));
                 Assert.That(first.registerAssignment, Is.EqualTo(expected));
             });
         }, minOpts: false);
@@ -772,7 +772,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             codeGen.RegSet.rsClearRegsModified();
             var allocator = new LinearScan(compiler);
             BlockInfo(allocator) = [new LsraBlockInfo()];
-            for (var register = REG_V0_ARM64; register <= REG_V31_ARM64; register++)
+            for (var register = REG_ARM64_V0; register <= REG_ARM64_V31; register++)
             {
                 allocator.physRegs[(int)register].init(register);
             }
@@ -786,21 +786,21 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 position.treeNode == load && position.regCount == 2)
                 ?? throw new AssertionException("Missing consecutive first reference.");
             first.registerAssignment = hasAvailablePair
-                ? SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64 | SRBM_V3_ARM64 | SRBM_V4_ARM64
-                : SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64;
+                ? SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V3 | SRBM_ARM64_V4
+                : SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2;
             first.delayRegFree = delayRegFree;
             StressMask(allocator) = 3;
-            InUse(allocator) = new regMaskTP(SRBM_V2_ARM64);
+            InUse(allocator) = new regMaskTP(SRBM_ARM64_V2);
 
-            FixedLow(allocator) = SRBM_V0_ARM64 | SRBM_V1_ARM64;
+            FixedLow(allocator) = SRBM_ARM64_V0 | SRBM_ARM64_V1;
             var nextFixed = NextFixed(allocator);
-            nextFixed[(int)REG_V0_ARM64] = first.nodeLocation;
-            nextFixed[(int)REG_V1_ARM64] = unchecked(first.nodeLocation + (delayRegFree ? 1u : 0u));
+            nextFixed[(int)REG_ARM64_V0] = first.nodeLocation;
+            nextFixed[(int)REG_ARM64_V1] = unchecked(first.nodeLocation + (delayRegFree ? 1u : 0u));
 
             if (hasAvailablePair)
             {
-                Assert.That(AllocateConsecutive(allocator, first.getInterval(), first, true), Is.EqualTo(REG_V3_ARM64));
-                Assert.That(first.registerAssignment, Is.EqualTo(SRBM_V3_ARM64));
+                Assert.That(AllocateConsecutive(allocator, first.getInterval(), first, true), Is.EqualTo(REG_ARM64_V3));
+                Assert.That(first.registerAssignment, Is.EqualTo(SRBM_ARM64_V3));
             }
             else
             {
@@ -832,12 +832,12 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 ?? throw new AssertionException("Missing consecutive first reference.");
 
             Assert.Multiple(() => {
-                Assert.That(StressLimit(allocator, null, TYP_FLOAT, SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V10_ARM64),
-                    Is.EqualTo(SRBM_V0_ARM64 | SRBM_V1_ARM64));
-                Assert.That(StressLimit(allocator, first, TYP_FLOAT, SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V10_ARM64),
-                    Is.EqualTo(SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V10_ARM64));
-                Assert.That(StressLimit(allocator, null, TYP_MASK, SRBM_P0_ARM64 | SRBM_P8_ARM64),
-                    Is.EqualTo(SRBM_P0_ARM64 | SRBM_P8_ARM64));
+                Assert.That(StressLimit(allocator, null, TYP_FLOAT, SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V10),
+                    Is.EqualTo(SRBM_ARM64_V0 | SRBM_ARM64_V1));
+                Assert.That(StressLimit(allocator, first, TYP_FLOAT, SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V10),
+                    Is.EqualTo(SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V10));
+                Assert.That(StressLimit(allocator, null, TYP_MASK, SRBM_ARM64_P0 | SRBM_ARM64_P8),
+                    Is.EqualTo(SRBM_ARM64_P0 | SRBM_ARM64_P8));
             });
         });
     }
@@ -856,9 +856,9 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
-    [TestCase(TYP_SHORT, SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64 | SRBM_V3_ARM64 | SRBM_V4_ARM64 | SRBM_V5_ARM64 | SRBM_V6_ARM64 | SRBM_V7_ARM64)]
-    [TestCase(TYP_DOUBLE, SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64 | SRBM_V3_ARM64 | SRBM_V4_ARM64 | SRBM_V5_ARM64 | SRBM_V6_ARM64 |
-        SRBM_V7_ARM64 | SRBM_V8_ARM64 | SRBM_V9_ARM64 | SRBM_V10_ARM64 | SRBM_V11_ARM64 | SRBM_V12_ARM64 | SRBM_V13_ARM64 | SRBM_V14_ARM64 | SRBM_V15_ARM64)]
+    [TestCase(TYP_SHORT, SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V3 | SRBM_ARM64_V4 | SRBM_ARM64_V5 | SRBM_ARM64_V6 | SRBM_ARM64_V7)]
+    [TestCase(TYP_DOUBLE, SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V3 | SRBM_ARM64_V4 | SRBM_ARM64_V5 | SRBM_ARM64_V6 |
+        SRBM_ARM64_V7 | SRBM_ARM64_V8 | SRBM_ARM64_V9 | SRBM_ARM64_V10 | SRBM_ARM64_V11 | SRBM_ARM64_V12 | SRBM_ARM64_V13 | SRBM_ARM64_V14 | SRBM_ARM64_V15)]
     public static void IndexedSveVectorRestrictsOnlySelectedOperand(var_types elementType, regMask expected)
     {
         WithCompiler(false, false, (compiler, _) => {
@@ -946,11 +946,11 @@ internal static unsafe class Arm64LinearScanConstructionTests
     public static void IntervalsUseNativeRegisterBanks(bool debugEnC, bool hasPatchpoint)
     {
         WithCompiler(debugEnC, hasPatchpoint, (compiler, codeGen) => {
-            var reserved = SRBM_R0_ARM64 | SRBM_R19_ARM64;
+            var reserved = SRBM_ARM64_R0 | SRBM_ARM64_R19;
             codeGen.RegSet.rsMaskResvd = new regMaskTP(reserved);
             var allocator = new LinearScan(compiler);
 
-            var integers = SRBM_ALLINT & ~(SRBM_PR_ARM64 | SRBM_FP_ARM64 | SRBM_LR_ARM64 | reserved);
+            var integers = SRBM_ALLINT & ~(SRBM_ARM64_PR | SRBM_ARM64_FP | SRBM_ARM64_LR | reserved);
             var floats = SRBM_ALLFLOAT;
             if (debugEnC)
             {

@@ -34,7 +34,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         {
             codeGen.Emitter.emitBegProlog();
             var actualZeroed = zeroed;
-            codeGen.genAllocLclFrame(frameSize, REG_R9_ARM64, ref actualZeroed, RBM_NONE);
+            codeGen.genAllocLclFrame(frameSize, REG_ARM64_R9, ref actualZeroed, RBM_NONE);
 
             Assert.That(actualZeroed, Is.EqualTo(zeroed));
             Assert.That(Descriptors(codeGen), Is.Empty);
@@ -54,7 +54,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             var initialLocation = unwindInfo.GetCurrentEmitterLocation()
                 ?? throw new AssertionException("Unwind prolog location was not captured.");
             var actualZeroed = true;
-            codeGen.genAllocLclFrame(frameSize, REG_R9_ARM64, ref actualZeroed, RBM_NONE);
+            codeGen.genAllocLclFrame(frameSize, REG_ARM64_R9, ref actualZeroed, RBM_NONE);
 
             Assert.That(actualZeroed, Is.EqualTo(expectedZeroed));
             var descriptors = Descriptors(codeGen);
@@ -62,9 +62,9 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             Assert.That(loads, Has.Length.EqualTo(probes));
             Assert.That(descriptors.Count, Is.GreaterThan(probes));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_ldr));
-            Assert.That(loads.All(id => id.idOpSize() == EA_4BYTE && id.idReg1() == REG_ZR_ARM64), Is.True);
+            Assert.That(loads.All(id => id.idOpSize() == EA_4BYTE && id.idReg1() == REG_ARM64_ZR), Is.True);
             Assert.That(descriptors.Where(id => id.idIns() != INS_ldr)
-                .All(id => id.idReg1() == REG_R9_ARM64), Is.True);
+                .All(id => id.idReg1() == REG_ARM64_R9), Is.True);
             var currentLocation = unwindInfo.GetCurrentEmitterLocation()
                 ?? throw new AssertionException("Unwind padding did not capture the emitter location.");
             Assert.That(initialLocation.IsCurrentLocation(codeGen.Emitter), Is.False);
@@ -111,7 +111,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             var descriptor = Descriptors(codeGen).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_FPBASE));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ZR_ARM64));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_ZR));
             var currentLocation = unwindInfo.GetCurrentEmitterLocation()
                 ?? throw new AssertionException("Frame-register unwind code did not capture the emitter location.");
             Assert.That(initialLocation.IsCurrentLocation(codeGen.Emitter), Is.False);
@@ -136,7 +136,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             codeGen.IsFramePointerUsed = true;
             var size = compiler.gtNewIconNode(TYP_I_IMPL, amount);
             size.IsContained = true;
-            var tree = new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size) { RegNum = REG_R0_ARM64 };
+            var tree = new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size) { RegNum = REG_ARM64_R0 };
 
             codeGen.genLclHeap(tree);
 
@@ -151,15 +151,15 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
                 Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)encodedOffset));
                 Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(insOpts.INS_OPTS_POST_INDEX));
                 Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_mov));
-                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R0_ARM64));
+                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_ARM64_R0));
                 if (expectedFirst == INS_ldp)
                 {
-                    Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R0_ARM64));
-                    Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ZR_ARM64));
+                    Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R0));
+                    Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_ZR));
                 }
                 else
                 {
-                    Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ZR_ARM64));
+                    Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_ZR));
                 }
             }
         });
@@ -176,7 +176,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
     {
         WithCodeGen((_, codeGen) =>
         {
-            var result = ProbeLoop(codeGen, -amount, REG_R9_ARM64);
+            var result = ProbeLoop(codeGen, -amount, REG_ARM64_R9);
             var descriptors = Descriptors(codeGen);
 
             Assert.That(result, Is.EqualTo((nint)lastTouch));
@@ -184,7 +184,7 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
             Assert.That(descriptors.Count(id => id.idIns() == INS_sub), Is.EqualTo((amount + 4095) / 4096));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R9_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R9));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(lastTouch == 0 ? INS_ldr : INS_sub));
         });
     }
@@ -198,13 +198,13 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         WithCodeGen((_, codeGen) =>
         {
             var fits = InstructionWithConstant(codeGen, ins, EA_8BYTE,
-                REG_R0_ARM64, REG_R1_ARM64, immediate, REG_R9_ARM64, false);
+                REG_ARM64_R0, REG_ARM64_R1, immediate, REG_ARM64_R9, false);
             var descriptor = Descriptors(codeGen).Single();
 
             Assert.That(fits, Is.True);
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0_ARM64));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)encoded));
         });
     }
@@ -215,22 +215,22 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         WithCodeGen((_, codeGen) =>
         {
             var fits = InstructionWithConstant(codeGen, INS_add, EA_8BYTE,
-                REG_R0_ARM64, REG_R1_ARM64, 4097, REG_R9_ARM64, false);
+                REG_ARM64_R0, REG_ARM64_R1, 4097, REG_ARM64_R9, false);
             var descriptors = Descriptors(codeGen);
 
             Assert.That(fits, Is.False);
             Assert.That(descriptors, Has.Count.GreaterThan(1));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R9_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R9));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R0_ARM64));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(descriptors[^1].idReg3(), Is.EqualTo(REG_R9_ARM64));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_ARM64_R0));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(descriptors[^1].idReg3(), Is.EqualTo(REG_ARM64_R9));
         });
     }
 
-    [TestCase(28, REG_R9_ARM64, true, 1, 2, 0)]
-    [TestCase(32, REG_R11_ARM64, false, 1, 0, 0)]
-    [TestCase(192, REG_R11_ARM64, false, 2, 0, 1)]
+    [TestCase(28, REG_ARM64_R9, true, 1, 2, 0)]
+    [TestCase(32, REG_ARM64_R11, false, 1, 0, 0)]
+    [TestCase(192, REG_ARM64_R11, false, 2, 0, 1)]
     public static void BlockInitializationUsesArm64ZeroAndPairStorePaths(
         int size, regNumber initReg, bool initRegZeroed, int pairStores, int scalarStores, int loopBranches)
     {
@@ -265,9 +265,9 @@ internal static unsafe class Arm64CodeGenStackAllocationTests
         Assert.That(PairOffset(null, immediate, size), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R0_ARM64, REG_R9_ARM64)]
-    [TestCase(REG_R9_ARM64, REG_R10_ARM64)]
-    [TestCase(REG_R19_ARM64, REG_R29_ARM64)]
+    [TestCase(REG_ARM64_R0, REG_ARM64_R9)]
+    [TestCase(REG_ARM64_R9, REG_ARM64_R10)]
+    [TestCase(REG_ARM64_R19, REG_ARM64_R29)]
     public static void ProbeLimitSelectionUsesLowestAvailableIntegerRegister(regNumber first, regNumber second)
     {
         var mask = regMaskTP.CreateFromRegNum(first, first.SingleTypeMask) |

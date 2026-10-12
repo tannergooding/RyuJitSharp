@@ -313,7 +313,7 @@ public partial class Emitter
         var id = emitAllocAnyInstr<instrDescLoadImm>(
             unchecked((nuint)DescriptorSizes.RiscVLoadImmediate),
             size);
-        id.idInsOpt(INS_OPTS_I_RISCV64);
+        id.idInsOpt(INS_OPTS_RISCV64_I);
         id.idcCnsVal = immediate;
         id.idReg1(reg);
         instructions.CopyTo(id.ins);

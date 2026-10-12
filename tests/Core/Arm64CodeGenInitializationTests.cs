@@ -33,7 +33,7 @@ internal static unsafe class Arm64CodeGenInitializationTests
             new LclVarDsc
             {
                 Type = TYP_INT,
-                RegNum = REG_R0_ARM64,
+                RegNum = REG_ARM64_R0,
                 lvIsParam = true,
                 lvRegister = true,
                 lvTracked = true,
@@ -56,12 +56,12 @@ internal static unsafe class Arm64CodeGenInitializationTests
             compiler.codeGen = codeGen;
             codeGen.RegSet.rsClearRegsModified();
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeSingleton(compiler, 0);
-            codeGen.GCInfo.gcRegGCrefSetCur = regMaskTP.CreateFromRegNum(REG_R0_ARM64, REG_R0_ARM64.SingleTypeMask);
-            codeGen.GCInfo.gcRegByrefSetCur = regMaskTP.CreateFromRegNum(REG_R1_ARM64, REG_R1_ARM64.SingleTypeMask);
+            codeGen.GCInfo.gcRegGCrefSetCur = regMaskTP.CreateFromRegNum(REG_ARM64_R0, REG_ARM64_R0.SingleTypeMask);
+            codeGen.GCInfo.gcRegByrefSetCur = regMaskTP.CreateFromRegNum(REG_ARM64_R1, REG_ARM64_R1.SingleTypeMask);
             codeGen.genInitialize();
 
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(),
-                Is.EqualTo(regMaskTP.CreateFromRegNum(REG_R0_ARM64, REG_R0_ARM64.SingleTypeMask)));
+                Is.EqualTo(regMaskTP.CreateFromRegNum(REG_ARM64_R0, REG_ARM64_R0.SingleTypeMask)));
             Assert.That(VarSetOps.IsEmpty(compiler, compiler.compCurLife), Is.True);
             Assert.That(VarSetOps.IsEmpty(compiler, codeGen.GCInfo.gcVarPtrSetCur), Is.True);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);

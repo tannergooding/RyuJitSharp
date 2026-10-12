@@ -31,27 +31,27 @@ internal static unsafe class Arm64RegisterCopyTests
         Assert.That(CreateCodeGen().ins_Copy(type), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R1_ARM64, TYP_INT, INS_mov)]
-    [TestCase(REG_V1_ARM64, TYP_INT, INS_mov)]
-    [TestCase(REG_R1_ARM64, TYP_FLOAT, INS_fmov)]
-    [TestCase(REG_V1_ARM64, TYP_FLOAT, INS_fmov)]
-    [TestCase(REG_R1_ARM64, TYP_DOUBLE, INS_fmov)]
-    [TestCase(REG_V1_ARM64, TYP_DOUBLE, INS_fmov)]
-    [TestCase(REG_V1_ARM64, TYP_SIMD16, INS_mov)]
-    [TestCase(REG_R1_ARM64, TYP_MASK, INS_sve_mov)]
-    [TestCase(REG_P1_ARM64, TYP_MASK, INS_sve_mov)]
+    [TestCase(REG_ARM64_R1, TYP_INT, INS_mov)]
+    [TestCase(REG_ARM64_V1, TYP_INT, INS_mov)]
+    [TestCase(REG_ARM64_R1, TYP_FLOAT, INS_fmov)]
+    [TestCase(REG_ARM64_V1, TYP_FLOAT, INS_fmov)]
+    [TestCase(REG_ARM64_R1, TYP_DOUBLE, INS_fmov)]
+    [TestCase(REG_ARM64_V1, TYP_DOUBLE, INS_fmov)]
+    [TestCase(REG_ARM64_V1, TYP_SIMD16, INS_mov)]
+    [TestCase(REG_ARM64_R1, TYP_MASK, INS_sve_mov)]
+    [TestCase(REG_ARM64_P1, TYP_MASK, INS_sve_mov)]
     public static void SourceClassSelectsTheNativeCopyInstruction(
         regNumber source, var_types type, instruction expected)
     {
         Assert.That(CreateCodeGen().ins_Copy(source, type), Is.EqualTo(expected));
     }
 
-    [TestCase(TYP_INT, REG_R0_ARM64, REG_R1_ARM64, EA_UNKNOWN, EA_4BYTE, INS_mov)]
-    [TestCase(TYP_LONG, REG_R0_ARM64, REG_R1_ARM64, EA_UNKNOWN, EA_8BYTE, INS_mov)]
-    [TestCase(TYP_LONG, REG_R0_ARM64, REG_R1_ARM64, EA_4BYTE, EA_4BYTE, INS_mov)]
-    [TestCase(TYP_FLOAT, REG_V0_ARM64, REG_V1_ARM64, EA_UNKNOWN, EA_4BYTE, INS_fmov)]
-    [TestCase(TYP_DOUBLE, REG_V0_ARM64, REG_V1_ARM64, EA_UNKNOWN, EA_8BYTE, INS_fmov)]
-    [TestCase(TYP_SIMD16, REG_V0_ARM64, REG_V1_ARM64, EA_UNKNOWN, EA_16BYTE, INS_mov)]
+    [TestCase(TYP_INT, REG_ARM64_R0, REG_ARM64_R1, EA_UNKNOWN, EA_4BYTE, INS_mov)]
+    [TestCase(TYP_LONG, REG_ARM64_R0, REG_ARM64_R1, EA_UNKNOWN, EA_8BYTE, INS_mov)]
+    [TestCase(TYP_LONG, REG_ARM64_R0, REG_ARM64_R1, EA_4BYTE, EA_4BYTE, INS_mov)]
+    [TestCase(TYP_FLOAT, REG_ARM64_V0, REG_ARM64_V1, EA_UNKNOWN, EA_4BYTE, INS_fmov)]
+    [TestCase(TYP_DOUBLE, REG_ARM64_V0, REG_ARM64_V1, EA_UNKNOWN, EA_8BYTE, INS_fmov)]
+    [TestCase(TYP_SIMD16, REG_ARM64_V0, REG_ARM64_V1, EA_UNKNOWN, EA_16BYTE, INS_mov)]
     public static void MoveRecordsTheSelectedInstructionAndExplicitOrDefaultWidth(
         var_types type, regNumber destination, regNumber source,
         emitAttr requested, emitAttr expectedSize, instruction expected)
@@ -74,7 +74,7 @@ internal static unsafe class Arm64RegisterCopyTests
     {
         var codeGen = CreateCodeGen();
 
-        codeGen.inst_Mov(TYP_LONG, REG_R0_ARM64, REG_R0_ARM64, canSkip);
+        codeGen.inst_Mov(TYP_LONG, REG_ARM64_R0, REG_ARM64_R0, canSkip);
 
         Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(expectedSize));
     }
@@ -102,12 +102,12 @@ internal static unsafe class Arm64RegisterCopyTests
         WithRegisterLife((compiler, codeGen) =>
         {
             var value = compiler.gtNewIconNode(type, 0);
-            value.RegNum = REG_R0_ARM64;
+            value.RegNum = REG_ARM64_R0;
 
             codeGen.genProduceReg(value);
 
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_R0_ARM64) : default));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_R0_ARM64) : default));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_ARM64_R0) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_ARM64_R0) : default));
         });
     }
 
@@ -119,17 +119,17 @@ internal static unsafe class Arm64RegisterCopyTests
         WithRegisterLife((compiler, codeGen) =>
         {
             var value = compiler.gtNewIconNode(type, 0);
-            value.RegNum = REG_R0_ARM64;
-            var copy = new GenTreeCopyOrReload(GT_COPY, type, value) { RegNum = REG_R1_ARM64 };
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0_ARM64, type);
+            value.RegNum = REG_ARM64_R0;
+            var copy = new GenTreeCopyOrReload(GT_COPY, type, value) { RegNum = REG_ARM64_R1 };
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R0, type);
 
             codeGen.genRegCopy(copy);
 
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_R1_ARM64) : default));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_R1_ARM64) : default));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_ARM64_R1) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_ARM64_R1) : default));
             var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing scalar copy.");
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R0_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_R0));
         });
     }
 
@@ -142,18 +142,18 @@ internal static unsafe class Arm64RegisterCopyTests
             var call = new GenTreeCall(TYP_STRUCT);
             call._returnTypeDesc.InitializeReturnType(compiler, TYP_REF, null, CorInfoCallConvExtension.Managed);
             ReturnTypes(ref call._returnTypeDesc)[1] = TYP_BYREF;
-            call.SetRegNumByIdx(REG_R0_ARM64, 0);
-            call.SetRegNumByIdx(REG_R1_ARM64, 1);
-            var copy = new GenTreeCopyOrReload(GT_COPY, TYP_STRUCT, call) { RegNum = REG_R3_ARM64 };
+            call.SetRegNumByIdx(REG_ARM64_R0, 0);
+            call.SetRegNumByIdx(REG_ARM64_R1, 1);
+            var copy = new GenTreeCopyOrReload(GT_COPY, TYP_STRUCT, call) { RegNum = REG_ARM64_R3 };
             if (retarget)
             {
-                copy.SetRegNumByIdx(REG_R2_ARM64, 1);
+                copy.SetRegNumByIdx(REG_ARM64_R2, 1);
             }
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R1_ARM64, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R1, TYP_BYREF);
 
-            Assert.That(codeGen.genRegCopy(copy, 1), Is.EqualTo(retarget ? REG_R2_ARM64 : REG_R1_ARM64));
+            Assert.That(codeGen.genRegCopy(copy, 1), Is.EqualTo(retarget ? REG_ARM64_R2 : REG_ARM64_R1));
 
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(retarget ? Mask(REG_R2_ARM64) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(retarget ? Mask(REG_ARM64_R2) : default));
             Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(retarget ? 4 : 0));
         });
     }
@@ -169,15 +169,15 @@ internal static unsafe class Arm64RegisterCopyTests
             var local = PrepareLocal(compiler, codeGen, TYP_REF);
             VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0);
 
-            codeGen.genUnspillLocal(0, TYP_REF, local, REG_R0_ARM64, reSpill, lastUse);
+            codeGen.genUnspillLocal(0, TYP_REF, local, REG_ARM64_R0, reSpill, lastUse);
 
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(reSpill ? REG_STK_ARM64 : REG_R0_ARM64));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(reSpill ? default : Mask(REG_R0_ARM64)));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_R0_ARM64)));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(reSpill ? REG_ARM64_STK : REG_ARM64_R0));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(reSpill ? default : Mask(REG_ARM64_R0)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_ARM64_R0)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.EqualTo(reSpill));
             var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing local reload.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R0));
         });
     }
 
@@ -190,30 +190,30 @@ internal static unsafe class Arm64RegisterCopyTests
         WithRegisterLife((compiler, codeGen) =>
         {
             var local = PrepareLocal(compiler, codeGen, TYP_REF);
-            compiler.lvaTable[0].RegNum = REG_R0_ARM64;
+            compiler.lvaTable[0].RegNum = REG_ARM64_R0;
             compiler.lvaTable[0].lvSpillAtSingleDef = writeThrough;
-            local.RegNum = REG_R0_ARM64;
+            local.RegNum = REG_ARM64_R0;
             local.Flags = GTF_SPILL | (definition ? GTF_VAR_DEF : GTF_EMPTY);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R0_ARM64, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_ARM64_R0, TYP_REF);
 
-            codeGen.genSpillLocal(0, TYP_REF, local, REG_R0_ARM64);
+            codeGen.genSpillLocal(0, TYP_REF, local, REG_ARM64_R0);
 
             Assert.That(GroupSize(codeGen.Emitter), Is.EqualTo(expectedSize));
             if (expectedSize != 0)
             {
                 var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing local spill.");
                 Assert.That(descriptor.idIns(), Is.EqualTo(INS_str));
-                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0_ARM64));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R0));
                 Assert.That(descriptor.idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
             }
         });
     }
 
-    [TestCase(TYP_INT, REG_R0_ARM64, EA_4BYTE)]
-    [TestCase(TYP_REF, REG_R0_ARM64, EA_8BYTE)]
-    [TestCase(TYP_BYREF, REG_R0_ARM64, EA_8BYTE)]
-    [TestCase(TYP_FLOAT, REG_V0_ARM64, EA_4BYTE)]
-    [TestCase(TYP_DOUBLE, REG_V0_ARM64, EA_8BYTE)]
+    [TestCase(TYP_INT, REG_ARM64_R0, EA_4BYTE)]
+    [TestCase(TYP_REF, REG_ARM64_R0, EA_8BYTE)]
+    [TestCase(TYP_BYREF, REG_ARM64_R0, EA_8BYTE)]
+    [TestCase(TYP_FLOAT, REG_ARM64_V0, EA_4BYTE)]
+    [TestCase(TYP_DOUBLE, REG_ARM64_V0, EA_8BYTE)]
     public static void TreeSpillAndReloadPreserveTypeAndRecycleTheTemporary(
         var_types type, regNumber reg, emitAttr size)
     {
@@ -265,7 +265,7 @@ internal static unsafe class Arm64RegisterCopyTests
         compiler.lvaTable = [new LclVarDsc
         {
             Type = type,
-            RegNum = REG_STK_ARM64,
+            RegNum = REG_ARM64_STK,
             lvTracked = true,
             lvLRACandidate = true,
             lvOnFrame = true,

@@ -66,7 +66,7 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         {
             var type = Compiler.GetSimdTypeForSize(size);
             var node = new GenTreeHWIntrinsic(type, NI_AdvSimd_Add, baseType, (byte)size,
-                Operand(REG_V1_ARM64, type), Operand(REG_V2_ARM64, type)) { RegNum = REG_V0_ARM64 };
+                Operand(REG_ARM64_V1, type), Operand(REG_ARM64_V2, type)) { RegNum = REG_ARM64_V0 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -74,23 +74,23 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             Assert.That(id.idIns(), Is.EqualTo(ins));
             Assert.That(id.idOpSize(), Is.EqualTo(type.EmitActualSize));
             Assert.That(id.idInsOpt(), Is.EqualTo(opt));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_V0_ARM64));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(id.idReg3(), Is.EqualTo(REG_V2_ARM64));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_V2));
         });
     }
 
-    [TestCase(REG_V1_ARM64, INS_bsl, REG_V2_ARM64, REG_V3_ARM64, 1)]
-    [TestCase(REG_V2_ARM64, INS_bif, REG_V3_ARM64, REG_V1_ARM64, 1)]
-    [TestCase(REG_V3_ARM64, INS_bit, REG_V2_ARM64, REG_V1_ARM64, 1)]
-    [TestCase(REG_V0_ARM64, INS_bsl, REG_V2_ARM64, REG_V3_ARM64, 2)]
+    [TestCase(REG_ARM64_V1, INS_bsl, REG_ARM64_V2, REG_ARM64_V3, 1)]
+    [TestCase(REG_ARM64_V2, INS_bif, REG_ARM64_V3, REG_ARM64_V1, 1)]
+    [TestCase(REG_ARM64_V3, INS_bit, REG_ARM64_V2, REG_ARM64_V1, 1)]
+    [TestCase(REG_ARM64_V0, INS_bsl, REG_ARM64_V2, REG_ARM64_V3, 2)]
     public static void BitwiseSelectChoosesAllocatedDestructiveOperand(
         regNumber target, instruction ins, regNumber source1, regNumber source2, int count)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AdvSimd_BitwiseSelect, TYP_INT, 16,
-                Operand(REG_V1_ARM64, TYP_SIMD16), Operand(REG_V2_ARM64, TYP_SIMD16), Operand(REG_V3_ARM64, TYP_SIMD16)) {
+                Operand(REG_ARM64_V1, TYP_SIMD16), Operand(REG_ARM64_V2, TYP_SIMD16), Operand(REG_ARM64_V3, TYP_SIMD16)) {
                 RegNum = target
             };
             EnableIsa(compiler, node);
@@ -102,7 +102,7 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
                 Assert.That(descriptors[0].idReg1(), Is.EqualTo(target));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V1_ARM64));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_V1));
             }
             var id = descriptors[^1];
             Assert.That(id.idIns(), Is.EqualTo(ins));
@@ -122,8 +122,8 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(baseType, intrinsic, baseType, 0,
-                Operand(REG_R1_ARM64, TYP_INT), Operand(REG_R2_ARM64, TYP_INT), Operand(REG_R3_ARM64, baseType)) {
-                RegNum = REG_R0_ARM64
+                Operand(REG_ARM64_R1, TYP_INT), Operand(REG_ARM64_R2, TYP_INT), Operand(REG_ARM64_R3, baseType)) {
+                RegNum = REG_ARM64_R0
             };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
@@ -131,10 +131,10 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             var id = SingleDescriptor(codeGen);
             Assert.That(id.idIns(), Is.EqualTo(expected));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_R0_ARM64));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(id.idReg3(), Is.EqualTo(REG_R2_ARM64));
-            Assert.That(id.idReg4(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_R0));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_R2));
+            Assert.That(id.idReg4(), Is.EqualTo(REG_ARM64_R3));
         });
     }
 
@@ -149,7 +149,7 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_INT, intrinsic, TYP_USHORT, 16,
-                Operand(REG_V1_ARM64, TYP_SIMD16), Operand(REG_V2_ARM64, TYP_SIMD16)) { RegNum = REG_R0_ARM64 };
+                Operand(REG_ARM64_V1, TYP_SIMD16), Operand(REG_ARM64_V2, TYP_SIMD16)) { RegNum = REG_ARM64_R0 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -157,8 +157,8 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_fcmp));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_2BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V2_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_V2));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_cset));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptors[1].idSmallCns() & 0xF, Is.EqualTo((int)cond));
@@ -174,14 +174,14 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, intrinsic, baseType, 16,
-                Operand(REG_V1_ARM64, TYP_SIMD16), Operand(REG_V2_ARM64, TYP_SIMD16)) { RegNum = REG_V0_ARM64 };
+                Operand(REG_ARM64_V1, TYP_SIMD16), Operand(REG_ARM64_V2, TYP_SIMD16)) { RegNum = REG_ARM64_V0 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
             var id = SingleDescriptor(codeGen);
             Assert.That(id.idIns(), Is.EqualTo(expected));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_V2_ARM64));
-            Assert.That(id.idReg3(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_V2));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_V1));
         });
     }
 
@@ -193,7 +193,7 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         {
             var immediate = Immediate(index);
             var node = new GenTreeHWIntrinsic(TYP_INT, NI_Vector_GetElement, TYP_INT, 16,
-                Operand(REG_V1_ARM64, TYP_SIMD16), immediate) { RegNum = REG_R0_ARM64 };
+                Operand(REG_ARM64_V1, TYP_SIMD16), immediate) { RegNum = REG_ARM64_R0 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -209,7 +209,7 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, intrinsic, TYP_INT, 0,
-                Operand(REG_V1_ARM64, TYP_SIMD_ARM64), Operand(REG_V2_ARM64, TYP_SIMD_ARM64)) { RegNum = REG_V0_ARM64 };
+                Operand(REG_ARM64_V1, TYP_SIMD_ARM64), Operand(REG_ARM64_V2, TYP_SIMD_ARM64)) { RegNum = REG_ARM64_V0 };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -217,8 +217,8 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             Assert.That(id.idIns(), Is.EqualTo(expected));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_SCALABLE));
             Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_S));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(id.idReg3(), Is.EqualTo(REG_V2_ARM64));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_V2));
         });
     }
 
@@ -229,8 +229,8 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         WithCodeGen((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_MASK, NI_Sve_CreateWhileLessThanMaskInt32, TYP_INT, 0,
-                Operand(REG_R1_ARM64, auxiliaryType), Operand(REG_R2_ARM64, auxiliaryType)) {
-                RegNum = REG_P0_ARM64,
+                Operand(REG_ARM64_R1, auxiliaryType), Operand(REG_ARM64_R2, auxiliaryType)) {
+                RegNum = REG_ARM64_P0,
                 AuxiliaryType = auxiliaryType
             };
             EnableIsa(compiler, node);
@@ -240,23 +240,23 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             Assert.That(id.idIns(), Is.EqualTo(expected));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_S));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_P0_ARM64));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_P0));
         });
     }
 
-    [TestCase(REG_V0_ARM64, REG_V0_ARM64, 1, INS_sve_abs)]
-    [TestCase(REG_V1_ARM64, REG_V0_ARM64, 2, INS_sve_sel)]
-    [TestCase(REG_V0_ARM64, REG_V8_ARM64, 2, INS_sve_abs)]
+    [TestCase(REG_ARM64_V0, REG_ARM64_V0, 1, INS_sve_abs)]
+    [TestCase(REG_ARM64_V1, REG_ARM64_V0, 2, INS_sve_sel)]
+    [TestCase(REG_ARM64_V0, REG_ARM64_V8, 2, INS_sve_abs)]
     public static void EmbeddedUnaryPreservesInactiveLanesAndSourceOverlap(
         regNumber target, regNumber falseReg, int count, instruction finalIns)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var embedded = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_Abs, TYP_INT, 0,
-                Operand(REG_V1_ARM64, TYP_SIMD_ARM64));
+                Operand(REG_ARM64_V1, TYP_SIMD_ARM64));
             embedded.Flags |= GTF_CONTAINED | GTF_HW_EM_OP;
             var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_ConditionalSelect, TYP_INT, 0,
-                Operand(REG_P1_ARM64, TYP_MASK), embedded, Operand(falseReg, TYP_SIMD_ARM64)) { RegNum = target };
+                Operand(REG_ARM64_P1, TYP_MASK), embedded, Operand(falseReg, TYP_SIMD_ARM64)) { RegNum = target };
             EnableIsa(compiler, node);
             codeGen.genHWIntrinsic(node);
 
@@ -264,7 +264,7 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
             Assert.That(descriptors, Has.Count.EqualTo(count));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(finalIns));
             Assert.That(descriptors[^1].idReg1(), Is.EqualTo(target));
-            if (target != falseReg && target != REG_V1_ARM64)
+            if (target != falseReg && target != REG_ARM64_V1)
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_sve_movprfx));
                 Assert.That(descriptors[0].idReg2(), Is.EqualTo(falseReg));
@@ -272,18 +272,18 @@ internal static unsafe class Arm64HardwareIntrinsicCodegenTests
         });
     }
 
-    [TestCase(REG_V1_ARM64)]
-    [TestCase(REG_V2_ARM64)]
-    [TestCase(REG_V3_ARM64)]
+    [TestCase(REG_ARM64_V1)]
+    [TestCase(REG_ARM64_V2)]
+    [TestCase(REG_ARM64_V3)]
     public static void EmbeddedFmaReachesGenuineFiveRegisterBoundaryForEachDestructiveChoice(regNumber target)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var embedded = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_FusedMultiplyAdd, TYP_FLOAT, 0,
-                Operand(REG_V1_ARM64, TYP_SIMD_ARM64), Operand(REG_V2_ARM64, TYP_SIMD_ARM64), Operand(REG_V3_ARM64, TYP_SIMD_ARM64));
+                Operand(REG_ARM64_V1, TYP_SIMD_ARM64), Operand(REG_ARM64_V2, TYP_SIMD_ARM64), Operand(REG_ARM64_V3, TYP_SIMD_ARM64));
             embedded.Flags |= GTF_CONTAINED | GTF_HW_EM_OP;
             var node = new GenTreeHWIntrinsic(TYP_SIMD_ARM64, NI_Sve_ConditionalSelect, TYP_FLOAT, 0,
-                Operand(REG_P1_ARM64, TYP_MASK), embedded, Operand(target, TYP_SIMD_ARM64)) { RegNum = target };
+                Operand(REG_ARM64_P1, TYP_MASK), embedded, Operand(target, TYP_SIMD_ARM64)) { RegNum = target };
             EnableIsa(compiler, node);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genHWIntrinsic(node)) ??

@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Resolve the remaining 50 target-specific ARM64 alias references in mixed test contexts: `ArgumentRegisterMappingTests.cs`, `Arm64AndUnixEmitterNoGCCallMaskTests.cs`, `CodeGenSharedFrameInitializationTests.cs`, `GSCookieTemporaryMaskTests.cs`, `LinearScanInitializationRegisterBanksTests.cs`, `LinearScanRegisterSelectionTests.cs`, `PatchpointMetadataTests.cs`, `SharedLocalVariableSpillTests.cs`, and `SharedStructArgumentSetupTests.cs`. Preserve each other target's identity and keep `Arm64CodeGenAsyncResumeInfoTests.cs` deferred until the B209 dependency closure is ported and tested; then resume production universal-`#if` migration.",
+    "nextAction": "Continue production universal-`#if` migration. Start with `sources\\Core\\jit\\codegen\\CodeGen.ZeroImmediate.cs`: replace its target dispatch with `Configuration` branches and target-qualified register identities, then validate the supported target-specific emitter forms without changing instruction selection. Keep `Arm64CodeGenAsyncResumeInfoTests.cs` deferred until the B209 dependency closure is ported and tested.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Qualify generated ARM64 register and scalar-mask identities in the target-gated test files `Arm64CalleeSavedRegisterTests`, `Arm64CallOutputTests`, `Arm64CodeGenLocalVariableTests`, `Arm64CodeGenOSRFrameTests`, `Arm64CodeGenProfilingLeaveTests`, `Arm64EmitterCallAllocationTests`, `Arm64EmitterGCTrackingTests`, `Arm64LinearScanConstructionTests`, `Arm64LinearScanLocalResolutionTests`, `Arm64RegisterMetadataTests`, `Arm64Simd12IndirectLoadTests`, `Arm64Simd12IndirectStoreTests`, and `CodeGenBlockDriverTargetTests`.",
-      "doneWhen": "No generated legacy ARM64 `REG_*`, `RBM_*`, or `SRBM_*` aliases remain in the selected target-gated files; Debug and Release ARM64 tests pass.",
-      "validation": "The isolated target-gated ARM64 test batch passed for `win-arm64` in Debug (287/287) and Release (258/258) with analyzers disabled. The full Core test project remains unbuildable for `linux-arm64` because untouched tests contain 1,220 target-configuration compile errors, including xarch aliases and missing `insTupleType`.",
-      "deferred": "Exclude `Arm64CodeGenAsyncResumeInfoTests` until the B209 target-width table/emitter dependency closure is ported and tested. Migrate remaining source and test consumers before changing the register generator or removing aliases. Existing fixture failures outside the alias change remain: `JumpTableDispatchRetainsTheExplicitEmitterNyi` has a null `compCurBB`; `ConstantCountArgumentsReachTypedPatternRecorderWithoutFakeEmission` and `EmbeddedFmaReachesGenuineFiveRegisterBoundaryForEachDestructiveChoice` expect exceptions not observed on their current paths."
+      "scope": "Apply config-first target identities across generated register numbers, scalar masks, factories, names, and instruction options. Use `X64` and `ARM32` identity tags for AMD64 and ARM, share `SRBM_NONE` and `SRBM_STK`, update managed consumers and test reflection, and keep LoongArch/RISC-V profiler-trash masks compile-time constants.",
+      "doneWhen": "Generator output matches the checked-in tables, no suffix-ordered register/mask/option identities remain in managed source or tests, and focused Debug/Release tests pass for every supported target RID.",
+      "validation": "GenerateTables completed successfully and the four checked-in target outputs matched generator output byte-for-byte. Focused register-number, name, mask, argument-mapping, and instruction-option tests passed in Debug and Release for win-x86, win-x64, win-arm, win-arm64, linux-loongarch64, linux-riscv64, and browser-wasm (11-89 passed per target/configuration; remaining skips are target-specific).",
+      "deferred": "Legacy target-selected unqualified register aliases remain inside generated TARGET_* sections and still need consumer migration before those sections can be removed. The broader target-gated PatchpointMetadata and SharedLocalVariableSpill fixtures were compiled for ARM64 but were not part of the identity-only execution filter. Keep `Arm64CodeGenAsyncResumeInfoTests` deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -694,11 +694,16 @@
         "sources\\GenerateTables\\Inputs\\registerriscv64.h",
         "sources\\GenerateTables\\Inputs\\registerwasm.h",
         "sources\\GenerateTables\\Program.cs",
-        "sources\\Core\\jit\\target\\regNumber.generated.cs"
+        "sources\\Core\\jit\\target\\regNumber.generated.cs",
+        "sources\\Core\\jit\\target\\regMask.generated.cs",
+        "sources\\Core\\jit\\target\\Globals.generated.cs",
+        "sources\\Core\\jit\\target\\regNumberExtensions.generated.cs",
+        "tests\\Core\\RegNumberIdentityTests.cs",
+        "tests\\Core\\RegMaskIdentityTests.cs"
       ],
-      "disposition": "Generated target-qualified enum members and explicit per-target count sentinels preserve native ordinals and aliases. Existing target-selected enum members remain temporarily for unmigrated consumers; the register-mask tables and their target-specific storage are explicitly deferred to a separate dependency-coherent batch.",
+      "disposition": "Register and scalar-mask enum members use prefix-first target identities (`X64` and `ARM32` for AMD64 and ARM), with `SRBM_NONE` and `SRBM_STK` shared. Generated per-target ordinals, mask tables, factories, and aliases preserve native values. Legacy target-selected unqualified members remain temporarily for unmigrated consumers.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
-      "validation": "Generator output was regenerated and compared byte-for-byte with the checked-in enum. The combined storage and register identity fixtures passed 5/5 in Release for all ten supported test-target RIDs; the identity fixture compares every current target enum name and alias."
+      "validation": "The generator completed successfully and all four checked-in target outputs matched its output byte-for-byte. Focused register identity and operation suites passed in Debug and Release for win-x86, win-x64, win-arm, win-arm64, linux-loongarch64, linux-riscv64, and browser-wasm."
     },
     {
       "area": "universal-register-name-dispatch",
@@ -753,6 +758,8 @@
         "sources\\Core\\jit\\target\\Globals.RegisterMaskBits.cs",
         "sources\\Core\\jit\\target\\Globals.RegisterMaskConstruction.cs",
         "sources\\Core\\jit\\target\\Globals.TypedRegisterMasks.cs",
+        "sources\\Core\\jit\\targetloongarch64\\Globals.Registers.cs",
+        "sources\\Core\\jit\\targetriscv64\\Globals.Registers.cs",
         "sources\\Core\\jit\\compiler\\Globals.BitShape.cs",
         "sources\\Core\\jit\\lsra\\LsraGlobals.cs",
         "tests\\Core\\RegMaskIdentityTests.cs",
@@ -760,7 +767,7 @@
         "tests\\Core\\RegisterMaskConstructionTests.cs",
         "tests\\Core\\TypedRegisterMaskTests.cs"
       ],
-      "disposition": "Generated target-qualified scalar-mask identities and per-target register-ordinal tables, then selected table/factory spans through runtime Configuration. A universal two-bank regMaskTP preserves 32-bit X86 truncation, upper-bank placement on targets with more than 64 registers, scalar bit-operation width, ARM32 typed-double rules, and Wasm's distinct storage semantics. Fixed-register operations remain explicit on unsupported targets; no observable deviation is accepted.",
+      "disposition": "Generated target-qualified scalar-mask identities and per-target register-ordinal tables, then selected table/factory spans through runtime Configuration. A universal two-bank regMaskTP preserves 32-bit X86 truncation, upper-bank placement on targets with more than 64 registers, scalar bit-operation width, ARM32 typed-double rules, and Wasm's distinct storage semantics. LoongArch/RISC-V profiler-trash constants spell their FP argument masks directly to retain compile-time evaluation while matching the runtime argument tables. Fixed-register operations remain explicit on unsupported targets; no observable deviation is accepted.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "GenerateTables output for Globals.generated.cs and regNumberExtensions.generated.cs matched checked-in files byte-for-byte. Focused mask identity, construction, bit-operation, numeric-operation, typed-mask, and target suites passed in Debug and Release for win-x86, win-x64, win-arm, win-arm64, linux-loongarch64, linux-riscv64, and browser-wasm. Full-analyzer library builds were blocked by existing IDE0059/IDE2002/IDE0058 diagnostics in untouched files; analyzer-disabled builds through the test matrix passed, and the diagnostics did not include changed files."
     },

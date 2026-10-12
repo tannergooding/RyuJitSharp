@@ -94,7 +94,7 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
 
     private static bool TryOptimizeLdrStr(Emitter emitter)
     {
-        return OptimizeLdrStr(emitter, INS_ldr, EA_8BYTE, REG_R0_ARM64, REG_SP_ARM64, 0, EA_8BYTE, IF_LS_2A, false, -1, -1
+        return OptimizeLdrStr(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R0, REG_ARM64_SP, 0, EA_8BYTE, IF_LS_2A, false, -1, -1
 #if DEBUG
             , false
 #endif

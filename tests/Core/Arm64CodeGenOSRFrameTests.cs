@@ -28,27 +28,27 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
             var instructions = descriptors.Select(descriptor => descriptor.idIns()).ToArray();
             var topOfCalleeSaves = 1024 - (isVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0);
             var firstRestoreIndex = hasFrameRegisters ? 0 : 1;
-            var restoreBase = hasFrameRegisters ? REG_FP_ARM64 : REG_IP0_ARM64;
+            var restoreBase = hasFrameRegisters ? REG_ARM64_FP : REG_ARM64_IP0;
             Assert.That(instructions.Skip(firstRestoreIndex).Take(3),
                 Is.EqualTo((instruction[])[INS_ldp, INS_ldp, INS_ldp]));
 
             if (hasFrameRegisters)
             {
-                Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_FP_ARM64));
+                Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ARM64_FP));
             }
             else
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_add));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_IP0_ARM64));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ZR_ARM64));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_IP0));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_ZR));
                 Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)topOfCalleeSaves));
             }
 
             Assert.That(descriptors[firstRestoreIndex].idReg3(), Is.EqualTo(restoreBase));
             Assert.That(descriptors[firstRestoreIndex + 1].idReg3(), Is.EqualTo(restoreBase));
-            Assert.That(descriptors[firstRestoreIndex + 2].idReg1(), Is.EqualTo(REG_FP_ARM64));
-            Assert.That(descriptors[firstRestoreIndex + 2].idReg2(), Is.EqualTo(REG_LR_ARM64));
-            Assert.That(descriptors[firstRestoreIndex + 2].idReg3(), Is.EqualTo(REG_FP_ARM64));
+            Assert.That(descriptors[firstRestoreIndex + 2].idReg1(), Is.EqualTo(REG_ARM64_FP));
+            Assert.That(descriptors[firstRestoreIndex + 2].idReg2(), Is.EqualTo(REG_ARM64_LR));
+            Assert.That(descriptors[firstRestoreIndex + 2].idReg3(), Is.EqualTo(REG_ARM64_FP));
 
             if (JitConfig.JitPacEnabled != 0)
             {
@@ -79,10 +79,10 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
             var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
             var patchpoint = (PatchpointInfo*)storage;
             patchpoint->Initialize(1, 1024);
-            var calleeSaveRegisters = SRBM_R19_ARM64 | SRBM_R20_ARM64 | SRBM_V8_ARM64 | SRBM_V9_ARM64;
+            var calleeSaveRegisters = SRBM_ARM64_R19 | SRBM_ARM64_R20 | SRBM_ARM64_V8 | SRBM_ARM64_V9;
             if (hasFrameRegisters)
             {
-                calleeSaveRegisters |= SRBM_FP_ARM64 | SRBM_LR_ARM64;
+                calleeSaveRegisters |= SRBM_ARM64_FP | SRBM_ARM64_LR;
             }
             patchpoint->CalleeSaveRegisters = (long)calleeSaveRegisters;
             compiler.info.compPatchpointInfo = patchpoint;

@@ -114,7 +114,7 @@ internal static class LoongArchEmitterClassifierTests
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
         var descriptor = NewDescriptor(INS_lu12i_w, isLocal: false);
         var immediate = unchecked((nint)immediateValue);
-        descriptor.idInsOpt(INS_OPTS_I_LOONGARCH64);
+        descriptor.idInsOpt(INS_OPTS_LOONGARCH64_I);
         descriptor.idCodeSize(8);
         descriptor.idReg1(REG_R21);
         descriptor.idReg2((regNumber)specialSequenceMarker);

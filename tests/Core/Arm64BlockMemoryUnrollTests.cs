@@ -39,8 +39,8 @@ internal static class Arm64BlockMemoryUnrollTests
             compiler.compCurBB = new BasicBlock(null, null);
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
 
-            var block = CreateBlock(size, Physical(REG_R1_ARM64, TYP_BYREF));
-            codeGen.InternalRegisters.Add(block, Mask(REG_R16_ARM64) | Mask(REG_V16_ARM64));
+            var block = CreateBlock(size, Physical(REG_ARM64_R1, TYP_BYREF));
+            codeGen.InternalRegisters.Add(block, Mask(REG_ARM64_R16) | Mask(REG_ARM64_V16));
             codeGen.genCodeForInitBlkUnroll(block);
 
             var emitted = Descriptors(codeGen);
@@ -63,12 +63,12 @@ internal static class Arm64BlockMemoryUnrollTests
             compiler.compCurBB = new BasicBlock(null, null);
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
 
-            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_R1_ARM64, TYP_BYREF), null, 0, 260)
+            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_ARM64_R1, TYP_BYREF), null, 0, 260)
             {
                 IsContained = true,
             };
             var block = CreateBlock(8, address);
-            codeGen.InternalRegisters.Add(block, Mask(REG_R16_ARM64));
+            codeGen.InternalRegisters.Add(block, Mask(REG_ARM64_R16));
             codeGen.genCodeForInitBlkUnroll(block);
 
             var emitted = Descriptors(codeGen);
@@ -99,7 +99,7 @@ internal static class Arm64BlockMemoryUnrollTests
             var block = CreateCopyBlock(size);
             codeGen.InternalRegisters.Add(
                 block,
-                Mask(REG_R16_ARM64) | Mask(REG_R17_ARM64) | Mask(REG_V16_ARM64) | Mask(REG_V17_ARM64));
+                Mask(REG_ARM64_R16) | Mask(REG_ARM64_R17) | Mask(REG_ARM64_V16) | Mask(REG_ARM64_V17));
             codeGen.genCodeForStoreBlk(block);
 
             var emitted = Descriptors(codeGen);
@@ -110,8 +110,8 @@ internal static class Arm64BlockMemoryUnrollTests
 
             for (var index = 0; index < emitted.Count; index += 2)
             {
-                Assert.That(AddressBase(emitted[index]), Is.EqualTo(REG_R2_ARM64));
-                Assert.That(AddressBase(emitted[index + 1]), Is.EqualTo(REG_R1_ARM64));
+                Assert.That(AddressBase(emitted[index]), Is.EqualTo(REG_ARM64_R2));
+                Assert.That(AddressBase(emitted[index + 1]), Is.EqualTo(REG_ARM64_R1));
             }
         });
     }
@@ -125,7 +125,7 @@ internal static class Arm64BlockMemoryUnrollTests
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
 
             var block = CreateCopyBlock(8, sourceOffset: 32768);
-            codeGen.InternalRegisters.Add(block, Mask(REG_R16_ARM64));
+            codeGen.InternalRegisters.Add(block, Mask(REG_ARM64_R16));
             codeGen.genCodeForStoreBlk(block);
 
             var emitted = Descriptors(codeGen);
@@ -135,7 +135,7 @@ internal static class Arm64BlockMemoryUnrollTests
             Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)8));
             Assert.That(emitted[1].idReg2(), Is.EqualTo(emitted[0].idReg1()));
             Assert.That(Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)0));
-            Assert.That(emitted[2].idReg2(), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(emitted[2].idReg2(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(Emitter.emitGetInsSC(emitted[2]), Is.EqualTo((nint)0));
         });
     }
@@ -149,7 +149,7 @@ internal static class Arm64BlockMemoryUnrollTests
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
 
             var block = CreateCopyBlock(8, destinationOffset: 32768);
-            codeGen.InternalRegisters.Add(block, Mask(REG_R16_ARM64));
+            codeGen.InternalRegisters.Add(block, Mask(REG_ARM64_R16));
             codeGen.genCodeForStoreBlk(block);
 
             var emitted = Descriptors(codeGen);
@@ -157,7 +157,7 @@ internal static class Arm64BlockMemoryUnrollTests
                 Is.EqualTo([INS_add, INS_ldr, INS_str]));
             Assert.That(emitted[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL12));
             Assert.That(Emitter.emitGetInsSC(emitted[0]), Is.EqualTo((nint)8));
-            Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(emitted[1].idReg2(), Is.EqualTo(REG_ARM64_R2));
             Assert.That(Emitter.emitGetInsSC(emitted[1]), Is.EqualTo((nint)0));
             Assert.That(emitted[2].idReg2(), Is.EqualTo(emitted[0].idReg1()));
             Assert.That(Emitter.emitGetInsSC(emitted[2]), Is.EqualTo((nint)0));
@@ -168,7 +168,7 @@ internal static class Arm64BlockMemoryUnrollTests
     {
         var sourceAddress = new GenTreeAddrMode(
             TYP_BYREF,
-            Physical(REG_R2_ARM64, TYP_BYREF),
+            Physical(REG_ARM64_R2, TYP_BYREF),
             null,
             0,
             sourceOffset)
@@ -181,7 +181,7 @@ internal static class Arm64BlockMemoryUnrollTests
         };
         var destination = new GenTreeAddrMode(
             TYP_BYREF,
-            Physical(REG_R1_ARM64, TYP_BYREF),
+            Physical(REG_ARM64_R1, TYP_BYREF),
             null,
             0,
             destinationOffset)

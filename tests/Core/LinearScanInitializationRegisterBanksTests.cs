@@ -79,7 +79,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
 #endif
             expectedInteger &= ~ReservedIntegerRegister;
 #if TARGET_ARM64
-            expectedInteger &= ~(SRBM_PR | SRBM_FP | SRBM_LR);
+            expectedInteger &= ~(SRBM_ARM64_PR | SRBM_ARM64_FP | SRBM_ARM64_LR);
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
             expectedInteger &= ~(SRBM_FP | SRBM_RA);
 #endif
@@ -227,8 +227,10 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
     private const regMask ReservedIntegerRegister = SRBM_EAX;
 #elif TARGET_AMD64
     private const regMask ReservedIntegerRegister = SRBM_RAX;
-#elif TARGET_ARM || TARGET_ARM64
+#elif TARGET_ARM
     private const regMask ReservedIntegerRegister = SRBM_R0;
+#elif TARGET_ARM64
+    private const regMask ReservedIntegerRegister = SRBM_ARM64_R0;
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
     private const regMask ReservedIntegerRegister = SRBM_A0;
 #else

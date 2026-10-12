@@ -20,49 +20,49 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64SveRegisterPairRecordingTests
 {
-    [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_AU_3A)]
-    [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_Q, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_AU_3A)]
-    [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, REG_P0_ARM64, REG_P15_ARM64, IF_SVE_CZ_4A_L)]
-    [TestCase(INS_sve_movs, INS_OPTS_SCALABLE_B, REG_P15_ARM64, REG_P0_ARM64, IF_SVE_CZ_4A_A)]
-    [TestCase(INS_sve_pmov, INS_OPTS_SCALABLE_B, REG_P15_ARM64, REG_V31_ARM64, IF_SVE_CE_2A)]
-    [TestCase(INS_sve_pmov, INS_OPTS_SCALABLE_B, REG_V31_ARM64, REG_P15_ARM64, IF_SVE_CF_2A)]
-    [TestCase(INS_sve_insr, INS_OPTS_SCALABLE_D, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_CC_2A)]
-    [TestCase(INS_sve_insr, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_ZR_ARM64, IF_SVE_CD_2A)]
-    [TestCase(INS_sve_pfirst, INS_OPTS_SCALABLE_B, REG_P15_ARM64, REG_P0_ARM64, IF_SVE_DD_2A)]
-    [TestCase(INS_sve_pnext, INS_OPTS_SCALABLE_D, REG_P15_ARM64, REG_P0_ARM64, IF_SVE_DF_2A)]
-    [TestCase(INS_sve_punpkhi, INS_OPTS_NONE, REG_P15_ARM64, REG_P0_ARM64, IF_SVE_CK_2A)]
-    [TestCase(INS_sve_punpklo, INS_OPTS_NONE, REG_P0_ARM64, REG_P15_ARM64, IF_SVE_CK_2A)]
-    [TestCase(INS_sve_rdffr, INS_OPTS_SCALABLE_B, REG_P15_ARM64, REG_P0_ARM64, IF_SVE_DG_2A)]
-    [TestCase(INS_sve_rdffrs, INS_OPTS_SCALABLE_B, REG_P0_ARM64, REG_P15_ARM64, IF_SVE_DG_2A)]
-    [TestCase(INS_sve_rev, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_CG_2A)]
-    [TestCase(INS_sve_rev, INS_OPTS_SCALABLE_S, REG_P0_ARM64, REG_P15_ARM64, IF_SVE_CJ_2A)]
-    [TestCase(INS_sve_ptest, INS_OPTS_SCALABLE_B, REG_P15_ARM64, REG_P0_ARM64, IF_SVE_DI_2A)]
-    [TestCase(INS_sve_incp, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_P15_ARM64, IF_SVE_DN_2A)]
-    [TestCase(INS_sve_decp, INS_OPTS_SCALABLE_D, REG_V31_ARM64, REG_P0_ARM64, IF_SVE_DN_2A)]
-    [TestCase(INS_sve_sqincp, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_P15_ARM64, IF_SVE_DP_2A)]
-    [TestCase(INS_sve_uqincp, INS_OPTS_SCALABLE_S, REG_V31_ARM64, REG_P0_ARM64, IF_SVE_DP_2A)]
-    [TestCase(INS_sve_sqdecp, INS_OPTS_SCALABLE_D, REG_V0_ARM64, REG_P15_ARM64, IF_SVE_DP_2A)]
-    [TestCase(INS_sve_uqdecp, INS_OPTS_SCALABLE_H, REG_V31_ARM64, REG_P0_ARM64, IF_SVE_DP_2A)]
-    [TestCase(INS_sve_sqcvtn, INS_OPTS_NONE, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_FZ_2A)]
-    [TestCase(INS_sve_uqcvtn, INS_OPTS_NONE, REG_V0_ARM64, REG_V30_ARM64, IF_SVE_FZ_2A)]
-    [TestCase(INS_sve_sqcvtun, INS_OPTS_NONE, REG_V31_ARM64, REG_V30_ARM64, IF_SVE_FZ_2A)]
-    [TestCase(INS_sve_sqxtnb, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_GD_2A)]
-    [TestCase(INS_sve_sqxtnt, INS_OPTS_SCALABLE_H, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_GD_2A)]
-    [TestCase(INS_sve_uqxtnb, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_GD_2A)]
-    [TestCase(INS_sve_uqxtnt, INS_OPTS_SCALABLE_B, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_GD_2A)]
-    [TestCase(INS_sve_sqxtunb, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_GD_2A)]
-    [TestCase(INS_sve_sqxtunt, INS_OPTS_SCALABLE_S, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_GD_2A)]
-    [TestCase(INS_sve_aese, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_GK_2A)]
-    [TestCase(INS_sve_aesd, INS_OPTS_SCALABLE_B, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_GK_2A)]
-    [TestCase(INS_sve_sm4e, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_GK_2A)]
-    [TestCase(INS_sve_frecpe, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_HF_2A)]
-    [TestCase(INS_sve_frsqrte, INS_OPTS_SCALABLE_D, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_HF_2A)]
-    [TestCase(INS_sve_sunpkhi, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_CH_2A)]
-    [TestCase(INS_sve_sunpklo, INS_OPTS_SCALABLE_H, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_CH_2A)]
-    [TestCase(INS_sve_uunpkhi, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_CH_2A)]
-    [TestCase(INS_sve_uunpklo, INS_OPTS_SCALABLE_B, REG_V31_ARM64, REG_V0_ARM64, IF_SVE_CH_2A)]
-    [TestCase(INS_sve_fexpa, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_BJ_2A)]
-    [TestCase(INS_sve_movprfx, INS_OPTS_NONE, REG_V0_ARM64, REG_V31_ARM64, IF_SVE_BI_2A)]
+    [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_AU_3A)]
+    [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_Q, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_AU_3A)]
+    [TestCase(INS_sve_mov, INS_OPTS_SCALABLE_B, REG_ARM64_P0, REG_ARM64_P15, IF_SVE_CZ_4A_L)]
+    [TestCase(INS_sve_movs, INS_OPTS_SCALABLE_B, REG_ARM64_P15, REG_ARM64_P0, IF_SVE_CZ_4A_A)]
+    [TestCase(INS_sve_pmov, INS_OPTS_SCALABLE_B, REG_ARM64_P15, REG_ARM64_V31, IF_SVE_CE_2A)]
+    [TestCase(INS_sve_pmov, INS_OPTS_SCALABLE_B, REG_ARM64_V31, REG_ARM64_P15, IF_SVE_CF_2A)]
+    [TestCase(INS_sve_insr, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_CC_2A)]
+    [TestCase(INS_sve_insr, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_ZR, IF_SVE_CD_2A)]
+    [TestCase(INS_sve_pfirst, INS_OPTS_SCALABLE_B, REG_ARM64_P15, REG_ARM64_P0, IF_SVE_DD_2A)]
+    [TestCase(INS_sve_pnext, INS_OPTS_SCALABLE_D, REG_ARM64_P15, REG_ARM64_P0, IF_SVE_DF_2A)]
+    [TestCase(INS_sve_punpkhi, INS_OPTS_NONE, REG_ARM64_P15, REG_ARM64_P0, IF_SVE_CK_2A)]
+    [TestCase(INS_sve_punpklo, INS_OPTS_NONE, REG_ARM64_P0, REG_ARM64_P15, IF_SVE_CK_2A)]
+    [TestCase(INS_sve_rdffr, INS_OPTS_SCALABLE_B, REG_ARM64_P15, REG_ARM64_P0, IF_SVE_DG_2A)]
+    [TestCase(INS_sve_rdffrs, INS_OPTS_SCALABLE_B, REG_ARM64_P0, REG_ARM64_P15, IF_SVE_DG_2A)]
+    [TestCase(INS_sve_rev, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_CG_2A)]
+    [TestCase(INS_sve_rev, INS_OPTS_SCALABLE_S, REG_ARM64_P0, REG_ARM64_P15, IF_SVE_CJ_2A)]
+    [TestCase(INS_sve_ptest, INS_OPTS_SCALABLE_B, REG_ARM64_P15, REG_ARM64_P0, IF_SVE_DI_2A)]
+    [TestCase(INS_sve_incp, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_P15, IF_SVE_DN_2A)]
+    [TestCase(INS_sve_decp, INS_OPTS_SCALABLE_D, REG_ARM64_V31, REG_ARM64_P0, IF_SVE_DN_2A)]
+    [TestCase(INS_sve_sqincp, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_P15, IF_SVE_DP_2A)]
+    [TestCase(INS_sve_uqincp, INS_OPTS_SCALABLE_S, REG_ARM64_V31, REG_ARM64_P0, IF_SVE_DP_2A)]
+    [TestCase(INS_sve_sqdecp, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_P15, IF_SVE_DP_2A)]
+    [TestCase(INS_sve_uqdecp, INS_OPTS_SCALABLE_H, REG_ARM64_V31, REG_ARM64_P0, IF_SVE_DP_2A)]
+    [TestCase(INS_sve_sqcvtn, INS_OPTS_NONE, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_FZ_2A)]
+    [TestCase(INS_sve_uqcvtn, INS_OPTS_NONE, REG_ARM64_V0, REG_ARM64_V30, IF_SVE_FZ_2A)]
+    [TestCase(INS_sve_sqcvtun, INS_OPTS_NONE, REG_ARM64_V31, REG_ARM64_V30, IF_SVE_FZ_2A)]
+    [TestCase(INS_sve_sqxtnb, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_GD_2A)]
+    [TestCase(INS_sve_sqxtnt, INS_OPTS_SCALABLE_H, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_GD_2A)]
+    [TestCase(INS_sve_uqxtnb, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_GD_2A)]
+    [TestCase(INS_sve_uqxtnt, INS_OPTS_SCALABLE_B, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_GD_2A)]
+    [TestCase(INS_sve_sqxtunb, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_GD_2A)]
+    [TestCase(INS_sve_sqxtunt, INS_OPTS_SCALABLE_S, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_GD_2A)]
+    [TestCase(INS_sve_aese, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_GK_2A)]
+    [TestCase(INS_sve_aesd, INS_OPTS_SCALABLE_B, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_GK_2A)]
+    [TestCase(INS_sve_sm4e, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_GK_2A)]
+    [TestCase(INS_sve_frecpe, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_HF_2A)]
+    [TestCase(INS_sve_frsqrte, INS_OPTS_SCALABLE_D, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_HF_2A)]
+    [TestCase(INS_sve_sunpkhi, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_CH_2A)]
+    [TestCase(INS_sve_sunpklo, INS_OPTS_SCALABLE_H, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_CH_2A)]
+    [TestCase(INS_sve_uunpkhi, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_CH_2A)]
+    [TestCase(INS_sve_uunpklo, INS_OPTS_SCALABLE_B, REG_ARM64_V31, REG_ARM64_V0, IF_SVE_CH_2A)]
+    [TestCase(INS_sve_fexpa, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_BJ_2A)]
+    [TestCase(INS_sve_movprfx, INS_OPTS_NONE, REG_ARM64_V0, REG_ARM64_V31, IF_SVE_BI_2A)]
     public static void RegisterFormsPreserveFormatBanksOptionsAndSmallDescriptors(
         instruction ins, insOpts opt, regNumber first, regNumber second, Emitter.insFormat format)
     {
@@ -81,24 +81,24 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var id = Record(emitter, () => emitter.emitIns_Mov(ins, EA_SCALABLE, REG_V0_ARM64, REG_V31_ARM64, false, opt));
-            AssertDescriptor(id, ins, EA_SCALABLE, format, opt, REG_V0_ARM64, REG_V31_ARM64);
+            var id = Record(emitter, () => emitter.emitIns_Mov(ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31, false, opt));
+            AssertDescriptor(id, ins, EA_SCALABLE, format, opt, REG_ARM64_V0, REG_ARM64_V31);
             Assert.That(id.idIsSmallDsc(), Is.True);
         });
     }
 
-    [TestCase(INS_sve_mov, EA_4BYTE, INS_OPTS_SCALABLE_B, REG_R0_ARM64)]
-    [TestCase(INS_sve_mov, EA_4BYTE, INS_OPTS_SCALABLE_H, REG_SP_ARM64)]
-    [TestCase(INS_sve_dup, EA_4BYTE, INS_OPTS_SCALABLE_S, REG_R30_ARM64)]
-    [TestCase(INS_sve_dup, EA_8BYTE, INS_OPTS_SCALABLE_D, REG_SP_ARM64)]
+    [TestCase(INS_sve_mov, EA_4BYTE, INS_OPTS_SCALABLE_B, REG_ARM64_R0)]
+    [TestCase(INS_sve_mov, EA_4BYTE, INS_OPTS_SCALABLE_H, REG_ARM64_SP)]
+    [TestCase(INS_sve_dup, EA_4BYTE, INS_OPTS_SCALABLE_S, REG_ARM64_R30)]
+    [TestCase(INS_sve_dup, EA_8BYTE, INS_OPTS_SCALABLE_D, REG_ARM64_SP)]
     public static void GeneralRegisterBroadcastSelectsMovAliasAndEncodesStackPointer(
         instruction ins, emitAttr attr, insOpts opt, regNumber second)
     {
         WithEmitter(emitter =>
         {
-            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, attr, REG_V31_ARM64, second, opt));
-            AssertDescriptor(id, INS_sve_mov, attr, IF_SVE_CB_2A, opt, REG_V31_ARM64,
-                second == REG_SP_ARM64 ? REG_ZR_ARM64 : second);
+            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, attr, REG_ARM64_V31, second, opt));
+            AssertDescriptor(id, INS_sve_mov, attr, IF_SVE_CB_2A, opt, REG_ARM64_V31,
+                second == REG_ARM64_SP ? REG_ARM64_ZR : second);
             Assert.That(id.idIsSmallDsc(), Is.True);
         });
     }
@@ -117,9 +117,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         {
             var conditional = ins is INS_sve_ctermeq or INS_sve_ctermne;
             var opt = conditional ? INS_OPTS_NONE : INS_OPTS_SCALABLE_H;
-            var second = conditional ? REG_R30_ARM64 : REG_P15_ARM64;
-            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, attr, REG_R0_ARM64, second, opt));
-            AssertDescriptor(id, ins, attr, format, opt, REG_R0_ARM64, second);
+            var second = conditional ? REG_ARM64_R30 : REG_ARM64_P15;
+            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, attr, REG_ARM64_R0, second, opt));
+            AssertDescriptor(id, ins, attr, format, opt, REG_ARM64_R0, second);
             Assert.That(id.idIsSmallDsc(), Is.True);
         });
     }
@@ -134,8 +134,8 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var id = Record(emitter, () => emitter.emitInsSve_R_R(
-                INS_sve_cntp, EA_SCALABLE, REG_R30_ARM64, REG_P15_ARM64, opt, sopt));
-            AssertDescriptor(id, INS_sve_cntp, EA_SCALABLE, IF_SVE_DL_2A, opt, REG_R30_ARM64, REG_P15_ARM64);
+                INS_sve_cntp, EA_SCALABLE, REG_ARM64_R30, REG_ARM64_P15, opt, sopt));
+            AssertDescriptor(id, INS_sve_cntp, EA_SCALABLE, IF_SVE_DL_2A, opt, REG_ARM64_R30, REG_ARM64_P15);
             Assert.That(id.idIsSmallDsc(), Is.False);
             Assert.That(id.idVectorLength4x(), Is.EqualTo(fourTimes));
         });
@@ -152,8 +152,8 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var first = predicateDestination ? REG_P15_ARM64 : REG_V31_ARM64;
-            var second = predicateDestination ? REG_V31_ARM64 : REG_P15_ARM64;
+            var first = predicateDestination ? REG_ARM64_P15 : REG_ARM64_V31;
+            var second = predicateDestination ? REG_ARM64_V31 : REG_ARM64_P15;
             var id = Record(emitter, () => emitter.emitInsSve_R_R(INS_sve_pmov, EA_SCALABLE, first, second, opt));
             AssertDescriptor(id, INS_sve_pmov, EA_SCALABLE, format, opt, first, second);
             AssertConstant(id, 0, false);
@@ -166,71 +166,71 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_V31_ARM64, REG_P15_ARM64, opt));
-            AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2B, opt, REG_V31_ARM64, REG_P15_ARM64);
+            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_ARM64_V31, REG_ARM64_P15, opt));
+            AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2B, opt, REG_ARM64_V31, REG_ARM64_P15);
             Assert.That(id.idIsSmallDsc(), Is.True);
         });
     }
 
-    [TestCase(INS_sve_asr, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 8, IF_SVE_BF_2A)]
-    [TestCase(INS_sve_lsl, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 0, IF_SVE_BF_2A)]
-    [TestCase(INS_sve_lsr, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 32, IF_SVE_BF_2A)]
-    [TestCase(INS_sve_srshr, INS_OPTS_SCALABLE_H, REG_P7_ARM64, 16, IF_SVE_AM_2A)]
-    [TestCase(INS_sve_sqshl, INS_OPTS_SCALABLE_B, REG_P7_ARM64, 7, IF_SVE_AM_2A)]
-    [TestCase(INS_sve_urshr, INS_OPTS_SCALABLE_S, REG_P0_ARM64, 1, IF_SVE_AM_2A)]
-    [TestCase(INS_sve_sqshlu, INS_OPTS_SCALABLE_D, REG_P7_ARM64, 63, IF_SVE_AM_2A)]
-    [TestCase(INS_sve_uqshl, INS_OPTS_SCALABLE_H, REG_P0_ARM64, 0, IF_SVE_AM_2A)]
-    [TestCase(INS_sve_asrd, INS_OPTS_SCALABLE_D, REG_P7_ARM64, 1, IF_SVE_AM_2A)]
-    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 8, IF_SVE_AW_2A)]
-    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 16, IF_SVE_AW_2A)]
-    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 32, IF_SVE_AW_2A)]
-    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_D, REG_V31_ARM64, 64, IF_SVE_AW_2A)]
-    [TestCase(INS_sve_sqrshrn, INS_OPTS_SCALABLE_H, REG_V30_ARM64, 32, IF_SVE_GA_2A)]
-    [TestCase(INS_sve_sqrshrun, INS_OPTS_SCALABLE_H, REG_V0_ARM64, 1, IF_SVE_GA_2A)]
-    [TestCase(INS_sve_uqrshrn, INS_OPTS_SCALABLE_H, REG_V30_ARM64, 16, IF_SVE_GA_2A)]
-    [TestCase(INS_sve_sshllb, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 7, IF_SVE_FR_2A)]
-    [TestCase(INS_sve_sshllt, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 15, IF_SVE_FR_2A)]
-    [TestCase(INS_sve_ushllb, INS_OPTS_SCALABLE_D, REG_V31_ARM64, 31, IF_SVE_FR_2A)]
-    [TestCase(INS_sve_ushllt, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 0, IF_SVE_FR_2A)]
-    [TestCase(INS_sve_sqshrunb, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 8, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_sqshrunt, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 16, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_sqrshrunb, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 32, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_sqrshrunt, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_shrnb, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_shrnt, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_rshrnb, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_rshrnt, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_sqshrnb, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_sqshrnt, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_sqrshrnb, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_sqrshrnt, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_uqshrnb, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_uqshrnt, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_uqrshrnb, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_uqrshrnt, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 1, IF_SVE_GB_2A)]
-    [TestCase(INS_sve_cadd, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 0, IF_SVE_FV_2A)]
-    [TestCase(INS_sve_sqcadd, INS_OPTS_SCALABLE_D, REG_V31_ARM64, 1, IF_SVE_FV_2A)]
-    [TestCase(INS_sve_ftmad, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 7, IF_SVE_HN_2A)]
-    [TestCase(INS_sve_sli, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 31, IF_SVE_FT_2A)]
-    [TestCase(INS_sve_sri, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 16, IF_SVE_FT_2A)]
-    [TestCase(INS_sve_srsra, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 8, IF_SVE_FU_2A)]
-    [TestCase(INS_sve_ssra, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 16, IF_SVE_FU_2A)]
-    [TestCase(INS_sve_ursra, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 32, IF_SVE_FU_2A)]
-    [TestCase(INS_sve_usra, INS_OPTS_SCALABLE_D, REG_V31_ARM64, 1, IF_SVE_FU_2A)]
-    [TestCase(INS_sve_ext, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 255, IF_SVE_BQ_2B)]
-    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 15, IF_SVE_BX_2A)]
-    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_H, REG_V31_ARM64, 7, IF_SVE_BX_2A)]
-    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_S, REG_V31_ARM64, 3, IF_SVE_BX_2A)]
-    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_D, REG_V31_ARM64, 1, IF_SVE_BX_2A)]
-    [TestCase(INS_sve_extq, INS_OPTS_SCALABLE_B, REG_V31_ARM64, 15, IF_SVE_BY_2A)]
+    [TestCase(INS_sve_asr, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 8, IF_SVE_BF_2A)]
+    [TestCase(INS_sve_lsl, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 0, IF_SVE_BF_2A)]
+    [TestCase(INS_sve_lsr, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 32, IF_SVE_BF_2A)]
+    [TestCase(INS_sve_srshr, INS_OPTS_SCALABLE_H, REG_ARM64_P7, 16, IF_SVE_AM_2A)]
+    [TestCase(INS_sve_sqshl, INS_OPTS_SCALABLE_B, REG_ARM64_P7, 7, IF_SVE_AM_2A)]
+    [TestCase(INS_sve_urshr, INS_OPTS_SCALABLE_S, REG_ARM64_P0, 1, IF_SVE_AM_2A)]
+    [TestCase(INS_sve_sqshlu, INS_OPTS_SCALABLE_D, REG_ARM64_P7, 63, IF_SVE_AM_2A)]
+    [TestCase(INS_sve_uqshl, INS_OPTS_SCALABLE_H, REG_ARM64_P0, 0, IF_SVE_AM_2A)]
+    [TestCase(INS_sve_asrd, INS_OPTS_SCALABLE_D, REG_ARM64_P7, 1, IF_SVE_AM_2A)]
+    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 8, IF_SVE_AW_2A)]
+    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 16, IF_SVE_AW_2A)]
+    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 32, IF_SVE_AW_2A)]
+    [TestCase(INS_sve_xar, INS_OPTS_SCALABLE_D, REG_ARM64_V31, 64, IF_SVE_AW_2A)]
+    [TestCase(INS_sve_sqrshrn, INS_OPTS_SCALABLE_H, REG_ARM64_V30, 32, IF_SVE_GA_2A)]
+    [TestCase(INS_sve_sqrshrun, INS_OPTS_SCALABLE_H, REG_ARM64_V0, 1, IF_SVE_GA_2A)]
+    [TestCase(INS_sve_uqrshrn, INS_OPTS_SCALABLE_H, REG_ARM64_V30, 16, IF_SVE_GA_2A)]
+    [TestCase(INS_sve_sshllb, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 7, IF_SVE_FR_2A)]
+    [TestCase(INS_sve_sshllt, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 15, IF_SVE_FR_2A)]
+    [TestCase(INS_sve_ushllb, INS_OPTS_SCALABLE_D, REG_ARM64_V31, 31, IF_SVE_FR_2A)]
+    [TestCase(INS_sve_ushllt, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 0, IF_SVE_FR_2A)]
+    [TestCase(INS_sve_sqshrunb, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 8, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_sqshrunt, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 16, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_sqrshrunb, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 32, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_sqrshrunt, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_shrnb, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_shrnt, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_rshrnb, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_rshrnt, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_sqshrnb, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_sqshrnt, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_sqrshrnb, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_sqrshrnt, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_uqshrnb, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_uqshrnt, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_uqrshrnb, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_uqrshrnt, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 1, IF_SVE_GB_2A)]
+    [TestCase(INS_sve_cadd, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 0, IF_SVE_FV_2A)]
+    [TestCase(INS_sve_sqcadd, INS_OPTS_SCALABLE_D, REG_ARM64_V31, 1, IF_SVE_FV_2A)]
+    [TestCase(INS_sve_ftmad, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 7, IF_SVE_HN_2A)]
+    [TestCase(INS_sve_sli, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 31, IF_SVE_FT_2A)]
+    [TestCase(INS_sve_sri, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 16, IF_SVE_FT_2A)]
+    [TestCase(INS_sve_srsra, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 8, IF_SVE_FU_2A)]
+    [TestCase(INS_sve_ssra, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 16, IF_SVE_FU_2A)]
+    [TestCase(INS_sve_ursra, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 32, IF_SVE_FU_2A)]
+    [TestCase(INS_sve_usra, INS_OPTS_SCALABLE_D, REG_ARM64_V31, 1, IF_SVE_FU_2A)]
+    [TestCase(INS_sve_ext, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 255, IF_SVE_BQ_2B)]
+    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 15, IF_SVE_BX_2A)]
+    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_H, REG_ARM64_V31, 7, IF_SVE_BX_2A)]
+    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_S, REG_ARM64_V31, 3, IF_SVE_BX_2A)]
+    [TestCase(INS_sve_dupq, INS_OPTS_SCALABLE_D, REG_ARM64_V31, 1, IF_SVE_BX_2A)]
+    [TestCase(INS_sve_extq, INS_OPTS_SCALABLE_B, REG_ARM64_V31, 15, IF_SVE_BY_2A)]
     public static void ImmediateFormsPreserveNativeImmediateRatherThanPreencodingIt(
         instruction ins, insOpts opt, regNumber second, int immediate, Emitter.insFormat format)
     {
         WithEmitter(emitter =>
         {
             var id = Record(emitter, () => emitter.emitIns_R_R_I(
-                ins, EA_SCALABLE, REG_V0_ARM64, second, immediate, opt));
-            AssertDescriptor(id, ins, EA_SCALABLE, format, opt, REG_V0_ARM64, second);
+                ins, EA_SCALABLE, REG_ARM64_V0, second, immediate, opt));
+            AssertDescriptor(id, ins, EA_SCALABLE, format, opt, REG_ARM64_V0, second);
             AssertConstant(id, immediate, false);
         });
     }
@@ -243,15 +243,15 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var id = Record(emitter, () => emitter.emitInsSve_R_R_I(
-                INS_sve_index, EA_SCALABLE, REG_V31_ARM64, REG_R30_ARM64, immediate, INS_OPTS_SCALABLE_S, sopt));
-            AssertDescriptor(id, INS_sve_index, EA_SCALABLE, format, INS_OPTS_SCALABLE_S, REG_V31_ARM64, REG_R30_ARM64);
+                INS_sve_index, EA_SCALABLE, REG_ARM64_V31, REG_ARM64_R30, immediate, INS_OPTS_SCALABLE_S, sopt));
+            AssertDescriptor(id, INS_sve_index, EA_SCALABLE, format, INS_OPTS_SCALABLE_S, REG_ARM64_V31, REG_ARM64_R30);
             AssertConstant(id, immediate, false);
         });
     }
 
-    [TestCase(INS_sve_addvl, -32, REG_SP_ARM64, REG_R30_ARM64)]
-    [TestCase(INS_sve_addpl, 31, REG_R0_ARM64, REG_SP_ARM64)]
-    [TestCase(INS_sve_addvl, 0, REG_SP_ARM64, REG_SP_ARM64)]
+    [TestCase(INS_sve_addvl, -32, REG_ARM64_SP, REG_ARM64_R30)]
+    [TestCase(INS_sve_addpl, 31, REG_ARM64_R0, REG_ARM64_SP)]
+    [TestCase(INS_sve_addvl, 0, REG_ARM64_SP, REG_ARM64_SP)]
     public static void ScalableAddressAddsEncodeBothStackPointerOperands(
         instruction ins, int immediate, regNumber first, regNumber second)
     {
@@ -259,7 +259,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         {
             var id = Record(emitter, () => emitter.emitInsSve_R_R_I(ins, EA_8BYTE, first, second, immediate));
             AssertDescriptor(id, ins, EA_8BYTE, IF_SVE_BB_2A, INS_OPTS_NONE,
-                first == REG_SP_ARM64 ? REG_ZR_ARM64 : first, second == REG_SP_ARM64 ? REG_ZR_ARM64 : second);
+                first == REG_ARM64_SP ? REG_ARM64_ZR : first, second == REG_ARM64_SP ? REG_ARM64_ZR : second);
             AssertConstant(id, immediate, false);
         });
     }
@@ -279,9 +279,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
             var reduced = shifted ? immediate >> 8 : immediate;
             var sopt = merge ? INS_SCALABLE_OPTS_PREDICATE_MERGE : INS_SCALABLE_OPTS_NONE;
             var id = Record(emitter, () => emitter.emitInsSve_R_R_I(
-                ins, EA_SCALABLE, REG_V31_ARM64, REG_P15_ARM64, immediate, INS_OPTS_SCALABLE_S, sopt));
+                ins, EA_SCALABLE, REG_ARM64_V31, REG_ARM64_P15, immediate, INS_OPTS_SCALABLE_S, sopt));
             AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, merge ? IF_SVE_BV_2A_J : IF_SVE_BV_2A,
-                INS_OPTS_SCALABLE_S, REG_V31_ARM64, REG_P15_ARM64);
+                INS_OPTS_SCALABLE_S, REG_ARM64_V31, REG_ARM64_P15);
             AssertConstant(id, reduced, shifted);
         });
     }
@@ -296,8 +296,8 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var id = Record(emitter, () => emitter.emitInsSve_R_R_I(
-                ins, EA_SCALABLE, REG_V0_ARM64, REG_V31_ARM64, immediate, opt));
-            AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BW_2A, opt, REG_V0_ARM64, REG_V31_ARM64);
+                ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31, immediate, opt));
+            AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BW_2A, opt, REG_ARM64_V0, REG_ARM64_V31);
             AssertConstant(id, immediate, false);
         });
     }
@@ -313,8 +313,8 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            var first = predicateDestination ? REG_P15_ARM64 : REG_V31_ARM64;
-            var second = predicateDestination ? REG_V31_ARM64 : REG_P15_ARM64;
+            var first = predicateDestination ? REG_ARM64_P15 : REG_ARM64_V31;
+            var second = predicateDestination ? REG_ARM64_V31 : REG_ARM64_P15;
             var id = Record(emitter, () => emitter.emitInsSve_R_R_I(
                 INS_sve_pmov, EA_SCALABLE, first, second, immediate, opt));
             AssertDescriptor(id, INS_sve_pmov, EA_SCALABLE, format, opt, first, second);
@@ -330,36 +330,36 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var id = Record(emitter, () => emitter.emitInsSve_R_R_I(
-                INS_sve_pext, EA_SCALABLE, REG_P15_ARM64, REG_P8_ARM64, immediate, INS_OPTS_SCALABLE_D, sopt));
-            AssertDescriptor(id, INS_sve_pext, EA_SCALABLE, format, INS_OPTS_SCALABLE_D, REG_P15_ARM64, REG_P8_ARM64);
+                INS_sve_pext, EA_SCALABLE, REG_ARM64_P15, REG_ARM64_P8, immediate, INS_OPTS_SCALABLE_D, sopt));
+            AssertDescriptor(id, INS_sve_pext, EA_SCALABLE, format, INS_OPTS_SCALABLE_D, REG_ARM64_P15, REG_ARM64_P8);
             AssertConstant(id, immediate, false);
         });
     }
 
-    [TestCase(INS_sve_ldr, REG_V31_ARM64, -256, IF_SVE_IE_2A)]
-    [TestCase(INS_sve_ldr, REG_P15_ARM64, 255, IF_SVE_ID_2A)]
-    [TestCase(INS_sve_str, REG_V31_ARM64, 255, IF_SVE_JH_2A)]
-    [TestCase(INS_sve_str, REG_P15_ARM64, -256, IF_SVE_JG_2A)]
+    [TestCase(INS_sve_ldr, REG_ARM64_V31, -256, IF_SVE_IE_2A)]
+    [TestCase(INS_sve_ldr, REG_ARM64_P15, 255, IF_SVE_ID_2A)]
+    [TestCase(INS_sve_str, REG_ARM64_V31, 255, IF_SVE_JH_2A)]
+    [TestCase(INS_sve_str, REG_ARM64_P15, -256, IF_SVE_JG_2A)]
     public static void ScalableLoadsAndStoresKeepSignedOffsetAndStackPointerEncoding(
         instruction ins, regNumber first, int immediate, Emitter.insFormat format)
     {
         WithEmitter(emitter =>
         {
-            var id = Record(emitter, () => emitter.emitInsSve_R_R_I(ins, EA_SCALABLE, first, REG_SP_ARM64, immediate));
-            AssertDescriptor(id, ins, EA_SCALABLE, format, INS_OPTS_NONE, first, REG_ZR_ARM64);
+            var id = Record(emitter, () => emitter.emitInsSve_R_R_I(ins, EA_SCALABLE, first, REG_ARM64_SP, immediate));
+            AssertDescriptor(id, ins, EA_SCALABLE, format, INS_OPTS_NONE, first, REG_ARM64_ZR);
             AssertConstant(id, immediate, false);
         });
     }
 
-    [TestCase(INS_sve_ldr, REG_V31_ARM64, IF_SVE_IE_2A)]
-    [TestCase(INS_sve_str, REG_P15_ARM64, IF_SVE_JG_2A)]
+    [TestCase(INS_sve_ldr, REG_ARM64_V31, IF_SVE_IE_2A)]
+    [TestCase(INS_sve_str, REG_ARM64_P15, IF_SVE_JG_2A)]
     public static void RegisterOnlyMemoryFormsDelegateZeroOffset(
         instruction ins, regNumber first, Emitter.insFormat format)
     {
         WithEmitter(emitter =>
         {
-            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, EA_SCALABLE, first, REG_SP_ARM64));
-            AssertDescriptor(id, ins, EA_SCALABLE, format, INS_OPTS_NONE, first, REG_ZR_ARM64);
+            var id = Record(emitter, () => emitter.emitInsSve_R_R(ins, EA_SCALABLE, first, REG_ARM64_SP));
+            AssertDescriptor(id, ins, EA_SCALABLE, format, INS_OPTS_NONE, first, REG_ARM64_ZR);
             AssertConstant(id, 0, false);
         });
     }
@@ -370,9 +370,9 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var id = Record(emitter, () => emitter.emitInsSve_R_R_R_R(
-                INS_sve_add, EA_SCALABLE, REG_V0_ARM64, REG_P7_ARM64, REG_V1_ARM64, REG_V31_ARM64, INS_OPTS_SCALABLE_S), 8);
-            AssertDescriptor(id, INS_sve_add, EA_SCALABLE, IF_SVE_AA_3A, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_P7_ARM64);
-            Assert.That(id.idReg3(), Is.EqualTo(REG_V31_ARM64));
+                INS_sve_add, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31, INS_OPTS_SCALABLE_S), 8);
+            AssertDescriptor(id, INS_sve_add, EA_SCALABLE, IF_SVE_AA_3A, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_P7);
+            Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_V31));
             Assert.That(id.idIsSmallDsc(), Is.False);
         });
     }
@@ -393,7 +393,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
     {
         WithEmitter(emitter =>
         {
-            ExpectFailure(() => emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_V0_ARM64, REG_V30_ARM64, opt));
+            ExpectFailure(() => emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V30, opt));
             Assert.That(GroupSize(emitter), Is.Zero);
             Assert.That(LastInstruction(emitter), Is.Null);
         });
@@ -409,11 +409,11 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
             {
                 if (immediate)
                 {
-                    emitter.emitInsSve_R_R_I(INS_nop, EA_SCALABLE, REG_V0_ARM64, REG_V31_ARM64, 0);
+                    emitter.emitInsSve_R_R_I(INS_nop, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31, 0);
                 }
                 else
                 {
-                    emitter.emitInsSve_R_R(INS_nop, EA_SCALABLE, REG_V0_ARM64, REG_V31_ARM64);
+                    emitter.emitInsSve_R_R(INS_nop, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31);
                 }
             });
             Assert.That(GroupSize(emitter), Is.Zero);
@@ -427,7 +427,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             ExpectFailure(() => emitter.emitInsSve_R_R_I(INS_sve_ext, EA_SCALABLE,
-                REG_V0_ARM64, REG_V31_ARM64, 0, INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
+                REG_ARM64_V0, REG_ARM64_V31, 0, INS_OPTS_SCALABLE_B, INS_SCALABLE_OPTS_WITH_VECTOR_PAIR));
             Assert.That(GroupSize(emitter), Is.Zero);
             Assert.That(LastInstruction(emitter), Is.Null);
         });
@@ -465,11 +465,11 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
-                INS_sve_cpy, EA_SCALABLE, REG_V0_ARM64, REG_P15_ARM64, immediate, INS_OPTS_SCALABLE_S));
+                INS_sve_cpy, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_P15, immediate, INS_OPTS_SCALABLE_S));
             Assert.That(assertions, Is.EqualTo<string[]>(["isValidSimm_MultipleOf(imm, 8, 256)"]));
             Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
-            AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2A, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_P15_ARM64);
+            AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2A, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_P15);
             AssertConstant(id, reduced, true);
         });
     }
@@ -484,11 +484,11 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
             {
                 if (immediate)
                 {
-                    emitter.emitInsSve_R_R_I(ins, EA_SCALABLE, REG_V0_ARM64, REG_V31_ARM64, 4, INS_OPTS_SCALABLE_H);
+                    emitter.emitInsSve_R_R_I(ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31, 4, INS_OPTS_SCALABLE_H);
                 }
                 else
                 {
-                    emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_V0_ARM64, REG_V31_ARM64);
+                    emitter.emitInsSve_R_R(ins, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31);
                 }
             });
             Assert.That(assertions, Is.EqualTo<string[]>(["isEvenRegister(reg2)", "isEvenRegister(id.idReg2())"]));
@@ -503,7 +503,7 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
         WithEmitter(emitter =>
         {
             var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => emitter.emitInsSve_R_R_I(
-                INS_sve_cadd, EA_SCALABLE, REG_V0_ARM64, REG_V31_ARM64, immediate, INS_OPTS_SCALABLE_B));
+                INS_sve_cadd, EA_SCALABLE, REG_ARM64_V0, REG_ARM64_V31, immediate, INS_OPTS_SCALABLE_B));
             Assert.That(assertions, Is.EqualTo<string[]>(["emitIsValidEncodedRotationImm90_or_270(emitGetInsSC(id))"]));
             Assert.That(GroupSize(emitter), Is.EqualTo(4));
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
@@ -524,11 +524,11 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
                 if (immediate)
                 {
                     emitter.emitInsSve_R_R_I(INS_sve_cpy, EA_SCALABLE,
-                        REG_V0_ARM64, REG_P15_ARM64, -32768, INS_OPTS_SCALABLE_H);
+                        REG_ARM64_V0, REG_ARM64_P15, -32768, INS_OPTS_SCALABLE_H);
                 }
                 else
                 {
-                    emitter.emitInsSve_R_R(INS_sve_dup, EA_8BYTE, REG_V0_ARM64, REG_SP_ARM64, INS_OPTS_SCALABLE_D);
+                    emitter.emitInsSve_R_R(INS_sve_dup, EA_8BYTE, REG_ARM64_V0, REG_ARM64_SP, INS_OPTS_SCALABLE_D);
                 }
             });
             Assert.That(assertions, Is.Empty);
@@ -536,13 +536,13 @@ internal static unsafe class Arm64SveRegisterPairRecordingTests
             var id = LastInstruction(emitter) ?? throw new AssertionException("No descriptor was prepared.");
             if (immediate)
             {
-                AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2A, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_P15_ARM64);
+                AssertDescriptor(id, INS_sve_mov, EA_SCALABLE, IF_SVE_BV_2A, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_P15);
                 AssertConstant(id, -128, true);
                 Assert.That(output, Does.Contain("z0.h, p15/z, #-128, LSL #8"));
             }
             else
             {
-                AssertDescriptor(id, INS_sve_mov, EA_8BYTE, IF_SVE_CB_2A, INS_OPTS_SCALABLE_D, REG_V0_ARM64, REG_ZR_ARM64);
+                AssertDescriptor(id, INS_sve_mov, EA_8BYTE, IF_SVE_CB_2A, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_ZR);
                 Assert.That(id.idIsSmallDsc(), Is.True);
                 Assert.That(output, Does.Contain("z0.d, sp"));
             }

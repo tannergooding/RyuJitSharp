@@ -28,7 +28,7 @@ internal static class Arm64CodeGenLockedInstructionTests
             var tree = CreateAtomic(compiler, oper, TYP_INT, TYP_INT);
             if (oper is GT_XAND)
             {
-                codeGen.InternalRegisters.Add(tree, RegisterMask(REG_R6_ARM64));
+                codeGen.InternalRegisters.Add(tree, RegisterMask(REG_ARM64_R6));
             }
 
             codeGen.genCodeForTreeNode(tree);
@@ -40,17 +40,17 @@ internal static class Arm64CodeGenLockedInstructionTests
             if (oper is GT_XAND)
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mvn));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R6_ARM64));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R5_ARM64));
-                Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R6_ARM64));
-                Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R3_ARM64));
-                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_R4_ARM64));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R6));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R5));
+                Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_R6));
+                Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_R3));
+                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_ARM64_R4));
             }
             else
             {
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R5_ARM64));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R3_ARM64));
-                Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R4_ARM64));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R5));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R3));
+                Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ARM64_R4));
             }
         });
     }
@@ -72,9 +72,9 @@ internal static class Arm64CodeGenLockedInstructionTests
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors[0].idIns(), Is.EqualTo(expected));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(expectedLast));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R5_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R3_ARM64));
-            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R4_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R5));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R3));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ARM64_R4));
             Assert.That(descriptors.Count, Is.EqualTo(type is TYP_BYTE or TYP_SHORT ? 2 : 1));
         });
     }
@@ -93,10 +93,10 @@ internal static class Arm64CodeGenLockedInstructionTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             EnableAtomics(compiler);
-            var tree = new GenTreeCmpXchg(type, Register(compiler, TYP_BYREF, REG_R4_ARM64),
-                Register(compiler, type, REG_R5_ARM64), Register(compiler, type, REG_R6_ARM64))
+            var tree = new GenTreeCmpXchg(type, Register(compiler, TYP_BYREF, REG_ARM64_R4),
+                Register(compiler, type, REG_ARM64_R5), Register(compiler, type, REG_ARM64_R6))
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
             };
 
             codeGen.genCodeForTreeNode(tree);
@@ -105,19 +105,19 @@ internal static class Arm64CodeGenLockedInstructionTests
             Assert.That(descriptors, Has.Count.EqualTo(expectedCount));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R6_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R6));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(expectedAtomic));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R3_ARM64));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R5_ARM64));
-            Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_R4_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_R3));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_R5));
+            Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_ARM64_R4));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(expectedLast));
             if (type is TYP_BYTE or TYP_SHORT)
             {
                 Assert.That(descriptors[^1].idOpSize(), Is.EqualTo(EA_4BYTE));
-                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R3_ARM64));
-                Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_R3_ARM64));
+                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_ARM64_R3));
+                Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_ARM64_R3));
             }
         });
     }
@@ -138,8 +138,8 @@ internal static class Arm64CodeGenLockedInstructionTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
-            var address = Register(compiler, TYP_BYREF, REG_R4_ARM64);
-            var data = Register(compiler, type, REG_R5_ARM64);
+            var address = Register(compiler, TYP_BYREF, REG_ARM64_R4);
+            var data = Register(compiler, type, REG_ARM64_R5);
             var comparand = compiler.gtNewIconNode(type, comparandValue);
             if (contained)
             {
@@ -148,14 +148,14 @@ internal static class Arm64CodeGenLockedInstructionTests
             }
             else
             {
-                comparand.RegNum = REG_R6_ARM64;
+                comparand.RegNum = REG_ARM64_R6;
             }
 
             var tree = new GenTreeCmpXchg(type, address, data, comparand)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
             };
-            codeGen.InternalRegisters.Add(tree, RegisterMask(REG_R7_ARM64));
+            codeGen.InternalRegisters.Add(tree, RegisterMask(REG_ARM64_R7));
 
             codeGen.genCodeForTreeNode(tree);
             Arm64CodeGenLocalVariableTests.SaveCurrentGroup(codeGen.Emitter);
@@ -164,22 +164,22 @@ internal static class Arm64CodeGenLockedInstructionTests
             Assert.That(descriptors, Has.Count.EqualTo(expectedCount));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(expectedLoad));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R4_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R4));
 
             var compareIndex = contained && comparandValue == 0 ? 1 : 2;
             if (expectedCompare == INS_cmp)
             {
                 Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_cmp));
                 Assert.That(descriptors[1].idOpSize(), Is.EqualTo(expectedSize));
-                Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R3_ARM64));
+                Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_R3));
                 if (contained)
                 {
                     Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(comparandValue));
                 }
                 else
                 {
-                    Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R6_ARM64));
+                    Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_R6));
                 }
             }
 
@@ -189,22 +189,22 @@ internal static class Arm64CodeGenLockedInstructionTests
             var retryBranch = (Emitter.instrDescJmp)descriptors[barrierIndex - 1];
             Assert.That(descriptors[storeIndex].idIns(), Is.EqualTo(expectedStore));
             Assert.That(descriptors[storeIndex].idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(descriptors[storeIndex].idReg1(), Is.EqualTo(REG_R7_ARM64));
-            Assert.That(descriptors[storeIndex].idReg2(), Is.EqualTo(REG_R5_ARM64));
-            Assert.That(descriptors[storeIndex].idReg3(), Is.EqualTo(REG_R4_ARM64));
+            Assert.That(descriptors[storeIndex].idReg1(), Is.EqualTo(REG_ARM64_R7));
+            Assert.That(descriptors[storeIndex].idReg2(), Is.EqualTo(REG_ARM64_R5));
+            Assert.That(descriptors[storeIndex].idReg3(), Is.EqualTo(REG_ARM64_R4));
             Assert.That(compareFailBranch.idIns(), Is.EqualTo(expectedCompare is INS_cbnz ? INS_cbnz : INS_bne));
             Assert.That(retryBranch.idIns(), Is.EqualTo(INS_cbnz));
             Assert.That(retryBranch.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(retryBranch.idReg1(), Is.EqualTo(REG_R7_ARM64));
+            Assert.That(retryBranch.idReg1(), Is.EqualTo(REG_ARM64_R7));
             Assert.That(compareFailBranch.idjTarget, Is.Not.SameAs(retryBranch.idjTarget));
             var retryTarget = retryBranch.idjTarget ?? throw new AssertionException("Missing retry target.");
             var compareFailTarget = compareFailBranch.idjTarget ?? throw new AssertionException("Missing compare-fail target.");
             Assert.That(retryTarget.HasFlag(BBF_HAS_LABEL), Is.True);
             Assert.That(compareFailTarget.HasFlag(BBF_HAS_LABEL), Is.True);
             Assert.That(new regMaskTP((regMask)retryTarget.bbEmitCookie!.igByrefRegs()),
-                Is.EqualTo(RegisterMask(REG_R4_ARM64)));
+                Is.EqualTo(RegisterMask(REG_ARM64_R4)));
             Assert.That(new regMaskTP((regMask)compareFailTarget.bbEmitCookie!.igByrefRegs()),
-                Is.EqualTo(RegisterMask(REG_R4_ARM64)));
+                Is.EqualTo(RegisterMask(REG_ARM64_R4)));
             Assert.That(descriptors[barrierIndex].idIns(), Is.EqualTo(INS_dmb));
             Assert.That(descriptors[barrierIndex].idSmallCns(), Is.EqualTo((int)INS_BARRIER_ISH));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(expectedLast));
@@ -219,43 +219,43 @@ internal static class Arm64CodeGenLockedInstructionTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.compCurBB = new BasicBlock(null, null);
-            var address = Register(compiler, TYP_BYREF, REG_R4_ARM64);
+            var address = Register(compiler, TYP_BYREF, REG_ARM64_R4);
             var data = compiler.gtNewIconNode(TYP_INT, 7);
             data.IsContained = useImmediate;
-            data.RegNum = useImmediate ? REG_NA : REG_R5_ARM64;
+            data.RegNum = useImmediate ? REG_NA : REG_ARM64_R5;
             var tree = new GenTreeIndir(GT_XADD, TYP_INT, address, data)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
             };
-            codeGen.InternalRegisters.Add(tree, RegisterMask(REG_R6_ARM64) | RegisterMask(REG_R7_ARM64));
+            codeGen.InternalRegisters.Add(tree, RegisterMask(REG_ARM64_R6) | RegisterMask(REG_ARM64_R7));
 
             codeGen.genCodeForTreeNode(tree);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(5));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldaxr));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R4_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R4));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R7_ARM64));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_R7));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_R3));
             if (useImmediate)
             {
                 Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(7));
             }
             else
             {
-                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_R5_ARM64));
+                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_ARM64_R5));
             }
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_stlxr));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R6_ARM64));
-            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R7_ARM64));
-            Assert.That(descriptors[2].idReg3(), Is.EqualTo(REG_R4_ARM64));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_ARM64_R6));
+            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_ARM64_R7));
+            Assert.That(descriptors[2].idReg3(), Is.EqualTo(REG_ARM64_R4));
             var branch = (Emitter.instrDescJmp)descriptors[3];
             var retryTarget = branch.idjTarget ?? throw new AssertionException("Missing retry target.");
             Assert.That(descriptors[3].idIns(), Is.EqualTo(INS_cbnz));
             Assert.That(descriptors[3].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[3].idReg1(), Is.EqualTo(REG_R6_ARM64));
+            Assert.That(descriptors[3].idReg1(), Is.EqualTo(REG_ARM64_R6));
             Assert.That(retryTarget.HasFlag(BBF_HAS_LABEL), Is.True);
             Assert.That(descriptors[4].idIns(), Is.EqualTo(INS_dmb));
             Assert.That(descriptors[4].idSmallCns(), Is.EqualTo((int)INS_BARRIER_ISH));
@@ -264,10 +264,10 @@ internal static class Arm64CodeGenLockedInstructionTests
 
     private static GenTreeIndir CreateAtomic(Compiler compiler, genTreeOps oper, var_types type, var_types dataType)
     {
-        return new GenTreeIndir(oper, type, Register(compiler, TYP_BYREF, REG_R4_ARM64),
-            Register(compiler, dataType, REG_R5_ARM64))
+        return new GenTreeIndir(oper, type, Register(compiler, TYP_BYREF, REG_ARM64_R4),
+            Register(compiler, dataType, REG_ARM64_R5))
         {
-            RegNum = REG_R3_ARM64,
+            RegNum = REG_ARM64_R3,
         };
     }
 

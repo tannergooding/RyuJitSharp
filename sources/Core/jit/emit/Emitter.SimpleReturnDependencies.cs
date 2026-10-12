@@ -85,7 +85,7 @@ public partial class Emitter
         id.idIns(ins);
         id.idReg1(dataReg);
         id.idReg2(addrReg);
-        id.idInsOpt(INS_OPTS_RELOC_RISCV64);
+        id.idInsOpt(INS_OPTS_RISCV64_RELOC);
         id.idAddr().iiaAddr = (byte*)disp;
         id.idCodeSize(8);
 

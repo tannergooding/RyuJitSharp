@@ -9,51 +9,29 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class RegMaskIdentityTests
 {
-    private static readonly string[] s_targetSuffixes =
+    private static readonly string[] s_targetIdentities =
     [
-        "_X86",
-        "_AMD64",
-        "_ARM",
-        "_ARM64",
-        "_LOONGARCH64",
-        "_RISCV64",
-        "_WASM",
+        "X86",
+        "X64",
+        "ARM32",
+        "ARM64",
+        "LOONGARCH64",
+        "RISCV64",
+        "WASM",
     ];
 
     [Test]
-    public static void TargetQualifiedRegisterMasksMatchTheSelectedNativeRegisterSet()
+    public static void NoneAndStackMasksHaveSingleUniversalIdentities()
     {
-        var target = GetTargetSuffix();
         var names = Enum.GetNames<regMask>();
 
-        foreach (var name in names)
+        Assert.That(names, Does.Contain(nameof(SRBM_NONE)));
+        Assert.That(names, Does.Contain(nameof(SRBM_STK)));
+
+        foreach (var target in s_targetIdentities)
         {
-            var isTargetQualified = false;
-            foreach (var suffix in s_targetSuffixes)
-            {
-                if (name.EndsWith(suffix, StringComparison.Ordinal))
-                {
-                    isTargetQualified = true;
-                    break;
-                }
-            }
-
-            if (isTargetQualified)
-            {
-                continue;
-            }
-
-            var targetQualifiedName = $"{name}_{target}";
-            if (Array.IndexOf(names, targetQualifiedName) is -1)
-            {
-                Assert.Fail($"Missing target-qualified register-mask identity '{targetQualifiedName}'.");
-                continue;
-            }
-
-            Assert.That(
-                Enum.Parse<regMask>(targetQualifiedName),
-                Is.EqualTo(Enum.Parse<regMask>(name)),
-                targetQualifiedName);
+            Assert.That(names, Does.Not.Contain($"SRBM_{target}_NONE"));
+            Assert.That(names, Does.Not.Contain($"SRBM_{target}_STK"));
         }
     }
 
@@ -61,33 +39,32 @@ internal static class RegMaskIdentityTests
     public static void RegisterMaskIdentitiesUseUniversal64BitStorage()
     {
         Assert.That(Unsafe.SizeOf<regMask>(), Is.EqualTo(sizeof(long)));
-        Assert.That(SRBM_XMM31_AMD64, Is.EqualTo((regMask)long.MinValue));
-        Assert.That(SRBM_V31_ARM64, Is.EqualTo((regMask)long.MinValue));
-        Assert.That(SRBM_STK_WASM, Is.EqualTo((regMask)0));
+        Assert.That(SRBM_X64_XMM31, Is.EqualTo((regMask)long.MinValue));
+        Assert.That(SRBM_ARM64_V31, Is.EqualTo((regMask)long.MinValue));
+        Assert.That(SRBM_STK, Is.EqualTo((regMask)0));
     }
 
     [Test]
     public static void TargetQualifiedTablesAndFactoriesMatchTheCurrentRegisterSet()
     {
-        var suffix = $"_{GetTargetSuffix()}";
+        var target = GetTargetIdentity();
+        var targetPrefix = $"SRBM_{target}_";
         var checkedEntries = 0;
 
         foreach (var maskName in Enum.GetNames<regMask>())
         {
-            if (!maskName.StartsWith("SRBM_", StringComparison.Ordinal) ||
-                !maskName.EndsWith(suffix, StringComparison.Ordinal) ||
-                maskName.StartsWith("SRBM_NONE_", StringComparison.Ordinal))
+            if (!maskName.StartsWith(targetPrefix, StringComparison.Ordinal))
             {
                 continue;
             }
 
-            var registerName = $"REG_{maskName[5..^suffix.Length]}{suffix}";
+            var registerName = $"REG_{target}_{maskName[targetPrefix.Length..]}";
             var register = Enum.Parse<regNumber>(registerName);
             var scalarMask = Enum.Parse<regMask>(maskName);
             var expectedFullMask = Configuration.HAS_MORE_THAN_64_REGISTERS && ((int)register >= 64)
                 ? new regMaskTP(SRBM_NONE, scalarMask)
                 : new regMaskTP(scalarMask);
-            var factoryName = $"RBM_{registerName[4..^suffix.Length]}";
+            var factoryName = $"RBM_{target}_{maskName[targetPrefix.Length..]}";
             var factory = typeof(Globals).GetProperty(factoryName);
 
             Assert.That(register.SingleTypeMask, Is.EqualTo(scalarMask), registerName);
@@ -96,10 +73,21 @@ internal static class RegMaskIdentityTests
             checkedEntries++;
         }
 
-        Assert.That(checkedEntries, Is.GreaterThan(0));
+        if (Configuration.TARGET_WASM)
+        {
+            var expectedStackMask = new regMaskTP(SRBM_STK);
+            Assert.That(checkedEntries, Is.Zero);
+            Assert.That(regNumber.REG_WASM_STK.SingleTypeMask, Is.EqualTo(SRBM_STK));
+            Assert.That(Globals.genRegMask(regNumber.REG_WASM_STK), Is.EqualTo(expectedStackMask));
+            Assert.That(Globals.RBM_WASM_STK, Is.EqualTo(expectedStackMask));
+        }
+        else
+        {
+            Assert.That(checkedEntries, Is.GreaterThan(0));
+        }
     }
 
-    private static string GetTargetSuffix()
+    private static string GetTargetIdentity()
     {
         if (Configuration.TARGET_X86)
         {
@@ -108,12 +96,12 @@ internal static class RegMaskIdentityTests
 
         if (Configuration.TARGET_AMD64)
         {
-            return "AMD64";
+            return "X64";
         }
 
         if (Configuration.TARGET_ARM)
         {
-            return "ARM";
+            return "ARM32";
         }
 
         if (Configuration.TARGET_ARM64)

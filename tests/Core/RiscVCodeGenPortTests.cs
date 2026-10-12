@@ -70,7 +70,7 @@ internal static unsafe class RiscVCodeGenPortTests
         WithCodeGen((_, codeGen) =>
         {
             var descriptor = new DescriptorSizeProbe();
-            descriptor.idInsOpt(INS_OPTS_I_RISCV64);
+            descriptor.idInsOpt(INS_OPTS_RISCV64_I);
             descriptor.idSetIsSmallDsc();
 
             Assert.That(DescriptorSize(codeGen.Emitter, descriptor), Is.EqualTo(8));
@@ -78,12 +78,12 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [TestCase(INS_OPTS_JUMP, 48)]
-    [TestCase(INS_OPTS_C_RISCV64, 16)]
+    [TestCase(INS_OPTS_RISCV64_C, 16)]
     [TestCase(INS_OPTS_RC, 16)]
     [TestCase(INS_OPTS_RL, 16)]
-    [TestCase(INS_OPTS_RELOC_RISCV64, 16)]
+    [TestCase(INS_OPTS_RISCV64_RELOC, 16)]
     [TestCase(INS_OPTS_NONE, 16)]
-    [TestCase(INS_OPTS_I_RISCV64, 88)]
+    [TestCase(INS_OPTS_RISCV64_I, 88)]
     public static void DescriptorSizeMatchesRiscVInstructionOptions(insOpts options, int expectedSize)
     {
         WithCodeGen((_, codeGen) =>
@@ -101,7 +101,7 @@ internal static unsafe class RiscVCodeGenPortTests
         WithCodeGen((_, codeGen) =>
         {
             var descriptor = new DescriptorSizeProbe();
-            descriptor.idInsOpt(INS_OPTS_C_RISCV64);
+            descriptor.idInsOpt(INS_OPTS_RISCV64_C);
             descriptor.idSetIsLargeCall();
 
             Assert.That(DescriptorSize(codeGen.Emitter, descriptor), Is.EqualTo(56));
@@ -1668,7 +1668,7 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idIns(), Is.EqualTo(ins));
             Assert.That(descriptor.idReg1(), Is.EqualTo(dataReg));
             Assert.That(descriptor.idReg2(), Is.EqualTo(addrReg));
-            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC_RISCV64));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RISCV64_RELOC));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
             Assert.That(descriptor.idIsDspReloc(), Is.True);
             Assert.That(descriptor.idIsCnsReloc(), Is.False);
@@ -1875,7 +1875,7 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_addi));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_A0));
-            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC_RISCV64));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RISCV64_RELOC));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
             Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)42));
             Assert.That(CurrentInstructionGroupSize(emitter),
@@ -2223,7 +2223,7 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_ld));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_A0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_A0));
-            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RELOC_RISCV64));
+            Assert.That(descriptor.idInsOpt(), Is.EqualTo(INS_OPTS_RISCV64_RELOC));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(8u));
             Assert.That((nint)descriptor.idAddr().iiaAddr, Is.EqualTo((nint)compiler.gsGlobalSecurityCookieAddr));
             Assert.That(zeroed, Is.False);

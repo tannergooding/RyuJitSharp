@@ -14,14 +14,14 @@ namespace RyuJitSharp;
 
 internal static class Program
 {
-    private static readonly (string Target, string InputFile)[] s_registerTargetHeaders = [
-        ("X86", @"Inputs\registerx86.h"),
-        ("AMD64", @"Inputs\registeramd64.h"),
-        ("ARM", @"Inputs\registerarm.h"),
-        ("ARM64", @"Inputs\registerarm64.h"),
-        ("LOONGARCH64", @"Inputs\registerloongarch64.h"),
-        ("RISCV64", @"Inputs\registerriscv64.h"),
-        ("WASM", @"Inputs\registerwasm.h"),
+    private static readonly (string Target, string Identity, string InputFile)[] s_registerTargetHeaders = [
+        ("X86", "X86", @"Inputs\registerx86.h"),
+        ("AMD64", "X64", @"Inputs\registeramd64.h"),
+        ("ARM", "ARM32", @"Inputs\registerarm.h"),
+        ("ARM64", "ARM64", @"Inputs\registerarm64.h"),
+        ("LOONGARCH64", "LOONGARCH64", @"Inputs\registerloongarch64.h"),
+        ("RISCV64", "RISCV64", @"Inputs\registerriscv64.h"),
+        ("WASM", "WASM", @"Inputs\registerwasm.h"),
     ];
 
     public static void Main()
@@ -4551,6 +4551,10 @@ public static partial class PhasesExtensions
             }
 
             var name = parts[0].AsSpan().Trim();
+            if (name.SequenceEqual("STK"))
+            {
+                return;
+            }
 
             if (parts.Length is 2)
             {
@@ -4670,6 +4674,8 @@ namespace RyuJitSharp;
 public enum regMask : long
 {
     SRBM_NONE = 0,
+    // REG_STK has no register mask on any supported target.
+    SRBM_STK = 0,
 {{targetQualifiedBuilder}}
 {{builder}}}
 """);
@@ -4680,10 +4686,9 @@ public enum regMask : long
         var builder = new StringBuilder();
         var prefixes = new[] { "REGDEF(", "REGALIAS(" };
 
-        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        foreach (var (target, identity, inputFile) in s_registerTargetHeaders)
         {
             var registerBases = ReadRegisterBaseValues(inputFile);
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    SRBM_NONE_{target} = 0,");
 
             var targetBuilder = ProcessMacroBasedFileUnion(inputFile, prefixes, (output, sourceFile, line, prefix, parts) => {
                 if (prefix is "REGALIAS(")
@@ -4695,9 +4700,14 @@ public enum regMask : long
 
                     var name = parts[0].AsSpan().Trim();
                     var realName = parts[1].AsSpan().Trim();
+                    if (name.SequenceEqual("STK"))
+                    {
+                        return;
+                    }
+
                     _ = output.AppendLine(
                         CultureInfo.InvariantCulture,
-                        $"    SRBM_{name}_{target} = SRBM_{realName}_{target},");
+                        $"    SRBM_{identity}_{name} = SRBM_{identity}_{realName},");
                 }
                 else
                 {
@@ -4707,13 +4717,18 @@ public enum regMask : long
                     }
 
                     var name = parts[0].AsSpan().Trim();
+                    if (name.SequenceEqual("STK"))
+                    {
+                        return;
+                    }
+
                     var mask = ParseRegisterMask(parts[2].AsSpan().Trim(), registerBases, target, inputFile);
                     var maskValue = mask is long.MinValue
                         ? "long.MinValue"
                         : mask.ToString(CultureInfo.InvariantCulture);
                     _ = output.AppendLine(
                         CultureInfo.InvariantCulture,
-                        $"    SRBM_{name}_{target} = {maskValue},");
+                        $"    SRBM_{identity}_{name} = {maskValue},");
                 }
             });
 
@@ -4843,7 +4858,7 @@ public enum regNumber : uint
         var builder = new StringBuilder();
         var prefixes = new[] { "REGDEF(", "REGALIAS(" };
 
-        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        foreach (var (target, identity, inputFile) in s_registerTargetHeaders)
         {
             var registerBases = ReadRegisterBaseValues(inputFile);
             var stackRegister = -1;
@@ -4861,14 +4876,14 @@ public enum regNumber : uint
                     var realName = parts[1].AsSpan().Trim().ToString();
                     _ = output.AppendLine(
                         CultureInfo.InvariantCulture,
-                        $"    REG_{name}_{target} = REG_{realName}_{target},");
+                        $"    REG_{identity}_{name} = REG_{identity}_{realName},");
                 }
                 else
                 {
                     var registerNumber = ParseRegisterOrdinal(parts[1].AsSpan().Trim(), registerBases, inputFile);
                     _ = output.AppendLine(
                         CultureInfo.InvariantCulture,
-                        $"    REG_{name}_{target} = {registerNumber},");
+                        $"    REG_{identity}_{name} = {registerNumber},");
 
                     if (name.Equals("STK", StringComparison.Ordinal))
                     {
@@ -4885,9 +4900,9 @@ public enum regNumber : uint
             _ = builder.Append(targetBuilder);
 
             var registerCount = checked(stackRegister + 1);
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_COUNT_{target} = {registerCount},");
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_NA_{target} = REG_COUNT_{target},");
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    ACTUAL_REG_COUNT_{target} = REG_COUNT_{target} - 1,");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_{identity}_COUNT = {registerCount},");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_{identity}_NA = REG_{identity}_COUNT,");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    ACTUAL_REG_{identity}_COUNT = REG_{identity}_COUNT - 1,");
         }
 
         return builder;
@@ -4938,7 +4953,7 @@ public enum regNumber : uint
     {
         var namesBuilder = new StringBuilder();
 
-        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        foreach (var (target, identity, inputFile) in s_registerTargetHeaders)
         {
             if (target is "WASM")
             {
@@ -4954,10 +4969,10 @@ public enum regNumber : uint
                 var name = parts[0].AsSpan().Trim();
                 var sname = parts[3].AsSpan().Trim();
 
-                _ = output.AppendLine(CultureInfo.InvariantCulture, $"        REG_{name}_{target} => {sname},");
+                _ = output.AppendLine(CultureInfo.InvariantCulture, $"        REG_{identity}_{name} => {sname},");
             });
 
-            _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"    private static string GetName{target}(regNumber regNum) => regNum switch");
+            _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"    private static string GetName{identity}(regNumber regNum) => regNum switch");
             _ = namesBuilder.AppendLine("    {");
             _ = namesBuilder.Append(targetBuilder);
             _ = namesBuilder.AppendLine("        _ => throw new FatalJitException(\"Invalid register number.\"),");
@@ -4992,7 +5007,7 @@ public static partial class regNumberExtensions
     {
         var builder = new StringBuilder();
 
-        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        foreach (var (target, identity, inputFile) in s_registerTargetHeaders)
         {
             var registerBases = ReadRegisterBaseValues(inputFile);
             var registerMasks = new SortedDictionary<int, string>();
@@ -5025,19 +5040,22 @@ public static partial class regNumberExtensions
 
             _ = builder.AppendLine(
                 CultureInfo.InvariantCulture,
-                $"    private static ReadOnlySpan<regMask> s_masks_{target} => [");
+                $"    private static ReadOnlySpan<regMask> s_masks_{identity} => [");
 
             for (var registerNumber = 0; registerNumber <= stackRegister; registerNumber++)
             {
                 if (registerMasks.TryGetValue(registerNumber, out var name))
                 {
+                    var mask = name.Equals("STK", StringComparison.Ordinal)
+                        ? "SRBM_STK"
+                        : $"SRBM_{identity}_{name}";
                     _ = builder.AppendLine(
                         CultureInfo.InvariantCulture,
-                        $"        SRBM_{name}_{target}, // REG_{name}_{target}");
+                        $"        {mask}, // REG_{identity}_{name}");
                 }
                 else
                 {
-                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        SRBM_NONE_{target}, // unused register ordinal {registerNumber}");
+                    _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        SRBM_NONE, // unused register ordinal {registerNumber}");
                 }
             }
 
@@ -5050,11 +5068,11 @@ public static partial class regNumberExtensions
         _ = builder.AppendLine("        get");
         _ = builder.AppendLine("        {");
 
-        foreach (var (target, _) in s_registerTargetHeaders)
+        foreach (var (target, identity, _) in s_registerTargetHeaders)
         {
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            if (Configuration.TARGET_{target})");
             _ = builder.AppendLine("            {");
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return s_masks_{target};");
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return s_masks_{identity};");
             _ = builder.AppendLine("            }");
         }
 
@@ -5303,11 +5321,11 @@ public static partial class Globals
     private static StringBuilder ProcessTargetQualifiedRegisterMaskFactories()
     {
         var builder = new StringBuilder();
-        var targetRegisterNames = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var targetRegisterNames = new Dictionary<string, List<(string Target, string Identity)>>(StringComparer.Ordinal);
         var registerNameOrder = new List<string>();
         var prefixes = new[] { "REGDEF(", "REGALIAS(" };
 
-        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        foreach (var (target, identity, inputFile) in s_registerTargetHeaders)
         {
             var targetRegisterNameSet = new HashSet<string>(StringComparer.Ordinal);
             var targetBuilder = ProcessMacroBasedFileUnion(inputFile, prefixes, (output, sourceFile, line, prefix, parts) => {
@@ -5336,20 +5354,23 @@ public static partial class Globals
                     registerNameOrder.Add(name);
                 }
 
-                targets.Add(target);
+                targets.Add((target, identity));
 
                 if (prefix is "REGALIAS(")
                 {
                     var realName = parts[1].AsSpan().Trim();
                     _ = output.AppendLine(
                         CultureInfo.InvariantCulture,
-                        $"    public static regMaskTP RBM_{name}_{target} => RBM_{realName}_{target};");
+                        $"    public static regMaskTP RBM_{identity}_{name} => RBM_{identity}_{realName};");
                 }
                 else
                 {
+                    var maskName = name.Equals("STK", StringComparison.Ordinal)
+                        ? "SRBM_STK"
+                        : $"SRBM_{identity}_{name}";
                     _ = output.AppendLine(
                         CultureInfo.InvariantCulture,
-                        $"    public static regMaskTP RBM_{name}_{target} => regMaskTP.CreateFromRegNum(REG_{name}_{target}, SRBM_{name}_{target});");
+                        $"    public static regMaskTP RBM_{identity}_{name} => regMaskTP.CreateFromRegNum(REG_{identity}_{name}, {maskName});");
                 }
             });
 
@@ -5363,11 +5384,11 @@ public static partial class Globals
             _ = builder.AppendLine("        get");
             _ = builder.AppendLine("        {");
 
-            foreach (var target in targetRegisterNames[name])
+            foreach (var (target, identity) in targetRegisterNames[name])
             {
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"            if (Configuration.TARGET_{target})");
                 _ = builder.AppendLine("            {");
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return RBM_{name}_{target};");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"                return RBM_{identity}_{name};");
                 _ = builder.AppendLine("            }");
             }
 

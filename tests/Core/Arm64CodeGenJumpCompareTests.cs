@@ -30,7 +30,7 @@ internal static class Arm64CodeGenJumpCompareTests
             var currentBlock = compiler.compCurBB ?? throw new AssertionException("Missing current block.");
             Assert.That(descriptor.idIns(), Is.EqualTo(condition is GenCondition.CodeKind.EQ ? INS_cbz : INS_cbnz));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(branch.idjTarget, Is.SameAs(currentBlock.TrueTarget));
         });
     }
@@ -52,7 +52,7 @@ internal static class Arm64CodeGenJumpCompareTests
             var currentBlock = compiler.compCurBB ?? throw new AssertionException("Missing current block.");
             Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(expectedBitIndex));
             Assert.That(branch.idjTarget, Is.SameAs(currentBlock.TrueTarget));
         });
@@ -71,7 +71,7 @@ internal static class Arm64CodeGenJumpCompareTests
         compiler.compCurBB = block;
 
         var value = compiler.gtNewIconNode(TYP_INT, 7);
-        value.RegNum = REG_R1_ARM64;
+        value.RegNum = REG_ARM64_R1;
         var constant = compiler.gtNewIconNode(TYP_INT, immediate);
         constant.IsContained = true;
 

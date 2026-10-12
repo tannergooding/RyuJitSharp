@@ -24,7 +24,7 @@ public static partial class Globals
             assert(reg.IsFltReg, conditionExpression: "genIsValidFloatReg(reg)");
             if (type == TYP_DOUBLE)
             {
-                return (unchecked((int)reg - (int)REG_F0_ARM) % 2) == 0;
+                return (unchecked((int)reg - (int)REG_ARM32_F0) % 2) == 0;
             }
 
             // Can be TYP_STRUCT for HFA. It's not clear that's correct; what about

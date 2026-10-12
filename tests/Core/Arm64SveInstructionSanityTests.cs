@@ -23,35 +23,35 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64SveInstructionSanityTests
 {
-    [TestCase(IF_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_P7_ARM64, REG_V31_ARM64, REG_V0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_AC_3A, INS_sve_sdiv, INS_OPTS_SCALABLE_D, REG_V0_ARM64, REG_P0_ARM64, REG_V1_ARM64, REG_V0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_AR_4A, INS_sve_mla, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_P0_ARM64, REG_V1_ARM64, REG_V31_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_BA_3A, INS_sve_index, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_ZR_ARM64, REG_R30_ARM64, REG_V0_ARM64, EA_8BYTE, 0)]
-    [TestCase(IF_SVE_BH_3B, INS_sve_adr, INS_OPTS_SCALABLE_D_UXTW, REG_V0_ARM64, REG_V1_ARM64, REG_V2_ARM64, REG_V0_ARM64, EA_SCALABLE, 3)]
-    [TestCase(IF_SVE_BL_1A, INS_sve_cntb, INS_OPTS_NONE, REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_8BYTE, 16)]
-    [TestCase(IF_SVE_CX_4A, INS_sve_cmpeq, INS_OPTS_SCALABLE_H, REG_P15_ARM64, REG_P7_ARM64, REG_V1_ARM64, REG_V31_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_CY_3A, INS_sve_cmpeq, INS_OPTS_SCALABLE_B, REG_P0_ARM64, REG_P0_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, -16)]
-    [TestCase(IF_SVE_CY_3B, INS_sve_cmpeq, INS_OPTS_SCALABLE_B, REG_P0_ARM64, REG_P0_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 127)]
-    [TestCase(IF_SVE_FD_3A, INS_sve_mul, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_V31_ARM64, REG_V7_ARM64, REG_V0_ARM64, EA_SCALABLE, 7)]
-    [TestCase(IF_SVE_FD_3C, INS_sve_mul, INS_OPTS_SCALABLE_D, REG_V0_ARM64, REG_V31_ARM64, REG_V7_ARM64, REG_V0_ARM64, EA_SCALABLE, 1)]
-    [TestCase(IF_SVE_CZ_4A, INS_sve_mov, INS_OPTS_SCALABLE_B, REG_P0_ARM64, REG_P15_ARM64, REG_P7_ARM64, REG_R0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_CW_4A, INS_sve_mov, INS_OPTS_SCALABLE_D, REG_V0_ARM64, REG_P15_ARM64, REG_V31_ARM64, REG_R0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_GQ_3A, INS_sve_fcvtnt, INS_OPTS_S_TO_H, REG_V0_ARM64, REG_P7_ARM64, REG_V31_ARM64, REG_V0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_GQ_3A, INS_sve_bfcvtnt, INS_OPTS_NONE, REG_V0_ARM64, REG_P0_ARM64, REG_V1_ARM64, REG_V0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_AQ_3A, INS_sve_sxtb, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_P0_ARM64, REG_V1_ARM64, REG_V0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_FZ_2A, INS_sve_mov, INS_OPTS_NONE, REG_V31_ARM64, REG_V30_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_AW_2A, INS_sve_xar, INS_OPTS_SCALABLE_D, REG_V0_ARM64, REG_V1_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 64)]
-    [TestCase(IF_SVE_DU_3A, INS_sve_cmpeq, INS_OPTS_SCALABLE_D, REG_P0_ARM64, REG_R0_ARM64, REG_R30_ARM64, REG_R0_ARM64, EA_8BYTE, 0)]
-    [TestCase(IF_SVE_DW_2B, INS_sve_pext, INS_OPTS_SCALABLE_S, REG_P0_ARM64, REG_P15_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_SCALABLE, 1)]
-    [TestCase(IF_SVE_EJ_3A, INS_sve_cdot, INS_OPTS_SCALABLE_S, REG_V0_ARM64, REG_V1_ARM64, REG_V2_ARM64, REG_V0_ARM64, EA_SCALABLE, 3)]
-    [TestCase(IF_SVE_IH_3A, INS_sve_ld3b, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_P7_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_SCALABLE, -24)]
-    [TestCase(IF_SVE_IO_3A, INS_sve_ld1rob, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_P0_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_SCALABLE, 224)]
-    [TestCase(IF_SVE_HW_4A, INS_sve_ld1b, INS_OPTS_SCALABLE_S_SXTW, REG_V0_ARM64, REG_P7_ARM64, REG_R0_ARM64, REG_V31_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_IW_4A, INS_sve_ld1q, INS_OPTS_SCALABLE_Q, REG_V31_ARM64, REG_P0_ARM64, REG_V0_ARM64, REG_ZR_ARM64, EA_SCALABLE, 0)]
-    [TestCase(IF_SVE_HM_2A, INS_sve_fadd, INS_OPTS_SCALABLE_H, REG_V0_ARM64, REG_P7_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 1)]
-    [TestCase(IF_SVE_ID_2A, INS_sve_ldr, INS_OPTS_NONE, REG_P15_ARM64, REG_ZR_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_SCALABLE, -256)]
-    [TestCase(IF_SVE_BF_2A, INS_sve_lsr, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_V1_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 8)]
-    [TestCase(IF_SVE_BW_2A, INS_sve_dup, INS_OPTS_SCALABLE_Q, REG_V0_ARM64, REG_V31_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 3)]
+    [TestCase(IF_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V31, REG_ARM64_V0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_AC_3A, INS_sve_sdiv, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_V1, REG_ARM64_V0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_AR_4A, INS_sve_mla, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_V1, REG_ARM64_V31, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_BA_3A, INS_sve_index, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_ZR, REG_ARM64_R30, REG_ARM64_V0, EA_8BYTE, 0)]
+    [TestCase(IF_SVE_BH_3B, INS_sve_adr, INS_OPTS_SCALABLE_D_UXTW, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, REG_ARM64_V0, EA_SCALABLE, 3)]
+    [TestCase(IF_SVE_BL_1A, INS_sve_cntb, INS_OPTS_NONE, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE, 16)]
+    [TestCase(IF_SVE_CX_4A, INS_sve_cmpeq, INS_OPTS_SCALABLE_H, REG_ARM64_P15, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_CY_3A, INS_sve_cmpeq, INS_OPTS_SCALABLE_B, REG_ARM64_P0, REG_ARM64_P0, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, -16)]
+    [TestCase(IF_SVE_CY_3B, INS_sve_cmpeq, INS_OPTS_SCALABLE_B, REG_ARM64_P0, REG_ARM64_P0, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 127)]
+    [TestCase(IF_SVE_FD_3A, INS_sve_mul, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_V31, REG_ARM64_V7, REG_ARM64_V0, EA_SCALABLE, 7)]
+    [TestCase(IF_SVE_FD_3C, INS_sve_mul, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_V31, REG_ARM64_V7, REG_ARM64_V0, EA_SCALABLE, 1)]
+    [TestCase(IF_SVE_CZ_4A, INS_sve_mov, INS_OPTS_SCALABLE_B, REG_ARM64_P0, REG_ARM64_P15, REG_ARM64_P7, REG_ARM64_R0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_CW_4A, INS_sve_mov, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_P15, REG_ARM64_V31, REG_ARM64_R0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_GQ_3A, INS_sve_fcvtnt, INS_OPTS_S_TO_H, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V31, REG_ARM64_V0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_GQ_3A, INS_sve_bfcvtnt, INS_OPTS_NONE, REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_V1, REG_ARM64_V0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_AQ_3A, INS_sve_sxtb, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_V1, REG_ARM64_V0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_FZ_2A, INS_sve_mov, INS_OPTS_NONE, REG_ARM64_V31, REG_ARM64_V30, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_AW_2A, INS_sve_xar, INS_OPTS_SCALABLE_D, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 64)]
+    [TestCase(IF_SVE_DU_3A, INS_sve_cmpeq, INS_OPTS_SCALABLE_D, REG_ARM64_P0, REG_ARM64_R0, REG_ARM64_R30, REG_ARM64_R0, EA_8BYTE, 0)]
+    [TestCase(IF_SVE_DW_2B, INS_sve_pext, INS_OPTS_SCALABLE_S, REG_ARM64_P0, REG_ARM64_P15, REG_ARM64_R0, REG_ARM64_R0, EA_SCALABLE, 1)]
+    [TestCase(IF_SVE_EJ_3A, INS_sve_cdot, INS_OPTS_SCALABLE_S, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, REG_ARM64_V0, EA_SCALABLE, 3)]
+    [TestCase(IF_SVE_IH_3A, INS_sve_ld3b, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_R0, REG_ARM64_R0, EA_SCALABLE, -24)]
+    [TestCase(IF_SVE_IO_3A, INS_sve_ld1rob, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_R0, REG_ARM64_R0, EA_SCALABLE, 224)]
+    [TestCase(IF_SVE_HW_4A, INS_sve_ld1b, INS_OPTS_SCALABLE_S_SXTW, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_R0, REG_ARM64_V31, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_IW_4A, INS_sve_ld1q, INS_OPTS_SCALABLE_Q, REG_ARM64_V31, REG_ARM64_P0, REG_ARM64_V0, REG_ARM64_ZR, EA_SCALABLE, 0)]
+    [TestCase(IF_SVE_HM_2A, INS_sve_fadd, INS_OPTS_SCALABLE_H, REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 1)]
+    [TestCase(IF_SVE_ID_2A, INS_sve_ldr, INS_OPTS_NONE, REG_ARM64_P15, REG_ARM64_ZR, REG_ARM64_R0, REG_ARM64_R0, EA_SCALABLE, -256)]
+    [TestCase(IF_SVE_BF_2A, INS_sve_lsr, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 8)]
+    [TestCase(IF_SVE_BW_2A, INS_sve_dup, INS_OPTS_SCALABLE_Q, REG_ARM64_V0, REG_ARM64_V31, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 3)]
     public static void RepresentativeFormatsRetainNativeOptionRegisterAndImmediateChecks(
         Emitter.insFormat format, instruction ins, insOpts opt, regNumber first, regNumber second,
         regNumber third, regNumber fourth, emitAttr size, int immediate)
@@ -67,7 +67,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
     public static void PredicatedChecksRetainAssertionOrderWhenTheEeContinues()
     {
         var id = SanityEmitter.Descriptor(IF_SVE_AA_3A, INS_sve_add, INS_OPTS_NONE,
-            REG_R0_ARM64, REG_P8_ARM64, REG_R1_ARM64, REG_R0_ARM64, EA_4BYTE, 0);
+            REG_ARM64_R0, REG_ARM64_P8, REG_ARM64_R1, REG_ARM64_R0, EA_4BYTE, 0);
         var (output, assertions) = Capture(() => Check(EmitterInstance(), id));
 
         Assert.That(assertions, Is.EqualTo<string[]>([
@@ -80,15 +80,15 @@ internal static unsafe class Arm64SveInstructionSanityTests
         Assert.That(output, Is.Empty);
     }
 
-    [TestCase(IF_SVE_BI_2A, INS_OPTS_NONE, REG_V1_ARM64)]
-    [TestCase(IF_SVE_AH_3A, INS_OPTS_SCALABLE_B, REG_P7_ARM64)]
+    [TestCase(IF_SVE_BI_2A, INS_OPTS_NONE, REG_ARM64_V1)]
+    [TestCase(IF_SVE_AH_3A, INS_OPTS_SCALABLE_B, REG_ARM64_P7)]
     public static void MovprfxPairSanityAcceptsMatchingUnpredicatedAndPredicatedPairs(
         Emitter.insFormat prefixFormat, insOpts prefixOptions, regNumber prefixSecondRegister)
     {
         var previous = SanityEmitter.Descriptor(prefixFormat, INS_sve_movprfx, prefixOptions,
-            REG_V0_ARM64, prefixSecondRegister, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 0);
+            REG_ARM64_V0, prefixSecondRegister, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 0);
         var current = SanityEmitter.Descriptor(IF_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_B,
-            REG_V0_ARM64, REG_P7_ARM64, REG_V2_ARM64, REG_V3_ARM64, EA_SCALABLE, 0);
+            REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V2, REG_ARM64_V3, EA_SCALABLE, 0);
         var (_, assertions) = Capture(() => CheckPair(EmitterInstance(), previous, current));
 
         Assert.That(assertions, Is.Empty);
@@ -100,10 +100,10 @@ internal static unsafe class Arm64SveInstructionSanityTests
         Emitter.insFormat format, instruction ins)
     {
         var previous = SanityEmitter.Descriptor(IF_SVE_AH_3A, INS_sve_movprfx, INS_OPTS_SCALABLE_B,
-            REG_V0_ARM64, REG_P7_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 0);
-        var secondPredicate = format is IF_SVE_AA_3A ? REG_P6_ARM64 : REG_P7_ARM64;
+            REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 0);
+        var secondPredicate = format is IF_SVE_AA_3A ? REG_ARM64_P6 : REG_ARM64_P7;
         var current = SanityEmitter.Descriptor(format, ins, INS_OPTS_SCALABLE_B,
-            REG_V0_ARM64, secondPredicate, REG_V2_ARM64, REG_V3_ARM64, EA_SCALABLE, 0);
+            REG_ARM64_V0, secondPredicate, REG_ARM64_V2, REG_ARM64_V3, EA_SCALABLE, 0);
         var (_, assertions) = Capture(() => CheckPair(EmitterInstance(), previous, current));
         string[] expectedAssertions = format is IF_SVE_BN_1A
             ? ["!movprfxIsPredicated", "!movprfxIsPredicated"]
@@ -111,15 +111,15 @@ internal static unsafe class Arm64SveInstructionSanityTests
         Assert.That(assertions, Is.EqualTo<string[]>(expectedAssertions));
     }
 
-    [TestCase(IF_SVE_DU_3A, INS_OPTS_SCALABLE_B, REG_P0_ARM64, REG_R0_ARM64, REG_R1_ARM64, EA_4BYTE, 0, "id.idOpSize() == EA_8BYTE")]
-    [TestCase(IF_SVE_DW_2B, INS_OPTS_SCALABLE_D, REG_P0_ARM64, REG_P8_ARM64, REG_R0_ARM64, EA_SCALABLE, 2, "isValidUimm(emitGetInsSC(id), 1)")]
-    [TestCase(IF_SVE_EJ_3A, INS_OPTS_SCALABLE_B, REG_V0_ARM64, REG_V1_ARM64, REG_V2_ARM64, EA_SCALABLE, 0, "insOptsScalableWords(id.idInsOpt())")]
+    [TestCase(IF_SVE_DU_3A, INS_OPTS_SCALABLE_B, REG_ARM64_P0, REG_ARM64_R0, REG_ARM64_R1, EA_4BYTE, 0, "id.idOpSize() == EA_8BYTE")]
+    [TestCase(IF_SVE_DW_2B, INS_OPTS_SCALABLE_D, REG_ARM64_P0, REG_ARM64_P8, REG_ARM64_R0, EA_SCALABLE, 2, "isValidUimm(emitGetInsSC(id), 1)")]
+    [TestCase(IF_SVE_EJ_3A, INS_OPTS_SCALABLE_B, REG_ARM64_V0, REG_ARM64_V1, REG_ARM64_V2, EA_SCALABLE, 0, "insOptsScalableWords(id.idInsOpt())")]
     public static void FallthroughChecksKeepTheirAdditionalNativePredicate(
         Emitter.insFormat format, insOpts opt, regNumber first, regNumber second, regNumber third,
         emitAttr size, int immediate, string assertion)
     {
         var id = SanityEmitter.Descriptor(format, INS_sve_add, opt,
-            first, second, third, REG_R0_ARM64, size, immediate);
+            first, second, third, REG_ARM64_R0, size, immediate);
         var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
 
         Assert.That(assertions, Is.EqualTo<string[]>([assertion]));
@@ -131,7 +131,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
     public static void PairedVectorFormatsRejectOddSourceRegisters(Emitter.insFormat format, insOpts opt)
     {
         var id = SanityEmitter.Descriptor(format, INS_sve_mov, opt,
-            REG_V0_ARM64, REG_V31_ARM64, REG_V0_ARM64, REG_V0_ARM64, EA_SCALABLE, 0);
+            REG_ARM64_V0, REG_ARM64_V31, REG_ARM64_V0, REG_ARM64_V0, EA_SCALABLE, 0);
         var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
 
         Assert.That(assertions, Is.EqualTo<string[]>(["isEvenRegister(id.idReg2())"]));
@@ -148,7 +148,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
         foreach (var immediate in new[] { minimum, excludedMaximum - multiple, minimum + 1, excludedMaximum })
         {
             var id = SanityEmitter.Descriptor(IF_SVE_IH_3A, ins, INS_OPTS_SCALABLE_B,
-                REG_V0_ARM64, REG_P0_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_SCALABLE, immediate);
+                REG_ARM64_V0, REG_ARM64_P0, REG_ARM64_R0, REG_ARM64_R0, EA_SCALABLE, immediate);
             var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
             var valid = (immediate == minimum) || (immediate == excludedMaximum - multiple);
 
@@ -166,7 +166,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
         foreach (var immediate in new[] { -1, 0, excludedMaximum - 1, excludedMaximum })
         {
             var id = SanityEmitter.Descriptor(IF_SVE_BW_2A, INS_sve_dup, opt,
-                REG_V0_ARM64, REG_V31_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_SCALABLE, immediate);
+                REG_ARM64_V0, REG_ARM64_V31, REG_ARM64_R0, REG_ARM64_R0, EA_SCALABLE, immediate);
             var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
             var valid = (immediate >= 0) && (immediate < excludedMaximum);
 
@@ -192,7 +192,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
         Emitter.insFormat format, int immediate, bool valid)
     {
         var id = SanityEmitter.Descriptor(format, INS_sve_add, INS_OPTS_SCALABLE_H,
-            REG_V0_ARM64, format == IF_SVE_HM_2A ? REG_P0_ARM64 : REG_V1_ARM64, REG_V2_ARM64, REG_V0_ARM64, EA_SCALABLE, immediate);
+            REG_ARM64_V0, format == IF_SVE_HM_2A ? REG_ARM64_P0 : REG_ARM64_V1, REG_ARM64_V2, REG_ARM64_V0, EA_SCALABLE, immediate);
         var (_, assertions) = Capture(() => Check(EmitterInstance(), id));
         var assertion = format switch
         {
@@ -220,7 +220,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
         Assert.That(second, Is.EqualTo((nint)expectedSecond));
 
         var id = SanityEmitter.Descriptor(IF_SVE_AX_1A, INS_sve_index, INS_OPTS_SCALABLE_S,
-            REG_V0_ARM64, REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_SCALABLE, encoded);
+            REG_ARM64_V0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, EA_SCALABLE, encoded);
         Assert.That(Capture(() => Check(EmitterInstance(), id)).Assertions, Is.Empty);
     }
 
@@ -257,7 +257,7 @@ internal static unsafe class Arm64SveInstructionSanityTests
     public static void UnexpectedFormatReportsNativeTextAndTheEeMayContinue()
     {
         var id = SanityEmitter.Descriptor(IF_EN5A, INS_ldr, INS_OPTS_NONE,
-            REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, REG_R0_ARM64, EA_8BYTE, 0);
+            REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE, 0);
         var result = Capture(() => Check(EmitterInstance(), id));
 
         AssertUnexpectedFormat(result);

@@ -14,49 +14,49 @@ internal static class RegNumberNameTests
 
         if (Configuration.TARGET_AMD64)
         {
-            Assert.That(REG_RAX_AMD64.Name, Is.EqualTo("rax"));
-            Assert.That(REG_XMM0_AMD64.Name, Is.EqualTo("mm0"));
-            Assert.That(REG_K0_AMD64.Name, Is.EqualTo("k0"));
-            Assert.That(REG_STK_AMD64.Name, Is.EqualTo("STK"));
+            Assert.That(REG_X64_RAX.Name, Is.EqualTo("rax"));
+            Assert.That(REG_X64_XMM0.Name, Is.EqualTo("mm0"));
+            Assert.That(REG_X64_K0.Name, Is.EqualTo("k0"));
+            Assert.That(REG_X64_STK.Name, Is.EqualTo("STK"));
         }
         else if (Configuration.TARGET_X86)
         {
-            Assert.That(REG_EAX_X86.Name, Is.EqualTo("eax"));
-            Assert.That(REG_XMM0_X86.Name, Is.EqualTo("mm0"));
-            Assert.That(REG_K0_X86.Name, Is.EqualTo("k0"));
-            Assert.That(REG_STK_X86.Name, Is.EqualTo("STK"));
+            Assert.That(REG_X86_EAX.Name, Is.EqualTo("eax"));
+            Assert.That(REG_X86_XMM0.Name, Is.EqualTo("mm0"));
+            Assert.That(REG_X86_K0.Name, Is.EqualTo("k0"));
+            Assert.That(REG_X86_STK.Name, Is.EqualTo("STK"));
         }
         else if (Configuration.TARGET_ARM64)
         {
-            Assert.That(REG_R0_ARM64.Name, Is.EqualTo("x0"));
-            Assert.That(REG_V0_ARM64.Name, Is.EqualTo("d0"));
-            Assert.That(REG_P0_ARM64.Name, Is.EqualTo("p0"));
-            Assert.That(REG_FFR_ARM64.Name, Is.EqualTo("ffr"));
-            Assert.That(REG_STK_ARM64.Name, Is.EqualTo("STK"));
+            Assert.That(REG_ARM64_R0.Name, Is.EqualTo("x0"));
+            Assert.That(REG_ARM64_V0.Name, Is.EqualTo("d0"));
+            Assert.That(REG_ARM64_P0.Name, Is.EqualTo("p0"));
+            Assert.That(REG_ARM64_FFR.Name, Is.EqualTo("ffr"));
+            Assert.That(REG_ARM64_STK.Name, Is.EqualTo("STK"));
         }
         else if (Configuration.TARGET_ARM)
         {
-            Assert.That(REG_R0_ARM.Name, Is.EqualTo("r0"));
-            Assert.That(REG_F0_ARM.Name, Is.EqualTo("f0"));
-            Assert.That(REG_STK_ARM.Name, Is.EqualTo("STK"));
+            Assert.That(REG_ARM32_R0.Name, Is.EqualTo("r0"));
+            Assert.That(REG_ARM32_F0.Name, Is.EqualTo("f0"));
+            Assert.That(REG_ARM32_STK.Name, Is.EqualTo("STK"));
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
-            Assert.That(REG_A0_LOONGARCH64.Name, Is.EqualTo("a0"));
-            Assert.That(REG_F0_LOONGARCH64.Name, Is.EqualTo("f0"));
-            Assert.That(REG_STK_LOONGARCH64.Name, Is.EqualTo("STK"));
+            Assert.That(REG_LOONGARCH64_A0.Name, Is.EqualTo("a0"));
+            Assert.That(REG_LOONGARCH64_F0.Name, Is.EqualTo("f0"));
+            Assert.That(REG_LOONGARCH64_STK.Name, Is.EqualTo("STK"));
         }
         else if (Configuration.TARGET_RISCV64)
         {
-            Assert.That(REG_SP_RISCV64.Name, Is.EqualTo("sp"));
-            Assert.That(REG_FT0_RISCV64.Name, Is.EqualTo("ft0"));
-            Assert.That(REG_STK_RISCV64.Name, Is.EqualTo("STK"));
+            Assert.That(REG_RISCV64_SP.Name, Is.EqualTo("sp"));
+            Assert.That(REG_RISCV64_FT0.Name, Is.EqualTo("ft0"));
+            Assert.That(REG_RISCV64_STK.Name, Is.EqualTo("STK"));
         }
         else if (Configuration.TARGET_WASM)
         {
             Assert.That(((regNumber)0x20000011u).Name, Is.EqualTo("$17"));
             Assert.That(((regNumber)0x20000014u).Name, Is.EqualTo("$<too large to print>"));
-            Assert.That(regNumberExtensions.GetWasmRegName(REG_NA_WASM), Is.EqualTo("NA"));
+            Assert.That(regNumberExtensions.GetWasmRegName(REG_WASM_NA), Is.EqualTo("NA"));
         }
         else
         {
@@ -69,7 +69,7 @@ internal static class RegNumberNameTests
     {
         if (Configuration.TARGET_WASM)
         {
-            Assert.That(regNumberExtensions.GetWasmRegName(REG_NA_WASM), Is.EqualTo("NA"));
+            Assert.That(regNumberExtensions.GetWasmRegName(REG_WASM_NA), Is.EqualTo("NA"));
         }
         else
         {

@@ -51,8 +51,8 @@ internal static unsafe class Arm64EmitterRegisterDescriptorTests
     public static void OptionAliasesShareTheNativeBit()
     {
         var descriptor = DescriptorEmitter.Basic();
-        descriptor.idReg3(REG_R19_ARM64);
-        descriptor.idReg4(REG_R28_ARM64);
+        descriptor.idReg3(REG_ARM64_R19);
+        descriptor.idReg4(REG_ARM64_R28);
         descriptor.idReg3Scaled(true);
         Assert.That(descriptor.idPredicateReg2Merge(), Is.True);
         Assert.That(descriptor.idVectorLength4x(), Is.True);
@@ -64,8 +64,8 @@ internal static unsafe class Arm64EmitterRegisterDescriptorTests
         Assert.That(descriptor.idReg3Scaled(), Is.True);
         descriptor.idHasShift(false);
         Assert.That(descriptor.idVectorLength4x(), Is.False);
-        Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R19_ARM64));
-        Assert.That(descriptor.idReg4(), Is.EqualTo(REG_R28_ARM64));
+        Assert.That(descriptor.idReg3(), Is.EqualTo(REG_ARM64_R19));
+        Assert.That(descriptor.idReg4(), Is.EqualTo(REG_ARM64_R28));
     }
 
     [Test]
@@ -82,8 +82,8 @@ internal static unsafe class Arm64EmitterRegisterDescriptorTests
     public static void SvePatternsOverlayOnlyTheLocalWord()
     {
         var descriptor = DescriptorEmitter.Basic();
-        descriptor.idReg3(REG_R19_ARM64);
-        descriptor.idReg4(REG_R28_ARM64);
+        descriptor.idReg3(REG_ARM64_R19);
+        descriptor.idReg4(REG_ARM64_R28);
         descriptor.idReg3Scaled(true);
         descriptor.idGCrefReg2(GCInfo.GCtype.GCT_BYREF);
         var registers = Raw(descriptor) >> 32;
@@ -105,16 +105,16 @@ internal static unsafe class Arm64EmitterRegisterDescriptorTests
     public static void SvePrefetchOperationsAliasAndTruncateTheFourthRegister(uint operation)
     {
         var descriptor = DescriptorEmitter.Basic();
-        descriptor.idReg3(REG_R19_ARM64);
+        descriptor.idReg3(REG_ARM64_R19);
         descriptor.idGCrefReg2(GCInfo.GCtype.GCT_GCREF);
         descriptor.idSvePrfop((insSvePrfop)operation);
         Assert.That((uint)descriptor.idSvePrfop(), Is.EqualTo(operation & 127));
         Assert.That((uint)descriptor.idReg4(), Is.EqualTo(operation & 127));
-        Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R19_ARM64));
+        Assert.That(descriptor.idReg3(), Is.EqualTo(REG_ARM64_R19));
         Assert.That(descriptor.idGCrefReg2(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
 
-        descriptor.idReg4(REG_R28_ARM64);
-        Assert.That((uint)descriptor.idSvePrfop(), Is.EqualTo((uint)REG_R28_ARM64));
+        descriptor.idReg4(REG_ARM64_R28);
+        Assert.That((uint)descriptor.idSvePrfop(), Is.EqualTo((uint)REG_ARM64_R28));
     }
 
     private static ref ulong Raw(Emitter.instrDesc descriptor)

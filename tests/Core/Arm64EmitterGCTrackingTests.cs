@@ -94,10 +94,10 @@ internal static unsafe class Arm64EmitterGCTrackingTests
         {
             emitter.emitFullGCinfo = true;
             SyncThisRegister(emitter) = REG_NA;
-            GCrefRegisters(emitter) = SRBM_R1_ARM64;
-            ByrefRegisters(emitter) = SRBM_R2_ARM64;
+            GCrefRegisters(emitter) = SRBM_ARM64_R1;
+            ByrefRegisters(emitter) = SRBM_ARM64_R2;
 
-            KillRegisters(emitter, new regMaskTP(SRBM_R1_ARM64 | SRBM_R2_ARM64), buffer + 9);
+            KillRegisters(emitter, new regMaskTP(SRBM_ARM64_R1 | SRBM_ARM64_R2), buffer + 9);
 
             Assert.That(GCrefRegisters(emitter), Is.EqualTo(SRBM_NONE));
             Assert.That(ByrefRegisters(emitter), Is.EqualTo(SRBM_NONE));
@@ -106,10 +106,10 @@ internal static unsafe class Arm64EmitterGCTrackingTests
             var second = first.rpdNext ?? throw new AssertionException("Missing byref death.");
             Assert.That(first.rpdOffs, Is.EqualTo(9u));
             Assert.That(first.rpdGCtype, Is.EqualTo(GCT_GCREF));
-            Assert.That(first.rpdCompiler.rpdDel, Is.EqualTo(SRBM_R1_ARM64));
+            Assert.That(first.rpdCompiler.rpdDel, Is.EqualTo(SRBM_ARM64_R1));
             Assert.That(second.rpdOffs, Is.EqualTo(9u));
             Assert.That(second.rpdGCtype, Is.EqualTo(GCT_BYREF));
-            Assert.That(second.rpdCompiler.rpdDel, Is.EqualTo(SRBM_R2_ARM64));
+            Assert.That(second.rpdCompiler.rpdDel, Is.EqualTo(SRBM_ARM64_R2));
             Assert.That(second.rpdNext, Is.Null);
         });
     }
@@ -120,8 +120,8 @@ internal static unsafe class Arm64EmitterGCTrackingTests
         WithEmitter((emitter, buffer) =>
         {
             emitter.emitSimpleStkUsed = true;
-            GCrefRegisters(emitter) = SRBM_R1_ARM64;
-            ByrefRegisters(emitter) = SRBM_R2_ARM64;
+            GCrefRegisters(emitter) = SRBM_ARM64_R1;
+            ByrefRegisters(emitter) = SRBM_ARM64_R2;
 
             emitter.emitRecordGCcall(buffer + 12, 4);
 
@@ -129,8 +129,8 @@ internal static unsafe class Arm64EmitterGCTrackingTests
                 ?.GetValue(emitter.GCInfo) ?? throw new AssertionException("Missing partial call descriptor.");
             Assert.That(ReadCallField<uint>(record, "cdOffs"), Is.EqualTo(12u));
             Assert.That(ReadCallField<ushort>(record, "cdCallInstrSize"), Is.EqualTo((ushort)4));
-            Assert.That(ReadCallField<regMask>(record, "cdGCrefRegs"), Is.EqualTo(SRBM_R1_ARM64));
-            Assert.That(ReadCallField<regMask>(record, "cdByrefRegs"), Is.EqualTo(SRBM_R2_ARM64));
+            Assert.That(ReadCallField<regMask>(record, "cdGCrefRegs"), Is.EqualTo(SRBM_ARM64_R1));
+            Assert.That(ReadCallField<regMask>(record, "cdByrefRegs"), Is.EqualTo(SRBM_ARM64_R2));
             Assert.That(ReadCallField<ushort>(record, "cdArgCnt"), Is.Zero);
         });
     }
@@ -164,21 +164,21 @@ internal static unsafe class Arm64EmitterGCTrackingTests
         {
             emitter.emitFullGCinfo = true;
             SyncThisRegister(emitter) = REG_NA;
-            ByrefRegisters(emitter) = SRBM_R1_ARM64;
+            ByrefRegisters(emitter) = SRBM_ARM64_R1;
 
-            UpdateRegisters(emitter, GCT_GCREF, new regMaskTP(SRBM_R1_ARM64), buffer + 8);
+            UpdateRegisters(emitter, GCT_GCREF, new regMaskTP(SRBM_ARM64_R1), buffer + 8);
 
-            Assert.That(GCrefRegisters(emitter), Is.EqualTo(SRBM_R1_ARM64));
+            Assert.That(GCrefRegisters(emitter), Is.EqualTo(SRBM_ARM64_R1));
             Assert.That(ByrefRegisters(emitter), Is.EqualTo(SRBM_NONE));
             var first = RegPtrList(ref emitter.GCInfo)
                 ?? throw new AssertionException("Missing register death.");
             var second = first.rpdNext ?? throw new AssertionException("Missing register birth.");
             Assert.That(first.rpdOffs, Is.EqualTo(8u));
             Assert.That(first.rpdGCtype, Is.EqualTo(GCT_BYREF));
-            Assert.That(first.rpdCompiler.rpdDel, Is.EqualTo(SRBM_R1_ARM64));
+            Assert.That(first.rpdCompiler.rpdDel, Is.EqualTo(SRBM_ARM64_R1));
             Assert.That(second.rpdOffs, Is.EqualTo(8u));
             Assert.That(second.rpdGCtype, Is.EqualTo(GCT_GCREF));
-            Assert.That(second.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_R1_ARM64));
+            Assert.That(second.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_ARM64_R1));
             Assert.That(second.rpdNext, Is.Null);
         });
     }

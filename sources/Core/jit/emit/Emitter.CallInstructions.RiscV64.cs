@@ -104,7 +104,7 @@ public partial class Emitter
 
         id.idSetIsNoGC(parameters.isJump || parameters.noSafePoint || emitNoGChelper(parameters.methHnd));
         id.idIns(INS_jalr);
-        id.idInsOpt(INS_OPTS_C_RISCV64);
+        id.idInsOpt(INS_OPTS_RISCV64_C);
 
         if ((parameters.callType is EC_INDIR_R) ||
             ((parameters.callType is EC_FUNC_TOKEN) && !IsAddressInRange(parameters.addr)))

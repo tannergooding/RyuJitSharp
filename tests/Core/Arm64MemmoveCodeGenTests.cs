@@ -42,8 +42,8 @@ internal static class Arm64MemmoveCodeGenTests
 
             var block = CreateMemmove(size);
             var intRegisters = size is 1 or 2 or 4 or 8
-                ? Mask(REG_R16_ARM64)
-                : Mask(REG_R16_ARM64) | Mask(REG_R17_ARM64);
+                ? Mask(REG_ARM64_R16)
+                : Mask(REG_ARM64_R16) | Mask(REG_ARM64_R17);
             codeGen.InternalRegisters.Add(block, intRegisters);
             codeGen.genCodeForMemmove(block);
 
@@ -56,8 +56,8 @@ internal static class Arm64MemmoveCodeGenTests
             var loadCount = expectedInstructions.Length / 2;
             for (var index = 0; index < loadCount; index++)
             {
-                Assert.That(emitted[index].idReg2(), Is.EqualTo(REG_R2_ARM64));
-                Assert.That(emitted[loadCount + index].idReg2(), Is.EqualTo(REG_R1_ARM64));
+                Assert.That(emitted[index].idReg2(), Is.EqualTo(REG_ARM64_R2));
+                Assert.That(emitted[loadCount + index].idReg2(), Is.EqualTo(REG_ARM64_R1));
                 Assert.That(emitted[loadCount + index].idReg1(), Is.EqualTo(emitted[index].idReg1()));
             }
         });
@@ -94,8 +94,8 @@ internal static class Arm64MemmoveCodeGenTests
 
             for (var index = 0; index < registerCount; index++)
             {
-                Assert.That(emitted[index].idReg2(), Is.EqualTo(REG_R2_ARM64));
-                Assert.That(emitted[registerCount + index].idReg2(), Is.EqualTo(REG_R1_ARM64));
+                Assert.That(emitted[index].idReg2(), Is.EqualTo(REG_ARM64_R2));
+                Assert.That(emitted[registerCount + index].idReg2(), Is.EqualTo(REG_ARM64_R1));
                 Assert.That(emitted[registerCount + index].idReg1(), Is.EqualTo(emitted[index].idReg1()));
             }
         });
@@ -103,13 +103,13 @@ internal static class Arm64MemmoveCodeGenTests
 
     private static GenTreeBlk CreateMemmove(int size)
     {
-        var sourceAddress = Physical(REG_R2_ARM64);
+        var sourceAddress = Physical(REG_ARM64_R2);
         var source = new GenTreeIndir(GT_IND, TYP_STRUCT, sourceAddress)
         {
             IsContained = true,
         };
 
-        return new GenTreeBlk(TYP_STRUCT, Physical(REG_R1_ARM64), source, new ClassLayout((uint)size))
+        return new GenTreeBlk(TYP_STRUCT, Physical(REG_ARM64_R1), source, new ClassLayout((uint)size))
         {
             _kind = BlkOpKindUnrollMemmove,
         };
@@ -129,9 +129,9 @@ internal static class Arm64MemmoveCodeGenTests
     {
         return count switch
         {
-            1 => Mask(REG_V16_ARM64),
-            2 => Mask(REG_V16_ARM64) | Mask(REG_V17_ARM64),
-            3 => Mask(REG_V16_ARM64) | Mask(REG_V17_ARM64) | Mask(REG_V18_ARM64),
+            1 => Mask(REG_ARM64_V16),
+            2 => Mask(REG_ARM64_V16) | Mask(REG_ARM64_V17),
+            3 => Mask(REG_ARM64_V16) | Mask(REG_ARM64_V17) | Mask(REG_ARM64_V18),
             _ => throw new ArgumentOutOfRangeException(nameof(count)),
         };
     }

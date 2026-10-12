@@ -129,12 +129,12 @@ public enum insOpts : uint
     INS_OPTS_JIRL = 3, // see ::emitIns_J_R().
     INS_OPTS_J = 4, // see ::emitIns_J().
     INS_OPTS_J_cond = 5, // see ::emitIns_J_cond_la().
-    INS_OPTS_I_LOONGARCH64 = 6, // see ::emitIns_I_la().
-    INS_OPTS_C_LOONGARCH64 = 7, // see ::emitIns_Call().
-    INS_OPTS_RELOC_LOONGARCH64 = 8, // see ::emitIns_R_AI().
+    INS_OPTS_LOONGARCH64_I = 6, // see ::emitIns_I_la().
+    INS_OPTS_LOONGARCH64_C = 7, // see ::emitIns_Call().
+    INS_OPTS_LOONGARCH64_RELOC = 8, // see ::emitIns_R_AI().
 
     INS_OPTS_JUMP = 3, // see ::emitIns_J() and ::emitIns_J_cond_la().
-    INS_OPTS_I_RISCV64 = 4, // see ::emitLoadImmediate().
-    INS_OPTS_C_RISCV64 = 5, // see ::emitIns_Call().
-    INS_OPTS_RELOC_RISCV64 = 6, // see ::emitIns_R_AI().
+    INS_OPTS_RISCV64_I = 4, // see ::emitLoadImmediate().
+    INS_OPTS_RISCV64_C = 5, // see ::emitIns_Call().
+    INS_OPTS_RISCV64_RELOC = 6, // see ::emitIns_R_AI().
 }

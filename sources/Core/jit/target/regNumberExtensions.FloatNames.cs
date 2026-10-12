@@ -30,97 +30,97 @@ public static partial class regNumberExtensions
                         break;
                     }
 
-                    case REG_F0_ARM:
+                    case REG_ARM32_F0:
                     {
                         regName = "d0";
                         break;
                     }
 
-                    case REG_F2_ARM:
+                    case REG_ARM32_F2:
                     {
                         regName = "d2";
                         break;
                     }
 
-                    case REG_F4_ARM:
+                    case REG_ARM32_F4:
                     {
                         regName = "d4";
                         break;
                     }
 
-                    case REG_F6_ARM:
+                    case REG_ARM32_F6:
                     {
                         regName = "d6";
                         break;
                     }
 
-                    case REG_F8_ARM:
+                    case REG_ARM32_F8:
                     {
                         regName = "d8";
                         break;
                     }
 
-                    case REG_F10_ARM:
+                    case REG_ARM32_F10:
                     {
                         regName = "d10";
                         break;
                     }
 
-                    case REG_F12_ARM:
+                    case REG_ARM32_F12:
                     {
                         regName = "d12";
                         break;
                     }
 
-                    case REG_F14_ARM:
+                    case REG_ARM32_F14:
                     {
                         regName = "d14";
                         break;
                     }
 
-                    case REG_F16_ARM:
+                    case REG_ARM32_F16:
                     {
                         regName = "d16";
                         break;
                     }
 
-                    case REG_F18_ARM:
+                    case REG_ARM32_F18:
                     {
                         regName = "d18";
                         break;
                     }
 
-                    case REG_F20_ARM:
+                    case REG_ARM32_F20:
                     {
                         regName = "d20";
                         break;
                     }
 
-                    case REG_F22_ARM:
+                    case REG_ARM32_F22:
                     {
                         regName = "d22";
                         break;
                     }
 
-                    case REG_F24_ARM:
+                    case REG_ARM32_F24:
                     {
                         regName = "d24";
                         break;
                     }
 
-                    case REG_F26_ARM:
+                    case REG_ARM32_F26:
                     {
                         regName = "d26";
                         break;
                     }
 
-                    case REG_F28_ARM:
+                    case REG_ARM32_F28:
                     {
                         regName = "d28";
                         break;
                     }
 
-                    case REG_F30_ARM:
+                    case REG_ARM32_F30:
                     {
                         regName = "d30";
                         break;
@@ -182,37 +182,37 @@ public static partial class regNumberExtensions
     {
         if (Configuration.TARGET_X86)
         {
-            return (int)REG_COUNT_X86;
+            return (int)REG_X86_COUNT;
         }
 
         if (Configuration.TARGET_AMD64)
         {
-            return (int)REG_COUNT_AMD64;
+            return (int)REG_X64_COUNT;
         }
 
         if (Configuration.TARGET_ARM)
         {
-            return (int)REG_COUNT_ARM;
+            return (int)REG_ARM32_COUNT;
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            return (int)REG_COUNT_ARM64;
+            return (int)REG_ARM64_COUNT;
         }
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            return (int)REG_COUNT_LOONGARCH64;
+            return (int)REG_LOONGARCH64_COUNT;
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            return (int)REG_COUNT_RISCV64;
+            return (int)REG_RISCV64_COUNT;
         }
 
         if (Configuration.TARGET_WASM)
         {
-            return (int)REG_COUNT_WASM;
+            return (int)REG_WASM_COUNT;
         }
 
         throw new FatalJitException("Invalid target architecture.");

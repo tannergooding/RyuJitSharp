@@ -49,11 +49,11 @@ internal static class FeatureConfigurationTests
     {
         var expected =
             Configuration.TARGET_X86 || Configuration.TARGET_WASM ? regNumberExtensions.NotAvailable :
-            Configuration.TARGET_AMD64 ? REG_XMM0_AMD64 :
-            Configuration.TARGET_ARM ? REG_F0_ARM :
-            Configuration.TARGET_ARM64 ? REG_V0_ARM64 :
-            Configuration.TARGET_LOONGARCH64 ? REG_F0_LOONGARCH64 :
-            Configuration.TARGET_RISCV64 ? REG_FA0_RISCV64 :
+            Configuration.TARGET_AMD64 ? REG_X64_XMM0 :
+            Configuration.TARGET_ARM ? REG_ARM32_F0 :
+            Configuration.TARGET_ARM64 ? REG_ARM64_V0 :
+            Configuration.TARGET_LOONGARCH64 ? REG_LOONGARCH64_F0 :
+            Configuration.TARGET_RISCV64 ? REG_RISCV64_FA0 :
             throw new FatalJitException("Invalid target architecture.");
 
         Assert.That(REG_FLOATRET, Is.EqualTo(expected));

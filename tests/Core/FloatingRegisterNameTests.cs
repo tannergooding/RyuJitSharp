@@ -77,20 +77,20 @@ internal static unsafe class FloatingRegisterNameTests
     [TestCase(REG_STK, TYP_SIMD64, "zSTK")]
 #endif
 #elif TARGET_ARM64
-    [TestCase(REG_R0_ARM64, TYP_FLOAT, "x0")]
-    [TestCase(REG_IP0_ARM64, TYP_DOUBLE, "xip0")]
-    [TestCase(REG_ZR_ARM64, TYP_FLOAT, "xzr")]
+    [TestCase(REG_ARM64_R0, TYP_FLOAT, "x0")]
+    [TestCase(REG_ARM64_IP0, TYP_DOUBLE, "xip0")]
+    [TestCase(REG_ARM64_ZR, TYP_FLOAT, "xzr")]
     [TestCase(REG_FP_FIRST, TYP_FLOAT, "d0")]
     [TestCase(REG_FP_LAST, TYP_DOUBLE, "d31")]
-    [TestCase(REG_P0_ARM64, TYP_FLOAT, "p0")]
-    [TestCase(REG_P15_ARM64, TYP_DOUBLE, "p15")]
-    [TestCase(REG_SP_ARM64, TYP_FLOAT, "sp")]
-    [TestCase(REG_FFR_ARM64, TYP_DOUBLE, "ffr")]
-    [TestCase(REG_STK_ARM64, TYP_FLOAT, "STK")]
+    [TestCase(REG_ARM64_P0, TYP_FLOAT, "p0")]
+    [TestCase(REG_ARM64_P15, TYP_DOUBLE, "p15")]
+    [TestCase(REG_ARM64_SP, TYP_FLOAT, "sp")]
+    [TestCase(REG_ARM64_FFR, TYP_DOUBLE, "ffr")]
+    [TestCase(REG_ARM64_STK, TYP_FLOAT, "STK")]
 #if FEATURE_SIMD
     [TestCase(REG_FP_FIRST, TYP_SIMD16, "d0")]
     [TestCase(REG_FP_LAST, TYP_SIMD_ARM64, "d31")]
-    [TestCase(REG_STK_ARM64, TYP_SIMD_ARM64, "STK")]
+    [TestCase(REG_ARM64_STK, TYP_SIMD_ARM64, "STK")]
 #endif
 #endif
 #if TARGET_AMD64 || TARGET_ARM64

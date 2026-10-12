@@ -92,10 +92,10 @@ public static partial class Globals
             if (Configuration.TARGET_ARM && (type == TYP_DOUBLE))
             {
                 const regMask allDoubleRegs =
-                    SRBM_F0_ARM | SRBM_F2_ARM | SRBM_F4_ARM | SRBM_F6_ARM |
-                    SRBM_F8_ARM | SRBM_F10_ARM | SRBM_F12_ARM | SRBM_F14_ARM |
-                    SRBM_F16_ARM | SRBM_F18_ARM | SRBM_F20_ARM | SRBM_F22_ARM |
-                    SRBM_F24_ARM | SRBM_F26_ARM | SRBM_F28_ARM | SRBM_F30_ARM;
+                    SRBM_ARM32_F0 | SRBM_ARM32_F2 | SRBM_ARM32_F4 | SRBM_ARM32_F6 |
+                    SRBM_ARM32_F8 | SRBM_ARM32_F10 | SRBM_ARM32_F12 | SRBM_ARM32_F14 |
+                    SRBM_ARM32_F16 | SRBM_ARM32_F18 | SRBM_ARM32_F20 | SRBM_ARM32_F22 |
+                    SRBM_ARM32_F24 | SRBM_ARM32_F26 | SRBM_ARM32_F28 | SRBM_ARM32_F30;
                 assert((result & new regMaskTP(allDoubleRegs)) != RBM_NONE, "(result & RBM_ALLDOUBLE) != 0");
                 result |= new regMaskTP(unchecked((regMask)((long)result.Lower << 1)));
             }
@@ -117,49 +117,49 @@ public static partial class Globals
 
         if (Configuration.TARGET_ARM)
         {
-            return unchecked((uint)(regNum - REG_F0_ARM));
+            return unchecked((uint)(regNum - REG_ARM32_F0));
         }
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            return unchecked((uint)(regNum - REG_F0_LOONGARCH64));
+            return unchecked((uint)(regNum - REG_LOONGARCH64_F0));
         }
 
         if (Configuration.TARGET_RISCV64)
         {
-            return unchecked((uint)(regNum - REG_FA0_RISCV64));
+            return unchecked((uint)(regNum - REG_RISCV64_FA0));
         }
 
         if (Configuration.TARGET_ARM64)
         {
-            return unchecked((uint)(regNum - REG_V0_ARM64));
+            return unchecked((uint)(regNum - REG_ARM64_V0));
         }
 
         if (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX)
         {
-            return unchecked((uint)(regNum - REG_XMM0_AMD64));
+            return unchecked((uint)(regNum - REG_X64_XMM0));
         }
 
         if (Configuration.TARGET_AMD64)
         {
             switch (regNum)
             {
-                case REG_XMM0_AMD64:
+                case REG_X64_XMM0:
                 {
                     return 0;
                 }
 
-                case REG_XMM1_AMD64:
+                case REG_X64_XMM1:
                 {
                     return 1;
                 }
 
-                case REG_XMM2_AMD64:
+                case REG_X64_XMM2:
                 {
                     return 2;
                 }
 
-                case REG_XMM3_AMD64:
+                case REG_X64_XMM3:
                 {
                     return 3;
                 }

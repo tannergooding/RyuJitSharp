@@ -41,7 +41,7 @@ internal static unsafe class TypedRegisterMaskTests
     {
         var expected = reg == REG_STK ? SRBM_NONE : unchecked((regMask)(1UL << ((int)reg % 64)));
 #if TARGET_ARM64
-        if (reg is REG_SP_ARM64 or REG_FFR_ARM64)
+        if (reg is REG_ARM64_SP or REG_ARM64_FFR)
         {
             expected = SRBM_NONE;
         }

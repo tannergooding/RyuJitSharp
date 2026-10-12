@@ -65,7 +65,7 @@ public partial class Emitter
         descriptor.idReg1(reg);
         assert(reg != REG_R0);
 
-        descriptor.idInsOpt(INS_OPTS_I_LOONGARCH64);
+        descriptor.idInsOpt(INS_OPTS_LOONGARCH64_I);
         descriptor.idAddr().iiaAddr = (byte*)immediate;
 
         appendToCurIG(descriptor);

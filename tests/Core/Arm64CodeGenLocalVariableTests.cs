@@ -30,7 +30,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             compiler.lvaTable[0].Type = type;
             var tree = new GenTreeLclVar(type, 0)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
             };
 
             codeGen.genCodeForLclVar(tree);
@@ -40,7 +40,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             var descriptor = descriptors[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
             Assert.That(descriptor.idIsLclVar(), Is.True);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
@@ -56,7 +56,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             var tree = new GenTreeLclFld(GT_LCL_FLD, type, 0, 24)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
             };
 
             codeGen.genCodeForLclFld(tree);
@@ -66,7 +66,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             var descriptor = descriptors[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
             Assert.That(descriptor.idIsLclVar(), Is.True);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
@@ -82,7 +82,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             var tree = new GenTreeLclFld(GT_LCL_ADDR, type, 0, 24)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
             };
 
             codeGen.genCodeForLclAddr(tree);
@@ -94,7 +94,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DI_2A));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(8));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
             Assert.That(descriptor.idIsLclVar(), Is.True);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
@@ -112,7 +112,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             compiler.lvaTable[0].lvLRACandidate = isRegCandidate;
             var tree = new GenTreeLclVar(TYP_INT, 0)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
                 Flags = flags,
             };
 
@@ -129,7 +129,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             compiler.lvaTable[0].Type = TYP_LONG;
             var source = compiler.gtNewIconNode(TYP_INT, 7);
-            source.RegNum = REG_R3_ARM64;
+            source.RegNum = REG_ARM64_R3;
             var tree = compiler.gtNewStoreLclFldNode(TYP_INT, 0, 4, source);
             tree.RegNum = REG_NA;
 
@@ -140,11 +140,11 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             var descriptor = descriptors[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_FPBASE));
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK_ARM64));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_STK));
         });
     }
 
@@ -164,7 +164,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             var descriptors = Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ZR_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_ZR));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
         });
     }
@@ -176,7 +176,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             compiler.lvaTable[0].Type = TYP_DOUBLE;
             var source = compiler.gtNewIconNode(TYP_INT, 7);
-            source.RegNum = REG_R3_ARM64;
+            source.RegNum = REG_ARM64_R3;
             var bitcast = new GenTreeUnOp(GT_BITCAST, TYP_FLOAT, source)
             {
                 IsContained = true,
@@ -190,7 +190,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
         });
     }
@@ -202,7 +202,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             compiler.lvaTable[0].Type = TYP_INT;
             var source = compiler.gtNewIconNode(TYP_INT, 7);
-            source.RegNum = REG_R3_ARM64;
+            source.RegNum = REG_ARM64_R3;
             var tree = compiler.gtNewStoreLclVarNode(0, source);
             tree.RegNum = REG_NA;
 
@@ -212,9 +212,9 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK_ARM64));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_STK));
         });
     }
 
@@ -225,11 +225,11 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             compiler.lvaTable[0].Type = TYP_INT;
             compiler.lvaTable[0].lvLRACandidate = true;
-            compiler.lvaTable[0].RegNum = REG_R4_ARM64;
+            compiler.lvaTable[0].RegNum = REG_ARM64_R4;
             var source = compiler.gtNewIconNode(TYP_INT, 7);
-            source.RegNum = REG_R3_ARM64;
+            source.RegNum = REG_ARM64_R3;
             var tree = compiler.gtNewStoreLclVarNode(0, source);
-            tree.RegNum = REG_R4_ARM64;
+            tree.RegNum = REG_ARM64_R4;
 
             codeGen.genCodeForStoreLclVar(tree);
 
@@ -237,9 +237,9 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R4_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R3_ARM64));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_R4_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R4));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R3));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_R4));
         });
     }
 
@@ -262,10 +262,10 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             var descriptors = Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_stp));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ZR_ARM64));
-            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_FP_ARM64));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_ZR));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ARM64_FP));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK_ARM64));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_STK));
         });
     }
 
@@ -276,21 +276,21 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         {
             compiler.lvaTable[0].Type = TYP_SIMD16;
             compiler.lvaTable[0].lvLRACandidate = true;
-            compiler.lvaTable[0].RegNum = REG_V0_ARM64;
+            compiler.lvaTable[0].RegNum = REG_ARM64_V0;
             var source = new GenTreeVecCon(TYP_SIMD16)
             {
                 IsContained = true,
             };
             var tree = compiler.gtNewStoreLclVarNode(0, source);
-            tree.RegNum = REG_V0_ARM64;
+            tree.RegNum = REG_ARM64_V0;
 
             codeGen.genCodeForStoreLclVar(tree);
 
             var descriptors = Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movi));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V0_ARM64));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_V0_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_V0));
         });
     }
 
@@ -313,13 +313,13 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ZR_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_ZR));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ZR_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_ZR));
             Assert.That(descriptors[1].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK_ARM64));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_STK));
         });
     }
 
@@ -331,21 +331,21 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             compiler.lvaTable[0].Type = TYP_SIMD16;
             var source = new GenTreeVecCon(TYP_SIMD12)
             {
-                RegNum = REG_V1_ARM64,
+                RegNum = REG_ARM64_V1,
             };
             source.SimdVal.u32[0] = 1;
             compiler.lvaTable[0].lvLRACandidate = true;
-            compiler.lvaTable[0].RegNum = REG_V0_ARM64;
+            compiler.lvaTable[0].RegNum = REG_ARM64_V0;
             var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
-            tree.RegNum = REG_V0_ARM64;
+            tree.RegNum = REG_ARM64_V0;
 
             codeGen.genCodeForStoreLclFld(tree);
 
             var descriptors = Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V0_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_V1));
         });
     }
 
@@ -357,7 +357,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             compiler.lvaTable[0].Type = TYP_SIMD16;
             var source = new GenTreeVecCon(TYP_SIMD12)
             {
-                RegNum = REG_V1_ARM64,
+                RegNum = REG_ARM64_V1,
             };
             source.SimdVal.u32[0] = 1;
             var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
@@ -370,26 +370,26 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
 
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
 
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_ext));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_16BYTE));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(8));
 
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[2].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
 
             Assert.That(descriptors[3].idIns(), Is.EqualTo(INS_ext));
             Assert.That(descriptors[3].idOpSize(), Is.EqualTo(EA_16BYTE));
-            Assert.That(descriptors[3].idReg1(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(descriptors[3].idReg2(), Is.EqualTo(REG_V1_ARM64));
-            Assert.That(descriptors[3].idReg3(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[3].idReg1(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(descriptors[3].idReg2(), Is.EqualTo(REG_ARM64_V1));
+            Assert.That(descriptors[3].idReg3(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[3].idSmallCns(), Is.EqualTo(8));
         });
     }
@@ -402,12 +402,12 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             compiler.lvaTable[0].Type = TYP_SIMD16;
             var source = new GenTreeVecCon(TYP_SIMD12)
             {
-                RegNum = REG_V1_ARM64,
+                RegNum = REG_ARM64_V1,
             };
             source.SimdVal.u32[0] = 1;
             var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
             tree.RegNum = REG_NA;
-            codeGen.InternalRegisters.Add(tree, RBM_R10_ARM64);
+            codeGen.InternalRegisters.Add(tree, RBM_ARM64_R10);
 
             codeGen.genCodeForStoreLclFld(tree);
 
@@ -416,18 +416,18 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
 
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(4u));
 
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R10_ARM64));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_R10));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(2));
 
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_R10_ARM64));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_ARM64_R10));
             Assert.That(descriptors[2].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(12u));
             Assert.That(codeGen.InternalRegisters.Count(tree), Is.Zero);
         });

@@ -25,12 +25,12 @@ internal static class Arm64CodeGenDivisionTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var dividend = compiler.gtNewIconNode(TYP_INT, 7);
-            dividend.RegNum = REG_R1_ARM64;
+            dividend.RegNum = REG_ARM64_R1;
             var divisor = compiler.gtNewIconNode(TYP_INT, 3);
-            divisor.RegNum = REG_R2_ARM64;
+            divisor.RegNum = REG_ARM64_R2;
             var tree = new GenTreeOp(GT_UDIV, TYP_INT, dividend, divisor)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
                 Flags = GTF_DIV_MOD_NO_BY_ZERO,
             };
 
@@ -40,9 +40,9 @@ internal static class Arm64CodeGenDivisionTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_udiv));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R3));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ARM64_R2));
         });
     }
 
@@ -52,12 +52,12 @@ internal static class Arm64CodeGenDivisionTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var dividend = compiler.gtNewDconNode(TYP_DOUBLE, 1.0);
-            dividend.RegNum = REG_V0_ARM64;
+            dividend.RegNum = REG_ARM64_V0;
             var divisor = compiler.gtNewDconNode(TYP_DOUBLE, 2.0);
-            divisor.RegNum = REG_V1_ARM64;
+            divisor.RegNum = REG_ARM64_V1;
             var tree = new GenTreeOp(GT_DIV, TYP_DOUBLE, dividend, divisor)
             {
-                RegNum = REG_V2_ARM64,
+                RegNum = REG_ARM64_V2,
             };
 
             codeGen.genCodeForTreeNode(tree);
@@ -66,9 +66,9 @@ internal static class Arm64CodeGenDivisionTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_fdiv));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V2_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V0_ARM64));
-            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V2));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_V0));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ARM64_V1));
         });
     }
 
@@ -79,12 +79,12 @@ internal static class Arm64CodeGenDivisionTests
         {
             _ = PrepareThrowTarget(compiler, SCK_ARITH_EXCPN);
             var dividend = compiler.gtNewIconNode(TYP_INT, int.MinValue);
-            dividend.RegNum = REG_R1_ARM64;
+            dividend.RegNum = REG_ARM64_R1;
             var divisor = compiler.gtNewLclvNode(TYP_INT, 0);
-            divisor.RegNum = REG_R2_ARM64;
+            divisor.RegNum = REG_ARM64_R2;
             var tree = new GenTreeOp(GT_DIV, TYP_INT, dividend, divisor)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
                 Flags = GTF_DIV_MOD_NO_BY_ZERO,
             };
 
@@ -108,12 +108,12 @@ internal static class Arm64CodeGenDivisionTests
         {
             var throwTarget = PrepareThrowTarget(compiler, SCK_DIV_BY_ZERO);
             var dividend = compiler.gtNewIconNode(TYP_INT, 7);
-            dividend.RegNum = REG_R1_ARM64;
+            dividend.RegNum = REG_ARM64_R1;
             var divisor = compiler.gtNewLclvNode(TYP_INT, 0);
-            divisor.RegNum = REG_R2_ARM64;
+            divisor.RegNum = REG_ARM64_R2;
             var tree = new GenTreeOp(GT_UDIV, TYP_INT, dividend, divisor)
             {
-                RegNum = REG_R3_ARM64,
+                RegNum = REG_ARM64_R3,
             };
 
             codeGen.genCodeForTreeNode(tree);
@@ -123,7 +123,7 @@ internal static class Arm64CodeGenDivisionTests
             var branch = (Emitter.instrDescJmp)descriptors[0];
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_cbz));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R2));
             Assert.That(branch.idjTarget, Is.SameAs(throwTarget));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_udiv));
         });

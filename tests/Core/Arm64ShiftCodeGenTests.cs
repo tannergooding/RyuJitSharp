@@ -26,9 +26,9 @@ internal static class Arm64ShiftCodeGenTests
     {
         Arm64CalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
         {
-            var operand = new GenTreePhysReg(REG_R1_ARM64, TYP_INT) { RegNum = REG_R1_ARM64 };
-            var shiftBy = new GenTreePhysReg(REG_R3_ARM64, TYP_INT) { RegNum = REG_R3_ARM64 };
-            var tree = new GenTreeOp(oper, TYP_INT, operand, shiftBy) { RegNum = REG_R2_ARM64 };
+            var operand = new GenTreePhysReg(REG_ARM64_R1, TYP_INT) { RegNum = REG_ARM64_R1 };
+            var shiftBy = new GenTreePhysReg(REG_ARM64_R3, TYP_INT) { RegNum = REG_ARM64_R3 };
+            var tree = new GenTreeOp(oper, TYP_INT, operand, shiftBy) { RegNum = REG_ARM64_R2 };
 
             codeGen.genCodeForShift(tree);
 
@@ -37,9 +37,9 @@ internal static class Arm64ShiftCodeGenTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(expected));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R2_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1_ARM64));
-            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R3_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R2));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R1));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_ARM64_R3));
         });
     }
 
@@ -54,10 +54,10 @@ internal static class Arm64ShiftCodeGenTests
     {
         Arm64CalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
         {
-            var operand = new GenTreePhysReg(REG_R1_ARM64, type) { RegNum = REG_R1_ARM64 };
+            var operand = new GenTreePhysReg(REG_ARM64_R1, type) { RegNum = REG_ARM64_R1 };
             var shiftBy = compiler.gtNewIconNode(TYP_INT, count);
             shiftBy.IsContained = true;
-            var tree = new GenTreeOp(GT_LSH, type, operand, shiftBy) { RegNum = REG_R2_ARM64 };
+            var tree = new GenTreeOp(GT_LSH, type, operand, shiftBy) { RegNum = REG_ARM64_R2 };
 
             codeGen.genCodeForShift(tree);
 
@@ -66,8 +66,8 @@ internal static class Arm64ShiftCodeGenTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_lsl));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R2_ARM64));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_R2));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)expectedCount));
         });
     }

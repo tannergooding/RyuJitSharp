@@ -344,7 +344,7 @@ public partial class Emitter
                 return DescriptorSizes.Jump;
             }
 
-            case INS_OPTS_C_RISCV64:
+            case INS_OPTS_RISCV64_C:
             {
                 if (descriptor.idIsLargeCall())
                 {
@@ -358,13 +358,13 @@ public partial class Emitter
 
             case INS_OPTS_RC:
             case INS_OPTS_RL:
-            case INS_OPTS_RELOC_RISCV64:
+            case INS_OPTS_RISCV64_RELOC:
             case INS_OPTS_NONE:
             {
                 return INSTR_DESC_SIZE;
             }
 
-            case INS_OPTS_I_RISCV64:
+            case INS_OPTS_RISCV64_I:
             {
                 return DescriptorSizes.RiscVLoadImmediate;
             }
