@@ -14,16 +14,16 @@ internal static class Arm64RegisterMetadataTests
     public static void RegisterClassBoundsAndSizesMatchNative()
     {
         Assert.Multiple(() => {
-            Assert.That(REG_INT_FIRST, Is.EqualTo(REG_R0));
-            Assert.That(REG_INT_LAST, Is.EqualTo(REG_ZR));
+            Assert.That(REG_INT_FIRST, Is.EqualTo(REG_R0_ARM64));
+            Assert.That(REG_INT_LAST, Is.EqualTo(REG_ZR_ARM64));
             Assert.That(REG_INT_COUNT, Is.EqualTo(32));
-            Assert.That(REG_FP_FIRST, Is.EqualTo(REG_V0));
-            Assert.That(REG_FP_LAST, Is.EqualTo(REG_V31));
-            Assert.That(REG_MASK_FIRST, Is.EqualTo(REG_P0));
-            Assert.That(REG_MASK_LAST, Is.EqualTo(REG_P15));
-            Assert.That(REG_PREDICATE_HIGH_FIRST, Is.EqualTo(REG_P8));
-            Assert.That(REG_NEXT(REG_R0), Is.EqualTo(REG_R1));
-            Assert.That(REG_PREV(REG_R1), Is.EqualTo(REG_R0));
+            Assert.That(REG_FP_FIRST, Is.EqualTo(REG_V0_ARM64));
+            Assert.That(REG_FP_LAST, Is.EqualTo(REG_V31_ARM64));
+            Assert.That(REG_MASK_FIRST, Is.EqualTo(REG_P0_ARM64));
+            Assert.That(REG_MASK_LAST, Is.EqualTo(REG_P15_ARM64));
+            Assert.That(REG_PREDICATE_HIGH_FIRST, Is.EqualTo(REG_P8_ARM64));
+            Assert.That(REG_NEXT(REG_R0_ARM64), Is.EqualTo(REG_R1_ARM64));
+            Assert.That(REG_PREV(REG_R1_ARM64), Is.EqualTo(REG_R0_ARM64));
             Assert.That(REGNUM_BITS, Is.EqualTo(7));
             Assert.That(REGSIZE_BYTES, Is.EqualTo(8));
             Assert.That(FPSAVE_REGSIZE_BYTES, Is.EqualTo(8));
@@ -56,17 +56,17 @@ internal static class Arm64RegisterMetadataTests
     {
         Assert.Multiple(() => {
             Assert.That(REG_VAR_ORDER.Length, Is.EqualTo(29));
-            Assert.That(REG_VAR_ORDER[0], Is.EqualTo(REG_R0));
-            Assert.That(REG_VAR_ORDER[14], Is.EqualTo(REG_R12));
-            Assert.That(REG_VAR_ORDER[^1], Is.EqualTo(REG_LR));
+            Assert.That(REG_VAR_ORDER[0], Is.EqualTo(REG_R0_ARM64));
+            Assert.That(REG_VAR_ORDER[14], Is.EqualTo(REG_R12_ARM64));
+            Assert.That(REG_VAR_ORDER[^1], Is.EqualTo(REG_LR_ARM64));
             Assert.That(REG_VAR_ORDER_FLT.Length, Is.EqualTo(32));
-            Assert.That(REG_VAR_ORDER_FLT[0], Is.EqualTo(REG_V16));
-            Assert.That(REG_VAR_ORDER_FLT[^1], Is.EqualTo(REG_V0));
+            Assert.That(REG_VAR_ORDER_FLT[0], Is.EqualTo(REG_V16_ARM64));
+            Assert.That(REG_VAR_ORDER_FLT[^1], Is.EqualTo(REG_V0_ARM64));
             Assert.That(SRBM_ARG_REGS, Is.EqualTo(
                 SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 |
                 SRBM_R4 | SRBM_R5 | SRBM_R6 | SRBM_R7));
-            Assert.That(REG_INTRET_1, Is.EqualTo(REG_R1));
-            Assert.That(REG_FLOATRET, Is.EqualTo(REG_V0));
+            Assert.That(REG_INTRET_1, Is.EqualTo(REG_R1_ARM64));
+            Assert.That(REG_FLOATRET, Is.EqualTo(REG_V0_ARM64));
             Assert.That(CNT_CALLEE_SAVED, Is.EqualTo(11));
             Assert.That(CNT_CALLEE_TRASH, Is.EqualTo(17));
             Assert.That(CNT_CALLEE_TRASH_FLOAT, Is.EqualTo(24));

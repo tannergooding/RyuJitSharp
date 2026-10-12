@@ -52,12 +52,12 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
-            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_R10), Is.True);
+            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_R10_ARM64), Is.True);
             Assert.That(descriptors.Any(descriptor => descriptor.idIns() == INS_ldr
-                && descriptor.idReg1() == REG_R10 && descriptor.idReg2() == REG_R10), Is.EqualTo(indirect));
+                && descriptor.idReg1() == REG_R10_ARM64 && descriptor.idReg2() == REG_R10_ARM64), Is.EqualTo(indirect));
 
             var callerStackAddress = descriptors.Last(descriptor =>
-                descriptor.idReg1() == REG_R11 && descriptor.idIns() is INS_add or INS_sub);
+                descriptor.idReg1() == REG_R11_ARM64 && descriptor.idIns() is INS_add or INS_sub);
             Assert.That(callerStackAddress.idReg2(), Is.EqualTo(REG_FPBASE));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_bl));
         });
