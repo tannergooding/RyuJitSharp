@@ -640,9 +640,10 @@ public partial class Compiler
                         storeInd.Type,
                         storeInd.Addr,
                         storeInd.Data);
-#if TARGET_XARCH
-                    copyStoreInd.RmwStatus = storeInd.RmwStatus;
-#endif
+                    if (Configuration.TARGET_XARCH)
+                    {
+                        copyStoreInd.RmwStatus = storeInd.RmwStatus;
+                    }
                     copy = copyStoreInd;
                     break;
                 }
@@ -726,8 +727,7 @@ public partial class Compiler
                     break;
                 }
 
-#if !TARGET_64BIT
-                case GT_MUL_LONG:
+                case GT_MUL_LONG when !Configuration.TARGET_64BIT:
                 {
                     var multiRegOp = tree.AsMultiRegOp();
 
@@ -742,7 +742,6 @@ public partial class Compiler
                     copy = multiRegOpCopy;
                     break;
                 }
-#endif
 
                 case GT_JCMP:
                 case GT_JTEST:
@@ -827,12 +826,8 @@ public partial class Compiler
                 case GT_FTN_ENTRY:
                 case GT_NOP:
                 case GT_NO_OP:
-#if SWIFT_SUPPORT
-                case GT_SWIFT_ERROR:
-#endif
-#if TARGET_WASM
-                case GT_WASM_THROW_REF:
-#endif
+                case GT_SWIFT_ERROR when Configuration.SWIFT_SUPPORT:
+                case GT_WASM_THROW_REF when Configuration.TARGET_WASM:
                 {
                     copy = new GenTree(oper, tree.Type);
                     break;

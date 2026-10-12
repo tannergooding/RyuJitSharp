@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universalizing target-specific node cloning in `Compiler.gt.cs::gtCloneExpr`, starting with `GT_STOREIND.RmwStatus` and the 32-bit-only `GT_MUL_LONG` clone, then the Swift/Wasm leaf cases.",
+    "nextAction": "Continue universalizing target-specific constant diagnostics in `Compiler.gtDispConst`, beginning with the `TARGET_64BIT` icon formatting branch and then the target-specific SIMD constant cases.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize `gtSetEvalOrder` special-node target costs and the indirect-store, MinOpts, and multi-operand ordering helpers. Preserve ARM virtual-stub and xarch call costs, HWI feature gating, xarch/x86 intrinsic costs, and Wasm's source-order constraint.",
-      "doneWhen": "All target/feature preprocessor branches in the eval-order and multi-operand-order region use runtime configuration without changing formulas or node behavior; focused target tests pass and the batch is committed locally.",
-      "validation": "`CompilerTargetConfigurationTests` passed in Debug and Release for win-x64 (32/1 skipped), win-x86 (33/1), linux-arm64 (29/3), linux-arm (22/9), linux-loongarch64 (21/9), linux-riscv64 (21/9), and browser-wasm (28/4). The new indirect-store reversal regression passed across all seven targets. Formatting and `git diff --check` passed. EnforceCodeStyleInBuild was disabled because full-analyzer builds report pre-existing IDE2002/IDE0059 diagnostics in untouched sections.",
-      "deferred": "Continue at `Compiler.gtCloneExpr` target-specific node cloning, then migrate the remaining compiler and other source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
+      "scope": "Universalize target-specific node cloning in `Compiler.gtCloneExpr` and its `GenTreeStoreInd` metadata contract. Preserve xarch RMW status cloning, 32-bit `GT_MUL_LONG` cloning, and Swift/Wasm leaf node support.",
+      "doneWhen": "All target/feature preprocessor branches in the cloning region use runtime configuration; the universal store-indirect node preserves the prior per-target RMW status behavior, and target clone regressions pass.",
+      "validation": "`CompilerTargetConfigurationTests` and `FeatureConfigurationTests` passed in Debug and Release for win-x64 (63/1 skipped), win-x86 (65/1), linux-arm64 (60/3), linux-arm (54/9), linux-loongarch64 (52/9), linux-riscv64 (52/9), and browser-wasm (60/4). The new xarch RMW-status and 32-bit `GT_MUL_LONG` clone regressions passed on their applicable targets. Formatting and `git diff --check` passed. EnforceCodeStyleInBuild was disabled because full-analyzer builds report pre-existing IDE2002/IDE0059 diagnostics in untouched sections.",
+      "deferred": "Continue at the target-specific constant diagnostics in `Compiler.gtDispConst`, then migrate the remaining compiler and other source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -616,6 +616,22 @@
       "disposition": "ARM and xarch call-cost adjustments, HWI feature dispatch and xarch intrinsic costs, the x86 long-vector adjustment, Wasm indirect-store handling, and multi-operand reversal now use runtime configuration. Existing formulas and explicit unsupported-operator failure behavior remain unchanged; no observable deviation is accepted.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "CompilerTargetConfigurationTests passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm, including the indirect-store reversal regression."
+    },
+    {
+      "area": "universal-node-cloning",
+      "native": [
+        "src\\coreclr\\jit\\compiler.cpp",
+        "src\\coreclr\\jit\\gentree.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\Configuration.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.gt.cs",
+        "sources\\Core\\jit\\gentree\\GenTreeStoreInd.cs",
+        "tests\\Targets\\CompilerTargetConfigurationTests.cs"
+      ],
+      "disposition": "Store-indirect cloning, 32-bit GT_MUL_LONG cloning, and Swift/Wasm leaf cloning now use runtime configuration. CPU_LOAD_STORE_ARCH is derived from the target, and RMW status remains observable only on xarch while the universal node shape carries the storage needed by xarch.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "CompilerTargetConfigurationTests and FeatureConfigurationTests passed in Debug and Release for win-x64, win-x86, linux-arm64, linux-arm, linux-loongarch64, linux-riscv64, and browser-wasm. RMW status and 32-bit long-multiply clone regressions cover their applicable targets."
     }
   ],
   "generatorInputMapping": {

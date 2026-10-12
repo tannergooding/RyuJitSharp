@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
+using static RyuJitSharp.RmwStatus;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
 
@@ -84,6 +85,45 @@ internal static unsafe class CompilerTargetConfigurationTests
 
             Assert.That(allowReversal, Is.False);
             Assert.That(store.IsReverseOp, Is.EqualTo(!Configuration.TARGET_WASM));
+        });
+    }
+
+    [Test]
+    public static void StoreIndCloningPreservesTargetReadModifyWriteStatus()
+    {
+        WithCompiler(compiler => {
+            var address = compiler.gtNewIconNode(TYP_I_IMPL, 4096);
+            var data = compiler.gtNewIconNode(TYP_INT, 1);
+            var store = new GenTreeStoreInd(TYP_INT, address, data);
+            var expectedStatus = STOREIND_RMW_STATUS_UNKNOWN;
+
+            if (Configuration.TARGET_XARCH)
+            {
+                store.RmwStatus = STOREIND_RMW_DST_IS_OP1;
+                expectedStatus = STOREIND_RMW_DST_IS_OP1;
+            }
+
+            var clone = compiler.gtCloneExpr(store).AsStoreInd();
+
+            Assert.That(clone.RmwStatus, Is.EqualTo(expectedStatus));
+        });
+    }
+
+    [Test]
+    public static void LongMultiplyCloningIsLimitedToThirtyTwoBitTargets()
+    {
+        Assume.That(Configuration.TARGET_32BIT, "GT_MUL_LONG is a 32-bit-only node.");
+
+        WithCompiler(compiler => {
+            var left = new GenTree(GT_NOP, TYP_INT);
+            var right = new GenTree(GT_NOP, TYP_INT);
+            var multiply = new GenTreeMultiRegOp(GT_MUL_LONG, TYP_LONG, left, right);
+
+            var clone = compiler.gtCloneExpr(multiply).AsMultiRegOp();
+
+            Assert.That(clone.Oper, Is.EqualTo(GT_MUL_LONG));
+            Assert.That(clone.Op1, Is.Not.SameAs(left));
+            Assert.That(clone.Op2, Is.Not.SameAs(right));
         });
     }
 

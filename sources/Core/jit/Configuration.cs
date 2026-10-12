@@ -55,6 +55,9 @@ internal static class Configuration
 
     internal static bool HAS_FIXED_REGISTER_SET => !TARGET_WASM;
 
+    internal static bool CPU_LOAD_STORE_ARCH =>
+        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM;
+
     internal static bool TARGET_64BIT => GetFeatureSwitch(nameof(TARGET_64BIT));
 
     internal static bool TARGET_ARM => GetFeatureSwitch(nameof(TARGET_ARM));
