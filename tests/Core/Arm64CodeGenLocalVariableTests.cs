@@ -407,7 +407,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             source.SimdVal.u32[0] = 1;
             var tree = compiler.gtNewStoreLclFldNode(TYP_SIMD12, 0, 4, source);
             tree.RegNum = REG_NA;
-            codeGen.InternalRegisters.Add(tree, RBM_R10);
+            codeGen.InternalRegisters.Add(tree, RBM_R10_ARM64);
 
             codeGen.genCodeForStoreLclFld(tree);
 

@@ -109,7 +109,7 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 #endif
                 );
 #if HAS_FIXED_REGISTER_SET
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_STK_ARM64;
 #endif
             Allocator(compiler) = new LinearScan(compiler);
             codeGen.RegSet.rsClearRegsModified();

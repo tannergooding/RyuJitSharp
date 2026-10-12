@@ -77,19 +77,19 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     {
         WithLocals(1, (compiler, allocator, block) => {
             compiler.lvaTable[0].Type = TYP_SIMD16;
-            var local = new Interval(TYP_SIMD16, SRBM_V8) {
+            var local = new Interval(TYP_SIMD16, SRBM_V8_ARM64) {
                 isLocalVar = true,
                 varNum = 0,
                 physReg = REG_V8_ARM64,
             };
-            var upper = new Interval(TYP_DOUBLE, SRBM_V9) {
+            var upper = new Interval(TYP_DOUBLE, SRBM_V9_ARM64) {
                 isUpperVector = true,
                 relatedInterval = local,
             };
             var call = new GenTreeCall(TYP_VOID);
             block.InsertAtEnd(call);
             var reference = new RefPosition((uint)block.bbNum, 2, call, RefType.RefTypeUpperVectorSave) {
-                registerAssignment = SRBM_V9,
+                registerAssignment = SRBM_V9_ARM64,
                 spillAfter = spillToMemory,
             };
             reference.setInterval(upper);
@@ -113,13 +113,13 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
     {
         WithLocals(1, (compiler, allocator, block) => {
             compiler.lvaTable[0].Type = TYP_SIMD16;
-            var local = new Interval(TYP_SIMD16, SRBM_V8) {
+            var local = new Interval(TYP_SIMD16, SRBM_V8_ARM64) {
                 isLocalVar = true,
                 isSpilled = spillToMemory,
                 varNum = 0,
                 physReg = REG_V8_ARM64,
             };
-            var upper = new Interval(TYP_DOUBLE, SRBM_V9) {
+            var upper = new Interval(TYP_DOUBLE, SRBM_V9_ARM64) {
                 isUpperVector = true,
                 relatedInterval = local,
                 physReg = spillToMemory ? REG_NA : REG_V9_ARM64,
@@ -129,7 +129,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             block.InsertAtEnd(load);
             block.InsertAtEnd(user);
             var reference = new RefPosition((uint)block.bbNum, 2, load, RefType.RefTypeUpperVectorRestore) {
-                registerAssignment = SRBM_V9,
+                registerAssignment = SRBM_V9_ARM64,
             };
             reference.setInterval(upper);
 
@@ -163,7 +163,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
                 SetOps.AddElemD(compiler, CandidateVars(allocator), index);
                 SetOps.AddElemD(compiler, live, index);
                 compiler.lvaTable[index].lvLRACandidate = true;
-                allocator.localVarIntervals[index] = new Interval(TYP_INT, SRBM_R0 | SRBM_R1) {
+                allocator.localVarIntervals[index] = new Interval(TYP_INT, SRBM_R0_ARM64 | SRBM_R1_ARM64) {
                     isLocalVar = true,
                     isSplit = true,
                     varNum = (uint)index,
@@ -280,10 +280,10 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
         WithLocals(1, (compiler, allocator, _) => {
             var call = new GenTreeCall(TYP_STRUCT);
             var reference = new RefPosition(1, 1, call, RefType.RefTypeDef) {
-                registerAssignment = SRBM_R1,
+                registerAssignment = SRBM_R1_ARM64,
                 multiRegIdx = 1,
             };
-            var interval = new Interval(TYP_LONG, SRBM_R1);
+            var interval = new Interval(TYP_LONG, SRBM_R1_ARM64);
             reference.setInterval(interval);
             call._returnTypeDesc.InitializeReturnType(compiler, TYP_LONG, null,
                 CorInfoCallConvExtension.Managed);
@@ -303,7 +303,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             compiler.lvaTable[0].lvIsParam = true;
             compiler.lvaTable[0].lvIsRegArg = true;
             compiler.lvaTable[0].lvLRACandidate = true;
-            var interval = new Interval(TYP_INT, SRBM_R0) {
+            var interval = new Interval(TYP_INT, SRBM_R0_ARM64) {
                 isLocalVar = true,
                 varNum = 0,
             };
@@ -315,7 +315,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             SetOps.AddElemD(compiler, CandidateVars(allocator), 0);
             allocator.initVarRegMaps();
             var parameter = new RefPosition(0, 0, null, RefType.RefTypeParamDef) {
-                registerAssignment = SRBM_R0,
+                registerAssignment = SRBM_R0_ARM64,
             };
             parameter.setInterval(interval);
             interval.firstRefPosition = parameter;
@@ -339,9 +339,9 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
         WithLocals(0, (compiler, allocator, block) => {
             var constant = compiler.gtNewIconNode(TYP_INT, 7);
             block.InsertAtEnd(constant);
-            var interval = new Interval(TYP_INT, SRBM_R0);
+            var interval = new Interval(TYP_INT, SRBM_R0_ARM64);
             var definition = new RefPosition((uint)block.bbNum, 2, constant, RefType.RefTypeDef) {
-                registerAssignment = SRBM_R0,
+                registerAssignment = SRBM_R0_ARM64,
             };
             definition.setInterval(interval);
             interval.firstRefPosition = definition;

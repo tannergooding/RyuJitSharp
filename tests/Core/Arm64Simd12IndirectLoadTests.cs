@@ -26,7 +26,7 @@ internal static unsafe class Arm64Simd12IndirectLoadTests
             {
                 RegNum = REG_V0_ARM64,
             };
-            codeGen.InternalRegisters.Add(load, RBM_R10);
+            codeGen.InternalRegisters.Add(load, RBM_R10_ARM64);
 
             codeGen.genLoadIndTypeSimd12(load);
 

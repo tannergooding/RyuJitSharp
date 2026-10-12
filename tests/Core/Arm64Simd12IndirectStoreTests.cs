@@ -28,7 +28,7 @@ internal static unsafe class Arm64Simd12IndirectStoreTests
                 RegNum = REG_V1_ARM64,
             };
             var store = new GenTreeStoreInd(TYP_SIMD12, address, data);
-            codeGen.InternalRegisters.Add(store, RBM_R10);
+            codeGen.InternalRegisters.Add(store, RBM_R10_ARM64);
 
             codeGen.genCodeForStoreInd(store);
 

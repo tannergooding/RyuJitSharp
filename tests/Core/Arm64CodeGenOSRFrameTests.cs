@@ -79,10 +79,10 @@ internal static unsafe class Arm64CodeGenOSRFrameTests
             var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
             var patchpoint = (PatchpointInfo*)storage;
             patchpoint->Initialize(1, 1024);
-            var calleeSaveRegisters = SRBM_R19 | SRBM_R20 | SRBM_V8 | SRBM_V9;
+            var calleeSaveRegisters = SRBM_R19_ARM64 | SRBM_R20_ARM64 | SRBM_V8_ARM64 | SRBM_V9_ARM64;
             if (hasFrameRegisters)
             {
-                calleeSaveRegisters |= SRBM_FP | SRBM_LR;
+                calleeSaveRegisters |= SRBM_FP_ARM64 | SRBM_LR_ARM64;
             }
             patchpoint->CalleeSaveRegisters = (long)calleeSaveRegisters;
             compiler.info.compPatchpointInfo = patchpoint;

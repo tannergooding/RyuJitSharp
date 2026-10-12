@@ -188,7 +188,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
     [Test]
     public static void RegisterCountIncludesBothMaskBanks()
     {
-        var mask = new regMaskTP(SRBM_R19 | SRBM_V8, SRBM_P8 | SRBM_P9);
+        var mask = new regMaskTP(SRBM_R19_ARM64 | SRBM_V8_ARM64, SRBM_P8_ARM64 | SRBM_P9_ARM64);
 
         Assert.That(CountRegisters(null, mask), Is.EqualTo(4));
     }

@@ -36,18 +36,18 @@ internal static class Arm64RegisterMetadataTests
     public static void RegisterMasksRetainSeparatePredicateBank()
     {
         Assert.Multiple(() => {
-            Assert.That(SRBM_INT_CALLEE_SAVED & SRBM_R19, Is.EqualTo(SRBM_R19));
-            Assert.That(SRBM_INT_CALLEE_SAVED & SRBM_R18, Is.EqualTo(SRBM_NONE));
-            Assert.That(SRBM_INT_CALLEE_TRASH & SRBM_LR, Is.EqualTo(SRBM_LR));
-            Assert.That(SRBM_INT_CALLEE_TRASH & SRBM_FP, Is.EqualTo(SRBM_NONE));
-            Assert.That(SRBM_FLT_CALLEE_SAVED & SRBM_V8, Is.EqualTo(SRBM_V8));
-            Assert.That(SRBM_FLT_CALLEE_TRASH & SRBM_V16, Is.EqualTo(SRBM_V16));
+            Assert.That(SRBM_INT_CALLEE_SAVED & SRBM_R19_ARM64, Is.EqualTo(SRBM_R19_ARM64));
+            Assert.That(SRBM_INT_CALLEE_SAVED & SRBM_R18_ARM64, Is.EqualTo(SRBM_NONE));
+            Assert.That(SRBM_INT_CALLEE_TRASH & SRBM_LR_ARM64, Is.EqualTo(SRBM_LR_ARM64));
+            Assert.That(SRBM_INT_CALLEE_TRASH & SRBM_FP_ARM64, Is.EqualTo(SRBM_NONE));
+            Assert.That(SRBM_FLT_CALLEE_SAVED & SRBM_V8_ARM64, Is.EqualTo(SRBM_V8_ARM64));
+            Assert.That(SRBM_FLT_CALLEE_TRASH & SRBM_V16_ARM64, Is.EqualTo(SRBM_V16_ARM64));
             Assert.That(SRBM_MSK_CALLEE_TRASH, Is.EqualTo(SRBM_ALLMASK));
             Assert.That(SRBM_CALLEE_TRASH.Lower,
                 Is.EqualTo(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH));
             Assert.That(SRBM_CALLEE_TRASH.Upper, Is.EqualTo(SRBM_ALLMASK));
-            Assert.That(SRBM_VALIDATE_INDIRECT_CALL_TRASH & SRBM_R15, Is.EqualTo(SRBM_NONE));
-            Assert.That(SRBM_VALIDATE_INDIRECT_CALL_TRASH & SRBM_R9, Is.EqualTo(SRBM_R9));
+            Assert.That(SRBM_VALIDATE_INDIRECT_CALL_TRASH & SRBM_R15_ARM64, Is.EqualTo(SRBM_NONE));
+            Assert.That(SRBM_VALIDATE_INDIRECT_CALL_TRASH & SRBM_R9_ARM64, Is.EqualTo(SRBM_R9_ARM64));
         });
     }
 
@@ -63,8 +63,8 @@ internal static class Arm64RegisterMetadataTests
             Assert.That(REG_VAR_ORDER_FLT[0], Is.EqualTo(REG_V16_ARM64));
             Assert.That(REG_VAR_ORDER_FLT[^1], Is.EqualTo(REG_V0_ARM64));
             Assert.That(SRBM_ARG_REGS, Is.EqualTo(
-                SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 |
-                SRBM_R4 | SRBM_R5 | SRBM_R6 | SRBM_R7));
+                SRBM_R0_ARM64 | SRBM_R1_ARM64 | SRBM_R2_ARM64 | SRBM_R3_ARM64 |
+                SRBM_R4_ARM64 | SRBM_R5_ARM64 | SRBM_R6_ARM64 | SRBM_R7_ARM64));
             Assert.That(REG_INTRET_1, Is.EqualTo(REG_R1_ARM64));
             Assert.That(REG_FLOATRET, Is.EqualTo(REG_V0_ARM64));
             Assert.That(CNT_CALLEE_SAVED, Is.EqualTo(11));

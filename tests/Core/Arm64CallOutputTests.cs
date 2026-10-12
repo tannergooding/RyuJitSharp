@@ -32,12 +32,12 @@ internal static unsafe class Arm64CallOutputTests
     {
         WithEmitter((compiler, emitter, buffer) =>
         {
-            var refs = new regMaskTP(SRBM_R19 | SRBM_R28);
-            var byrefs = large ? new regMaskTP(SRBM_R20) : RBM_NONE;
+            var refs = new regMaskTP(SRBM_R19_ARM64 | SRBM_R28_ARM64);
+            var byrefs = large ? new regMaskTP(SRBM_R20_ARM64) : RBM_NONE;
             var id = Call(emitter, VarSetOps.MakeEmpty(compiler), refs, byrefs, returnSize);
             id.idSetIsNoGC(true);
-            GCrefRegs(emitter) = SRBM_R21;
-            ByrefRegs(emitter) = SRBM_R22;
+            GCrefRegs(emitter) = SRBM_R21_ARM64;
+            ByrefRegs(emitter) = SRBM_R22_ARM64;
             ThisVariables(emitter) = VarSetOps.MakeSingleton(compiler, 0);
             VariablesSet(emitter) = true;
 
@@ -50,9 +50,9 @@ internal static unsafe class Arm64CallOutputTests
             Assert.That(id.idIsLargeCall(), Is.EqualTo(large));
             Assert.That(VarSetOps.IsEmpty(compiler, ThisVariables(emitter)), Is.True);
             Assert.That(GCrefRegs(emitter),
-                Is.EqualTo(SRBM_R19 | SRBM_R28 | (returnSize == EA_GCREF ? SRBM_R0 : SRBM_NONE)));
+                Is.EqualTo(SRBM_R19_ARM64 | SRBM_R28_ARM64 | (returnSize == EA_GCREF ? SRBM_R0_ARM64 : SRBM_NONE)));
             Assert.That(ByrefRegs(emitter),
-                Is.EqualTo((large ? SRBM_R20 : SRBM_NONE) | (returnSize == EA_BYREF ? SRBM_R0 : SRBM_NONE)));
+                Is.EqualTo((large ? SRBM_R20_ARM64 : SRBM_NONE) | (returnSize == EA_BYREF ? SRBM_R0_ARM64 : SRBM_NONE)));
             Assert.That(CallList(ref emitter.GCInfo), Is.Null);
         });
     }
@@ -94,19 +94,19 @@ internal static unsafe class Arm64CallOutputTests
         WithEmitter((compiler, emitter, buffer) =>
         {
             var vars = VarSetOps.MakeSingleton(compiler, 0);
-            var id = Call(emitter, vars, new regMaskTP(SRBM_R19), new regMaskTP(SRBM_R20),
+            var id = Call(emitter, vars, new regMaskTP(SRBM_R19_ARM64), new regMaskTP(SRBM_R20_ARM64),
                 firstReturn, secondReturn, asyncReturn);
             id.idSetIsNoGC(true);
 
             var size = Output(emitter, new insGroup(), buffer + 8, id, 0xD63F0040u);
 
-            var expectedRefs = SRBM_R19 |
-                (firstReturn == EA_GCREF ? SRBM_R0 : SRBM_NONE) |
-                (secondReturn == EA_GCREF ? SRBM_R1 : SRBM_NONE) |
+            var expectedRefs = SRBM_R19_ARM64 |
+                (firstReturn == EA_GCREF ? SRBM_R0_ARM64 : SRBM_NONE) |
+                (secondReturn == EA_GCREF ? SRBM_R1_ARM64 : SRBM_NONE) |
                 (asyncReturn ? REG_ASYNC_CONTINUATION_RET.SingleTypeMask : SRBM_NONE);
-            var expectedByrefs = SRBM_R20 |
-                (firstReturn == EA_BYREF ? SRBM_R0 : SRBM_NONE) |
-                (secondReturn == EA_BYREF ? SRBM_R1 : SRBM_NONE);
+            var expectedByrefs = SRBM_R20_ARM64 |
+                (firstReturn == EA_BYREF ? SRBM_R0_ARM64 : SRBM_NONE) |
+                (secondReturn == EA_BYREF ? SRBM_R1_ARM64 : SRBM_NONE);
             Assert.That(size, Is.EqualTo(4u));
             Assert.That(id.idIsLargeCall(), Is.True);
             Assert.That(GCrefRegs(emitter), Is.EqualTo(expectedRefs));
@@ -152,7 +152,7 @@ internal static unsafe class Arm64CallOutputTests
             var birth = RegPtrList(ref emitter.GCInfo) ?? throw new AssertionException("Missing return-register birth.");
             Assert.That(birth.rpdOffs, Is.EqualTo(12u));
             Assert.That(birth.rpdGCtypeGet(), Is.EqualTo(returnSize == EA_GCREF ? GCT_GCREF : GCT_BYREF));
-            Assert.That(birth.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_R0));
+            Assert.That(birth.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_R0_ARM64));
             Assert.That(birth.rpdCompiler.rpdDel, Is.EqualTo(SRBM_NONE));
             Assert.That(birth.rpdArg, Is.False);
             Assert.That(birth.rpdCall, Is.False);
@@ -166,16 +166,16 @@ internal static unsafe class Arm64CallOutputTests
     {
         WithEmitter((compiler, emitter, buffer) =>
         {
-            var id = Call(emitter, VarSetOps.MakeEmpty(compiler), new regMaskTP(SRBM_R19),
-                large ? new regMaskTP(SRBM_R20) : RBM_NONE, EA_GCREF);
+            var id = Call(emitter, VarSetOps.MakeEmpty(compiler), new regMaskTP(SRBM_R19_ARM64),
+                large ? new regMaskTP(SRBM_R20_ARM64) : RBM_NONE, EA_GCREF);
 #if EMIT_TRACK_STACK_DEPTH
             var size = Output(emitter, new insGroup(), buffer + 8, id, 0x94000000u);
             Assert.That(size, Is.EqualTo(4u));
             var call = CallList(ref emitter.GCInfo) ?? throw new AssertionException("Missing partial-map call.");
             Assert.That(CallField<uint>(call, "cdOffs"), Is.EqualTo(12u));
             Assert.That(CallField<ushort>(call, "cdCallInstrSize"), Is.EqualTo((ushort)4));
-            Assert.That(CallField<regMask>(call, "cdGCrefRegs"), Is.EqualTo(SRBM_R19 | SRBM_R0));
-            Assert.That(CallField<regMask>(call, "cdByrefRegs"), Is.EqualTo(large ? SRBM_R20 : SRBM_NONE));
+            Assert.That(CallField<regMask>(call, "cdGCrefRegs"), Is.EqualTo(SRBM_R19_ARM64 | SRBM_R0_ARM64));
+            Assert.That(CallField<regMask>(call, "cdByrefRegs"), Is.EqualTo(large ? SRBM_R20_ARM64 : SRBM_NONE));
 #else
             var address = (nint)(buffer + 8);
             var failure = Assert.Throws<FatalJitException>(() =>
@@ -186,8 +186,8 @@ internal static unsafe class Arm64CallOutputTests
             Assert.That(CallList(ref emitter.GCInfo), Is.Null);
 #endif
             Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 8), Is.EqualTo(0x94000000u));
-            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_R19 | SRBM_R0));
-            Assert.That(ByrefRegs(emitter), Is.EqualTo(large ? SRBM_R20 : SRBM_NONE));
+            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_R19_ARM64 | SRBM_R0_ARM64));
+            Assert.That(ByrefRegs(emitter), Is.EqualTo(large ? SRBM_R20_ARM64 : SRBM_NONE));
         });
     }
 
@@ -218,13 +218,13 @@ internal static unsafe class Arm64CallOutputTests
             Assert.That(failure.Message, Is.EqualTo("Stack-depth tracking is disabled for this target."));
 #endif
             Assert.That(Unsafe.ReadUnaligned<uint>(buffer + 8), Is.EqualTo(0x94000000u));
-            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_R0));
+            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_R0_ARM64));
             Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_NONE));
             Assert.That(CallList(ref emitter.GCInfo), Is.Null);
             var birth = RegPtrList(ref emitter.GCInfo) ?? throw new AssertionException("Missing return-register birth.");
             Assert.That(birth.rpdOffs, Is.EqualTo(12u));
             Assert.That(birth.rpdGCtypeGet(), Is.EqualTo(GCT_GCREF));
-            Assert.That(birth.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_R0));
+            Assert.That(birth.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_R0_ARM64));
             Assert.That(birth.rpdCall, Is.False);
             Assert.That(birth.rpdArg, Is.False);
 #if EMIT_TRACK_STACK_DEPTH
@@ -234,7 +234,7 @@ internal static unsafe class Arm64CallOutputTests
             Assert.That(call.rpdArg, Is.True);
             Assert.That(call.rpdArgTypeGet(), Is.EqualTo(GCInfo.rpdArgType_t.rpdARG_POP));
             Assert.That(call.rpdCallInstrSize, Is.EqualTo((byte)4));
-            Assert.That(call.rpdCallData.rpdCallGCrefRegs, Is.EqualTo((uint)SRBM_R0));
+            Assert.That(call.rpdCallData.rpdCallGCrefRegs, Is.EqualTo((uint)SRBM_R0_ARM64));
             Assert.That(call.rpdCallData.rpdCallByrefRegs, Is.Zero);
             Assert.That(call.rpdCallData.rpdPtrArg, Is.Zero);
             Assert.That(call.rpdNext, Is.Null);

@@ -19,15 +19,15 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
     {
         WithLeave((compiler, codeGen) =>
         {
-            codeGen.GCInfo.gcRegGCrefSetCur = RBM_R10;
-            codeGen.GCInfo.gcRegByrefSetCur = RBM_R11;
+            codeGen.GCInfo.gcRegGCrefSetCur = RBM_R10_ARM64;
+            codeGen.GCInfo.gcRegByrefSetCur = RBM_R11_ARM64;
 
             codeGen.genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
 
             Assert.That(Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter), Is.Empty);
             Assert.That(compiler.info.compProfilerCallback, Is.False);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_R10));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_R11));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_R10_ARM64));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(RBM_R11_ARM64));
         });
     }
 
@@ -43,8 +43,8 @@ internal static unsafe class Arm64CodeGenProfilingLeaveTests
             ProfilerHookNeeded(compiler) = true;
             compiler.compProfilerMethHndIndirected = indirect;
             compiler.compProfilerMethHnd = (void*)0x12345678;
-            codeGen.GCInfo.gcRegGCrefSetCur = RBM_R10;
-            codeGen.GCInfo.gcRegByrefSetCur = RBM_R11;
+            codeGen.GCInfo.gcRegGCrefSetCur = RBM_R10_ARM64;
+            codeGen.GCInfo.gcRegByrefSetCur = RBM_R11_ARM64;
 
             codeGen.genProfilingLeaveCallback(helper);
             Assert.That(compiler.info.compProfilerCallback, Is.True);
