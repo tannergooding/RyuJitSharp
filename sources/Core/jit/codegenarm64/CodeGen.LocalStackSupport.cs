@@ -32,7 +32,7 @@ public sealed partial class CodeGen
         }
         else if (imm == 0)
         {
-            instGen_Set_Reg_To_Zero(size, reg, flags);
+            instGen_Set_Reg_To_Zero(size, reg);
         }
         else
         {

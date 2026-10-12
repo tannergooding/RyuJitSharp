@@ -12,8 +12,9 @@ public partial class Emitter
 {
     internal static uint emitInsCode(instruction ins)
     {
-        assert((uint)ins < (uint)insCodes.Length);
-        var code = insCodes[(int)ins];
+        var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);
+        assert((uint)nativeOrdinal < (uint)insCodes.Length);
+        var code = insCodes[nativeOrdinal];
         assert(code != BAD_CODE);
 
         return code;

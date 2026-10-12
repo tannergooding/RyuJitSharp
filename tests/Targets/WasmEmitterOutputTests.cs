@@ -84,6 +84,18 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [Test]
+    public static void FixedRegisterZeroingFailsExplicitlyOnWasm()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var failure = Assert.Throws<FatalJitException>(
+                () => codeGen.instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_NA));
+
+            Assert.That(failure?.Message, Does.Contain("requires a fixed register set"));
+        });
+    }
+
     [TestCase(GT_EQ, TYP_INT, false, false)]
     [TestCase(GT_EQ, TYP_INT, true, false)]
     [TestCase(GT_NE, TYP_INT, false, false)]

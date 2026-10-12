@@ -57,6 +57,37 @@ internal static class Arm32InstructionSelectionTests
     }
 
     [Test]
+    public static void ZeroImmediatePreservesRequestedConditionCodeFlags()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            codeGen.instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_R3, 0, INS_FLAGS_SET);
+
+            var descriptor = LastInstruction(codeGen.Emitter)
+                ?? throw new AssertionException("Missing zero immediate instruction.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T1_J0));
+            Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_SET));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)0));
+        });
+    }
+
+    [Test]
+    public static void DirectZeroInitializationEmitsMoveImmediate()
+    {
+        ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
+        {
+            codeGen.instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_R3);
+
+            var descriptor = LastInstruction(codeGen.Emitter)
+                ?? throw new AssertionException("Missing zero initialization instruction.");
+            Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)0));
+        });
+    }
+
+    [Test]
     public static void ConstantInstructionMaterializesValuesThatDoNotFit()
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>

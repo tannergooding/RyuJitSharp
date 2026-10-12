@@ -24,7 +24,7 @@ public sealed partial class CodeGen
 
         if ((imm == 0) && !EA_IS_RELOC(size))
         {
-            instGen_Set_Reg_To_Zero(size, reg, flags);
+            instGen_Set_Reg_To_Zero(size, reg);
         }
         else if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(unchecked((nuint)imm)))
         {

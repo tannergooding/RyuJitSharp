@@ -60,6 +60,24 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
+    public static void ExplicitZeroingUsesTheLoongArchZeroRegister()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+
+            codeGen.instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_S0);
+
+            Assert.That(descriptors, Has.Count.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_ori));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_LOONGARCH64_R0));
+            Assert.That(Emitter.emitGetInsSC(descriptors[^1]), Is.EqualTo((nint)0));
+        });
+    }
+
+    [Test]
     public static void RelocatedImmediateMaterializationReachesTheLoongArchEmitterBoundary()
     {
         WithCodeGen((compiler, codeGen) =>
@@ -180,6 +198,24 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
 #endif
 
 #if TARGET_RISCV64
+    [Test]
+    public static void ExplicitZeroingUsesTheRiscVZeroRegister()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialCount = descriptors.Count;
+
+            codeGen.instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_S0);
+
+            Assert.That(descriptors, Has.Count.EqualTo(initialCount + 1));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_RISCV64_R0));
+            Assert.That(Emitter.emitGetInsSC(descriptors[^1]), Is.EqualTo((nint)0));
+        });
+    }
+
 #if DEBUG
     [TestCase(false, null)]
 #else

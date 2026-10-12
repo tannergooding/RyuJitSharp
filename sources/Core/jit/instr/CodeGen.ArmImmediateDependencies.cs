@@ -44,7 +44,7 @@ public sealed partial class CodeGen
         }
         else if (imm == 0)
         {
-            instGen_Set_Reg_To_Zero(size, reg, flags);
+            instGen_Set_Reg_To_ZeroArm32(size, reg, flags);
         }
         else
         {
@@ -81,6 +81,14 @@ public sealed partial class CodeGen
             }
         }
 
+        _regSet.verifyRegUsed(reg);
+    }
+
+    private void instGen_Set_Reg_To_ZeroArm32(emitAttr size, regNumber reg, insFlags flags)
+    {
+        assert(genIsValidIntOrFakeReg(reg));
+
+        Emitter.emitIns_R_I(INS_mov, size, reg, 0, flags);
         _regSet.verifyRegUsed(reg);
     }
 

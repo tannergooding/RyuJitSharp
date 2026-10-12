@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue production universal-`#if` migration. Start with `sources\\Core\\jit\\codegen\\CodeGen.ZeroImmediate.cs`: replace its target dispatch with `Configuration` branches and target-qualified register identities, then validate the supported target-specific emitter forms without changing instruction selection. Keep `Arm64CodeGenAsyncResumeInfoTests.cs` deferred until the B209 dependency closure is ported and tested.",
+    "nextAction": "Continue production universal-`#if` migration at `sources\\Core\\jit\\codegencommon\\CodeGen.PrologInitialization.cs` (`genGetZeroReg`/`genZeroInitFltRegs`): replace the remaining target gate and register selection with `Configuration` dispatch while preserving the Wasm path. Keep `Arm64CodeGenAsyncResumeInfoTests.cs` deferred until the B209 dependency closure is ported and tested.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Apply config-first target identities across generated register numbers, scalar masks, factories, names, and instruction options. Use `X64` and `ARM32` identity tags for AMD64 and ARM, share `SRBM_NONE` and `SRBM_STK`, update managed consumers and test reflection, and keep LoongArch/RISC-V profiler-trash masks compile-time constants.",
-      "doneWhen": "Generator output matches the checked-in tables, no suffix-ordered register/mask/option identities remain in managed source or tests, and focused Debug/Release tests pass for every supported target RID.",
-      "validation": "GenerateTables completed successfully and the four checked-in target outputs matched generator output byte-for-byte. Focused register-number, name, mask, argument-mapping, and instruction-option tests passed in Debug and Release for win-x86, win-x64, win-arm, win-arm64, linux-loongarch64, linux-riscv64, and browser-wasm (11-89 passed per target/configuration; remaining skips are target-specific).",
-      "deferred": "Legacy target-selected unqualified register aliases remain inside generated TARGET_* sections and still need consumer migration before those sections can be removed. The broader target-gated PatchpointMetadata and SharedLocalVariableSpill fixtures were compiled for ARM64 but were not part of the identity-only execution filter. Keep `Arm64CodeGenAsyncResumeInfoTests` deferred until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Make fixed-register zero emission unconditional and select the xarch, ARM32, ARM64, LoongArch, or RISC-V instruction through Configuration. Preserve ARM32 flag-sensitive zeroing through a separately named helper, use target-qualified zero registers, and map RISC-V instruction identities before indexing its native-order opcode table.",
+      "doneWhen": "The shared zero helper has no target/feature preprocessor guard, all immediate-zero callers preserve their existing flags behavior, Wasm fails explicitly, and zero emission is validated across supported target configurations.",
+      "validation": "Focused Debug/Release tests passed for win-x86 and win-x64, win-arm (7 ARM32 instruction-selection tests), win-arm64, linux-loongarch64, linux-riscv64, and browser-wasm. The x64 immediate suite passed 23 Debug/20 Release tests; the target-specific zeroing checks passed 1-7 tests per target/configuration. The full-analyzer win-x64 build still reports 25 IDE2002/IDE0058 diagnostics in unrelated Compiler.gt.cs, Compiler.gt.Shuffle.cs, and Compiler.gt.ShuffleVariable.cs; no diagnostics were reported in this batch. Focused test builds used RunAnalyzers=false.",
+      "deferred": "The broader production and test target/feature `#if` migration remains in progress. Keep `Arm64CodeGenAsyncResumeInfoTests` deferred until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -137,11 +137,12 @@
         "sources\\Core\\jit\\instr\\instruction.generated.cs",
         "sources\\Core\\jit\\instr\\instruction.Ordinals.generated.cs",
         "sources\\Core\\jit\\emit\\",
+        "sources\\Core\\jit\\emitriscv64\\Emitter.InstructionEncoding.cs",
         "tests\\Targets\\InstructionOrdinalMappingTests.cs"
       ],
       "disposition": "The managed instruction enum is the union of target identities. Generated maps translate before native-order table indexing, range checks, and ordinal arithmetic; the native CORINFO_InstructionSet ABI remains a separate target-prefixed alias enum.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
-      "validation": "Instruction ordinal round-trip and bounds tests passed in Debug/Release for win-x86, win-x64, linux-arm64, linux-riscv64, and browser-wasm."
+      "validation": "Instruction ordinal round-trip and bounds tests passed in Debug/Release for win-x86, win-x64, linux-arm64, linux-riscv64, and browser-wasm. RISC-V opcode lookup now indexes the native-order table through GetNativeInstructionOrdinal; direct zero-instruction recording passed in Debug and Release on linux-riscv64."
     },
     {
       "area": "universal-emission-and-instruction-flags",
