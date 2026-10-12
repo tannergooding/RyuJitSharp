@@ -284,13 +284,11 @@ public partial struct GCInfo
         header.interruptible = _codeGen.Interruptible ? (byte)1 : (byte)0;
         if (!_codeGen.IsFramePointerUsed)
         {
-#if DOUBLE_ALIGN
-            if (compiler.genDoubleAlign)
+            if (Configuration.DOUBLE_ALIGN && compiler.genDoubleAlign)
             {
                 header.ebpSaved = 1;
                 assert(!RegSet.rsRegsModified(RBM_EBP));
             }
-#endif
             if (RegSet.rsRegsModified(RBM_EBP))
             {
                 header.ebpSaved = 1;
@@ -302,9 +300,7 @@ public partial struct GCInfo
             header.ebpFrame = 1;
         }
 
-#if DOUBLE_ALIGN
-        header.doubleAlign = compiler.genDoubleAlign ? (byte)1 : (byte)0;
-#endif
+        header.doubleAlign = (Configuration.DOUBLE_ALIGN && compiler.genDoubleAlign) ? (byte)1 : (byte)0;
 
         header.security = 0;
         header.handlers = compiler.compHndBBtabCount != 0 ? (byte)1 : (byte)0;

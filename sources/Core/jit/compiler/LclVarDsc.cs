@@ -806,7 +806,6 @@ public partial struct LclVarDsc
         }
     }
 
-#if TARGET_64BIT
     /// <summary>Quirk to allocate this LclVar as a 64-bit long</summary>
     public bool lvQuirkToLong
     {
@@ -820,7 +819,7 @@ public partial struct LclVarDsc
             _flags = (_flags & ~Flags.QuirkToLong) | (value ? Flags.QuirkToLong : Flags.None);
         }
     }
-#else
+
     /// <summary>Must we double align this struct?</summary>
     public bool lvStructDoubleAlign
     {
@@ -834,7 +833,6 @@ public partial struct LclVarDsc
             _flags = (_flags & ~Flags.StructDoubleAlign) | (value ? Flags.StructDoubleAlign : Flags.None);
         }
     }
-#endif
 
     /// <summary>This struct local has been bitcast to a SIMD type.</summary>
     public bool lvIsBitcastToSimd

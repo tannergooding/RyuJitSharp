@@ -168,12 +168,10 @@ public partial class Compiler
         {
             jitprintf($"{STR_SPBASE,3} | ");
         }
-#if DOUBLE_ALIGN
-        else if (rpFrameType == FT_DOUBLE_ALIGN_FRAME)
+        else if (Configuration.DOUBLE_ALIGN && (rpFrameType == FT_DOUBLE_ALIGN_FRAME))
         {
             jitprintf("dbl | ");
         }
-#endif
         else
         {
             jitprintf("??? | ");

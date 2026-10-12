@@ -60,11 +60,8 @@ public partial struct LclVarDsc
         IsVectorPerElementMask = 1L << 51,
         VectorPerElementMaskElemSizeLog2Mask = 3L << 52,
 
-#if TARGET_64BIT
         QuirkToLong = 1L << 46,
-#else
-	    StructDoubleAlign = 1L << 46,
-#endif
+        StructDoubleAlign = 1L << 46,
 
         IsBitcastToSimd = 1L << 50,
 

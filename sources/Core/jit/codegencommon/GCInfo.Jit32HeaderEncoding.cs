@@ -569,14 +569,12 @@ public partial struct GCInfo
             goto Done;
         }
 
-#if DOUBLE_ALIGN
-        if (state.doubleAlign != header.doubleAlign)
+        if (Configuration.DOUBLE_ALIGN && (state.doubleAlign != header.doubleAlign))
         {
             state.doubleAlign = header.doubleAlign;
             encoding = FLIP_DOUBLE_ALIGN;
             goto Done;
         }
-#endif
 
         if (state.security != header.security)
         {
@@ -916,8 +914,7 @@ public partial struct GCInfo
             }
         }
 
-#if DOUBLE_ALIGN
-        if (candidate.doubleAlign != header.doubleAlign)
+        if (Configuration.DOUBLE_ALIGN && (candidate.doubleAlign != header.doubleAlign))
         {
             distance++;
             if (distance >= closeness)
@@ -925,7 +922,6 @@ public partial struct GCInfo
                 return distance;
             }
         }
-#endif
 
         if (candidate.security != header.security)
         {

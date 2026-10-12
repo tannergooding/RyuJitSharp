@@ -323,11 +323,6 @@
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'riscv64'">$(DefineConstants);CPU_LOAD_STORE_ARCH</DefineConstants>
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'wasm'">$(DefineConstants);CPU_LOAD_STORE_ARCH</DefineConstants>
     
-    <!-- DOUBLE_ALIGN -->
-    <!--   This aligns ESP to 0 mod 8 in function prolog, then uses ESP to reference locals, EBP to reference parameters. -->
-    <!--   It only makes sense if frameless method support is on (frameless method support is now always on) -->
-    <DefineConstants Condition="'$(RyuJitTargetArchitecture)' == 'x86'">$(DefineConstants);DOUBLE_ALIGN</DefineConstants>
-
     <!-- EMIT_TRACK_STACK_DEPTH -->
     <DefineConstants Condition="'$(RyuJitTargetArchitecture)' != 'wasm'">$(DefineConstants);EMIT_TRACK_STACK_DEPTH</DefineConstants>
     

@@ -49,7 +49,6 @@ public partial class Compiler
         }
     }
 
-#if DOUBLE_ALIGN
     public bool genDoubleAlign
     {
         get
@@ -58,7 +57,6 @@ public partial class Compiler
             return codeGen.IsDoubleAligned;
         }
     }
-#endif
 
     /// <summary>Return the normalized index to use in the EXPSET_TP for the CSE with the given CSE index.</summary>
     /// <param name="cseNum"></param>

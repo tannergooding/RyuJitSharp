@@ -423,12 +423,11 @@ public partial struct GCInfo
                     }
 
                     var offset = variable.StackOffset;
-#if DOUBLE_ALIGN
-                    if (compiler.genDoubleAlign && variable.lvIsParam && !variable.lvIsRegArg)
+                    if (Configuration.DOUBLE_ALIGN && compiler.genDoubleAlign && variable.lvIsParam &&
+                        !variable.lvIsRegArg)
                     {
                         offset = unchecked(offset + _codeGen.genTotalFrameSize);
                     }
-#endif
                     assert((unchecked(~(int)OffsetMask) % sizeof(int)) == 0);
                     if (variable.Type == TYP_BYREF)
                     {
@@ -461,12 +460,11 @@ public partial struct GCInfo
 
                         var offset = unchecked((int)((uint)variable.StackOffset +
                             ((uint)slot * TARGET_POINTER_SIZE)));
-#if DOUBLE_ALIGN
-                        if (compiler.genDoubleAlign && variable.lvIsParam && !variable.lvIsRegArg)
+                        if (Configuration.DOUBLE_ALIGN && compiler.genDoubleAlign && variable.lvIsParam &&
+                            !variable.lvIsRegArg)
                         {
                             offset = unchecked(offset + _codeGen.genTotalFrameSize);
                         }
-#endif
                         if (layout.GetGCPtrType(slot) == TYP_BYREF)
                         {
                             offset |= (int)ByrefOffsetFlag;

@@ -7,7 +7,5 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if DOUBLE_ALIGN
     public bool IsDoubleAligned { get; set; }
-#endif
 }

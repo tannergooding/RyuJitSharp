@@ -17,15 +17,17 @@ public sealed partial class LinearScan
         assert(codeGen is not null);
 
         var frameType = FT_NOT_SET;
-#if DOUBLE_ALIGN
-        setDoubleAlign(false);
-        if (_doDoubleAlign)
+        if (Configuration.DOUBLE_ALIGN)
+        {
+            setDoubleAlign(false);
+        }
+
+        if (Configuration.DOUBLE_ALIGN && _doDoubleAlign)
         {
             frameType = FT_DOUBLE_ALIGN_FRAME;
             setDoubleAlign(true);
         }
         else
-#endif
         if (codeGen.IsFramePointerRequired)
         {
             frameType = FT_EBP_FRAME;
@@ -65,14 +67,12 @@ public sealed partial class LinearScan
                 codeGen.IsFramePointerUsed = true;
                 break;
             }
-#if DOUBLE_ALIGN
             case FT_DOUBLE_ALIGN_FRAME:
             {
                 noway_assert(!codeGen.IsFramePointerRequired);
                 codeGen.IsFramePointerUsed = false;
                 break;
             }
-#endif
             default:
             {
                 throw new FatalJitException("LSRA frame type was not selected.");
@@ -137,14 +137,12 @@ public sealed partial class LinearScan
         }
     }
 
-#if DOUBLE_ALIGN
     private void setDoubleAlign(bool enabled)
     {
         var codeGen = _compiler.codeGen;
         assert(codeGen is not null);
         codeGen.IsDoubleAligned = enabled;
     }
-#endif
 
 #if !(TARGET_AMD64 || TARGET_ARM64)
     private regMask getFramePointerBaseMask()

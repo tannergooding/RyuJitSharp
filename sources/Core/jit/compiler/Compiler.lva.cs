@@ -102,7 +102,7 @@ public partial class Compiler
     /// <summary>reverse map of tracked number to var number</summary>
     public int[]? lvaTrackedToVarNum;
 
-#if DEBUG && DOUBLE_ALIGN
+#if DEBUG
     /// <summary># of procs compiled a with double-aligned stack</summary>
     public static int s_lvaDoubleAlignedProcsCount;
 #endif
@@ -1004,11 +1004,15 @@ public partial class Compiler
             else
 #endif
             {
-#if DOUBLE_ALIGN
-                assert(fpBased == (IsFramePointerUsed || (genDoubleAlign && varDsc.lvIsParam && !varDsc.lvIsRegArg)));
-#elif TARGET_X86
-                assert(fpBased == IsFramePointerUsed);
-#endif
+                if (Configuration.DOUBLE_ALIGN)
+                {
+                    assert(fpBased == (IsFramePointerUsed ||
+                        (genDoubleAlign && varDsc.lvIsParam && !varDsc.lvIsRegArg)));
+                }
+                else if (Configuration.TARGET_X86)
+                {
+                    assert(fpBased == IsFramePointerUsed);
+                }
             }
 #endif
 

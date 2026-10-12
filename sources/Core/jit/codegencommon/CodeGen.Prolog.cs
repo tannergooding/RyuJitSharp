@@ -356,14 +356,12 @@ public sealed partial class CodeGen
 #if TARGET_X86
             genEstablishFramePointer(0, reportUnwindData: true);
 #endif
-#if DOUBLE_ALIGN
-            if (_compiler.genDoubleAlign)
+            if (Configuration.DOUBLE_ALIGN && _compiler.genDoubleAlign)
             {
                 noway_assert(!IsFramePointerUsed);
                 noway_assert(!_regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE)));
                 inst_RV_IV(INS_and, REG_SPBASE, -8, EA_PTRSIZE);
             }
-#endif
         }
 #endif
         var pushesCalleeSaves = true;

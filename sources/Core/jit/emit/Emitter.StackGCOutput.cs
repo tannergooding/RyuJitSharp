@@ -117,13 +117,10 @@ public partial class Emitter
                     }
                     if (!isTracked)
                     {
-#if DOUBLE_ALIGN
                         assert(!emitContTrkPtrLcls ||
-                            ((_compiler.rpFrameType == FrameType.FT_DOUBLE_ALIGN_FRAME) && (varNum >= 0) &&
-                            _compiler.lvaTable[varNum].lvFramePointerBased));
-#else
-                        assert(!emitContTrkPtrLcls);
-#endif
+                            (Configuration.DOUBLE_ALIGN &&
+                             (_compiler.rpFrameType == FrameType.FT_DOUBLE_ALIGN_FRAME) && (varNum >= 0) &&
+                             _compiler.lvaTable[varNum].lvFramePointerBased));
                         return;
                     }
                 }

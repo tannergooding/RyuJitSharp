@@ -212,15 +212,13 @@ public sealed partial class CodeGen
             assert(!_compiler.opts.IsOSR);
 
             var needMovEspEbp = false;
-#if DOUBLE_ALIGN
-            if (_compiler.genDoubleAlign)
+            if (Configuration.DOUBLE_ALIGN && _compiler.genDoubleAlign)
             {
                 noway_assert(_compiler.compLclFrameSize != 0);
                 inst_RV_IV(INS_add, REG_SPBASE, _compiler.compLclFrameSize, EA_PTRSIZE);
                 needMovEspEbp = true;
             }
             else
-#endif
             {
                 var needLea = false;
                 if (_compiler.compLocallocUsed)

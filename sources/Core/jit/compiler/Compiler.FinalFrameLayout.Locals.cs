@@ -77,13 +77,16 @@ public partial class Compiler
 
         var preSpillSize = 0;
         var mustDoubleAlign = false;
-#if TARGET_ARM
-        mustDoubleAlign = true;
-        preSpillSize = BitOperations.PopCount(
-            unchecked((ulong)codeGen.RegSet.rsMaskPreSpillRegs(true).IntRegSet)) * REGSIZE_BYTES;
-#elif DOUBLE_ALIGN
-        mustDoubleAlign = genDoubleAlign;
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            mustDoubleAlign = true;
+            preSpillSize = BitOperations.PopCount(
+                unchecked((ulong)codeGen.RegSet.rsMaskPreSpillRegs(true).IntRegSet)) * REGSIZE_BYTES;
+        }
+        else if (Configuration.DOUBLE_ALIGN)
+        {
+            mustDoubleAlign = genDoubleAlign;
+        }
 
 #if TARGET_ARM64
         // Initially place FP/LR with the other callee saves; fixup may move them below the locals.
@@ -746,12 +749,10 @@ public partial class Compiler
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
         }
 #elif TARGET_X86
-#if DOUBLE_ALIGN
-        if (genDoubleAlign && (compLclFrameSize == 0))
+        if (Configuration.DOUBLE_ALIGN && genDoubleAlign && (compLclFrameSize == 0))
         {
             lvaIncrementFrameSize(TARGET_POINTER_SIZE);
         }
-#endif
         if (STACK_ALIGN > REGSIZE_BYTES)
         {
             if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)

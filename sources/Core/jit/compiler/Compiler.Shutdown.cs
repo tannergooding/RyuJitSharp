@@ -182,8 +182,11 @@ public partial class Compiler
                         $"{(uint)(100 * (totalNCsize - grossNCsize) / grossNCsize)}% of {Target.TgtCpuName,6} code).\n");
                 }
 
-#if DEBUG && DOUBLE_ALIGN
-                jitprintf($"{(uint)s_lvaDoubleAlignedProcsCount} out of {genMethodCnt} methods generated with double-aligned stack\n");
+#if DEBUG
+                if (Configuration.DOUBLE_ALIGN)
+                {
+                    jitprintf($"{(uint)s_lvaDoubleAlignedProcsCount} out of {genMethodCnt} methods generated with double-aligned stack\n");
+                }
 #endif
             }
         }

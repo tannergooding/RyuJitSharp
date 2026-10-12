@@ -24,42 +24,43 @@ public sealed partial class LinearScan
             identifyCandidatesExceptionDataflow();
         }
 
-#if DOUBLE_ALIGN
         _doDoubleAlign = false;
-        var checkDoubleAlign = true;
-        var codeGen = _compiler.codeGen;
-        assert(codeGen is not null);
-        if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
+        var checkDoubleAlign = Configuration.DOUBLE_ALIGN;
+        if (checkDoubleAlign)
         {
-            checkDoubleAlign = false;
-        }
-        else
-        {
-            switch (getCanDoubleAlign())
+            var codeGen = _compiler.codeGen;
+            assert(codeGen is not null);
+            if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
             {
-                case CanDoubleAlign.MUST_DOUBLE_ALIGN:
+                checkDoubleAlign = false;
+            }
+            else
+            {
+                switch (getCanDoubleAlign())
                 {
-                    _doDoubleAlign = true;
-                    checkDoubleAlign = false;
-                    break;
-                }
-                case CanDoubleAlign.CAN_DOUBLE_ALIGN:
-                {
-                    break;
-                }
-                case CanDoubleAlign.CANT_DOUBLE_ALIGN:
-                {
-                    _doDoubleAlign = false;
-                    checkDoubleAlign = false;
-                    break;
-                }
-                default:
-                {
-                    throw new FatalJitException("Unrecognized double-alignment policy.");
+                    case CanDoubleAlign.MUST_DOUBLE_ALIGN:
+                    {
+                        _doDoubleAlign = true;
+                        checkDoubleAlign = false;
+                        break;
+                    }
+                    case CanDoubleAlign.CAN_DOUBLE_ALIGN:
+                    {
+                        break;
+                    }
+                    case CanDoubleAlign.CANT_DOUBLE_ALIGN:
+                    {
+                        _doDoubleAlign = false;
+                        checkDoubleAlign = false;
+                        break;
+                    }
+                    default:
+                    {
+                        throw new FatalJitException("Unrecognized double-alignment policy.");
+                    }
                 }
             }
         }
-#endif
 
         localVarIntervals = null;
         for (var localNumber = 0; localNumber < _compiler.lvaCount; localNumber++)
@@ -72,12 +73,10 @@ public sealed partial class LinearScan
             local.lvLRACandidate = false;
         }
 
-#if DOUBLE_ALIGN
         if (checkDoubleAlign)
         {
             _doDoubleAlign = shouldDoubleAlign(0, 0, 0, 0, 0);
         }
-#endif
 
 #if DEBUG
         if (VERBOSE)

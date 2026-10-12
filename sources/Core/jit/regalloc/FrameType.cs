@@ -12,12 +12,9 @@ public enum FrameType
     FT_NOT_SET,
     FT_ESP_FRAME,
     FT_EBP_FRAME,
-#if DOUBLE_ALIGN
     FT_DOUBLE_ALIGN_FRAME,
-#endif
 }
 
-#if DOUBLE_ALIGN
 public enum CanDoubleAlign
 {
     CANT_DOUBLE_ALIGN,
@@ -27,4 +24,3 @@ public enum CanDoubleAlign
 
     DEFAULT_DOUBLE_ALIGN = CAN_DOUBLE_ALIGN,
 }
-#endif

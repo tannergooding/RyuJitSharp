@@ -90,6 +90,9 @@ internal static class Configuration
 
     internal static bool TARGET_X86 => TARGET_XARCH && !TARGET_64BIT;
 
+    // Native double-aligned frames are an x86-only policy.
+    internal static bool DOUBLE_ALIGN => TARGET_X86;
+
     internal static bool TARGET_XARCH => GetFeatureSwitch(nameof(TARGET_XARCH));
 
     internal static bool TARGET_WASM => GetFeatureSwitch(nameof(TARGET_WASM));

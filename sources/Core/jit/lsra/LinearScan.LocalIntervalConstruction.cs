@@ -7,9 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if TARGET_X86
     private bool _doDoubleAlign;
-#endif
 
     private void buildIntervalsWithLocals()
     {
@@ -41,9 +39,7 @@ public sealed partial class LinearScan
 #endif
 
         resetRegStateWithLocals();
-#if TARGET_X86
         _doDoubleAlign = false;
-#endif
         identifyCandidatesWithLocals();
         setFrameType();
 #if TARGET_AMD64

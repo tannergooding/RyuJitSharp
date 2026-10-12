@@ -128,13 +128,11 @@ public sealed partial class CodeGen
             {
                 jitprintf($"; optimized using {_compiler.compPgoSourceName}\n");
             }
-#if DOUBLE_ALIGN
-            if (_compiler.genDoubleAlign)
+            if (Configuration.DOUBLE_ALIGN && _compiler.genDoubleAlign)
             {
                 jitprintf("; double-aligned frame\n");
             }
             else
-#endif
             {
                 jitprintf($"; {(IsFramePointerUsed ? STR_FPBASE : STR_SPBASE)} based frame\n");
             }

@@ -39,9 +39,7 @@ public sealed partial class LinearScan
 #endif
 
         resetRegStateMinimal();
-#if TARGET_X86
         _doDoubleAlign = false;
-#endif
         identifyCandidatesMinimal();
         setFrameType();
 #if TARGET_AMD64

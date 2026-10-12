@@ -8,11 +8,7 @@ public sealed partial class CodeGen
 {
     private bool doubleAlignOrFramePointerUsed()
     {
-#if DOUBLE_ALIGN
-        return IsFramePointerUsed || _compiler.genDoubleAlign;
-#else
-        return IsFramePointerUsed;
-#endif
+        return IsFramePointerUsed || (Configuration.DOUBLE_ALIGN && _compiler.genDoubleAlign);
     }
 
 #if !TARGET_XARCH

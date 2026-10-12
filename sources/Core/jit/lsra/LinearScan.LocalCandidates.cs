@@ -36,47 +36,48 @@ public sealed partial class LinearScan
         VarSetOps.AssignNoCopy(_compiler, ref _largeVectorCalleeSaveCandidateVars, VarSetOps.MakeEmpty(_compiler));
 #endif
 
-#if DOUBLE_ALIGN
         uint refCntStk = 0;
         uint refCntReg = 0;
         double refCntWtdReg = 0;
         uint refCntStkParam = 0;
         double refCntWtdStkDbl = 0;
         _doDoubleAlign = false;
-        var checkDoubleAlign = true;
-        var codeGen = _compiler.codeGen;
-        assert(codeGen is not null);
-        if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
+        var checkDoubleAlign = Configuration.DOUBLE_ALIGN;
+        if (checkDoubleAlign)
         {
-            checkDoubleAlign = false;
-        }
-        else
-        {
-            switch (getCanDoubleAlign())
+            var codeGen = _compiler.codeGen;
+            assert(codeGen is not null);
+            if (codeGen.IsFramePointerRequired || _compiler.opts.MinOpts)
             {
-                case CanDoubleAlign.MUST_DOUBLE_ALIGN:
+                checkDoubleAlign = false;
+            }
+            else
+            {
+                switch (getCanDoubleAlign())
                 {
-                    _doDoubleAlign = true;
-                    checkDoubleAlign = false;
-                    break;
-                }
-                case CanDoubleAlign.CAN_DOUBLE_ALIGN:
-                {
-                    break;
-                }
-                case CanDoubleAlign.CANT_DOUBLE_ALIGN:
-                {
-                    _doDoubleAlign = false;
-                    checkDoubleAlign = false;
-                    break;
-                }
-                default:
-                {
-                    throw new FatalJitException("Unrecognized double-alignment policy.");
+                    case CanDoubleAlign.MUST_DOUBLE_ALIGN:
+                    {
+                        _doDoubleAlign = true;
+                        checkDoubleAlign = false;
+                        break;
+                    }
+                    case CanDoubleAlign.CAN_DOUBLE_ALIGN:
+                    {
+                        break;
+                    }
+                    case CanDoubleAlign.CANT_DOUBLE_ALIGN:
+                    {
+                        _doDoubleAlign = false;
+                        checkDoubleAlign = false;
+                        break;
+                    }
+                    default:
+                    {
+                        throw new FatalJitException("Unrecognized double-alignment policy.");
+                    }
                 }
             }
         }
-#endif
 
         if (_compiler.lvaTrackedCount > 0)
         {
@@ -90,7 +91,6 @@ public sealed partial class LinearScan
 #if !TARGET_64BIT
             local.OtherReg = REG_STK;
 #endif
-#if DOUBLE_ALIGN
             if (checkDoubleAlign)
             {
                 if (local.lvIsParam && !local.lvIsRegArg)
@@ -113,7 +113,6 @@ public sealed partial class LinearScan
                     refCntWtdReg += local.lvRefCntWtd();
                 }
             }
-#endif
             local.lvLRACandidate = true;
             local.lvRegister = false;
             checkForDNER(localNumber, in local);
@@ -234,14 +233,12 @@ public sealed partial class LinearScan
         }
 #endif
 
-#if DOUBLE_ALIGN
         if (checkDoubleAlign)
         {
             var refCntEBP = refCntReg / 8;
             var refCntWtdEBP = refCntWtdReg / 8;
             _doDoubleAlign = shouldDoubleAlign(refCntStk, refCntEBP, refCntWtdEBP, refCntStkParam, refCntWtdStkDbl);
         }
-#endif
 
 #if DEBUG
         if (VERBOSE)
@@ -292,7 +289,6 @@ public sealed partial class LinearScan
 #endif
     }
 
-#if DOUBLE_ALIGN
     private CanDoubleAlign getCanDoubleAlign()
     {
 #if DEBUG
@@ -359,7 +355,6 @@ public sealed partial class LinearScan
 
         return doDoubleAlign;
     }
-#endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private void makeUpperVectorInterval(uint varIndex)

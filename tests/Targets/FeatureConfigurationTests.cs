@@ -24,6 +24,36 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void DoubleAlignmentFeatureMatchesTheTargetArchitecture()
+    {
+        Assert.That(Configuration.DOUBLE_ALIGN, Is.EqualTo(Configuration.TARGET_X86));
+    }
+
+    [Test]
+    public static void DoubleAlignmentStateIsSharedThroughTheCodeGenContract()
+    {
+        if (!Configuration.DOUBLE_ALIGN)
+        {
+            Assert.Ignore("Double-aligned frames are specific to x86.");
+        }
+
+        WithCompiler(compiler =>
+        {
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            ICodeGen codeGenContract = codeGen;
+
+            Assert.That(codeGenContract.IsDoubleAligned, Is.False);
+            Assert.That(compiler.genDoubleAlign, Is.False);
+
+            codeGenContract.IsDoubleAligned = true;
+
+            Assert.That(codeGen.IsDoubleAligned, Is.True);
+            Assert.That(compiler.genDoubleAlign, Is.True);
+        });
+    }
+
+    [Test]
     public static void ProfilingFeatureMatchesTheRuntimeSwitch()
     {
         Assert.That(AppContext.TryGetSwitch("RyuJitSharp.PROFILING_SUPPORTED", out var enabled), Is.True);

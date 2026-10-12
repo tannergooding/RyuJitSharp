@@ -40,13 +40,11 @@ public partial class Compiler
 #elif TARGET_AMD64
         compCalleeFPRegsSavedMask = compFloatingPointUsed ? SRBM_FLT_CALLEE_SAVED : SRBM_NONE;
 #endif
-#if DOUBLE_ALIGN
-        if (genDoubleAlign)
+        if (Configuration.DOUBLE_ALIGN && genDoubleAlign)
         {
             // The x86 "and esp, -8" prolog can introduce one additional four-byte slot.
             compCalleeRegsPushed++;
         }
-#endif
 #if TARGET_XARCH
         if (codeGen.IsFramePointerUsed)
         {
@@ -527,14 +525,13 @@ public partial class Compiler
 
                 JITDUMP($"-- V{lclNum:D2} was {dsc.StackOffset}, now {dsc.StackOffset + localDelta}\n");
                 dsc.StackOffset += localDelta;
-#if DOUBLE_ALIGN
-                if (genDoubleAlign && !codeGen.IsFramePointerUsed && dsc.lvFramePointerBased)
+                if (Configuration.DOUBLE_ALIGN && genDoubleAlign && !codeGen.IsFramePointerUsed &&
+                    dsc.lvFramePointerBased)
                 {
                     dsc.StackOffset -= localDelta;
                     dsc.StackOffset += 2 * TARGET_POINTER_SIZE;
-                    noway_assert(dsc.StackOffset >= FIRST_ARG_STACK_OFFS);
+                    noway_assert(dsc.StackOffset >= (2 * TARGET_POINTER_SIZE));
                 }
-#endif
                 assert(codeGen.IsFramePointerUsed || (dsc.StackOffset >= 0));
             }
         }
@@ -618,10 +615,6 @@ public partial class Compiler
     private bool lvaDoubleAlignOrFramePointerUsed()
     {
         assert(codeGen is not null);
-#if DOUBLE_ALIGN
-        return codeGen.IsFramePointerUsed || genDoubleAlign;
-#else
-        return codeGen.IsFramePointerUsed;
-#endif
+        return codeGen.IsFramePointerUsed || (Configuration.DOUBLE_ALIGN && genDoubleAlign);
     }
 }
