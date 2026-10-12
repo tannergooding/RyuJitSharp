@@ -88,6 +88,8 @@ internal static class Configuration
 
     internal static bool TARGET_WINDOWS => GetFeatureSwitch(nameof(TARGET_WINDOWS));
 
+    internal static bool WINDOWS_AMD64_ABI => GetFeatureSwitch(nameof(WINDOWS_AMD64_ABI));
+
     internal static bool TARGET_UNIX => GetFeatureSwitch(nameof(TARGET_UNIX));
 
     internal static bool TARGET_APPLE => GetFeatureSwitch(nameof(TARGET_APPLE));

@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Convert `AbiPassingInformation.ShadowSpace.cs`'s Windows AMD64 compile guard to runtime configuration, add the `WINDOWS_AMD64_ABI` switch and per-RID/runtime-host defaults, and validate supported/unsupported ABI behavior before continuing through the ABI and codegen target guards.",
+    "nextAction": "Universalize the ABI classifier family by replacing the target-selected `PlatformClassifier` alias in `sources/Core/jit/abi/Aliases.cs` with runtime dispatch, then remove target guards from the classifier implementations. Preserve each ABI's state and unsupported-target failure behavior; validate Windows x64 and ARM64 target builds.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace the disassembler's remaining `DISASM_DEBUG` compile guards with runtime configuration and propagate the default through test-host configuration and NativeAOT RID substitutions.",
-      "doneWhen": "Disassembler diagnostics compile universally, remain disabled by default as they are in current builds, and can be runtime-enabled without any `DISASM_DEBUG` preprocessor or conditional-call-site dependency.",
-      "validation": "Focused late-disassembly tests passed on win-x64 with analyzers disabled: Release 32/32 and Debug 33/33. The target unit-test project passed 34/34 in Release with `RyuJitTargetRuntimeIdentifier=win-arm64`. The runtime switch can be toggled both false and true in tests. All seven RID substitution files parse as XML and substitute `DISASM_DEBUG` to false; the test-host targets file parses, and no `DISASM_DEBUG` preprocessor or conditional-call-site remains.",
+      "scope": "Replace the Windows AMD64 ABI compile guard in `AbiPassingInformation.ShadowSpace.cs` with runtime target configuration and propagate its ABI switch through RID substitutions and test-host configuration.",
+      "doneWhen": "Windows AMD64 still returns the existing shadow-space caller offsets, every other target still terminates with the explicit unsupported error, and no `WINDOWS_AMD64_ABI` preprocessor dependency remains for this method.",
+      "validation": "Focused tests passed: Core Release Windows x64 14/14; Target Release Windows x64 14/14 and Debug Windows x64 14/14. Target Release and Debug Windows ARM64 builds compiled and each ran the unsupported-target rejection test (1 passed; 13 ABI-specific cases skipped). All seven RID substitutions parsed and `git diff --check` passed. Full-analyzer Release test remains blocked by pre-existing IDE2002/IDE0059 diagnostics in unchanged `Compiler.gt*.cs` files.",
       "deferred": "Continue the remaining target/feature preprocessor migration in dependency-coherent batches. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {

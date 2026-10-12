@@ -11,6 +11,7 @@
       <method signature="System.Boolean get_FEATURE_READYTORUN()" body="stub" value="true" />
       <method signature="System.Boolean get_FEATURE_VN_DUMP_FUNC_ARGS()" body="stub" value="false" />
       <method signature="System.Boolean get_DISASM_DEBUG()" body="stub" value="false" />
+      <method signature="System.Boolean get_WINDOWS_AMD64_ABI()" body="stub" value="false" />
       <method signature="System.Boolean get_ARM_SOFTFP()" body="stub" value="false" />
       <method signature="System.Boolean get_TARGET_64BIT()" body="stub" value="true" />
       <method signature="System.Boolean get_TARGET_ARM()" body="stub" value="false" />
