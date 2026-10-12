@@ -117,7 +117,7 @@ internal static unsafe class CodeGenSharedFrameInitializationTests
         {
             var zeroed = initiallyZero;
 #if TARGET_ARM64
-            var expected = REG_ZR;
+            var expected = REG_ZR_ARM64;
 #else
             var expected = REG_R0;
 #endif

@@ -25,11 +25,11 @@ internal static unsafe class SharedStructArgumentSetupTests
     private const regNumber FieldRegister = REG_RAX;
     private const regNumber ReferenceRegister = REG_RDX;
 #else
-    private const regNumber DestinationRegister = REG_R0;
-    private const regNumber SourceRegister = REG_R1;
-    private const regNumber AddressRegister = REG_R2;
-    private const regNumber FieldRegister = REG_R3;
-    private const regNumber ReferenceRegister = REG_R4;
+    private const regNumber DestinationRegister = REG_R0_ARM64;
+    private const regNumber SourceRegister = REG_R1_ARM64;
+    private const regNumber AddressRegister = REG_R2_ARM64;
+    private const regNumber FieldRegister = REG_R3_ARM64;
+    private const regNumber ReferenceRegister = REG_R4_ARM64;
 #endif
 
     [TestCase(GT_BLK, false)]
@@ -277,7 +277,7 @@ internal static unsafe class SharedStructArgumentSetupTests
         WithCompiler((compiler, codeGen) =>
         {
             var small = Physical(TYP_INT, FieldRegister);
-            var vector = Physical(TYP_SIMD16, REG_V0);
+            var vector = Physical(TYP_SIMD16, REG_V0_ARM64);
             var reference = Physical(TYP_REF, ReferenceRegister);
             var fields = new GenTreeFieldList { IsContained = true };
             fields.AddFieldLIR(compiler, small, 0, TYP_INT);
@@ -296,10 +296,10 @@ internal static unsafe class SharedStructArgumentSetupTests
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(6));
             AssertStack(descriptors[0], INS_str, EA_4BYTE, FieldRegister, 0, 0);
-            AssertStack(descriptors[1], INS_str, EA_8BYTE, REG_V0, 0, 8);
+            AssertStack(descriptors[1], INS_str, EA_8BYTE, REG_V0_ARM64, 0, 8);
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_ext));
             Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(8));
-            AssertStack(descriptors[3], INS_str, EA_4BYTE, REG_V0, 0, 16);
+            AssertStack(descriptors[3], INS_str, EA_4BYTE, REG_V0_ARM64, 0, 16);
             Assert.That(descriptors[4].idIns(), Is.EqualTo(INS_ext));
             Assert.That(descriptors[4].idSmallCns(), Is.EqualTo(8));
             AssertStack(descriptors[5], INS_str, EA_8BYTE, ReferenceRegister, 0, 24);

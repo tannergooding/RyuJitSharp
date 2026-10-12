@@ -45,7 +45,8 @@ internal static unsafe class ArgumentRegisterMappingTests
 #elif TARGET_ARM || TARGET_ARM64
             (REG_R0, RBM_R0), (REG_R1, RBM_R1), (REG_R2, RBM_R2), (REG_R3, RBM_R3),
 #if TARGET_ARM64
-            (REG_R4, RBM_R4), (REG_R5, RBM_R5), (REG_R6, RBM_R6), (REG_R7, RBM_R7),
+            (REG_R4_ARM64, RBM_R4_ARM64), (REG_R5_ARM64, RBM_R5_ARM64),
+            (REG_R6_ARM64, RBM_R6_ARM64), (REG_R7_ARM64, RBM_R7_ARM64),
 #endif
 #elif TARGET_LOONGARCH64 || TARGET_RISCV64
             (REG_A0, RBM_A0), (REG_A1, RBM_A1), (REG_A2, RBM_A2), (REG_A3, RBM_A3),
@@ -69,8 +70,10 @@ internal static unsafe class ArgumentRegisterMappingTests
             (REG_XMM4, RBM_XMM4), (REG_XMM5, RBM_XMM5), (REG_XMM6, RBM_XMM6), (REG_XMM7, RBM_XMM7),
 #endif
 #elif TARGET_ARM64
-            (REG_V0, RBM_V0), (REG_V1, RBM_V1), (REG_V2, RBM_V2), (REG_V3, RBM_V3),
-            (REG_V4, RBM_V4), (REG_V5, RBM_V5), (REG_V6, RBM_V6), (REG_V7, RBM_V7),
+            (REG_V0_ARM64, RBM_V0_ARM64), (REG_V1_ARM64, RBM_V1_ARM64),
+            (REG_V2_ARM64, RBM_V2_ARM64), (REG_V3_ARM64, RBM_V3_ARM64),
+            (REG_V4_ARM64, RBM_V4_ARM64), (REG_V5_ARM64, RBM_V5_ARM64),
+            (REG_V6_ARM64, RBM_V6_ARM64), (REG_V7_ARM64, RBM_V7_ARM64),
 #elif TARGET_ARM || TARGET_LOONGARCH64
             (REG_F0, RBM_F0), (REG_F1, RBM_F1), (REG_F2, RBM_F2), (REG_F3, RBM_F3),
             (REG_F4, RBM_F4), (REG_F5, RBM_F5), (REG_F6, RBM_F6), (REG_F7, RBM_F7),
@@ -182,8 +185,8 @@ internal static unsafe class ArgumentRegisterMappingTests
         var expectedFloat = REG_XMM0;
         var expectedFloatMask = RBM_XMM0;
 #elif TARGET_ARM64
-        var expectedFloat = REG_V0;
-        var expectedFloatMask = RBM_V0;
+        var expectedFloat = REG_V0_ARM64;
+        var expectedFloatMask = RBM_V0_ARM64;
 #elif TARGET_RISCV64
         var expectedFloat = REG_FA0;
         var expectedFloatMask = RBM_FA0;
@@ -227,7 +230,7 @@ internal static unsafe class ArgumentRegisterMappingTests
 #if TARGET_ARM64
         var expectedFixed = !TargetOS.IsWindows || !instanceConvention;
         const uint expectedIndex = 8;
-        const regNumber expectedReg = REG_R8;
+        const regNumber expectedReg = REG_R8_ARM64;
 #elif TARGET_AMD64 && SWIFT_SUPPORT
         var expectedFixed = callConv == CorInfoCallConvExtension.Swift;
 #if UNIX_AMD64_ABI
