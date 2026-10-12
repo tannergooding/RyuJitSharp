@@ -21,10 +21,10 @@ internal static unsafe class Arm64Simd12IndirectLoadTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var address = compiler.gtNewIconNode(TYP_BYREF, 0);
-            address.RegNum = REG_R2;
+            address.RegNum = REG_R2_ARM64;
             var load = new GenTreeIndir(GT_IND, TYP_SIMD12, address)
             {
-                RegNum = REG_V0,
+                RegNum = REG_V0_ARM64,
             };
             codeGen.InternalRegisters.Add(load, RBM_R10);
 
@@ -35,22 +35,22 @@ internal static unsafe class Arm64Simd12IndirectLoadTests
 
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V0));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V0_ARM64));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2_ARM64));
 
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R10));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R2));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_R10_ARM64));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_R2_ARM64));
             // A 4-byte load encodes an 8-byte offset as two words.
             Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(2));
 
             Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptors[2].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_V0));
-            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R10));
+            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_V0_ARM64));
+            Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_R10_ARM64));
             Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(2));
-            Assert.That(load.RegNum, Is.EqualTo(REG_V0));
+            Assert.That(load.RegNum, Is.EqualTo(REG_V0_ARM64));
         });
     }
 #endif

@@ -20,7 +20,7 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
         {
             var initRegZeroed = true;
 
-            codeGen.genProfilingEnterCallback(REG_R10, ref initRegZeroed);
+            codeGen.genProfilingEnterCallback(REG_R10_ARM64, ref initRegZeroed);
 
             Assert.That(Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter), Is.Empty);
             Assert.That(initRegZeroed, Is.True);
@@ -38,15 +38,15 @@ internal static unsafe class Arm64CodeGenProfilingEntryTests
             compiler.compProfilerMethHnd = (void*)0x12345678;
             var initRegZeroed = true;
 
-            codeGen.genProfilingEnterCallback(REG_R10, ref initRegZeroed);
+            codeGen.genProfilingEnterCallback(REG_R10_ARM64, ref initRegZeroed);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
-            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_R10), Is.True);
+            Assert.That(descriptors.Any(descriptor => descriptor.idReg1() == REG_R10_ARM64), Is.True);
             Assert.That(descriptors.Any(descriptor => descriptor.idIns() == INS_ldr
-                && descriptor.idReg1() == REG_R10 && descriptor.idReg2() == REG_R10), Is.EqualTo(indirect));
+                && descriptor.idReg1() == REG_R10_ARM64 && descriptor.idReg2() == REG_R10_ARM64), Is.EqualTo(indirect));
 
             var callerStackAddress = descriptors.Last(descriptor =>
-                descriptor.idReg1() == REG_R11 && descriptor.idIns() is INS_add or INS_sub);
+                descriptor.idReg1() == REG_R11_ARM64 && descriptor.idIns() is INS_add or INS_sub);
             Assert.That(callerStackAddress.idReg2(),
                 Is.EqualTo(codeGen.IsFramePointerUsed ? REG_FPBASE : REG_SPBASE));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_bl));

@@ -19,7 +19,7 @@ internal static class Arm64CodeGenNonLocalJumpTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var target = compiler.gtNewIconNode(TYP_I_IMPL, 7);
-            target.RegNum = REG_R3;
+            target.RegNum = REG_R3_ARM64;
             var tree = new GenTreeUnOp(GT_NONLOCAL_JMP, TYP_VOID, target);
 
             codeGen.genCodeForTreeNode(tree);
@@ -28,7 +28,7 @@ internal static class Arm64CodeGenNonLocalJumpTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_br));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_PTRSIZE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
             Assert.That(codeGen.HasTailCalls, Is.True);
         });
     }

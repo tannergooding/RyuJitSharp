@@ -11,14 +11,14 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64EmitterExecutionMemoryTests
 {
-    [TestCase(INS_add, IF_DR_3A, REG_NA, REG_NA, None, false)]
-    [TestCase(INS_ldr, IF_LS_1A, REG_NA, REG_NA, Read, true)]
-    [TestCase(INS_str, IF_LS_2A, REG_ZR, REG_NA, Write, true)]
-    [TestCase(INS_str, IF_LS_2A, REG_R0, REG_NA, Write, false)]
-    [TestCase(INS_ldr, IF_LS_3B, REG_NA, REG_FP, Read, true)]
-    [TestCase(INS_ldr, IF_LS_3B, REG_NA, REG_R0, Read, false)]
-    [TestCase(INS_ldadd, IF_LS_2A, REG_ZR, REG_NA, ReadWrite, true)]
-    [TestCase(INS_ldr, IF_SVE_HX_3A_B, REG_ZR, REG_ZR, Read, false)]
+    [TestCase(INS_add, IF_DR_3A, REG_NA_ARM64, REG_NA_ARM64, None, false)]
+    [TestCase(INS_ldr, IF_LS_1A, REG_NA_ARM64, REG_NA_ARM64, Read, true)]
+    [TestCase(INS_str, IF_LS_2A, REG_ZR_ARM64, REG_NA_ARM64, Write, true)]
+    [TestCase(INS_str, IF_LS_2A, REG_R0_ARM64, REG_NA_ARM64, Write, false)]
+    [TestCase(INS_ldr, IF_LS_3B, REG_NA_ARM64, REG_FP_ARM64, Read, true)]
+    [TestCase(INS_ldr, IF_LS_3B, REG_NA_ARM64, REG_R0_ARM64, Read, false)]
+    [TestCase(INS_ldadd, IF_LS_2A, REG_ZR_ARM64, REG_NA_ARM64, ReadWrite, true)]
+    [TestCase(INS_ldr, IF_SVE_HX_3A_B, REG_ZR_ARM64, REG_ZR_ARM64, Read, false)]
     public static void ClassifiesMemoryAccessAndLocality(instruction ins, Emitter.insFormat format,
         regNumber reg2, regNumber reg3, Emitter.PerfScoreMemoryAccessKind expectedKind, bool expectedLocal)
     {

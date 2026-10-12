@@ -20,7 +20,7 @@ internal static class Arm64CodeGenFunctionEntryTests
         {
             var tree = new GenTree(GT_FTN_ENTRY, TYP_I_IMPL)
             {
-                RegNum = REG_R3,
+                RegNum = REG_R3_ARM64,
             };
 
             codeGen.genCodeForTreeNode(tree);
@@ -29,7 +29,7 @@ internal static class Arm64CodeGenFunctionEntryTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_adr));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_PTRSIZE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R3_ARM64));
         });
     }
 }

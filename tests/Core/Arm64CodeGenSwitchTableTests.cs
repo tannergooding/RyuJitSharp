@@ -21,14 +21,14 @@ internal static class Arm64CodeGenSwitchTableTests
         Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
         {
             var index = compiler.gtNewIconNode(TYP_I_IMPL, 2);
-            index.RegNum = REG_R1;
+            index.RegNum = REG_R1_ARM64;
             var table = new GenTree(GT_JMPTABLE, TYP_I_IMPL)
             {
-                RegNum = REG_R2,
+                RegNum = REG_R2_ARM64,
             };
             var tree = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, index, table);
             codeGen.InternalRegisters.Add(tree,
-                regMaskTP.CreateFromRegNum(REG_R3, REG_R3.SingleTypeMask));
+                regMaskTP.CreateFromRegNum(REG_R3_ARM64, REG_R3_ARM64.SingleTypeMask));
             compiler.fgFirstBB = new BasicBlock(null, null);
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree)) ??
@@ -41,9 +41,9 @@ internal static class Arm64CodeGenSwitchTableTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_ldr));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R2));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2));
-            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R1));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_R2_ARM64));
+            Assert.That(descriptors[0].idReg3(), Is.EqualTo(REG_R1_ARM64));
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL));
             Assert.That(descriptors[0].idReg3Scaled(), Is.True);
         });
@@ -56,7 +56,7 @@ internal static class Arm64CodeGenSwitchTableTests
         {
             var tree = new GenTree(GT_JMPTABLE, TYP_I_IMPL)
             {
-                RegNum = REG_R3,
+                RegNum = REG_R3_ARM64,
             };
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree)) ??

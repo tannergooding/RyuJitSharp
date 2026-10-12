@@ -24,7 +24,7 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
             var source = CreateSource(compiler);
             var save = new GenTreeIntrinsic(TYP_DOUBLE, source, NI_SIMD_UpperSave, methodHandle: null)
             {
-                RegNum = REG_V1,
+                RegNum = REG_V1_ARM64,
             };
 
             codeGen.genSimdUpperSave(save);
@@ -34,8 +34,8 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_DV_2F));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V0));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V0_ARM64));
             Assert.That(descriptors[0].idSmallCns(), Is.EqualTo(1));
         });
     }
@@ -48,7 +48,7 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
             var source = CreateSource(compiler);
             var save = new GenTreeIntrinsic(TYP_DOUBLE, source, NI_SIMD_UpperSave, methodHandle: null)
             {
-                RegNum = REG_V1,
+                RegNum = REG_V1_ARM64,
                 Flags = GTF_SPILL,
             };
 
@@ -57,11 +57,11 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V0));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_V1_ARM64));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_V0_ARM64));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_str));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_8BYTE));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_V1));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_V1_ARM64));
             Assert.That(descriptors[1].idIsLclVar(), Is.True);
             Assert.That(descriptors[1].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptors[1].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(8u));
@@ -72,11 +72,11 @@ internal static unsafe class Arm64CodeGenSimdUpperSaveTests
     {
         compiler.lvaTable[0].Type = TYP_SIMD16;
         compiler.lvaTable[0].lvLRACandidate = true;
-        compiler.lvaTable[0].RegNum = REG_V0;
+        compiler.lvaTable[0].RegNum = REG_V0_ARM64;
 
         return new GenTreeLclVar(TYP_SIMD16, 0)
         {
-            RegNum = REG_V0,
+            RegNum = REG_V0_ARM64,
         };
     }
 }
