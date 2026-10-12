@@ -9,8 +9,11 @@ namespace RyuJitSharp;
 
 public struct AbiPassingSegment
 {
-    private regNumber _register = REG_NA;
-    private bool _isFullStackSlot = true;
+    // Wasm type tag 7 is invalid (WasmValueType.Count is 7), reserving these values for stack segments.
+    private const regNumber REG_STACK_FULL_SLOT = (regNumber)uint.MaxValue;
+    private const regNumber REG_STACK_PARTIAL_SLOT = (regNumber)(uint.MaxValue - 1);
+
+    private regNumber _register = REG_STACK_FULL_SLOT;
     private int _stackOffset;
 
     public int Offset;
@@ -20,9 +23,10 @@ public struct AbiPassingSegment
     {
     }
 
-    public readonly bool IsPassedInRegister => _register != REG_NA;
+    public readonly bool IsPassedInRegister =>
+        (_register != REG_STACK_FULL_SLOT) && (_register != REG_STACK_PARTIAL_SLOT);
 
-    public readonly bool IsPassedOnStack => _register == REG_NA;
+    public readonly bool IsPassedOnStack => !IsPassedInRegister;
 
     // If this segment is passed in a register, return the particular register.
     public readonly regNumber Register
@@ -30,7 +34,7 @@ public struct AbiPassingSegment
         get
         {
             assert(Debugger.IsAttached || IsPassedInRegister);
-            return _register;
+            return IsPassedInRegister ? _register : REG_NA;
         }
     }
 
@@ -106,7 +110,7 @@ public struct AbiPassingSegment
         get
         {
             assert(Debugger.IsAttached || IsPassedOnStack);
-            return _isFullStackSlot ? roundUp(Size, TARGET_POINTER_SIZE) : Size;
+            return _register == REG_STACK_FULL_SLOT ? roundUp(Size, TARGET_POINTER_SIZE) : Size;
         }
     }
 
@@ -117,7 +121,7 @@ public struct AbiPassingSegment
     /// <returns>New instance of AbiPassingSegment.</returns>
     public static AbiPassingSegment InRegister(regNumber reg, int offset, int size)
     {
-        assert(reg != REG_NA);
+        assert((reg != REG_NA) && (reg != REG_STACK_FULL_SLOT) && (reg != REG_STACK_PARTIAL_SLOT));
         return new AbiPassingSegment {
             _register = reg,
             Offset = offset,
@@ -133,7 +137,7 @@ public struct AbiPassingSegment
     public static AbiPassingSegment OnStack(int stackOffset, int offset, int size)
     {
         return new AbiPassingSegment {
-            _register = REG_NA,
+            _register = REG_STACK_FULL_SLOT,
             _stackOffset = stackOffset,
             Offset = offset,
             Size = size,
@@ -144,9 +148,8 @@ public struct AbiPassingSegment
     public static AbiPassingSegment OnStackWithoutConsumingFullSlot(int stackOffset, int offset, int size)
     {
         return new AbiPassingSegment {
-            _register = REG_NA,
+            _register = REG_STACK_PARTIAL_SLOT,
             _stackOffset = stackOffset,
-            _isFullStackSlot = false,
             Offset = offset,
             Size = size,
         };

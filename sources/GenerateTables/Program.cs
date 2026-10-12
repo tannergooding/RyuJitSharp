@@ -4705,11 +4705,7 @@ global using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp;
 
-#if TARGET_WASM
 public enum regNumber : uint
-#else
-public enum regNumber : byte
-#endif
 {
 {{builder}}    REG_COUNT,
 

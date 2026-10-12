@@ -225,7 +225,7 @@ public sealed partial class LinearScan
         if (!_needNonIntegerRegisters)
         {
 #if HAS_FIXED_REGISTER_SET
-            _availableRegCount = _regIntLast - REG_INT_FIRST + 1;
+            _availableRegCount = unchecked((int)(_regIntLast - REG_INT_FIRST + 1));
 #else
             _availableRegCount = 0;
 #endif

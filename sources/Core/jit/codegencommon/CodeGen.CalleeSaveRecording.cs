@@ -99,7 +99,7 @@ public sealed partial class CodeGen
             pushRegs &= ~regMaskTP.CreateFromRegNum(alignReg, alignReg.SingleTypeMask);
         }
 
-        Span<regNumber> registers = stackalloc regNumber[REG_INT_LAST - REG_INT_FIRST + 1];
+        Span<regNumber> registers = stackalloc regNumber[unchecked((int)(REG_INT_LAST - REG_INT_FIRST + 1))];
         var count = 0;
         while (pushRegs.IsNonEmpty)
         {

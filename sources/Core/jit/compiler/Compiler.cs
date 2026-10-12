@@ -867,7 +867,7 @@ public partial class Compiler
 
     public regMask SRBM_INT_CALLEE_TRASH => srbmIntCalleeTrash;
 
-    public int REG_INT_COUNT => REG_INT_LAST - REG_INT_FIRST + 1;
+    public int REG_INT_COUNT => unchecked((int)(REG_INT_LAST - REG_INT_FIRST + 1));
 
     public regNumber REG_INT_LAST => regIntLast;
 #else
