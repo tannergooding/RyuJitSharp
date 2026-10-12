@@ -74,10 +74,6 @@ public partial class Globals
 
     public static ReadOnlySpan<regNumber> REG_VAR_ORDER_FLT => [];
 
-    public static ReadOnlySpan<regNumber> IntArgRegs => [];
-
-    public static ReadOnlySpan<regNumber> FltArgRegs => [];
-
     public const regMask SRBM_INT_CALLEE_SAVED = SRBM_NONE;
 
     public const regMask SRBM_CALLEE_SAVED = SRBM_NONE;

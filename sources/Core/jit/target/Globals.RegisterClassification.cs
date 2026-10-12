@@ -12,14 +12,11 @@ public static partial class Globals
         return varTypeUsesFloatReg(type);
     }
 
-#if HAS_FIXED_REGISTER_SET
     public static bool isByteReg(regNumber reg)
     {
-#if CPU_HAS_BYTE_REGS
-        return reg <= REG_EBX;
-#else
-        return true;
-#endif
+        EnsureFixedRegisterSet();
+
+        return !Configuration.TARGET_XARCH ||
+            (reg <= (Configuration.TARGET_X86 ? REG_EBX_X86 : REG_EBX_AMD64));
     }
-#endif
 }

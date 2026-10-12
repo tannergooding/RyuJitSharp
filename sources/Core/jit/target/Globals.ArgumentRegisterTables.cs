@@ -3,54 +3,162 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if HAS_FIXED_REGISTER_SET && (TARGET_X86 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64)
 using System;
 
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if TARGET_X86
-    public static ReadOnlySpan<regNumber> IntArgRegs => [
-        REG_ECX, REG_EDX,
-    ];
+    private static ReadOnlySpan<regNumber> UnsupportedTargetRegisterTable()
+    {
+        throw new FatalJitException("Invalid target architecture.");
+    }
 
-    public const regMask SRBM_FLTARG_REGS = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM3;
-#elif TARGET_ARM
-    public static ReadOnlySpan<regNumber> IntArgRegs => [
-        REG_R0, REG_R1, REG_R2, REG_R3,
-    ];
+    public static ReadOnlySpan<regNumber> IntArgRegs
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return [REG_ECX_X86, REG_EDX_X86];
+            }
 
-    public static ReadOnlySpan<regNumber> FltArgRegs => [
-        REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7,
-        REG_F8, REG_F9, REG_F10, REG_F11, REG_F12, REG_F13, REG_F14, REG_F15,
-    ];
+            if (Configuration.TARGET_AMD64)
+            {
+                return Configuration.TARGET_UNIX
+                    ? [REG_EDI_AMD64, REG_ESI_AMD64, REG_EDX_AMD64, REG_ECX_AMD64, REG_R8_AMD64, REG_R9_AMD64]
+                    : [REG_ECX_AMD64, REG_EDX_AMD64, REG_R8_AMD64, REG_R9_AMD64];
+            }
 
-    public const regMask SRBM_FLTARG_REGS =
-        SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 | SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7 |
-        SRBM_F8 | SRBM_F9 | SRBM_F10 | SRBM_F11 | SRBM_F12 | SRBM_F13 | SRBM_F14 | SRBM_F15;
-#elif TARGET_LOONGARCH64
-    public static ReadOnlySpan<regNumber> IntArgRegs => [
-        REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7,
-    ];
+            if (Configuration.TARGET_ARM)
+            {
+                return [REG_R0_ARM, REG_R1_ARM, REG_R2_ARM, REG_R3_ARM];
+            }
 
-    public static ReadOnlySpan<regNumber> FltArgRegs => [
-        REG_F0, REG_F1, REG_F2, REG_F3, REG_F4, REG_F5, REG_F6, REG_F7,
-    ];
+            if (Configuration.TARGET_ARM64)
+            {
+                return [REG_R0_ARM64, REG_R1_ARM64, REG_R2_ARM64, REG_R3_ARM64,
+                    REG_R4_ARM64, REG_R5_ARM64, REG_R6_ARM64, REG_R7_ARM64];
+            }
 
-    public const regMask SRBM_FLTARG_REGS =
-        SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 | SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7;
-#elif TARGET_RISCV64
-    public static ReadOnlySpan<regNumber> IntArgRegs => [
-        REG_A0, REG_A1, REG_A2, REG_A3, REG_A4, REG_A5, REG_A6, REG_A7,
-    ];
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return [REG_A0_LOONGARCH64, REG_A1_LOONGARCH64, REG_A2_LOONGARCH64, REG_A3_LOONGARCH64,
+                    REG_A4_LOONGARCH64, REG_A5_LOONGARCH64, REG_A6_LOONGARCH64, REG_A7_LOONGARCH64];
+            }
 
-    public static ReadOnlySpan<regNumber> FltArgRegs => [
-        REG_FA0, REG_FA1, REG_FA2, REG_FA3, REG_FA4, REG_FA5, REG_FA6, REG_FA7,
-    ];
+            if (Configuration.TARGET_RISCV64)
+            {
+                return [REG_A0_RISCV64, REG_A1_RISCV64, REG_A2_RISCV64, REG_A3_RISCV64,
+                    REG_A4_RISCV64, REG_A5_RISCV64, REG_A6_RISCV64, REG_A7_RISCV64];
+            }
 
-    public const regMask SRBM_FLTARG_REGS =
-        SRBM_FA0 | SRBM_FA1 | SRBM_FA2 | SRBM_FA3 | SRBM_FA4 | SRBM_FA5 | SRBM_FA6 | SRBM_FA7;
-#endif
+            if (Configuration.TARGET_WASM)
+            {
+                return [];
+            }
+
+            return UnsupportedTargetRegisterTable();
+        }
+    }
+
+    public static ReadOnlySpan<regNumber> FltArgRegs
+    {
+        get
+        {
+            if (Configuration.TARGET_X86 || Configuration.TARGET_WASM)
+            {
+                return [];
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return Configuration.TARGET_UNIX
+                    ? [REG_XMM0_AMD64, REG_XMM1_AMD64, REG_XMM2_AMD64, REG_XMM3_AMD64,
+                        REG_XMM4_AMD64, REG_XMM5_AMD64, REG_XMM6_AMD64, REG_XMM7_AMD64]
+                    : [REG_XMM0_AMD64, REG_XMM1_AMD64, REG_XMM2_AMD64, REG_XMM3_AMD64];
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return [REG_F0_ARM, REG_F1_ARM, REG_F2_ARM, REG_F3_ARM,
+                    REG_F4_ARM, REG_F5_ARM, REG_F6_ARM, REG_F7_ARM,
+                    REG_F8_ARM, REG_F9_ARM, REG_F10_ARM, REG_F11_ARM,
+                    REG_F12_ARM, REG_F13_ARM, REG_F14_ARM, REG_F15_ARM];
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return [REG_V0_ARM64, REG_V1_ARM64, REG_V2_ARM64, REG_V3_ARM64,
+                    REG_V4_ARM64, REG_V5_ARM64, REG_V6_ARM64, REG_V7_ARM64];
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return [REG_F0_LOONGARCH64, REG_F1_LOONGARCH64, REG_F2_LOONGARCH64, REG_F3_LOONGARCH64,
+                    REG_F4_LOONGARCH64, REG_F5_LOONGARCH64, REG_F6_LOONGARCH64, REG_F7_LOONGARCH64];
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return [REG_FA0_RISCV64, REG_FA1_RISCV64, REG_FA2_RISCV64, REG_FA3_RISCV64,
+                    REG_FA4_RISCV64, REG_FA5_RISCV64, REG_FA6_RISCV64, REG_FA7_RISCV64];
+            }
+
+            return UnsupportedTargetRegisterTable();
+        }
+    }
+
+    public static regMask SRBM_FLTARG_REGS
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return SRBM_XMM0_X86 | SRBM_XMM1_X86 | SRBM_XMM2_X86 | SRBM_XMM3_X86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return Configuration.TARGET_UNIX
+                    ? SRBM_XMM0_AMD64 | SRBM_XMM1_AMD64 | SRBM_XMM2_AMD64 | SRBM_XMM3_AMD64 |
+                        SRBM_XMM4_AMD64 | SRBM_XMM5_AMD64 | SRBM_XMM6_AMD64 | SRBM_XMM7_AMD64
+                    : SRBM_XMM0_AMD64 | SRBM_XMM1_AMD64 | SRBM_XMM2_AMD64 | SRBM_XMM3_AMD64;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return SRBM_F0_ARM | SRBM_F1_ARM | SRBM_F2_ARM | SRBM_F3_ARM |
+                    SRBM_F4_ARM | SRBM_F5_ARM | SRBM_F6_ARM | SRBM_F7_ARM |
+                    SRBM_F8_ARM | SRBM_F9_ARM | SRBM_F10_ARM | SRBM_F11_ARM |
+                    SRBM_F12_ARM | SRBM_F13_ARM | SRBM_F14_ARM | SRBM_F15_ARM;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return SRBM_V0_ARM64 | SRBM_V1_ARM64 | SRBM_V2_ARM64 | SRBM_V3_ARM64 |
+                    SRBM_V4_ARM64 | SRBM_V5_ARM64 | SRBM_V6_ARM64 | SRBM_V7_ARM64;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return SRBM_F0_LOONGARCH64 | SRBM_F1_LOONGARCH64 | SRBM_F2_LOONGARCH64 |
+                    SRBM_F3_LOONGARCH64 | SRBM_F4_LOONGARCH64 | SRBM_F5_LOONGARCH64 |
+                    SRBM_F6_LOONGARCH64 | SRBM_F7_LOONGARCH64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return SRBM_FA0_RISCV64 | SRBM_FA1_RISCV64 | SRBM_FA2_RISCV64 | SRBM_FA3_RISCV64 |
+                    SRBM_FA4_RISCV64 | SRBM_FA5_RISCV64 | SRBM_FA6_RISCV64 | SRBM_FA7_RISCV64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return SRBM_NONE;
+            }
+
+            return UnsupportedTargetValue<regMask>("Invalid target architecture.");
+        }
+    }
 }
-#endif

@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Replace target and feature branches in `sources/Core/jit/target/Globals.ArgumentRegisterTables.cs`, `Globals.ArgumentRegisterValidity.cs`, `Globals.RegisterClassification.cs`, `Globals.SimpleReturnAliases.cs`, and `regNumberExtensions.FloatNames.cs` with runtime dispatch; preserve ABI table order and target register identities. Keep generated register enums as a separate generator-owned closure.",
+    "nextAction": "Universalize `target/Globals.SimpleReturnAliases.cs` and the target-specific branches in `target/regNumberExtensions.FloatNames.cs` through runtime Configuration and target-qualified register identities; preserve ARM32 double-register names, xarch SIMD name selection, and lazy debug-name initialization.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Remove target and feature preprocessor branches from the shared register/argument metadata helpers: Globals.ArgumentRegisterTables.cs, Globals.ArgumentRegisterValidity.cs, Globals.RegisterClassification.cs, Globals.SimpleReturnAliases.cs, and regNumberExtensions.FloatNames.cs.",
-      "doneWhen": "Those helpers have no target/feature preprocessor branches; table order, target register identities, and floating-register naming match the existing ABI across supported target RIDs; focused Debug/Release target tests pass.",
-      "validation": "Pending. The preceding target-global dispatch batch passed its focused test matrix in Debug and Release for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, and browser-wasm with analyzers disabled. Full-analyzer Debug remains blocked by existing IDE2002/IDE0059/IDE0058 diagnostics in untouched Compiler.gt files.",
+      "scope": "Universalize target-specific simple return-register aliases and debug floating-register name formatting through runtime Configuration.",
+      "doneWhen": "The simple return aliases and float-name helpers contain no target/feature preprocessor branches; target register names, ARM32 double-register diagnostics, xarch SIMD name selection, and lazy debug-only initialization are preserved and focused tests pass.",
+      "validation": "Pending.",
       "deferred": "Continue target/feature preprocessor migration by coherent subsystem after this batch. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
@@ -787,6 +787,34 @@
       "disposition": "Target names, mask formats, branch dimensions, register-validity checks, fixed return-buffer helpers, and Swift register masks select target behavior through Configuration. Existing fixed-return-buffer assertion continuations are preserved; unavailable branch dimensions terminate explicitly. Wasm register validity is decoded from the packed value-type tag.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "Focused FeatureConfigurationTests, ArgumentRegisterMappingTests, and FixedReturnBufferMaskTests passed in Debug and Release for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, and browser-wasm (41-89 tests per target, no failures or skips), with analyzers disabled. Full-analyzer Debug was blocked by pre-existing IDE2002, IDE0059, and IDE0058 diagnostics in untouched Compiler.gt files; the touched files had no analyzer diagnostics after the target-global property handling was corrected."
+    },
+    {
+      "area": "universal-argument-register-dispatch",
+      "native": [
+        "src\\coreclr\\jit\\target.h",
+        "src\\coreclr\\jit\\targetamd64.h",
+        "src\\coreclr\\jit\\targetarm.h",
+        "src\\coreclr\\jit\\targetarm64.h",
+        "src\\coreclr\\jit\\targetloongarch64.h",
+        "src\\coreclr\\jit\\targetriscv64.h",
+        "src\\coreclr\\jit\\targetwasm.h",
+        "src\\coreclr\\jit\\compiler.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\target\\Globals.ArgumentRegisterTables.cs",
+        "sources\\Core\\jit\\target\\Globals.ArgumentRegisterValidity.cs",
+        "sources\\Core\\jit\\target\\Globals.RegisterClassification.cs",
+        "sources\\Core\\jit\\compiler\\Globals.ArgumentRegisterMapping.cs",
+        "sources\\Core\\jit\\compiler\\Globals.cs",
+        "sources\\Core\\jit\\targetamd64\\Globals.cs",
+        "sources\\Core\\jit\\targetarm64\\Globals.cs",
+        "sources\\Core\\jit\\targetarm64\\Globals.Registers.cs",
+        "sources\\Core\\jit\\targetwasm\\Globals.cs",
+        "tests\\Core\\ArgumentRegisterMappingTests.cs"
+      ],
+      "disposition": "Argument-register tables, membership predicates, and mapping helpers dispatch through Configuration using target-qualified register identities. ABI order and widths, ARM32 double-register pairing, fixed return-buffer indices, and x86 floating-argument assertion continuations are preserved; unsupported fixed-register paths terminate explicitly.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "FeatureConfigurationTests, ArgumentRegisterMappingTests, and FixedReturnBufferMaskTests passed with analyzers disabled in Debug and Release for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, and browser-wasm (41-89 tests per target, no failures or skips). The full-analyzer run was blocked only by existing IDE2002/IDE0059/IDE0058 diagnostics in untouched Compiler.gt*.cs files; no changed files were flagged after the CA1065 property-exception handling was corrected."
     }
   ],
   "generatorInputMapping": {

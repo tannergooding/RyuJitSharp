@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if HAS_FIXED_REGISTER_SET
 namespace RyuJitSharp;
 
 public static partial class Globals
@@ -12,27 +11,34 @@ public static partial class Globals
     // A fixed return buffer uses its special argument index rather than the ordinary table.
     public static regNumber genMapIntRegArgNumToRegNum(uint argNum, CorInfoCallConvExtension callConv)
     {
+        EnsureFixedRegisterSet();
+
         if (hasFixedRetBuffReg(callConv) && (argNum == unchecked((uint)theFixedRetBuffArgNum(callConv))))
         {
             return theFixedRetBuffReg(callConv);
         }
 
-        assert(argNum < (uint)IntArgRegs.Length, "argNum < ArrLen(intArgRegs)");
+        var registers = IntArgRegs;
+        assert(argNum < (uint)registers.Length, "argNum < ArrLen(intArgRegs)");
 
-        return IntArgRegs[unchecked((int)argNum)];
+        return registers[unchecked((int)argNum)];
     }
 
     public static regNumber genMapFloatRegArgNumToRegNum(uint argNum)
     {
-#if !TARGET_X86
-        assert(argNum < (uint)FltArgRegs.Length, "argNum < ArrLen(fltArgRegs)");
+        EnsureFixedRegisterSet();
 
-        return FltArgRegs[unchecked((int)argNum)];
-#else
+        if (!Configuration.TARGET_X86)
+        {
+            var registers = FltArgRegs;
+            assert(argNum < (uint)registers.Length, "argNum < ArrLen(fltArgRegs)");
+
+            return registers[unchecked((int)argNum)];
+        }
+
         assert(false, "!\"no x86 float arg regs\\n\"");
 
-        return REG_NA;
-#endif
+        return regNumberExtensions.NotAvailable;
     }
 
     public static regNumber genMapRegArgNumToRegNum(uint argNum, var_types type, CorInfoCallConvExtension callConv)
@@ -49,8 +55,11 @@ public static partial class Globals
 
     public static regMaskTP genMapIntRegArgNumToRegMask(uint argNum)
     {
-        assert(argNum < (uint)IntArgRegs.Length, "argNum < ArrLen(intArgMasks)");
-        var reg = IntArgRegs[unchecked((int)argNum)];
+        EnsureFixedRegisterSet();
+
+        var registers = IntArgRegs;
+        assert(argNum < (uint)registers.Length, "argNum < ArrLen(intArgMasks)");
+        var reg = registers[unchecked((int)argNum)];
 
         return regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
     }
@@ -58,16 +67,20 @@ public static partial class Globals
     // The native masks contain one bit per register, including only the low ARM double register.
     public static regMaskTP genMapFloatRegArgNumToRegMask(uint argNum)
     {
-#if !TARGET_X86
-        assert(argNum < (uint)FltArgRegs.Length, "argNum < ArrLen(fltArgMasks)");
-        var reg = FltArgRegs[unchecked((int)argNum)];
+        EnsureFixedRegisterSet();
 
-        return regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
-#else
+        if (!Configuration.TARGET_X86)
+        {
+            var registers = FltArgRegs;
+            assert(argNum < (uint)registers.Length, "argNum < ArrLen(fltArgMasks)");
+            var reg = registers[unchecked((int)argNum)];
+
+            return regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+        }
+
         assert(false, "!\"no x86 float arg regs\\n\"");
 
         return RBM_NONE;
-#endif
     }
 
     public static regMaskTP genMapArgNumToRegMask(uint argNum, var_types type)
@@ -76,13 +89,16 @@ public static partial class Globals
         if (varTypeUsesFloatArgReg(type))
         {
             result = genMapFloatRegArgNumToRegMask(argNum);
-#if TARGET_ARM
-            if (type == TYP_DOUBLE)
+            if (Configuration.TARGET_ARM && (type == TYP_DOUBLE))
             {
-                assert((result & new regMaskTP(SRBM_ALLDOUBLE)) != RBM_NONE, "(result & RBM_ALLDOUBLE) != 0");
+                const regMask allDoubleRegs =
+                    SRBM_F0_ARM | SRBM_F2_ARM | SRBM_F4_ARM | SRBM_F6_ARM |
+                    SRBM_F8_ARM | SRBM_F10_ARM | SRBM_F12_ARM | SRBM_F14_ARM |
+                    SRBM_F16_ARM | SRBM_F18_ARM | SRBM_F20_ARM | SRBM_F22_ARM |
+                    SRBM_F24_ARM | SRBM_F26_ARM | SRBM_F28_ARM | SRBM_F30_ARM;
+                assert((result & new regMaskTP(allDoubleRegs)) != RBM_NONE, "(result & RBM_ALLDOUBLE) != 0");
                 result |= new regMaskTP(unchecked((regMask)((long)result.Lower << 1)));
             }
-#endif
         }
         else
         {
@@ -94,64 +110,77 @@ public static partial class Globals
 
     public static uint genMapFloatRegNumToRegArgNum(regNumber regNum)
     {
+        EnsureFixedRegisterSet();
+
         assert((regMaskTP.CreateFromRegNum(regNum, regNum.SingleTypeMask) & new regMaskTP(SRBM_FLTARG_REGS)) != RBM_NONE,
             "genRegMask(regNum) & RBM_FLTARG_REGS");
 
-#if TARGET_ARM
-        return unchecked((uint)(regNum - REG_F0));
-#elif TARGET_LOONGARCH64
-        return unchecked((uint)(regNum - REG_F0));
-#elif TARGET_RISCV64
-        return unchecked((uint)(regNum - REG_FA0));
-#elif TARGET_ARM64
-        return unchecked((uint)(regNum - REG_V0));
-#elif UNIX_AMD64_ABI
-        return unchecked((uint)(regNum - REG_FLTARG_0));
-#else
-        // In this branch MAX_FLOAT_REG_ARG is four on AMD64 and zero on x86.
-#if TARGET_AMD64
-        switch (regNum)
+        if (Configuration.TARGET_ARM)
         {
-            case REG_FLTARG_0:
-            {
-                return 0;
-            }
+            return unchecked((uint)(regNum - REG_F0_ARM));
+        }
 
-            case REG_FLTARG_1:
-            {
-                return 1;
-            }
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return unchecked((uint)(regNum - REG_F0_LOONGARCH64));
+        }
 
-            case REG_FLTARG_2:
-            {
-                return 2;
-            }
+        if (Configuration.TARGET_RISCV64)
+        {
+            return unchecked((uint)(regNum - REG_FA0_RISCV64));
+        }
 
-            case REG_FLTARG_3:
-            {
-                return 3;
-            }
-#if UNIX_AMD64_ABI
+        if (Configuration.TARGET_ARM64)
+        {
+            return unchecked((uint)(regNum - REG_V0_ARM64));
+        }
 
-            case REG_FLTARG_4:
-            {
-                return 4;
-            }
-#endif
+        if (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX)
+        {
+            return unchecked((uint)(regNum - REG_XMM0_AMD64));
+        }
 
-            default:
+        if (Configuration.TARGET_AMD64)
+        {
+            switch (regNum)
             {
-                assert(false, "!\"invalid register arg register\"");
+                case REG_XMM0_AMD64:
+                {
+                    return 0;
+                }
 
-                return unchecked((uint)BAD_VAR_NUM);
+                case REG_XMM1_AMD64:
+                {
+                    return 1;
+                }
+
+                case REG_XMM2_AMD64:
+                {
+                    return 2;
+                }
+
+                case REG_XMM3_AMD64:
+                {
+                    return 3;
+                }
+
+                default:
+                {
+                    assert(false, "!\"invalid register arg register\"");
+
+                    return unchecked((uint)BAD_VAR_NUM);
+                }
             }
         }
-#else
-        assert(false, "!\"flt reg args not allowed\"");
 
-        return unchecked((uint)BAD_VAR_NUM);
-#endif
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            assert(false, "!\"flt reg args not allowed\"");
+
+            return unchecked((uint)BAD_VAR_NUM);
+        }
+
+        throw new FatalJitException("Floating-point argument register mapping is not supported for this target.");
     }
 
     public static uint genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInfoCallConvExtension callConv)
@@ -166,4 +195,3 @@ public static partial class Globals
         }
     }
 }
-#endif

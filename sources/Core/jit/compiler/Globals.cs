@@ -36,62 +36,30 @@ public partial class Globals
 
     public static int genMapIntRegNumToRegArgNum(regNumber regNum, CorInfoCallConvExtension callConv)
     {
-#if TARGET_AMD64 || TARGET_ARM64
-        assert((regMaskTP.CreateFromRegNum(regNum, regNum.SingleTypeMask) & fullIntArgRegMask(callConv)) != RBM_NONE);
-        switch (regNum)
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
         {
-            case REG_ARG_0:
+            assert((regMaskTP.CreateFromRegNum(regNum, regNum.SingleTypeMask) & fullIntArgRegMask(callConv)) != RBM_NONE);
+            var registers = IntArgRegs;
+            for (var index = 0; index < registers.Length; index++)
             {
-                return 0;
-            }
-            case REG_ARG_1:
-            {
-                return 1;
-            }
-            case REG_ARG_2:
-            {
-                return 2;
-            }
-            case REG_ARG_3:
-            {
-                return 3;
-            }
-#if UNIX_AMD64_ABI || TARGET_ARM64
-            case REG_ARG_4:
-            {
-                return 4;
-            }
-            case REG_ARG_5:
-            {
-                return 5;
-            }
-#endif
-#if TARGET_ARM64
-            case REG_ARG_6:
-            {
-                return 6;
-            }
-            case REG_ARG_7:
-            {
-                return 7;
-            }
-#endif
-            default:
-            {
-                if (hasFixedRetBuffReg(callConv) && (regNum == theFixedRetBuffReg(callConv)))
+                if (regNum == registers[index])
                 {
-                    return theFixedRetBuffArgNum(callConv);
+                    return index;
                 }
-
-                assert(false, "invalid register arg register");
-                return BAD_VAR_NUM;
             }
+
+            if (hasFixedRetBuffReg(callConv) && (regNum == theFixedRetBuffReg(callConv)))
+            {
+                return theFixedRetBuffArgNum(callConv);
+            }
+
+            assert(false, "invalid register arg register");
+
+            return BAD_VAR_NUM;
         }
-#else
         NYI("Integer argument-register indexing outside AMD64/ARM64");
         fatal(CORJIT_IMPLLIMITATION);
         throw new FatalJitException("Integer argument-register indexing outside AMD64/ARM64.");
-#endif
     }
 
     /// <summary>Limit frames size to 1GB.</summary>

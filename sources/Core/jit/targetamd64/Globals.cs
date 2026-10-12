@@ -600,12 +600,8 @@ public partial class Globals
     public const regMask SRBM_FLTARG_7 = SRBM_XMM7;
 
     public const regMask SRBM_ARG_REGS = SRBM_ARG_0 | SRBM_ARG_1 | SRBM_ARG_2 | SRBM_ARG_3 | SRBM_ARG_4 | SRBM_ARG_5;
-
-    public const regMask SRBM_FLTARG_REGS = SRBM_FLTARG_0 | SRBM_FLTARG_1 | SRBM_FLTARG_2 | SRBM_FLTARG_3 | SRBM_FLTARG_4 | SRBM_FLTARG_5 | SRBM_FLTARG_6 | SRBM_FLTARG_7;
 #else
     public const regMask SRBM_ARG_REGS = SRBM_ARG_0 | SRBM_ARG_1 | SRBM_ARG_2 | SRBM_ARG_3;
-
-    public const regMask SRBM_FLTARG_REGS = SRBM_FLTARG_0 | SRBM_FLTARG_1 | SRBM_FLTARG_2 | SRBM_FLTARG_3;
 #endif
 
     public const regMask SRBM_VALIDATE_INDIRECT_CALL_TRASH_ALL = SRBM_INT_CALLEE_TRASH_ALL & ~(SRBM_R10 | SRBM_RCX);
@@ -667,40 +663,5 @@ public partial class Globals
     public const regNumber REG_SWIFT_SELF = REG_NA;
 #endif
 
-#if UNIX_AMD64_ABI
-    public static ReadOnlySpan<regNumber> IntArgRegs => [
-        REG_EDI,
-        REG_ESI,
-        REG_EDX,
-        REG_ECX,
-        REG_R8,
-        REG_R9,
-    ];
-
-    public static ReadOnlySpan<regNumber> FltArgRegs => [
-        REG_XMM0,
-        REG_XMM1,
-        REG_XMM2,
-        REG_XMM3,
-        REG_XMM4,
-        REG_XMM5,
-        REG_XMM6,
-        REG_XMM7,
-    ];
-#else
-    public static ReadOnlySpan<regNumber> IntArgRegs => [
-        REG_ECX,
-        REG_EDX,
-        REG_R8,
-        REG_R9,
-    ];
-
-    public static ReadOnlySpan<regNumber> FltArgRegs => [
-        REG_XMM0,
-        REG_XMM1,
-        REG_XMM2,
-        REG_XMM3,
-    ];
-#endif
 }
 #endif

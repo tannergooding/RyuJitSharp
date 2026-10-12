@@ -50,12 +50,5 @@ public partial class Globals
 
     public const int MAX_FLOAT_REG_ARG = 8;
 
-    public static ReadOnlySpan<regNumber> IntArgRegs => [
-        REG_R0, REG_R1, REG_R2, REG_R3, REG_R4, REG_R5, REG_R6, REG_R7,
-    ];
-
-    public static ReadOnlySpan<regNumber> FltArgRegs => [
-        REG_V0, REG_V1, REG_V2, REG_V3, REG_V4, REG_V5, REG_V6, REG_V7,
-    ];
 }
 #endif

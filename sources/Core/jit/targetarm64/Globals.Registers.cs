@@ -241,9 +241,6 @@ public static partial class Globals
     public const regMask SRBM_ARG_REGS =
         SRBM_ARG_0 | SRBM_ARG_1 | SRBM_ARG_2 | SRBM_ARG_3 |
         SRBM_ARG_4 | SRBM_ARG_5 | SRBM_ARG_6 | SRBM_ARG_7;
-    public const regMask SRBM_FLTARG_REGS =
-        SRBM_FLTARG_0 | SRBM_FLTARG_1 | SRBM_FLTARG_2 | SRBM_FLTARG_3 |
-        SRBM_FLTARG_4 | SRBM_FLTARG_5 | SRBM_FLTARG_6 | SRBM_FLTARG_7;
 
     public const int LBL_DIST_SMALL_MAX_NEG = -1048576;
     public const int LBL_DIST_SMALL_MAX_POS = 1048575;
