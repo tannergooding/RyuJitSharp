@@ -130,6 +130,19 @@ internal static unsafe class CompilerTargetConfigurationTests
     }
 
     [Test]
+    public static void DisabledLateDisassemblerHooksDoNotRequireInitialization()
+    {
+        Assume.That(!Configuration.LATE_DISASM);
+
+        var disassembler = default(Disassembler);
+        Assert.DoesNotThrow(() => disassembler.disDone());
+        Assert.DoesNotThrow(() => disassembler.disOpenForLateDisAsm(string.Empty, string.Empty, null));
+        Assert.DoesNotThrow(() => disassembler.disAsmCode(null, null, 0, null, null, 0));
+        Assert.DoesNotThrow(() => disassembler.disRecordRelocation(0, 0));
+        Assert.DoesNotThrow(() => disassembler.disSetMethod(0, default));
+    }
+
+    [Test]
     public static void NullCheckTypeUsesTheTargetArchitecture()
     {
         WithCompiler(compiler => {

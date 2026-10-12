@@ -60,8 +60,9 @@ public partial class Emitter
         {
             emitCmpHandle->recordRelocation(location, locationRW, target, relocType, addlDelta);
         }
-#if LATE_DISASM
-        codeGen.Disassembler.disRecordRelocation((nuint)location, (nuint)target);
-#endif
+        if (Configuration.LATE_DISASM)
+        {
+            codeGen.Disassembler.disRecordRelocation((nuint)location, (nuint)target);
+        }
     }
 }

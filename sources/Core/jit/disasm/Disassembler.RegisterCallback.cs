@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 namespace RyuJitSharp;
 
 public partial struct Disassembler
@@ -17,4 +16,3 @@ public partial struct Disassembler
         return 0;
     }
 }
-#endif

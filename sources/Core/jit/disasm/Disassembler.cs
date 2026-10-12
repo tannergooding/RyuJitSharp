@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -61,6 +60,11 @@ public partial struct Disassembler
 
     public void disDone()
     {
+        if (!Configuration.LATE_DISASM)
+        {
+            return;
+        }
+
 #if USE_COREDISTOOLS
         DoneCoredistoolsDisasm();
 #endif
@@ -88,6 +92,11 @@ public partial struct Disassembler
 
     public unsafe void disOpenForLateDisAsm(string curMethodName, string curClassName, PCCOR_SIGNATURE sig)
     {
+        if (!Configuration.LATE_DISASM)
+        {
+            return;
+        }
+
         var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
         if (!compiler.opts.doLateDisasm)
         {
@@ -101,6 +110,11 @@ public partial struct Disassembler
     public unsafe void disAsmCode(byte* hotCodePtr, byte* hotCodePtrRW, nuint hotCodeSize,
         byte* coldCodePtr, byte* coldCodePtrRW, nuint coldCodeSize)
     {
+        if (!Configuration.LATE_DISASM)
+        {
+            return;
+        }
+
         var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
         if (!compiler.opts.doLateDisasm)
         {
@@ -171,4 +185,3 @@ public partial struct Disassembler
         return ((nuint)dspAddr(address)).ToString($"X{sizeof(nuint) * 2}", CultureInfo.InvariantCulture);
     }
 }
-#endif

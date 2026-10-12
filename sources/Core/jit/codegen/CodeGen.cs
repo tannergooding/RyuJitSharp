@@ -10,9 +10,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen : ICodeGen
 {
-#if LATE_DISASM
     private Disassembler _cgDisasm;
-#endif
 
     private Emitter _cgEmitter;
 
@@ -98,9 +96,10 @@ public sealed partial class CodeGen : ICodeGen
 
         _regSet.tmpInit();
 
-#if LATE_DISASM
-        _cgDisasm.disInit(compiler);
-#endif
+        if (Configuration.LATE_DISASM)
+        {
+            _cgDisasm.disInit(compiler);
+        }
 
 #if DEBUG
         _genTrnslLocalVarCount = 0;
@@ -134,9 +133,7 @@ public sealed partial class CodeGen : ICodeGen
 
     public Compiler Compiler => _compiler;
 
-#if LATE_DISASM
     public ref Disassembler Disassembler => ref _cgDisasm;
-#endif
 
     public Emitter Emitter => _cgEmitter;
 
@@ -1052,9 +1049,10 @@ public sealed partial class CodeGen : ICodeGen
 
     public unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode)
     {
-#if LATE_DISASM
-        RequireSupportedLateDisassembly();
-#endif
+        if (Configuration.LATE_DISASM)
+        {
+            RequireSupportedLateDisassembly();
+        }
 #if TARGET_WASM
         genCheckWasmFunclets();
 #endif

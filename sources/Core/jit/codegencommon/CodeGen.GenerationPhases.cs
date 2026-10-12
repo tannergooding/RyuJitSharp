@@ -22,9 +22,10 @@ public sealed partial class CodeGen
 
     internal unsafe void genGenerateMachineCode()
     {
-#if LATE_DISASM
-        RequireSupportedLateDisassembly();
-#endif
+        if (Configuration.LATE_DISASM)
+        {
+            RequireSupportedLateDisassembly();
+        }
 #if DEBUG
         _genInterruptibleUsed = true;
         _compiler.fgDebugCheckBBlist();
@@ -189,9 +190,10 @@ public sealed partial class CodeGen
 
     internal unsafe void genEmitMachineCode()
     {
-#if LATE_DISASM
-        RequireSupportedLateDisassembly();
-#endif
+        if (Configuration.LATE_DISASM)
+        {
+            RequireSupportedLateDisassembly();
+        }
         assert(_codePtr is not null);
         assert(_nativeSizeOfCode is not null);
         Emitter.emitComputeCodeSizes();
@@ -301,14 +303,12 @@ public sealed partial class CodeGen
         _compiler.info.compNativeCodeSize = unchecked((int)_codeSize);
     }
 
-#if LATE_DISASM
     private void RequireSupportedLateDisassembly()
     {
-        if (_compiler.opts.doLateDisasm)
+        if (Configuration.LATE_DISASM && _compiler.opts.doLateDisasm)
         {
             throw new FatalJitException(CORJIT_SKIPPED,
                 "Late disassembly requires a native callback bridge to preserve decoder-error output.");
         }
     }
-#endif
 }

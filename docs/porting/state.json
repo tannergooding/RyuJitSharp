@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the `LATE_DISASM` runtime migration at `codegen/CodeGen.cs::_cgDisasm`, `CodeGen.Disassembler`, and `genGenerateCode`, including the `ICodeGen` contract and disassembler dependency closure without enabling unsupported backends.",
+    "nextAction": "Universalize the remaining `LATE_DISASM` dependencies in `Compiler.Info.cs` and the disassembler decoder partials (`Disassembler.Msvc*` and `Disassembler.Coredistools.cs`), then migrate emitter diagnostic state and initialization. Remove the `LATE_DISASM` and `USE_COREDISTOOLS` build defines only after every dependent source and test guard has a runtime equivalent.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize the `LATE_DISASM` gate in `Compiler.gtCloneCnsInt` and supply its Debug/Release/ARM64 opt-in runtime configuration and AOT substitution.",
-      "doneWhen": "Integer-constant cloning uses runtime `Configuration.LATE_DISASM` while preserving handle cloning and Debug target-cookie behavior; test hosts and NativeAOT substitutions receive the same value as the existing build policy.",
-      "validation": "In Debug and Release, `CompilerTargetConfigurationTests` passed on all eight target configurations using a win-x64 test host and per-target `RyuJitTargetRuntimeIdentifier`: win-x64 (38 passed, 1 skipped), win-x86 (40, 1), linux-x86 (40, 1), linux-arm64 (35, 3), linux-arm (29, 9), linux-loongarch64 (27, 9), linux-riscv64 (27, 9), and browser-wasm (35, 4). The Release linux-arm64 late-disassembly opt-in test passed (2/2). Generated NativeAOT substitution XML parsed and produced true for Debug win-x64, false for Release win-x64, and true for Release linux-arm64 with the opt-in. `IlcArg` evaluation includes both the RID and generated policy substitutions. No full NativeAOT publish was run.",
-      "deferred": "Continue the remaining `LATE_DISASM` implementation and dependency closure after this cloning branch. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
+      "scope": "Make the CodeGen late-disassembly interface and lifecycle available across target builds, and gate compiler/emitter entrypoints with runtime `Configuration.LATE_DISASM`.",
+      "doneWhen": "The common Disassembler contract compiles when the feature is disabled, disabled hooks do not require initialization, enabled-but-unsupported late disassembly still terminates explicitly, and compiler/emitter dispatch preserves the existing feature policy.",
+      "validation": "Focused `CompilerTargetConfigurationTests` passed with `-p:EnforceCodeStyleInBuild=false`: Debug win-x64 (38 passed, 1 skipped), Release win-x64 (39 passed, 1 skipped), and Release browser-wasm (36 passed, 4 skipped). The Debug win-x64 build exercised the enabled feature compilation; Release win-x64 and browser-wasm exercised runtime-disabled paths, including the new uninitialized-hook regression. The normal analyzer-enabled build remains blocked by previously recorded unrelated IDE2002/IDE0059 diagnostics. `git diff --check` passed; no full NativeAOT publish was run.",
+      "deferred": "The target-specific MSVC/CoreDisTools decoder partials, emitter diagnostic data guarded by `DEBUG || LATE_DISASM`, and remaining source/test/project LATE_DISASM guards remain. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
       "corelibCodegen": {

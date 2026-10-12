@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -41,8 +40,13 @@ public partial struct Disassembler
 
     public unsafe void disSetMethod(nuint addr, CORINFO_METHOD_HANDLE methHnd)
     {
-        assert(_compiler is not null);
-        if (!_compiler.opts.doLateDisasm)
+        if (!Configuration.LATE_DISASM)
+        {
+            return;
+        }
+
+        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        if (!compiler.opts.doLateDisasm)
         {
             return;
         }
@@ -51,7 +55,7 @@ public partial struct Disassembler
         {
 #if DISASM_DEBUG
 #if DEBUG
-            if (_compiler.verbose)
+            if (compiler.verbose)
 #endif
             {
                 jitprintf($"Helper function: {addr:X16} => {(nuint)methHnd:X16}\n");
@@ -63,7 +67,7 @@ public partial struct Disassembler
         {
 #if DISASM_DEBUG
 #if DEBUG
-            if (_compiler.verbose)
+            if (compiler.verbose)
 #endif
             {
                 jitprintf($"Function: {addr:X16} => {(nuint)methHnd:X16}\n");
@@ -73,4 +77,3 @@ public partial struct Disassembler
         }
     }
 }
-#endif

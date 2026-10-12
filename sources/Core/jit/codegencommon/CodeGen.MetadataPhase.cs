@@ -13,9 +13,10 @@ public sealed partial class CodeGen
 {
     internal unsafe void genEmitUnwindDebugGCandEH()
     {
-#if LATE_DISASM
-        RequireSupportedLateDisassembly();
-#endif
+        if (Configuration.LATE_DISASM)
+        {
+            RequireSupportedLateDisassembly();
+        }
         assert(_codePtr is not null);
         _compiler.unwindEmit(*_codePtr, _coldCodePtr);
         genIPmappingGen();
@@ -23,33 +24,40 @@ public sealed partial class CodeGen
         genReportAsyncDebugInfo();
         genSetScopeInfo();
 
-#if LATE_DISASM || DEBUG
-        uint finalHotCodeSize;
-        uint finalColdCodeSize;
-        var allocatedHotCodeSize = unchecked((uint)_compiler.info.compTotalHotCodeSize);
-        var allocatedColdCodeSize = unchecked((uint)_compiler.info.compTotalColdCodeSize);
-        if (_compiler.fgFirstColdBlock is not null)
-        {
-            // Hot code is padded to its allocation; the final cold section is not.
-            assert(_codeSize <= unchecked(allocatedHotCodeSize + allocatedColdCodeSize));
-            assert(allocatedHotCodeSize > 0);
-            assert(allocatedColdCodeSize > 0);
-            finalHotCodeSize = allocatedHotCodeSize;
-            finalColdCodeSize = unchecked(_codeSize - finalHotCodeSize);
-        }
-        else
-        {
-            assert(_codeSize <= allocatedHotCodeSize);
-            assert(allocatedHotCodeSize > 0);
-            assert(allocatedColdCodeSize == 0);
-            finalHotCodeSize = _codeSize;
-            finalColdCodeSize = 0;
-        }
+        uint finalHotCodeSize = 0;
+        uint finalColdCodeSize = 0;
+#if DEBUG
+        const bool shouldComputeFinalCodeSizes = true;
+#else
+        var shouldComputeFinalCodeSizes = Configuration.LATE_DISASM;
 #endif
-#if LATE_DISASM
-        Disassembler.disAsmCode((byte*)*_codePtr, (byte*)_codePtrRW, finalHotCodeSize,
-            (byte*)_coldCodePtr, (byte*)_coldCodePtrRW, finalColdCodeSize);
-#endif
+        if (shouldComputeFinalCodeSizes)
+        {
+            var allocatedHotCodeSize = unchecked((uint)_compiler.info.compTotalHotCodeSize);
+            var allocatedColdCodeSize = unchecked((uint)_compiler.info.compTotalColdCodeSize);
+            if (_compiler.fgFirstColdBlock is not null)
+            {
+                // Hot code is padded to its allocation; the final cold section is not.
+                assert(_codeSize <= unchecked(allocatedHotCodeSize + allocatedColdCodeSize));
+                assert(allocatedHotCodeSize > 0);
+                assert(allocatedColdCodeSize > 0);
+                finalHotCodeSize = allocatedHotCodeSize;
+                finalColdCodeSize = unchecked(_codeSize - finalHotCodeSize);
+            }
+            else
+            {
+                assert(_codeSize <= allocatedHotCodeSize);
+                assert(allocatedHotCodeSize > 0);
+                assert(allocatedColdCodeSize == 0);
+                finalHotCodeSize = _codeSize;
+                finalColdCodeSize = 0;
+            }
+        }
+        if (Configuration.LATE_DISASM)
+        {
+            Disassembler.disAsmCode((byte*)*_codePtr, (byte*)_codePtrRW, finalHotCodeSize,
+                (byte*)_coldCodePtr, (byte*)_coldCodePtrRW, finalColdCodeSize);
+        }
 #if DEBUG
         if (JitConfig.JitRawHexCode.contains(_compiler.info.compMethodHnd, _compiler.info.compClassHnd,
             &_compiler.info.compMethodInfo->args))

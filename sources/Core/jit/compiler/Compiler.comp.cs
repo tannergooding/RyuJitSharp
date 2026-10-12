@@ -1532,9 +1532,10 @@ public partial class Compiler
 
     public unsafe void compDone()
     {
-#if LATE_DISASM
-        codeGen?.Disassembler.disDone();
-#endif
+        if (Configuration.LATE_DISASM)
+        {
+            codeGen?.Disassembler.disDone();
+        }
 
         // getOSRInfo returns EE-owned storage. Only the mismatched-target copy is ours.
         if (_ownedPatchpointInfo is not null)
@@ -1760,11 +1761,12 @@ public partial class Compiler
 
         opts.altJit = false;
 
-#if LATE_DISASM && !DEBUG
-        // For non-debug builds with the late disassembler built in, we currently always do late disassembly
-        // (we have no way to determine when not to, since we don't have class/method names).
-        // In the DEBUG case, this is initialized to false, below.
-        opts.doLateDisasm = true;
+#if !DEBUG
+        if (Configuration.LATE_DISASM)
+        {
+            // Non-debug builds cannot select late disassembly by method name.
+            opts.doLateDisasm = true;
+        }
 #endif
 
 #if DEBUG
@@ -2098,9 +2100,7 @@ public partial class Compiler
         assert(opts.dspUnwind is false);
         assert(opts.compLongAddress is false);
 
-#if LATE_DISASM
         assert(opts.doLateDisasm is false);
-#endif
 
         assert(compDebugBreak is false);
 
@@ -2158,12 +2158,11 @@ public partial class Compiler
                 opts.disasmWithGC = true;
             }
 
-#if LATE_DISASM
-            if (JitConfig.JitLateDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
+            if (Configuration.LATE_DISASM &&
+                JitConfig.JitLateDisasm.contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.doLateDisasm = true;
             }
-#endif // LATE_DISASM
 
             if (JitConfig.JitDisasmWithAddress != 0)
             {
@@ -2476,8 +2475,12 @@ public partial class Compiler
         opts.compScopeInfo = false;
 #endif
 
-#if LATE_DISASM
-        codeGen.Disassembler.disOpenForLateDisAsm(info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig);
+#if DEBUG || LATE_DISASM
+        if (Configuration.LATE_DISASM)
+        {
+            codeGen.Disassembler.disOpenForLateDisAsm(
+                info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig);
+        }
 #endif
 
         opts.compReloc = jitFlags->IsSet(JitFlags.JIT_FLAG_RELOC);

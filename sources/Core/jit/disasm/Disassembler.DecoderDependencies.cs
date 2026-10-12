@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -200,4 +199,3 @@ public partial struct Disassembler
     }
 #pragma warning restore IDE0251
 }
-#endif

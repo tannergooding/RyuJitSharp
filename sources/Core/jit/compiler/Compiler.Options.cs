@@ -361,10 +361,8 @@ public partial class Compiler
         /// <summary>Iteration limit to unroll a loop.</summary>
         public ushort compJitUnrollLoopMaxIterationCount;
 
-#if LATE_DISASM
         /// <summary>Run the late disassembler</summary>
         public bool doLateDisasm;
-#endif
 
 #if DUMP_GC_TABLES && !DEBUG
 #warning NOTE: this non-debug build has GC ptr table dumping always enabled!

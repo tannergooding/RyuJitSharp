@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -19,15 +18,20 @@ public partial struct Disassembler
 
     public void disRecordRelocation(nuint relocAddr, nuint targetAddr)
     {
-        assert(_compiler is not null);
-        if (!_compiler.opts.doLateDisasm)
+        if (!Configuration.LATE_DISASM)
+        {
+            return;
+        }
+
+        var compiler = _compiler ?? throw new FatalJitException("Disassembler has not been initialized.");
+        if (!compiler.opts.doLateDisasm)
         {
             return;
         }
 
 #if DISASM_DEBUG
 #if DEBUG
-        if (_compiler.verbose)
+        if (compiler.verbose)
 #endif
         {
             jitprintf($"Relocation {relocAddr:X16} => {targetAddr:X16}\n");
@@ -36,4 +40,3 @@ public partial struct Disassembler
         GetRelocationMap()[relocAddr] = targetAddr;
     }
 }
-#endif

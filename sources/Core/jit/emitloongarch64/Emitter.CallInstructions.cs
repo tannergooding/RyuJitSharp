@@ -145,12 +145,10 @@ public partial class Emitter
             debugInfo.idMemCookie = unchecked((nint)parameters.methHnd);
         }
 
-#if LATE_DISASM
-        if (parameters.addr != null)
+        if (Configuration.LATE_DISASM && (parameters.addr != null))
         {
             codeGen.Disassembler.disSetMethod((nuint)parameters.addr, parameters.methHnd);
         }
-#endif
 
         appendToCurIG(id);
     }

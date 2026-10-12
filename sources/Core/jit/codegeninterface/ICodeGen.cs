@@ -9,13 +9,11 @@ public interface ICodeGen
 {
     Compiler Compiler { get; }
 
-#if LATE_DISASM
     ref Disassembler Disassembler { get; }
 
     string? siRegVarName(nuint offs, nuint size, uint reg);
 
     string? siStackVarName(nuint offs, nuint size, uint reg, uint stkOffs);
-#endif
 
     Emitter Emitter { get; }
 
