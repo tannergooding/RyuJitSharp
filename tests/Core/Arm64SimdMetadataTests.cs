@@ -495,13 +495,13 @@ internal static class Arm64SimdMetadataTests
         var node = new GenTreeHWIntrinsic(TYP_STRUCT, NI_AdvSimd_Arm64_Load4xVector128, TYP_INT, 16, address);
 
         Assert.That(node.IsMultiRegNode, Is.True);
-        node.SetRegNumByIdx(REG_V4, 0);
-        node.SetRegNumByIdx(REG_V7, 3);
+        node.SetRegNumByIdx(REG_V4_ARM64, 0);
+        node.SetRegNumByIdx(REG_V7_ARM64, 3);
 
-        Assert.That(node.GetRegNumByIdx(0), Is.EqualTo(REG_V4));
-        Assert.That(node.GetRegNumByIdx(1), Is.EqualTo(REG_V5));
-        Assert.That(node.GetRegNumByIdx(2), Is.EqualTo(REG_V6));
-        Assert.That(node.GetRegNumByIdx(3), Is.EqualTo(REG_V7));
+        Assert.That(node.GetRegNumByIdx(0), Is.EqualTo(REG_V4_ARM64));
+        Assert.That(node.GetRegNumByIdx(1), Is.EqualTo(REG_V5_ARM64));
+        Assert.That(node.GetRegNumByIdx(2), Is.EqualTo(REG_V6_ARM64));
+        Assert.That(node.GetRegNumByIdx(3), Is.EqualTo(REG_V7_ARM64));
     }
 
     [Test]
@@ -510,11 +510,11 @@ internal static class Arm64SimdMetadataTests
         var scalar = new GenTreeIntCon(TYP_INT, 7);
         var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_Create, TYP_INT, 16, scalar);
 
-        node.SetRegNumByIdx(REG_V0, 0);
-        node.SetRegNumByIdx(REG_V9, 1);
+        node.SetRegNumByIdx(REG_V0_ARM64, 0);
+        node.SetRegNumByIdx(REG_V9_ARM64, 1);
 
-        Assert.That(node.GetRegNumByIdx(0), Is.EqualTo(REG_V0));
-        Assert.That(node.GetRegNumByIdx(1), Is.EqualTo(REG_V9));
+        Assert.That(node.GetRegNumByIdx(0), Is.EqualTo(REG_V0_ARM64));
+        Assert.That(node.GetRegNumByIdx(1), Is.EqualTo(REG_V9_ARM64));
     }
 }
 #endif

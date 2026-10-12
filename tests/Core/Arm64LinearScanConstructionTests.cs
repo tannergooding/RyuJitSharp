@@ -461,8 +461,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
         });
     }
 
-    [TestCase(REG_V0, SRBM_V0 | SRBM_V31)]
-    [TestCase(REG_V1, SRBM_V0)]
+    [TestCase(REG_V0_ARM64, SRBM_V0 | SRBM_V31)]
+    [TestCase(REG_V1_ARM64, SRBM_V0)]
     public static void ConsecutiveReuseUsesNativePredecessorBit(
         regNumber assignedNext, regMask expected)
     {
@@ -508,8 +508,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var second = definitions[1];
             first.registerAssignment = SRBM_V31;
 
-            Assert.That(CanAssignNext(allocator, first, REG_V31), Is.True);
-            AssignConsecutive(allocator, first, REG_V31);
+            Assert.That(CanAssignNext(allocator, first, REG_V31_ARM64), Is.True);
+            AssignConsecutive(allocator, first, REG_V31_ARM64);
             Assert.Multiple(() => {
                 Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0));
                 Assert.That(ConsecutiveInUse(allocator), Is.EqualTo(SRBM_V31 | SRBM_V0));
@@ -545,7 +545,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             NextConsecutiveMap(allocator)[restore] = second;
             first.registerAssignment = SRBM_V31;
 
-            AssignConsecutive(allocator, first, REG_V31);
+            AssignConsecutive(allocator, first, REG_V31_ARM64);
             Assert.Multiple(() => {
                 Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_V3));
                 Assert.That(second.registerAssignment, Is.EqualTo(SRBM_V0));
@@ -568,15 +568,15 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var definitions = allocator.refPositions.FindAll(position =>
                 position.treeNode == load && position.refType is RefType.RefTypeDef);
             var nextInterval = definitions[1].getInterval();
-            var register = allocator.physRegs[(int)REG_V0];
-            register.init(REG_V0);
+            var register = allocator.physRegs[(int)REG_V0_ARM64];
+            register.init(REG_V0_ARM64);
             nextInterval.assignedReg = register;
             nextInterval.isActive = true;
             register.assignedInterval = nextInterval;
 
-            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31), Is.True);
+            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31_ARM64), Is.True);
             InUse(allocator) = new regMaskTP(SRBM_V0);
-            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31), Is.False);
+            Assert.That(CanAssignNext(allocator, definitions[0], REG_V31_ARM64), Is.False);
         });
     }
 
@@ -680,7 +680,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var local = NewInterval(allocator, TYP_SIMD16);
             local.isLocalVar = true;
             local.varNum = 0;
-            local.physReg = REG_V0;
+            local.physReg = REG_V0_ARM64;
             local.isPartiallySpilled = true;
             var upper = NewInterval(allocator, TYP_DOUBLE);
             upper.isUpperVector = true;
@@ -692,8 +692,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
             AllocateRegisters(allocator);
             Assert.Multiple(() => {
                 Assert.That(restore.registerAssignment, Is.EqualTo(SRBM_V3));
-                Assert.That(upper.physReg, Is.EqualTo(REG_V3));
-                Assert.That(upper.assignedReg, Is.SameAs(allocator.physRegs[(int)REG_V3]));
+                Assert.That(upper.physReg, Is.EqualTo(REG_V3_ARM64));
+                Assert.That(upper.assignedReg, Is.SameAs(allocator.physRegs[(int)REG_V3_ARM64]));
                 Assert.That(local.isPartiallySpilled, Is.False);
             });
         });
@@ -715,8 +715,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 position.treeNode == load && position.refType is RefType.RefTypeDef &&
                 position.regCount == 2) ?? throw new AssertionException("Missing first vector definition.");
 
-            SetRegInUse(allocator, REG_V1, TYP_FLOAT);
-            SetRegInUse(allocator, REG_V2, TYP_FLOAT);
+            SetRegInUse(allocator, REG_V1_ARM64, TYP_FLOAT);
+            SetRegInUse(allocator, REG_V2_ARM64, TYP_FLOAT);
             Assert.That(GetConsecutiveCandidates(allocator, SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3,
                 first, out var busy), Is.EqualTo(SRBM_NONE));
             Assert.That(busy, Is.EqualTo(SRBM_V0 | SRBM_V2));
@@ -733,7 +733,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             codeGen.RegSet.rsClearRegsModified();
             var allocator = new LinearScan(compiler);
             BlockInfo(allocator) = [new LsraBlockInfo()];
-            for (var register = REG_V0; register <= REG_V31; register++)
+            for (var register = REG_V0_ARM64; register <= REG_V31_ARM64; register++)
             {
                 allocator.physRegs[(int)register].init(register);
             }
@@ -752,7 +752,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             Assert.That(first.isFixedRegRef, Is.False);
             var selected = AllocateConsecutive(allocator, first.getInterval(), first, true);
             Assert.Multiple(() => {
-                Assert.That(selected, Is.EqualTo(expected == SRBM_V31 ? REG_V31 : REG_V0));
+                Assert.That(selected, Is.EqualTo(expected == SRBM_V31 ? REG_V31_ARM64 : REG_V0_ARM64));
                 Assert.That(first.registerAssignment, Is.EqualTo(expected));
             });
         }, minOpts: false);
@@ -772,7 +772,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             codeGen.RegSet.rsClearRegsModified();
             var allocator = new LinearScan(compiler);
             BlockInfo(allocator) = [new LsraBlockInfo()];
-            for (var register = REG_V0; register <= REG_V31; register++)
+            for (var register = REG_V0_ARM64; register <= REG_V31_ARM64; register++)
             {
                 allocator.physRegs[(int)register].init(register);
             }
@@ -794,12 +794,12 @@ internal static unsafe class Arm64LinearScanConstructionTests
 
             FixedLow(allocator) = SRBM_V0 | SRBM_V1;
             var nextFixed = NextFixed(allocator);
-            nextFixed[(int)REG_V0] = first.nodeLocation;
-            nextFixed[(int)REG_V1] = unchecked(first.nodeLocation + (delayRegFree ? 1u : 0u));
+            nextFixed[(int)REG_V0_ARM64] = first.nodeLocation;
+            nextFixed[(int)REG_V1_ARM64] = unchecked(first.nodeLocation + (delayRegFree ? 1u : 0u));
 
             if (hasAvailablePair)
             {
-                Assert.That(AllocateConsecutive(allocator, first.getInterval(), first, true), Is.EqualTo(REG_V3));
+                Assert.That(AllocateConsecutive(allocator, first.getInterval(), first, true), Is.EqualTo(REG_V3_ARM64));
                 Assert.That(first.registerAssignment, Is.EqualTo(SRBM_V3));
             }
             else

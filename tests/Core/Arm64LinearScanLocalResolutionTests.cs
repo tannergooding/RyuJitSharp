@@ -80,7 +80,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             var local = new Interval(TYP_SIMD16, SRBM_V8) {
                 isLocalVar = true,
                 varNum = 0,
-                physReg = REG_V8,
+                physReg = REG_V8_ARM64,
             };
             var upper = new Interval(TYP_DOUBLE, SRBM_V9) {
                 isUpperVector = true,
@@ -100,9 +100,9 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             Assert.Multiple(() => {
                 Assert.That(save.Oper, Is.EqualTo(GT_INTRINSIC));
                 Assert.That(save.Type, Is.EqualTo(TYP_DOUBLE));
-                Assert.That(save.RegNum, Is.EqualTo(REG_V9));
+                Assert.That(save.RegNum, Is.EqualTo(REG_V9_ARM64));
                 Assert.That((save.Flags & GTF_SPILL) != 0, Is.EqualTo(spillToMemory));
-                Assert.That(upper.physReg, Is.EqualTo(spillToMemory ? REG_NA : REG_V9));
+                Assert.That(upper.physReg, Is.EqualTo(spillToMemory ? REG_NA : REG_V9_ARM64));
             });
         });
     }
@@ -117,12 +117,12 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
                 isLocalVar = true,
                 isSpilled = spillToMemory,
                 varNum = 0,
-                physReg = REG_V8,
+                physReg = REG_V8_ARM64,
             };
             var upper = new Interval(TYP_DOUBLE, SRBM_V9) {
                 isUpperVector = true,
                 relatedInterval = local,
-                physReg = spillToMemory ? REG_NA : REG_V9,
+                physReg = spillToMemory ? REG_NA : REG_V9_ARM64,
             };
             var load = compiler.gtNewLclvNode(TYP_SIMD16, 0);
             var user = new GenTreeLclVar(TYP_SIMD16, 0, load);
@@ -139,7 +139,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             Assert.Multiple(() => {
                 Assert.That(restore.Oper, Is.EqualTo(GT_INTRINSIC));
                 Assert.That(restore.Type, Is.EqualTo(TYP_SIMD16));
-                Assert.That(restore.RegNum, Is.EqualTo(REG_V9));
+                Assert.That(restore.RegNum, Is.EqualTo(REG_V9_ARM64));
                 Assert.That((restore.Flags & GTF_SPILLED) != 0, Is.EqualTo(spillToMemory));
                 Assert.That(restore.Flags & GTF_NOREG_AT_USE, Is.EqualTo(GTF_EMPTY));
             });
@@ -168,8 +168,8 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
                     isSplit = true,
                     varNum = (uint)index,
                 };
-                allocator.setOutVarRegForBB((uint)source.bbNum, (uint)index, index == 0 ? REG_R0 : REG_R1);
-                allocator.setInVarRegForBB((uint)target.bbNum, (uint)index, index == 0 ? REG_R1 : REG_R0);
+                allocator.setOutVarRegForBB((uint)source.bbNum, (uint)index, index == 0 ? REG_R0_ARM64 : REG_R1_ARM64);
+                allocator.setInVarRegForBB((uint)target.bbNum, (uint)index, index == 0 ? REG_R1_ARM64 : REG_R0_ARM64);
             }
 
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin, live,
@@ -235,14 +235,14 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
         });
     }
 
-    [TestCase(TYP_INT, REG_STK, REG_R0, GT_LCL_VAR)]
-    [TestCase(TYP_INT, REG_R0, REG_STK, GT_LCL_VAR)]
-    [TestCase(TYP_INT, REG_R0, REG_R1, GT_COPY)]
-    [TestCase(TYP_REF, REG_R0, REG_R1, GT_COPY)]
-    [TestCase(TYP_DOUBLE, REG_V0, REG_V1, GT_COPY)]
-    [TestCase(TYP_MASK, REG_STK, REG_P1, GT_LCL_VAR)]
-    [TestCase(TYP_MASK, REG_P0, REG_STK, GT_LCL_VAR)]
-    [TestCase(TYP_MASK, REG_P0, REG_P1, GT_COPY)]
+    [TestCase(TYP_INT, REG_STK_ARM64, REG_R0_ARM64, GT_LCL_VAR)]
+    [TestCase(TYP_INT, REG_R0_ARM64, REG_STK_ARM64, GT_LCL_VAR)]
+    [TestCase(TYP_INT, REG_R0_ARM64, REG_R1_ARM64, GT_COPY)]
+    [TestCase(TYP_REF, REG_R0_ARM64, REG_R1_ARM64, GT_COPY)]
+    [TestCase(TYP_DOUBLE, REG_V0_ARM64, REG_V1_ARM64, GT_COPY)]
+    [TestCase(TYP_MASK, REG_STK_ARM64, REG_P1_ARM64, GT_LCL_VAR)]
+    [TestCase(TYP_MASK, REG_P0_ARM64, REG_STK_ARM64, GT_LCL_VAR)]
+    [TestCase(TYP_MASK, REG_P0_ARM64, REG_P1_ARM64, GT_COPY)]
     public static void JoinResolutionMovesLocalBetweenStackAndRegisters(
         var_types type, regNumber from, regNumber to, genTreeOps expected)
     {
@@ -252,7 +252,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
             compiler.lvaTable[0].Type = type;
             compiler.compFloatingPointUsed = type is TYP_DOUBLE or TYP_MASK;
-            var interval = new Interval(type, genSingleTypeRegMask(from == REG_STK ? to : from)) {
+            var interval = new Interval(type, genSingleTypeRegMask(from == REG_STK_ARM64 ? to : from)) {
                 isLocalVar = true,
                 isSpilled = true,
                 varNum = 0,
@@ -292,7 +292,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
 
             WriteRegisters(allocator, reference, call);
 
-            Assert.That(call.GetRegNumByIdx(1), Is.EqualTo(REG_R1));
+            Assert.That(call.GetRegNumByIdx(1), Is.EqualTo(REG_R1_ARM64));
         });
     }
 
@@ -326,9 +326,9 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             allocator.resolveRegistersWithLocals();
 
             Assert.Multiple(() => {
-                Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_R0));
-                Assert.That(compiler.lvaTable[0].ArgInitReg, Is.EqualTo(REG_R0));
-                Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_R0));
+                Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_R0_ARM64));
+                Assert.That(compiler.lvaTable[0].ArgInitReg, Is.EqualTo(REG_R0_ARM64));
+                Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_R0_ARM64));
             });
         });
     }
@@ -351,7 +351,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
 
             ResolveMinimal(allocator);
 
-            Assert.That(constant.RegNum, Is.EqualTo(REG_R0));
+            Assert.That(constant.RegNum, Is.EqualTo(REG_R0_ARM64));
         }, enableLocals: false);
     }
 

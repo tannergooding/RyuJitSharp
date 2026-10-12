@@ -40,8 +40,8 @@ internal static unsafe class Arm64ReturnTypeTests
                 Assert.That(descriptor.IsMultiRegRetType, Is.True);
                 Assert.That(descriptor.GetReturnRegType(0), Is.EqualTo(firstType));
                 Assert.That(descriptor.GetReturnRegType(1), Is.EqualTo(secondType));
-                Assert.That(descriptor.GetAbiReturnReg(0, CorInfoCallConvExtension.Managed), Is.EqualTo(REG_R0));
-                Assert.That(descriptor.GetAbiReturnReg(1, CorInfoCallConvExtension.Managed), Is.EqualTo(REG_R1));
+                Assert.That(descriptor.GetAbiReturnReg(0, CorInfoCallConvExtension.Managed), Is.EqualTo(REG_R0_ARM64));
+                Assert.That(descriptor.GetAbiReturnReg(1, CorInfoCallConvExtension.Managed), Is.EqualTo(REG_R1_ARM64));
                 Assert.That(metadata.GcLayoutCalls, Is.EqualTo(1));
                 Assert.That(metadata.GcLayoutWasInitialized, Is.True);
                 Assert.That(metadata.SizeCalls, Is.EqualTo(1));
@@ -263,10 +263,10 @@ internal static unsafe class Arm64ReturnTypeTests
         });
     }
 
-    [TestCase(TYP_INT, REG_R0, false)]
-    [TestCase(TYP_LONG, REG_R7, false)]
-    [TestCase(TYP_FLOAT, REG_V0, false)]
-    [TestCase(TYP_DOUBLE, REG_V7, false)]
+    [TestCase(TYP_INT, REG_R0_ARM64, false)]
+    [TestCase(TYP_LONG, REG_R7_ARM64, false)]
+    [TestCase(TYP_FLOAT, REG_V0_ARM64, false)]
+    [TestCase(TYP_DOUBLE, REG_V7_ARM64, false)]
     [TestCase(TYP_LONG, REG_NA, true)]
     [TestCase(TYP_DOUBLE, REG_NA, true)]
     public static void CallArgumentsUseTheirClassifiedRegisterOrStackSlot(var_types type, regNumber register, bool stack)
@@ -368,7 +368,7 @@ internal static unsafe class Arm64ReturnTypeTests
             var call = new GenTreeCall(TYP_VOID);
             var argument = call.Args.PushBack(NewCallArg.CreateForStruct(value, TYP_STRUCT, layout));
             argument.AbiInfo = new AbiPassingInformation(2);
-            argument.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(REG_R7, 0, 8);
+            argument.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(REG_R7_ARM64, 0, 8);
             argument.AbiInfo.Segments[1] = AbiPassingSegment.OnStack(16, 8, 8);
             var tailValue = compiler.gtNewIconNode(TYP_LONG, 33);
             var tail = call.Args.PushBack(NewCallArg.CreateForPrimitive(tailValue));
@@ -405,7 +405,7 @@ internal static unsafe class Arm64ReturnTypeTests
             Assert.That(registers.SignatureLayout?.Size, Is.EqualTo(8));
             Assert.That(argument.Node.Oper, Is.EqualTo(GT_PUTARG_STK));
             Assert.That(registers.Node.Oper, Is.EqualTo(GT_PUTARG_REG));
-            Assert.That(registers.Node.RegNum, Is.EqualTo(REG_R7));
+            Assert.That(registers.Node.RegNum, Is.EqualTo(REG_R7_ARM64));
             Assert.That(value.Next, Is.Null);
             var stackValue = argument.Node.AsPutArgStk().Data;
             var registerValue = registers.Node.AsUnOp().Op1;
@@ -451,7 +451,7 @@ internal static unsafe class Arm64ReturnTypeTests
             var call = new GenTreeCall(TYP_VOID);
             var argument = call.Args.PushBack(NewCallArg.CreateForStruct(fields, TYP_STRUCT, layout));
             argument.AbiInfo = new AbiPassingInformation(2);
-            argument.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(REG_R7, 0, 8);
+            argument.AbiInfo.Segments[0] = AbiPassingSegment.InRegister(REG_R7_ARM64, 0, 8);
             argument.AbiInfo.Segments[1] = AbiPassingSegment.OnStack(0, 8, 8);
             block.InsertAtEnd(value);
             block.InsertAtEnd(fields);
@@ -479,7 +479,7 @@ internal static unsafe class Arm64ReturnTypeTests
 
             Assert.That(argument.Node.Oper, Is.EqualTo(GT_PUTARG_STK));
             Assert.That(registers.Node.Oper, Is.EqualTo(GT_PUTARG_REG));
-            Assert.That(registers.Node.RegNum, Is.EqualTo(REG_R7));
+            Assert.That(registers.Node.RegNum, Is.EqualTo(REG_R7_ARM64));
         });
     }
 
