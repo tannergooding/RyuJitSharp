@@ -6769,7 +6769,6 @@ public partial class Compiler
         return id;
     }
 
-#if FEATURE_HW_INTRINSICS
     /// <summary>Returns intrinsic ID based on the oper, base type, and simd size</summary>
     /// <param name="oper">The oper for which to get the intrinsic ID</param>
     /// <param name="type">The return type of the comparison</param>
@@ -6800,26 +6799,25 @@ public partial class Compiler
         assert(IsFullVectorOperand(op1));
         assert(op2 is not null);
 
-#if TARGET_XARCH
-        if (varTypeIsMask(type))
+        if (Configuration.TARGET_XARCH && varTypeIsMask(type))
         {
 #if DEBUG
             assert(!isScalar);
             assert(canUseEvexEncodingDebugOnly());
 #endif
         }
-        else if (simdSize is 32)
+        else if (Configuration.TARGET_XARCH && (simdSize is 32))
         {
             assert(!isScalar);
         }
         else
-#endif
-            {
-                assert((simdSize is 8) || (simdSize is 16));
+        {
+            assert((simdSize is 8) || (simdSize is 16));
 
-#if TARGET_ARM64
-            assert(!isScalar || (simdSize is 8));
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(!isScalar || (simdSize is 8));
+            }
 
             assert(!isScalar || varTypeIsFloating(simdBaseType));
         }
@@ -6834,8 +6832,7 @@ public partial class Compiler
             {
                 reverseCond = false;
             }
-#if TARGET_ARM64
-            else if (oper is not GT_EQ)
+            else if (Configuration.TARGET_ARM64 && (oper is not GT_EQ))
             {
                 // Unlike xarch, there is no reverse comparison
                 // for floating-point and so we cannot actually
@@ -6844,7 +6841,6 @@ public partial class Compiler
 
                 return NI_Illegal;
             }
-#endif
         }
 
         switch (oper)
@@ -6853,39 +6849,44 @@ public partial class Compiler
             {
                 assert(IsFullVectorOperand(op2));
 
-#if TARGET_XARCH
-                if (varTypeIsMask(type))
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = NI_AVX512_CompareEqualMask;
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType))
+                    if (varTypeIsMask(type))
                     {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_CompareEqual;
+                        id = NI_AVX512_CompareEqualMask;
+                    }
+                    else if (simdSize is 32)
+                    {
+                        if (varTypeIsIntegral(simdBaseType))
+                        {
+                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                            id = NI_AVX2_CompareEqual;
+                        }
+                        else
+                        {
+                            id = NI_AVX_CompareEqual;
+                        }
                     }
                     else
                     {
-                        id = NI_AVX_CompareEqual;
+                        id = isScalar ? NI_X86Base_CompareScalarEqual : NI_X86Base_CompareEqual;
                     }
                 }
-                else
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = isScalar ? NI_X86Base_CompareScalarEqual : NI_X86Base_CompareEqual;
+                    if (simdBaseType.Size is 8)
+                    {
+                        id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_CompareEqual;
+                    }
                 }
-#elif TARGET_ARM64
-                if (simdBaseType.Size is 8)
+                else if (Configuration.TARGET_WASM)
                 {
-                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
+                    id = NI_PackedSimd_CompareEqual;
                 }
-                else
-                {
-                    id = NI_AdvSimd_CompareEqual;
-                }
-#elif TARGET_WASM
-                id = NI_PackedSimd_CompareEqual;
-#endif
                 break;
             }
 
@@ -6893,155 +6894,162 @@ public partial class Compiler
             {
                 assert(IsFullVectorOperand(op2));
 
-#if TARGET_XARCH
-                if (varTypeIsMask(type))
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = reverseCond ? NI_AVX512_CompareNotLessThanMask : NI_AVX512_CompareGreaterThanOrEqualMask;
-                }
-                else if (varTypeIsIntegral(simdBaseType))
-                {
-#if DEBUG
-                    // This should have been handled by the caller setting type = TYP_MASK
-                    assert(!canUseEvexEncodingDebugOnly());
-#endif
-                }
-                else if (simdSize is 32)
-                {
-                    id = reverseCond ? NI_AVX_CompareNotLessThan : NI_AVX_CompareGreaterThanOrEqual;
-                }
-                else if (isScalar)
-                {
-                    id = reverseCond ? NI_X86Base_CompareScalarNotLessThan : NI_X86Base_CompareScalarGreaterThanOrEqual;
-                }
-                else
-                {
-                    id = reverseCond ? NI_X86Base_CompareNotLessThan : NI_X86Base_CompareGreaterThanOrEqual;
-                }
-#elif TARGET_ARM64
-                if (simdBaseType.Size is 8)
-                {
-                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar
-                                         : NI_AdvSimd_Arm64_CompareGreaterThanOrEqual;
-                }
-                else
-                {
-                    id = NI_AdvSimd_CompareGreaterThanOrEqual;
-                }
-#elif TARGET_WASM
-                if (simdBaseType != TYP_ULONG)
-                {
-                    id = NI_PackedSimd_CompareGreaterThanOrEqual;
-                }
-#endif
-                    break;
-            }
-
-            case GT_GT:
-            {
-                assert(IsFullVectorOperand(op2));
-
-#if TARGET_XARCH
-                if (varTypeIsMask(type))
-                {
-                    id = reverseCond ? NI_AVX512_CompareNotLessThanOrEqualMask : NI_AVX512_CompareGreaterThanMask;
-                }
-                else if (varTypeIsIntegral(simdBaseType))
-                {
-                    if (varTypeIsSigned(simdBaseType))
+                    if (varTypeIsMask(type))
                     {
-                        if (simdSize is 32)
-                        {
-                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                            id = NI_AVX2_CompareGreaterThan;
-                        }
-                        else
-                        {
-                            id = NI_X86Base_CompareGreaterThan;
-                        }
+                        id = reverseCond ? NI_AVX512_CompareNotLessThanMask : NI_AVX512_CompareGreaterThanOrEqualMask;
                     }
-                    else
+                    else if (varTypeIsIntegral(simdBaseType))
                     {
 #if DEBUG
                         // This should have been handled by the caller setting type = TYP_MASK
                         assert(!canUseEvexEncodingDebugOnly());
 #endif
                     }
+                    else if (simdSize is 32)
+                    {
+                        id = reverseCond ? NI_AVX_CompareNotLessThan : NI_AVX_CompareGreaterThanOrEqual;
+                    }
+                    else if (isScalar)
+                    {
+                        id = reverseCond ? NI_X86Base_CompareScalarNotLessThan : NI_X86Base_CompareScalarGreaterThanOrEqual;
+                    }
+                    else
+                    {
+                        id = reverseCond ? NI_X86Base_CompareNotLessThan : NI_X86Base_CompareGreaterThanOrEqual;
+                    }
                 }
-                else if (simdSize is 32)
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = reverseCond ? NI_AVX_CompareNotLessThanOrEqual : NI_AVX_CompareGreaterThan;
+                    if (simdBaseType.Size is 8)
+                    {
+                        id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar
+                            : NI_AdvSimd_Arm64_CompareGreaterThanOrEqual;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_CompareGreaterThanOrEqual;
+                    }
                 }
-                else if (isScalar)
+                else if (Configuration.TARGET_WASM && (simdBaseType != TYP_ULONG))
                 {
-                    id = reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
+                    id = NI_PackedSimd_CompareGreaterThanOrEqual;
                 }
-                else
-                {
-                    id = reverseCond ? NI_X86Base_CompareNotLessThanOrEqual : NI_X86Base_CompareGreaterThan;
-                }
-#elif TARGET_ARM64
-            if (simdBaseType.Size is 8)
-            {
-                id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareGreaterThanScalar : NI_AdvSimd_Arm64_CompareGreaterThan;
+                break;
             }
-            else
+
+            case GT_GT:
             {
-                id = NI_AdvSimd_CompareGreaterThan;
-            }
-#elif TARGET_WASM
-                if (simdBaseType != TYP_ULONG)
+                assert(IsFullVectorOperand(op2));
+
+                if (Configuration.TARGET_XARCH)
+                {
+                    if (varTypeIsMask(type))
+                    {
+                        id = reverseCond ? NI_AVX512_CompareNotLessThanOrEqualMask : NI_AVX512_CompareGreaterThanMask;
+                    }
+                    else if (varTypeIsIntegral(simdBaseType))
+                    {
+                        if (varTypeIsSigned(simdBaseType))
+                        {
+                            if (simdSize is 32)
+                            {
+                                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                                id = NI_AVX2_CompareGreaterThan;
+                            }
+                            else
+                            {
+                                id = NI_X86Base_CompareGreaterThan;
+                            }
+                        }
+                        else
+                        {
+#if DEBUG
+                            // This should have been handled by the caller setting type = TYP_MASK
+                            assert(!canUseEvexEncodingDebugOnly());
+#endif
+                        }
+                    }
+                    else if (simdSize is 32)
+                    {
+                        id = reverseCond ? NI_AVX_CompareNotLessThanOrEqual : NI_AVX_CompareGreaterThan;
+                    }
+                    else if (isScalar)
+                    {
+                        id = reverseCond ? NI_X86Base_CompareScalarNotLessThanOrEqual : NI_X86Base_CompareScalarGreaterThan;
+                    }
+                    else
+                    {
+                        id = reverseCond ? NI_X86Base_CompareNotLessThanOrEqual : NI_X86Base_CompareGreaterThan;
+                    }
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    if (simdBaseType.Size is 8)
+                    {
+                        id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareGreaterThanScalar
+                            : NI_AdvSimd_Arm64_CompareGreaterThan;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_CompareGreaterThan;
+                    }
+                }
+                else if (Configuration.TARGET_WASM && (simdBaseType != TYP_ULONG))
                 {
                     id = NI_PackedSimd_CompareGreaterThan;
                 }
-#endif
-                        break;
+                break;
             }
 
             case GT_LE:
             {
                 assert(IsFullVectorOperand(op2));
 
-#if TARGET_XARCH
-                if (varTypeIsMask(type))
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = reverseCond ? NI_AVX512_CompareNotGreaterThanMask : NI_AVX512_CompareLessThanOrEqualMask;
-                }
-                else if (varTypeIsIntegral(simdBaseType))
-                {
+                    if (varTypeIsMask(type))
+                    {
+                        id = reverseCond ? NI_AVX512_CompareNotGreaterThanMask : NI_AVX512_CompareLessThanOrEqualMask;
+                    }
+                    else if (varTypeIsIntegral(simdBaseType))
+                    {
 #if DEBUG
-                    // This should have been handled by the caller setting type = TYP_MASK
-                    assert(!canUseEvexEncodingDebugOnly());
+                        // This should have been handled by the caller setting type = TYP_MASK
+                        assert(!canUseEvexEncodingDebugOnly());
 #endif
+                    }
+                    else if (simdSize is 32)
+                    {
+                        id = reverseCond ? NI_AVX_CompareNotGreaterThan : NI_AVX_CompareLessThanOrEqual;
+                    }
+                    else if (isScalar)
+                    {
+                        id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThan : NI_X86Base_CompareScalarLessThanOrEqual;
+                    }
+                    else
+                    {
+                        id = reverseCond ? NI_X86Base_CompareNotGreaterThan : NI_X86Base_CompareLessThanOrEqual;
+                    }
                 }
-                else if (simdSize is 32)
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = reverseCond ? NI_AVX_CompareNotGreaterThan : NI_AVX_CompareLessThanOrEqual;
+                    if (simdBaseType.Size is 8)
+                    {
+                        id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
+                            : NI_AdvSimd_Arm64_CompareLessThanOrEqual;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_CompareLessThanOrEqual;
+                    }
                 }
-                else if (isScalar)
-                {
-                    id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThan : NI_X86Base_CompareScalarLessThanOrEqual;
-                }
-                else
-                {
-                    id = reverseCond ? NI_X86Base_CompareNotGreaterThan : NI_X86Base_CompareLessThanOrEqual;
-                }
-#elif TARGET_ARM64
-                if (simdBaseType.Size is 8)
-                {
-                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar
-                                         : NI_AdvSimd_Arm64_CompareLessThanOrEqual;
-                }
-                else
-                {
-                    id = NI_AdvSimd_CompareLessThanOrEqual;
-                }
-#elif TARGET_WASM
-                if (simdBaseType != TYP_ULONG)
+                else if (Configuration.TARGET_WASM && (simdBaseType != TYP_ULONG))
                 {
                     id = NI_PackedSimd_CompareLessThanOrEqual;
                 }
-#endif
-                    break;
+                break;
             }
 
             case GT_LT:
@@ -7050,93 +7058,97 @@ public partial class Compiler
 
                 // !GE
 
-#if TARGET_XARCH
-                if (varTypeIsMask(type))
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = reverseCond ? NI_AVX512_CompareNotGreaterThanOrEqualMask : NI_AVX512_CompareLessThanMask;
-                }
-                else if (varTypeIsIntegral(simdBaseType))
-                {
-                    if (varTypeIsSigned(simdBaseType))
+                    if (varTypeIsMask(type))
                     {
-                        if (simdSize is 32)
+                        id = reverseCond ? NI_AVX512_CompareNotGreaterThanOrEqualMask : NI_AVX512_CompareLessThanMask;
+                    }
+                    else if (varTypeIsIntegral(simdBaseType))
+                    {
+                        if (varTypeIsSigned(simdBaseType))
                         {
-                            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                            id = NI_AVX2_CompareLessThan;
+                            if (simdSize is 32)
+                            {
+                                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                                id = NI_AVX2_CompareLessThan;
+                            }
+                            else
+                            {
+                                id = NI_X86Base_CompareLessThan;
+                            }
                         }
                         else
                         {
-                            id = NI_X86Base_CompareLessThan;
+#if DEBUG
+                            // This should have been handled by the caller setting type = TYP_MASK
+                            assert(!canUseEvexEncodingDebugOnly());
+#endif
                         }
+                    }
+                    else if (simdSize is 32)
+                    {
+                        id = reverseCond ? NI_AVX_CompareNotGreaterThanOrEqual : NI_AVX_CompareLessThan;
+                    }
+                    else if (isScalar)
+                    {
+                        id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThanOrEqual : NI_X86Base_CompareScalarLessThan;
                     }
                     else
                     {
-#if DEBUG
-                        // This should have been handled by the caller setting type = TYP_MASK
-                        assert(!canUseEvexEncodingDebugOnly());
-#endif
+                        id = reverseCond ? NI_X86Base_CompareNotGreaterThanOrEqual : NI_X86Base_CompareLessThan;
                     }
                 }
-                else if (simdSize is 32)
+                else if (Configuration.TARGET_ARM64)
                 {
-                    id = reverseCond ? NI_AVX_CompareNotGreaterThanOrEqual : NI_AVX_CompareLessThan;
+                    if (simdBaseType.Size is 8)
+                    {
+                        id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareLessThanScalar
+                            : NI_AdvSimd_Arm64_CompareLessThan;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_CompareLessThan;
+                    }
                 }
-                else if (isScalar)
-                {
-                    id = reverseCond ? NI_X86Base_CompareScalarNotGreaterThanOrEqual : NI_X86Base_CompareScalarLessThan;
-                }
-                else
-                {
-                    id = reverseCond ? NI_X86Base_CompareNotGreaterThanOrEqual : NI_X86Base_CompareLessThan;
-                }
-#elif TARGET_ARM64
-                if (simdBaseType.Size is 8)
-                {
-                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_CompareLessThanScalar : NI_AdvSimd_Arm64_CompareLessThan;
-                }
-                else
-                {
-                    id = NI_AdvSimd_CompareLessThan;
-                }
-#elif TARGET_WASM
-                if (simdBaseType != TYP_ULONG)
+                else if (Configuration.TARGET_WASM && (simdBaseType != TYP_ULONG))
                 {
                     id = NI_PackedSimd_CompareLessThan;
                 }
-#endif
-                        break;
+                break;
             }
 
             case GT_NE:
             {
                 assert(IsFullVectorOperand(op2));
 
-#if TARGET_XARCH
-                if (varTypeIsMask(type))
+                if (Configuration.TARGET_XARCH)
                 {
-                    id = NI_AVX512_CompareNotEqualMask;
-                }
-                else if (varTypeIsIntegral(simdBaseType))
-                {
+                    if (varTypeIsMask(type))
+                    {
+                        id = NI_AVX512_CompareNotEqualMask;
+                    }
+                    else if (varTypeIsIntegral(simdBaseType))
+                    {
 #if DEBUG
-                    // This should have been handled by the caller setting type = TYP_MASK
-                    assert(!canUseEvexEncodingDebugOnly());
+                        // This should have been handled by the caller setting type = TYP_MASK
+                        assert(!canUseEvexEncodingDebugOnly());
 #endif
+                    }
+                    else if (simdSize is 32)
+                    {
+                        id = NI_AVX_CompareNotEqual;
+                    }
+                    else
+                    {
+                        id = isScalar ? NI_X86Base_CompareScalarNotEqual : NI_X86Base_CompareNotEqual;
+                    }
                 }
-                else if (simdSize is 32)
+                else if (Configuration.TARGET_WASM)
                 {
-                    id = NI_AVX_CompareNotEqual;
+                    id = NI_PackedSimd_CompareNotEqual;
                 }
-                else
-                {
-                    id = isScalar ? NI_X86Base_CompareScalarNotEqual : NI_X86Base_CompareNotEqual;
-                }
-#elif TARGET_ARM64
-                id = NI_Illegal;
-#elif TARGET_WASM
-                id = NI_PackedSimd_CompareNotEqual;
-#endif
-                    break;
+                break;
             }
 
             default:
@@ -7163,19 +7175,18 @@ public partial class Compiler
         assert(varTypeIsArithmetic(simdBaseType));
         assert(varTypeIsSimd(simdType));
 
-#if TARGET_XARCH
-        if (simdSize is 32 or 64)
+        if (Configuration.TARGET_XARCH && (simdSize is 32 or 64))
         {
             assert(!isScalar);
         }
         else
-#endif
         {
-#if TARGET_ARM64
-            assert(!isScalar || (simdSize is 8));
-            // TODO-SVE: Add scalable length support
-            assert(simdSize is 8 or 16);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(!isScalar || (simdSize is 8));
+                // TODO-SVE: Add scalable length support
+                assert(simdSize is 8 or 16);
+            }
 
             assert(!isScalar || varTypeIsFloating(simdBaseType));
         }
@@ -7189,26 +7200,27 @@ public partial class Compiler
         {
             case GT_NEG:
             {
-#if TARGET_ARM64
-                assert(varTypeIsSigned(simdBaseType) || varTypeIsFloating(simdBaseType));
+                if (Configuration.TARGET_ARM64)
+                {
+                    assert(varTypeIsSigned(simdBaseType) || varTypeIsFloating(simdBaseType));
 
-                if (varTypeIsLong(simdBaseType))
-                {
-                    id = (simdSize is 8) ? NI_AdvSimd_Arm64_NegateScalar : NI_AdvSimd_Arm64_Negate;
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        id = (simdSize is 8) ? NI_AdvSimd_Arm64_NegateScalar : NI_AdvSimd_Arm64_Negate;
+                    }
+                    else if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
+                    {
+                        id = NI_AdvSimd_NegateScalar;
+                    }
+                    else if (simdBaseType == TYP_DOUBLE)
+                    {
+                        id = NI_AdvSimd_Arm64_Negate;
+                    }
+                    else
+                    {
+                        id = NI_AdvSimd_Negate;
+                    }
                 }
-                else if ((simdSize is 8) && (isScalar || (simdBaseType.Size is 8)))
-                {
-                    id = NI_AdvSimd_NegateScalar;
-                }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    id = NI_AdvSimd_Arm64_Negate;
-                }
-                else
-                {
-                    id = NI_AdvSimd_Negate;
-                }
-#endif
                 break;
             }
 
@@ -7216,9 +7228,10 @@ public partial class Compiler
             {
                 assert(!isScalar);
 
-#if TARGET_ARM64
-                id = NI_AdvSimd_Not;
-#endif
+                if (Configuration.TARGET_ARM64)
+                {
+                    id = NI_AdvSimd_Not;
+                }
                 break;
             }
 
@@ -7250,16 +7263,13 @@ public partial class Compiler
 
         var lookupType = type;
 
-#if TARGET_XARCH
-        if ((simdSize is 64) || canUseEvexEncoding())
+        if (Configuration.TARGET_XARCH && ((simdSize is 64) || canUseEvexEncoding()))
         {
             lookupType = TYP_MASK;
         }
-#endif
 
         return lookupType;
     }
-#endif
 
     /// <summary>Calculate the cost for a primitive indir node.</summary>
     /// <param name="node">The node in question</param>

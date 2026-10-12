@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the shared hardware-intrinsic ID migration in `compiler/Compiler.gt.cs::GetHWIntrinsicIdForCmpOp`. Convert comparison mappings to runtime target checks while preserving xarch, Arm64, and Wasm selection; then resolve its `FEATURE_HW_INTRINSICS` dependency guard.",
+    "nextAction": "Continue target-specific migration in `compiler/Compiler.gt.cs::gtGetIndNodeCost`. Convert its architecture-specific cost branches to `Configuration` checks while preserving each target's costs and fallback behavior.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize target-specific binary SIMD intrinsic-ID selection and make `Compiler.gt.cs::GetHWIntrinsicIdForBinOp` available to universal compilation.",
-      "doneWhen": "All operator mappings preserve xarch, Arm64, and Wasm intrinsic selection through runtime target checks; unsupported SIMD targets terminate explicitly; the helper compiles without `FEATURE_HW_INTRINSICS`.",
-      "validation": "Completed `GetHWIntrinsicIdForBinOp` mappings with direct selector tests: x64 Debug/Release passed 47/47, Arm64 passed 12/12, and browser-wasm passed 153/153. Arm64 and feature-disabled RISC-V `FeatureConfigurationTests` passed 30/30 in Debug/Release. The broader x64 HWI filter passed 183 Debug and 182 Release tests after excluding the unrelated `GatherImmediateRejectsInvalidScaleWithoutPopping` assertion-path failure (NullReferenceException in `Globals.HashString`). Full analyzer builds still stop at the unrelated IDE0059 in `Compiler.gt.cs:8988`.",
+      "scope": "Universalize the shared comparison, unary, and lookup SIMD intrinsic-ID selectors in `Compiler.gt.cs`, including the EVEX capability helpers needed to compile them on every target.",
+      "doneWhen": "The comparison, unary, and lookup selectors preserve xarch, Arm64, and Wasm behavior through runtime target checks, the EVEX helpers return false off xarch, and the selector family compiles without `FEATURE_HW_INTRINSICS`.",
+      "validation": "Direct selector tests passed in Debug/Release: x64 48/48, Arm64 13/13, and browser-wasm 154/154. Feature-disabled linux-riscv64 `FeatureConfigurationTests` passed 30/30 in Debug/Release, compiling the unguarded selector family. The full Release analyzer build remains blocked by the unrelated IDE0059 on the `simd12ToSimd16Widening` assignment in `Compiler.gt.cs`.",
       "deferred": "Remaining SIMD codegen, register-allocation, emitter/generated-metadata guards, and other TARGET_/FEATURE_ migrations; do not claim universal compilation is complete."
     },
     "parityEvidence": {

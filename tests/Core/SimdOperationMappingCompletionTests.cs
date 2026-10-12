@@ -273,6 +273,29 @@ internal static unsafe class SimdOperationMappingCompletionTests
     }
 #endif
 
+    [Test]
+    public static void UnaryAndComparisonLookupMappingsUseTheConfiguredTarget()
+    {
+        WithCompiler(compiler =>
+        {
+            var operand = Local(compiler, TYP_SIMD16);
+            var expectedNegate = Configuration.TARGET_ARM64 ? NI_AdvSimd_Negate : NI_Illegal;
+            var expectedNot = Configuration.TARGET_ARM64 ? NI_AdvSimd_Not : NI_Illegal;
+
+            Assert.That(compiler.GetHWIntrinsicIdForUnOp(GT_NEG, operand, TYP_INT, 16, false),
+                Is.EqualTo(expectedNegate));
+            Assert.That(compiler.GetHWIntrinsicIdForUnOp(GT_NOT, operand, TYP_INT, 16, false),
+                Is.EqualTo(expectedNot));
+
+            var lookupType = Configuration.TARGET_XARCH
+                ? compiler.GetLookupTypeForCmpOp(GT_EQ, TYP_SIMD64, TYP_INT, 64)
+                : compiler.GetLookupTypeForCmpOp(GT_EQ, TYP_SIMD16, TYP_INT, 16);
+            var expectedLookupType = Configuration.TARGET_XARCH ? TYP_MASK : TYP_SIMD16;
+
+            Assert.That(lookupType, Is.EqualTo(expectedLookupType));
+        });
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void MappingDoesNotRewriteNaNPayloadOrSignedZeroOperands(bool reverse)

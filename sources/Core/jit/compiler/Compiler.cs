@@ -1053,17 +1053,19 @@ public partial class Compiler
     public bool canUseVexEncoding() =>
         Configuration.TARGET_XARCH && compOpportunisticallyDependsOn(InstructionSet_AVX);
 
-#if TARGET_XARCH
     /// <summary>Answer the question: Is Evex encoding supported on this target</summary>
     /// <returns></returns>
-    public bool canUseEvexEncoding() => compOpportunisticallyDependsOn(InstructionSet_AVX512);
+    public bool canUseEvexEncoding() =>
+        Configuration.TARGET_XARCH && compOpportunisticallyDependsOn(InstructionSet_AVX512);
 
 #if DEBUG
     /// <summary>Answer the question: Is Evex encoding supported on this target.</summary>
     /// <returns>`true` if Evex encoding is supported, `false` if not.</returns>
-    public bool canUseEvexEncodingDebugOnly() => compIsaSupportedDebugOnly(InstructionSet_AVX512);
+    public bool canUseEvexEncodingDebugOnly() =>
+        Configuration.TARGET_XARCH && compIsaSupportedDebugOnly(InstructionSet_AVX512);
 #endif
 
+#if TARGET_XARCH
     /// <summary>Answer the question: Are APX encodings supported on this target.</summary>
     /// <returns></returns>
     public bool canUseApxEncoding() => compOpportunisticallyDependsOn(InstructionSet_APX);
