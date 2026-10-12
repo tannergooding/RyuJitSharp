@@ -10,11 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue consumer-first register-alias migration through the ARM64 SVE recording fixtures: replace generated register aliases with `_ARM64` identities in `tests/Core/Arm64SveThreeRegisterRecordingTests.cs`, `tests/Core/Arm64SveMultioperandRecordingTests.cs`, `tests/Core/Arm64SveRegisterPairRecordingTests.cs`, and `tests/Core/Arm64SveInstructionSanityTests.cs`, then run focused ARM64 Debug/Release tests. Keep generated aliases until all consumers are converted.",
+    "nextAction": "Continue consumer-first register-alias migration through the remaining ARM64 SVE tests: replace generated register aliases with `_ARM64` identities in `tests/Core/Arm64SveImmediateRecordingTests.cs`, `tests/Core/Arm64SveInstructionOutputTests.cs`, `tests/Core/Arm64SveDisassemblyTests.cs`, and `tests/Core/Arm64SveExecutionCharacteristicsTests.cs`, then run focused ARM64 Debug/Release tests. Keep generated aliases until all consumers are converted.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Qualify target-specific register identities across the four ARM64 SVE recording test files and their shared sanity helper.",
-      "doneWhen": "All generated ARM64 register aliases in these recording fixtures use `_ARM64` identities while preserving descriptor values, register ordinals, and test behavior.",
+      "scope": "Qualify target-specific register identities across the remaining ARM64 SVE recording, output, disassembly, and execution-characteristic tests.",
+      "doneWhen": "All generated ARM64 register aliases in these four SVE test files use `_ARM64` identities while preserving descriptor values, register ordinals, and test behavior.",
       "validation": "Pending.",
       "deferred": "Migrate remaining source and test consumers before changing the register generator or removing aliases. Continue target/feature preprocessor migration by coherent subsystem. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
