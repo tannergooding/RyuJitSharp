@@ -7454,14 +7454,12 @@ public partial class Compiler
                 kind = "cse";
                 num  = lclNum - optCSEstart;
             }
-#if TARGET_ARM64
-            else if (lclNum == lvaFfrRegister)
+            else if (Configuration.TARGET_ARM64 && (lclNum == lvaFfrRegister))
             {
                 // We introduce this LclVar in lowering, hence special case the printing of
                 // it instead of handling it in "rationalizer" below.
                 name = "FFReg";
             }
-#endif
             else if ((optCSEstart >= 0) && (optCSEstart <= lclNum))
             {
                 // Currently any new LclVar's introduced after the CSE phase
@@ -7485,28 +7483,22 @@ public partial class Compiler
             {
                 name = "ReturnAddress";
             }
-#if FEATURE_FIXED_OUT_ARGS
-            else if (lclNum == lvaOutgoingArgSpaceVar)
+            else if (Configuration.FEATURE_FIXED_OUT_ARGS && (lclNum == lvaOutgoingArgSpaceVar))
             {
                 name = "OutArgs";
             }
-#endif
-#if JIT32_GCENCODER
-            else if (lclNum == lvaLocAllocSPvar)
+            else if (Configuration.TARGET_X86 && (lclNum == lvaLocAllocSPvar))
             {
                 name = "LocAllocSP";
             }
-#endif
             else if (lclNum == lvaAsyncContinuationArg)
             {
                 name = "AsyncCont";
             }
-#if TARGET_WASM
-            else if (lclNum == lvaWasmSpArg)
+            else if (Configuration.TARGET_WASM && (lclNum == lvaWasmSpArg))
             {
                 name = "SP";
             }
-#endif
             else
             {
                 kind = "tmp";

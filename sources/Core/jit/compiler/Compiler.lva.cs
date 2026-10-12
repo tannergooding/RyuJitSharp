@@ -165,10 +165,10 @@ public partial class Compiler
     /// <summary>Local number of argument passed as WellKnownArg.AsyncContinuation to next call</summary>
     public int lvaNextCallAsyncContinuation = BAD_VAR_NUM;
 
-#if FEATURE_FIXED_OUT_ARGS
     /// <summary>Var that represents outgoing argument space</summary>
     public int lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
 
+#if FEATURE_FIXED_OUT_ARGS
     /// <summary>Size of fixed outgoing argument space</summary>
     public PhasedVar<int> lvaOutgoingArgSpaceSize;
 #endif
@@ -277,10 +277,8 @@ public partial class Compiler
 
     public int lvaCachedGenericContextArgOffs;
 
-#if JIT32_GCENCODER
     /// <summary>variable which stores the value of ESP after the last alloca/localloc</summary>
     public int lvaLocAllocSPvar = BAD_VAR_NUM;
-#endif
 
     /// <summary>Variable with arguments for new MD array helper</summary>
     public int lvaNewObjArrayArgs = BAD_VAR_NUM;
@@ -288,10 +286,8 @@ public partial class Compiler
     /// <summary>LclVar number</summary>
     public int lvaGSSecurityCookie = BAD_VAR_NUM;
 
-#if TARGET_ARM64
     /// <summary>LclVar number</summary>
     public int lvaFfrRegister = BAD_VAR_NUM;
-#endif
 
     /// <summary>This is a temp lclVar allocated on the stack as TYP_SIMD_ARM64.</summary>
     /// <remarks>
