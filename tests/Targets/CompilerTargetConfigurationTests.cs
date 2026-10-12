@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -29,6 +30,50 @@ internal static unsafe class CompilerTargetConfigurationTests
             else
             {
                 Assert.That(constant, Is.TypeOf<GenTreeLngCon>());
+            }
+        });
+    }
+
+    [Test]
+    public static void LongConstantAdditionFoldingUsesTargetRepresentationAndFieldSequences()
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compMinOptsIsSet = true;
+            compiler.opts.compMinOpts = false;
+            compiler.opts.canUseTier0Opts = true;
+            compiler.opts.canUseAllOpts = true;
+
+            var left = compiler.gtNewLconNode(1).AsIntConCommon();
+            var right = compiler.gtNewLconNode(2).AsIntConCommon();
+            FieldSeq? expectedFieldSeq = null;
+
+            if (Configuration.TARGET_64BIT)
+            {
+                ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+                vtable.Base.Base.isFieldStatic = &IsInstanceFieldStatic;
+                ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
+                compiler.info.compCompHnd = &jitInfo;
+
+                var field = (CORINFO_FIELD_STRUCT_*)0x1000;
+                var fieldSeq = compiler.FieldSeqStore.Create(field, 8, FieldSeq.FieldKind.Instance);
+                left.AsIntCon().FieldSeq = fieldSeq;
+                expectedFieldSeq = fieldSeq;
+            }
+
+            var tree = compiler.gtNewBinaryNode(GT_ADD, TYP_LONG, left, right).AsOp();
+            var result = compiler.gtFoldExprBinaryConstLng(tree, left, right);
+
+            Assert.That(result.Oper.IsConst, Is.True);
+            Assert.That(result.AsIntConCommon().LngValue, Is.EqualTo(3));
+
+            if (Configuration.TARGET_64BIT)
+            {
+                Assert.That(result, Is.TypeOf<GenTreeIntCon>());
+                Assert.That(result.AsIntCon().FieldSeq, Is.SameAs(expectedFieldSeq));
+            }
+            else
+            {
+                Assert.That(result, Is.TypeOf<GenTreeLngCon>());
             }
         });
     }
@@ -689,6 +734,9 @@ internal static unsafe class CompilerTargetConfigurationTests
             }
         });
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsInstanceFieldStatic(ICorJitInfo* info, CORINFO_FIELD_STRUCT_* handle) => 0;
 
     private static void WithCompiler(Action<Compiler> action)
     {

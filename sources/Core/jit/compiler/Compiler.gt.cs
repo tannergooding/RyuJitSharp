@@ -4761,15 +4761,21 @@ public partial class Compiler
             }
 
             case GT_ADD:
+            {
                 if (tree.HasOverflowCheck && !(tree.IsUnsigned ? CheckedOps.TryAddUns(value1, value2, out _) : CheckedOps.TryAdd(value1, value2, out _)))
                 {
                     return gtFoldExprForOverflow(tree);
                 }
+
                 value1 = unchecked(value1 + value2);
-#if TARGET_64BIT
-                fields = FieldSeqStore.Append(intCon1.AsIntCon().FieldSeq, intCon2.AsIntCon().FieldSeq);
-#endif
+
+                if (Configuration.TARGET_64BIT)
+                {
+                    fields = FieldSeqStore.Append(intCon1.AsIntCon().FieldSeq, intCon2.AsIntCon().FieldSeq);
+                }
+
                 break;
+            }
 
             case GT_SUB:
             {
@@ -4981,21 +4987,25 @@ public partial class Compiler
 
     public GenTree gtBashTreeToConstLng(GenTree tree, long value, FieldSeq? fields = null)
     {
-#if !TARGET_64BIT
-        if (fields is not null)
+        if (!Configuration.TARGET_64BIT && fields is not null)
         {
             assert(false, "Field sequences on CNS_LNG nodes!?");
             return tree;
         }
 
-#endif
         JITDUMP("\nFolding operator with constant nodes into a constant:\n");
         DISPTREE(tree);
-#if TARGET_64BIT
-        GenTree result = new GenTreeIntCon(TYP_LONG, (nint)value, fields, tree, fgNodeThreading);
-#else
-        GenTree result = new GenTreeLngCon(value, tree, fgNodeThreading);
-#endif
+
+        GenTree result;
+        if (Configuration.TARGET_64BIT)
+        {
+            result = new GenTreeIntCon(TYP_LONG, (nint)value, fields, tree, fgNodeThreading);
+        }
+        else
+        {
+            result = new GenTreeLngCon(value, tree, fgNodeThreading);
+        }
+
         fgUpdateConstTreeValueNumber(result);
         JITDUMP("Bashed to constant:\n");
         DISPTREE(result);

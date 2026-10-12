@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue universalizing the target-width branches in `Compiler.gtFoldExprBinaryConstLng` and `gtBashTreeToConstLng`, preserving field-sequence and constant-node representation, then proceed in source order.",
+    "nextAction": "Universalize the `TARGET_ARM64` and `TARGET_XARCH` branches in `Compiler.gt.cs::gtGetAddrNodeCost` using runtime configuration, preserving volatile address-mode handling and constant-address cost behavior, then continue in source order.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize `gtFoldExpr` hardware-intrinsic dispatch and its folding helper family, including target-specific intrinsic-operation mapping, mask folding, and xarch floating-comparison remapping.",
-      "doneWhen": "HWI folding and its operation-mapping dependencies compile in the universal build; their target/feature branches use runtime configuration while preserving each target's existing fold behavior.",
-      "validation": "`CompilerTargetConfigurationTests` and `FeatureConfigurationTests` passed in Debug and Release for win-x64 (64/1 skipped), win-x86 (66/1), linux-arm64 (61/3), linux-arm (55/9), linux-loongarch64 (53/9), linux-riscv64 (53/9), and browser-wasm (61/4). Formatting and `git diff --check` passed. Full-analysis test compilation remains blocked by pre-existing IDE2002/IDE0059 diagnostics in unrelated or unchanged sections; this target matrix disabled EnforceCodeStyleInBuild. This validates target builds and focused behavior, not generated-code parity.",
-      "deferred": "Continue with target-width constant folding in `Compiler.gtFoldExprBinaryConstLng` and `gtBashTreeToConstLng`, then migrate remaining target/feature conditionals. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
+      "scope": "Universalize target-width branches in `Compiler.gtFoldExprBinaryConstLng` and `gtBashTreeToConstLng`, including field-sequence handling and constant-node creation.",
+      "doneWhen": "Both methods use runtime target-width configuration instead of TARGET_64BIT preprocessor branches while preserving overflow behavior, field-sequence semantics, and target-specific node representations.",
+      "validation": "The focused `LongConstantAdditionFoldingUsesTargetRepresentationAndFieldSequences` test passed in Debug and Release for win-x64. The target test project built successfully in Debug and Release for win-x86 and linux-arm. The win-x86 runtime test could not execute because the .NET 11.0.0-rc.1 x86 runtime is not installed; broader builds were also blocked for linux-loongarch64 by unavailable runtime packs (NU1101). This verifies x64 behavior and 32-bit compilation, but not 32-bit runtime behavior.",
+      "deferred": "Proceed to the next target/feature conditional in `Compiler.gt.cs` and then continue through remaining source areas. Debug-only compile guards and `genAsyncResumeInfo` remain deferred."
     },
     "parityEvidence": {
       "corelibCodegen": {
