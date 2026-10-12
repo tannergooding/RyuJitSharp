@@ -37,6 +37,26 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     private const regNumber REG_F2 = REG_FT2;
 #endif
 
+    [Test]
+    public static void FrameOffsetFixupAccountsForSavedFrameAndReturnAddresses()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.lvaCount = 0;
+            compiler.lvaTable = Array.Empty<LclVarDsc>();
+            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+            compiler.lvaRetAddrVar = BAD_VAR_NUM;
+            compiler.lvaMonAcquired = BAD_VAR_NUM;
+            compiler.lvaCachedGenericContextArgOffs = 0;
+            compiler.compCalleeRegsPushed = 2;
+            codeGen.IsFramePointerUsed = true;
+
+            compiler.lvaFixVirtualFrameOffsets();
+
+            Assert.That(compiler.lvaCachedGenericContextArgOffs, Is.EqualTo(16));
+        });
+    }
+
 #if TARGET_LOONGARCH64
     [Test]
     public static void ImmediateMaterializationRecordsLargeConstantDescriptor()

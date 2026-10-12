@@ -424,29 +424,30 @@ public partial class Compiler
         assert(codeGen is not null);
         var frameLocalsDelta = 0;
         var frameBoundary = 0;
-#if TARGET_XARCH
-        var delta = REGSIZE_BYTES;
-        JITDUMP($"--- delta bump {REGSIZE_BYTES} for RA\n");
-
-        if (lvaDoubleAlignOrFramePointerUsed())
-        {
-            JITDUMP($"--- delta bump {REGSIZE_BYTES} for FP\n");
-            delta += REGSIZE_BYTES;
-        }
-#else
         var delta = 0;
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            delta = REGSIZE_BYTES;
+            JITDUMP($"--- delta bump {REGSIZE_BYTES} for RA\n");
+
+            if (lvaDoubleAlignOrFramePointerUsed())
+            {
+                JITDUMP($"--- delta bump {REGSIZE_BYTES} for FP\n");
+                delta += REGSIZE_BYTES;
+            }
+        }
 
         if (!codeGen.IsFramePointerUsed)
         {
             JITDUMP($"--- delta bump {codeGen.genTotalFrameSize} for RSP frame\n");
             delta += codeGen.genTotalFrameSize;
         }
-        else
+        else if (Configuration.TARGET_ARM)
         {
-#if TARGET_ARM
             delta += 2 * REGSIZE_BYTES;
-#elif TARGET_ARM64
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
             delta += codeGen.genTotalFrameSize - codeGen.genSPtoFPdelta;
             if (!codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
             {
@@ -454,15 +455,19 @@ public partial class Compiler
                 frameBoundary = opts.IsOSR ? -info.compPatchpointInfo->TotalFrameSize : 0;
                 if (info.compIsVarArgs)
                 {
-                    frameBoundary -= MAX_REG_ARG * REGSIZE_BYTES;
+                    frameBoundary -= Target.ARM64_MAX_REG_ARG * REGSIZE_BYTES;
                 }
             }
 
             JITDUMP($"--- delta bump {delta} for FP frame, {frameLocalsDelta} inside frame for FP/LR relocation\n");
-#elif TARGET_AMD64
+        }
+        else if (Configuration.TARGET_AMD64)
+        {
             JITDUMP($"--- delta bump {codeGen.genTotalFrameSize - codeGen.genSPtoFPdelta} for FP frame\n");
             delta += codeGen.genTotalFrameSize - codeGen.genSPtoFPdelta;
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
+        }
+        else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
             delta += compCalleeRegsPushed << 3;
             if ((lvaMonAcquired != BAD_VAR_NUM) && !opts.IsOSR)
             {
@@ -470,20 +475,19 @@ public partial class Compiler
                 delta += lvaLclStackHomeSize(lvaMonAcquired);
             }
             JITDUMP($"--- delta bump {delta} for FP frame\n");
-#elif TARGET_WASM
+        }
+        else if (Configuration.TARGET_WASM)
+        {
             JITDUMP($"--- delta bump {codeGen.genTotalFrameSize} for FP frame\n");
             delta += codeGen.genTotalFrameSize;
-#endif
         }
 
-#if TARGET_AMD64 || TARGET_ARM64
-        if (opts.IsOSR)
+        if ((Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64) && opts.IsOSR)
         {
             assert(info.compPatchpointInfo is not null);
             JITDUMP($"--- delta bump {info.compPatchpointInfo->TotalFrameSize} for OSR + Tier0 frame\n");
             delta += info.compPatchpointInfo->TotalFrameSize;
         }
-#endif
 
         JITDUMP($"--- virtual stack offset to actual stack offset delta is {delta}\n");
         for (var lclNum = 0; lclNum < lvaCount; lclNum++)
@@ -500,11 +504,8 @@ public partial class Compiler
             {
                 ref var parent = ref lvaGetDesc(dsc.lvParentLcl);
                 var promotionType = lvaGetPromotionType(in parent);
-#if TARGET_X86
-                if ((!dsc.lvIsParam || parent.lvIsParam) && (promotionType == PROMOTION_TYPE_DEPENDENT))
-#else
-                if (!dsc.lvIsParam && (promotionType == PROMOTION_TYPE_DEPENDENT))
-#endif
+                if ((!dsc.lvIsParam || (Configuration.TARGET_X86 && parent.lvIsParam)) &&
+                    (promotionType == PROMOTION_TYPE_DEPENDENT))
                 {
                     doAssignStkOffs = false;
                 }
@@ -553,22 +554,21 @@ public partial class Compiler
         }
 
         lvaCachedGenericContextArgOffs += delta;
-#if FEATURE_FIXED_OUT_ARGS
-        if (lvaOutgoingArgSpaceVar != BAD_VAR_NUM)
+        if (Configuration.FEATURE_FIXED_OUT_ARGS && (lvaOutgoingArgSpaceVar != BAD_VAR_NUM))
         {
             ref var outgoing = ref lvaGetDesc(lvaOutgoingArgSpaceVar);
             outgoing.StackOffset = 0;
             outgoing.lvFramePointerBased = false;
             outgoing.lvMustInit = false;
         }
-#endif
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-        assert(codeGen.IsFramePointerUsed);
-        if (lvaRetAddrVar != BAD_VAR_NUM)
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            lvaTable[lvaRetAddrVar].StackOffset = REGSIZE_BYTES;
+            assert(codeGen.IsFramePointerUsed);
+            if (lvaRetAddrVar != BAD_VAR_NUM)
+            {
+                lvaTable[lvaRetAddrVar].StackOffset = REGSIZE_BYTES;
+            }
         }
-#endif
     }
 
     public void lvaAssignFrameOffsetsToPromotedStructs()

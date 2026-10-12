@@ -41,6 +41,8 @@ public interface ICodeGen
     /// <summary>Indicates whether the current method sets up an explicit stack frame or not.</summary>
     bool IsFramePointerUsed { get; set; }
 
+    bool IsSaveFpLrWithAllCalleeSavedRegisters { get; }
+
     bool IsDoubleAligned { get; set; }
 
     /// <summary>Indicates whether the current method requires an explicit frame.</summary>
@@ -48,8 +50,6 @@ public interface ICodeGen
     bool IsFrameRequired { get; set; }
 
 #if TARGET_ARM64
-    bool IsSaveFpLrWithAllCalleeSavedRegisters { get; }
-
     void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
 #endif
 

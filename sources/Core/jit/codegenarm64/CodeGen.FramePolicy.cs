@@ -8,10 +8,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private bool genSaveFpLrWithAllCalleeSavedRegisters;
     internal bool genForceFuncletFrameType5;
-
-    public bool IsSaveFpLrWithAllCalleeSavedRegisters => genSaveFpLrWithAllCalleeSavedRegisters;
 
     public void SetSaveFpLrWithAllCalleeSavedRegisters(bool value)
     {

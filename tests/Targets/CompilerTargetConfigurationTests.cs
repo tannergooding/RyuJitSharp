@@ -79,6 +79,72 @@ internal static unsafe class CompilerTargetConfigurationTests
     }
 
     [Test]
+    public static void FrameOffsetFixupUsesArm32AndWasmPolicies()
+    {
+        if (!Configuration.TARGET_ARM && !Configuration.TARGET_WASM)
+        {
+            Assert.Ignore("This frame-offset fixup test covers ARM32 and Wasm policies.");
+        }
+
+        WithCompiler(compiler =>
+        {
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            compiler.lvaCount = 0;
+            compiler.lvaTable = Array.Empty<LclVarDsc>();
+            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+            compiler.lvaRetAddrVar = BAD_VAR_NUM;
+            compiler.lvaMonAcquired = BAD_VAR_NUM;
+            compiler.lvaCachedGenericContextArgOffs = 0;
+            compiler.compCalleeRegsPushed = 0;
+            compiler.compLclFrameSize = 24;
+            codeGen.IsFramePointerUsed = true;
+
+            compiler.lvaFixVirtualFrameOffsets();
+
+            var expectedDelta = Configuration.TARGET_ARM ? 2 * REGSIZE_BYTES : codeGen.genTotalFrameSize;
+            Assert.That(compiler.lvaCachedGenericContextArgOffs, Is.EqualTo(expectedDelta));
+        });
+    }
+
+    [Test]
+    public static void XarchFrameOffsetFixupAccountsForReturnAndFramePointers()
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            Assert.Ignore("This frame-offset fixup test covers xarch targets.");
+        }
+
+        WithCompiler(compiler =>
+        {
+            JitFlags flags = default;
+            compiler.opts.jitFlags = &flags;
+
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            compiler.lvaCount = 0;
+            compiler.lvaTable = Array.Empty<LclVarDsc>();
+            compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
+            compiler.lvaRetAddrVar = BAD_VAR_NUM;
+            compiler.lvaMonAcquired = BAD_VAR_NUM;
+            compiler.lvaCachedGenericContextArgOffs = 0;
+            compiler.compCalleeRegsPushed = 0;
+            compiler.compLclFrameSize = 24;
+            codeGen.IsFramePointerUsed = true;
+
+            compiler.lvaFixVirtualFrameOffsets();
+
+            var expectedDelta = 2 * REGSIZE_BYTES;
+            if (Configuration.TARGET_AMD64)
+            {
+                expectedDelta += codeGen.genTotalFrameSize - codeGen.genSPtoFPdelta;
+            }
+
+            Assert.That(compiler.lvaCachedGenericContextArgOffs, Is.EqualTo(expectedDelta));
+        });
+    }
+
+    [Test]
     public static void CallPopArgsFlagUsesConfiguredUnixX86Abi()
     {
         WithCompiler(compiler => {

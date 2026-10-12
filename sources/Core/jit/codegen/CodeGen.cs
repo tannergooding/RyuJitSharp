@@ -19,6 +19,7 @@ public sealed partial class CodeGen : ICodeGen
     private PhasedVar<bool> _cgFrameRequired;
 
     private bool _cgInterruptible;
+    private bool genSaveFpLrWithAllCalleeSavedRegisters;
 #if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     private bool _cgHasTailCalls;
 #endif
@@ -432,6 +433,8 @@ public sealed partial class CodeGen : ICodeGen
             _cgFramePointerUsed.Value = value;
         }
     }
+
+    public bool IsSaveFpLrWithAllCalleeSavedRegisters => genSaveFpLrWithAllCalleeSavedRegisters;
 
     public bool IsFrameRequired
     {

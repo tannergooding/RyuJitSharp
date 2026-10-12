@@ -9,6 +9,9 @@ namespace RyuJitSharp;
 
 public sealed partial class Target
 {
+    // ARM64 varargs reserve eight integer argument slots in the frame.
+    internal const int ARM64_MAX_REG_ARG = 8;
+
     public static string TgtPlatformName => TargetOS.IsWindows ? "Windows" : "Unix";
 
     public static string TgtCpuName
