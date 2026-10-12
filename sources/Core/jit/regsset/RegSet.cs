@@ -28,7 +28,6 @@ public partial struct RegSet
     private regMaskTP _rsMaskCalleeSaved;
 #endif
 
-#if TARGET_ARM
     public regMaskTP rsMaskPreSpillRegArg;
     public regMaskTP rsMaskPreSpillAlign;
 
@@ -36,7 +35,6 @@ public partial struct RegSet
     {
         return includeAlignment ? (rsMaskPreSpillRegArg | rsMaskPreSpillAlign) : rsMaskPreSpillRegArg;
     }
-#endif
 
 #if DEBUG
     private bool _rsModifiedRegsMaskInitialized;
@@ -64,10 +62,8 @@ public partial struct RegSet
         _rsMaskCalleeSaved = RBM_NONE;
 #endif
 
-#if TARGET_ARM
         rsMaskPreSpillRegArg = RBM_NONE;
         rsMaskPreSpillAlign = RBM_NONE;
-#endif
 
 #if DEBUG
         _rsModifiedRegsMaskInitialized = false;

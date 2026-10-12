@@ -375,12 +375,13 @@ public sealed partial class CodeGen
 
     private bool genIsContextArgPrespilledForProfiling(int contextArg)
     {
-#if TARGET_ARM && PROFILING_SUPPORTED
+        if (!Configuration.TARGET_ARM || !Configuration.PROFILING_SUPPORTED)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 profiling pre-spill information is unavailable.");
+        }
+
         return _compiler.compIsProfilerHookNeeded
             && _compiler.lvaIsPreSpilled(contextArg, _regSet.rsMaskPreSpillRegs(false));
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 profiling pre-spill information is unavailable.");
-#endif
     }
 
     public unsafe void genReportGenericContextArg(regNumber initReg, ref bool initRegZeroed)

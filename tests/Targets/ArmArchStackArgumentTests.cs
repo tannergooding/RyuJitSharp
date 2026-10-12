@@ -20,6 +20,35 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class ArmArchStackArgumentTests
 {
+    [Test]
+    public static void PreSpilledParameterDetectionMatchesItsRegisterSegment()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            Assert.Ignore("Pre-spilled parameter registers are specific to ARM32.");
+        }
+
+        WithStackArea((compiler, _) =>
+        {
+            compiler.lvaCount = 1;
+            compiler.lvaTable =
+            [
+                new() { Type = TYP_I_IMPL, lvIsParam = true, lvOnFrame = true, RegNum = REG_STK },
+            ];
+            compiler.info.compArgsCount = 1;
+            compiler.lvaParameterPassingInfo =
+            [
+                AbiPassingInformation.FromSegment(compiler, false,
+                    AbiPassingSegment.InRegister(REG_R0, 0, TARGET_POINTER_SIZE)),
+            ];
+
+            var parameterRegister = regMaskTP.CreateFromRegNum(REG_R0, REG_R0.SingleTypeMask);
+            var unrelatedRegister = regMaskTP.CreateFromRegNum(REG_R1, REG_R1.SingleTypeMask);
+            Assert.That(compiler.lvaIsPreSpilled(0, parameterRegister), Is.True);
+            Assert.That(compiler.lvaIsPreSpilled(0, unrelatedRegister), Is.False);
+        });
+    }
+
     [TestCase(TYP_BYTE, REG_R1)]
     [TestCase(TYP_USHORT, REG_R2)]
     [TestCase(TYP_INT, REG_R3)]

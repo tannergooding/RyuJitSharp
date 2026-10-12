@@ -4,9 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Diagnostics.CodeAnalysis;
-#if TARGET_ARM
 using System.Numerics;
-#endif
 
 namespace RyuJitSharp;
 
@@ -352,9 +350,14 @@ public partial class Compiler
         return false;
     }
 
-#if TARGET_ARM
     public bool lvaIsPreSpilled(int lclNum, regMaskTP preSpillMask)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(
+                CORJIT_SKIPPED, "Pre-spilled register arguments are unavailable for this target.");
+        }
+
         ref var dsc = ref lvaGetDesc(lclNum);
         if (dsc.lvIsStructField)
         {
@@ -371,10 +374,8 @@ public partial class Compiler
                 return true;
             }
         }
-
         return false;
     }
-#endif
 
     public bool lvaParamHasLocalStackSpace(int lclNum)
     {
@@ -394,17 +395,20 @@ public partial class Compiler
         {
             return false;
         }
-#if TARGET_ARM
-        assert(codeGen is not null);
-        if (lvaIsPreSpilled(lclNum, codeGen.RegSet.rsMaskPreSpillRegs(false)))
+        if (Configuration.TARGET_ARM)
         {
+            assert(codeGen is not null);
+            if (!lvaIsPreSpilled(lclNum, codeGen.RegSet.rsMaskPreSpillRegs(false)))
+            {
+                return true;
+            }
+
 #if DEBUG
             assert(dsc.StackOffset != BAD_STK_OFFS);
 #endif
 
             return false;
         }
-#endif
 
         return true;
 #endif
