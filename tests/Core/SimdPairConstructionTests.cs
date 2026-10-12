@@ -16,6 +16,86 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SimdPairConstructionTests
 {
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void WideningSelectsTheTargetIntrinsic(bool upper)
+    {
+        WithCompiler(compiler =>
+        {
+            var value = Local(compiler, TYP_SIMD16);
+            var result = upper
+                ? compiler.gtNewSimdWidenUpperNode(TYP_SIMD16, value, TYP_SHORT, 16)
+                : compiler.gtNewSimdWidenLowerNode(TYP_SIMD16, value, TYP_SHORT, 16);
+            var expected = Configuration.TARGET_XARCH
+                ? NI_X86Base_ConvertToVector128Int32
+                : Configuration.TARGET_ARM64
+                    ? (upper ? NI_AdvSimd_SignExtendWideningUpper : NI_AdvSimd_SignExtendWideningLower)
+                    : (upper ? NI_PackedSimd_SignExtendWideningUpper : NI_PackedSimd_SignExtendWideningLower);
+
+            Assert.That(result.AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void TruncationSelectsTheTargetIntrinsic()
+    {
+        WithCompiler(compiler =>
+        {
+            var value = Local(compiler, TYP_SIMD16);
+            var result = compiler.gtNewSimdTruncNode(TYP_SIMD16, value, TYP_FLOAT, 16).AsHWIntrinsic();
+            var expected = Configuration.TARGET_XARCH
+                ? NI_X86Base_RoundToZero
+                : Configuration.TARGET_ARM64
+                    ? NI_AdvSimd_RoundToZero
+                    : NI_PackedSimd_Truncate;
+
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void WithElementSelectsTheTargetIntrinsic()
+    {
+        WithCompiler(compiler =>
+        {
+            var value = Local(compiler, TYP_SIMD16);
+            var index = compiler.gtNewIconNode(TYP_INT, 1);
+            var element = compiler.gtNewIconNode(TYP_INT, 42);
+            var result = compiler.gtNewSimdWithElementNode(TYP_SIMD16, value,
+                index, element, TYP_INT, 16).AsHWIntrinsic();
+            var expected = Configuration.TARGET_ARM64 ? NI_AdvSimd_Insert : NI_Vector_WithElement;
+
+            Assert.That(result.HWIntrinsicId, Is.EqualTo(expected));
+        });
+    }
+
+    [Test]
+    public static void WithLowerAndUpperPreserveTheWasmUnsupportedBoundary()
+    {
+        WithCompiler(compiler =>
+        {
+            var size = Configuration.TARGET_XARCH ? (byte)32 : (byte)16;
+            var type = Compiler.GetSimdTypeForSize(size);
+            var left = Local(compiler, type);
+            var right = Local(compiler, type);
+
+            if (Configuration.TARGET_WASM)
+            {
+                Assert.Throws<FatalJitException>(() =>
+                    compiler.gtNewSimdWithLowerNode(type, left, right, TYP_INT, size));
+                Assert.Throws<FatalJitException>(() =>
+                    compiler.gtNewSimdWithUpperNode(type, left, right, TYP_INT, size));
+            }
+            else
+            {
+                Assert.That(compiler.gtNewSimdWithLowerNode(type, left, right, TYP_INT, size)
+                    .AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(NI_Vector_WithLower));
+                Assert.That(compiler.gtNewSimdWithUpperNode(type, left, right, TYP_INT, size)
+                    .AsHWIntrinsic().HWIntrinsicId, Is.EqualTo(NI_Vector_WithUpper));
+            }
+        });
+    }
+
 #if TARGET_XARCH
     [TestCase(TYP_BYTE, (byte)16, 0x00FF00FF00FF00FFUL)]
     [TestCase(TYP_UBYTE, (byte)16, 0x00FF00FF00FF00FFUL)]

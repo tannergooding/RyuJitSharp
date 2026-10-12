@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue in `Compiler.gt.cs::gtNewOneConNode`; replace its `TARGET_XARCH` guard for SIMD32/SIMD64 constant cases with runtime target selection while preserving target-specific type availability.",
+    "nextAction": "In `Compiler.gt.cs::gtSetCallArgsOrder`, replace the two `TARGET_XARCH` preprocessor branches in call-argument size-cost accumulation with `Configuration.TARGET_XARCH`; preserve each target's existing cost formula and run the focused cost-order tests across xarch and non-xarch targets.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace the target-width guard in `Compiler.gt.cs::gtNewLconNode` and target-architecture guard in `gtTypeForNullCheck` with runtime selection, preserving 32/64-bit constant representations and xarch null-check types.",
-      "doneWhen": "`gtNewLconNode` creates `GenTreeIntCon` only for 64-bit targets and `GenTreeLngCon` otherwise; `gtTypeForNullCheck` returns `TYP_INT` for 8-byte xarch values and retains the size-based mapping elsewhere.",
-      "validation": "`CompilerTargetConfigurationTests` passed 2/2 in Debug and Release for win-x64, win-x86, and linux-arm64, covering both target widths and xarch/non-xarch null-check typing. Focused runs used analyzer/documentation fast-mode overrides because the default Core analyzer run is blocked by IDE0059 diagnostics in unchanged compiler code.",
-      "deferred": "The remaining target/feature branches in `Compiler.gt.cs` and the rest of the universal-compilation migration; universal compilation is not complete."
+      "scope": "Replace target preprocessor branches in `Compiler.gt.cs::gtNewConWithPattern` and `gtNewZeroConNode` with runtime `Configuration` checks without enabling vector types unsupported by the active target.",
+      "doneWhen": "Pattern constants retain the configured vector-capacity fill and zero padding, ARM64 scalable zero construction remains ARM64-specific, target-focused tests pass, and the validated batch is committed locally.",
+      "validation": "`CompilerTargetConfigurationTests` and `Arm64SimdMetadataTests` passed for win-x64 (Debug/Release 13 passed, 1 skip each), linux-arm64 (Debug 109 passed/3 skips; Release 92 passed/3 skips), browser-wasm (8 passed/4 skips each), and linux-riscv64 (3 passed/9 skips each).",
+      "deferred": "Remaining target/feature guards elsewhere in the compiler, generated tables, tests, and architecture backends; debug-only compile guards and `genAsyncResumeInfo` are outside this batch."
     },
     "parityEvidence": {
       "corelibCodegen": {

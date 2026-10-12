@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_WASM
 using System;
 
 namespace RyuJitSharp;
@@ -15,12 +14,18 @@ public partial class Compiler
     private GenTree gtNewSimdWasmTwoSourceShuffleNode(var_types type, GenTree op1, GenTree op2,
         ReadOnlySpan<uint> selectors, var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION,
+                "Two-source SIMD shuffles require WebAssembly hardware-intrinsic support.");
+        }
+
         assert(varTypeIsSimd(type));
         assert(GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
 
         var count = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
-        var indexType = UnsignedSimdIndexType(simdBaseType);
+        var indexType = getUnsignedSimdBaseType(simdBaseType);
         var indices1 = gtNewVconNode(type);
         var indices2 = gtNewVconNode(type);
 
@@ -52,4 +57,3 @@ public partial class Compiler
         return gtNewSimdBinOpNode(GT_OR, type, scatter1, scatter2, simdBaseType, simdSize);
     }
 }
-#endif

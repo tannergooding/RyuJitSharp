@@ -9,50 +9,56 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS
     public bool IsValidForShuffle(GenTree indices, byte simdSize, var_types baseType, out bool canBecomeValid,
         bool isShuffleNative)
     {
         canBecomeValid = false;
-#if TARGET_XARCH
-        if (simdSize == 32)
+        if (!Configuration.FEATURE_HW_INTRINSICS ||
+            !(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM))
         {
-            if (!compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
-            {
-                return false;
-            }
+            return false;
         }
-        else if (simdSize == 64)
-        {
-            if (varTypeIsByte(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
-            {
-                return false;
-            }
-        }
-        else
-        {
-            assert(simdSize == 16);
 
-            var isVariableShuffle = !indices.Oper.IsCnsVec;
-            if (!isVariableShuffle && isShuffleNative)
+        if (Configuration.TARGET_XARCH)
+        {
+            if (simdSize == 32)
             {
-                // Out-of-range native constant shuffles use the variable implementation.
-                // Preserve the native scan even though eligibility is unchanged here.
-                var elementCount = simdSize / baseType.Size;
-                for (var index = 0; index < elementCount; index++)
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
                 {
-                    var value = indices.GetIntegralVectorConstElement(index, baseType);
-                    if (value >= (ulong)elementCount)
-                    {
-                        isVariableShuffle = true;
-                        break;
-                    }
+                    return false;
                 }
             }
+            else if (simdSize == 64)
+            {
+                if (varTypeIsByte(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                assert(simdSize == 16);
 
-            _ = isVariableShuffle;
+                var isVariableShuffle = !indices.Oper.IsCnsVec;
+                if (!isVariableShuffle && isShuffleNative)
+                {
+                    // Out-of-range native constant shuffles use the variable implementation.
+                    // Preserve the native scan even though eligibility is unchanged here.
+                    var elementCount = simdSize / baseType.Size;
+                    for (var index = 0; index < elementCount; index++)
+                    {
+                        var value = indices.GetIntegralVectorConstElement(index, baseType);
+                        if (value >= (ulong)elementCount)
+                        {
+                            isVariableShuffle = true;
+                            break;
+                        }
+                    }
+                }
+
+                _ = isVariableShuffle;
+            }
         }
-#endif
         canBecomeValid = true;
         return true;
     }
@@ -60,6 +66,11 @@ public partial class Compiler
     public GenTree gtNewSimdShuffleNode(var_types type, GenTree op1, GenTree op2, var_types baseType, byte simdSize,
         bool isShuffleNative)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD shuffles are unsupported on this target.");
+        }
+
         assert(varTypeIsSimd(type) && (GetSimdTypeForSize(simdSize) == type));
         assert((op1.Type == type) && (op2.Type == type));
         if (!op2.Oper.IsCnsVec)
@@ -101,347 +112,353 @@ public partial class Compiler
                 GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         }
 
-#if TARGET_XARCH
-        byte control = 0;
-        var crossLane = false;
-        var needsZero = varTypeIsSmall(baseType) && (simdSize <= 16);
-        var differsByLane = false;
-        var indices = default(simd_t);
-        var mask = default(simd_t);
-        for (var index = 0; index < elementCount; index++)
+        if (Configuration.TARGET_XARCH)
         {
-            var value = op2.GetIntegralVectorConstElement(index, baseType);
-            if (value < (ulong)elementCount)
+            byte control = 0;
+            var crossLane = false;
+            var needsZero = varTypeIsSmall(baseType) && (simdSize <= 16);
+            var differsByLane = false;
+            var indices = default(simd_t);
+            var mask = default(simd_t);
+            for (var index = 0; index < elementCount; index++)
             {
-                crossLane |= ((((ulong)index ^ value) * (ulong)elementSize) & ~15UL) != 0;
-                control |= unchecked((byte)(value << (index * (elementCount / 2))));
-                for (var offset = 0; offset < elementSize; offset++)
+                var value = op2.GetIntegralVectorConstElement(index, baseType);
+                if (value < (ulong)elementCount)
                 {
-                    indices.u8[(index * elementSize) + offset] = (byte)((value * (ulong)elementSize) + (ulong)offset);
-                    mask.u8[(index * elementSize) + offset] = 0xFF;
-                }
-            }
-            else
-            {
-                needsZero = true;
-                for (var offset = 0; offset < elementSize; offset++)
-                {
-                    indices.u8[(index * elementSize) + offset] = 0xFF;
-                }
-            }
-            if ((index * elementSize) >= 16)
-            {
-                differsByLane |= ((indices.u8[index * elementSize] ^ indices.u8[(index * elementSize) & 15]) & 15) != 0;
-            }
-        }
-
-        GenTree result;
-        if (simdSize == 32)
-        {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-            if ((varTypeIsByte(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2)) ||
-                (varTypeIsShort(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512)) ||
-                (!crossLane && (needsZero || (elementSize < 4) || ((elementSize == 4) && differsByLane))))
-            {
-                baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
-                var leftWants = 0;
-                var rightWants = 0;
-                var nonDefaultMask = false;
-                var selection = default(simd_t);
-                for (var index = 0; index < simdSize; index++)
-                {
-                    var value = indices.u8[index];
-                    var wants = value < 16 ? 1 : value < 32 ? 2 : 0;
-                    if (index < 16)
+                    crossLane |= ((((ulong)index ^ value) * (ulong)elementSize) & ~15UL) != 0;
+                    control |= unchecked((byte)(value << (index * (elementCount / 2))));
+                    for (var offset = 0; offset < elementSize; offset++)
                     {
-                        leftWants |= wants;
-                    }
-                    else
-                    {
-                        rightWants |= wants;
-                    }
-                    value ^= (byte)(index & 0x10);
-                    selection.u8[index] = (value is >= 16 and < 32) ? (byte)0xFF : (byte)0;
-                    if (indices.u8[index] < 32)
-                    {
-                        indices.u8[index] &= 15;
-                    }
-                    nonDefaultMask |= indices.u8[index] != (index & 15);
-                }
-
-                // Each lane can use one source lane, or combine a normal and swapped shuffle.
-                if ((leftWants != 3) && (rightWants != 3))
-                {
-                    result = op1;
-                    var laneControl = (leftWants == 2 ? 1 : 0) | (rightWants != 1 ? 16 : 0);
-                    if (laneControl != 16)
-                    {
-                        var duplicate = fgMakeMultiUse(ref result);
-                        result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute2x128, baseType, simdSize,
-                            result, duplicate, gtNewIconNode(TYP_INT, laneControl));
-                    }
-                    if (nonDefaultMask)
-                    {
-                        var indexNode = gtNewVconNode(type);
-                        indexNode.SimdVal = indices;
-                        result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, result, indexNode);
+                        indices.u8[(index * elementSize) + offset] = (byte)((value * (ulong)elementSize) + (ulong)offset);
+                        mask.u8[(index * elementSize) + offset] = 0xFF;
                     }
                 }
                 else
                 {
-                    var duplicate = fgMakeMultiUse(ref op1);
-                    var duplicate2 = gtCloneExpr(duplicate);
-                    GenTree swapped = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute2x128, baseType, simdSize,
-                        duplicate, duplicate2, gtNewIconNode(TYP_INT, 1));
-                    if (nonDefaultMask)
+                    needsZero = true;
+                    for (var offset = 0; offset < elementSize; offset++)
                     {
-                        var indexNode = gtNewVconNode(type);
-                        indexNode.SimdVal = indices;
-                        op2 = indexNode;
-                        var duplicateIndices = fgMakeMultiUse(ref op2);
-                        op1 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, op1, op2);
-                        swapped = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, swapped, duplicateIndices);
+                        indices.u8[(index * elementSize) + offset] = 0xFF;
                     }
-                    var selectionNode = gtNewVconNode(type);
-                    selectionNode.SimdVal = selection;
-                    result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_BlendVariable, baseType, simdSize, op1, swapped, selectionNode);
                 }
-                return result;
+                if ((index * elementSize) >= 16)
+                {
+                    differsByLane |= ((indices.u8[index * elementSize] ^ indices.u8[(index * elementSize) & 15]) & 15) != 0;
+                }
             }
 
-            if (elementSize == 4)
+            GenTree result;
+            if (simdSize == 32)
             {
-                if (!crossLane && !differsByLane)
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                if ((varTypeIsByte(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2)) ||
+                    (varTypeIsShort(baseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512)) ||
+                    (!crossLane && (needsZero || (elementSize < 4) || ((elementSize == 4) && differsByLane))))
                 {
-                    assert(!needsZero);
-                    var immediate = 0;
-                    for (var index = 0; index < 4; index++)
+                    baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
+                    var leftWants = 0;
+                    var rightWants = 0;
+                    var nonDefaultMask = false;
+                    var selection = default(simd_t);
+                    for (var index = 0; index < simdSize; index++)
                     {
-                        immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 3) << (index * 2);
+                        var value = indices.u8[index];
+                        var wants = value < 16 ? 1 : value < 32 ? 2 : 0;
+                        if (index < 16)
+                        {
+                            leftWants |= wants;
+                        }
+                        else
+                        {
+                            rightWants |= wants;
+                        }
+                        value ^= (byte)(index & 0x10);
+                        selection.u8[index] = (value is >= 16 and < 32) ? (byte)0xFF : (byte)0;
+                        if (indices.u8[index] < 32)
+                        {
+                            indices.u8[index] &= 15;
+                        }
+                        nonDefaultMask |= indices.u8[index] != (index & 15);
                     }
-                    op2 = gtNewIconNode(TYP_INT, immediate);
-                    if (varTypeIsFloating(baseType))
+
+                    // Each lane can use one source lane, or combine a normal and swapped shuffle.
+                    if ((leftWants != 3) && (rightWants != 3))
+                    {
+                        result = op1;
+                        var laneControl = (leftWants == 2 ? 1 : 0) | (rightWants != 1 ? 16 : 0);
+                        if (laneControl != 16)
+                        {
+                            var duplicate = fgMakeMultiUse(ref result);
+                            result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute2x128, baseType, simdSize,
+                                result, duplicate, gtNewIconNode(TYP_INT, laneControl));
+                        }
+                        if (nonDefaultMask)
+                        {
+                            var indexNode = gtNewVconNode(type);
+                            indexNode.SimdVal = indices;
+                            result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, result, indexNode);
+                        }
+                    }
+                    else
                     {
                         var duplicate = fgMakeMultiUse(ref op1);
-                        return gtNewSimdHWIntrinsicNode(type, NI_AVX_Shuffle, baseType, simdSize, op1, duplicate, op2);
+                        var duplicate2 = gtCloneExpr(duplicate);
+                        GenTree swapped = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute2x128, baseType, simdSize,
+                            duplicate, duplicate2, gtNewIconNode(TYP_INT, 1));
+                        if (nonDefaultMask)
+                        {
+                            var indexNode = gtNewVconNode(type);
+                            indexNode.SimdVal = indices;
+                            op2 = indexNode;
+                            var duplicateIndices = fgMakeMultiUse(ref op2);
+                            op1 = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, op1, op2);
+                            swapped = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, swapped, duplicateIndices);
+                        }
+                        var selectionNode = gtNewVconNode(type);
+                        selectionNode.SimdVal = selection;
+                        result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_BlendVariable, baseType, simdSize, op1, swapped, selectionNode);
                     }
-                    return gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, op1, op2);
-                }
-                for (var index = 0; index < elementCount; index++)
-                {
-                    indices.u32[index] = (uint)(indices.u8[index * elementSize] / elementSize);
-                }
-                var indexNode = gtNewVconNode(type);
-                indexNode.SimdVal = indices;
-                result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_PermuteVar8x32, baseType, simdSize, indexNode, op1);
-            }
-            else if (elementSize == 2)
-            {
-#if DEBUG
-                assert(crossLane && canUseEvexEncodingDebugOnly());
-#endif
-                for (var index = 0; index < elementCount; index++)
-                {
-                    indices.u16[index] = (ushort)(indices.u8[index * elementSize] / elementSize);
-                }
-                var indexNode = gtNewVconNode(type);
-                indexNode.SimdVal = indices;
-                result = gtNewSimdHWIntrinsicNode(type, NI_AVX512_PermuteVar16x16, baseType, simdSize, indexNode, op1);
-            }
-            else if (elementSize == 1)
-            {
-                assert(crossLane && compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
-                var indexNode = gtNewVconNode(type);
-                indexNode.SimdVal = indices;
-                result = gtNewSimdHWIntrinsicNode(type, NI_AVX512v2_PermuteVar32x8, baseType, simdSize, indexNode, op1);
-            }
-            else
-            {
-                assert(elementSize == 8);
-                if (!crossLane)
-                {
-                    assert(!needsZero);
-                    var immediate = 0;
-                    for (var index = 0; index < elementCount; index++)
-                    {
-                        immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 1) << index;
-                    }
-                    op2 = gtNewIconNode(TYP_INT, immediate);
-                    var duplicate = fgMakeMultiUse(ref op1);
-                    return gtNewSimdHWIntrinsicNode(type, NI_AVX_Shuffle, TYP_DOUBLE, simdSize, op1, duplicate, op2);
-                }
-                result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, baseType, simdSize,
-                    op1, gtNewIconNode(TYP_INT, control));
-            }
-        }
-        else if (simdSize == 64)
-        {
-            if (!crossLane)
-            {
-                if ((elementSize == 8) && !needsZero)
-                {
-                    var immediate = 0;
-                    for (var index = 0; index < elementCount; index++)
-                    {
-                        immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 1) << index;
-                    }
-                    op2 = gtNewIconNode(TYP_INT, immediate);
-                    var duplicate = fgMakeMultiUse(ref op1);
-                    return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, TYP_DOUBLE, simdSize, op1, duplicate, op2);
-                }
-                if ((elementSize == 4) && !needsZero && !differsByLane)
-                {
-                    var immediate = 0;
-                    for (var index = 0; index < 4; index++)
-                    {
-                        immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 3) << (index * 2);
-                    }
-                    op2 = gtNewIconNode(TYP_INT, immediate);
-                    if (varTypeIsFloating(baseType))
-                    {
-                        var duplicate = fgMakeMultiUse(ref op1);
-                        return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, baseType, simdSize, op1, duplicate, op2);
-                    }
-                    return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, baseType, simdSize, op1, op2);
+                    return result;
                 }
 
-                var indexNode = gtNewVconNode(type);
-                indexNode.SimdVal = indices;
-                baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
-                return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, baseType, simdSize, op1, indexNode);
-            }
-
-            NamedIntrinsic intrinsic;
-            switch (elementSize)
-            {
-                case 1:
+                if (elementSize == 4)
                 {
-                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
-                    intrinsic = NI_AVX512v2_PermuteVar64x8;
-                    break;
-                }
-
-                case 2:
-                {
-                    for (var index = 0; index < elementCount; index++)
+                    if (!crossLane && !differsByLane)
                     {
-                        indices.u16[index] = (ushort)(indices.u8[index * elementSize] / elementSize);
+                        assert(!needsZero);
+                        var immediate = 0;
+                        for (var index = 0; index < 4; index++)
+                        {
+                            immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 3) << (index * 2);
+                        }
+                        op2 = gtNewIconNode(TYP_INT, immediate);
+                        if (varTypeIsFloating(baseType))
+                        {
+                            var duplicate = fgMakeMultiUse(ref op1);
+                            return gtNewSimdHWIntrinsicNode(type, NI_AVX_Shuffle, baseType, simdSize, op1, duplicate, op2);
+                        }
+                        return gtNewSimdHWIntrinsicNode(type, NI_AVX2_Shuffle, baseType, simdSize, op1, op2);
                     }
-                    intrinsic = NI_AVX512_PermuteVar32x16;
-                    break;
-                }
-
-                case 4:
-                {
                     for (var index = 0; index < elementCount; index++)
                     {
                         indices.u32[index] = (uint)(indices.u8[index * elementSize] / elementSize);
                     }
-                    intrinsic = NI_AVX512_PermuteVar16x32;
-                    break;
+                    var indexNode = gtNewVconNode(type);
+                    indexNode.SimdVal = indices;
+                    result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_PermuteVar8x32, baseType, simdSize, indexNode, op1);
                 }
-
-                default:
+                else if (elementSize == 2)
                 {
-                    assert(elementSize == 8);
+    #if DEBUG
+                    assert(crossLane && canUseEvexEncodingDebugOnly());
+    #endif
                     for (var index = 0; index < elementCount; index++)
                     {
-                        indices.u64[index] = (ulong)(indices.u8[index * elementSize] / elementSize);
+                        indices.u16[index] = (ushort)(indices.u8[index * elementSize] / elementSize);
                     }
-                    intrinsic = NI_AVX512_PermuteVar8x64;
-                    break;
+                    var indexNode = gtNewVconNode(type);
+                    indexNode.SimdVal = indices;
+                    result = gtNewSimdHWIntrinsicNode(type, NI_AVX512_PermuteVar16x16, baseType, simdSize, indexNode, op1);
+                }
+                else if (elementSize == 1)
+                {
+                    assert(crossLane && compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
+                    var indexNode = gtNewVconNode(type);
+                    indexNode.SimdVal = indices;
+                    result = gtNewSimdHWIntrinsicNode(type, NI_AVX512v2_PermuteVar32x8, baseType, simdSize, indexNode, op1);
+                }
+                else
+                {
+                    assert(elementSize == 8);
+                    if (!crossLane)
+                    {
+                        assert(!needsZero);
+                        var immediate = 0;
+                        for (var index = 0; index < elementCount; index++)
+                        {
+                            immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 1) << index;
+                        }
+                        op2 = gtNewIconNode(TYP_INT, immediate);
+                        var duplicate = fgMakeMultiUse(ref op1);
+                        return gtNewSimdHWIntrinsicNode(type, NI_AVX_Shuffle, TYP_DOUBLE, simdSize, op1, duplicate, op2);
+                    }
+                    result = gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, baseType, simdSize,
+                        op1, gtNewIconNode(TYP_INT, control));
                 }
             }
-            var permutationIndices = gtNewVconNode(type);
-            permutationIndices.SimdVal = indices;
-            result = gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, permutationIndices, op1);
+            else if (simdSize == 64)
+            {
+                if (!crossLane)
+                {
+                    if ((elementSize == 8) && !needsZero)
+                    {
+                        var immediate = 0;
+                        for (var index = 0; index < elementCount; index++)
+                        {
+                            immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 1) << index;
+                        }
+                        op2 = gtNewIconNode(TYP_INT, immediate);
+                        var duplicate = fgMakeMultiUse(ref op1);
+                        return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, TYP_DOUBLE, simdSize, op1, duplicate, op2);
+                    }
+                    if ((elementSize == 4) && !needsZero && !differsByLane)
+                    {
+                        var immediate = 0;
+                        for (var index = 0; index < 4; index++)
+                        {
+                            immediate |= (int)(op2.GetIntegralVectorConstElement(index, baseType) & 3) << (index * 2);
+                        }
+                        op2 = gtNewIconNode(TYP_INT, immediate);
+                        if (varTypeIsFloating(baseType))
+                        {
+                            var duplicate = fgMakeMultiUse(ref op1);
+                            return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, baseType, simdSize, op1, duplicate, op2);
+                        }
+                        return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, baseType, simdSize, op1, op2);
+                    }
+
+                    var indexNode = gtNewVconNode(type);
+                    indexNode.SimdVal = indices;
+                    baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
+                    return gtNewSimdHWIntrinsicNode(type, NI_AVX512_Shuffle, baseType, simdSize, op1, indexNode);
+                }
+
+                NamedIntrinsic intrinsic;
+                switch (elementSize)
+                {
+                    case 1:
+                    {
+                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
+                        intrinsic = NI_AVX512v2_PermuteVar64x8;
+                        break;
+                    }
+
+                    case 2:
+                    {
+                        for (var index = 0; index < elementCount; index++)
+                        {
+                            indices.u16[index] = (ushort)(indices.u8[index * elementSize] / elementSize);
+                        }
+                        intrinsic = NI_AVX512_PermuteVar32x16;
+                        break;
+                    }
+
+                    case 4:
+                    {
+                        for (var index = 0; index < elementCount; index++)
+                        {
+                            indices.u32[index] = (uint)(indices.u8[index * elementSize] / elementSize);
+                        }
+                        intrinsic = NI_AVX512_PermuteVar16x32;
+                        break;
+                    }
+
+                    default:
+                    {
+                        assert(elementSize == 8);
+                        for (var index = 0; index < elementCount; index++)
+                        {
+                            indices.u64[index] = (ulong)(indices.u8[index * elementSize] / elementSize);
+                        }
+                        intrinsic = NI_AVX512_PermuteVar8x64;
+                        break;
+                    }
+                }
+                var permutationIndices = gtNewVconNode(type);
+                permutationIndices.SimdVal = indices;
+                result = gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, permutationIndices, op1);
+                if (needsZero)
+                {
+                    var maskNode = gtNewVconNode(type);
+                    maskNode.SimdVal = mask;
+                    result = gtNewSimdBinOpNode(GT_AND, type, maskNode, result, baseType, simdSize);
+                }
+                return result;
+            }
+            else if (needsZero)
+            {
+                baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
+                var indexNode = gtNewVconNode(type);
+                indexNode.SimdVal.v128[0] = indices.v128[0];
+                return gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, indexNode);
+            }
+            else
+            {
+                if (varTypeIsLong(baseType))
+                {
+                    baseType = TYP_DOUBLE;
+                }
+                var immediate = gtNewIconNode(TYP_INT, control);
+                if (varTypeIsIntegral(baseType))
+                {
+                    result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, immediate);
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    result = gtNewSimdHWIntrinsicNode(type, NI_AVX_Permute, baseType, simdSize, op1, immediate);
+                }
+                else
+                {
+                    var duplicate = fgMakeMultiUse(ref op1);
+                    result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, duplicate, immediate);
+                }
+            }
+
             if (needsZero)
             {
+                assert(simdSize == 32);
                 var maskNode = gtNewVconNode(type);
                 maskNode.SimdVal = mask;
                 result = gtNewSimdBinOpNode(GT_AND, type, maskNode, result, baseType, simdSize);
             }
             return result;
         }
-        else if (needsZero)
+        else if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
         {
+            if (Configuration.TARGET_WASM)
+            {
+                assert(simdSize == 16);
+            }
+            var indices = default(simd_t);
+
+            // Table lookup operates on bytes. An out-of-range element selector
+            // becomes 0xFF bytes, preserving the lookup's zero-fill behavior.
+            for (var index = 0; index < elementCount; index++)
+            {
+                var value = op2.GetIntegralVectorConstElement(index, baseType);
+
+                for (var offset = 0; offset < elementSize; offset++)
+                {
+                    indices.u8[(index * elementSize) + offset] = value < (ulong)elementCount
+                        ? unchecked((byte)((value * (ulong)elementSize) + (ulong)offset))
+                        : (byte)0xFF;
+                }
+            }
+
+            var intrinsic = Configuration.TARGET_ARM64
+                ? (simdSize == 16 ? NI_AdvSimd_Arm64_VectorTableLookup : NI_AdvSimd_VectorTableLookup)
+                : NI_PackedSimd_Swizzle;
+            if (Configuration.TARGET_ARM64)
+            {
+                if ((simdSize == 16) &&
+                    (indices.u64[0] == 0x0F0E0D0C0B0A0908) && (indices.u64[1] == 0x0706050403020100))
+                {
+                    // A 64-bit half swap needs no table: extract from two uses of the source.
+                    var duplicate = fgMakeMultiUse(ref op1);
+                    return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractVector128, TYP_ULONG, simdSize,
+                        op1, duplicate, gtNewIconNode(TYP_INT, 1));
+                }
+
+            }
             baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
-            var indexNode = gtNewVconNode(type);
-            indexNode.SimdVal.v128[0] = indices.v128[0];
-            return gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, indexNode);
+            var byteIndices = gtNewVconNode(type);
+            byteIndices.SimdVal = indices;
+
+            return gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, op1, byteIndices);
         }
         else
         {
-            if (varTypeIsLong(baseType))
-            {
-                baseType = TYP_DOUBLE;
-            }
-            var immediate = gtNewIconNode(TYP_INT, control);
-            if (varTypeIsIntegral(baseType))
-            {
-                result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, immediate);
-            }
-            else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
-            {
-                result = gtNewSimdHWIntrinsicNode(type, NI_AVX_Permute, baseType, simdSize, op1, immediate);
-            }
-            else
-            {
-                var duplicate = fgMakeMultiUse(ref op1);
-                result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, duplicate, immediate);
-            }
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD constant shuffles are unsupported on this target.");
         }
-
-        if (needsZero)
-        {
-            assert(simdSize == 32);
-            var maskNode = gtNewVconNode(type);
-            maskNode.SimdVal = mask;
-            result = gtNewSimdBinOpNode(GT_AND, type, maskNode, result, baseType, simdSize);
-        }
-        return result;
-#elif TARGET_ARM64 || TARGET_WASM
-#if TARGET_WASM
-        assert(simdSize == 16);
-#endif
-        var indices = default(simd_t);
-
-        // Table lookup operates on bytes. An out-of-range element selector
-        // becomes 0xFF bytes, preserving the lookup's zero-fill behavior.
-        for (var index = 0; index < elementCount; index++)
-        {
-            var value = op2.GetIntegralVectorConstElement(index, baseType);
-
-            for (var offset = 0; offset < elementSize; offset++)
-            {
-                indices.u8[(index * elementSize) + offset] = value < (ulong)elementCount
-                    ? unchecked((byte)((value * (ulong)elementSize) + (ulong)offset))
-                    : (byte)0xFF;
-            }
-        }
-
-#if TARGET_ARM64
-        if ((simdSize == 16) &&
-            (indices.u64[0] == 0x0F0E0D0C0B0A0908) && (indices.u64[1] == 0x0706050403020100))
-        {
-            // A 64-bit half swap needs no table: extract from two uses of the source.
-            var duplicate = fgMakeMultiUse(ref op1);
-            return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractVector128, TYP_ULONG, simdSize,
-                op1, duplicate, gtNewIconNode(TYP_INT, 1));
-        }
-
-        var intrinsic = simdSize == 16 ? NI_AdvSimd_Arm64_VectorTableLookup : NI_AdvSimd_VectorTableLookup;
-#else
-        var intrinsic = NI_PackedSimd_Swizzle;
-#endif
-        baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
-        var byteIndices = gtNewVconNode(type);
-        byteIndices.SimdVal = indices;
-
-        return gtNewSimdHWIntrinsicNode(type, intrinsic, baseType, simdSize, op1, byteIndices);
-#else
-        throw new NotImplementedException("SIMD constant shuffle construction is unsupported on this target.");
-#endif
     }
-#endif
 }
