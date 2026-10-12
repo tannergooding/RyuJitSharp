@@ -65,9 +65,10 @@
     <RyuJitFeatureLateDisasm Condition="'$(Configuration)' == 'Debug' and ('$(RyuJitTargetIsArmArch)' == 'true' or '$(RyuJitTargetIsXarch)' == 'true')">true</RyuJitFeatureLateDisasm>
     <RyuJitFeatureLateDisasm Condition="'$(RyuJitTargetIsArm64)' == 'true' and '$(RyuJitEnableArm64LateDisasm)' == 'true'">true</RyuJitFeatureLateDisasm>
     <RyuJitFeatureLateDisasm Condition="'$(RyuJitFeatureLateDisasm)' == ''">false</RyuJitFeatureLateDisasm>
+    <RyuJitFeatureDisasmDebug Condition="'$(RyuJitFeatureDisasmDebug)' == ''">false</RyuJitFeatureDisasmDebug>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureLoopAlign)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitUnixX86Abi)' != '' and '$(RyuJitFeatureLateDisasm)' != ''">
+  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureLoopAlign)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitUnixX86Abi)' != '' and '$(RyuJitFeatureLateDisasm)' != '' and '$(RyuJitFeatureDisasmDebug)' != ''">
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HW_INTRINSICS" Value="$(RyuJitFeatureHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_MASKED_HW_INTRINSICS" Value="$(RyuJitFeatureMaskedHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HAS_ZERO_REG" Value="$(RyuJitFeatureHasZeroReg)" />
@@ -93,6 +94,7 @@
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_UNIX_OS_RUNTIMEDETERMINED" Value="$(RyuJitUnixOSRuntimeDetermined)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.UNIX_X86_ABI" Value="$(RyuJitUnixX86Abi)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.LATE_DISASM" Value="$(RyuJitFeatureLateDisasm)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.DISASM_DEBUG" Value="$(RyuJitFeatureDisasmDebug)" />
   </ItemGroup>
 
   <Target Name="GetRyuJitCompileConstants" BeforeTargets="CoreCompile">

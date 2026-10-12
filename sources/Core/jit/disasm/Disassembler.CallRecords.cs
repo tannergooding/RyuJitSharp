@@ -53,26 +53,30 @@ public partial struct Disassembler
 
         if (Compiler.eeGetHelperNum(methHnd) != CORINFO_HELP_UNDEF)
         {
-#if DISASM_DEBUG
-#if DEBUG
-            if (compiler.verbose)
-#endif
+            if (Configuration.DISASM_DEBUG)
             {
-                jitprintf($"Helper function: {addr:X16} => {(nuint)methHnd:X16}\n");
-            }
+#if DEBUG
+                if (compiler.verbose)
 #endif
+                {
+                    jitprintf($"Helper function: {addr:X16} => {(nuint)methHnd:X16}\n");
+                }
+            }
+
             GetHelperAddrToMethodHandleMap()[addr] = methHnd;
         }
         else
         {
-#if DISASM_DEBUG
-#if DEBUG
-            if (compiler.verbose)
-#endif
+            if (Configuration.DISASM_DEBUG)
             {
-                jitprintf($"Function: {addr:X16} => {(nuint)methHnd:X16}\n");
-            }
+#if DEBUG
+                if (compiler.verbose)
 #endif
+                {
+                    jitprintf($"Function: {addr:X16} => {(nuint)methHnd:X16}\n");
+                }
+            }
+
             GetAddrToMethodHandleMap()[addr] = methHnd;
         }
     }

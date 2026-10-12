@@ -29,14 +29,16 @@ public partial struct Disassembler
             return;
         }
 
-#if DISASM_DEBUG
-#if DEBUG
-        if (compiler.verbose)
-#endif
+        if (Configuration.DISASM_DEBUG)
         {
-            jitprintf($"Relocation {relocAddr:X16} => {targetAddr:X16}\n");
-        }
+#if DEBUG
+            if (compiler.verbose)
 #endif
+            {
+                jitprintf($"Relocation {relocAddr:X16} => {targetAddr:X16}\n");
+            }
+        }
+
         GetRelocationMap()[relocAddr] = targetAddr;
     }
 }

@@ -78,6 +78,24 @@ internal static unsafe class LateDisassemblyBackendTests
         Assert.That(GetCoreDisTargetForCurrentTarget(), Is.EqualTo(expected));
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void DisasmDebugUsesRuntimeFeatureSwitch(bool enabled)
+    {
+        const string switchName = "RyuJitSharp.DISASM_DEBUG";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, enabled);
+
+        try
+        {
+            Assert.That(Configuration.DISASM_DEBUG, Is.EqualTo(enabled));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
+        }
+    }
+
     [Test]
     public static void UnsupportedTargetsRejectLateDisassemblyWithoutANativeDecoder()
     {

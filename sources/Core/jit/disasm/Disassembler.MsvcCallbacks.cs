@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System.Diagnostics;
 using System.Globalization;
 
 namespace RyuJitSharp;
@@ -314,18 +313,18 @@ public partial struct Disassembler
         return _labels[checked((int)offset)];
     }
 
-    [Conditional("DISASM_DEBUG")]
     private readonly void DumpMsCallback(string text)
     {
-#if DISASM_DEBUG
-#if DEBUG
-        assert(_compiler is not null);
-        if (_compiler.verbose)
-#endif
+        if (Configuration.DISASM_DEBUG)
         {
-            jitprintf(text);
-        }
+#if DEBUG
+            assert(_compiler is not null);
+            if (_compiler.verbose)
 #endif
+            {
+                jitprintf(text);
+            }
+        }
     }
 
     private static unsafe string FormatRawPointer(nuint address)

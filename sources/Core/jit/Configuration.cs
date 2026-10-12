@@ -14,6 +14,8 @@ internal static class Configuration
 
     internal static bool FEATURE_VN_DUMP_FUNC_ARGS => GetFeatureSwitch(nameof(FEATURE_VN_DUMP_FUNC_ARGS));
 
+    internal static bool DISASM_DEBUG => GetFeatureSwitch(nameof(DISASM_DEBUG));
+
     internal static bool FEATURE_HFA =>
         TARGET_ARM64 || (TARGET_ARM && (!ARM_SOFTFP || CONFIGURABLE_ARM_ABI));
 
