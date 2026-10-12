@@ -77,7 +77,6 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
         Assert.That(Capture(() => DisplayAddress(emitter, (byte*)address)), Is.EqualTo(expected));
     }
 
-#if DEBUG || LATE_DISASM
     [TestCase(0.25f, 0.0f, Emitter.PerfScoreMemoryAccessKind.None, 0.25f, 0.25f)]
     [TestCase(0.25f, 0.75f, Emitter.PerfScoreMemoryAccessKind.Read, 0.75f, 0.75f)]
     [TestCase(0.25f, 1.0f, Emitter.PerfScoreMemoryAccessKind.None, 0.25f, 0.25f)]
@@ -193,7 +192,6 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "perfScoreUnhandledInstruction")]
     private static extern void UnhandledInstruction(Emitter emitter, Emitter.instrDesc id,
         ref Emitter.insExecutionCharacteristics result);
-#endif
 
     private static Compiler CreateCompiler()
     {

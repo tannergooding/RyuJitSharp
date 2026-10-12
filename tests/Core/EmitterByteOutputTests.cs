@@ -163,18 +163,21 @@ internal static unsafe class EmitterByteOutputTests
             emitter.writeableOffset = aliasOffset;
             var buffer = stackalloc byte[32];
             var location = buffer + (aliasOffset < 0 ? 16 : 0);
-#if LATE_DISASM
-            codeGen.Disassembler.disInit(compiler);
-            compiler.opts.doLateDisasm = true;
-#endif
+            if (Configuration.LATE_DISASM)
+            {
+                codeGen.Disassembler.disInit(compiler);
+                compiler.opts.doLateDisasm = true;
+            }
 
             emitter.emitRecordRelocation(location, buffer + 24, CorInfoReloc.RELATIVE32, -4);
 
             Assert.That(context.Calls, Is.EqualTo(matched ? 1 : 0));
-#if LATE_DISASM
-            var relocations = Relocations(ref codeGen.Disassembler) ?? throw new AssertionException("Missing relocation map.");
-            Assert.That(relocations[(nuint)location], Is.EqualTo((nuint)(buffer + 24)));
-#endif
+            if (Configuration.LATE_DISASM)
+            {
+                var relocations = Relocations(ref codeGen.Disassembler)
+                    ?? throw new AssertionException("Missing relocation map.");
+                Assert.That(relocations[(nuint)location], Is.EqualTo((nuint)(buffer + 24)));
+            }
             if (matched)
             {
                 Assert.That((nuint)context.Location, Is.EqualTo((nuint)location));
@@ -197,10 +200,8 @@ internal static unsafe class EmitterByteOutputTests
         public int Delta;
     }
 
-#if LATE_DISASM
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_relocationMap")]
     private static extern ref Dictionary<nuint, nuint>? Relocations(ref Disassembler disassembler);
-#endif
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static void RecordRelocation(ICorJitInfo* self, void* location, void* locationRW, void* target, CorInfoReloc type, int delta)

@@ -10,6 +10,18 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionGroupTests
 {
+    private static bool CapturesPerformanceMetrics
+    {
+        get
+        {
+#if DEBUG
+            return true;
+#else
+            return Configuration.LATE_DISASM;
+#endif
+        }
+    }
+
     [Test]
     public static void GroupNumberPreservesUnsignedWidth()
     {
@@ -46,10 +58,8 @@ internal static unsafe class EmitterInstructionGroupTests
         Assert.That(group.igSelf, Is.SameAs(group));
         Assert.That(group.igBlocks, Is.Empty);
 #endif
-#if DEBUG || LATE_DISASM
-        Assert.That(group.igWeight, Is.EqualTo(100.0));
+        Assert.That(group.igWeight, Is.EqualTo(CapturesPerformanceMetrics ? 100.0 : 0.0));
         Assert.That(group.igPerfScore, Is.Zero);
-#endif
     }
 
     [Test]
@@ -99,9 +109,10 @@ internal static unsafe class EmitterInstructionGroupTests
         {
             igFlags = flag | InsGroupFlags.Extend | InsGroupFlags.NoGCInterrupt | InsGroupFlags.OutOfOrderHead,
         };
-#if DEBUG || LATE_DISASM
-        head.igWeight = 42.0;
-#endif
+        if (CapturesPerformanceMetrics)
+        {
+            head.igWeight = 42.0;
+        }
         var tail = new insGroup();
         head.igNext = tail;
         FirstGroup(emitter) = head;
@@ -115,9 +126,7 @@ internal static unsafe class EmitterInstructionGroupTests
         Assert.That(LastGroup(emitter), Is.SameAs(tail));
         Assert.That(emitter.emitCurIG, Is.SameAs(next));
         Assert.That(next.igFlags, Is.EqualTo(flag));
-#if DEBUG || LATE_DISASM
-        Assert.That(next.igWeight, Is.EqualTo(42.0));
-#endif
+        Assert.That(next.igWeight, Is.EqualTo(CapturesPerformanceMetrics ? 42.0 : 0.0));
     }
 
     [Test]
@@ -131,9 +140,8 @@ internal static unsafe class EmitterInstructionGroupTests
 
         var group = Allocate(emitter);
 
-#if DEBUG || LATE_DISASM
-        Assert.That(group.igWeight, Is.EqualTo(block.getBBWeight(compiler)));
-#endif
+        Assert.That(group.igWeight,
+            Is.EqualTo(CapturesPerformanceMetrics ? block.getBBWeight(compiler) : 0.0));
     }
 
     [TestCase(false)]

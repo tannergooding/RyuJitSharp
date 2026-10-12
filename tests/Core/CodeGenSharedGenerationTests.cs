@@ -93,10 +93,10 @@ internal static unsafe class CodeGenSharedGenerationTests
     }
 #endif
 
-#if LATE_DISASM
     [Test]
     public static void LateDisassemblyRejectsBeforeBorrowingOutputsOrStartingAPhase()
     {
+        Assume.That(Configuration.LATE_DISASM);
         WithGeneration((compiler, codeGen) =>
         {
             compiler.opts.doLateDisasm = true;
@@ -115,7 +115,6 @@ internal static unsafe class CodeGenSharedGenerationTests
             Assert.That(size, Is.EqualTo(77));
         });
     }
-#endif
 
 #if TARGET_WASM
     [TestCase(0, 0, false)]

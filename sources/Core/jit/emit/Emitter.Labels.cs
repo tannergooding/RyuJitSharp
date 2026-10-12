@@ -58,9 +58,15 @@ public partial class Emitter
         {
             assert(emitCurIG is not null);
             assert((emitCurIG.igFlags & InsGroupFlags.Extend) == 0);
-#if DEBUG || LATE_DISASM
+#if DEBUG
             emitCurIG.igWeight = getCurrentBlockWeight();
             emitCurIG.igPerfScore = 0.0;
+#else
+            if (Configuration.LATE_DISASM)
+            {
+                emitCurIG.igWeight = getCurrentBlockWeight();
+                emitCurIG.igPerfScore = 0.0;
+            }
 #endif
         }
 

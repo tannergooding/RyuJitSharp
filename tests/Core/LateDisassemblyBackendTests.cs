@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -697,4 +696,3 @@ internal static unsafe class LateDisassemblyBackendTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_coldCodeSize")]
     private static extern ref nuint ColdSize(ref Disassembler disassembler);
 }
-#endif

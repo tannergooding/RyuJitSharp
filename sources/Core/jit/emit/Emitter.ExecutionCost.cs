@@ -15,7 +15,6 @@ public partial class Emitter
         ReadWrite,
     }
 
-#if DEBUG || LATE_DISASM
     private const float PERFSCORE_THROUGHPUT_ILLEGAL = -1024.0f;
     private const float PERFSCORE_THROUGHPUT_ZERO = 0.0f;
     private const float PERFSCORE_THROUGHPUT_1P5X = 2.0f / 3.0f;
@@ -157,5 +156,4 @@ public partial class Emitter
         result.insThroughput = PERFSCORE_THROUGHPUT_1C;
         result.insLatency = PERFSCORE_LATENCY_1C;
     }
-#endif
 }

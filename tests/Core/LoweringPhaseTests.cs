@@ -139,10 +139,10 @@ internal static unsafe class LoweringPhaseTests
         }, minOpts: false);
     }
 
-#if LATE_DISASM
     [Test]
     public static void UnsupportedLateDisassemblyReturnsExplicitSkipBeforeGeneration()
     {
+        Assume.That(Configuration.LATE_DISASM);
         WithCompiler((compiler, allocator) => {
             compiler.opts.doLateDisasm = true;
             var exception = Assert.Throws<FatalJitException>(() => compiler.codeGen!.genGenerateCode(out _, out _));
@@ -151,7 +151,6 @@ internal static unsafe class LoweringPhaseTests
             Assert.That(compiler.lvaTable[0].lvDoNotEnregister, Is.False);
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]

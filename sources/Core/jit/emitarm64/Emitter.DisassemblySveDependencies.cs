@@ -2141,7 +2141,6 @@ public partial class Emitter
         }
     }
 
-#if DEBUG || LATE_DISASM
     private const float PERFSCORE_THROUGHPUT_9X = 1.0f / 9.0f;
     private const float PERFSCORE_THROUGHPUT_11C = 11.0f;
     private const float PERFSCORE_THROUGHPUT_14C = 14.0f;
@@ -5149,6 +5148,6 @@ public partial class Emitter
             }
         }
     }
-#endif
+
 }
 #endif

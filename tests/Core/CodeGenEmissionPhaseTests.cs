@@ -160,12 +160,12 @@ internal static unsafe class CodeGenEmissionPhaseTests
     }
 
 #if DEBUG
-#if LATE_DISASM
     [TestCase(0)]
     [TestCase(1)]
     [TestCase(2)]
     public static void LateDisassemblyRejectsBeforePhaseMutationOrPublication(int phaseNumber)
     {
+        Assume.That(Configuration.LATE_DISASM);
         WithEmission((compiler, codeGen, state) =>
         {
             void* hotCode = null;
@@ -193,7 +193,6 @@ internal static unsafe class CodeGenEmissionPhaseTests
             Assert.That(compiler.lvaDoneFrameLayout, Is.EqualTo(Compiler.TENTATIVE_FRAME_LAYOUT));
         });
     }
-#endif
 
     [Test]
     public static void MetricsModeEmitsAfterUnwindAndCodeAllocation()

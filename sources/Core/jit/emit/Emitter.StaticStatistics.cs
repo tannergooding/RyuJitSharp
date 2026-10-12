@@ -151,9 +151,15 @@ public partial class Emitter
 #if DEBUG
         AddField(ref group, "igSelf             ", word, word, print);
 #endif
-#if DEBUG || LATE_DISASM
+#if DEBUG
         AddField(ref group, "igWeight           ", sizeof(double), doubleAlignment, print);
         AddField(ref group, "igPerfScore        ", sizeof(double), doubleAlignment, print);
+#else
+        if (Configuration.LATE_DISASM)
+        {
+            AddField(ref group, "igWeight           ", sizeof(double), doubleAlignment, print);
+            AddField(ref group, "igPerfScore        ", sizeof(double), doubleAlignment, print);
+        }
 #endif
 #if DEBUG
         AddField(ref group, "lastGeneratedBlock ", word, word, print);

@@ -113,9 +113,14 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
             var group = emitter.emitCurIG ?? throw new AssertionException("Missing current instruction group.");
             var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing return instruction.");
             descriptor.idCodeSize(2);
-#if DEBUG || LATE_DISASM
-            group.igWeight = 16_777_217;
+            var tracksPerformance = Configuration.LATE_DISASM;
+#if DEBUG
+            tracksPerformance = true;
 #endif
+            if (tracksPerformance)
+            {
+                group.igWeight = 16_777_217;
+            }
             var buffer = stackalloc byte[16];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 16;
@@ -124,12 +129,10 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
             emitter.emitIssuing = true;
 #endif
             OffsetAdjustment(emitter) = initial;
-#if DEBUG || LATE_DISASM
             var cost = View.ExecutionCost(emitter, descriptor);
             var score = group.igWeight / (double)BB_UNITY_WEIGHT * cost;
             var initialScore = compiler.Metrics.PerfScore;
             var initialGroupScore = group.igPerfScore;
-#endif
             var end = buffer;
             var size = View.Issue(emitter, group, descriptor, &end);
 
@@ -140,10 +143,11 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
             Assert.That(OffsetAdjustment(emitter), Is.EqualTo(expected));
             Assert.That(group.igFlags & InsGroupFlags.UpdatedInstructionSize,
                 Is.EqualTo(InsGroupFlags.UpdatedInstructionSize));
-#if DEBUG || LATE_DISASM
-            Assert.That(compiler.Metrics.PerfScore, Is.EqualTo(initialScore + score));
-            Assert.That(group.igPerfScore, Is.EqualTo(initialGroupScore + score));
-#endif
+            if (tracksPerformance)
+            {
+                Assert.That(compiler.Metrics.PerfScore, Is.EqualTo(initialScore + score));
+                Assert.That(group.igPerfScore, Is.EqualTo(initialGroupScore + score));
+            }
         });
     }
 
@@ -260,10 +264,8 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitIssue1Instr")]
         public static extern nuint Issue(Emitter emitter, insGroup group, instrDesc descriptor, byte** code);
 
-#if DEBUG || LATE_DISASM
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "insEvaluateExecutionCost")]
         public static extern float ExecutionCost(Emitter emitter, instrDesc descriptor);
-#endif
 #endif
     }
 }

@@ -55,9 +55,7 @@ public sealed partial class CodeGen
                 source.Next.SetFlags(BBF_HAS_LABEL);
             }
         }
-#if DEBUG || LATE_DISASM
         var removedJmp = false;
-#endif
         switch (block.Kind)
         {
             case BBJ_RETURN:
@@ -136,12 +134,10 @@ public sealed partial class CodeGen
                         instGen(INS_nop);
                     }
 #endif
-#if DEBUG || LATE_DISASM
                     if (Configuration.FEATURE_LOOP_ALIGN)
                     {
                         removedJmp = true;
                     }
-#endif
                     break;
                 }
 #if TARGET_XARCH
@@ -186,9 +182,7 @@ public sealed partial class CodeGen
                 assert(!block.isBBCallFinallyPairTail);
                 assert(block.Kind != BBJ_CALLFINALLY);
                 Emitter.emitLoopAlignment(
-#if DEBUG || LATE_DISASM
                     (block.Kind == BBJ_ALWAYS) && !removedJmp
-#endif
                     );
             }
 

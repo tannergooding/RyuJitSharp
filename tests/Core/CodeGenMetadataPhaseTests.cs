@@ -227,9 +227,7 @@ internal static unsafe class CodeGenMetadataPhaseTests
         compiler.eeInfo.osPageSize = 4096;
         compiler.opts.compDbgInfo = debugInfo;
         compiler.opts.compScopeInfo = false;
-#if LATE_DISASM
         compiler.opts.doLateDisasm = false;
-#endif
         compiler.opts.disAsm = false;
 #if DEBUG
         compiler.opts.dspMetrics = false;

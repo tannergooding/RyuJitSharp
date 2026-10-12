@@ -47,12 +47,8 @@ internal static class EmitterLoopAlignmentRecordingTests
                 Assert.That(Access.Group(id), Is.SameAs(group));
                 Assert.That(Access.Predecessor(id), Is.SameAs(i == 0 ? group : null));
                 Assert.That(Access.Next(id), Is.SameAs(i == 0 ? null : descriptors[i - 1]));
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
                 Assert.That(Access.AfterJump(id), Is.True);
-                Assert.That(id.NativeLogicalSize, Is.EqualTo(48));
-#else
-                Assert.That(id.NativeLogicalSize, Is.EqualTo(40));
-#endif
+                Assert.That(id.NativeLogicalSize, Is.EqualTo(ExpectedAlignDescriptorSize));
                 total += id.idCodeSize();
             }
             Assert.That(total, Is.EqualTo((uint)padding));
@@ -246,22 +242,33 @@ internal static class EmitterLoopAlignmentRecordingTests
     }
 #endif
 
-    private static int FullAlignSize =>
+    private static int FullAlignSize
+    {
+        get
+        {
 #if DEBUG
-        48 + IntPtr.Size;
-#elif TARGET_ARM64 && LATE_DISASM
-        48;
+            return 48 + IntPtr.Size;
 #else
-        40;
+            return ExpectedAlignDescriptorSize;
 #endif
+        }
+    }
+
+    private static int ExpectedAlignDescriptorSize
+    {
+        get
+        {
+#if DEBUG
+            return 48;
+#else
+            return Configuration.TARGET_ARM64 && Configuration.LATE_DISASM ? 48 : 40;
+#endif
+        }
+    }
 
     private static void Align(Emitter emitter, bool afterJump = false)
     {
-        emitter.emitLoopAlignment(
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
-            afterJump
-#endif
-            );
+        emitter.emitLoopAlignment(afterJump);
     }
 
     private static BasicBlock LoopTop(insGroup? group)
@@ -310,9 +317,7 @@ internal static class EmitterLoopAlignmentRecordingTests
         public static insGroup? Group(instrDesc id) => ((instrDescAlign)id).idaIG;
         public static insGroup? Predecessor(instrDesc id) => ((instrDescAlign)id).idaLoopHeadPredIG;
         public static insGroup? Header(instrDesc id) => ((instrDescAlign)id).loopHeadIG();
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
         public static bool AfterJump(instrDesc id) => ((instrDescAlign)id).isPlacedAfterJmp;
-#endif
 
         public static instrDesc Install(Emitter emitter, insGroup containing, insGroup header, int count)
         {

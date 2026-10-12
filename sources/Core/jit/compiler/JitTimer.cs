@@ -228,12 +228,14 @@ public sealed class JitTimer
         }
 
         // eeGetMethodFullName uses locks, so don't enter crit sec before this call.
-#if DEBUG || LATE_DISASM
+#if DEBUG
         // If we already have computed the name because for some reason we're generating the CSV
         // for a DEBUG build (presumably not for the time info), just re-use it.
         var methName = compiler.info.compFullName;
 #else
-        var methName = compiler.eeGetMethodFullName(compiler.info.compMethodHnd);
+        var methName = Configuration.LATE_DISASM
+            ? compiler.info.compFullName
+            : compiler.eeGetMethodFullName(compiler.info.compMethodHnd);
 #endif
 
         // Try and access the SPMI index to report in the data set.

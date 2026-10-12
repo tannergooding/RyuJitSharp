@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -41,6 +40,7 @@ internal static unsafe class LateDisassemblyTests
     [Test]
     public static void LateDisassemblerOpenRecordsMethodAndClassOnlyWhenEnabled()
     {
+        Assume.That(Configuration.LATE_DISASM);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var disassembler = codeGen.Disassembler;
@@ -111,6 +111,7 @@ internal static unsafe class LateDisassemblyTests
     [Test]
     public static void InitializationResetsMapsAndLabelsWithoutClosingBorrowedOutput()
     {
+        Assume.That(Configuration.LATE_DISASM);
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             using var stream = new MemoryStream();
@@ -221,4 +222,3 @@ internal static unsafe class LateDisassemblyTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "disGetBufferSize")]
     private static extern nuint RemainingBufferSize(ref Disassembler disassembler, nuint offset);
 }
-#endif

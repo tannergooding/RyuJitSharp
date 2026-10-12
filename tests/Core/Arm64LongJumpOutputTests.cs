@@ -356,9 +356,10 @@ internal static unsafe class Arm64LongJumpOutputTests
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
-#if LATE_DISASM
-            codeGen.Disassembler.disInit(compiler);
-#endif
+            if (Configuration.LATE_DISASM)
+            {
+                codeGen.Disassembler.disInit(compiler);
+            }
             var emitter = codeGen.Emitter;
             emitter.emitBegCG(compiler, default);
             emitter.Init();

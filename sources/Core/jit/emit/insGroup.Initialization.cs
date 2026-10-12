@@ -22,10 +22,8 @@ public sealed partial class insGroup
     public nuint igDataSize;
 #endif
 
-#if DEBUG || LATE_DISASM
     public weight_t igWeight;
     public double igPerfScore;
-#endif
 
     private uint igNum;
 

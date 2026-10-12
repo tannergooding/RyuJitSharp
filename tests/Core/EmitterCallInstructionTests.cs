@@ -1,9 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
-#if LATE_DISASM
 using System.Collections.Generic;
-#endif
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -438,7 +436,6 @@ internal static unsafe class EmitterCallInstructionTests
         });
     }
 
-#if LATE_DISASM
     [TestCase(EC_FUNC_TOKEN, false, false)]
     [TestCase(EC_FUNC_TOKEN, false, true)]
     [TestCase(EC_FUNC_TOKEN, true, false)]
@@ -450,6 +447,7 @@ internal static unsafe class EmitterCallInstructionTests
     public static void LateDisassemblyRecordsTargetsInSeparateLazyMapsAndOverwritesEntries(
         EmitCallType type, bool helper, bool enabled)
     {
+        Assume.That(Configuration.LATE_DISASM);
         WithEmitter((compiler, codeGen) =>
         {
             compiler.opts.doLateDisasm = enabled;
@@ -479,7 +477,6 @@ internal static unsafe class EmitterCallInstructionTests
             Assert.That((nuint)map[(nuint)parameters.addr].Value, Is.EqualTo((nuint)parameters.methHnd));
         });
     }
-#endif
 
 #if DEBUG
     [Test]
@@ -496,9 +493,10 @@ internal static unsafe class EmitterCallInstructionTests
             parameters.ptrVars = VarSetOps.MakeSingleton(compiler, 0);
             parameters.gcrefRegs = new(SRBM_RBX);
             parameters.retSize = EA_GCREF;
-#if LATE_DISASM
-            compiler.opts.doLateDisasm = true;
-#endif
+            if (Configuration.LATE_DISASM)
+            {
+                compiler.opts.doLateDisasm = true;
+            }
             compiler.opts.dspCode = true;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
@@ -517,9 +515,10 @@ internal static unsafe class EmitterCallInstructionTests
             Assert.That(ThisByrefs(emitter), Is.EqualTo(regMask.SRBM_NONE));
             Assert.That(diagnostic, Does.Contain("call"));
             Assert.That(diagnostic, Does.Contain("<unknown method>"));
-#if LATE_DISASM
-            Assert.That(MethodMap(ref codeGen.Disassembler), Is.Not.Null);
-#endif
+            if (Configuration.LATE_DISASM)
+            {
+                Assert.That(MethodMap(ref codeGen.Disassembler), Is.Not.Null);
+            }
         });
     }
 #endif
@@ -610,11 +609,9 @@ internal static unsafe class EmitterCallInstructionTests
     [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitDecodeCallGCregs")]
     private static extern uint DecodeGcRegisters(Emitter? emitter, Emitter.instrDesc id);
 
-#if LATE_DISASM
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_addressToMethodHandleMap")]
     private static extern ref Dictionary<nuint, Pointer<CORINFO_METHOD_STRUCT_>>? MethodMap(ref Disassembler disassembler);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_helperAddressToMethodHandleMap")]
     private static extern ref Dictionary<nuint, Pointer<CORINFO_METHOD_STRUCT_>>? HelperMap(ref Disassembler disassembler);
-#endif
 }

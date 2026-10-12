@@ -2809,7 +2809,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH && (DEBUG || LATE_DISASM)
+#if TARGET_XARCH
     private static ReadOnlySpan<float> insLatencyInfos => [
 {{latencyBuilder}}    ];
 

@@ -49,7 +49,6 @@ internal static class LoongArchEmitterClassifierTests
         Assert.That(emitter.emitRegName(reg, EA_4BYTE, varName: false), Is.EqualTo(expected));
     }
 
-#if DEBUG || LATE_DISASM
     [TestCase(INS_nop, 4.0f)]
     [TestCase(INS_b, 1.0f)]
     [TestCase(INS_ld_d, 3.0f)]
@@ -85,8 +84,6 @@ internal static class LoongArchEmitterClassifierTests
 
         Assert.That(emitter.insEvaluateExecutionCost(descriptor), Is.EqualTo(expectedCost));
     }
-#endif
-
     [TestCase(INS_nop, 0x03400000u, 0xffffffffu, "DF_G_ALIAS")]
     [TestCase(INS_addi_d, 0x02c00000u, 0xffc00000u, "DF_G_2R12I")]
     public static void InstructionCodeAndDisassemblyTablesStayAligned(

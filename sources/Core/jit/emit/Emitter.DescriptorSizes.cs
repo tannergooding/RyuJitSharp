@@ -49,12 +49,10 @@ public partial class Emitter
                 }
                 return 48;
 #else
-#if LATE_DISASM
-                if (Configuration.TARGET_ARM64)
+                if (Configuration.LATE_DISASM && Configuration.TARGET_ARM64)
                 {
                     return 48;
                 }
-#endif
                 if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
                 {
                     return 24;

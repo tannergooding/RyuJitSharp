@@ -63,9 +63,15 @@ public partial class Emitter
         ig.igFuncIdx = compiler.compCurrFuncIdx;
         ig.igFlags = InsGroupFlags.None;
 
-#if DEBUG || LATE_DISASM
-        ig.igWeight = getCurrentBlockWeight();
+        ig.igWeight = 0;
         ig.igPerfScore = 0.0;
+#if DEBUG
+        ig.igWeight = getCurrentBlockWeight();
+#else
+        if (Configuration.LATE_DISASM)
+        {
+            ig.igWeight = getCurrentBlockWeight();
+        }
 #endif
 
         ig.igData = null;
@@ -112,7 +118,6 @@ public partial class Emitter
         }
     }
 
-#if DEBUG || LATE_DISASM
     private weight_t getCurrentBlockWeight()
     {
         var compiler = _compiler ?? throw new InvalidOperationException("Instruction groups require an active compiler.");
@@ -131,5 +136,4 @@ public partial class Emitter
             return BB_UNITY_WEIGHT;
         }
     }
-#endif
 }

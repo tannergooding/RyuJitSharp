@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if (DEBUG || LATE_DISASM) && TARGET_XARCH
+#if TARGET_XARCH
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
         var ins = id.idIns();
@@ -122,14 +122,18 @@ public partial class Emitter
 
                 if (Configuration.FEATURE_LOOP_ALIGN)
                 {
-#if DEBUG
-                    var skipAlign = id.idCodeSize() == 0 || ((instrDescAlign)id).isPlacedAfterJmp;
-#else
                     var skipAlign = id.idCodeSize() == 0;
-                    if (!skipAlign)
+#if DEBUG
+                    skipAlign |= ((instrDescAlign)id).isPlacedAfterJmp;
+#else
+                    if (Configuration.LATE_DISASM)
+                    {
+                        skipAlign |= ((instrDescAlign)id).isPlacedAfterJmp;
+                    }
+                    else if (!skipAlign)
                     {
                         throw new FatalJitException(CORJIT_SKIPPED,
-                            "Non-debug alignment performance scoring requires the native debug-only placement metadata.");
+                            "Non-debug alignment performance scoring requires late-disassembly placement metadata.");
                     }
 #endif
 
@@ -1157,7 +1161,7 @@ public partial class Emitter
         result.insMemoryAccessKind = memAccessKind;
         return result;
     }
-#elif (DEBUG || LATE_DISASM) && !TARGET_ARM64
+#elif !TARGET_ARM64
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
 #if TARGET_WASM || TARGET_ARM

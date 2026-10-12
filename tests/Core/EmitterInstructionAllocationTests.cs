@@ -19,6 +19,23 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterInstructionAllocationTests
 {
+    private static int ExpectedAlignDescriptorSize
+    {
+        get
+        {
+#if DEBUG
+            return Configuration.TARGET_X86 || Configuration.TARGET_ARM ? 28 : 48;
+#else
+            if (Configuration.LATE_DISASM && Configuration.TARGET_ARM64)
+            {
+                return 48;
+            }
+
+            return Configuration.TARGET_X86 || Configuration.TARGET_ARM ? 24 : 40;
+#endif
+        }
+    }
+
     [TestCase(EA_1BYTE)]
     [TestCase(EA_2BYTE)]
     [TestCase(EA_4BYTE)]
@@ -69,14 +86,13 @@ internal static unsafe class EmitterInstructionAllocationTests
         Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
     }
 
-    [TestCase("emitNewInstrJmp", INS_jmp, 48)]
-#if DEBUG || (TARGET_ARM64 && LATE_DISASM)
-    [TestCase("emitNewInstrAlign", INS_align, 48)]
-#else
-    [TestCase("emitNewInstrAlign", INS_align, 40)]
-#endif
-    public static void SpecialWrappersAllocateTheirNativeLayout(string method, instruction instruction, int size)
+    [TestCase("emitNewInstrJmp", INS_jmp)]
+    [TestCase("emitNewInstrAlign", INS_align)]
+    public static void SpecialWrappersAllocateTheirNativeLayout(string method, instruction instruction)
     {
+        var size = instruction == INS_align
+            ? ExpectedAlignDescriptorSize
+            : Configuration.TARGET_X86 || Configuration.TARGET_ARM ? 28 : 48;
         var emitter = CreateEmitter(out _);
         var allocator = typeof(Emitter).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)!;
         var descriptor = (Emitter.instrDesc)allocator.Invoke(emitter, null)!;

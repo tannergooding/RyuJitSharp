@@ -12,9 +12,7 @@ public partial class Emitter
         public instrDescAlign? idaNext;
         public insGroup? idaIG;
         public insGroup? idaLoopHeadPredIG;
-#if DEBUG || LATE_DISASM
         public bool isPlacedAfterJmp;
-#endif
 
         public override int NativeLogicalSize =>
             Configuration.TARGET_XARCH || Configuration.TARGET_ARM64

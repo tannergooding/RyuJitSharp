@@ -44,11 +44,6 @@ internal static class Arm64EmitterDescriptorSizeTests
 #if TARGET_WINDOWS
     [TestCase("instrDescCGCA", 80)]
 #endif
-#if DEBUG || LATE_DISASM
-    [TestCase("instrDescAlign", 48)]
-#else
-    [TestCase("instrDescAlign", 40)]
-#endif
     public static void ManagedDescriptorStorageMatchesNativeLayouts(string name, int expected)
     {
         var type = typeof(Emitter).GetNestedType(name, BindingFlags.NonPublic)
@@ -59,6 +54,19 @@ internal static class Arm64EmitterDescriptorSizeTests
         }
 
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public static void AlignmentDescriptorMatchesConfiguredNativeLayout()
+    {
+        var type = typeof(Emitter).GetNestedType("instrDescAlign", BindingFlags.NonPublic)
+            ?? throw new AssertionException("Missing descriptor type instrDescAlign.");
+        if (RuntimeHelpers.GetUninitializedObject(type) is not Emitter.instrDesc descriptor)
+        {
+            throw new AssertionException("Invalid descriptor type instrDescAlign.");
+        }
+
+        Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(ExpectedAlignDescriptorSize));
     }
 
     [TestCase(0, 16)]
@@ -133,15 +141,21 @@ internal static class Arm64EmitterDescriptorSizeTests
     }
 
     [Test]
-    public static void AlignmentStorageIncludesTheDebugField()
+    public static void AlignmentStorageMatchesConfiguredNativeLayout()
     {
-        Assert.That(Size(CreateEmitter(), Descriptor(INS_align, IF_SN_0A)), Is.EqualTo(
-#if DEBUG || LATE_DISASM
-            48
+        Assert.That(Size(CreateEmitter(), Descriptor(INS_align, IF_SN_0A)), Is.EqualTo(ExpectedAlignDescriptorSize));
+    }
+
+    private static int ExpectedAlignDescriptorSize
+    {
+        get
+        {
+#if DEBUG
+            return 48;
 #else
-            40
+            return Configuration.LATE_DISASM ? 48 : 40;
 #endif
-            ));
+        }
     }
 
     private static FlagDescriptor Descriptor(instruction instruction, Emitter.insFormat format)

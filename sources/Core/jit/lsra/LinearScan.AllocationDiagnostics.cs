@@ -882,10 +882,13 @@ public sealed partial class LinearScan
         }
 
         streamWriter.Write('"');
-#if DEBUG || LATE_DISASM || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
+#if DEBUG || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
         streamWriter.Write(_compiler.info.compFullName);
 #else
-        streamWriter.Write(_compiler.eeGetMethodFullName(_compiler.info.compCompHnd));
+        var methodName = Configuration.LATE_DISASM
+            ? _compiler.info.compFullName
+            : _compiler.eeGetMethodFullName(_compiler.info.compCompHnd);
+        streamWriter.Write(methodName);
 #endif
         streamWriter.Write('"');
         foreach (var totalStat in totalStats)

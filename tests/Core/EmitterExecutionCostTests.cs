@@ -34,7 +34,6 @@ internal static class EmitterExecutionCostTests
         Assert.That(Emitter.getMemoryOperation(id), Is.EqualTo(IF_NONE));
     }
 
-#if DEBUG || LATE_DISASM
     [TestCase(INS_add, EA_8BYTE, IF_RRW_RRD, 0.25f, 1.0f, None, 0.25f)]
     [TestCase(INS_mov, EA_8BYTE, IF_RWR_RRD, 0.25f, 0.0f, None, 0.25f)]
     [TestCase(INS_add, EA_8BYTE, IF_RWR_SRD, 0.5f, 2.0f, Read, 1.0f)]
@@ -102,13 +101,21 @@ internal static class EmitterExecutionCostTests
             Assert.That(emitter.insEvaluateExecutionCost(branch), Is.EqualTo(2.0f));
 
             var zeroAlign = View.Align(0, false);
-            var emittedAlign = View.Align(8, false);
             Assert.That(emitter.insEvaluateExecutionCost(zeroAlign), Is.Zero);
 #if DEBUG
+            var emittedAlign = View.Align(8, false);
             var placedAfterJump = View.Align(8, true);
             Assert.That(emitter.insEvaluateExecutionCost(placedAfterJump), Is.Zero);
-#endif
             Assert.That(emitter.insEvaluateExecutionCost(emittedAlign), Is.EqualTo(0.25f));
+#else
+            if (Configuration.LATE_DISASM)
+            {
+                var emittedAlign = View.Align(8, false);
+                var placedAfterJump = View.Align(8, true);
+                Assert.That(emitter.insEvaluateExecutionCost(placedAfterJump), Is.Zero);
+                Assert.That(emitter.insEvaluateExecutionCost(emittedAlign), Is.EqualTo(0.25f));
+            }
+#endif
         });
     }
 
@@ -154,8 +161,6 @@ internal static class EmitterExecutionCostTests
         CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (_, codeGen, _) =>
             test(codeGen.Emitter));
     }
-#endif
-
     private abstract class View(CodeGen codeGen) : Emitter(codeGen)
     {
         public static instrDesc Basic(instruction ins, emitAttr size, insFormat format)
@@ -200,9 +205,7 @@ internal static class EmitterExecutionCostTests
             id.idIns(INS_align);
             id.idInsFmt(IF_NONE);
             id.idCodeSize(padding);
-#if DEBUG
             id.isPlacedAfterJmp = placedAfterJump;
-#endif
             return id;
         }
     }

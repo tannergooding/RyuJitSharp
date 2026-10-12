@@ -39,11 +39,7 @@ public partial class Emitter
         emitNxtIG();
     }
 
-    public void emitLoopAlignment(
-#if DEBUG || LATE_DISASM
-        bool isPlacedBehindJmp
-#endif
-        )
+    public void emitLoopAlignment(bool isPlacedBehindJmp)
     {
         if (Configuration.TARGET_AMD64)
         {
@@ -57,21 +53,13 @@ public partial class Emitter
             if ((_compiler.opts.compJitAlignLoopBoundary > 16) && !_compiler.opts.compJitAlignLoopAdaptive)
             {
                 paddingBytes = _compiler.opts.compJitAlignLoopBoundary;
-                emitLongLoopAlign(paddingBytes
-#if DEBUG || LATE_DISASM
-                    , isPlacedBehindJmp
-#endif
-                    );
+                emitLongLoopAlign(paddingBytes, isPlacedBehindJmp);
             }
             else
             {
                 emitCheckAlignFitInCurIG(1);
                 paddingBytes = MAX_XARCH_ALIGN_INSTR_SIZE;
-                emitLoopAlign(paddingBytes, true
-#if DEBUG || LATE_DISASM
-                    , isPlacedBehindJmp
-#endif
-                    );
+                emitLoopAlign(paddingBytes, true, isPlacedBehindJmp);
             }
         }
         else if (Configuration.TARGET_ARM64)
@@ -79,11 +67,7 @@ public partial class Emitter
             paddingBytes = _compiler.opts.compJitAlignLoopAdaptive
                 ? (uint)_compiler.opts.compJitAlignLoopBoundary >> 1
                 : _compiler.opts.compJitAlignLoopBoundary;
-            emitLongLoopAlign(paddingBytes
-#if DEBUG || LATE_DISASM
-                , isPlacedBehindJmp
-#endif
-                );
+            emitLongLoopAlign(paddingBytes, isPlacedBehindJmp);
         }
         else
         {
@@ -238,11 +222,7 @@ public partial class Emitter
         }
     }
 
-    private void emitLoopAlign(uint paddingBytes, bool isFirstAlign
-#if DEBUG || LATE_DISASM
-        , bool isPlacedBehindJmp
-#endif
-        )
+    private void emitLoopAlign(uint paddingBytes, bool isFirstAlign, bool isPlacedBehindJmp)
     {
         EnsureLoopAlignmentTargetSupported();
         assert(emitCurIG is not null);
@@ -281,20 +261,14 @@ public partial class Emitter
         {
             id.idaLoopHeadPredIG = null;
         }
-#if DEBUG || LATE_DISASM
         id.isPlacedAfterJmp = isPlacedBehindJmp;
-#endif
         id.idaNext = emitCurIGAlignList;
         emitCurIGsize = unchecked(emitCurIGsize + (int)paddingBytes);
         dispIns(id);
         emitCurIGAlignList = id;
     }
 
-    private void emitLongLoopAlign(uint alignmentBoundary
-#if DEBUG || LATE_DISASM
-        , bool isPlacedBehindJmp
-#endif
-        )
+    private void emitLongLoopAlign(uint alignmentBoundary, bool isPlacedBehindJmp)
     {
         EnsureLoopAlignmentTargetSupported();
         uint nAlignInstr;
@@ -320,11 +294,7 @@ public partial class Emitter
         var isFirstAlign = true;
         while (insAlignCount != 0)
         {
-            emitLoopAlign(paddingBytes, isFirstAlign
-#if DEBUG || LATE_DISASM
-                , isPlacedBehindJmp
-#endif
-                );
+            emitLoopAlign(paddingBytes, isFirstAlign, isPlacedBehindJmp);
             insAlignCount--;
             isFirstAlign = false;
         }
@@ -332,11 +302,7 @@ public partial class Emitter
         if (Configuration.TARGET_XARCH)
         {
             // Native also records the zero-sized remainder when padding is a multiple of 15.
-            emitLoopAlign(lastInsAlignSize, isFirstAlign
-#if DEBUG || LATE_DISASM
-                , isPlacedBehindJmp
-#endif
-                );
+            emitLoopAlign(lastInsAlignSize, isFirstAlign, isPlacedBehindJmp);
         }
     }
 

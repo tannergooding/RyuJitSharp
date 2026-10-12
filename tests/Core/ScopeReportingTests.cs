@@ -330,10 +330,10 @@ internal static unsafe class ScopeReportingTests
         });
     }
 
-#if LATE_DISASM
     [Test]
     public static void RegisterVariableNamesRespectScopeAvailabilityAndInstructionBounds()
     {
+        Assume.That(Configuration.LATE_DISASM);
         WithCompiler((compiler, codeGen, _) =>
         {
             compiler.info.compVarScopes[0].vsdLVnum = 0;
@@ -361,6 +361,7 @@ internal static unsafe class ScopeReportingTests
     [Test]
     public static void StackVariableNamesMatchTheirRegisterAndDisplacement()
     {
+        Assume.That(Configuration.LATE_DISASM);
         WithCompiler((compiler, codeGen, _) =>
         {
             compiler.info.compVarScopes[0].vsdLVnum = 0;
@@ -375,7 +376,6 @@ internal static unsafe class ScopeReportingTests
             Assert.That(((ICodeGen)codeGen).siStackVarName(8, 1, (uint)REG_FPBASE, 16), Is.Null);
         });
     }
-#endif
 
     [Test]
     public static void DebugPublicationRetainsCallAndSpecialVariableDiagnostics()

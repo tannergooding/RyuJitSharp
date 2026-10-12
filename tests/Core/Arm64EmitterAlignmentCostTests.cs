@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64 && (DEBUG || LATE_DISASM)
+#if TARGET_ARM64
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
@@ -61,9 +61,7 @@ internal static class Arm64EmitterAlignmentCostTests
             id.idIns(INS_align);
             id.idInsFmt(IF_SN_0A);
             id.idInsOpt(opt);
-#if DEBUG || LATE_DISASM
             id.isPlacedAfterJmp = placedAfterJump;
-#endif
             return id;
         }
 

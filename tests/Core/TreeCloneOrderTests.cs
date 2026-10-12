@@ -122,12 +122,10 @@ internal static unsafe class TreeCloneOrderTests
             Assert.That(copy.IconHandleFlag, Is.EqualTo(original.IconHandleFlag));
 #if DEBUG
             var expectedCookie = expression ? original.TargetHandle : 0;
-#if LATE_DISASM
-            if (handle)
+            if (Configuration.LATE_DISASM && handle)
             {
                 expectedCookie = 0;
             }
-#endif
             Assert.That(copy.TargetHandle, Is.EqualTo(expectedCookie));
             Assert.That(original.TargetHandle, Is.EqualTo((nint)789));
 #endif

@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 && (DEBUG || LATE_DISASM)
+#if TARGET_ARM64
 using System;
 using System.Diagnostics;
 using static RyuJitSharp.Emitter.insFormat;
@@ -19,9 +19,7 @@ public partial class Emitter
 
     private static bool emitAlignIsPlacedAfterJmpArm64(instrDesc id)
     {
-#if DEBUG || LATE_DISASM
         return ((instrDescAlign)id).isPlacedAfterJmp;
-#endif
     }
 
     // Latencies and throughput follow the Arm Cortex-A55 Software Optimization Guide:

@@ -16,18 +16,14 @@ internal static class Arm32EmitterStatisticsTests
 #if TARGET_WINDOWS
 #if DEBUG
         const int expectedGroupSize = 88;
-#elif LATE_DISASM
-        const int expectedGroupSize = 60;
 #else
-        const int expectedGroupSize = 40;
+        var expectedGroupSize = Configuration.LATE_DISASM ? 60 : 40;
 #endif
 #elif TARGET_UNIX
 #if DEBUG
         const int expectedGroupSize = 96;
-#elif LATE_DISASM
-        const int expectedGroupSize = 64;
 #else
-        const int expectedGroupSize = 48;
+        var expectedGroupSize = Configuration.LATE_DISASM ? 64 : 48;
 #endif
 #else
         Assert.Fail("ARM32 emitter statistics require a known native ABI.");

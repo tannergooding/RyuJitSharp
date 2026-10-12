@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64 && (DEBUG || LATE_DISASM)
+#if TARGET_RISCV64
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 

@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RyuJitEnableArm64LateDisasm)' == 'true' and ($(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64'))))">
-    <DefineConstants>$(DefineConstants);LATE_DISASM;USE_COREDISTOOLS</DefineConstants>
+    <DefineConstants>$(DefineConstants);USE_COREDISTOOLS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

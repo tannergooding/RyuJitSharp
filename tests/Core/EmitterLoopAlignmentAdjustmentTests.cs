@@ -320,11 +320,7 @@ internal static class EmitterLoopAlignmentAdjustmentTests
 
     private static void Align(Emitter emitter)
     {
-        emitter.emitLoopAlignment(
-#if DEBUG
-            false
-#endif
-            );
+        emitter.emitLoopAlignment(false);
     }
 
     private static void WithEmitter(Action<Compiler, Emitter> action)

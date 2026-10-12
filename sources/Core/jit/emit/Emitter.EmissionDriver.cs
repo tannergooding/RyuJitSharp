@@ -27,11 +27,19 @@ public partial class Emitter
         var curInsAdr = *dp;
         var size = emitOutputInstr(ig, id, dp);
 
-#if DEBUG || LATE_DISASM
+#if DEBUG
         var insExeCost = insEvaluateExecutionCost(id);
         var insPerfScore = (ig.igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
         compiler.Metrics.PerfScore += insPerfScore;
         ig.igPerfScore += insPerfScore;
+#else
+        if (Configuration.LATE_DISASM)
+        {
+            var insExeCost = insEvaluateExecutionCost(id);
+            var insPerfScore = (ig.igWeight / (double)BB_UNITY_WEIGHT) * insExeCost;
+            compiler.Metrics.PerfScore += insPerfScore;
+            ig.igPerfScore += insPerfScore;
+        }
 #endif
 #if EMIT_TRACK_STACK_DEPTH
         assert(!emitFullGCinfo || (emitCurStackLvl != 0) || (u2.emitGcArgTrackCnt == 0));
