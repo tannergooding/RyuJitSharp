@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM && (TARGET_XARCH || TARGET_ARM64)
 using System.IO;
 
 namespace RyuJitSharp;
@@ -85,4 +84,3 @@ public partial struct Disassembler
         throw new FatalJitException(CORJIT_SKIPPED, "Late disassembly requires DIS::PdisNew and the MSVCDIS C++ callback ABI.");
     }
 }
-#endif

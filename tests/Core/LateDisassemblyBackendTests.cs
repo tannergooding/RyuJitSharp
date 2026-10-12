@@ -59,6 +59,20 @@ internal static unsafe class LateDisassemblyBackendTests
     private static nint s_outputBuffer;
     private static int s_outputBufferClearCount;
 
+    [Test]
+    public static void CoreDisToolsArchitectureUsesRuntimeTargetConfiguration()
+    {
+        var expected = Configuration.TARGET_ARM64 ? CoreDisTarget.Arm64 :
+            Configuration.TARGET_ARM ? CoreDisTarget.Thumb :
+            Configuration.TARGET_X86 ? CoreDisTarget.X86 :
+            Configuration.TARGET_AMD64 ? CoreDisTarget.X64 :
+            Configuration.TARGET_LOONGARCH64 ? CoreDisTarget.LoongArch64 :
+            Configuration.TARGET_RISCV64 ? CoreDisTarget.RiscV64 :
+            throw new AssertionException("The current target has no CoreDisTools architecture.");
+
+        Assert.That(GetCoreDisTargetForCurrentTarget(), Is.EqualTo(expected));
+    }
+
     [TestCase(false)]
     [TestCase(true)]
     public static void CoreDisToolsVisitsWritableHotThenColdAtLinearExecutionAddresses(bool printit)

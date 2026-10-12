@@ -274,10 +274,6 @@ public partial class Globals
 #error When UNIX_X86_ABI is defined, you must define TARGET_X86 as well.
 #endif
 
-#if USE_COREDISTOOLS && !LATE_DISASM
-#error When USE_COREDISTOOLS is defined, you must define LATE_DISASM as well.
-#endif
-
     public const int REGEN_SHORTCUTS = 0;
 
     public const int REGEN_CALLPAT = 0;

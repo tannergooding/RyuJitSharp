@@ -2475,13 +2475,11 @@ public partial class Compiler
         opts.compScopeInfo = false;
 #endif
 
-#if DEBUG || LATE_DISASM
         if (Configuration.LATE_DISASM)
         {
             codeGen.Disassembler.disOpenForLateDisAsm(
                 info.compMethodName, info.compClassName, info.compMethodInfo->args.pSig);
         }
-#endif
 
         opts.compReloc = jitFlags->IsSet(JitFlags.JIT_FLAG_RELOC);
 

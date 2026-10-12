@@ -443,21 +443,27 @@ public partial class Compiler
         }
 #endif
 
-#if DEBUG || LATE_DISASM || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
-        info.compMethodName = eeGetMethodName(methodHandle);
-        info.compClassName = eeGetClassName(info.compClassHnd);
-        info.compFullName = eeGetMethodFullName(methodHandle);
-
-        fixed (byte* pName = "SuperPMIMethodContextNumber"u8)
-        {
-            info.compMethodSpmiIndex = CILJit.s_jitHost->getIntConfigValue(pName, -1);
-        }
-
-        if (!compIsForInlining)
-        {
-            JitMetadata.report(this, JitMetadata.MethodFullName, info.compFullName);
-        }
+#if DEBUG || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
+        const bool shouldCaptureMethodNames = true;
+#else
+        var shouldCaptureMethodNames = Configuration.LATE_DISASM;
 #endif
+        if (shouldCaptureMethodNames)
+        {
+            info.compMethodName = eeGetMethodName(methodHandle);
+            info.compClassName = eeGetClassName(info.compClassHnd);
+            info.compFullName = eeGetMethodFullName(methodHandle);
+
+            fixed (byte* pName = "SuperPMIMethodContextNumber"u8)
+            {
+                info.compMethodSpmiIndex = CILJit.s_jitHost->getIntConfigValue(pName, -1);
+            }
+
+            if (!compIsForInlining)
+            {
+                JitMetadata.report(this, JitMetadata.MethodFullName, info.compFullName);
+            }
+        }
 
 #if DEBUG
         // Opt-in to jit stress based on method hash ranges.

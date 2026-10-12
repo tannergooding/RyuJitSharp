@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM && USE_COREDISTOOLS
+#if USE_COREDISTOOLS
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -38,22 +38,7 @@ public partial struct Disassembler
             return false;
         }
 
-        var architecture = CoreDisTarget.Host;
-#if TARGET_ARM64
-        architecture = CoreDisTarget.Arm64;
-#elif TARGET_ARM
-        architecture = CoreDisTarget.Thumb;
-#elif TARGET_X86
-        architecture = CoreDisTarget.X86;
-#elif TARGET_AMD64
-        architecture = CoreDisTarget.X64;
-#elif TARGET_LOONGARCH64
-        architecture = CoreDisTarget.LoongArch64;
-#elif TARGET_RISCV64
-        architecture = CoreDisTarget.RiscV64;
-#else
-#error Unsupported target for LATE_DISASM with USE_COREDISTOOLS
-#endif
+        var architecture = GetCoreDisTargetForCurrentTarget();
         _corDisasm = s_PtrInitBufferedDisasm(architecture);
         if (_corDisasm == 0)
         {
@@ -63,6 +48,41 @@ public partial struct Disassembler
         }
 
         return true;
+    }
+
+    internal static CoreDisTarget GetCoreDisTargetForCurrentTarget()
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            return CoreDisTarget.Arm64;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return CoreDisTarget.Thumb;
+        }
+
+        if (Configuration.TARGET_X86)
+        {
+            return CoreDisTarget.X86;
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            return CoreDisTarget.X64;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return CoreDisTarget.LoongArch64;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return CoreDisTarget.RiscV64;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "CoreDisTools does not support this JIT target.");
     }
 
     private unsafe void DoneCoredistoolsDisasm()
@@ -92,9 +112,7 @@ public partial struct Disassembler
     private readonly unsafe void DisasmRegionCoredistools(StreamWriter output, nuint executionAddress, nuint blockAddress,
         nuint blockSize, ref uint errorCount)
     {
-#if TARGET_ARM64
         const uint maxErrorCount = 50;
-#endif
         var address = (byte*)executionAddress;
         var codeBytes = (byte*)blockAddress;
         var codeSizeBytes = blockSize;
@@ -111,24 +129,25 @@ public partial struct Disassembler
             if (instrLen == 0)
             {
                 errorCount++;
-#if TARGET_ARM64
-                if (codeSizeBytes >= 4)
+                if (Configuration.TARGET_ARM64)
                 {
-                    // Native uses %x for the address, intentionally retaining only its low 32 bits.
-                    output.Write(
-                        $"{unchecked((uint)(nuint)address):x}: {codeBytes[0]:x2} {codeBytes[1]:x2} {codeBytes[2]:x2} {codeBytes[3]:x2}\n");
-                    address += 4;
-                    codeBytes += 4;
-                    codeSizeBytes -= 4;
-                }
+                    if (codeSizeBytes >= 4)
+                    {
+                        // Native uses %x for the address, intentionally retaining only its low 32 bits.
+                        output.Write(
+                            $"{unchecked((uint)(nuint)address):x}: {codeBytes[0]:x2} {codeBytes[1]:x2} {codeBytes[2]:x2} {codeBytes[3]:x2}\n");
+                        address += 4;
+                        codeBytes += 4;
+                        codeSizeBytes -= 4;
+                    }
 
-                if (errorCount < maxErrorCount)
-                {
-                    continue;
-                }
+                    if (errorCount < maxErrorCount)
+                    {
+                        continue;
+                    }
 
-                output.Write("Too many failures\n");
-#endif
+                    output.Write("Too many failures\n");
+                }
                 break;
             }
 

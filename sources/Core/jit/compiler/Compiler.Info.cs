@@ -25,7 +25,6 @@ public partial class Compiler
 
         public bool hasCircularMethodConstraints;
 
-#if DEBUG || LATE_DISASM || DUMP_FLOWGRAPHS || DUMP_GC_TABLES
         public string compMethodName = "";
 
         public string compClassName = "";
@@ -34,7 +33,6 @@ public partial class Compiler
 
         /// <summary>useful when debugging under SuperPMI</summary>
         public int compMethodSpmiIndex = -1;
-#endif
 
 #if DEBUG
         private int compMethodHashPrivate;

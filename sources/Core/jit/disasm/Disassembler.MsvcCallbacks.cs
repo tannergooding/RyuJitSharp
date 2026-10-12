@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LATE_DISASM && (TARGET_XARCH || TARGET_ARM64)
+#if TARGET_XARCH || TARGET_ARM64
 using System.Diagnostics;
 using System.Globalization;
 
