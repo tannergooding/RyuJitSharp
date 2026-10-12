@@ -5,21 +5,22 @@
 
 namespace RyuJitSharp;
 
+// These values match registeramd64.h; regNumber only contains names for the active target.
+internal enum WindowsAmd64Register : uint
+{
+    Rcx = 1,
+    Rdx = 2,
+    R8 = 8,
+    R9 = 9,
+    R10 = 10,
+    Xmm0 = 32,
+    Xmm1 = 33,
+    Xmm2 = 34,
+    Xmm3 = 35,
+}
+
 public partial struct AbiPassingInformation
 {
-    // These values match registeramd64.h; regNumber only contains names for the active target.
-    private enum WindowsAmd64Register : uint
-    {
-        Rcx = 1,
-        Rdx = 2,
-        R8 = 8,
-        R9 = 9,
-        Xmm0 = 32,
-        Xmm1 = 33,
-        Xmm2 = 34,
-        Xmm3 = 35,
-    }
-
     public static bool GetShadowSpaceCallerOffsetForReg(regNumber reg, out int offset)
     {
         if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)

@@ -3,19 +3,27 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if WINDOWS_AMD64_ABI
+using System;
+
 namespace RyuJitSharp;
 
 public ref struct WinX64Classifier
 {
+    private const int WindowsAmd64PointerSize = 8;
+
     private RegisterQueue _intRegs;
     private RegisterQueue _fltRegs;
     private int _stackArgSize = 32;
 
     public WinX64Classifier(in ClassifierInfo info)
     {
-        _intRegs = new RegisterQueue(IntArgRegs);
-        _fltRegs = new RegisterQueue(FltArgRegs);
+        if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Windows x64 ABI classification requires Windows AMD64.");
+        }
+
+        _intRegs = new RegisterQueue(WindowsAmd64IntArgRegs);
+        _fltRegs = new RegisterQueue(WindowsAmd64FloatArgRegs);
     }
 
     public readonly int StackSize => _stackArgSize;
@@ -31,7 +39,7 @@ public ref struct WinX64Classifier
         if (wellKnownParam is WellKnownArg.SecretStubParam)
         {
             return AbiPassingInformation.FromSegment(comp, false,
-                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister((regNumber)(uint)WindowsAmd64Register.R10, 0, WindowsAmd64PointerSize));
         }
 
         // On windows-x64 ABI all parameters take exactly 1 stack slot (structs
@@ -49,10 +57,10 @@ public ref struct WinX64Classifier
             typeSize = structLayout.Size;
         }
 
-        if ((typeSize > TARGET_POINTER_SIZE) || !uint.IsPow2(typeSize))
+        if ((typeSize > WindowsAmd64PointerSize) || !uint.IsPow2(typeSize))
         {
             passedByRef = true;
-            typeSize = TARGET_POINTER_SIZE;
+            typeSize = WindowsAmd64PointerSize;
         }
 
         AbiPassingSegment segment;
@@ -68,9 +76,24 @@ public ref struct WinX64Classifier
         else
         {
             segment = AbiPassingSegment.OnStack(_stackArgSize, 0, (int)typeSize);
-            _stackArgSize += TARGET_POINTER_SIZE;
+            _stackArgSize += WindowsAmd64PointerSize;
         }
         return AbiPassingInformation.FromSegment(comp, passedByRef, segment);
     }
+
+    private static ReadOnlySpan<regNumber> WindowsAmd64IntArgRegs =>
+    [
+        (regNumber)(uint)WindowsAmd64Register.Rcx,
+        (regNumber)(uint)WindowsAmd64Register.Rdx,
+        (regNumber)(uint)WindowsAmd64Register.R8,
+        (regNumber)(uint)WindowsAmd64Register.R9,
+    ];
+
+    private static ReadOnlySpan<regNumber> WindowsAmd64FloatArgRegs =>
+    [
+        (regNumber)(uint)WindowsAmd64Register.Xmm0,
+        (regNumber)(uint)WindowsAmd64Register.Xmm1,
+        (regNumber)(uint)WindowsAmd64Register.Xmm2,
+        (regNumber)(uint)WindowsAmd64Register.Xmm3,
+    ];
 }
-#endif

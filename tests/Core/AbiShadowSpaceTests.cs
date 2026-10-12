@@ -63,6 +63,7 @@ internal static class AbiShadowSpaceTests
             var exception = Assert.Throws<FatalJitException>(() =>
                 AbiPassingInformation.GetShadowSpaceCallerOffsetForReg(WindowsAmd64Rcx, out _));
             Assert.That(exception?.Message, Is.EqualTo("Caller shadow-space offsets require Windows AMD64."));
+            Assert.Throws<FatalJitException>(CreateWinX64Classifier);
         }
         finally
         {
@@ -73,5 +74,11 @@ internal static class AbiShadowSpaceTests
     private static void AssumeWindowsAmd64Abi()
     {
         Assume.That(Configuration.TARGET_AMD64 && Configuration.WINDOWS_AMD64_ABI);
+    }
+
+    private static void CreateWinX64Classifier()
+    {
+        var info = new ClassifierInfo();
+        _ = new WinX64Classifier(info);
     }
 }

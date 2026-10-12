@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Universalize the ABI classifier family by replacing the target-selected `PlatformClassifier` alias in `sources/Core/jit/abi/Aliases.cs` with runtime dispatch, then remove target guards from the classifier implementations. Preserve each ABI's state and unsupported-target failure behavior; validate Windows x64 and ARM64 target builds.",
+    "nextAction": "Replace the target-selected `PlatformClassifier` alias with an allocation-free runtime-dispatched `ref struct` façade that preserves per-signature classifier state. Before removing remaining classifier guards, port the exact register-table and helper dependencies together, including the Wasm register-width constraint.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Replace the Windows AMD64 ABI compile guard in `AbiPassingInformation.ShadowSpace.cs` with runtime target configuration and propagate its ABI switch through RID substitutions and test-host configuration.",
-      "doneWhen": "Windows AMD64 still returns the existing shadow-space caller offsets, every other target still terminates with the explicit unsupported error, and no `WINDOWS_AMD64_ABI` preprocessor dependency remains for this method.",
-      "validation": "Focused tests passed: Core Release Windows x64 14/14; Target Release Windows x64 14/14 and Debug Windows x64 14/14. Target Release and Debug Windows ARM64 builds compiled and each ran the unsupported-target rejection test (1 passed; 13 ABI-specific cases skipped). All seven RID substitutions parsed and `git diff --check` passed. Full-analyzer Release test remains blocked by pre-existing IDE2002/IDE0059 diagnostics in unchanged `Compiler.gt*.cs` files.",
+      "scope": "Remove the compile-time Windows AMD64 guard from `WinX64Classifier.cs`, preserving its queue state and algorithm while using fixed Windows AMD64 register ordinals and rejecting construction unless the runtime target is Windows AMD64.",
+      "doneWhen": "`WinX64Classifier` compiles in Windows x64 and ARM64 target builds, supported Windows x64 classification is unchanged, unsupported construction terminates explicitly, and no Windows ABI preprocessor guard remains in the classifier file.",
+      "validation": "Passed focused ABI tests with analyzers disabled: Core Release Windows x64 123/123; Target Release Windows x64 38/38 and Debug Windows x64 38/38; Target Release and Debug Windows ARM64 64/64 each. ARM64 output lists the 13 Windows-x64-only cases as skipped. `git diff --check` passed and `state.json` parses. Full-analyzer Core Release test is blocked by pre-existing IDE2002/IDE0059 diagnostics in unchanged `Compiler.gt*.cs` files.",
       "deferred": "Continue the remaining target/feature preprocessor migration in dependency-coherent batches. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
