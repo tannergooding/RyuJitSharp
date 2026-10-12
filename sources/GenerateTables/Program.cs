@@ -4653,6 +4653,7 @@ public static partial class PhasesExtensions
                 _ = builder.AppendLine(",");
             }
         }, includeRegAlias: true);
+        var targetQualifiedBuilder = ProcessTargetQualifiedRegisterMasks();
 
         _ = Directory.CreateDirectory(@"Outputs\jit\target");
 
@@ -4666,15 +4667,118 @@ global using static RyuJitSharp.regMask;
 
 namespace RyuJitSharp;
 
-#if TARGET_X86
-public enum regMask
-#else
 public enum regMask : long
-#endif
 {
     SRBM_NONE = 0,
+{{targetQualifiedBuilder}}
 {{builder}}}
 """);
+    }
+
+    private static StringBuilder ProcessTargetQualifiedRegisterMasks()
+    {
+        var builder = new StringBuilder();
+        var prefixes = new[] { "REGDEF(", "REGALIAS(" };
+
+        foreach (var (target, inputFile) in s_registerTargetHeaders)
+        {
+            var registerBases = ReadRegisterBaseValues(inputFile);
+            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    SRBM_NONE_{target} = 0,");
+
+            var targetBuilder = ProcessMacroBasedFileUnion(inputFile, prefixes, (output, sourceFile, line, prefix, parts) => {
+                if (prefix is "REGALIAS(")
+                {
+                    if (parts.Length != 2)
+                    {
+                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                    }
+
+                    var name = parts[0].AsSpan().Trim();
+                    var realName = parts[1].AsSpan().Trim();
+                    _ = output.AppendLine(
+                        CultureInfo.InvariantCulture,
+                        $"    SRBM_{name}_{target} = SRBM_{realName}_{target},");
+                }
+                else
+                {
+                    if (parts.Length is not 4 and not 5)
+                    {
+                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                    }
+
+                    var name = parts[0].AsSpan().Trim();
+                    var mask = ParseRegisterMask(parts[2].AsSpan().Trim(), registerBases, target, inputFile);
+                    var maskValue = mask is long.MinValue
+                        ? "long.MinValue"
+                        : mask.ToString(CultureInfo.InvariantCulture);
+                    _ = output.AppendLine(
+                        CultureInfo.InvariantCulture,
+                        $"    SRBM_{name}_{target} = {maskValue},");
+                }
+            });
+
+            _ = builder.Append(targetBuilder);
+        }
+
+        return builder;
+    }
+
+    private static long ParseRegisterMask(
+        ReadOnlySpan<char> expression, Dictionary<string, int> registerBases, string target, string inputFile)
+    {
+        var mask = expression.ToString();
+        if (mask.StartsWith("0x", StringComparison.Ordinal))
+        {
+            if (!ulong.TryParse(mask.AsSpan(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var value))
+            {
+                throw new InvalidDataException($"Invalid register mask '{mask}' in '{inputFile}'.");
+            }
+
+            return unchecked((long)value);
+        }
+
+        if (long.TryParse(mask, NumberStyles.Integer, CultureInfo.InvariantCulture, out var literal))
+        {
+            return literal;
+        }
+
+        var openParenthesis = mask.IndexOf('(', StringComparison.Ordinal);
+        var closeParenthesis = mask.LastIndexOf(')', StringComparison.Ordinal);
+        if (openParenthesis < 0 || closeParenthesis <= openParenthesis ||
+            !int.TryParse(mask.AsSpan(openParenthesis + 1, closeParenthesis - openParenthesis - 1).Trim(),
+                NumberStyles.Integer, CultureInfo.InvariantCulture, out var offset))
+        {
+            throw new InvalidDataException($"Invalid register mask '{mask}' in '{inputFile}'.");
+        }
+
+        var baseName = mask[..openParenthesis] switch {
+            "GPRMASK" or "RMASK" or "PMASK" => null,
+            "XMMMASK" => "XMMBASE",
+            "KMASK" when target is "X86" => "KBASE",
+            "KMASK" => null,
+            "VFPMASK" => "FPBASE",
+            "VMASK" => "VBASE",
+            "FMASK" => "FBASE",
+            _ => throw new InvalidDataException($"Unsupported register mask '{mask}' in '{inputFile}'."),
+        };
+
+        var bit = offset;
+        if (baseName is not null)
+        {
+            if (!registerBases.TryGetValue(baseName, out var registerBase))
+            {
+                throw new InvalidDataException($"Missing register mask base '{baseName}' in '{inputFile}'.");
+            }
+
+            bit = checked(bit + registerBase);
+        }
+
+        if ((uint)bit >= 64)
+        {
+            throw new InvalidDataException($"Register mask bit '{bit}' is outside the 64-bit mask in '{inputFile}'.");
+        }
+
+        return 1L << bit;
     }
 
     private static void GenerateRegNumber()

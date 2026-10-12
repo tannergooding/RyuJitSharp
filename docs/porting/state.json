@@ -10,13 +10,13 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Trace `s_masks` and `regMaskTP` storage from `regNumberExtensions.SingleTypeMask` through upper-bank mask operations and LSRA consumers; establish the complete width/storage dependency closure before runtime-dispatching the register-mask table.",
+    "nextAction": "Trace `s_masks` and `RBM_*` construction from `regNumberExtensions.SingleTypeMask` through `regMaskTP` and its LSRA consumers; establish the complete target-width, bank-placement, and operation-semantics closure before replacing target-specific mask lookup with runtime dispatch.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Move register-name formatting and bounds/sentinel handling to runtime `Configuration` dispatch using target-qualified enum values. Generate separate fixed-register switch tables for each architecture, and preserve Wasm local-name formatting; leave the target-specific register-mask table unchanged.",
-      "doneWhen": "Every supported target reports the same register names and sentinel behavior as before; each generated fixed-register switch uses only its target-qualified identities; Wasm index formatting and the non-Wasm unsupported-helper failure remain explicit; target-mask generation is unchanged.",
-      "validation": "`dotnet run --no-restore` passed from `sources\\GenerateTables`; the generated register-extension output SHA256 matched the checked-in file. All 360 fixed-register name entries match the previous target-specific maps, and the generated register-mask table is unchanged. Focused Release register-name and identity tests passed 4/4 on each of win-x64, win-x86, win-arm64, linux-x64, linux-arm64, osx-arm64, browser-wasm, linux-arm, linux-riscv64, and linux-loongarch64. The full-analyzer run remains blocked by IDE2002/IDE0059/IDE0058 diagnostics in unchanged `Compiler.gt*.cs` files.",
-      "deferred": "Register-mask table width and upper-bank storage remain a separate dependency-coherent batch. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
+      "scope": "Emit a 64-bit, target-qualified `regMask` identity union from every architecture header, evaluating each native single-register mask and preserving register-mask aliases; retain current target-selected identities until consumers are migrated. The enum's scalar representation necessarily widens on X86.",
+      "doneWhen": "Every target header's definitions and aliases have qualified enum members with their exact native scalar mask bits, including X86's 32-bit values and bit-63 masks; current target-selected members remain numerically unchanged; all seven maps and aliases are tested.",
+      "validation": "The generator completed and its output matched the checked-in enum byte-for-byte (SHA256 519F4B5F85B670DBDF10619685BDCAFE8CAB487E2D190577BB8519C5AD056B57). The two identity tests passed in Debug and Release for all ten supported test-target RIDs; existing focused register-mask operation tests passed across all ten RIDs (82 total test executions). Test-project builds used RunAnalyzers=false because unchanged Compiler.gt*.cs files still report IDE2002/IDE0059/IDE0058 diagnostics.",
+      "deferred": "Runtime `s_masks` dispatch, `RBM_*` factory migration, `regMaskTP` upper-word layout, and width-sensitive operation migration remain for the next dependency-coherent mask batch. Do not port `genAsyncResumeInfo` until the B209 target-width table/emitter dependency closure is ported and tested."
     },
     "parityEvidence": {
       "corelibCodegen": {
@@ -722,6 +722,33 @@
       "disposition": "Register-name interpretation uses runtime target configuration because equal numeric values from different register enums carry no architecture tag. Generated fixed-register switches remain target-qualified and separate; Wasm keeps its type-bit/index formatting. The mask table remains target-specific and unchanged.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "Generated register-extension output matched the checked-in file byte-for-byte. All 360 fixed-register name entries match the previous target-specific maps, the mask table is unchanged, and focused Release tests passed 4/4 for all ten target RIDs."
+    },
+    {
+      "area": "target-qualified-register-mask-identities",
+      "native": [
+        "src\\coreclr\\jit\\registerx86.h",
+        "src\\coreclr\\jit\\registeramd64.h",
+        "src\\coreclr\\jit\\registerarm.h",
+        "src\\coreclr\\jit\\registerarm64.h",
+        "src\\coreclr\\jit\\registerloongarch64.h",
+        "src\\coreclr\\jit\\registerriscv64.h",
+        "src\\coreclr\\jit\\registerwasm.h"
+      ],
+      "csharp": [
+        "sources\\GenerateTables\\Inputs\\registerx86.h",
+        "sources\\GenerateTables\\Inputs\\registeramd64.h",
+        "sources\\GenerateTables\\Inputs\\registerarm.h",
+        "sources\\GenerateTables\\Inputs\\registerarm64.h",
+        "sources\\GenerateTables\\Inputs\\registerloongarch64.h",
+        "sources\\GenerateTables\\Inputs\\registerriscv64.h",
+        "sources\\GenerateTables\\Inputs\\registerwasm.h",
+        "sources\\GenerateTables\\Program.cs",
+        "sources\\Core\\jit\\target\\regMask.generated.cs",
+        "tests\\Core\\RegMaskIdentityTests.cs"
+      ],
+      "disposition": "Generated 64-bit target-qualified scalar-mask identities and aliases for every architecture. The enum's X86 storage widens to 64 bits so identities such as AMD64 XMM31 and ARM64 V31 remain representable; target-specific mask-table dispatch and regMaskTP operations remain deferred.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Generated enum output matched byte-for-byte. Both identity tests passed in Debug and Release for all ten target RIDs, and existing focused mask-operation tests passed for all ten target RIDs."
     }
   ],
   "generatorInputMapping": {
