@@ -63,17 +63,9 @@ public partial class Globals
     public const int LBL_DIST_MED_MAX_NEG = -4095;
     public const int LBL_DIST_MED_MAX_POS = 4096;
 
-    public const int JMP_DIST_SMALL_MAX_POS = 2046;
-
     public const int CALL_DIST_MAX_NEG = -16777216;
     public const int CALL_DIST_MAX_POS = 16777214;
 
-    public const int JCC_DIST_SMALL_MAX_POS = 254;
-    public const int JCC_DIST_MEDIUM_MAX_POS = 1048574;
-
     public const int LBL_SIZE_SMALL = 2;
-    public const int JMP_SIZE_LARGE = 4;
-    public const int JCC_SIZE_MEDIUM = 4;
-    public const int JCC_SIZE_LARGE = 6;
 }
 #endif

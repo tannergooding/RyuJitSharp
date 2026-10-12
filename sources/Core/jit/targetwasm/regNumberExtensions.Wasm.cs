@@ -72,24 +72,6 @@ public static partial class regNumberExtensions
         return type;
     }
 
-    public static bool IsValidWasmReg(regNumber reg)
-    {
-        _ = UnpackWasmReg(reg, out var type);
-        return (WasmValueType.Invalid < type) && (type < WasmValueType.Count);
-    }
-
-    public static bool IsValidWasmIntReg(regNumber reg)
-    {
-        _ = UnpackWasmReg(reg, out var type);
-        return (type is WasmValueType.I32) || (type is WasmValueType.I64);
-    }
-
-    public static bool IsValidWasmFloatReg(regNumber reg)
-    {
-        _ = UnpackWasmReg(reg, out var type);
-        return (type is WasmValueType.F32) || (type is WasmValueType.F64) || (type is WasmValueType.V128);
-    }
-
     private static WasmValueType InvalidWasmType()
     {
         unreached();

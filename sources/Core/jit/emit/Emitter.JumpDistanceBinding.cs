@@ -85,13 +85,13 @@ public partial class Emitter
                 {
                     if (jump.idIns() is not (INS_call or INS_jmp))
                     {
-                        shortSize = JCC_SIZE_SMALL;
+                        shortSize = unchecked((uint)JCC_SIZE_SMALL);
                         maxNegativeDistance = JCC_DIST_SMALL_MAX_NEG;
                         maxPositiveDistance = JCC_DIST_SMALL_MAX_POS;
                     }
                     else
                     {
-                        shortSize = JMP_SIZE_SMALL;
+                        shortSize = unchecked((uint)JMP_SIZE_SMALL);
                         maxNegativeDistance = JMP_DIST_SMALL_MAX_NEG;
                         maxPositiveDistance = JMP_DIST_SMALL_MAX_POS;
                     }

@@ -23,6 +23,80 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void TargetGlobalMetadataMatchesTheRuntimeTarget()
+    {
+        var expectedName =
+            Configuration.TARGET_X86 ? "X86" :
+            Configuration.TARGET_AMD64 ? "AMD64" :
+            Configuration.TARGET_ARM ? "ARM" :
+            Configuration.TARGET_ARM64 ? "ARM64" :
+            Configuration.TARGET_LOONGARCH64 ? "LOONGARCH64" :
+            Configuration.TARGET_RISCV64 ? "RISCV64" :
+            Configuration.TARGET_WASM ? "WASM32" :
+            throw new FatalJitException("Invalid target architecture.");
+
+        Assert.That(TARGET_READABLE_NAME, Is.EqualTo(expectedName));
+        Assert.That(CSE_CONST_SHARED_LOW_BITS, Is.EqualTo(Configuration.TARGET_XARCH ? 16 : 12));
+        Assert.That(REG_MASK_INT_FMT,
+            Is.EqualTo(Configuration.REGMASK_BITS_32 ? "{0:X8}" : "{0:X4}"));
+        Assert.That(REG_MASK_ALL_FMT,
+            Is.EqualTo(Configuration.REGMASK_BITS_32 ? "{0:X8}" : "{0:X16}"));
+    }
+
+    [Test]
+    public static void BranchSizesAndDistancesMatchTheRuntimeTarget()
+    {
+        if (Configuration.TARGET_ARM)
+        {
+            Assert.That(JMP_DIST_SMALL_MAX_NEG, Is.EqualTo(-2048));
+            Assert.That(JMP_DIST_SMALL_MAX_POS, Is.EqualTo(2046));
+            Assert.That(JCC_DIST_SMALL_MAX_NEG, Is.EqualTo(-256));
+            Assert.That(JCC_DIST_SMALL_MAX_POS, Is.EqualTo(254));
+            Assert.That(JCC_DIST_MEDIUM_MAX_NEG, Is.EqualTo(-1048576));
+            Assert.That(JCC_DIST_MEDIUM_MAX_POS, Is.EqualTo(1048574));
+            Assert.That(JMP_SIZE_SMALL, Is.EqualTo(2));
+            Assert.That(JMP_SIZE_LARGE, Is.EqualTo(4));
+            Assert.That(JCC_SIZE_SMALL, Is.EqualTo(2));
+            Assert.That(JCC_SIZE_MEDIUM, Is.EqualTo(4));
+            Assert.That(JCC_SIZE_LARGE, Is.EqualTo(6));
+            return;
+        }
+
+        if (Configuration.TARGET_XARCH)
+        {
+            Assert.That(JMP_DIST_SMALL_MAX_NEG, Is.EqualTo(-128));
+            Assert.That(JMP_DIST_SMALL_MAX_POS, Is.EqualTo(127));
+            Assert.That(JCC_DIST_SMALL_MAX_NEG, Is.EqualTo(-128));
+            Assert.That(JCC_DIST_SMALL_MAX_POS, Is.EqualTo(127));
+            Assert.That(JMP_SIZE_SMALL, Is.EqualTo(2));
+            Assert.That(JMP_SIZE_LARGE, Is.EqualTo(5));
+            Assert.That(JCC_SIZE_SMALL, Is.EqualTo(2));
+            Assert.That(JCC_SIZE_LARGE, Is.EqualTo(6));
+            Assert.That(PUSH_INST_SIZE, Is.EqualTo(5));
+            Assert.That(CALL_INST_SIZE, Is.EqualTo(5));
+            Assert.Throws<FatalJitException>(() => _ = JCC_DIST_MEDIUM_MAX_NEG);
+            Assert.Throws<FatalJitException>(() => _ = JCC_SIZE_MEDIUM);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            Assert.That(JCC_DIST_SMALL_MAX_NEG, Is.EqualTo(-1048576));
+            Assert.That(JCC_DIST_SMALL_MAX_POS, Is.EqualTo(1048575));
+            Assert.That(JMP_SIZE_SMALL, Is.EqualTo(4));
+            Assert.That(JCC_SIZE_SMALL, Is.EqualTo(4));
+            Assert.That(JCC_SIZE_LARGE, Is.EqualTo(8));
+            Assert.Throws<FatalJitException>(() => _ = JMP_DIST_SMALL_MAX_NEG);
+            Assert.Throws<FatalJitException>(() => _ = JCC_DIST_MEDIUM_MAX_NEG);
+            Assert.Throws<FatalJitException>(() => _ = JMP_SIZE_LARGE);
+            return;
+        }
+
+        Assert.Throws<FatalJitException>(() => _ = JMP_SIZE_SMALL);
+        Assert.Throws<FatalJitException>(() => _ = JCC_SIZE_SMALL);
+    }
+
+    [Test]
     public static void MultiRegisterReturnFeatureMatchesTheTargetArchitecture()
     {
         var supportsMultiRegRet = Configuration.TARGET_ARMARCH ||

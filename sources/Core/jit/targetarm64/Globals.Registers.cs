@@ -248,16 +248,11 @@ public static partial class Globals
     public const int LBL_DIST_SMALL_MAX_NEG = -1048576;
     public const int LBL_DIST_SMALL_MAX_POS = 1048575;
     public const int LBL_SIZE_SMALL = 4;
-    public const int JCC_DIST_SMALL_MAX_NEG = -1048576;
-    public const int JCC_DIST_SMALL_MAX_POS = 1048575;
-    public const int JCC_SIZE_SMALL = 4;
-    public const int JCC_SIZE_LARGE = 8;
     public const int TB_DIST_SMALL_MAX_NEG = -32768;
     public const int TB_DIST_SMALL_MAX_POS = 32767;
     public const int LDC_DIST_SMALL_MAX_NEG = -1048576;
     public const int LDC_DIST_SMALL_MAX_POS = 1048575;
     public const int LDC_SIZE_SMALL = 4;
-    public const int JMP_SIZE_SMALL = 4;
     public const int STACK_PROBE_BOUNDARY_THRESHOLD_BYTES = 512;
 
     public const regNumber REG_SWIFT_ERROR = REG_R21;

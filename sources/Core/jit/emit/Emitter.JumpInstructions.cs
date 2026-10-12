@@ -176,7 +176,7 @@ public partial class Emitter
 
         if (ins == INS_call)
         {
-            sz = CALL_INST_SIZE;
+            sz = unchecked((uint)CALL_INST_SIZE);
         }
         else if (ins is INS_push or INS_push_hide)
         {
@@ -185,7 +185,7 @@ public partial class Emitter
             {
                 id.idSetIsDspReloc();
             }
-            sz = PUSH_INST_SIZE;
+            sz = unchecked((uint)PUSH_INST_SIZE);
         }
         else
         {
@@ -197,7 +197,7 @@ public partial class Emitter
             }
             else
             {
-                sz = JMP_SIZE_SMALL;
+                sz = unchecked((uint)JMP_SIZE_SMALL);
             }
 
             if (tgt is not null)
@@ -205,7 +205,7 @@ public partial class Emitter
 #pragma warning disable CA1508 // The distance estimate requires conditional and unconditional short encodings to have equal widths.
                 assert(JMP_SIZE_SMALL == JCC_SIZE_SMALL);
 #pragma warning restore CA1508
-                var srcOffs = unchecked((uint)emitCurCodeOffset + (uint)emitCurIGsize + JMP_SIZE_SMALL);
+                var srcOffs = unchecked((uint)emitCurCodeOffset + (uint)emitCurIGsize + (uint)JMP_SIZE_SMALL);
                 var jmpDist = unchecked((int)(srcOffs - tgt.igOffs));
                 assert(jmpDist > 0);
                 var extra = unchecked(jmpDist + JMP_DIST_SMALL_MAX_NEG);
@@ -230,7 +230,7 @@ public partial class Emitter
                 if ((extra <= 0) && !id.idjKeepLong)
                 {
                     emitSetShortJump(id);
-                    sz = JMP_SIZE_SMALL;
+                    sz = unchecked((uint)JMP_SIZE_SMALL);
                 }
             }
 #if DEBUG_EMIT
@@ -244,7 +244,7 @@ public partial class Emitter
                     {
                         jitprintf($"[0] Jump {debugInfo.idNum}:\n");
                     }
-                    var srcOffs = unchecked((uint)emitCurCodeOffset + (uint)emitCurIGsize + JMP_SIZE_SMALL);
+                    var srcOffs = unchecked((uint)emitCurCodeOffset + (uint)emitCurIGsize + (uint)JMP_SIZE_SMALL);
                     jitprintf($"[0] Jump source is at {emitCurIGsize:X4}/{srcOffs:X8}\n");
                     jitprintf("[0] Label block is unknown\n");
                 }

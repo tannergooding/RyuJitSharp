@@ -12,52 +12,68 @@ public static partial class Globals
 {
     public static bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
     {
-#if TARGET_ARM64
-        return !TargetOS.IsWindows || !callConvIsInstanceMethodCallConv(callConv);
-#elif TARGET_AMD64 && SWIFT_SUPPORT
-        return callConv is CorInfoCallConvExtension.Swift;
-#else
+        if (Configuration.TARGET_ARM64)
+        {
+            return !TargetOS.IsWindows || !callConvIsInstanceMethodCallConv(callConv);
+        }
+
+        if (Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT)
+        {
+            return callConv is CorInfoCallConvExtension.Swift;
+        }
+
         return false;
-#endif
     }
 
     public static regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
     {
         assert(hasFixedRetBuffReg(callConv));
-#if TARGET_ARM64
-        return REG_ARG_RET_BUFF;
-#elif TARGET_AMD64 && SWIFT_SUPPORT
-        assert(callConv is CorInfoCallConvExtension.Swift);
-        return REG_SWIFT_ARG_RET_BUFF;
-#else
-        return REG_NA;
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            return REG_R8_ARM64;
+        }
+
+        if (Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT)
+        {
+            assert(callConv is CorInfoCallConvExtension.Swift);
+            return REG_RAX_AMD64;
+        }
+
+        return regNumberExtensions.NotAvailable;
     }
 
     public static regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
     {
         assert(hasFixedRetBuffReg(callConv));
-#if TARGET_ARM64
-        return new regMaskTP(SRBM_ARG_RET_BUFF);
-#elif TARGET_AMD64 && SWIFT_SUPPORT
-        assert(callConv == CorInfoCallConvExtension.Swift, "callConv == CorInfoCallConvExtension::Swift");
-        return new regMaskTP(SRBM_SWIFT_ARG_RET_BUFF);
-#else
+        if (Configuration.TARGET_ARM64)
+        {
+            return new regMaskTP(SRBM_R8_ARM64);
+        }
+
+        if (Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT)
+        {
+            assert(callConv == CorInfoCallConvExtension.Swift, "callConv == CorInfoCallConvExtension::Swift");
+            return new regMaskTP(SRBM_RAX_AMD64);
+        }
+
         return RBM_NONE;
-#endif
     }
 
     public static int theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
     {
         assert(hasFixedRetBuffReg(callConv));
-#if TARGET_ARM64
-        return RET_BUFF_ARGNUM;
-#elif TARGET_AMD64 && SWIFT_SUPPORT
-        assert(callConv is CorInfoCallConvExtension.Swift);
-        return SWIFT_RET_BUFF_ARGNUM;
-#else
+        if (Configuration.TARGET_ARM64)
+        {
+            return 8;
+        }
+
+        if (Configuration.TARGET_AMD64 && Configuration.SWIFT_SUPPORT)
+        {
+            assert(callConv is CorInfoCallConvExtension.Swift);
+            return 6;
+        }
+
         return BAD_VAR_NUM;
-#endif
     }
 
     public static regMaskTP fullIntArgRegMask(CorInfoCallConvExtension callConv)
@@ -68,84 +84,84 @@ public static partial class Globals
             result |= theFixedRetBuffMask(callConv);
         }
 
-#if SWIFT_SUPPORT
-        if (callConv is CorInfoCallConvExtension.Swift)
+        if (Configuration.SWIFT_SUPPORT && (callConv is CorInfoCallConvExtension.Swift))
         {
-            result |= new regMaskTP(SRBM_SWIFT_SELF);
-            // SwiftError is initially marked as a register argument, then excluded from allocation.
-            result |= new regMaskTP(SRBM_SWIFT_ERROR);
+            if (Configuration.TARGET_ARM64)
+            {
+                result |= new regMaskTP(SRBM_R20_ARM64);
+                // SwiftError is initially marked as a register argument, then excluded from allocation.
+                result |= new regMaskTP(SRBM_R21_ARM64);
+            }
+            else if (Configuration.TARGET_AMD64)
+            {
+                result |= new regMaskTP(SRBM_R13_AMD64);
+                // SwiftError is initially marked as a register argument, then excluded from allocation.
+                result |= new regMaskTP(SRBM_R12_AMD64);
+            }
+            else
+            {
+                throw new FatalJitException("Swift calling conventions are not supported for this target.");
+            }
         }
-#endif
 
         return result;
     }
 
     // The following are human readable names for the target architectures
-#if TARGET_X86
-    public const string TARGET_READABLE_NAME = "X86";
-#elif TARGET_AMD64
-    public const string TARGET_READABLE_NAME = "AMD64";
-#elif TARGET_ARM
-    public const string TARGET_READABLE_NAME = "ARM";
-#elif TARGET_ARM64
-    public const string TARGET_READABLE_NAME = "ARM64";
-#elif TARGET_LOONGARCH64
-    public const string TARGET_READABLE_NAME = "LOONGARCH64";
-#elif TARGET_RISCV64
-    public const string TARGET_READABLE_NAME = "RISCV64";
-#elif TARGET_WASM32
-    public const string TARGET_READABLE_NAME = "WASM32";
-#else
-#error Unsupported or unset target architecture
-#endif
+    public static string TARGET_READABLE_NAME
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return "X86";
+            }
 
-#if REGMASK_BITS_32 && REGMASK_BITS_64
-#error Cannot define both REGMASK_BITS_32 and REGMASK_BITS_64
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                return "AMD64";
+            }
 
-#if TARGET_AMD64
-    public const int CSE_CONST_SHARED_LOW_BITS = 16;
-#elif TARGET_X86
-    public const int CSE_CONST_SHARED_LOW_BITS = 16;
-#elif TARGET_ARM
-    public const int CSE_CONST_SHARED_LOW_BITS = 12;
-#elif TARGET_ARM64
-    public const int CSE_CONST_SHARED_LOW_BITS = 12;
-#elif TARGET_LOONGARCH64
-    public const int CSE_CONST_SHARED_LOW_BITS = 12;
-#elif TARGET_RISCV64
-    public const int CSE_CONST_SHARED_LOW_BITS = 12;
-#elif TARGET_WASM32
-    public const int CSE_CONST_SHARED_LOW_BITS = 12;
-#else
-#error Unsupported or unset target architecture
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                return "ARM";
+            }
 
-#if REGMASK_BITS_8
-    public const string REG_MASK_INT_FMT = "{0:X2}";
+            if (Configuration.TARGET_ARM64)
+            {
+                return "ARM64";
+            }
 
-    public const string REG_MASK_ALL_FMT = "{0:X2}";
-#elif REGMASK_BITS_16
-    public const string REG_MASK_INT_FMT = "{0:X4}";
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return "LOONGARCH64";
+            }
 
-    public const string REG_MASK_ALL_FMT = "{0:X4}";
-#elif REGMASK_BITS_32
-    public const string REG_MASK_INT_FMT = "{0:X8}";
+            if (Configuration.TARGET_RISCV64)
+            {
+                return "RISCV64";
+            }
 
-    public const string REG_MASK_ALL_FMT = "{0:X8}";
-#elif REGMASK_BITS_64
-    public const string REG_MASK_INT_FMT = "{0:X4}";
+            if (Configuration.TARGET_WASM)
+            {
+                return "WASM32";
+            }
 
-    public const string REG_MASK_ALL_FMT = "{0:X16}";
-#else
-#error Unsupported REGMASK_BITS size
-#endif
+            return UnsupportedTargetValue<string>("Unsupported or unset target architecture.");
+        }
+    }
+
+    public static int CSE_CONST_SHARED_LOW_BITS => Configuration.TARGET_XARCH ? 16 : 12;
+
+    public static string REG_MASK_INT_FMT =>
+        Configuration.REGMASK_BITS_32 ? "{0:X8}" : "{0:X4}";
+
+    public static string REG_MASK_ALL_FMT =>
+        Configuration.REGMASK_BITS_32 ? "{0:X8}" : "{0:X16}";
 
     public const int REG_LOW_BASE = 0;
 
-#if HAS_MORE_THAN_64_REGISTERS
     public const int REG_HIGH_BASE = 64;
-#endif
 
 #if DEBUG
     public const int DSP_SRC_OPER_LEFT  = 0;
@@ -157,38 +173,78 @@ public static partial class Globals
     public const int DSP_DST_OPER_RIGHT = 0;
 #endif
 
-#if TARGET_ARM
     // Thumb branch limits and minimum sizes from targetarm.h.
-    public const int JMP_DIST_SMALL_MAX_NEG = -2048;
+    public static int JMP_DIST_SMALL_MAX_NEG =>
+        Configuration.TARGET_ARM ? -2048 :
+        Configuration.TARGET_XARCH ? -128 :
+        UnsupportedTargetValue<int>("Short unconditional branches are not supported for this target.");
 
-    public const int JCC_DIST_SMALL_MAX_NEG = -256;
+    public static int JMP_DIST_SMALL_MAX_POS =>
+        Configuration.TARGET_ARM ? 2046 :
+        Configuration.TARGET_XARCH ? 127 :
+        UnsupportedTargetValue<int>("Short unconditional branches are not supported for this target.");
 
-    public const int JCC_DIST_MEDIUM_MAX_NEG = -1048576;
+    public static int JCC_DIST_SMALL_MAX_NEG =>
+        Configuration.TARGET_ARM ? -256 :
+        Configuration.TARGET_XARCH ? -128 :
+        Configuration.TARGET_ARM64 ? -1048576 :
+        UnsupportedTargetValue<int>("Short conditional branches are not supported for this target.");
 
-    public const int JMP_SIZE_SMALL = 2;
+    public static int JCC_DIST_SMALL_MAX_POS =>
+        Configuration.TARGET_ARM ? 254 :
+        Configuration.TARGET_XARCH ? 127 :
+        Configuration.TARGET_ARM64 ? 1048575 :
+        UnsupportedTargetValue<int>("Short conditional branches are not supported for this target.");
 
-    public const int JCC_SIZE_SMALL = 2;
-#elif TARGET_XARCH
-    public const int JMP_DIST_SMALL_MAX_NEG = -128;
+    public static int JCC_DIST_MEDIUM_MAX_NEG =>
+        Configuration.TARGET_ARM
+            ? -1048576
+            : UnsupportedTargetValue<int>("Medium conditional branches are not supported for this target.");
 
-    public const int JMP_DIST_SMALL_MAX_POS = +127;
+    public static int JCC_DIST_MEDIUM_MAX_POS =>
+        Configuration.TARGET_ARM
+            ? 1048574
+            : UnsupportedTargetValue<int>("Medium conditional branches are not supported for this target.");
 
-    public const int JCC_DIST_SMALL_MAX_NEG = -128;
+    public static int JMP_SIZE_SMALL =>
+        (Configuration.TARGET_ARM || Configuration.TARGET_XARCH) ? 2 :
+        Configuration.TARGET_ARM64 ? 4 :
+        UnsupportedTargetValue<int>("Short unconditional branches are not supported for this target.");
 
-    public const int JCC_DIST_SMALL_MAX_POS = +127;
+    public static int JMP_SIZE_LARGE =>
+        Configuration.TARGET_ARM ? 4 :
+        Configuration.TARGET_XARCH ? 5 :
+        UnsupportedTargetValue<int>("Long unconditional branches are not supported for this target.");
 
-    public const int JMP_SIZE_SMALL = 2;
+    public static int JCC_SIZE_SMALL =>
+        (Configuration.TARGET_ARM || Configuration.TARGET_XARCH) ? 2 :
+        Configuration.TARGET_ARM64 ? 4 :
+        UnsupportedTargetValue<int>("Short conditional branches are not supported for this target.");
 
-    public const int JMP_SIZE_LARGE = 5;
+    public static int JCC_SIZE_LARGE =>
+        (Configuration.TARGET_ARM || Configuration.TARGET_XARCH) ? 6 :
+        Configuration.TARGET_ARM64 ? 8 :
+        UnsupportedTargetValue<int>("Long conditional branches are not supported for this target.");
 
-    public const int JCC_SIZE_SMALL = 2;
+    public static int JCC_SIZE_MEDIUM =>
+        Configuration.TARGET_ARM
+            ? 4
+            : UnsupportedTargetValue<int>("Medium conditional branches are not supported for this target.");
 
-    public const int JCC_SIZE_LARGE = 6;
+    public static int PUSH_INST_SIZE =>
+        Configuration.TARGET_XARCH
+            ? 5
+            : UnsupportedTargetValue<int>("Push instruction sizes are not defined for this target.");
 
-    public const int PUSH_INST_SIZE = 5;
+    public static int CALL_INST_SIZE =>
+        Configuration.TARGET_XARCH
+            ? 5
+            : UnsupportedTargetValue<int>("Call instruction sizes are not defined for this target.");
 
-    public const int CALL_INST_SIZE = 5;
-#endif
+    private static T UnsupportedTargetValue<T>(string message)
+    {
+        throw new FatalJitException(message);
+    }
 
     public const int BITS_PER_BYTE = 8;
 
@@ -220,39 +276,38 @@ public static partial class Globals
         return TargetArchitecture.IsX86 && TargetOS.IsUnix;
     }
 
-#if TARGET_ARM
-    public static bool genIsValidDoubleReg(regNumber reg) => genIsValidFloatReg(reg) && ((reg - REG_FP_FIRST) & 0x1) is 0;
-#endif
-
-#if TARGET_WASM
-    public static bool genIsValidFloatReg(regNumber reg) => regNumberExtensions.IsValidWasmFloatReg(reg);
-
-    public static bool genIsValidIntOrFakeReg(regNumber reg) => genIsValidIntReg(reg);
-
-    public static bool genIsValidIntReg(regNumber reg) => regNumberExtensions.IsValidWasmIntReg(reg);
-
-    public static bool genIsValidReg(regNumber reg) => regNumberExtensions.IsValidWasmReg(reg);
-#else
-    public static bool genIsValidFloatReg(regNumber reg) => reg is >= REG_FP_FIRST and <= REG_FP_LAST;
-
-#if TARGET_ARM64
-    public static bool genIsValidIntOrFakeReg(regNumber reg) => genIsValidIntReg(reg) || (reg is REG_SP);
-#else
-    public static bool genIsValidIntOrFakeReg(regNumber reg) => genIsValidIntReg(reg);
-#endif
-
-    public static bool genIsValidIntReg(regNumber reg) => reg is >= REG_INT_FIRST and <= REG_INT_LAST;
-
-#endif
-
-#if FEATURE_MASKED_HW_INTRINSICS
-    public static bool genIsValidMaskReg(regNumber reg) => reg is >= REG_MASK_FIRST and <= REG_MASK_LAST;
-#endif
-
-#if !TARGET_WASM
     /// <summary>Return true if the register number is valid</summary>
     /// <param name="reg"></param>
     /// <returns></returns>
-    public static bool genIsValidReg(regNumber reg) => reg < REG_COUNT;
-#endif
+    public static bool genIsValidReg(regNumber reg)
+    {
+        return Configuration.TARGET_WASM
+            ? regNumberExtensions.IsValidWasmReg(reg)
+            : reg < regNumberExtensions.NotAvailable;
+    }
+
+    public static bool genIsValidFloatReg(regNumber reg)
+    {
+        return Configuration.TARGET_WASM
+            ? regNumberExtensions.IsValidWasmFloatReg(reg)
+            : reg.IsFltReg;
+    }
+
+    public static bool genIsValidIntReg(regNumber reg)
+    {
+        return Configuration.TARGET_WASM
+            ? regNumberExtensions.IsValidWasmIntReg(reg)
+            : reg.IsIntReg;
+    }
+
+    public static bool genIsValidIntOrFakeReg(regNumber reg)
+    {
+        return genIsValidIntReg(reg) || (Configuration.TARGET_ARM64 && (reg is REG_SP_ARM64));
+    }
+
+    public static bool genIsValidDoubleReg(regNumber reg) =>
+        regNumberExtensions.IsValidArmDoubleRegister(reg);
+
+    public static bool genIsValidMaskReg(regNumber reg) =>
+        Configuration.FEATURE_MASKED_HW_INTRINSICS && reg.IsMskReg;
 }

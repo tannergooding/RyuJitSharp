@@ -19,6 +19,8 @@
     <Compile Include="..\Core\AbiPassingInformationTests.cs" Link="AbiPassingInformationTests.cs" />
     <Compile Include="..\Core\ArithmeticMorphTests.cs" Link="ArithmeticMorphTests.cs" />
     <Compile Include="..\Core\AbiPassingSegmentStorageTests.cs" Link="AbiPassingSegmentStorageTests.cs" />
+    <Compile Include="..\Core\ArgumentRegisterMappingTests.cs" Link="ArgumentRegisterMappingTests.cs" />
+    <Compile Include="..\Core\FixedReturnBufferMaskTests.cs" Link="FixedReturnBufferMaskTests.cs" />
     <Compile Include="..\Core\RegNumberIdentityTests.cs" Link="RegNumberIdentityTests.cs" />
     <Compile Include="..\Core\RegNumberNameTests.cs" Link="RegNumberNameTests.cs" />
     <Compile Include="..\Core\RegMaskIdentityTests.cs" Link="RegMaskIdentityTests.cs" />

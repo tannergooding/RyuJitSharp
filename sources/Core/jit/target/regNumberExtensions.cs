@@ -233,6 +233,34 @@ public static partial class regNumberExtensions
     internal static bool IsValidArmDoubleRegister(regNumber regNum) =>
         Configuration.TARGET_ARM && regNum.IsFltReg && (((int)regNum - (int)REG_F0_ARM) & 1) is 0;
 
+    // These tags match WasmValueType; the top three register bits carry the value type.
+    private const uint WASM_VALUE_TYPE_I32 = 1;
+    private const uint WASM_VALUE_TYPE_I64 = 2;
+    private const uint WASM_VALUE_TYPE_F32 = 3;
+    private const uint WASM_VALUE_TYPE_F64 = 4;
+    private const uint WASM_VALUE_TYPE_V128 = 5;
+    private const uint WASM_VALUE_TYPE_COUNT = 7;
+
+    private static uint GetWasmValueTypeTag(regNumber regNum) => unchecked((uint)regNum) >> WASM_REG_TYPE_SHIFT;
+
+    public static bool IsValidWasmReg(regNumber regNum)
+    {
+        var type = GetWasmValueTypeTag(regNum);
+        return (type > 0) && (type < WASM_VALUE_TYPE_COUNT);
+    }
+
+    public static bool IsValidWasmIntReg(regNumber regNum)
+    {
+        var type = GetWasmValueTypeTag(regNum);
+        return (type is WASM_VALUE_TYPE_I32 or WASM_VALUE_TYPE_I64);
+    }
+
+    public static bool IsValidWasmFloatReg(regNumber regNum)
+    {
+        var type = GetWasmValueTypeTag(regNum);
+        return (type is WASM_VALUE_TYPE_F32 or WASM_VALUE_TYPE_F64 or WASM_VALUE_TYPE_V128);
+    }
+
     private static bool IsIntegerRegister(regNumber regNum)
     {
         if (Configuration.TARGET_X86)

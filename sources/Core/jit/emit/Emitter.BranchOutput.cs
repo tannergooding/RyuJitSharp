@@ -56,15 +56,15 @@ public partial class Emitter
         {
             case INS_jmp:
             {
-                ssz = JMP_SIZE_SMALL;
-                lsz = JMP_SIZE_LARGE;
+                ssz = unchecked((nuint)JMP_SIZE_SMALL);
+                lsz = unchecked((nuint)JMP_SIZE_LARGE);
                 jmp = true;
                 break;
             }
 
             case INS_call:
             {
-                ssz = lsz = CALL_INST_SIZE;
+                ssz = lsz = unchecked((nuint)CALL_INST_SIZE);
                 jmp = false;
                 break;
             }
@@ -89,8 +89,8 @@ public partial class Emitter
 
             default:
             {
-                ssz = JCC_SIZE_SMALL;
-                lsz = JCC_SIZE_LARGE;
+                ssz = unchecked((nuint)JCC_SIZE_SMALL);
+                lsz = unchecked((nuint)JCC_SIZE_LARGE);
                 jmp = true;
                 break;
             }
