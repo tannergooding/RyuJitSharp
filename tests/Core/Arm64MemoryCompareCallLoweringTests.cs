@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -19,6 +18,8 @@ internal static unsafe class Arm64MemoryCompareCallLoweringTests
     [TestCase(9, TYP_LONG)]
     public static void ScalarOverlappingLoadsUseTwoEqualitiesAndAnd(int size, var_types loadType)
     {
+        RequireArm64();
+
         WithCompiler((compiler, block, lowering) => {
             var (call, left, right, length) = NewCall(compiler, size);
             var use = new GenTreeUnOp(GT_NEG, TYP_INT, call);
@@ -44,10 +45,15 @@ internal static unsafe class Arm64MemoryCompareCallLoweringTests
         });
     }
 
-#if FEATURE_SIMD
     [Test]
     public static void VectorOverlappingLoadsKeepXorOrEquality()
     {
+        RequireArm64();
+        if (!Configuration.FEATURE_SIMD)
+        {
+            Assert.Ignore("SIMD is disabled for this target.");
+        }
+
         WithCompiler((compiler, block, lowering) => {
             var (call, left, right, length) = NewCall(compiler, 17);
             var use = new GenTreeUnOp(GT_NEG, TYP_INT, call);
@@ -65,7 +71,6 @@ internal static unsafe class Arm64MemoryCompareCallLoweringTests
             Assert.That(call.Next, Is.Null);
         });
     }
-#endif
 
     private static (GenTreeCall Call, GenTreeLclVar Left, GenTreeLclVar Right, GenTreeIntCon Length)
         NewCall(Compiler compiler, int size)
@@ -132,6 +137,14 @@ internal static unsafe class Arm64MemoryCompareCallLoweringTests
         }
     }
 
+    private static void RequireArm64()
+    {
+        if (!Configuration.TARGET_ARM64)
+        {
+            Assert.Ignore("This test requires Arm64.");
+        }
+    }
+
     private readonly struct MethodMetadata(byte* namespaceName, byte* className, byte* methodName)
     {
         public readonly byte* Namespace = namespaceName;
@@ -149,4 +162,3 @@ internal static unsafe class Arm64MemoryCompareCallLoweringTests
         return metadata->Method;
     }
 }
-#endif

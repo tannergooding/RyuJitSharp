@@ -10,24 +10,25 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_SIMD
     private GenTree NewMemcmpBinaryOp(genTreeOps operation, var_types type, GenTree left, GenTree right)
-#else
-    private GenTreeOp NewMemcmpBinaryOp(genTreeOps operation, var_types type, GenTree left, GenTree right)
-#endif
     {
-#if FEATURE_SIMD
-        if (varTypeIsSimd(left.Type))
+        if (Configuration.FEATURE_SIMD && varTypeIsSimd(left.Type))
         {
             var compiler = CompilerInstance;
             if (operation is GT_EQ)
             {
                 assert(type is TYP_INT);
-                return compiler.gtNewSimdCmpOpAllNode(operation, TYP_INT, left, right, TYP_U_IMPL, left.Type.Size);
+                return compiler.gtNewSimdEqualityAllNode(left, right, TYP_U_IMPL, left.Type.Size);
             }
-            return compiler.gtNewSimdBinOpNode(operation, left.Type, left, right, TYP_U_IMPL, left.Type.Size);
+
+            if (operation is GT_OR or GT_XOR)
+            {
+                return compiler.gtNewSimdBitwiseOrXorNode(operation, left.Type, left, right, TYP_U_IMPL, left.Type.Size);
+            }
+
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unsupported SIMD memory comparison operation.");
         }
-#endif
+
         return CompilerInstance.gtNewBinaryNode(operation, type, left, right);
     }
 
@@ -91,31 +92,32 @@ public sealed partial class Lowering
             8 => TYP_LONG,
             _ => TYP_UNDEF,
         };
-#if !FEATURE_SIMD
-        if (loadWidth > 8)
+        if (!Configuration.FEATURE_SIMD)
         {
-            loadWidth = 8;
-            loadType = TYP_LONG;
+            if (loadWidth > 8)
+            {
+                loadWidth = 8;
+                loadType = TYP_LONG;
+            }
         }
-#else
-        if ((loadWidth == 16) || (maxUnrollSize == 32 && loadWidth > 8))
+        else
         {
-            loadWidth = 16;
-            loadType = TYP_SIMD16;
+            if ((loadWidth == 16) || (maxUnrollSize == 32 && loadWidth > 8))
+            {
+                loadWidth = 16;
+                loadType = TYP_SIMD16;
+            }
+            else if (Configuration.TARGET_XARCH && ((loadWidth == 32) || (maxUnrollSize == 64 && loadWidth > 16)))
+            {
+                loadWidth = 32;
+                loadType = TYP_SIMD32;
+            }
+            else if (Configuration.TARGET_XARCH && ((loadWidth == 64) || (maxUnrollSize == 128 && loadWidth > 32)))
+            {
+                loadWidth = 64;
+                loadType = TYP_SIMD64;
+            }
         }
-#if TARGET_XARCH
-        else if ((loadWidth == 32) || (maxUnrollSize == 64 && loadWidth > 16))
-        {
-            loadWidth = 32;
-            loadType = TYP_SIMD32;
-        }
-        else if ((loadWidth == 64) || (maxUnrollSize == 128 && loadWidth > 32))
-        {
-            loadWidth = 64;
-            loadType = TYP_SIMD64;
-        }
-#endif
-#endif
         if (loadType is TYP_UNDEF)
         {
             throw new InvalidOperationException("Unsupported memory comparison load width.");
@@ -153,8 +155,7 @@ public sealed partial class Lowering
             BlockRange().InsertAfter(rightClone, leftFirst, leftOffset, leftAddress, leftSecond);
             BlockRange().InsertAfter(leftSecond, rightFirst, rightOffset, rightAddress, rightSecond);
 
-#if TARGET_ARM64
-            if (!varTypeIsSimd(loadType))
+            if (Configuration.TARGET_ARM64 && !varTypeIsSimd(loadType))
             {
                 var leftEqual = NewMemcmpBinaryOp(GT_EQ, TYP_INT, leftFirst, rightFirst);
                 var rightEqual = NewMemcmpBinaryOp(GT_EQ, TYP_INT, leftSecond, rightSecond);
@@ -162,7 +163,6 @@ public sealed partial class Lowering
                 BlockRange().InsertAfter(rightSecond, leftEqual, rightEqual, result);
             }
             else
-#endif
             {
                 var leftXor = NewMemcmpBinaryOp(GT_XOR, actualLoadType, leftFirst, rightFirst);
                 var rightXor = NewMemcmpBinaryOp(GT_XOR, actualLoadType, leftSecond, rightSecond);

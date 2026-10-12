@@ -6524,33 +6524,7 @@ public partial class Compiler
             {
                 assert(!isScalar);
                 assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
-
-#if TARGET_XARCH
-                if (simdSize is 64)
-                {
-                    id = NI_AVX512_Or;
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType))
-                    {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_Or;
-                    }
-                    else
-                    {
-                        id = NI_AVX_Or;
-                    }
-                }
-                else
-                {
-                    id = NI_X86Base_Or;
-                }
-#elif TARGET_ARM64
-                id = NI_AdvSimd_Or;
-#elif TARGET_WASM
-                id = NI_PackedSimd_Or;
-#endif
+                id = GetSimdBitwiseOrXorIntrinsic(oper, simdBaseType, simdSize);
                 break;
             }
 
@@ -6743,33 +6717,7 @@ public partial class Compiler
             {
                 assert(!isScalar);
                 assert(IsFullVectorOperand(op2) || varTypeIsFloating(op2.Type));
-
-#if TARGET_XARCH
-                if (simdSize is 64)
-                {
-                    id = NI_AVX512_Xor;
-                }
-                else if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType))
-                    {
-                        assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                        id = NI_AVX2_Xor;
-                    }
-                    else
-                    {
-                        id = NI_AVX_Xor;
-                    }
-                }
-                else
-                {
-                    id = NI_X86Base_Xor;
-                }
-#elif TARGET_ARM64
-                id = NI_AdvSimd_Xor;
-#elif TARGET_WASM
-                id = NI_PackedSimd_Xor;
-#endif
+                id = GetSimdBitwiseOrXorIntrinsic(oper, simdBaseType, simdSize);
                 break;
             }
 
@@ -9742,29 +9690,14 @@ public partial class Compiler
                 break;
             }
 
-#if TARGET_XARCH
             case GT_AND:
             case GT_AND_NOT:
             case GT_OR:
             case GT_XOR:
             {
-                if (simdSize is 32)
-                {
-                    if (varTypeIsIntegral(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                    {
-                        if (varTypeIsLong(simdBaseType))
-                        {
-                            simdBaseType = TYP_DOUBLE;
-                        }
-                        else
-                        {
-                            simdBaseType = TYP_FLOAT;
-                        }
-                    }
-                }
+                simdBaseType = GetSimdBitwiseOpBaseType(op, simdBaseType, simdSize);
                 break;
             }
-#endif
 
             default:
             {

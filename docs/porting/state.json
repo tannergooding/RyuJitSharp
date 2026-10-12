@@ -10,12 +10,12 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Continue the SIMD lowering sweep at `lower/Lowering.MemoryCompareCalls.cs`. Its generic comparison builder depends on `Compiler.gt.cs::gtNewSimdCmpOpAllNode` and `gtNewSimdBinOpNode`, still inside `FEATURE_HW_INTRINSICS`; universalize that helper closure before removing the memory-compare guards.",
+    "nextAction": "Continue the shared hardware-intrinsic ID migration in `compiler/Compiler.gt.cs::GetHWIntrinsicIdForBinOp`. OR/XOR selection is now runtime-targeted in `Compiler.SimdIntrinsicHelpers.cs`; convert the remaining operator mappings and then remove the helper's `FEATURE_HW_INTRINSICS` guard after resolving its dependency closure.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": {
-      "scope": "Universalize the SIMD-aware memory comparison path in `lower/Lowering.MemoryCompareCalls.cs` and the shared compare/binary node helpers it requires.",
-      "doneWhen": "The common memcmp lowering compiles without `FEATURE_SIMD` symbols, selects vector widths only when SIMD is enabled, and preserves scalar fallback behavior.",
-      "validation": "Run focused x64 `MemoryCompareCallLoweringTests` and disabled linux-riscv64 feature tests in Debug and Release; compile enabled target configurations. Full analysis remains blocked by the previously observed IDE0018 at `Compiler.cs:1703`.",
+      "scope": "Universalize target-specific binary SIMD intrinsic-ID selection and make `Compiler.gt.cs::GetHWIntrinsicIdForBinOp` available to universal compilation.",
+      "doneWhen": "All operator mappings preserve xarch, Arm64, and Wasm intrinsic selection through runtime target checks; unsupported SIMD targets terminate explicitly; the helper compiles without `FEATURE_HW_INTRINSICS`.",
+      "validation": "Add focused intrinsic-ID coverage and run Debug/Release target-frontier tests. The memcmp batch passed 26 tests with 3 expected Arm64 skips on x64, 3/3 on Arm64, and 30/30 RISC-V feature-configuration tests. Full analyzer builds currently stop at the unrelated existing IDE0059 in `Compiler.gt.cs:8988`; keep this gap visible and do not fix it as part of the batch.",
       "deferred": "Remaining SIMD codegen, register-allocation, emitter/generated-metadata guards, and other TARGET_/FEATURE_ migrations; do not claim universal compilation is complete."
     },
     "parityEvidence": {

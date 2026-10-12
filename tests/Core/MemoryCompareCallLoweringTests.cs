@@ -18,11 +18,14 @@ internal static unsafe class MemoryCompareCallLoweringTests
     [TestCase(2, TYP_USHORT)]
     [TestCase(4, TYP_INT)]
     [TestCase(8, TYP_LONG)]
-#if FEATURE_SIMD
     [TestCase(16, TYP_SIMD16)]
-#endif
     public static void PowerOfTwoLengthUsesOneComparisonAndReplacesItsOwner(int size, var_types loadType)
     {
+        if ((loadType is TYP_SIMD16) && !Configuration.FEATURE_SIMD)
+        {
+            Assert.Ignore("SIMD is disabled for this target.");
+        }
+
         WithCompiler(false, (compiler, block, lowering) => {
             var (call, left, right, length) = NewCall(compiler, size);
             var use = new GenTreeUnOp(GT_NEG, TYP_INT, call);
@@ -49,13 +52,16 @@ internal static unsafe class MemoryCompareCallLoweringTests
 
     [TestCase(5, TYP_INT, 1)]
     [TestCase(9, TYP_LONG, 1)]
-#if FEATURE_SIMD
     [TestCase(17, TYP_SIMD16, 1)]
     [TestCase(31, TYP_SIMD16, 15)]
-#endif
     public static void NonPowerOfTwoLengthUsesOverlappingLoadsAndXorOrEquality(
         int size, var_types loadType, int offset)
     {
+        if (varTypeIsSimd(loadType) && !Configuration.FEATURE_SIMD)
+        {
+            Assert.Ignore("SIMD is disabled for this target.");
+        }
+
         WithCompiler(false, (compiler, block, lowering) => {
             var (call, left, right, length) = NewCall(compiler, size);
             var use = new GenTreeUnOp(GT_NEG, TYP_INT, call);
@@ -91,13 +97,14 @@ internal static unsafe class MemoryCompareCallLoweringTests
         });
     }
 
-#if FEATURE_SIMD && TARGET_XARCH
     [TestCase(false, false, 32)]
     [TestCase(true, false, 64)]
     [TestCase(true, true, 128)]
     public static void MemcmpThresholdFollowsSupportedEqualityWidth(
         bool avx2, bool avx512, int expected)
     {
+        RequireXarchSimd();
+
         WithCompiler(false, (compiler, _, _) => {
             EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX);
             if (avx2)
@@ -121,6 +128,8 @@ internal static unsafe class MemoryCompareCallLoweringTests
     public static void VectorWidthAndThresholdFollowAvailableInstructionSets(
         ManagedInstructionSet isa, int size, var_types loadType, bool singleLoad)
     {
+        RequireXarchSimd();
+
         WithCompiler(false, (compiler, block, lowering) => {
             EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX);
             EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX2);
@@ -157,6 +166,8 @@ internal static unsafe class MemoryCompareCallLoweringTests
     public static void AvailableInstructionSetsDoNotExceedNativeMaximum(
         ManagedInstructionSet isa, int size)
     {
+        RequireXarchSimd();
+
         WithCompiler(false, (compiler, block, lowering) => {
             EnableIsa(compiler, ManagedInstructionSet.InstructionSet_AVX2);
             if (isa is ManagedInstructionSet.InstructionSet_AVX512)
@@ -174,7 +185,48 @@ internal static unsafe class MemoryCompareCallLoweringTests
             Assert.That(length.Next, Is.SameAs(call));
         });
     }
-#endif
+
+    [Test]
+    public static void FeatureDisabledMemcmpUsesScalarLoads()
+    {
+        const string switchName = "RyuJitSharp.FEATURE_SIMD";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, false);
+        try
+        {
+            WithCompiler(false, (compiler, block, lowering) => {
+                if (!Configuration.TARGET_XARCH || (compiler.GetUnrollThreshold(Compiler.Memcmp) < 16))
+                {
+                    Assert.Ignore("This test requires xarch scalar memcmp unrolling for 16-byte inputs.");
+                }
+
+                var (call, left, right, length) = NewCall(compiler, 16);
+                foreach (var node in new GenTree[] { left, right, length, call })
+                {
+                    block.InsertAtEnd(node);
+                }
+
+                Assert.That(LowerCallMemcmp(lowering, call, out var next), Is.True);
+
+                var loadCount = 0;
+                for (var node = next; node is not null; node = node.Next)
+                {
+                    if (node.Oper is GT_IND)
+                    {
+                        loadCount++;
+                        Assert.That(varTypeIsSimd(node.Type), Is.False);
+                        Assert.That(node.Type.Size, Is.LessThanOrEqualTo(8));
+                    }
+                }
+
+                Assert.That(loadCount, Is.EqualTo(4));
+            });
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
+        }
+    }
 
     [Test]
     public static void UnusedResultMarksItsRootAndUnusedRuntimeCell()
@@ -270,6 +322,14 @@ internal static unsafe class MemoryCompareCallLoweringTests
         compiler.opts.compSupportsISA.AddInstructionSet(isa);
         compiler.opts.compSupportsISAReported.AddInstructionSet(isa);
         compiler.opts.compSupportsISAExactly.AddInstructionSet(isa);
+    }
+
+    private static void RequireXarchSimd()
+    {
+        if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
+        {
+            Assert.Ignore("This test requires xarch SIMD support.");
+        }
     }
 
     private static (GenTreeCall Call, GenTreeLclVar Left, GenTreeLclVar Right, GenTreeIntCon Length)

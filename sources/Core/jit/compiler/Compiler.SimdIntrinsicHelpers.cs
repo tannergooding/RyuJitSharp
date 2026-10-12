@@ -26,6 +26,104 @@ public partial class Compiler
         return new GenTreeHWIntrinsic(type, hwIntrinsicId, simdBaseType, simdSize, operands);
     }
 
+    public GenTree gtNewSimdEqualityAllNode(GenTree op1, GenTree op2, var_types simdBaseType, byte simdSize)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD equality is unsupported on this target.");
+        }
+
+        var simdType = GetSimdTypeForSize(simdSize);
+        assert(varTypeIsSimd(simdType));
+        assert(op1 is not null && op1.Type == simdType);
+        assert(op2 is not null && op2.Type == simdType);
+        assert(varTypeIsArithmetic(simdBaseType));
+
+        return gtNewSimdHWIntrinsicNode(TYP_INT, NI_Vector_op_Equality, simdBaseType, simdSize, op1, op2);
+    }
+
+    public GenTree gtNewSimdBitwiseOrXorNode(
+        genTreeOps op,
+        var_types type,
+        GenTree op1,
+        GenTree op2,
+        var_types simdBaseType,
+        byte simdSize)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD bitwise operations are unsupported on this target.");
+        }
+
+        if (op is not GT_OR and not GT_XOR)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Only SIMD OR and XOR operations are supported.");
+        }
+
+        assert(varTypeIsSimd(type));
+        assert(GetSimdTypeForSize(simdSize) == type);
+        assert(varTypeIsArithmetic(simdBaseType));
+        assert(op1 is not null && op1.Type == type);
+        assert(op2 is not null && op2.Type == type);
+
+        simdBaseType = GetSimdBitwiseOpBaseType(op, simdBaseType, simdSize);
+        var intrinsic = GetSimdBitwiseOrXorIntrinsic(op, simdBaseType, simdSize);
+
+        return gtNewSimdHWIntrinsicNode(type, intrinsic, simdBaseType, simdSize, op1, op2);
+    }
+
+    private var_types GetSimdBitwiseOpBaseType(genTreeOps op, var_types simdBaseType, byte simdSize)
+    {
+        assert(op is GT_AND or GT_AND_NOT or GT_OR or GT_XOR);
+
+        if (Configuration.TARGET_XARCH && (simdSize is 32) && varTypeIsIntegral(simdBaseType) &&
+            !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        {
+            // AVX has floating-point bitwise operations; integral 256-bit operations require AVX2.
+            return varTypeIsLong(simdBaseType) ? TYP_DOUBLE : TYP_FLOAT;
+        }
+
+        return simdBaseType;
+    }
+
+    private NamedIntrinsic GetSimdBitwiseOrXorIntrinsic(genTreeOps op, var_types simdBaseType, byte simdSize)
+    {
+        assert(op is GT_OR or GT_XOR);
+
+        if (Configuration.TARGET_XARCH)
+        {
+            if (simdSize is 64)
+            {
+                return (op is GT_OR) ? NI_AVX512_Or : NI_AVX512_Xor;
+            }
+
+            if (simdSize is 32)
+            {
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
+                    return (op is GT_OR) ? NI_AVX2_Or : NI_AVX2_Xor;
+                }
+
+                return (op is GT_OR) ? NI_AVX_Or : NI_AVX_Xor;
+            }
+
+            return (op is GT_OR) ? NI_X86Base_Or : NI_X86Base_Xor;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return (op is GT_OR) ? NI_AdvSimd_Or : NI_AdvSimd_Xor;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return (op is GT_OR) ? NI_PackedSimd_Or : NI_PackedSimd_Xor;
+        }
+
+        throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD bitwise operations are unsupported on this target.");
+    }
+
     public GenTreeHWIntrinsic gtNewScalarHWIntrinsicNode(
         var_types type,
         NamedIntrinsic hwIntrinsicId,
