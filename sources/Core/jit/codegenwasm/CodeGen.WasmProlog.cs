@@ -131,30 +131,6 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
-    {
-        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
-        if (!UseBlockInit)
-        {
-            assert(InitStkLclCnt is 0);
-            return;
-        }
-
-        assert(untrLclHi > untrLclLo);
-        assert(untrLclLo >= 0);
-
-        Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, checked((nint)GetFramePointerRegIndex()));
-        if (untrLclLo is not 0)
-        {
-            Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, untrLclLo);
-            Emitter.emitIns(INS_I_add);
-        }
-
-        Emitter.emitIns_I(INS_i32_const, EA_4BYTE, 0);
-        Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
-        Emitter.emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
-    }
-
     internal static instruction WasmBitCastInstruction(var_types toType, var_types fromType)
     {
         toType = toType.ActualType;
@@ -320,31 +296,6 @@ public sealed partial class CodeGen
                 }
             }
         }
-    }
-
-    private void genReportGenericContextArgWasm()
-    {
-        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
-
-        var reportArg = _compiler.lvaReportParamTypeArg();
-        var reportThis = _compiler.lvaKeepAliveAndReportThis();
-        if (!reportArg && !reportThis)
-        {
-            return;
-        }
-
-        var contextArg = reportArg ? _compiler.info.compTypeCtxtArg : _compiler.info.compThisArg;
-        noway_assert(contextArg != BAD_VAR_NUM);
-
-        ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(contextArg);
-        assert(abiInfo.HasExactlyOneRegisterSegment);
-        var register = abiInfo.Segments[0].Register;
-
-        Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
-        Emitter.emitIns_I(INS_local_get, EA_PTRSIZE,
-            unchecked((nint)regNumberExtensions.WasmRegToIndex(register)));
-        Emitter.emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
-            unchecked((nint)_compiler.lvaCachedGenericContextArgOffset()));
     }
 
     private unsafe void genFnEpilogWasm(BasicBlock block)

@@ -24,6 +24,13 @@ internal static class FeatureConfigurationTests
     }
 
     [Test]
+    public static void ProfilingFeatureMatchesTheRuntimeSwitch()
+    {
+        Assert.That(AppContext.TryGetSwitch("RyuJitSharp.PROFILING_SUPPORTED", out var enabled), Is.True);
+        Assert.That(Configuration.PROFILING_SUPPORTED, Is.EqualTo(enabled));
+    }
+
+    [Test]
     public static void TargetGlobalMetadataMatchesTheRuntimeTarget()
     {
         var expectedName =

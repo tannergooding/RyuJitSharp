@@ -51,6 +51,8 @@ internal static class Configuration
 
     internal static bool LATE_DISASM => GetFeatureSwitch(nameof(LATE_DISASM));
 
+    internal static bool PROFILING_SUPPORTED => GetFeatureSwitch(nameof(PROFILING_SUPPORTED));
+
     internal static bool FEATURE_TAILCALL_OPT =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 

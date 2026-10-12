@@ -96,6 +96,62 @@ internal static unsafe class WasmEmitterOutputTests
         });
     }
 
+    [Test]
+    public static void PrologZeroInitializationUsesMemoryFill()
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            SetUseBlockInit(codeGen, true);
+            compiler.compFuncInfos = [new FuncInfoDsc
+            {
+                funFramePointerReg = regNumberExtensions.MakeWasmReg(0, WasmValueType.I),
+            }];
+            compiler.compFuncInfoCount = 1;
+            compiler.compCurrFuncIdx = 0;
+
+            var group = codeGen.Emitter.emitCurIG ??
+                throw new AssertionException("Missing current instruction group.");
+            group.igFlags |= InsGroupFlags.Prolog;
+
+            var descriptors = CurrentDescriptors(codeGen.Emitter) ??
+                throw new AssertionException("Missing Wasm instruction descriptors.");
+            var initialCount = descriptors.Count;
+            var zeroed = false;
+            codeGen.genZeroInitFrame(40, 8, REG_NA, ref zeroed);
+
+            var pointerConst = Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
+            var pointerAdd = Configuration.TARGET_64BIT ? INS_i64_add : INS_i32_add;
+            var expected = new instruction[]
+            {
+                INS_local_get, pointerConst, pointerAdd, INS_i32_const, pointerConst, INS_memory_fill,
+            };
+            var actual = new instruction[descriptors.Count - initialCount];
+            for (var index = 0; index < actual.Length; index++)
+            {
+                actual[index] = descriptors[initialCount + index].idIns();
+            }
+
+            Assert.That(actual, Is.EqualTo(expected));
+            Assert.That(zeroed, Is.False);
+        });
+    }
+
+    [Test]
+    public static void NativeRegisterZeroingFailsExplicitlyOnWasm()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var zeroed = false;
+            var zeroRegisterFailure = Assert.Throws<FatalJitException>(
+                () => codeGen.genGetZeroReg(REG_NA, ref zeroed));
+            var floatingRegistersFailure = Assert.Throws<FatalJitException>(
+                () => codeGen.genZeroInitFltRegs(default, default, REG_NA));
+
+            Assert.That(zeroRegisterFailure?.Message, Does.Contain("no architectural integer zero register"));
+            Assert.That(floatingRegistersFailure?.Message, Does.Contain("no architectural floating-point registers"));
+        });
+    }
+
     [TestCase(GT_EQ, TYP_INT, false, false)]
     [TestCase(GT_EQ, TYP_INT, true, false)]
     [TestCase(GT_NE, TYP_INT, false, false)]
@@ -313,6 +369,9 @@ internal static unsafe class WasmEmitterOutputTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurIGfreeBase")]
     private static extern ref List<Emitter.instrDesc>? CurrentDescriptors(Emitter emitter);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseBlockInit")]
+    private static extern void SetUseBlockInit(CodeGen codeGen, bool value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genCompareInt")]
     private static extern void GenCompareInt(CodeGen codeGen, GenTreeOp comparison);
