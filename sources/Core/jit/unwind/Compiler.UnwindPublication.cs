@@ -4,13 +4,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
     internal unsafe void unwindReserveEEInfo(bool isFunclet, bool isColdCode, int unwindSize)
     {
+        RequireUnwindEETarget();
+
 #if DEBUG
         if (verbose)
         {
@@ -24,6 +25,24 @@ public partial class Compiler
     }
 
     internal unsafe void unwindAllocEEInfo(byte* hotCode, byte* coldCode, int startOffset, int endOffset,
+        int unwindSize, byte* unwindBlock, CorJitFuncKind functionKind)
+    {
+        RequireUnwindEETarget();
+        AllocateUnwindEEInfo(hotCode, coldCode, startOffset, endOffset, unwindSize, unwindBlock, functionKind);
+    }
+
+    private unsafe void eeAllocUnwindInfo(byte* hotCode, byte* coldCode, int startOffset, int endOffset,
+        int unwindSize, byte* unwindBlock, CorJitFuncKind functionKind)
+    {
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch/Wasm unwind EE publication requires xarch or Wasm.");
+        }
+
+        AllocateUnwindEEInfo(hotCode, coldCode, startOffset, endOffset, unwindSize, unwindBlock, functionKind);
+    }
+
+    private unsafe void AllocateUnwindEEInfo(byte* hotCode, byte* coldCode, int startOffset, int endOffset,
         int unwindSize, byte* unwindBlock, CorJitFuncKind functionKind)
     {
 #if DEBUG
@@ -48,5 +67,12 @@ public partial class Compiler
                 unwindBlock, functionKind);
         }
     }
+
+    private static void RequireUnwindEETarget()
+    {
+        if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Unwind EE publication for this target is not ported.");
+        }
+    }
 }
-#endif

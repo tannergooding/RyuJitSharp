@@ -3,110 +3,30 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_CFI_SUPPORT
-    public short mapRegNumToDwarfReg(regNumber reg)
+    public short MapArm64RegNumToDwarfReg(regNumber reg)
     {
-        short dwarfReg = reg switch
-        {
-            REG_ARM64_R0 => 0,
-            REG_ARM64_R1 => 1,
-            REG_ARM64_R2 => 2,
-            REG_ARM64_R3 => 3,
-            REG_ARM64_R4 => 4,
-            REG_ARM64_R5 => 5,
-            REG_ARM64_R6 => 6,
-            REG_ARM64_R7 => 7,
-            REG_ARM64_R8 => 8,
-            REG_ARM64_R9 => 9,
-            REG_ARM64_R10 => 10,
-            REG_ARM64_R11 => 11,
-            REG_ARM64_R12 => 12,
-            REG_ARM64_R13 => 13,
-            REG_ARM64_R14 => 14,
-            REG_ARM64_R15 => 15,
-            REG_ARM64_R16 => 16,
-            REG_ARM64_R17 => 17,
-            REG_ARM64_R18 => 18,
-            REG_ARM64_R19 => 19,
-            REG_ARM64_R20 => 20,
-            REG_ARM64_R21 => 21,
-            REG_ARM64_R22 => 22,
-            REG_ARM64_R23 => 23,
-            REG_ARM64_R24 => 24,
-            REG_ARM64_R25 => 25,
-            REG_ARM64_R26 => 26,
-            REG_ARM64_R27 => 27,
-            REG_ARM64_R28 => 28,
-            REG_ARM64_R29 => 29,
-            REG_ARM64_R30 => 30,
-            REG_ARM64_SP => 31,
-            REG_ARM64_V0 => 64,
-            REG_ARM64_V1 => 65,
-            REG_ARM64_V2 => 66,
-            REG_ARM64_V3 => 67,
-            REG_ARM64_V4 => 68,
-            REG_ARM64_V5 => 69,
-            REG_ARM64_V6 => 70,
-            REG_ARM64_V7 => 71,
-            REG_ARM64_V8 => 72,
-            REG_ARM64_V9 => 73,
-            REG_ARM64_V10 => 74,
-            REG_ARM64_V11 => 75,
-            REG_ARM64_V12 => 76,
-            REG_ARM64_V13 => 77,
-            REG_ARM64_V14 => 78,
-            REG_ARM64_V15 => 79,
-            REG_ARM64_V16 => 80,
-            REG_ARM64_V17 => 81,
-            REG_ARM64_V18 => 82,
-            REG_ARM64_V19 => 83,
-            REG_ARM64_V20 => 84,
-            REG_ARM64_V21 => 85,
-            REG_ARM64_V22 => 86,
-            REG_ARM64_V23 => 87,
-            REG_ARM64_V24 => 88,
-            REG_ARM64_V25 => 89,
-            REG_ARM64_V26 => 90,
-            REG_ARM64_V27 => 91,
-            REG_ARM64_V28 => 92,
-            REG_ARM64_V29 => 93,
-            REG_ARM64_V30 => 94,
-            REG_ARM64_V31 => 95,
-            _ => DWARF_REG_ILLEGAL,
-        };
-
-        if (dwarfReg == DWARF_REG_ILLEGAL)
-        {
-            NYI("CFI codes");
-        }
-
-        return dwarfReg;
+        return MapCfiRegNumToDwarfReg(reg);
     }
-#endif
 
-    public void unwindPush(regNumber reg)
+    public void unwindPushArm64(regNumber reg)
     {
         unreached(); // Use one of the unwindSaveReg* functions instead.
     }
 
-    public void unwindAllocStack(uint size)
+    public void unwindAllocStackArm64(uint size)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindAllocStackCFI(size);
             }
-
             return;
         }
-#endif
 
         var pu = funCurrentFunc().GetUnwindInfo();
         assert(size % 16 == 0);
@@ -130,19 +50,16 @@ public partial class Compiler
         }
     }
 
-    public void unwindSetFrameReg(regNumber reg, uint offset)
+    public void unwindSetFrameRegArm64(regNumber reg, uint offset)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindSetFrameRegCFI(reg, offset);
             }
-
             return;
         }
-#endif
 
         var pu = funCurrentFunc().GetUnwindInfo();
         if (offset == 0)
@@ -163,36 +80,22 @@ public partial class Compiler
         }
     }
 
-    public void unwindSaveReg(regNumber reg, uint offset)
+    public void unwindSaveRegArm64(regNumber reg, uint offset)
     {
         unreached();
     }
 
-    public void unwindNop()
+    public void unwindNopArm64()
     {
-        var pu = funCurrentFunc().GetUnwindInfo();
-#if DEBUG
-        if (verbose)
-        {
-            logf("unwindNop: adding NOP\n");
-        }
-
-        pu.uwiAddingNOP = true;
-#endif
-        // nop: 11100011, no unwind operation is required.
-        pu.AddCode(0xE3);
-#if DEBUG
-        pu.uwiAddingNOP = false;
-#endif
+        RecordUnwindPadding(4);
     }
 
     // The second register must immediately follow the first, except for pairs ending in LR.
     // Those pairs may start with FP or an odd register from R19 through R27.
-    public void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
+    public void unwindSaveRegPairArm64(regNumber reg1, regNumber reg2, int offset)
     {
         assert(0 <= offset && offset <= 504);
         assert((offset % 8) == 0);
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
@@ -200,13 +103,12 @@ public partial class Compiler
                 ref var func = ref funCurrentFunc();
                 var cbProlog = unwindGetCurrentOffset(in func);
 
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg1), offset);
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg2), offset + 8);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapArm64RegNumToDwarfReg(reg1), offset);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapArm64RegNumToDwarfReg(reg2), offset + 8);
             }
 
             return;
         }
-#endif
 
         var pu = funCurrentFunc().GetUnwindInfo();
         var z = offset / 8;
@@ -229,7 +131,7 @@ public partial class Compiler
 
             pu.AddCode(unchecked((byte)(0xD6 | (byte)(x >> 2))), unchecked((byte)((byte)(x << 6) | (byte)z)));
         }
-        else if ((reg1 >= REG_INT_FIRST) && (reg1 <= REG_ARM64_LR))
+        else if ((reg1 >= TargetRuntimeMetadata.IntegerRegisterFirst) && (reg1 <= REG_ARM64_LR))
         {
             // save_regp: 110010xx | xxzzzzzz.
             assert(reg1 + 1 == reg2);
@@ -251,11 +153,10 @@ public partial class Compiler
         }
     }
 
-    public void unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int offset)
+    public void unwindSaveRegPairPreindexedArm64(regNumber reg1, regNumber reg2, int offset)
     {
         assert(offset < 0);
         assert((offset % 8) == 0);
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
@@ -264,13 +165,12 @@ public partial class Compiler
                 var cbProlog = unwindGetCurrentOffset(in func);
 
                 createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, unchecked(-offset));
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg1), 0);
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg2), 8);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapArm64RegNumToDwarfReg(reg1), 0);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapArm64RegNumToDwarfReg(reg2), 8);
             }
 
             return;
         }
-#endif
 
         var pu = funCurrentFunc().GetUnwindInfo();
         if (reg1 == REG_ARM64_FP)
@@ -293,7 +193,7 @@ public partial class Compiler
 
             pu.AddCode(unchecked((byte)(0x20 | (byte)z)));
         }
-        else if ((reg1 >= REG_INT_FIRST) && (reg1 <= REG_ARM64_LR))
+        else if ((reg1 >= TargetRuntimeMetadata.IntegerRegisterFirst) && (reg1 <= REG_ARM64_LR))
         {
             // save_regp_x: 110011xx | xxzzzzzz.
             assert(-512 <= offset);
@@ -321,11 +221,10 @@ public partial class Compiler
         }
     }
 
-    public void unwindSaveReg(regNumber reg, int offset)
+    public void unwindSaveRegArm64(regNumber reg, int offset)
     {
         assert(0 <= offset && offset <= 504);
         assert((offset % 8) == 0);
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
@@ -333,18 +232,17 @@ public partial class Compiler
                 ref var func = ref funCurrentFunc();
                 var cbProlog = unwindGetCurrentOffset(in func);
 
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), offset);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapArm64RegNumToDwarfReg(reg), offset);
             }
 
             return;
         }
-#endif
 
         var z = offset / 8;
         assert(0 <= z && z <= 0x3F);
         var pu = funCurrentFunc().GetUnwindInfo();
 
-        if ((reg >= REG_INT_FIRST) && (reg <= REG_ARM64_LR))
+        if ((reg >= TargetRuntimeMetadata.IntegerRegisterFirst) && (reg <= REG_ARM64_LR))
         {
             // save_reg: 110100xx | xxzzzzzz.
             assert(REG_ARM64_R19 <= reg && reg <= REG_ARM64_LR);
@@ -364,11 +262,10 @@ public partial class Compiler
         }
     }
 
-    public void unwindSaveRegPreindexed(regNumber reg, int offset)
+    public void unwindSaveRegPreindexedArm64(regNumber reg, int offset)
     {
         assert(-256 <= offset && offset < 0);
         assert((offset % 8) == 0);
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
@@ -377,18 +274,17 @@ public partial class Compiler
                 var cbProlog = unwindGetCurrentOffset(in func);
 
                 createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, unchecked(-offset));
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), 0);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapArm64RegNumToDwarfReg(reg), 0);
             }
 
             return;
         }
-#endif
 
         var pu = funCurrentFunc().GetUnwindInfo();
         var z = unchecked((-offset) / 8 - 1);
         assert(0 <= z && z <= 0x1F);
 
-        if ((reg >= REG_INT_FIRST) && (reg <= REG_ARM64_LR))
+        if ((reg >= TargetRuntimeMetadata.IntegerRegisterFirst) && (reg <= REG_ARM64_LR))
         {
             // save_reg_x: 1101010x | xxxzzzzz.
             assert(REG_ARM64_R19 <= reg && reg <= REG_ARM64_LR);
@@ -410,22 +306,19 @@ public partial class Compiler
 
     public void unwindSaveNext()
     {
-#if FEATURE_CFI_SUPPORT
         // CFI has no save-next opcode.
         assert(!generateCFIUnwindCodes());
-#endif
         var pu = funCurrentFunc().GetUnwindInfo();
         // The caller is responsible for ensuring that the next register pair is correct.
         pu.AddCode(0xE6);
     }
 
-    public void unwindPacSignLR()
+    public void unwindPacSignLRArm64()
     {
         if (JitConfig.JitPacEnabled == 0)
         {
             return;
         }
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (!UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
@@ -441,14 +334,12 @@ public partial class Compiler
 
             return;
         }
-#endif
         // pac_sign_lr: 11111100, sign LR with the platform PAC key.
         funCurrentFunc().GetUnwindInfo().AddCode(0xFC);
     }
 
-    public void unwindReturn(regNumber reg)
+    public void unwindReturnArm64(regNumber reg)
     {
         // Padding always contains at least one trailing "end" opcode.
     }
 }
-#endif

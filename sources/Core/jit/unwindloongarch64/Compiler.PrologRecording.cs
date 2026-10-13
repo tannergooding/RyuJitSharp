@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regNumber;
 
@@ -12,24 +11,21 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public void unwindPush(regNumber reg)
+    public void unwindPushLoongArch64(regNumber reg)
     {
         unreached(); // Use one of the unwindSaveReg* functions instead.
     }
 
-    public void unwindAllocStack(uint size)
+    public void unwindAllocStackLoongArch64(uint size)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindAllocStackCFI(size);
             }
-
             return;
         }
-#endif
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
         assert(size % 16 == 0);
@@ -53,31 +49,28 @@ public partial class Compiler
         }
     }
 
-    public void unwindSetFrameReg(regNumber reg, uint offset)
+    public void unwindSetFrameRegLoongArch64(regNumber reg, uint offset)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindSetFrameRegCFI(reg, offset);
             }
-
             return;
         }
-#endif
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
         if (offset == 0)
         {
-            assert(reg == REG_FP);
+            assert(reg == REG_LOONGARCH64_FP);
             // set_fp: move fp, sp.
             unwindInfo.AddCode(0xE1);
         }
         else
         {
             // add_fp: addi.d fp, sp, #x * 8.
-            assert(reg == REG_FP);
+            assert(reg == REG_LOONGARCH64_FP);
             assert((offset % 8) == 0);
             var x = offset / 8;
             assert(x <= 0x1FF);
@@ -86,37 +79,22 @@ public partial class Compiler
         }
     }
 
-    public void unwindSaveReg(regNumber reg, uint offset)
+    public void unwindSaveRegLoongArch64(regNumber reg, uint offset)
     {
-        unwindSaveReg(reg, unchecked((int)offset));
+        unwindSaveRegLoongArch64(reg, unchecked((int)offset));
     }
 
-    public void unwindNop()
+    public void unwindNopLoongArch64()
     {
-        var unwindInfo = funCurrentFunc().GetUnwindInfo();
-
-#if DEBUG
-        if (verbose)
-        {
-            logf("unwindNop: adding NOP\n");
-        }
-
-        unwindInfo.uwiAddingNOP = true;
-#endif
-        // nop: no unwind operation is required.
-        unwindInfo.AddCode(0xE3);
-#if DEBUG
-        unwindInfo.uwiAddingNOP = false;
-#endif
+        RecordUnwindPadding(4);
     }
 
-    public void unwindSaveReg(regNumber reg, int offset)
+    public void unwindSaveRegLoongArch64(regNumber reg, int offset)
     {
         // st.d reg, sp, offset; prolog offsets are positive multiples of 8.
         assert(0 <= offset && offset <= 2047);
         assert((offset % 8) == 0);
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (UnwindEmitter().emitGeneratingPrologOrFuncletProlog())
@@ -124,12 +102,10 @@ public partial class Compiler
                 ref var func = ref funCurrentFunc();
                 var cbProlog = unwindGetCurrentOffset(in func);
 
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), offset);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapCfiRegNumToDwarfReg(reg), offset);
             }
-
             return;
         }
-#endif
 
         var z = offset / 8;
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
@@ -137,9 +113,9 @@ public partial class Compiler
         if (Emitter.isGeneralRegister(reg))
         {
             // save_reg encodes the register relative to RA and the SP offset in 8-byte units.
-            assert(reg == REG_RA || reg == REG_FP
-                   || ((int)reg >= (int)REG_S0 && (int)reg <= (int)REG_S8));
-            var x = unchecked((byte)((int)reg - (int)REG_RA));
+            assert(reg == REG_LOONGARCH64_RA || reg == REG_LOONGARCH64_FP
+                   || ((int)reg >= (int)REG_LOONGARCH64_S0 && (int)reg <= (int)REG_LOONGARCH64_S8));
+            var x = unchecked((byte)((int)reg - (int)REG_LOONGARCH64_RA));
             assert(x <= 0x1E);
 
             unwindInfo.AddCode(0xD0, x, unchecked((byte)z));
@@ -147,45 +123,42 @@ public partial class Compiler
         else
         {
             // save_freg encodes F24-F31 and the SP offset in 8-byte units.
-            assert((int)reg >= (int)REG_F24 && (int)reg <= (int)REG_F31);
-            var x = unchecked((byte)((int)reg - (int)REG_F24));
+            assert((int)reg >= (int)REG_LOONGARCH64_F24 && (int)reg <= (int)REG_LOONGARCH64_F31);
+            var x = unchecked((byte)((int)reg - (int)REG_LOONGARCH64_F24));
             assert(x <= 0x7);
 
             unwindInfo.AddCode(0xDC, unchecked((byte)((x << 4) | (z >> 8))), unchecked((byte)z));
         }
     }
 
-    public void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
+    public void unwindSaveRegPairLoongArch64(regNumber reg1, regNumber reg2, int offset)
     {
-        assert(false, "unused on LOONGARCH64 yet");
+        throw new FatalJitException(CORJIT_SKIPPED, "unwindSaveRegPair is not implemented for LoongArch64.");
     }
 
-    public void unwindReturn(regNumber reg)
+    public void unwindReturnLoongArch64(regNumber reg)
     {
         // A trailing end opcode is always present in the unwind padding.
     }
 
-    public void unwindBegEpilog()
+    public void unwindBegEpilogLoongArch64()
     {
         assert(GetEmitter().emitGeneratingEpilogOrFuncletEpilog());
         assert(!compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = true;
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             return;
         }
-#endif
 
         funCurrentFunc().GetUnwindInfo().AddEpilog();
     }
 
-    public void unwindEndEpilog()
+    public void unwindEndEpilogLoongArch64()
     {
         assert(GetEmitter().emitGeneratingEpilogOrFuncletEpilog());
         assert(compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = false;
     }
 }
-#endif

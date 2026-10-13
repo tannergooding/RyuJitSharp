@@ -3,10 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM && DEBUG
+#if DEBUG
 namespace RyuJitSharp;
 
-public abstract unsafe class UnwindCodesBase
+public abstract unsafe class ArmUnwindCodesBase
 {
     public uint GetCodeSizeFromUnwindCodes(bool isProlog)
     {

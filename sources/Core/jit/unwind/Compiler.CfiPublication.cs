@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_CFI_SUPPORT
 using System;
 using System.Runtime.InteropServices;
 
@@ -58,15 +57,16 @@ public partial class Compiler
     private unsafe void CfiAllocateUnwindInfo(byte* hotCode, byte* coldCode, uint startOffset, uint endOffset,
         int unwindSize, byte* unwindBlock, CorJitFuncKind funcKind)
     {
-#if TARGET_AMD64
-        eeAllocUnwindInfo(hotCode, coldCode, unchecked((int)startOffset), unchecked((int)endOffset),
-            unwindSize, unwindBlock, funcKind);
-#elif TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-        unwindAllocEEInfo(hotCode, coldCode, unchecked((int)startOffset), unchecked((int)endOffset),
-            unwindSize, unwindBlock, funcKind);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Unwind EE publication for this target is not ported.");
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            eeAllocUnwindInfo(hotCode, coldCode, unchecked((int)startOffset), unchecked((int)endOffset),
+                unwindSize, unwindBlock, funcKind);
+        }
+        else
+        {
+            unwindAllocEEInfo(hotCode, coldCode, unchecked((int)startOffset), unchecked((int)endOffset),
+                unwindSize, unwindBlock, funcKind);
+        }
     }
 
 #if DEBUG
@@ -115,4 +115,3 @@ public partial class Compiler
     }
 #endif
 }
-#endif

@@ -4,7 +4,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64 && DEBUG
+#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 
@@ -12,17 +12,7 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    public static uint ExtractBits(uint value, uint start, uint length)
-    {
-        return (value >> unchecked((int)start)) & unchecked((1u << unchecked((int)length)) - 1);
-    }
-
-    private static regNumber GetRegisterAtOffset(regNumber first, uint offset)
-    {
-        return unchecked((regNumber)((uint)first + offset));
-    }
-
-    public static unsafe void DumpUnwindInfo(
+    private static unsafe void DumpLoongArch64UnwindInfo(
         Compiler comp, bool isHotCode, uint startOffset, uint endOffset, byte* pHeader, uint unwindBlockSize)
     {
         jitprintf($"Unwind Info{(isHotCode ? "" : " COLD")}:\n");
@@ -149,7 +139,7 @@ public static partial class Globals
                 z = b3;
 
                 jitprintf($"    {b1:X2} {b2:X2} {b3:X2}      save_reg X#{x} Z#{z} (0x{z:X2}); " +
-                    $"st.d {GetRegisterAtOffset(REG_RA, x).Name}, sp, {z * 8}\n");
+                    $"st.d {GetUnwindRegisterAtOffset(REG_LOONGARCH64_RA, x).Name}, sp, {z * 8}\n");
             }
             else if (b1 == 0xDC)
             {
@@ -161,7 +151,7 @@ public static partial class Globals
                 z = ((uint)(b2 & 0xF) << 8) | b3;
 
                 jitprintf($"    {b1:X2} {b2:X2} {b3:X2}      save_freg X#{x} Z#{z} (0x{z:X2}); " +
-                    $"fst.d {GetRegisterAtOffset(REG_F24, x).Name}, [sp, #{z * 8}]\n");
+                    $"fst.d {GetUnwindRegisterAtOffset(REG_LOONGARCH64_F24, x).Name}, [sp, #{z * 8}]\n");
             }
             else if (b1 == 0xE0)
             {
@@ -178,7 +168,7 @@ public static partial class Globals
             }
             else if (b1 == 0xE1)
             {
-                jitprintf($"    {b1:X2}          set_fp; move {REG_FP.Name}, sp\n");
+                jitprintf($"    {b1:X2}          set_fp; move {REG_LOONGARCH64_FP.Name}, sp\n");
             }
             else if (b1 == 0xE2)
             {
@@ -189,7 +179,7 @@ public static partial class Globals
                 x = ((uint)(b2 & 0x1F) << 8) | b3;
 
                 jitprintf($"    {b1:X2} {b2:X2} {b3:X2}      add_fp {x} (0x{x:X2}); " +
-                    $"addi.d {REG_FP.Name}, sp, #{x * 8}\n");
+                    $"addi.d {REG_LOONGARCH64_FP.Name}, sp, #{x * 8}\n");
             }
             else if (b1 == 0xE3)
             {

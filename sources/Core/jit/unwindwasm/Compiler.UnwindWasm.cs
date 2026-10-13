@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
@@ -13,21 +12,21 @@ public partial class Compiler
     // Frame size and virtual IP length are uint32 values, each requiring at most five ULEB128 bytes.
     private const int WasmUnwindInfoBufferSize = 10;
 
-    public void unwindBegProlog()
+    public void unwindBegPrologWasm()
     {
     }
 
-    public void unwindEndProlog()
+    public void unwindEndPrologWasm()
     {
     }
 
-    public void unwindAllocStack(uint size)
+    public void unwindAllocStackWasm(uint size)
     {
         ref var func = ref funCurrentFunc();
         func.funWasmFrameSize = unchecked(func.funWasmFrameSize + size);
     }
 
-    public void unwindReserve()
+    public void unwindReserveWasm()
     {
         var emitter = UnwindEmitter();
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
@@ -35,11 +34,11 @@ public partial class Compiler
 
         foreach (ref readonly var func in Funcs)
         {
-            unwindReserveFunc(in func);
+            unwindReserveFuncWasm(in func);
         }
     }
 
-    public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
+    public unsafe void unwindEmitWasm(void* pHotCode, void* pColdCode)
     {
         var emitter = UnwindEmitter();
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
@@ -47,11 +46,11 @@ public partial class Compiler
 
         foreach (ref readonly var func in Funcs)
         {
-            unwindEmitFunc(in func, pHotCode, pColdCode);
+            unwindEmitFuncWasm(in func, pHotCode, pColdCode);
         }
     }
 
-    private void unwindReserveFunc(in FuncInfoDsc func)
+    private void unwindReserveFuncWasm(in FuncInfoDsc func)
     {
         var isFunclet = func.IsFunclet();
         assert(func.endVirtualIP > func.startVirtualIP);
@@ -59,10 +58,10 @@ public partial class Compiler
         var encodedSize = WasmUnwindInfoSizeOfULEB128(func.funWasmFrameSize)
             + WasmUnwindInfoSizeOfULEB128(virtualIPLength);
 
-        eeReserveUnwindInfo(isFunclet, false, encodedSize);
+        eeReserveUnwindInfoWasm(isFunclet, false, encodedSize);
     }
 
-    private unsafe void unwindEmitFunc(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
+    private unsafe void unwindEmitFuncWasm(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
     {
         var emitter = UnwindEmitter();
         var startLocation = func.startLoc
@@ -97,7 +96,7 @@ public partial class Compiler
             (CorJitFuncKind)func.funKind);
     }
 
-    private unsafe void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize)
+    private unsafe void eeReserveUnwindInfoWasm(bool isFunclet, bool isColdCode, int unwindSize)
     {
 #if DEBUG
         if (verbose)
@@ -110,35 +109,6 @@ public partial class Compiler
         if (info.compMatchedVM)
         {
             info.compCompHnd->reserveUnwindInfo(isFunclet, isColdCode, unwindSize);
-        }
-    }
-
-    private unsafe void eeAllocUnwindInfo(
-        byte* pHotCode, byte* pColdCode, int startOffset, int endOffset, int unwindSize, byte* pUnwindBlock,
-        CorJitFuncKind funcKind)
-    {
-#if DEBUG
-        if (verbose)
-        {
-            var functionDescription = funcKind switch
-            {
-                CorJitFuncKind.CORJIT_FUNC_ROOT => "main function",
-                CorJitFuncKind.CORJIT_FUNC_HANDLER => "handler",
-                CorJitFuncKind.CORJIT_FUNC_FILTER => "filter",
-                _ => "ILLEGAL",
-            };
-            jitprintf(
-                $"allocUnwindInfo(pHotCode=0x{(nuint)dspPtr(pHotCode):X16}, " +
-                $"pColdCode=0x{(nuint)dspPtr(pColdCode):X16}, startOffset=0x{startOffset:x}, " +
-                $"endOffset=0x{endOffset:x}, unwindSize=0x{unwindSize:x}, " +
-                $"pUnwindBlock=0x{(nuint)dspPtr(pUnwindBlock):X16}, funKind={(int)funcKind} " +
-                $"({functionDescription}))\n");
-        }
-#endif
-        if (info.compMatchedVM)
-        {
-            info.compCompHnd->allocUnwindInfo(
-                pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
         }
     }
 
@@ -167,4 +137,3 @@ public partial class Compiler
         return size;
     }
 }
-#endif

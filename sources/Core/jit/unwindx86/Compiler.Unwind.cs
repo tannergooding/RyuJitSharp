@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
@@ -13,39 +12,39 @@ public partial class Compiler
     // x86 UNWIND_INFO contains only its ULONG FunctionLength field.
     private const int X86UnwindInfoSize = sizeof(uint);
 
-    public void unwindBegProlog()
+    public void unwindBegPrologX86()
     {
     }
 
-    public void unwindEndProlog()
+    public void unwindEndPrologX86()
     {
     }
 
-    public void unwindBegEpilog()
+    public void unwindBegEpilogX86()
     {
     }
 
-    public void unwindEndEpilog()
+    public void unwindEndEpilogX86()
     {
     }
 
-    public void unwindPush(regNumber reg)
+    public void unwindPushX86(regNumber reg)
     {
     }
 
-    public void unwindAllocStack(uint size)
+    public void unwindAllocStackX86(uint size)
     {
     }
 
-    public void unwindSetFrameReg(regNumber reg, uint offset)
+    public void unwindSetFrameRegX86(regNumber reg, uint offset)
     {
     }
 
-    public void unwindSaveReg(regNumber reg, uint offset)
+    public void unwindSaveRegX86(regNumber reg, uint offset)
     {
     }
 
-    public void unwindReserve()
+    public void unwindReserveX86()
     {
         var emitter = UnwindEmitter();
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
@@ -53,13 +52,13 @@ public partial class Compiler
 
         foreach (ref readonly var func in Funcs)
         {
-            unwindReserveFunc(in func);
+            unwindReserveFuncX86(in func);
         }
     }
 
-    private void unwindReserveFunc(in FuncInfoDsc func)
+    private void unwindReserveFuncX86(in FuncInfoDsc func)
     {
-        unwindReserveFuncHelper(in func, true);
+        unwindReserveFuncHelperX86(in func, true);
 
         if (fgFirstColdBlock is not null)
         {
@@ -67,20 +66,20 @@ public partial class Compiler
             if (JitConfig.JitFakeProcedureSplitting == 0)
 #endif
             {
-                unwindReserveFuncHelper(in func, false);
+                unwindReserveFuncHelperX86(in func, false);
             }
         }
     }
 
-    private void unwindReserveFuncHelper(in FuncInfoDsc func, bool isHotCode)
+    private void unwindReserveFuncHelperX86(in FuncInfoDsc func, bool isHotCode)
     {
         var isFunclet = func.funKind != FuncKind.FUNC_ROOT;
         var isColdCode = !isHotCode;
 
-        eeReserveUnwindInfo(isFunclet, isColdCode, X86UnwindInfoSize);
+        eeReserveUnwindInfoX86(isFunclet, isColdCode, X86UnwindInfoSize);
     }
 
-    public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
+    public unsafe void unwindEmitX86(void* pHotCode, void* pColdCode)
     {
         var emitter = UnwindEmitter();
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
@@ -88,13 +87,13 @@ public partial class Compiler
 
         foreach (ref readonly var func in Funcs)
         {
-            unwindEmitFunc(in func, pHotCode, pColdCode);
+            unwindEmitFuncX86(in func, pHotCode, pColdCode);
         }
     }
 
-    private unsafe void unwindEmitFunc(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
+    private unsafe void unwindEmitFuncX86(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
     {
-        unwindEmitFuncHelper(in func, pHotCode, pColdCode, true);
+        unwindEmitFuncHelperX86(in func, pHotCode, pColdCode, true);
 
         if (pColdCode != null)
         {
@@ -102,12 +101,12 @@ public partial class Compiler
             if (JitConfig.JitFakeProcedureSplitting == 0)
 #endif
             {
-                unwindEmitFuncHelper(in func, pHotCode, pColdCode, false);
+                unwindEmitFuncHelperX86(in func, pHotCode, pColdCode, false);
             }
         }
     }
 
-    private unsafe void unwindEmitFuncHelper(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
+    private unsafe void unwindEmitFuncHelperX86(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
     {
         var emitter = UnwindEmitter();
         uint startOffset;
@@ -166,7 +165,7 @@ public partial class Compiler
             (CorJitFuncKind)func.funKind);
     }
 
-    private unsafe void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize)
+    private unsafe void eeReserveUnwindInfoX86(bool isFunclet, bool isColdCode, int unwindSize)
     {
 #if DEBUG
         if (verbose)
@@ -181,33 +180,4 @@ public partial class Compiler
             info.compCompHnd->reserveUnwindInfo(isFunclet, isColdCode, unwindSize);
         }
     }
-
-    private unsafe void eeAllocUnwindInfo(byte* pHotCode, byte* pColdCode, int startOffset, int endOffset,
-        int unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
-    {
-#if DEBUG
-        if (verbose)
-        {
-            var functionDescription = funcKind switch
-            {
-                CorJitFuncKind.CORJIT_FUNC_ROOT => "main function",
-                CorJitFuncKind.CORJIT_FUNC_HANDLER => "handler",
-                CorJitFuncKind.CORJIT_FUNC_FILTER => "filter",
-                _ => "ILLEGAL",
-            };
-            jitprintf(
-                $"allocUnwindInfo(pHotCode=0x{(nuint)dspPtr(pHotCode):X16}, " +
-                $"pColdCode=0x{(nuint)dspPtr(pColdCode):X16}, startOffset=0x{startOffset:x}, " +
-                $"endOffset=0x{endOffset:x}, unwindSize=0x{unwindSize:x}, " +
-                $"pUnwindBlock=0x{(nuint)dspPtr(pUnwindBlock):X16}, funKind={(int)funcKind} " +
-                $"({functionDescription}))\n");
-        }
-#endif
-        if (info.compMatchedVM)
-        {
-            info.compCompHnd->allocUnwindInfo(
-                pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
-        }
-    }
 }
-#endif

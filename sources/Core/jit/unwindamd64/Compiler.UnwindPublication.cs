@@ -3,17 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64
 using System;
 using System.Runtime.InteropServices;
-#endif
 
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_AMD64
-    public void unwindReserve()
+    public void unwindReserveAmd64()
     {
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to reserve unwind information.");
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
@@ -22,11 +19,11 @@ public partial class Compiler
         var funcs = Funcs;
         for (var index = 0; index < funcs.Length; index++)
         {
-            unwindReserveFunc(ref compFuncInfos[index]);
+            unwindReserveFuncAmd64(ref compFuncInfos[index]);
         }
     }
 
-    private void unwindReserveFunc(ref FuncInfoDsc func)
+    private void unwindReserveFuncAmd64(ref FuncInfoDsc func)
     {
 #if DEBUG
         if (JitConfig.JitFakeProcedureSplitting != 0)
@@ -58,14 +55,12 @@ public partial class Compiler
 
         if (isHotCode || isFunclet)
         {
-#if UNIX_AMD64_ABI
-            if (generateCFIUnwindCodes())
+            if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
             {
                 noway_assert(func.cfiCodes is not null);
                 unwindCodeBytes = unchecked(func.cfiCodes.Count * 8);
             }
             else
-#endif
             {
                 var codes = func.unwindCodes ?? throw new InvalidOperationException("The prolog unwind codes have not been recorded.");
                 noway_assert(func.unwindHeader.Version == 1);
@@ -91,10 +86,10 @@ public partial class Compiler
             }
         }
 
-        eeReserveUnwindInfo(isFunclet, !isHotCode, unwindCodeBytes);
+        eeReserveUnwindInfoAmd64(isFunclet, !isHotCode, unwindCodeBytes);
     }
 
-    public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
+    public unsafe void unwindEmitAmd64(void* pHotCode, void* pColdCode)
     {
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to publish unwind information.");
         assert(!emitter.emitGeneratingPrologOrFuncletProlog());
@@ -102,36 +97,36 @@ public partial class Compiler
 
         foreach (ref readonly var func in Funcs)
         {
-            unwindEmitFunc(in func, pHotCode, pColdCode);
+            unwindEmitFuncAmd64(in func, pHotCode, pColdCode);
         }
     }
 
-    private unsafe void unwindEmitFunc(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
+    private unsafe void unwindEmitFuncAmd64(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
     {
 #if DEBUG
         if (JitConfig.JitFakeProcedureSplitting != 0)
         {
-            unwindEmitFuncHelper(in func, pHotCode, pColdCode, true);
+            unwindEmitFuncHelperAmd64(in func, pHotCode, pColdCode, true);
             return;
         }
 #endif
 
         if (func.funKind == FuncKind.FUNC_ROOT)
         {
-            unwindEmitFuncHelper(in func, pHotCode, pColdCode, true);
+            unwindEmitFuncHelperAmd64(in func, pHotCode, pColdCode, true);
 
             if ((fgFirstColdBlock is not null) && (fgFirstColdBlock != fgFirstFuncletBB))
             {
-                unwindEmitFuncHelper(in func, pHotCode, pColdCode, false);
+                unwindEmitFuncHelperAmd64(in func, pHotCode, pColdCode, false);
             }
         }
         else
         {
-            unwindEmitFuncHelper(in func, pHotCode, pColdCode, fgFirstColdBlock is null);
+            unwindEmitFuncHelperAmd64(in func, pHotCode, pColdCode, fgFirstColdBlock is null);
         }
     }
 
-    private unsafe void unwindEmitFuncHelper(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
+    private unsafe void unwindEmitFuncHelperAmd64(in FuncInfoDsc func, void* pHotCode, void* pColdCode, bool isHotCode)
     {
         var emitter = codeGen?.Emitter ?? throw new InvalidOperationException("An emitter is required to resolve unwind locations.");
         if (!isHotCode)
@@ -144,8 +139,7 @@ public partial class Compiler
         var startOffset = startLocation?.CodeOffset(emitter) ?? 0u;
         var endOffset = endLocation?.CodeOffset(emitter) ?? checked((uint)info.compNativeCodeSize);
 
-#if UNIX_AMD64_ABI
-        if (generateCFIUnwindCodes())
+        if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
         {
             var codes = (isHotCode || (func.funKind != FuncKind.FUNC_ROOT)) ? func.cfiCodes : null;
             noway_assert(!(isHotCode || (func.funKind != FuncKind.FUNC_ROOT)) || codes is not null);
@@ -189,7 +183,6 @@ public partial class Compiler
             }
         }
         else
-#endif
         {
             var unwindCodeBytes = 0;
             byte[]? unwindCodes = null;
@@ -242,7 +235,7 @@ public partial class Compiler
         }
     }
 
-    private unsafe void eeReserveUnwindInfo(bool isFunclet, bool isColdCode, int unwindSize)
+    private unsafe void eeReserveUnwindInfoAmd64(bool isFunclet, bool isColdCode, int unwindSize)
     {
 #if DEBUG
         if (verbose)
@@ -256,38 +249,4 @@ public partial class Compiler
         }
     }
 
-    private unsafe void eeAllocUnwindInfo(byte* pHotCode, byte* pColdCode, int startOffset, int endOffset,
-        int unwindSize, byte* pUnwindBlock, CorJitFuncKind funcKind)
-    {
-#if DEBUG
-        if (verbose)
-        {
-            var functionDescription = funcKind switch
-            {
-                CorJitFuncKind.CORJIT_FUNC_ROOT => "main function",
-                CorJitFuncKind.CORJIT_FUNC_HANDLER => "handler",
-                CorJitFuncKind.CORJIT_FUNC_FILTER => "filter",
-                _ => "ILLEGAL",
-            };
-            jitprintf($"allocUnwindInfo(pHotCode=0x{(nuint)dspPtr(pHotCode):X16}, pColdCode=0x{(nuint)dspPtr(pColdCode):X16}, " +
-                      $"startOffset=0x{startOffset:x}, endOffset=0x{endOffset:x}, unwindSize=0x{unwindSize:x}, " +
-                      $"pUnwindBlock=0x{(nuint)dspPtr(pUnwindBlock):X16}, funKind={(int)funcKind} ({functionDescription}))\n");
-        }
-#endif
-        if (info.compMatchedVM)
-        {
-            info.compCompHnd->allocUnwindInfo(pHotCode, pColdCode, startOffset, endOffset, unwindSize, pUnwindBlock, funcKind);
-        }
-    }
-#else
-    public void unwindReserve()
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Windows AMD64 unwind reservation is not implemented for this target.");
-    }
-
-    public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Windows AMD64 unwind publication is not implemented for this target.");
-    }
-#endif
 }

@@ -3,7 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 && DEBUG
+// Keep the decoder available when MSBuild excludes the ARM64 backend.
+#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 
@@ -11,12 +12,7 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    private static regNumber GetRegisterAtOffset(regNumber first, uint offset)
-    {
-        return unchecked((regNumber)((uint)first + offset));
-    }
-
-    public static uint GetUnwindSizeFromUnwindHeader(byte b1)
+    private static uint GetArm64UnwindSize(byte b1)
     {
         ReadOnlySpan<byte> unwindSize =
         [
@@ -43,13 +39,7 @@ public static partial class Globals
         return size;
     }
 
-    // start is a zero-based bit index from the least significant bit.
-    public static uint ExtractBits(uint dw, uint start, uint length)
-    {
-        return (dw >> (int)start) & unchecked((uint)((1 << (int)length) - 1));
-    }
-
-    public static unsafe void DumpUnwindInfo(
+    private static unsafe void DumpArm64UnwindInfo(
         Compiler comp, bool isHotCode, uint startOffset, uint endOffset, byte* pHeader, uint unwindBlockSize)
     {
         jitprintf($"Unwind Info{(isHotCode ? "" : " COLD")}:\n");
@@ -153,19 +143,19 @@ public static partial class Globals
             {
                 z = (uint)(b1 & 0x1F);
                 jitprintf($"    {b1:X2}          save_r19r20_x #{z} (0x{z:X2}); " +
-                    $"stp {REG_R19.Name}, {REG_R20.Name}, [sp, #-{z * 8}]!\n");
+                    $"stp {REG_ARM64_R19.Name}, {REG_ARM64_R20.Name}, [sp, #-{z * 8}]!\n");
             }
             else if ((b1 & 0xC0) == 0x40)
             {
                 z = (uint)(b1 & 0x3F);
                 jitprintf($"    {b1:X2}          save_fplr #{z} (0x{z:X2}); " +
-                    $"stp {REG_FP.Name}, {REG_LR.Name}, [sp, #{z * 8}]\n");
+                    $"stp {REG_ARM64_FP.Name}, {REG_ARM64_LR.Name}, [sp, #{z * 8}]\n");
             }
             else if ((b1 & 0xC0) == 0x80)
             {
                 z = (uint)(b1 & 0x3F);
                 jitprintf($"    {b1:X2}          save_fplr_x #{z} (0x{z:X2}); " +
-                    $"stp {REG_FP.Name}, {REG_LR.Name}, [sp, #-{(z + 1) * 8}]!\n");
+                    $"stp {REG_ARM64_FP.Name}, {REG_ARM64_LR.Name}, [sp, #-{(z + 1) * 8}]!\n");
             }
             else if ((b1 & 0xF8) == 0xC0)
             {
@@ -186,8 +176,8 @@ public static partial class Globals
                 z = (uint)(b2 & 0x3F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_regp X#{x} Z#{z} (0x{z:X2}); " +
-                    $"stp {GetRegisterAtOffset(REG_R19, x).Name}, " +
-                    $"{GetRegisterAtOffset(REG_R19, x + 1).Name}, [sp, #{z * 8}]\n");
+                    $"stp {GetUnwindRegisterAtOffset(REG_ARM64_R19, x).Name}, " +
+                    $"{GetUnwindRegisterAtOffset(REG_ARM64_R19, x + 1).Name}, [sp, #{z * 8}]\n");
             }
             else if ((b1 & 0xFC) == 0xCC)
             {
@@ -198,8 +188,8 @@ public static partial class Globals
                 z = (uint)(b2 & 0x3F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_regp_x X#{x} Z#{z} (0x{z:X2}); " +
-                    $"stp {GetRegisterAtOffset(REG_R19, x).Name}, " +
-                    $"{GetRegisterAtOffset(REG_R19, x + 1).Name}, [sp, #-{(z + 1) * 8}]!\n");
+                    $"stp {GetUnwindRegisterAtOffset(REG_ARM64_R19, x).Name}, " +
+                    $"{GetUnwindRegisterAtOffset(REG_ARM64_R19, x + 1).Name}, [sp, #-{(z + 1) * 8}]!\n");
             }
             else if ((b1 & 0xFC) == 0xD0)
             {
@@ -210,7 +200,7 @@ public static partial class Globals
                 z = (uint)(b2 & 0x3F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_reg X#{x} Z#{z} (0x{z:X2}); " +
-                    $"str {GetRegisterAtOffset(REG_R19, x).Name}, [sp, #{z * 8}]\n");
+                    $"str {GetUnwindRegisterAtOffset(REG_ARM64_R19, x).Name}, [sp, #{z * 8}]\n");
             }
             else if ((b1 & 0xFE) == 0xD4)
             {
@@ -221,7 +211,7 @@ public static partial class Globals
                 z = (uint)(b2 & 0x1F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_reg_x X#{x} Z#{z} (0x{z:X2}); " +
-                    $"str {GetRegisterAtOffset(REG_R19, x).Name}, [sp, #-{(z + 1) * 8}]!\n");
+                    $"str {GetUnwindRegisterAtOffset(REG_ARM64_R19, x).Name}, [sp, #-{(z + 1) * 8}]!\n");
             }
             else if ((b1 & 0xFE) == 0xD6)
             {
@@ -232,7 +222,7 @@ public static partial class Globals
                 z = (uint)(b2 & 0x3F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_lrpair X#{x} Z#{z} (0x{z:X2}); " +
-                    $"stp {GetRegisterAtOffset(REG_R19, 2 * x).Name}, {REG_LR.Name}, [sp, #{z * 8}]\n");
+                    $"stp {GetUnwindRegisterAtOffset(REG_ARM64_R19, 2 * x).Name}, {REG_ARM64_LR.Name}, [sp, #{z * 8}]\n");
             }
             else if ((b1 & 0xFE) == 0xD8)
             {
@@ -243,8 +233,8 @@ public static partial class Globals
                 z = (uint)(b2 & 0x3F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_fregp X#{x} Z#{z} (0x{z:X2}); " +
-                    $"stp {GetRegisterAtOffset(REG_V8, x).Name}, " +
-                    $"{GetRegisterAtOffset(REG_V8, x + 1).Name}, [sp, #{z * 8}]\n");
+                    $"stp {GetUnwindRegisterAtOffset(REG_ARM64_V8, x).Name}, " +
+                    $"{GetUnwindRegisterAtOffset(REG_ARM64_V8, x + 1).Name}, [sp, #{z * 8}]\n");
             }
             else if ((b1 & 0xFE) == 0xDA)
             {
@@ -255,8 +245,8 @@ public static partial class Globals
                 z = (uint)(b2 & 0x3F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_fregp_x X#{x} Z#{z} (0x{z:X2}); " +
-                    $"stp {GetRegisterAtOffset(REG_V8, x).Name}, " +
-                    $"{GetRegisterAtOffset(REG_V8, x + 1).Name}, [sp, #-{(z + 1) * 8}]!\n");
+                    $"stp {GetUnwindRegisterAtOffset(REG_ARM64_V8, x).Name}, " +
+                    $"{GetUnwindRegisterAtOffset(REG_ARM64_V8, x + 1).Name}, [sp, #-{(z + 1) * 8}]!\n");
             }
             else if ((b1 & 0xFE) == 0xDC)
             {
@@ -267,7 +257,7 @@ public static partial class Globals
                 z = (uint)(b2 & 0x3F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_freg X#{x} Z#{z} (0x{z:X2}); " +
-                    $"str {GetRegisterAtOffset(REG_V8, x).Name}, [sp, #{z * 8}]\n");
+                    $"str {GetUnwindRegisterAtOffset(REG_ARM64_V8, x).Name}, [sp, #{z * 8}]\n");
             }
             else if (b1 == 0xDE)
             {
@@ -278,7 +268,7 @@ public static partial class Globals
                 z = (uint)(b2 & 0x1F);
 
                 jitprintf($"    {b1:X2} {b2:X2}       save_freg_x X#{x} Z#{z} (0x{z:X2}); " +
-                    $"str {GetRegisterAtOffset(REG_V8, x).Name}, [sp, #-{(z + 1) * 8}]!\n");
+                    $"str {GetUnwindRegisterAtOffset(REG_ARM64_V8, x).Name}, [sp, #-{(z + 1) * 8}]!\n");
             }
             else if (b1 == 0xE0)
             {
@@ -294,7 +284,7 @@ public static partial class Globals
             }
             else if (b1 == 0xE1)
             {
-                jitprintf($"    {b1:X2}          set_fp; mov {REG_FP.Name}, sp\n");
+                jitprintf($"    {b1:X2}          set_fp; mov {REG_ARM64_FP.Name}, sp\n");
             }
             else if (b1 == 0xE2)
             {
@@ -304,7 +294,7 @@ public static partial class Globals
                 x = b2;
 
                 jitprintf($"    {b1:X2} {b2:X2}       add_fp {x} (0x{x:X2}); " +
-                    $"add {REG_FP.Name}, sp, #{x * 8}\n");
+                    $"add {REG_ARM64_FP.Name}, sp, #{x * 8}\n");
             }
             else if (b1 == 0xE3)
             {

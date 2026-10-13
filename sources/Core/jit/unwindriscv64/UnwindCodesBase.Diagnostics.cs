@@ -3,10 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64 && DEBUG
+#if DEBUG
 namespace RyuJitSharp;
 
-public abstract unsafe class UnwindCodesBase
+public abstract unsafe class RiscV64UnwindCodesBase
 {
     public abstract void AddCode(byte b1);
     public abstract void AddCode(byte b1, byte b2);

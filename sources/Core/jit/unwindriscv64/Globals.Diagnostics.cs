@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64 && DEBUG
+#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 
@@ -11,7 +11,7 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    public static uint GetUnwindSizeFromUnwindHeader(byte header)
+    private static uint GetRiscV64UnwindSize(byte header)
     {
         ReadOnlySpan<byte> unwindSize =
         [
@@ -38,17 +38,7 @@ public static partial class Globals
         return size;
     }
 
-    public static uint ExtractBits(uint value, uint start, uint length)
-    {
-        return (value >> (int)start) & unchecked((uint)((1 << (int)length) - 1));
-    }
-
-    private static regNumber GetRegisterAtOffset(regNumber first, uint offset)
-    {
-        return unchecked((regNumber)((uint)first + offset));
-    }
-
-    public static unsafe void DumpUnwindInfo(
+    private static unsafe void DumpRiscV64UnwindInfo(
         Compiler comp, bool isHotCode, uint startOffset, uint endOffset, byte* pHeader, uint unwindBlockSize)
     {
         jitprintf($"Unwind Info{(isHotCode ? "" : " COLD")}:\n");
@@ -161,7 +151,7 @@ public static partial class Globals
                 x = b2;
                 z = b3;
                 jitprintf($"    {b1:X2} {b2:X2} {b3:X2}      save_reg X#{x} Z#{z} (0x{z:X2}); " +
-                    $"sd {GetRegisterAtOffset(REG_RA, x).Name}, sp, {z * 8}\n");
+                    $"sd {GetUnwindRegisterAtOffset(REG_RISCV64_RA, x).Name}, sp, {z * 8}\n");
             }
             else if ((b1 & 0xFE) == 0xDC)
             {
@@ -172,7 +162,7 @@ public static partial class Globals
                 x = ((uint)(b1 & 0x1) << 4) | (uint)(b2 >> 4);
                 z = ((uint)(b2 & 0xF) << 8) | b3;
                 jitprintf($"    {b1:X2} {b2:X2} {b3:X2}      save_freg X#{x} Z#{z} (0x{z:X2}); " +
-                    $"fsd {GetRegisterAtOffset(REG_FS0, x).Name}, [sp, #{z * 8}]\n");
+                    $"fsd {GetUnwindRegisterAtOffset(REG_RISCV64_FS0, x).Name}, [sp, #{z * 8}]\n");
             }
             else if (b1 == 0xE0)
             {
@@ -187,7 +177,7 @@ public static partial class Globals
             }
             else if (b1 == 0xE1)
             {
-                jitprintf($"    {b1:X2}          set_fp; move {REG_FP.Name}, sp\n");
+                jitprintf($"    {b1:X2}          set_fp; move {REG_RISCV64_FP.Name}, sp\n");
             }
             else if (b1 == 0xE2)
             {
@@ -197,7 +187,7 @@ public static partial class Globals
                 i += 2;
                 x = ((uint)(b2 & 0x1F) << 8) | b3;
                 jitprintf($"    {b1:X2} {b2:X2} {b3:X2}      add_fp {x} (0x{x:X2}); " +
-                    $"addi {REG_FP.Name}, sp, #{x * 8}\n");
+                    $"addi {REG_RISCV64_FP.Name}, sp, #{x * 8}\n");
             }
             else if (b1 == 0xE3)
             {

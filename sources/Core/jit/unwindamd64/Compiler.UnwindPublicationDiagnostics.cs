@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG && TARGET_AMD64
+#if DEBUG
 using System;
 using System.Buffers.Binary;
 
@@ -111,8 +111,7 @@ public partial class Compiler
                     jitprintf($"    CodeOffset: 0x{codeOffset:X2} UnwindOp: UWOP_SET_FPREG ({op})       OpInfo: Unused ({opInfo})\n");
                     break;
                 }
-#if UNIX_AMD64_ABI
-                case UWOP_SET_FPREG_LARGE:
+                case UWOP_SET_FPREG_LARGE when Configuration.UNIX_AMD64_ABI:
                 {
                     jitprintf($"    CodeOffset: 0x{codeOffset:X2} UnwindOp: UWOP_SET_FPREG_LARGE ({op}) OpInfo: Unused ({opInfo})\n");
                     index++;
@@ -125,7 +124,6 @@ public partial class Compiler
                     index++;
                     break;
                 }
-#endif
                 case UWOP_SAVE_NONVOL:
                 case UWOP_SAVE_XMM128:
                 {

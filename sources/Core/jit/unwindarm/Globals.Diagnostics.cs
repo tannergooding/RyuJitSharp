@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM && DEBUG
+#if DEBUG
 using System;
 using System.Runtime.CompilerServices;
 
@@ -11,12 +11,6 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-    // start is a zero-based bit index from the least significant bit.
-    public static uint ExtractBits(uint dw, uint start, uint length)
-    {
-        return (dw >> (int)start) & unchecked((uint)((1 << (int)length) - 1));
-    }
-
     private static uint DisplayOffset(Compiler comp, uint offset)
     {
         return unchecked((uint)comp.dspOffset(unchecked((nint)offset)));
@@ -122,7 +116,7 @@ public static partial class Globals
         return padding + 11;
     }
 
-    public static unsafe void DumpUnwindInfo(
+    private static unsafe void DumpArmUnwindInfo(
         Compiler comp, bool isHotCode, uint startOffset, uint endOffset, byte* pHeader, uint unwindBlockSize)
     {
         jitprintf($"Unwind Info{(isHotCode ? "" : " COLD")}:\n");

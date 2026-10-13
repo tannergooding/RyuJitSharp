@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -132,13 +131,11 @@ public partial class Compiler
         assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 |
             RBM_R9 | RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR)).IsEmpty);
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             unwindPushPopMaskCFI(maskInt, false);
             return;
         }
-#endif
 
         var useOpsize16 = (maskInt & (RBM_LOW_REGS | RBM_LR)) == maskInt;
         unwindPushPopMaskInt(maskInt, useOpsize16);
@@ -148,25 +145,21 @@ public partial class Compiler
     {
         assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             unwindPushPopMaskCFI(maskFloat, true);
             return;
         }
-#endif
 
         unwindPushPopMaskFloat(maskFloat);
     }
 
     public void unwindPopMaskInt(regMaskTP maskInt)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             return;
         }
-#endif
 
         assert((maskInt & ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 |
             RBM_R9 | RBM_R10 | RBM_R11 | RBM_R12 | RBM_LR | RBM_PC)).IsEmpty);
@@ -182,30 +175,25 @@ public partial class Compiler
 
     public void unwindPopMaskFloat(regMaskTP maskFloat)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             return;
         }
-#endif
 
         assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
         unwindPushPopMaskFloat(maskFloat);
     }
 
-    public void unwindAllocStack(uint size)
+    public void unwindAllocStackArm(uint size)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (GetEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindAllocStackCFI(size);
             }
-
             return;
         }
-#endif
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
         assert(size % 4 == 0);
@@ -233,19 +221,16 @@ public partial class Compiler
         }
     }
 
-    public void unwindSetFrameReg(regNumber reg, uint offset)
+    public void unwindSetFrameRegArm(regNumber reg, uint offset)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (GetEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindSetFrameRegCFI(reg, offset);
             }
-
             return;
         }
-#endif
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
         assert(offset == 0);
@@ -253,56 +238,19 @@ public partial class Compiler
         unwindInfo.AddCode(unchecked((byte)(0xC0 + (int)reg)));
     }
 
-    public void unwindSaveReg(regNumber reg, uint offset)
+    public void unwindSaveRegArm(regNumber reg, uint offset)
     {
         unreached();
     }
 
     public void unwindBranch16()
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             return;
         }
-#endif
 
         // The epilog end code is currently followed by an extra end byte.
         funCurrentFunc().GetUnwindInfo().AddCode(0xFD);
     }
-
-    public void unwindNop(uint codeSizeInBytes)
-    {
-#if FEATURE_CFI_SUPPORT
-        if (generateCFIUnwindCodes())
-        {
-            return;
-        }
-#endif
-
-        var unwindInfo = funCurrentFunc().GetUnwindInfo();
-#if DEBUG
-        if (verbose)
-        {
-            logf($"unwindNop: adding NOP for {codeSizeInBytes} byte instruction\n");
-        }
-
-        unwindInfo.uwiAddingNOP = true;
-#endif
-
-        if (codeSizeInBytes == 2)
-        {
-            unwindInfo.AddCode(0xFB);
-        }
-        else
-        {
-            noway_assert(codeSizeInBytes == 4);
-            unwindInfo.AddCode(0xFC);
-        }
-
-#if DEBUG
-        unwindInfo.uwiAddingNOP = false;
-#endif
-    }
 }
-#endif

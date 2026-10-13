@@ -11,97 +11,35 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_AMD64
     private const int Amd64UnwindCodeStorageSize = 4 + (0xFF * 2);
     private const byte UWOP_PUSH_NONVOL = 0;
     private const byte UWOP_ALLOC_LARGE = 1;
     private const byte UWOP_ALLOC_SMALL = 2;
     private const byte UWOP_SET_FPREG = 3;
-#if UNIX_AMD64_ABI
     private const byte UWOP_SET_FPREG_LARGE = 11;
-#endif
 
     private const byte UWOP_SAVE_NONVOL = 4;
     private const byte UWOP_SAVE_NONVOL_FAR = 5;
     private const byte UWOP_SAVE_XMM128 = 8;
     private const byte UWOP_SAVE_XMM128_FAR = 9;
 
-    public void unwindBegProlog()
+    public void unwindBegPrologAmd64()
     {
         assert(!compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = true;
-#if UNIX_AMD64_ABI
-        if (generateCFIUnwindCodes())
+        if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
         {
             unwindBegPrologCFI();
         }
         else
-#endif
         {
             unwindBegPrologWindows();
         }
     }
 
-#if UNIX_AMD64_ABI
-    private static short mapRegNumToDwarfReg(regNumber reg)
+    private static short MapAmd64RegNumToDwarfReg(regNumber reg)
     {
-        var dwarfReg = DWARF_REG_ILLEGAL;
-
-        switch (reg)
-        {
-            case regNumber.REG_RAX:
-            {
-                dwarfReg = 0;
-                break;
-            }
-            case regNumber.REG_RCX:
-            {
-                dwarfReg = 2;
-                break;
-            }
-            case regNumber.REG_RDX:
-            {
-                dwarfReg = 1;
-                break;
-            }
-            case regNumber.REG_RBX:
-            {
-                dwarfReg = 3;
-                break;
-            }
-            case regNumber.REG_RSP:
-            {
-                dwarfReg = 7;
-                break;
-            }
-            case regNumber.REG_RBP:
-            {
-                dwarfReg = 6;
-                break;
-            }
-            case regNumber.REG_RSI:
-            {
-                dwarfReg = 4;
-                break;
-            }
-            case regNumber.REG_RDI:
-            {
-                dwarfReg = 5;
-                break;
-            }
-            case >= regNumber.REG_R8 and <= regNumber.REG_R31:
-            {
-                dwarfReg = (short)reg;
-                break;
-            }
-            default:
-            {
-                noway_assert(false, "!\"unexpected REG_NUM\"");
-                break;
-            }
-        }
-
-        return dwarfReg;
+        return MapCfiRegNumToDwarfReg(reg);
     }
 
     private void unwindSaveRegCFI(regNumber reg, uint offset)
@@ -112,10 +50,9 @@ public partial class Compiler
         {
             ref var func = ref funCurrentFunc();
             var cbProlog = unwindGetCurrentOffset(in func);
-            createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), unchecked((int)offset));
+            createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapAmd64RegNumToDwarfReg(reg), unchecked((int)offset));
         }
     }
-#endif
 
     private void unwindBegPrologWindows()
     {
@@ -142,50 +79,46 @@ public partial class Compiler
         func.unwindHeader.FrameOffset = 0;
     }
 
-    public void unwindEndProlog()
+    public void unwindEndPrologAmd64()
     {
         noway_assert(codeGen?.Emitter.emitGeneratingPrologOrFuncletProlog() == true);
         noway_assert(compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = false;
     }
 
-    public void unwindBegEpilog()
+    public void unwindBegEpilogAmd64()
     {
         noway_assert(codeGen?.Emitter.emitGeneratingEpilogOrFuncletEpilog() == true);
         noway_assert(!compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = true;
     }
 
-    public void unwindEndEpilog()
+    public void unwindEndEpilogAmd64()
     {
         noway_assert(codeGen?.Emitter.emitGeneratingEpilogOrFuncletEpilog() == true);
         noway_assert(compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = false;
     }
 
-    public void unwindPush(regNumber reg)
+    public void unwindPushAmd64(regNumber reg)
     {
-#if UNIX_AMD64_ABI
-        if (generateCFIUnwindCodes())
+        if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
         {
             unwindPushPopCFI(reg);
         }
         else
-#endif
         {
             unwindPushWindows(reg);
         }
     }
 
-    public void unwindPush2(regNumber reg1, regNumber reg2)
+    public void unwindPush2Amd64(regNumber reg1, regNumber reg2)
     {
-#if UNIX_AMD64_ABI
-        if (generateCFIUnwindCodes())
+        if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
         {
             unwindPush2Pop2CFI(reg1, reg2);
         }
         else
-#endif
         {
             unwindPush2Windows(reg1, reg2);
         }
@@ -204,11 +137,7 @@ public partial class Compiler
         var code = UnwindReserveCode(ref func, 0);
         var cbProlog = unwindGetCurrentOffset(in func);
 
-        if (UnwindIsCalleeSaved(reg)
-#if ETW_EBP_FRAMED
-            || reg == REG_FPBASE
-#endif
-            )
+        if (UnwindIsCalleeSaved(reg) || (Configuration.ETW_EBP_FRAMED && reg == TargetRuntimeMetadata.FramePointerBaseRegister))
         {
             UnwindWriteCode(ref func, code, cbProlog, UWOP_PUSH_NONVOL, (byte)reg);
         }
@@ -218,15 +147,13 @@ public partial class Compiler
         }
     }
 
-    public void unwindAllocStack(uint size)
+    public void unwindAllocStackAmd64(uint size)
     {
-#if UNIX_AMD64_ABI
-        if (generateCFIUnwindCodes())
+        if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
         {
             unwindAllocStackCFI(size);
         }
         else
-#endif
         {
             unwindAllocStackWindows(size);
         }
@@ -265,15 +192,13 @@ public partial class Compiler
         UnwindWriteCode(ref func, code, unwindGetCurrentOffset(in func), op, info);
     }
 
-    public void unwindSetFrameReg(regNumber reg, uint offset)
+    public void unwindSetFrameRegAmd64(regNumber reg, uint offset)
     {
-#if UNIX_AMD64_ABI
-        if (generateCFIUnwindCodes())
+        if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
         {
             unwindSetFrameRegCFI(reg, offset);
         }
         else
-#endif
         {
             unwindSetFrameRegWindows(reg, offset);
         }
@@ -283,16 +208,12 @@ public partial class Compiler
     {
         ref var func = ref UnwindCurrentProlog();
         var cbProlog = unwindGetCurrentOffset(in func);
-#if UNIX_AMD64_ABI
         noway_assert(offset % 16 == 0);
-#else
-        noway_assert(offset <= 240 && offset % 16 == 0);
-#endif
+        noway_assert(Configuration.UNIX_AMD64_ABI || offset <= 240);
         noway_assert(genIsValidIntReg(reg) && (uint)reg <= 15);
 
         func.unwindHeader.FrameRegister = (byte)reg;
-#if UNIX_AMD64_ABI
-        if (offset > 240)
+        if (Configuration.UNIX_AMD64_ABI && (offset > 240))
         {
             var largeCode = UnwindReserveCode(ref func, 4);
             BinaryPrimitives.WriteUInt32LittleEndian(UnwindCodes(in func).AsSpan(largeCode + 2, 4), offset / 16);
@@ -300,21 +221,18 @@ public partial class Compiler
             func.unwindHeader.FrameOffset = 15;
             return;
         }
-#endif
         var code = UnwindReserveCode(ref func, 0);
         UnwindWriteCode(ref func, code, cbProlog, UWOP_SET_FPREG, 0);
         func.unwindHeader.FrameOffset = (byte)(offset / 16);
     }
 
-    public void unwindSaveReg(regNumber reg, uint offset)
+    public void unwindSaveRegAmd64(regNumber reg, uint offset)
     {
-#if UNIX_AMD64_ABI
-        if (generateCFIUnwindCodes())
+        if (Configuration.UNIX_AMD64_ABI && generateCFIUnwindCodes())
         {
             unwindSaveRegCFI(reg, offset);
         }
         else
-#endif
         {
             unwindSaveRegWindows(reg, offset);
         }
@@ -344,7 +262,7 @@ public partial class Compiler
                 op = isFloat ? UWOP_SAVE_XMM128_FAR : UWOP_SAVE_NONVOL_FAR;
             }
 
-            var unwindRegNum = isFloat ? (uint)reg - XMMBASE : (uint)reg;
+            var unwindRegNum = isFloat ? (uint)reg - (uint)REG_X64_XMM0 : (uint)reg;
             noway_assert(unwindRegNum <= 15);
             UnwindWriteCode(ref func, code, unwindGetCurrentOffset(in func), op, (byte)unwindRegNum);
         }
@@ -363,7 +281,7 @@ public partial class Compiler
     private static bool UnwindIsCalleeSaved(regNumber reg)
     {
         noway_assert(genIsValidIntReg(reg) || genIsValidFloatReg(reg));
-        return (((regMask)(1L << (int)reg) & (SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED)) != 0);
+        return (((regMask)(1L << (int)reg) & (TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask)) != 0);
     }
 
     private static byte[] UnwindCodes(in FuncInfoDsc func)
@@ -387,27 +305,4 @@ public partial class Compiler
         codes[slot] = (byte)offset;
         codes[slot + 1] = (byte)(op | (info << 4));
     }
-#else
-    public void unwindBegProlog() => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-
-    public void unwindEndProlog() => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-
-    public void unwindBegEpilog() => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-
-    public void unwindEndEpilog() => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-
-#if !TARGET_ARM64
-    public void unwindPush(regNumber reg) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-#endif
-
-    public void unwindPush2(regNumber reg1, regNumber reg2) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-
-#if !TARGET_ARM64
-    public void unwindAllocStack(uint size) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-
-    public void unwindSetFrameReg(regNumber reg, uint offset) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-
-    public void unwindSaveReg(regNumber reg, uint offset) => throw new FatalJitException(CORJIT_SKIPPED, "Unwind recording requires Windows AMD64.");
-#endif
-#endif
 }

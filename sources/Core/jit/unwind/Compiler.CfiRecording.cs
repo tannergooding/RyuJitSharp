@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_CFI_SUPPORT
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -16,13 +15,9 @@ public partial class Compiler
     private const byte CFI_REL_OFFSET = 2;
     private const byte CFI_NEGATE_RA_STATE = 4;
 
-#if TARGET_AMD64
+    // AMD64 has no callee-saved mask registers, so the upper bank is empty on every target.
     private static regMaskTP CfiCalleeSavedMask =>
-        new(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
-#else
-    private static regMaskTP CfiCalleeSavedMask =>
-        new(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
-#endif
+        GetCfiRegisterPolicy().CalleeSavedMask;
 
     private static void createCfiCode(in FuncInfoDsc func, uint codeOffset, byte cfiOpcode, short dwarfReg, int offset = 0)
     {
@@ -38,23 +33,30 @@ public partial class Compiler
 
         ref var func = ref funCurrentFunc();
         var cbProlog = unwindGetCurrentOffset(in func);
-        var relOffsetMask = CfiCalleeSavedMask;
+        var policy = GetCfiRegisterPolicy();
+        var relOffsetMask = policy.CalleeSavedMask;
 
-#if UNIX_AMD64_ABI && ETW_EBP_FRAMED
-        // ETW removes RBP from the callee-save mask, but its frame-register push still needs unwind info.
-        relOffsetMask |= new regMaskTP(SRBM_FPBASE);
-#endif
-#if TARGET_ARM
-        relOffsetMask |= new regMaskTP(regMask.SRBM_R11 | regMask.SRBM_LR | regMask.SRBM_PC);
-        createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL,
-            reg >= REG_FP_FIRST ? 2 * REGSIZE_BYTES : REGSIZE_BYTES);
-#else
-        assert(reg < REG_FP_FIRST);
-        createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
-#endif
+        if (Configuration.UNIX_AMD64_ABI && Configuration.ETW_EBP_FRAMED)
+        {
+            // ETW removes RBP from the callee-save mask, but its frame-register push still needs unwind info.
+            relOffsetMask |= new regMaskTP(regMask.SRBM_X64_RBP);
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            relOffsetMask |= new regMaskTP(regMask.SRBM_ARM32_R11 | regMask.SRBM_ARM32_LR | regMask.SRBM_ARM32_PC);
+            createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL,
+                reg >= policy.FirstFloatRegister ? 2 * policy.RegisterSize : policy.RegisterSize);
+        }
+        else
+        {
+            assert(reg < policy.FirstFloatRegister);
+            createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, policy.RegisterSize);
+        }
+
         if ((bool)(relOffsetMask & genRegMask(reg)))
         {
-            createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
+            createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapCfiRegNumToDwarfReg(reg));
         }
     }
 
@@ -81,13 +83,13 @@ public partial class Compiler
 
     private void unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
     {
-#if TARGET_ARM
-        var regNum = isFloat ? REG_FP_LAST - 1 : REG_INT_LAST;
-        var regBit = isFloat ? genRegMask(regNum) | genRegMask(regNum + 1) : genRegMask(regNum);
-#else
-        var regNum = isFloat ? REG_FP_LAST : REG_INT_LAST;
-        var regBit = genRegMask(regNum);
-#endif
+        // LLVM DWARF names D0-D15, so pair the ARM emitter's S0-S31 registers.
+        var policy = GetCfiRegisterPolicy();
+        var pairFloatRegisters = Configuration.TARGET_ARM && isFloat;
+        var regNum = isFloat
+            ? (pairFloatRegisters ? policy.LastFloatRegister - 1 : policy.LastFloatRegister)
+            : policy.LastIntegerRegister;
+        var regBit = pairFloatRegisters ? genRegMask(regNum) | genRegMask(regNum + 1) : genRegMask(regNum);
 
         while (!regMask.IsEmpty && !regBit.IsEmpty)
         {
@@ -97,14 +99,8 @@ public partial class Compiler
                 regMask &= ~regBit;
             }
 
-#if TARGET_ARM
-            // LLVM DWARF names D0-D15, so pair the emitter's S0-S31 registers.
-            regBit >>= isFloat ? 2 : 1;
-            regNum = unchecked((regNumber)((int)regNum - (isFloat ? 2 : 1)));
-#else
-            regBit >>= 1;
-            regNum = unchecked(regNum - 1);
-#endif
+            regBit >>= pairFloatRegisters ? 2 : 1;
+            regNum = unchecked(regNum - (pairFloatRegisters ? 2u : 1u));
         }
     }
 
@@ -128,7 +124,7 @@ public partial class Compiler
         ref var func = ref funCurrentFunc();
         var cbProlog = unwindGetCurrentOffset(in func);
 
-        createCfiCode(in func, cbProlog, CFI_DEF_CFA_REGISTER, mapRegNumToDwarfReg(reg));
+        createCfiCode(in func, cbProlog, CFI_DEF_CFA_REGISTER, MapCfiRegNumToDwarfReg(reg));
         if (offset != 0)
         {
             // Preserve the old CFA address when switching from RSP to RBP = RSP + offset.
@@ -137,75 +133,241 @@ public partial class Compiler
         }
     }
 
-#if TARGET_LOONGARCH64
-    private static short mapRegNumToDwarfReg(regNumber reg)
+    private static short MapCfiRegNumToDwarfReg(regNumber reg)
     {
-        // LoongArch register numbers are the DWARF encodings for R0-R31 and F0-F31.
-        if ((byte)reg <= (byte)REG_F31)
+        if (Configuration.TARGET_ARM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            return (short)reg;
+            return MapPortableCfiRegNumToDwarfReg(reg);
         }
 
-        NYI("CFI codes");
-        return DWARF_REG_ILLEGAL;
-    }
-#elif TARGET_RISCV64
-    private static short mapRegNumToDwarfReg(regNumber reg)
-    {
-        // RISC-V integer and floating-point register ordinals are their DWARF numbers.
-        if ((reg >= REG_INT_FIRST) && (reg <= REG_FP_LAST))
+        if (Configuration.TARGET_ARM64)
         {
-            return (short)reg;
+            return MapArm64CfiRegNumToDwarfReg(reg);
         }
 
-        NYI("CFI codes");
-        return DWARF_REG_ILLEGAL;
-    }
-#elif TARGET_ARM
-    private static short mapRegNumToDwarfReg(regNumber reg)
-    {
-        return reg switch
+        if (Configuration.UNIX_AMD64_ABI)
         {
-            REG_R0 => 0,
-            REG_R1 => 1,
-            REG_R2 => 2,
-            REG_R3 => 3,
-            REG_R4 => 4,
-            REG_R5 => 5,
-            REG_R6 => 6,
-            REG_R7 => 7,
-            REG_R8 => 8,
-            REG_R9 => 9,
-            REG_R10 => 10,
-            REG_R11 => 11,
-            REG_R12 => 12,
-            REG_R13 => 13,
-            REG_R14 => 14,
-            REG_R15 => 15,
-            REG_F0 => 256,
-            REG_F2 => 257,
-            REG_F4 => 258,
-            REG_F6 => 259,
-            REG_F8 => 260,
-            REG_F10 => 261,
-            REG_F12 => 262,
-            REG_F14 => 263,
-            REG_F16 => 264,
-            REG_F18 => 265,
-            REG_F20 => 266,
-            REG_F22 => 267,
-            REG_F24 => 268,
-            REG_F26 => 269,
-            REG_F28 => 270,
-            REG_F30 => 271,
-            _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM DWARF register."),
-        };
-    }
-#elif !TARGET_ARM64 && (!TARGET_AMD64 || !UNIX_AMD64_ABI)
-    private static short mapRegNumToDwarfReg(regNumber reg)
-    {
+            return MapAmd64CfiRegNumToDwarfReg(reg);
+        }
+
         throw new FatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
     }
-#endif
+
+    private static short MapPortableCfiRegNumToDwarfReg(regNumber reg)
+    {
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            // LoongArch register numbers are the DWARF encodings for R0-R31 and F0-F31.
+            if ((byte)reg <= (byte)REG_LOONGARCH64_F31)
+            {
+                return (short)reg;
+            }
+
+            NYI("CFI codes");
+            return DWARF_REG_ILLEGAL;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            // RISC-V integer and floating-point register ordinals are their DWARF numbers.
+            if ((reg >= REG_RISCV64_R0) && (reg <= REG_RISCV64_FT11))
+            {
+                return (short)reg;
+            }
+
+            NYI("CFI codes");
+            return DWARF_REG_ILLEGAL;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return reg switch
+            {
+                REG_ARM32_R0 => 0,
+                REG_ARM32_R1 => 1,
+                REG_ARM32_R2 => 2,
+                REG_ARM32_R3 => 3,
+                REG_ARM32_R4 => 4,
+                REG_ARM32_R5 => 5,
+                REG_ARM32_R6 => 6,
+                REG_ARM32_R7 => 7,
+                REG_ARM32_R8 => 8,
+                REG_ARM32_R9 => 9,
+                REG_ARM32_R10 => 10,
+                REG_ARM32_R11 => 11,
+                REG_ARM32_R12 => 12,
+                REG_ARM32_SP => 13,
+                REG_ARM32_LR => 14,
+                REG_ARM32_PC => 15,
+                REG_ARM32_F0 => 256,
+                REG_ARM32_F2 => 257,
+                REG_ARM32_F4 => 258,
+                REG_ARM32_F6 => 259,
+                REG_ARM32_F8 => 260,
+                REG_ARM32_F10 => 261,
+                REG_ARM32_F12 => 262,
+                REG_ARM32_F14 => 263,
+                REG_ARM32_F16 => 264,
+                REG_ARM32_F18 => 265,
+                REG_ARM32_F20 => 266,
+                REG_ARM32_F22 => 267,
+                REG_ARM32_F24 => 268,
+                REG_ARM32_F26 => 269,
+                REG_ARM32_F28 => 270,
+                REG_ARM32_F30 => 271,
+                _ => throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unexpected ARM DWARF register."),
+            };
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "The target DWARF register mapping is not ported.");
+    }
+
+    private static short MapAmd64CfiRegNumToDwarfReg(regNumber reg)
+    {
+        var dwarfReg = DWARF_REG_ILLEGAL;
+
+        switch (reg)
+        {
+            case REG_X64_RAX:
+            {
+                dwarfReg = 0;
+                break;
+            }
+
+            case REG_X64_RCX:
+            {
+                dwarfReg = 2;
+                break;
+            }
+
+            case REG_X64_RDX:
+            {
+                dwarfReg = 1;
+                break;
+            }
+
+            case REG_X64_RBX:
+            {
+                dwarfReg = 3;
+                break;
+            }
+
+            case REG_X64_RSP:
+            {
+                dwarfReg = 7;
+                break;
+            }
+
+            case REG_X64_RBP:
+            {
+                dwarfReg = 6;
+                break;
+            }
+
+            case REG_X64_RSI:
+            {
+                dwarfReg = 4;
+                break;
+            }
+
+            case REG_X64_RDI:
+            {
+                dwarfReg = 5;
+                break;
+            }
+
+            case >= REG_X64_R8 and <= REG_X64_R31:
+            {
+                dwarfReg = (short)reg;
+                break;
+            }
+
+            default:
+            {
+                noway_assert(false, "!\"unexpected REG_NUM\"");
+                break;
+            }
+        }
+
+        return dwarfReg;
+    }
+
+    private static short MapArm64CfiRegNumToDwarfReg(regNumber reg)
+    {
+        short dwarfReg = reg switch
+        {
+            REG_ARM64_R0 => 0,
+            REG_ARM64_R1 => 1,
+            REG_ARM64_R2 => 2,
+            REG_ARM64_R3 => 3,
+            REG_ARM64_R4 => 4,
+            REG_ARM64_R5 => 5,
+            REG_ARM64_R6 => 6,
+            REG_ARM64_R7 => 7,
+            REG_ARM64_R8 => 8,
+            REG_ARM64_R9 => 9,
+            REG_ARM64_R10 => 10,
+            REG_ARM64_R11 => 11,
+            REG_ARM64_R12 => 12,
+            REG_ARM64_R13 => 13,
+            REG_ARM64_R14 => 14,
+            REG_ARM64_R15 => 15,
+            REG_ARM64_R16 => 16,
+            REG_ARM64_R17 => 17,
+            REG_ARM64_R18 => 18,
+            REG_ARM64_R19 => 19,
+            REG_ARM64_R20 => 20,
+            REG_ARM64_R21 => 21,
+            REG_ARM64_R22 => 22,
+            REG_ARM64_R23 => 23,
+            REG_ARM64_R24 => 24,
+            REG_ARM64_R25 => 25,
+            REG_ARM64_R26 => 26,
+            REG_ARM64_R27 => 27,
+            REG_ARM64_R28 => 28,
+            REG_ARM64_R29 => 29,
+            REG_ARM64_R30 => 30,
+            REG_ARM64_SP => 31,
+            REG_ARM64_V0 => 64,
+            REG_ARM64_V1 => 65,
+            REG_ARM64_V2 => 66,
+            REG_ARM64_V3 => 67,
+            REG_ARM64_V4 => 68,
+            REG_ARM64_V5 => 69,
+            REG_ARM64_V6 => 70,
+            REG_ARM64_V7 => 71,
+            REG_ARM64_V8 => 72,
+            REG_ARM64_V9 => 73,
+            REG_ARM64_V10 => 74,
+            REG_ARM64_V11 => 75,
+            REG_ARM64_V12 => 76,
+            REG_ARM64_V13 => 77,
+            REG_ARM64_V14 => 78,
+            REG_ARM64_V15 => 79,
+            REG_ARM64_V16 => 80,
+            REG_ARM64_V17 => 81,
+            REG_ARM64_V18 => 82,
+            REG_ARM64_V19 => 83,
+            REG_ARM64_V20 => 84,
+            REG_ARM64_V21 => 85,
+            REG_ARM64_V22 => 86,
+            REG_ARM64_V23 => 87,
+            REG_ARM64_V24 => 88,
+            REG_ARM64_V25 => 89,
+            REG_ARM64_V26 => 90,
+            REG_ARM64_V27 => 91,
+            REG_ARM64_V28 => 92,
+            REG_ARM64_V29 => 93,
+            REG_ARM64_V30 => 94,
+            REG_ARM64_V31 => 95,
+            _ => DWARF_REG_ILLEGAL,
+        };
+
+        if (dwarfReg == DWARF_REG_ILLEGAL)
+        {
+            NYI("CFI codes");
+        }
+
+        return dwarfReg;
+    }
 }
-#endif

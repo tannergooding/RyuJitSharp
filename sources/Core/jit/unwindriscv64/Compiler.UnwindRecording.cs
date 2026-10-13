@@ -3,30 +3,26 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    public void unwindPush(regNumber reg)
+    public void unwindPushRiscV64(regNumber reg)
     {
         throw new FatalJitException(
             CORJIT_SKIPPED, "unwindPush is unreachable; use one of the unwindSaveReg* functions instead.");
     }
 
-    public void unwindAllocStack(uint size)
+    public void unwindAllocStackRiscV64(uint size)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (GetEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindAllocStackCFI(size);
             }
-
             return;
         }
-#endif
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
         assert(size % 16 == 0);
@@ -46,30 +42,27 @@ public partial class Compiler
         }
     }
 
-    public void unwindSetFrameReg(regNumber reg, uint offset)
+    public void unwindSetFrameRegRiscV64(regNumber reg, uint offset)
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (GetEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 unwindSetFrameRegCFI(reg, offset);
             }
-
             return;
         }
-#endif
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
 
         if (offset == 0)
         {
-            assert(reg == REG_FP);
+            assert(reg == REG_RISCV64_FP);
             unwindInfo.AddCode(0xE1);
         }
         else
         {
-            assert(reg == REG_FP);
+            assert(reg == REG_RISCV64_FP);
             assert((offset % 8) == 0);
             var x = offset / 8;
             assert(x <= 0x1FF);
@@ -78,54 +71,39 @@ public partial class Compiler
         }
     }
 
-    public void unwindSaveReg(regNumber reg, uint offset)
+    public void unwindSaveRegRiscV64(regNumber reg, uint offset)
     {
-        unwindSaveReg(reg, unchecked((int)offset));
+        unwindSaveRegRiscV64(reg, unchecked((int)offset));
     }
 
-    public void unwindNop()
+    public void unwindNopRiscV64()
     {
-        var unwindInfo = funCurrentFunc().GetUnwindInfo();
-#if DEBUG
-        if (verbose)
-        {
-            jitprintf("unwindNop: adding NOP\n");
-        }
-
-        unwindInfo.uwiAddingNOP = true;
-#endif
-        unwindInfo.AddCode(0xE3);
-#if DEBUG
-        unwindInfo.uwiAddingNOP = false;
-#endif
+        RecordUnwindPadding(4);
     }
 
-    public void unwindSaveReg(regNumber reg, int offset)
+    public void unwindSaveRegRiscV64(regNumber reg, int offset)
     {
         assert(0 <= offset && offset <= 2047);
         assert((offset % 8) == 0);
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             if (GetEmitter().emitGeneratingPrologOrFuncletProlog())
             {
                 ref var func = ref funCurrentFunc();
                 var cbProlog = unwindGetCurrentOffset(in func);
-                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), offset);
+                createCfiCode(in func, cbProlog, CFI_REL_OFFSET, MapCfiRegNumToDwarfReg(reg), offset);
             }
-
             return;
         }
-#endif
 
         var z = offset / 8;
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
 
-        if (reg >= REG_INT_FIRST && reg <= REG_INT_LAST)
+        if (reg >= REG_INT_FIRST_RISCV64 && reg <= REG_INT_LAST_RISCV64)
         {
-            assert(reg == REG_RA || (REG_FP <= reg && reg <= REG_S11));
-            var x = unchecked((byte)(reg - REG_RA));
+            assert(reg == REG_RISCV64_RA || (REG_RISCV64_FP <= reg && reg <= REG_RISCV64_S11));
+            var x = unchecked((byte)(reg - REG_RISCV64_RA));
             assert(x <= 0x1B);
             assert(z <= 0xFF);
 
@@ -133,8 +111,8 @@ public partial class Compiler
         }
         else
         {
-            assert(REG_FS0 == reg || REG_FS1 == reg || (REG_FS2 <= reg && reg <= REG_FS11));
-            var x = unchecked((byte)(reg - REG_FS0));
+            assert(REG_RISCV64_FS0 == reg || REG_RISCV64_FS1 == reg || (REG_RISCV64_FS2 <= reg && reg <= REG_RISCV64_FS11));
+            var x = unchecked((byte)(reg - REG_RISCV64_FS0));
             assert(x <= 0x13);
             assert(z <= 0xFFF);
 
@@ -143,28 +121,26 @@ public partial class Compiler
         }
     }
 
-    public void unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
+    public void unwindSaveRegPairRiscV64(regNumber reg1, regNumber reg2, int offset)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "unwindSaveRegPair-----unused on RISCV64 yet----");
     }
 
-    public void unwindReturn(regNumber reg)
+    public void unwindReturnRiscV64(regNumber reg)
     {
     }
 
-    public void unwindBegProlog()
+    public void unwindBegPrologRiscV64()
     {
         assert(GetEmitter().emitGeneratingPrologOrFuncletProlog());
         assert(!compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = true;
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             unwindBegPrologCFI();
             return;
         }
-#endif
 
         ref var func = ref funCurrentFunc();
         unwindGetFuncLocations(in func, true, out var startLoc, out var endLoc);
@@ -174,44 +150,40 @@ public partial class Compiler
         func.uwiCold = null;
     }
 
-    public void unwindEndProlog()
+    public void unwindEndPrologRiscV64()
     {
         assert(GetEmitter().emitGeneratingPrologOrFuncletProlog());
         assert(compGeneratingUnwindProlog);
         compGeneratingUnwindProlog = false;
     }
 
-    public void unwindBegEpilog()
+    public void unwindBegEpilogRiscV64()
     {
         assert(GetEmitter().emitGeneratingEpilogOrFuncletEpilog());
         assert(!compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = true;
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             return;
         }
-#endif
 
         funCurrentFunc().GetUnwindInfo().AddEpilog();
     }
 
-    public void unwindEndEpilog()
+    public void unwindEndEpilogRiscV64()
     {
         assert(GetEmitter().emitGeneratingEpilogOrFuncletEpilog());
         assert(compGeneratingUnwindEpilog);
         compGeneratingUnwindEpilog = false;
     }
 
-    public void unwindPadding()
+    public void unwindPaddingRiscV64()
     {
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             return;
         }
-#endif
 
         var unwindInfo = funCurrentFunc().GetUnwindInfo();
         var currentLocation = unwindInfo.GetCurrentEmitterLocation();
@@ -219,7 +191,7 @@ public partial class Compiler
         GetEmitter().emitUnwindNopPadding(currentLocation.GetValueOrDefault(), this);
     }
 
-    public void unwindReserve()
+    public void unwindReserveRiscV64()
     {
         assert(!GetEmitter().emitGeneratingPrologOrFuncletProlog());
         assert(!GetEmitter().emitGeneratingEpilogOrFuncletEpilog());
@@ -227,16 +199,15 @@ public partial class Compiler
         for (var index = 0; index < compFuncInfoCount; index++)
         {
             ref var func = ref compFuncInfos[index];
-            unwindReserveFunc(ref func);
+            unwindReserveFuncRiscV64(ref func);
         }
     }
 
-    private void unwindReserveFunc(ref FuncInfoDsc func)
+    private void unwindReserveFuncRiscV64(ref FuncInfoDsc func)
     {
         var isFunclet = func.funKind != FuncKind.FUNC_ROOT;
         var funcHasColdSection = false;
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             uint unwindCodeBytes = 0;
@@ -250,7 +221,6 @@ public partial class Compiler
             unwindReserveEEInfo(isFunclet, false, unchecked((int)unwindCodeBytes));
             return;
         }
-#endif
 
         if (fgFirstColdBlock is not null)
         {
@@ -276,30 +246,27 @@ public partial class Compiler
         }
     }
 
-    public unsafe void unwindEmit(void* pHotCode, void* pColdCode)
+    public unsafe void unwindEmitRiscV64(void* pHotCode, void* pColdCode)
     {
         for (var index = 0; index < compFuncInfoCount; index++)
         {
-            unwindEmitFunc(in compFuncInfos[index], pHotCode, pColdCode);
+            unwindEmitFuncRiscV64(in compFuncInfos[index], pHotCode, pColdCode);
         }
     }
 
-    private unsafe void unwindEmitFunc(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
+    private unsafe void unwindEmitFuncRiscV64(in FuncInfoDsc func, void* pHotCode, void* pColdCode)
     {
         assert((int)FuncKind.FUNC_ROOT == (int)CorJitFuncKind.CORJIT_FUNC_ROOT);
         assert((int)FuncKind.FUNC_HANDLER == (int)CorJitFuncKind.CORJIT_FUNC_HANDLER);
         assert((int)FuncKind.FUNC_FILTER == (int)CorJitFuncKind.CORJIT_FUNC_FILTER);
 
-#if FEATURE_CFI_SUPPORT
         if (generateCFIUnwindCodes())
         {
             unwindEmitFuncCFI(in func, pHotCode, pColdCode);
             return;
         }
-#endif
 
         func.GetUnwindInfo().Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, true);
         func.uwiCold?.Allocate((CorJitFuncKind)func.funKind, pHotCode, pColdCode, false);
     }
 }
-#endif

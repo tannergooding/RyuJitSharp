@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 using System;
 
 namespace RyuJitSharp;
@@ -14,7 +13,6 @@ public sealed partial class UnwindInfo
 #if DEBUG
     public bool uwiAddingNOP;
 
-#if TARGET_LOONGARCH64
     private static ReadOnlySpan<byte> s_UnwindSize =>
     [
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -47,7 +45,5 @@ public sealed partial class UnwindInfo
         return (value >> unchecked((int)start)) & ((1u << unchecked((int)length)) - 1);
     }
 #endif
-#endif
 
 }
-#endif
