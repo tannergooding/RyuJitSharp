@@ -48,12 +48,13 @@ public partial struct GCInfo
             return VarTypeToReturnKind(returnType.GetReturnRegType(0));
         }
 
-#if DEBUG
-        for (byte index = 0; index < returnRegCount; index++)
+        if (Configuration.DEBUG)
         {
-            assert(!varTypeIsGC(returnType.GetReturnRegType(index)));
+            for (byte index = 0; index < returnRegCount; index++)
+            {
+                assert(!varTypeIsGC(returnType.GetReturnRegType(index)));
+            }
         }
-#endif
 
         return 0;
     }

@@ -383,12 +383,13 @@ public partial struct GCInfo
         totalSize += sizeof(ushort);
 #endif
 
-#if DEBUG
-        gcCountForHeader(out var untrackedCount, out var varPtrTableSize, out var noGCRegionCount);
-        assert(untrackedCount == header.untrackedCnt);
-        assert(varPtrTableSize == header.varPtrTableSize);
-        assert(noGCRegionCount == header.noGCRegionCnt);
-#endif
+        if (Configuration.DEBUG)
+        {
+            gcCountForHeader(out var untrackedCount, out var varPtrTableSize, out var noGCRegionCount);
+            assert(untrackedCount == header.untrackedCnt);
+            assert(varPtrTableSize == header.varPtrTableSize);
+            assert(noGCRegionCount == header.noGCRegionCnt);
+        }
 
         if (header.noGCRegionCnt != 0)
         {

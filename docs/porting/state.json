@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Inspect the remaining non-interop DEBUG assertions in Compiler.comp.cs::compFunctionTraceEnd and Compiler.CompilationFinish.cs::compCompileFinish; runtime-gate only Release-safe checks, then validate the coherent batch in Debug and Release.",
+    "nextAction": "Review the OSR patchpoint-offset assertions in GCInfo.HeaderEncoding.cs::gcInfoBlockHdrSave and promoted-local slot assertions in GCInfo.TableSlots.cs::gcMakeRegPtrTable for Release availability; validate any safe conversions with the x64 GC-info tests.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources.",
@@ -25,7 +25,9 @@
       "AssertionTests passed 182/182 in Debug and 180/180 in Release after runtime-dispatching the three compCurBB presence assertions. Full-analysis Debug and Release builds remain blocked by the recorded IDE0058/IDE0059 diagnostics in unchanged files; no analyzer diagnostics were reported in Compiler.ap.Application.cs.",
       "Compiler.AssertionDsc.cs optLocalAssertionProp checks remain under DEBUG because AssertionDscOp1 and AssertionDscOp2 store their _compiler references only in Debug builds. The GC-info pointer checks in CodeGen.GCInfoPublication.cs are deferred because the JIT32 path uses the EE allocation callback and the existing test harness skips full code generation for non-win-x64 targets.",
       "LSRA guarded assertions depend on DEBUG-only assignedCount or getKillSetForNode state; the liveness assertion depends on DEBUG-only LclVarDsc.IsDefinedViaAddress. These remain preprocessor-guarded.",
-      "Jit32GcInfoTests passed with win-x86 target semantics on the win-x64 host: Debug 61/61 and Release 14/14, with no skips, using tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj. The Core test project could not compile unrelated x86 fixtures, so the target project was used to run the linked fixture."
+      "Jit32GcInfoTests passed with win-x86 target semantics on the win-x64 host: Debug 61/61 and Release 14/14, with no skips, using tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj. It exercised JIT32 pointer-table saves and header encoding. Full-analysis test attempts in both configurations stopped before tests on the existing IDE0058/IDE0059 diagnostics in JitTimer.cs:257 and CodeGen.BlockMemoryCopy.cs:215, 219, 225, 231 and 236.",
+      "The Core test project could not compile unrelated x86 fixtures, so the target project was used to run the linked Jit32GcInfoTests fixture.",
+      "The Compiler.comp.cs inline/prejit result-invariant region uses conditional assert calls directly rather than DEBUG-only wrappers; its tree-ID preservation and diagnostic/skip paths remain DEBUG-only, so no conversion was needed."
     ],
     "activeBatch": null,
     "parityEvidence": {
