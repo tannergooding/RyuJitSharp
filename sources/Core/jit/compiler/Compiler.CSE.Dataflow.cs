@@ -315,12 +315,12 @@ public partial class Compiler
 #endif
                         }
 
-#if DEBUG
-                        if (isDef)
+                        if (Configuration.DEBUG && isDef)
                         {
                             assert(!BitVecOps.IsMember(cseLivenessTraits, available, crossCallBit));
                         }
 
+#if DEBUG
                         if (verbose)
                         {
                             jitprintf($"{FMT_BB(block.bbNum)} [{tree.TreeId:D6}] " +

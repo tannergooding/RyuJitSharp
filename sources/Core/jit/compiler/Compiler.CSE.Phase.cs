@@ -146,9 +146,10 @@ public partial class Compiler
 
         optCSECandidateCount = 0;
         optCSEstart = lvaCount;
-#if DEBUG
-        optEnsureClearCSEInfo();
-#endif
+        if (Configuration.DEBUG)
+        {
+            optEnsureClearCSEInfo();
+        }
         _ = optOptimizeValnumCSEs();
     }
 
@@ -166,7 +167,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     private void optEnsureClearCSEInfo()
     {
         foreach (var block in Blocks)
@@ -180,5 +180,4 @@ public partial class Compiler
             }
         }
     }
-#endif
 }
