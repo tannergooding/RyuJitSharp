@@ -38,7 +38,7 @@ internal static unsafe class CodeGenThrowHelperTests
             var firstGroup = codeGen.Emitter.emitCurIG;
             var failBlock = new BasicBlock(null, null);
 
-            codeGen.genJumpToThrowHlpBlk(EJ_jo, kind, failBlock);
+            codeGen.genJumpToThrowHlpBlk(EJ_XARCH_jo, kind, failBlock);
 
             _ = AssertInlineThrow(firstGroup, INS_jno, 2);
             Assert.That(context.Helper, Is.EqualTo(helper));
@@ -46,10 +46,10 @@ internal static unsafe class CodeGenThrowHelperTests
         });
     }
 
-    [TestCase(EJ_jo, INS_jno)]
-    [TestCase(EJ_jb, INS_jae)]
-    [TestCase(EJ_jae, INS_jb)]
-    [TestCase(EJ_je, INS_jne)]
+    [TestCase(EJ_XARCH_jo, INS_jno)]
+    [TestCase(EJ_XARCH_jb, INS_jae)]
+    [TestCase(EJ_XARCH_jae, INS_jb)]
+    [TestCase(EJ_XARCH_je, INS_jne)]
     public static void ConditionalThrowsRestoreNormalPathGcStateAtTheColdContinuation(
         emitJumpKind jump, instruction reverse)
     {
@@ -106,10 +106,12 @@ internal static unsafe class CodeGenThrowHelperTests
         });
     }
 
-#if !FEATURE_FIXED_OUT_ARGS && !JIT32_GCENCODER && !TARGET_WASM
     [Test]
     public static void StackLevelSetterDoesNotForceFullInterruptibilityForFramePointer()
     {
+        Assume.That(!Configuration.FEATURE_FIXED_OUT_ARGS
+            && !Configuration.JIT32_GCENCODER
+            && !Configuration.TARGET_WASM);
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.opts.compDbgCode = true;
@@ -122,7 +124,6 @@ internal static unsafe class CodeGenThrowHelperTests
             Assert.That(codeGen.Interruptible, Is.False);
         });
     }
-#endif
 
 #if DEBUG
     [Test]
@@ -140,7 +141,7 @@ internal static unsafe class CodeGenThrowHelperTests
             var first = codeGen.Emitter.emitCurIG;
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
-                () => codeGen.genJumpToThrowHlpBlk(EJ_jo, SCK_OVERFLOW));
+                () => codeGen.genJumpToThrowHlpBlk(EJ_XARCH_jo, SCK_OVERFLOW));
             Assert.That(diagnostic, Does.Contain("call"));
             Assert.That(CodeGenLocalHeapTests.AllDescriptors(first, codeGen).Exists(id => id.idIns() == INS_call), Is.True);
         });

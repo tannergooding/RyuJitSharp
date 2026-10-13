@@ -14,11 +14,11 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class LinearScanBlockLocationTests
 {
-    [TestCase(false, true, REG_RCX)]
-    [TestCase(true, true, REG_RCX)]
-    [TestCase(true, false, REG_RCX)]
-    [TestCase(false, false, REG_RCX)]
-    [TestCase(false, true, REG_STK)]
+    [TestCase(false, true, REG_X64_RCX)]
+    [TestCase(true, true, REG_X64_RCX)]
+    [TestCase(true, false, REG_X64_RCX)]
+    [TestCase(false, false, REG_X64_RCX)]
+    [TestCase(false, true, REG_X64_STK)]
     public static void LocationRestorationRehomesOnlyRangesLiveAtTheLastReportedBlock(
         bool callFinally, bool wasLive, regNumber destination)
     {
@@ -81,11 +81,11 @@ internal static class LinearScanBlockLocationTests
                 bbNum = 1,
                 bbLiveIn = liveIn ? VarSetOps.MakeSingleton(compiler, 0) : VarSetOps.MakeEmpty(compiler),
             };
-            allocator.setInVarRegForBB(1, 0, REG_RCX);
+            allocator.setInVarRegForBB(1, 0, REG_X64_RCX);
 
             allocator.recordVarLocationsAtStartOfBB(block);
 
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_RAX));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_RAX));
             Assert.That(VarSetOps.IsEmpty(compiler, CurrentLiveVars(allocator)), Is.True);
         });
     }
@@ -93,17 +93,17 @@ internal static class LinearScanBlockLocationTests
     [Test]
     public static void DisabledEnregistrationDoesNotAccessMapsOrLiveSets()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RAX, (compiler, _, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RAX, (compiler, _, _) =>
         {
             var allocator = new LinearScan(compiler);
             allocator.recordVarLocationsAtStartOfBB(new BasicBlock(null, null));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_RAX));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_RAX));
         });
     }
 
     private static void WithAllocator(Action<Compiler, CodeGen, LinearScan> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.opts.compFlags |= CLFLG_REGVAR;
             compiler.opts.compDbgInfo = true;

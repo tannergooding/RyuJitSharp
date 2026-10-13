@@ -393,10 +393,10 @@ internal static class CodeGenComparisonTests
 
     [TestCase(EJ_NONE, EJ_NONE)]
     [TestCase(EJ_jmp, EJ_jmp)]
-    [TestCase(EJ_jo, EJ_jno)]
-    [TestCase(EJ_jbe, EJ_ja)]
-    [TestCase(EJ_jp, EJ_jnp)]
-    [TestCase(EJ_jle, EJ_jg)]
+    [TestCase(EJ_XARCH_jo, EJ_XARCH_jno)]
+    [TestCase(EJ_XARCH_jbe, EJ_XARCH_ja)]
+    [TestCase(EJ_XARCH_jp, EJ_XARCH_jnp)]
+    [TestCase(EJ_XARCH_jle, EJ_XARCH_jg)]
     public static void GeneratedReverseConditionsRetainNativePairs(emitJumpKind condition, emitJumpKind reverse)
     {
         Assert.That(Emitter.emitReverseJumpKind(condition), Is.EqualTo(reverse));

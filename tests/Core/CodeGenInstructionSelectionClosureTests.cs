@@ -14,17 +14,17 @@ namespace RyuJitSharp.UnitTests;
 internal static class CodeGenInstructionSelectionClosureTests
 {
 #if TARGET_AMD64
-    [TestCase(EJ_js, INS_sets)]
-    [TestCase(EJ_jne, INS_setne)]
-    [TestCase(EJ_jle, INS_setle)]
-    [TestCase(EJ_jae, INS_setae)]
-    [TestCase(EJ_jp, INS_setp)]
-    [TestCase(EJ_jnp, INS_setnp)]
+    [TestCase(EJ_XARCH_js, INS_sets)]
+    [TestCase(EJ_XARCH_jne, INS_setne)]
+    [TestCase(EJ_XARCH_jle, INS_setle)]
+    [TestCase(EJ_XARCH_jae, INS_setae)]
+    [TestCase(EJ_XARCH_jp, INS_setp)]
+    [TestCase(EJ_XARCH_jnp, INS_setnp)]
     public static void Amd64ConditionAdapterRecordsTheMatchingByteSet(emitJumpKind condition, instruction expected)
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            codeGen.inst_SET(condition, REG_RAX);
+            codeGen.inst_SET(condition, REG_X64_RAX);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));
@@ -36,13 +36,13 @@ internal static class CodeGenInstructionSelectionClosureTests
     [TestCase(TYP_BYTE, INS_movsx, EA_4BYTE)]
     [TestCase(TYP_UBYTE, INS_movzx, EA_4BYTE)]
     [TestCase(TYP_INT, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_LONG, INS_mov, EA_8BYTE)]
+    [TestCase(var_types.TYP_LONG, INS_mov, EA_8BYTE)]
     public static void Amd64ExtendedMoveRecordsSignAndActualWidth(
         var_types sourceType, instruction expected, emitAttr size)
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            codeGen.inst_Mov_Extend(sourceType, srcInReg: true, REG_R8, REG_RAX, canSkip: false, EA_UNKNOWN);
+            codeGen.inst_Mov_Extend(sourceType, srcInReg: true, REG_X64_R8, REG_X64_RAX, canSkip: false, EA_UNKNOWN);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));

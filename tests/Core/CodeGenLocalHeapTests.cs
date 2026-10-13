@@ -97,7 +97,7 @@ internal static class CodeGenLocalHeapTests
             {
                 Assert.That(ids.Last().idIns(), Is.EqualTo(INS_test));
                 Assert.That(ids.Last().idOpSize(), Is.EqualTo(EA_PTRSIZE));
-                Assert.That(ids.Last().idReg1(), Is.EqualTo(REG_RAX));
+                Assert.That(ids.Last().idReg1(), Is.EqualTo(REG_X64_RAX));
             }
         });
     }
@@ -108,27 +108,27 @@ internal static class CodeGenLocalHeapTests
         WithHeap(0, false, (_, codeGen) =>
         {
             var first = codeGen.Emitter.emitCurIG;
-            codeGen.genStackPointerDynamicAdjustmentWithProbe(REG_RDX);
+            codeGen.genStackPointerDynamicAdjustmentWithProbe(REG_X64_RDX);
             var ids = AllDescriptors(first, codeGen);
 
             Assert.That(ids.Select(id => id.idIns()), Is.EqualTo(
             [
                 INS_add, INS_jb, INS_xor, INS_test, INS_sub_hide, INS_cmp, INS_jae, INS_mov,
             ]));
-            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_RDX));
+            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_X64_RDX));
             Assert.That(ids[0].idReg2(), Is.EqualTo(REG_SPBASE));
             Assert.That(ids[3].idAddr().iiaAddrMode.amDisp, Is.Zero);
             Assert.That(InstructionConstant(codeGen.Emitter, ids[4]), Is.EqualTo((nint)4096));
             Assert.That(ids[^1].idReg1(), Is.EqualTo(REG_SPBASE));
-            Assert.That(ids[^1].idReg2(), Is.EqualTo(REG_RDX));
+            Assert.That(ids[^1].idReg2(), Is.EqualTo(REG_X64_RDX));
         });
     }
 
     [TestCase(TYP_INT, 0, false)]
-    [TestCase(TYP_I_IMPL, 32, false)]
+    [TestCase(TYP_LONG, 32, false)]
     [TestCase(TYP_INT, 32, true)]
-    [TestCase(TYP_I_IMPL, 4096, true)]
-    [TestCase(TYP_I_IMPL, 4112, true)]
+    [TestCase(TYP_LONG, 4096, true)]
+    [TestCase(TYP_LONG, 4112, true)]
     public static void DynamicAllocationsRetainWidthZeroBypassInitializationAndOutgoingRestoration(
         var_types sizeType, int outgoing, bool initialize)
     {
@@ -139,7 +139,7 @@ internal static class CodeGenLocalHeapTests
             {
                 codeGen.InternalRegisters.Add(tree, RBM_RDX);
             }
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RBX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RBX, TYP_REF);
             var first = codeGen.Emitter.emitCurIG;
             codeGen.genLclHeap(tree);
             var ids = AllDescriptors(first, codeGen);
@@ -187,7 +187,7 @@ internal static class CodeGenLocalHeapTests
             Assert.That(registers.Count(tree, RBM_RAX), Is.EqualTo(1u));
             Assert.That(registers.Count(tree, RBM_RCX), Is.Zero);
 #if HAS_MORE_THAN_64_REGISTERS
-            registers.Add(tree, regMaskTP.CreateFromRegNum(REG_K1, REG_K1.SingleTypeMask));
+            registers.Add(tree, regMaskTP.CreateFromRegNum(REG_X64_K1, REG_X64_K1.SingleTypeMask));
             Assert.That(registers.Count(tree), Is.EqualTo(3u));
 #endif
         });
@@ -231,13 +231,13 @@ internal static class CodeGenLocalHeapTests
     }
 #endif
 
-    private static GenTreeUnOp Heap(Compiler compiler, nint amount, bool contained, var_types sizeType = TYP_I_IMPL)
+    private static GenTreeUnOp Heap(Compiler compiler, nint amount, bool contained, var_types sizeType = TYP_LONG)
     {
         var size = compiler.gtNewIconNode(sizeType, amount);
         size.IsContained = contained;
-        size.RegNum = contained ? REG_NA : REG_RCX;
+        size.RegNum = contained ? REG_X64_NA : REG_X64_RCX;
 
-        return new GenTreeUnOp(GT_LCLHEAP, TYP_I_IMPL, size) { RegNum = REG_RAX };
+        return new GenTreeUnOp(GT_LCLHEAP, TYP_LONG, size) { RegNum = REG_X64_RAX };
     }
 
     private static void WithHeap(int outgoing, bool initialize, Action<Compiler, CodeGen> action)

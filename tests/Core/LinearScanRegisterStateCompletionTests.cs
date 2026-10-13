@@ -12,23 +12,23 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class LinearScanRegisterStateCompletionTests
 {
-    [TestCase(TYP_FLOAT, REG_XMM0, REG_XMM31)]
-    [TestCase(TYP_FLOAT, REG_XMM31, REG_XMM0)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM31)]
-    [TestCase(TYP_DOUBLE, REG_XMM31, REG_XMM0)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM0, REG_X64_XMM31)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM31, REG_X64_XMM0)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, REG_X64_XMM31)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM31, REG_X64_XMM0)]
     public static void BoundaryRotationSelectsAndWrapsTheSignBitRegister(
         var_types type, regNumber target, regNumber expected)
     {
         LinearScanMinimalCandidatesTests.WithCompiler(compiler =>
         {
             var allocator = new LinearScan(compiler);
-            var candidates = SRBM_XMM0 | SRBM_XMM31;
+            var candidates = SRBM_X64_XMM0 | SRBM_X64_XMM31;
             AvailableFloatRegisters(allocator) = candidates;
             AvailableDoubleRegisters(allocator) = candidates;
             StressMask(allocator) = 0x200;
             var interval = new Interval(type, candidates);
 
-            Assert.That((long)SRBM_XMM31, Is.EqualTo(long.MinValue));
+            Assert.That((long)SRBM_X64_XMM31, Is.EqualTo(long.MinValue));
             Assert.That(Rotate(allocator, interval, target, new regMaskTP(candidates)), Is.EqualTo(expected));
         });
     }

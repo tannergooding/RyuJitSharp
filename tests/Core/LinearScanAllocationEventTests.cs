@@ -21,19 +21,19 @@ internal static unsafe class LinearScanAllocationEventTests
             var allocator = CreateAllocator(compiler);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var priorInterval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(priorInterval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(priorInterval, 9, RefType.RefTypeUse, tree, SRBM_RAX);
-            allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval = priorInterval;
+            _ = allocator.newRefPosition(priorInterval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(priorInterval, 9, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = priorInterval;
 
             var interval = NewInterval(allocator, TYP_INT);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RBX);
-            _ = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_RAX);
-            UpdateNextFixedReference(allocator, regNumber.REG_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RBX);
+            _ = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            UpdateNextFixedReference(allocator, regNumber.REG_X64_RAX);
             compiler.verbose = true;
 
             var output = Capture(() => {
                 var selected = allocator.selectMinimal(interval, definition);
-                Assert.That(selected, Is.EqualTo(SRBM_RAX));
+                Assert.That(selected, Is.EqualTo(SRBM_X64_RAX));
             });
 
             var conflict = output.IndexOf("DUconflict    ", StringComparison.Ordinal);
@@ -50,7 +50,7 @@ internal static unsafe class LinearScanAllocationEventTests
             var allocator = CreateAllocator(compiler);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var interval = NewInterval(allocator, TYP_INT);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
             compiler.verbose = false;
 
             var output = Capture(() => _ = allocator.selectMinimal(interval, definition));
@@ -63,7 +63,7 @@ internal static unsafe class LinearScanAllocationEventTests
     {
         var allocator = new LinearScan(compiler);
         BlockInfo(allocator) = [new LsraBlockInfo()];
-        for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+        for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
         {
             var register = allocator.physRegs[index];
             register.init((regNumber)index);

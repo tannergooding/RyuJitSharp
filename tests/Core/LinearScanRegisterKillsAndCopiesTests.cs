@@ -20,8 +20,8 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
     public static void KillBuilderLinksInLocationOrderAndMarksFullMasksModified()
     {
         WithAllocator((compiler, allocator) => {
-            var lowerMask = new regMaskTP(SRBM_RAX | SRBM_XMM2);
-            var upperMask = regMaskTP.CreateFromRegNum(regNumber.REG_K1, SRBM_K1);
+            var lowerMask = new regMaskTP(SRBM_X64_RAX | SRBM_XMM2);
+            var upperMask = regMaskTP.CreateFromRegNum(regNumber.REG_X64_K1, SRBM_X64_K1);
 
             var firstKill = AddKillForRegs(allocator, lowerMask, 10);
             var secondKill = AddKillForRegs(allocator, upperMask, 20);
@@ -46,18 +46,18 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-            var killedUse = allocator.newRefPosition(interval, 15, RefType.RefTypeUse, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(interval, 30, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var killedUse = allocator.newRefPosition(interval, 15, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(interval, 30, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             interval.recentRefPosition = killedUse;
             killedUse.lastUse = false;
-            var register = allocator.physRegs[(int)regNumber.REG_RAX];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, register, interval);
 
-            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKill, null, SRBM_RAX);
-            kill.killedRegisters = new regMaskTP(SRBM_RAX);
-            SetCurrentFixedReferenceBeforeKill(allocator, register, regNumber.REG_RAX, kill);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
+            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKill, null, SRBM_X64_RAX);
+            kill.killedRegisters = new regMaskTP(SRBM_X64_RAX);
+            SetCurrentFixedReferenceBeforeKill(allocator, register, regNumber.REG_X64_RAX, kill);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
             allocator.setCurrentBlockStartLocation(0);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
 #if DEBUG
@@ -68,12 +68,12 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
             Assert.That(interval.isSpilled, Is.True);
             Assert.That(interval.isActive, Is.False);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(killedUse.spillAfter, Is.True);
             Assert.That(register.assignedInterval, Is.Null);
-            Assert.That(NextFixedRef(allocator)[(int)regNumber.REG_RAX], Is.EqualTo(30u));
-            Assert.That(BusyUntilKill(allocator).IsSet(regNumber.REG_RAX), Is.False);
-            Assert.That(GetFreeCandidates(allocator, SRBM_RAX, TYP_INT), Is.EqualTo(SRBM_RAX));
+            Assert.That(NextFixedRef(allocator)[(int)regNumber.REG_X64_RAX], Is.EqualTo(30u));
+            Assert.That(BusyUntilKill(allocator).IsSet(regNumber.REG_X64_RAX), Is.False);
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_RAX, TYP_INT), Is.EqualTo(SRBM_X64_RAX));
 #if DEBUG
             Assert.That(output, Does.Contain("None     "));
             Assert.That(output, Does.Contain("rax"));
@@ -85,20 +85,20 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
     public static void KillsProcessHighRegisterMaskBankAndFixedReferences()
     {
         WithAllocator((compiler, allocator) => {
-            var register = allocator.physRegs[(int)regNumber.REG_K1];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_K1];
             var firstFixed = allocator.newRefPosition(
-                regNumber.REG_K1, 10, RefType.RefTypeFixedReg, null, SRBM_K1);
-            _ = allocator.newRefPosition(regNumber.REG_K1, 30, RefType.RefTypeFixedReg, null, SRBM_K1);
-            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKill, null, SRBM_K1);
-            kill.killedRegisters = regMaskTP.CreateFromRegNum(regNumber.REG_K1, SRBM_K1);
+                regNumber.REG_X64_K1, 10, RefType.RefTypeFixedReg, null, SRBM_X64_K1);
+            _ = allocator.newRefPosition(regNumber.REG_X64_K1, 30, RefType.RefTypeFixedReg, null, SRBM_X64_K1);
+            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKill, null, SRBM_X64_K1);
+            kill.killedRegisters = regMaskTP.CreateFromRegNum(regNumber.REG_X64_K1, SRBM_X64_K1);
             register.recentRefPosition = firstFixed;
             UpdateNextFixedRef(allocator, register, firstFixed.nextRefPosition, kill);
-            BusyUntilKill(allocator) = regMaskTP.CreateFromRegNum(regNumber.REG_K1, SRBM_K1);
+            BusyUntilKill(allocator) = regMaskTP.CreateFromRegNum(regNumber.REG_X64_K1, SRBM_X64_K1);
 
             ProcessKills(allocator, kill);
 
-            Assert.That(NextFixedRef(allocator)[(int)regNumber.REG_K1], Is.EqualTo(30u));
-            Assert.That(BusyUntilKill(allocator).IsSet(regNumber.REG_K1), Is.False);
+            Assert.That(NextFixedRef(allocator)[(int)regNumber.REG_X64_K1], Is.EqualTo(30u));
+            Assert.That(BusyUntilKill(allocator).IsSet(regNumber.REG_X64_K1), Is.False);
         });
     }
 
@@ -109,23 +109,23 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var gcInterval = NewInterval(allocator, TYP_REF);
             var gcTree = compiler.gtNewIconNode(TYP_INT, 2);
-            _ = allocator.newRefPosition(gcInterval, 5, RefType.RefTypeDef, gcTree, SRBM_RAX);
-            var gcUse = allocator.newRefPosition(gcInterval, 10, RefType.RefTypeUse, gcTree, SRBM_RAX);
-            _ = allocator.newRefPosition(gcInterval, 30, RefType.RefTypeUse, gcTree, SRBM_RAX);
+            _ = allocator.newRefPosition(gcInterval, 5, RefType.RefTypeDef, gcTree, SRBM_X64_RAX);
+            var gcUse = allocator.newRefPosition(gcInterval, 10, RefType.RefTypeUse, gcTree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(gcInterval, 30, RefType.RefTypeUse, gcTree, SRBM_X64_RAX);
             gcInterval.recentRefPosition = gcUse;
             gcUse.lastUse = false;
-            var gcRegister = allocator.physRegs[(int)regNumber.REG_RAX];
+            var gcRegister = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, gcRegister, gcInterval);
 
             var integerInterval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(integerInterval, 5, RefType.RefTypeDef, tree, SRBM_RBX);
-            var integerUse = allocator.newRefPosition(integerInterval, 10, RefType.RefTypeUse, tree, SRBM_RBX);
-            _ = allocator.newRefPosition(integerInterval, 30, RefType.RefTypeUse, tree, SRBM_RBX);
+            _ = allocator.newRefPosition(integerInterval, 5, RefType.RefTypeDef, tree, SRBM_X64_RBX);
+            var integerUse = allocator.newRefPosition(integerInterval, 10, RefType.RefTypeUse, tree, SRBM_X64_RBX);
+            _ = allocator.newRefPosition(integerInterval, 30, RefType.RefTypeUse, tree, SRBM_X64_RBX);
             integerInterval.recentRefPosition = integerUse;
-            var integerRegister = allocator.physRegs[(int)regNumber.REG_RBX];
+            var integerRegister = allocator.physRegs[(int)regNumber.REG_X64_RBX];
             AssignPhysReg(allocator, integerRegister, integerInterval);
 
-            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_RAX | SRBM_RBX);
+            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_X64_RAX | SRBM_X64_RBX);
             allocator.setCurrentBlockStartLocation(0);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
 #if DEBUG
@@ -136,12 +136,12 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
             Assert.That(gcInterval.isSpilled, Is.True);
             Assert.That(gcInterval.isActive, Is.False);
-            Assert.That(gcInterval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(gcInterval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(gcUse.spillAfter, Is.True);
             Assert.That(gcRegister.assignedInterval, Is.Null);
             Assert.That(integerInterval.isSpilled, Is.False);
             Assert.That(integerInterval.isActive, Is.True);
-            Assert.That(integerInterval.physReg, Is.EqualTo(regNumber.REG_RBX));
+            Assert.That(integerInterval.physReg, Is.EqualTo(regNumber.REG_X64_RBX));
             Assert.That(integerRegister.assignedInterval, Is.SameAs(integerInterval));
 #if DEBUG
             Assert.That(output, Does.Contain("Done          "));
@@ -155,11 +155,11 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
         WithAllocator((compiler, allocator) => {
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var interval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, tree, SRBM_RBX);
-            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_RBX);
-            var register = allocator.physRegs[(int)regNumber.REG_RBX];
+            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, tree, SRBM_X64_RBX);
+            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_X64_RBX);
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RBX];
             AssignPhysReg(allocator, register, interval);
-            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_RBX);
+            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_X64_RBX);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
 #if DEBUG
             compiler.verbose = true;
@@ -185,13 +185,13 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             var interval = NewInterval(allocator, TYP_INT);
             interval.isLocalVar = true;
             interval.varNum = 0;
-            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, gcTree, SRBM_RAX);
-            var recentUse = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, gcTree, SRBM_RAX);
-            _ = allocator.newRefPosition(interval, 30, RefType.RefTypeUse, gcTree, SRBM_RAX);
+            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, gcTree, SRBM_X64_RAX);
+            var recentUse = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, gcTree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(interval, 30, RefType.RefTypeUse, gcTree, SRBM_X64_RAX);
             interval.recentRefPosition = recentUse;
-            var register = allocator.physRegs[(int)regNumber.REG_RAX];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, register, interval);
-            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_RAX);
+            var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKillGCRefs, null, SRBM_X64_RAX);
             allocator.setCurrentBlockStartLocation(0);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
 
@@ -199,7 +199,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
             Assert.That(interval.isSpilled, Is.True);
             Assert.That(interval.isActive, Is.False);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(recentUse.spillAfter, Is.True);
             Assert.That(register.assignedInterval, Is.Null);
         }, trackedLocal: true);
@@ -211,13 +211,13 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-            var copyUse = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_RBX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var copyUse = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_X64_RBX);
             interval.recentRefPosition = definition;
             var relatedInterval = NewInterval(allocator, TYP_INT);
             interval.relatedInterval = relatedInterval;
-            var primaryRegister = allocator.physRegs[(int)regNumber.REG_RAX];
-            var copyRegister = allocator.physRegs[(int)regNumber.REG_RBX];
+            var primaryRegister = allocator.physRegs[(int)regNumber.REG_X64_RAX];
+            var copyRegister = allocator.physRegs[(int)regNumber.REG_X64_RBX];
             AssignPhysReg(allocator, primaryRegister, interval);
 #if DEBUG
             compiler.verbose = true;
@@ -225,13 +225,13 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
             var output = Capture(() => {
                 var result = AssignCopyRegMinimal(allocator, copyUse);
-                Assert.That(result, Is.EqualTo(regNumber.REG_RBX));
+                Assert.That(result, Is.EqualTo(regNumber.REG_X64_RBX));
             });
 
             Assert.That(copyUse.copyReg, Is.True);
-            Assert.That(copyUse.registerAssignment, Is.EqualTo(SRBM_RBX));
+            Assert.That(copyUse.registerAssignment, Is.EqualTo(SRBM_X64_RBX));
             Assert.That(interval.isActive, Is.True);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_RAX));
             Assert.That(interval.assignedReg, Is.SameAs(primaryRegister));
             Assert.That(interval.relatedInterval, Is.SameAs(relatedInterval));
             Assert.That(primaryRegister.assignedInterval, Is.SameAs(interval));
@@ -250,13 +250,13 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             var copyUse = allocator.newRefPosition(
-                interval, 20, RefType.RefTypeUse, tree, SRBM_RBX | SRBM_RCX);
+                interval, 20, RefType.RefTypeUse, tree, SRBM_X64_RBX | SRBM_X64_RCX);
             interval.recentRefPosition = definition;
-            var primaryRegister = allocator.physRegs[(int)regNumber.REG_RAX];
-            allocator.physRegs[(int)regNumber.REG_RBX].regOrder = 0;
-            allocator.physRegs[(int)regNumber.REG_RCX].regOrder = 1;
+            var primaryRegister = allocator.physRegs[(int)regNumber.REG_X64_RAX];
+            allocator.physRegs[(int)regNumber.REG_X64_RBX].regOrder = 0;
+            allocator.physRegs[(int)regNumber.REG_X64_RCX].regOrder = 1;
             AssignPhysReg(allocator, primaryRegister, interval);
 #if DEBUG
             compiler.verbose = true;
@@ -264,7 +264,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
 
             var output = Capture(() => {
                 var result = AssignCopyRegMinimal(allocator, copyUse);
-                Assert.That(result, Is.EqualTo(regNumber.REG_RBX));
+                Assert.That(result, Is.EqualTo(regNumber.REG_X64_RBX));
             });
 
 #if DEBUG
@@ -285,10 +285,10 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             localInterval.isLocalVar = true;
             localInterval.varNum = 0;
             var localTree = compiler.gtNewLclvNode(TYP_INT, 0);
-            _ = allocator.newRefPosition(localInterval, 5, RefType.RefTypeDef, localTree, SRBM_XMM6);
-            var localUse = allocator.newRefPosition(localInterval, 9, RefType.RefTypeUse, localTree, SRBM_XMM6);
+            _ = allocator.newRefPosition(localInterval, 5, RefType.RefTypeDef, localTree, SRBM_X64_XMM6);
+            var localUse = allocator.newRefPosition(localInterval, 9, RefType.RefTypeUse, localTree, SRBM_X64_XMM6);
             localInterval.recentRefPosition = localUse;
-            var localRegister = allocator.physRegs[(int)regNumber.REG_XMM6];
+            var localRegister = allocator.physRegs[(int)regNumber.REG_X64_XMM6];
             AssignPhysReg(allocator, localRegister, localInterval);
 
             var upperInterval = NewInterval(allocator, TYP_FLOAT);
@@ -300,12 +300,12 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             _ = allocator.newRefPosition(upperInterval, 30, RefType.RefTypeUse, vectorTree, SRBM_XMM8);
             upperInterval.recentRefPosition = upperUse;
             upperUse.lastUse = false;
-            var upperRegister = allocator.physRegs[(int)regNumber.REG_XMM8];
+            var upperRegister = allocator.physRegs[(int)regNumber.REG_X64_XMM8];
             AssignPhysReg(allocator, upperRegister, upperInterval);
 
             var kill = allocator.newRefPosition(null, 20, RefType.RefTypeKill, null, SRBM_XMM8);
             kill.killedRegisters = new regMaskTP(SRBM_XMM8);
-            SetCurrentFixedReferenceBeforeKill(allocator, upperRegister, regNumber.REG_XMM8, kill);
+            SetCurrentFixedReferenceBeforeKill(allocator, upperRegister, regNumber.REG_X64_XMM8, kill);
             allocator.setCurrentBlockStartLocation(0);
             CurrentAllocationLocation(allocator) = kill.nodeLocation;
             var expectedSpillWeight = GetSpillWeight(allocator, localRegister);
@@ -319,7 +319,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
             Assert.That(localInterval.isSpilled, Is.True);
             Assert.That(localInterval.isActive, Is.True);
             Assert.That(localRegister.assignedInterval, Is.SameAs(localInterval));
-            Assert.That(SpillCost(allocator)[(int)regNumber.REG_XMM6], Is.EqualTo(expectedSpillWeight));
+            Assert.That(SpillCost(allocator)[(int)regNumber.REG_X64_XMM6], Is.EqualTo(expectedSpillWeight));
             Assert.That(
                 BitSetOps<Compiler, TrackedVarBitSetTraits>.IsMember(compiler, SplitOrSpilledVars(allocator)!, 0),
                 Is.True);
@@ -462,7 +462,7 @@ internal static unsafe class LinearScanRegisterKillsAndCopiesTests
         try
         {
             var allocator = new LinearScan(compiler);
-            for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+            for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
             {
                 var register = allocator.physRegs[index];
                 register.init((regNumber)index);

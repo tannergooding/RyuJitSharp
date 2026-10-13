@@ -1,6 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if HAS_FIXED_REGISTER_SET
+using System.Collections.Generic;
+
 #if DEBUG
 using System;
 using System.Runtime.CompilerServices;
@@ -18,15 +20,20 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class RegisterMaskConstructionTests
 {
-    [TestCase(REG_STK)]
-    [TestCase(REG_INT_FIRST)]
-    [TestCase(REG_INT_LAST)]
-    [TestCase(REG_FP_FIRST)]
-    [TestCase(REG_FP_LAST)]
+    private static IEnumerable<TestCaseData> RegisterCases()
+    {
+        yield return new TestCaseData(REG_STK);
+        yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterLast);
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast);
 #if FEATURE_MASKED_HW_INTRINSICS
-    [TestCase(REG_MASK_FIRST)]
-    [TestCase(REG_MASK_LAST)]
+        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterLast);
 #endif
+    }
+
+    [TestCaseSource(nameof(RegisterCases))]
     public static void ConstructionUsesTheLookupBitAndTheFullRegisterBank(regNumber reg)
     {
         var expectedBit = reg == REG_STK ? SRBM_NONE : unchecked((regMask)(1UL << ((int)reg % 64)));
@@ -48,18 +55,21 @@ internal static unsafe class RegisterMaskConstructionTests
     [Test]
     public static void EachConstructionReturnsAnIndependentValue()
     {
-        var first = genRegMask(REG_INT_FIRST);
+        var firstRegister = TargetRuntimeMetadata.IntegerRegisterFirst;
+        var lastRegister = TargetRuntimeMetadata.IntegerRegisterLast;
+        var firstFloatRegister = TargetRuntimeMetadata.FloatingRegisterFirst;
+        var first = genRegMask(firstRegister);
         var original = first;
-        var last = genRegMask(REG_INT_LAST, TYP_INT);
-        var floating = genRegMask(REG_FP_FIRST, TYP_FLOAT);
+        var last = genRegMask(lastRegister, TYP_INT);
+        var floating = genRegMask(firstFloatRegister, TYP_FLOAT);
         var empty = genRegMask(REG_STK);
 
-        regMaskTP.AddRegNumInMask(ref first, REG_INT_LAST);
-        Assert.That(original, Is.EqualTo(new regMaskTP(REG_INT_FIRST.SingleTypeMask)));
-        Assert.That(last, Is.EqualTo(new regMaskTP(REG_INT_LAST.SingleTypeMask)));
-        Assert.That(floating, Is.EqualTo(new regMaskTP(REG_FP_FIRST.SingleTypeMask)));
+        regMaskTP.AddRegNumInMask(ref first, lastRegister);
+        Assert.That(original, Is.EqualTo(new regMaskTP(firstRegister.SingleTypeMask)));
+        Assert.That(last, Is.EqualTo(new regMaskTP(lastRegister.SingleTypeMask)));
+        Assert.That(floating, Is.EqualTo(new regMaskTP(firstFloatRegister.SingleTypeMask)));
         Assert.That(empty, Is.EqualTo(RBM_NONE));
-        Assert.That(genRegMask(REG_INT_FIRST), Is.EqualTo(original));
+        Assert.That(genRegMask(firstRegister), Is.EqualTo(original));
         Assert.That(first, Is.EqualTo(original | last));
     }
 
@@ -67,14 +77,16 @@ internal static unsafe class RegisterMaskConstructionTests
     [Test]
     public static void ScalarMasksAreBankLocalWhileFullMasksKeepOverlappingBanksSeparate()
     {
-        var integer = genSingleTypeRegMask(REG_INT_FIRST);
-        var masked = genSingleTypeRegMask(REG_MASK_FIRST, TYP_MASK);
+        var integerRegister = TargetRuntimeMetadata.IntegerRegisterFirst;
+        var maskRegister = TargetRuntimeMetadata.MaskRegisterFirst;
+        var integer = genSingleTypeRegMask(integerRegister);
+        var masked = genSingleTypeRegMask(maskRegister, TYP_MASK);
 
         Assert.That(integer, Is.EqualTo((regMask)1));
         Assert.That(masked, Is.EqualTo(integer));
-        Assert.That(genRegMask(REG_INT_FIRST), Is.EqualTo(new regMaskTP(integer, SRBM_NONE)));
-        Assert.That(genRegMask(REG_MASK_FIRST, TYP_MASK), Is.EqualTo(new regMaskTP(SRBM_NONE, masked)));
-        Assert.That(genRegMask(REG_INT_FIRST), Is.Not.EqualTo(genRegMask(REG_MASK_FIRST)));
+        Assert.That(genRegMask(integerRegister), Is.EqualTo(new regMaskTP(integer, SRBM_NONE)));
+        Assert.That(genRegMask(maskRegister, TYP_MASK), Is.EqualTo(new regMaskTP(SRBM_NONE, masked)));
+        Assert.That(genRegMask(integerRegister), Is.Not.EqualTo(genRegMask(maskRegister)));
     }
 #endif
 
@@ -85,9 +97,10 @@ internal static unsafe class RegisterMaskConstructionTests
     [TestCase(TYP_STRUCT)]
     public static void NonArmTypedConstructionIgnoresTheType(var_types type)
     {
-        regNumber[] registers = [REG_STK, REG_INT_LAST, REG_FP_LAST
+        regNumber[] registers = [REG_STK, TargetRuntimeMetadata.IntegerRegisterLast,
+            TargetRuntimeMetadata.FloatingRegisterLast
 #if FEATURE_MASKED_HW_INTRINSICS
-            , REG_MASK_LAST
+            , TargetRuntimeMetadata.MaskRegisterLast
 #endif
         ];
         foreach (var reg in registers)

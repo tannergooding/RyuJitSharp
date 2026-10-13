@@ -26,11 +26,6 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
         "NYI: Unimplemented node type GT_PHI\n",
         "!\"Unknown node in codegen\"",
     ];
-    private static readonly string[] s_swiftNyiAndUnknownAssertions =
-    [
-        "NYI: Unimplemented node type GT_SWIFT_ERROR\n",
-        "!\"Unknown node in codegen\"",
-    ];
 #endif
 
     [TestCase(false, false)]
@@ -163,23 +158,23 @@ internal static unsafe class CodeGenNodeDispatchFidelityTests
         }, altJit: true, minopts: minopts);
     }
 
-#if !SWIFT_SUPPORT
     [Test]
-    public static void DisabledSwiftOperatorsUseTheUnknownNodeDiagnostic()
+    public static void UnsupportedSwiftErrorValuesFailExplicitly()
     {
+        if (Configuration.SWIFT_SUPPORT)
+        {
+            Assert.Ignore("Swift error values are supported on this target.");
+        }
+
         WithCodeGen(codeGen =>
         {
-            NyiPolicy(ref JitConfig) = 3;
-
-            codeGen.genCodeForTreeNode(new GenTree(GT_SWIFT_ERROR, TYP_I_IMPL));
-
-#if DEBUG
-            Assert.That(s_assertions, Is.EqualTo(s_swiftNyiAndUnknownAssertions));
-#endif
+            var failure = Assert.Throws<FatalJitException>(() =>
+                codeGen.genCodeForTreeNode(new GenTree(GT_SWIFT_ERROR, TYP_I_IMPL)));
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Is.EqualTo("Swift error values are unavailable for this target."));
             Assert.That(codeGen.Emitter.emitCurIG, Is.Null);
         });
     }
-#endif
 
     private static void WithCodeGen(Action<CodeGen> action, bool altJit = false, bool minopts = true)
     {

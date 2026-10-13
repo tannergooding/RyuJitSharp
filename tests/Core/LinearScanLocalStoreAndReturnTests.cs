@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.GenTreeFlags;
@@ -342,10 +343,18 @@ internal static unsafe class LinearScanLocalStoreAndReturnTests
         });
     }
 
-    [TestCase(TYP_INT, SRBM_INTRET)]
-    [TestCase(TYP_LONG, SRBM_LNGRET)]
-    [TestCase(TYP_FLOAT, SRBM_FLOATRET)]
-    [TestCase(TYP_DOUBLE, SRBM_DOUBLERET)]
+    private static IEnumerable<TestCaseData> PrimitiveReturnCases()
+    {
+        yield return new TestCaseData(TYP_INT, TargetRuntimeMetadata.IntegerReturnMask);
+        if (!Configuration.TARGET_WASM)
+        {
+            yield return new TestCaseData(TYP_LONG, TargetRuntimeMetadata.LongReturnMask);
+            yield return new TestCaseData(TYP_FLOAT, TargetRuntimeMetadata.FloatingReturnMask);
+            yield return new TestCaseData(TYP_DOUBLE, TargetRuntimeMetadata.DoubleReturnMask);
+        }
+    }
+
+    [TestCaseSource(nameof(PrimitiveReturnCases))]
     public static void PrimitiveReturnsUseTheirAbiRegisters(var_types type, regMask register)
     {
         WithAllocator((compiler, allocator) => {

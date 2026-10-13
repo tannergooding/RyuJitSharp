@@ -60,7 +60,7 @@ internal static class CodeGenAtomicTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) => {
             codeGen.Emitter.emitIns_I_AR(ins, EA_8BYTE, 130, REG_RCX, 8192);
             var id = Descriptors(codeGen).Single();
-            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARW_SHF));
+            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_ARW_SHF));
             Assert.That(id.idIsLargeDsp(), Is.True);
             Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)2));
         });

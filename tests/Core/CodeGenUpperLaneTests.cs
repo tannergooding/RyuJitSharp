@@ -31,7 +31,7 @@ internal static unsafe class CodeGenUpperLaneTests
             var node = new GenTreeIntrinsic(restore ? TYP_SIMD32 : TYP_SIMD16, local,
                 restore ? NI_SIMD_UpperRestore : NI_SIMD_UpperSave, null)
             {
-                RegNum = REG_XMM7,
+                RegNum = REG_X64_XMM7,
             };
 
             Emit(codeGen, node, restore);
@@ -40,26 +40,26 @@ internal static unsafe class CodeGenUpperLaneTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             var id = descriptors[0];
             Assert.That(id.idIns(), Is.EqualTo(restore ? INS_vinsertf32x4 : INS_vextractf32x4));
-            Assert.That(id.idInsFmt(), Is.EqualTo(restore ? IF_RWR_RRD_RRD_CNS : IF_RWR_RRD_CNS));
+            Assert.That(id.idInsFmt(), Is.EqualTo(restore ? IF_XARCH_RWR_RRD_RRD_CNS : IF_XARCH_RWR_RRD_CNS));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_32BYTE));
-            Assert.That(id.idReg1(), Is.EqualTo(restore ? REG_XMM6 : REG_XMM7));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM6));
+            Assert.That(id.idReg1(), Is.EqualTo(restore ? REG_X64_XMM6 : REG_X64_XMM7));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM6));
             if (restore)
             {
-                Assert.That(id.idReg3(), Is.EqualTo(REG_XMM7));
+                Assert.That(id.idReg3(), Is.EqualTo(REG_X64_XMM7));
             }
             Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)1));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_XMM6));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_XMM6));
             Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 0), Is.EqualTo(!lastUse));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(lastUse ? default : Mask(REG_XMM6)));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(lastUse ? default : Mask(REG_X64_XMM6)));
             AssertLifetimeMarkers(local, node, produced: !restore);
         });
     }
 
-    [TestCase(TYP_SIMD32, false, INS_vextractf32x4, IF_SWR_RRD_CNS, 16u)]
-    [TestCase(TYP_SIMD32, true, INS_vinsertf32x4, IF_RWR_RRD_SRD_CNS, 16u)]
-    [TestCase(TYP_SIMD64, false, INS_movups, IF_SWR_RRD, 0u)]
-    [TestCase(TYP_SIMD64, true, INS_movups, IF_RWR_SRD, 0u)]
+    [TestCase(TYP_SIMD32, false, INS_vextractf32x4, IF_XARCH_SWR_RRD_CNS, 16u)]
+    [TestCase(TYP_SIMD32, true, INS_vinsertf32x4, IF_XARCH_RWR_RRD_SRD_CNS, 16u)]
+    [TestCase(TYP_SIMD64, false, INS_movups, IF_XARCH_SWR_RRD, 0u)]
+    [TestCase(TYP_SIMD64, true, INS_movups, IF_XARCH_RWR_SRD, 0u)]
     public static void StackHomesUseUpperSixteenBytesForYmmAndTheWholeZmm(
         var_types type, bool restore, instruction ins, Emitter.insFormat format, uint offset)
     {
@@ -69,7 +69,7 @@ internal static unsafe class CodeGenUpperLaneTests
             var node = new GenTreeIntrinsic(restore ? type : TYP_SIMD16, local,
                 restore ? NI_SIMD_UpperRestore : NI_SIMD_UpperSave, null)
             {
-                RegNum = REG_NA,
+                RegNum = REG_X64_NA,
                 Flags = restore ? GTF_NOREG_AT_USE : GTF_SPILL,
             };
 
@@ -81,7 +81,7 @@ internal static unsafe class CodeGenUpperLaneTests
             Assert.That(id.idIns(), Is.EqualTo(ins));
             Assert.That(id.idInsFmt(), Is.EqualTo(format));
             Assert.That(id.idOpSize(), Is.EqualTo(type.EmitSize));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM6));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM6));
             Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(offset));
             Assert.That(id.idCodeSize(), Is.GreaterThan(0u));
@@ -90,13 +90,13 @@ internal static unsafe class CodeGenUpperLaneTests
                 Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)1));
                 if (restore)
                 {
-                    Assert.That(id.idReg2(), Is.EqualTo(REG_XMM6));
+                    Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM6));
                 }
             }
             Assert.That(node.Flags & (GTF_SPILL | GTF_NOREG_AT_USE),
                 Is.EqualTo(restore ? GTF_NOREG_AT_USE : GTF_SPILL));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_XMM6));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_XMM6)));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_XMM6));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_XMM6)));
             Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 0), Is.True);
             AssertLifetimeMarkers(local, node, produced: false);
         });
@@ -109,11 +109,11 @@ internal static unsafe class CodeGenUpperLaneTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var local = ConfigureLocal(compiler, codeGen, TYP_SIMD32, evex: false);
-            local.RegNum = REG_XMM8;
+            local.RegNum = REG_X64_XMM8;
             var node = new GenTreeIntrinsic(restore ? TYP_SIMD32 : TYP_SIMD16, local,
                 restore ? NI_SIMD_UpperRestore : NI_SIMD_UpperSave, null)
             {
-                RegNum = REG_XMM7,
+                RegNum = REG_X64_XMM7,
             };
 
             Emit(codeGen, node, restore);
@@ -122,10 +122,10 @@ internal static unsafe class CodeGenUpperLaneTests
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movaps));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_32BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM8));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_XMM6));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_XMM8));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_XMM6));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_XMM8));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_X64_XMM6));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_X64_XMM8));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_XMM6));
         });
     }
 
@@ -136,27 +136,27 @@ internal static unsafe class CodeGenUpperLaneTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var local = ConfigureLocal(compiler, codeGen, TYP_SIMD32, evex: false);
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.RegSet.ClearMaskVars();
             local.Flags |= GTF_SPILLED;
             var node = new GenTreeIntrinsic(restore ? TYP_SIMD32 : TYP_SIMD16, local,
                 restore ? NI_SIMD_UpperRestore : NI_SIMD_UpperSave, null)
             {
-                RegNum = REG_XMM7,
+                RegNum = REG_X64_XMM7,
             };
 
             Emit(codeGen, node, restore);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
-            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_RWR_SRD));
+            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_XARCH_RWR_SRD));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_32BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM6));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_XMM6));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptors[1].idIns(), Is.EqualTo(restore ? INS_vinsertf32x4 : INS_vextractf32x4));
             Assert.That(local.Flags & GTF_SPILLED, Is.EqualTo(GTF_EMPTY));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_XMM6));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_XMM6)));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_XMM6));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_XMM6)));
             AssertLifetimeMarkers(local, node, produced: !restore);
         });
     }
@@ -169,13 +169,13 @@ internal static unsafe class CodeGenUpperLaneTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var local = ConfigureLocal(compiler, codeGen, TYP_SIMD32, evex: false);
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.RegSet.ClearMaskVars();
             local.Flags |= GTF_SPILLED | GTF_VAR_DEATH;
             var node = new GenTreeIntrinsic(restore ? TYP_SIMD32 : TYP_SIMD16, local,
                 restore ? NI_SIMD_UpperRestore : NI_SIMD_UpperSave, null)
             {
-                RegNum = memory ? REG_NA : REG_XMM7,
+                RegNum = memory ? REG_X64_NA : REG_X64_XMM7,
             };
             compiler.opts.dspCode = true;
 
@@ -204,13 +204,13 @@ internal static unsafe class CodeGenUpperLaneTests
         ref var local = ref compiler.lvaTable[0];
         local.Type = type;
         local.lvLRACandidate = true;
-        local.RegNum = REG_XMM6;
+        local.RegNum = REG_X64_XMM6;
         local.StackOffset = -128;
         local.lvOnFrame = true;
-        codeGen.RegSet.SetMaskVars(Mask(REG_XMM6));
+        codeGen.RegSet.SetMaskVars(Mask(REG_X64_XMM6));
         VarSetOps.AddElemD(compiler, compiler.compCurLife, 0);
 
-        return new GenTreeLclVar(type, 0) { RegNum = REG_XMM6 };
+        return new GenTreeLclVar(type, 0) { RegNum = REG_X64_XMM6 };
     }
 
     private static void Emit(CodeGen codeGen, GenTreeIntrinsic node, bool restore)
@@ -234,10 +234,10 @@ internal static unsafe class CodeGenUpperLaneTests
             Is.Not.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
         Assert.That((node._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_PRODUCED) != 0, Is.EqualTo(produced));
 #else
-        Assert.That(local.RegNum, Is.Not.EqualTo(REG_NA));
+        Assert.That(local.RegNum, Is.Not.EqualTo(REG_X64_NA));
         if (produced)
         {
-            Assert.That(node.RegNum, Is.Not.EqualTo(REG_NA));
+            Assert.That(node.RegNum, Is.Not.EqualTo(REG_X64_NA));
         }
 #endif
     }

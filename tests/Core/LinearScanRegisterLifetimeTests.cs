@@ -21,10 +21,10 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             interval.recentRefPosition = definition;
-            var register = allocator.physRegs[(int)regNumber.REG_RAX];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, register, interval);
 
             UnassignPhysRegNoSpill(allocator, register);
@@ -33,8 +33,8 @@ internal static unsafe class LinearScanRegisterLifetimeTests
             Assert.That(interval.isActive, Is.True);
             Assert.That(interval.isSpilled, Is.False);
             Assert.That(definition.spillAfter, Is.False);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
-            Assert.That(GetFreeCandidates(allocator, SRBM_RAX, TYP_INT), Is.EqualTo(SRBM_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_RAX, TYP_INT), Is.EqualTo(SRBM_X64_RAX));
         });
     }
 
@@ -44,24 +44,24 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-            var recentUse = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_RAX);
-            var nextUse = allocator.newRefPosition(interval, 30, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var recentUse = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            var nextUse = allocator.newRefPosition(interval, 30, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             interval.recentRefPosition = recentUse;
-            var register = allocator.physRegs[(int)regNumber.REG_RAX];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, register, interval);
 
             FreeRegister(allocator, register);
 
             Assert.That(register.assignedInterval, Is.SameAs(interval));
             Assert.That(interval.assignedReg, Is.SameAs(register));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_RAX));
             Assert.That(interval.isActive, Is.False);
             Assert.That(interval.isSpilled, Is.False);
             Assert.That(recentUse.nextRefPosition, Is.SameAs(nextUse));
-            Assert.That(GetFreeCandidates(allocator, SRBM_RAX, TYP_INT), Is.EqualTo(SRBM_RAX));
-            Assert.That(NextIntervalRef(allocator)[(int)regNumber.REG_RAX], Is.EqualTo(nextUse.nodeLocation));
-            Assert.That(SpillCost(allocator)[(int)regNumber.REG_RAX], Is.EqualTo(0));
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_RAX, TYP_INT), Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(NextIntervalRef(allocator)[(int)regNumber.REG_X64_RAX], Is.EqualTo(nextUse.nodeLocation));
+            Assert.That(SpillCost(allocator)[(int)regNumber.REG_X64_RAX], Is.EqualTo(0));
         });
     }
 
@@ -71,26 +71,26 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, tree, SRBM_RAX);
-            var recentUse = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(interval, 20, RefType.RefTypeDef, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var recentUse = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(interval, 20, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             interval.recentRefPosition = recentUse;
-            var register = allocator.physRegs[(int)regNumber.REG_RAX];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, register, interval);
 
             FreeRegister(allocator, register);
 
             Assert.That(register.assignedInterval, Is.Null);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(interval.isActive, Is.False);
             Assert.That(interval.isSpilled, Is.False);
-            Assert.That(GetFreeCandidates(allocator, SRBM_RAX, TYP_INT), Is.EqualTo(SRBM_RAX));
-            Assert.That(NextIntervalRef(allocator)[(int)regNumber.REG_RAX], Is.EqualTo(MaxLocation));
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_RAX, TYP_INT), Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(NextIntervalRef(allocator)[(int)regNumber.REG_X64_RAX], Is.EqualTo(MaxLocation));
         });
     }
 
-    [TestCase(TYP_LONG, TYP_INT)]
-    [TestCase(TYP_INT, TYP_LONG)]
+    [TestCase(var_types.TYP_LONG, TYP_INT)]
+    [TestCase(TYP_INT, var_types.TYP_LONG)]
     [TestCase(TYP_REF, TYP_BYREF)]
     [TestCase(TYP_BYREF, TYP_REF)]
     [TestCase(TYP_DOUBLE, TYP_FLOAT)]
@@ -101,10 +101,10 @@ internal static unsafe class LinearScanRegisterLifetimeTests
             var floating = varTypeUsesFloatReg(type);
             var interval = NewInterval(allocator, type);
             GenTree tree = floating ? compiler.gtNewDconNode(type, 1) : compiler.gtNewIconNode(type, 0);
-            var mask = floating ? SRBM_XMM0 : SRBM_RAX;
+            var mask = floating ? SRBM_X64_XMM0 : SRBM_X64_RAX;
             var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, mask);
             interval.recentRefPosition = definition;
-            var register = allocator.physRegs[(int)(floating ? regNumber.REG_XMM0 : regNumber.REG_RAX)];
+            var register = allocator.physRegs[(int)(floating ? regNumber.REG_X64_XMM0 : regNumber.REG_X64_RAX)];
 
             AssignPhysReg(allocator, register, interval);
             Assert.That(GetFreeCandidates(allocator, mask, type), Is.EqualTo(SRBM_NONE));
@@ -122,17 +122,17 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_DOUBLE);
             var tree = compiler.gtNewDconNode(TYP_DOUBLE, 1);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_XMM0);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_XMM0);
             interval.recentRefPosition = definition;
-            var register = allocator.physRegs[(int)regNumber.REG_XMM0];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_XMM0];
             AssignPhysReg(allocator, register, interval);
 
             FreeRegister(allocator, register);
 
             Assert.That(register.assignedInterval, Is.Null);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
-            Assert.That(GetFreeCandidates(allocator, SRBM_XMM0, TYP_FLOAT), Is.EqualTo(SRBM_XMM0));
-            Assert.That(GetFreeCandidates(allocator, SRBM_XMM0, TYP_DOUBLE), Is.EqualTo(SRBM_XMM0));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_XMM0, TYP_FLOAT), Is.EqualTo(SRBM_X64_XMM0));
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_XMM0, TYP_DOUBLE), Is.EqualTo(SRBM_X64_XMM0));
         });
     }
 
@@ -140,16 +140,16 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     public static void FreeRegistersHandlesIntegerAndMaskedRegisterBanks()
     {
         WithAllocator((compiler, allocator) => {
-            var intInterval = NewAssignedInterval(compiler, allocator, TYP_INT, regNumber.REG_RAX);
-            var registers = regMaskTP.CreateFromRegNum(regNumber.REG_RAX, SRBM_RAX) |
-                regMaskTP.CreateFromRegNum(regNumber.REG_K1, SRBM_K1);
+            var intInterval = NewAssignedInterval(compiler, allocator, TYP_INT, regNumber.REG_X64_RAX);
+            var registers = regMaskTP.CreateFromRegNum(regNumber.REG_X64_RAX, SRBM_X64_RAX) |
+                regMaskTP.CreateFromRegNum(regNumber.REG_X64_K1, SRBM_X64_K1);
 
             FreeRegisters(allocator, registers);
 
             Assert.That(intInterval.assignedReg!.assignedInterval, Is.Null);
-            Assert.That(intInterval.physReg, Is.EqualTo(regNumber.REG_NA));
-            Assert.That(GetFreeCandidates(allocator, SRBM_RAX, TYP_INT), Is.EqualTo(SRBM_RAX));
-            Assert.That(GetFreeCandidates(allocator, SRBM_K1, TYP_MASK), Is.EqualTo(SRBM_K1));
+            Assert.That(intInterval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_RAX, TYP_INT), Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_K1, TYP_MASK), Is.EqualTo(SRBM_X64_K1));
         });
     }
 
@@ -160,22 +160,22 @@ internal static unsafe class LinearScanRegisterLifetimeTests
             var interval = NewInterval(allocator, TYP_INT);
             interval.isConstant = true;
             var tree = compiler.gtNewIconNode(TYP_INT, 7);
-            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-            var register = allocator.physRegs[(int)regNumber.REG_RAX];
+            _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, register, interval);
-            Assert.That(IsRegConstant(allocator, regNumber.REG_RAX, TYP_INT), Is.True);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
-            FixedRegsLow(allocator) = SRBM_RBX;
+            Assert.That(IsRegConstant(allocator, regNumber.REG_X64_RAX, TYP_INT), Is.True);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
+            FixedRegsLow(allocator) = SRBM_X64_RBX;
 
             ResetAllRegistersState(allocator);
 
             Assert.That(register.assignedInterval, Is.Null);
-            Assert.That(IsRegConstant(allocator, regNumber.REG_RAX, TYP_INT), Is.False);
-            Assert.That(GetFreeCandidates(allocator, SRBM_RAX, TYP_INT), Is.EqualTo(SRBM_RAX));
-            Assert.That(NextIntervalRef(allocator)[(int)regNumber.REG_RAX], Is.EqualTo(MaxLocation));
-            Assert.That(SpillCost(allocator)[(int)regNumber.REG_RAX], Is.EqualTo(0));
-            Assert.That(BusyUntilKill(allocator), Is.EqualTo(new regMaskTP(SRBM_RAX)));
-            Assert.That(FixedRegsLow(allocator), Is.EqualTo(SRBM_RBX));
+            Assert.That(IsRegConstant(allocator, regNumber.REG_X64_RAX, TYP_INT), Is.False);
+            Assert.That(GetFreeCandidates(allocator, SRBM_X64_RAX, TYP_INT), Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(NextIntervalRef(allocator)[(int)regNumber.REG_X64_RAX], Is.EqualTo(MaxLocation));
+            Assert.That(SpillCost(allocator)[(int)regNumber.REG_X64_RAX], Is.EqualTo(0));
+            Assert.That(BusyUntilKill(allocator), Is.EqualTo(new regMaskTP(SRBM_X64_RAX)));
+            Assert.That(FixedRegsLow(allocator), Is.EqualTo(SRBM_X64_RBX));
         });
     }
 
@@ -185,26 +185,26 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
-            var immediate = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(interval, 5, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
+            var immediate = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             immediate.lastUse = true;
-            var delayed = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_RBX);
+            var delayed = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_X64_RBX);
             delayed.lastUse = true;
             delayed.delayRegFree = true;
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RCX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RCX);
             var registersToFree = new regMaskTP(SRBM_NONE);
             var delayRegistersToFree = new regMaskTP(SRBM_NONE);
 
             UpdateRegsFreeBusyState(
-                allocator, immediate, TYP_INT, SRBM_RAX, ref registersToFree, ref delayRegistersToFree);
+                allocator, immediate, TYP_INT, SRBM_X64_RAX, ref registersToFree, ref delayRegistersToFree);
             UpdateRegsFreeBusyState(
-                allocator, delayed, TYP_INT, SRBM_RBX, ref registersToFree, ref delayRegistersToFree);
+                allocator, delayed, TYP_INT, SRBM_X64_RBX, ref registersToFree, ref delayRegistersToFree);
 
-            Assert.That(registersToFree, Is.EqualTo(new regMaskTP(SRBM_RAX)));
-            Assert.That(delayRegistersToFree, Is.EqualTo(new regMaskTP(SRBM_RBX)));
-            Assert.That(RegsInUseThisLocation(allocator), Is.EqualTo(new regMaskTP(SRBM_RAX | SRBM_RBX)));
-            Assert.That(RegsInUseNextLocation(allocator), Is.EqualTo(new regMaskTP(SRBM_RBX)));
-            Assert.That(BusyUntilKill(allocator), Is.EqualTo(new regMaskTP(SRBM_RCX)));
+            Assert.That(registersToFree, Is.EqualTo(new regMaskTP(SRBM_X64_RAX)));
+            Assert.That(delayRegistersToFree, Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
+            Assert.That(RegsInUseThisLocation(allocator), Is.EqualTo(new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX)));
+            Assert.That(RegsInUseNextLocation(allocator), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
+            Assert.That(BusyUntilKill(allocator), Is.EqualTo(new regMaskTP(SRBM_X64_RCX)));
         });
     }
 
@@ -235,18 +235,18 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         WithAllocator((compiler, allocator) => {
             var retainedInterval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            _ = allocator.newRefPosition(retainedInterval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(retainedInterval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             retainedInterval.recentRefPosition =
-                allocator.newRefPosition(retainedInterval, 20, RefType.RefTypeUse, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(retainedInterval, 30, RefType.RefTypeUse, tree, SRBM_RAX);
-            var retainedRegister = allocator.physRegs[(int)regNumber.REG_RAX];
+                allocator.newRefPosition(retainedInterval, 20, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(retainedInterval, 30, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            var retainedRegister = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, retainedRegister, retainedInterval);
             FreeRegister(allocator, retainedRegister);
 
             var releasedInterval = NewInterval(allocator, TYP_INT);
-            var definition = allocator.newRefPosition(releasedInterval, 40, RefType.RefTypeDef, tree, SRBM_RBX);
+            var definition = allocator.newRefPosition(releasedInterval, 40, RefType.RefTypeDef, tree, SRBM_X64_RBX);
             releasedInterval.recentRefPosition = definition;
-            var releasedRegister = allocator.physRegs[(int)regNumber.REG_RBX];
+            var releasedRegister = allocator.physRegs[(int)regNumber.REG_X64_RBX];
             AssignPhysReg(allocator, releasedRegister, releasedInterval);
             FreeRegister(allocator, releasedRegister);
             CurrentAllocationLocation(allocator) = 50;
@@ -261,12 +261,12 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     public static void VerifyFreeRegistersSkipsPendingRegistersAndChecksNonpendingRegisters()
     {
         WithAllocator((_, allocator) => {
-            var pendingRegisters = new regMaskTP(SRBM_RAX);
+            var pendingRegisters = new regMaskTP(SRBM_X64_RAX);
 
-            SetConstantReg(allocator, regNumber.REG_RAX);
+            SetConstantReg(allocator, regNumber.REG_X64_RAX);
             Assert.That(VerifyWithAssertCounter(allocator, pendingRegisters), Is.Zero);
 
-            SetConstantReg(allocator, regNumber.REG_RBX);
+            SetConstantReg(allocator, regNumber.REG_X64_RBX);
             Assert.That(VerifyWithAssertCounter(allocator, pendingRegisters), Is.EqualTo(1));
         });
     }
@@ -277,15 +277,15 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         WithAllocator((compiler, allocator) => {
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var delayedInterval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(delayedInterval, 5, RefType.RefTypeDef, tree, SRBM_RAX);
-            var delayed = allocator.newRefPosition(delayedInterval, 10, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(delayedInterval, 5, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var delayed = allocator.newRefPosition(delayedInterval, 10, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             delayed.lastUse = true;
             delayed.delayRegFree = true;
             delayedInterval.recentRefPosition = delayed;
 
             var immediateInterval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(immediateInterval, 15, RefType.RefTypeDef, tree, SRBM_RAX);
-            var immediate = allocator.newRefPosition(immediateInterval, 20, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(immediateInterval, 15, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var immediate = allocator.newRefPosition(immediateInterval, 20, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             immediate.lastUse = true;
             immediateInterval.recentRefPosition = immediate;
             compiler.verbose = true;
@@ -294,11 +294,11 @@ internal static unsafe class LinearScanRegisterLifetimeTests
                 var registersToFree = new regMaskTP(SRBM_NONE);
                 var delayedRegisters = new regMaskTP(SRBM_NONE);
                 UpdateRegsFreeBusyState(
-                    allocator, delayed, TYP_INT, SRBM_RAX, ref registersToFree, ref delayedRegisters,
-                    delayedInterval, regNumber.REG_R10);
+                    allocator, delayed, TYP_INT, SRBM_X64_RAX, ref registersToFree, ref delayedRegisters,
+                    delayedInterval, regNumber.REG_X64_R10);
                 UpdateRegsFreeBusyState(
-                    allocator, immediate, TYP_INT, SRBM_RAX, ref registersToFree, ref delayedRegisters,
-                    immediateInterval, regNumber.REG_R10);
+                    allocator, immediate, TYP_INT, SRBM_X64_RAX, ref registersToFree, ref delayedRegisters,
+                    immediateInterval, regNumber.REG_X64_R10);
                 FreeRegisters(allocator, new regMaskTP(SRBM_R10));
             });
 
@@ -310,8 +310,8 @@ internal static unsafe class LinearScanRegisterLifetimeTests
                 var registersToFree = new regMaskTP(SRBM_NONE);
                 var delayedRegisters = new regMaskTP(SRBM_NONE);
                 UpdateRegsFreeBusyState(
-                    allocator, delayed, TYP_INT, SRBM_RAX, ref registersToFree, ref delayedRegisters,
-                    delayedInterval, regNumber.REG_R10);
+                    allocator, delayed, TYP_INT, SRBM_X64_RAX, ref registersToFree, ref delayedRegisters,
+                    delayedInterval, regNumber.REG_X64_R10);
                 FreeRegisters(allocator, new regMaskTP(SRBM_R10));
             });
 
@@ -323,7 +323,7 @@ internal static unsafe class LinearScanRegisterLifetimeTests
     public static void VerifyFreeRegistersHonorsSpillAlwaysStressForConstantMarker()
     {
         WithAllocator((_, allocator) => {
-            SetConstantReg(allocator, regNumber.REG_RAX);
+            SetConstantReg(allocator, regNumber.REG_X64_RAX);
             StressMask(allocator) = 0x800;
 
             VerifyFreeRegisters(allocator, new regMaskTP(SRBM_NONE));
@@ -372,7 +372,7 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         ref regMaskTP registersToFree,
         ref regMaskTP delayRegistersToFree,
         Interval? interval = null,
-        regNumber assignedRegister = regNumber.REG_NA);
+        regNumber assignedRegister = regNumber.REG_X64_NA);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "verifyFreeRegisters")]
     private static extern void VerifyFreeRegisters(LinearScan allocator, regMaskTP registersToFree);
@@ -470,7 +470,7 @@ internal static unsafe class LinearScanRegisterLifetimeTests
         try
         {
             var allocator = new LinearScan(compiler);
-            for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+            for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
             {
                 var register = allocator.physRegs[index];
                 register.init((regNumber)index);

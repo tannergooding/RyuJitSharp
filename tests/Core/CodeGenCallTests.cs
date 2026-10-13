@@ -22,16 +22,16 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class CodeGenCallTests
 {
 #if DEBUG
-    [TestCase(REG_RCX, true, false, 0)]
-    [TestCase(REG_RBX, true, false, 1)]
-    [TestCase(REG_XMM0, true, false, 0)]
-    [TestCase(REG_XMM3, true, false, 0)]
-    [TestCase(REG_XMM6, true, false, 1)]
-    [TestCase(REG_XMM8, true, false, 1)]
-    [TestCase(REG_XMM8, false, false, 0)]
-    [TestCase(REG_STK, true, false, 0)]
-    [TestCase(REG_R10, true, false, 0)]
-    [TestCase(REG_R10, true, true, 1)]
+    [TestCase(REG_X64_RCX, true, false, 0)]
+    [TestCase(REG_X64_RBX, true, false, 1)]
+    [TestCase(REG_X64_XMM0, true, false, 0)]
+    [TestCase(REG_X64_XMM3, true, false, 0)]
+    [TestCase(REG_X64_XMM6, true, false, 1)]
+    [TestCase(REG_X64_XMM8, true, false, 1)]
+    [TestCase(REG_X64_XMM8, false, false, 0)]
+    [TestCase(REG_X64_STK, true, false, 0)]
+    [TestCase(REG_X64_R10, true, false, 0)]
+    [TestCase(REG_X64_R10, true, true, 1)]
     public static void TailCallEpilogChecksUseNativeRegisterPositions(
         regNumber reg, bool tailCall, bool cookie, int expectedAssertions)
     {
@@ -48,9 +48,9 @@ internal static unsafe class CodeGenCallTests
                 call._callMoreFlags |= GTF_CALL_M_TAILCALL;
             }
 
-            var type = reg is >= REG_FP_FIRST and <= REG_FP_LAST ? TYP_DOUBLE : TYP_LONG;
+            var type = (int)reg >= (int)REG_FP_FIRST && (int)reg <= (int)REG_FP_LAST ? TYP_DOUBLE : TYP_LONG;
             var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(new GenTree(GT_NOP, type)));
-            var segment = reg == REG_STK
+            var segment = reg == REG_X64_STK
                 ? AbiPassingSegment.OnStack(0, 0, 8)
                 : AbiPassingSegment.InRegister(reg, 0, 8);
             argument.AbiInfo = AbiPassingInformation.FromSegment(compiler, false, segment);
@@ -83,14 +83,14 @@ internal static unsafe class CodeGenCallTests
     }
 #endif
 
-    [TestCase(TYP_INT, REG_RAX, REG_RAX)]
-    [TestCase(TYP_INT, REG_RCX, REG_RAX)]
-    [TestCase(TYP_LONG, REG_RBX, REG_RAX)]
-    [TestCase(TYP_REF, REG_RBX, REG_RAX)]
-    [TestCase(TYP_BYREF, REG_RBX, REG_RAX)]
-    [TestCase(TYP_FLOAT, REG_XMM0, REG_XMM0)]
-    [TestCase(TYP_FLOAT, REG_XMM2, REG_XMM0)]
-    [TestCase(TYP_DOUBLE, REG_XMM2, REG_XMM0)]
+    [TestCase(TYP_INT, REG_X64_RAX, REG_X64_RAX)]
+    [TestCase(TYP_INT, REG_X64_RCX, REG_X64_RAX)]
+    [TestCase(TYP_LONG, REG_X64_RBX, REG_X64_RAX)]
+    [TestCase(TYP_REF, REG_X64_RBX, REG_X64_RAX)]
+    [TestCase(TYP_BYREF, REG_X64_RBX, REG_X64_RAX)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM0, REG_X64_XMM0)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM2, REG_X64_XMM0)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM2, REG_X64_XMM0)]
     public static void CallsMoveAbiResultsBeforeProducingTheAllocatedRegister(
         var_types type, regNumber allocated, regNumber abi)
     {
@@ -107,7 +107,7 @@ internal static unsafe class CodeGenCallTests
                 Assert.That(descriptors[1].idReg1(), Is.EqualTo(allocated));
                 Assert.That(descriptors[1].idReg2(), Is.EqualTo(abi));
                 Assert.That(descriptors[1].idOpSize(),
-                    Is.EqualTo(varTypeIsGC(type) ? emitAttr.EA_PTRSIZE : type.EmitActualSize));
+                    Is.EqualTo(varTypeIsGC(type) ? Globals.EA_PTRSIZE : type.EmitActualSize));
             }
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur,
                 Is.EqualTo(type == TYP_REF ? Mask(allocated) : default));
@@ -131,7 +131,7 @@ internal static unsafe class CodeGenCallTests
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-            var call = Call(type, REG_RAX);
+            var call = Call(type, REG_X64_RAX);
             if (hasNext)
             {
                 call.Next = new GenTree(GT_NOP, TYP_VOID);
@@ -141,9 +141,9 @@ internal static unsafe class CodeGenCallTests
 
             var live = minopts || hasNext;
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur,
-                Is.EqualTo(live && type == TYP_REF ? Mask(REG_RAX) : default));
+                Is.EqualTo(live && type == TYP_REF ? Mask(REG_X64_RAX) : default));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
-                Is.EqualTo(live && type == TYP_BYREF ? Mask(REG_RAX) : default));
+                Is.EqualTo(live && type == TYP_BYREF ? Mask(REG_X64_RAX) : default));
         }, minopts);
     }
 
@@ -159,27 +159,27 @@ internal static unsafe class CodeGenCallTests
             {
                 call._callMoreFlags |= GTF_CALL_M_TAILCALL;
             }
-            var argument = new GenTreeUnOp(GT_PUTARG_REG, TYP_REF, Physical(TYP_REF, REG_RDX))
+            var argument = new GenTreeUnOp(GT_PUTARG_REG, TYP_REF, Physical(TYP_REF, REG_X64_RDX))
             {
-                RegNum = REG_RDX,
+                RegNum = REG_X64_RDX,
             };
             var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(argument));
             arg.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
-                AbiPassingSegment.InRegister(REG_RCX, 0, 8));
+                AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8));
             arg.EarlyNode = null;
             arg.LateNode = argument;
             call.Args.PushLateBack(arg);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RDX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RDX, TYP_REF);
 
             codeGen.genCall(call);
 
             var descriptors = Descriptors(codeGen);
             instruction[] expected = tail ? [INS_mov, INS_cmp] : [INS_mov, INS_cmp, INS_call];
             Assert.That(descriptors.Select(id => id.idIns()), Is.EqualTo(expected));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_RCX));
-            Assert.That(descriptors[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RCX));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_RCX));
+            Assert.That(descriptors[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RCX));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(emitAttr.EA_4BYTE));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(tail ? Mask(REG_RCX) : default));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(tail ? Mask(REG_X64_RCX) : default));
         });
     }
 
@@ -194,17 +194,17 @@ internal static unsafe class CodeGenCallTests
             call._callMoreFlags |= GTF_CALL_M_TAILCALL;
             var label = new BasicBlock(null, null);
             PendingLabel(codeGen) = label;
-            var baseNode = Physical(memory ? TYP_REF : TYP_I_IMPL, REG_R10);
-            var index = Physical(TYP_BYREF, REG_R11);
+            var baseNode = Physical(memory ? TYP_REF : TYP_LONG, REG_X64_R10);
+            var index = Physical(TYP_BYREF, REG_X64_R11);
             call.ControlExpr = memory
-                ? new GenTreeIndir(GT_IND, TYP_I_IMPL,
+                ? new GenTreeIndir(GT_IND, TYP_LONG,
                     new GenTreeAddrMode(TYP_BYREF, baseNode, index, 1, 8) { IsContained = true })
                     { IsContained = true }
                 : baseNode;
             if (memory)
             {
-                codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_REF);
-                codeGen.GCInfo.gcMarkRegPtrVal(REG_R11, TYP_BYREF);
+                codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_REF);
+                codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R11, TYP_BYREF);
 #if DEBUG
                 index.UseNum = 1;
 #endif
@@ -215,8 +215,8 @@ internal static unsafe class CodeGenCallTests
             Assert.That(Descriptors(codeGen), Is.Empty);
             Assert.That(PendingLabel(codeGen), Is.SameAs(label));
             Assert.That(label.bbEmitCookie, Is.Null);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(memory ? Mask(REG_R10) : default));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(memory ? Mask(REG_R11) : default));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(memory ? Mask(REG_X64_R10) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(memory ? Mask(REG_X64_R11) : default));
 #if DEBUG
             Assert.That(baseNode._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
@@ -232,7 +232,7 @@ internal static unsafe class CodeGenCallTests
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var emitter = codeGen.Emitter;
-            var before = emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), Mask(REG_RAX), default);
+            var before = emitter.emitAddLabel(VarSetOps.MakeEmpty(compiler), Mask(REG_X64_RAX), default);
             emitter.emitIns(INS_nop);
             var call = Call(TYP_VOID);
             call.Flags |= GTF_CALL_UNMANAGED;
@@ -248,13 +248,13 @@ internal static unsafe class CodeGenCallTests
     }
 
 #if DEBUG
-    [TestCase(TYP_REF, REG_RBX, true, 1)]
-    [TestCase(TYP_BYREF, REG_RBX, true, 1)]
-    [TestCase(TYP_LONG, REG_RBX, true, 0)]
-    [TestCase(TYP_REF, REG_RAX, true, 1)]
-    [TestCase(TYP_BYREF, REG_RAX, true, 1)]
-    [TestCase(TYP_REF, REG_RBX, false, 0)]
-    [TestCase(TYP_BYREF, REG_RBX, false, 0)]
+    [TestCase(TYP_REF, REG_X64_RBX, true, 1)]
+    [TestCase(TYP_BYREF, REG_X64_RBX, true, 1)]
+    [TestCase(TYP_LONG, REG_X64_RBX, true, 0)]
+    [TestCase(TYP_REF, REG_X64_RAX, true, 1)]
+    [TestCase(TYP_BYREF, REG_X64_RAX, true, 1)]
+    [TestCase(TYP_REF, REG_X64_RBX, false, 0)]
+    [TestCase(TYP_BYREF, REG_X64_RBX, false, 0)]
     public static void PInvokeRequiresCalleeSavedGcRootsToBeSpilled(
         var_types type, regNumber reg, bool unmanaged, int expectedAssertions)
     {
@@ -340,7 +340,7 @@ internal static unsafe class CodeGenCallTests
         {
             var label = new BasicBlock(null, null);
             PendingLabel(codeGen) = label;
-            var call = Call(TYP_INT, REG_RCX);
+            var call = Call(TYP_INT, REG_X64_RCX);
             if (helper)
             {
                 call._callType = CT_HELPER;
@@ -362,12 +362,12 @@ internal static unsafe class CodeGenCallTests
     {
         EmitterCallInstructionTests.WithEmitter((_, codeGen) =>
         {
-            codeGen.genSimd12UpperClear(REG_XMM1);
+            codeGen.genSimd12UpperClear(REG_X64_XMM1);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_insertps));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM1));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM1));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM1));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM1));
             Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)(sbyte)-8));
         });
     }
@@ -378,7 +378,7 @@ internal static unsafe class CodeGenCallTests
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-            var call = Call(TYP_REF, REG_RAX);
+            var call = Call(TYP_REF, REG_X64_RAX);
             var label = new BasicBlock(null, null);
             PendingLabel(codeGen) = label;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -396,7 +396,7 @@ internal static unsafe class CodeGenCallTests
     }
 #endif
 
-    private static GenTreeCall Call(var_types type, regNumber reg = REG_NA) => new(type)
+    private static GenTreeCall Call(var_types type, regNumber reg = REG_X64_NA) => new(type)
     {
         _callType = CT_USER_FUNC,
         _callMethHnd = (CORINFO_METHOD_STRUCT_*)0x4000,

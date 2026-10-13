@@ -23,15 +23,15 @@ internal static unsafe class LinearScanRegisterSelectionTests
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
 
-            allocator.physRegs[(int)regNumber.REG_RAX].regOrder = 1;
-            allocator.physRegs[(int)regNumber.REG_RBX].regOrder = 0;
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].regOrder = 1;
+            allocator.physRegs[(int)regNumber.REG_X64_RBX].regOrder = 0;
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
 
             var selected = allocator.selectMinimal(interval, definition);
 
-            Assert.That(selected, Is.EqualTo(SRBM_RBX));
+            Assert.That(selected, Is.EqualTo(SRBM_X64_RBX));
         });
     }
 
@@ -43,9 +43,9 @@ internal static unsafe class LinearScanRegisterSelectionTests
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
             definition.setRegOptional(true);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX | SRBM_RBX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX);
 
             var selected = allocator.selectMinimal(interval, definition);
 
@@ -61,22 +61,22 @@ internal static unsafe class LinearScanRegisterSelectionTests
             var allocator = CreateAllocator(compiler);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var priorInterval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(priorInterval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            var priorLastUse = allocator.newRefPosition(priorInterval, 9, RefType.RefTypeUse, tree, SRBM_RAX);
-            allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval = priorInterval;
+            _ = allocator.newRefPosition(priorInterval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var priorLastUse = allocator.newRefPosition(priorInterval, 9, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = priorInterval;
 
             var interval = NewInterval(allocator, TYP_INT);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RBX);
-            _ = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_RAX);
-            UpdateNextFixedReference(allocator, regNumber.REG_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RBX);
+            _ = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            UpdateNextFixedReference(allocator, regNumber.REG_X64_RAX);
 
             var selected = allocator.selectMinimal(interval, definition);
 
             Assert.That(priorLastUse.lastUse, Is.True);
             Assert.That(interval.hasConflictingDefUse, Is.True);
-            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
             Assert.That(definition.isFixedRegRef, Is.True);
-            Assert.That(selected, Is.EqualTo(SRBM_RAX));
+            Assert.That(selected, Is.EqualTo(SRBM_X64_RAX));
         });
     }
 
@@ -87,16 +87,16 @@ internal static unsafe class LinearScanRegisterSelectionTests
             var allocator = CreateAllocator(compiler);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var priorInterval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(priorInterval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            var priorUse = allocator.newRefPosition(priorInterval, 11, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(priorInterval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var priorUse = allocator.newRefPosition(priorInterval, 11, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             priorInterval.isActive = true;
-            allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval = priorInterval;
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = priorInterval;
 
             var interval = NewInterval(allocator, TYP_INT);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RBX);
-            _ = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_RAX);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
-            UpdateNextFixedReference(allocator, regNumber.REG_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RBX);
+            _ = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_X64_RAX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
+            UpdateNextFixedReference(allocator, regNumber.REG_X64_RAX);
 
             var selected = allocator.selectMinimal(interval, definition);
 
@@ -104,7 +104,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
             Assert.That(interval.hasConflictingDefUse, Is.True);
             Assert.That(definition.registerAssignment, Is.EqualTo(AllRegs(allocator, TYP_INT)));
             Assert.That(definition.isFixedRegRef, Is.False);
-            Assert.That(selected, Is.Not.EqualTo(SRBM_RAX));
+            Assert.That(selected, Is.Not.EqualTo(SRBM_X64_RAX));
             Assert.That(definition.registerAssignment & selected, Is.EqualTo(selected));
         });
     }
@@ -114,18 +114,18 @@ internal static unsafe class LinearScanRegisterSelectionTests
     public static void MinimalMaskSelectionExcludesConflictingHighBankRegister()
     {
         WithCompiler(compiler => {
-            CompilerAllMaskRegs(compiler) = SRBM_K1 | SRBM_K2;
+            CompilerAllMaskRegs(compiler) = SRBM_X64_K1 | SRBM_X64_K2;
             var allocator = CreateAllocator(compiler);
             var interval = NewInterval(allocator, TYP_MASK);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_K1 | SRBM_K2);
-            _ = allocator.newRefPosition(regNumber.REG_K1, 10, RefType.RefTypeFixedReg, null, SRBM_K1);
-            UpdateNextFixedReference(allocator, regNumber.REG_K1);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_K1 | SRBM_X64_K2);
+            _ = allocator.newRefPosition(regNumber.REG_X64_K1, 10, RefType.RefTypeFixedReg, null, SRBM_X64_K1);
+            UpdateNextFixedReference(allocator, regNumber.REG_X64_K1);
 
             var selected = allocator.selectMinimal(interval, definition);
 
-            Assert.That(selected, Is.EqualTo(SRBM_K2));
+            Assert.That(selected, Is.EqualTo(SRBM_X64_K2));
         });
     }
 #endif
@@ -327,7 +327,7 @@ internal static unsafe class LinearScanRegisterSelectionTests
     {
         var allocator = new LinearScan(compiler);
         BlockInfo(allocator) = [new LsraBlockInfo()];
-        for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+        for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
         {
             var register = allocator.physRegs[index];
             register.init((regNumber)index);

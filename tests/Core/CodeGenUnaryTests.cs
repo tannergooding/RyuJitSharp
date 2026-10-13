@@ -45,25 +45,25 @@ internal static unsafe class CodeGenUnaryTests
         Assert.That(CodeGen.genGetInsForOper(oper, type), Is.EqualTo(expected));
     }
 
-    [TestCase(GT_NEG, TYP_INT, REG_RAX, INS_neg, 1)]
-    [TestCase(GT_NEG, TYP_INT, REG_RCX, INS_neg, 2)]
-    [TestCase(GT_NEG, TYP_LONG, REG_RAX, INS_neg, 1)]
-    [TestCase(GT_NEG, TYP_LONG, REG_RCX, INS_neg, 2)]
-    [TestCase(GT_NOT, TYP_INT, REG_RAX, INS_not, 1)]
-    [TestCase(GT_NOT, TYP_INT, REG_RCX, INS_not, 2)]
-    [TestCase(GT_NOT, TYP_LONG, REG_RAX, INS_not, 1)]
-    [TestCase(GT_NOT, TYP_LONG, REG_RCX, INS_not, 2)]
+    [TestCase(GT_NEG, TYP_INT, REG_X64_RAX, INS_neg, 1)]
+    [TestCase(GT_NEG, TYP_INT, REG_X64_RCX, INS_neg, 2)]
+    [TestCase(GT_NEG, TYP_LONG, REG_X64_RAX, INS_neg, 1)]
+    [TestCase(GT_NEG, TYP_LONG, REG_X64_RCX, INS_neg, 2)]
+    [TestCase(GT_NOT, TYP_INT, REG_X64_RAX, INS_not, 1)]
+    [TestCase(GT_NOT, TYP_INT, REG_X64_RCX, INS_not, 2)]
+    [TestCase(GT_NOT, TYP_LONG, REG_X64_RAX, INS_not, 1)]
+    [TestCase(GT_NOT, TYP_LONG, REG_X64_RCX, INS_not, 2)]
     public static void IntegerUnaryNodesConsumeCopyAndProduceInNativeOrder(
         genTreeOps oper, var_types type, regNumber target, instruction expected, int count)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var operand = compiler.gtNewIconNode(type, 1);
-            operand.RegNum = REG_RAX;
+            operand.RegNum = REG_X64_RAX;
             var tree = compiler.gtNewUnaryNode(oper, type, operand);
             tree.RegNum = target;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RCX, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RCX, TYP_BYREF);
 
             codeGen.genCodeForNegNot(tree.AsUnOp());
 
@@ -76,7 +76,7 @@ internal static unsafe class CodeGenUnaryTests
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
                 Assert.That(descriptors[0].idReg1(), Is.EqualTo(target));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_RAX));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_X64_RAX));
             }
 
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
@@ -101,11 +101,11 @@ internal static unsafe class CodeGenUnaryTests
             codeGen.Emitter.UseVexEncodings = vex;
             codeGen.Emitter.UseEvexEncodings = vex;
             var operand = compiler.gtNewDconNode(type, -0.0);
-            operand.RegNum = REG_XMM0;
+            operand.RegNum = REG_X64_XMM0;
             GenTree tree = absolute
                 ? new GenTreeIntrinsic(type, operand, NI_System_Math_Abs, null)
                 : compiler.gtNewUnaryNode(GT_NEG, type, operand);
-            tree.RegNum = REG_XMM1;
+            tree.RegNum = REG_X64_XMM1;
 
             if (absolute)
             {
@@ -127,11 +127,11 @@ internal static unsafe class CodeGenUnaryTests
             Assert.That(descriptors.Count, Is.EqualTo(vex ? 1 : 2));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(expected));
             Assert.That(descriptors[^1].idOpSize(), Is.EqualTo(EA_16BYTE));
-            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_X64_XMM1));
             if (!vex)
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movaps));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_XMM0));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_X64_XMM0));
             }
         });
     }
@@ -142,9 +142,9 @@ internal static unsafe class CodeGenUnaryTests
         WithCodeGen((compiler, codeGen) =>
         {
             var operand = compiler.gtNewIconNode(TYP_INT, 1);
-            operand.RegNum = REG_RAX;
+            operand.RegNum = REG_X64_RAX;
             var tree = compiler.gtNewUnaryNode(GT_NEG, TYP_INT, operand);
-            tree.RegNum = REG_RAX;
+            tree.RegNum = REG_X64_RAX;
             tree.Flags |= GTF_SPILL;
             codeGen.RegSet.tmpInit();
             codeGen.RegSet.tmpPreAllocateTemps(TYP_INT, 1);
@@ -158,7 +158,7 @@ internal static unsafe class CodeGenUnaryTests
             Assert.That(descriptors.Count, Is.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_neg));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_mov));
-            Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_SWR_RRD));
+            Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_SWR_RRD));
             Assert.That(tree.Flags & (GTF_SPILL | GTF_SPILLED), Is.EqualTo(GTF_SPILLED));
         });
     }
@@ -173,7 +173,7 @@ internal static unsafe class CodeGenUnaryTests
             GenTree operand = type == TYP_INT
                 ? compiler.gtNewIconNode(type, 1)
                 : compiler.gtNewDconNode(type, 1.0);
-            operand.RegNum = type == TYP_INT ? REG_RAX : REG_XMM0;
+            operand.RegNum = type == TYP_INT ? REG_X64_RAX : REG_X64_XMM0;
             var tree = compiler.gtNewUnaryNode(GT_NEG, type, operand);
             tree.RegNum = operand.RegNum;
             compiler.opts.dspCode = true;
@@ -188,7 +188,7 @@ internal static unsafe class CodeGenUnaryTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
             LifeUpdater(codeGen) = new TreeLifeUpdater(compiler, forCodeGen: true);

@@ -20,25 +20,25 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenAvxFamilyTests
 {
-    [TestCase(0, REG_XMM1, 0, REG_XMM1, REG_XMM2, REG_XMM3)]
-    [TestCase(0, REG_XMM2, 0, REG_XMM2, REG_XMM1, REG_XMM3)]
-    [TestCase(0, REG_XMM3, 1, REG_XMM3, REG_XMM2, REG_XMM1)]
-    [TestCase(0, REG_XMM4, 0, REG_XMM1, REG_XMM2, REG_XMM3)]
-    [TestCase(1, REG_XMM2, -1, REG_XMM2, REG_XMM3, REG_NA)]
-    [TestCase(1, REG_XMM3, 1, REG_XMM3, REG_XMM2, REG_NA)]
-    [TestCase(1, REG_XMM4, 1, REG_XMM3, REG_XMM2, REG_NA)]
-    [TestCase(2, REG_XMM1, -1, REG_XMM1, REG_XMM3, REG_NA)]
-    [TestCase(2, REG_XMM3, 1, REG_XMM3, REG_XMM1, REG_NA)]
-    [TestCase(2, REG_XMM4, -1, REG_XMM1, REG_XMM3, REG_NA)]
-    [TestCase(3, REG_XMM1, 0, REG_XMM1, REG_XMM2, REG_NA)]
-    [TestCase(3, REG_XMM2, 0, REG_XMM2, REG_XMM1, REG_NA)]
-    [TestCase(3, REG_XMM4, 0, REG_XMM1, REG_XMM2, REG_NA)]
+    [TestCase(0, REG_X64_XMM1, 0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3)]
+    [TestCase(0, REG_X64_XMM2, 0, REG_X64_XMM2, REG_X64_XMM1, REG_X64_XMM3)]
+    [TestCase(0, REG_X64_XMM3, 1, REG_X64_XMM3, REG_X64_XMM2, REG_X64_XMM1)]
+    [TestCase(0, REG_X64_XMM4, 0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3)]
+    [TestCase(1, REG_X64_XMM2, -1, REG_X64_XMM2, REG_X64_XMM3, REG_X64_NA)]
+    [TestCase(1, REG_X64_XMM3, 1, REG_X64_XMM3, REG_X64_XMM2, REG_X64_NA)]
+    [TestCase(1, REG_X64_XMM4, 1, REG_X64_XMM3, REG_X64_XMM2, REG_X64_NA)]
+    [TestCase(2, REG_X64_XMM1, -1, REG_X64_XMM1, REG_X64_XMM3, REG_X64_NA)]
+    [TestCase(2, REG_X64_XMM3, 1, REG_X64_XMM3, REG_X64_XMM1, REG_X64_NA)]
+    [TestCase(2, REG_X64_XMM4, -1, REG_X64_XMM1, REG_X64_XMM3, REG_X64_NA)]
+    [TestCase(3, REG_X64_XMM1, 0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_NA)]
+    [TestCase(3, REG_X64_XMM2, 0, REG_X64_XMM2, REG_X64_XMM1, REG_X64_NA)]
+    [TestCase(3, REG_X64_XMM4, 0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_NA)]
     public static void FmaSelectsTheNativeFormWithoutRewritingOperands(
         int memoryOperand, regNumber target, int formOffset, regNumber seed, regNumber source, regNumber rm)
     {
         WithHardware((compiler, codeGen) =>
         {
-            var operands = new GenTree[] { Vector(REG_XMM1), Vector(REG_XMM2), Vector(REG_XMM3) };
+            var operands = new GenTree[] { Vector(REG_X64_XMM1), Vector(REG_X64_XMM2), Vector(REG_X64_XMM3) };
             if (memoryOperand != 0)
             {
                 operands[memoryOperand - 1] = Memory(compiler, TYP_SIMD16);
@@ -75,7 +75,7 @@ internal static class CodeGenAvxFamilyTests
             }
             else
             {
-                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
             }
             Assert.That(node.Operands.ToArray(), Is.EqualTo(original));
             AssertProduced(node);
@@ -92,9 +92,9 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD32, intrinsic, TYP_DOUBLE, 32,
-                Vector(REG_XMM1, TYP_SIMD32), Vector(REG_XMM2, TYP_SIMD32), Vector(REG_XMM3, TYP_SIMD32))
+                Vector(REG_X64_XMM1, TYP_SIMD32), Vector(REG_X64_XMM2, TYP_SIMD32), Vector(REG_X64_XMM3, TYP_SIMD32))
             {
-                RegNum = REG_XMM1,
+                RegNum = REG_X64_XMM1,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var id = Descriptors(codeGen)[^1];
@@ -103,27 +103,27 @@ internal static class CodeGenAvxFamilyTests
         });
     }
 
-    [TestCase(2, INS_vfmadd132ss, REG_XMM3)]
-    [TestCase(3, INS_vfmadd213ss, REG_XMM2)]
+    [TestCase(2, INS_vfmadd132ss, REG_X64_XMM3)]
+    [TestCase(3, INS_vfmadd213ss, REG_X64_XMM2)]
     public static void ScalarFmaCopiesUpperBitsFromTheFirstOperand(
         int memoryOperand, instruction expected, regNumber source)
     {
         WithHardware((compiler, codeGen) =>
         {
-            var operands = new GenTree[] { Vector(REG_XMM1), Vector(REG_XMM2), Vector(REG_XMM3) };
+            var operands = new GenTree[] { Vector(REG_X64_XMM1), Vector(REG_X64_XMM2), Vector(REG_X64_XMM3) };
             operands[memoryOperand - 1] = Memory(compiler, TYP_FLOAT);
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX512_FusedMultiplyAddScalar, TYP_FLOAT, 16, operands)
             {
-                RegNum = REG_XMM4,
+                RegNum = REG_X64_XMM4,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
-            AssertMove(descriptors[0], REG_XMM4, REG_XMM1, EA_16BYTE);
+            AssertMove(descriptors[0], REG_X64_XMM4, REG_X64_XMM1, EA_16BYTE);
             Assert.That(descriptors[1].idIns(), Is.EqualTo(expected));
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(source));
-            Assert.That(descriptors[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            Assert.That(descriptors[1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
         });
     }
 
@@ -133,17 +133,17 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD64, NI_AVX512_FusedMultiplyAdd, TYP_FLOAT, 64,
-                Vector(REG_XMM1, TYP_SIMD64), Vector(REG_XMM2, TYP_SIMD64), Vector(REG_XMM3, TYP_SIMD64))
+                Vector(REG_X64_XMM1, TYP_SIMD64), Vector(REG_X64_XMM2, TYP_SIMD64), Vector(REG_X64_XMM3, TYP_SIMD64))
             {
-                RegNum = REG_XMM3,
+                RegNum = REG_X64_XMM3,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_em_k7 | INS_OPTS_EVEX_em_zero);
 
             var id = Descriptors(codeGen)[^1];
             Assert.That(id.idIns(), Is.EqualTo(INS_vfmadd231ps));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_64BYTE));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
-            Assert.That(id.idReg3(), Is.EqualTo(REG_XMM1));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM2));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_X64_XMM1));
             Assert.That(id.idGetEvexbContext(), Is.EqualTo(2u));
             Assert.That(id.idGetEvexAaaContext(), Is.EqualTo(7u));
             Assert.That(id.idIsEvexZContextSet(), Is.True);
@@ -156,9 +156,9 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD64, NI_AVX512_FusedMultiplyAdd, TYP_FLOAT, 64,
-                Vector(REG_XMM1, TYP_SIMD64), Vector(REG_XMM2, TYP_SIMD64), Vector(REG_XMM3, TYP_SIMD64))
+                Vector(REG_X64_XMM1, TYP_SIMD64), Vector(REG_X64_XMM2, TYP_SIMD64), Vector(REG_X64_XMM3, TYP_SIMD64))
             {
-                RegNum = REG_XMM2,
+                RegNum = REG_X64_XMM2,
             };
             codeGen.genFmaIntrinsic(node, INS_OPTS_EVEX_er_rd);
             codeGen.genFmaIntrinsic(node, INS_OPTS_EVEX_er_ru);
@@ -168,9 +168,9 @@ internal static class CodeGenAvxFamilyTests
             foreach (var id in descriptors)
             {
                 Assert.That(id.idIns(), Is.EqualTo(INS_vfmadd213ps));
-                Assert.That(id.idReg1(), Is.EqualTo(REG_XMM2));
-                Assert.That(id.idReg2(), Is.EqualTo(REG_XMM1));
-                Assert.That(id.idReg3(), Is.EqualTo(REG_XMM3));
+                Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM2));
+                Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM1));
+                Assert.That(id.idReg3(), Is.EqualTo(REG_X64_XMM3));
             }
             Assert.That(descriptors[0].idGetEvexbContext(), Is.EqualTo(1u));
             Assert.That(descriptors[1].idGetEvexbContext(), Is.EqualTo(2u));
@@ -191,7 +191,7 @@ internal static class CodeGenAvxFamilyTests
     {
         WithHardware((compiler, codeGen) =>
         {
-            var spilled = Vector(REG_XMM2);
+            var spilled = Vector(REG_X64_XMM2);
             codeGen.RegSet.tmpInit();
             codeGen.RegSet.tmpPreAllocateTemps(TYP_SIMD16, 1);
             var temp = codeGen.RegSet.tmpGetTemp(TYP_SIMD16);
@@ -202,9 +202,9 @@ internal static class CodeGenAvxFamilyTests
             spilled.Flags |= GTF_NOREG_AT_USE;
             spilled.IsRegOptional = true;
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX512_FusedMultiplyAdd, TYP_FLOAT, 16,
-                Vector(REG_XMM1), spilled, Vector(REG_XMM3))
+                Vector(REG_X64_XMM1), spilled, Vector(REG_X64_XMM3))
             {
-                RegNum = REG_XMM1,
+                RegNum = REG_X64_XMM1,
             };
             var before = Descriptors(codeGen).Count;
 
@@ -213,24 +213,24 @@ internal static class CodeGenAvxFamilyTests
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(before + 1));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_vfmadd132ps));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_XMM3));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_X64_XMM3));
             Assert.That(descriptors[^1].idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(temp.tdTempNum));
             Assert.That(codeGen.RegSet.rsGetSpillInfo(spilled, spilled.RegNum, out _), Is.Null);
         });
     }
 
-    [TestCase(REG_XMM1, false, INS_vpermt2d, REG_XMM1, REG_XMM2)]
-    [TestCase(REG_XMM2, false, INS_vpermi2d, REG_XMM2, REG_XMM1)]
-    [TestCase(REG_XMM4, false, INS_vpermt2d, REG_XMM1, REG_XMM2)]
-    [TestCase(REG_XMM1, true, INS_vpermt2d, REG_XMM1, REG_XMM2)]
-    [TestCase(REG_XMM2, true, INS_vpermi2d, REG_XMM2, REG_XMM1)]
+    [TestCase(REG_X64_XMM1, false, INS_vpermt2d, REG_X64_XMM1, REG_X64_XMM2)]
+    [TestCase(REG_X64_XMM2, false, INS_vpermi2d, REG_X64_XMM2, REG_X64_XMM1)]
+    [TestCase(REG_X64_XMM4, false, INS_vpermt2d, REG_X64_XMM1, REG_X64_XMM2)]
+    [TestCase(REG_X64_XMM1, true, INS_vpermt2d, REG_X64_XMM1, REG_X64_XMM2)]
+    [TestCase(REG_X64_XMM2, true, INS_vpermi2d, REG_X64_XMM2, REG_X64_XMM1)]
     public static void PermuteSelectsIndexOrTableDestination(
         regNumber target, bool memory, instruction expected, regNumber seed, regNumber source)
     {
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX512_PermuteVar4x32x2, TYP_INT, 16,
-                Vector(REG_XMM1), Vector(REG_XMM2), memory ? Memory(compiler, TYP_SIMD16) : Vector(REG_XMM3))
+                Vector(REG_X64_XMM1), Vector(REG_X64_XMM2), memory ? Memory(compiler, TYP_SIMD16) : Vector(REG_X64_XMM3))
             {
                 RegNum = target,
             };
@@ -253,17 +253,17 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((_, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX512_PermuteVar4x32x2, TYP_INT, 16,
-                Vector(REG_XMM1), Vector(REG_XMM2), Vector(REG_XMM3))
+                Vector(REG_X64_XMM1), Vector(REG_X64_XMM2), Vector(REG_X64_XMM3))
             {
-                RegNum = REG_XMM2,
+                RegNum = REG_X64_XMM2,
             };
 
             codeGen.genPermuteVar2x(node, INS_OPTS_NONE);
 
             var descriptor = Descriptors(codeGen)[^1];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_vpermi2d));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_XMM2));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_XMM1));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_XMM2));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_XMM1));
             AssertProduced(node);
         });
     }
@@ -279,41 +279,41 @@ internal static class CodeGenAvxFamilyTests
     {
         WithHardware((compiler, codeGen) =>
         {
-            var address = Register(compiler, TYP_I_IMPL, REG_RAX);
-            var index = Vector(REG_XMM2, indexVectorType);
+            var address = Register(compiler, TYP_LONG, REG_X64_RAX);
+            var index = Vector(REG_X64_XMM2, indexVectorType);
             var scale = compiler.gtNewIconNode(TYP_INT, 4);
             scale.IsContained = true;
             var operands = masked
-                ? new GenTree[] { Vector(REG_XMM1), address, index, Vector(REG_XMM3), scale }
+                ? new GenTree[] { Vector(REG_X64_XMM1), address, index, Vector(REG_X64_XMM3), scale }
                 : [address, index, scale];
             var node = new GenTreeHWIntrinsic(TYP_SIMD16,
                 masked ? NI_AVX2_GatherMaskVector128 : NI_AVX2_GatherVector128, baseType, 16, operands)
             {
-                RegNum = REG_XMM4,
+                RegNum = REG_X64_XMM4,
                 AuxiliaryType = indexType,
             };
-            codeGen.InternalRegisters.Add(node, Mask(REG_XMM5));
+            codeGen.InternalRegisters.Add(node, Mask(REG_X64_XMM5));
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(masked ? 3 : 2));
             if (masked)
             {
-                AssertMove(descriptors[0], REG_XMM5, REG_XMM3, EA_16BYTE);
-                AssertMove(descriptors[1], REG_XMM4, REG_XMM1, EA_16BYTE);
+                AssertMove(descriptors[0], REG_X64_XMM5, REG_X64_XMM3, EA_16BYTE);
+                AssertMove(descriptors[1], REG_X64_XMM4, REG_X64_XMM1, EA_16BYTE);
             }
             else
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_pcmpeqd));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM5));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_XMM5));
             }
             var id = descriptors[^1];
             Assert.That(id.idIns(), Is.EqualTo(expected));
             Assert.That(id.idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM4));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM5));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_XMM2));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM4));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM5));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_XMM2));
             Assert.That(codeGen.InternalRegisters.GetAll(node), Is.EqualTo(default(regMaskTP)));
         });
     }
@@ -330,9 +330,9 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_MASK, NI_AVX512_NotMask, baseType, (byte)size,
-                new GenTreePhysReg(REG_K1, TYP_MASK) { RegNum = REG_K1 })
+                new GenTreePhysReg(REG_X64_K1, TYP_MASK) { RegNum = REG_X64_K1 })
             {
-                RegNum = REG_K2,
+                RegNum = REG_X64_K2,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var descriptors = Descriptors(codeGen);
@@ -355,7 +355,7 @@ internal static class CodeGenAvxFamilyTests
     {
         WithHardware((_, codeGen) =>
         {
-            codeGen.ClearUnusedMaskBits(REG_K1, (uint)count);
+            codeGen.ClearUnusedMaskBits(REG_X64_K1, (uint)count);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
@@ -364,7 +364,7 @@ internal static class CodeGenAvxFamilyTests
             foreach (var descriptor in descriptors)
             {
                 Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
-                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_K1));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_K1));
                 Assert.That(InstructionConstant(codeGen.Emitter, descriptor), Is.EqualTo((nint)shift));
             }
         });
@@ -381,8 +381,8 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_MASK, intrinsic, TYP_BYTE, 32,
-                new GenTreePhysReg(REG_K1, TYP_MASK) { RegNum = REG_K1 },
-                new GenTreePhysReg(REG_K2, TYP_MASK) { RegNum = REG_K2 })
+                new GenTreePhysReg(REG_X64_K1, TYP_MASK) { RegNum = REG_X64_K1 },
+                new GenTreePhysReg(REG_X64_K2, TYP_MASK) { RegNum = REG_X64_K2 })
             {
                 RegNum = REG_K3,
             };
@@ -391,8 +391,8 @@ internal static class CodeGenAvxFamilyTests
             Assert.That(id.idIns(), Is.EqualTo(expected));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_32BYTE));
             Assert.That(id.idReg1(), Is.EqualTo(REG_K3));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_K1));
-            Assert.That(id.idReg3(), Is.EqualTo(REG_K2));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_K1));
+            Assert.That(id.idReg3(), Is.EqualTo(REG_X64_K2));
         });
     }
 
@@ -403,13 +403,13 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(TYP_VOID, intrinsic, TYP_BYTE, 16,
-                new GenTreePhysReg(REG_K1, TYP_MASK) { RegNum = REG_K1 },
-                new GenTreePhysReg(REG_K2, TYP_MASK) { RegNum = REG_K2 });
+                new GenTreePhysReg(REG_X64_K1, TYP_MASK) { RegNum = REG_X64_K1 },
+                new GenTreePhysReg(REG_X64_K2, TYP_MASK) { RegNum = REG_X64_K2 });
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var id = Descriptors(codeGen)[^1];
             Assert.That(id.idIns(), Is.EqualTo(expected));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_K1));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_K1));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_K1));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_K1));
         });
     }
 
@@ -422,9 +422,9 @@ internal static class CodeGenAvxFamilyTests
             var count = compiler.gtNewIconNode(TYP_INT, 255);
             count.IsContained = true;
             var node = new GenTreeHWIntrinsic(TYP_MASK, intrinsic, TYP_BYTE, 64,
-                new GenTreePhysReg(REG_K1, TYP_MASK) { RegNum = REG_K1 }, count)
+                new GenTreePhysReg(REG_X64_K1, TYP_MASK) { RegNum = REG_X64_K1 }, count)
             {
-                RegNum = REG_K2,
+                RegNum = REG_X64_K2,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var id = Descriptors(codeGen)[^1];
@@ -443,16 +443,16 @@ internal static class CodeGenAvxFamilyTests
         WithHardware((compiler, codeGen) =>
         {
             var node = new GenTreeHWIntrinsic(size == 64 ? TYP_LONG : TYP_INT, NI_AVX512_MoveMask,
-                baseType, (byte)size, new GenTreePhysReg(REG_K1, TYP_MASK) { RegNum = REG_K1 })
+                baseType, (byte)size, new GenTreePhysReg(REG_X64_K1, TYP_MASK) { RegNum = REG_X64_K1 })
             {
-                RegNum = REG_RAX,
+                RegNum = REG_X64_RAX,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var id = Descriptors(codeGen)[^1];
             Assert.That(id.idIns(), Is.EqualTo(expected));
             Assert.That(id.idOpSize(), Is.EqualTo(expectedSize));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RAX));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_K1));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RAX));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_K1));
         });
     }
 
@@ -462,76 +462,76 @@ internal static class CodeGenAvxFamilyTests
     {
         WithHardware((compiler, codeGen) =>
         {
-            var source = pointer ? Register(compiler, TYP_I_IMPL, REG_RAX) : (GenTree)Vector(REG_XMM1);
+            var source = pointer ? Register(compiler, TYP_LONG, REG_X64_RAX) : (GenTree)Vector(REG_X64_XMM1);
             var node = new GenTreeHWIntrinsic(TYP_SIMD32, NI_AVX2_ConvertToVector256Int32, TYP_SHORT, 32, source)
             {
-                RegNum = REG_XMM2,
-                AuxiliaryType = pointer ? TYP_U_IMPL : TYP_UNKNOWN,
+                RegNum = REG_X64_XMM2,
+                AuxiliaryType = pointer ? TYP_ULONG : TYP_UNKNOWN,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var id = Descriptors(codeGen)[^1];
             Assert.That(id.idIns(), Is.EqualTo(INS_pmovsxwd));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_32BYTE));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM2));
             if (pointer)
             {
-                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
             }
             else
             {
-                Assert.That(id.idReg2(), Is.EqualTo(REG_XMM1));
+                Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM1));
             }
         });
     }
 
-    [TestCase(false, REG_RAX)]
-    [TestCase(false, REG_RDX)]
-    [TestCase(true, REG_RAX)]
-    [TestCase(true, REG_RDX)]
+    [TestCase(false, REG_X64_RAX)]
+    [TestCase(false, REG_X64_RDX)]
+    [TestCase(true, REG_X64_RAX)]
+    [TestCase(true, REG_X64_RDX)]
     public static void MultiplyNoFlagsUsesRdxAndTheOptionalLowResultHome(bool storeLow, regNumber first)
     {
         WithHardware((compiler, codeGen) =>
         {
             var op1 = Register(compiler, TYP_LONG, first);
-            var op2 = Register(compiler, TYP_LONG, REG_RCX);
+            var op2 = Register(compiler, TYP_LONG, REG_X64_RCX);
             var operands = storeLow
-                ? new GenTree[] { op1, op2, Register(compiler, TYP_I_IMPL, REG_R9) }
+                ? new GenTree[] { op1, op2, Register(compiler, TYP_LONG, REG_X64_R9) }
                 : [op1, op2];
             var node = new GenTreeHWIntrinsic(TYP_LONG, NI_AVX2_X64_MultiplyNoFlags, TYP_UNKNOWN, 0, operands)
             {
-                RegNum = REG_R8,
+                RegNum = REG_X64_R8,
             };
             if (storeLow)
             {
-                codeGen.InternalRegisters.Add(node, Mask(REG_R10));
+                codeGen.InternalRegisters.Add(node, Mask(REG_X64_R10));
             }
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var descriptors = Descriptors(codeGen);
-            Assert.That(descriptors, Has.Count.EqualTo(1 + (first == REG_RDX ? 0 : 1) + (storeLow ? 1 : 0)));
+            Assert.That(descriptors, Has.Count.EqualTo(1 + (first == REG_X64_RDX ? 0 : 1) + (storeLow ? 1 : 0)));
             var mul = descriptors[storeLow ? ^2 : ^1];
             Assert.That(mul.idIns(), Is.EqualTo(INS_mulx));
-            Assert.That(mul.idInsFmt(), Is.EqualTo(IF_RWR_RWR_RRD));
-            Assert.That(mul.idReg1(), Is.EqualTo(REG_R8));
-            Assert.That(mul.idReg2(), Is.EqualTo(storeLow ? REG_R10 : REG_R8));
-            Assert.That(mul.idReg3(), Is.EqualTo(REG_RCX));
+            Assert.That(mul.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RWR_RRD));
+            Assert.That(mul.idReg1(), Is.EqualTo(REG_X64_R8));
+            Assert.That(mul.idReg2(), Is.EqualTo(storeLow ? REG_X64_R10 : REG_X64_R8));
+            Assert.That(mul.idReg3(), Is.EqualTo(REG_X64_RCX));
             if (storeLow)
             {
                 Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_mov));
-                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_R10));
-                Assert.That(descriptors[^1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R9));
+                Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_X64_R10));
+                Assert.That(descriptors[^1].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_R9));
             }
         });
     }
 
-    [TestCase(false, REG_RCX, true)]
-    [TestCase(false, REG_RAX, false)]
-    [TestCase(true, REG_RCX, true)]
-    [TestCase(true, REG_RAX, false)]
+    [TestCase(false, REG_X64_RCX, true)]
+    [TestCase(false, REG_X64_RAX, false)]
+    [TestCase(true, REG_X64_RCX, true)]
+    [TestCase(true, REG_X64_RAX, false)]
     public static void CountZeroBreaksOnlyFalseDependencies(bool memory, regNumber target, bool zeroes)
     {
         WithHardware((compiler, codeGen) =>
         {
-            GenTree operand = memory ? Memory(compiler, TYP_LONG) : Register(compiler, TYP_LONG, REG_RAX);
+            GenTree operand = memory ? Memory(compiler, TYP_LONG) : Register(compiler, TYP_LONG, REG_X64_RAX);
             var node = new GenTreeHWIntrinsic(TYP_LONG, NI_AVX2_X64_LeadingZeroCount, TYP_UNKNOWN, 0, operand)
             {
                 RegNum = target,
@@ -559,15 +559,15 @@ internal static class CodeGenAvxFamilyTests
     {
         WithHardware((compiler, codeGen) =>
         {
-            var node = new GenTreeHWIntrinsic(targetType, intrinsic, baseType, (byte)sourceType.Size, Vector(REG_XMM1, sourceType))
+            var node = new GenTreeHWIntrinsic(targetType, intrinsic, baseType, (byte)sourceType.Size, Vector(REG_X64_XMM1, sourceType))
             {
-                RegNum = REG_XMM2,
+                RegNum = REG_X64_XMM2,
             };
             codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
             var id = Descriptors(codeGen)[^1];
             Assert.That(id.idIns(), Is.EqualTo(expected));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM1));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM1));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(id.idOpSize(), Is.EqualTo(sourceType.EmitSize));
         });
     }
@@ -593,18 +593,18 @@ internal static class CodeGenAvxFamilyTests
                 compiler.opts.compSupportsISAReported.AddInstructionSet(InstructionSet_AVXVNNIINT);
                 var node = new GenTreeHWIntrinsic(TYP_SIMD16,
                     saturate ? NI_AVXVNNIINT_MultiplyWideningAndAddSaturate : NI_AVXVNNIINT_MultiplyWideningAndAdd,
-                    baseType, 16, Vector(REG_XMM1), Vector(REG_XMM2), Vector(REG_XMM3))
+                    baseType, 16, Vector(REG_X64_XMM1), Vector(REG_X64_XMM2), Vector(REG_X64_XMM3))
                 {
-                    RegNum = REG_XMM4,
+                    RegNum = REG_X64_XMM4,
                     AuxiliaryType = auxiliaryType,
                 };
                 codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE);
                 var descriptors = Descriptors(codeGen);
                 Assert.That(descriptors, Has.Count.EqualTo(2));
-                AssertMove(descriptors[0], REG_XMM4, REG_XMM1, EA_16BYTE);
+                AssertMove(descriptors[0], REG_X64_XMM4, REG_X64_XMM1, EA_16BYTE);
                 Assert.That(descriptors[1].idIns(), Is.EqualTo(saturate ? saturating : normal));
-                Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_XMM2));
-                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_XMM3));
+                Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_X64_XMM2));
+                Assert.That(descriptors[1].idReg3(), Is.EqualTo(REG_X64_XMM3));
             });
         }
     }
@@ -618,12 +618,12 @@ internal static class CodeGenAvxFamilyTests
             var scale = compiler.gtNewIconNode(TYP_INT, 4);
             scale.IsContained = true;
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX2_GatherVector128, TYP_INT, 16,
-                Register(compiler, TYP_I_IMPL, REG_RAX), Vector(REG_XMM2), scale)
+                Register(compiler, TYP_LONG, REG_X64_RAX), Vector(REG_X64_XMM2), scale)
             {
-                RegNum = REG_XMM1,
+                RegNum = REG_X64_XMM1,
                 AuxiliaryType = TYP_INT,
             };
-            codeGen.InternalRegisters.Add(node, Mask(REG_XMM5));
+            codeGen.InternalRegisters.Add(node, Mask(REG_X64_XMM5));
             compiler.opts.dspCode = true;
             var diagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.genAvxFamilyIntrinsic(node, INS_OPTS_NONE));
@@ -643,11 +643,11 @@ internal static class CodeGenAvxFamilyTests
         {
             var node = entry == 3
                 ? new GenTreeHWIntrinsic(TYP_LONG, NI_AVX2_X64_LeadingZeroCount, TYP_UNKNOWN, 0,
-                    Register(compiler, TYP_LONG, REG_RAX))
+                    Register(compiler, TYP_LONG, REG_X64_RAX))
                 : new GenTreeHWIntrinsic(TYP_SIMD16,
                     entry == 2 ? NI_AVX512_PermuteVar4x32x2 : NI_AVX512_FusedMultiplyAdd,
-                    entry == 2 ? TYP_INT : TYP_FLOAT, 16, Vector(REG_XMM1), Vector(REG_XMM2), Vector(REG_XMM3));
-            node.RegNum = entry == 3 ? REG_RAX : REG_XMM1;
+                    entry == 2 ? TYP_INT : TYP_FLOAT, 16, Vector(REG_X64_XMM1), Vector(REG_X64_XMM2), Vector(REG_X64_XMM3));
+            node.RegNum = entry == 3 ? REG_X64_RAX : REG_X64_XMM1;
             var before = Descriptors(codeGen).Count;
             compiler.opts.dspCode = true;
             var diagnostic = InstructionRecordingTestSupport.Capture(() => EmitEntry(codeGen, node, entry));
@@ -693,7 +693,7 @@ internal static class CodeGenAvxFamilyTests
         => new(reg, type) { RegNum = reg };
 
     private static GenTreeIndir Memory(Compiler compiler, var_types type)
-        => new(GT_IND, type, Register(compiler, TYP_I_IMPL, REG_RAX)) { IsContained = true };
+        => new(GT_IND, type, Register(compiler, TYP_LONG, REG_X64_RAX)) { IsContained = true };
 
     private static regMaskTP Mask(regNumber reg) => regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
 

@@ -105,11 +105,11 @@ internal static unsafe class CodeGenFramePolicyClosureTests
             var descriptors = CodeGenLocalHeapTests.AllDescriptors(firstGroup, codeGen);
             Assert.That(descriptors.Count(descriptor => descriptor.idIns() == INS_r_stosd), Is.EqualTo(1));
             Assert.That(descriptors.Count(descriptor => descriptor.idIns() == INS_mov
-                && descriptor.idInsFmt() == Emitter.insFormat.IF_RWR_CNS
+                && descriptor.idInsFmt() == Emitter.insFormat.IF_XARCH_RWR_CNS
                 && descriptor.idReg1() == REG_EAX && descriptor.idOpSize() == EA_PTRSIZE), Is.EqualTo(1));
             Assert.That(InstructionConstant(codeGen.Emitter, descriptors[0]),
                 Is.EqualTo(unchecked((nint)0xCDCDCDCDCDCDCDCDUL)));
-            var stores = descriptors.Where(descriptor => descriptor.idInsFmt() == Emitter.insFormat.IF_SWR_RRD).ToArray();
+            var stores = descriptors.Where(descriptor => descriptor.idInsFmt() == Emitter.insFormat.IF_XARCH_SWR_RRD).ToArray();
             Assert.That(stores, Has.Length.EqualTo(3));
             Assert.That(stores.All(descriptor => descriptor.idReg1() == REG_SCRATCH), Is.True);
             Assert.That(descriptors.Count, Is.EqualTo(7));

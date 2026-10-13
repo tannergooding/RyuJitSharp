@@ -13,15 +13,15 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class LinearScanGeneralAllocationTests
 {
-    [TestCase(false, REG_RAX)]
-    [TestCase(true, REG_RBX)]
+    [TestCase(false, REG_X64_RAX)]
+    [TestCase(true, REG_X64_RBX)]
     public static void SelectionUsesCallerOrCalleePreference(bool calleeSave, regNumber expected)
     {
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             interval.preferCalleeSave = calleeSave;
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 7), SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 7), SRBM_X64_RAX | SRBM_X64_RBX);
             var selected = Allocate(allocator, interval, definition);
 
             Assert.That(selected, Is.EqualTo(expected));
@@ -39,15 +39,15 @@ internal static class LinearScanGeneralAllocationTests
             interval.preferCalleeSave = true;
             interval.isWriteThru = true;
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 7), SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 7), SRBM_X64_RAX | SRBM_X64_RBX);
 
-            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_RAX));
+            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_X64_RAX));
         });
     }
 
-    [TestCase(TYP_INT, REG_RAX, REG_RBX)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM1)]
-    [TestCase(TYP_MASK, REG_K1, REG_K2)]
+    [TestCase(TYP_INT, REG_X64_RAX, REG_X64_RBX)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, REG_X64_XMM1)]
+    [TestCase(TYP_MASK, REG_X64_K1, REG_X64_K2)]
     public static void ConflictingFixedUseRemovesTheCorrectRegisterBank(
         var_types type, regNumber conflicting, regNumber expected)
     {
@@ -75,13 +75,13 @@ internal static class LinearScanGeneralAllocationTests
     {
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
-            interval.assignedReg = allocator.physRegs[(int)REG_RAX];
+            interval.assignedReg = allocator.physRegs[(int)REG_X64_RAX];
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 7), SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 7), SRBM_X64_RAX | SRBM_X64_RBX);
             definition.setRegOptional(true);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX | SRBM_RBX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX);
 
-            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_NA));
+            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_X64_NA));
             Assert.That(interval.assignedReg, Is.Null);
         });
     }
@@ -97,22 +97,22 @@ internal static class LinearScanGeneralAllocationTests
             var previous = NewInterval(allocator, TYP_INT);
             previous.isConstant = true;
             _ = allocator.newRefPosition(previous, 1, RefType.RefTypeDef,
-                compiler.gtNewIconNode(previousType, (nint)value), SRBM_RBX);
-            var register = allocator.physRegs[(int)REG_RBX];
+                compiler.gtNewIconNode(previousType, (nint)value), SRBM_X64_RBX);
+            var register = allocator.physRegs[(int)REG_X64_RBX];
             Assign(allocator, register, previous);
             previous.isActive = false;
-            MakeAvailable(allocator, REG_RBX, TYP_INT);
+            MakeAvailable(allocator, REG_X64_RBX, TYP_INT);
             InUse(allocator) = default;
 
             var interval = NewInterval(allocator, TYP_INT);
             interval.isConstant = true;
             var tree = compiler.gtNewIconNode(type, (nint)value);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
             var selected = Allocate(allocator, interval, definition);
 
             Assert.That(tree.IsReuseRegVal, Is.EqualTo(expectedReuse));
-            Assert.That(selected, Is.EqualTo(expectedReuse ? REG_RBX : REG_RAX));
+            Assert.That(selected, Is.EqualTo(expectedReuse ? REG_X64_RBX : REG_X64_RAX));
         });
     }
 
@@ -127,15 +127,15 @@ internal static class LinearScanGeneralAllocationTests
             var previous = NewInterval(allocator, TYP_DOUBLE);
             previous.isConstant = true;
             _ = allocator.newRefPosition(previous, 1, RefType.RefTypeDef,
-                compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(previousBits)), SRBM_XMM0);
-            Assign(allocator, allocator.physRegs[(int)REG_XMM0], previous);
+                compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(previousBits)), SRBM_X64_XMM0);
+            Assign(allocator, allocator.physRegs[(int)REG_X64_XMM0], previous);
 
             var interval = NewInterval(allocator, TYP_DOUBLE);
             interval.isConstant = true;
             var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef,
-                compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(bits)), SRBM_XMM0);
+                compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(bits)), SRBM_X64_XMM0);
 
-            Assert.That(Matches(allocator, allocator.physRegs[(int)REG_XMM0], definition), Is.EqualTo(expected));
+            Assert.That(Matches(allocator, allocator.physRegs[(int)REG_X64_XMM0], definition), Is.EqualTo(expected));
         });
     }
 
@@ -145,24 +145,24 @@ internal static class LinearScanGeneralAllocationTests
         WithAllocator((compiler, allocator) => {
             var previous = NewInterval(allocator, TYP_INT);
             var previousDefinition = allocator.newRefPosition(
-                previous, 1, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_RAX);
+                previous, 1, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
             var interval = NewInterval(allocator, TYP_INT);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 2), SRBM_RAX);
+                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 2), SRBM_X64_RAX);
             _ = allocator.newRefPosition(
-                previous, 30, RefType.RefTypeUse, compiler.gtNewIconNode(TYP_INT, 1), SRBM_RAX);
+                previous, 30, RefType.RefTypeUse, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
             previous.recentRefPosition = previousDefinition;
-            var record = allocator.physRegs[(int)REG_RAX];
+            var record = allocator.physRegs[(int)REG_X64_RAX];
             Assign(allocator, record, previous);
             previous.isActive = false;
-            MakeAvailable(allocator, REG_RAX, TYP_INT);
+            MakeAvailable(allocator, REG_X64_RAX, TYP_INT);
             InUse(allocator) = default;
 
             _ = Allocate(allocator, interval, definition);
 
             Assert.That(record.previousInterval, Is.SameAs(previous));
             Assert.That(record.assignedInterval, Is.SameAs(interval));
-            Assert.That(previous.physReg, Is.EqualTo(REG_NA));
+            Assert.That(previous.physReg, Is.EqualTo(REG_X64_NA));
         });
     }
 
@@ -172,18 +172,18 @@ internal static class LinearScanGeneralAllocationTests
         WithAllocator((compiler, allocator) => {
             var previous = NewInterval(allocator, TYP_INT);
             var oldDefinition = allocator.newRefPosition(
-                previous, 1, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_RAX);
+                previous, 1, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
             var interval = NewInterval(allocator, TYP_INT);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 2), SRBM_RAX);
+                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 2), SRBM_X64_RAX);
             _ = allocator.newRefPosition(
-                previous, 30, RefType.RefTypeUse, compiler.gtNewIconNode(TYP_INT, 1), SRBM_RAX);
+                previous, 30, RefType.RefTypeUse, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
             previous.recentRefPosition = oldDefinition;
-            Assign(allocator, allocator.physRegs[(int)REG_RAX], previous);
+            Assign(allocator, allocator.physRegs[(int)REG_X64_RAX], previous);
             InUse(allocator) = default;
             allocator.setCurrentBlockStartLocation(0);
 
-            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_RAX));
+            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_X64_RAX));
             Assert.That(oldDefinition.spillAfter, Is.True);
             Assert.That(previous.isSpilled, Is.True);
             Assert.That(previous.isActive, Is.False);
@@ -198,15 +198,15 @@ internal static class LinearScanGeneralAllocationTests
             var interval = NewInterval(allocator, TYP_INT);
             var related = NewInterval(allocator, TYP_INT);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX | SRBM_X64_RBX);
             _ = allocator.newRefPosition(
-                related, 30, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 2), SRBM_RBX);
+                related, 30, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 2), SRBM_X64_RBX);
             interval.relatedInterval = related;
             related.relatedInterval = interval;
             interval.recentRefPosition = null;
             related.recentRefPosition = null;
 
-            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_RBX));
+            Assert.That(Allocate(allocator, interval, definition), Is.EqualTo(REG_X64_RBX));
         });
     }
 
@@ -216,22 +216,22 @@ internal static class LinearScanGeneralAllocationTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_RAX);
-            var use = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_RBX);
+            var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var use = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_X64_RBX);
             interval.recentRefPosition = definition;
-            var home = allocator.physRegs[(int)REG_RAX];
+            var home = allocator.physRegs[(int)REG_X64_RAX];
             Assign(allocator, home, interval);
             var related = NewInterval(allocator, TYP_INT);
             interval.relatedInterval = related;
 
-            Assert.That(AssignCopy(allocator, use), Is.EqualTo(REG_RBX));
+            Assert.That(AssignCopy(allocator, use), Is.EqualTo(REG_X64_RBX));
             Assert.That(use.copyReg, Is.True);
             Assert.That(use.RegOptional(), Is.False);
-            Assert.That(interval.physReg, Is.EqualTo(REG_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(REG_X64_RAX));
             Assert.That(interval.assignedReg, Is.SameAs(home));
             Assert.That(interval.relatedInterval, Is.SameAs(related));
             Assert.That(interval.isActive, Is.True);
-            Assert.That(allocator.physRegs[(int)REG_RBX].assignedInterval, Is.SameAs(interval));
+            Assert.That(allocator.physRegs[(int)REG_X64_RBX].assignedInterval, Is.SameAs(interval));
         });
     }
 

@@ -10,7 +10,7 @@ internal static class RegNumberNameTests
     [Test]
     public static void RegisterNamesUseRuntimeTargetConfiguration()
     {
-        Assert.That(REG_NA.Name, Is.EqualTo("NA"));
+        Assert.That(Globals.REG_NA.Name, Is.EqualTo("NA"));
 
         if (Configuration.TARGET_AMD64)
         {

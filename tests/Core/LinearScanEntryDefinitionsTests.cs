@@ -88,9 +88,9 @@ internal static unsafe class LinearScanEntryDefinitionsTests
         });
     }
 
-    [TestCase(TYP_INT, REG_NA)]
-    [TestCase(TYP_INT, REG_RCX)]
-    [TestCase(TYP_DOUBLE, REG_XMM0)]
+    [TestCase(TYP_INT, REG_X64_NA)]
+    [TestCase(TYP_INT, REG_X64_RCX)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0)]
     public static void ParameterDefinitionPrefersIncomingRegister(var_types type, regNumber register)
     {
         WithEntry(type, false, false, (compiler, allocator, interval) => {
@@ -101,7 +101,7 @@ internal static unsafe class LinearScanEntryDefinitionsTests
             Assert.That(allocator.refPositions, Has.Count.EqualTo(1));
             var position = allocator.refPositions[0];
             AssertEntryDefinition(position, RefType.RefTypeParamDef);
-            if (register != REG_NA)
+            if (register != REG_X64_NA)
             {
                 Assert.That(interval.physReg, Is.EqualTo(register));
                 Assert.That(interval.isActive, Is.True);

@@ -69,11 +69,11 @@ internal static class CodeGenRegisterPairShiftAdapterTests
     }
 
 #if TARGET_AMD64
-    private const regNumber FirstRegister = REG_RAX;
-    private const regNumber SecondRegister = REG_RCX;
+    private const regNumber FirstRegister = REG_X64_RAX;
+    private const regNumber SecondRegister = REG_X64_RCX;
 #else
-    private const regNumber FirstRegister = REG_EAX;
-    private const regNumber SecondRegister = REG_ECX;
+    private const regNumber FirstRegister = REG_X64_EAX;
+    private const regNumber SecondRegister = REG_X64_ECX;
 #endif
 }
 #endif

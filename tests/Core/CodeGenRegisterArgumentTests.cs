@@ -15,12 +15,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenRegisterArgumentTests
 {
-    [TestCase(TYP_INT, REG_RAX, REG_RCX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_LONG, REG_R9, REG_RDX, INS_mov, EA_8BYTE)]
-    [TestCase(TYP_REF, REG_RAX, REG_RCX, INS_mov, EA_8BYTE)]
-    [TestCase(TYP_BYREF, REG_RDX, REG_R8, INS_mov, EA_8BYTE)]
-    [TestCase(TYP_FLOAT, REG_XMM4, REG_XMM0, INS_movaps, EA_4BYTE)]
-    [TestCase(TYP_DOUBLE, REG_XMM5, REG_XMM1, INS_movaps, EA_8BYTE)]
+    [TestCase(TYP_INT, REG_X64_RAX, REG_X64_RCX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_LONG, REG_X64_R9, REG_X64_RDX, INS_mov, EA_8BYTE)]
+    [TestCase(TYP_REF, REG_X64_RAX, REG_X64_RCX, INS_mov, EA_8BYTE)]
+    [TestCase(TYP_BYREF, REG_X64_RDX, REG_X64_R8, INS_mov, EA_8BYTE)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM4, REG_X64_XMM0, INS_movaps, EA_4BYTE)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM5, REG_X64_XMM1, INS_movaps, EA_8BYTE)]
     public static void PutArgConsumesMovesAndProducesTheArgument(
         var_types type, regNumber sourceReg, regNumber targetReg, instruction ins, emitAttr size)
     {
@@ -48,11 +48,11 @@ internal static class CodeGenRegisterArgumentTests
         });
     }
 
-    [TestCase(TYP_INT, REG_RCX)]
-    [TestCase(TYP_REF, REG_RCX)]
-    [TestCase(TYP_BYREF, REG_RDX)]
-    [TestCase(TYP_FLOAT, REG_XMM0)]
-    [TestCase(TYP_DOUBLE, REG_XMM1)]
+    [TestCase(TYP_INT, REG_X64_RCX)]
+    [TestCase(TYP_REF, REG_X64_RCX)]
+    [TestCase(TYP_BYREF, REG_X64_RDX)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM0)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM1)]
     public static void AliasPutArgsStillConsumeAndProduceWithoutAnInstruction(var_types type, regNumber reg)
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
@@ -83,22 +83,22 @@ internal static class CodeGenRegisterArgumentTests
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-            var source = Physical(TYP_REF, REG_RAX);
-            var copyReg = alias ? REG_RCX : REG_RDX;
+            var source = Physical(TYP_REF, REG_X64_RAX);
+            var copyReg = alias ? REG_X64_RCX : REG_X64_RDX;
             var copy = new GenTreeCopyOrReload(GT_COPY, TYP_REF, source) { RegNum = copyReg };
-            var argument = new GenTreeUnOp(GT_PUTARG_REG, TYP_REF, copy) { RegNum = REG_RCX };
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
+            var argument = new GenTreeUnOp(GT_PUTARG_REG, TYP_REF, copy) { RegNum = REG_X64_RCX };
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
 
             codeGen.genPutArgReg(argument);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(alias ? 1 : 2));
-            AssertMove(descriptors[0], INS_mov, EA_8BYTE, copyReg, REG_RAX);
+            AssertMove(descriptors[0], INS_mov, EA_8BYTE, copyReg, REG_X64_RAX);
             if (!alias)
             {
-                AssertMove(descriptors[1], INS_mov, EA_8BYTE, REG_RCX, REG_RDX);
+                AssertMove(descriptors[1], INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RDX);
             }
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_RCX)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_X64_RCX)));
 #if DEBUG
             Assert.That(source._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
@@ -116,12 +116,12 @@ internal static class CodeGenRegisterArgumentTests
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = new GenTreeCall(TYP_VOID);
-            var second = PutArg(TYP_LONG, REG_R8);
-            var first = PutArg(TYP_LONG, REG_RDX);
+            var second = PutArg(TYP_LONG, REG_X64_R8);
+            var first = PutArg(TYP_LONG, REG_X64_RDX);
             var secondArg = AddArgument(compiler, call, second,
-                AbiPassingSegment.InRegister(REG_RDX, 0, 8), late: false);
+                AbiPassingSegment.InRegister(REG_X64_RDX, 0, 8), late: false);
             var firstArg = AddArgument(compiler, call, first,
-                AbiPassingSegment.InRegister(REG_RCX, 0, 8), late: false);
+                AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8), late: false);
             secondArg.EarlyNode = null;
             secondArg.LateNode = second;
             firstArg.EarlyNode = null;
@@ -129,11 +129,11 @@ internal static class CodeGenRegisterArgumentTests
             call.Args.PushLateBack(firstArg);
             call.Args.PushLateBack(secondArg);
 
-            var stackSource = Physical(TYP_LONG, REG_R11);
+            var stackSource = Physical(TYP_LONG, REG_X64_R11);
             var stack = new GenTreePutArgStk(TYP_LONG, stackSource, call, 32, 8, false);
             _ = AddArgument(compiler, call, stack, AbiPassingSegment.OnStack(32, 0, 8));
-            var early = PutArg(TYP_LONG, REG_R9);
-            _ = AddArgument(compiler, call, early, AbiPassingSegment.InRegister(REG_R9, 0, 8), late: false);
+            var early = PutArg(TYP_LONG, REG_X64_R9);
+            _ = AddArgument(compiler, call, early, AbiPassingSegment.InRegister(REG_X64_R9, 0, 8), late: false);
 #if DEBUG
             first.UseNum = 0;
             second.UseNum = 1;
@@ -144,8 +144,8 @@ internal static class CodeGenRegisterArgumentTests
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
             // RDX must reach RCX before the next placement overwrites RDX.
-            AssertMove(descriptors[0], INS_mov, EA_8BYTE, REG_RCX, REG_RDX);
-            AssertMove(descriptors[1], INS_mov, EA_8BYTE, REG_RDX, REG_R8);
+            AssertMove(descriptors[0], INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RDX);
+            AssertMove(descriptors[1], INS_mov, EA_8BYTE, REG_X64_RDX, REG_X64_R8);
 #if DEBUG
             Assert.That(first._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
@@ -171,8 +171,8 @@ internal static class CodeGenRegisterArgumentTests
 
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-            var first = PutArg(TYP_INT, REG_RAX);
-            var second = PutArg(TYP_INT, REG_RBX);
+            var first = PutArg(TYP_INT, REG_X64_RAX);
+            var second = PutArg(TYP_INT, REG_X64_RBX);
             var fields = new GenTreeFieldList();
             fields.AddFieldLIR(compiler, first, 0, TYP_INT);
             fields.AddFieldLIR(compiler, second, 4, TYP_INT);
@@ -183,8 +183,8 @@ internal static class CodeGenRegisterArgumentTests
             argument.EarlyNode = null;
             argument.LateNode = fields;
 
-            var firstSegment = AbiPassingSegment.InRegister(REG_R8, 0, 4);
-            var secondSegment = AbiPassingSegment.InRegister(REG_R9, 4, 4);
+            var firstSegment = AbiPassingSegment.InRegister(REG_X64_R8, 0, 4);
+            var secondSegment = AbiPassingSegment.InRegister(REG_X64_R9, 4, 4);
             argument.AbiInfo = AbiPassingInformation.FromSegments(compiler, in firstSegment, in secondSegment);
             call.Args.PushLateBack(argument);
 
@@ -192,8 +192,8 @@ internal static class CodeGenRegisterArgumentTests
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(2));
-            AssertMove(descriptors[0], INS_mov, EA_4BYTE, REG_R8, REG_RAX);
-            AssertMove(descriptors[1], INS_mov, EA_4BYTE, REG_R9, REG_RBX);
+            AssertMove(descriptors[0], INS_mov, EA_4BYTE, REG_X64_R8, REG_X64_RAX);
+            AssertMove(descriptors[1], INS_mov, EA_4BYTE, REG_X64_R9, REG_X64_RBX);
         });
     }
 
@@ -215,18 +215,18 @@ internal static class CodeGenRegisterArgumentTests
             {
                 call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_TAILCALL;
             }
-            var sourceReg = alias ? REG_RCX : REG_RAX;
+            var sourceReg = alias ? REG_X64_RCX : REG_X64_RAX;
             var argument = PutArg(type, sourceReg);
-            _ = AddArgument(compiler, call, argument, AbiPassingSegment.InRegister(REG_RCX, 0, 8));
+            _ = AddArgument(compiler, call, argument, AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8));
             codeGen.GCInfo.gcMarkRegPtrVal(sourceReg, type);
 
             codeGen.genCallPlaceRegArgs(call);
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(alias ? 0 : 1));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur,
-                Is.EqualTo(tailCall && type == TYP_REF ? Mask(REG_RCX) : default));
+                Is.EqualTo(tailCall && type == TYP_REF ? Mask(REG_X64_RCX) : default));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
-                Is.EqualTo(tailCall && type == TYP_BYREF ? Mask(REG_RCX) : default));
+                Is.EqualTo(tailCall && type == TYP_BYREF ? Mask(REG_X64_RCX) : default));
 #if DEBUG
             Assert.That(argument._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
@@ -244,9 +244,9 @@ internal static class CodeGenRegisterArgumentTests
         {
             var call = new GenTreeCall(TYP_VOID);
             call.Args.IsVarArgs = varargs;
-            regNumber[] floatRegs = [REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3];
-            regNumber[] sourceRegs = [REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM3];
-            regNumber[] intRegs = [REG_RCX, REG_RDX, REG_R8, REG_R9];
+            regNumber[] floatRegs = [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3];
+            regNumber[] sourceRegs = [REG_X64_XMM4, REG_X64_XMM5, REG_X64_XMM6, REG_X64_XMM3];
+            regNumber[] intRegs = [REG_X64_RCX, REG_X64_RDX, REG_X64_R8, REG_X64_R9];
             var size = type == TYP_FLOAT ? EA_4BYTE : EA_8BYTE;
 
             for (var i = 0; i < floatRegs.Length; i++)
@@ -255,7 +255,7 @@ internal static class CodeGenRegisterArgumentTests
                 _ = AddArgument(compiler, call, argument,
                     AbiPassingSegment.InRegister(floatRegs[i], 0, (int)size), late: i != 3);
             }
-            var stack = new GenTreePutArgStk(type, Physical(type, REG_XMM7), call, 32, 8, false);
+            var stack = new GenTreePutArgStk(type, Physical(type, REG_X64_XMM7), call, 32, 8, false);
             _ = AddArgument(compiler, call, stack, AbiPassingSegment.OnStack(32, 0, (int)size));
 
             codeGen.genCallPlaceRegArgs(call);
@@ -285,16 +285,16 @@ internal static class CodeGenRegisterArgumentTests
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-            var sourceReg = alias ? REG_RCX : REG_RAX;
+            var sourceReg = alias ? REG_X64_RCX : REG_X64_RAX;
             var source = Physical(TYP_REF, sourceReg);
             var argument = new GenTreeUnOp(GT_PUTARG_REG, TYP_REF, source)
             {
-                RegNum = placement ? sourceReg : REG_RCX,
+                RegNum = placement ? sourceReg : REG_X64_RCX,
             };
             var call = new GenTreeCall(TYP_VOID);
-            _ = AddArgument(compiler, call, argument, AbiPassingSegment.InRegister(REG_RCX, 0, 8));
+            _ = AddArgument(compiler, call, argument, AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8));
             codeGen.GCInfo.gcMarkRegPtrVal(sourceReg, TYP_REF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R10, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R10, TYP_BYREF);
             compiler.opts.dspCode = true;
 
             void Generate()
@@ -312,8 +312,8 @@ internal static class CodeGenRegisterArgumentTests
             var diagnostic = InstructionRecordingTestSupport.Capture(Generate);
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(alias ? 0 : 1));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(placement ? default : Mask(REG_RCX)));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(REG_R10)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(placement ? default : Mask(REG_X64_RCX)));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(REG_X64_R10)));
             Assert.That(diagnostic.Contains("mov", StringComparison.Ordinal), Is.EqualTo(!alias));
         });
     }

@@ -22,9 +22,9 @@ internal static class CodeGenScalarNodeTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var tree = new GenTreeUnOp(GT_INC_SATURATE, type, Register(compiler, type, REG_RAX))
+            var tree = new GenTreeUnOp(GT_INC_SATURATE, type, Register(compiler, type, REG_X64_RAX))
             {
-                RegNum = same ? REG_RAX : REG_R8,
+                RegNum = same ? REG_X64_RAX : REG_X64_R8,
             };
             codeGen.genCodeForIncSaturate(tree);
             var ids = Descriptors(codeGen);
@@ -49,9 +49,9 @@ internal static class CodeGenScalarNodeTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var source = Register(compiler, type, REG_RAX);
-            var index = Register(compiler, TYP_INT, sharedValue ? REG_RAX : REG_RCX);
-            var tree = new GenTreeOp(oper, type, source, index) { RegNum = sharedValue ? REG_RAX : REG_R8 };
+            var source = Register(compiler, type, REG_X64_RAX);
+            var index = Register(compiler, TYP_INT, sharedValue ? REG_X64_RAX : REG_X64_RCX);
+            var tree = new GenTreeOp(oper, type, source, index) { RegNum = sharedValue ? REG_X64_RAX : REG_X64_R8 };
             codeGen.genCodeForBitOp(tree);
             var ids = Descriptors(codeGen);
 
@@ -65,14 +65,14 @@ internal static class CodeGenScalarNodeTests
 
     [TestCase(TYP_REF, false)]
     [TestCase(TYP_BYREF, false)]
-    [TestCase(TYP_I_IMPL, false)]
+    [TestCase(TYP_LONG, false)]
     [TestCase(TYP_REF, true)]
     public static void PhysicalRegisterReadsPreserveSourceAndDestinationGcState(var_types type, bool same)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var tree = new GenTreePhysReg(REG_RAX, type) { RegNum = same ? REG_RAX : REG_R8 };
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, type);
+            var tree = new GenTreePhysReg(REG_X64_RAX, type) { RegNum = same ? REG_X64_RAX : REG_X64_R8 };
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, type);
             codeGen.genCodeForPhysReg(tree);
             var expected = same ? RBM_RAX : RBM_RAX | RBM_R8;
 
@@ -92,7 +92,7 @@ internal static class CodeGenScalarNodeTests
             block.CatchType = bbCatchType.BBCT_FILTER;
             var exceptionMask = new regMaskTP(SRBM_EXCEPTION_OBJECT);
             codeGen.GCInfo.gcMarkRegSetGCref(exceptionMask);
-            var tree = new GenTree(GT_CATCH_ARG, TYP_REF) { RegNum = same ? REG_EXCEPTION_OBJECT : REG_R8 };
+            var tree = new GenTree(GT_CATCH_ARG, TYP_REF) { RegNum = same ? REG_EXCEPTION_OBJECT : REG_X64_R8 };
             codeGen.genCodeForCatchArg(tree);
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(same ? 0 : 1));
@@ -108,7 +108,7 @@ internal static class CodeGenScalarNodeTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = compiler.gtNewIconNode(TYP_INT, value);
-            tree.RegNum = REG_RAX;
+            tree.RegNum = REG_X64_RAX;
             tree.IsReuseRegVal = true;
             if (nonempty)
             {

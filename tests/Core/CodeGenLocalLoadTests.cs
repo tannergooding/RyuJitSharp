@@ -16,12 +16,12 @@ namespace RyuJitSharp.UnitTests;
 internal static class CodeGenLocalLoadTests
 {
     [TestCase(TYP_BYREF)]
-    [TestCase(TYP_I_IMPL)]
+    [TestCase(TYP_LONG)]
     public static void LocalAddressesPreserveOffsetsAndGcKind(var_types type)
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            var tree = new GenTreeLclFld(GT_LCL_ADDR, type, 0, 24) { RegNum = REG_RCX };
+            var tree = new GenTreeLclFld(GT_LCL_ADDR, type, 0, 24) { RegNum = REG_X64_RCX };
 
             codeGen.genCodeForLclAddr(tree);
 
@@ -46,7 +46,7 @@ internal static class CodeGenLocalLoadTests
         {
             var tree = new GenTreeLclFld(GT_LCL_FLD, type, 0, 2)
             {
-                RegNum = REG_RCX,
+                RegNum = REG_X64_RCX,
                 Flags = noExtension ? GTF_DONT_EXTEND : GTF_EMPTY,
             };
 
@@ -60,11 +60,11 @@ internal static class CodeGenLocalLoadTests
         });
     }
 
-    [TestCase(TYP_BYTE, TYP_INT, REG_RCX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_DOUBLE, TYP_DOUBLE, REG_XMM1, INS_movsd_simd, EA_8BYTE)]
-    [TestCase(TYP_SIMD12, TYP_SIMD12, REG_XMM1, INS_movaps, EA_16BYTE)]
-    [TestCase(TYP_SIMD16, TYP_SIMD16, REG_XMM1, INS_movaps, EA_16BYTE)]
-    [TestCase(TYP_REF, TYP_REF, REG_RCX, INS_mov, EA_8BYTE)]
+    [TestCase(TYP_BYTE, TYP_INT, REG_X64_RCX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_DOUBLE, TYP_DOUBLE, REG_X64_XMM1, INS_movsd_simd, EA_8BYTE)]
+    [TestCase(TYP_SIMD12, TYP_SIMD12, REG_X64_XMM1, INS_movaps, EA_16BYTE)]
+    [TestCase(TYP_SIMD16, TYP_SIMD16, REG_X64_XMM1, INS_movaps, EA_16BYTE)]
+    [TestCase(TYP_REF, TYP_REF, REG_X64_RCX, INS_mov, EA_8BYTE)]
     public static void LocalLoadsUseRegisterTypesAndAlignedStackHomes(
         var_types localType, var_types nodeType, regNumber reg, instruction ins, emitAttr size)
     {
@@ -74,7 +74,7 @@ internal static class CodeGenLocalLoadTests
             var tree = compiler.gtNewLclvNode(nodeType, 0);
             tree.RegNum = reg;
 
-            codeGen.genCodeForLclVar(tree);
+            codeGen.genCodeForLclVarXarch(tree);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));
@@ -95,10 +95,10 @@ internal static class CodeGenLocalLoadTests
         {
             compiler.lvaTable[0].lvLRACandidate = candidate;
             var tree = compiler.gtNewLclvNode(TYP_INT, 0);
-            tree.RegNum = REG_RAX;
+            tree.RegNum = REG_X64_RAX;
             tree.Flags |= flags;
 
-            codeGen.genCodeForLclVar(tree);
+            codeGen.genCodeForLclVarXarch(tree);
 
             Assert.That(Descriptors(codeGen), Is.Empty);
 #if DEBUG
@@ -116,7 +116,7 @@ internal static class CodeGenLocalLoadTests
         {
             codeGen.Emitter.UseVexEncodings = vex;
             codeGen.Emitter.UseEvexEncodings = vex;
-            var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_SIMD12, 0, 4) { RegNum = REG_XMM1 };
+            var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_SIMD12, 0, 4) { RegNum = REG_X64_XMM1 };
 
             codeGen.genCodeForLclFld(tree);
 
@@ -141,7 +141,7 @@ internal static class CodeGenLocalLoadTests
             emitter.UseVexEncodings = vex;
             emitter.UseEvexEncodings = vex;
 
-            emitter.emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, REG_XMM1, REG_XMM0, 0, 8, 0x28,
+            emitter.emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM0, 0, 8, 0x28,
                 INS_OPTS_NONE);
 
             var descriptors = Descriptors(codeGen);
@@ -150,8 +150,8 @@ internal static class CodeGenLocalLoadTests
             if (!vex)
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movaps));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM1));
-                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_XMM0));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_XMM1));
+                Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_X64_XMM0));
             }
         });
     }
@@ -162,13 +162,13 @@ internal static class CodeGenLocalLoadTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_REF, 0, 0) { RegNum = REG_RCX };
+            var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_REF, 0, 0) { RegNum = REG_X64_RCX };
             compiler.opts.dspCode = true;
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
             {
                 codeGen.genCodeForLclFld(tree);
                 codeGen.Emitter.emitIns_SIMD_R_R_S_I(
-                    INS_insertps, EA_16BYTE, REG_XMM1, REG_XMM0, 0, 8, 0x28, INS_OPTS_NONE);
+                    INS_insertps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM0, 0, 8, 0x28, INS_OPTS_NONE);
             });
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(2));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RCX));

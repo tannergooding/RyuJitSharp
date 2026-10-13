@@ -51,10 +51,10 @@ internal static unsafe class LinearScanScalarArithmeticTests
                 Is.EqualTo(immediate ? null : (!avx2 || setsFlags)));
             if (!immediate && (!avx2 || setsFlags))
             {
-                Assert.That(countDef?.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RCX));
+                Assert.That(countDef?.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_X64_RCX));
                 Assert.That(allocator.refPositions.Exists(reference =>
                     (reference.refType is RefType.RefTypeKill) &&
-                    (reference.registerAssignment == SRBM_RCX)), Is.True);
+                    (reference.registerAssignment == SRBM_X64_RCX)), Is.True);
                 Assert.That(TargetPreferredUse(allocator), Is.SameAs(valueDef.nextRefPosition));
             }
             else if (avx2)
@@ -76,7 +76,7 @@ internal static unsafe class LinearScanScalarArithmeticTests
             EnableAvx2(compiler);
             ApxSupported(allocator) = true;
             EvexSupported(allocator) = evex;
-            AvailableIntRegs(allocator) |= SRBM_R16;
+            AvailableIntRegs(allocator) |= SRBM_X64_R16;
 
             var source = compiler.gtNewIconNode(TYP_LONG, 123);
             var count = compiler.gtNewIconNode(TYP_INT, 13);
@@ -119,21 +119,21 @@ internal static unsafe class LinearScanScalarArithmeticTests
 
             Assert.That(BuildShiftRotate(allocator, shift), Is.EqualTo(2));
             Assert.That(TargetPreferredUse(allocator), Is.SameAs(sourceDef.nextRefPosition));
-            Assert.That(countDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RCX));
+            Assert.That(countDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_X64_RCX));
             Assert.That(countDef.nextRefPosition?.delayRegFree, Is.False);
             Assert.That(allocator.refPositions.Exists(reference =>
                 (reference.refType is RefType.RefTypeKill) &&
-                (reference.registerAssignment == SRBM_RCX)), Is.True);
+                (reference.registerAssignment == SRBM_X64_RCX)), Is.True);
             Assert.That(allocator.refPositions.Exists(reference =>
                 ReferenceEquals(reference.treeNode, shift) &&
                 (reference.refType is RefType.RefTypeDef)), Is.False);
         });
     }
 
-    [TestCase(GT_DIV, SRBM_RAX)]
-    [TestCase(GT_UDIV, SRBM_RAX)]
-    [TestCase(GT_MOD, SRBM_RDX)]
-    [TestCase(GT_UMOD, SRBM_RDX)]
+    [TestCase(GT_DIV, SRBM_X64_RAX)]
+    [TestCase(GT_UDIV, SRBM_X64_RAX)]
+    [TestCase(GT_MOD, SRBM_X64_RDX)]
+    [TestCase(GT_UMOD, SRBM_X64_RDX)]
     public static void DivisionUsesDividendAndResultRegisters(genTreeOps operation, regMask resultRegister)
     {
         WithAllocator((compiler, allocator) => {
@@ -146,22 +146,22 @@ internal static unsafe class LinearScanScalarArithmeticTests
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildModDiv(allocator, division), Is.EqualTo(2));
-            Assert.That(dividendDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(dividendDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
             Assert.That(TargetPreferredUse(allocator), Is.SameAs(dividendDef.nextRefPosition));
             Assert.That(divisorDef.nextRefPosition?.delayRegFree, Is.True);
-            Assert.That(divisorDef.nextRefPosition?.registerAssignment & (SRBM_RAX | SRBM_RDX),
+            Assert.That(divisorDef.nextRefPosition?.registerAssignment & (SRBM_X64_RAX | SRBM_X64_RDX),
                 Is.EqualTo(SRBM_NONE));
             Assert.That(allocator.refPositions[^1].registerAssignment, Is.EqualTo(resultRegister));
             Assert.That(allocator.refPositions[^1].refType, Is.EqualTo(RefType.RefTypeDef));
             Assert.That(allocator.refPositions.Exists(reference =>
                 (reference.refType is RefType.RefTypeKill) &&
-                (reference.registerAssignment == (SRBM_RAX | SRBM_RDX))), Is.True);
+                (reference.registerAssignment == (SRBM_X64_RAX | SRBM_X64_RDX))), Is.True);
         });
     }
 
     [TestCase(GT_MUL, false, false, SRBM_NONE, 1)]
-    [TestCase(GT_MUL, true, false, SRBM_RAX, 1)]
-    [TestCase(GT_MULHI, false, false, SRBM_RDX, 2)]
+    [TestCase(GT_MUL, true, false, SRBM_X64_RAX, 1)]
+    [TestCase(GT_MULHI, false, false, SRBM_X64_RDX, 2)]
     [TestCase(GT_MULHI, true, true, SRBM_NONE, 2)]
     public static void MultiplicationPreservesEncodingAndKillRequirements(
         genTreeOps operation, bool unsigned, bool avx2, regMask resultCandidates, int expectedSources)
@@ -205,7 +205,7 @@ internal static unsafe class LinearScanScalarArithmeticTests
         WithAllocator((compiler, allocator) => {
             EnableAvx2(compiler);
             var left = compiler.gtNewIconNode(TYP_INT, 17);
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             ReferenceBuildLocation(allocator) = 2;
             var leftDef = BuildDef(allocator, left, SRBM_NONE, 0);
             var addressDef = BuildDef(allocator, address, SRBM_NONE, 0);
@@ -216,7 +216,7 @@ internal static unsafe class LinearScanScalarArithmeticTests
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildMul(allocator, multiply), Is.EqualTo(2));
-            Assert.That(leftDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RDX));
+            Assert.That(leftDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_X64_RDX));
             Assert.That(addressDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
             Assert.That(allocator.refPositions[^1].refType, Is.EqualTo(RefType.RefTypeDef));
         });
@@ -301,7 +301,7 @@ internal static unsafe class LinearScanScalarArithmeticTests
             Assert.That(allocator.refPositions.FindAll(reference =>
                 ReferenceEquals(reference.treeNode, modulo) &&
                 reference.refType is RefType.RefTypeDef), Has.Count.EqualTo(2));
-            Assert.That(allocator.refPositions[^1].registerAssignment, Is.EqualTo(SRBM_RDX));
+            Assert.That(allocator.refPositions[^1].registerAssignment, Is.EqualTo(SRBM_X64_RDX));
         });
     }
 
@@ -336,8 +336,8 @@ internal static unsafe class LinearScanScalarArithmeticTests
             Assert.That(definitions[1].multiRegIdx, Is.EqualTo(1));
             if (!mulx)
             {
-                Assert.That(definitions[0].registerAssignment, Is.EqualTo(SRBM_RAX));
-                Assert.That(definitions[1].registerAssignment, Is.EqualTo(SRBM_RDX));
+                Assert.That(definitions[0].registerAssignment, Is.EqualTo(SRBM_X64_RAX));
+                Assert.That(definitions[1].registerAssignment, Is.EqualTo(SRBM_X64_RDX));
             }
         });
     }

@@ -15,11 +15,11 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class LinearScanLocalBlockLocationsTests
 {
-    [TestCase(REG_RCX, false, false, REG_RCX)]
-    [TestCase(REG_RCX, true, false, REG_RCX)]
-    [TestCase(REG_RCX, true, true, REG_STK)]
-    [TestCase(REG_RCX, false, true, REG_RCX)]
-    [TestCase(REG_STK, false, false, REG_STK)]
+    [TestCase(REG_X64_RCX, false, false, REG_X64_RCX)]
+    [TestCase(REG_X64_RCX, true, false, REG_X64_RCX)]
+    [TestCase(REG_X64_RCX, true, true, REG_X64_STK)]
+    [TestCase(REG_X64_RCX, false, true, REG_X64_RCX)]
+    [TestCase(REG_X64_STK, false, false, REG_X64_STK)]
     public static void IncomingLocationsRespectPredecessorAndWriteThroughHomes(
         regNumber predecessorReg, bool writeThrough, bool ehPredecessor, regNumber expected)
     {
@@ -33,9 +33,9 @@ internal static class LinearScanLocalBlockLocationsTests
 
             ProcessStart(allocator, block);
 
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.EqualTo(expected));
-            Assert.That(interval.isActive, Is.EqualTo(expected != REG_STK));
-            if (expected != REG_STK)
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(expected));
+            Assert.That(interval.isActive, Is.EqualTo(expected != REG_X64_STK));
+            if (expected != REG_X64_STK)
             {
                 Assert.That(allocator.physRegs[(int)expected].assignedInterval, Is.SameAs(interval));
             }
@@ -53,7 +53,7 @@ internal static class LinearScanLocalBlockLocationsTests
 
             ProcessStart(allocator, block);
 
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_STK));
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_X64_STK));
             Assert.That(interval.isActive, Is.False);
         });
     }
@@ -66,34 +66,34 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             BlockInfo(allocator)![1].predBBNum = 2;
-            allocator.setOutVarRegForBB(2, 0, REG_RCX);
+            allocator.setOutVarRegForBB(2, 0, REG_X64_RCX);
             interval.isWriteThru = true;
             interval.firstRefPosition = nextReferenceIsDefinition
                 ? new RefPosition(1, 2, null, RefType.RefTypeDef) : null;
 
             ProcessStart(allocator, block);
 
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_STK));
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_X64_STK));
             Assert.That(interval.isActive, Is.False);
         });
     }
 
-    [TestCase(false, REG_STK)]
-    [TestCase(true, REG_RCX)]
+    [TestCase(false, REG_X64_STK)]
+    [TestCase(true, REG_X64_RCX)]
     public static void ResolutionRetainsCopyHomeAfterPredecessorSpill(bool copyReg, regNumber expected)
     {
         WithLocations((compiler, allocator, block, interval) =>
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             BlockInfo(allocator)![1].predBBNum = 2;
-            allocator.setInVarRegForBB(1, 0, REG_RCX);
+            allocator.setInVarRegForBB(1, 0, REG_X64_RCX);
             AllocationPassComplete(allocator) = true;
             interval.firstRefPosition!.copyReg = copyReg;
 
             ProcessStart(allocator, block);
 
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.EqualTo(expected));
-            Assert.That(interval.isActive, Is.EqualTo(expected != REG_STK));
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(expected));
+            Assert.That(interval.isActive, Is.EqualTo(expected != REG_X64_STK));
         });
     }
 
@@ -104,7 +104,7 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             BlockInfo(allocator)![1].predBBNum = 2;
-            allocator.setInVarRegForBB(1, 0, REG_RCX);
+            allocator.setInVarRegForBB(1, 0, REG_X64_RCX);
             AllocationPassComplete(allocator) = true;
             interval.isWriteThru = true;
             interval.firstRefPosition = null;
@@ -112,7 +112,7 @@ internal static class LinearScanLocalBlockLocationsTests
             var exception = Assert.Throws<FatalJitException>(() => ProcessStart(allocator, block));
 
             Assert.That(exception!.Message, Does.Contain("requires a next reference"));
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_RCX));
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_X64_RCX));
             Assert.That(interval.isActive, Is.False);
         });
     }
@@ -155,8 +155,8 @@ internal static class LinearScanLocalBlockLocationsTests
             });
 
             Assert.That(exception!.Message, Does.Contain("require enregistered locals"));
-            Assert.That(incomingMap[0], Is.EqualTo(REG_STK));
-            Assert.That(outgoingMap[0], Is.EqualTo(REG_STK));
+            Assert.That((regNumber)incomingMap[0], Is.EqualTo(REG_X64_STK));
+            Assert.That((regNumber)outgoingMap[0], Is.EqualTo(REG_X64_STK));
             Assert.That(interval.isActive, Is.False);
         });
     }
@@ -168,14 +168,14 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             SetOps.AddElemD(compiler, block.bbLiveOut, 0);
             CurrentBlockNumber(allocator) = 1;
-            Assign(allocator, allocator.physRegs[(int)REG_RCX], interval);
+            Assign(allocator, allocator.physRegs[(int)REG_X64_RCX], interval);
 
             ProcessEnd(allocator, block);
-            Assert.That(allocator.getOutVarToRegMap(1)![0], Is.EqualTo(REG_RCX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap(1)![0], Is.EqualTo(REG_X64_RCX));
 
             interval.isActive = false;
             ProcessEnd(allocator, block);
-            Assert.That(allocator.getOutVarToRegMap(1)![0], Is.EqualTo(REG_STK));
+            Assert.That((regNumber)allocator.getOutVarToRegMap(1)![0], Is.EqualTo(REG_X64_STK));
         });
     }
 
@@ -199,12 +199,12 @@ internal static class LinearScanLocalBlockLocationsTests
             BlockSequencingDone(allocator) = true;
             VisitedTraits(allocator) = new BitVecTraits(compiler, 2);
             VisitedBlocks(allocator) = VisitedSetOps.MakeEmpty(VisitedTraits(allocator)!);
-            Assign(allocator, allocator.physRegs[(int)REG_RCX], interval);
+            Assign(allocator, allocator.physRegs[(int)REG_X64_RCX], interval);
 
             ProcessEndAllocation(allocator, block);
 
-            Assert.That(allocator.getOutVarToRegMap(1)![0], Is.EqualTo(REG_RCX));
-            Assert.That(allocator.getInVarToRegMap(2)![0], Is.EqualTo(REG_RCX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap(1)![0], Is.EqualTo(REG_X64_RCX));
+            Assert.That((regNumber)allocator.getInVarToRegMap(2)![0], Is.EqualTo(REG_X64_RCX));
             Assert.That(VisitedSetOps.IsMember(VisitedTraits(allocator)!, VisitedBlocks(allocator), 0), Is.True);
         });
     }
@@ -216,15 +216,15 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             interval.firstRefPosition = null;
             interval.isWriteThru = true;
-            Assign(allocator, allocator.physRegs[(int)REG_RCX], interval);
-            allocator.setInVarRegForBB(1, 0, REG_RCX);
+            Assign(allocator, allocator.physRegs[(int)REG_X64_RCX], interval);
+            allocator.setInVarRegForBB(1, 0, REG_X64_RCX);
             BlockInfo(allocator)![1].predBBNum = 2;
 
             ProcessStart(allocator, block);
 
             Assert.That(interval.isActive, Is.False);
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_STK));
-            Assert.That(allocator.physRegs[(int)REG_RCX].assignedInterval, Is.Null);
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_X64_STK));
+            Assert.That(allocator.physRegs[(int)REG_X64_RCX].assignedInterval, Is.Null);
         });
     }
 
@@ -233,14 +233,14 @@ internal static class LinearScanLocalBlockLocationsTests
     {
         WithLocations((_, allocator, block, _) =>
         {
-            var constant = new Interval(TYP_INT, SRBM_RCX) { isConstant = true };
-            Assign(allocator, allocator.physRegs[(int)REG_RCX], constant);
-            Assert.That(ConstantRegisters(allocator).IsSet(REG_RCX), Is.True);
+            var constant = new Interval(TYP_INT, SRBM_X64_RCX) { isConstant = true };
+            Assign(allocator, allocator.physRegs[(int)REG_X64_RCX], constant);
+            Assert.That(ConstantRegisters(allocator).IsSet(REG_X64_RCX), Is.True);
 
             ProcessStart(allocator, block);
 
-            Assert.That(allocator.physRegs[(int)REG_RCX].assignedInterval, Is.Null);
-            Assert.That(ConstantRegisters(allocator).IsSet(REG_RCX), Is.False);
+            Assert.That(allocator.physRegs[(int)REG_X64_RCX].assignedInterval, Is.Null);
+            Assert.That(ConstantRegisters(allocator).IsSet(REG_X64_RCX), Is.False);
         });
     }
 
@@ -249,7 +249,7 @@ internal static class LinearScanLocalBlockLocationsTests
     {
         WithLocations((_, allocator, _, _) =>
         {
-            ConstantRegisters(allocator) = new regMaskTP(SRBM_RCX);
+            ConstantRegisters(allocator) = new regMaskTP(SRBM_X64_RCX);
 
             ResetRegStateWithLocals(allocator);
 
@@ -265,12 +265,12 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             var upper = new Interval(TYP_SIMD16, SRBM_XMM1) { isUpperVector = true };
             ActualRegisters(allocator) = new regMaskTP(SRBM_XMM1);
-            Assign(allocator, allocator.physRegs[(int)REG_XMM1], upper);
+            Assign(allocator, allocator.physRegs[(int)REG_X64_XMM1], upper);
 
             ProcessStart(allocator, block);
 
-            Assert.That(allocator.physRegs[(int)REG_XMM1].assignedInterval, Is.Null);
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_STK));
+            Assert.That(allocator.physRegs[(int)REG_X64_XMM1].assignedInterval, Is.Null);
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.EqualTo(REG_X64_STK));
         });
     }
 #endif
@@ -283,12 +283,12 @@ internal static class LinearScanLocalBlockLocationsTests
         {
             SetOps.AddElemD(compiler, block.bbLiveIn, 0);
             BlockInfo(allocator)![1].predBBNum = 2;
-            allocator.setOutVarRegForBB(2, 0, REG_RCX);
+            allocator.setOutVarRegForBB(2, 0, REG_X64_RCX);
             StressMask(allocator) = 0x200;
 
             ProcessStart(allocator, block);
 
-            Assert.That(allocator.getInVarToRegMap(1)![0], Is.Not.EqualTo(REG_RCX));
+            Assert.That((regNumber)allocator.getInVarToRegMap(1)![0], Is.Not.EqualTo(REG_X64_RCX));
             Assert.That(interval.isSplit, Is.True);
             Assert.That(SetOps.IsMember(compiler, SplitVars(allocator), 0), Is.True);
         });
@@ -309,7 +309,7 @@ internal static class LinearScanLocalBlockLocationsTests
                 bbLiveIn = SetOps.MakeEmpty(compiler),
                 bbLiveOut = SetOps.MakeEmpty(compiler),
             };
-            var interval = new Interval(TYP_INT, SRBM_RCX | SRBM_RDX)
+            var interval = new Interval(TYP_INT, SRBM_X64_RCX | SRBM_X64_RDX)
             {
                 isLocalVar = true,
                 varNum = 0,
@@ -319,7 +319,7 @@ internal static class LinearScanLocalBlockLocationsTests
             Candidates(allocator) = SetOps.MakeSingleton(compiler, 0);
             BlockInfo(allocator) = new LsraBlockInfo[3];
             MaxBlockBeforeResolution(allocator) = 2;
-            ActualRegisters(allocator) = new regMaskTP(SRBM_RCX | SRBM_RDX);
+            ActualRegisters(allocator) = new regMaskTP(SRBM_X64_RCX | SRBM_X64_RDX);
             BuildPhysicalRegisters(allocator);
             allocator.initVarRegMaps();
             action(compiler, allocator, block, interval);

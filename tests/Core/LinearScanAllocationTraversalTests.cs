@@ -29,16 +29,16 @@ internal static unsafe class LinearScanAllocationTraversalTests
             _ = BeginBlock(compiler, allocator);
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 3);
-            var definition = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            var use = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var use = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             use.delayRegFree = delayed;
             AllocateRegisters(allocator);
 
-            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_RAX));
-            Assert.That(use.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(use.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
             Assert.That(use.lastUse, Is.True);
             Assert.That(interval.isActive, Is.False);
-            Assert.That(allocator.physRegs[(int)REG_RAX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)REG_X64_RAX].assignedInterval, Is.Null);
         });
     }
 
@@ -50,20 +50,20 @@ internal static unsafe class LinearScanAllocationTraversalTests
             _ = BeginBlock(compiler, allocator);
             if (kill)
             {
-                _ = AddKillForRegs(allocator, new regMaskTP(SRBM_RAX), 2);
+                _ = AddKillForRegs(allocator, new regMaskTP(SRBM_X64_RAX), 2);
             }
             else
             {
-                _ = allocator.newRefPosition(REG_RAX, 2,
-                    RefType.RefTypeFixedReg, null, SRBM_RAX);
+                _ = allocator.newRefPosition(REG_X64_RAX, 2,
+                    RefType.RefTypeFixedReg, null, SRBM_X64_RAX);
             }
             var interval = NewInterval(allocator, TYP_INT);
             var definition = allocator.newRefPosition(
-                interval, 4, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 5), SRBM_RAX);
+                interval, 4, RefType.RefTypeDef, compiler.gtNewIconNode(TYP_INT, 5), SRBM_X64_RAX);
 
             AllocateRegisters(allocator);
-            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_RAX));
-            Assert.That(interval.physReg, Is.EqualTo(REG_NA));
+            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(REG_X64_NA));
         });
     }
 
@@ -76,13 +76,13 @@ internal static unsafe class LinearScanAllocationTraversalTests
             var interval = NewInterval(allocator, TYP_INT);
             interval.isConstant = constant;
             var tree = compiler.gtNewIconNode(TYP_INT, 9);
-            _ = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             CurrentBlockNumber(allocator) = (uint)blocks[1].bbNum;
             _ = allocator.newRefPosition(null, 6, RefType.RefTypeBB, null, SRBM_NONE);
 
             AllocateRegisters(allocator);
-            Assert.That(allocator.physRegs[(int)REG_RAX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)REG_X64_RAX].assignedInterval, Is.Null);
         });
     }
 
@@ -108,14 +108,14 @@ internal static unsafe class LinearScanAllocationTraversalTests
             var interval = NewInterval(allocator, TYP_INT);
             interval.setLocalNumber(compiler, 0, allocator);
             interval.isWriteThru = ehBoundary;
-            var definition = allocator.newRefPosition(interval, 0, type, null, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 0, type, null, SRBM_X64_RAX);
             _ = allocator.newRefPosition(null, 1, RefType.RefTypeBB, null, SRBM_NONE);
             var use = allocator.newRefPosition(interval, 4, RefType.RefTypeUse,
-                compiler.gtNewIconNode(TYP_INT, 3), SRBM_RAX);
+                compiler.gtNewIconNode(TYP_INT, 3), SRBM_X64_RAX);
 
             AllocateRegisters(allocator);
             Assert.That(definition.registerAssignment,
-                Is.EqualTo(expectEntryRegister ? SRBM_RAX : SRBM_NONE));
+                Is.EqualTo(expectEntryRegister ? SRBM_X64_RAX : SRBM_NONE));
             Assert.That(interval.isSpilled, Is.EqualTo(!expectEntryRegister));
             Assert.That(use.reload, Is.EqualTo(!expectEntryRegister));
         });
@@ -128,15 +128,15 @@ internal static unsafe class LinearScanAllocationTraversalTests
             _ = BeginBlock(compiler, allocator);
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 7);
-            var definition = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            var copiedUse = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_RBX);
+            var definition = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var copiedUse = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_X64_RBX);
             copiedUse.lastUse = false;
-            var finalUse = allocator.newRefPosition(interval, 6, RefType.RefTypeUse, tree, SRBM_RAX);
+            var finalUse = allocator.newRefPosition(interval, 6, RefType.RefTypeUse, tree, SRBM_X64_RAX);
 
             AllocateRegisters(allocator);
-            Assert.That(definition.registerAssignment, Is.AnyOf(SRBM_RAX, SRBM_RBX));
-            Assert.That(copiedUse.registerAssignment, Is.EqualTo(SRBM_RBX));
-            Assert.That(finalUse.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(definition.registerAssignment, Is.AnyOf(SRBM_X64_RAX, SRBM_X64_RBX));
+            Assert.That(copiedUse.registerAssignment, Is.EqualTo(SRBM_X64_RBX));
+            Assert.That(finalUse.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
             Assert.That(copiedUse.moveReg || finalUse.moveReg, Is.True);
             Assert.That(copiedUse.copyReg || finalUse.copyReg, Is.False);
         });
@@ -150,14 +150,14 @@ internal static unsafe class LinearScanAllocationTraversalTests
             var first = NewInterval(allocator, TYP_INT);
             var second = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 7);
-            var firstDefinition = allocator.newRefPosition(first, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(second, 4, RefType.RefTypeDef, tree, SRBM_RAX);
-            var firstUse = allocator.newRefPosition(first, 6, RefType.RefTypeUse, tree, SRBM_RAX);
+            var firstDefinition = allocator.newRefPosition(first, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(second, 4, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var firstUse = allocator.newRefPosition(first, 6, RefType.RefTypeUse, tree, SRBM_X64_RAX);
 
             AllocateRegisters(allocator);
             Assert.That(firstDefinition.spillAfter, Is.True);
             Assert.That(firstUse.reload, Is.True);
-            Assert.That(firstUse.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(firstUse.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
         });
     }
 
@@ -188,26 +188,26 @@ internal static unsafe class LinearScanAllocationTraversalTests
             var interval = NewInterval(allocator, TYP_INT);
             interval.setLocalNumber(compiler, 0, allocator);
             CurrentBlockNumber(allocator) = (uint)blocks[1].bbNum;
-            var dummy = allocator.newRefPosition(interval, 6, RefType.RefTypeDummyDef, null, SRBM_RAX);
+            var dummy = allocator.newRefPosition(interval, 6, RefType.RefTypeDummyDef, null, SRBM_X64_RAX);
             dummy.setRegOptional(true);
             _ = allocator.newRefPosition(null, 6, RefType.RefTypeBB, null, SRBM_NONE);
             var use = allocator.newRefPosition(interval, 8, RefType.RefTypeUse,
-                compiler.gtNewIconNode(TYP_INT, 1), SRBM_RAX);
+                compiler.gtNewIconNode(TYP_INT, 1), SRBM_X64_RAX);
 
             AllocateRegisters(allocator);
-            Assert.That(dummy.registerAssignment, Is.EqualTo(SRBM_RAX));
-            Assert.That(allocator.getInVarToRegMap((uint)blocks[1].bbNum)![0], Is.EqualTo(REG_RAX));
-            Assert.That(use.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(dummy.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)blocks[1].bbNum)![0], Is.EqualTo(REG_X64_RAX));
+            Assert.That(use.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
         });
     }
 
-    [TestCase(TYP_INT, REG_RCX, false, false)]
-    [TestCase(TYP_INT, REG_RCX, false, true)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, false, false)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, false, true)]
+    [TestCase(TYP_INT, REG_X64_RCX, false, false)]
+    [TestCase(TYP_INT, REG_X64_RCX, false, true)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, false, false)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, false, true)]
 #if DEBUG
-    [TestCase(TYP_INT, REG_RCX, true, false)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, true, false)]
+    [TestCase(TYP_INT, REG_X64_RCX, true, false)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, true, false)]
 #endif
     public static void IncomingParameterCanSpillBeforeTheFirstBlock(
         var_types type, regNumber register, bool forceSpill, bool lowWeight)
@@ -257,8 +257,8 @@ internal static unsafe class LinearScanAllocationTraversalTests
             Assert.That(definition.spillAfter, Is.EqualTo(expectedSpill));
             Assert.That(interval.isSpilled, Is.EqualTo(expectedSpill));
             Assert.That(use.reload, Is.EqualTo(expectedSpill));
-            Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0],
-                Is.EqualTo(REG_STK));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)block.bbNum)![0],
+                Is.EqualTo(REG_X64_STK));
         });
     }
 
@@ -270,8 +270,8 @@ internal static unsafe class LinearScanAllocationTraversalTests
             _ = BeginBlock(compiler, allocator);
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 3);
-            _ = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(interval, 4, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             compiler.verbose = true;
 
             var output = Capture(() => AllocateRegisters(allocator));
@@ -301,8 +301,8 @@ internal static unsafe class LinearScanAllocationTraversalTests
             LargeVectorVars(allocator) = SetOps.MakeEmpty(compiler);
             var interval = NewInterval(allocator, TYP_INT);
             interval.setLocalNumber(compiler, 0, allocator);
-            var register = allocator.physRegs[(int)REG_R15];
-            interval.physReg = REG_R15;
+            var register = allocator.physRegs[(int)REG_X64_R15];
+            interval.physReg = REG_X64_R15;
             interval.assignedReg = register;
             register.assignedInterval = interval;
             _ = allocator.newRefPosition(interval, 2, RefType.RefTypeExpUse, null, SRBM_R15);
@@ -310,8 +310,8 @@ internal static unsafe class LinearScanAllocationTraversalTests
 
             var output = Capture(() => AllocateRegisters(allocator));
 
-            Assert.That(output, Does.Contain($"Keep     {REG_NA.Name,-4}"));
-            Assert.That(AllocationDumpRegisters(allocator).IsSet(REG_R15), Is.False);
+            Assert.That(output, Does.Contain($"Keep     {REG_X64_NA.Name,-4}"));
+            Assert.That(AllocationDumpRegisters(allocator).IsSet(REG_X64_R15), Is.False);
         });
     }
 
@@ -323,12 +323,12 @@ internal static unsafe class LinearScanAllocationTraversalTests
             _ = BeginBlock(compiler, allocator);
             var interval = NewInterval(allocator, TYP_SIMD32);
             var save = allocator.newRefPosition(
-                interval, 2, RefType.RefTypeUpperVectorSave, null, SRBM_XMM0);
+                interval, 2, RefType.RefTypeUpperVectorSave, null, SRBM_X64_XMM0);
             compiler.verbose = true;
 
             var output = Capture(() => AllocateRegisters(allocator));
 
-            Assert.That(interval.physReg, Is.EqualTo(REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(REG_X64_NA));
             Assert.That(save.registerAssignment, Is.EqualTo(SRBM_NONE));
             Assert.That(output, Does.Not.Contain("NoReg"));
         });
@@ -359,8 +359,9 @@ internal static unsafe class LinearScanAllocationTraversalTests
     public static void Amd64ProfilerDoesNotPreserveUpperVectorHalves()
     {
         var reference = new RefPosition(1, 4, null, RefType.RefTypeUpperVectorSave);
-        var interval = new Interval(TYP_SIMD32, SRBM_XMM0);
-        Assert.That(CanSkipUpperVectorSave(null, reference, interval), Is.False);
+        var interval = new Interval(TYP_SIMD32, SRBM_X64_XMM0);
+        var allocator = (LinearScan)RuntimeHelpers.GetUninitializedObject(typeof(LinearScan));
+        Assert.That(CanSkipUpperVectorSave(allocator, reference, interval), Is.False);
     }
 #endif
 
@@ -475,7 +476,7 @@ internal static unsafe class LinearScanAllocationTraversalTests
 #endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "canSkipUpperVectorSave")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "canSkipUpperVectorSave")]
     private static extern bool CanSkipUpperVectorSave(
         LinearScan? _, RefPosition reference, Interval interval);
 #endif

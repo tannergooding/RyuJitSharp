@@ -36,22 +36,22 @@ internal static unsafe class LinearScanPairedRegisterAssignmentTests
             codeGen.CopyRegisterInfo();
             codeGen.RegSet.rsClearRegsModified();
             var allocator = new LinearScan(compiler);
-            var register = allocator.physRegs[(int)regNumber.REG_XMM0];
-            register.init(regNumber.REG_XMM0);
+            var register = allocator.physRegs[(int)regNumber.REG_X64_XMM0];
+            register.init(regNumber.REG_X64_XMM0);
             var interval = NewInterval(allocator, TYP_DOUBLE);
             interval.isConstant = true;
 
             AssignPhysReg(allocator, register, interval);
 
             Assert.That(register.assignedInterval, Is.SameAs(interval));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_XMM0));
-            Assert.That(RegistersWithConstants(allocator).IsSet(regNumber.REG_XMM0), Is.True);
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_XMM0));
+            Assert.That(RegistersWithConstants(allocator).IsSet(regNumber.REG_X64_XMM0), Is.True);
 
             interval.isActive = false;
             UnassignPhysReg(allocator, register, (RefPosition?)null);
 
             Assert.That(register.assignedInterval, Is.Null);
-            Assert.That(RegistersWithConstants(allocator).IsSet(regNumber.REG_XMM0), Is.False);
+            Assert.That(RegistersWithConstants(allocator).IsSet(regNumber.REG_X64_XMM0), Is.False);
         }
         finally
         {

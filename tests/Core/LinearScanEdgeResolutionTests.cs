@@ -23,12 +23,19 @@ internal static class LinearScanEdgeResolutionTests
     [Test]
     public static void ResolveTypeDiagnosticNamesMatchEnumOrder()
     {
-        Assert.That(ResolveTypeNames(null), Is.EqualTo(s_expectedResolveTypeNames));
+        var resolveTypes = Enum.GetValues<LinearScan.ResolveType>();
+        var names = new string[resolveTypes.Length];
+        for (var i = 0; i < resolveTypes.Length; i++)
+        {
+            names[i] = ResolveTypeName(null, resolveTypes[i]);
+        }
+
+        Assert.That(names, Is.EqualTo(s_expectedResolveTypeNames));
     }
 
-    [TestCase(REG_STK, REG_RCX, GT_LCL_VAR, GTF_SPILLED)]
-    [TestCase(REG_RCX, REG_STK, GT_LCL_VAR, GTF_SPILL)]
-    [TestCase(REG_RCX, REG_RDX, GT_COPY, GTF_EMPTY)]
+    [TestCase(REG_X64_STK, REG_X64_RCX, GT_LCL_VAR, GTF_SPILLED)]
+    [TestCase(REG_X64_RCX, REG_X64_STK, GT_LCL_VAR, GTF_SPILL)]
+    [TestCase(REG_X64_RCX, REG_X64_RDX, GT_COPY, GTF_EMPTY)]
     public static void JoinMovesPreserveStackAndRegisterHomes(
         regNumber from, regNumber to, genTreeOps expectedOper, GenTreeFlags expectedFlag)
     {
@@ -48,13 +55,13 @@ internal static class LinearScanEdgeResolutionTests
                 ?? throw new AssertionException("Join resolution did not insert a node.");
             Assert.That(inserted.Oper, Is.EqualTo(expectedOper));
             Assert.That((inserted.Flags & expectedFlag) == expectedFlag, Is.True);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(to));
-            Assert.That(allocator.getInVarToRegMap((uint)target.bbNum)![0], Is.EqualTo(to));
-            if (to is REG_RDX)
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(to));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)target.bbNum)![0], Is.EqualTo(to));
+            if (to is REG_X64_RDX)
             {
-                Assert.That(inserted.AsCopyOrReload().Op1.RegNum, Is.EqualTo(REG_RCX));
-                Assert.That(inserted.RegNum, Is.EqualTo(REG_RDX));
+                Assert.That(inserted.AsCopyOrReload().Op1.RegNum, Is.EqualTo(REG_X64_RCX));
+                Assert.That(inserted.RegNum, Is.EqualTo(REG_X64_RDX));
             }
         });
     }
@@ -64,7 +71,7 @@ internal static class LinearScanEdgeResolutionTests
     {
         WithEdge(2, (compiler, allocator, source, target, _) =>
         {
-            AvailableIntegerRegisters(allocator) = SRBM_RCX | SRBM_RDX;
+            AvailableIntegerRegisters(allocator) = SRBM_X64_RCX | SRBM_X64_RDX;
             var liveSet = SetOps.MakeEmpty(compiler);
             for (var index = 0; index < 2; index++)
             {
@@ -72,19 +79,19 @@ internal static class LinearScanEdgeResolutionTests
                 SetOps.AddElemD(compiler, liveSet, index);
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_RDX);
-            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_RDX);
-            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_RDX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_RCX);
 
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin, liveSet, RBM_NONE);
 
             var swap = source.LastNode ?? throw new AssertionException("Missing register swap.");
             Assert.That(swap.Oper, Is.EqualTo(GT_SWAP));
-            Assert.That(swap.AsOp().Op1.RegNum, Is.EqualTo(REG_RCX));
-            Assert.That(swap.AsOp().Op2!.RegNum, Is.EqualTo(REG_RDX));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_RDX));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_RCX));
+            Assert.That(swap.AsOp().Op1.RegNum, Is.EqualTo(REG_X64_RCX));
+            Assert.That(swap.AsOp().Op2!.RegNum, Is.EqualTo(REG_X64_RDX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_X64_RDX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_X64_RCX));
         });
     }
 
@@ -93,9 +100,9 @@ internal static class LinearScanEdgeResolutionTests
     {
         WithEdge(3, (compiler, allocator, source, target, _) =>
         {
-            AvailableIntegerRegisters(allocator) = SRBM_RAX | SRBM_RCX | SRBM_RDX | SRBM_RBX;
+            AvailableIntegerRegisters(allocator) = SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RDX | SRBM_X64_RBX;
             var liveSet = SetOps.MakeEmpty(compiler);
-            var registers = new[] { REG_RCX, REG_RDX, REG_RBX };
+            var registers = new[] { REG_X64_RCX, REG_X64_RDX, REG_X64_RBX };
             for (var index = 0; index < registers.Length; index++)
             {
                 MapInterval(compiler, allocator, index).isSplit = true;
@@ -119,10 +126,10 @@ internal static class LinearScanEdgeResolutionTests
                 Assert.That((node.Flags & (GTF_SPILL | GTF_SPILLED)) == 0, Is.True);
             }
             Assert.That(moveCount, Is.EqualTo(4));
-            Assert.That((compiler.codeGen!.RegSet.rsGetModifiedRegsMask().Lower & SRBM_RAX) != 0, Is.True);
+            Assert.That((compiler.codeGen!.RegSet.rsGetModifiedRegsMask().Lower & SRBM_X64_RAX) != 0, Is.True);
             for (var index = 0; index < registers.Length; index++)
             {
-                Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![index],
+                Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![index],
                     Is.EqualTo(registers[(index + 1) % registers.Length]));
             }
         });
@@ -134,7 +141,7 @@ internal static class LinearScanEdgeResolutionTests
         WithEdge(2, (compiler, allocator, source, target, _) =>
         {
             compiler.compFloatingPointUsed = true;
-            AvailableFloatingRegisters(allocator) = SRBM_XMM0 | SRBM_XMM1;
+            AvailableFloatingRegisters(allocator) = SRBM_X64_XMM0 | SRBM_XMM1;
             var liveSet = SetOps.MakeEmpty(compiler);
             for (var index = 0; index < 2; index++)
             {
@@ -144,10 +151,10 @@ internal static class LinearScanEdgeResolutionTests
                 SetOps.AddElemD(compiler, liveSet, index);
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_XMM0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_XMM1);
-            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_XMM1);
-            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_XMM0);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_XMM0);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_XMM1);
+            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_XMM1);
+            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_XMM0);
 
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin, liveSet, RBM_NONE);
 
@@ -159,9 +166,9 @@ internal static class LinearScanEdgeResolutionTests
                 reloaded |= (node.Flags & GTF_SPILLED) != 0;
             }
             Assert.That(spilled && reloaded, Is.True);
-            Assert.That(source.LastNode!.RegNum, Is.EqualTo(REG_XMM1));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_XMM1));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_XMM0));
+            Assert.That(source.LastNode!.RegNum, Is.EqualTo(REG_X64_XMM1));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_X64_XMM1));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_X64_XMM0));
         });
     }
 
@@ -177,10 +184,10 @@ internal static class LinearScanEdgeResolutionTests
                 SetOps.AddElemD(compiler, liveSet, index);
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_STK);
-            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_RDX);
-            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_STK);
+            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_RCX);
 
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin, liveSet, RBM_NONE);
 
@@ -188,9 +195,9 @@ internal static class LinearScanEdgeResolutionTests
             Assert.That(source.FirstNode.Next!.Oper, Is.EqualTo(GT_COPY));
             Assert.That(source.FirstNode.Next.Next!.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That((source.LastNode!.Flags & GTF_SPILLED) != 0, Is.True);
-            Assert.That(source.LastNode.RegNum, Is.EqualTo(REG_RCX));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_RDX));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_RCX));
+            Assert.That(source.LastNode.RegNum, Is.EqualTo(REG_X64_RCX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_X64_RDX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_X64_RCX));
         });
     }
 
@@ -200,24 +207,24 @@ internal static class LinearScanEdgeResolutionTests
     {
         WithEdge(2, (compiler, allocator, source, target, _) =>
         {
-            AvailableIntegerRegisters(allocator) = SRBM_RAX | SRBM_RCX | SRBM_RDX | SRBM_RBX;
+            AvailableIntegerRegisters(allocator) = SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RDX | SRBM_X64_RBX;
             for (var index = 0; index < 2; index++)
             {
                 MapInterval(compiler, allocator, index).isSplit = true;
                 SetOps.AddElemD(compiler, target.bbLiveIn, index);
             }
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_RBX);
-            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_RDX);
-            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_RBX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 1, REG_X64_RBX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 1, REG_X64_RBX);
 
             var free = TempReg(allocator, source, target, TYP_INT,
                 SetOps.MakeEmpty(compiler), RBM_NONE);
             var consumed = TempReg(allocator, source, target, TYP_INT,
-                SetOps.MakeEmpty(compiler), new regMaskTP(SRBM_RAX));
+                SetOps.MakeEmpty(compiler), new regMaskTP(SRBM_X64_RAX));
 
-            Assert.That(free, Is.EqualTo(REG_RAX));
-            Assert.That(consumed, Is.EqualTo(REG_NA));
+            Assert.That(free, Is.EqualTo(REG_X64_RAX));
+            Assert.That(consumed, Is.EqualTo(REG_X64_NA));
         });
     }
 #endif
@@ -230,7 +237,7 @@ internal static class LinearScanEdgeResolutionTests
             var interval = MapInterval(compiler, allocator, 0);
             interval.isWriteThru = true;
             interval.isSpilled = true;
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
             var liveSet = SetOps.MakeEmpty(compiler);
             SetOps.AddElemD(compiler, liveSet, 0);
@@ -238,8 +245,8 @@ internal static class LinearScanEdgeResolutionTests
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveSplit, liveSet, RBM_NONE);
 
             Assert.That(target.FirstNode, Is.Null);
-            Assert.That(allocator.getInVarToRegMap((uint)target.bbNum)![0], Is.EqualTo(REG_STK));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_RCX));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)target.bbNum)![0], Is.EqualTo(REG_X64_STK));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_X64_RCX));
         });
     }
 
@@ -254,14 +261,14 @@ internal static class LinearScanEdgeResolutionTests
             interval.isSpilled = true;
             SetOps.AddElemD(compiler, source.bbLiveOut, 0);
             SetOps.AddElemD(compiler, ExceptVars(allocator), 0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
 
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin,
                 SetOps.MakeEmpty(compiler), RBM_NONE);
 
             Assert.That(source.LastNode!.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That((source.LastNode.Flags & GTF_SPILL) != 0, Is.True);
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_STK));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_X64_STK));
         });
     }
 
@@ -274,8 +281,8 @@ internal static class LinearScanEdgeResolutionTests
             compiler.verbose = true;
             MapInterval(compiler, allocator, 0).isSplit = true;
             SetOps.AddElemD(compiler, target.bbLiveIn, 0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
-            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_RDX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            allocator.setInVarRegForBB((uint)target.bbNum, 0, REG_X64_RDX);
             var liveSet = SetOps.MakeEmpty(compiler);
             SetOps.AddElemD(compiler, liveSet, 0);
 
@@ -284,7 +291,7 @@ internal static class LinearScanEdgeResolutionTests
 
             Assert.That(dump, Does.Contain(
                 $"{FMT_BB(source.bbNum)} bottom ({FMT_BB(source.bbNum)}->{FMT_BB(target.bbNum)}): " +
-                $"move V00 from {REG_RCX.Name} to {REG_RDX.Name} (Join)"));
+                $"move V00 from {REG_X64_RCX.Name} to {REG_X64_RDX.Name} (Join)"));
         });
     }
 #endif
@@ -313,7 +320,7 @@ internal static class LinearScanEdgeResolutionTests
             var second = compiler.fgAddRefPred(splitSuccessor, source);
             other.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(join, other));
             other.TargetEdge.Likelihood = 1;
-            var operand = new GenTreeLclVar(TYP_INT, 0) { RegNum = REG_RAX };
+            var operand = new GenTreeLclVar(TYP_INT, 0) { RegNum = REG_X64_RAX };
             source.InsertAtEnd(operand);
             if (duplicateSwitchTarget)
             {
@@ -325,7 +332,7 @@ internal static class LinearScanEdgeResolutionTests
                 switchTargets.Cases[1] = duplicate;
                 switchTargets.Cases[2] = second;
                 source.SwitchTargets = switchTargets;
-                var table = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_RDX };
+                var table = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_X64_RDX };
                 source.InsertAtEnd(table);
                 source.InsertAtEnd(new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, operand, table));
             }
@@ -346,10 +353,10 @@ internal static class LinearScanEdgeResolutionTests
             SetOps.AddElemD(compiler, other.bbLiveOut, 0);
             SetOps.AddElemD(compiler, join.bbLiveIn, 0);
             SetOps.AddElemD(compiler, splitSuccessor.bbLiveIn, 0);
-            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_RCX);
-            allocator.setOutVarRegForBB((uint)other.bbNum, 0, REG_RDX);
-            allocator.setInVarRegForBB((uint)join.bbNum, 0, REG_RDX);
-            allocator.setInVarRegForBB((uint)splitSuccessor.bbNum, 0, REG_RBX);
+            allocator.setOutVarRegForBB((uint)source.bbNum, 0, REG_X64_RCX);
+            allocator.setOutVarRegForBB((uint)other.bbNum, 0, REG_X64_RDX);
+            allocator.setInVarRegForBB((uint)join.bbNum, 0, REG_X64_RDX);
+            allocator.setInVarRegForBB((uint)splitSuccessor.bbNum, 0, REG_X64_RBX);
             HasCriticalEdges(allocator) = true;
             BlockInfo(allocator)![source.bbNum].hasCriticalOutEdge = true;
             var originalMaximum = compiler.fgBBNumMax;
@@ -366,8 +373,8 @@ internal static class LinearScanEdgeResolutionTests
             }
             Assert.That(resolution.UniqueSucc, Is.SameAs(join));
             Assert.That(resolution.FirstNode, Is.Not.Null);
-            Assert.That(allocator.getInVarToRegMap((uint)resolution.bbNum)![0], Is.EqualTo(REG_RCX));
-            Assert.That(allocator.getOutVarToRegMap((uint)resolution.bbNum)![0], Is.EqualTo(REG_RDX));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)resolution.bbNum)![0], Is.EqualTo(REG_X64_RCX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)resolution.bbNum)![0], Is.EqualTo(REG_X64_RDX));
             Assert.That(SetOps.IsMember(compiler, resolution.bbLiveIn, 0), Is.True);
             Assert.That(SetOps.IsMember(compiler, resolution.bbLiveOut, 0), Is.True);
         });
@@ -393,8 +400,8 @@ internal static class LinearScanEdgeResolutionTests
             var firstEdge = compiler.fgAddRefPred(firstTarget, source);
             var secondEdge = compiler.fgAddRefPred(secondTarget, source);
             source.SwitchTargets = new BBswtDesc([firstEdge, secondEdge], [0, 1], hasDefault: true);
-            var first = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_RAX };
-            var second = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_RDX };
+            var first = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_X64_RAX };
+            var second = new GenTreeIntCon(TYP_INT, 0) { RegNum = REG_X64_RDX };
             var table = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, first, second);
             source.InsertAtEnd(table);
             Setup(compiler, allocator);
@@ -426,7 +433,7 @@ internal static class LinearScanEdgeResolutionTests
 
                 Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
                 Assert.That(source.LastNode, Is.SameAs(table));
-                Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_STK));
+                Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(REG_X64_STK));
             }
             finally
             {
@@ -506,11 +513,11 @@ internal static class LinearScanEdgeResolutionTests
 
             HandleOutgoingCriticalEdges(allocator, source);
 
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0],
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0],
                 Is.EqualTo(reloadAtJoin ? REG_F2 : REG_F0));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_F1));
-            Assert.That(allocator.getInVarToRegMap((uint)join.bbNum)![0],
-                Is.EqualTo(reloadAtJoin ? REG_STK : REG_F0));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![1], Is.EqualTo(REG_F1));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)join.bbNum)![0],
+                Is.EqualTo(reloadAtJoin ? REG_X64_STK : REG_F0));
             Assert.That(join.FirstNode is not null, Is.EqualTo(reloadAtJoin));
             if (reloadAtJoin)
             {
@@ -553,7 +560,7 @@ internal static class LinearScanEdgeResolutionTests
             source.SetCond(joinEdge, otherEdge);
             other.SetKindAndTargetEdge(BBJ_ALWAYS, compiler.fgAddRefPred(join, other));
             other.TargetEdge.Likelihood = 1;
-            var operand = new GenTreeLclVar(TYP_INT, 0) { RegNum = REG_RCX };
+            var operand = new GenTreeLclVar(TYP_INT, 0) { RegNum = REG_X64_RCX };
             source.InsertAtEnd(operand);
             source.InsertAtEnd(new GenTreeUnOp(GT_JTRUE, TYP_VOID, operand));
 
@@ -566,7 +573,7 @@ internal static class LinearScanEdgeResolutionTests
             SetOps.AddElemD(compiler, ExceptVars(allocator), 0);
             SetOps.AddElemD(compiler, source.bbLiveOut, 0);
             SetOps.AddElemD(compiler, join.bbLiveIn, 0);
-            allocator.setInVarRegForBB((uint)join.bbNum, 0, REG_RCX);
+            allocator.setInVarRegForBB((uint)join.bbNum, 0, REG_X64_RCX);
             HasCriticalEdges(allocator) = true;
             BlockInfo(allocator)![source.bbNum].hasCriticalOutEdge = true;
             var originalMaximum = compiler.fgBBNumMax;
@@ -576,8 +583,8 @@ internal static class LinearScanEdgeResolutionTests
             Assert.That(compiler.fgBBNumMax, Is.EqualTo(originalMaximum));
             Assert.That(join.FirstNode!.Oper, Is.EqualTo(GT_LCL_VAR));
             Assert.That((join.FirstNode.Flags & GTF_SPILLED) != 0, Is.True);
-            Assert.That(join.FirstNode.RegNum, Is.EqualTo(REG_RCX));
-            Assert.That(allocator.getInVarToRegMap((uint)join.bbNum)![0], Is.EqualTo(REG_STK));
+            Assert.That(join.FirstNode.RegNum, Is.EqualTo(REG_X64_RCX));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)join.bbNum)![0], Is.EqualTo(REG_X64_STK));
         });
     }
 
@@ -596,15 +603,15 @@ internal static class LinearScanEdgeResolutionTests
     }
 
 #if DEBUG
-    [TestCase(0x1, TYP_INT, SRBM_RAX | SRBM_RBX, SRBM_RBX)]
-    [TestCase(0x1, TYP_INT, SRBM_RAX, SRBM_RAX)]
-    [TestCase(0x2, TYP_INT, SRBM_RAX | SRBM_RBX, SRBM_RAX)]
-    [TestCase(0x2, TYP_FLOAT, SRBM_XMM0 | SRBM_XMM6, SRBM_XMM0)]
-    [TestCase(0x3, TYP_INT, SRBM_RAX | SRBM_RBX, SRBM_RAX | SRBM_RBX)]
-    [TestCase(0x2000, TYP_FLOAT, SRBM_XMM0 | SRBM_XMM16, SRBM_XMM16)]
-    [TestCase(0x2000, TYP_INT, SRBM_RAX | SRBM_RBX, SRBM_RAX | SRBM_RBX)]
-    [TestCase(0x4000, TYP_INT, SRBM_RAX | SRBM_R16, SRBM_R16)]
-    [TestCase(0x4000, TYP_FLOAT, SRBM_XMM0 | SRBM_XMM6, SRBM_XMM0 | SRBM_XMM6)]
+    [TestCase(0x1, TYP_INT, SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RBX)]
+    [TestCase(0x1, TYP_INT, SRBM_X64_RAX, SRBM_X64_RAX)]
+    [TestCase(0x2, TYP_INT, SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RAX)]
+    [TestCase(0x2, TYP_FLOAT, SRBM_X64_XMM0 | SRBM_X64_XMM6, SRBM_X64_XMM0)]
+    [TestCase(0x3, TYP_INT, SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RAX | SRBM_X64_RBX)]
+    [TestCase(0x2000, TYP_FLOAT, SRBM_X64_XMM0 | SRBM_X64_XMM16, SRBM_X64_XMM16)]
+    [TestCase(0x2000, TYP_INT, SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RAX | SRBM_X64_RBX)]
+    [TestCase(0x4000, TYP_INT, SRBM_X64_RAX | SRBM_X64_R16, SRBM_X64_R16)]
+    [TestCase(0x4000, TYP_FLOAT, SRBM_X64_XMM0 | SRBM_X64_XMM6, SRBM_X64_XMM0 | SRBM_X64_XMM6)]
     public static void NullResolutionStressUsesOneCandidateWithoutFixedRegister(
         int stressMask, var_types type, regMask candidates, regMask expected)
     {
@@ -615,9 +622,9 @@ internal static class LinearScanEdgeResolutionTests
         });
     }
 
-    [TestCase(1u, false, SRBM_RAX)]
-    [TestCase(2u, false, SRBM_RAX | SRBM_RBX)]
-    [TestCase(1u, true, SRBM_RAX | SRBM_RBX)]
+    [TestCase(1u, false, SRBM_X64_RAX)]
+    [TestCase(2u, false, SRBM_X64_RAX | SRBM_X64_RBX)]
+    [TestCase(1u, true, SRBM_X64_RAX | SRBM_X64_RBX)]
     public static void NonnullStressStillRespectsMinimumCandidatesAndFixedRegister(
         uint minimumCount, bool fixedReference, regMask expected)
     {
@@ -626,24 +633,24 @@ internal static class LinearScanEdgeResolutionTests
             StressMask(allocator) = 0x2;
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse)
             {
-                registerAssignment = SRBM_RBX,
+                registerAssignment = SRBM_X64_RBX,
                 isFixedRegRef = fixedReference,
                 minRegCandidateCount = minimumCount,
             };
-            Assert.That(StressLimit(allocator, reference, TYP_INT, SRBM_RAX | SRBM_RBX),
+            Assert.That(StressLimit(allocator, reference, TYP_INT, SRBM_X64_RAX | SRBM_X64_RBX),
                 Is.EqualTo(expected));
         });
     }
 
-    [TestCase(0x1, REG_RBX)]
-    [TestCase(0x2, REG_RAX)]
-    [TestCase(0x3, REG_NA)]
+    [TestCase(0x1, REG_X64_RBX)]
+    [TestCase(0x2, REG_X64_RAX)]
+    [TestCase(0x3, REG_X64_NA)]
     public static void ScratchSelectionUsesNullableStressContract(int stressMask, regNumber expected)
     {
         WithEdge(1, (compiler, allocator, source, target, _) =>
         {
             StressMask(allocator) = stressMask;
-            AvailableIntegerRegisters(allocator) = SRBM_RAX | SRBM_RBX;
+            AvailableIntegerRegisters(allocator) = SRBM_X64_RAX | SRBM_X64_RBX;
             var scratch = TempReg(allocator, source, target, TYP_INT,
                 SetOps.MakeEmpty(compiler), RBM_NONE);
             Assert.That(scratch, Is.EqualTo(expected));
@@ -685,7 +692,7 @@ internal static class LinearScanEdgeResolutionTests
         compiler.codeGen!.RegSet.rsClearRegsModified();
         foreach (ref var local in compiler.lvaTable.AsSpan())
         {
-            local.RegNum = REG_STK;
+            local.RegNum = REG_X64_STK;
             local.lvLRACandidate = true;
         }
         EnregisterLocals(allocator) = true;
@@ -702,7 +709,7 @@ internal static class LinearScanEdgeResolutionTests
     private static Interval MapInterval(Compiler compiler, LinearScan allocator, int index,
         var_types type = TYP_INT)
     {
-        var interval = new Interval(type, SRBM_RCX | SRBM_RDX)
+        var interval = new Interval(type, SRBM_X64_RCX | SRBM_X64_RDX)
         {
             isLocalVar = true,
             varNum = (uint)index,
@@ -764,6 +771,6 @@ internal static class LinearScanEdgeResolutionTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_availableFloatRegs")]
     private static extern ref regMask AvailableFloatingRegisters(LinearScan allocator);
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "s_resolveTypeName")]
-    private static extern ref string[] ResolveTypeNames(LinearScan? allocator);
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetResolveTypeName")]
+    private static extern string ResolveTypeName(LinearScan? _, LinearScan.ResolveType resolveType);
 }

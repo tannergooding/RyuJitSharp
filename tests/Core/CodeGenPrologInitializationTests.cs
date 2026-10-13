@@ -26,8 +26,8 @@ internal static unsafe class CodeGenPrologInitializationTests
         WithProlog((_, codeGen) =>
         {
             var zeroed = initiallyZero;
-            Assert.That(codeGen.genGetZeroReg(REG_RAX, ref zeroed), Is.EqualTo(REG_RAX));
-            Assert.That(codeGen.genGetZeroReg(REG_RAX, ref zeroed), Is.EqualTo(REG_RAX));
+            Assert.That(codeGen.genGetZeroReg(REG_X64_RAX, ref zeroed), Is.EqualTo(REG_X64_RAX));
+            Assert.That(codeGen.genGetZeroReg(REG_X64_RAX, ref zeroed), Is.EqualTo(REG_X64_RAX));
             Assert.That(zeroed, Is.True);
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(initiallyZero ? 0 : 1));
         });
@@ -39,17 +39,17 @@ internal static unsafe class CodeGenPrologInitializationTests
     {
         WithProlog((_, codeGen) =>
         {
-            var first = regMaskTP.CreateFromRegNum(REG_XMM0, REG_XMM0.SingleTypeMask);
-            var second = regMaskTP.CreateFromRegNum(REG_XMM1, REG_XMM1.SingleTypeMask);
-            var third = regMaskTP.CreateFromRegNum(REG_XMM2, REG_XMM2.SingleTypeMask);
+            var first = regMaskTP.CreateFromRegNum(REG_X64_XMM0, REG_X64_XMM0.SingleTypeMask);
+            var second = regMaskTP.CreateFromRegNum(REG_X64_XMM1, REG_X64_XMM1.SingleTypeMask);
+            var third = regMaskTP.CreateFromRegNum(REG_X64_XMM2, REG_X64_XMM2.SingleTypeMask);
             codeGen.genZeroInitFltRegs(firstDouble ? second : first | third,
-                firstDouble ? first | third : second, REG_RAX);
+                firstDouble ? first | third : second, REG_X64_RAX);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(3));
             Assert.That(ids[0].idIns(), Is.EqualTo(INS_xorps));
-            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_XMM0));
-            Assert.That(ids.Skip(1).Select(id => id.idReg2()), Is.EqualTo((regNumber[])[REG_XMM0, REG_XMM0]));
+            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_X64_XMM0));
+            Assert.That(ids.Skip(1).Select(id => id.idReg2()), Is.EqualTo((regNumber[])[REG_X64_XMM0, REG_X64_XMM0]));
             Assert.That(ids.Skip(1).Select(id => id.idOpSize()), Is.EqualTo(firstDouble
                 ? (emitAttr[])[EA_4BYTE, EA_8BYTE] : [EA_8BYTE, EA_4BYTE]));
         });
@@ -66,12 +66,12 @@ internal static unsafe class CodeGenPrologInitializationTests
             compiler.lvaTable[0] = new LclVarDsc
             {
                 Type = TYP_STRUCT, Layout = ClassLayout.Create(compiler, in builder),
-                lvOnFrame = true, lvFramePointerBased = true, StackOffset = -32, RegNum = REG_STK,
+                lvOnFrame = true, lvFramePointerBased = true, StackOffset = -32, RegNum = REG_X64_STK,
             };
             compiler.info.compInitMem = initMem;
             PlanInitialization(codeGen);
             var zeroed = false;
-            codeGen.genZeroInitFrame(-16, -32, REG_RAX, ref zeroed);
+            codeGen.genZeroInitFrame(-16, -32, REG_X64_RAX, ref zeroed);
 
             var stores = Descriptors(codeGen).Where(id => id.idIns() == INS_mov).ToArray();
             Assert.That(stores.Select(id => id.idAddr().iiaLclVar.lvaOffset()),
@@ -95,7 +95,7 @@ internal static unsafe class CodeGenPrologInitializationTests
             PlanInitialization(codeGen);
             var zeroed = false;
 
-            codeGen.genZeroInitFrame(-40, -48, REG_RAX, ref zeroed);
+            codeGen.genZeroInitFrame(-40, -48, REG_X64_RAX, ref zeroed);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(2));
@@ -136,7 +136,7 @@ internal static unsafe class CodeGenPrologInitializationTests
             ConfigureVectors(compiler, codeGen, vectorWidth);
             var firstGroup = codeGen.Emitter.emitCurIG;
             var zeroed = false;
-            codeGen.genZeroInitFrameUsingBlockInit(low + size, low, REG_RAX, ref zeroed);
+            codeGen.genZeroInitFrameUsingBlockInitNonArm64(low + size, low, REG_X64_RAX, ref zeroed);
             var ids = CodeGenLocalHeapTests.AllDescriptors(firstGroup, codeGen);
 
             Assert.That(ids.Any(id => id.idIns() == INS_jne), Is.EqualTo(loop));
@@ -149,17 +149,17 @@ internal static unsafe class CodeGenPrologInitializationTests
             HashSet<int> cleared = [];
             var loopCount = loop
                 ? (int)InstructionConstant(codeGen.Emitter, ids.Single(id => id.idIns() == INS_mov
-                    && id.idInsFmt() == Emitter.insFormat.IF_RWR_CNS && id.idReg1() == REG_RAX))
+                    && id.idInsFmt() == Emitter.insFormat.IF_XARCH_RWR_CNS && id.idReg1() == REG_X64_RAX))
                 : 0;
-            foreach (var id in ids.Where(id => id.idInsFmt() == Emitter.insFormat.IF_AWR_RRD))
+            foreach (var id in ids.Where(id => id.idInsFmt() == Emitter.insFormat.IF_XARCH_AWR_RRD))
             {
                 var address = id.idAddr().iiaAddrMode;
                 var offset = (int)Displacement(codeGen.Emitter, id);
                 var bytes = (int)EA_SIZE_IN_BYTES(id.idOpSize());
-                if (address.amIndxReg != REG_NA)
+                if (address.amIndxReg != REG_X64_NA)
                 {
                     Assert.That(new[] { address.amBaseReg, address.amIndxReg },
-                        Is.EquivalentTo((regNumber[])[REG_RBP, REG_RAX]));
+                        Is.EquivalentTo((regNumber[])[REG_X64_RBP, REG_X64_RAX]));
                     for (var index = loopCount; index < 0; index += 48)
                     {
                         cleared.UnionWith(Enumerable.Range(offset + index, bytes));
@@ -167,7 +167,7 @@ internal static unsafe class CodeGenPrologInitializationTests
                 }
                 else
                 {
-                    Assert.That(address.amBaseReg, Is.EqualTo(REG_RBP));
+                    Assert.That(address.amBaseReg, Is.EqualTo(REG_X64_RBP));
                     cleared.UnionWith(Enumerable.Range(offset, bytes));
                 }
             }
@@ -214,7 +214,7 @@ internal static unsafe class CodeGenPrologInitializationTests
             compiler.lvaGSSecurityCookie = 0;
             compiler.gsGlobalSecurityCookieVal = (nint)cookie;
             var zeroed = true;
-            codeGen.genSetGSSecurityCookie(REG_R10, ref zeroed);
+            codeGen.genSetGSSecurityCookie(REG_X64_R10, ref zeroed);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(usesScratch ? 2 : 1));
@@ -259,8 +259,8 @@ internal static unsafe class CodeGenPrologInitializationTests
     }
 #endif
 
-    [TestCase(REG_RAX)]
-    [TestCase(REG_R10)]
+    [TestCase(REG_X64_RAX)]
+    [TestCase(REG_X64_R10)]
     public static void IndirectCookiesAlwaysLoadThroughRax(regNumber scratch)
     {
         WithProlog((compiler, codeGen) =>
@@ -274,11 +274,11 @@ internal static unsafe class CodeGenPrologInitializationTests
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(2));
-            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_RAX));
+            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_X64_RAX));
             Assert.That(ids[0].idIsDspReloc(), Is.True);
             Assert.That(Displacement(codeGen.Emitter, ids[0]), Is.EqualTo((nint)0x12345678));
-            Assert.That(ids[1].idReg1(), Is.EqualTo(REG_RAX));
-            Assert.That(zeroed, Is.EqualTo(scratch != REG_RAX));
+            Assert.That(ids[1].idReg1(), Is.EqualTo(REG_X64_RAX));
+            Assert.That(zeroed, Is.EqualTo(scratch != REG_X64_RAX));
         });
     }
 
@@ -296,17 +296,17 @@ internal static unsafe class CodeGenPrologInitializationTests
             compiler.info.compArgsCount = 1;
             compiler.info.compMethodInfo->options = (fromThis
                 ? CORINFO_GENERICS_CTXT_FROM_THIS : CORINFO_GENERICS_CTXT_FROM_METHODDESC) | CORINFO_GENERICS_CTXT_KEEP_ALIVE;
-            compiler.lvaTable[0].Type = fromThis ? TYP_REF : TYP_I_IMPL;
+            compiler.lvaTable[0].Type = fromThis ? TYP_REF : TYP_LONG;
             compiler.lvaTable[0].lvIsParam = true;
             compiler.lvaParameterPassingInfo = [AbiPassingInformation.FromSegment(compiler, false,
-                onStack ? AbiPassingSegment.OnStack(0, 0, 8) : AbiPassingSegment.InRegister(REG_RCX, 0, 8))];
+                onStack ? AbiPassingSegment.OnStack(0, 0, 8) : AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8))];
             compiler.lvaCachedGenericContextArgOffs = -40;
             var zeroed = true;
-            codeGen.genReportGenericContextArg(REG_RAX, ref zeroed);
+            codeGen.genReportGenericContextArg(REG_X64_RAX, ref zeroed);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(onStack ? 2 : 1));
-            Assert.That(ids[^1].idReg1(), Is.EqualTo(onStack ? REG_RAX : REG_RCX));
+            Assert.That(ids[^1].idReg1(), Is.EqualTo(onStack ? REG_X64_RAX : REG_X64_RCX));
             Assert.That(Displacement(codeGen.Emitter, ids[^1]), Is.EqualTo((nint)(-40)));
             Assert.That(zeroed, Is.EqualTo(!onStack));
             if (onStack)
@@ -330,7 +330,7 @@ internal static unsafe class CodeGenPrologInitializationTests
             compiler.compNeedsGSSecurityCookie = true;
             var zeroed = true;
 
-            codeGen.genSetGSSecurityCookie(REG_RAX, ref zeroed);
+            codeGen.genSetGSSecurityCookie(REG_X64_RAX, ref zeroed);
 
             Assert.That(Descriptors(codeGen), Is.Empty);
             Assert.That(zeroed, Is.True);
@@ -357,7 +357,7 @@ internal static unsafe class CodeGenPrologInitializationTests
                 ? CORINFO_GENERICS_CTXT_FROM_THIS : CORINFO_GENERICS_CTXT_FROM_METHODDESC) | CORINFO_GENERICS_CTXT_KEEP_ALIVE;
             var zeroed = true;
 
-            codeGen.genReportGenericContextArg(REG_RAX, ref zeroed);
+            codeGen.genReportGenericContextArg(REG_X64_RAX, ref zeroed);
 
             Assert.That(Descriptors(codeGen), Is.Empty);
             Assert.That(zeroed, Is.True);
@@ -389,31 +389,31 @@ internal static unsafe class CodeGenPrologInitializationTests
                 {
                     case 0:
                     {
-                        _ = codeGen.genGetZeroReg(REG_RAX, ref zeroed);
+                        _ = codeGen.genGetZeroReg(REG_X64_RAX, ref zeroed);
                         break;
                     }
 
                     case 1:
                     {
-                        codeGen.genZeroInitFltRegs(RBM_XMM0, RBM_NONE, REG_RAX);
+                        codeGen.genZeroInitFltRegs(RBM_XMM0, RBM_NONE, REG_X64_RAX);
                         break;
                     }
 
                     case 2:
                     {
-                        codeGen.genZeroInitFrame(-16, -32, REG_RAX, ref zeroed);
+                        codeGen.genZeroInitFrame(-16, -32, REG_X64_RAX, ref zeroed);
                         break;
                     }
 
                     case 3:
                     {
-                        codeGen.genSetGSSecurityCookie(REG_RAX, ref zeroed);
+                        codeGen.genSetGSSecurityCookie(REG_X64_RAX, ref zeroed);
                         break;
                     }
 
                     default:
                     {
-                        codeGen.genReportGenericContextArg(REG_RAX, ref zeroed);
+                        codeGen.genReportGenericContextArg(REG_X64_RAX, ref zeroed);
                         break;
                     }
                 }
@@ -432,7 +432,7 @@ internal static unsafe class CodeGenPrologInitializationTests
         {
             compiler.lvaTable = [new LclVarDsc
             {
-                Type = TYP_INT, lvOnFrame = true, lvFramePointerBased = true, StackOffset = -16, RegNum = REG_STK,
+                Type = TYP_INT, lvOnFrame = true, lvFramePointerBased = true, StackOffset = -16, RegNum = REG_X64_STK,
             }];
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
             compiler.lvaGSSecurityCookie = BAD_VAR_NUM;

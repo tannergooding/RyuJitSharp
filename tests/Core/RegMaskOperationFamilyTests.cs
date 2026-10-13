@@ -1,5 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System.Collections.Generic;
+
 #if DEBUG
 using System;
 using System.Runtime.CompilerServices;
@@ -21,14 +23,19 @@ internal static unsafe class RegMaskOperationFamilyTests
         public regMaskTP Mask;
     }
 
-    [TestCase(REG_INT_FIRST)]
-    [TestCase(REG_INT_LAST)]
-    [TestCase(REG_FP_FIRST)]
-    [TestCase(REG_FP_LAST)]
+    private static IEnumerable<TestCaseData> RegisterCases()
+    {
+        yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterLast);
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast);
 #if FEATURE_MASKED_HW_INTRINSICS
-    [TestCase(REG_MASK_FIRST)]
-    [TestCase(REG_MASK_LAST)]
+        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterLast);
 #endif
+    }
+
+    [TestCaseSource(nameof(RegisterCases))]
     public static void RegisterOperationsUseTheNativeLookupAndBank(regNumber reg)
     {
 #if HAS_MORE_THAN_64_REGISTERS

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regMask;
+using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -34,17 +35,19 @@ internal static unsafe class LinearScanVariableMapTests
             assert(outMaps is not null);
             Assert.That(inMaps, Has.Length.EqualTo(6));
             Assert.That(outMaps, Has.Length.EqualTo(6));
-            var identities = new HashSet<regNumber[]>();
+            var identities = new HashSet<byte[]>();
             for (var blockNumber = 0; blockNumber <= 5; blockNumber++)
             {
                 var inMap = inMaps[blockNumber];
                 var outMap = outMaps[blockNumber];
                 Assert.That(inMap, Has.Length.EqualTo(mapCount));
                 Assert.That(outMap, Has.Length.EqualTo(mapCount));
-                Assert.That(inMap, Is.All.EqualTo(regNumber.REG_STK));
-                Assert.That(outMap, Is.All.EqualTo(regNumber.REG_STK));
+                Assert.That(inMap, Is.All.EqualTo((byte)REG_X64_STK));
+                Assert.That(outMap, Is.All.EqualTo((byte)REG_X64_STK));
                 assert(inMap is not null);
                 assert(outMap is not null);
+                Assert.That(Buffer.ByteLength(inMap), Is.EqualTo(mapCount));
+                Assert.That(Buffer.ByteLength(outMap), Is.EqualTo(mapCount));
                 Assert.That(identities.Add(inMap), Is.True);
                 Assert.That(identities.Add(outMap), Is.True);
                 Assert.That(allocator.getInVarToRegMap((uint)blockNumber), Is.SameAs(inMap));
@@ -57,6 +60,7 @@ internal static unsafe class LinearScanVariableMapTests
             var scratch = ScratchMap(allocator);
             Assert.That(scratch, Has.Length.EqualTo(mapCount));
             assert(scratch is not null);
+            Assert.That(Buffer.ByteLength(scratch), Is.EqualTo(mapCount));
             Assert.That(identities.Add(scratch), Is.True);
             Assert.That(allocator.getOutVarToRegMap(0), Is.Null);
         });
@@ -119,26 +123,26 @@ internal static unsafe class LinearScanVariableMapTests
             MaxBlockBeforeResolution(allocator) = 2;
             allocator.initVarRegMaps();
 
-            allocator.setInVarRegForBB(1, 0, regNumber.REG_RAX);
-            allocator.setInVarRegForBB(1, 3, regNumber.REG_XMM2);
-            allocator.setOutVarRegForBB(2, 2, regNumber.REG_K7);
+            allocator.setInVarRegForBB(1, 0, regNumber.REG_X64_RAX);
+            allocator.setInVarRegForBB(1, 3, REG_X64_XMM2);
+            allocator.setOutVarRegForBB(2, 2, REG_K7);
             var inMap = allocator.getInVarToRegMap(1);
             var outMap = allocator.getOutVarToRegMap(2);
             assert(inMap is not null);
             assert(outMap is not null);
 
-            regNumber[] expectedInMap = [
-                regNumber.REG_STK, regNumber.REG_XMM2, regNumber.REG_RAX, regNumber.REG_STK,
+            byte[] expectedInMap = [
+                (byte)REG_X64_STK, (byte)REG_X64_XMM2, (byte)regNumber.REG_X64_RAX, (byte)REG_X64_STK,
             ];
-            regNumber[] expectedOutMap = [
-                regNumber.REG_K7, regNumber.REG_STK, regNumber.REG_STK, regNumber.REG_STK,
+            byte[] expectedOutMap = [
+                (byte)REG_K7, (byte)REG_X64_STK, (byte)REG_X64_STK, (byte)REG_X64_STK,
             ];
             Assert.That(inMap, Is.EqualTo(expectedInMap));
             Assert.That(outMap, Is.EqualTo(expectedOutMap));
-            Assert.That(allocator.getVarReg(inMap, 2), Is.EqualTo(regNumber.REG_RAX));
-            allocator.setVarReg(inMap, 0, regNumber.REG_NA);
-            Assert.That(allocator.getVarReg(inMap, 0), Is.EqualTo(regNumber.REG_NA));
-            Assert.That(allocator.getVarReg(outMap, 0), Is.EqualTo(regNumber.REG_K7));
+            Assert.That(allocator.getVarReg(inMap, 2), Is.EqualTo(regNumber.REG_X64_RAX));
+            allocator.setVarReg(inMap, 0, REG_X64_NA);
+            Assert.That(allocator.getVarReg(inMap, 0), Is.EqualTo(REG_X64_NA));
+            Assert.That(allocator.getVarReg(outMap, 0), Is.EqualTo(REG_K7));
         });
     }
 
@@ -158,8 +162,8 @@ internal static unsafe class LinearScanVariableMapTests
             var toMap = allocator.getInVarToRegMap(2);
             assert(fromMap is not null);
             assert(toMap is not null);
-            allocator.setVarReg(fromMap, 0, regNumber.REG_RAX);
-            allocator.setVarReg(toMap, 0, regNumber.REG_RBX);
+            allocator.setVarReg(fromMap, 0, regNumber.REG_X64_RAX);
+            allocator.setVarReg(toMap, 0, regNumber.REG_X64_RBX);
 
             compiler.fgBBNumMax = 3;
             var splitMap = allocator.getSplitBBNumToTargetBBNumMap();
@@ -172,12 +176,12 @@ internal static unsafe class LinearScanVariableMapTests
             Assert.That(outMap, Is.SameAs(toBlock == 0 ? fromMap : toMap));
             assert(inMap is not null);
             assert(outMap is not null);
-            allocator.setVarReg(inMap, 0, regNumber.REG_RDX);
+            allocator.setVarReg(inMap, 0, regNumber.REG_X64_RDX);
             Assert.That(allocator.getVarReg(fromBlock == 0 ? toMap : fromMap, 0),
-                Is.EqualTo(regNumber.REG_RDX));
-            allocator.setVarReg(outMap, 0, regNumber.REG_RSI);
+                Is.EqualTo(regNumber.REG_X64_RDX));
+            allocator.setVarReg(outMap, 0, regNumber.REG_X64_RSI);
             Assert.That(allocator.getVarReg(toBlock == 0 ? fromMap : toMap, 0),
-                Is.EqualTo(regNumber.REG_RSI));
+                Is.EqualTo(regNumber.REG_X64_RSI));
             Assert.That(InMaps(allocator), Has.Length.EqualTo(3));
             Assert.That(OutMaps(allocator), Has.Length.EqualTo(3));
         });
@@ -202,24 +206,24 @@ internal static unsafe class LinearScanVariableMapTests
             var alias = allocator.getInVarToRegMap(3);
             Assert.That(alias, Is.SameAs(destination));
 
-            var source = new regNumber[mapCount + 1];
-            Array.Fill(source, regNumber.REG_RAX);
-            source[mapCount - 1] = regNumber.REG_K7;
-            source[mapCount] = regNumber.REG_NA;
+            var source = new byte[mapCount + 1];
+            Array.Fill(source, (byte)regNumber.REG_X64_RAX);
+            source[mapCount - 1] = (byte)REG_K7;
+            source[mapCount] = (byte)REG_X64_NA;
             var result = allocator.setInVarToRegMap(2, source);
 
             Assert.That(result, Is.SameAs(destination));
             Assert.That(allocator.getInVarToRegMap(3), Is.SameAs(alias));
             Assert.That(destination, Has.Length.EqualTo(mapCount));
             Assert.That(destination, Is.EqualTo(source.AsSpan(0, mapCount).ToArray()));
-            source[0] = regNumber.REG_RDX;
-            Assert.That(destination[0], Is.EqualTo(regNumber.REG_RAX));
-            Assert.That(source[mapCount], Is.EqualTo(regNumber.REG_NA));
+            source[0] = (byte)regNumber.REG_X64_RDX;
+            Assert.That((regNumber)destination[0], Is.EqualTo(regNumber.REG_X64_RAX));
+            Assert.That((regNumber)source[mapCount], Is.EqualTo(REG_X64_NA));
 
             result = allocator.setInVarToRegMap(2, alias);
             Assert.That(result, Is.SameAs(destination));
-            Assert.That(destination[0], Is.EqualTo(regNumber.REG_RAX));
-            Assert.That(destination[mapCount - 1], Is.EqualTo(regNumber.REG_K7));
+            Assert.That((regNumber)destination[0], Is.EqualTo(regNumber.REG_X64_RAX));
+            Assert.That((regNumber)destination[mapCount - 1], Is.EqualTo(REG_K7));
         });
     }
 
@@ -245,13 +249,13 @@ internal static unsafe class LinearScanVariableMapTests
     private static extern ref uint MaxBlockBeforeResolution(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_inVarToRegMaps")]
-    private static extern ref regNumber[]?[]? InMaps(LinearScan allocator);
+    private static extern ref byte[]?[]? InMaps(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_outVarToRegMaps")]
-    private static extern ref regNumber[]?[]? OutMaps(LinearScan allocator);
+    private static extern ref byte[]?[]? OutMaps(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_sharedCriticalVarToRegMap")]
-    private static extern ref regNumber[]? ScratchMap(LinearScan allocator);
+    private static extern ref byte[]? ScratchMap(LinearScan allocator);
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "srbmAllInt")]
     private static extern ref regMask CompilerAllIntRegs(Compiler compiler);

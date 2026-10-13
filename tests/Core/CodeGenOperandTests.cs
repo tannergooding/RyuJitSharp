@@ -22,10 +22,10 @@ internal static unsafe class CodeGenOperandTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var reg = Register(compiler, TYP_I_IMPL, REG_RAX);
+            var reg = Register(compiler, TYP_LONG, REG_X64_RAX);
             var register = codeGen.genOperandDesc(INS_mov, reg);
             Assert.That(register.GetKind(), Is.EqualTo(CodeGen.OperandKind.Reg));
-            Assert.That(register.GetReg(), Is.EqualTo(REG_RAX));
+            Assert.That(register.GetReg(), Is.EqualTo(REG_X64_RAX));
             Assert.That(register.IsContained(), Is.False);
 
             var indir = new GenTreeIndir(GT_IND, TYP_INT, reg) { IsContained = true };
@@ -61,7 +61,7 @@ internal static unsafe class CodeGenOperandTests
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.compReloc = relocatable;
-            var constant = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
+            var constant = compiler.gtNewIconNode(TYP_LONG, 0x1234);
             constant.Flags |= GTF_ICON_FIELD_HDL;
             constant.IsContained = true;
             var descriptor = codeGen.genOperandDesc(INS_mov, constant);
@@ -151,7 +151,7 @@ internal static unsafe class CodeGenOperandTests
         {
             GenTree source = localAddress
                 ? new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 4)
-                : compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+                : compiler.gtNewLclvNode(TYP_LONG, 0);
             source.IsContained = true;
             var broadcast = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX_BroadcastScalarToVector128,
                 TYP_DOUBLE, 16, source) { IsContained = true };
@@ -168,7 +168,7 @@ internal static unsafe class CodeGenOperandTests
                 Assert.That(form.Type, Is.EqualTo(TYP_DOUBLE));
                 Assert.That(form.Op1, Is.SameAs(source));
                 Assert.That(form.IsContained, Is.True);
-                Assert.That(form.RegNum, Is.EqualTo(REG_NA));
+                Assert.That(form.RegNum, Is.EqualTo(REG_X64_NA));
             }
         });
     }
@@ -198,9 +198,9 @@ internal static unsafe class CodeGenOperandTests
             var temp = codeGen.RegSet.tmpGetTemp(TYP_INT);
             temp.tdTempOffs = -32;
             codeGen.RegSet.tmpRlsTemp(temp);
-            var node = Register(compiler, TYP_INT, REG_RAX);
+            var node = Register(compiler, TYP_INT, REG_X64_RAX);
             node.Flags |= GTF_SPILL;
-            codeGen.RegSet.rsSpillTree(REG_RAX, node);
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, node);
             node.Flags |= GTF_NOREG_AT_USE;
             node.IsRegOptional = true;
 
@@ -208,15 +208,15 @@ internal static unsafe class CodeGenOperandTests
 
             Assert.That(descriptor.GetKind(), Is.EqualTo(CodeGen.OperandKind.Local));
             Assert.That(descriptor.GetVarNum(), Is.EqualTo(temp.tdTempNum));
-            Assert.That(codeGen.RegSet.rsGetSpillInfo(node, REG_RAX, out _), Is.Null);
+            Assert.That(codeGen.RegSet.rsGetSpillInfo(node, REG_X64_RAX, out _), Is.Null);
             var reused = codeGen.RegSet.tmpGetTemp(TYP_INT);
             Assert.That(reused, Is.SameAs(temp));
             codeGen.RegSet.tmpRlsTemp(reused);
         });
     }
 
-    [TestCase(INS_shld, EA_4BYTE, REG_RAX, REG_RCX, 3u)]
-    [TestCase(INS_pshufd, EA_16BYTE, REG_XMM0, REG_XMM1, 0x24u)]
+    [TestCase(INS_shld, EA_4BYTE, REG_X64_RAX, REG_X64_RCX, 3u)]
+    [TestCase(INS_pshufd, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, 0x24u)]
     public static void RegisterPairImmediateWrapperPreservesInstructionOperands(
         instruction ins, emitAttr size, regNumber target, regNumber source, uint immediate)
     {
@@ -242,23 +242,23 @@ internal static unsafe class CodeGenOperandTests
         {
             GenTree operand = immediate
                 ? compiler.gtNewIconNode(TYP_INT, 7)
-                : Register(compiler, TYP_INT, REG_RCX);
+                : Register(compiler, TYP_INT, REG_X64_RCX);
             operand.IsContained = immediate;
 
-            codeGen.inst_RV_TT(INS_add, EA_4BYTE, REG_RAX, operand);
+            codeGen.inst_RV_TT(INS_add, EA_4BYTE, REG_X64_RAX, operand);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             var descriptor = descriptors[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_RAX));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_RAX));
             if (immediate)
             {
                 Assert.That(InstructionConstant(codeGen.Emitter, descriptor), Is.EqualTo((nint)7));
             }
             else
             {
-                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_RCX));
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_RCX));
             }
         });
     }
@@ -271,8 +271,8 @@ internal static unsafe class CodeGenOperandTests
     {
         WithCodeGen((_, codeGen) =>
         {
-            var operand = new GenTreeVecCon(TYP_SIMD16) { RegNum = REG_XMM2 };
-            codeGen.inst_RV_RV_TT(ins, EA_16BYTE, REG_XMM0, REG_XMM1, operand, false, INS_OPTS_NONE);
+            var operand = new GenTreeVecCon(TYP_SIMD16) { RegNum = REG_X64_XMM2 };
+            codeGen.inst_RV_RV_TT(ins, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, operand, false, INS_OPTS_NONE);
 
             Assert.That(Descriptors(codeGen)[^1].idIns(), Is.EqualTo(expected));
         });
@@ -284,8 +284,8 @@ internal static unsafe class CodeGenOperandTests
     {
         WithCodeGen((_, codeGen) =>
         {
-            var operand = new GenTreeVecCon(TYP_SIMD32) { RegNum = REG_XMM1 };
-            codeGen.inst_RV_TT_IV(ins, EA_32BYTE, REG_XMM0, operand, 1, INS_OPTS_NONE);
+            var operand = new GenTreeVecCon(TYP_SIMD32) { RegNum = REG_X64_XMM1 };
+            codeGen.inst_RV_TT_IV(ins, EA_32BYTE, REG_X64_XMM0, operand, 1, INS_OPTS_NONE);
 
             Assert.That(Descriptors(codeGen)[^1].idIns(), Is.EqualTo(expected));
         });
@@ -306,7 +306,7 @@ internal static unsafe class CodeGenOperandTests
             Assert.That(codeGen.IsEmbeddedBroadcastEnabled(INS_paddd, broadcast), Is.EqualTo(evex));
             if (evex)
             {
-                codeGen.inst_RV_RV_TT(INS_paddd, EA_16BYTE, REG_XMM0, REG_XMM1, broadcast, false, INS_OPTS_NONE);
+                codeGen.inst_RV_RV_TT(INS_paddd, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, broadcast, false, INS_OPTS_NONE);
                 Assert.That(Section(codeGen).dsSize, Is.EqualTo(4));
             }
         });
@@ -319,13 +319,13 @@ internal static unsafe class CodeGenOperandTests
         {
             codeGen.Emitter.UseVexEncodings = false;
             codeGen.Emitter.UseEvexEncodings = false;
-            var operand = new GenTreeVecCon(TYP_SIMD16) { RegNum = REG_XMM0 };
-            codeGen.inst_RV_RV_TT(INS_pandd, EA_16BYTE, REG_XMM0, REG_XMM1, operand, true, INS_OPTS_NONE);
+            var operand = new GenTreeVecCon(TYP_SIMD16) { RegNum = REG_X64_XMM0 };
+            codeGen.inst_RV_RV_TT(INS_pandd, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, operand, true, INS_OPTS_NONE);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM0));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_XMM1));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_XMM0));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_X64_XMM1));
         });
     }
 
@@ -342,11 +342,11 @@ internal static unsafe class CodeGenOperandTests
             {
                 if (immediate)
                 {
-                    codeGen.inst_RV_TT_IV(INS_pshufd, EA_16BYTE, REG_XMM0, value, 1, INS_OPTS_NONE);
+                    codeGen.inst_RV_TT_IV(INS_pshufd, EA_16BYTE, REG_X64_XMM0, value, 1, INS_OPTS_NONE);
                 }
                 else
                 {
-                    codeGen.inst_RV_RV_TT(INS_pandd, EA_16BYTE, REG_XMM0, REG_XMM1, value, false, INS_OPTS_NONE);
+                    codeGen.inst_RV_RV_TT(INS_pandd, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, value, false, INS_OPTS_NONE);
                 }
             });
 

@@ -36,23 +36,23 @@ internal static unsafe class LinearScanRegisterWritebackTests
         {
             var left = compiler.gtNewIconNode(TYP_INT, 2);
             var right = compiler.gtNewIconNode(TYP_INT, 3);
-            var source = new GenTreeMultiRegOp(GT_MUL_LONG, TYP_LONG, left, right);
-            var copy = new GenTreeMultiRegOp(GT_MUL_LONG, TYP_LONG, left, right);
-            Assert.That(source.OtherReg, Is.EqualTo(regNumber.REG_NA));
+            var source = new GenTreeMultiRegOp(GT_MUL_LONG, var_types.TYP_LONG, left, right);
+            var copy = new GenTreeMultiRegOp(GT_MUL_LONG, var_types.TYP_LONG, left, right);
+            Assert.That(source.OtherReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(source.RegCount, Is.EqualTo((byte)2));
             Assert.That(source.GetRegType(1), Is.EqualTo(TYP_INT));
             Assert.That(source.GetRegSpillFlagByIdx(1), Is.EqualTo(default(GenTreeFlags)));
 
             lsraAssignRegToTree(source, regNumber.REG_EAX, 0);
-            lsraAssignRegToTree(source, regNumber.REG_EDX, 1);
+            lsraAssignRegToTree(source, regNumber.REG_X64_EDX, 1);
             source.SetRegSpillFlagByIdx(GTF_SPILLED, 1);
             copy.RegNum = regNumber.REG_ECX;
             copy.CopyOtherRegs(source);
 
             Assert.That(source.GetRegNumByIdx(0), Is.EqualTo(regNumber.REG_EAX));
-            Assert.That(source.GetRegNumByIdx(1), Is.EqualTo(regNumber.REG_EDX));
+            Assert.That(source.GetRegNumByIdx(1), Is.EqualTo(regNumber.REG_X64_EDX));
             Assert.That(copy.RegNum, Is.EqualTo(regNumber.REG_ECX));
-            Assert.That(copy.OtherReg, Is.EqualTo(regNumber.REG_EDX));
+            Assert.That(copy.OtherReg, Is.EqualTo(regNumber.REG_X64_EDX));
             Assert.That(copy.GetRegSpillFlagByIdx(1), Is.EqualTo(GTF_SPILLED));
             copy.ClearOtherRegFlags();
             Assert.That(copy.GetRegSpillFlagByIdx(1), Is.EqualTo(default(GenTreeFlags)));
@@ -102,19 +102,19 @@ internal static unsafe class LinearScanRegisterWritebackTests
             var source = compiler.gtNewIconNode(TYP_INT, 1);
             var node = new GenTreeCopyOrReload(GT_COPY, TYP_INT, source);
             var interval = new Interval(TYP_INT, SRBM_ALLINT_INIT);
-            var reference = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, node, SRBM_RBX);
+            var reference = allocator.newRefPosition(interval, 2, RefType.RefTypeDef, node, SRBM_X64_RBX);
             if (indexed)
             {
-                node.RegNum = regNumber.REG_RAX;
+                node.RegNum = regNumber.REG_X64_RAX;
                 reference.setMultiRegIdx(1);
             }
 
             WriteRegisters(allocator, reference, node);
 
-            Assert.That(node.GetRegNumByIdx(indexed ? (byte)1 : (byte)0), Is.EqualTo(regNumber.REG_RBX));
+            Assert.That(node.GetRegNumByIdx(indexed ? (byte)1 : (byte)0), Is.EqualTo(regNumber.REG_X64_RBX));
             if (indexed)
             {
-                Assert.That(node.RegNum, Is.EqualTo(regNumber.REG_RAX));
+                Assert.That(node.RegNum, Is.EqualTo(regNumber.REG_X64_RAX));
             }
         });
     }
@@ -132,14 +132,14 @@ internal static unsafe class LinearScanRegisterWritebackTests
             block.InsertAtEnd(intervening);
             block.InsertAtEnd(parent);
 
-            var reference = NewReference(allocator, source, regNumber.REG_RBX);
+            var reference = NewReference(allocator, source, regNumber.REG_X64_RBX);
             reference.reload = reload;
             InsertCopyOrReload(allocator, block, source, 0, reference);
 
             var copy = parent.Op1.AsCopyOrReload();
             Assert.That(copy.Oper, Is.EqualTo(reload ? GT_RELOAD : GT_COPY));
             Assert.That(copy.Op1, Is.SameAs(source));
-            Assert.That(copy.RegNum, Is.EqualTo(regNumber.REG_RBX));
+            Assert.That(copy.RegNum, Is.EqualTo(regNumber.REG_X64_RBX));
             Assert.That(source.Next, Is.SameAs(copy));
             Assert.That(copy.Next, Is.SameAs(intervening));
             Assert.That(intervening.Next, Is.SameAs(parent));
@@ -158,10 +158,10 @@ internal static unsafe class LinearScanRegisterWritebackTests
             var block = NewBlock(compiler);
             var original = compiler.gtNewIconNode(TYP_INT, 1);
             var source = new GenTreeCopyOrReload(GT_COPY, TYP_INT, original) {
-                RegNum = regNumber.REG_RAX,
+                RegNum = regNumber.REG_X64_RAX,
             };
             var firstCopy = new GenTreeCopyOrReload(reload ? GT_RELOAD : GT_COPY, TYP_INT, source) {
-                RegNum = regNumber.REG_RAX,
+                RegNum = regNumber.REG_X64_RAX,
             };
             var parent = new GenTreeOp(GT_ADD, TYP_INT, firstCopy, compiler.gtNewIconNode(TYP_INT, 2));
             block.InsertAtEnd(original);
@@ -170,11 +170,11 @@ internal static unsafe class LinearScanRegisterWritebackTests
             block.InsertAtEnd(parent.Op2);
             block.InsertAtEnd(parent);
 
-            var reference = NewReference(allocator, source, regNumber.REG_RBX);
+            var reference = NewReference(allocator, source, regNumber.REG_X64_RBX);
             reference.reload = reload;
             InsertCopyOrReload(allocator, block, source, 1, reference);
 
-            Assert.That(firstCopy.GetRegNumByIdx(1), Is.EqualTo(regNumber.REG_RBX));
+            Assert.That(firstCopy.GetRegNumByIdx(1), Is.EqualTo(regNumber.REG_X64_RBX));
             Assert.That(firstCopy.Next, Is.SameAs(parent.Op2));
             Assert.That(parent.Op1, Is.SameAs(firstCopy));
         });
@@ -192,7 +192,7 @@ internal static unsafe class LinearScanRegisterWritebackTests
             var parent = new GenTreeUnOp(GT_RETURN, TYP_VOID, source);
             block.InsertAtEnd(source);
             block.InsertAtEnd(parent);
-            var reference = NewReference(allocator, source, regNumber.REG_RBX);
+            var reference = NewReference(allocator, source, regNumber.REG_X64_RBX);
 
             InsertCopyOrReload(allocator, block, source, 0, reference);
 
@@ -213,7 +213,7 @@ internal static unsafe class LinearScanRegisterWritebackTests
             var parent = compiler.gtNewStoreLclVarNode(0, source);
             block.InsertAtEnd(source);
             block.InsertAtEnd(parent);
-            var reference = NewReference(allocator, source, regNumber.REG_RBX);
+            var reference = NewReference(allocator, source, regNumber.REG_X64_RBX);
             reference.copyReg = true;
 
             InsertCopyOrReload(allocator, block, source, 0, reference);
@@ -280,7 +280,7 @@ internal static unsafe class LinearScanRegisterWritebackTests
         try
         {
             var allocator = new LinearScan(compiler);
-            for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+            for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
             {
                 allocator.physRegs[index].init((regNumber)index);
             }

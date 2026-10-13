@@ -30,13 +30,13 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             var interval = NewInterval(allocator);
-            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_RAX);
-            var use = AddReference(allocator, RefType.RefTypeUse, 4, interval, copy || move ? SRBM_RBX : SRBM_RAX);
+            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_X64_RAX);
+            var use = AddReference(allocator, RefType.RefTypeUse, 4, interval, copy || move ? SRBM_X64_RBX : SRBM_X64_RAX);
             use.copyReg = copy;
             use.moveReg = move;
             if (copy)
             {
-                _ = AddReference(allocator, RefType.RefTypeUse, 6, interval, SRBM_RAX);
+                _ = AddReference(allocator, RefType.RefTypeUse, 6, interval, SRBM_X64_RAX);
                 allocator.refPositions[^1].lastUse = true;
             }
             else
@@ -44,21 +44,21 @@ internal static unsafe class LinearScanFinalVerificationTests
                 use.lastUse = true;
             }
 
-            interval.physReg = regNumber.REG_RDX;
-            interval.assignedReg = allocator.physRegs[(int)regNumber.REG_RDX];
-            allocator.physRegs[(int)regNumber.REG_RDX].assignedInterval = interval;
-            allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval = interval;
+            interval.physReg = regNumber.REG_X64_RDX;
+            interval.assignedReg = allocator.physRegs[(int)regNumber.REG_X64_RDX];
+            allocator.physRegs[(int)regNumber.REG_X64_RDX].assignedInterval = interval;
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = interval;
 
             VerifyFinalAllocation(allocator);
 
-            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
             Assert.That(interval.recentRefPosition, Is.SameAs(allocator.refPositions[^1]));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(interval.assignedReg, Is.Null);
             Assert.That(interval.isActive, Is.False);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval, Is.Null);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RBX].assignedInterval, Is.Null);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RDX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RBX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RDX].assignedInterval, Is.Null);
             Assert.That(block, Is.SameAs(compiler.fgFirstBB));
         });
     }
@@ -72,10 +72,10 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             var interval = NewInterval(allocator);
-            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_RAX);
+            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_X64_RAX);
             definition.spillAfter = true;
             definition.writeThru = writeThrough;
-            var use = AddReference(allocator, RefType.RefTypeUse, 4, interval, SRBM_RBX);
+            var use = AddReference(allocator, RefType.RefTypeUse, 4, interval, SRBM_X64_RBX);
             use.reload = true;
             use.lastUse = true;
             compiler.verbose = true;
@@ -85,11 +85,11 @@ internal static unsafe class LinearScanFinalVerificationTests
             Assert.That(output, Does.Contain("Final allocation"));
             Assert.That(output, Does.Contain(writeThrough ? "WThru" : "Spill"));
             Assert.That(output, Does.Contain("ReLod"));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(interval.assignedReg, Is.Null);
             Assert.That(interval.isActive, Is.False);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval, Is.Null);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RBX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RBX].assignedInterval, Is.Null);
         });
     }
 
@@ -119,13 +119,13 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             var interval = NewInterval(allocator);
-            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_RAX);
+            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_X64_RAX);
             var fixedRegister = AddReference(allocator, RefType.RefTypeFixedReg, 4);
-            fixedRegister.setReg(allocator.physRegs[(int)regNumber.REG_RBX]);
+            fixedRegister.setReg(allocator.physRegs[(int)regNumber.REG_X64_RBX]);
             var killed = AddReference(allocator, RefType.RefTypeKill, 6);
             killed.killedRegisters = RBM_RBX;
             var gcKill = AddReference(allocator, RefType.RefTypeKillGCRefs, 8);
-            gcKill.registerAssignment = SRBM_RAX;
+            gcKill.registerAssignment = SRBM_X64_RAX;
             var optional = AddReference(allocator, RefType.RefTypeUse, 10, interval);
             optional.regOptional = true;
             optional.lastUse = true;
@@ -134,7 +134,7 @@ internal static unsafe class LinearScanFinalVerificationTests
 
             Assert.That(fixedRegister.getReg().recentRefPosition, Is.SameAs(fixedRegister));
             Assert.That(interval.recentRefPosition, Is.SameAs(optional));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(definition.nodeLocation, Is.EqualTo(2u));
         });
     }
@@ -147,18 +147,18 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             var first = NewInterval(allocator);
-            _ = AddReference(allocator, RefType.RefTypeDef, 2, first, SRBM_RAX);
+            _ = AddReference(allocator, RefType.RefTypeDef, 2, first, SRBM_X64_RAX);
             _ = AddReference(allocator, RefType.RefTypeBB, 4);
             var second = NewInterval(allocator);
-            var definition = AddReference(allocator, RefType.RefTypeDef, 6, second, SRBM_RAX);
+            var definition = AddReference(allocator, RefType.RefTypeDef, 6, second, SRBM_X64_RAX);
             definition.lastUse = true;
 
             VerifyFinalAllocation(allocator);
 
-            Assert.That(first.physReg, Is.EqualTo(regNumber.REG_RAX));
-            Assert.That(first.assignedReg, Is.SameAs(allocator.physRegs[(int)regNumber.REG_RAX]));
-            Assert.That(second.physReg, Is.EqualTo(regNumber.REG_NA));
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval, Is.Null);
+            Assert.That(first.physReg, Is.EqualTo(regNumber.REG_X64_RAX));
+            Assert.That(first.assignedReg, Is.SameAs(allocator.physRegs[(int)regNumber.REG_X64_RAX]));
+            Assert.That(second.physReg, Is.EqualTo(regNumber.REG_X64_NA));
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval, Is.Null);
         });
     }
 
@@ -170,14 +170,14 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             var interval = NewInterval(allocator);
-            interval.physReg = regNumber.REG_XMM16;
-            interval.assignedReg = allocator.physRegs[(int)regNumber.REG_XMM16];
-            allocator.physRegs[(int)regNumber.REG_XMM16].assignedInterval = interval;
+            interval.physReg = regNumber.REG_X64_XMM16;
+            interval.assignedReg = allocator.physRegs[(int)regNumber.REG_X64_XMM16];
+            allocator.physRegs[(int)regNumber.REG_X64_XMM16].assignedInterval = interval;
 
             VerifyFinalAllocation(allocator);
 
-            Assert.That(allocator.physRegs[(int)regNumber.REG_XMM16].assignedInterval, Is.Null);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_XMM16].assignedInterval, Is.Null);
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(interval.assignedReg, Is.Null);
         }, evex: true);
     }
@@ -190,12 +190,12 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             var interval = NewInterval(allocator);
-            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_RAX);
+            var definition = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_X64_RAX);
             var optionalDefinition = AddReference(allocator, RefType.RefTypeDef, 4, interval);
             optionalDefinition.regOptional = true;
             var special = NewInterval(allocator);
             special.isSpecialPutArg = true;
-            _ = AddReference(allocator, RefType.RefTypeUse, 6, special, SRBM_R15);
+            _ = AddReference(allocator, RefType.RefTypeUse, 6, special, SRBM_X64_R15);
             compiler.verbose = true;
 
             var output = Capture(() => VerifyFinalAllocation(allocator));
@@ -203,10 +203,10 @@ internal static unsafe class LinearScanFinalVerificationTests
             Assert.That(output, Does.Contain("NoReg"));
             Assert.That(output, Does.Contain("PtArg    r15"));
             Assert.That(definition.nodeLocation, Is.EqualTo(2u));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval, Is.Null);
-            Assert.That(special.physReg, Is.EqualTo(regNumber.REG_NA));
-            Assert.That(allocator.physRegs[(int)regNumber.REG_R15].assignedInterval, Is.Null);
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval, Is.Null);
+            Assert.That(special.physReg, Is.EqualTo(regNumber.REG_X64_NA));
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_R15].assignedInterval, Is.Null);
         });
     }
 
@@ -218,18 +218,18 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             _ = AddReference(allocator, RefType.RefTypeBB, 0);
             var interval = NewInterval(allocator);
-            _ = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_RAX);
-            var copy = AddReference(allocator, RefType.RefTypeUse, 4, interval, SRBM_RBX);
+            _ = AddReference(allocator, RefType.RefTypeDef, 2, interval, SRBM_X64_RAX);
+            var copy = AddReference(allocator, RefType.RefTypeUse, 4, interval, SRBM_X64_RBX);
             copy.copyReg = true;
             copy.spillAfter = true;
 
             VerifyFinalAllocation(allocator);
 
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(interval.assignedReg, Is.Null);
             Assert.That(interval.isActive, Is.False);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval, Is.Null);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RBX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RBX].assignedInterval, Is.Null);
         });
     }
 
@@ -241,11 +241,11 @@ internal static unsafe class LinearScanFinalVerificationTests
             _ = StartBlockSequence(allocator);
             BbNumMaxBeforeResolution(allocator) = (uint)blocks[0].bbNum;
             var interval = NewInterval(allocator);
-            interval.physReg = regNumber.REG_RAX;
+            interval.physReg = regNumber.REG_X64_RAX;
 
             _ = Assert.Throws<FatalJitException>(() => VerifyFinalAllocation(allocator));
 
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_RAX));
         });
     }
 
@@ -290,11 +290,11 @@ internal static unsafe class LinearScanFinalVerificationTests
             block.InsertAtEnd(operand);
             block.InsertAtEnd(copy);
             var interval = NewInterval(allocator);
-            interval.physReg = regNumber.REG_RAX;
+            interval.physReg = regNumber.REG_X64_RAX;
 
             Assert.That(IsResolutionNode(null, block, operand), Is.True);
             _ = Assert.Throws<FatalJitException>(() => VerifyFinalAllocation(allocator));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_RAX));
         });
     }
 
@@ -303,12 +303,12 @@ internal static unsafe class LinearScanFinalVerificationTests
     {
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator);
-            interval.physReg = regNumber.REG_RAX;
+            interval.physReg = regNumber.REG_X64_RAX;
             EnregisterLocalVars(allocator) = true;
 
             _ = Assert.Throws<FatalJitException>(() => VerifyFinalAllocation(allocator));
 
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_RAX));
         });
     }
 

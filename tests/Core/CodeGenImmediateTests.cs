@@ -180,8 +180,8 @@ internal static unsafe class CodeGenImmediateTests
 
     [TestCase(EA_4BYTE)]
     [TestCase(EA_8BYTE)]
-    [TestCase(EA_GCREF)]
-    [TestCase(EA_BYREF)]
+    [TestCase(EA_64BIT_GCREF)]
+    [TestCase(EA_64BIT_BYREF)]
     public static void ExplicitZeroingPreservesTheRequestedGcClassification(emitAttr attr)
     {
         WithCodeGen(CorInfoReloc.NONE, (_, codeGen) =>

@@ -255,7 +255,7 @@ internal static unsafe class CodeGenEHReportingTests
 
     private static void WithReporting(ReportingAction action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.setEHcount = &SetCount;

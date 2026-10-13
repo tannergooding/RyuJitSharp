@@ -18,11 +18,11 @@ internal static class LinearScanRegisterStressTests
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
             StressMask(allocator) = 3;
-            var candidates = SRBM_R12 | SRBM_RDI;
+            var candidates = SRBM_X64_R12 | SRBM_X64_RDI;
 #if UNIX_AMD64_ABI
-            var expected = SRBM_R12;
+            var expected = SRBM_X64_R12;
 #else
-            var expected = SRBM_RDI;
+            var expected = SRBM_X64_RDI;
 #endif
             Assert.That(StressLimit(allocator, null, TYP_INT, candidates), Is.EqualTo(expected));
         });
@@ -33,9 +33,9 @@ internal static class LinearScanRegisterStressTests
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
             StressMask(allocator) = 3;
-            var candidates = SRBM_XMM3 | SRBM_XMM6;
+            var candidates = SRBM_X64_XMM3 | SRBM_X64_XMM6;
 
-            Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_XMM6));
+            Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_X64_XMM6));
         });
     }
 
@@ -44,9 +44,9 @@ internal static class LinearScanRegisterStressTests
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
             StressMask(allocator) = 0x2000;
-            var candidates = SRBM_XMM15 | SRBM_XMM16;
+            var candidates = SRBM_X64_XMM15 | SRBM_X64_XMM16;
 
-            Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_XMM16));
+            Assert.That(StressLimit(allocator, null, TYP_FLOAT, candidates), Is.EqualTo(SRBM_X64_XMM16));
         });
     }
 
@@ -55,9 +55,9 @@ internal static class LinearScanRegisterStressTests
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
             StressMask(allocator) = 0x4000;
-            var candidates = SRBM_R15 | SRBM_R16;
+            var candidates = SRBM_X64_R15 | SRBM_X64_R16;
 
-            Assert.That(StressLimit(allocator, null, TYP_INT, candidates), Is.EqualTo(SRBM_R16));
+            Assert.That(StressLimit(allocator, null, TYP_INT, candidates), Is.EqualTo(SRBM_X64_R16));
         });
     }
 
@@ -65,19 +65,19 @@ internal static class LinearScanRegisterStressTests
     public static void RequiredBusyCandidateRetainsTheOriginalMask()
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) => {
-            IntCalleeTrash(compiler) = SRBM_RAX;
+            IntCalleeTrash(compiler) = SRBM_X64_RAX;
             StressMask(allocator) = 2;
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse)
             {
                 minRegCandidateCount = 1,
             };
-            var candidates = SRBM_RAX | SRBM_RBX;
+            var candidates = SRBM_X64_RAX | SRBM_X64_RBX;
 
             Assert.That(StressLimit(allocator, reference, TYP_INT, candidates), Is.EqualTo(candidates));
 
             reference.setRegOptional(true);
-            Assert.That(StressLimit(allocator, reference, TYP_INT, candidates), Is.EqualTo(SRBM_RAX));
+            Assert.That(StressLimit(allocator, reference, TYP_INT, candidates), Is.EqualTo(SRBM_X64_RAX));
         });
     }
 
@@ -85,14 +85,14 @@ internal static class LinearScanRegisterStressTests
     public static void MinimumCountAndFixedReferencePreserveRequiredCandidates()
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (compiler, allocator) => {
-            IntCalleeTrash(compiler) = SRBM_RAX;
+            IntCalleeTrash(compiler) = SRBM_X64_RAX;
             StressMask(allocator) = 2;
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse)
             {
-                registerAssignment = SRBM_RBX,
+                registerAssignment = SRBM_X64_RBX,
                 minRegCandidateCount = 2,
             };
-            var candidates = SRBM_RAX | SRBM_RBX;
+            var candidates = SRBM_X64_RAX | SRBM_X64_RBX;
 
             Assert.That(StressLimit(allocator, reference, TYP_INT, candidates), Is.EqualTo(candidates));
 
@@ -110,12 +110,12 @@ internal static class LinearScanRegisterStressTests
             StressMask(allocator) = 1;
             var reference = new RefPosition(1, 2, null, RefType.RefTypeUse)
             {
-                registerAssignment = SRBM_RBX,
+                registerAssignment = SRBM_X64_RBX,
                 isFixedRegRef = true,
                 minRegCandidateCount = 1,
             };
 
-            Assert.That(StressLimit(allocator, reference, TYP_INT, SRBM_RAX), Is.EqualTo(SRBM_RAX | SRBM_RBX));
+            Assert.That(StressLimit(allocator, reference, TYP_INT, SRBM_X64_RAX), Is.EqualTo(SRBM_X64_RAX | SRBM_X64_RBX));
         });
     }
 
@@ -124,8 +124,8 @@ internal static class LinearScanRegisterStressTests
     {
         LinearScanLocalCandidatesTests.WithCandidates(1, (_, allocator) => {
             StressMask(allocator) = 3;
-            Assert.That(StressLimit(allocator, null, TYP_MASK, SRBM_K1 | SRBM_K2),
-                Is.EqualTo(SRBM_K1 | SRBM_K2));
+            Assert.That(StressLimit(allocator, null, TYP_MASK, SRBM_X64_K1 | SRBM_X64_K2),
+                Is.EqualTo(SRBM_X64_K1 | SRBM_X64_K2));
         });
     }
 

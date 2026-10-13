@@ -70,7 +70,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
 
             var output = Capture(() => {
                 InitializeAllocationDumpFormat(allocator);
-                AllocationDumpRegisters(allocator) |= new regMaskTP(SRBM_XMM3);
+                AllocationDumpRegisters(allocator) |= new regMaskTP(SRBM_X64_XMM3);
                 DumpAllocationRegisterTitleIfNeeded(allocator);
             });
 
@@ -90,7 +90,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var allocator = CreateAllocator(compiler);
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var reference = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_RAX);
+            var reference = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             compiler.verbose = true;
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
@@ -159,7 +159,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
 
             var selected = allocator.selectMinimal(interval, definition);
 
@@ -173,17 +173,17 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     public static void MinimalRegisterNumberFallbackIncrementsItsBlockStatistic()
     {
         WithCompiler((compiler, codeGen) => {
-            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_RBX | SRBM_RCX);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_X64_RBX | SRBM_X64_RCX);
             var allocator = CreateAllocator(compiler);
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX | SRBM_RCX);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX | SRBM_X64_RCX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
 
             var selected = allocator.selectMinimal(interval, definition);
 
-            Assert.That(selected, Is.EqualTo(SRBM_RCX));
+            Assert.That(selected, Is.EqualTo(SRBM_X64_RCX));
             Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_ORDER, 0), Is.Zero);
             Assert.That(allocator.getLsraStat(LsraStat.STAT_REG_NUM, 0), Is.EqualTo(1u));
         });
@@ -198,7 +198,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
             _ = allocator.selectMinimal(interval, definition);
 
             using var stream = new MemoryStream();
@@ -223,7 +223,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
     {
         var allocator = new LinearScan(compiler);
         BlockInfo(allocator) = [new LsraBlockInfo()];
-        for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+        for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
         {
             var register = allocator.physRegs[index];
             register.init((regNumber)index);
@@ -305,7 +305,7 @@ internal static unsafe class LinearScanAllocationDiagnosticsTests
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
-        CompilerLastIntRegister(compiler) = regNumber.REG_R15;
+        CompilerLastIntRegister(compiler) = regNumber.REG_X64_R15;
         JitTls.Compiler = compiler;
         var codeGen = new CodeGen(compiler);
         compiler.codeGen = codeGen;

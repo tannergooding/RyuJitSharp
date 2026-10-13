@@ -4,6 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
@@ -26,7 +27,7 @@ internal static unsafe class LinearScanCallBuildingTests
     public static void InitPInvokeFrameReturnsTheThreadControlBlockInEsi()
     {
         WithAllocator((compiler, allocator) => {
-            var call = compiler.gtNewHelperCallNode(TYP_I_IMPL, CorInfoHelpFunc.CORINFO_HELP_INIT_PINVOKE_FRAME);
+            var call = compiler.gtNewHelperCallNode(TYP_LONG, CorInfoHelpFunc.CORINFO_HELP_INIT_PINVOKE_FRAME);
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildCall(allocator, call), Is.Zero);
@@ -55,10 +56,10 @@ internal static unsafe class LinearScanCallBuildingTests
     public static void IndirectVirtualStubCallUsesEaxForTheContainedTargetAddress()
     {
         WithAllocator((compiler, allocator) => {
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             ReferenceBuildLocation(allocator) = 2;
             var addressDef = BuildDef(allocator, address, SRBM_NONE, 0);
-            var target = compiler.gtNewIndir(TYP_I_IMPL, address);
+            var target = compiler.gtNewIndir(TYP_LONG, address);
             target.IsContained = true;
             var call = compiler.gtNewCallNode(TYP_VOID, CT_INDIRECT, null);
             call.Flags |= GTF_CALL_VIRT_STUB;
@@ -94,11 +95,19 @@ internal static unsafe class LinearScanCallBuildingTests
     }
 #endif
 #else
-    [TestCase(TYP_VOID, SRBM_NONE)]
-    [TestCase(TYP_INT, SRBM_INTRET)]
-    [TestCase(TYP_LONG, SRBM_LNGRET)]
-    [TestCase(TYP_DOUBLE, SRBM_FLOATRET)]
-    [TestCase(TYP_SIMD16, SRBM_FLOATRET)]
+    private static IEnumerable<TestCaseData> ReturnRegisterCases()
+    {
+        yield return new TestCaseData(TYP_VOID, SRBM_NONE);
+        yield return new TestCaseData(TYP_INT, TargetRuntimeMetadata.IntegerReturnMask);
+        if (!Configuration.TARGET_WASM)
+        {
+            yield return new TestCaseData(TYP_LONG, TargetRuntimeMetadata.LongReturnMask);
+            yield return new TestCaseData(TYP_DOUBLE, TargetRuntimeMetadata.FloatingReturnMask);
+            yield return new TestCaseData(TYP_SIMD16, TargetRuntimeMetadata.FloatingReturnMask);
+        }
+    }
+
+    [TestCaseSource(nameof(ReturnRegisterCases))]
     public static void CallKillsBeforeDefiningItsAbiReturn(var_types type, regMask returnRegister)
     {
         WithAllocator((compiler, allocator) => {
@@ -137,7 +146,7 @@ internal static unsafe class LinearScanCallBuildingTests
             {
                 compiler.NeedsGSSecurityCookie = true;
             }
-            var target = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
+            var target = compiler.gtNewIconNode(TYP_LONG, 0x1234);
             ReferenceBuildLocation(allocator) = 2;
             var targetDef = BuildDef(allocator, target, SRBM_NONE, 0);
             var call = compiler.gtNewCallNode(TYP_VOID, CT_INDIRECT, null);
@@ -145,8 +154,8 @@ internal static unsafe class LinearScanCallBuildingTests
             call.ControlExpr = target;
             if (secretStub)
             {
-                var secret = compiler.gtNewIconNode(TYP_I_IMPL, 7);
-                var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_I_IMPL, secret) { RegNum = REG_R10 };
+                var secret = compiler.gtNewIconNode(TYP_LONG, 7);
+                var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_LONG, secret) { RegNum = REG_X64_R10 };
                 _ = BuildDef(allocator, putArg, SRBM_R10, 0);
                 var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(secret).WithWellKnownArg(
                     WellKnownArg.SecretStubParam));
@@ -163,12 +172,12 @@ internal static unsafe class LinearScanCallBuildingTests
         });
     }
 
-    [TestCase(REG_RCX)]
-    [TestCase(REG_XMM2)]
+    [TestCase(REG_X64_RCX)]
+    [TestCase(REG_X64_XMM2)]
     public static void RegisterArgumentsUseAndDefineTheirAbiRegister(regNumber register)
     {
         WithAllocator((compiler, allocator) => {
-            var type = register is REG_XMM2 ? TYP_DOUBLE : TYP_INT;
+            var type = register is REG_X64_XMM2 ? TYP_DOUBLE : TYP_INT;
             GenTree value = type is TYP_DOUBLE
                 ? compiler.gtNewDconNode(TYP_DOUBLE, 2.5)
                 : compiler.gtNewIconNode(TYP_INT, 5);
@@ -214,7 +223,7 @@ internal static unsafe class LinearScanCallBuildingTests
             allocator.localVarIntervals = [localInterval];
             localInterval.setLocalNumber(compiler, 0, allocator);
             var source = compiler.gtNewLclvNode(TYP_INT, 0);
-            var arg = new GenTreeUnOp(GT_PUTARG_REG, TYP_INT, source) { RegNum = REG_RCX };
+            var arg = new GenTreeUnOp(GT_PUTARG_REG, TYP_INT, source) { RegNum = REG_X64_RCX };
             ReferenceBuildLocation(allocator) = 4;
 
             Assert.That(BuildPutArgReg(allocator, arg), Is.EqualTo(1));
@@ -275,16 +284,16 @@ internal static unsafe class LinearScanCallBuildingTests
     }
 
 #if TARGET_AMD64 && !UNIX_AMD64_ABI
-    [TestCase(REG_XMM0, SRBM_RCX)]
-    [TestCase(REG_XMM1, SRBM_RDX)]
-    [TestCase(REG_XMM2, SRBM_R8)]
-    [TestCase(REG_XMM3, SRBM_R9)]
+    [TestCase(REG_X64_XMM0, SRBM_X64_RCX)]
+    [TestCase(REG_X64_XMM1, SRBM_X64_RDX)]
+    [TestCase(REG_X64_XMM2, SRBM_X64_R8)]
+    [TestCase(REG_X64_XMM3, SRBM_X64_R9)]
     public static void WindowsVarargsFloatsReserveTheCorrespondingIntegerRegister(
         regNumber floatRegister, regMask integerRegister)
     {
         WithAllocator((compiler, allocator) => {
             var value = compiler.gtNewDconNode(TYP_DOUBLE, 2.5);
-            var target = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
+            var target = compiler.gtNewIconNode(TYP_LONG, 0x1234);
             var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_DOUBLE, value) { RegNum = floatRegister };
             ReferenceBuildLocation(allocator) = 2;
             _ = BuildDef(allocator, putArg, genSingleTypeRegMask(floatRegister), 0);
@@ -336,14 +345,14 @@ internal static unsafe class LinearScanCallBuildingTests
     public static void SwiftErrorArgumentKeepsItsRegisterBusyThroughTheCall()
     {
         WithAllocator((compiler, allocator) => {
-            var source = compiler.gtNewIconNode(TYP_I_IMPL, 0);
-            var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_I_IMPL, source) { RegNum = REG_SWIFT_ERROR };
+            var source = compiler.gtNewIconNode(TYP_LONG, 0);
+            var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_LONG, source) { RegNum = REG_SWIFT_ERROR };
             ReferenceBuildLocation(allocator) = 2;
             _ = BuildDef(allocator, putArg, SRBM_SWIFT_ERROR, 0);
             var call = compiler.gtNewCallNode(TYP_VOID, CT_USER_FUNC, null);
             call.Flags |= GTF_CALL_UNMANAGED;
             call._unmgdCallConv = CorInfoCallConvExtension.Swift;
-            call.Next = new GenTree(GT_SWIFT_ERROR, TYP_I_IMPL);
+            call.Next = new GenTree(GT_SWIFT_ERROR, TYP_LONG);
             var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(source).WithWellKnownArg(
                 WellKnownArg.SwiftError));
             arg.EarlyNode = null;

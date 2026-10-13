@@ -28,7 +28,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
                 Is.EqualTo(Enumerable.Range(1, MAX_REG_ARG).Select(index => (nint)(index * TARGET_POINTER_SIZE))));
             Assert.That(ids.All(id => id.idIns() == INS_mov && id.idOpSize() == EA_8BYTE
                 && id.idAddr().iiaAddrMode.amBaseReg == REG_SPBASE
-                && id.idAddr().iiaAddrMode.amIndxReg == REG_NA), Is.True);
+                && id.idAddr().iiaAddrMode.amIndxReg == REG_X64_NA), Is.True);
         });
     }
 
@@ -45,21 +45,21 @@ internal static unsafe class CodeGenPrologFrameSetupTests
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(delta == 0 ? INS_mov : INS_lea));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RBP));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RBP));
             if (delta == 0)
             {
-                Assert.That(id.idReg2(), Is.EqualTo(REG_RSP));
+                Assert.That(id.idReg2(), Is.EqualTo(REG_X64_RSP));
             }
             else
             {
-                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RSP));
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RSP));
                 Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)delta));
             }
         });
     }
 
-    [TestCase(false, REG_RSP)]
-    [TestCase(true, REG_RBP)]
+    [TestCase(false, REG_X64_RSP)]
+    [TestCase(true, REG_X64_RBP)]
     public static void FramePointerRegisterTracksFramePointerUsage(bool framePointerUsed, regNumber expected)
     {
         WithProlog((_, codeGen) =>
@@ -80,7 +80,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         WithProlog((_, codeGen) =>
         {
             var zeroed = true;
-            codeGen.genAllocLclFrame(size, REG_RAX, ref zeroed, RBM_NONE);
+            codeGen.genAllocLclFrame(size, REG_X64_RAX, ref zeroed, RBM_NONE);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(size == 0 ? 0 : 1));
@@ -88,7 +88,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
             if (size != 0)
             {
                 Assert.That(ids[0].idIns(), Is.EqualTo(size == 8 ? INS_push : INS_sub));
-                Assert.That(ids[0].idReg1(), Is.EqualTo(size == 8 ? REG_RAX : REG_RSP));
+                Assert.That(ids[0].idReg1(), Is.EqualTo(size == 8 ? REG_X64_RAX : REG_X64_RSP));
                 if (size != 8)
                 {
                     Assert.That(InstructionConstant(codeGen.Emitter, ids[0]), Is.EqualTo((nint)size));
@@ -97,9 +97,9 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         });
     }
 
-    [TestCase(4096u, REG_RAX, false)]
-    [TestCase(8192u, REG_R11, false)]
-    [TestCase(8192u, REG_R10, true)]
+    [TestCase(4096u, REG_X64_RAX, false)]
+    [TestCase(8192u, REG_X64_R11, false)]
+    [TestCase(8192u, REG_X64_R10, true)]
     public static void LargeFramesProbeBeforeMovingSpAndInvalidateOnlyNativeScratchRegisters(
         uint size, regNumber scratch, bool expectedZero)
     {
@@ -113,7 +113,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
             Assert.That(ids.Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_lea, INS_call, INS_mov]));
             Assert.That(ids[0].idReg1(), Is.EqualTo(REG_STACK_PROBE_HELPER_ARG));
             Assert.That(Displacement(codeGen.Emitter, ids[0]), Is.EqualTo(-(nint)size));
-            Assert.That(ids[^1].idReg1(), Is.EqualTo(REG_RSP));
+            Assert.That(ids[^1].idReg1(), Is.EqualTo(REG_X64_RSP));
             Assert.That(ids[^1].idReg2(), Is.EqualTo(REG_STACK_PROBE_HELPER_ARG));
             Assert.That(zeroed, Is.EqualTo(expectedZero));
         });
@@ -130,10 +130,10 @@ internal static unsafe class CodeGenPrologFrameSetupTests
             compiler.compCalleeRegsPushed = framePointer ? 2 : 3;
             var zeroed = true;
 
-            codeGen.genPushCalleeSavedRegisters(REG_RAX, ref zeroed);
+            codeGen.genPushCalleeSavedRegisters(REG_X64_RAX, ref zeroed);
 
             Assert.That(Descriptors(codeGen).Select(id => id.idReg1()), Is.EqualTo(framePointer
-                ? (regNumber[])[REG_R12, REG_RBX] : [REG_R12, REG_RBP, REG_RBX]));
+                ? (regNumber[])[REG_X64_R12, REG_X64_RBX] : [REG_X64_R12, REG_X64_RBP, REG_X64_RBX]));
             Assert.That(Descriptors(codeGen).All(id => id.idIns() == INS_push), Is.True);
             Assert.That(zeroed, Is.True);
         });
@@ -161,8 +161,8 @@ internal static unsafe class CodeGenPrologFrameSetupTests
             var registers = ids.SelectMany(id => id.idIns() == INS_push2
                 ? new[] { id.idReg1(), id.idReg2() } : [id.idReg1()]).ToArray();
             var expected = framePointer
-                ? (includesRbp ? (regNumber[])[REG_R13, REG_R12, REG_RBP, REG_RBX] : [REG_R13, REG_R12, REG_RBX])
-                : (includesRbp ? (regNumber[])[REG_RBP, REG_R13, REG_R12, REG_RBX] : [REG_RBX, REG_R13, REG_R12]);
+                ? (includesRbp ? (regNumber[])[REG_X64_R13, REG_X64_R12, REG_X64_RBP, REG_X64_RBX] : [REG_X64_R13, REG_X64_R12, REG_X64_RBX])
+                : (includesRbp ? (regNumber[])[REG_X64_RBP, REG_X64_R13, REG_X64_R12, REG_X64_RBX] : [REG_X64_RBX, REG_X64_R13, REG_X64_R12]);
             Assert.That(registers, Is.EqualTo(expected));
             Assert.That(ids.Count(id => id.idIns() == INS_push2), Is.EqualTo(framePointer && includesRbp ? 2 : 1));
         });
@@ -184,7 +184,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
             codeGen.genPreserveCalleeSavedFltRegs();
 
             var ids = Descriptors(codeGen);
-            Assert.That(ids.Select(id => id.idReg1()), Is.EqualTo((regNumber[])[REG_XMM6, REG_XMM8]));
+            Assert.That(ids.Select(id => id.idReg1()), Is.EqualTo((regNumber[])[REG_X64_XMM6, REG_X64_XMM8]));
             Assert.That(ids.All(id => id.idOpSize() == EA_16BYTE), Is.True);
             Assert.That(ids.Select(id => Displacement(codeGen.Emitter, id)),
                 Is.EqualTo((nint[])[expectedOffset, expectedOffset - 16]));
@@ -207,7 +207,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
             codeGen.genRestoreCalleeSavedFltRegs();
 
             var id = Descriptors(codeGen).Single();
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(localloc ? REG_RBP : REG_RSP));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(localloc ? REG_X64_RBP : REG_X64_RSP));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)(localloc ? 32 : 64)));
         });
     }
@@ -238,7 +238,7 @@ internal static unsafe class CodeGenPrologFrameSetupTests
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.osPageSize = 4096;
-            LastIntegerRegister(compiler) = REG_R15;
+            LastIntegerRegister(compiler) = REG_X64_R15;
             codeGen.CopyRegisterInfo();
             codeGen.resetFramePointerUsedWritePhase();
             action(compiler, codeGen);

@@ -14,12 +14,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanReferenceTests
 {
-    [TestCase(SRBM_RAX | SRBM_RBX, SRBM_RBX | SRBM_RCX, SRBM_NONE, false, SRBM_RBX)]
-    [TestCase(SRBM_RAX, SRBM_RBX, SRBM_RBX, false, SRBM_RAX)]
-    [TestCase(SRBM_RAX, SRBM_RBX | SRBM_RCX, SRBM_NONE, false, SRBM_RBX | SRBM_RCX)]
-    [TestCase(SRBM_RAX | SRBM_RCX, SRBM_RBX, SRBM_NONE, false, SRBM_RAX | SRBM_RCX)]
-    [TestCase(SRBM_RAX, SRBM_RBX, SRBM_NONE, false, SRBM_RAX | SRBM_RBX)]
-    [TestCase(SRBM_RAX, SRBM_RBX, SRBM_NONE, true, SRBM_RBX)]
+    [TestCase(SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RBX | SRBM_X64_RCX, SRBM_NONE, false, SRBM_X64_RBX)]
+    [TestCase(SRBM_X64_RAX, SRBM_X64_RBX, SRBM_X64_RBX, false, SRBM_X64_RAX)]
+    [TestCase(SRBM_X64_RAX, SRBM_X64_RBX | SRBM_X64_RCX, SRBM_NONE, false, SRBM_X64_RBX | SRBM_X64_RCX)]
+    [TestCase(SRBM_X64_RAX | SRBM_X64_RCX, SRBM_X64_RBX, SRBM_NONE, false, SRBM_X64_RAX | SRBM_X64_RCX)]
+    [TestCase(SRBM_X64_RAX, SRBM_X64_RBX, SRBM_NONE, false, SRBM_X64_RAX | SRBM_X64_RBX)]
+    [TestCase(SRBM_X64_RAX, SRBM_X64_RBX, SRBM_NONE, true, SRBM_X64_RBX)]
     public static void PreferencesPreserveAversionAndKillSetSemantics(
         regMask original, regMask incoming, regMask aversion, bool preferCalleeSave, regMask expected)
     {
@@ -33,30 +33,30 @@ internal static unsafe class LinearScanReferenceTests
         Assert.That(interval.registerPreferences, Is.EqualTo(expected));
     }
 
-    [TestCase(false, SRBM_RAX | SRBM_RCX)]
-    [TestCase(true, SRBM_RAX | SRBM_RDX)]
+    [TestCase(false, SRBM_X64_RAX | SRBM_X64_RCX)]
+    [TestCase(true, SRBM_X64_RAX | SRBM_X64_RDX)]
     public static void UpdatingPreferencesUsesCurrentRelatedRegisterOnlyWhenInactive(
         bool relatedIntervalIsActive, regMask expected)
     {
-        var interval = new Interval(TYP_INT, SRBM_RAX);
-        var relatedInterval = new Interval(TYP_INT, SRBM_RBX) {
+        var interval = new Interval(TYP_INT, SRBM_X64_RAX);
+        var relatedInterval = new Interval(TYP_INT, SRBM_X64_RBX) {
             isActive = relatedIntervalIsActive,
         };
         var register = new RegRecord();
-        register.init(regNumber.REG_RCX);
+        register.init(regNumber.REG_X64_RCX);
         relatedInterval.assignedReg = register;
         interval.assignRelatedInterval(relatedInterval);
 
-        Assert.That(relatedInterval.getCurrentPreferences(), Is.EqualTo(SRBM_RCX));
+        Assert.That(relatedInterval.getCurrentPreferences(), Is.EqualTo(SRBM_X64_RCX));
 
-        interval.updateRegisterPreferences(SRBM_RDX);
+        interval.updateRegisterPreferences(SRBM_X64_RDX);
 
         Assert.That(interval.registerPreferences, Is.EqualTo(expected));
     }
 
-    [TestCase(regNumber.REG_RBX, TYP_INT, true)]
-    [TestCase(regNumber.REG_XMM31, TYP_FLOAT, false)]
-    [TestCase(regNumber.REG_K7, TYP_MASK, false)]
+    [TestCase(regNumber.REG_X64_RBX, TYP_INT, true)]
+    [TestCase(regNumber.REG_X64_XMM31, TYP_FLOAT, false)]
+    [TestCase(regNumber.REG_X64_K7, TYP_MASK, false)]
     public static void PhysicalReferencesPreserveRegisterBanks(regNumber reg, var_types type, bool calleeSave)
     {
         var record = new RegRecord();
@@ -77,7 +77,7 @@ internal static unsafe class LinearScanReferenceTests
     [TestCase(false, true, 10u)]
     public static void ReferenceRangesRespectLastUseSpillsAndDelayedFree(bool lastUse, bool spillAfter, uint end)
     {
-        var interval = new Interval(TYP_INT, SRBM_RAX);
+        var interval = new Interval(TYP_INT, SRBM_X64_RAX);
         var use = new RefPosition(1, 15, null, RefType.RefTypeUse) { delayRegFree = true };
         var definition = new RefPosition(1, 10, null, RefType.RefTypeDef) {
             nextRefPosition = use,
@@ -107,7 +107,7 @@ internal static unsafe class LinearScanReferenceTests
             compiler.lvaTable[0].lvTracked = true;
             compiler.lvaTable[0]._varIndex = 1;
             var allocator = new LinearScan(compiler) { localVarIntervals = new Interval?[2] };
-            var interval = new Interval(TYP_INT, SRBM_RAX);
+            var interval = new Interval(TYP_INT, SRBM_X64_RAX);
 
             interval.setLocalNumber(compiler, 0, allocator);
 
@@ -132,7 +132,7 @@ internal static unsafe class LinearScanReferenceTests
 
             Assert.That(allocator.refPositions[0], Is.SameAs(definition));
             Assert.That(allocator.refPositions[1], Is.SameAs(use));
-            Assert.That(definition.assignedReg(), Is.EqualTo(regNumber.REG_NA));
+            Assert.That(definition.assignedReg(), Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(use.treeNode, Is.SameAs(tree));
 #if DEBUG
             Assert.That(definition.rpNum, Is.EqualTo(0u));
@@ -149,8 +149,8 @@ internal static unsafe class LinearScanReferenceTests
     {
         WithCompiler(compiler => {
             compiler.verbose = true;
-            var local = new Interval(TYP_INT, SRBM_RAX) { isLocalVar = true, varNum = 7, intervalIndex = 2 };
-            var temporary = new Interval(TYP_INT, SRBM_RBX) { isInternal = true, intervalIndex = 3 };
+            var local = new Interval(TYP_INT, SRBM_X64_RAX) { isLocalVar = true, varNum = 7, intervalIndex = 2 };
+            var temporary = new Interval(TYP_INT, SRBM_X64_RBX) { isInternal = true, intervalIndex = 3 };
             using var stream = new MemoryStream();
             using var writer = new JitTextWriter(stream, leaveOpen: true);
             var previous = s_jitstdout;

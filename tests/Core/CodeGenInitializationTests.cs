@@ -26,7 +26,7 @@ internal static class CodeGenInitializationTests
     public static void PreparationClassifiesOnlyTrackedGcLocalsWithStackHomes(
         var_types type, bool tracked, bool fullRegister, bool parameter, bool registerArgument, bool expected)
     {
-        CodeGenSpillVariableTests.WithCompiler(type, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(type, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             ref var local = ref compiler.lvaTable[0];
             local.lvTracked = tracked;
@@ -36,7 +36,7 @@ internal static class CodeGenInitializationTests
             local.lvIsRegArg = registerArgument;
             compiler.fgBBcount = 7;
             VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcTrkStkPtrLcls, 0);
-            LastLiveMask(codeGen) = regMaskTP.CreateFromRegNum(REG_RAX, REG_RAX.SingleTypeMask);
+            LastLiveMask(codeGen) = regMaskTP.CreateFromRegNum(REG_X64_RAX, REG_X64_RAX.SingleTypeMask);
 
             codeGen.genPrepForCompiler();
 
@@ -47,12 +47,12 @@ internal static class CodeGenInitializationTests
         });
     }
 
-    [TestCase(true, true, true, false, REG_RAX, true)]
-    [TestCase(false, true, true, false, REG_RAX, false)]
-    [TestCase(true, false, true, false, REG_RAX, false)]
-    [TestCase(true, true, false, false, REG_RAX, false)]
-    [TestCase(true, true, true, true, REG_RAX, false)]
-    [TestCase(true, true, true, false, REG_XMM0, false)]
+    [TestCase(true, true, true, false, REG_X64_RAX, true)]
+    [TestCase(false, true, true, false, REG_X64_RAX, false)]
+    [TestCase(true, false, true, false, REG_X64_RAX, false)]
+    [TestCase(true, true, false, false, REG_X64_RAX, false)]
+    [TestCase(true, true, true, true, REG_X64_RAX, false)]
+    [TestCase(true, true, true, false, REG_X64_XMM0, false)]
     public static void RegisterInitializationMarksOnlyEligibleLiveIntegerParameters(
         bool parameter, bool fullRegister, bool live, bool addressExposed, regNumber reg, bool expected)
     {
@@ -75,7 +75,7 @@ internal static class CodeGenInitializationTests
 
             codeGen.genInitializeRegisterState();
 
-            var mask = expected ? regMaskTP.CreateFromRegNum(REG_RAX, REG_RAX.SingleTypeMask) : default;
+            var mask = expected ? regMaskTP.CreateFromRegNum(REG_X64_RAX, REG_X64_RAX.SingleTypeMask) : default;
             Assert.That(codeGen.RegSet.rsGetModifiedRegsMask(), Is.EqualTo(mask));
         });
     }
@@ -85,7 +85,7 @@ internal static class CodeGenInitializationTests
     [TestCase(true, 1)]
     public static void InitializationPreservesTheNativeScopePredicates(bool scopeInfo, int scopeCount)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.opts.compScopeInfo = scopeInfo;
             compiler.info.compVarScopesCount = scopeCount;
@@ -107,7 +107,7 @@ internal static class CodeGenInitializationTests
     [TestCase(true)]
     public static void InitializationResetsPointerListsForTheSelectedReportingMode(bool fullMap)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             codeGen.IsFullPtrRegMapRequired = fullMap;
             object state = codeGen.GCInfo;
@@ -124,8 +124,8 @@ internal static class CodeGenInitializationTests
             Field(typeof(GCInfo), "gcCallDescList").SetValue(state, call);
             Field(typeof(GCInfo), "gcCallDescLast").SetValue(state, call);
             codeGen.GCInfo = (GCInfo)state;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RCX, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RCX, TYP_BYREF);
             VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0);
             VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcTrkStkPtrLcls, 0);
             var oldLife = codeGen.GCInfo.gcVarPtrSetCur;
@@ -150,10 +150,10 @@ internal static class CodeGenInitializationTests
     [Test]
     public static void PreparationAndInitializationWireTheRealTreeLifeEntryPoint()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.lvaTable[0].lvLRACandidate = false;
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             compiler.opts.compDbgInfo = true;
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
             VarSetOps.AddElemD(compiler, compiler.compCurLife, 0);
@@ -179,7 +179,7 @@ internal static class CodeGenInitializationTests
     [Test]
     public static void InitializationReplacesCallReturnStorageAndPendingLabels()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (_, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (_, codeGen, _) =>
         {
             codeGen.genInitialize();
             var returnsField = Field(typeof(CodeGen), "emittedCallReturnInfo");

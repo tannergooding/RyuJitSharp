@@ -51,9 +51,9 @@ internal static unsafe class LinearScanIntervalConstructionTests
             Assert.That(compiler.compRegAllocDone, Is.True);
             Assert.That(compiler.mostRecentlyActivePhase, Is.EqualTo(Phases.PHASE_LINEAR_SCAN_RESOLVE));
             Assert.That(AllocationPassComplete(allocator), Is.True);
-            Assert.That(left.RegNum, Is.Not.EqualTo(REG_NA));
-            Assert.That(right.RegNum, Is.Not.EqualTo(REG_NA));
-            Assert.That(add.RegNum, Is.Not.EqualTo(REG_NA));
+            Assert.That(left.RegNum, Is.Not.EqualTo(REG_X64_NA));
+            Assert.That(right.RegNum, Is.Not.EqualTo(REG_X64_NA));
+            Assert.That(add.RegNum, Is.Not.EqualTo(REG_X64_NA));
             var spillCount = 0;
             var reloadCount = 0;
             foreach (var node in block)
@@ -114,7 +114,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
                 Assert.That(definition.spillAfter, Is.False);
                 var use = definition.nextRefPosition
                     ?? throw new AssertionException("The vector producer has no use.");
-                use.registerAssignment = definition.assignedReg() is REG_XMM1 ? SRBM_XMM0 : SRBM_XMM1;
+                use.registerAssignment = definition.assignedReg() is REG_X64_XMM1 ? SRBM_X64_XMM0 : SRBM_XMM1;
                 use.moveReg = true;
             }
 
@@ -173,7 +173,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             var internalRegisters = compiler.codeGen!.InternalRegisters.GetAll(finite);
             Assert.That(internalRegisters.IsEmpty, Is.False);
             Assert.That((internalRegisters & new regMaskTP(SRBM_ALLFLOAT_INIT)).IsEmpty, Is.True);
-            Assert.That(finite.RegNum, Is.EqualTo(REG_XMM0));
+            Assert.That(finite.RegNum, Is.EqualTo(REG_X64_XMM0));
             Assert.That(compiler.codeGen.InternalRegisters.GetAll(value).IsEmpty, Is.True);
         });
     }
@@ -297,7 +297,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             var first = compiler.gtNewIconNode(TYP_INT, 1);
             var second = compiler.gtNewIconNode(TYP_INT, 1);
             ref var registers = ref compiler.codeGen!.InternalRegisters;
-            var maskRegister = regMaskTP.CreateFromRegNum(REG_K1, genSingleTypeRegMask(REG_K1));
+            var maskRegister = regMaskTP.CreateFromRegNum(REG_X64_K1, genSingleTypeRegMask(REG_X64_K1));
             registers.Add(first, RBM_RAX);
             registers.Add(first, maskRegister);
             registers.Add(second, RBM_RDX);
@@ -332,7 +332,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             BuildIntervals(allocator);
 
             Assert.That(compiler.lvaTable[0].lvLRACandidate, Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(allocator.localVarIntervals, Is.Null);
             var boundaries = allocator.refPositions.FindAll(reference => reference.refType is RefType.RefTypeBB);
             Assert.That(boundaries, Has.Count.EqualTo(2));
@@ -345,9 +345,9 @@ internal static unsafe class LinearScanIntervalConstructionTests
             Assert.That(allocator.intervals[0].lastRefPosition?.nodeLocation, Is.EqualTo(4));
             Assert.That(allocator.intervals[1].firstRefPosition?.nodeLocation, Is.EqualTo(9));
             Assert.That(allocator.intervals[1].lastRefPosition?.registerAssignment, Is.EqualTo(SRBM_INTRET));
-            Assert.That(ActualRegistersMask(allocator).IsSet(REG_XMM0), Is.False);
-            Assert.That(ActualRegistersMask(allocator).IsSet(REG_R15), Is.True);
-            Assert.That(ActualRegistersMask(allocator).IsSet(REG_R16), Is.False);
+            Assert.That(ActualRegistersMask(allocator).IsSet(REG_X64_XMM0), Is.False);
+            Assert.That(ActualRegistersMask(allocator).IsSet(REG_X64_R15), Is.True);
+            Assert.That(ActualRegistersMask(allocator).IsSet(REG_X64_R16), Is.False);
             Assert.That(compiler.compCurBB, Is.SameAs(blocks[1]));
 
             allocator.initVarRegMaps();
@@ -355,7 +355,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             AllocationPassComplete(allocator) = true;
             ResolveRegisters(allocator);
             Assert.That(compiler.lvaTable[0].lvOnFrame, Is.True);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(load.RegNum, Is.EqualTo(REG_INTRET));
         });
     }
@@ -455,14 +455,14 @@ internal static unsafe class LinearScanIntervalConstructionTests
             var boundaries = allocator.refPositions.FindAll(reference => reference.refType is RefType.RefTypeBB);
             Assert.That(boundaries, Has.Count.EqualTo(2));
             Assert.That(boundaries[1].nodeLocation, Is.EqualTo(4));
-            Assert.That(ActualRegistersMask(allocator).IsSet(REG_XMM0), Is.EqualTo(floating));
-            Assert.That(ActualRegistersMask(allocator).IsSet(REG_K0), Is.False);
+            Assert.That(ActualRegistersMask(allocator).IsSet(REG_X64_XMM0), Is.EqualTo(floating));
+            Assert.That(ActualRegistersMask(allocator).IsSet(REG_X64_K0), Is.False);
 
             allocator.initVarRegMaps();
             AllocateRegisters(allocator);
             AllocationPassComplete(allocator) = true;
             ResolveRegisters(allocator);
-            Assert.That(value.RegNum, Is.Not.EqualTo(REG_NA));
+            Assert.That(value.RegNum, Is.Not.EqualTo(REG_X64_NA));
         });
     }
 
@@ -487,20 +487,20 @@ internal static unsafe class LinearScanIntervalConstructionTests
             compiler.lvaTable[0].setLvRefCnt(1);
             compiler.lvaTable[2].setLvRefCnt((ushort)(mappedIsUsed ? 1 : 0));
             compiler.lvaParameterPassingInfo = [
-                AbiPassingInformation.FromSegment(compiler, false, AbiPassingSegment.InRegister(REG_RCX, 0, 8)),
-                AbiPassingInformation.FromSegment(compiler, false, AbiPassingSegment.InRegister(REG_XMM1, 0, 4)),
+                AbiPassingInformation.FromSegment(compiler, false, AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8)),
+                AbiPassingInformation.FromSegment(compiler, false, AbiPassingSegment.InRegister(REG_X64_XMM1, 0, 4)),
             ];
             compiler._paramRegLocalMappings = [
-                new ParameterRegisterLocalMapping(AbiPassingSegment.InRegister(REG_RCX, 0, 8), 2, 0),
+                new ParameterRegisterLocalMapping(AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8), 2, 0),
             ];
             _ = CreateBlocks(compiler, BBJ_RETURN);
 
             BuildIntervals(allocator);
 
             var registers = compiler.codeGen!.CalleeRegArgMaskLiveIn;
-            Assert.That(registers.IsSet(REG_RCX), Is.EqualTo(expectedIntegerLive));
-            Assert.That(registers.IsSet(REG_XMM1), Is.True);
-            Assert.That(registers.IsSet(REG_RDX), Is.False);
+            Assert.That(registers.IsSet(REG_X64_RCX), Is.EqualTo(expectedIntegerLive));
+            Assert.That(registers.IsSet(REG_X64_XMM1), Is.True);
+            Assert.That(registers.IsSet(REG_X64_RDX), Is.False);
             Assert.That(registers.IsSet(REG_SECRET_STUB_PARAM), Is.False);
             Assert.That(allocator.refPositions.Exists(reference => reference.refType is RefType.RefTypeParamDef), Is.False);
         });
@@ -546,9 +546,9 @@ internal static unsafe class LinearScanIntervalConstructionTests
         });
     }
 
-    [TestCase(false, false, REG_R9)]
-    [TestCase(true, false, REG_R10)]
-    [TestCase(true, true, REG_R11)]
+    [TestCase(false, false, REG_X64_R9)]
+    [TestCase(true, false, REG_X64_R10)]
+    [TestCase(true, true, REG_X64_R11)]
     public static void CookieRegistersPreserveReturnAndTailcallContracts(
         bool tailCall, bool secretParameter, regNumber expected)
     {
@@ -557,7 +557,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
             if (secretParameter)
             {
                 _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(
-                    compiler.gtNewIconNode(TYP_I_IMPL, 1)).WithWellKnownArg(WellKnownArg.SecretStubParam));
+                    compiler.gtNewIconNode(TYP_LONG, 1)).WithWellKnownArg(WellKnownArg.SecretStubParam));
             }
             Assert.That(compiler.codeGen!.genGetGSCookieTempRegs(tailCall, call),
                 Is.EqualTo(regMaskTP.CreateFromRegNum(expected, genSingleTypeRegMask(expected))));
@@ -622,7 +622,7 @@ internal static unsafe class LinearScanIntervalConstructionTests
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
         CompilerFloatCalleeTrash(compiler) = SRBM_FLT_CALLEE_TRASH_INIT;
-        CompilerLastIntReg(compiler) = REG_R15;
+        CompilerLastIntReg(compiler) = REG_X64_R15;
         JitTls.Compiler = compiler;
         var codeGen = new CodeGen(compiler);
         compiler.codeGen = codeGen;

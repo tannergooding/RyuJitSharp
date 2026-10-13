@@ -18,8 +18,8 @@ internal static class CodeGenSimd12XarchTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var address = Register(compiler, TYP_BYREF, REG_RAX);
-            var load = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_XMM1 };
+            var address = Register(compiler, TYP_BYREF, REG_X64_RAX);
+            var load = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_X64_XMM1 };
 
             codeGen.genLoadIndTypeSimd12(load);
 
@@ -39,11 +39,11 @@ internal static class CodeGenSimd12XarchTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaTable[0].Type = TYP_SIMD12;
-            compiler.lvaTable[0].RegNum = REG_STK;
-            var data = new GenTreeVecCon(TYP_SIMD12) { RegNum = REG_XMM1 };
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
+            var data = new GenTreeVecCon(TYP_SIMD12) { RegNum = REG_X64_XMM1 };
             data.SimdVal.u32[0] = zero ? 0u : 1u;
             var store = compiler.gtNewStoreLclVarNode(0, data);
-            store.RegNum = REG_NA;
+            store.RegNum = REG_X64_NA;
 
             if (directHelper)
             {
@@ -68,11 +68,11 @@ internal static class CodeGenSimd12XarchTests
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            var load = new GenTreeLclFld(GT_LCL_FLD, TYP_SIMD12, 0, 4) { RegNum = REG_XMM1 };
+            var load = new GenTreeLclFld(GT_LCL_FLD, TYP_SIMD12, 0, 4) { RegNum = REG_X64_XMM1 };
 
             if (directHelper)
             {
-                codeGen.genEmitLoadLclTypeSimd12(REG_XMM1, 0, 4);
+                codeGen.genEmitLoadLclTypeSimd12(REG_X64_XMM1, 0, 4);
             }
             else
             {
@@ -93,12 +93,12 @@ internal static class CodeGenSimd12XarchTests
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            codeGen.genSimd12UpperClear(REG_XMM1);
+            codeGen.genSimd12UpperClear(REG_X64_XMM1);
 
             var descriptor = Descriptors(codeGen).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_insertps));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_16BYTE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_XMM1));
         });
     }
 }

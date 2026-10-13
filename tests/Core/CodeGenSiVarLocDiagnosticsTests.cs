@@ -31,15 +31,13 @@ internal static class CodeGenSiVarLocDiagnosticsTests
         AssertOutput(codeGen, integerRegister, $"{REG_INT_FIRST.Name} byref");
 
         var floatingRegister = new CodeGen.siVarLoc { vlType = VLT_REG_FP };
-#if TARGET_AMD64 || TARGET_ARM64
-        floatingRegister.vlReg.vlrReg = ICorDebugInfo.RegNum.REGNUM_FP_FIRST;
-#else
-        floatingRegister.vlReg.vlrReg = (ICorDebugInfo.RegNum)0;
-#endif
+        floatingRegister.vlReg.vlrReg = Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64
+            ? ICorDebugInfo.REGNUM_FP_FIRST
+            : (ICorDebugInfo.RegNum)0;
         AssertOutput(codeGen, floatingRegister, REG_FP_FIRST.Name);
 
         var stackLocation = new CodeGen.siVarLoc { vlType = VLT_STK };
-        stackLocation.vlStk.vlsBaseReg = ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP;
+        stackLocation.vlStk.vlsBaseReg = ICorDebugInfo.REGNUM_AMBIENT_SP;
         stackLocation.vlStk.vlsOffset = -12;
         AssertOutput(codeGen, stackLocation, $"{STR_SPBASE}'[-12] (1 slot)");
 
@@ -48,42 +46,98 @@ internal static class CodeGenSiVarLocDiagnosticsTests
 
         var registerPair = new CodeGen.siVarLoc { vlType = VLT_REG_REG };
         registerPair.vlRegReg.vlrrReg1 = (ICorDebugInfo.RegNum)REG_INT_FIRST;
-#if TARGET_AMD64 || TARGET_ARM64
-        registerPair.vlRegReg.vlrrReg2 = ICorDebugInfo.RegNum.REGNUM_FP_FIRST;
-        AssertOutput(codeGen, registerPair, $"{REG_INT_FIRST.Name}-{REG_FP_FIRST.Name}");
-#else
-        var secondIntegerRegister = (regNumber)((int)REG_INT_FIRST + 1);
-        registerPair.vlRegReg.vlrrReg2 = (ICorDebugInfo.RegNum)secondIntegerRegister;
-        AssertOutput(codeGen, registerPair, $"{REG_INT_FIRST.Name}-{secondIntegerRegister.Name}");
-#endif
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+        {
+            registerPair.vlRegReg.vlrrReg2 = ICorDebugInfo.REGNUM_FP_FIRST;
+            AssertOutput(codeGen, registerPair, $"{REG_INT_FIRST.Name}-{REG_FP_FIRST.Name}");
+        }
+        else
+        {
+            var secondIntegerRegister = (regNumber)((int)REG_INT_FIRST + 1);
+            registerPair.vlRegReg.vlrrReg2 = (ICorDebugInfo.RegNum)secondIntegerRegister;
+            AssertOutput(codeGen, registerPair, $"{REG_INT_FIRST.Name}-{secondIntegerRegister.Name}");
+        }
 
-#if !TARGET_AMD64
-        var registerStack = new CodeGen.siVarLoc { vlType = VLT_REG_STK };
-        registerStack.vlRegStk.vlrsReg = (ICorDebugInfo.RegNum)REG_INT_FIRST;
-        registerStack.vlRegStk.vlrsStk.vlrssBaseReg = ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP;
-        registerStack.vlRegStk.vlrsStk.vlrssOffset = 20;
-        AssertOutput(codeGen, registerStack, $"{REG_INT_FIRST.Name}-{STR_SPBASE}'[20]");
+        if (!Configuration.TARGET_AMD64)
+        {
+            var registerStack = new CodeGen.siVarLoc { vlType = VLT_REG_STK };
+            registerStack.vlRegStk.vlrsReg = (ICorDebugInfo.RegNum)REG_INT_FIRST;
+            registerStack.vlRegStk.vlrsStk.vlrssBaseReg = ICorDebugInfo.REGNUM_AMBIENT_SP;
+            registerStack.vlRegStk.vlrsStk.vlrssOffset = 20;
+            AssertOutput(codeGen, registerStack, $"{REG_INT_FIRST.Name}-{STR_SPBASE}'[20]");
 
-        registerStack.vlRegStk.vlrsStk.vlrssBaseReg = (ICorDebugInfo.RegNum)REG_FPBASE;
-        registerStack.vlRegStk.vlrsStk.vlrssOffset = -8;
-        AssertOutput(codeGen, registerStack, $"{REG_INT_FIRST.Name}-{REG_FPBASE.Name}[-8]");
+            registerStack.vlRegStk.vlrsStk.vlrssBaseReg = (ICorDebugInfo.RegNum)REG_FPBASE;
+            registerStack.vlRegStk.vlrsStk.vlrssOffset = -8;
+            AssertOutput(codeGen, registerStack, $"{REG_INT_FIRST.Name}-{REG_FPBASE.Name}[-8]");
 
-        var twoStackSlots = new CodeGen.siVarLoc { vlType = VLT_STK2 };
-        twoStackSlots.vlStk2.vls2BaseReg = ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP;
-        twoStackSlots.vlStk2.vls2Offset = 16;
-        AssertOutput(codeGen, twoStackSlots, $"{STR_SPBASE}'[16] (2 slots)");
+            var twoStackSlots = new CodeGen.siVarLoc { vlType = VLT_STK2 };
+            twoStackSlots.vlStk2.vls2BaseReg = ICorDebugInfo.REGNUM_AMBIENT_SP;
+            twoStackSlots.vlStk2.vls2Offset = 16;
+            AssertOutput(codeGen, twoStackSlots, $"{STR_SPBASE}'[16] (2 slots)");
 
-        twoStackSlots.vlStk2.vls2BaseReg = (ICorDebugInfo.RegNum)REG_FPBASE;
-        AssertOutput(codeGen, twoStackSlots, $"{REG_FPBASE.Name}[16] (2 slots)");
+            twoStackSlots.vlStk2.vls2BaseReg = (ICorDebugInfo.RegNum)REG_FPBASE;
+            AssertOutput(codeGen, twoStackSlots, $"{REG_FPBASE.Name}[16] (2 slots)");
 
-        var fpStack = new CodeGen.siVarLoc { vlType = VLT_FPSTK };
-        fpStack.vlFPstk.vlfReg = 3;
-        AssertOutput(codeGen, fpStack, "ST(L-3)");
+            var fpStack = new CodeGen.siVarLoc { vlType = VLT_FPSTK };
+            fpStack.vlFPstk.vlfReg = 3;
+            AssertOutput(codeGen, fpStack, "ST(L-3)");
 
-        var fixedVarArg = new CodeGen.siVarLoc { vlType = VLT_FIXED_VA };
-        fixedVarArg.vlFixedVarArg.vlfvOffset = 24;
-        AssertOutput(codeGen, fixedVarArg, "fxd_va[24]");
-#endif
+            var fixedVarArg = new CodeGen.siVarLoc { vlType = VLT_FIXED_VA };
+            fixedVarArg.vlFixedVarArg.vlfvOffset = 24;
+            AssertOutput(codeGen, fixedVarArg, "fxd_va[24]");
+        }
+    }
+
+    [Test]
+    public static void DebugRegisterMetadataPreservesTargetNumbering()
+    {
+        int expectedCount;
+        int expectedAmbientSp;
+        int expectedFpFirst;
+        if (Configuration.TARGET_X86)
+        {
+            expectedCount = 8;
+            expectedAmbientSp = 9;
+            expectedFpFirst = 0;
+        }
+        else if (Configuration.TARGET_AMD64)
+        {
+            expectedCount = 32;
+            expectedAmbientSp = 33;
+            expectedFpFirst = 16;
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            expectedCount = 16;
+            expectedAmbientSp = 17;
+            expectedFpFirst = 0;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            expectedCount = 65;
+            expectedAmbientSp = 66;
+            expectedFpFirst = 33;
+        }
+        else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            expectedCount = 33;
+            expectedAmbientSp = 34;
+            expectedFpFirst = 0;
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            expectedCount = 1;
+            expectedAmbientSp = 2;
+            expectedFpFirst = 0;
+        }
+        else
+        {
+            throw new InvalidOperationException("Register numbering is not defined for this target.");
+        }
+
+        Assert.That((int)ICorDebugInfo.REGNUM_COUNT, Is.EqualTo(expectedCount));
+        Assert.That((int)ICorDebugInfo.REGNUM_AMBIENT_SP, Is.EqualTo(expectedAmbientSp));
+        Assert.That((int)ICorDebugInfo.REGNUM_FP_FIRST, Is.EqualTo(expectedFpFirst));
     }
 
     [Test]
@@ -92,26 +146,31 @@ internal static class CodeGenSiVarLocDiagnosticsTests
         Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_INT_FIRST),
             Is.EqualTo((ICorDebugInfo.RegNum)REG_INT_FIRST));
         Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_NA),
-            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_COUNT));
+            Is.EqualTo(ICorDebugInfo.REGNUM_COUNT));
 
-#if TARGET_AMD64
-        var highestEncodedRegister = (regNumber)((int)REG_FP_FIRST + 15);
-        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST),
-            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_FP_FIRST));
-        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(highestEncodedRegister),
-            Is.EqualTo((ICorDebugInfo.RegNum)((int)ICorDebugInfo.RegNum.REGNUM_FP_FIRST + 15)));
-        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_XMM16),
-            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_COUNT));
-#elif TARGET_ARM64
-        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST),
-            Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_FP_FIRST));
-        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_LAST),
-            Is.EqualTo((ICorDebugInfo.RegNum)((int)ICorDebugInfo.RegNum.REGNUM_FP_FIRST + 31)));
-#else
-        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST), Is.EqualTo((ICorDebugInfo.RegNum)0));
-        Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_LAST),
-            Is.EqualTo((ICorDebugInfo.RegNum)((int)REG_FP_LAST - (int)REG_FP_FIRST)));
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            var highestEncodedRegister = (regNumber)((int)REG_FP_FIRST + 15);
+            Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST),
+                Is.EqualTo(ICorDebugInfo.REGNUM_FP_FIRST));
+            Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(highestEncodedRegister),
+                Is.EqualTo((ICorDebugInfo.RegNum)((int)ICorDebugInfo.REGNUM_FP_FIRST + 15)));
+            Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_X64_XMM16),
+                Is.EqualTo(ICorDebugInfo.REGNUM_COUNT));
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST),
+                Is.EqualTo(ICorDebugInfo.REGNUM_FP_FIRST));
+            Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_LAST),
+                Is.EqualTo((ICorDebugInfo.RegNum)((int)ICorDebugInfo.REGNUM_FP_FIRST + 31)));
+        }
+        else
+        {
+            Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST), Is.EqualTo((ICorDebugInfo.RegNum)0));
+            Assert.That(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_LAST),
+                Is.EqualTo((ICorDebugInfo.RegNum)((int)REG_FP_LAST - (int)REG_FP_FIRST)));
+        }
     }
 
     [Test]
@@ -135,13 +194,16 @@ internal static class CodeGenSiVarLocDiagnosticsTests
             Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(secondIntegerRegister)));
 
         location.storeVariableInRegisters(REG_INT_FIRST, REG_FP_FIRST);
-#if TARGET_AMD64 || TARGET_ARM64
-        Assert.That(location.vlType, Is.EqualTo(VLT_REG_REG));
-        Assert.That(location.vlRegReg.vlrrReg2,
-            Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST)));
-#else
-        Assert.That(location.vlType, Is.EqualTo(VLT_INVALID));
-#endif
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+        {
+            Assert.That(location.vlType, Is.EqualTo(VLT_REG_REG));
+            Assert.That(location.vlRegReg.vlrrReg2,
+                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST)));
+        }
+        else
+        {
+            Assert.That(location.vlType, Is.EqualTo(VLT_INVALID));
+        }
 
         location.storeVariableInRegisters(REG_NA, REG_NA);
         Assert.That(location.vlType, Is.EqualTo(VLT_INVALID));
@@ -152,15 +214,18 @@ internal static class CodeGenSiVarLocDiagnosticsTests
     {
         var stackLocal = new LclVarDsc { Type = TYP_DOUBLE };
         var location = new CodeGen.siVarLoc(in stackLocal, REG_SPBASE, 24, isFramePointerUsed: false);
-#if TARGET_64BIT
-        Assert.That(location.vlType, Is.EqualTo(VLT_STK));
-        Assert.That(location.vlStk.vlsBaseReg, Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP));
-        Assert.That(location.vlStk.vlsOffset, Is.EqualTo(24));
-#else
-        Assert.That(location.vlType, Is.EqualTo(VLT_STK2));
-        Assert.That(location.vlStk2.vls2BaseReg, Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP));
-        Assert.That(location.vlStk2.vls2Offset, Is.EqualTo(24));
-#endif
+        if (Configuration.TARGET_64BIT)
+        {
+            Assert.That(location.vlType, Is.EqualTo(VLT_STK));
+            Assert.That(location.vlStk.vlsBaseReg, Is.EqualTo(ICorDebugInfo.REGNUM_AMBIENT_SP));
+            Assert.That(location.vlStk.vlsOffset, Is.EqualTo(24));
+        }
+        else
+        {
+            Assert.That(location.vlType, Is.EqualTo(VLT_STK2));
+            Assert.That(location.vlStk2.vls2BaseReg, Is.EqualTo(ICorDebugInfo.REGNUM_AMBIENT_SP));
+            Assert.That(location.vlStk2.vls2Offset, Is.EqualTo(24));
+        }
 
         var floatingLocal = new LclVarDsc
         {
@@ -169,14 +234,17 @@ internal static class CodeGenSiVarLocDiagnosticsTests
             RegNum = REG_FP_FIRST,
         };
         location = new CodeGen.siVarLoc(in floatingLocal, REG_SPBASE, 8, isFramePointerUsed: true);
-#if TARGET_64BIT
-        Assert.That(location.vlType, Is.EqualTo(VLT_REG_FP));
-        Assert.That(location.vlReg.vlrReg,
-            Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST)));
-#else
-        Assert.That(location.vlType, Is.EqualTo(VLT_FPSTK));
-        Assert.That(location.vlFPstk.vlfReg, Is.EqualTo((int)REG_FP_FIRST));
-#endif
+        if (Configuration.TARGET_64BIT)
+        {
+            Assert.That(location.vlType, Is.EqualTo(VLT_REG_FP));
+            Assert.That(location.vlReg.vlrReg,
+                Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(REG_FP_FIRST)));
+        }
+        else
+        {
+            Assert.That(location.vlType, Is.EqualTo(VLT_FPSTK));
+            Assert.That(location.vlFPstk.vlfReg, Is.EqualTo((int)REG_FP_FIRST));
+        }
     }
 
     private static void AssertOutput(CodeGen codeGen, CodeGen.siVarLoc location, string expected)

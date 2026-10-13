@@ -28,10 +28,10 @@ internal static unsafe class CodeGenIndirectLoadTests
         {
             GenTree address = local
                 ? new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 4) { IsContained = true }
-                : Register(compiler, TYP_BYREF, REG_RAX);
+                : Register(compiler, TYP_BYREF, REG_X64_RAX);
             var tree = new GenTreeIndir(GT_IND, type, address)
             {
-                RegNum = REG_RCX,
+                RegNum = REG_X64_RCX,
                 Flags = noExtension ? GTF_DONT_EXTEND : GTF_EMPTY,
             };
 
@@ -54,10 +54,10 @@ internal static unsafe class CodeGenIndirectLoadTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x58);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x58);
             address.Flags |= GTF_ICON_TLS_HDL;
             address.IsContained = true;
-            var tree = new GenTreeIndir(GT_IND, TYP_I_IMPL, address) { RegNum = REG_RAX };
+            var tree = new GenTreeIndir(GT_IND, TYP_LONG, address) { RegNum = REG_X64_RAX };
 
             codeGen.genCodeForIndir(tree);
 
@@ -77,10 +77,10 @@ internal static unsafe class CodeGenIndirectLoadTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x58);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x58);
             address.Flags |= GTF_ICON_TLS_HDL;
             address.IsContained = true;
-            var tree = new GenTreeIndir(GT_IND, TYP_I_IMPL, address) { RegNum = REG_EAX };
+            var tree = new GenTreeIndir(GT_IND, TYP_LONG, address) { RegNum = REG_X64_EAX };
 
             codeGen.genCodeForIndir(tree);
 
@@ -111,14 +111,14 @@ internal static unsafe class CodeGenIndirectLoadTests
             codeGen.Emitter.UseEvexEncodings = vex;
             GenTree address = addressKind switch
             {
-                0 => Register(compiler, TYP_BYREF, REG_RAX),
-                1 => new GenTreeAddrMode(TYP_BYREF, Register(compiler, TYP_BYREF, REG_RAX), null, 0, 4)
+                0 => Register(compiler, TYP_BYREF, REG_X64_RAX),
+                1 => new GenTreeAddrMode(TYP_BYREF, Register(compiler, TYP_BYREF, REG_X64_RAX), null, 0, 4)
                     { IsContained = true },
-                2 => compiler.gtNewIconNode(TYP_I_IMPL, 0x100),
+                2 => compiler.gtNewIconNode(TYP_LONG, 0x100),
                 _ => new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 4),
             };
             address.IsContained = addressKind != 0;
-            var tree = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_XMM0 };
+            var tree = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_X64_XMM0 };
 
             codeGen.genCodeForIndir(tree);
 
@@ -163,18 +163,18 @@ internal static unsafe class CodeGenIndirectLoadTests
                 3 => TYP_STRUCT,
                 _ => TYP_LONG,
             };
-            var tree = new GenTreeIndexAddr(Register(compiler, TYP_REF, REG_RAX),
-                Register(compiler, nativeIndex ? TYP_I_IMPL : TYP_INT, REG_RCX),
+            var tree = new GenTreeIndexAddr(Register(compiler, TYP_REF, REG_X64_RAX),
+                Register(compiler, nativeIndex ? TYP_LONG : TYP_INT, REG_X64_RCX),
                 elementType, scale == 3 ? (CORINFO_CLASS_STRUCT_*)1 : NO_CLASS_HANDLE, scale, 8, 16, bounds)
             {
-                RegNum = REG_RDX,
+                RegNum = REG_X64_RDX,
             };
             codeGen.InternalRegisters.Add(tree, RBM_R11);
             if (bounds)
             {
                 _ = CodeGenBinaryTests.PrepareThrowTarget(compiler, SCK_RNGCHK_FAIL);
             }
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
 
             codeGen.genCodeForIndexAddr(tree);
 
@@ -184,8 +184,8 @@ internal static unsafe class CodeGenIndirectLoadTests
             Assert.That(descriptors, Has.Count.EqualTo(count));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_lea));
             var address = descriptors[^1].idAddr().iiaAddrMode;
-            Assert.That(address.amBaseReg, Is.EqualTo(REG_RAX));
-            Assert.That(address.amIndxReg, Is.EqualTo(!nativeIndex || (scale == 3) ? REG_R11 : REG_RCX));
+            Assert.That(address.amBaseReg, Is.EqualTo(REG_X64_RAX));
+            Assert.That(address.amIndxReg, Is.EqualTo(!nativeIndex || (scale == 3) ? REG_X64_R11 : REG_X64_RCX));
             Assert.That(address.amScale, Is.EqualTo(scale == 8 ? 3 : 0));
             Assert.That(address.amDisp, Is.EqualTo(16));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));
@@ -202,10 +202,10 @@ internal static unsafe class CodeGenIndirectLoadTests
         });
     }
 
-    [TestCase(REG_R8)]
-    [TestCase(REG_XMM8)]
-    [TestCase(REG_XMM31)]
-    [TestCase(REG_K1)]
+    [TestCase(REG_X64_R8)]
+    [TestCase(REG_X64_XMM8)]
+    [TestCase(REG_X64_XMM31)]
+    [TestCase(REG_X64_K1)]
     public static void SingleInternalRegisterSelectionPreservesBothBanks(regNumber reg)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -223,10 +223,10 @@ internal static unsafe class CodeGenIndirectLoadTests
         });
     }
 
-    [TestCase(REG_R8)]
-    [TestCase(REG_XMM8)]
-    [TestCase(REG_XMM31)]
-    [TestCase(REG_K1)]
+    [TestCase(REG_X64_R8)]
+    [TestCase(REG_X64_XMM8)]
+    [TestCase(REG_X64_XMM31)]
+    [TestCase(REG_X64_K1)]
     public static void InternalRegisterExtractionPreservesOrderAcrossBanks(regNumber reg)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -235,19 +235,19 @@ internal static unsafe class CodeGenIndirectLoadTests
             var selected = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
             codeGen.InternalRegisters.Add(tree, selected | RBM_RDX | RBM_K7);
 
-            Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_RDX));
+            Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_X64_RDX));
             Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(selected | RBM_K7));
             Assert.That(codeGen.InternalRegisters.Extract(tree, selected), Is.EqualTo(reg));
             Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_K7));
-            Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_K7));
+            Assert.That(codeGen.InternalRegisters.Extract(tree), Is.EqualTo(REG_X64_K7));
             Assert.That(codeGen.InternalRegisters.GetAll(tree), Is.EqualTo(RBM_NONE));
         });
     }
 
-    [TestCase(REG_R8)]
-    [TestCase(REG_XMM8)]
-    [TestCase(REG_XMM31)]
-    [TestCase(REG_K1)]
+    [TestCase(REG_X64_R8)]
+    [TestCase(REG_X64_XMM8)]
+    [TestCase(REG_X64_XMM31)]
+    [TestCase(REG_X64_K1)]
     public static void InternalRegisterCountPreservesBothBanksWithoutConsuming(regNumber reg)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -270,10 +270,10 @@ internal static unsafe class CodeGenIndirectLoadTests
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-            var tree = new GenTreeIndexAddr(Register(compiler, TYP_REF, REG_RAX),
-                Register(compiler, TYP_INT, REG_RCX), TYP_INT, NO_CLASS_HANDLE, 4, 8, 16, boundsCheck: true)
+            var tree = new GenTreeIndexAddr(Register(compiler, TYP_REF, REG_X64_RAX),
+                Register(compiler, TYP_INT, REG_X64_RCX), TYP_INT, NO_CLASS_HANDLE, 4, 8, 16, boundsCheck: true)
             {
-                RegNum = REG_RDX,
+                RegNum = REG_X64_RDX,
             };
             codeGen.InternalRegisters.Add(tree, RBM_R11);
             compiler.opts.compDbgCode = true;
@@ -294,11 +294,11 @@ internal static unsafe class CodeGenIndirectLoadTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var address = new GenTreeAddrMode(TYP_BYREF, Register(compiler, TYP_BYREF, REG_RAX), null, 0, 4)
+            var address = new GenTreeAddrMode(TYP_BYREF, Register(compiler, TYP_BYREF, REG_X64_RAX), null, 0, 4)
             {
                 IsContained = true,
             };
-            var tree = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_XMM0 };
+            var tree = new GenTreeIndir(GT_IND, TYP_SIMD12, address) { RegNum = REG_X64_XMM0 };
             compiler.opts.dspCode = true;
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForIndir(tree));
             Assert.That(address.Offset, Is.EqualTo(12));

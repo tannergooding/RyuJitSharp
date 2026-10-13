@@ -15,9 +15,9 @@ internal static unsafe class CodeGenOSRParameterHomingTests
 {
     private delegate void OSRLocalAction(Compiler compiler, CodeGen codeGen, PatchpointInfo* patchpoint);
 
-    [TestCase(TYP_INT, REG_RCX, INS_mov)]
-    [TestCase(TYP_REF, REG_RDX, INS_mov)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, INS_movsd_simd)]
+    [TestCase(TYP_INT, REG_X64_RCX, INS_mov)]
+    [TestCase(TYP_REF, REG_X64_RDX, INS_mov)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, INS_movsd_simd)]
     public static void LiveOSRLocalIsLoadedFromTheOriginalFrame(var_types type, regNumber reg, instruction ins)
     {
         WithOSRLocal(type, reg, (compiler, codeGen, patchpoint) =>
@@ -25,12 +25,12 @@ internal static unsafe class CodeGenOSRParameterHomingTests
             MarkLiveIn(compiler, 0);
             var stillZeroed = true;
 
-            codeGen.genEnregisterOSRArgsAndLocals(REG_R10, ref stillZeroed);
+            codeGen.genEnregisterOSRArgsAndLocals(REG_X64_R10, ref stillZeroed);
 
             var id = CodeGenShiftTests.Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(ins));
             Assert.That(id.idReg1(), Is.EqualTo(reg));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RBP));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RBP));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)64));
             Assert.That(stillZeroed, Is.True);
             Assert.That(patchpoint->Offset(0), Is.EqualTo(-40));
@@ -40,7 +40,7 @@ internal static unsafe class CodeGenOSRParameterHomingTests
     [Test]
     public static void StackPointerFrameIncludesTheOSRFrameDelta()
     {
-        WithOSRLocal(TYP_LONG, REG_RCX, (compiler, codeGen, _) =>
+        WithOSRLocal(TYP_LONG, REG_X64_RCX, (compiler, codeGen, _) =>
         {
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = false;
@@ -49,10 +49,10 @@ internal static unsafe class CodeGenOSRParameterHomingTests
             MarkLiveIn(compiler, 0);
             var stillZeroed = true;
 
-            codeGen.genEnregisterOSRArgsAndLocals(REG_R10, ref stillZeroed);
+            codeGen.genEnregisterOSRArgsAndLocals(REG_X64_R10, ref stillZeroed);
 
             var id = CodeGenShiftTests.Descriptors(codeGen).Single();
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RSP));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RSP));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)88));
             Assert.That(stillZeroed, Is.True);
         });
@@ -64,12 +64,12 @@ internal static unsafe class CodeGenOSRParameterHomingTests
     public static void UnavailableDeadAndMemoryResidentLocalsAreNotLoaded(
         bool isOSRLocal, bool liveIn, bool enregistered)
     {
-        WithOSRLocal(TYP_LONG, REG_RDX, (compiler, codeGen, _) =>
+        WithOSRLocal(TYP_LONG, REG_X64_RDX, (compiler, codeGen, _) =>
         {
             compiler.lvaTable[0].lvIsOSRLocal = isOSRLocal;
             if (!enregistered)
             {
-                compiler.lvaTable[0].RegNum = REG_STK;
+                compiler.lvaTable[0].RegNum = REG_X64_STK;
             }
             if (liveIn)
             {
@@ -77,7 +77,7 @@ internal static unsafe class CodeGenOSRParameterHomingTests
             }
             var stillZeroed = false;
 
-            codeGen.genEnregisterOSRArgsAndLocals(REG_R10, ref stillZeroed);
+            codeGen.genEnregisterOSRArgsAndLocals(REG_X64_R10, ref stillZeroed);
 
             Assert.That(CodeGenShiftTests.Descriptors(codeGen), Is.Empty);
             Assert.That(stillZeroed, Is.False);
@@ -87,12 +87,12 @@ internal static unsafe class CodeGenOSRParameterHomingTests
     [Test]
     public static void PromotedFieldReadsTheParentTier0SlotAtItsFieldOffset()
     {
-        WithOSRLocal(TYP_STRUCT, REG_STK, (compiler, codeGen, _) =>
+        WithOSRLocal(TYP_STRUCT, REG_X64_STK, (compiler, codeGen, _) =>
         {
             compiler.lvaTable[1] = new LclVarDsc
             {
                 Type = TYP_REF,
-                RegNum = REG_RDX,
+                RegNum = REG_X64_RDX,
                 lvIsOSRLocal = true,
                 lvIsStructField = true,
                 lvParentLcl = 0,
@@ -107,11 +107,11 @@ internal static unsafe class CodeGenOSRParameterHomingTests
             MarkLiveIn(compiler, 1);
             var stillZeroed = true;
 
-            codeGen.genEnregisterOSRArgsAndLocals(REG_R10, ref stillZeroed);
+            codeGen.genEnregisterOSRArgsAndLocals(REG_X64_R10, ref stillZeroed);
 
             var id = CodeGenShiftTests.Descriptors(codeGen).Single();
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RDX));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RBP));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RDX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RBP));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)72));
             Assert.That(id.idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
             Assert.That(stillZeroed, Is.True);
@@ -122,11 +122,11 @@ internal static unsafe class CodeGenOSRParameterHomingTests
     [TestCase(true)]
     public static void WindowsAMD64SplitParameterHomingDoesNotAlterScratchState(bool initiallyZero)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (_, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (_, codeGen, _) =>
         {
             var stillZeroed = initiallyZero;
 
-            codeGen.genHomeStackPartOfSplitParameter(REG_R10, ref stillZeroed);
+            codeGen.genHomeStackPartOfSplitParameter(REG_X64_R10, ref stillZeroed);
 
             Assert.That(stillZeroed, Is.EqualTo(initiallyZero));
             Assert.That(CodeGenShiftTests.Descriptors(codeGen), Is.Empty);
@@ -135,7 +135,7 @@ internal static unsafe class CodeGenOSRParameterHomingTests
 
     private static void WithOSRLocal(var_types type, regNumber reg, OSRLocalAction action)
     {
-        CodeGenSpillVariableTests.WithCompiler(type == TYP_STRUCT ? TYP_LONG : type, REG_RAX,
+        CodeGenSpillVariableTests.WithCompiler(type == TYP_STRUCT ? TYP_LONG : type, REG_X64_RAX,
             (compiler, codeGen, _) =>
             {
                 var storage = stackalloc byte[PatchpointInfo.ComputeSize(1)];
@@ -153,7 +153,7 @@ internal static unsafe class CodeGenOSRParameterHomingTests
                 var local = new LclVarDsc
                 {
                     Type = type, RegNum = reg, lvOnFrame = true, lvIsOSRLocal = true,
-                    lvLRACandidate = reg != REG_STK, lvTracked = true, lvFramePointerBased = true,
+                    lvLRACandidate = reg != REG_X64_STK, lvTracked = true, lvFramePointerBased = true,
                 };
                 if (type == TYP_STRUCT)
                 {

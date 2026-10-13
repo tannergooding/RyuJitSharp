@@ -18,9 +18,9 @@ namespace RyuJitSharp.UnitTests;
 internal static class CodeGenOperandAdapterTests
 {
 #if TARGET_AMD64
-    [TestCase(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2)]
-    [TestCase(INS_addsd, EA_8BYTE, REG_XMM2, REG_XMM1, REG_XMM0)]
-    [TestCase(INS_subps, EA_32BYTE, REG_XMM1, REG_XMM2, REG_XMM0)]
+    [TestCase(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2)]
+    [TestCase(INS_addsd, EA_8BYTE, REG_X64_XMM2, REG_X64_XMM1, REG_X64_XMM0)]
+    [TestCase(INS_subps, EA_32BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM0)]
     public static void ThreeRegisterAdapterPreservesInstructionSizeAndRegisterOrder(
         instruction ins, emitAttr size, regNumber dst, regNumber src1, regNumber src2)
     {
@@ -53,7 +53,7 @@ internal static class CodeGenOperandAdapterTests
             tree.LclIlOffs = ilOffset;
 
             codeGen.inst_set_SV_var(tree);
-            codeGen.Emitter.emitIns_R_S(INS_mov, EA_4BYTE, REG_RAX, 0, 0);
+            codeGen.Emitter.emitIns_R_S(INS_mov, EA_4BYTE, REG_X64_RAX, 0, 0);
 
             var id = Descriptors(codeGen).Single();
             var debugInfo = id.idDebugOnlyInfo() ??

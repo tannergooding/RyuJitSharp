@@ -132,7 +132,7 @@ internal static class CodeGenSwitchTests
             codeGen.Emitter.emitIns_R_L(INS_lea, EA_8BYTE | (reloc ? EA_DSP_RELOC_FLG : EA_UNKNOWN), target, REG_R11);
 
             var label = Descriptors(codeGen)[1];
-            Assert.That(label.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_LABEL));
+            Assert.That(label.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_LABEL));
             Assert.That(label.idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(label.idCodeSize(), Is.EqualTo(reloc ? 7 : 8));
             Assert.That(label.idIsDspReloc(), Is.EqualTo(reloc));

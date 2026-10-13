@@ -15,32 +15,32 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenConditionalTests
 {
-    [TestCase(false, REG_RAX)]
-    [TestCase(false, REG_RCX)]
-    [TestCase(false, REG_RDX)]
-    [TestCase(true, REG_RDX)]
+    [TestCase(false, REG_X64_RAX)]
+    [TestCase(false, REG_X64_RCX)]
+    [TestCase(false, REG_X64_RDX)]
+    [TestCase(true, REG_X64_RDX)]
     public static void SelectionsRetainRegisterConflictsAndBooleanConsumption(bool boolean, regNumber target)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var trueVal = Register(compiler, TYP_INT, REG_RAX);
-            var falseVal = Register(compiler, TYP_INT, REG_RCX);
+            var trueVal = Register(compiler, TYP_INT, REG_X64_RAX);
+            var falseVal = Register(compiler, TYP_INT, REG_X64_RCX);
             GenTreeOp tree = boolean
-                ? new GenTreeConditional(GT_SELECT, TYP_INT, Register(compiler, TYP_INT, REG_R8), trueVal, falseVal)
+                ? new GenTreeConditional(GT_SELECT, TYP_INT, Register(compiler, TYP_INT, REG_X64_R8), trueVal, falseVal)
                 : new GenTreeOpCC(GT_SELECTCC, TYP_INT, new GenCondition(GenCondition.CodeKind.NE), trueVal, falseVal);
             tree.RegNum = target;
 
             codeGen.genCodeForSelect(tree);
 
             var descriptors = Descriptors(codeGen);
-            Assert.That(descriptors[^1].idIns(), Is.EqualTo(target == REG_RAX ? INS_cmove : INS_cmovne));
+            Assert.That(descriptors[^1].idIns(), Is.EqualTo(target == REG_X64_RAX ? INS_cmove : INS_cmovne));
             Assert.That(descriptors[^1].idReg1(), Is.EqualTo(target));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(target == REG_RAX ? REG_RCX : REG_RAX));
-            Assert.That(descriptors.Count(id => id.idIns() == INS_mov), Is.EqualTo(target == REG_RDX ? 1 : 0));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(target == REG_X64_RAX ? REG_X64_RCX : REG_X64_RAX));
+            Assert.That(descriptors.Count(id => id.idIns() == INS_mov), Is.EqualTo(target == REG_X64_RDX ? 1 : 0));
             if (boolean)
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_test));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_R8));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_R8));
             }
         });
     }
@@ -53,9 +53,9 @@ internal static class CodeGenConditionalTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeOpCC(GT_SELECTCC, TYP_INT, new GenCondition(condition),
-                Register(compiler, TYP_INT, REG_RAX), Register(compiler, TYP_INT, REG_RCX))
+                Register(compiler, TYP_INT, REG_X64_RAX), Register(compiler, TYP_INT, REG_X64_RCX))
             {
-                RegNum = REG_RDX,
+                RegNum = REG_X64_RDX,
             };
 
             codeGen.genCodeForSelect(tree);
@@ -63,7 +63,7 @@ internal static class CodeGenConditionalTests
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors.Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_mov, first, second]));
             Assert.That(descriptors[^1].idReg2(),
-                Is.EqualTo(condition == GenCondition.CodeKind.FEQ ? REG_RCX : REG_RAX));
+                Is.EqualTo(condition == GenCondition.CodeKind.FEQ ? REG_X64_RCX : REG_X64_RAX));
         });
     }
 
@@ -72,19 +72,19 @@ internal static class CodeGenConditionalTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var address = new GenTreeAddrMode(TYP_BYREF, Register(compiler, TYP_BYREF, REG_RDX),
-                Register(compiler, TYP_I_IMPL, REG_R8), 4, 8) { IsContained = true };
+            var address = new GenTreeAddrMode(TYP_BYREF, Register(compiler, TYP_BYREF, REG_X64_RDX),
+                Register(compiler, TYP_LONG, REG_X64_R8), 4, 8) { IsContained = true };
             var memory = new GenTreeIndir(GT_IND, TYP_INT, address) { IsContained = true };
             var tree = new GenTreeOpCC(GT_SELECTCC, TYP_INT, new GenCondition(GenCondition.CodeKind.NE),
-                memory, Register(compiler, TYP_INT, REG_RCX)) { RegNum = REG_RDX };
+                memory, Register(compiler, TYP_INT, REG_X64_RCX)) { RegNum = REG_X64_RDX };
             Assert.That(memory.ContainedRegMask, Is.EqualTo(RBM_RDX | RBM_R8));
 
             codeGen.genCodeForSelect(tree);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors.Select(id => id.idIns()), Is.EqualTo((instruction[])[INS_mov, INS_cmove]));
-            Assert.That(descriptors[0].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RDX));
-            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_RCX));
+            Assert.That(descriptors[0].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RDX));
+            Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_X64_RCX));
         });
     }
 
@@ -96,7 +96,7 @@ internal static class CodeGenConditionalTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var (whenTrue, whenFalse) = SetConditionalBlock(compiler, nextIsFalse, coldBoundary);
-            var tree = new GenTreeUnOp(GT_JTRUE, TYP_VOID, Register(compiler, TYP_INT, REG_RAX));
+            var tree = new GenTreeUnOp(GT_JTRUE, TYP_VOID, Register(compiler, TYP_INT, REG_X64_RAX));
 
             codeGen.genCodeForJTrue(tree);
 
@@ -203,7 +203,7 @@ internal static class CodeGenConditionalTests
         {
             var tree = new GenTreeCC(GT_SETCC, TYP_INT, new GenCondition(condition))
             {
-                RegNum = REG_RAX,
+                RegNum = REG_X64_RAX,
             };
 
             codeGen.genCodeForSetcc(tree);
@@ -220,9 +220,9 @@ internal static class CodeGenConditionalTests
         {
             var tree = new GenTreeCC(GT_SETCC, TYP_INT, new GenCondition(GenCondition.CodeKind.ULT))
             {
-                RegNum = REG_RAX,
+                RegNum = REG_X64_RAX,
             };
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
 
             codeGen.genCodeForSetcc(tree);
 
@@ -232,10 +232,10 @@ internal static class CodeGenConditionalTests
     }
 
     [TestCase(EJ_NONE, INS_none)]
-    [TestCase(EJ_jo, INS_cmovo)]
-    [TestCase(EJ_jno, INS_cmovno)]
-    [TestCase(EJ_jp, INS_cmovp)]
-    [TestCase(EJ_jle, INS_cmovle)]
+    [TestCase(EJ_XARCH_jo, INS_cmovo)]
+    [TestCase(EJ_XARCH_jno, INS_cmovno)]
+    [TestCase(EJ_XARCH_jp, INS_cmovp)]
+    [TestCase(EJ_XARCH_jle, INS_cmovle)]
     public static void CmovMappingIncludesOverflowAndParity(emitJumpKind condition, instruction expected)
     {
         Assert.That(CodeGen.JumpKindToCmov(condition), Is.EqualTo(expected));
@@ -248,8 +248,8 @@ internal static class CodeGenConditionalTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             var tree = new GenTreeConditional(GT_SELECT, TYP_INT,
-                Register(compiler, TYP_INT, REG_R8), Register(compiler, TYP_INT, REG_RAX),
-                Register(compiler, TYP_INT, REG_RCX)) { RegNum = REG_RDX };
+                Register(compiler, TYP_INT, REG_X64_R8), Register(compiler, TYP_INT, REG_X64_RAX),
+                Register(compiler, TYP_INT, REG_X64_RCX)) { RegNum = REG_X64_RDX };
             compiler.opts.dspCode = true;
             var diagnostic = InstructionRecordingTestSupport.Capture(() => codeGen.genCodeForSelect(tree));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(3));

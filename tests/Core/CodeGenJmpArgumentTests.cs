@@ -25,8 +25,8 @@ internal static unsafe class CodeGenJmpArgumentTests
         {
             Configure(compiler, codeGen,
                 [TYP_REF, TYP_BYREF, TYP_LONG, TYP_DOUBLE, TYP_INT],
-                [REG_RDX, REG_RCX, REG_R10, REG_XMM2, REG_STK],
-                [REG_RCX, REG_RDX, REG_NA, REG_XMM3, REG_NA]);
+                [REG_X64_RDX, REG_X64_RCX, REG_X64_R10, REG_X64_XMM2, REG_X64_STK],
+                [REG_X64_RCX, REG_X64_RDX, REG_X64_NA, REG_X64_XMM3, REG_X64_NA]);
             if (profile)
             {
                 ProfilerHookNeeded(compiler) = true;
@@ -43,10 +43,10 @@ internal static unsafe class CodeGenJmpArgumentTests
             var descriptors = Descriptors(codeGen);
             var reloadIndex = profile ? 7 : 4;
             Assert.That(descriptors, Has.Count.EqualTo(reloadIndex + 3));
-            AssertStack(descriptors[0], true, INS_mov, EA_8BYTE, 0, REG_RDX);
-            AssertStack(descriptors[1], true, INS_mov, EA_8BYTE, 1, REG_RCX);
-            AssertStack(descriptors[2], true, INS_mov, EA_8BYTE, 2, REG_R10);
-            AssertStack(descriptors[3], true, INS_movsd_simd, EA_8BYTE, 3, REG_XMM2);
+            AssertStack(descriptors[0], true, INS_mov, EA_8BYTE, 0, REG_X64_RDX);
+            AssertStack(descriptors[1], true, INS_mov, EA_8BYTE, 1, REG_X64_RCX);
+            AssertStack(descriptors[2], true, INS_mov, EA_8BYTE, 2, REG_X64_R10);
+            AssertStack(descriptors[3], true, INS_movsd_simd, EA_8BYTE, 3, REG_X64_XMM2);
             if (profile)
             {
                 Assert.That(descriptors[4].idIns(), Is.EqualTo(INS_mov));
@@ -58,12 +58,12 @@ internal static unsafe class CodeGenJmpArgumentTests
                 Assert.That(VarSetOps.IsMember(compiler, callbackRoots, 1), Is.True);
                 Assert.That(compiler.info.compProfilerCallback, Is.True);
             }
-            AssertStack(descriptors[reloadIndex], false, INS_mov, EA_8BYTE, 0, REG_RCX);
-            AssertStack(descriptors[reloadIndex + 1], false, INS_mov, EA_8BYTE, 1, REG_RDX);
-            AssertStack(descriptors[reloadIndex + 2], false, INS_movsd_simd, EA_8BYTE, 3, REG_XMM3);
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_RCX) | Mask(REG_RDX) | Mask(REG_XMM3)));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_RCX)));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(REG_RDX)));
+            AssertStack(descriptors[reloadIndex], false, INS_mov, EA_8BYTE, 0, REG_X64_RCX);
+            AssertStack(descriptors[reloadIndex + 1], false, INS_mov, EA_8BYTE, 1, REG_X64_RDX);
+            AssertStack(descriptors[reloadIndex + 2], false, INS_movsd_simd, EA_8BYTE, 3, REG_X64_XMM3);
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_RCX) | Mask(REG_X64_RDX) | Mask(REG_X64_XMM3)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_X64_RCX)));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(REG_X64_RDX)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 1), Is.False);
             Assert.That(compiler.lvaTable.Take(5).Select(local => local.RegNum), Is.EqualTo(originalHomes));
@@ -71,26 +71,26 @@ internal static unsafe class CodeGenJmpArgumentTests
         });
     }
 
-    [TestCase(REG_STK, 1)]
-    [TestCase(REG_RCX, 2)]
-    [TestCase(REG_R8, 2)]
+    [TestCase(REG_X64_STK, 1)]
+    [TestCase(REG_X64_RCX, 2)]
+    [TestCase(REG_X64_R8, 2)]
     public static void AlreadyCorrectAndSpilledHomesStillFollowNativeReloadProtocol(regNumber home, int count)
     {
         WithJmp((compiler, codeGen) =>
         {
-            Configure(compiler, codeGen, [TYP_BYTE], [home], [REG_RCX]);
+            Configure(compiler, codeGen, [TYP_BYTE], [home], [REG_X64_RCX]);
 
             codeGen.genJmpPlaceArgs(new GenTreeVal(GT_JMP, TYP_VOID, 0));
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(count));
-            if (home != REG_STK)
+            if (home != REG_X64_STK)
             {
                 AssertStack(descriptors[0], true, INS_mov, EA_4BYTE, 0, home);
             }
-            AssertStack(descriptors[^1], false, INS_mov, EA_4BYTE, 0, REG_RCX);
+            AssertStack(descriptors[^1], false, INS_mov, EA_4BYTE, 0, REG_X64_RCX);
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(home));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_RCX)));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_RCX)));
         });
     }
 
@@ -102,8 +102,8 @@ internal static unsafe class CodeGenJmpArgumentTests
         WithJmp((compiler, codeGen) =>
         {
             Configure(compiler, codeGen, [type, type, type, type, TYP_INT],
-                [REG_STK, REG_STK, REG_STK, REG_STK, REG_STK],
-                [REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_NA]);
+                [REG_X64_STK, REG_X64_STK, REG_X64_STK, REG_X64_STK, REG_X64_STK],
+                [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3, REG_X64_NA]);
             compiler.info.compIsVarArgs = true;
             var group = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
             var oldFlags = group.igFlags;
@@ -112,8 +112,8 @@ internal static unsafe class CodeGenJmpArgumentTests
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(4));
-            regNumber[] integers = [REG_RCX, REG_RDX, REG_R8, REG_R9];
-            regNumber[] floats = [REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3];
+            regNumber[] integers = [REG_X64_RCX, REG_X64_RDX, REG_X64_R8, REG_X64_R9];
+            regNumber[] floats = [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3];
             for (var i = 0; i < 4; i++)
             {
                 // Native deliberately selects MOVD64 from TYP_LONG even when the explicit size is four.
@@ -140,8 +140,8 @@ internal static unsafe class CodeGenJmpArgumentTests
         {
             Configure(compiler, codeGen,
                 fixedArgs ? [TYP_FLOAT, TYP_LONG] : [],
-                fixedArgs ? [REG_STK, REG_STK] : [],
-                fixedArgs ? [REG_XMM1, REG_R9] : []);
+                fixedArgs ? [REG_X64_STK, REG_X64_STK] : [],
+                fixedArgs ? [REG_X64_XMM1, REG_X64_R9] : []);
             compiler.info.compIsVarArgs = true;
             codeGen.IsFramePointerUsed = framePointer;
             codeGen.instGen(INS_nop);
@@ -158,8 +158,8 @@ internal static unsafe class CodeGenJmpArgumentTests
             var saved = before.igData ?? throw new AssertionException("Missing pre-NoGC instructions.");
             Assert.That(saved.Select(id => id.idIns()),
                 Is.EqualTo(fixedArgs ? new[] { INS_nop, INS_movd64 } : [INS_nop]));
-            regNumber[] integers = fixedArgs ? [REG_RCX, REG_R8] : [REG_RCX, REG_RDX, REG_R8, REG_R9];
-            regNumber[] floats = fixedArgs ? [REG_XMM0, REG_XMM2] : [REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3];
+            regNumber[] integers = fixedArgs ? [REG_X64_RCX, REG_X64_R8] : [REG_X64_RCX, REG_X64_RDX, REG_X64_R8, REG_X64_R9];
+            regNumber[] floats = fixedArgs ? [REG_X64_XMM0, REG_X64_XMM2] : [REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3];
             int[] homes = fixedArgs ? [0, 16] : [0, 8, 16, 24];
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(integers.Length * 2));
@@ -169,7 +169,7 @@ internal static unsafe class CodeGenJmpArgumentTests
                 Assert.That(load.idIns(), Is.EqualTo(INS_mov));
                 Assert.That(load.idOpSize(), Is.EqualTo(EA_8BYTE));
                 Assert.That(load.idReg1(), Is.EqualTo(integers[i]));
-                Assert.That(load.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(framePointer ? REG_RBP : REG_RSP));
+                Assert.That(load.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(framePointer ? REG_X64_RBP : REG_X64_RSP));
                 Assert.That(load.idAddr().iiaAddrMode.amDisp, Is.EqualTo(homes[i] + (framePointer ? 16 : 88)));
                 var copy = descriptors[(2 * i) + 1];
                 Assert.That(copy.idIns(), Is.EqualTo(INS_movd64));
@@ -196,7 +196,7 @@ internal static unsafe class CodeGenJmpArgumentTests
     {
         WithJmp((compiler, codeGen) =>
         {
-            Configure(compiler, codeGen, [TYP_DOUBLE], [REG_XMM2], [REG_XMM0]);
+            Configure(compiler, codeGen, [TYP_DOUBLE], [REG_X64_XMM2], [REG_X64_XMM0]);
             compiler.info.compIsVarArgs = true;
             var before = codeGen.Emitter.emitCurIG ?? throw new AssertionException("Missing instruction group.");
 
@@ -205,24 +205,24 @@ internal static unsafe class CodeGenJmpArgumentTests
             var saved = before.igData ?? throw new AssertionException("Missing fixed argument group.");
             Assert.That(saved.Select(id => id.idIns()),
                 Is.EqualTo([INS_movsd_simd, INS_movsd_simd, INS_movd64]));
-            Assert.That(saved[0].idReg1(), Is.EqualTo(REG_XMM2));
-            Assert.That(saved[1].idReg1(), Is.EqualTo(REG_XMM0));
-            Assert.That(saved[2].idReg1(), Is.EqualTo(REG_RCX));
+            Assert.That(saved[0].idReg1(), Is.EqualTo(REG_X64_XMM2));
+            Assert.That(saved[1].idReg1(), Is.EqualTo(REG_X64_XMM0));
+            Assert.That(saved[2].idReg1(), Is.EqualTo(REG_X64_RCX));
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(6));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_XMM0)));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_XMM0)));
         });
     }
 
-    [TestCase(TYP_REF, REG_RCX, 0, 8, false, TYP_REF)]
-    [TestCase(TYP_BYREF, REG_RCX, 0, 8, false, TYP_BYREF)]
-    [TestCase(TYP_BYTE, REG_RCX, 0, 1, false, TYP_INT)]
-    [TestCase(TYP_FLOAT, REG_XMM0, 0, 4, false, TYP_FLOAT)]
-    [TestCase(TYP_STRUCT, REG_XMM0, 0, 8, false, TYP_DOUBLE)]
-    [TestCase(TYP_STRUCT, REG_RCX, 0, 8, false, TYP_REF)]
-    [TestCase(TYP_STRUCT, REG_RCX, 8, 8, false, TYP_BYREF)]
-    [TestCase(TYP_STRUCT, REG_RCX, 16, 8, false, TYP_I_IMPL)]
-    [TestCase(TYP_STRUCT, REG_RCX, 17, 1, false, TYP_INT)]
-    [TestCase(TYP_STRUCT, REG_RCX, 17, 1, true, TYP_UBYTE)]
+    [TestCase(TYP_REF, REG_X64_RCX, 0, 8, false, TYP_REF)]
+    [TestCase(TYP_BYREF, REG_X64_RCX, 0, 8, false, TYP_BYREF)]
+    [TestCase(TYP_BYTE, REG_X64_RCX, 0, 1, false, TYP_INT)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM0, 0, 4, false, TYP_FLOAT)]
+    [TestCase(TYP_STRUCT, REG_X64_XMM0, 0, 8, false, TYP_DOUBLE)]
+    [TestCase(TYP_STRUCT, REG_X64_RCX, 0, 8, false, TYP_REF)]
+    [TestCase(TYP_STRUCT, REG_X64_RCX, 8, 8, false, TYP_BYREF)]
+    [TestCase(TYP_STRUCT, REG_X64_RCX, 16, 8, false, TYP_LONG)]
+    [TestCase(TYP_STRUCT, REG_X64_RCX, 17, 1, false, TYP_INT)]
+    [TestCase(TYP_STRUCT, REG_X64_RCX, 17, 1, true, TYP_UBYTE)]
     public static void StackTypeSelectionRetainsGcSlotsRegisterClassesAndRounding(
         var_types type, regNumber reg, int offset, int size, bool swift, var_types expected)
     {
@@ -253,7 +253,7 @@ internal static unsafe class CodeGenJmpArgumentTests
     {
         WithJmp((compiler, codeGen) =>
         {
-            Configure(compiler, codeGen, [TYP_REF], [REG_RDX], [REG_RCX]);
+            Configure(compiler, codeGen, [TYP_REF], [REG_X64_RDX], [REG_X64_RCX]);
             compiler.info.compIsVarArgs = true;
             var jump = new GenTreeVal(GT_JMP, TYP_VOID, 0);
             Assert.That(codeGen.Emitter.emitCurIG, Is.Not.Null);
@@ -303,21 +303,21 @@ internal static unsafe class CodeGenJmpArgumentTests
             {
                 Type = types[i],
                 RegNum = homes[i],
-                lvLRACandidate = homes[i] != REG_STK,
+                lvLRACandidate = homes[i] != REG_X64_STK,
                 lvIsParam = true,
-                lvIsRegArg = abiRegisters[i] != REG_NA,
+                lvIsRegArg = abiRegisters[i] != REG_X64_NA,
                 lvTracked = true,
                 lvOnFrame = true,
                 lvFramePointerBased = true,
                 StackOffset = 16 + (i * 8),
                 _varIndex = checked((ushort)i),
             };
-            var segment = abiRegisters[i] == REG_NA
+            var segment = abiRegisters[i] == REG_X64_NA
                 ? AbiPassingSegment.OnStack(i * 8, 0, types[i].Size)
                 : AbiPassingSegment.InRegister(abiRegisters[i], 0, types[i].Size);
             compiler.lvaParameterPassingInfo[i] = AbiPassingInformation.FromSegment(compiler, false, segment);
             VarSetOps.AddElemD(compiler, compiler.compCurLife, i);
-            if (homes[i] != REG_STK)
+            if (homes[i] != REG_X64_STK)
             {
                 codeGen.RegSet.AddMaskVars(Mask(homes[i]));
                 codeGen.GCInfo.gcMarkRegPtrVal(homes[i], types[i]);
@@ -330,7 +330,7 @@ internal static unsafe class CodeGenJmpArgumentTests
         compiler.lvaTable[count] = new LclVarDsc
         {
             Type = TYP_STRUCT, Layout = new ClassLayout(32), lvOnFrame = true,
-            lvFramePointerBased = false, StackOffset = 0, RegNum = REG_STK,
+            lvFramePointerBased = false, StackOffset = 0, RegNum = REG_X64_STK,
         };
     }
 
@@ -353,7 +353,7 @@ internal static unsafe class CodeGenJmpArgumentTests
         emitAttr size, int variable, regNumber reg)
     {
         Assert.That(id.idIns(), Is.EqualTo(ins));
-        Assert.That(id.idInsFmt(), Is.EqualTo(store ? Emitter.insFormat.IF_SWR_RRD : Emitter.insFormat.IF_RWR_SRD));
+        Assert.That(id.idInsFmt(), Is.EqualTo(store ? Emitter.insFormat.IF_XARCH_SWR_RRD : Emitter.insFormat.IF_XARCH_RWR_SRD));
         Assert.That(id.idOpSize(), Is.EqualTo(size));
         Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(variable));
         Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.Zero);

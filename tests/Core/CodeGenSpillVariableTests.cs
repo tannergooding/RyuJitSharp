@@ -17,25 +17,25 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenSpillVariableTests
 {
-    [TestCase(TYP_BYTE, REG_RAX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_UBYTE, REG_RAX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_SHORT, REG_RAX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_USHORT, REG_RAX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_INT, REG_RAX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_LONG, REG_RAX, INS_mov, EA_8BYTE)]
-    [TestCase(TYP_FLOAT, REG_XMM0, INS_movss, EA_4BYTE)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, INS_movsd_simd, EA_8BYTE)]
-    [TestCase(TYP_SIMD16, REG_XMM0, INS_movaps, EA_16BYTE)]
-    [TestCase(TYP_SIMD32, REG_XMM0, INS_movups, EA_32BYTE)]
-    [TestCase(TYP_SIMD64, REG_XMM0, INS_movups, EA_64BYTE)]
-    [TestCase(TYP_MASK, REG_K1, INS_kmovq_msk, EA_8BYTE)]
+    [TestCase(TYP_BYTE, REG_X64_RAX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_UBYTE, REG_X64_RAX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_SHORT, REG_X64_RAX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_USHORT, REG_X64_RAX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_INT, REG_X64_RAX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_LONG, REG_X64_RAX, INS_mov, EA_8BYTE)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM0, INS_movss, EA_4BYTE)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, INS_movsd_simd, EA_8BYTE)]
+    [TestCase(TYP_SIMD16, REG_X64_XMM0, INS_movaps, EA_16BYTE)]
+    [TestCase(TYP_SIMD32, REG_X64_XMM0, INS_movups, EA_32BYTE)]
+    [TestCase(TYP_SIMD64, REG_X64_XMM0, INS_movups, EA_64BYTE)]
+    [TestCase(TYP_MASK, REG_X64_K1, INS_kmovq_msk, EA_8BYTE)]
     public static void SpillingUsesStackHomeWidthAndKillsOnlyTheVariablesRegister(
         var_types type, regNumber reg, instruction ins, emitAttr size)
     {
         WithCompiler(type, reg, (compiler, codeGen, tree) =>
         {
-            var unrelated = regMaskTP.CreateFromRegNum(REG_RDX, REG_RDX.SingleTypeMask);
-            var gcTemporary = regMaskTP.CreateFromRegNum(REG_RCX, REG_RCX.SingleTypeMask);
+            var unrelated = regMaskTP.CreateFromRegNum(REG_X64_RDX, REG_X64_RDX.SingleTypeMask);
+            var gcTemporary = regMaskTP.CreateFromRegNum(REG_X64_RCX, REG_X64_RCX.SingleTypeMask);
             codeGen.RegSet.AddMaskVars(unrelated);
             codeGen.GCInfo.gcMarkRegSetGCref(gcTemporary);
 
@@ -51,7 +51,7 @@ internal static unsafe class CodeGenSpillVariableTests
             Assert.That(CurrentCount(codeGen.Emitter), Is.EqualTo(1));
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(unrelated));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(gcTemporary));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.Flags & GTF_SPILL, Is.EqualTo(GTF_EMPTY));
         });
     }
@@ -60,10 +60,10 @@ internal static unsafe class CodeGenSpillVariableTests
     [TestCase(TYP_BYREF)]
     public static void SpillMovesGcLivenessFromTheRegisterToTheTrackedStackHome(var_types type)
     {
-        WithCompiler(type, REG_RAX, (compiler, codeGen, tree) =>
+        WithCompiler(type, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcTrkStkPtrLcls, 0);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, type);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, type);
 
             codeGen.genSpillVar(tree);
 
@@ -80,7 +80,7 @@ internal static unsafe class CodeGenSpillVariableTests
     [TestCase(true)]
     public static void AlwaysAliveMemoryLocalsAvoidTheStoreButStillDieInTheirRegister(bool writeThrough)
     {
-        WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, tree) =>
+        WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             compiler.lvaTable[0]._lvLiveInOutOfHandler = writeThrough;
             compiler.lvaTable[0].lvSpillAtSingleDef = !writeThrough;
@@ -89,7 +89,7 @@ internal static unsafe class CodeGenSpillVariableTests
 
             Assert.That(CurrentCount(codeGen.Emitter), Is.Zero);
             Assert.That(codeGen.RegSet.GetMaskVars().IsEmpty, Is.True);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.Flags & GTF_SPILL, Is.EqualTo(GTF_EMPTY));
         });
     }
@@ -98,7 +98,7 @@ internal static unsafe class CodeGenSpillVariableTests
     [TestCase(true)]
     public static void DefinitionsDoNotStoreAndOnlySpilledWriteThroughDefinitionsRetainTheirRegister(bool spilled)
     {
-        WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, tree) =>
+        WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             tree.Flags |= GTF_VAR_DEF;
             if (spilled)
@@ -112,7 +112,7 @@ internal static unsafe class CodeGenSpillVariableTests
 
             Assert.That(CurrentCount(codeGen.Emitter), Is.Zero);
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(before));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(spilled ? REG_RAX : REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(spilled ? REG_X64_RAX : REG_X64_STK));
             Assert.That(tree.Flags & GTF_SPILL, Is.EqualTo(GTF_EMPTY));
             Assert.That((tree.Flags & GTF_SPILLED) != 0, Is.EqualTo(spilled));
         });
@@ -122,7 +122,7 @@ internal static unsafe class CodeGenSpillVariableTests
     [TestCase(TYP_SHORT, EA_2BYTE)]
     public static void OsrStructFieldsRetainTheirNarrowStackHome(var_types type, emitAttr size)
     {
-        WithCompiler(type, REG_RAX, (compiler, codeGen, tree) =>
+        WithCompiler(type, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             compiler.lvaTable[0].lvIsOSRLocal = true;
             compiler.lvaTable[0].lvIsStructField = true;
@@ -138,15 +138,15 @@ internal static unsafe class CodeGenSpillVariableTests
     [Test]
     public static void AnAlreadyStackResidentLocalDoesNotRecordAnotherSpill()
     {
-        WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, tree) =>
+        WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.RegSet.ClearMaskVars();
 
             codeGen.genSpillVar(tree);
 
             Assert.That(CurrentCount(codeGen.Emitter), Is.Zero);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.Flags & GTF_SPILL, Is.EqualTo(GTF_EMPTY));
         });
     }
@@ -154,7 +154,7 @@ internal static unsafe class CodeGenSpillVariableTests
     [Test]
     public static void SpillUpdatesTheLiveRangeAfterRecordingTheStoreAndChangingTheHome()
     {
-        WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, tree) =>
+        WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             compiler.opts.compDbgInfo = true;
             codeGen.initializeVariableLiveKeeper();
@@ -178,7 +178,7 @@ internal static unsafe class CodeGenSpillVariableTests
     [Test]
     public static void Simd12SpillsRecordBothNativeStores()
     {
-        WithCompiler(TYP_SIMD12, REG_XMM0, (_, codeGen, tree) =>
+        WithCompiler(TYP_SIMD12, REG_X64_XMM0, (_, codeGen, tree) =>
         {
             codeGen.genSpillVar(tree);
             var descriptor = LastInstruction(codeGen.Emitter) ??
@@ -195,7 +195,7 @@ internal static unsafe class CodeGenSpillVariableTests
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movsd_simd));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.Zero);
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM0));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_XMM0));
         });
     }
 

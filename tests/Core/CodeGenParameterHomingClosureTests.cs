@@ -201,10 +201,10 @@ internal static unsafe class CodeGenParameterHomingClosureTests
         });
     }
 
-#if JIT32_GCENCODER
     [Test]
     public static void Jit32KeptAliveThisDoesNotCreateAGenericContextSlot()
     {
+        Assume.That(Configuration.JIT32_GCENCODER);
         WithCompiler((compiler, codeGen) =>
         {
             compiler.info.compIsStatic = false;
@@ -220,7 +220,6 @@ internal static unsafe class CodeGenParameterHomingClosureTests
             Assert.That(CurrentInstructionCount(codeGen.Emitter), Is.Zero);
         });
     }
-#endif
 
 #if !TARGET_RISCV64 && !TARGET_LOONGARCH64
     [Test]

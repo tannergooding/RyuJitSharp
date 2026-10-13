@@ -138,7 +138,7 @@ internal static class CodeGenBinaryTests
             var descriptor = Descriptors(codeGen)[^1];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_xor));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(memory
-                ? Emitter.insFormat.IF_RRW_SRD : Emitter.insFormat.IF_RRW_CNS));
+                ? Emitter.insFormat.IF_XARCH_RRW_SRD : Emitter.insFormat.IF_XARCH_RRW_CNS));
             Assert.That(tree.Op1, Is.SameAs(first));
         });
     }
@@ -299,7 +299,7 @@ internal static class CodeGenBinaryTests
         WithCodeGen((compiler, codeGen) =>
         {
             var target = PrepareThrowTarget(compiler);
-            codeGen.genJumpToThrowHlpBlk(EJ_jo, SCK_OVERFLOW, explicitTarget ? target : null);
+            codeGen.genJumpToThrowHlpBlk(EJ_XARCH_jo, SCK_OVERFLOW, explicitTarget ? target : null);
             Assert.That(EmitterJumpInstructionTests.JumpView.Target(Descriptors(codeGen)[0]), Is.SameAs(target));
         });
     }

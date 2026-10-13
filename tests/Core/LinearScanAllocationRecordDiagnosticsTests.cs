@@ -91,7 +91,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void SpillUsesTheAssignedRegisterRatherThanTheRequestedRegister()
     {
         WithAllocator((_, allocator, interval, reference) => {
-            interval.assignedReg = allocator.physRegs[(int)regNumber.REG_RCX];
+            interval.assignedReg = allocator.physRegs[(int)regNumber.REG_X64_RCX];
             var prefix = Capture(() => DumpReference(allocator, reference));
             LastReference(allocator) = null;
 
@@ -196,7 +196,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void KillMaskPrecedesTheRepeatedBlankReferenceAndAction()
     {
         WithAllocator((compiler, allocator, interval, reference) => {
-            var mask = new regMaskTP(SRBM_RAX | SRBM_RCX);
+            var mask = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RCX);
             var prefix = Capture(() => DumpReference(allocator, reference));
             var maskText = Capture(() => compiler.dumpRegMask(mask));
             LastReference(allocator) = null;
@@ -269,28 +269,28 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void BusyFormatIsInitiallyEmptyAndRetainsTheLastEmptyCellWidthAcrossAllocators()
     {
         WithAllocator((compiler, allocator, _, _) => {
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
             Assert.That(Capture(() => DumpRecords(allocator)),
                 Is.EqualTo(separator + separator + Environment.NewLine));
 
             BusyUntilKill(allocator) = RBM_NONE;
             Assert.That(Capture(() => DumpRecords(allocator)), Is.EqualTo(EmptyRow(allocator)));
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
             Assert.That(Capture(() => DumpRecords(allocator)),
                 Is.EqualTo(separator + "Busy" + separator + Environment.NewLine));
 
             var widerAllocator = CreateAllocator(compiler, 1000, 1, 1);
             _ = Capture(() => DumpHeader(widerAllocator));
             FormatInitialized(widerAllocator) = true;
-            BusyUntilKill(widerAllocator) = new regMaskTP(SRBM_RAX);
+            BusyUntilKill(widerAllocator) = new regMaskTP(SRBM_X64_RAX);
             Assert.That(ColumnWidth(widerAllocator), Is.EqualTo(6));
             Assert.That(Capture(() => DumpRecords(widerAllocator)),
                 Is.EqualTo(separator + "Busy" + separator + Environment.NewLine));
 
             BusyUntilKill(widerAllocator) = RBM_NONE;
             Assert.That(Capture(() => DumpRecords(widerAllocator)), Is.EqualTo(EmptyRow(widerAllocator)));
-            BusyUntilKill(widerAllocator) = new regMaskTP(SRBM_RAX);
+            BusyUntilKill(widerAllocator) = new regMaskTP(SRBM_X64_RAX);
             Assert.That(Capture(() => DumpRecords(widerAllocator)),
                 Is.EqualTo(separator + "Busy  " + separator + Environment.NewLine));
         });
@@ -302,7 +302,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     {
         WithAllocator((compiler, allocator, interval, _) => {
             interval.isActive = active;
-            allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval = interval;
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = interval;
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
             Assert.That(Capture(() => DumpRecords(allocator)),
@@ -317,7 +317,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         WithAllocator((compiler, allocator, interval, _) => {
             interval.isActive = true;
             interval.isPartiallySpilled = true;
-            allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval = interval;
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval = interval;
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
             Assert.That(Capture(() => DumpRecords(allocator)),
@@ -382,14 +382,14 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
     public static void ANewRegisterRepeatsTheTitleAndUpdatesTheLastDumpedSet()
     {
         WithAllocator((compiler, allocator, _, _) => {
-            DumpRegisters(allocator) |= new regMaskTP(SRBM_RCX);
+            DumpRegisters(allocator) |= new regMaskTP(SRBM_X64_RCX);
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
             var output = Capture(() => DumpTitleIfNeeded(allocator));
 
             Assert.That(output, Does.Contain(separator + "rax " + separator + "rcx " + separator));
             Assert.That(LastDumpedRegisters(allocator), Is.EqualTo(DumpRegisters(allocator)));
-            Assert.That(LastRegisterIndex(allocator), Is.EqualTo((int)regNumber.REG_RCX));
+            Assert.That(LastRegisterIndex(allocator), Is.EqualTo((int)regNumber.REG_X64_RCX));
             Assert.That(RowsSinceTitle(allocator), Is.Zero);
         });
     }
@@ -402,7 +402,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         WithAllocator((compiler, allocator, _, _) => {
             compiler.compFloatingPointUsed = floatingPointUsed;
             DumpRegisters(allocator) |= new regMaskTP(SRBM_XMM0) |
-                regMaskTP.CreateFromRegNum(regNumber.REG_K1, genSingleTypeRegMask(regNumber.REG_K1));
+                regMaskTP.CreateFromRegNum(regNumber.REG_X64_K1, genSingleTypeRegMask(regNumber.REG_X64_K1));
             var separator = compiler.ShouldDumpAsciiTrees ? "|" : "│";
 
             var output = Capture(() => DumpTitleIfNeeded(allocator));
@@ -412,7 +412,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             Assert.That(output.Contains(separator + "k1  " + separator, StringComparison.Ordinal),
                 Is.EqualTo(floatingPointUsed));
             Assert.That(LastRegisterIndex(allocator), Is.EqualTo(
-                floatingPointUsed ? (int)regNumber.REG_K1 : (int)regNumber.REG_RAX));
+                floatingPointUsed ? (int)regNumber.REG_X64_K1 : (int)regNumber.REG_X64_RAX));
         });
     }
 #endif
@@ -427,19 +427,28 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             _ = Capture(() => InitializeFormat(allocator));
 
 #if UNIX_AMD64_ABI
-            var expected = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_R12 | SRBM_R13;
+            var expected = SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_R12 | SRBM_R13;
             Assert.That(LastRegisterIndex(allocator), Is.EqualTo((int)regNumber.REG_R13));
 #else
-            var expected = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_RDI;
+            var expected = SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_X64_RDI;
 #endif
-            expected |= SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7 | SRBM_ARG_REGS;
+            expected |= SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_X64_XMM6 | SRBM_XMM7 | SRBM_ARG_REGS;
             Assert.That(DumpRegisters(allocator), Is.EqualTo(new regMaskTP(expected)));
         });
     }
 
-    private static MethodInfo EventMethod() =>
-        typeof(LinearScan).GetMethod("dumpLsraAllocationEvent", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?? throw new AssertionException("Missing allocation event dispatcher.");
+    private static MethodInfo EventMethod()
+    {
+        foreach (var method in typeof(LinearScan).GetMethods(BindingFlags.Instance | BindingFlags.NonPublic))
+        {
+            if (method.Name is "dumpLsraAllocationEvent" && method.GetParameters().Length == 7)
+            {
+                return method;
+            }
+        }
+
+        throw new AssertionException("Missing allocation event dispatcher.");
+    }
 
     private static void DumpEvent(
         LinearScan allocator, string name, Interval? interval, RefPosition? reference,
@@ -449,7 +458,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         var parameters = method.GetParameters();
         var dumpEvent = Enum.Parse(parameters[0].ParameterType, name);
         var registerScore = Enum.Parse(parameters[5].ParameterType, score);
-        _ = method.Invoke(allocator, [dumpEvent, interval, reference, regNumber.REG_RAX, null, registerScore, mask]);
+        _ = method.Invoke(allocator, [dumpEvent, interval, reference, regNumber.REG_X64_RAX, null, registerScore, mask]);
     }
 
     private static string EmptyRow(LinearScan allocator)
@@ -465,7 +474,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         try
         {
             var allocator = new LinearScan(compiler);
-            for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+            for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
             {
                 allocator.physRegs[index].init((regNumber)index);
             }
@@ -481,11 +490,11 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
             for (var index = 0; index < referenceCount; index++)
             {
                 _ = allocator.newRefPosition(
-                    referencedInterval, location, RefType.RefTypeDef, null, SRBM_RAX | SRBM_RCX);
+                    referencedInterval, location, RefType.RefTypeDef, null, SRBM_X64_RAX | SRBM_X64_RCX);
             }
 
             MaxNodeLocation(allocator) = location;
-            DumpRegisters(allocator) = new regMaskTP(SRBM_RAX);
+            DumpRegisters(allocator) = new regMaskTP(SRBM_X64_RAX);
             return allocator;
         }
         finally
@@ -509,7 +518,7 @@ internal static unsafe class LinearScanAllocationRecordDiagnosticsTests
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;
-        CompilerLastIntRegister(compiler) = regNumber.REG_R15;
+        CompilerLastIntRegister(compiler) = regNumber.REG_X64_R15;
         JitTls.Compiler = compiler;
         try
         {

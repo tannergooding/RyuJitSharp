@@ -265,16 +265,16 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
 
             _ = AddRef(allocator, RefType.RefTypeParamDef, 0, local);
             _ = AddRef(allocator, RefType.RefTypeBB, 2);
-            var physicalRegister = allocator.physRegs[(int)regNumber.REG_RAX];
-            physicalRegister.init(regNumber.REG_RAX);
+            var physicalRegister = allocator.physRegs[(int)regNumber.REG_X64_RAX];
+            physicalRegister.init(regNumber.REG_X64_RAX);
             AddRef(allocator, RefType.RefTypeFixedReg, 4).setReg(physicalRegister);
             var use = AddRef(allocator, RefType.RefTypeUse, 4, value);
-            use.registerAssignment = SRBM_RAX;
+            use.registerAssignment = SRBM_X64_RAX;
             use.isFixedRegRef = true;
             use.isLocalDefUse = true;
             use.lastUse = true;
             var definition = AddRef(allocator, RefType.RefTypeDef, 5, value);
-            definition.registerAssignment = SRBM_RCX;
+            definition.registerAssignment = SRBM_X64_RCX;
             definition.isFixedRegRef = true;
             definition.isLocalDefUse = true;
             definition.lastUse = true;
@@ -348,7 +348,7 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
             var block = CreateBlocks(compiler, 1)[0];
             var node = compiler.gtNewIconNode(TYP_INT, 7);
             node._seqNum = 2;
-            node.RegNum = regNumber.REG_RAX;
+            node.RegNum = regNumber.REG_X64_RAX;
             if (spill)
             {
                 node.Flags |= GTF_SPILL;
@@ -377,7 +377,7 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
         WithAllocator((compiler, allocator) => {
             var node = compiler.gtNewIconNode(TYP_INT, 7);
             node._seqNum = 2;
-            node.RegNum = regNumber.REG_RAX;
+            node.RegNum = regNumber.REG_X64_RAX;
             if (spill)
             {
                 node.Flags |= GTF_SPILL;
@@ -396,23 +396,23 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
         WithAllocator((compiler, allocator) => {
             var block = CreateBlocks(compiler, 1)[0];
             compiler.lvaTable = [
-                new LclVarDsc { Type = TYP_INT, lvIsRegArg = true, lvRegister = true, RegNum = regNumber.REG_RBX },
-                new LclVarDsc { Type = TYP_INT, lvIsParamRegTarget = true, RegNum = regNumber.REG_STK },
-                new LclVarDsc { Type = TYP_INT, RegNum = regNumber.REG_STK },
+                new LclVarDsc { Type = TYP_INT, lvIsRegArg = true, lvRegister = true, RegNum = regNumber.REG_X64_RBX },
+                new LclVarDsc { Type = TYP_INT, lvIsParamRegTarget = true, RegNum = regNumber.REG_X64_STK },
+                new LclVarDsc { Type = TYP_INT, RegNum = regNumber.REG_X64_STK },
             ];
             compiler.lvaCount = 3;
             compiler.info.compArgsCount = 1;
             compiler.lvaParameterPassingInfo = [
                 AbiPassingInformation.FromSegment(compiler, false,
-                    AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8)),
+                    AbiPassingSegment.InRegister(regNumber.REG_X64_RCX, 0, 8)),
             ];
             compiler._paramRegLocalMappings = [
-                new ParameterRegisterLocalMapping(AbiPassingSegment.InRegister(regNumber.REG_RDX, 0, 8), 1, 0),
+                new ParameterRegisterLocalMapping(AbiPassingSegment.InRegister(regNumber.REG_X64_RDX, 0, 8), 1, 0),
             ];
 
             foreach (var (localNumber, assignment) in new[] {
-                (0u, SRBM_RBX),
-                (1u, SRBM_RAX),
+                (0u, SRBM_X64_RBX),
+                (1u, SRBM_X64_RAX),
                 (2u, SRBM_NONE),
             })
             {
@@ -455,9 +455,9 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
                 new LinearScan.SplitEdgeInfo { fromBBNum = firstNumber, toBBNum = secondNumber };
             BlockInfo(allocator)[blocks[1].bbNum].predBBNum = firstNumber;
             allocator.initVarRegMaps();
-            allocator.setOutVarRegForBB(firstNumber, 0, regNumber.REG_RAX);
-            allocator.setInVarRegForBB(secondNumber, 0, regNumber.REG_RBX);
-            allocator.setOutVarRegForBB(secondNumber, 0, regNumber.REG_RCX);
+            allocator.setOutVarRegForBB(firstNumber, 0, regNumber.REG_X64_RAX);
+            allocator.setInVarRegForBB(secondNumber, 0, regNumber.REG_X64_RBX);
+            allocator.setOutVarRegForBB(secondNumber, 0, regNumber.REG_X64_RCX);
 
             var firstHeader = Capture(() => blocks[0].dspBlockHeader());
             var secondHeader = Capture(() => blocks[1].dspBlockHeader());
@@ -487,7 +487,7 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
             var block = CreateBlocks(compiler, 1)[0];
             compiler.lvaTable = [new LclVarDsc { Type = TYP_INT, lvLRACandidate = true, _varIndex = 0 }];
             compiler.lvaCount = 1;
-            var node = new GenTreeLclVar(TYP_INT, 0) { _seqNum = 2, RegNum = regNumber.REG_RAX };
+            var node = new GenTreeLclVar(TYP_INT, 0) { _seqNum = 2, RegNum = regNumber.REG_X64_RAX };
             node.Flags |= GTF_VAR_DEATH | GTF_SPILLED;
             block.InsertAtEnd(node);
             var header = Capture(() => block.dspBlockHeader());
@@ -539,8 +539,8 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
             compiler.lvaCount = 1;
             var node = new GenTreeLclVar(TYP_STRUCT, 0) { _seqNum = 2 };
             node.Flags |= GTF_VAR_MULTIREG | GTF_VAR_DEATH;
-            node.SetRegNumByIdx(regNumber.REG_RAX, 0);
-            node.SetRegNumByIdx(regNumber.REG_RDX, 1);
+            node.SetRegNumByIdx(regNumber.REG_X64_RAX, 0);
+            node.SetRegNumByIdx(regNumber.REG_X64_RDX, 1);
             block.InsertAtEnd(node);
             var header = Capture(() => block.dspBlockHeader());
             var newline = Environment.NewLine;
@@ -565,9 +565,9 @@ internal static unsafe class LinearScanIntervalDiagnosticsTests
             stacked._seqNum = 2;
             var assigned = compiler.gtNewIconNode(TYP_INT, 5);
             assigned._seqNum = 4;
-            assigned.RegNum = regNumber.REG_RAX;
+            assigned.RegNum = regNumber.REG_X64_RAX;
             var add = new GenTreeOp(GT_ADD, TYP_INT, stacked, assigned) {
-                _seqNum = 6, RegNum = regNumber.REG_RBX,
+                _seqNum = 6, RegNum = regNumber.REG_X64_RBX,
             };
             block.InsertAtEnd(stacked);
             block.InsertAtEnd(assigned);

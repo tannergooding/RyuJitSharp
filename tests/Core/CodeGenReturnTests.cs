@@ -261,7 +261,7 @@ internal static unsafe class CodeGenReturnTests
             }
             else
             {
-                Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_SRD));
+                Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_SRD));
             }
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_RAX));
             Assert.That(descriptors[^1].idIsNoGC(), Is.True);

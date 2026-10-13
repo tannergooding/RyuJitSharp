@@ -57,7 +57,7 @@ internal static unsafe class LinearScanBuildIntervalsTests
             AssertOrder(allocator, REG_VAR_ORDER);
             AssertOrder(
                 allocator,
-                EvexIsSupported(allocator) ? REG_VAR_ORDER_FLT_EVEX : REG_VAR_ORDER_FLT);
+                EvexIsSupported(allocator) ? REG_VAR_ORDER_FLT_EVEX : REG_VAR_ORDER_FLT_AMD64);
             if (EvexIsSupported(allocator))
             {
                 AssertOrder(allocator, REG_VAR_ORDER_MSK);

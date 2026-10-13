@@ -36,21 +36,21 @@ internal static unsafe class CodeGenCallInstructionTests
             {
                 call._callMoreFlags |= GTF_CALL_M_ASYNC;
             }
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RBX, TYP_REF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_R12, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RBX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_R12, TYP_BYREF);
 
             codeGen.genCallInstruction(call);
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_call));
-            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_METHOD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_METHOD));
             Assert.That(EmitterCallInstructionTests.CallView.AsyncReturn(id), Is.EqualTo(async));
             Assert.That(EmitterCallInstructionTests.CallView.Refs(id), Is.EqualTo(RBM_RBX));
             Assert.That(EmitterCallInstructionTests.CallView.Byrefs(id), Is.EqualTo(RBM_R12));
             Assert.That(ThisRefs(codeGen.Emitter), Is.EqualTo(
-                SRBM_RBX | ((!unused && type == TYP_REF) ? SRBM_RAX : 0)));
+                SRBM_X64_RBX | ((!unused && type == TYP_REF) ? SRBM_X64_RAX : 0)));
             Assert.That(ThisByrefs(codeGen.Emitter), Is.EqualTo(
-                SRBM_R12 | ((!unused && type == TYP_BYREF) ? SRBM_RAX : 0)));
+                SRBM_R12 | ((!unused && type == TYP_BYREF) ? SRBM_X64_RAX : 0)));
 #if DEBUG
             var debugInfo = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing call diagnostics.");
             Assert.That(debugInfo.idMemCookie, Is.EqualTo((nint)call._callMethHnd));
@@ -92,7 +92,7 @@ internal static unsafe class CodeGenCallInstructionTests
     {
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
-            var target = RegisterTarget(REG_R11);
+            var target = RegisterTarget(REG_X64_R11);
             var call = DirectCall(TYP_VOID);
             call._callType = indirect ? CT_INDIRECT : CT_USER_FUNC;
             call.ControlExpr = target;
@@ -106,7 +106,7 @@ internal static unsafe class CodeGenCallInstructionTests
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(tailCall ? INS_tail_i_jmp : INS_call));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R11));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_R11));
 #if DEBUG
             Assert.That(target._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
                 Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED));
@@ -124,15 +124,15 @@ internal static unsafe class CodeGenCallInstructionTests
     {
         EmitterCallInstructionTests.WithEmitter((_, codeGen) =>
         {
-            var index = RegisterTarget(REG_R11);
-            var address = new GenTreeAddrMode(TYP_I_IMPL,
-                indexOnly ? null : RegisterTarget(REG_R10), index, 4, -48)
+            var index = RegisterTarget(REG_X64_R11);
+            var address = new GenTreeAddrMode(TYP_LONG,
+                indexOnly ? null : RegisterTarget(REG_X64_R10), index, 4, -48)
             {
                 IsContained = true,
             };
             var call = DirectCall(TYP_VOID);
             call._callType = CT_INDIRECT;
-            call.ControlExpr = new GenTreeIndir(GT_IND, TYP_I_IMPL, address) { IsContained = true };
+            call.ControlExpr = new GenTreeIndir(GT_IND, TYP_LONG, address) { IsContained = true };
             if (tailCall)
             {
                 call._callMoreFlags |= GTF_CALL_M_TAILCALL;
@@ -143,8 +143,8 @@ internal static unsafe class CodeGenCallInstructionTests
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(tailCall ? INS_tail_i_jmp : INS_call));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(indexOnly ? REG_NA : REG_R10));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_R11));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(indexOnly ? REG_X64_NA : REG_X64_R10));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_R11));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(2));
             Assert.That(id.idAddr().iiaAddrMode.amDisp, Is.EqualTo(-48));
 #if DEBUG
@@ -163,10 +163,10 @@ internal static unsafe class CodeGenCallInstructionTests
 #if DEBUG
             compiler.opts.compEnablePCRelAddr = true;
 #endif
-            var address = new GenTreeIntCon(TYP_I_IMPL, 0x1234) { IsContained = true };
+            var address = new GenTreeIntCon(TYP_LONG, 0x1234) { IsContained = true };
             var call = DirectCall(TYP_VOID);
             call._callType = CT_INDIRECT;
-            call.ControlExpr = new GenTreeIndir(GT_IND, TYP_I_IMPL, address) { IsContained = true };
+            call.ControlExpr = new GenTreeIndir(GT_IND, TYP_LONG, address) { IsContained = true };
             if (tailCall)
             {
                 call._callMoreFlags |= GTF_CALL_M_TAILCALL;
@@ -175,7 +175,7 @@ internal static unsafe class CodeGenCallInstructionTests
             codeGen.genCallInstruction(call);
 
             var id = Descriptors(codeGen).Single();
-            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_METHPTR));
+            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_METHPTR));
             Assert.That(id.idIns(), Is.EqualTo(tailCall ? INS_tail_i_jmp : INS_call));
             Assert.That((nint)id.idAddr().iiaAddr, Is.EqualTo((nint)0x1234));
         });
@@ -201,7 +201,7 @@ internal static unsafe class CodeGenCallInstructionTests
                 call.Flags |= GTF_CALL_VIRT_STUB;
             }
             var argument = call.Args.PushBack(NewCallArg.CreateForPrimitive(
-                new GenTreeUnOp(GT_PUTARG_REG, TYP_I_IMPL, RegisterTarget(reg)) { RegNum = reg })
+                new GenTreeUnOp(GT_PUTARG_REG, TYP_LONG, RegisterTarget(reg)) { RegNum = reg })
                 .WithWellKnownArg(kind));
             argument.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
                 AbiPassingSegment.InRegister(reg, 0, 8));
@@ -220,9 +220,9 @@ internal static unsafe class CodeGenCallInstructionTests
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
-            var call = DirectCall(TYP_I_IMPL);
+            var call = DirectCall(TYP_LONG);
             call.Flags |= GTF_TLS_GET_ADDR;
-            call.ControlExpr = new GenTreeIntCon(TYP_I_IMPL, 0x3456) { IsContained = true };
+            call.ControlExpr = new GenTreeIntCon(TYP_LONG, 0x3456) { IsContained = true };
 
             codeGen.genCallInstruction(call);
 
@@ -247,7 +247,7 @@ internal static unsafe class CodeGenCallInstructionTests
             var call = DirectCall(TYP_VOID);
             call._callType = CT_HELPER;
             call._callMethHnd = Compiler.eeFindHelper(helper);
-            call.ControlExpr = new GenTreeIndir(GT_IND, TYP_I_IMPL, RegisterTarget(REG_R11))
+            call.ControlExpr = new GenTreeIndir(GT_IND, TYP_LONG, RegisterTarget(REG_X64_R11))
             {
                 IsContained = true,
             };
@@ -256,16 +256,16 @@ internal static unsafe class CodeGenCallInstructionTests
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_call));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R11));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_R11));
         });
     }
 
 #if DEBUG
-    [TestCase(false, true, false, REG_RBX)]
-    [TestCase(true, false, false, REG_R10)]
-    [TestCase(true, true, false, REG_R11)]
-    [TestCase(true, true, true, REG_R10)]
-    [TestCase(true, true, false, REG_XMM0)]
+    [TestCase(false, true, false, REG_X64_RBX)]
+    [TestCase(true, false, false, REG_X64_R10)]
+    [TestCase(true, true, false, REG_X64_R11)]
+    [TestCase(true, true, true, REG_X64_R10)]
+    [TestCase(true, true, false, REG_X64_XMM0)]
     public static void EpilogChecksRetainTheCookieAndSecretArgumentRegisterChoices(
         bool tailCall, bool cookie, bool secret, regNumber reg)
     {
@@ -282,10 +282,10 @@ internal static unsafe class CodeGenCallInstructionTests
                 AbiPassingSegment.InRegister(reg, 0, 8));
             if (secret)
             {
-                var secretArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(RegisterTarget(REG_R10))
+                var secretArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(RegisterTarget(REG_X64_R10))
                     .WithWellKnownArg(WellKnownArg.SecretStubParam));
                 secretArg.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
-                    AbiPassingSegment.InRegister(REG_R10, 0, 8));
+                    AbiPassingSegment.InRegister(REG_X64_R10, 0, 8));
             }
 
             codeGen.genCallInstruction(call);
@@ -300,7 +300,7 @@ internal static unsafe class CodeGenCallInstructionTests
         EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
         {
             var call = DirectCall(TYP_VOID);
-            var target = RegisterTarget(REG_R11);
+            var target = RegisterTarget(REG_X64_R11);
             call.ControlExpr = target;
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
@@ -335,7 +335,7 @@ internal static unsafe class CodeGenCallInstructionTests
     }
 
     private static GenTreePhysReg RegisterTarget(regNumber reg)
-        => new(reg, TYP_I_IMPL) { RegNum = reg };
+        => new(reg, TYP_LONG) { RegNum = reg };
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitThisGCrefRegs")]
     private static extern ref regMask ThisRefs(Emitter emitter);

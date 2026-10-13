@@ -10,9 +10,9 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class CodeGenPrologScopeTests
 {
-    [TestCase(REG_RCX)]
-    [TestCase(REG_XMM0)]
-    [TestCase(REG_NA)]
+    [TestCase(REG_X64_RCX)]
+    [TestCase(REG_X64_XMM0)]
+    [TestCase(REG_X64_NA)]
     public static void ParameterScopesUseIncomingAbiLocationsAndCloseAtThePrologEnd(regNumber reg)
     {
         CodeGenPrologTests.WithRoot((compiler, codeGen) =>
@@ -21,11 +21,11 @@ internal static class CodeGenPrologScopeTests
             compiler.info.compArgsCount = 1;
             compiler.info.compLocalsCount = 2;
             compiler.lvaTable = [
-                new() { Type = TYP_LONG, lvIsParam = true, lvOnFrame = true, StackOffset = 16, RegNum = REG_STK },
-                new() { Type = TYP_INT, lvOnFrame = true, StackOffset = -16, RegNum = REG_STK },
+                new() { Type = TYP_LONG, lvIsParam = true, lvOnFrame = true, StackOffset = 16, RegNum = REG_X64_STK },
+                new() { Type = TYP_INT, lvOnFrame = true, StackOffset = -16, RegNum = REG_X64_STK },
             ];
             compiler.lvaParameterPassingInfo = [AbiPassingInformation.FromSegment(compiler, false,
-                reg == REG_NA ? AbiPassingSegment.OnStack(0, 0, 8) : AbiPassingSegment.InRegister(reg, 0, 8))];
+                reg == REG_X64_NA ? AbiPassingSegment.OnStack(0, 0, 8) : AbiPassingSegment.InRegister(reg, 0, 8))];
             compiler.info.compVarScopes = [
                 new() { vsdVarNum = 0, vsdLVnum = 0, vsdLifeBeg = 0, vsdLifeEnd = 10 },
                 new() { vsdVarNum = 1, vsdLVnum = 1, vsdLifeBeg = 0, vsdLifeEnd = 10 },
@@ -39,12 +39,12 @@ internal static class CodeGenPrologScopeTests
             codeGen.psiEndProlog();
 
             var range = codeGen.getVariableLiveKeeper().getLiveRangesForVarForProlog(0)[0];
-            if (reg == REG_NA)
+            if (reg == REG_X64_NA)
             {
                 var offset = compiler.lvaToCallerSPRelativeOffset(16, false) + 8;
-                Assert.That(range.m_VarLocation.vlIsOnStack(REG_RSP, offset), Is.True);
+                Assert.That(range.m_VarLocation.vlIsOnStack(REG_X64_RSP, offset), Is.True);
             }
-            else if (reg == REG_XMM0)
+            else if (reg == REG_X64_XMM0)
             {
                 Assert.That(range.m_VarLocation.vlType, Is.EqualTo(ICorDebugInfo.VarLocType.VLT_REG_FP));
                 Assert.That(range.m_VarLocation.vlReg.vlrReg, Is.EqualTo(CodeGen.siVarLoc.mapRegNumToDebugRegNum(reg)));

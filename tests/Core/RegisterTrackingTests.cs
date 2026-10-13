@@ -27,7 +27,7 @@ internal static unsafe class RegisterTrackingTests
     public static void LocalRegisterLifeGivesDeathPriorityOverBirth(bool born, bool dying)
     {
         WithCompiler(minOpts: true, (compiler, codeGen) => {
-            compiler.lvaTable = [new() { Type = TYP_INT, lvTracked = true, lvLRACandidate = true, RegNum = REG_RAX }];
+            compiler.lvaTable = [new() { Type = TYP_INT, lvTracked = true, lvLRACandidate = true, RegNum = REG_X64_RAX }];
             compiler.lvaCount = 1;
             compiler.lvaTrackedCount = 1;
 #if DEBUG
@@ -50,7 +50,7 @@ internal static unsafe class RegisterTrackingTests
     {
         WithCompiler(minOpts: true, (compiler, codeGen) => {
             compiler.lvaTable = [
-                new() { Type = TYP_REF, lvTracked = true, lvLRACandidate = true, RegNum = REG_RAX, lvSpillAtSingleDef = true },
+                new() { Type = TYP_REF, lvTracked = true, lvLRACandidate = true, RegNum = REG_X64_RAX, lvSpillAtSingleDef = true },
             ];
             compiler.lvaCount = 1;
             compiler.lvaTrackedCount = 1;
@@ -74,18 +74,18 @@ internal static unsafe class RegisterTrackingTests
     public static void ScalarLocalLocationUsesTheDefinitionOrCopyRegister(bool copy)
     {
         WithCompiler(minOpts: true, (compiler, codeGen) => {
-            compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = true, RegNum = REG_STK }];
+            compiler.lvaTable = [new() { Type = TYP_INT, lvLRACandidate = true, RegNum = REG_X64_STK }];
             compiler.lvaCount = 1;
             GenTree tree = compiler.gtNewLclvNode(TYP_INT, 0);
             if (copy)
             {
                 tree = new GenTreeCopyOrReload(GT_COPY, TYP_INT, tree);
             }
-            tree.RegNum = REG_R8;
+            tree.RegNum = REG_X64_R8;
 
             codeGen.genUpdateVarReg(ref compiler.lvaTable[0], tree);
 
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_R8));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_R8));
             Assert.That(codeGen.genGetRegMask(in compiler.lvaTable[0]), Is.EqualTo(RBM_R8));
         });
     }
@@ -97,18 +97,18 @@ internal static unsafe class RegisterTrackingTests
             compiler.lvaEnregMultiRegVars = true;
             compiler.lvaTable = [
                 new() { Type = TYP_STRUCT, lvPromoted = true, lvFieldLclStart = 1, lvFieldCnt = 2 },
-                new() { Type = TYP_INT, lvIsStructField = true, lvLRACandidate = true, RegNum = REG_RAX },
-                new() { Type = TYP_DOUBLE, lvIsStructField = true, lvLRACandidate = true, RegNum = REG_STK },
+                new() { Type = TYP_INT, lvIsStructField = true, lvLRACandidate = true, RegNum = REG_X64_RAX },
+                new() { Type = TYP_DOUBLE, lvIsStructField = true, lvLRACandidate = true, RegNum = REG_X64_STK },
             ];
             compiler.lvaCount = 3;
             var tree = compiler.gtNewLclvNode(TYP_STRUCT, 0).AsLclVar();
             tree.Flags |= GTF_VAR_MULTIREG;
-            tree.SetRegNumByIdx(REG_XMM1, 1);
+            tree.SetRegNumByIdx(REG_X64_XMM1, 1);
             Assert.That(codeGen.genGetRegMask(tree), Is.EqualTo(RBM_RAX));
 
             codeGen.genUpdateVarReg(ref compiler.lvaTable[2], tree, 1);
 
-            Assert.That(compiler.lvaTable[2].RegNum, Is.EqualTo(REG_XMM1));
+            Assert.That(compiler.lvaTable[2].RegNum, Is.EqualTo(REG_X64_XMM1));
             Assert.That(codeGen.genGetRegMask(tree), Is.EqualTo(RBM_RAX | RBM_XMM1));
         });
     }
@@ -119,8 +119,8 @@ internal static unsafe class RegisterTrackingTests
     {
         WithCompiler(minOpts: true, (compiler, codeGen) => {
             compiler.lvaTable = [
-                new() { Type = TYP_SIMD16, lvLRACandidate = true, RegNum = REG_XMM31 },
-                new() { Type = TYP_MASK, lvLRACandidate = true, RegNum = REG_K1 },
+                new() { Type = TYP_SIMD16, lvLRACandidate = true, RegNum = REG_X64_XMM31 },
+                new() { Type = TYP_MASK, lvLRACandidate = true, RegNum = REG_X64_K1 },
             ];
             compiler.lvaCount = 2;
 
@@ -136,16 +136,16 @@ internal static unsafe class RegisterTrackingTests
         WithCompiler(minOpts: true, (_, codeGen) => {
             ref var gc = ref codeGen.GCInfo;
             ref var registers = ref codeGen.RegSet;
-            var pointers = new regMaskTP(SRBM_RAX | SRBM_RBX);
+            var pointers = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX);
             gc.gcMarkRegSetGCref(pointers);
-            gc.gcMarkRegPtrVal(REG_RAX, TYP_BYREF);
+            gc.gcMarkRegPtrVal(REG_X64_RAX, TYP_BYREF);
             registers.SetMaskVars(pointers);
             gc.gcMarkRegSetNpt(pointers);
             Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
             Assert.That(gc.gcRegByrefSetCur, Is.EqualTo(RBM_RAX));
 
             registers.RemoveMaskVars(RBM_RAX);
-            gc.gcMarkRegPtrVal(REG_RAX, TYP_INT);
+            gc.gcMarkRegPtrVal(REG_X64_RAX, TYP_INT);
             Assert.That(gc.gcRegByrefSetCur, Is.EqualTo(RBM_NONE));
             Assert.That(gc.gcRegGCrefSetCur, Is.EqualTo(RBM_RBX));
 
@@ -178,18 +178,18 @@ internal static unsafe class RegisterTrackingTests
         });
     }
 
-    [TestCase(REG_RAX, EA_1BYTE, "al")]
-    [TestCase(REG_RAX, EA_2BYTE, "ax")]
-    [TestCase(REG_RAX, EA_4BYTE, "eax")]
-    [TestCase(REG_RAX, EA_GCREF, "rax")]
-    [TestCase(REG_RSI, EA_1BYTE, "sil")]
-    [TestCase(REG_R8, EA_1BYTE, "r8b")]
-    [TestCase(REG_R15, EA_2BYTE, "r15w")]
-    [TestCase(REG_R16, EA_4BYTE, "r16d")]
-    [TestCase(REG_XMM0, EA_8BYTE, "xmm0")]
-    [TestCase(REG_XMM15, EA_32BYTE, "ymm15")]
-    [TestCase(REG_XMM31, EA_64BYTE, "zmm31")]
-    [TestCase(REG_K1, EA_64BYTE, "k1")]
+    [TestCase(REG_X64_RAX, EA_1BYTE, "al")]
+    [TestCase(REG_X64_RAX, EA_2BYTE, "ax")]
+    [TestCase(REG_X64_RAX, EA_4BYTE, "eax")]
+    [TestCase(REG_X64_RAX, EA_64BIT_GCREF, "rax")]
+    [TestCase(REG_X64_RSI, EA_1BYTE, "sil")]
+    [TestCase(REG_X64_R8, EA_1BYTE, "r8b")]
+    [TestCase(REG_X64_R15, EA_2BYTE, "r15w")]
+    [TestCase(REG_X64_R16, EA_4BYTE, "r16d")]
+    [TestCase(REG_X64_XMM0, EA_8BYTE, "xmm0")]
+    [TestCase(REG_X64_XMM15, EA_32BYTE, "ymm15")]
+    [TestCase(REG_X64_XMM31, EA_64BYTE, "zmm31")]
+    [TestCase(REG_X64_K1, EA_64BYTE, "k1")]
     public static void EmitterRegisterNamesMatchNativeSizeAndRegisterClass(
         regNumber reg, emitAttr attr, string expected)
     {
@@ -245,9 +245,9 @@ internal static unsafe class RegisterTrackingTests
 #endif
     public static void TypeSelectsTheNativeRegisterMaskBankWithoutFiltering(var_types type)
     {
-        var mask = new regMaskTP(SRBM_RAX | SRBM_XMM6);
+        var mask = new regMaskTP(SRBM_X64_RAX | SRBM_XMM6);
 #if FEATURE_MASKED_HW_INTRINSICS
-        mask |= regMaskTP.CreateFromRegNum(REG_K1, genSingleTypeRegMask(REG_K1));
+        mask |= regMaskTP.CreateFromRegNum(REG_X64_K1, genSingleTypeRegMask(REG_X64_K1));
 #endif
         var expected = varTypeIsMask(type) ? mask.MskRegSet : mask.Lower;
 
@@ -261,21 +261,21 @@ internal static unsafe class RegisterTrackingTests
             ref var registers = ref codeGen.RegSet;
             registers.rsClearRegsModified();
 
-            var modified = new regMaskTP(SRBM_RAX | SRBM_RBX | SRBM_XMM6);
+            var modified = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX | SRBM_XMM6);
             registers.rsSetRegsModified(modified);
-            registers.rsSetRegsModified(new regMaskTP(SRBM_RBX), suppressDump: true);
+            registers.rsSetRegsModified(new regMaskTP(SRBM_X64_RBX), suppressDump: true);
 
             Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(modified));
             Assert.That(registers.rsGetModifiedCalleeSavedRegsMask(),
-                Is.EqualTo(new regMaskTP(SRBM_RBX | SRBM_XMM6)));
-            Assert.That(registers.rsGetModifiedIntCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_RBX)));
-            Assert.That(registers.rsGetModifiedOsrIntCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_RBX)));
+                Is.EqualTo(new regMaskTP(SRBM_X64_RBX | SRBM_XMM6)));
+            Assert.That(registers.rsGetModifiedIntCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
+            Assert.That(registers.rsGetModifiedOsrIntCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
             Assert.That(registers.rsGetModifiedFltCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_XMM6)));
-            Assert.That(registers.rsRegsModified(new regMaskTP(SRBM_RBX)), Is.True);
-            Assert.That(registers.rsRegsModified(new regMaskTP(SRBM_RCX)), Is.False);
+            Assert.That(registers.rsRegsModified(new regMaskTP(SRBM_X64_RBX)), Is.True);
+            Assert.That(registers.rsRegsModified(new regMaskTP(SRBM_X64_RCX)), Is.False);
 
-            registers.rsRemoveRegsModified(new regMaskTP(SRBM_RBX | SRBM_RCX));
-            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_RAX | SRBM_XMM6)));
+            registers.rsRemoveRegsModified(new regMaskTP(SRBM_X64_RBX | SRBM_X64_RCX));
+            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RAX | SRBM_XMM6)));
 
             registers.rsClearRegsModified();
             Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(RBM_NONE));
@@ -289,9 +289,9 @@ internal static unsafe class RegisterTrackingTests
             ref var registers = ref codeGen.RegSet;
             registers.rsClearRegsModified();
 
-            registers.verifyRegUsed(REG_RBX);
+            registers.verifyRegUsed(REG_X64_RBX);
 
-            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_RBX)));
+            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
         });
     }
 
@@ -304,10 +304,10 @@ internal static unsafe class RegisterTrackingTests
             registers.rsClearRegsModified();
 
             registers.verifyRegistersUsed(RBM_NONE);
-            registers.verifyRegistersUsed(new regMaskTP(SRBM_RBX | SRBM_RAX));
+            registers.verifyRegistersUsed(new regMaskTP(SRBM_X64_RBX | SRBM_X64_RAX));
 
             Assert.That(registers.rsGetModifiedRegsMask(),
-                Is.EqualTo(minOpts ? RBM_NONE : new regMaskTP(SRBM_RBX | SRBM_RAX)));
+                Is.EqualTo(minOpts ? RBM_NONE : new regMaskTP(SRBM_X64_RBX | SRBM_X64_RAX)));
         });
     }
 
@@ -317,13 +317,13 @@ internal static unsafe class RegisterTrackingTests
         WithCompiler(minOpts: true, (compiler, codeGen) => {
             ref var registers = ref codeGen.RegSet;
             registers.rsClearRegsModified();
-            registers.rsSetRegsModified(new regMaskTP(SRBM_RBX));
+            registers.rsSetRegsModified(new regMaskTP(SRBM_X64_RBX));
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
 
-            registers.rsSetRegsModified(new regMaskTP(SRBM_RBX | SRBM_RAX));
-            registers.rsRemoveRegsModified(new regMaskTP(SRBM_RAX));
+            registers.rsSetRegsModified(new regMaskTP(SRBM_X64_RBX | SRBM_X64_RAX));
+            registers.rsRemoveRegsModified(new regMaskTP(SRBM_X64_RAX));
 
-            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_RBX)));
+            Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
         });
     }
 
@@ -339,10 +339,10 @@ internal static unsafe class RegisterTrackingTests
             compiler.lvaDoneFrameLayout = Compiler.FINAL_FRAME_LAYOUT;
             codeGen.Emitter.emitCurIG = new insGroup { igFlags = phase };
 
-            registers.rsSetRegsModified(new regMaskTP(SRBM_RBX));
-            Assert.That(registers.rsGetModifiedCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_RBX)));
+            registers.rsSetRegsModified(new regMaskTP(SRBM_X64_RBX));
+            Assert.That(registers.rsGetModifiedCalleeSavedRegsMask(), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
 
-            registers.rsRemoveRegsModified(new regMaskTP(SRBM_RBX));
+            registers.rsRemoveRegsModified(new regMaskTP(SRBM_X64_RBX));
             Assert.That(registers.rsGetModifiedRegsMask(), Is.EqualTo(RBM_NONE));
         });
     }

@@ -22,10 +22,10 @@ internal static unsafe class CodeGenProfilingEntryTests
     {
         WithEntry((compiler, codeGen) =>
         {
-            ConfigureArguments(compiler, [(TYP_REF, REG_RCX)]);
+            ConfigureArguments(compiler, [(TYP_REF, REG_X64_RCX)]);
             var zeroed = true;
 
-            codeGen.genProfilingEnterCallback(REG_RAX, ref zeroed);
+            codeGen.genProfilingEnterCallback(REG_X64_RAX, ref zeroed);
 
             Assert.That(Descriptors(codeGen), Is.Empty);
             Assert.That(zeroed, Is.True);
@@ -40,21 +40,21 @@ internal static unsafe class CodeGenProfilingEntryTests
         WithEntry((compiler, codeGen) =>
         {
             ConfigureArguments(compiler, [
-                (TYP_REF, REG_RCX), (TYP_DOUBLE, REG_XMM1),
-                (TYP_SIMD8, REG_R8), (TYP_STRUCT, REG_R9), (TYP_INT, REG_NA),
+                (TYP_REF, REG_X64_RCX), (TYP_DOUBLE, REG_X64_XMM1),
+                (TYP_SIMD8, REG_X64_R8), (TYP_STRUCT, REG_X64_R9), (TYP_INT, REG_X64_NA),
             ]);
             ProfilerHookNeeded(compiler) = true;
             compiler.compProfilerMethHndIndirected = indirect;
             compiler.compProfilerMethHnd = (void*)0x12345678;
             codeGen.IsFramePointerUsed = true;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RBX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RBX, TYP_REF);
             var zeroed = true;
 
-            codeGen.genProfilingEnterCallback(REG_RAX, ref zeroed);
+            codeGen.genProfilingEnterCallback(REG_X64_RAX, ref zeroed);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(11));
-            regNumber[] regs = [REG_RCX, REG_XMM1, REG_R8, REG_R9];
+            regNumber[] regs = [REG_X64_RCX, REG_X64_XMM1, REG_X64_R8, REG_X64_R9];
             instruction[] instructions = [INS_mov, INS_movsd_simd, INS_mov, INS_mov];
             emitAttr[] widths = [EA_8BYTE, EA_8BYTE, EA_8BYTE, EA_8BYTE];
             for (var i = 0; i < regs.Length; i++)
@@ -64,7 +64,7 @@ internal static unsafe class CodeGenProfilingEntryTests
             }
 
             Assert.That(ids[4].idIns(), Is.EqualTo(INS_mov));
-            Assert.That(ids[4].idReg1(), Is.EqualTo(REG_RCX));
+            Assert.That(ids[4].idReg1(), Is.EqualTo(REG_X64_RCX));
             Assert.That(ids[4].idIsDspReloc(), Is.EqualTo(indirect));
             if (indirect)
             {
@@ -76,8 +76,8 @@ internal static unsafe class CodeGenProfilingEntryTests
             }
 
             Assert.That(ids[5].idIns(), Is.EqualTo(INS_lea));
-            Assert.That(ids[5].idReg1(), Is.EqualTo(REG_RDX));
-            Assert.That(ids[5].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RBP));
+            Assert.That(ids[5].idReg1(), Is.EqualTo(REG_X64_RDX));
+            Assert.That(ids[5].idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RBP));
             Assert.That(ids[5].idAddr().iiaAddrMode.amDisp,
                 Is.EqualTo(-compiler.lvaToCallerSPRelativeOffset(0, isFpBased: true)));
             Assert.That(ids[6].idIns(), Is.EqualTo(INS_call));
@@ -95,37 +95,37 @@ internal static unsafe class CodeGenProfilingEntryTests
     {
         WithEntry((compiler, codeGen) =>
         {
-            ConfigureArguments(compiler, [(type, REG_XMM0), (TYP_LONG, REG_RDX)]);
+            ConfigureArguments(compiler, [(type, REG_X64_XMM0), (TYP_LONG, REG_X64_RDX)]);
             compiler.info.compIsVarArgs = true;
             ProfilerHookNeeded(compiler) = true;
             compiler.compProfilerMethHnd = (void*)0x1234;
             codeGen.IsFramePointerUsed = true;
             var zeroed = true;
 
-            codeGen.genProfilingEnterCallback(REG_RBX, ref zeroed);
+            codeGen.genProfilingEnterCallback(REG_X64_RBX, ref zeroed);
 
             var ids = Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(6));
-            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_RCX));
+            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_X64_RCX));
             Assert.That(ids[1].idIns(), Is.EqualTo(INS_lea));
             Assert.That(ids[2].idIns(), Is.EqualTo(INS_call));
             AssertStack(ids[3], false, type == TYP_FLOAT ? INS_movss : INS_movsd_simd,
-                width, 0, REG_XMM0);
+                width, 0, REG_X64_XMM0);
             Assert.That(ids[4].idIns(), Is.EqualTo(INS_movd64));
             Assert.That(ids[4].idOpSize(), Is.EqualTo(width));
-            Assert.That(ids[4].idReg1(), Is.EqualTo(REG_RCX));
-            Assert.That(ids[4].idReg2(), Is.EqualTo(REG_XMM0));
-            AssertStack(ids[5], false, INS_mov, EA_8BYTE, 1, REG_RDX);
+            Assert.That(ids[4].idReg1(), Is.EqualTo(REG_X64_RCX));
+            Assert.That(ids[4].idReg2(), Is.EqualTo(REG_X64_XMM0));
+            AssertStack(ids[5], false, INS_mov, EA_8BYTE, 1, REG_X64_RDX);
             Assert.That(zeroed, Is.True);
         });
     }
 
-    [TestCase(REG_RAX, false)]
-    [TestCase(REG_RCX, false)]
-    [TestCase(REG_RDX, false)]
-    [TestCase(REG_R11, false)]
-    [TestCase(REG_RBX, true)]
-    [TestCase(REG_RSI, true)]
+    [TestCase(REG_X64_RAX, false)]
+    [TestCase(REG_X64_RCX, false)]
+    [TestCase(REG_X64_RDX, false)]
+    [TestCase(REG_X64_R11, false)]
+    [TestCase(REG_X64_RBX, true)]
+    [TestCase(REG_X64_RSI, true)]
     public static void ScratchZeroStateReflectsProfilerCallClobbers(regNumber scratch, bool remainsZero)
     {
         WithEntry((compiler, codeGen) =>
@@ -158,7 +158,7 @@ internal static unsafe class CodeGenProfilingEntryTests
                 lvIsParam = true,
                 lvOnFrame = true,
                 lvFramePointerBased = true,
-                RegNum = REG_STK,
+                RegNum = REG_X64_STK,
             };
             if (type == TYP_STRUCT)
             {
@@ -169,7 +169,7 @@ internal static unsafe class CodeGenProfilingEntryTests
             compiler.lvaTable[i] = descriptor;
 
             var size = type == TYP_STRUCT ? 8 : type.Size;
-            var segment = reg == REG_NA
+            var segment = reg == REG_X64_NA
                 ? AbiPassingSegment.OnStack(i * 8, 0, size)
                 : AbiPassingSegment.InRegister(reg, 0, size);
             compiler.lvaParameterPassingInfo[i] = AbiPassingInformation.FromSegment(compiler, false, segment);
@@ -181,7 +181,7 @@ internal static unsafe class CodeGenProfilingEntryTests
             Layout = new ClassLayout(32),
             lvOnFrame = true,
             StackOffset = 0,
-            RegNum = REG_STK,
+            RegNum = REG_X64_STK,
         };
         compiler.lvaOutgoingArgSpaceVar = args.Length;
         compiler.lvaOutgoingArgSpaceSize.Value = 32;
@@ -209,7 +209,7 @@ internal static unsafe class CodeGenProfilingEntryTests
         emitAttr size, int variable, regNumber reg)
     {
         Assert.That(id.idIns(), Is.EqualTo(ins));
-        Assert.That(id.idInsFmt(), Is.EqualTo(store ? Emitter.insFormat.IF_SWR_RRD : Emitter.insFormat.IF_RWR_SRD));
+        Assert.That(id.idInsFmt(), Is.EqualTo(store ? Emitter.insFormat.IF_XARCH_SWR_RRD : Emitter.insFormat.IF_XARCH_RWR_SRD));
         Assert.That(id.idOpSize(), Is.EqualTo(size));
         Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(variable));
         Assert.That(id.idReg1(), Is.EqualTo(reg));

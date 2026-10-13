@@ -93,12 +93,12 @@ internal static unsafe class CodeGenConstantTests
             }
             var value = Pattern(populated, period);
 
-            codeGen.Emitter.emitSimdConstCompressedLoad(in value, (emitAttr)size, REG_XMM1);
+            codeGen.Emitter.emitSimdConstCompressedLoad(in value, (emitAttr)size, REG_X64_XMM1);
 
             var descriptor = Last(codeGen);
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));
             Assert.That(descriptor.idOpSize(), Is.EqualTo((emitAttr)instructionSize));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_XMM1));
             Assert.That(descriptor.idIsDspReloc(), Is.True);
             Assert.That(Section(codeGen).Data, Is.EqualTo(value.AsSpan<byte>()[..dataSize].ToArray()));
             Assert.That(Section(codeGen).dsAlignment, Is.EqualTo(dataSize));
@@ -116,7 +116,7 @@ internal static unsafe class CodeGenConstantTests
         WithCodeGen((_, codeGen) =>
         {
             simd64_t value = default;
-            codeGen.genSetRegToConst(REG_XMM1, type, in value);
+            codeGen.genSetRegToConst(REG_X64_XMM1, type, in value);
 
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(INS_xorps));
             Assert.That(Last(codeGen).idOpSize(), Is.EqualTo(EA_16BYTE));
@@ -124,15 +124,15 @@ internal static unsafe class CodeGenConstantTests
         });
     }
 
-    [TestCase(TYP_SIMD8, REG_XMM1, INS_pcmpeqd)]
-    [TestCase(TYP_SIMD12, REG_XMM1, INS_pcmpeqd)]
-    [TestCase(TYP_SIMD16, REG_XMM1, INS_pcmpeqd)]
-    [TestCase(TYP_SIMD32, REG_XMM1, INS_pcmpeqd)]
-    [TestCase(TYP_SIMD64, REG_XMM1, INS_vpternlogd)]
-    [TestCase(TYP_SIMD8, REG_XMM16, INS_vpternlogd)]
-    [TestCase(TYP_SIMD12, REG_XMM16, INS_vpternlogd)]
-    [TestCase(TYP_SIMD16, REG_XMM16, INS_vpternlogd)]
-    [TestCase(TYP_SIMD32, REG_XMM16, INS_vpternlogd)]
+    [TestCase(TYP_SIMD8, REG_X64_XMM1, INS_pcmpeqd)]
+    [TestCase(TYP_SIMD12, REG_X64_XMM1, INS_pcmpeqd)]
+    [TestCase(TYP_SIMD16, REG_X64_XMM1, INS_pcmpeqd)]
+    [TestCase(TYP_SIMD32, REG_X64_XMM1, INS_pcmpeqd)]
+    [TestCase(TYP_SIMD64, REG_X64_XMM1, INS_vpternlogd)]
+    [TestCase(TYP_SIMD8, REG_X64_XMM16, INS_vpternlogd)]
+    [TestCase(TYP_SIMD12, REG_X64_XMM16, INS_vpternlogd)]
+    [TestCase(TYP_SIMD16, REG_X64_XMM16, INS_vpternlogd)]
+    [TestCase(TYP_SIMD32, REG_X64_XMM16, INS_vpternlogd)]
     public static void AllBitsSetVectorsSelectTheNativeRegisterAndIsaForms(
         var_types type, regNumber reg, instruction expected)
     {
@@ -159,7 +159,7 @@ internal static unsafe class CodeGenConstantTests
             codeGen.Emitter.UseEvexEncodings = false;
             var value = simd64_t.AllBitsSet;
 
-            codeGen.genSetRegToConst(REG_XMM1, TYP_SIMD32, in value);
+            codeGen.genSetRegToConst(REG_X64_XMM1, TYP_SIMD32, in value);
 
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(INS_vbroadcastss));
             Assert.That(Section(codeGen).Data, Is.EqualTo(new byte[] { 255, 255, 255, 255 }));
@@ -172,7 +172,7 @@ internal static unsafe class CodeGenConstantTests
         WithCodeGen((_, codeGen) =>
         {
             var value = Pattern(12, 12);
-            codeGen.genSetRegToConst(REG_XMM1, TYP_SIMD12, in value);
+            codeGen.genSetRegToConst(REG_X64_XMM1, TYP_SIMD12, in value);
 
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(INS_movups));
             Assert.That(Section(codeGen).Data, Is.EqualTo(value.AsSpan<byte>()[..16].ToArray()));
@@ -188,11 +188,11 @@ internal static unsafe class CodeGenConstantTests
         {
             simdmask_t value = default;
             value.u64[0] = bits;
-            var tree = new GenTreeMskCon(value) { RegNum = REG_K2 };
-            codeGen.genSetRegToConst(REG_K1, TYP_MASK, tree);
+            var tree = new GenTreeMskCon(value) { RegNum = REG_X64_K2 };
+            codeGen.genSetRegToConst(REG_X64_K1, TYP_MASK, tree);
 
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(expected));
-            Assert.That(Last(codeGen).idReg1(), Is.EqualTo(REG_K2));
+            Assert.That(Last(codeGen).idReg1(), Is.EqualTo(REG_X64_K2));
             if (expected == INS_kmovq_msk)
             {
                 Assert.That(BitConverter.ToUInt64(Section(codeGen).Data), Is.EqualTo(bits));
@@ -216,23 +216,23 @@ internal static unsafe class CodeGenConstantTests
         {
             var tree = new GenTreeVecCon(type)
             {
-                RegNum = REG_XMM2,
+                RegNum = REG_X64_XMM2,
                 SimdVal = Pattern(type.Size, type.Size),
             };
-            codeGen.genSetRegToConst(REG_XMM1, type, tree);
-            Assert.That(Last(codeGen).idReg1(), Is.EqualTo(REG_XMM2));
+            codeGen.genSetRegToConst(REG_X64_XMM1, type, tree);
+            Assert.That(Last(codeGen).idReg1(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(Section(codeGen).Data, Is.EqualTo(tree.SimdVal.AsSpan<byte>()[..(int)Section(codeGen).dsSize].ToArray()));
         });
     }
 
-    [TestCase(TYP_FLOAT, 0UL, REG_XMM1, INS_xorps)]
-    [TestCase(TYP_DOUBLE, 0UL, REG_XMM1, INS_xorps)]
-    [TestCase(TYP_FLOAT, 0x8000000000000000UL, REG_XMM1, INS_movss)]
-    [TestCase(TYP_DOUBLE, 0x8000000000000000UL, REG_XMM1, INS_movsd_simd)]
-    [TestCase(TYP_FLOAT, ulong.MaxValue, REG_XMM1, INS_pcmpeqd)]
-    [TestCase(TYP_DOUBLE, ulong.MaxValue, REG_XMM1, INS_pcmpeqd)]
-    [TestCase(TYP_DOUBLE, ulong.MaxValue, REG_XMM16, INS_vpternlogd)]
-    [TestCase(TYP_DOUBLE, 0x3FF8000000000000UL, REG_XMM1, INS_movsd_simd)]
+    [TestCase(TYP_FLOAT, 0UL, REG_X64_XMM1, INS_xorps)]
+    [TestCase(TYP_DOUBLE, 0UL, REG_X64_XMM1, INS_xorps)]
+    [TestCase(TYP_FLOAT, 0x8000000000000000UL, REG_X64_XMM1, INS_movss)]
+    [TestCase(TYP_DOUBLE, 0x8000000000000000UL, REG_X64_XMM1, INS_movsd_simd)]
+    [TestCase(TYP_FLOAT, ulong.MaxValue, REG_X64_XMM1, INS_pcmpeqd)]
+    [TestCase(TYP_DOUBLE, ulong.MaxValue, REG_X64_XMM1, INS_pcmpeqd)]
+    [TestCase(TYP_DOUBLE, ulong.MaxValue, REG_X64_XMM16, INS_vpternlogd)]
+    [TestCase(TYP_DOUBLE, 0x3FF8000000000000UL, REG_X64_XMM1, INS_movsd_simd)]
     public static void FloatingNodesDistinguishSignedZeroAndAllBitsSet(
         var_types type, ulong bits, regNumber reg, instruction expected)
     {
@@ -265,7 +265,7 @@ internal static unsafe class CodeGenConstantTests
         WithCodeGen((compiler, codeGen) =>
         {
             var tree = compiler.gtNewIconNode(type, unchecked((nint)value));
-            codeGen.genSetRegToConst(REG_RAX, type, tree);
+            codeGen.genSetRegToConst(REG_X64_RAX, type, tree);
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(expected));
             Assert.That(Last(codeGen).idGCref(), Is.EqualTo(gcType));
         });
@@ -280,15 +280,15 @@ internal static unsafe class CodeGenConstantTests
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
             compiler.opts.compReloc = true;
             codeGen.RegSet.SetMaskVars(default);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
-            var tree = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
+            var tree = compiler.gtNewIconNode(TYP_LONG, 0x1234);
             tree.Flags |= flag;
 
-            codeGen.genSetRegToConst(REG_RCX, TYP_I_IMPL, tree);
+            codeGen.genSetRegToConst(REG_X64_RCX, TYP_LONG, tree);
 
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(INS_mov));
             Assert.That(Last(codeGen).idAddr().iiaSecRel, Is.EqualTo(!tls));
-            var rax = regMaskTP.CreateFromRegNum(REG_RAX, REG_RAX.SingleTypeMask);
+            var rax = regMaskTP.CreateFromRegNum(REG_X64_RAX, REG_X64_RAX.SingleTypeMask);
             Assert.That((codeGen.GCInfo.gcRegGCrefSetCur & rax).IsEmpty, Is.EqualTo(tls));
         });
     }
@@ -303,35 +303,35 @@ internal static unsafe class CodeGenConstantTests
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.opts.dspCode = true;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
             var before = codeGen.GCInfo.gcRegGCrefSetCur;
             string diagnostic;
             if (kind == 0)
             {
                 compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
-                var tree = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
+                var tree = compiler.gtNewIconNode(TYP_LONG, 0x1234);
                 tree.Flags |= GTF_ICON_TLSGD_OFFSET;
                 diagnostic = InstructionRecordingTestSupport.Capture(
-                    () => codeGen.genSetRegToConst(REG_RCX, TYP_I_IMPL, tree));
+                    () => codeGen.genSetRegToConst(REG_X64_RCX, TYP_LONG, tree));
             }
             else if (kind == 1)
             {
                 var value = Pattern(16, 16);
                 diagnostic = InstructionRecordingTestSupport.Capture(
-                    () => codeGen.Emitter.emitSimdConstCompressedLoad(in value, EA_16BYTE, REG_XMM1));
+                    () => codeGen.Emitter.emitSimdConstCompressedLoad(in value, EA_16BYTE, REG_X64_XMM1));
             }
             else if (kind == 2)
             {
                 simdmask_t value = default;
                 value.u64[0] = 1;
                 diagnostic = InstructionRecordingTestSupport.Capture(
-                    () => codeGen.genSetRegToConst(REG_K1, TYP_MASK, in value));
+                    () => codeGen.genSetRegToConst(REG_X64_K1, TYP_MASK, in value));
             }
             else
             {
                 var tree = compiler.gtNewDconNode(TYP_DOUBLE, 1.5);
                 diagnostic = InstructionRecordingTestSupport.Capture(
-                    () => codeGen.genSetRegToConst(REG_XMM1, TYP_DOUBLE, tree));
+                    () => codeGen.genSetRegToConst(REG_X64_XMM1, TYP_DOUBLE, tree));
             }
 
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(before));
@@ -361,7 +361,7 @@ internal static unsafe class CodeGenConstantTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;

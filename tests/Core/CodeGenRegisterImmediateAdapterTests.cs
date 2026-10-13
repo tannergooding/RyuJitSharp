@@ -14,12 +14,12 @@ internal static class CodeGenRegisterImmediateAdapterTests
 {
 #if TARGET_AMD64
     [TestCase(TYP_INT, EA_4BYTE)]
-    [TestCase(TYP_LONG, EA_8BYTE)]
+    [TestCase(var_types.TYP_LONG, EA_8BYTE)]
     public static void Amd64SingleRegisterDefaultSizeRemainsTheActualTypeSize(var_types type, emitAttr size)
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            codeGen.inst_RV(INS_inc, REG_RAX, type);
+            codeGen.inst_RV(INS_inc, REG_X64_RAX, type);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));
@@ -36,7 +36,7 @@ internal static class CodeGenRegisterImmediateAdapterTests
     {
         CodeGenBinaryTests.WithCodeGen((_, codeGen) =>
         {
-            codeGen.inst_RV_IV(INS_mov, REG_RAX, unchecked((nint)value), EA_8BYTE);
+            codeGen.inst_RV_IV(INS_mov, REG_X64_RAX, unchecked((nint)value), EA_8BYTE);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));

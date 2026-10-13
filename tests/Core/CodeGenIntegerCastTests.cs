@@ -205,7 +205,7 @@ internal static class CodeGenIntegerCastTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(ins));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(size));
-            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_SRD));
+            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_SRD));
         });
     }
 

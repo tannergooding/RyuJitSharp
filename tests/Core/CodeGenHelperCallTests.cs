@@ -21,14 +21,14 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class CodeGenHelperCallTests
 {
-    [TestCase(false, 0x1234L, CorInfoReloc.NONE, false, REG_NA)]
-    [TestCase(true, 0x1234L, CorInfoReloc.NONE, false, REG_NA)]
-    [TestCase(true, 0x100000000L, CorInfoReloc.RELATIVE32, false, REG_NA)]
-    [TestCase(true, 0x100000000L, CorInfoReloc.NONE, true, REG_NA)]
-    [TestCase(true, 0x100000000L, CorInfoReloc.NONE, true, REG_R11)]
-    [TestCase(false, -1234L, CorInfoReloc.NONE, false, REG_NA)]
-    [TestCase(true, -1234L, CorInfoReloc.NONE, false, REG_NA)]
-    [TestCase(true, long.MinValue, CorInfoReloc.NONE, true, REG_NA)]
+    [TestCase(false, 0x1234L, CorInfoReloc.NONE, false, REG_X64_NA)]
+    [TestCase(true, 0x1234L, CorInfoReloc.NONE, false, REG_X64_NA)]
+    [TestCase(true, 0x100000000L, CorInfoReloc.RELATIVE32, false, REG_X64_NA)]
+    [TestCase(true, 0x100000000L, CorInfoReloc.NONE, true, REG_X64_NA)]
+    [TestCase(true, 0x100000000L, CorInfoReloc.NONE, true, REG_X64_R11)]
+    [TestCase(false, -1234L, CorInfoReloc.NONE, false, REG_X64_NA)]
+    [TestCase(true, -1234L, CorInfoReloc.NONE, false, REG_X64_NA)]
+    [TestCase(true, long.MinValue, CorInfoReloc.NONE, true, REG_X64_NA)]
     public static void HelperLookupPreservesDirectAndIndirectAddressChoices(
         bool indirect, long address, CorInfoReloc hint, bool registerTarget, regNumber target)
     {
@@ -55,11 +55,11 @@ internal static unsafe class CodeGenHelperCallTests
             Assert.That(context.HintQueries, Is.EqualTo(registerTarget ? 2 : indirect ? 1 : 0));
             Assert.That(descriptors, Has.Count.EqualTo(registerTarget ? 2 : 1));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_call));
-            Assert.That(descriptors[^1].idInsFmt(), Is.EqualTo(registerTarget ? Emitter.insFormat.IF_ARD :
-                indirect ? Emitter.insFormat.IF_METHPTR : Emitter.insFormat.IF_METHOD));
+            Assert.That(descriptors[^1].idInsFmt(), Is.EqualTo(registerTarget ? Emitter.insFormat.IF_XARCH_ARD :
+                indirect ? Emitter.insFormat.IF_XARCH_METHPTR : Emitter.insFormat.IF_XARCH_METHOD));
             if (registerTarget)
             {
-                var expectedTarget = target == REG_NA ? REG_DEFAULT_HELPER_CALL_TARGET : target;
+                var expectedTarget = target == REG_X64_NA ? REG_DEFAULT_HELPER_CALL_TARGET : target;
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
                 Assert.That(descriptors[0].idReg1(), Is.EqualTo(expectedTarget));
                 Assert.That(descriptors[0].idIsCnsReloc(), Is.True);
@@ -106,8 +106,8 @@ internal static unsafe class CodeGenHelperCallTests
     {
         EmitterCallInstructionTests.WithEmitter((_, codeGen) =>
         {
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RBX, TYP_REF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RSI, TYP_BYREF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RBX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RSI, TYP_BYREF);
             var parameters = Parameters();
 
             codeGen.genEmitCallWithCurrentGC(ref parameters);
@@ -119,9 +119,9 @@ internal static unsafe class CodeGenHelperCallTests
         });
     }
 
-    [TestCase(TYP_INT, REG_RAX)]
-    [TestCase(TYP_DOUBLE, REG_XMM0)]
-    [TestCase(TYP_SIMD16, REG_XMM0)]
+    [TestCase(TYP_INT, REG_X64_RAX)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0)]
+    [TestCase(TYP_SIMD16, REG_X64_XMM0)]
     public static void ManagedReturnLocationsUseTheReturnRegisterAndPostCallLocation(
         var_types type, regNumber expectedRegister)
     {
@@ -156,7 +156,7 @@ internal static unsafe class CodeGenHelperCallTests
             Assert.That(FieldValue(record, "callILOffset"), Is.EqualTo(37));
             var location = (CodeGen.siVarLoc)FieldValue(record, "returnValueLoc");
             CodeGen.siVarLoc expected = default;
-            expected.storeVariableInRegisters(expectedRegister, REG_NA);
+            expected.storeVariableInRegisters(expectedRegister, REG_X64_NA);
             Assert.That(location, Is.EqualTo(expected));
             Assert.That(FieldValue(record, "returnLocation"), Is.EqualTo(new emitLocation(codeGen.Emitter)));
         });
@@ -204,7 +204,7 @@ internal static unsafe class CodeGenHelperCallTests
             var call = new GenTreeCall(TYP_VOID) { _returnType = TYP_STRUCT };
             GenTree address = localAddress
                 ? new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 4)
-                : Register(compiler, TYP_BYREF, REG_RCX);
+                : Register(compiler, TYP_BYREF, REG_X64_RCX);
             var putArg = new GenTreeUnOp(GT_PUTARG_REG, TYP_BYREF, address);
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(putArg).WithWellKnownArg(WellKnownArg.RetBuffer));
             compiler.genCallSite2DebugInfoMap = new()
@@ -249,7 +249,7 @@ internal static unsafe class CodeGenHelperCallTests
             var helperDiagnostic = InstructionRecordingTestSupport.Capture(
                 () => codeGen.genEmitHelperCall(CORINFO_HELP_ASSIGN_REF, 0, EA_PTRSIZE));
             var parameters = Parameters();
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RBX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RBX, TYP_REF);
             void EmitCurrentGcCall()
             {
                 codeGen.genEmitCallWithCurrentGC(ref parameters);

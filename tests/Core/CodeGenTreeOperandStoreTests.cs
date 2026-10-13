@@ -36,17 +36,17 @@ internal static class CodeGenTreeOperandStoreTests
                     local.Flags |= GTF_SPILLED | GTF_SPILL;
                 }
 
-                codeGen.inst_TT_RV(INS_mov, EA_4BYTE, local, REG_RAX);
-                codeGen.inst_ST_RV(INS_mov, temp, 0, REG_RAX, TYP_INT);
+                codeGen.inst_TT_RV(INS_mov, EA_4BYTE, local, REG_X64_RAX);
+                codeGen.inst_ST_RV(INS_mov, temp, 0, REG_X64_RAX, TYP_INT);
 
                 var descriptors = Descriptors(codeGen);
                 Assert.That(descriptors, Has.Count.EqualTo(2));
                 foreach (var descriptor in descriptors)
                 {
                     Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
-                    Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_SWR_RRD));
+                    Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_XARCH_SWR_RRD));
                     Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
-                    Assert.That(descriptor.idReg1(), Is.EqualTo(REG_RAX));
+                    Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_RAX));
                 }
                 Assert.That(descriptors[0].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
                 Assert.That(descriptors[1].idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(temp.tdTempNum));
@@ -72,7 +72,7 @@ internal static class CodeGenTreeOperandStoreTests
             {
                 temp.tdTempOffs = -32;
 
-                codeGen.inst_ST_RV(INS_mov, temp, 0, REG_RAX, type);
+                codeGen.inst_ST_RV(INS_mov, temp, 0, REG_X64_RAX, type);
 
                 var descriptors = Descriptors(codeGen);
                 Assert.That(descriptors, Has.Count.EqualTo(1));

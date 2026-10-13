@@ -30,8 +30,8 @@ internal static class CodeGenXarchResidualClosureTests
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
-            var address = Register(compiler, TYP_BYREF, REG_RAX);
-            var data = Register(compiler, TYP_REF, REG_RCX);
+            var address = Register(compiler, TYP_BYREF, REG_X64_RAX);
+            var data = Register(compiler, TYP_REF, REG_X64_RCX);
             var before = codeGen.Emitter.emitCurIG;
 
             Assert.That(codeGen.genEmitOptimizedGCWriteBarrier(form, address, data), Is.False);
@@ -60,7 +60,7 @@ internal static class CodeGenXarchResidualClosureTests
         var row = form is WBF_BarrierUnchecked ? 0 : 1;
 
         Assert.That(helpers[row, (int)sourceReg], Is.EqualTo(expected));
-        Assert.That(helpers[row, (int)REG_EDX], Is.EqualTo((CorInfoHelpFunc)(-1)));
+        Assert.That(helpers[row, (int)REG_X64_EDX], Is.EqualTo((CorInfoHelpFunc)(-1)));
         Assert.That(helpers[row, (int)REG_ESP], Is.EqualTo((CorInfoHelpFunc)(-1)));
     }
 
@@ -82,8 +82,8 @@ internal static class CodeGenXarchResidualClosureTests
         {
             var low = Register(compiler, TYP_INT, REG_EAX);
             var high = Register(compiler, TYP_INT, REG_ECX);
-            var pair = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
-            var cast = new GenTreeCast(TYP_INT, pair, sourceUnsigned, destination) { RegNum = REG_EDX };
+            var pair = new GenTreeOp(GT_LONG, var_types.TYP_LONG, low, high);
+            var cast = new GenTreeCast(TYP_INT, pair, sourceUnsigned, destination) { RegNum = REG_X64_EDX };
             if (overflow)
             {
                 cast.Flags |= GTF_OVERFLOW;
@@ -104,7 +104,7 @@ internal static class CodeGenXarchResidualClosureTests
                     _ => [INS_test, INS_jne, INS_mov],
                 };
             Assert.That(descriptors.Select(static descriptor => descriptor.idIns()), Is.EqualTo(expected));
-            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_EDX));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_X64_EDX));
             Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_EAX));
             Assert.That(descriptors[^1].idOpSize(), Is.EqualTo(EA_4BYTE));
             if (!sourceUnsigned && (destination is TYP_INT) && overflow)

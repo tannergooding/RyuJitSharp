@@ -23,17 +23,17 @@ internal static unsafe class LinearScanMinimalAllocationTests
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
-            allocator.physRegs[(int)regNumber.REG_RAX].regOrder = 1;
-            allocator.physRegs[(int)regNumber.REG_RBX].regOrder = 0;
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
+            allocator.physRegs[(int)regNumber.REG_X64_RAX].regOrder = 1;
+            allocator.physRegs[(int)regNumber.REG_X64_RBX].regOrder = 0;
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX);
 
             var selected = AllocateRegMinimal(allocator, interval, definition);
 
-            Assert.That(selected, Is.EqualTo(regNumber.REG_RBX));
-            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_RBX));
-            Assert.That(interval.assignedReg, Is.SameAs(allocator.physRegs[(int)regNumber.REG_RBX]));
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RBX));
+            Assert.That(selected, Is.EqualTo(regNumber.REG_X64_RBX));
+            Assert.That(definition.registerAssignment, Is.EqualTo(SRBM_X64_RBX));
+            Assert.That(interval.assignedReg, Is.SameAs(allocator.physRegs[(int)regNumber.REG_X64_RBX]));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_RBX));
             Assert.That(interval.isActive, Is.True);
         });
     }
@@ -45,16 +45,16 @@ internal static unsafe class LinearScanMinimalAllocationTests
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var definition = allocator.newRefPosition(
-                interval, 10, RefType.RefTypeDef, tree, SRBM_RAX | SRBM_RBX);
+                interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX | SRBM_X64_RBX);
             definition.setRegOptional(true);
-            BusyUntilKill(allocator) = new regMaskTP(SRBM_RAX | SRBM_RBX);
+            BusyUntilKill(allocator) = new regMaskTP(SRBM_X64_RAX | SRBM_X64_RBX);
 
             var selected = AllocateRegMinimal(allocator, interval, definition);
 
-            Assert.That(selected, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(selected, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(interval.assignedReg, Is.Null);
-            Assert.That(interval.physReg, Is.Not.EqualTo(regNumber.REG_RAX));
-            Assert.That(interval.physReg, Is.Not.EqualTo(regNumber.REG_RBX));
+            Assert.That(interval.physReg, Is.Not.EqualTo(regNumber.REG_X64_RAX));
+            Assert.That(interval.physReg, Is.Not.EqualTo(regNumber.REG_X64_RBX));
         });
     }
 
@@ -64,23 +64,23 @@ internal static unsafe class LinearScanMinimalAllocationTests
         WithAllocator((compiler, allocator) => {
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
             var previousInterval = NewInterval(allocator, TYP_INT);
-            _ = allocator.newRefPosition(previousInterval, 2, RefType.RefTypeDef, tree, SRBM_RAX);
+            _ = allocator.newRefPosition(previousInterval, 2, RefType.RefTypeDef, tree, SRBM_X64_RAX);
             var previousDefinition = previousInterval.recentRefPosition;
             var previousRegister = AllocateRegMinimal(
                 allocator, previousInterval, previousDefinition
                     ?? throw new InvalidOperationException("The previous interval requires a definition."));
-            Assert.That(previousRegister, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(previousRegister, Is.EqualTo(regNumber.REG_X64_RAX));
             previousInterval.isActive = false;
 
             var interval = NewInterval(allocator, TYP_INT);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
 
             var selected = AllocateRegMinimal(allocator, interval, definition);
 
-            Assert.That(selected, Is.EqualTo(regNumber.REG_RAX));
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RAX].assignedInterval, Is.SameAs(interval));
-            Assert.That(interval.assignedReg, Is.SameAs(allocator.physRegs[(int)regNumber.REG_RAX]));
-            Assert.That(previousInterval.physReg, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(selected, Is.EqualTo(regNumber.REG_X64_RAX));
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RAX].assignedInterval, Is.SameAs(interval));
+            Assert.That(interval.assignedReg, Is.SameAs(allocator.physRegs[(int)regNumber.REG_X64_RAX]));
+            Assert.That(previousInterval.physReg, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(previousInterval.isActive, Is.False);
         });
     }
@@ -91,24 +91,24 @@ internal static unsafe class LinearScanMinimalAllocationTests
         WithAllocator((compiler, allocator) => {
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_RAX);
-            var use = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_RBX);
+            var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var use = allocator.newRefPosition(interval, 10, RefType.RefTypeUse, tree, SRBM_X64_RBX);
             interval.recentRefPosition = definition;
-            var home = allocator.physRegs[(int)regNumber.REG_RAX];
+            var home = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, home, interval);
             var related = NewInterval(allocator, TYP_INT);
             interval.relatedInterval = related;
 
             var selected = AssignCopyRegMinimal(allocator, use);
 
-            Assert.That(selected, Is.EqualTo(regNumber.REG_RBX));
+            Assert.That(selected, Is.EqualTo(regNumber.REG_X64_RBX));
             Assert.That(use.copyReg, Is.True);
             Assert.That(use.RegOptional(), Is.False);
-            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_RAX));
+            Assert.That(interval.physReg, Is.EqualTo(regNumber.REG_X64_RAX));
             Assert.That(interval.assignedReg, Is.SameAs(home));
             Assert.That(interval.relatedInterval, Is.SameAs(related));
             Assert.That(interval.isActive, Is.True);
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RBX].assignedInterval, Is.SameAs(interval));
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RBX].assignedInterval, Is.SameAs(interval));
         });
     }
 
@@ -120,12 +120,12 @@ internal static unsafe class LinearScanMinimalAllocationTests
             compiler.verbose = true;
             var interval = NewInterval(allocator, TYP_INT);
             var tree = compiler.gtNewIconNode(TYP_INT, 1);
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-            _ = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            _ = allocator.newRefPosition(interval, 20, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             interval.recentRefPosition = definition;
             allocator.setCurrentBlockStartLocation(0);
 
-            var register = allocator.physRegs[(int)regNumber.REG_RAX];
+            var register = allocator.physRegs[(int)regNumber.REG_X64_RAX];
             AssignPhysReg(allocator, register, interval);
 
             var output = Capture(() => UnassignPhysReg(allocator, register, interval.registerType));
@@ -185,7 +185,7 @@ internal static unsafe class LinearScanMinimalAllocationTests
         try
         {
             var allocator = new LinearScan(compiler);
-            for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+            for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
             {
                 var register = allocator.physRegs[index];
                 register.init((regNumber)index);

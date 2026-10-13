@@ -139,10 +139,10 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
 
             Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(3));
             Assert.That(destinations, Is.EqualTo(2));
-            Assert.That(lowDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RAX));
-            Assert.That(highDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RDX));
+            Assert.That(lowDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(highDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_X64_RDX));
             Assert.That(divisorDef.nextRefPosition?.delayRegFree, Is.True);
-            regMask[] expectedRegisters = [SRBM_RAX, SRBM_RDX];
+            regMask[] expectedRegisters = [SRBM_X64_RAX, SRBM_X64_RDX];
             Assert.That(allocator.refPositions.Where(reference =>
                 reference.treeNode == intrinsic && reference.refType == RefType.RefTypeDef)
                 .Select(reference => reference.registerAssignment),
@@ -155,7 +155,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     {
         WithAllocator((compiler, allocator) => {
             var left = compiler.gtNewIconNode(TYP_LONG, 11);
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             var right = compiler.gtNewIndir(TYP_LONG, address);
             right.IsContained = true;
             ReferenceBuildLocation(allocator) = 2;
@@ -167,9 +167,9 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
 
             Assert.That(BuildHWIntrinsic(allocator, intrinsic, out var destinations), Is.EqualTo(2));
             Assert.That(destinations, Is.EqualTo(2));
-            Assert.That(leftDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_RAX));
+            Assert.That(leftDef.nextRefPosition?.registerAssignment, Is.EqualTo(SRBM_X64_RAX));
             Assert.That(addressDef.nextRefPosition?.refType, Is.EqualTo(RefType.RefTypeUse));
-            regMask[] expectedRegisters = [SRBM_RAX, SRBM_RDX];
+            regMask[] expectedRegisters = [SRBM_X64_RAX, SRBM_X64_RDX];
             Assert.That(allocator.refPositions.Where(reference =>
                 reference.treeNode == intrinsic && reference.refType == RefType.RefTypeDef)
                 .Select(reference => reference.registerAssignment),
@@ -183,7 +183,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
         WithAllocator((compiler, allocator) => {
             ApxSupported(allocator) = true;
             EvexSupported(allocator) = true;
-            AvailableIntRegs(allocator) |= SRBM_R16;
+            AvailableIntRegs(allocator) |= SRBM_X64_R16;
             var left = compiler.gtNewIconNode(TYP_LONG, 11);
             var right = compiler.gtNewIconNode(TYP_LONG, 13);
             ReferenceBuildLocation(allocator) = 2;
@@ -198,13 +198,13 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
             Assert.That(destinations, Is.EqualTo(2));
             Assert.That(leftDef.nextRefPosition?.registerAssignment, Is.EqualTo(AvailableIntRegs(allocator)));
             Assert.That(rightDef.nextRefPosition?.registerAssignment, Is.EqualTo(AvailableIntRegs(allocator)));
-            Assert.That(leftDef.nextRefPosition?.registerAssignment & SRBM_R16, Is.Not.EqualTo(SRBM_NONE));
-            Assert.That(LowGprRegs(allocator) & SRBM_R16, Is.EqualTo(SRBM_NONE));
+            Assert.That(leftDef.nextRefPosition?.registerAssignment & SRBM_X64_R16, Is.Not.EqualTo(SRBM_NONE));
+            Assert.That(LowGprRegs(allocator) & SRBM_X64_R16, Is.EqualTo(SRBM_NONE));
         });
     }
 
-    [TestCase(NI_X86Base_MaskMove, SRBM_RDI, 0)]
-    [TestCase(NI_AVX2_MultiplyNoFlags, SRBM_RDX, 1)]
+    [TestCase(NI_X86Base_MaskMove, SRBM_X64_RDI, 0)]
+    [TestCase(NI_AVX2_MultiplyNoFlags, SRBM_X64_RDX, 1)]
     public static void ImplicitOperandsAndInternalUsesHaveNativeAssignments(
         NamedIntrinsic id, regMask fixedRegister, int internalTemps)
     {
@@ -293,7 +293,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
             Enable(compiler, InstructionSet_AVX);
             Enable(compiler, InstructionSet_AVX2);
             var first = new GenTreeVecCon(TYP_SIMD16);
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             var memory = compiler.gtNewIndir(TYP_SIMD16, address);
             memory.IsContained = true;
             var third = new GenTreeVecCon(TYP_SIMD16);
@@ -318,7 +318,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
     public static void MemoryLoadBuildsItsAddressRatherThanUsingContainedLoad()
     {
         WithAllocator((compiler, allocator) => {
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             ReferenceBuildLocation(allocator) = 2;
             var addressDef = BuildDef(allocator, address, SRBM_NONE, 0);
             var intrinsic = new GenTreeHWIntrinsic(
@@ -391,7 +391,7 @@ internal static unsafe class LinearScanHardwareIntrinsicBuildingTests
             Enable(compiler, InstructionSet_AVX2);
             ApxSupported(allocator) = true;
             EvexSupported(allocator) = evexSupported;
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1000);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x1000);
             var indices = new GenTreeVecCon(TYP_SIMD16);
             var scale = compiler.gtNewIconNode(TYP_INT, 4);
             scale.IsContained = true;

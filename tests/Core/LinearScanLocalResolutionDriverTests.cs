@@ -21,9 +21,9 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class LinearScanLocalResolutionDriverTests
 {
-    [TestCase(RefType.RefTypeParamDef, REG_RCX, false)]
-    [TestCase(RefType.RefTypeParamDef, REG_STK, true)]
-    [TestCase(RefType.RefTypeZeroInit, REG_RCX, false)]
+    [TestCase(RefType.RefTypeParamDef, REG_X64_RCX, false)]
+    [TestCase(RefType.RefTypeParamDef, REG_X64_STK, true)]
+    [TestCase(RefType.RefTypeZeroInit, REG_X64_RCX, false)]
     public static void EntryDefinitionsRebuildHomesAndFinalizeLocalDescriptors(
         RefType kind, regNumber expected, bool onStack)
     {
@@ -37,7 +37,7 @@ internal static class LinearScanLocalResolutionDriverTests
             }
             var reference = new RefPosition(0, 0, null, kind)
             {
-                registerAssignment = onStack ? SRBM_NONE : SRBM_RCX,
+                registerAssignment = onStack ? SRBM_NONE : SRBM_X64_RCX,
                 regOptional = onStack,
             };
             reference.setInterval(interval);
@@ -53,14 +53,14 @@ internal static class LinearScanLocalResolutionDriverTests
 
             allocator.resolveRegistersWithLocals();
 
-            Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(expected));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(expected));
             Assert.That(local.RegNum, Is.EqualTo(expected));
             Assert.That(local.lvRegister, Is.EqualTo(!onStack));
             if (kind is RefType.RefTypeParamDef)
             {
                 Assert.That(local.ArgInitReg, Is.EqualTo(expected));
             }
-            Assert.That(allocator.getOutVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_STK));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_X64_STK));
         });
     }
 
@@ -70,10 +70,10 @@ internal static class LinearScanLocalResolutionDriverTests
         WithDriver((_, allocator, _, interval) =>
         {
             EnregisterLocals(allocator) = false;
-            interval.physReg = REG_RCX;
+            interval.physReg = REG_X64_RCX;
             var exception = Assert.Throws<FatalJitException>(() => allocator.resolveRegistersWithLocals());
             Assert.That(exception!.Message, Does.Contain("requires enregistered locals"));
-            Assert.That(interval.physReg, Is.EqualTo(REG_RCX));
+            Assert.That(interval.physReg, Is.EqualTo(REG_X64_RCX));
         });
     }
 
@@ -89,7 +89,7 @@ internal static class LinearScanLocalResolutionDriverTests
 
             Assert.That(compiler.lvaTable[0].lvLRACandidate, Is.False);
             Assert.That(compiler.lvaTable[0].lvOnFrame, Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
         });
     }
 
@@ -104,7 +104,7 @@ internal static class LinearScanLocalResolutionDriverTests
             compiler.lvaTable[0].lvIsRegArg = true;
             var parameter = new RefPosition(0, 0, null, RefType.RefTypeParamDef)
             {
-                registerAssignment = SRBM_RCX,
+                registerAssignment = SRBM_X64_RCX,
             };
             parameter.setInterval(interval);
             interval.firstRefPosition = parameter;
@@ -136,14 +136,14 @@ internal static class LinearScanLocalResolutionDriverTests
             SetOps.AddElemD(compiler, successor.bbLiveIn, 0);
             var parameter = new RefPosition(0, 0, null, RefType.RefTypeParamDef)
             {
-                registerAssignment = SRBM_RCX,
+                registerAssignment = SRBM_X64_RCX,
             };
             parameter.setInterval(interval);
             var localUse = compiler.gtNewLclvNode(TYP_INT, 0);
             successor.InsertAtEnd(localUse);
             var use = new RefPosition((uint)successor.bbNum, 5, localUse, RefType.RefTypeUse)
             {
-                registerAssignment = SRBM_RCX,
+                registerAssignment = SRBM_X64_RCX,
                 lastUse = lastUse,
             };
             use.setInterval(interval);
@@ -155,7 +155,7 @@ internal static class LinearScanLocalResolutionDriverTests
             {
                 var dummy = new RefPosition((uint)successor.bbNum, 3, null, RefType.RefTypeDummyDef)
                 {
-                    registerAssignment = SRBM_RCX,
+                    registerAssignment = SRBM_X64_RCX,
                     reload = true,
                 };
                 dummy.setInterval(interval);
@@ -174,31 +174,31 @@ internal static class LinearScanLocalResolutionDriverTests
 
             allocator.resolveRegistersWithLocals();
 
-            Assert.That(allocator.getOutVarToRegMap((uint)entry.bbNum)![0], Is.EqualTo(REG_RCX));
-            Assert.That(allocator.getInVarToRegMap((uint)successor.bbNum)![0], Is.EqualTo(REG_RCX));
-            Assert.That(localUse.RegNum, Is.EqualTo(REG_RCX));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)entry.bbNum)![0], Is.EqualTo(REG_X64_RCX));
+            Assert.That((regNumber)allocator.getInVarToRegMap((uint)successor.bbNum)![0], Is.EqualTo(REG_X64_RCX));
+            Assert.That(localUse.RegNum, Is.EqualTo(REG_X64_RCX));
             Assert.That(localUse.IsLastUse(0), Is.EqualTo(lastUse));
             Assert.That(compiler.lvaTable[0].lvRegister, Is.True);
         }, twoBlocks: true);
     }
 
 #if DEBUG
-    [TestCase(REG_RCX, REG_RDX, GT_COPY)]
-    [TestCase(REG_STK, REG_RCX, GT_LCL_VAR)]
-    [TestCase(REG_RCX, REG_STK, GT_LCL_VAR)]
+    [TestCase(REG_X64_RCX, REG_X64_RDX, GT_COPY)]
+    [TestCase(REG_X64_STK, REG_X64_RCX, GT_LCL_VAR)]
+    [TestCase(REG_X64_RCX, REG_X64_STK, GT_LCL_VAR)]
     public static void FinalVerificationReplaysInsertedRegisterAndStackMoves(
         regNumber from, regNumber to, genTreeOps oper)
     {
         WithDriver((compiler, allocator, _, interval) =>
         {
-            interval.physReg = from == REG_STK ? REG_NA : from;
-            if (from != REG_STK)
+            interval.physReg = from == REG_X64_STK ? REG_X64_NA : from;
+            if (from != REG_X64_STK)
             {
                 interval.assignedReg = allocator.physRegs[(int)from];
                 interval.assignedReg.assignedInterval = interval;
             }
             var source = compiler.gtNewLclvNode(TYP_INT, 0);
-            source.RegNum = from == REG_STK ? to : from;
+            source.RegNum = from == REG_X64_STK ? to : from;
             GenTree destination = source;
             if (oper is GT_COPY)
             {
@@ -207,7 +207,7 @@ internal static class LinearScanLocalResolutionDriverTests
                     RegNum = to,
                 };
             }
-            else if (from == REG_STK)
+            else if (from == REG_X64_STK)
             {
                 source.Flags |= GTF_SPILLED;
             }
@@ -220,14 +220,14 @@ internal static class LinearScanLocalResolutionDriverTests
 
             VerifyMove(allocator, destination, 3);
 
-            Assert.That(interval.physReg, Is.EqualTo(to == REG_STK ? REG_NA : to));
-            Assert.That(interval.isActive, Is.EqualTo(to != REG_STK));
-            if (from != REG_STK)
+            Assert.That(interval.physReg, Is.EqualTo(to == REG_X64_STK ? REG_X64_NA : to));
+            Assert.That(interval.isActive, Is.EqualTo(to != REG_X64_STK));
+            if (from != REG_X64_STK)
             {
                 Assert.That(allocator.physRegs[(int)from].assignedInterval,
                     to == from ? Is.SameAs(interval) : Is.Null);
             }
-            if (to != REG_STK)
+            if (to != REG_X64_STK)
             {
                 Assert.That(allocator.physRegs[(int)to].assignedInterval, Is.SameAs(interval));
             }
@@ -239,34 +239,34 @@ internal static class LinearScanLocalResolutionDriverTests
     {
         WithDriver((compiler, allocator, _, firstInterval) =>
         {
-            var secondInterval = new Interval(TYP_INT, SRBM_RDX)
+            var secondInterval = new Interval(TYP_INT, SRBM_X64_RDX)
             {
                 isLocalVar = true,
                 varNum = 1,
-                physReg = REG_RDX,
+                physReg = REG_X64_RDX,
             };
             allocator.localVarIntervals![1] = secondInterval;
-            firstInterval.physReg = REG_RCX;
-            firstInterval.assignedReg = allocator.physRegs[(int)REG_RCX];
-            secondInterval.assignedReg = allocator.physRegs[(int)REG_RDX];
+            firstInterval.physReg = REG_X64_RCX;
+            firstInterval.assignedReg = allocator.physRegs[(int)REG_X64_RCX];
+            secondInterval.assignedReg = allocator.physRegs[(int)REG_X64_RDX];
             firstInterval.assignedReg.assignedInterval = firstInterval;
             secondInterval.assignedReg.assignedInterval = secondInterval;
             var first = compiler.gtNewLclvNode(TYP_INT, 0);
             var second = compiler.gtNewLclvNode(TYP_INT, 1);
-            first.RegNum = REG_RCX;
-            second.RegNum = REG_RDX;
+            first.RegNum = REG_X64_RCX;
+            second.RegNum = REG_X64_RDX;
             var swap = new GenTreeOp(GT_SWAP, TYP_VOID, first, second)
             {
-                RegNum = REG_NA,
+                RegNum = REG_X64_NA,
             };
             swap._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
 
             VerifyMove(allocator, swap, 3);
 
-            Assert.That(firstInterval.physReg, Is.EqualTo(REG_RDX));
-            Assert.That(secondInterval.physReg, Is.EqualTo(REG_RCX));
-            Assert.That(allocator.physRegs[(int)REG_RDX].assignedInterval, Is.SameAs(firstInterval));
-            Assert.That(allocator.physRegs[(int)REG_RCX].assignedInterval, Is.SameAs(secondInterval));
+            Assert.That(firstInterval.physReg, Is.EqualTo(REG_X64_RDX));
+            Assert.That(secondInterval.physReg, Is.EqualTo(REG_X64_RCX));
+            Assert.That(allocator.physRegs[(int)REG_X64_RDX].assignedInterval, Is.SameAs(firstInterval));
+            Assert.That(allocator.physRegs[(int)REG_X64_RCX].assignedInterval, Is.SameAs(secondInterval));
         }, localCount: 2);
     }
 
@@ -277,32 +277,32 @@ internal static class LinearScanLocalResolutionDriverTests
     {
         WithDriver((compiler, allocator, block, firstInterval) =>
         {
-            firstInterval.physReg = REG_RCX;
-            firstInterval.assignedReg = allocator.physRegs[(int)REG_RCX];
+            firstInterval.physReg = REG_X64_RCX;
+            firstInterval.assignedReg = allocator.physRegs[(int)REG_X64_RCX];
             firstInterval.assignedReg.assignedInterval = firstInterval;
             var first = compiler.gtNewLclvNode(TYP_INT, 0);
-            first.RegNum = REG_RCX;
+            first.RegNum = REG_X64_RCX;
             GenTree move;
             if (swap)
             {
-                var secondInterval = new Interval(TYP_INT, SRBM_RDX)
+                var secondInterval = new Interval(TYP_INT, SRBM_X64_RDX)
                 {
                     isLocalVar = true,
                     varNum = 1,
-                    physReg = REG_RDX,
-                    assignedReg = allocator.physRegs[(int)REG_RDX],
+                    physReg = REG_X64_RDX,
+                    assignedReg = allocator.physRegs[(int)REG_X64_RDX],
                 };
                 allocator.localVarIntervals![1] = secondInterval;
                 secondInterval.assignedReg.assignedInterval = secondInterval;
                 var second = compiler.gtNewLclvNode(TYP_INT, 1);
-                second.RegNum = REG_RDX;
+                second.RegNum = REG_X64_RDX;
                 move = new GenTreeOp(GT_SWAP, TYP_VOID, first, second);
             }
             else
             {
                 move = new GenTreeCopyOrReload(GT_COPY, TYP_INT, first)
                 {
-                    RegNum = REG_RDX,
+                    RegNum = REG_X64_RDX,
                     IsUnusedValue = true,
                 };
             }
@@ -320,13 +320,13 @@ internal static class LinearScanLocalResolutionDriverTests
             var action = swap ? "Swap" : "Move";
             var padding = new string(' ', swap ? 9 : 12);
             var prefix = swap ? "\n" : $"\n[{move.TreeId:D6}] ";
-            Assert.That(output, Does.Contain($"{prefix}3.#0 V00  {action}{padding}{REG_RDX.Name,-4} "));
+            Assert.That(output, Does.Contain($"{prefix}3.#0 V00  {action}{padding}{REG_X64_RDX.Name,-4} "));
             if (swap)
             {
                 Assert.That(output,
-                    Does.Contain($"\n3.#0 V01  \"{new string(' ', 12)}{REG_RCX.Name,-4} "));
+                    Does.Contain($"\n3.#0 V01  \"{new string(' ', 12)}{REG_X64_RCX.Name,-4} "));
             }
-            Assert.That(firstInterval.physReg, Is.EqualTo(REG_RDX));
+            Assert.That(firstInterval.physReg, Is.EqualTo(REG_X64_RDX));
         }, localCount: swap ? 2 : 1);
     }
 
@@ -367,8 +367,8 @@ internal static class LinearScanLocalResolutionDriverTests
 #endif
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    [TestCase(REG_NA, true)]
-    [TestCase(REG_XMM8, false)]
+    [TestCase(REG_X64_NA, true)]
+    [TestCase(REG_X64_XMM8, false)]
     public static void UpperVectorSavesAndRestoresPreservePlacementAndMemoryHome(
         regNumber spillRegister, bool onStack)
     {
@@ -380,19 +380,19 @@ internal static class LinearScanLocalResolutionDriverTests
                 isLocalVar = true,
                 varNum = 0,
                 isSpilled = onStack,
-                physReg = REG_XMM6,
+                physReg = REG_X64_XMM6,
             };
             var upper = new Interval(TYP_FLOAT, SRBM_XMM8)
             {
                 isUpperVector = true,
                 relatedInterval = local,
-                physReg = REG_NA,
+                physReg = REG_X64_NA,
             };
             var anchor = compiler.gtNewIconNode(TYP_INT, 1);
             block.InsertAtEnd(anchor);
             var save = new RefPosition((uint)block.bbNum, 2, anchor, RefType.RefTypeUpperVectorSave)
             {
-                registerAssignment = spillRegister == REG_NA ? SRBM_NONE : SRBM_XMM8,
+                registerAssignment = spillRegister == REG_X64_NA ? SRBM_NONE : SRBM_XMM8,
             };
             save.setInterval(upper);
 
@@ -447,13 +447,13 @@ internal static class LinearScanLocalResolutionDriverTests
             {
                 isLocalVar = true,
                 varNum = 0,
-                physReg = REG_XMM6,
+                physReg = REG_X64_XMM6,
             };
             var upper = new Interval(TYP_FLOAT, SRBM_XMM8)
             {
                 isUpperVector = true,
                 relatedInterval = local,
-                physReg = REG_XMM8,
+                physReg = REG_X64_XMM8,
             };
             var reference = new RefPosition((uint)block.bbNum, 2, null, RefType.RefTypeUpperVectorRestore);
             reference.setInterval(upper);
@@ -464,8 +464,8 @@ internal static class LinearScanLocalResolutionDriverTests
 
             Assert.That(exception?.Result, Is.EqualTo(CorJitResult.CORJIT_RECOVERABLEERROR));
             Assert.That(block.IsEmpty, Is.True);
-            Assert.That(upper.physReg, Is.EqualTo(REG_XMM8));
-            Assert.That(local.physReg, Is.EqualTo(REG_XMM6));
+            Assert.That(upper.physReg, Is.EqualTo(REG_X64_XMM8));
+            Assert.That(local.physReg, Is.EqualTo(REG_X64_XMM6));
         }, minOpts: false);
     }
 #endif
@@ -506,7 +506,7 @@ internal static class LinearScanLocalResolutionDriverTests
             BuildPhysicalRegisters(allocator);
             SetBlockSequence(allocator);
             allocator.initVarRegMaps();
-            var interval = new Interval(TYP_INT, SRBM_RCX)
+            var interval = new Interval(TYP_INT, SRBM_X64_RCX)
             {
                 isLocalVar = true,
                 varNum = 0,
@@ -515,7 +515,7 @@ internal static class LinearScanLocalResolutionDriverTests
             allocator.localVarIntervals[0] = interval;
             allocator.intervals.Add(interval);
             compiler.lvaTable[0].lvLRACandidate = true;
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             RegisterCandidates(allocator) = SetOps.MakeEmpty(compiler);
             ResolutionCandidates(allocator) = SetOps.MakeEmpty(compiler);
             SplitOrSpilled(allocator) = SetOps.MakeEmpty(compiler);

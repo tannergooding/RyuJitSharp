@@ -157,7 +157,7 @@ internal static class CodeGenEHTransferTests
 
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(INS_lea));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_LABEL));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_LABEL));
             Assert.That(id.idReg1(), Is.EqualTo(REG_INTRET));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_PTRSIZE));
             Assert.That(id.idIsDspReloc(), Is.True);

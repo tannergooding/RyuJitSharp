@@ -25,10 +25,10 @@ internal static class CodeGenRegisterValueTests
     public static void ReloadNormalizesFromTheLocalTypeEvenWhenTheNodeIsWider(
         var_types type, instruction ins, emitAttr size)
     {
-        CodeGenSpillVariableTests.WithCompiler(type, REG_RAX, (compiler, codeGen, tree) =>
+        CodeGenSpillVariableTests.WithCompiler(type, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             compiler.lvaTable[0].lvIsParam = true;
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.RegSet.ClearMaskVars();
             tree.Type = TYP_LONG;
             tree.Flags = GTF_SPILLED;
@@ -38,11 +38,11 @@ internal static class CodeGenRegisterValueTests
             var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing reload.");
             Assert.That(descriptor.idIns(), Is.EqualTo(ins));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_RAX));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_SRD));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_RAX));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_SRD));
             Assert.That(descriptor.idCodeSize(), Is.GreaterThan(0));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_RAX));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_RAX)));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_RAX));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_RAX)));
             Assert.That(tree.Flags & GTF_SPILLED, Is.EqualTo(GTF_EMPTY));
         });
     }
@@ -50,9 +50,9 @@ internal static class CodeGenRegisterValueTests
     [Test]
     public static void ReloadUsesTheLocalStackHomeGcKindInsteadOfTheUseType()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_I_IMPL, REG_RAX, (compiler, codeGen, tree) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.RegSet.ClearMaskVars();
             tree.Type = TYP_BYREF;
             tree.Flags = GTF_SPILLED;
@@ -61,7 +61,7 @@ internal static class CodeGenRegisterValueTests
 
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur.IsEmpty, Is.True);
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_RAX)));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_RAX)));
         });
     }
 
@@ -72,9 +72,9 @@ internal static class CodeGenRegisterValueTests
     public static void LocalReloadPreservesWriteThroughRootsAndDoesNotPublishTemporaryHomes(
         bool reSpill, bool alwaysInMemory)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RAX, (compiler, codeGen, tree) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             compiler.lvaTable[0].lvSpillAtSingleDef = alwaysInMemory;
             codeGen.RegSet.ClearMaskVars();
             VarSetOps.AddElemD(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0);
@@ -82,9 +82,9 @@ internal static class CodeGenRegisterValueTests
 
             codeGen.genUnspillRegIfNeeded(tree);
 
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(reSpill ? REG_STK : REG_RAX));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(reSpill ? default : Mask(REG_RAX)));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_RAX)));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(reSpill ? REG_X64_STK : REG_X64_RAX));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(reSpill ? default : Mask(REG_X64_RAX)));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(REG_X64_RAX)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0),
                 Is.EqualTo(reSpill || alwaysInMemory));
         });
@@ -94,10 +94,10 @@ internal static class CodeGenRegisterValueTests
     [TestCase(true)]
     public static void LastUseReloadDoesNotOpenANewDebugLiveRange(bool lastUse)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, tree) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             compiler.opts.compDbgInfo = true;
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.RegSet.ClearMaskVars();
             codeGen.initializeVariableLiveKeeper();
             codeGen.getVariableLiveKeeper().siStartVariableLiveRange(in compiler.lvaTable[0], 0);
@@ -115,31 +115,31 @@ internal static class CodeGenRegisterValueTests
     [TestCase(TYP_BYREF, EA_8BYTE)]
     public static void SpilledTemporaryReloadsIntoTheWrapperRegisterAndReleasesItsTemp(var_types type, emitAttr size)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             PrepareLife(compiler, codeGen);
             codeGen.RegSet.ClearMaskVars();
             var temp = PrepareTemp(codeGen, type);
             var value = compiler.gtNewIconNode(type, 0);
-            value.RegNum = REG_RAX;
+            value.RegNum = REG_X64_RAX;
             value.Flags |= GTF_SPILL;
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, type);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, type);
 
             codeGen.genProduceReg(value);
             Assert.That(value.Flags & (GTF_SPILL | GTF_SPILLED), Is.EqualTo(GTF_SPILLED));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur.IsEmpty, Is.True);
 
-            var reload = new GenTreeCopyOrReload(GT_RELOAD, type, value) { RegNum = REG_RDX };
+            var reload = new GenTreeCopyOrReload(GT_RELOAD, type, value) { RegNum = REG_X64_RDX };
             codeGen.genUnspillRegIfNeeded(reload);
 
             var descriptor = LastInstruction(codeGen.Emitter) ?? throw new AssertionException("Missing temp reload.");
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_RDX));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_RDX));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(size));
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(temp.tdTempNum));
             Assert.That(value.Flags & GTF_SPILLED, Is.EqualTo(GTF_EMPTY));
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_RDX) : default));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_RDX) : default));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_X64_RDX) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_X64_RDX) : default));
 
             var recycled = codeGen.RegSet.tmpGetTemp(type);
             Assert.That(recycled, Is.SameAs(temp));
@@ -152,21 +152,21 @@ internal static class CodeGenRegisterValueTests
     [TestCase(true)]
     public static void CopyMovesOnlyPermanentLocalHomes(bool temporary)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RAX, (compiler, codeGen, tree) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             PrepareLife(compiler, codeGen);
             VarSetOps.AddElemD(compiler, compiler.compCurLife, 0);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
             tree.Flags = GTF_EMPTY;
             var copy = new GenTreeCopyOrReload(GT_COPY, TYP_REF, tree)
             {
-                RegNum = REG_RDX,
+                RegNum = REG_X64_RDX,
                 Flags = temporary ? GTF_VAR_DEATH : GTF_EMPTY,
             };
 
-            Assert.That(codeGen.genConsumeReg(copy), Is.EqualTo(REG_RDX));
+            Assert.That(codeGen.genConsumeReg(copy), Is.EqualTo(REG_X64_RDX));
 
-            var home = temporary ? REG_RAX : REG_RDX;
+            var home = temporary ? REG_X64_RAX : REG_X64_RDX;
             Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(home));
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(home)));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(home)));
@@ -179,17 +179,17 @@ internal static class CodeGenRegisterValueTests
     [TestCase(TYP_INT)]
     public static void ConsumingANonlocalClearsItsProducedGcRegister(var_types type)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             PrepareLife(compiler, codeGen);
             codeGen.RegSet.ClearMaskVars();
             var tree = compiler.gtNewIconNode(type, 0);
-            tree.RegNum = REG_RDX;
+            tree.RegNum = REG_X64_RDX;
             codeGen.genProduceReg(tree);
-            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_RDX) : default));
-            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_RDX) : default));
+            Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(type == TYP_REF ? Mask(REG_X64_RDX) : default));
+            Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(type == TYP_BYREF ? Mask(REG_X64_RDX) : default));
 
-            Assert.That(codeGen.genConsumeReg(tree), Is.EqualTo(REG_RDX));
+            Assert.That(codeGen.genConsumeReg(tree), Is.EqualTo(REG_X64_RDX));
 
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur.IsEmpty, Is.True);
@@ -199,7 +199,7 @@ internal static class CodeGenRegisterValueTests
     [Test]
     public static void SpillDescriptorsSupportOutOfOrderUnspillingAndReuse()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             codeGen.RegSet.tmpInit();
             codeGen.RegSet.tmpPreAllocateTemps(TYP_INT, 2);
@@ -211,20 +211,20 @@ internal static class CodeGenRegisterValueTests
             codeGen.RegSet.tmpRlsTemp(temp2);
             var first = compiler.gtNewIconNode(TYP_INT, 1);
             var second = compiler.gtNewIconNode(TYP_INT, 2);
-            first.RegNum = REG_RAX;
-            second.RegNum = REG_RAX;
+            first.RegNum = REG_X64_RAX;
+            second.RegNum = REG_X64_RAX;
             first.Flags |= GTF_SPILL;
             second.Flags |= GTF_SPILL;
 
-            codeGen.RegSet.rsSpillTree(REG_RAX, first);
-            codeGen.RegSet.rsSpillTree(REG_RAX, second);
-            var firstTemp = codeGen.RegSet.rsUnspillInPlace(first, REG_RAX);
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, first);
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, second);
+            var firstTemp = codeGen.RegSet.rsUnspillInPlace(first, REG_X64_RAX);
             Assert.That(firstTemp, Is.SameAs(temp2));
             codeGen.RegSet.tmpRlsTemp(firstTemp);
             first.Flags |= GTF_SPILL;
-            codeGen.RegSet.rsSpillTree(REG_RAX, first);
-            codeGen.RegSet.tmpRlsTemp(codeGen.RegSet.rsUnspillInPlace(second, REG_RAX));
-            codeGen.RegSet.tmpRlsTemp(codeGen.RegSet.rsUnspillInPlace(first, REG_RAX));
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, first);
+            codeGen.RegSet.tmpRlsTemp(codeGen.RegSet.rsUnspillInPlace(second, REG_X64_RAX));
+            codeGen.RegSet.tmpRlsTemp(codeGen.RegSet.rsUnspillInPlace(first, REG_X64_RAX));
 
             codeGen.RegSet.rsSpillBeg();
             Assert.That(first.Flags & (GTF_SPILL | GTF_SPILLED), Is.EqualTo(GTF_EMPTY));
@@ -235,7 +235,7 @@ internal static class CodeGenRegisterValueTests
     [Test]
     public static void MultiRegisterCopyPrecedesAReloadIntoTheOldSourceRegister()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.lvaCount = 3;
             compiler.info.compLocalsCount = 3;
@@ -247,12 +247,12 @@ internal static class CodeGenRegisterValueTests
                 new()
                 {
                     Type = TYP_LONG, lvIsStructField = true, lvTracked = true, lvLRACandidate = true,
-                    RegNum = REG_RAX, lvOnFrame = true, lvFramePointerBased = true, StackOffset = -16, _varIndex = 0,
+                    RegNum = REG_X64_RAX, lvOnFrame = true, lvFramePointerBased = true, StackOffset = -16, _varIndex = 0,
                 },
                 new()
                 {
                     Type = TYP_REF, lvIsStructField = true, lvTracked = true, lvLRACandidate = true,
-                    RegNum = REG_STK, lvOnFrame = true, lvFramePointerBased = true, StackOffset = -8, _varIndex = 1,
+                    RegNum = REG_X64_STK, lvOnFrame = true, lvFramePointerBased = true, StackOffset = -8, _varIndex = 1,
                 },
             ];
             PrepareLife(compiler, codeGen);
@@ -263,60 +263,60 @@ internal static class CodeGenRegisterValueTests
             codeGen.initializeVariableLiveKeeper();
             var local = compiler.gtNewLclvNode(TYP_STRUCT, 0).AsLclVar();
             local.SetMultiReg();
-            local.SetRegNumByIdx(REG_RAX, 0);
-            local.SetRegNumByIdx(REG_RAX, 1);
+            local.SetRegNumByIdx(REG_X64_RAX, 0);
+            local.SetRegNumByIdx(REG_X64_RAX, 1);
             local.Flags |= GTF_SPILLED;
             local.SetRegSpillFlagByIdx(GTF_SPILLED, 1);
             local.SetLastUse(1, true);
-            var copy = new GenTreeCopyOrReload(GT_COPY, TYP_STRUCT, local) { RegNum = REG_RDX };
+            var copy = new GenTreeCopyOrReload(GT_COPY, TYP_STRUCT, local) { RegNum = REG_X64_RDX };
 
             codeGen.genRegCopy(copy);
 
             var descriptors = CurrentDescriptors(codeGen.Emitter) ?? throw new AssertionException("Missing descriptors.");
             Assert.That(descriptors, Has.Count.EqualTo(2));
-            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_RRD));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_RDX));
-            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_RAX));
-            Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_SRD));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_RAX));
+            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_RRD));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_RDX));
+            Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_X64_RAX));
+            Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_SRD));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_X64_RAX));
             Assert.That(descriptors[1].idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(2));
-            Assert.That(compiler.lvaTable[1].RegNum, Is.EqualTo(REG_RDX));
-            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_RDX)));
+            Assert.That(compiler.lvaTable[1].RegNum, Is.EqualTo(REG_X64_RDX));
+            Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(REG_X64_RDX)));
             Assert.That(VarSetOps.IsMember(compiler, compiler.compCurLife, 1), Is.False);
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur.IsEmpty, Is.True);
         });
     }
 
-    [TestCase(REG_RAX, TYP_LONG, INS_mov)]
-    [TestCase(REG_XMM0, TYP_LONG, INS_movd64)]
-    [TestCase(REG_XMM0, TYP_INT, INS_movd32)]
-    [TestCase(REG_RAX, TYP_DOUBLE, INS_movd64)]
-    [TestCase(REG_RAX, TYP_FLOAT, INS_movd32)]
-    [TestCase(REG_XMM0, TYP_DOUBLE, INS_movaps)]
-    [TestCase(REG_K1, TYP_LONG, INS_kmovq_gpr)]
-    [TestCase(REG_RAX, TYP_MASK, INS_kmovq_gpr)]
-    [TestCase(REG_K1, TYP_MASK, INS_kmovq_msk)]
+    [TestCase(REG_X64_RAX, TYP_LONG, INS_mov)]
+    [TestCase(REG_X64_XMM0, TYP_LONG, INS_movd64)]
+    [TestCase(REG_X64_XMM0, TYP_INT, INS_movd32)]
+    [TestCase(REG_X64_RAX, TYP_DOUBLE, INS_movd64)]
+    [TestCase(REG_X64_RAX, TYP_FLOAT, INS_movd32)]
+    [TestCase(REG_X64_XMM0, TYP_DOUBLE, INS_movaps)]
+    [TestCase(REG_X64_K1, TYP_LONG, INS_kmovq_gpr)]
+    [TestCase(REG_X64_RAX, TYP_MASK, INS_kmovq_gpr)]
+    [TestCase(REG_X64_K1, TYP_MASK, INS_kmovq_msk)]
     public static void CopySelectionPreservesRegisterClassAndWidth(
         regNumber source, var_types destinationType, instruction expected)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX,
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX,
             (_, codeGen, _) => Assert.That(codeGen.ins_Copy(source, destinationType), Is.EqualTo(expected)));
     }
 
     [Test]
     public static void ContainedComparisonConsumesItsOperandsInNativeOrder()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             PrepareLife(compiler, codeGen);
             codeGen.RegSet.ClearMaskVars();
             var left = compiler.gtNewIconNode(TYP_REF, 0);
             var right = compiler.gtNewIconNode(TYP_REF, 0);
-            left.RegNum = REG_RAX;
-            right.RegNum = REG_RDX;
+            left.RegNum = REG_X64_RAX;
+            right.RegNum = REG_X64_RDX;
             var comparison = new GenTreeOp(GT_EQ, TYP_INT, left, right) { IsContained = true };
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_REF);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RDX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_REF);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RDX, TYP_REF);
 #if DEBUG
             var useNum = 0;
             codeGen.genNumberOperandUse(comparison, ref useNum);
@@ -336,12 +336,12 @@ internal static class CodeGenRegisterValueTests
     [Test]
     public static void DspCodeRecordsStackLoads()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, tree) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, tree) =>
         {
             compiler.opts.dspCode = true;
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
-                () => codeGen.Emitter.emitIns_R_S(INS_mov, EA_4BYTE, REG_RAX, 0, 0));
+                () => codeGen.Emitter.emitIns_R_S(INS_mov, EA_4BYTE, REG_X64_RAX, 0, 0));
 
             Assert.That(LastInstruction(codeGen.Emitter)?.idIns(), Is.EqualTo(INS_mov));
             Assert.That(diagnostic, Does.Contain("mov"));

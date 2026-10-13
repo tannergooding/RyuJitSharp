@@ -57,7 +57,7 @@ internal static class CodeGenHardwareGenerationTests
         insOpts[] rounding = [INS_OPTS_NONE, INS_OPTS_EVEX_er_rd, INS_OPTS_EVEX_er_ru, INS_OPTS_EVEX_er_rz];
         for (var mode = 0; mode <= 255; mode++)
         {
-            var options = CodeGen.AddEmbMaskingMode(INS_OPTS_NONE, REG_K7, true);
+            var options = CodeGen.AddEmbMaskingMode(INS_OPTS_NONE, REG_X64_K7, true);
             Assert.That(CodeGen.AddEmbRoundingMode(options, unchecked((sbyte)mode)),
                 Is.EqualTo(options | rounding[mode & 3]));
         }
@@ -97,7 +97,7 @@ internal static class CodeGenHardwareGenerationTests
             var cases = new List<sbyte>();
             var firstGroup = codeGen.Emitter.emitCurIG;
 
-            codeGen.genHWIntrinsicJumpTableFallback(intrinsic, ins, EA_16BYTE, REG_RAX, REG_R10, REG_R11,
+            codeGen.genHWIntrinsicJumpTableFallback(intrinsic, ins, EA_16BYTE, REG_X64_RAX, REG_X64_R10, REG_X64_R11,
                 immediate =>
                 {
                     cases.Add(immediate);
@@ -130,23 +130,23 @@ internal static class CodeGenHardwareGenerationTests
             immediate.IsContained = true;
             var type = copyUpper ? TYP_DOUBLE : TYP_SHORT;
             var intrinsic = copyUpper ? NI_X86Base_RoundCurrentDirectionScalar : NI_X86Base_ShuffleHigh;
-            var source = new GenTreePhysReg(REG_XMM1, TYP_SIMD16) { RegNum = REG_XMM1 };
+            var source = new GenTreePhysReg(REG_X64_XMM1, TYP_SIMD16) { RegNum = REG_X64_XMM1 };
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, intrinsic, type, 16,
-                copyUpper ? [source] : [source, immediate]) { RegNum = REG_XMM0 };
+                copyUpper ? [source] : [source, immediate]) { RegNum = REG_X64_XMM0 };
 
             codeGen.genHWIntrinsic(node);
 
             var descriptor = Descriptors(codeGen).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(copyUpper ? INS_roundsd : INS_pshufhw));
             Assert.That(InstructionConstant(codeGen.Emitter, descriptor), Is.EqualTo(copyUpper ? (nint)4 : -1));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_XMM0));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_XMM1));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_XMM0));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_XMM1));
         });
     }
 
-    [TestCase(REG_XMM0, 0xCA)]
-    [TestCase(REG_XMM2, 0xE2)]
-    [TestCase(REG_XMM3, 0xD8)]
+    [TestCase(REG_X64_XMM0, 0xCA)]
+    [TestCase(REG_X64_XMM2, 0xE2)]
+    [TestCase(REG_X64_XMM3, 0xD8)]
     public static void TernaryLogicPermutesItsTruthTableWithAliasedInputs(regNumber target, int control)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -155,9 +155,9 @@ internal static class CodeGenHardwareGenerationTests
             var immediate = compiler.gtNewIconNode(TYP_INT, 0xCA);
             immediate.IsContained = true;
             var node = new GenTreeHWIntrinsic(TYP_SIMD16, NI_AVX512_TernaryLogic, TYP_INT, 16,
-                new GenTreePhysReg(REG_XMM1, TYP_SIMD16) { RegNum = REG_XMM1 },
-                new GenTreePhysReg(REG_XMM2, TYP_SIMD16) { RegNum = REG_XMM2 },
-                new GenTreePhysReg(REG_XMM3, TYP_SIMD16) { RegNum = REG_XMM3 }, immediate) { RegNum = target };
+                new GenTreePhysReg(REG_X64_XMM1, TYP_SIMD16) { RegNum = REG_X64_XMM1 },
+                new GenTreePhysReg(REG_X64_XMM2, TYP_SIMD16) { RegNum = REG_X64_XMM2 },
+                new GenTreePhysReg(REG_X64_XMM3, TYP_SIMD16) { RegNum = REG_X64_XMM3 }, immediate) { RegNum = target };
 
             codeGen.genHWIntrinsic(node);
 
@@ -178,25 +178,25 @@ internal static class CodeGenHardwareGenerationTests
             var rounding = compiler.gtNewIconNode(TYP_INT, 10);
             rounding.IsContained = true;
             var operation = new GenTreeHWIntrinsic(TYP_SIMD64, NI_AVX512_Add, TYP_FLOAT, 64,
-                new GenTreePhysReg(REG_XMM1, TYP_SIMD64) { RegNum = REG_XMM1 },
-                new GenTreePhysReg(REG_XMM2, TYP_SIMD64) { RegNum = REG_XMM2 }, rounding)
+                new GenTreePhysReg(REG_X64_XMM1, TYP_SIMD64) { RegNum = REG_X64_XMM1 },
+                new GenTreePhysReg(REG_X64_XMM2, TYP_SIMD64) { RegNum = REG_X64_XMM2 }, rounding)
             {
                 IsContained = true,
-                RegNum = REG_NA,
+                RegNum = REG_X64_NA,
             };
             operation.Flags |= GTF_HW_EM_OP;
             GenTree merge = zeroMerge
                 ? new GenTreeVecCon(TYP_SIMD64) { IsContained = true }
-                : new GenTreePhysReg(REG_XMM4, TYP_SIMD64) { RegNum = REG_XMM4 };
+                : new GenTreePhysReg(REG_X64_XMM4, TYP_SIMD64) { RegNum = REG_X64_XMM4 };
             var node = new GenTreeHWIntrinsic(TYP_SIMD64, NI_AVX512_BlendVariableMask, TYP_FLOAT, 64,
-                merge, operation, new GenTreePhysReg(REG_K3, TYP_MASK) { RegNum = REG_K3 }) { RegNum = REG_XMM0 };
+                merge, operation, new GenTreePhysReg(REG_K3, TYP_MASK) { RegNum = REG_K3 }) { RegNum = REG_X64_XMM0 };
 
             codeGen.genHWIntrinsic(node);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(zeroMerge ? 1 : 2));
             Assert.That(operation.IsContained, Is.False);
-            Assert.That(operation.RegNum, Is.EqualTo(REG_XMM0));
+            Assert.That(operation.RegNum, Is.EqualTo(REG_X64_XMM0));
             Assert.That(operation.Operands.Length, Is.EqualTo(2));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_addps));
             Assert.That(descriptors[^1].idGetEvexAaaContext(), Is.EqualTo(3u));
@@ -205,8 +205,8 @@ internal static class CodeGenHardwareGenerationTests
         });
     }
 
-    [TestCase(REG_XMM2, INS_vfmadd213ps)]
-    [TestCase(REG_XMM3, INS_vfmadd231ps)]
+    [TestCase(REG_X64_XMM2, INS_vfmadd213ps)]
+    [TestCase(REG_X64_XMM3, INS_vfmadd231ps)]
     public static void DynamicRoundingUsesFmaAliasSelectionForEveryCase(regNumber target, instruction expected)
     {
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
@@ -215,10 +215,10 @@ internal static class CodeGenHardwareGenerationTests
             compiler.fgFirstBB = new BasicBlock(null, null);
             compiler.fgFirstBB.SetFlags(BBF_HAS_LABEL);
             var node = new GenTreeHWIntrinsic(TYP_SIMD64, NI_AVX512_FusedMultiplyAdd, TYP_FLOAT, 64,
-                new GenTreePhysReg(REG_XMM1, TYP_SIMD64) { RegNum = REG_XMM1 },
-                new GenTreePhysReg(REG_XMM2, TYP_SIMD64) { RegNum = REG_XMM2 },
-                new GenTreePhysReg(REG_XMM3, TYP_SIMD64) { RegNum = REG_XMM3 },
-                Register(compiler, TYP_INT, REG_RAX)) { RegNum = target };
+                new GenTreePhysReg(REG_X64_XMM1, TYP_SIMD64) { RegNum = REG_X64_XMM1 },
+                new GenTreePhysReg(REG_X64_XMM2, TYP_SIMD64) { RegNum = REG_X64_XMM2 },
+                new GenTreePhysReg(REG_X64_XMM3, TYP_SIMD64) { RegNum = REG_X64_XMM3 },
+                Register(compiler, TYP_INT, REG_X64_RAX)) { RegNum = target };
             codeGen.InternalRegisters.Add(node, RBM_R10 | RBM_R11);
             var firstGroup = codeGen.Emitter.emitCurIG;
 
@@ -243,23 +243,23 @@ internal static class CodeGenHardwareGenerationTests
         CodeGenBinaryTests.WithCodeGen((compiler, codeGen) =>
         {
             Enable(compiler, codeGen);
-            var address = Register(compiler, TYP_BYREF, REG_RAX);
+            var address = Register(compiler, TYP_BYREF, REG_X64_RAX);
             var node = store
                 ? new GenTreeHWIntrinsic(TYP_VOID, NI_X86Base_StoreAligned, TYP_FLOAT, 16,
-                    address, new GenTreePhysReg(REG_XMM1, TYP_SIMD16) { RegNum = REG_XMM1 })
+                    address, new GenTreePhysReg(REG_X64_XMM1, TYP_SIMD16) { RegNum = REG_X64_XMM1 })
                 : new GenTreeHWIntrinsic(TYP_SIMD16, NI_X86Base_LoadAlignedVector128, TYP_FLOAT, 16, address)
                 {
-                    RegNum = REG_XMM1,
+                    RegNum = REG_X64_XMM1,
                 };
 
             codeGen.genHWIntrinsic(node);
 
             var descriptor = Descriptors(codeGen).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_movaps));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_XMM1));
-            Assert.That(descriptor.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_XMM1));
+            Assert.That(descriptor.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(store
-                ? Emitter.insFormat.IF_AWR_RRD : Emitter.insFormat.IF_RWR_ARD));
+                ? Emitter.insFormat.IF_XARCH_AWR_RRD : Emitter.insFormat.IF_XARCH_RWR_ARD));
         });
     }
 
@@ -272,8 +272,8 @@ internal static class CodeGenHardwareGenerationTests
             Enable(compiler, codeGen);
             var node = vector
                 ? new GenTreeHWIntrinsic(TYP_SIMD16, NI_Vector_CreateScalar, TYP_FLOAT, 16,
-                    new GenTreeDblCon(TYP_FLOAT, 1.0) { RegNum = REG_XMM1 }) { RegNum = REG_XMM0 }
-                : new GenTreeHWIntrinsic(TYP_VOID, NI_X86Base_Pause, TYP_UNKNOWN, 0) { RegNum = REG_NA };
+                    new GenTreeDblCon(TYP_FLOAT, 1.0) { RegNum = REG_X64_XMM1 }) { RegNum = REG_X64_XMM0 }
+                : new GenTreeHWIntrinsic(TYP_VOID, NI_X86Base_Pause, TYP_UNKNOWN, 0) { RegNum = REG_X64_NA };
 
             codeGen.genHWIntrinsic(node);
 

@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using NUnit.Framework;
+using System.Collections.Generic;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -39,41 +40,46 @@ internal static class RegisterClassificationTests
     }
 
 #if HAS_FIXED_REGISTER_SET
-#if CPU_HAS_BYTE_REGS
-    [TestCase(REG_EAX, true)]
-    [TestCase(REG_ECX, true)]
-    [TestCase(REG_EDX, true)]
-    [TestCase(REG_EBX, true)]
-    [TestCase(REG_ESP, false)]
-    [TestCase(REG_EBP, false)]
-    [TestCase(REG_ESI, false)]
-    [TestCase(REG_EDI, false)]
-    [TestCase(REG_FP_FIRST, false)]
-    [TestCase(REG_STK, false)]
-    [TestCase(REG_NA, false)]
-    [TestCase(REG_COUNT, false)]
-    [TestCase(unchecked((regNumber)255), false)]
-    public static void ByteRegisterRestrictionEndsAtEbx(regNumber reg, bool expected)
+    private static IEnumerable<TestCaseData> RegisterCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            var byteRegisters = Configuration.TARGET_X86
+                ? new[] { REG_X86_EAX, REG_X86_ECX, REG_X86_EDX, REG_X86_EBX }
+                : new[] { REG_X64_RAX, REG_X64_RCX, REG_X64_RDX, REG_X64_RBX };
+            foreach (var reg in byteRegisters)
+            {
+                yield return new TestCaseData(reg, true);
+            }
+
+            var nonByteRegisters = Configuration.TARGET_X86
+                ? new[] { REG_X86_ESP, REG_X86_EBP, REG_X86_ESI, REG_X86_EDI }
+                : new[] { REG_X64_RSP, REG_X64_RBP, REG_X64_RSI, REG_X64_RDI };
+            foreach (var reg in nonByteRegisters)
+            {
+                yield return new TestCaseData(reg, false);
+            }
+
+            yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterFirst, false);
+        }
+        else
+        {
+            yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterFirst, true);
+            yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterLast, true);
+            yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterFirst, true);
+            yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast, true);
+        }
+
+        yield return new TestCaseData(REG_STK, !Configuration.TARGET_XARCH);
+        yield return new TestCaseData(REG_NA, !Configuration.TARGET_XARCH);
+        yield return new TestCaseData(REG_COUNT, !Configuration.TARGET_XARCH);
+        yield return new TestCaseData(unchecked((regNumber)255), !Configuration.TARGET_XARCH);
+    }
+
+    [TestCaseSource(nameof(RegisterCases))]
+    public static void ByteRegisterClassificationUsesTheRuntimeTargetPolicy(regNumber reg, bool expected)
     {
         Assert.That(isByteReg(reg), Is.EqualTo(expected));
     }
-#else
-    [TestCase(REG_INT_FIRST)]
-    [TestCase(REG_INT_LAST)]
-    [TestCase(REG_FP_FIRST)]
-    [TestCase(REG_FP_LAST)]
-    [TestCase(REG_STK)]
-    [TestCase(REG_NA)]
-    [TestCase(REG_COUNT)]
-    [TestCase(unchecked((regNumber)255))]
-#if FEATURE_MASKED_HW_INTRINSICS
-    [TestCase(REG_MASK_FIRST)]
-    [TestCase(REG_MASK_LAST)]
-#endif
-    public static void UnrestrictedTargetsDoNotTurnThePredicateIntoRegisterValidation(regNumber reg)
-    {
-        Assert.That(isByteReg(reg), Is.True);
-    }
-#endif
 #endif
 }

@@ -15,10 +15,10 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class CodeGenParameterHomingTests
 {
-    [TestCase(TYP_INT, REG_RDX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_LONG, REG_RDX, INS_mov, EA_8BYTE)]
-    [TestCase(TYP_REF, REG_RCX, INS_mov, EA_8BYTE)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, INS_movsd_simd, EA_8BYTE)]
+    [TestCase(TYP_INT, REG_X64_RDX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_LONG, REG_X64_RDX, INS_mov, EA_8BYTE)]
+    [TestCase(TYP_REF, REG_X64_RCX, INS_mov, EA_8BYTE)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, INS_movsd_simd, EA_8BYTE)]
     public static void MinoptsSpillsOnlyLiveIncomingRegisters(var_types type, regNumber source,
         instruction ins, emitAttr size)
     {
@@ -28,7 +28,7 @@ internal static class CodeGenParameterHomingTests
             codeGen.CalleeRegArgMaskLiveIn = Mask(source);
             var stillZeroed = true;
 
-            codeGen.genHomeRegisterParams(REG_R10, ref stillZeroed);
+            codeGen.genHomeRegisterParams(REG_X64_R10, ref stillZeroed);
 
             var id = CodeGenShiftTests.Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(ins));
@@ -43,22 +43,22 @@ internal static class CodeGenParameterHomingTests
     [Test]
     public static void MinoptsSkipsDeadArgumentsAndDoesNotChangeScratchState()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RCX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RCX, (compiler, codeGen, _) =>
         {
-            SetParameter(compiler, 0, REG_RCX, 8);
-            codeGen.CalleeRegArgMaskLiveIn = Mask(REG_RDX);
+            SetParameter(compiler, 0, REG_X64_RCX, 8);
+            codeGen.CalleeRegArgMaskLiveIn = Mask(REG_X64_RDX);
             var stillZeroed = true;
 
-            codeGen.genHomeRegisterParams(REG_R10, ref stillZeroed);
+            codeGen.genHomeRegisterParams(REG_X64_R10, ref stillZeroed);
 
             Assert.That(CodeGenShiftTests.Descriptors(codeGen), Is.Empty);
             Assert.That(stillZeroed, Is.True);
         });
     }
 
-    [TestCase(TYP_INT, REG_RDX, REG_RAX, INS_mov, EA_4BYTE)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM1, INS_movaps, EA_8BYTE)]
-    [TestCase(TYP_SIMD16, REG_XMM0, REG_XMM1, INS_movaps, EA_16BYTE)]
+    [TestCase(TYP_INT, REG_X64_RDX, REG_X64_RAX, INS_mov, EA_4BYTE)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, REG_X64_XMM1, INS_movaps, EA_8BYTE)]
+    [TestCase(TYP_SIMD16, REG_X64_XMM0, REG_X64_XMM1, INS_movaps, EA_16BYTE)]
     public static void OptimizedHomingCopiesIntegerAndSimdParameters(var_types type, regNumber source,
         regNumber target, instruction ins, emitAttr size)
     {
@@ -83,21 +83,21 @@ internal static class CodeGenParameterHomingTests
     [Test]
     public static void OptimizedHomingStoresAWriteThroughParameterBeforeMovingIt()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RCX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RCX, (compiler, codeGen, _) =>
         {
-            SetParameter(compiler, 0, REG_RCX, 8);
-            compiler.lvaTable[0].RegNum = REG_RDX;
+            SetParameter(compiler, 0, REG_X64_RCX, 8);
+            compiler.lvaTable[0].RegNum = REG_X64_RDX;
             compiler.lvaTable[0]._lvLiveInOutOfHandler = true;
-            codeGen.CalleeRegArgMaskLiveIn = Mask(REG_RCX);
+            codeGen.CalleeRegArgMaskLiveIn = Mask(REG_X64_RCX);
             var stillZeroed = true;
 
-            codeGen.genHomeRegisterParams(REG_R10, ref stillZeroed);
+            codeGen.genHomeRegisterParams(REG_X64_R10, ref stillZeroed);
 
             var ids = CodeGenShiftTests.Descriptors(codeGen);
             Assert.That(ids, Has.Count.EqualTo(2));
             Assert.That(ids[0].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
-            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_RCX));
-            Assert.That((ids[1].idReg1(), ids[1].idReg2()), Is.EqualTo((REG_RDX, REG_RCX)));
+            Assert.That(ids[0].idReg1(), Is.EqualTo(REG_X64_RCX));
+            Assert.That((ids[1].idReg1(), ids[1].idReg2()), Is.EqualTo((REG_X64_RDX, REG_X64_RCX)));
             Assert.That(stillZeroed, Is.True);
         }, minopts: false);
     }
@@ -106,10 +106,10 @@ internal static class CodeGenParameterHomingTests
     [TestCase(true, 1)]
     public static void MappedParameterIsStoredInBothHomesUnlessBaseIsPromoted(bool promoted, int expectedStores)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RCX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RCX, (compiler, codeGen, _) =>
         {
-            SetParameter(compiler, 0, REG_RCX, 8);
-            compiler.lvaTable[0].RegNum = REG_STK;
+            SetParameter(compiler, 0, REG_X64_RCX, 8);
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             compiler.lvaTable[0].lvPromoted = promoted;
             if (promoted)
             {
@@ -120,18 +120,18 @@ internal static class CodeGenParameterHomingTests
                 compiler.lvaTable[0],
                 new LclVarDsc
                 {
-                    Type = TYP_LONG, RegNum = REG_STK, lvOnFrame = true, lvFramePointerBased = true,
+                    Type = TYP_LONG, RegNum = REG_X64_STK, lvOnFrame = true, lvFramePointerBased = true,
                     StackOffset = -32,
                 },
             ];
             compiler.lvaCount = 2;
             compiler._paramRegLocalMappings = [
-                new ParameterRegisterLocalMapping(AbiPassingSegment.InRegister(REG_RCX, 0, 8), 1, 0),
+                new ParameterRegisterLocalMapping(AbiPassingSegment.InRegister(REG_X64_RCX, 0, 8), 1, 0),
             ];
-            codeGen.CalleeRegArgMaskLiveIn = Mask(REG_RCX);
+            codeGen.CalleeRegArgMaskLiveIn = Mask(REG_X64_RCX);
             var stillZeroed = true;
 
-            codeGen.genHomeRegisterParams(REG_R10, ref stillZeroed);
+            codeGen.genHomeRegisterParams(REG_X64_R10, ref stillZeroed);
 
             var ids = CodeGenShiftTests.Descriptors(codeGen);
             Assert.That(ids.Select(id => id.idAddr().iiaLclVar.lvaVarNum()),
@@ -140,10 +140,10 @@ internal static class CodeGenParameterHomingTests
         }, minopts: false);
     }
 
-    [TestCase(TYP_LONG, REG_RAX, REG_RCX, REG_RDX, INS_mov, EA_8BYTE, false)]
-    [TestCase(TYP_LONG, REG_RAX, REG_RCX, REG_RDX, INS_mov, EA_8BYTE, true)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM1, REG_XMM2, INS_movaps, EA_8BYTE, false)]
-    [TestCase(TYP_DOUBLE, REG_XMM0, REG_XMM1, REG_XMM2, INS_movaps, EA_8BYTE, true)]
+    [TestCase(TYP_LONG, REG_X64_RAX, REG_X64_RCX, REG_X64_RDX, INS_mov, EA_8BYTE, false)]
+    [TestCase(TYP_LONG, REG_X64_RAX, REG_X64_RCX, REG_X64_RDX, INS_mov, EA_8BYTE, true)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, INS_movaps, EA_8BYTE, false)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, INS_movaps, EA_8BYTE, true)]
     public static void RegisterCycleUsesFreeScratchOfTheCorrectClassAndUpdatesZeroedContract(
         var_types type, regNumber source, regNumber destination, regNumber scratch, instruction ins, emitAttr size,
         bool highFloat)
@@ -177,7 +177,7 @@ internal static class CodeGenParameterHomingTests
             ];
             codeGen.CalleeRegArgMaskLiveIn = Mask(source) | Mask(destination);
             var stillZeroed = true;
-            var initReg = type == TYP_DOUBLE ? REG_R10 : scratch;
+            var initReg = type == TYP_DOUBLE ? REG_X64_R10 : scratch;
             Assert.That((codeGen.genGetParameterHomingTempRegisterCandidates() & Mask(scratch)).IsNonEmpty, Is.True);
 
             codeGen.genHomeRegisterParams(initReg, ref stillZeroed);
@@ -196,15 +196,15 @@ internal static class CodeGenParameterHomingTests
     [TestCase(false)]
     public static void SecretStubParameterHomesAsOrdinaryRegisterArgument(bool minopts)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             SetParameter(compiler, 0, REG_SECRET_STUB_PARAM, 8);
             compiler.lvaSecretStubArg = 0;
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.CalleeRegArgMaskLiveIn = Mask(REG_SECRET_STUB_PARAM);
             var stillZeroed = true;
 
-            codeGen.genHomeRegisterParams(REG_R10, ref stillZeroed);
+            codeGen.genHomeRegisterParams(REG_X64_R10, ref stillZeroed);
 
             var id = CodeGenShiftTests.Descriptors(codeGen).Single();
             Assert.That(id.idReg1(), Is.EqualTo(REG_SECRET_STUB_PARAM));
@@ -220,12 +220,12 @@ internal static class CodeGenParameterHomingTests
     public static void IncomingStackArgumentLoadsOnlyLiveEnregisteredNonRegisterArguments(
         bool liveIn, bool registerArgument, bool expectLoad)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_R10, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_R10, (compiler, codeGen, _) =>
         {
             InitializeModifiedRegisters(compiler, codeGen);
             compiler.lvaTable[0].lvIsParam = true;
             compiler.lvaTable[0].lvIsRegArg = registerArgument;
-            compiler.lvaTable[0].ArgInitReg = REG_R10;
+            compiler.lvaTable[0].ArgInitReg = REG_X64_R10;
             compiler.fgFirstBB = new BasicBlock(null, null) { bbLiveIn = VarSetOps.MakeEmpty(compiler) };
             if (liveIn)
             {
@@ -240,9 +240,9 @@ internal static class CodeGenParameterHomingTests
             Assert.That(ids, Has.Count.EqualTo(expectLoad ? 1 : 0));
             if (expectLoad)
             {
-                Assert.That(ids[0].idReg1(), Is.EqualTo(REG_R10));
+                Assert.That(ids[0].idReg1(), Is.EqualTo(REG_X64_R10));
                 Assert.That(ids[0].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
-                Assert.That((codeGen.RegSet.rsGetModifiedRegsMask() & Mask(REG_R10)).IsNonEmpty, Is.True);
+                Assert.That((codeGen.RegSet.rsGetModifiedRegsMask() & Mask(REG_X64_R10)).IsNonEmpty, Is.True);
             }
         });
     }

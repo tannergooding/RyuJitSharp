@@ -135,8 +135,8 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
 #endif
             var indices = RegisterIndices(allocator);
 #if TARGET_AMD64
-            Assert.That(indices[15], Is.EqualTo(REG_R15));
-            Assert.That(indices[16], Is.EqualTo(REG_XMM0));
+            Assert.That(indices[15], Is.EqualTo(REG_X64_R15));
+            Assert.That(indices[16], Is.EqualTo(REG_X64_XMM0));
             Assert.That(indices[^1], Is.EqualTo(REG_COUNT));
 #else
             Assert.That(indices, Has.Length.EqualTo((int)ACTUAL_REG_COUNT + 1));
@@ -192,7 +192,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
             }
             else
             {
-                Assert.That(indices[16], Is.EqualTo(REG_XMM0));
+                Assert.That(indices[16], Is.EqualTo(REG_X64_XMM0));
                 Assert.That(indices[^1], Is.EqualTo(REG_COUNT));
             }
         });
@@ -226,7 +226,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
 #if TARGET_X86
     private const regMask ReservedIntegerRegister = SRBM_EAX;
 #elif TARGET_AMD64
-    private const regMask ReservedIntegerRegister = SRBM_RAX;
+    private const regMask ReservedIntegerRegister = SRBM_X64_RAX;
 #elif TARGET_ARM
     private const regMask ReservedIntegerRegister = SRBM_R0;
 #elif TARGET_ARM64
@@ -268,7 +268,7 @@ internal static unsafe class LinearScanInitializationRegisterBanksTests
             apx ? SRBM_INT_CALLEE_TRASH_INIT | SRBM_HIGHINT : SRBM_INT_CALLEE_TRASH_INIT;
         CompilerFloatTrashRegisters(compiler) =
             evex ? SRBM_FLT_CALLEE_TRASH_INIT | SRBM_HIGHFLOAT : SRBM_FLT_CALLEE_TRASH_INIT;
-        CompilerLastIntegerRegister(compiler) = apx ? REG_R31 : REG_R15;
+        CompilerLastIntegerRegister(compiler) = apx ? REG_X64_R31 : REG_X64_R15;
         if (apx)
         {
             compiler.opts.compSupportsISA.AddInstructionSet(InstructionSet_APX);

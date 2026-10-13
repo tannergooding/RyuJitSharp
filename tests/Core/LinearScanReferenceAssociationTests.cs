@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -13,8 +14,7 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class LinearScanReferenceAssociationTests
 {
-    [TestCase(TYP_INT, SRBM_ALLINT_INIT)]
-    [TestCase(TYP_DOUBLE, SRBM_ALLFLOAT_INIT)]
+    [TestCaseSource(nameof(RegisterBankCases))]
     public static void EmptyCandidatesUseTheIntervalRegisterBank(var_types type, regMask expected)
     {
         WithCompiler(compiler => {
@@ -39,6 +39,12 @@ internal static unsafe class LinearScanReferenceAssociationTests
         });
     }
 
+    private static IEnumerable<TestCaseData> RegisterBankCases()
+    {
+        yield return new TestCaseData(TYP_INT, SRBM_ALLINT_INIT);
+        yield return new TestCaseData(TYP_DOUBLE, SRBM_ALLFLOAT_INIT);
+    }
+
     [TestCase(false, 4)]
     [TestCase(true, 3)]
     public static void FixedReferencesPrecedeIntervalReferencesAndSkipInternalUses(bool isInternal, int count)
@@ -51,10 +57,10 @@ internal static unsafe class LinearScanReferenceAssociationTests
 #if DEBUG
             CurrentBuildNode(allocator) = tree;
 #endif
-            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-            var use = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+            var use = allocator.newRefPosition(interval, 12, RefType.RefTypeUse, tree, SRBM_X64_RAX);
             var physicalDefinition = allocator.refPositions[0];
-            var record = allocator.physRegs[(int)regNumber.REG_RAX];
+            var record = allocator.physRegs[(int)regNumber.REG_X64_RAX];
 
             Assert.That(allocator.refPositions, Has.Count.EqualTo(count));
             Assert.That(allocator.refPositions[1], Is.SameAs(definition));
@@ -84,9 +90,9 @@ internal static unsafe class LinearScanReferenceAssociationTests
         });
     }
 
-    [TestCase(regNumber.REG_RBX, SRBM_RBX)]
-    [TestCase(regNumber.REG_XMM31, SRBM_XMM31)]
-    [TestCase(regNumber.REG_K7, SRBM_K7)]
+    [TestCase(regNumber.REG_X64_RBX, SRBM_X64_RBX)]
+    [TestCase(regNumber.REG_X64_XMM31, SRBM_X64_XMM31)]
+    [TestCase(regNumber.REG_X64_K7, SRBM_X64_K7)]
     public static void PhysicalReferencesRetainCanonicalRecordsAndOrderedLinks(regNumber reg, regMask mask)
     {
         WithCompiler(compiler => {
@@ -108,10 +114,10 @@ internal static unsafe class LinearScanReferenceAssociationTests
         });
     }
 
-    [TestCase(SRBM_RAX | SRBM_RBX, SRBM_RBX, false, SRBM_RBX, false)]
-    [TestCase(SRBM_RAX | SRBM_RBX, SRBM_RBX, true, SRBM_RAX | SRBM_RBX, false)]
-    [TestCase(SRBM_RAX | SRBM_RBX | SRBM_RCX, SRBM_RBX | SRBM_RCX, true, SRBM_RBX | SRBM_RCX, false)]
-    [TestCase(SRBM_RAX, SRBM_RBX, false, SRBM_RAX, true)]
+    [TestCase(SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RBX, false, SRBM_X64_RBX, false)]
+    [TestCase(SRBM_X64_RAX | SRBM_X64_RBX, SRBM_X64_RBX, true, SRBM_X64_RAX | SRBM_X64_RBX, false)]
+    [TestCase(SRBM_X64_RAX | SRBM_X64_RBX | SRBM_X64_RCX, SRBM_X64_RBX | SRBM_X64_RCX, true, SRBM_X64_RBX | SRBM_X64_RCX, false)]
+    [TestCase(SRBM_X64_RAX, SRBM_X64_RBX, false, SRBM_X64_RAX, true)]
     public static void TemporaryUsesNarrowDefinitionsWithoutIgnoringInterference(
         regMask defMask, regMask useMask, bool interfering, regMask expectedDefMask, bool conflicting)
     {
@@ -169,19 +175,19 @@ internal static unsafe class LinearScanReferenceAssociationTests
         WithCompiler(compiler => {
             var allocator = CreateAllocator(compiler);
             var interval = NewLocalInterval(compiler, allocator);
-            var reference = allocator.newRefPosition(interval, 0, refType, null, SRBM_RAX);
+            var reference = allocator.newRefPosition(interval, 0, refType, null, SRBM_X64_RAX);
 
             Assert.That(reference.lastUse, Is.False);
             Assert.That(reference.isFixedRegRef, Is.True);
             Assert.That(interval.isSingleDef, Is.True);
             Assert.That(allocator.refPositions, Has.Count.EqualTo(1));
-            Assert.That(allocator.physRegs[(int)regNumber.REG_RAX].firstRefPosition, Is.Null);
+            Assert.That(allocator.physRegs[(int)regNumber.REG_X64_RAX].firstRefPosition, Is.Null);
         });
     }
 
     [TestCase(RefType.RefTypeBB, SRBM_NONE)]
-    [TestCase(RefType.RefTypeKillGCRefs, SRBM_RAX)]
-    [TestCase(RefType.RefTypeKill, SRBM_RAX | SRBM_RBX)]
+    [TestCase(RefType.RefTypeKillGCRefs, SRBM_X64_RAX)]
+    [TestCase(RefType.RefTypeKill, SRBM_X64_RAX | SRBM_X64_RBX)]
     public static void UnassociatedReferencesRetainTheirMasksAndHaveNoLinks(RefType type, regMask mask)
     {
         WithCompiler(compiler => {
@@ -224,8 +230,8 @@ internal static unsafe class LinearScanReferenceAssociationTests
             StressMask(allocator) = 0x08 | 0x80;
             var interval = NewLocalInterval(compiler, allocator);
             var originalPreferences = interval.registerPreferences;
-            var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, null, SRBM_RAX);
-            var use = allocator.newRefPosition(interval, 2, RefType.RefTypeUse, null, SRBM_RAX);
+            var definition = allocator.newRefPosition(interval, 1, RefType.RefTypeDef, null, SRBM_X64_RAX);
+            var use = allocator.newRefPosition(interval, 2, RefType.RefTypeUse, null, SRBM_X64_RAX);
 
             Assert.That(interval.registerPreferences, Is.EqualTo(originalPreferences));
             Assert.That(definition.lastUse, Is.False);
@@ -244,8 +250,8 @@ internal static unsafe class LinearScanReferenceAssociationTests
             compiler.verbose = true;
 
             var text = Capture(() => {
-                _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_RAX);
-                _ = allocator.newRefPosition(null, 12, RefType.RefTypeKill, null, SRBM_RAX);
+                _ = allocator.newRefPosition(interval, 10, RefType.RefTypeDef, tree, SRBM_X64_RAX);
+                _ = allocator.newRefPosition(null, 12, RefType.RefTypeKill, null, SRBM_X64_RAX);
                 _ = allocator.newRefPosition(null, 14, RefType.RefTypeBB, null, SRBM_NONE);
             });
 
@@ -262,14 +268,14 @@ internal static unsafe class LinearScanReferenceAssociationTests
     public static void RegisterMaskDiagnosticsUseCurrentBanksAndFallbackRegisterNames()
     {
         WithCompiler(compiler => {
-            CompilerAllMaskRegs(compiler) = SRBM_K1 | SRBM_K2;
+            CompilerAllMaskRegs(compiler) = SRBM_X64_K1 | SRBM_X64_K2;
             var text = Capture(() => {
                 compiler.dumpRegMask(compiler.SRBM_ALLINT, TYP_INT);
                 compiler.dumpRegMask(compiler.SRBM_ALLINT & ~SRBM_FPBASE, TYP_INT);
                 compiler.dumpRegMask(compiler.SRBM_ALLFLOAT, TYP_DOUBLE);
                 compiler.dumpRegMask(compiler.SRBM_ALLMASK, TYP_MASK);
-                compiler.dumpRegMask(SRBM_K7, TYP_MASK);
-                compiler.dumpRegMask(new regMaskTP(SRBM_RAX, SRBM_K7));
+                compiler.dumpRegMask(SRBM_X64_K7, TYP_MASK);
+                compiler.dumpRegMask(new regMaskTP(SRBM_X64_RAX, SRBM_X64_K7));
             });
 
             Assert.That(text, Is.EqualTo("[allInt][allIntButFP][allFloat][allMask][k7][rax k7]"));
@@ -308,7 +314,7 @@ internal static unsafe class LinearScanReferenceAssociationTests
     private static LinearScan CreateAllocator(Compiler compiler)
     {
         var allocator = new LinearScan(compiler);
-        for (var index = 0; index < (int)regNumber.ACTUAL_REG_COUNT; index++)
+        for (var index = 0; index < (int)regNumber.ACTUAL_REG_X64_COUNT; index++)
         {
             allocator.physRegs[index].init((regNumber)index);
         }
