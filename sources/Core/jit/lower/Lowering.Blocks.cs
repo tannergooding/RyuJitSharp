@@ -17,7 +17,7 @@ public sealed partial class Lowering
             !Configuration.TARGET_RISCV64 &&
             !Configuration.TARGET_LOONGARCH64)
         {
-            throw new NotImplementedException("Block-store address containment is not ported for this target.");
+            throw new FatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
         }
 
         assert((block.Oper is GT_STORE_BLK) && (block._kind is GenTreeBlk.BlkOpKindUnroll));
@@ -190,7 +190,7 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new NotImplementedException("Block-store address containment is not ported for this target.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Block-store address containment is not ported for this target.");
     }
 
     private GenTree? LowerStoreBlock(GenTreeBlk block)
@@ -351,12 +351,12 @@ public sealed partial class Lowering
         var registerType = block.Layout.RegisterType;
         if (registerType is not TYP_UNDEF)
         {
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-            if (varTypeIsFloating(call.Type))
+            if ((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) &&
+                varTypeIsFloating(call.Type))
             {
                 registerType = call.Type;
             }
-#endif
+
             if (Configuration.TARGET_WASM)
             {
                 var wasmAbiType = CompilerInstance.info.compCompHnd->getWasmLowering(call.RetClsHnd);
@@ -372,13 +372,16 @@ public sealed partial class Lowering
             return;
         }
 
-#if WINDOWS_AMD64_ABI
-        unreached();
-#else
-        block._kind = GenTreeBlk.BlkOpKindUnroll;
-        block.Data = SpillStructCallResult(call);
-        LowerBlockStoreCommon(block);
-#endif
+        if (Configuration.WINDOWS_AMD64_ABI)
+        {
+            unreached();
+        }
+        else
+        {
+            block._kind = GenTreeBlk.BlkOpKindUnroll;
+            block.Data = SpillStructCallResult(call);
+            LowerBlockStoreCommon(block);
+        }
     }
 
     private void LowerInitBlockStore(GenTreeBlk block)
@@ -455,7 +458,7 @@ public sealed partial class Lowering
                         source.IsContained = true;
                     }
                 }
-                else if (Configuration.TARGET_64BIT && (size >= REGSIZE_BYTES))
+                else if (Configuration.TARGET_64BIT && (size >= Configuration.REGSIZE_BYTES))
                 {
                     fill = unchecked(fill * (nint)0x0101010101010101L);
                     source.Type = TYP_LONG;
@@ -511,8 +514,7 @@ public sealed partial class Lowering
             unrollLimit = CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memcpy, !copyGcPointers || isNotHeap);
         }
 
-#if !JIT32_GCENCODER
-        if (copyGcPointers && isNotHeap)
+        if (!Configuration.JIT32_GCENCODER && copyGcPointers && isNotHeap)
         {
             if (isWasm)
             {
@@ -525,7 +527,6 @@ public sealed partial class Lowering
                 block._gcUnsafe = true;
             }
         }
-#endif
         if (copyGcPointers)
         {
             if (!TryDecomposeBlockStoreAsIndirs(block))

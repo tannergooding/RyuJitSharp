@@ -145,16 +145,14 @@ public sealed partial class Lowering
                 return false;
             }
 
-#if TARGET_ARM64
-            if (combinedSize == 2 * TARGET_POINTER_SIZE)
+            if (Configuration.TARGET_ARM64 && (combinedSize == 2 * Configuration.TARGET_POINTER_SIZE))
             {
                 // ARM single-copy atomicity treats a 64-bit-aligned 128-bit SIMD
                 // write as two atomic 64-bit writes. REF-based stores are already
                 // aligned; absolute addresses require an explicit alignment check.
-                return (current.BaseAddress is not null) || ((minOffset % TARGET_POINTER_SIZE) == 0);
+                return (current.BaseAddress is not null) || ((minOffset % Configuration.TARGET_POINTER_SIZE) == 0);
             }
-#endif
-            return (combinedSize <= TARGET_POINTER_SIZE) && ((minOffset % combinedSize) == 0);
+            return (combinedSize <= Configuration.TARGET_POINTER_SIZE) && ((minOffset % combinedSize) == 0);
         }
 
         return true;
@@ -162,7 +160,11 @@ public sealed partial class Lowering
 
     private void LowerIndirectStoreCoalescing(GenTreeIndir store)
     {
-#if TARGET_XARCH || TARGET_ARM64
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64)
+        {
+            return;
+        }
+
         var compiler = CompilerInstance;
         if (!compiler.opts.OptimizationEnabled || (store.Oper is not (GT_STOREIND or GT_STORE_BLK)))
         {
@@ -247,30 +249,23 @@ public sealed partial class Lowering
             var newType = oldType switch {
                 TYP_BYTE or TYP_UBYTE => TYP_USHORT,
                 TYP_SHORT or TYP_USHORT => TYP_INT,
-#if TARGET_64BIT
-                TYP_INT => TYP_LONG,
-#if FEATURE_HW_INTRINSICS
-                TYP_LONG or TYP_REF => TYP_SIMD16,
-#if TARGET_AMD64
-                TYP_SIMD16 when compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
-                TYP_SIMD32 when compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
-#endif
-#endif
-#endif
+                TYP_INT when Configuration.TARGET_64BIT => TYP_LONG,
+                TYP_LONG or TYP_REF when Configuration.TARGET_64BIT && Configuration.FEATURE_HW_INTRINSICS =>
+                    TYP_SIMD16,
+                TYP_SIMD16 when Configuration.TARGET_AMD64 && Configuration.FEATURE_HW_INTRINSICS &&
+                    compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
+                TYP_SIMD32 when Configuration.TARGET_AMD64 && Configuration.FEATURE_HW_INTRINSICS &&
+                    compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
                 _ => TYP_UNDEF,
             };
-#if TARGET_64BIT && FEATURE_HW_INTRINSICS
-            reusePreviousValue = (newType is TYP_UNDEF) && (oldType is TYP_SIMD16
-#if TARGET_AMD64
-                or TYP_SIMD32
-#endif
-                );
-            if ((oldType is TYP_REF) &&
+            reusePreviousValue = (newType is TYP_UNDEF) && Configuration.TARGET_64BIT &&
+                Configuration.FEATURE_HW_INTRINSICS &&
+                ((oldType is TYP_SIMD16) || (Configuration.TARGET_AMD64 && (oldType is TYP_SIMD32)));
+            if (Configuration.TARGET_64BIT && Configuration.FEATURE_HW_INTRINSICS && (oldType is TYP_REF) &&
                 (!currentValue.IsIntegralConst(0) || !previousValue.IsIntegralConst(0)))
             {
                 return;
             }
-#endif
             if ((newType is TYP_UNDEF) && !reusePreviousValue)
             {
                 return;
@@ -281,8 +276,8 @@ public sealed partial class Lowering
             }
             if (reusePreviousValue)
             {
-#if FEATURE_HW_INTRINSICS
-                if ((currentValue.Oper is GT_CNS_VEC) && GenTree.Compare(previousValue, currentValue) &&
+                if (Configuration.FEATURE_HW_INTRINSICS && (currentValue.Oper is GT_CNS_VEC) &&
+                    GenTree.Compare(previousValue, currentValue) &&
                     BlockRange().TryGetUse(previousValue, out var use))
                 {
                     var temp = use.ReplaceWithLclVar(compiler);
@@ -291,14 +286,12 @@ public sealed partial class Lowering
                     BlockRange().Remove(currentValue);
                     store.Data = read;
                 }
-#endif
                 return;
             }
 
-#if FEATURE_HW_INTRINSICS && TARGET_AMD64
             ulong previousBits = 0;
             ulong currentBits = 0;
-            if (varTypeIsSimd(oldType))
+            if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_AMD64 && varTypeIsSimd(oldType))
             {
                 if ((previousValue.Oper is not GT_CNS_VEC) || (currentValue.Oper is not GT_CNS_VEC))
                 {
@@ -308,10 +301,6 @@ public sealed partial class Lowering
             else
             if (!TryGetLocalStoreConstantBits(previousValue, out previousBits) ||
                 !TryGetLocalStoreConstantBits(currentValue, out currentBits))
-#else
-            if (!TryGetLocalStoreConstantBits(previousValue, out var previousBits) ||
-                !TryGetLocalStoreConstantBits(currentValue, out var currentBits))
-#endif
             {
                 return;
             }
@@ -332,9 +321,7 @@ public sealed partial class Lowering
             store.Type = newType;
             store.Data.Type = newType;
 
-#if FEATURE_HW_INTRINSICS
-#if TARGET_AMD64
-            if (varTypeIsSimd(oldType))
+            if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_AMD64 && varTypeIsSimd(oldType))
             {
                 var left = previousValue.AsVecCon().SimdVal.AsSpan<byte>();
                 var right = currentValue.AsVecCon().SimdVal.AsSpan<byte>();
@@ -346,9 +333,7 @@ public sealed partial class Lowering
                 upper.CopyTo(right.Slice(width, width));
                 continue;
             }
-#endif
-#if TARGET_64BIT
-            if (varTypeIsSimd(newType))
+            if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_64BIT && varTypeIsSimd(newType))
             {
                 if (previous.Offset > current.Offset)
                 {
@@ -362,8 +347,6 @@ public sealed partial class Lowering
                 store.Data = vector;
                 continue;
             }
-#endif
-#endif
             static ulong Mask(int size)
             {
                 return size >= sizeof(ulong) ? ulong.MaxValue : (1UL << (size * 8)) - 1;
@@ -385,8 +368,5 @@ public sealed partial class Lowering
                 store.Flags |= GTF_IND_ALLOW_NON_ATOMIC;
             }
         }
-#else
-        return;
-#endif
     }
 }

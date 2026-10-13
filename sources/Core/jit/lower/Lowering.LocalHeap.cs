@@ -13,45 +13,46 @@ public sealed partial class Lowering
     {
         assert(node.Oper is GT_LCLHEAP);
 
-#if TARGET_XARCH || TARGET_ARM64
-        var sizeNode = node.Op1;
-        if (sizeNode.Oper.IsCnsIntOrI)
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
         {
-            var size = sizeNode.AsIntCon().IconValue;
-            if (size == 0)
+            var sizeNode = node.Op1;
+            if (sizeNode.Oper.IsCnsIntOrI)
             {
-                var zero = new GenTreeIntCon(TYP_I_IMPL, 0, null, node, NodeThreading.LIR);
-                zero._vnPair.SetBoth(ValueNumStore.NoVN);
-                BlockRange().ReplaceNode(node, zero);
-                BlockRange().Remove(sizeNode);
-                return zero.Next;
-            }
-
-            if (CompilerInstance.info.compInitMem)
-            {
-                var alignedSize = unchecked((long)(((ulong)size + (STACK_ALIGN - 1)) &
-                    ~(ulong)(STACK_ALIGN - 1)));
-                if ((size > uint.MaxValue) || (alignedSize > uint.MaxValue))
+                var size = sizeNode.AsIntCon().IconValue;
+                if (size == 0)
                 {
-                    return node.Next;
+                    var zero = new GenTreeIntCon(TYP_I_IMPL, 0, null, node, NodeThreading.LIR);
+                    zero._vnPair.SetBoth(ValueNumStore.NoVN);
+                    BlockRange().ReplaceNode(node, zero);
+                    BlockRange().Remove(sizeNode);
+                    return zero.Next;
                 }
 
-                if (!BlockRange().TryGetUse(node, out var use))
+                if (CompilerInstance.info.compInitMem)
                 {
-                    return node.Next;
-                }
+                    var stackAlign = (ulong)Configuration.STACK_ALIGN;
+                    var alignedSize = unchecked((long)(((ulong)size + (stackAlign - 1)) & ~(stackAlign - 1)));
+                    if ((size > uint.MaxValue) || (alignedSize > uint.MaxValue))
+                    {
+                        return node.Next;
+                    }
 
-                sizeNode.AsIntCon().IconValue = (nint)alignedSize;
-                var temp = use.ReplaceWithLclVar(CompilerInstance);
-                var heapLocal = CompilerInstance.gtNewLclvNode(TYP_I_IMPL, temp);
-                var zero = CompilerInstance.gtNewIconNode(TYP_INT, 0);
-                var store = new GenTreeBlk(TYP_STRUCT, heapLocal, zero,
-                    CompilerInstance.typGetBlkLayout(unchecked((uint)alignedSize)));
-                store.Flags |= GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF;
-                BlockRange().InsertAfter(use.Def(), heapLocal, zero, store);
+                    if (!BlockRange().TryGetUse(node, out var use))
+                    {
+                        return node.Next;
+                    }
+
+                    sizeNode.AsIntCon().IconValue = (nint)alignedSize;
+                    var temp = use.ReplaceWithLclVar(CompilerInstance);
+                    var heapLocal = CompilerInstance.gtNewLclvNode(TYP_I_IMPL, temp);
+                    var zero = CompilerInstance.gtNewIconNode(TYP_INT, 0);
+                    var store = new GenTreeBlk(TYP_STRUCT, heapLocal, zero,
+                        CompilerInstance.typGetBlkLayout(unchecked((uint)alignedSize)));
+                    store.Flags |= GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF;
+                    BlockRange().InsertAfter(use.Def(), heapLocal, zero, store);
+                }
             }
         }
-#endif
 
         ContainCheckLclHeap(node);
         return node.Next;
@@ -92,6 +93,6 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new NotImplementedException("Nonlocal jump containment is not ported for this target.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Nonlocal jump containment is not ported for this target.");
     }
 }

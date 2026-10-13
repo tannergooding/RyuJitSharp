@@ -77,37 +77,29 @@ public sealed partial class Lowering
         var codeGen = CompilerInstance.codeGen;
         assert(codeGen is not null);
 
-#if TARGET_ARM64
-        if ((parent.Oper is GT_STOREIND) && parent.AsIndir().IsVolatile &&
+        if (Configuration.TARGET_ARM64 && (parent.Oper is GT_STOREIND) && parent.AsIndir().IsVolatile &&
             codeGen.GCInfo.gcIsWriteBarrierStoreIndNode(parent.AsStoreInd()))
         {
             // A write barrier will not use a volatile RCPC2 store; do not report that dependency.
             return false;
         }
 
-        if (parent.Type is TYP_MASK or TYP_SIMD_ARM64)
+        if (Configuration.TARGET_ARM64 && (parent.Type is TYP_MASK or TYP_SIMD_ARM64))
         {
             return false;
         }
-#endif
 
         var targetType = parent.Oper.IsIndir ? parent.Type : TYP_UNDEF;
-#if TARGET_ARM64
-        var naturalMul = targetType.Size;
-#else
-        var naturalMul = 0;
-#endif
+        var naturalMul = Configuration.TARGET_ARM64 ? targetType.Size : 0;
         var doAddrMode = codeGen.genCreateAddrMode(addr.AsOp(), true, naturalMul, out _, out var baseAddress,
             out var index, out var scale, out var offset);
-#if TARGET_ARM64
-        if (parent.Oper.IsIndir && parent.AsIndir().IsVolatile)
+        if (Configuration.TARGET_ARM64 && parent.Oper.IsIndir && parent.AsIndir().IsVolatile)
         {
             if ((scale > 1) || !Emitter.emitIns_valid_imm_for_unscaled_ldst_offset(offset) || (index is not null))
             {
                 return false;
             }
         }
-#endif
         if (scale == 0)
         {
             scale = 1;
@@ -128,13 +120,11 @@ public sealed partial class Lowering
             return false;
         }
 
-#if TARGET_ARM64
-        if (parent.Oper.IsIndir && parent.AsIndir().IsVolatile &&
+        if (Configuration.TARGET_ARM64 && parent.Oper.IsIndir && parent.AsIndir().IsVolatile &&
             !CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_Rcpc2))
         {
             return false;
         }
-#endif
 
         JITDUMP("Addressing mode:\n");
         JITDUMP("  Base\n    ");
@@ -176,8 +166,7 @@ public sealed partial class Lowering
             }
         }
 
-#if TARGET_ARM64
-        if (index is not null)
+        if (Configuration.TARGET_ARM64 && (index is not null))
         {
             if ((index.Oper is GT_CAST) && (scale == 1) && (offset == 0) && varTypeIsByte(targetType))
             {
@@ -206,8 +195,7 @@ public sealed partial class Lowering
                 }
             }
         }
-#elif TARGET_RISCV64
-        if (index is not null)
+        else if (Configuration.TARGET_RISCV64 && (index is not null))
         {
             assert(baseAddress is not null);
             assert(scale <= 1);
@@ -218,7 +206,6 @@ public sealed partial class Lowering
             addrMode.Index = null;
             _ = LowerAdd(addition);
         }
-#endif
 
         JITDUMP("New addressing mode node:\n  ");
         DISPNODE(addrMode);

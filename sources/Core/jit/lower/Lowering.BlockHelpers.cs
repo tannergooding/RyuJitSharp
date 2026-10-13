@@ -189,7 +189,7 @@ public sealed partial class Lowering
         var compiler = CompilerInstance;
         var layout = block.Layout;
         var source = block.Data;
-        assert(layout.Size == layout.SlotCount * TARGET_POINTER_SIZE);
+        assert(layout.Size == layout.SlotCount * Configuration.TARGET_POINTER_SIZE);
         assert(source.Oper is GT_IND or GT_LCL_VAR or GT_LCL_FLD);
 
         if (!(block.IsVolatile || ((source.Oper is GT_IND) && source.AsIndir().IsVolatile)))
@@ -271,7 +271,7 @@ public sealed partial class Lowering
         {
             if (layout.IsGCPtr(i))
             {
-                EmitStore(i * TARGET_POINTER_SIZE, layout.GetGCPtrType(i), null);
+                EmitStore(i * Configuration.TARGET_POINTER_SIZE, layout.GetGCPtrType(i), null);
                 i++;
             }
             else
@@ -283,8 +283,10 @@ public sealed partial class Lowering
                 }
                 while ((i < layout.SlotCount) && !layout.IsGCPtr(i));
                 var runSlots = i - start;
-                var runLayout = runSlots > 1 ? compiler.typGetBlkLayout(runSlots * TARGET_POINTER_SIZE) : null;
-                EmitStore(start * TARGET_POINTER_SIZE, TYP_I_IMPL, runLayout);
+                var runLayout = runSlots > 1
+                    ? compiler.typGetBlkLayout(runSlots * Configuration.TARGET_POINTER_SIZE)
+                    : null;
+                EmitStore(start * Configuration.TARGET_POINTER_SIZE, TYP_I_IMPL, runLayout);
             }
         }
 

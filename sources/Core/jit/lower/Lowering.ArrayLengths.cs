@@ -16,7 +16,8 @@ public sealed partial class Lowering
             case GT_ARR_LENGTH:
             {
                 offset = node.AsArrLen().ArrLenOffset;
-                assert(offset is OFFSETOF__CORINFO_Array__length or OFFSETOF__CORINFO_String__stringLen);
+                assert((offset == OFFSETOF__CORINFO_Array__length) ||
+                    (offset == OFFSETOF__CORINFO_String__stringLen));
                 break;
             }
 

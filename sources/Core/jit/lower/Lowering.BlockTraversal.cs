@@ -13,10 +13,11 @@ public sealed partial class Lowering
         assert(block == compiler.compCurBB);
         assert(block.isEmpty() || block.IsLIR);
         _block = block;
-#if TARGET_ARM64
-        _blockIndirs.Clear();
-        _ffrTrashed = true;
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            _blockIndirs.Clear();
+            _ffrTrashed = true;
+        }
 
         // Insertions before the current node must already be lowered. The
         // returned successor can also replace or skip nodes in the original LIR.

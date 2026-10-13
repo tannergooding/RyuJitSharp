@@ -35,11 +35,14 @@ public sealed partial class Lowering
         {
             var store = compiler.gtNewStoreLclFldNode(use.Type, localNumber, use.Offset, use.Node);
             BlockRange().InsertAfter(use.Node, store);
-#if TARGET_ARM64
-            _ = LowerStoreLocCommon(store);
-#else
-            _ = LowerNode(store);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                _ = LowerStoreLocCommon(store);
+            }
+            else
+            {
+                _ = LowerNode(store);
+            }
         }
         return localNumber;
     }
@@ -104,7 +107,7 @@ public sealed partial class Lowering
             if ((index == numRegs - 1) && !varTypeUsesFloatReg(regType))
             {
                 // The final integer register may carry undefined trailing bits.
-                regEnd = regStart + REGSIZE_BYTES;
+                regEnd = regStart + Configuration.REGSIZE_BYTES;
             }
 
             if ((use is null) || (use.Offset >= regEnd))
@@ -145,7 +148,8 @@ public sealed partial class Lowering
                 }
 
                 // Integer-to-float conversion must fit in a single bitcast.
-                if (varTypeUsesIntReg(use.Node.Type) && varTypeUsesFloatReg(regType) && (regType.Size > TARGET_POINTER_SIZE))
+                if (varTypeUsesIntReg(use.Node.Type) && varTypeUsesFloatReg(regType) &&
+                    (regType.Size > Configuration.TARGET_POINTER_SIZE))
                 {
 #if DEBUG
                     JITDUMP($"it is not; field [{use.Node.TreeId:D6}] requires an insertion into float register {index} of size {regType.Size}\n");
@@ -184,7 +188,7 @@ public sealed partial class Lowering
             var regEnd = regStart + regType.Size;
             if ((index == numRegs - 1) && !varTypeUsesFloatReg(regType))
             {
-                regEnd = regStart + REGSIZE_BYTES;
+                regEnd = regStart + Configuration.REGSIZE_BYTES;
             }
 
             var regEntry = use;
