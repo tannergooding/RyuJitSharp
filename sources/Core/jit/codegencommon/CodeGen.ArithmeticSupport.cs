@@ -40,15 +40,16 @@ public sealed partial class CodeGen
             if (failBlock is not null)
             {
                 target = failBlock;
-#if DEBUG
-                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
-                assert(add.acdUsed);
-                assert(ReferenceEquals(target, add.acdDstBlk));
-                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                if (Configuration.DEBUG)
                 {
-                    assert(add.acdStkLvlInit || IsFramePointerUsed);
+                    var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                    assert(add.acdUsed);
+                    assert(ReferenceEquals(target, add.acdDstBlk));
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                    {
+                        assert(add.acdStkLvlInit || IsFramePointerUsed);
+                    }
                 }
-#endif
             }
             else
             {
@@ -56,12 +57,10 @@ public sealed partial class CodeGen
                 assert(add is not null);
                 assert(add.acdUsed);
                 target = add.acdDstBlk;
-#if DEBUG
-                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                if (Configuration.DEBUG && !Configuration.FEATURE_FIXED_OUT_ARGS)
                 {
                     assert(add.acdStkLvlInit || IsFramePointerUsed);
                 }
-#endif
             }
 
             noway_assert(target is not null);

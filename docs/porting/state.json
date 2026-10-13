@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Inspect the Release availability of fgGetExcptnTarget results and their fields in CodeGen.ArithmeticSupport.cs::genJumpToThrowHlpBlk; runtime-gate only safe invariants, then validate CodeGenThrowHelperTests in Debug and Release.",
+    "nextAction": "Inspect sources/Core/jit/codegencommon/CodeGen.CalleeSaveRecording.cs::genPushCalleeSavedRegisters; confirm Release availability of the DEBUG-only OSR and callee-saved-count diagnostic members, then runtime-gate only safe checks and validate the xarch callee-save tests in Debug and Release.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources.",
@@ -28,7 +28,8 @@
       "Jit32GcInfoTests passed with win-x86 target semantics on the win-x64 host: Debug 61/61 and Release 14/14, with no skips, using tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj. It exercised JIT32 pointer-table saves and header encoding. Full-analysis test attempts in both configurations stopped before tests on the existing IDE0058/IDE0059 diagnostics in JitTimer.cs:257 and CodeGen.BlockMemoryCopy.cs:215, 219, 225, 231 and 236.",
       "The Core test project could not compile unrelated x86 fixtures, so the target project was used to run the linked Jit32GcInfoTests fixture.",
       "The Compiler.comp.cs inline/prejit result-invariant region uses conditional assert calls directly rather than DEBUG-only wrappers; its tree-ID preservation and diagnostic/skip paths remain DEBUG-only, so no conversion was needed.",
-      "GcInfoTableEncodingTests passed 10/10 in Debug and Release with win-x64 target semantics; the Release run excluded the two known unsupported xarch test sources. Full-analysis attempts stopped before tests on the already-recorded IDE0058/IDE0059 diagnostics in JitTimer.cs:257 and CodeGen.BlockMemoryCopy.cs:215, 219, 225, 231 and 236."
+      "GcInfoTableEncodingTests passed 10/10 in Debug and Release with win-x64 target semantics; the Release run excluded the two known unsupported xarch test sources. Full-analysis attempts stopped before tests on the already-recorded IDE0058/IDE0059 diagnostics in JitTimer.cs:257 and CodeGen.BlockMemoryCopy.cs:215, 219, 225, 231 and 236.",
+      "CodeGen.ArithmeticSupport.cs::genJumpToThrowHlpBlk runtime-gates its throw-helper descriptor assertions; fgGetExcptnTarget and AddCodeDsc.acdUsed, acdDstBlk, and acdStkLvlInit exist in Release. CodeGenThrowHelperTests passed 16 tests in Debug and 15 in Release with win-x64 semantics; the frame-pointer-only stack-level case was assumption-skipped. The Release run excluded EmitterJumpRemovalTests.cs and EmitterLoopAlignmentAdjustmentTests.cs through artifacts\\ExcludeKnownReleaseTestSources.targets. The neighboring inst_JMP stack-depth check remains DEBUG-guarded because BasicBlock.bbTgtStkDepth is DEBUG-only."
     ],
     "activeBatch": null,
     "parityEvidence": {

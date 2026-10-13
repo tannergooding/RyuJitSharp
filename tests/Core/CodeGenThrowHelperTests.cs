@@ -46,6 +46,27 @@ internal static unsafe class CodeGenThrowHelperTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void ThrowHelperBlocksJumpToThePreparedTarget(bool useExplicitFailBlock)
+    {
+        EmitterCallInstructionTests.WithEmitter((compiler, codeGen) =>
+        {
+            compiler.opts.compDbgCode = false;
+            var source = compiler.compCurBB ?? throw new AssertionException("Missing current block.");
+            var target = CodeGenBinaryTests.PrepareThrowTarget(compiler);
+            compiler.fgGetExcptnTarget(SCK_OVERFLOW, source).acdStkLvlInit = true;
+            var firstGroup = codeGen.Emitter.emitCurIG;
+
+            codeGen.genJumpToThrowHlpBlk(EJ_jmp, SCK_OVERFLOW, useExplicitFailBlock ? target : null);
+
+            var instructions = CodeGenLocalHeapTests.AllDescriptors(firstGroup, codeGen);
+            Assert.That(instructions, Has.Count.EqualTo(1));
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_jmp));
+            Assert.That(EmitterJumpInstructionTests.JumpView.Target(instructions[0]), Is.SameAs(target));
+        });
+    }
+
     [TestCase(EJ_XARCH_jo, INS_jno)]
     [TestCase(EJ_XARCH_jb, INS_jae)]
     [TestCase(EJ_XARCH_jae, INS_jb)]
