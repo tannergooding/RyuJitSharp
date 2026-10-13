@@ -900,10 +900,11 @@ public sealed partial class CodeGen
                     var firstField = intrin.Op1.AsFieldList().Uses.Head;
                     assert(firstField is not null);
                     op1Reg = firstField.Node.RegNum;
-#if DEBUG
-                    var regCount = GetArm64IntrinsicRegisterList(intrin.Op1, out op1Reg);
-                    assert(regCount == 2);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        var regCount = GetArm64IntrinsicRegisterList(intrin.Op1, out op1Reg);
+                        assert(regCount == 2);
+                    }
                     Emitter.emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
                         INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
                     break;
@@ -916,44 +917,45 @@ public sealed partial class CodeGen
                     var firstField = intrin.Op3.AsFieldList().Uses.Head;
                     assert(firstField is not null);
                     op3Reg = firstField.Node.RegNum;
-#if DEBUG
-                    var regCount = GetArm64IntrinsicRegisterList(intrin.Op3, out op3Reg);
-                    switch (ins)
+                    if (Configuration.DEBUG)
                     {
-                        case INS_sve_st2b:
-                        case INS_sve_st2d:
-                        case INS_sve_st2h:
-                        case INS_sve_st2w:
-                        case INS_sve_st2q:
+                        var regCount = GetArm64IntrinsicRegisterList(intrin.Op3, out op3Reg);
+                        switch (ins)
                         {
-                            assert(regCount == 2);
-                            break;
-                        }
-                        case INS_sve_st3b:
-                        case INS_sve_st3d:
-                        case INS_sve_st3h:
-                        case INS_sve_st3w:
-                        case INS_sve_st3q:
-                        {
-                            assert(regCount == 3);
-                            break;
-                        }
-                        case INS_sve_st4b:
-                        case INS_sve_st4d:
-                        case INS_sve_st4h:
-                        case INS_sve_st4w:
-                        case INS_sve_st4q:
-                        {
-                            assert(regCount == 4);
-                            break;
-                        }
-                        default:
-                        {
-                            unreached();
-                            break;
+                            case INS_sve_st2b:
+                            case INS_sve_st2d:
+                            case INS_sve_st2h:
+                            case INS_sve_st2w:
+                            case INS_sve_st2q:
+                            {
+                                assert(regCount == 2);
+                                break;
+                            }
+                            case INS_sve_st3b:
+                            case INS_sve_st3d:
+                            case INS_sve_st3h:
+                            case INS_sve_st3w:
+                            case INS_sve_st3q:
+                            {
+                                assert(regCount == 3);
+                                break;
+                            }
+                            case INS_sve_st4b:
+                            case INS_sve_st4d:
+                            case INS_sve_st4h:
+                            case INS_sve_st4w:
+                            case INS_sve_st4q:
+                            {
+                                assert(regCount == 4);
+                                break;
+                            }
+                            default:
+                            {
+                                unreached();
+                                break;
+                            }
                         }
                     }
-#endif
                     Emitter.emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
                     break;
                 }
