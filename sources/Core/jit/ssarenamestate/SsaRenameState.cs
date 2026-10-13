@@ -127,18 +127,19 @@ public sealed class SsaRenameState
             _freeStack.Push(top);
         }
 
-#if DEBUG
-        if (_stacks is not null)
+        if (Configuration.DEBUG)
         {
-            for (var i = 0; i < _lvaCount; i++)
+            if (_stacks is not null)
             {
-                if (_stacks[i].Top is StackNode top)
+                for (var i = 0; i < _lvaCount; i++)
                 {
-                    assert(!ReferenceEquals(top.Block, block));
+                    if (_stacks[i].Top is StackNode top)
+                    {
+                        assert(!ReferenceEquals(top.Block, block));
+                    }
                 }
             }
         }
-#endif
     }
 
     public int TopMemory(MemoryKind memoryKind)
