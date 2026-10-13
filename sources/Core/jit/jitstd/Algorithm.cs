@@ -17,12 +17,13 @@ internal static class JitStd
         {
             QuickSort(values, 0, values.Length - 1, less);
 
-#if DEBUG
-            for (var i = 0; i < values.Length - 1; i++)
+            if (Configuration.DEBUG)
             {
-                assert(!less(values[1], values[0]));
+                for (var i = 0; i < values.Length - 1; i++)
+                {
+                    assert(!less(values[1], values[0]));
+                }
             }
-#endif
         }
     }
 
