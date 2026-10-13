@@ -9,17 +9,18 @@ public sealed partial class Lowering
 {
     private bool IsContainableUnaryOrBinaryOp(GenTree parentNode, GenTree childNode)
     {
-#if DEBUG
-        if (parentNode.Oper.IsBinary)
+        if (Configuration.DEBUG)
         {
-            assert((parentNode.AsOp().Op1 == childNode) || (parentNode.AsOp().Op2 == childNode));
+            if (parentNode.Oper.IsBinary)
+            {
+                assert((parentNode.AsOp().Op1 == childNode) || (parentNode.AsOp().Op2 == childNode));
+            }
+            else
+            {
+                assert(parentNode.Oper.IsUnary);
+                assert(parentNode.AsUnOp().Op1 == childNode);
+            }
         }
-        else
-        {
-            assert(parentNode.Oper.IsUnary);
-            assert(parentNode.AsUnOp().Op1 == childNode);
-        }
-#endif
         if (parentNode.IsContained)
         {
             return false;
