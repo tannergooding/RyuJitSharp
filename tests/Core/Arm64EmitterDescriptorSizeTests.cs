@@ -79,7 +79,7 @@ internal static class Arm64EmitterDescriptorSizeTests
     [TestCase(7, 32)]
     public static void ExtendedPayloadSizesFollowNativeFlags(int flags, int expected)
     {
-        var descriptor = Descriptor(INS_nop, IF_SN_0A);
+        var descriptor = Descriptor(INS_nop, IF_ARM64_SN_0A);
         if ((flags & 1) != 0)
         {
             descriptor.idSetIsLargeCns();
@@ -111,7 +111,7 @@ internal static class Arm64EmitterDescriptorSizeTests
 #endif
     public static void CallsUseTheirNativePayloadSize(bool large, int expected)
     {
-        var descriptor = Descriptor(INS_blr, IF_BR_1B);
+        var descriptor = Descriptor(INS_blr, IF_ARM64_BR_1B);
         if (large)
         {
             descriptor.idSetIsLargeCall();
@@ -124,17 +124,17 @@ internal static class Arm64EmitterDescriptorSizeTests
     [Test]
     public static void FatCallLayoutRemainsAnExplicitDependency()
     {
-        var descriptor = Descriptor(INS_blr, IF_BR_1B);
+        var descriptor = Descriptor(INS_blr, IF_ARM64_BR_1B);
         descriptor.idSetIsLargeCall();
 
         _ = Assert.Throws<PlatformNotSupportedException>(() => Size(CreateEmitter(), descriptor));
     }
 #endif
 
-    [TestCase(IF_LABEL)]
-    [TestCase(IF_LARGEJMP)]
-    [TestCase(IF_LARGEADR)]
-    [TestCase(IF_LARGELDC)]
+    [TestCase(IF_ARM64_LABEL)]
+    [TestCase(IF_ARM64_LARGEJMP)]
+    [TestCase(IF_ARM64_LARGEADR)]
+    [TestCase(IF_ARM64_LARGELDC)]
     public static void LabelFormatsUseJumpStorage(Emitter.insFormat format)
     {
         Assert.That(Size(CreateEmitter(), Descriptor(INS_b, format)), Is.EqualTo(48));
@@ -143,7 +143,7 @@ internal static class Arm64EmitterDescriptorSizeTests
     [Test]
     public static void AlignmentStorageMatchesConfiguredNativeLayout()
     {
-        Assert.That(Size(CreateEmitter(), Descriptor(INS_align, IF_SN_0A)), Is.EqualTo(ExpectedAlignDescriptorSize));
+        Assert.That(Size(CreateEmitter(), Descriptor(INS_align, IF_ARM64_SN_0A)), Is.EqualTo(ExpectedAlignDescriptorSize));
     }
 
     private static int ExpectedAlignDescriptorSize

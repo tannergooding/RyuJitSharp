@@ -16,13 +16,13 @@ internal static class Arm64EmitterInstructionMetadataTests
     {
         for (var index = 0; index < CodeGen.instInfo.Length; index++)
         {
-            var ins = (instruction)index;
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(index);
             var info = CodeGen.instInfo[index];
 
-            Assert.That(IsCompare(null, ins), Is.EqualTo((info & 4) != 0), $"Compare classification for {ins}");
-            Assert.That(IsVectorLong(null, ins), Is.EqualTo((info & 32) != 0), $"Long classification for {ins}");
-            Assert.That(IsVectorNarrow(null, ins), Is.EqualTo((info & 64) != 0), $"Narrow classification for {ins}");
-            Assert.That(IsVectorWide(null, ins), Is.EqualTo((info & 16) != 0), $"Wide classification for {ins}");
+            Assert.That(IsCompare(null, ins), Is.EqualTo((info & (insInfoFlags)4) != 0), $"Compare classification for {ins}");
+            Assert.That(IsVectorLong(null, ins), Is.EqualTo((info & (insInfoFlags)32) != 0), $"Long classification for {ins}");
+            Assert.That(IsVectorNarrow(null, ins), Is.EqualTo((info & (insInfoFlags)64) != 0), $"Narrow classification for {ins}");
+            Assert.That(IsVectorWide(null, ins), Is.EqualTo((info & (insInfoFlags)16) != 0), $"Wide classification for {ins}");
         }
     }
 

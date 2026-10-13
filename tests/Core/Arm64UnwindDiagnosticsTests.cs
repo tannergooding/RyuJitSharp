@@ -187,7 +187,7 @@ internal static unsafe class Arm64UnwindDiagnosticsTests
         });
     }
 
-    private sealed class DiagnosticCodes(byte* codes) : UnwindCodesBase
+    private sealed class DiagnosticCodes(byte* codes) : Arm64UnwindCodesBase
     {
         public override byte* GetCodes()
         {

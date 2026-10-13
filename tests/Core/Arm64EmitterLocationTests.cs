@@ -18,9 +18,9 @@ internal static unsafe class Arm64EmitterLocationTests
     public static void FinalOffsetsRespectPredictedAndChangedInstructionSizes(bool changed, uint expected)
     {
         var (_, emitter) = CreateEmitter();
-        var first = LocationEmitter.Basic(IF_LARGEJMP);
-        var second = LocationEmitter.Basic(IF_SN_0A);
-        var third = LocationEmitter.Basic(IF_SN_0A);
+        var first = LocationEmitter.Basic(IF_ARM64_LARGEJMP);
+        var second = LocationEmitter.Basic(IF_ARM64_SN_0A);
+        var third = LocationEmitter.Basic(IF_ARM64_SN_0A);
         var group = Group(first, second, third);
         group.igOffs = 100;
         group.igSize = changed ? (ushort)16 : (ushort)12;
@@ -30,7 +30,7 @@ internal static unsafe class Arm64EmitterLocationTests
         }
         else
         {
-            first.idInsFmt(IF_SN_0A);
+            first.idInsFmt(IF_ARM64_SN_0A);
         }
 
         Assert.That(new emitLocation(group, Emitter.emitSpecifiedOffset(2, 8)).CodeOffset(emitter), Is.EqualTo(expected));
@@ -42,8 +42,8 @@ internal static unsafe class Arm64EmitterLocationTests
     public static void ReplacedInstructionsCanMoveIntoTheNextGroup()
     {
         var (_, emitter) = CreateEmitter();
-        var group = Group(LocationEmitter.Basic(IF_SN_0A));
-        var replacement = Group(LocationEmitter.Basic(IF_LARGEJMP));
+        var group = Group(LocationEmitter.Basic(IF_ARM64_SN_0A));
+        var replacement = Group(LocationEmitter.Basic(IF_ARM64_LARGEJMP));
         group.igFlags |= InsGroupFlags.HasRemovedInstruction;
         group.igNext = replacement;
         replacement.igOffs = uint.MaxValue - 3;
@@ -57,7 +57,7 @@ internal static unsafe class Arm64EmitterLocationTests
     {
         var (compiler, emitter) = CreateEmitter();
         var currentDescriptor = emitter.Allocate();
-        var savedDescriptor = LocationEmitter.Basic(IF_SN_0A);
+        var savedDescriptor = LocationEmitter.Basic(IF_ARM64_SN_0A);
         var first = Group(savedDescriptor);
         var empty = Group();
         first.igNext = empty;
@@ -209,7 +209,7 @@ internal static unsafe class Arm64EmitterLocationTests
         {
             var descriptor = AllocateSmall(this, EA_8BYTE);
             descriptor.idIns(INS_nop);
-            descriptor.idInsFmt(IF_SN_0A);
+            descriptor.idInsFmt(IF_ARM64_SN_0A);
             CurrentSize(this) += 4;
             return descriptor;
         }

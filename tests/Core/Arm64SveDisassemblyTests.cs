@@ -19,15 +19,15 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm64SveDisassemblyTests
 {
-    [TestCase(IF_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z0.s, z1.s")]
-    [TestCase(IF_SVE_AO_3A, INS_sve_asr, INS_OPTS_SCALABLE_H, "z0.h, p7/m, z0.h, z1.d")]
-    [TestCase(IF_SVE_AR_4A, INS_sve_mla, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z1.s, z31.s")]
-    [TestCase(IF_SVE_AH_3A, INS_sve_movprfx, INS_OPTS_SCALABLE_S, "z0.s, p7/z, z1.s")]
-    [TestCase(IF_SVE_HO_3A, INS_sve_fcvtx, INS_OPTS_D_TO_S, "z0.s, p7/m, z1.d")]
-    [TestCase(IF_SVE_GQ_3A, INS_sve_bfcvtnt, INS_OPTS_SCALABLE_H, "z0.h, p7/m, z1.s")]
-    [TestCase(IF_SVE_EQ_3A, INS_sve_sadalp, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z1.h")]
-    [TestCase(IF_SVE_GP_3A, INS_sve_fcadd, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z0.s, z1.s, #90")]
-    [TestCase(IF_SVE_HM_2A, INS_sve_fmul, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z0.s, #0.5000")]
+    [TestCase(IF_ARM64_SVE_AA_3A, INS_sve_add, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z0.s, z1.s")]
+    [TestCase(IF_ARM64_SVE_AO_3A, INS_sve_asr, INS_OPTS_SCALABLE_H, "z0.h, p7/m, z0.h, z1.d")]
+    [TestCase(IF_ARM64_SVE_AR_4A, INS_sve_mla, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z1.s, z31.s")]
+    [TestCase(IF_ARM64_SVE_AH_3A, INS_sve_movprfx, INS_OPTS_SCALABLE_S, "z0.s, p7/z, z1.s")]
+    [TestCase(IF_ARM64_SVE_HO_3A, INS_sve_fcvtx, INS_OPTS_D_TO_S, "z0.s, p7/m, z1.d")]
+    [TestCase(IF_ARM64_SVE_GQ_3A, INS_sve_bfcvtnt, INS_OPTS_SCALABLE_H, "z0.h, p7/m, z1.s")]
+    [TestCase(IF_ARM64_SVE_EQ_3A, INS_sve_sadalp, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z1.h")]
+    [TestCase(IF_ARM64_SVE_GP_3A, INS_sve_fcadd, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z0.s, z1.s, #90")]
+    [TestCase(IF_ARM64_SVE_HM_2A, INS_sve_fmul, INS_OPTS_SCALABLE_S, "z0.s, p7/m, z0.s, #0.5000")]
     public static void PredicatedFormatsPreserveDestructiveOperandsAndConversionWidths(
         Emitter.insFormat format, instruction ins, insOpts opt, string expected)
     {
@@ -38,25 +38,25 @@ internal static class Arm64SveDisassemblyTests
         });
     }
 
-    [TestCase(IF_SVE_AU_3A, INS_sve_mov, INS_OPTS_SCALABLE_D, 0, "z0.d, z1.d")]
-    [TestCase(IF_SVE_AU_3A, INS_sve_orr, INS_OPTS_SCALABLE_D, 0, "z0.d, z1.d, z31.d")]
-    [TestCase(IF_SVE_AV_3A, INS_sve_eor3, INS_OPTS_SCALABLE_D, 0, "z0.d, z0.d, z1.d, z31.d")]
-    [TestCase(IF_SVE_BZ_3A, INS_sve_tbl, INS_OPTS_SCALABLE_S, 0, "z0.s, { z1.s }, z31.s")]
-    [TestCase(IF_SVE_BZ_3A, INS_sve_tbx, INS_OPTS_SCALABLE_S, 0, "z0.s, z1.s, z31.s")]
-    [TestCase(IF_SVE_BZ_3A_A, INS_sve_tbl, INS_OPTS_SCALABLE_S, 0, "z0.s, { z1.s, z2.s }, z31.s")]
-    [TestCase(IF_SVE_BH_3A, INS_sve_adr, INS_OPTS_SCALABLE_D, 0, "z0.d, [z1.d, z31.d]")]
-    [TestCase(IF_SVE_BH_3A, INS_sve_adr, INS_OPTS_SCALABLE_D, 3, "z0.d, [z1.d, z31.d, lsl #3]")]
-    [TestCase(IF_SVE_BH_3B, INS_sve_adr, INS_OPTS_SCALABLE_D, 0, "z0.d, [z1.d, z31.d, sxtw]")]
-    [TestCase(IF_SVE_AX_1A, INS_sve_index, INS_OPTS_SCALABLE_S, 0x3F0, "z0.s, #-16, #15")]
-    [TestCase(IF_SVE_FA_3A, INS_sve_cdot, INS_OPTS_SCALABLE_B, 14, "z0.s, z1.b, z31.b[3], #180")]
-    [TestCase(IF_SVE_FA_3B, INS_sve_cdot, INS_OPTS_SCALABLE_H, 7, "z0.d, z1.h, z31.h[1], #270")]
-    [TestCase(IF_SVE_FB_3A, INS_sve_cmla, INS_OPTS_SCALABLE_H, 9, "z0.h, z1.h, z31.h[2], #90")]
-    [TestCase(IF_SVE_FR_2A, INS_sve_sshllb, INS_OPTS_SCALABLE_S, 3, "z0.s, z1.h, #3")]
-    [TestCase(IF_SVE_GB_2A, INS_sve_shrnb, INS_OPTS_SCALABLE_H, 4, "z0.h, z1.s, #4")]
-    [TestCase(IF_SVE_BS_1A, INS_sve_and, INS_OPTS_SCALABLE_D, 0x1000, "z0.d, z0.d, #1")]
-    [TestCase(IF_SVE_BT_1A, INS_sve_dupm, INS_OPTS_SCALABLE_D, 0x1000, "z0.d, #1")]
-    [TestCase(IF_SVE_BW_2A, INS_sve_dup, INS_OPTS_SCALABLE_S, 0, "z0.s, s1")]
-    [TestCase(IF_SVE_BW_2A, INS_sve_dup, INS_OPTS_SCALABLE_S, 3, "z0.s, z1.s[3]")]
+    [TestCase(IF_ARM64_SVE_AU_3A, INS_sve_mov, INS_OPTS_SCALABLE_D, 0, "z0.d, z1.d")]
+    [TestCase(IF_ARM64_SVE_AU_3A, INS_sve_orr, INS_OPTS_SCALABLE_D, 0, "z0.d, z1.d, z31.d")]
+    [TestCase(IF_ARM64_SVE_AV_3A, INS_sve_eor3, INS_OPTS_SCALABLE_D, 0, "z0.d, z0.d, z1.d, z31.d")]
+    [TestCase(IF_ARM64_SVE_BZ_3A, INS_sve_tbl, INS_OPTS_SCALABLE_S, 0, "z0.s, { z1.s }, z31.s")]
+    [TestCase(IF_ARM64_SVE_BZ_3A, INS_sve_tbx, INS_OPTS_SCALABLE_S, 0, "z0.s, z1.s, z31.s")]
+    [TestCase(IF_ARM64_SVE_BZ_3A_A, INS_sve_tbl, INS_OPTS_SCALABLE_S, 0, "z0.s, { z1.s, z2.s }, z31.s")]
+    [TestCase(IF_ARM64_SVE_BH_3A, INS_sve_adr, INS_OPTS_SCALABLE_D, 0, "z0.d, [z1.d, z31.d]")]
+    [TestCase(IF_ARM64_SVE_BH_3A, INS_sve_adr, INS_OPTS_SCALABLE_D, 3, "z0.d, [z1.d, z31.d, lsl #3]")]
+    [TestCase(IF_ARM64_SVE_BH_3B, INS_sve_adr, INS_OPTS_SCALABLE_D, 0, "z0.d, [z1.d, z31.d, sxtw]")]
+    [TestCase(IF_ARM64_SVE_AX_1A, INS_sve_index, INS_OPTS_SCALABLE_S, 0x3F0, "z0.s, #-16, #15")]
+    [TestCase(IF_ARM64_SVE_FA_3A, INS_sve_cdot, INS_OPTS_SCALABLE_B, 14, "z0.s, z1.b, z31.b[3], #180")]
+    [TestCase(IF_ARM64_SVE_FA_3B, INS_sve_cdot, INS_OPTS_SCALABLE_H, 7, "z0.d, z1.h, z31.h[1], #270")]
+    [TestCase(IF_ARM64_SVE_FB_3A, INS_sve_cmla, INS_OPTS_SCALABLE_H, 9, "z0.h, z1.h, z31.h[2], #90")]
+    [TestCase(IF_ARM64_SVE_FR_2A, INS_sve_sshllb, INS_OPTS_SCALABLE_S, 3, "z0.s, z1.h, #3")]
+    [TestCase(IF_ARM64_SVE_GB_2A, INS_sve_shrnb, INS_OPTS_SCALABLE_H, 4, "z0.h, z1.s, #4")]
+    [TestCase(IF_ARM64_SVE_BS_1A, INS_sve_and, INS_OPTS_SCALABLE_D, 0x1000, "z0.d, z0.d, #1")]
+    [TestCase(IF_ARM64_SVE_BT_1A, INS_sve_dupm, INS_OPTS_SCALABLE_D, 0x1000, "z0.d, #1")]
+    [TestCase(IF_ARM64_SVE_BW_2A, INS_sve_dup, INS_OPTS_SCALABLE_S, 0, "z0.s, s1")]
+    [TestCase(IF_ARM64_SVE_BW_2A, INS_sve_dup, INS_OPTS_SCALABLE_S, 3, "z0.s, z1.s[3]")]
     public static void VectorFormatsPreserveAliasesListsPackedImmediatesAndIndexZero(
         Emitter.insFormat format, instruction ins, insOpts opt, int immediate, string expected)
     {
@@ -74,7 +74,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_CW_4A, ins, INS_OPTS_SCALABLE_S,
+            var id = View.Descriptor(IF_ARM64_SVE_CW_4A, ins, INS_OPTS_SCALABLE_S,
                 REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31);
             AssertOutput(emitter, id, expected);
         });
@@ -88,7 +88,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_CZ_4A, ins, INS_OPTS_SCALABLE_B,
+            var id = View.Descriptor(IF_ARM64_SVE_CZ_4A, ins, INS_OPTS_SCALABLE_B,
                 REG_ARM64_P0, REG_ARM64_P7, REG_ARM64_P1, REG_ARM64_P15);
             AssertOutput(emitter, id, expected);
         });
@@ -100,7 +100,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_AH_3A, INS_sve_movprfx, INS_OPTS_SCALABLE_S,
+            var id = View.Descriptor(IF_ARM64_SVE_AH_3A, INS_sve_movprfx, INS_OPTS_SCALABLE_S,
                 REG_ARM64_V0, REG_ARM64_P7, REG_ARM64_V1, REG_ARM64_V31);
             id.idPredicateReg2Merge(merge);
             AssertOutput(emitter, id, expected);
@@ -113,7 +113,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_DE_1A, INS_sve_ptrue, INS_OPTS_SCALABLE_S,
+            var id = View.Descriptor(IF_ARM64_SVE_DE_1A, INS_sve_ptrue, INS_OPTS_SCALABLE_S,
                 REG_ARM64_P0, REG_ARM64_P0, REG_ARM64_P0, REG_ARM64_P0);
             id.idSvePattern(pattern);
             AssertOutput(emitter, id, expected);
@@ -126,18 +126,18 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_BL_1A, INS_sve_cntw, INS_OPTS_NONE,
+            var id = View.Descriptor(IF_ARM64_SVE_BL_1A, INS_sve_cntw, INS_OPTS_NONE,
                 REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE, multiplier);
             id.idSvePattern(SVE_PATTERN_VL4);
             AssertOutput(emitter, id, expected);
         });
     }
 
-    [TestCase(IF_SVE_IJ_3A, INS_sve_ld1w, 0, "{ z31.s }, p7/z, [x2]")]
-    [TestCase(IF_SVE_IJ_3A, INS_sve_ld1w, -2, "{ z31.s }, p7/z, [x2, #-2, mul vl]")]
-    [TestCase(IF_SVE_IO_3A, INS_sve_ld1rqw, 32, "{ z31.s }, p7/z, [x2, #0x20]")]
-    [TestCase(IF_SVE_IS_3A, INS_sve_ld2w, 2, "{ z31.s, z0.s }, p7/z, [x2, #0x02, mul vl]")]
-    [TestCase(IF_SVE_JO_3A, INS_sve_st3w, 3, "{ z31.s, z0.s, z1.s }, p7, [x2, #0x03, mul vl]")]
+    [TestCase(IF_ARM64_SVE_IJ_3A, INS_sve_ld1w, 0, "{ z31.s }, p7/z, [x2]")]
+    [TestCase(IF_ARM64_SVE_IJ_3A, INS_sve_ld1w, -2, "{ z31.s }, p7/z, [x2, #-2, mul vl]")]
+    [TestCase(IF_ARM64_SVE_IO_3A, INS_sve_ld1rqw, 32, "{ z31.s }, p7/z, [x2, #0x20]")]
+    [TestCase(IF_ARM64_SVE_IS_3A, INS_sve_ld2w, 2, "{ z31.s, z0.s }, p7/z, [x2, #0x02, mul vl]")]
+    [TestCase(IF_ARM64_SVE_JO_3A, INS_sve_st3w, 3, "{ z31.s, z0.s, z1.s }, p7, [x2, #0x03, mul vl]")]
     public static void MemoryFormatsKeepWrappedListsAndCapstoneHexOffsets(
         Emitter.insFormat format, instruction ins, int immediate, string expected)
     {
@@ -155,7 +155,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_DO_2A, INS_sve_sqincp, INS_OPTS_SCALABLE_S,
+            var id = View.Descriptor(IF_ARM64_SVE_DO_2A, INS_sve_sqincp, INS_OPTS_SCALABLE_S,
                 REG_ARM64_R0, REG_ARM64_P1, REG_ARM64_R0, REG_ARM64_R0, size);
             AssertOutput(emitter, id, expected);
         });
@@ -167,7 +167,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_DL_2A, INS_sve_cntp, INS_OPTS_SCALABLE_S,
+            var id = View.Descriptor(IF_ARM64_SVE_DL_2A, INS_sve_cntp, INS_OPTS_SCALABLE_S,
                 REG_ARM64_R0, REG_ARM64_P8, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE);
             id.idVectorLength4x(four);
             AssertOutput(emitter, id, expected);
@@ -179,7 +179,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_BB_2A, INS_sve_addvl, INS_OPTS_NONE,
+            var id = View.Descriptor(IF_ARM64_SVE_BB_2A, INS_sve_addvl, INS_OPTS_NONE,
                 REG_ARM64_ZR, REG_ARM64_ZR, REG_ARM64_R0, REG_ARM64_R0, EA_8BYTE, -16);
             AssertOutput(emitter, id, "sp, sp, #-16");
         });
@@ -191,7 +191,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_EB_1A, INS_sve_dup, INS_OPTS_SCALABLE_S,
+            var id = View.Descriptor(IF_ARM64_SVE_EB_1A, INS_sve_dup, INS_OPTS_SCALABLE_S,
                 REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, REG_ARM64_V0, immediate: 7);
             id.idHasShift(shift);
             AssertOutput(emitter, id, expected);
@@ -203,7 +203,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_SVE_DQ_0A, INS_sve_setffr, INS_OPTS_NONE,
+            var id = View.Descriptor(IF_ARM64_SVE_DQ_0A, INS_sve_setffr, INS_OPTS_NONE,
                 REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0);
             AssertOutput(emitter, id, "");
         });
@@ -214,7 +214,7 @@ internal static class Arm64SveDisassemblyTests
     {
         WithEmitter(emitter =>
         {
-            var id = View.Descriptor(IF_EN5A, INS_ldr, INS_OPTS_NONE,
+            var id = View.Descriptor(IF_ARM64_EN5A, INS_ldr, INS_OPTS_NONE,
                 REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0, REG_ARM64_R0);
             var (output, assertions) = Capture(() => Display(emitter, id));
 

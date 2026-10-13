@@ -26,7 +26,7 @@ internal static class Arm64IndirectLoadStoreTests
             var address = new GenTreeAddrMode(TYP_I_IMPL, baseAddress, null, 0, 8) { IsContained = true };
             var indir = new GenTreeIndir(GT_IND, TYP_INT, address);
 
-            codeGen.Emitter.emitInsLoadStoreOp(INS_ldr, EA_4BYTE, REG_ARM64_R0, indir);
+            codeGen.Emitter.emitInsLoadStoreOpArm64(INS_ldr, EA_4BYTE, REG_ARM64_R0, indir);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(1));
@@ -49,7 +49,7 @@ internal static class Arm64IndirectLoadStoreTests
             var address = new GenTreeAddrMode(TYP_I_IMPL, baseAddress, index, 4, 0) { IsContained = true };
             var indir = new GenTreeIndir(GT_IND, TYP_INT, address);
 
-            codeGen.Emitter.emitInsLoadStoreOp(INS_ldr, EA_4BYTE, REG_ARM64_R0, indir);
+            codeGen.Emitter.emitInsLoadStoreOpArm64(INS_ldr, EA_4BYTE, REG_ARM64_R0, indir);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(1));

@@ -144,7 +144,7 @@ internal static class Arm64CodeGenLockedInstructionTests
             if (contained)
             {
                 comparand.IsContained = true;
-                comparand.RegNum = REG_NA;
+                comparand.RegNum = REG_ARM64_NA;
             }
             else
             {
@@ -222,7 +222,7 @@ internal static class Arm64CodeGenLockedInstructionTests
             var address = Register(compiler, TYP_BYREF, REG_ARM64_R4);
             var data = compiler.gtNewIconNode(TYP_INT, 7);
             data.IsContained = useImmediate;
-            data.RegNum = useImmediate ? REG_NA : REG_ARM64_R5;
+            data.RegNum = useImmediate ? REG_ARM64_NA : REG_ARM64_R5;
             var tree = new GenTreeIndir(GT_XADD, TYP_INT, address, data)
             {
                 RegNum = REG_ARM64_R3,

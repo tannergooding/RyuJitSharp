@@ -160,12 +160,12 @@ internal static unsafe class Arm64ArithmeticLoweringTests
         });
     }
 
-    [TestCase(GenCondition.FEQ, GT_NONE, EJ_eq, EJ_NONE)]
-    [TestCase(GenCondition.FNE, GT_AND, EJ_gt, EJ_lo)]
-    [TestCase(GenCondition.FEQU, GT_OR, EJ_eq, EJ_vs)]
-    [TestCase(GenCondition.FNEU, GT_NONE, EJ_ne, EJ_NONE)]
-    [TestCase(GenCondition.FLT, GT_NONE, EJ_lo, EJ_NONE)]
-    [TestCase(GenCondition.FLTU, GT_NONE, EJ_lt, EJ_NONE)]
+    [TestCase(GenCondition.FEQ, GT_NONE, EJ_ARMARCH_eq, EJ_NONE)]
+    [TestCase(GenCondition.FNE, GT_AND, EJ_ARMARCH_gt, EJ_ARMARCH_lo)]
+    [TestCase(GenCondition.FEQU, GT_OR, EJ_ARMARCH_eq, EJ_ARMARCH_vs)]
+    [TestCase(GenCondition.FNEU, GT_NONE, EJ_ARMARCH_ne, EJ_NONE)]
+    [TestCase(GenCondition.FLT, GT_NONE, EJ_ARMARCH_lo, EJ_NONE)]
+    [TestCase(GenCondition.FLTU, GT_NONE, EJ_ARMARCH_lt, EJ_NONE)]
     public static void FloatingConditionDescriptorsPreserveNativeBranchCombinations(
         GenCondition.CodeKind condition, genTreeOps oper, emitJumpKind first, emitJumpKind second)
     {

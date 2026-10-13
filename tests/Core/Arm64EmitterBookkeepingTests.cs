@@ -78,13 +78,21 @@ internal static unsafe class Arm64EmitterBookkeepingTests
     }
 
     [Test]
-    public static void EpilogCounterReturnsNativeUnsignedBits()
+    public static void EpilogCounterHonorsEncoderAvailabilityAndUnsignedBits()
     {
         var (_, emitter) = CreateEmitter();
-        EpilogCount(emitter) = -1;
-        var getter = typeof(Emitter).GetMethod("emitGetEpilogCnt")
-            ?? throw new AssertionException("Missing native epilog-count helper.");
-        Assert.That(getter.Invoke(emitter, null), Is.EqualTo(uint.MaxValue));
+        if (Configuration.JIT32_GCENCODER)
+        {
+            EpilogCount(emitter) = -1;
+            Assert.That(emitter.emitGetEpilogCnt(), Is.EqualTo(uint.MaxValue));
+        }
+        else
+        {
+            var failure = Assert.Throws<FatalJitException>(() => emitter.emitGetEpilogCnt());
+            Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Is.EqualTo("The epilog recorder is only supported by the x86 GC encoder."));
+        }
     }
 
     [TestCase(false, 2)]
@@ -110,7 +118,7 @@ internal static unsafe class Arm64EmitterBookkeepingTests
         {
             var descriptor = group.igData?[0] ?? throw new AssertionException("Missing NoGC descriptor.");
             descriptor.idIns(instruction.INS_nop);
-            descriptor.idInsFmt(Emitter.insFormat.IF_SN_0A);
+            descriptor.idInsFmt(Emitter.insFormat.IF_ARM64_SN_0A);
         }
 #endif
         prolog.igFlags |= InsGroupFlags.NoGCInterrupt;

@@ -28,8 +28,8 @@ internal static class Arm64StoreClassificationTests
     {
         for (var index = 0; index < CodeGen.instInfo.Length; index++)
         {
-            var ins = (instruction)index;
-            var expected = (CodeGen.instInfo[index] & CodeGen.ST) != 0;
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(index);
+            var expected = ((byte)CodeGen.instInfo[index] & CodeGen.ST) != 0;
 
             Assert.That(s_emitter.emitInsIsStore(ins), Is.EqualTo(expected), $"Instruction {ins}");
         }

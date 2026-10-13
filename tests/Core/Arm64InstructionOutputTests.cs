@@ -23,7 +23,7 @@ internal static unsafe class Arm64InstructionOutputTests
     {
         var emitter = NewEmitter();
         emitter.writeableOffset = alias;
-        var id = OutputEmitter.Descriptor(INS_sve_setffr, IF_SVE_DQ_0A, EA_SCALABLE);
+        var id = OutputEmitter.Descriptor(INS_sve_setffr, IF_ARM64_SVE_DQ_0A, EA_SCALABLE);
         if (small)
         {
             id.idSetIsSmallDsc();
@@ -47,10 +47,10 @@ internal static unsafe class Arm64InstructionOutputTests
         }
     }
 
-    [TestCase(INS_ret, IF_BR_1A, 0xD65F0000u, true)]
-    [TestCase(INS_nop, IF_SN_0A, 0xD503201Fu, false)]
-    [TestCase(INS_add, IF_DI_2A, 0x91000020u, false)]
-    [TestCase(INS_str, IF_LS_2A, 0xF9000020u, false)]
+    [TestCase(INS_ret, IF_ARM64_BR_1A, 0xD65F0000u, true)]
+    [TestCase(INS_nop, IF_ARM64_SN_0A, 0xD503201Fu, false)]
+    [TestCase(INS_add, IF_ARM64_DI_2A, 0x91000020u, false)]
+    [TestCase(INS_str, IF_ARM64_LS_2A, 0xF9000020u, false)]
     public static void OrdinaryOpcodeRecordsItsNativeEncoding(
         instruction ins, Emitter.insFormat format, uint expected, bool isSmallDescriptor)
     {
@@ -87,7 +87,7 @@ internal static unsafe class Arm64InstructionOutputTests
         new Span<byte>(buffer, 64).Fill(0xA5);
         emitter.emitCodeBlock = buffer;
         emitter.emitTotalHotCodeSize = 128;
-        var id = OutputEmitter.Jump(INS_cbz, IF_LARGEJMP, EA_8BYTE, 48);
+        var id = OutputEmitter.Jump(INS_cbz, IF_ARM64_LARGEJMP, EA_8BYTE, 48);
         var cursor = buffer + 16;
         var slot = (nint)(&cursor);
 
@@ -109,7 +109,7 @@ internal static unsafe class Arm64InstructionOutputTests
         new Span<byte>(buffer, 16).Fill(0xA5);
         emitter.emitCodeBlock = buffer;
         emitter.emitTotalHotCodeSize = 16;
-        var jump = OutputEmitter.Jump(INS_b, IF_BI_0A, EA_8BYTE, 8);
+        var jump = OutputEmitter.Jump(INS_b, IF_ARM64_BI_0A, EA_8BYTE, 8);
         jump.idjShort = true;
 
         var end = emitter.emitOutputLJ(null, buffer, jump);
@@ -211,23 +211,23 @@ internal static unsafe class Arm64InstructionOutputTests
         Assert.That(PairIndexed(null, ins, opt), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_OPTS_H_TO_S, IF_DV_2J, 0x00C00000u)]
-    [TestCase(INS_OPTS_D_TO_H, IF_DV_2J, 0x00418000u)]
-    [TestCase(INS_OPTS_H_TO_8BYTE, IF_DV_2H, 0x80C00000u)]
-    [TestCase(INS_OPTS_8BYTE_TO_D, IF_DV_2I, 0x80400000u)]
+    [TestCase(INS_OPTS_H_TO_S, IF_ARM64_DV_2J, 0x00C00000u)]
+    [TestCase(INS_OPTS_D_TO_H, IF_ARM64_DV_2J, 0x00418000u)]
+    [TestCase(INS_OPTS_H_TO_8BYTE, IF_ARM64_DV_2H, 0x80C00000u)]
+    [TestCase(INS_OPTS_8BYTE_TO_D, IF_ARM64_DV_2I, 0x80400000u)]
     public static void ConversionKeepsScalarWidthAndFtypeBits(insOpts opt, Emitter.insFormat format, uint expected)
     {
         Assert.That(Convert(null, format, opt), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_sve_setffr, IF_SVE_DQ_0A, false)]
-    [TestCase(INS_sve_clasta, IF_SVE_CO_3A, true)]
-    [TestCase(INS_add, IF_DI_2A, true)]
-    [TestCase(INS_fmov, IF_DV_2H, true)]
-    [TestCase(INS_fmov, IF_DV_2I, false)]
-    [TestCase(INS_str, IF_LS_2A, false)]
-    [TestCase(INS_ldr, IF_LS_2A, true)]
-    [TestCase(INS_ldadd, IF_LS_3E, true)]
+    [TestCase(INS_sve_setffr, IF_ARM64_SVE_DQ_0A, false)]
+    [TestCase(INS_sve_clasta, IF_ARM64_SVE_CO_3A, true)]
+    [TestCase(INS_add, IF_ARM64_DI_2A, true)]
+    [TestCase(INS_fmov, IF_ARM64_DV_2H, true)]
+    [TestCase(INS_fmov, IF_ARM64_DV_2I, false)]
+    [TestCase(INS_str, IF_ARM64_LS_2A, false)]
+    [TestCase(INS_ldr, IF_ARM64_LS_2A, true)]
+    [TestCase(INS_ldadd, IF_ARM64_LS_3E, true)]
     public static void GcDestinationClassificationRetainsRegisterAndMemoryBanks(
         instruction ins, Emitter.insFormat format, bool expected)
     {
@@ -239,7 +239,7 @@ internal static unsafe class Arm64InstructionOutputTests
     public static void InvalidConvertOptionAssertsAndRetainsNativeZeroContinuation()
     {
         var result = uint.MaxValue;
-        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Convert(null, IF_DV_2J, INS_OPTS_NONE));
+        var (_, assertions) = Arm64SveInstructionSanityTests.Capture(() => result = Convert(null, IF_ARM64_DV_2J, INS_OPTS_NONE));
         Assert.That(assertions, Is.EqualTo<string[]>(["!\"Invalid 'conversion' value\""]));
         Assert.That(result, Is.Zero);
     }
@@ -259,7 +259,7 @@ internal static unsafe class Arm64InstructionOutputTests
     {
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-            () => result = Convert(null, IF_DV_2I, INS_OPTS_H_TO_S));
+            () => result = Convert(null, IF_ARM64_DV_2I, INS_OPTS_H_TO_S));
         Assert.That(assertions, Is.EqualTo<string[]>(["fmt == IF_DV_2J"]));
         Assert.That(result, Is.EqualTo(0x00C00000u));
     }
@@ -278,7 +278,7 @@ internal static unsafe class Arm64InstructionOutputTests
     public static void UnboundJumpDescriptorTripsItsBoundAssertion()
     {
         var emitter = NewEmitter();
-        var id = OutputEmitter.Jump(INS_cbz, IF_LARGEJMP, EA_8BYTE, 48, isBound: false);
+        var id = OutputEmitter.Jump(INS_cbz, IF_ARM64_LARGEJMP, EA_8BYTE, 48, isBound: false);
         var buffer = stackalloc byte[64];
         new Span<byte>(buffer, 64).Fill(0xA5);
         emitter.emitCodeBlock = buffer;
@@ -359,7 +359,7 @@ internal static unsafe class Arm64InstructionOutputTests
         {
             var id = new instrDescAlign();
             id.idIns(INS_align);
-            id.idInsFmt(IF_SN_0A);
+            id.idInsFmt(IF_ARM64_SN_0A);
             id.idInsOpt(INS_OPTS_NONE);
 
             return id;

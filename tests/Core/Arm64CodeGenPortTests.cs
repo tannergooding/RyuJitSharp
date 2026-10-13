@@ -1,6 +1,8 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 #if TARGET_ARM64
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using static RyuJitSharp.ManagedInstructionSet;
@@ -177,8 +179,7 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
-    [TestCase(TYP_INT, 4, INS_OPTS_UXTW, 2)]
-    [TestCase(TYP_I_IMPL, 8, INS_OPTS_LSL, 3)]
+    [TestCaseSource(nameof(IndexAddressCases))]
     public static void IndexAddressesPreserveWordWideningScaleAndElementOffset(
         var_types indexType, int elementSize, insOpts scaleOption, int scale)
     {
@@ -213,6 +214,12 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur,
                 Is.EqualTo(regMaskTP.CreateFromRegNum(REG_ARM64_R0, REG_ARM64_R0.SingleTypeMask)));
         });
+    }
+
+    private static IEnumerable<TestCaseData> IndexAddressCases()
+    {
+        yield return new TestCaseData(TYP_INT, 4, INS_OPTS_UXTW, 2);
+        yield return new TestCaseData(TYP_I_IMPL, 8, INS_OPTS_LSL, 3);
     }
 
     [Test]
@@ -371,6 +378,39 @@ internal static unsafe class Arm64CodeGenPortTests
         });
     }
 
+    [TestCase(false, false)]
+    [TestCase(false, true)]
+    [TestCase(true, false)]
+    [NonParallelizable]
+    public static void UnknownSizeFrameEmissionRejectsUnsupportedRuntimeConfiguration(bool arm64, bool simd)
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((_, codeGen) =>
+        {
+            const string targetSwitch = "RyuJitSharp.TARGET_ARM64";
+            const string featureSwitch = "RyuJitSharp.FEATURE_SIMD";
+            Assert.That(AppContext.TryGetSwitch(targetSwitch, out var previousTarget), Is.True);
+            Assert.That(AppContext.TryGetSwitch(featureSwitch, out var previousFeature), Is.True);
+            AppContext.SetSwitch(targetSwitch, arm64);
+            AppContext.SetSwitch(featureSwitch, simd);
+
+            try
+            {
+                var frameFailure = Assert.Throws<FatalJitException>(() => codeGen.genUnknownSizeFrame());
+                var zeroFailure = Assert.Throws<FatalJitException>(() => codeGen.genZeroInitializeUnknownSizeFrame());
+
+                Assert.That(frameFailure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+                Assert.That(zeroFailure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
+            }
+            finally
+            {
+                AppContext.SetSwitch(targetSwitch, previousTarget);
+                AppContext.SetSwitch(featureSwitch, previousFeature);
+            }
+
+            Assert.That(Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter), Is.Empty);
+        });
+    }
+
 #if !DEBUG
     // The pinned emitter's DEBUG assertions reject SP operands for MSub.
     [Test]
@@ -398,6 +438,45 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(msub.idReg4(), Is.EqualTo(REG_ARM64_SP));
         });
     }
+
+    [TestCase(33u)]
+    [TestCase(0x10000u)]
+    [TestCase(0xfffffu)]
+    [TestCase(0x12345678u)]
+    [TestCase(0xffff0000u)]
+    [TestCase(uint.MaxValue)]
+    public static void UnknownSizeFrameCountMaterializationMatchesTheArm64Emitter(uint count)
+    {
+        Arm64CodeGenLocalVariableTests.WithCodeGen((compiler, codeGen) =>
+        {
+            compiler.compLocallocUsed = true;
+            compiler.compUsesUnknownSizeFrame = true;
+            compiler.unkSizeFrame.nVector = count;
+            compiler.unkSizeFrame.FinalizeLayout();
+            codeGen.genUnknownSizeFrame();
+
+            var frame = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
+            var reserved = codeGen.rsGetRsvdReg();
+            Arm64CodeGenLocalVariableTests.WithCodeGen((_, referenceCodeGen) =>
+            {
+                referenceCodeGen.instGen_Set_Reg_To_Imm(EA_8BYTE, reserved, (nint)count);
+                var reference = Arm64CodeGenLocalVariableTests.Descriptors(referenceCodeGen.Emitter);
+                Assert.That(frame, Has.Count.EqualTo(reference.Count + 3));
+                for (var index = 0; index < reference.Count; index++)
+                {
+                    var actual = frame[index + 1];
+                    var expected = reference[index];
+                    Assert.That(actual.idIns(), Is.EqualTo(expected.idIns()));
+                    Assert.That(actual.idInsFmt(), Is.EqualTo(expected.idInsFmt()));
+                    Assert.That(actual.idOpSize(), Is.EqualTo(expected.idOpSize()));
+                    Assert.That(actual.idInsOpt(), Is.EqualTo(expected.idInsOpt()));
+                    Assert.That(actual.idReg1(), Is.EqualTo(expected.idReg1()));
+                    Assert.That(actual.idIsSmallDsc(), Is.EqualTo(expected.idIsSmallDsc()));
+                    Assert.That(Emitter.emitGetInsSC(actual), Is.EqualTo(Emitter.emitGetInsSC(expected)));
+                }
+            });
+        });
+    }
 #endif
 
     [Test]
@@ -419,12 +498,16 @@ internal static unsafe class Arm64CodeGenPortTests
                 ]));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_SCRATCH_V));
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_B));
+            Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_SCALABLE));
+            Assert.That(descriptors[0].idHasShift(), Is.False);
 
             for (var index = 0; index < 5; index++)
             {
                 var descriptor = descriptors[index + 1];
                 Assert.That(descriptor.idReg1(), Is.EqualTo(REG_SCRATCH_V));
                 Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_ZR));
+                Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_SCALABLE));
+                Assert.That(descriptor.idHasShift(), Is.False);
                 Assert.That(Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)index));
             }
         });
@@ -449,6 +532,7 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_B));
             Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_SCRATCH));
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_UNKBASE));
+            Assert.That(descriptors[1].idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
             Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_SCRATCH));
             Assert.That(descriptors[2].idReg2(), Is.EqualTo(REG_SCRATCH));
             Assert.That(Emitter.emitGetInsSC(descriptors[2]), Is.EqualTo((nint)(-1)));
@@ -457,6 +541,13 @@ internal static unsafe class Arm64CodeGenPortTests
             Assert.That(descriptors[4].idReg1(), Is.EqualTo(REG_ARM64_ZR));
             Assert.That(descriptors[4].idReg2(), Is.EqualTo(REG_SCRATCH));
             Assert.That(descriptors[4].idInsOpt(), Is.EqualTo(INS_OPTS_UXTX));
+            Assert.That(descriptors[4].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARM64_DR_2C));
+            var branch = (Emitter.instrDescJmp)descriptors[5];
+            Assert.That(branch.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARM64_LARGEJMP));
+            Assert.That(branch.idCodeSize(), Is.EqualTo(8));
+            Assert.That(branch.idjShort, Is.False);
+            Assert.That(branch.idjTarget?.bbEmitCookie, Is.Not.Null);
+            Assert.That(branch.idjIG, Is.Not.Null);
         });
     }
 

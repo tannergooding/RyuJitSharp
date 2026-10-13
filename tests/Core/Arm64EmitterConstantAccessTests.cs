@@ -66,9 +66,9 @@ internal static unsafe class Arm64EmitterConstantAccessTests
     }
 
 #if DEBUG
-    [TestCase(IF_BI_1B, 63)]
-    [TestCase(IF_LS_2B, 4095)]
-    [TestCase(IF_LS_2C, -256)]
+    [TestCase(IF_ARM64_BI_1B, 63)]
+    [TestCase(IF_ARM64_LS_2B, 4095)]
+    [TestCase(IF_ARM64_LS_2C, -256)]
     public static void SanityChecksReadCompactAndExtendedImmediates(Emitter.insFormat format, int value)
     {
         var descriptor = AccessEmitter.Constant(value, !Emitter.instrDesc.fitsInSmallCns(value));

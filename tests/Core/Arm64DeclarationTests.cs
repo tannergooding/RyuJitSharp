@@ -42,13 +42,13 @@ internal static class Arm64DeclarationTests
     public static void TargetDeclarationSizesPreserveNativeValues()
     {
         Assert.Multiple(() => {
-            Assert.That(MAX_PASS_SINGLEREG_BYTES, Is.EqualTo(16));
-            Assert.That(MAX_PASS_MULTIREG_BYTES, Is.EqualTo(64));
-            Assert.That(MAX_RET_MULTIREG_BYTES, Is.EqualTo(64));
-            Assert.That(MAX_ARG_REG_COUNT, Is.EqualTo(4));
-            Assert.That(MAX_RET_REG_COUNT, Is.EqualTo(4));
-            Assert.That(MAX_MULTIREG_COUNT, Is.EqualTo(4));
-            Assert.That(FP_REGSIZE_BYTES, Is.EqualTo(16));
+            Assert.That(Configuration.MAX_PASS_SINGLEREG_BYTES, Is.EqualTo(16));
+            Assert.That(Configuration.MAX_PASS_MULTIREG_BYTES, Is.EqualTo(64));
+            Assert.That(Configuration.MAX_RET_MULTIREG_BYTES, Is.EqualTo(64));
+            Assert.That(Configuration.MAX_ARG_REG_COUNT, Is.EqualTo(4));
+            Assert.That(Configuration.MAX_RET_REG_COUNT, Is.EqualTo(4));
+            Assert.That(Configuration.MAX_MULTIREG_COUNT, Is.EqualTo(4));
+            Assert.That(Configuration.FP_REGSIZE_BYTES, Is.EqualTo(16));
             Assert.That(Target.ARG_ORDER_R2L, Is.EqualTo(Target.ArgOrder.ARG_ORDER_R2L));
             Assert.That(Target.ARG_ORDER_L2R, Is.EqualTo(Target.ArgOrder.ARG_ORDER_L2R));
             Assert.That(Target.TgtCpuName, Is.EqualTo("arm64"));

@@ -59,7 +59,7 @@ internal static class Arm64EmitterAlignmentCostTests
         {
             var id = new instrDescAlign();
             id.idIns(INS_align);
-            id.idInsFmt(IF_SN_0A);
+            id.idInsFmt(IF_ARM64_SN_0A);
             id.idInsOpt(opt);
             id.isPlacedAfterJmp = placedAfterJump;
             return id;

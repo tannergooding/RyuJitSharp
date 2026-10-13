@@ -591,7 +591,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
                 offsetSpToSavedFp = frameType == 2 ? 16 : 0,
             };
 
-            codeGen.genPopCalleeSavedRegistersAndFreeLclFrame(false);
+            codeGen.genPopCalleeSavedRegistersAndFreeLclFrameArm64(false);
 
             var descriptor = Descriptors(codeGen)[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(expected));

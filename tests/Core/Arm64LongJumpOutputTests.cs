@@ -20,16 +20,16 @@ internal static unsafe class Arm64LongJumpOutputTests
 {
     private delegate void OutputTest(Compiler compiler, Emitter emitter, byte* code, CallbackContext* callbacks);
 
-    [TestCase(INS_b, IF_BI_0A, EA_4BYTE, 0, 0x14000008u)]
-    [TestCase(INS_bl_local, IF_BI_0A, EA_4BYTE, 0, 0x94000008u)]
-    [TestCase(INS_beq, IF_BI_0B, EA_4BYTE, 0, 0x54000100u)]
-    [TestCase(INS_bne, IF_BI_0B, EA_4BYTE, 0, 0x54000101u)]
-    [TestCase(INS_cbz, IF_BI_1A, EA_4BYTE, 0, 0x34000103u)]
-    [TestCase(INS_cbnz, IF_BI_1A, EA_8BYTE, 0, 0xB5000103u)]
-    [TestCase(INS_tbz, IF_BI_1B, EA_4BYTE, 0, 0x36000103u)]
-    [TestCase(INS_tbz, IF_BI_1B, EA_4BYTE, 31, 0x36F80103u)]
-    [TestCase(INS_tbnz, IF_BI_1B, EA_8BYTE, 32, 0xB7000103u)]
-    [TestCase(INS_tbnz, IF_BI_1B, EA_8BYTE, 63, 0xB7F80103u)]
+    [TestCase(INS_b, IF_ARM64_BI_0A, EA_4BYTE, 0, 0x14000008u)]
+    [TestCase(INS_bl_local, IF_ARM64_BI_0A, EA_4BYTE, 0, 0x94000008u)]
+    [TestCase(INS_beq, IF_ARM64_BI_0B, EA_4BYTE, 0, 0x54000100u)]
+    [TestCase(INS_bne, IF_ARM64_BI_0B, EA_4BYTE, 0, 0x54000101u)]
+    [TestCase(INS_cbz, IF_ARM64_BI_1A, EA_4BYTE, 0, 0x34000103u)]
+    [TestCase(INS_cbnz, IF_ARM64_BI_1A, EA_8BYTE, 0, 0xB5000103u)]
+    [TestCase(INS_tbz, IF_ARM64_BI_1B, EA_4BYTE, 0, 0x36000103u)]
+    [TestCase(INS_tbz, IF_ARM64_BI_1B, EA_4BYTE, 31, 0x36F80103u)]
+    [TestCase(INS_tbnz, IF_ARM64_BI_1B, EA_8BYTE, 32, 0xB7000103u)]
+    [TestCase(INS_tbnz, IF_ARM64_BI_1B, EA_8BYTE, 63, 0xB7F80103u)]
     public static void ShortBranchesPreserveNativeFormatsAndForwardPatching(
         instruction ins, Emitter.insFormat format, emitAttr size, int bit, uint expected)
     {
@@ -70,7 +70,7 @@ internal static unsafe class Arm64LongJumpOutputTests
     {
         WithEmitter((_, emitter, code, callbacks) =>
         {
-            var id = View.Jump(ins, IF_LARGEJMP, EA_8BYTE, shortJump: false, target: 48, immediate: 63);
+            var id = View.Jump(ins, IF_ARM64_LARGEJMP, EA_8BYTE, shortJump: false, target: 48, immediate: 63);
             var end = Output(emitter, new insGroup(), code + 16, id);
 
             Assert.That((nuint)end, Is.EqualTo((nuint)(code + 24)));
@@ -78,7 +78,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             Assert.That(Unsafe.ReadUnaligned<uint>(code + 20), Is.EqualTo(0x14000007u));
             View.CheckPatch(id, code + 16, 48);
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_LARGEJMP));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_LARGEJMP));
             Assert.That(callbacks->Count, Is.Zero);
             Assert.That(code[24], Is.EqualTo(0xA5));
         });
@@ -94,7 +94,7 @@ internal static unsafe class Arm64LongJumpOutputTests
         WithEmitter((_, emitter, code, _) =>
         {
             OffsetAdjustment(emitter) = 4;
-            var id = View.Jump(INS_b, IF_BI_0A, EA_4BYTE, shortJump, target);
+            var id = View.Jump(INS_b, IF_ARM64_BI_0A, EA_4BYTE, shortJump, target);
             var end = Output(emitter, null, code + 16, id);
 
             Assert.That((nuint)end, Is.EqualTo((nuint)(code + 20)));
@@ -111,7 +111,7 @@ internal static unsafe class Arm64LongJumpOutputTests
         WithEmitter((_, emitter, code, _) =>
         {
             OffsetAdjustment(emitter) = adjustment;
-            var id = View.Jump(INS_b, IF_BI_0A, EA_4BYTE, shortJump: false, target: 48);
+            var id = View.Jump(INS_b, IF_ARM64_BI_0A, EA_4BYTE, shortJump: false, target: 48);
 
             _ = Output(emitter, null, code + 16, id);
 
@@ -134,7 +134,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             emitter.emitColdCodeBlock = code + 256;
             OffsetAdjustment(emitter) = 4;
             emitter.writeableOffset = 64;
-            var id = View.Jump(conditional ? INS_beq : INS_b, conditional ? IF_LARGEJMP : IF_BI_0A,
+            var id = View.Jump(conditional ? INS_beq : INS_b, conditional ? IF_ARM64_LARGEJMP : IF_ARM64_BI_0A,
                 EA_4BYTE, shortJump: false, target: 40, keepLong: true);
             var end = Output(emitter, null, code + 16, id);
 
@@ -163,7 +163,7 @@ internal static unsafe class Arm64LongJumpOutputTests
     {
         WithEmitter((_, emitter, code, callbacks) =>
         {
-            var id = View.Jump(INS_adr, shortAddress ? IF_DI_1E : IF_LARGEADR, EA_8BYTE,
+            var id = View.Jump(INS_adr, shortAddress ? IF_ARM64_DI_1E : IF_ARM64_LARGEADR, EA_8BYTE,
                 shortAddress, target: 48);
             var end = Output(emitter, null, code + 16, id);
 
@@ -179,8 +179,8 @@ internal static unsafe class Arm64LongJumpOutputTests
         });
     }
 
-    [TestCase(EA_4BYTE, REG_ARM64_R3, REG_NA, 0xB0000003u, 0xB9402063u, 0u, 8)]
-    [TestCase(EA_8BYTE, REG_ARM64_R3, REG_NA, 0xB0000003u, 0xF9401063u, 0u, 8)]
+    [TestCase(EA_4BYTE, REG_ARM64_R3, REG_ARM64_NA, 0xB0000003u, 0xB9402063u, 0u, 8)]
+    [TestCase(EA_8BYTE, REG_ARM64_R3, REG_ARM64_NA, 0xB0000003u, 0xF9401063u, 0u, 8)]
     [TestCase(EA_4BYTE, REG_ARM64_V2, REG_ARM64_R9, 0xB0000009u, 0xB9402129u, 0x1E270122u, 12)]
     [TestCase(EA_8BYTE, REG_ARM64_V2, REG_ARM64_R9, 0xB0000009u, 0xF9401129u, 0x9E670122u, 12)]
     [TestCase(EA_16BYTE, REG_ARM64_V2, REG_ARM64_R9, 0xB0000009u, 0x91008129u, 0x4C407122u, 12)]
@@ -194,7 +194,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             offsets[0] = 0;
             chunks[0] = new AllocMemChunk { block = code + 4096 + 32, size = 64 };
             SetDataChunks(emitter, offsets, chunks, 1, 64);
-            var id = View.Data(INS_ldr, IF_LARGELDC, size, destination, scratch, shortAddress: false);
+            var id = View.Data(INS_ldr, IF_ARM64_LARGELDC, size, destination, scratch, shortAddress: false);
 
             var end = Output(emitter, null, code + 16, id);
 
@@ -228,7 +228,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             chunks[0] = new AllocMemChunk { block = code + 96, size = 16 };
             chunks[1] = new AllocMemChunk { block = code + 40, size = 32 };
             SetDataChunks(emitter, offsets, chunks, 2, 48);
-            var id = View.Data(INS_ldr, IF_LS_1A, size, destination, REG_NA,
+            var id = View.Data(INS_ldr, IF_ARM64_LS_1A, size, destination, REG_ARM64_NA,
                 shortAddress: true, dataOffset: 16, immediate: 8);
 
             var end = Output(emitter, null, code + 16, id);
@@ -253,7 +253,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             offsets[0] = 0;
             chunks[0] = new AllocMemChunk { block = code + 4096 + 32, size = 64 };
             SetDataChunks(emitter, offsets, chunks, 1, 64);
-            var id = View.Data(INS_adr, IF_LARGEADR, EA_8BYTE, REG_ARM64_R3, REG_NA,
+            var id = View.Data(INS_adr, IF_ARM64_LARGEADR, EA_8BYTE, REG_ARM64_R3, REG_ARM64_NA,
                 shortAddress: false, relocatable: true);
 
             var end = Output(emitter, null, code + 16, id);
@@ -284,8 +284,8 @@ internal static unsafe class Arm64LongJumpOutputTests
             offsets[0] = 0;
             chunks[0] = new AllocMemChunk { block = shortAddress ? code + 48 : code + 4096 + 32, size = 32 };
             SetDataChunks(emitter, offsets, chunks, 1, 32);
-            var id = View.Data(INS_adr, shortAddress ? IF_DI_1E : IF_LARGEADR, EA_8BYTE,
-                REG_ARM64_R3, REG_NA, shortAddress);
+            var id = View.Data(INS_adr, shortAddress ? IF_ARM64_DI_1E : IF_ARM64_LARGEADR, EA_8BYTE,
+                REG_ARM64_R3, REG_ARM64_NA, shortAddress);
 
             var end = Output(emitter, null, code + 16, id);
 
@@ -301,12 +301,12 @@ internal static unsafe class Arm64LongJumpOutputTests
         });
     }
 
-    [TestCase(INS_b, IF_BI_0A, -134217728, 0x16000000u)]
-    [TestCase(INS_b, IF_BI_0A, 134217724, 0x15FFFFFFu)]
-    [TestCase(INS_beq, IF_BI_0B, -1048576, 0x54800000u)]
-    [TestCase(INS_beq, IF_BI_0B, 1048572, 0x547FFFE0u)]
-    [TestCase(INS_tbz, IF_BI_1B, -32768, 0x36040003u)]
-    [TestCase(INS_tbz, IF_BI_1B, 32764, 0x3603FFE3u)]
+    [TestCase(INS_b, IF_ARM64_BI_0A, -134217728, 0x16000000u)]
+    [TestCase(INS_b, IF_ARM64_BI_0A, 134217724, 0x15FFFFFFu)]
+    [TestCase(INS_beq, IF_ARM64_BI_0B, -1048576, 0x54800000u)]
+    [TestCase(INS_beq, IF_ARM64_BI_0B, 1048572, 0x547FFFE0u)]
+    [TestCase(INS_tbz, IF_ARM64_BI_1B, -32768, 0x36040003u)]
+    [TestCase(INS_tbz, IF_ARM64_BI_1B, 32764, 0x3603FFE3u)]
     public static void ShortBranchSupportEncodesBothSignedRangeEndpoints(
         instruction ins, Emitter.insFormat format, int displacement, uint expected)
     {
@@ -393,7 +393,7 @@ internal static unsafe class Arm64LongJumpOutputTests
         public static instrDescJmp Jump(instruction ins, insFormat format, emitAttr size, bool shortJump,
             uint target, int immediate = 0, bool keepLong = false)
         {
-            var id = Create(ins, format, size, REG_ARM64_R3, REG_NA, immediate);
+            var id = Create(ins, format, size, REG_ARM64_R3, REG_ARM64_NA, immediate);
             id.idjShort = shortJump;
             id.idjKeepLong = keepLong;
             id.idjTargetIG = new insGroup { igOffs = target };
@@ -424,7 +424,7 @@ internal static unsafe class Arm64LongJumpOutputTests
             id.idInsFmt(format);
             id.idOpSize(size);
             id.idReg1(destination);
-            if (scratch != REG_NA)
+            if (scratch != REG_ARM64_NA)
             {
                 id.idReg2(scratch);
             }

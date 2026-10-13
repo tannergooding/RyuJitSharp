@@ -270,7 +270,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             ResolveEdge(allocator, source, target, LinearScan.ResolveType.ResolveJoin, live, RBM_NONE);
 
             Assert.That(source.LastNode?.Oper, Is.EqualTo(expected));
-            Assert.That(allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(to));
+            Assert.That((regNumber)allocator.getOutVarToRegMap((uint)source.bbNum)![0], Is.EqualTo(to));
         }, twoBlocks: true);
     }
 
@@ -326,7 +326,7 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
             allocator.resolveRegistersWithLocals();
 
             Assert.Multiple(() => {
-                Assert.That(allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_ARM64_R0));
+                Assert.That((regNumber)allocator.getInVarToRegMap((uint)block.bbNum)![0], Is.EqualTo(REG_ARM64_R0));
                 Assert.That(compiler.lvaTable[0].ArgInitReg, Is.EqualTo(REG_ARM64_R0));
                 Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_ARM64_R0));
             });

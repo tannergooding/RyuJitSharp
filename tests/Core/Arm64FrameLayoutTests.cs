@@ -40,9 +40,10 @@ internal static unsafe class Arm64FrameLayoutTests
             Assert.That(compiler.compUsesUnknownSizeFrame, Is.EqualTo(scalable));
             Assert.That(compiler.compLocallocUsed, Is.EqualTo(scalable));
 
-            var reserved = SRBM_FPBASE | SRBM_OPT_RSVD | (scalable ? SRBM_UNKBASE : SRBM_NONE);
+            var reserved = SRBM_FPBASE | SRBM_OPT_RSVD_ARM64 | (scalable ? SRBM_UNKBASE : SRBM_NONE);
             Assert.That(NewInterval(allocator, TYP_INT).registerPreferences & reserved, Is.EqualTo(SRBM_NONE));
-            Assert.That(codeGen.RegSet.rsMaskResvd.IntRegSet & SRBM_OPT_RSVD, Is.EqualTo(SRBM_OPT_RSVD));
+            Assert.That(codeGen.RegSet.rsMaskResvd.IntRegSet & SRBM_OPT_RSVD_ARM64,
+                Is.EqualTo(SRBM_OPT_RSVD_ARM64));
             Assert.That(codeGen.RegSet.rsMaskResvd.IntRegSet & SRBM_UNKBASE,
                 Is.EqualTo(scalable ? SRBM_UNKBASE : SRBM_NONE));
 

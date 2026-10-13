@@ -43,7 +43,7 @@ internal static unsafe class Arm64AndUnixEmitterSimpleRecordingTests
             emitter.emitIns_I(INS_push, EA_PTRSIZE, value);
             var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing push descriptor.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_push));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_CNS));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_XARCH_CNS));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(expectedSize));
         }
         finally

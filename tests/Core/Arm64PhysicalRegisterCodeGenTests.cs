@@ -59,7 +59,7 @@ internal static class Arm64PhysicalRegisterCodeGenTests
                 ?? throw new AssertionException("Missing descriptor buffer.");
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_sve_rdffr));
-            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_SVE_DH_1A));
+            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_ARM64_SVE_DH_1A));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_SCALABLE));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_P0));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));

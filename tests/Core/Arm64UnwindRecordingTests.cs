@@ -122,13 +122,13 @@ internal static class Arm64UnwindRecordingTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         for (var index = 0; index < 31; index++)
         {
-            Assert.That(compiler.mapRegNumToDwarfReg((regNumber)((int)REG_ARM64_R0 + index)), Is.EqualTo(index));
+            Assert.That(compiler.MapArm64RegNumToDwarfReg((regNumber)((int)REG_ARM64_R0 + index)), Is.EqualTo(index));
         }
 
-        Assert.That(compiler.mapRegNumToDwarfReg(REG_ARM64_SP), Is.EqualTo(31));
+        Assert.That(compiler.MapArm64RegNumToDwarfReg(REG_ARM64_SP), Is.EqualTo(31));
         for (var index = 0; index < 32; index++)
         {
-            Assert.That(compiler.mapRegNumToDwarfReg((regNumber)((int)REG_ARM64_V0 + index)), Is.EqualTo(64 + index));
+            Assert.That(compiler.MapArm64RegNumToDwarfReg((regNumber)((int)REG_ARM64_V0 + index)), Is.EqualTo(64 + index));
         }
     }
 
@@ -159,10 +159,10 @@ internal static class Arm64UnwindRecordingTests
             }
 
             (byte, byte, short, int)[] expected = preindexed
-                ? [(4, 0, -1, -offset), (4, 2, compiler.mapRegNumToDwarfReg(first), 0),
-                    (4, 2, compiler.mapRegNumToDwarfReg(second), 8)]
-                : [(4, 2, compiler.mapRegNumToDwarfReg(first), offset),
-                    (4, 2, compiler.mapRegNumToDwarfReg(second), offset + 8)];
+                ? [(4, 0, -1, -offset), (4, 2, compiler.MapArm64RegNumToDwarfReg(first), 0),
+                    (4, 2, compiler.MapArm64RegNumToDwarfReg(second), 8)]
+                : [(4, 2, compiler.MapArm64RegNumToDwarfReg(first), offset),
+                    (4, 2, compiler.MapArm64RegNumToDwarfReg(second), offset + 8)];
             Assert.That(compiler.funCurrentFunc().cfiCodes?.Select(
                 code => (code.CodeOffset, code.CfiOpCode, code.DwarfReg, code.Offset)), Is.EqualTo(expected));
         });
@@ -193,8 +193,8 @@ internal static class Arm64UnwindRecordingTests
             }
 
             (byte, byte, short, int)[] expected = preindexed
-                ? [(4, 0, -1, -offset), (4, 2, compiler.mapRegNumToDwarfReg(reg), 0)]
-                : [(4, 2, compiler.mapRegNumToDwarfReg(reg), offset)];
+                ? [(4, 0, -1, -offset), (4, 2, compiler.MapArm64RegNumToDwarfReg(reg), 0)]
+                : [(4, 2, compiler.MapArm64RegNumToDwarfReg(reg), offset)];
             Assert.That(compiler.funCurrentFunc().cfiCodes?.Select(
                 code => (code.CodeOffset, code.CfiOpCode, code.DwarfReg, code.Offset)), Is.EqualTo(expected));
         });

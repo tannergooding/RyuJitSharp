@@ -22,12 +22,12 @@ internal static unsafe class Arm64CallOutputTests
 {
     private delegate void OutputTest(Compiler compiler, Emitter emitter, byte* buffer);
 
-    [TestCase(false, EA_PTRSIZE)]
-    [TestCase(false, EA_GCREF)]
-    [TestCase(false, EA_BYREF)]
-    [TestCase(true, EA_PTRSIZE)]
-    [TestCase(true, EA_GCREF)]
-    [TestCase(true, EA_BYREF)]
+    [TestCase(false, EA_64BIT_PTRSIZE)]
+    [TestCase(false, EA_64BIT_GCREF)]
+    [TestCase(false, EA_64BIT_BYREF)]
+    [TestCase(true, EA_64BIT_PTRSIZE)]
+    [TestCase(true, EA_64BIT_GCREF)]
+    [TestCase(true, EA_64BIT_BYREF)]
     public static void NoGcCallsStillWriteOneInstructionAndUpdateReturnMasks(bool large, emitAttr returnSize)
     {
         WithEmitter((compiler, emitter, buffer) =>
@@ -85,9 +85,9 @@ internal static unsafe class Arm64CallOutputTests
         });
     }
 
-    [TestCase(EA_GCREF, EA_BYREF, false)]
-    [TestCase(EA_BYREF, EA_GCREF, false)]
-    [TestCase(EA_PTRSIZE, EA_GCREF, true)]
+    [TestCase(EA_64BIT_GCREF, EA_64BIT_BYREF, false)]
+    [TestCase(EA_64BIT_BYREF, EA_64BIT_GCREF, false)]
+    [TestCase(EA_64BIT_PTRSIZE, EA_64BIT_GCREF, true)]
     public static void FatCallsPreserveSecondAndAsyncReturnMasks(
         emitAttr firstReturn, emitAttr secondReturn, bool asyncReturn)
     {
@@ -116,8 +116,8 @@ internal static unsafe class Arm64CallOutputTests
         });
     }
 
-    [TestCase(EA_GCREF)]
-    [TestCase(EA_BYREF)]
+    [TestCase(EA_64BIT_GCREF)]
+    [TestCase(EA_64BIT_BYREF)]
     public static void StackVariablesDieAtCallStartAndFullMapReturnsAreBornAtInstructionEnd(emitAttr returnSize)
     {
         WithEmitter((compiler, emitter, buffer) =>
@@ -246,7 +246,7 @@ internal static unsafe class Arm64CallOutputTests
 
     private static Emitter.instrDesc Call(Emitter emitter, ReadOnlySpan<nint> variables,
         regMaskTP refs, regMaskTP byrefs, emitAttr firstReturn,
-        emitAttr secondReturn = EA_PTRSIZE, bool asyncReturn = false)
+        emitAttr secondReturn = EA_8BYTE, bool asyncReturn = false)
     {
         return AllocateCall(emitter, 0, variables, refs, byrefs, firstReturn,
 #if MULTIREG_HAS_SECOND_GC_RET

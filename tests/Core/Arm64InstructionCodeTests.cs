@@ -16,46 +16,46 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm64InstructionCodeTests
 {
-    [TestCase(INS_mov, IF_DR_2E, 0x2A0003E0u)]
-    [TestCase(INS_mov, IF_DR_2G, 0x11000000u)]
-    [TestCase(INS_mov, IF_DI_1B, 0x52800000u)]
-    [TestCase(INS_mov, IF_DI_1D, 0x320003E0u)]
-    [TestCase(INS_mov, IF_DV_3C, 0x0EA01C00u)]
-    [TestCase(INS_mov, IF_DV_2B, 0x0E003C00u)]
-    [TestCase(INS_mov, IF_DV_2C, 0x4E001C00u)]
-    [TestCase(INS_mov, IF_DV_2E, 0x5E000400u)]
-    [TestCase(INS_mov, IF_DV_2F, 0x6E000400u)]
-    [TestCase(INS_add, IF_DR_3A, 0x0B000000u)]
-    [TestCase(INS_add, IF_DR_3B, 0x0B000000u)]
-    [TestCase(INS_add, IF_DR_3C, 0x0B200000u)]
-    [TestCase(INS_add, IF_DI_2A, 0x11000000u)]
-    [TestCase(INS_add, IF_DV_3A, 0x0E208400u)]
-    [TestCase(INS_add, IF_DV_3E, 0x5E208400u)]
-    [TestCase(INS_ldr, IF_LS_2A, 0xB9400000u)]
-    [TestCase(INS_ldr, IF_LS_2B, 0xB9400000u)]
-    [TestCase(INS_ldr, IF_LS_2C, 0xB8400000u)]
-    [TestCase(INS_ldr, IF_LS_3A, 0xB8600800u)]
-    [TestCase(INS_ldr, IF_LS_1A, 0x18000000u)]
-    [TestCase(INS_fmov, IF_DV_2G, 0x1E204000u)]
-    [TestCase(INS_fmov, IF_DV_2H, 0x1E260000u)]
-    [TestCase(INS_fmov, IF_DV_2I, 0x1E270000u)]
-    [TestCase(INS_fmov, IF_DV_1A, 0x1E201000u)]
-    [TestCase(INS_fmov, IF_DV_1B, 0x0F00F400u)]
-    [TestCase(INS_adr, IF_DI_1E, 0x10000000u)]
-    [TestCase(INS_adrp, IF_DI_1E, 0x90000000u)]
-    [TestCase(INS_b, IF_BI_0A, 0x14000000u)]
-    [TestCase(INS_bl, IF_BI_0C, 0x94000000u)]
-    [TestCase(INS_br, IF_BR_1A, 0xD61F0000u)]
-    [TestCase(INS_blr, IF_BR_1B, 0xD63F0000u)]
-    [TestCase(INS_ret, IF_BR_1A, 0xD65F0000u)]
-    [TestCase(INS_cbz, IF_BI_1A, 0x34000000u)]
-    [TestCase(INS_tbz, IF_BI_1B, 0x36000000u)]
-    [TestCase(INS_movk, IF_DI_1B, 0x72800000u)]
-    [TestCase(INS_movn, IF_DI_1B, 0x12800000u)]
-    [TestCase(INS_movz, IF_DI_1B, 0x52800000u)]
-    [TestCase(INS_nop, IF_SN_0A, 0xD503201Fu)]
-    [TestCase(INS_fcvt, IF_DV_2J, 0x1E224000u)]
-    [TestCase(INS_sm4e, IF_DV_2V, 0xCEC08400u)]
+    [TestCase(INS_mov, IF_ARM64_DR_2E, 0x2A0003E0u)]
+    [TestCase(INS_mov, IF_ARM64_DR_2G, 0x11000000u)]
+    [TestCase(INS_mov, IF_ARM64_DI_1B, 0x52800000u)]
+    [TestCase(INS_mov, IF_ARM64_DI_1D, 0x320003E0u)]
+    [TestCase(INS_mov, IF_ARM64_DV_3C, 0x0EA01C00u)]
+    [TestCase(INS_mov, IF_ARM64_DV_2B, 0x0E003C00u)]
+    [TestCase(INS_mov, IF_ARM64_DV_2C, 0x4E001C00u)]
+    [TestCase(INS_mov, IF_ARM64_DV_2E, 0x5E000400u)]
+    [TestCase(INS_mov, IF_ARM64_DV_2F, 0x6E000400u)]
+    [TestCase(INS_add, IF_ARM64_DR_3A, 0x0B000000u)]
+    [TestCase(INS_add, IF_ARM64_DR_3B, 0x0B000000u)]
+    [TestCase(INS_add, IF_ARM64_DR_3C, 0x0B200000u)]
+    [TestCase(INS_add, IF_ARM64_DI_2A, 0x11000000u)]
+    [TestCase(INS_add, IF_ARM64_DV_3A, 0x0E208400u)]
+    [TestCase(INS_add, IF_ARM64_DV_3E, 0x5E208400u)]
+    [TestCase(INS_ldr, IF_ARM64_LS_2A, 0xB9400000u)]
+    [TestCase(INS_ldr, IF_ARM64_LS_2B, 0xB9400000u)]
+    [TestCase(INS_ldr, IF_ARM64_LS_2C, 0xB8400000u)]
+    [TestCase(INS_ldr, IF_ARM64_LS_3A, 0xB8600800u)]
+    [TestCase(INS_ldr, IF_ARM64_LS_1A, 0x18000000u)]
+    [TestCase(INS_fmov, IF_ARM64_DV_2G, 0x1E204000u)]
+    [TestCase(INS_fmov, IF_ARM64_DV_2H, 0x1E260000u)]
+    [TestCase(INS_fmov, IF_ARM64_DV_2I, 0x1E270000u)]
+    [TestCase(INS_fmov, IF_ARM64_DV_1A, 0x1E201000u)]
+    [TestCase(INS_fmov, IF_ARM64_DV_1B, 0x0F00F400u)]
+    [TestCase(INS_adr, IF_ARM64_DI_1E, 0x10000000u)]
+    [TestCase(INS_adrp, IF_ARM64_DI_1E, 0x90000000u)]
+    [TestCase(INS_b, IF_ARM64_BI_0A, 0x14000000u)]
+    [TestCase(INS_bl, IF_ARM64_BI_0C, 0x94000000u)]
+    [TestCase(INS_br, IF_ARM64_BR_1A, 0xD61F0000u)]
+    [TestCase(INS_blr, IF_ARM64_BR_1B, 0xD63F0000u)]
+    [TestCase(INS_ret, IF_ARM64_BR_1A, 0xD65F0000u)]
+    [TestCase(INS_cbz, IF_ARM64_BI_1A, 0x34000000u)]
+    [TestCase(INS_tbz, IF_ARM64_BI_1B, 0x36000000u)]
+    [TestCase(INS_movk, IF_ARM64_DI_1B, 0x72800000u)]
+    [TestCase(INS_movn, IF_ARM64_DI_1B, 0x12800000u)]
+    [TestCase(INS_movz, IF_ARM64_DI_1B, 0x52800000u)]
+    [TestCase(INS_nop, IF_ARM64_SN_0A, 0xD503201Fu)]
+    [TestCase(INS_fcvt, IF_ARM64_DV_2J, 0x1E224000u)]
+    [TestCase(INS_sm4e, IF_ARM64_DV_2V, 0xCEC08400u)]
     public static void NativeGoldenOpcodesPreserveColumnsAndFullUnsignedWords(
         instruction ins, Emitter.insFormat format, uint expected)
     {
@@ -96,7 +96,7 @@ internal static class Arm64InstructionCodeTests
         {
             var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(ordinal);
             var format = Format(emitter, ins);
-            if (format is >= IF_EN9 and <= IF_EN2Q)
+            if (format is >= IF_ARM64_EN9 and <= IF_ARM64_EN2Q)
             {
                 continue;
             }
@@ -173,7 +173,7 @@ internal static class Arm64InstructionCodeTests
     {
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-            () => result = Code(NewEmitter(), INS_align, IF_SN_0A));
+            () => result = Code(NewEmitter(), INS_align, IF_ARM64_SN_0A));
 
         Assert.That(assertions, Is.EqualTo<string[]>(["(code != BAD_CODE)"]));
         Assert.That(result, Is.EqualTo(BAD_CODE));
@@ -182,53 +182,53 @@ internal static class Arm64InstructionCodeTests
 
     private static IEnumerable<TestCaseData> EncodingGroups()
     {
-        yield return Group(IF_EN9, [
-            IF_DR_2E, IF_DR_2G, IF_DI_1B, IF_DI_1D, IF_DV_3C,
-            IF_DV_2B, IF_DV_2C, IF_DV_2E, IF_DV_2F,
+        yield return Group(IF_ARM64_EN9, [
+            IF_ARM64_DR_2E, IF_ARM64_DR_2G, IF_ARM64_DI_1B, IF_ARM64_DI_1D, IF_ARM64_DV_3C,
+            IF_ARM64_DV_2B, IF_ARM64_DV_2C, IF_ARM64_DV_2E, IF_ARM64_DV_2F,
         ]);
-        yield return Group(IF_EN6A, [IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A, IF_DV_3A, IF_DV_3E]);
-        yield return Group(IF_EN6B, [IF_LS_2D, IF_LS_3F, IF_LS_2E, IF_LS_2F, IF_LS_3G, IF_LS_2G]);
-        yield return Group(IF_EN5A, [IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A, IF_LS_1A]);
-        yield return Group(IF_EN5B, [IF_DV_2G, IF_DV_2H, IF_DV_2I, IF_DV_1A, IF_DV_1B]);
-        yield return Group(IF_EN5C, [IF_DR_3A, IF_DR_3B, IF_DI_2C, IF_DV_3C, IF_DV_1B]);
-        yield return Group(IF_EN4A, [IF_LS_2A, IF_LS_2B, IF_LS_2C, IF_LS_3A]);
-        yield return Group(IF_EN4B, [IF_DR_3A, IF_DR_3B, IF_DR_3C, IF_DI_2A]);
-        yield return Group(IF_EN4C, [IF_DR_2A, IF_DR_2B, IF_DR_2C, IF_DI_1A]);
-        yield return Group(IF_EN4D, [IF_DV_3B, IF_DV_3D, IF_DV_3BI, IF_DV_3DI]);
-        yield return Group(IF_EN4E, [IF_DR_3A, IF_DR_3B, IF_DI_2C, IF_DV_3C]);
-        yield return Group(IF_EN4F, [IF_DR_3A, IF_DR_3B, IF_DV_3C, IF_DV_1B]);
-        yield return Group(IF_EN4G, [IF_DR_2E, IF_DR_2F, IF_DV_2M, IF_DV_2L]);
-        yield return Group(IF_EN4H, [IF_DV_3E, IF_DV_3A, IF_DV_2L, IF_DV_2M]);
-        yield return Group(IF_EN4I, [IF_DV_3D, IF_DV_3B, IF_DV_2G, IF_DV_2A]);
-        yield return Group(IF_EN4J, [IF_DV_2N, IF_DV_2O, IF_DV_3E, IF_DV_3A]);
-        yield return Group(IF_EN4K, [IF_DV_3E, IF_DV_3A, IF_DV_3EI, IF_DV_3AI]);
-        yield return Group(IF_EN3A, [IF_DR_3A, IF_DR_3B, IF_DI_2C]);
-        yield return Group(IF_EN3B, [IF_DR_2A, IF_DR_2B, IF_DI_1C]);
-        yield return Group(IF_EN3C, [IF_DR_3A, IF_DR_3B, IF_DV_3C]);
-        yield return Group(IF_EN3D, [IF_DV_2C, IF_DV_2D, IF_DV_2E]);
-        yield return Group(IF_EN3E, [IF_DV_3B, IF_DV_3BI, IF_DV_3DI]);
-        yield return Group(IF_EN3F, [IF_DV_2A, IF_DV_2G, IF_DV_2H]);
-        yield return Group(IF_EN3G, [IF_DV_2A, IF_DV_2G, IF_DV_2I]);
-        yield return Group(IF_EN3H, [IF_DR_3A, IF_DV_3A, IF_DV_3AI]);
-        yield return Group(IF_EN3I, [IF_DR_2E, IF_DR_2F, IF_DV_2M]);
-        yield return Group(IF_EN3J, [IF_LS_2D, IF_LS_3F, IF_LS_2E]);
-        yield return Group(IF_EN2A, [IF_DR_2E, IF_DR_2F]);
-        yield return Group(IF_EN2B, [IF_DR_3A, IF_DR_3B]);
-        yield return Group(IF_EN2C, [IF_DR_3A, IF_DI_2D]);
-        yield return Group(IF_EN2D, [IF_DR_3A, IF_DI_2B]);
-        yield return Group(IF_EN2E, [IF_LS_3B, IF_LS_3C]);
-        yield return Group(IF_EN2F, [IF_DR_2I, IF_DI_1F]);
-        yield return Group(IF_EN2G, [IF_DV_3B, IF_DV_3D]);
-        yield return Group(IF_EN2H, [IF_DV_2C, IF_DV_2F]);
-        yield return Group(IF_EN2I, [IF_DV_2K, IF_DV_1C]);
-        yield return Group(IF_EN2J, [IF_DV_2A, IF_DV_2G]);
-        yield return Group(IF_EN2K, [IF_DV_2M, IF_DV_2L]);
-        yield return Group(IF_EN2L, [IF_DR_2G, IF_DV_2M]);
-        yield return Group(IF_EN2M, [IF_DV_3A, IF_DV_3AI]);
-        yield return Group(IF_EN2N, [IF_DV_2N, IF_DV_2O]);
-        yield return Group(IF_EN2O, [IF_DV_3E, IF_DV_3A]);
-        yield return Group(IF_EN2P, [IF_DV_2Q, IF_DV_3B]);
-        yield return Group(IF_EN2Q, [IF_DV_2S, IF_DV_3A]);
+        yield return Group(IF_ARM64_EN6A, [IF_ARM64_DR_3A, IF_ARM64_DR_3B, IF_ARM64_DR_3C, IF_ARM64_DI_2A, IF_ARM64_DV_3A, IF_ARM64_DV_3E]);
+        yield return Group(IF_ARM64_EN6B, [IF_ARM64_LS_2D, IF_ARM64_LS_3F, IF_ARM64_LS_2E, IF_ARM64_LS_2F, IF_ARM64_LS_3G, IF_ARM64_LS_2G]);
+        yield return Group(IF_ARM64_EN5A, [IF_ARM64_LS_2A, IF_ARM64_LS_2B, IF_ARM64_LS_2C, IF_ARM64_LS_3A, IF_ARM64_LS_1A]);
+        yield return Group(IF_ARM64_EN5B, [IF_ARM64_DV_2G, IF_ARM64_DV_2H, IF_ARM64_DV_2I, IF_ARM64_DV_1A, IF_ARM64_DV_1B]);
+        yield return Group(IF_ARM64_EN5C, [IF_ARM64_DR_3A, IF_ARM64_DR_3B, IF_ARM64_DI_2C, IF_ARM64_DV_3C, IF_ARM64_DV_1B]);
+        yield return Group(IF_ARM64_EN4A, [IF_ARM64_LS_2A, IF_ARM64_LS_2B, IF_ARM64_LS_2C, IF_ARM64_LS_3A]);
+        yield return Group(IF_ARM64_EN4B, [IF_ARM64_DR_3A, IF_ARM64_DR_3B, IF_ARM64_DR_3C, IF_ARM64_DI_2A]);
+        yield return Group(IF_ARM64_EN4C, [IF_ARM64_DR_2A, IF_ARM64_DR_2B, IF_ARM64_DR_2C, IF_ARM64_DI_1A]);
+        yield return Group(IF_ARM64_EN4D, [IF_ARM64_DV_3B, IF_ARM64_DV_3D, IF_ARM64_DV_3BI, IF_ARM64_DV_3DI]);
+        yield return Group(IF_ARM64_EN4E, [IF_ARM64_DR_3A, IF_ARM64_DR_3B, IF_ARM64_DI_2C, IF_ARM64_DV_3C]);
+        yield return Group(IF_ARM64_EN4F, [IF_ARM64_DR_3A, IF_ARM64_DR_3B, IF_ARM64_DV_3C, IF_ARM64_DV_1B]);
+        yield return Group(IF_ARM64_EN4G, [IF_ARM64_DR_2E, IF_ARM64_DR_2F, IF_ARM64_DV_2M, IF_ARM64_DV_2L]);
+        yield return Group(IF_ARM64_EN4H, [IF_ARM64_DV_3E, IF_ARM64_DV_3A, IF_ARM64_DV_2L, IF_ARM64_DV_2M]);
+        yield return Group(IF_ARM64_EN4I, [IF_ARM64_DV_3D, IF_ARM64_DV_3B, IF_ARM64_DV_2G, IF_ARM64_DV_2A]);
+        yield return Group(IF_ARM64_EN4J, [IF_ARM64_DV_2N, IF_ARM64_DV_2O, IF_ARM64_DV_3E, IF_ARM64_DV_3A]);
+        yield return Group(IF_ARM64_EN4K, [IF_ARM64_DV_3E, IF_ARM64_DV_3A, IF_ARM64_DV_3EI, IF_ARM64_DV_3AI]);
+        yield return Group(IF_ARM64_EN3A, [IF_ARM64_DR_3A, IF_ARM64_DR_3B, IF_ARM64_DI_2C]);
+        yield return Group(IF_ARM64_EN3B, [IF_ARM64_DR_2A, IF_ARM64_DR_2B, IF_ARM64_DI_1C]);
+        yield return Group(IF_ARM64_EN3C, [IF_ARM64_DR_3A, IF_ARM64_DR_3B, IF_ARM64_DV_3C]);
+        yield return Group(IF_ARM64_EN3D, [IF_ARM64_DV_2C, IF_ARM64_DV_2D, IF_ARM64_DV_2E]);
+        yield return Group(IF_ARM64_EN3E, [IF_ARM64_DV_3B, IF_ARM64_DV_3BI, IF_ARM64_DV_3DI]);
+        yield return Group(IF_ARM64_EN3F, [IF_ARM64_DV_2A, IF_ARM64_DV_2G, IF_ARM64_DV_2H]);
+        yield return Group(IF_ARM64_EN3G, [IF_ARM64_DV_2A, IF_ARM64_DV_2G, IF_ARM64_DV_2I]);
+        yield return Group(IF_ARM64_EN3H, [IF_ARM64_DR_3A, IF_ARM64_DV_3A, IF_ARM64_DV_3AI]);
+        yield return Group(IF_ARM64_EN3I, [IF_ARM64_DR_2E, IF_ARM64_DR_2F, IF_ARM64_DV_2M]);
+        yield return Group(IF_ARM64_EN3J, [IF_ARM64_LS_2D, IF_ARM64_LS_3F, IF_ARM64_LS_2E]);
+        yield return Group(IF_ARM64_EN2A, [IF_ARM64_DR_2E, IF_ARM64_DR_2F]);
+        yield return Group(IF_ARM64_EN2B, [IF_ARM64_DR_3A, IF_ARM64_DR_3B]);
+        yield return Group(IF_ARM64_EN2C, [IF_ARM64_DR_3A, IF_ARM64_DI_2D]);
+        yield return Group(IF_ARM64_EN2D, [IF_ARM64_DR_3A, IF_ARM64_DI_2B]);
+        yield return Group(IF_ARM64_EN2E, [IF_ARM64_LS_3B, IF_ARM64_LS_3C]);
+        yield return Group(IF_ARM64_EN2F, [IF_ARM64_DR_2I, IF_ARM64_DI_1F]);
+        yield return Group(IF_ARM64_EN2G, [IF_ARM64_DV_3B, IF_ARM64_DV_3D]);
+        yield return Group(IF_ARM64_EN2H, [IF_ARM64_DV_2C, IF_ARM64_DV_2F]);
+        yield return Group(IF_ARM64_EN2I, [IF_ARM64_DV_2K, IF_ARM64_DV_1C]);
+        yield return Group(IF_ARM64_EN2J, [IF_ARM64_DV_2A, IF_ARM64_DV_2G]);
+        yield return Group(IF_ARM64_EN2K, [IF_ARM64_DV_2M, IF_ARM64_DV_2L]);
+        yield return Group(IF_ARM64_EN2L, [IF_ARM64_DR_2G, IF_ARM64_DV_2M]);
+        yield return Group(IF_ARM64_EN2M, [IF_ARM64_DV_3A, IF_ARM64_DV_3AI]);
+        yield return Group(IF_ARM64_EN2N, [IF_ARM64_DV_2N, IF_ARM64_DV_2O]);
+        yield return Group(IF_ARM64_EN2O, [IF_ARM64_DV_3E, IF_ARM64_DV_3A]);
+        yield return Group(IF_ARM64_EN2P, [IF_ARM64_DV_2Q, IF_ARM64_DV_3B]);
+        yield return Group(IF_ARM64_EN2Q, [IF_ARM64_DV_2S, IF_ARM64_DV_3A]);
     }
 
     private static TestCaseData Group(Emitter.insFormat group, Emitter.insFormat[] formats)

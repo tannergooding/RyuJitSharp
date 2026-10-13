@@ -6,6 +6,7 @@ using NUnit.Framework;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using VarSetOps = RyuJitSharp.BitSetOps<RyuJitSharp.Compiler, RyuJitSharp.TrackedVarBitSetTraits>;
 
@@ -71,7 +72,7 @@ internal static unsafe class Arm64EmitterLabelTests
         var descriptor = LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No block label address was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(INS_adr));
-        Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_LARGEADR));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARM64_LARGEADR));
         Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
         Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_ARM64_R5));
         Assert.That(descriptor.idjTarget, Is.SameAs(target));
@@ -97,7 +98,7 @@ internal static unsafe class Arm64EmitterLabelTests
         var descriptor = LastInstruction(emitter) as Emitter.instrDescJmp
             ?? throw new AssertionException("No instruction-group label address was recorded.");
         Assert.That(descriptor.idIns(), Is.EqualTo(INS_adr));
-        Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_LARGEADR));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARM64_LARGEADR));
         Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_PTRSIZE));
         Assert.That(descriptor.idReg1(), Is.EqualTo(regNumber.REG_ARM64_R5));
         Assert.That(descriptor.idjTarget, Is.Null);
@@ -112,8 +113,8 @@ internal static unsafe class Arm64EmitterLabelTests
     }
 
 #if DEBUG
-    [TestCase(Emitter.insFormat.IF_LARGEADR, INS_adrp)]
-    [TestCase(Emitter.insFormat.IF_LARGELDC, INS_ldr)]
+    [TestCase(Emitter.insFormat.IF_ARM64_LARGEADR, INS_adrp)]
+    [TestCase(Emitter.insFormat.IF_ARM64_LARGELDC, INS_ldr)]
     public static void JumpListDiagnosticDisplaysArm64LargeAddressRegisters(Emitter.insFormat format, instruction ins)
     {
         var (_, emitter) = CreateEmitter();

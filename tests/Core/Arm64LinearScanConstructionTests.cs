@@ -31,13 +31,13 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var profilerTrash = new regMaskTP(
                 (SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH) &
                 ~(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_ARM64_FP),
-                SRBM_MSK_CALLEE_TRASH);
+                SRBM_MSK_CALLEE_TRASH_ARM64);
 
             Assert.Multiple(() => {
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_ASSIGN_REF),
-                    Is.EqualTo(new regMaskTP(SRBM_CALLEE_TRASH_WRITEBARRIER)));
+                    Is.EqualTo(new regMaskTP(SRBM_CALLEE_TRASH_WRITEBARRIER_ARM64)));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_CHECKED_ASSIGN_REF),
-                    Is.EqualTo(new regMaskTP(SRBM_CALLEE_TRASH_WRITEBARRIER)));
+                    Is.EqualTo(new regMaskTP(SRBM_CALLEE_TRASH_WRITEBARRIER_ARM64)));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_ENTER),
                     Is.EqualTo(profilerTrash));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE),
@@ -45,15 +45,15 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_TAILCALL),
                     Is.EqualTo(profilerTrash));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_STOP_FOR_GC),
-                    Is.EqualTo(SRBM_STOP_FOR_GC_TRASH));
+                    Is.EqualTo(SRBM_STOP_FOR_GC_TRASH_ARM64));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_INIT_PINVOKE_FRAME),
-                    Is.EqualTo(SRBM_INIT_PINVOKE_FRAME_TRASH));
+                    Is.EqualTo(SRBM_INIT_PINVOKE_FRAME_TRASH_ARM64));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_VALIDATE_INDIRECT_CALL),
-                    Is.EqualTo(new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH)));
+                    Is.EqualTo(new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64)));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT),
                     Is.EqualTo(SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH));
                 Assert.That(compiler.compHelperCallKillSet(CORINFO_HELP_UNDEF),
-                    Is.EqualTo(SRBM_CALLEE_TRASH));
+                    Is.EqualTo(SRBM_CALLEE_TRASH_ARM64));
             });
         });
     }
@@ -80,7 +80,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             NeedToKillFloatRegisters(allocator) = killFloatRegisters;
 
             var expected = killFloatRegisters
-                ? SRBM_CALLEE_TRASH
+                ? SRBM_CALLEE_TRASH_ARM64
                 : new regMaskTP(SRBM_INT_CALLEE_TRASH);
             Assert.That(GetKillSetForCall(allocator, new GenTreeCall(TYP_VOID)), Is.EqualTo(expected));
         });
@@ -148,7 +148,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var call = new GenTreeCall(TYP_VOID) { _callType = CT_INDIRECT, ControlExpr = target };
             call._callMoreFlags |= GTF_CALL_M_TAILCALL;
 
-            var cookieTemporaries = new regMaskTP(SRBM_GSCOOKIE_TMP);
+            var cookieTemporaries = new regMaskTP(SRBM_GSCOOKIE_TMP_ARM64);
             Assert.Multiple(() => {
                 Assert.That(codeGen.genGetGSCookieTempRegs(false, null), Is.EqualTo(cookieTemporaries));
                 Assert.That(codeGen.genGetGSCookieTempRegs(true, call), Is.EqualTo(cookieTemporaries));
@@ -158,7 +158,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
             var expected = AvailableIntRegs(allocator) & SRBM_INT_CALLEE_TRASH & ~SRBM_ARM64_LR;
             if (needsCookie)
             {
-                expected &= ~SRBM_GSCOOKIE_TMP;
+                expected &= ~SRBM_GSCOOKIE_TMP_ARM64;
             }
             Assert.That(definition.nextRefPosition?.registerAssignment, Is.EqualTo(expected));
             Assert.That(definition.nextRefPosition?.registerAssignment & SRBM_ARM64_LR, Is.EqualTo(SRBM_NONE));
@@ -966,7 +966,7 @@ internal static unsafe class Arm64LinearScanConstructionTests
                 (TYP_DOUBLE, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
                 (TYP_SIMD16, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
                 (TYP_SIMD_ARM64, floats, SRBM_FLT_CALLEE_SAVED, SRBM_FLT_CALLEE_TRASH),
-                (TYP_MASK, SRBM_ALLMASK, SRBM_MSK_CALLEE_SAVED, SRBM_MSK_CALLEE_TRASH),
+                (TYP_MASK, SRBM_ALLMASK, SRBM_MSK_CALLEE_SAVED, SRBM_MSK_CALLEE_TRASH_ARM64),
             ];
 
             foreach (var bank in banks)

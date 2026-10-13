@@ -11,6 +11,7 @@ using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -107,8 +108,8 @@ internal static unsafe class Arm64EmitterCallAllocationTests
     }
 
     [TestCase(EA_8BYTE, false, GCT_NONE)]
-    [TestCase(EA_GCREF, true, GCT_GCREF)]
-    [TestCase(EA_BYREF, true, GCT_BYREF)]
+    [TestCase(EA_64BIT_GCREF, true, GCT_GCREF)]
+    [TestCase(EA_64BIT_BYREF, true, GCT_BYREF)]
     public static void SecondReturnRegisterCarriesItsGcType(emitAttr second, bool large, GCInfo.GCtype gcType)
     {
         var descriptor = Direct(CreateEmitter(), 0, [0], default, default, EA_UNKNOWN, second, false);
@@ -190,7 +191,7 @@ internal static unsafe class Arm64EmitterCallAllocationTests
         {
             var descriptor = new instrDescBasic();
             descriptor.idIns(INS_bl);
-            descriptor.idInsFmt(IF_BI_0C);
+            descriptor.idInsFmt(IF_ARM64_BI_0C);
             return descriptor;
         }
 

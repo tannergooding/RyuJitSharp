@@ -2,6 +2,7 @@
 
 #if TARGET_ARM64
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -18,16 +19,7 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class Arm64ReturnTypeTests
 {
-    [TestCase(9, TYPE_GC_NONE, TYPE_GC_NONE, TYP_I_IMPL, TYP_I_IMPL)]
-    [TestCase(9, TYPE_GC_REF, TYPE_GC_NONE, TYP_REF, TYP_I_IMPL)]
-    [TestCase(9, TYPE_GC_BYREF, TYPE_GC_NONE, TYP_BYREF, TYP_I_IMPL)]
-    [TestCase(16, TYPE_GC_NONE, TYPE_GC_REF, TYP_I_IMPL, TYP_REF)]
-    [TestCase(16, TYPE_GC_BYREF, TYPE_GC_NONE, TYP_BYREF, TYP_I_IMPL)]
-    [TestCase(16, TYPE_GC_NONE, TYPE_GC_BYREF, TYP_I_IMPL, TYP_BYREF)]
-    [TestCase(16, TYPE_GC_REF, TYPE_GC_BYREF, TYP_REF, TYP_BYREF)]
-    [TestCase(16, TYPE_GC_BYREF, TYPE_GC_REF, TYP_BYREF, TYP_REF)]
-    [TestCase(16, TYPE_GC_REF, TYPE_GC_REF, TYP_REF, TYP_REF)]
-    [TestCase(16, TYPE_GC_BYREF, TYPE_GC_BYREF, TYP_BYREF, TYP_BYREF)]
+    [TestCaseSource(nameof(TwoRegisterReturnCases))]
     public static void TwoRegisterReturnsMapBothTypedGcLayoutSlots(
         int size, CorInfoGCType first, CorInfoGCType second, var_types firstType, var_types secondType)
     {
@@ -47,6 +39,20 @@ internal static unsafe class Arm64ReturnTypeTests
                 Assert.That(metadata.SizeCalls, Is.EqualTo(1));
             });
         });
+    }
+
+    private static IEnumerable<TestCaseData> TwoRegisterReturnCases()
+    {
+        yield return new TestCaseData(9, TYPE_GC_NONE, TYPE_GC_NONE, TYP_I_IMPL, TYP_I_IMPL);
+        yield return new TestCaseData(9, TYPE_GC_REF, TYPE_GC_NONE, TYP_REF, TYP_I_IMPL);
+        yield return new TestCaseData(9, TYPE_GC_BYREF, TYPE_GC_NONE, TYP_BYREF, TYP_I_IMPL);
+        yield return new TestCaseData(16, TYPE_GC_NONE, TYPE_GC_REF, TYP_I_IMPL, TYP_REF);
+        yield return new TestCaseData(16, TYPE_GC_BYREF, TYPE_GC_NONE, TYP_BYREF, TYP_I_IMPL);
+        yield return new TestCaseData(16, TYPE_GC_NONE, TYPE_GC_BYREF, TYP_I_IMPL, TYP_BYREF);
+        yield return new TestCaseData(16, TYPE_GC_REF, TYPE_GC_BYREF, TYP_REF, TYP_BYREF);
+        yield return new TestCaseData(16, TYPE_GC_BYREF, TYPE_GC_REF, TYP_BYREF, TYP_REF);
+        yield return new TestCaseData(16, TYPE_GC_REF, TYPE_GC_REF, TYP_REF, TYP_REF);
+        yield return new TestCaseData(16, TYPE_GC_BYREF, TYPE_GC_BYREF, TYP_BYREF, TYP_BYREF);
     }
 
     [Test]
@@ -267,8 +273,8 @@ internal static unsafe class Arm64ReturnTypeTests
     [TestCase(TYP_LONG, REG_ARM64_R7, false)]
     [TestCase(TYP_FLOAT, REG_ARM64_V0, false)]
     [TestCase(TYP_DOUBLE, REG_ARM64_V7, false)]
-    [TestCase(TYP_LONG, REG_NA, true)]
-    [TestCase(TYP_DOUBLE, REG_NA, true)]
+    [TestCase(TYP_LONG, REG_ARM64_NA, true)]
+    [TestCase(TYP_DOUBLE, REG_ARM64_NA, true)]
     public static void CallArgumentsUseTheirClassifiedRegisterOrStackSlot(var_types type, regNumber register, bool stack)
     {
         WithLowering(8, TYP_LONG, (compiler, lowering, block) => {

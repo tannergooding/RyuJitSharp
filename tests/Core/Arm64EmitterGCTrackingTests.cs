@@ -93,7 +93,7 @@ internal static unsafe class Arm64EmitterGCTrackingTests
         WithEmitter((emitter, buffer) =>
         {
             emitter.emitFullGCinfo = true;
-            SyncThisRegister(emitter) = REG_NA;
+            SyncThisRegister(emitter) = REG_ARM64_NA;
             GCrefRegisters(emitter) = SRBM_ARM64_R1;
             ByrefRegisters(emitter) = SRBM_ARM64_R2;
 
@@ -163,7 +163,7 @@ internal static unsafe class Arm64EmitterGCTrackingTests
         WithEmitter((emitter, buffer) =>
         {
             emitter.emitFullGCinfo = true;
-            SyncThisRegister(emitter) = REG_NA;
+            SyncThisRegister(emitter) = REG_ARM64_NA;
             ByrefRegisters(emitter) = SRBM_ARM64_R1;
 
             UpdateRegisters(emitter, GCT_GCREF, new regMaskTP(SRBM_ARM64_R1), buffer + 8);

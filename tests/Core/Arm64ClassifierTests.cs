@@ -47,7 +47,7 @@ internal static unsafe class Arm64ClassifierTests
             var classifier = new Arm64Classifier(new ClassifierInfo());
             if (exhaust)
             {
-                for (var i = 0; i < MAX_FLOAT_REG_ARG - 1; i++)
+                for (var i = 0; i < MAX_FLOAT_REG_ARG_ARM64 - 1; i++)
                 {
                     _ = classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None);
                 }
@@ -200,7 +200,7 @@ internal static unsafe class Arm64ClassifierTests
         var compiler = NewCompiler();
         var classifier = new Arm64Classifier(new ClassifierInfo());
 
-        for (var i = 0; i < MAX_FLOAT_REG_ARG; i++)
+        for (var i = 0; i < MAX_FLOAT_REG_ARG_ARM64; i++)
         {
             Assert.That(classifier.Classify(compiler, TYP_DOUBLE, null, WellKnownArg.None).Segments[0].Register,
                 Is.EqualTo(FltArgRegs[i]));

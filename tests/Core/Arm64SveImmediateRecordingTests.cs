@@ -31,7 +31,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             var id = Record(emitter, () => emitter.emitIns_I(INS_sve_setffr, EA_4BYTE, 123));
 
             Assert.That(id.idIns(), Is.EqualTo(INS_sve_setffr));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_DQ_0A));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_SVE_DQ_0A));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_PTRSIZE));
             Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)0));
             Assert.That(id.idIsSmallDsc(), Is.True);
@@ -68,7 +68,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             var id = Record(emitter, () => emitter.emitIns_R_PATTERN_I(
                 INS_sve_cntw, EA_8BYTE, REG_ARM64_R0, SVE_PATTERN_VL4, 3));
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_BL_1A));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_SVE_BL_1A));
             Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_R0));
             Assert.That(id.idSvePattern(), Is.EqualTo(SVE_PATTERN_VL4));
             Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)3));
@@ -83,7 +83,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             var id = Record(emitter, () => emitter.emitIns_PRFOP_R_R_R(
                 INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_ARM64_P0, REG_ARM64_R1, REG_ARM64_R2));
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_IB_3A));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_SVE_IB_3A));
             Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_P0));
             Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(id.idReg3(), Is.EqualTo(REG_ARM64_R2));
@@ -99,7 +99,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             var id = Record(emitter, () => emitter.emitIns_PRFOP_R_R_I(
                 INS_sve_prfb, EA_SCALABLE, SVE_PRFOP_PLDL1KEEP, REG_ARM64_P0, REG_ARM64_R1, -1));
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_IA_2A));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_SVE_IA_2A));
             Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_P0));
             Assert.That(id.idReg2(), Is.EqualTo(REG_ARM64_R1));
             Assert.That(id.idSvePrfop(), Is.EqualTo(SVE_PRFOP_PLDL1KEEP));
@@ -107,13 +107,13 @@ internal static unsafe class Arm64SveImmediateRecordingTests
         });
     }
 
-    [TestCase(INS_sve_aesmc, REG_ARM64_V0, INS_OPTS_NONE, INS_sve_aesmc, IF_SVE_GL_1A, INS_OPTS_SCALABLE_B)]
-    [TestCase(INS_sve_aesimc, REG_ARM64_V31, INS_OPTS_NONE, INS_sve_aesimc, IF_SVE_GL_1A, INS_OPTS_SCALABLE_B)]
-    [TestCase(INS_sve_rdffr, REG_ARM64_P0, INS_OPTS_NONE, INS_sve_rdffr, IF_SVE_DH_1A, INS_OPTS_SCALABLE_B)]
-    [TestCase(INS_sve_pfalse, REG_ARM64_P15, INS_OPTS_NONE, INS_sve_pfalse, IF_SVE_DJ_1A, INS_OPTS_SCALABLE_B)]
-    [TestCase(INS_sve_wrffr, REG_ARM64_P15, INS_OPTS_NONE, INS_sve_wrffr, IF_SVE_DR_1A, INS_OPTS_SCALABLE_B)]
-    [TestCase(INS_sve_ptrue, REG_ARM64_P8, INS_OPTS_SCALABLE_D, INS_sve_ptrue, IF_SVE_DZ_1A, INS_OPTS_SCALABLE_D)]
-    [TestCase(INS_sve_fmov, REG_ARM64_V31, INS_OPTS_SCALABLE_S, INS_sve_mov, IF_SVE_EB_1B, INS_OPTS_SCALABLE_S)]
+    [TestCase(INS_sve_aesmc, REG_ARM64_V0, INS_OPTS_NONE, INS_sve_aesmc, IF_ARM64_SVE_GL_1A, INS_OPTS_SCALABLE_B)]
+    [TestCase(INS_sve_aesimc, REG_ARM64_V31, INS_OPTS_NONE, INS_sve_aesimc, IF_ARM64_SVE_GL_1A, INS_OPTS_SCALABLE_B)]
+    [TestCase(INS_sve_rdffr, REG_ARM64_P0, INS_OPTS_NONE, INS_sve_rdffr, IF_ARM64_SVE_DH_1A, INS_OPTS_SCALABLE_B)]
+    [TestCase(INS_sve_pfalse, REG_ARM64_P15, INS_OPTS_NONE, INS_sve_pfalse, IF_ARM64_SVE_DJ_1A, INS_OPTS_SCALABLE_B)]
+    [TestCase(INS_sve_wrffr, REG_ARM64_P15, INS_OPTS_NONE, INS_sve_wrffr, IF_ARM64_SVE_DR_1A, INS_OPTS_SCALABLE_B)]
+    [TestCase(INS_sve_ptrue, REG_ARM64_P8, INS_OPTS_SCALABLE_D, INS_sve_ptrue, IF_ARM64_SVE_DZ_1A, INS_OPTS_SCALABLE_D)]
+    [TestCase(INS_sve_fmov, REG_ARM64_V31, INS_OPTS_SCALABLE_S, INS_sve_mov, IF_ARM64_SVE_EB_1B, INS_OPTS_SCALABLE_S)]
     public static void RegisterFormsPreserveForcedOptionsAndPreferredAliases(
         instruction ins, regNumber reg, insOpts opt, instruction expectedIns,
         Emitter.insFormat format, insOpts expectedOpt)
@@ -130,16 +130,16 @@ internal static unsafe class Arm64SveImmediateRecordingTests
         });
     }
 
-    [TestCase(INS_sve_rdvl, EA_8BYTE, REG_ARM64_R0, INS_OPTS_NONE, -32, -32, false, INS_sve_rdvl, IF_SVE_BC_1A)]
-    [TestCase(INS_sve_rdvl, EA_8BYTE, REG_ARM64_R30, INS_OPTS_NONE, 31, 31, false, INS_sve_rdvl, IF_SVE_BC_1A)]
-    [TestCase(INS_sve_smax, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, -128, -128, false, INS_sve_smax, IF_SVE_ED_1A)]
-    [TestCase(INS_sve_umin, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, 255, 255, false, INS_sve_umin, IF_SVE_ED_1A)]
-    [TestCase(INS_sve_mul, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_S, 127, 127, false, INS_sve_mul, IF_SVE_EE_1A)]
-    [TestCase(INS_sve_mov, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, -128, -128, false, INS_sve_mov, IF_SVE_EB_1A)]
-    [TestCase(INS_sve_mov, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_H, -32768, -128, true, INS_sve_mov, IF_SVE_EB_1A)]
-    [TestCase(INS_sve_dup, EA_SCALABLE, REG_ARM64_V31, INS_OPTS_SCALABLE_D, 32512, 127, true, INS_sve_mov, IF_SVE_EB_1A)]
-    [TestCase(INS_sve_add, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, 255, 255, false, INS_sve_add, IF_SVE_EC_1A)]
-    [TestCase(INS_sve_subr, EA_SCALABLE, REG_ARM64_V31, INS_OPTS_SCALABLE_H, 65280, 255, true, INS_sve_subr, IF_SVE_EC_1A)]
+    [TestCase(INS_sve_rdvl, EA_8BYTE, REG_ARM64_R0, INS_OPTS_NONE, -32, -32, false, INS_sve_rdvl, IF_ARM64_SVE_BC_1A)]
+    [TestCase(INS_sve_rdvl, EA_8BYTE, REG_ARM64_R30, INS_OPTS_NONE, 31, 31, false, INS_sve_rdvl, IF_ARM64_SVE_BC_1A)]
+    [TestCase(INS_sve_smax, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, -128, -128, false, INS_sve_smax, IF_ARM64_SVE_ED_1A)]
+    [TestCase(INS_sve_umin, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, 255, 255, false, INS_sve_umin, IF_ARM64_SVE_ED_1A)]
+    [TestCase(INS_sve_mul, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_S, 127, 127, false, INS_sve_mul, IF_ARM64_SVE_EE_1A)]
+    [TestCase(INS_sve_mov, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, -128, -128, false, INS_sve_mov, IF_ARM64_SVE_EB_1A)]
+    [TestCase(INS_sve_mov, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_H, -32768, -128, true, INS_sve_mov, IF_ARM64_SVE_EB_1A)]
+    [TestCase(INS_sve_dup, EA_SCALABLE, REG_ARM64_V31, INS_OPTS_SCALABLE_D, 32512, 127, true, INS_sve_mov, IF_ARM64_SVE_EB_1A)]
+    [TestCase(INS_sve_add, EA_SCALABLE, REG_ARM64_V0, INS_OPTS_SCALABLE_B, 255, 255, false, INS_sve_add, IF_ARM64_SVE_EC_1A)]
+    [TestCase(INS_sve_subr, EA_SCALABLE, REG_ARM64_V31, INS_OPTS_SCALABLE_H, 65280, 255, true, INS_sve_subr, IF_ARM64_SVE_EC_1A)]
     public static void ImmediateFormsPreserveBoundsArithmeticShiftAndDescriptorChoice(
         instruction ins, emitAttr attr, regNumber reg, insOpts opt, int immediate,
         int encoded, bool shifted, instruction expectedIns, Emitter.insFormat format)
@@ -169,19 +169,19 @@ internal static unsafe class Arm64SveImmediateRecordingTests
                 INS_sve_index, EA_SCALABLE, REG_ARM64_V0, imm1, imm2, INS_OPTS_SCALABLE_S));
 
             Assert.That(id.idIns(), Is.EqualTo(INS_sve_index));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_AX_1A));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_SVE_AX_1A));
             Assert.That(id.idInsOpt(), Is.EqualTo(INS_OPTS_SCALABLE_S));
             Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_V0));
             Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)encoded));
         });
     }
 
-    [TestCase(INS_sve_fadd, REG_ARM64_P0, 0.5, INS_OPTS_SCALABLE_H, INS_sve_fadd, IF_SVE_HM_2A, 0)]
-    [TestCase(INS_sve_fsubr, REG_ARM64_P7, 1.0, INS_OPTS_SCALABLE_D, INS_sve_fsubr, IF_SVE_HM_2A, 1)]
-    [TestCase(INS_sve_fmaxnm, REG_ARM64_P0, 0.0, INS_OPTS_SCALABLE_S, INS_sve_fmaxnm, IF_SVE_HM_2A, 0)]
-    [TestCase(INS_sve_fmul, REG_ARM64_P7, 2.0, INS_OPTS_SCALABLE_H, INS_sve_fmul, IF_SVE_HM_2A, 1)]
-    [TestCase(INS_sve_fcpy, REG_ARM64_P15, -10.0, INS_OPTS_SCALABLE_D, INS_sve_fmov, IF_SVE_BU_2A, 0xA4)]
-    [TestCase(INS_sve_fmov, REG_ARM64_P0, 2.0, INS_OPTS_SCALABLE_H, INS_sve_fmov, IF_SVE_BU_2A, 0)]
+    [TestCase(INS_sve_fadd, REG_ARM64_P0, 0.5, INS_OPTS_SCALABLE_H, INS_sve_fadd, IF_ARM64_SVE_HM_2A, 0)]
+    [TestCase(INS_sve_fsubr, REG_ARM64_P7, 1.0, INS_OPTS_SCALABLE_D, INS_sve_fsubr, IF_ARM64_SVE_HM_2A, 1)]
+    [TestCase(INS_sve_fmaxnm, REG_ARM64_P0, 0.0, INS_OPTS_SCALABLE_S, INS_sve_fmaxnm, IF_ARM64_SVE_HM_2A, 0)]
+    [TestCase(INS_sve_fmul, REG_ARM64_P7, 2.0, INS_OPTS_SCALABLE_H, INS_sve_fmul, IF_ARM64_SVE_HM_2A, 1)]
+    [TestCase(INS_sve_fcpy, REG_ARM64_P15, -10.0, INS_OPTS_SCALABLE_D, INS_sve_fmov, IF_ARM64_SVE_BU_2A, 0xA4)]
+    [TestCase(INS_sve_fmov, REG_ARM64_P0, 2.0, INS_OPTS_SCALABLE_H, INS_sve_fmov, IF_ARM64_SVE_BU_2A, 0)]
     public static void RegisterFloatConstantFormsPreserveImmediateEncodingsAndAliases(
         instruction ins, regNumber predicate, double immediate, insOpts opt, instruction expectedIns,
         Emitter.insFormat format, int encoded)
@@ -201,15 +201,15 @@ internal static unsafe class Arm64SveImmediateRecordingTests
         });
     }
 
-    [TestCase(INS_sve_and, 255L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_SVE_BS_1A, 4103)]
-    [TestCase(INS_sve_bic, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_SVE_BS_1A, 4103)]
-    [TestCase(INS_sve_eon, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_eor, IF_SVE_BS_1A, 4103)]
-    [TestCase(INS_sve_orn, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_orr, IF_SVE_BS_1A, 4103)]
-    [TestCase(INS_sve_mov, 255L, INS_SCALABLE_OPTS_IMM_BITMASK, INS_sve_dupm, IF_SVE_BT_1A, 4103)]
-    [TestCase(INS_sve_dupm, 0x00ff00ff00ff00ffL, INS_SCALABLE_OPTS_NONE, INS_sve_dupm, IF_SVE_BT_1A, 39)]
-    [TestCase(INS_sve_dupm, 0x0000000000ffff00L, INS_SCALABLE_OPTS_NONE, INS_sve_mov, IF_SVE_BT_1A, 7695)]
-    [TestCase(INS_sve_dupm, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_dupm, IF_SVE_BT_1A, 7735)]
-    [TestCase(INS_sve_bic, long.MinValue, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_SVE_BS_1A, 4158)]
+    [TestCase(INS_sve_and, 255L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_ARM64_SVE_BS_1A, 4103)]
+    [TestCase(INS_sve_bic, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_ARM64_SVE_BS_1A, 4103)]
+    [TestCase(INS_sve_eon, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_eor, IF_ARM64_SVE_BS_1A, 4103)]
+    [TestCase(INS_sve_orn, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_orr, IF_ARM64_SVE_BS_1A, 4103)]
+    [TestCase(INS_sve_mov, 255L, INS_SCALABLE_OPTS_IMM_BITMASK, INS_sve_dupm, IF_ARM64_SVE_BT_1A, 4103)]
+    [TestCase(INS_sve_dupm, 0x00ff00ff00ff00ffL, INS_SCALABLE_OPTS_NONE, INS_sve_dupm, IF_ARM64_SVE_BT_1A, 39)]
+    [TestCase(INS_sve_dupm, 0x0000000000ffff00L, INS_SCALABLE_OPTS_NONE, INS_sve_mov, IF_ARM64_SVE_BT_1A, 7695)]
+    [TestCase(INS_sve_dupm, -256L, INS_SCALABLE_OPTS_NONE, INS_sve_dupm, IF_ARM64_SVE_BT_1A, 7735)]
+    [TestCase(INS_sve_bic, long.MinValue, INS_SCALABLE_OPTS_NONE, INS_sve_and, IF_ARM64_SVE_BS_1A, 4158)]
     public static void BitmaskFormsPreserveComplementEncodingAndDisassemblyPreference(
         instruction ins, long immediate, insScalableOpts sopt, instruction expectedIns,
         Emitter.insFormat format, int encoded)
@@ -246,7 +246,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
                 var id = Record(emitter, () => emitter.emitIns_R_F(ins, EA_SCALABLE, REG_ARM64_V0, value, opt));
 
                 Assert.That(id.idIns(), Is.EqualTo(INS_sve_fmov));
-                Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_EA_1A));
+                Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_SVE_EA_1A));
                 Assert.That(id.idInsOpt(), Is.EqualTo(opt));
                 Assert.That(id.idReg1(), Is.EqualTo(REG_ARM64_V0));
                 Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)encoded));
@@ -264,7 +264,7 @@ internal static unsafe class Arm64SveImmediateRecordingTests
             var id = Record(emitter, () => emitter.emitIns_R_PATTERN(ins, EA_SCALABLE, reg, opt, pattern));
 
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_SVE_DE_1A));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_SVE_DE_1A));
             Assert.That(id.idInsOpt(), Is.EqualTo(opt));
             Assert.That(id.idReg1(), Is.EqualTo(reg));
             Assert.That(id.idSvePattern(), Is.EqualTo(pattern));

@@ -63,7 +63,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
             Assert.That(result, Is.EqualTo(REG_ARM64_R2));
             var descriptor = Descriptors(codeGen.Emitter).Single();
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_DI_2A));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARM64_DI_2A));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R2));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_ARM64_R0));
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(7));
@@ -199,7 +199,7 @@ internal static unsafe class Arm64CodeGenBinaryTargetTests
             var descriptors = Descriptors(codeGen.Emitter);
             Assert.That(descriptors.Select(descriptor => descriptor.idIns()).ToArray(),
                 Is.EqualTo([INS_add, INS_add]));
-            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_DI_2A));
+            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARM64_DI_2A));
             Assert.That(descriptors[0].idInsOpt(), Is.EqualTo(INS_OPTS_LSL12));
             Assert.That(descriptors[0].idIsCnsReloc(), Is.True);
             Assert.That(descriptors[1].idIsCnsReloc(), Is.False);

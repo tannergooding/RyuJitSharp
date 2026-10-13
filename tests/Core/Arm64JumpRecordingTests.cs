@@ -23,22 +23,22 @@ internal static unsafe class Arm64JumpRecordingTests
             INS_nop, INS_b, INS_beq, INS_bne, INS_bhs, INS_blo, INS_bmi, INS_bpl,
             INS_bvs, INS_bvc, INS_bhi, INS_bls, INS_bge, INS_blt, INS_bgt, INS_ble,
         ];
-        Assert.That(expected.Length, Is.EqualTo((int)EJ_COUNT));
+        Assert.That(expected.Length, Is.EqualTo((int)EJ_ARMARCH_COUNT));
         for (var index = 0; index < expected.Length; index++)
         {
             Assert.That(Emitter.emitJumpKindToIns((emitJumpKind)index), Is.EqualTo(expected[index]));
         }
     }
 
-    [TestCase(INS_cbz, IF_LARGEJMP, IF_BI_1A)]
-    [TestCase(INS_cbnz, IF_LARGEJMP, IF_BI_1A)]
-    [TestCase(INS_tbz, IF_LARGEJMP, IF_BI_1B)]
-    [TestCase(INS_tbnz, IF_LARGEJMP, IF_BI_1B)]
-    [TestCase(INS_bne, IF_LARGEJMP, IF_BI_0B)]
-    [TestCase(INS_adr, IF_LARGEADR, IF_DI_1E)]
-    [TestCase(INS_adr, IF_DI_1E, IF_DI_1E)]
-    [TestCase(INS_ldr, IF_LARGELDC, IF_LS_1A)]
-    [TestCase(INS_ldr, IF_LS_1A, IF_LS_1A)]
+    [TestCase(INS_cbz, IF_ARM64_LARGEJMP, IF_ARM64_BI_1A)]
+    [TestCase(INS_cbnz, IF_ARM64_LARGEJMP, IF_ARM64_BI_1A)]
+    [TestCase(INS_tbz, IF_ARM64_LARGEJMP, IF_ARM64_BI_1B)]
+    [TestCase(INS_tbnz, IF_ARM64_LARGEJMP, IF_ARM64_BI_1B)]
+    [TestCase(INS_bne, IF_ARM64_LARGEJMP, IF_ARM64_BI_0B)]
+    [TestCase(INS_adr, IF_ARM64_LARGEADR, IF_ARM64_DI_1E)]
+    [TestCase(INS_adr, IF_ARM64_DI_1E, IF_ARM64_DI_1E)]
+    [TestCase(INS_ldr, IF_ARM64_LARGELDC, IF_ARM64_LS_1A)]
+    [TestCase(INS_ldr, IF_ARM64_LS_1A, IF_ARM64_LS_1A)]
     public static void ShortSelectionPreservesAllFormatsAndTheKeepLongVeto(
         instruction ins, Emitter.insFormat initial, Emitter.insFormat expected)
     {
@@ -53,7 +53,7 @@ internal static unsafe class Arm64JumpRecordingTests
         [Values(false, true)] bool hasCookie)
     {
         var (_, _, emitter) = CreateEmitter();
-        var format = ins is INS_b or INS_bl_local ? IF_BI_0A : IF_LARGEJMP;
+        var format = ins is INS_b or INS_bl_local ? IF_ARM64_BI_0A : IF_ARM64_LARGEJMP;
         var size = ins is INS_b or INS_bl_local ? 4u : 8u;
         var target = Label();
         if (hasCookie)
@@ -103,7 +103,7 @@ internal static unsafe class Arm64JumpRecordingTests
 
         var id = Last(emitter);
         JumpView.Check(id, target, group, 0u, keepShort: true, keepLong: false);
-        Assert.That(id.idInsFmt(), Is.EqualTo(IF_BI_0B));
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_BI_0B));
         Assert.That(id.idCodeSize(), Is.EqualTo(4u));
         Assert.That(JumpView.Pending(emitter), Is.SameAs(id));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
@@ -126,7 +126,7 @@ internal static unsafe class Arm64JumpRecordingTests
 
         var id = Last(emitter);
         JumpView.Check(id, target, group, 0u, keepShort: true, keepLong: false);
-        Assert.That(id.idInsFmt(), Is.EqualTo(IF_BI_0B));
+        Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM64_BI_0B));
         Assert.That(GroupSize(emitter), Is.EqualTo(4));
     }
 
@@ -153,7 +153,7 @@ internal static unsafe class Arm64JumpRecordingTests
         var id = Last(emitter);
         JumpView.Check(id, target, emitter.emitCurIG, 0u, keepShort: false,
             keepLong: hasColdSection && (sourceCold != targetCold));
-        Assert.That(id.idInsFmt(), Is.EqualTo(ins == INS_b ? IF_BI_0A : IF_LARGEJMP));
+        Assert.That(id.idInsFmt(), Is.EqualTo(ins == INS_b ? IF_ARM64_BI_0A : IF_ARM64_LARGEJMP));
         Assert.That(id.idCodeSize(), Is.EqualTo(ins == INS_b ? 4u : 8u));
     }
 
@@ -191,10 +191,10 @@ internal static unsafe class Arm64JumpRecordingTests
     }
 
     [TestCase(EJ_jmp, INS_b)]
-    [TestCase(EJ_eq, INS_beq)]
-    [TestCase(EJ_ne, INS_bne)]
-    [TestCase(EJ_vc, INS_bvc)]
-    [TestCase(EJ_lo, INS_blo)]
+    [TestCase(EJ_ARMARCH_eq, INS_beq)]
+    [TestCase(EJ_ARMARCH_ne, INS_bne)]
+    [TestCase(EJ_ARMARCH_vc, INS_bvc)]
+    [TestCase(EJ_ARMARCH_lo, INS_blo)]
     public static void CodegenJumpUsesTheArm64InstructionMapping(emitJumpKind kind, instruction expected)
     {
         var (_, codeGen, emitter) = CreateEmitter();
@@ -226,7 +226,7 @@ internal static unsafe class Arm64JumpRecordingTests
         var id = Last(emitter);
         JumpView.Check(id, target, emitter.emitCurIG, 0u, keepShort,
             keepLong: !keepShort && (forceLong || differentRegion));
-        Assert.That(id.idInsFmt(), Is.EqualTo(keepShort ? IF_BI_0B : IF_LARGEJMP));
+        Assert.That(id.idInsFmt(), Is.EqualTo(keepShort ? IF_ARM64_BI_0B : IF_ARM64_LARGEJMP));
         Assert.That(id.idCodeSize(), Is.EqualTo(keepShort ? 4u : 8u));
     }
 

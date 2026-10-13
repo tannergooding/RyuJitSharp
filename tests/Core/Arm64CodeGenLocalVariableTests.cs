@@ -74,8 +74,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
         });
     }
 
-    [TestCase(TYP_BYREF)]
-    [TestCase(TYP_I_IMPL)]
+    [TestCaseSource(nameof(LocalAddressTypes))]
     public static void LocalAddressesRecordTheTargetRegisterAndOffset(var_types type)
     {
         WithCodeGen((_, codeGen) =>
@@ -91,7 +90,7 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptors, Has.Count.EqualTo(1));
             var descriptor = descriptors[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_DI_2A));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM64_DI_2A));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(descriptor.idSmallCns(), Is.EqualTo(8));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_ARM64_R3));
@@ -100,6 +99,12 @@ internal static unsafe class Arm64CodeGenLocalVariableTests
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(24u));
         });
+    }
+
+    private static IEnumerable<TestCaseData> LocalAddressTypes()
+    {
+        yield return new TestCaseData(TYP_BYREF);
+        yield return new TestCaseData(TYP_I_IMPL);
     }
 
     [TestCase(true, GTF_EMPTY)]

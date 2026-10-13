@@ -27,12 +27,12 @@ internal static unsafe class Arm64CodeGenSimdUpperRestoreTests
                 RegNum = REG_ARM64_V1,
             };
 
-            codeGen.genSimdUpperRestore(restore);
+            codeGen.genSimdUpperRestoreArm64(restore);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
-            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_DV_2F));
+            Assert.That(descriptors[0].idInsFmt(), Is.EqualTo(IF_ARM64_DV_2F));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_ARM64_V0));
             Assert.That(descriptors[0].idReg2(), Is.EqualTo(REG_ARM64_V1));
@@ -52,7 +52,7 @@ internal static unsafe class Arm64CodeGenSimdUpperRestoreTests
                 Flags = GTF_SPILLED,
             };
 
-            codeGen.genSimdUpperRestore(restore);
+            codeGen.genSimdUpperRestoreArm64(restore);
 
             var descriptors = Arm64CodeGenLocalVariableTests.Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(2));
@@ -64,7 +64,7 @@ internal static unsafe class Arm64CodeGenSimdUpperRestoreTests
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptors[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(8u));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_mov));
-            Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(IF_DV_2F));
+            Assert.That(descriptors[1].idInsFmt(), Is.EqualTo(IF_ARM64_DV_2F));
             Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_ARM64_V0));
             Assert.That(descriptors[1].idReg2(), Is.EqualTo(REG_ARM64_V1));
             Assert.That(descriptors[1].idSmallCns(), Is.EqualTo(16));

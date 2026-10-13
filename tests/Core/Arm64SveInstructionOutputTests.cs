@@ -154,11 +154,11 @@ internal static unsafe class Arm64SveInstructionOutputTests
         Assert.That(SizeR(null, size), Is.EqualTo(bit << 22));
     }
 
-    [TestCase(IF_SVE_HX_3A_B, EA_4BYTE, 0u)]
-    [TestCase(IF_SVE_HX_3A_E, EA_8BYTE, 0x40000000u)]
-    [TestCase(IF_SVE_IV_3A, EA_8BYTE, 0u)]
-    [TestCase(IF_SVE_JI_3A_A, EA_4BYTE, 0x200000u)]
-    [TestCase(IF_SVE_JI_3A_A, EA_8BYTE, 0u)]
+    [TestCase(IF_ARM64_SVE_HX_3A_B, EA_4BYTE, 0u)]
+    [TestCase(IF_ARM64_SVE_HX_3A_E, EA_8BYTE, 0x40000000u)]
+    [TestCase(IF_ARM64_SVE_IV_3A, EA_8BYTE, 0u)]
+    [TestCase(IF_ARM64_SVE_JI_3A_A, EA_4BYTE, 0x200000u)]
+    [TestCase(IF_ARM64_SVE_JI_3A_A, EA_8BYTE, 0u)]
     public static void GatherAndScatterWidthsKeepTheirOppositeSizeSelection(
         Emitter.insFormat format, emitAttr size, uint expected)
     {
@@ -252,10 +252,10 @@ internal static unsafe class Arm64SveInstructionOutputTests
         Assert.That(MergeFour(null, merge), Is.EqualTo(bit << 4));
     }
 
-    [TestCase(IF_SVE_DL_2A, false, 0u)]
-    [TestCase(IF_SVE_DL_2A, true, 0x400u)]
-    [TestCase(IF_SVE_DY_3A, false, 0u)]
-    [TestCase(IF_SVE_DY_3A, true, 0x2000u)]
+    [TestCase(IF_ARM64_SVE_DL_2A, false, 0u)]
+    [TestCase(IF_ARM64_SVE_DL_2A, true, 0x400u)]
+    [TestCase(IF_ARM64_SVE_DY_3A, false, 0u)]
+    [TestCase(IF_ARM64_SVE_DY_3A, true, 0x2000u)]
     public static void VectorLengthSpecifierUsesTheDescriptorBit(
         Emitter.insFormat format, bool four, uint expected)
     {
@@ -280,12 +280,12 @@ internal static unsafe class Arm64SveInstructionOutputTests
         Assert.That(Dtype(null, ins, size, code), Is.EqualTo(code | bits));
     }
 
-    [TestCase(IF_SVE_IH_3A_F, EA_4BYTE, 0x408000u)]
-    [TestCase(IF_SVE_IH_3A_F, EA_8BYTE, 0x608000u)]
-    [TestCase(IF_SVE_IH_3A_F, EA_16BYTE, 0x100000u)]
-    [TestCase(IF_SVE_II_4A_H, EA_4BYTE, 0x404000u)]
-    [TestCase(IF_SVE_II_4A_H, EA_8BYTE, 0x604000u)]
-    [TestCase(IF_SVE_II_4A_H, EA_16BYTE, 0x8000u)]
+    [TestCase(IF_ARM64_SVE_IH_3A_F, EA_4BYTE, 0x408000u)]
+    [TestCase(IF_ARM64_SVE_IH_3A_F, EA_8BYTE, 0x608000u)]
+    [TestCase(IF_ARM64_SVE_IH_3A_F, EA_16BYTE, 0x100000u)]
+    [TestCase(IF_ARM64_SVE_II_4A_H, EA_4BYTE, 0x404000u)]
+    [TestCase(IF_ARM64_SVE_II_4A_H, EA_8BYTE, 0x604000u)]
+    [TestCase(IF_ARM64_SVE_II_4A_H, EA_16BYTE, 0x8000u)]
     public static void Ld1wIncludesRequiredBitsOutsideDtype(
         Emitter.insFormat format, emitAttr size, uint bits)
     {
@@ -293,20 +293,20 @@ internal static unsafe class Arm64SveInstructionOutputTests
         Assert.That(DtypeWord(null, INS_sve_ld1w, format, size, code), Is.EqualTo(code | bits));
     }
 
-    [TestCase(INS_sve_ld1rsh, IF_SVE_IC_3A_A, EA_4BYTE, 0x2000u)]
-    [TestCase(INS_sve_ld1rsh, IF_SVE_IC_3A_A, EA_8BYTE, 0u)]
-    [TestCase(INS_sve_ld1rw, IF_SVE_IC_3A_A, EA_4BYTE, 0x4000u)]
-    [TestCase(INS_sve_ld1rw, IF_SVE_IC_3A_A, EA_8BYTE, 0x6000u)]
-    [TestCase(INS_sve_ld1rh, IF_SVE_IC_3A_B, EA_2BYTE, 0x2000u)]
-    [TestCase(INS_sve_ld1rh, IF_SVE_IC_3A_B, EA_4BYTE, 0x4000u)]
-    [TestCase(INS_sve_ld1rh, IF_SVE_IC_3A_B, EA_8BYTE, 0x6000u)]
-    [TestCase(INS_sve_ld1rsb, IF_SVE_IC_3A_B, EA_2BYTE, 0x1004000u)]
-    [TestCase(INS_sve_ld1rsb, IF_SVE_IC_3A_B, EA_4BYTE, 0x1002000u)]
-    [TestCase(INS_sve_ld1rsb, IF_SVE_IC_3A_B, EA_8BYTE, 0x1000000u)]
-    [TestCase(INS_sve_ld1rb, IF_SVE_IC_3A_C, EA_1BYTE, 0u)]
-    [TestCase(INS_sve_ld1rb, IF_SVE_IC_3A_C, EA_2BYTE, 0x2000u)]
-    [TestCase(INS_sve_ld1rb, IF_SVE_IC_3A_C, EA_4BYTE, 0x4000u)]
-    [TestCase(INS_sve_ld1rb, IF_SVE_IC_3A_C, EA_8BYTE, 0x6000u)]
+    [TestCase(INS_sve_ld1rsh, IF_ARM64_SVE_IC_3A_A, EA_4BYTE, 0x2000u)]
+    [TestCase(INS_sve_ld1rsh, IF_ARM64_SVE_IC_3A_A, EA_8BYTE, 0u)]
+    [TestCase(INS_sve_ld1rw, IF_ARM64_SVE_IC_3A_A, EA_4BYTE, 0x4000u)]
+    [TestCase(INS_sve_ld1rw, IF_ARM64_SVE_IC_3A_A, EA_8BYTE, 0x6000u)]
+    [TestCase(INS_sve_ld1rh, IF_ARM64_SVE_IC_3A_B, EA_2BYTE, 0x2000u)]
+    [TestCase(INS_sve_ld1rh, IF_ARM64_SVE_IC_3A_B, EA_4BYTE, 0x4000u)]
+    [TestCase(INS_sve_ld1rh, IF_ARM64_SVE_IC_3A_B, EA_8BYTE, 0x6000u)]
+    [TestCase(INS_sve_ld1rsb, IF_ARM64_SVE_IC_3A_B, EA_2BYTE, 0x1004000u)]
+    [TestCase(INS_sve_ld1rsb, IF_ARM64_SVE_IC_3A_B, EA_4BYTE, 0x1002000u)]
+    [TestCase(INS_sve_ld1rsb, IF_ARM64_SVE_IC_3A_B, EA_8BYTE, 0x1000000u)]
+    [TestCase(INS_sve_ld1rb, IF_ARM64_SVE_IC_3A_C, EA_1BYTE, 0u)]
+    [TestCase(INS_sve_ld1rb, IF_ARM64_SVE_IC_3A_C, EA_2BYTE, 0x2000u)]
+    [TestCase(INS_sve_ld1rb, IF_ARM64_SVE_IC_3A_C, EA_4BYTE, 0x4000u)]
+    [TestCase(INS_sve_ld1rb, IF_ARM64_SVE_IC_3A_C, EA_8BYTE, 0x6000u)]
     public static void BroadcastLoadsKeepDtypeHighLowAndSignExtensionBits(
         instruction ins, Emitter.insFormat format, emitAttr size, uint bits)
     {
@@ -337,11 +337,11 @@ internal static unsafe class Arm64SveInstructionOutputTests
         }
     }
 
-    [TestCase(INS_sve_asr, IF_SVE_AA_3A, 0x049083E0u)]
-    [TestCase(INS_sve_movprfx, IF_SVE_BI_2A, 0x0420BFE0u)]
-    [TestCase(INS_sve_setffr, IF_SVE_DQ_0A, 0x252C9000u)]
-    [TestCase(INS_sve_mov, IF_SVE_BV_2B, 0x05904000u)]
-    [TestCase(INS_sve_mov, IF_SVE_EB_1B, 0x25B8C000u)]
+    [TestCase(INS_sve_asr, IF_ARM64_SVE_AA_3A, 0x049083E0u)]
+    [TestCase(INS_sve_movprfx, IF_ARM64_SVE_BI_2A, 0x0420BFE0u)]
+    [TestCase(INS_sve_setffr, IF_ARM64_SVE_DQ_0A, 0x252C9000u)]
+    [TestCase(INS_sve_mov, IF_ARM64_SVE_BV_2B, 0x05904000u)]
+    [TestCase(INS_sve_mov, IF_ARM64_SVE_EB_1B, 0x25B8C000u)]
     public static void OutputUsesRealEncodingTablesAndAdvancesOneInstruction(
         instruction ins, Emitter.insFormat format, uint expected)
     {
@@ -349,7 +349,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
         var id = OutputEmitter.Descriptor(format);
         id.idIns(ins);
         id.idInsOpt(INS_OPTS_SCALABLE_S);
-        id.idReg2(format is IF_SVE_AA_3A or IF_SVE_BV_2B ? REG_ARM64_P0 : REG_ARM64_V31);
+        id.idReg2(format is IF_ARM64_SVE_AA_3A or IF_ARM64_SVE_BV_2B ? REG_ARM64_P0 : REG_ARM64_V31);
         id.idReg3(REG_ARM64_V31);
         var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
@@ -364,7 +364,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     public static void UnexpectedFormatKeepsTheReturnCursorAndBuffer()
     {
         var emitter = NewEmitter();
-        var id = OutputEmitter.Descriptor(IF_EN5A);
+        var id = OutputEmitter.Descriptor(IF_ARM64_EN5A);
         var buffer = stackalloc byte[12];
         new Span<byte>(buffer, 12).Fill(0xA5);
         byte* end = null;
@@ -431,7 +431,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     {
         uint result = 0;
         var (_, assertions) = Arm64SveInstructionSanityTests.Capture(
-            () => result = DtypeWord(null, INS_sve_ld1w, IF_SVE_IH_3A_F, EA_1BYTE, 0xA5000001));
+            () => result = DtypeWord(null, INS_sve_ld1w, IF_ARM64_SVE_IH_3A_F, EA_1BYTE, 0xA5000001));
         Assert.That(assertions, Is.EqualTo<string[]>([
             "!\"Invalid size for encoding dtype.\"", "!\"Invalid instruction format\"",
         ]));
@@ -441,7 +441,7 @@ internal static unsafe class Arm64SveInstructionOutputTests
     [Test]
     public static void InvalidOutputShiftKeepsNativeAssertionOrderThroughEncoding()
     {
-        var id = OutputEmitter.Descriptor(IF_SVE_GA_2A);
+        var id = OutputEmitter.Descriptor(IF_ARM64_SVE_GA_2A);
         var emitter = NewEmitter();
         var buffer = stackalloc byte[4];
         new Span<byte>(buffer, 4).Fill(0xA5);
