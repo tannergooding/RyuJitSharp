@@ -84,36 +84,37 @@ public sealed partial class CodeGen
         var size = EA_SIZE(attr);
         assert(tmpReg != reg2);
 
-#if DEBUG
-        switch (ins)
+        if (Configuration.DEBUG)
         {
-            case INS_addi:
-            case INS_sb:
-            case INS_sh:
-            case INS_sw:
-            case INS_fsw:
-            case INS_sd:
-            case INS_fsd:
-            case INS_lb:
-            case INS_lh:
-            case INS_lw:
-            case INS_flw:
-            case INS_ld:
-            case INS_fld:
-            case INS_lbu:
-            case INS_lhu:
-            case INS_lwu:
+            switch (ins)
             {
-                break;
-            }
+                case INS_addi:
+                case INS_sb:
+                case INS_sh:
+                case INS_sw:
+                case INS_fsw:
+                case INS_sd:
+                case INS_fsd:
+                case INS_lb:
+                case INS_lh:
+                case INS_lw:
+                case INS_flw:
+                case INS_ld:
+                case INS_fld:
+                case INS_lbu:
+                case INS_lhu:
+                case INS_lwu:
+                {
+                    break;
+                }
 
-            default:
-            {
-                assert(false, conditionExpression: "!\"Unexpected instruction in genInstrWithConstant\"");
-                break;
+                default:
+                {
+                    assert(false, conditionExpression: "!\"Unexpected instruction in genInstrWithConstant\"");
+                    break;
+                }
             }
         }
-#endif
 
         var immediateFits = Emitter.isValidSimm12(imm);
         if (immediateFits)

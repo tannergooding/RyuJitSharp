@@ -29,32 +29,33 @@ public sealed partial class CodeGen
         var calleeSavedRegs = pushRegs | framePointerMask | RBM_RA;
         _regSet.rsSetCalleeSavedRegsMask(calleeSavedRegs);
 
-#if DEBUG
-        JITDUMP(
-            $"Frame info. #outsz={_compiler.lvaOutgoingArgSpaceSize.Value}; #framesz={genTotalFrameSize}; LclFrameSize={_compiler.compLclFrameSize};\n");
-
-        var expectedPushCount = unchecked((int)genCountBits(calleeSavedRegs));
-        if (_compiler.compCalleeRegsPushed != expectedPushCount)
+        if (Configuration.DEBUG)
         {
-            jitprintf(
-                $"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. Got: {expectedPushCount} ");
-            dspRegMask(calleeSavedRegs);
-            jitprintf("\n");
-            assert(_compiler.compCalleeRegsPushed == expectedPushCount);
-        }
+            JITDUMP(
+                $"Frame info. #outsz={_compiler.lvaOutgoingArgSpaceSize.Value}; #framesz={genTotalFrameSize}; LclFrameSize={_compiler.compLclFrameSize};\n");
 
-        if (_verbose)
-        {
-            var maskSaveRegsFloat = pushRegs & new regMaskTP(SRBM_FLT_CALLEE_SAVED_RISCV64);
-            var maskSaveRegsInt = pushRegs & ~maskSaveRegsFloat;
-            jitprintf("Save float regs: ");
-            dspRegMask(maskSaveRegsFloat);
-            jitprintf("\n");
-            jitprintf("Save int   regs: ");
-            dspRegMask(maskSaveRegsInt);
-            jitprintf("\n");
+            var expectedPushCount = unchecked((int)genCountBits(calleeSavedRegs));
+            if (_compiler.compCalleeRegsPushed != expectedPushCount)
+            {
+                jitprintf(
+                    $"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. Got: {expectedPushCount} ");
+                dspRegMask(calleeSavedRegs);
+                jitprintf("\n");
+                assert(_compiler.compCalleeRegsPushed == expectedPushCount);
+            }
+
+            if (_verbose)
+            {
+                var maskSaveRegsFloat = pushRegs & new regMaskTP(SRBM_FLT_CALLEE_SAVED_RISCV64);
+                var maskSaveRegsInt = pushRegs & ~maskSaveRegsFloat;
+                jitprintf("Save float regs: ");
+                dspRegMask(maskSaveRegsFloat);
+                jitprintf("\n");
+                jitprintf("Save int   regs: ");
+                dspRegMask(maskSaveRegsInt);
+                jitprintf("\n");
+            }
         }
-#endif
 
         var totalFrameSize = genTotalFrameSize;
         var leftFrameSize = 0;
