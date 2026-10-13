@@ -12,12 +12,16 @@ public sealed partial class CodeGen
 {
     internal unsafe OperandDesc genOperandDesc(instruction ins, GenTree op)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction operand classification requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Instruction operand classification requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         if (!op.IsContained && !op.IsUsedFromSpillTemp)
         {
             return new OperandDesc(op.RegNum);
@@ -47,7 +51,12 @@ public sealed partial class CodeGen
             }
             else
             {
-#if FEATURE_HW_INTRINSICS
+                if (!Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Hardware instruction operands require hardware intrinsics.");
+                }
+
                 var intrinsic = op.AsHWIntrinsic();
                 var intrinsicId = intrinsic.HWIntrinsicId;
                 var simdBaseType = intrinsic.SimdBaseType;
@@ -111,9 +120,6 @@ public sealed partial class CodeGen
                         break;
                     }
                 }
-#else
-                throw new FatalJitException(CORJIT_SKIPPED, "Hardware instruction operands require hardware intrinsics.");
-#endif
             }
 
             if (address.IsContained && (address.Oper is GT_LCL_ADDR))
@@ -156,9 +162,19 @@ public sealed partial class CodeGen
                     return new OperandDesc(op.AsIntCon().IconValue, op.AsIntCon().ImmedValNeedsReloc(_compiler));
                 }
 
-#if FEATURE_SIMD
                 case GT_CNS_VEC:
                 {
+                    if (!Configuration.FEATURE_SIMD)
+                    {
+                        throw new FatalJitException(CORJIT_SKIPPED,
+                            "Vector constant operands require SIMD support.");
+                    }
+                    if (!Configuration.TARGET_XARCH)
+                    {
+                        throw new FatalJitException(CORJIT_SKIPPED,
+                            "Emitter vector-constant operands are not implemented outside xarch.");
+                    }
+
                     var tupleType = Emitter.insTupleTypeInfo(ins);
                     var size = (int)op.Type.Size;
                     if (tupleType is INS_TT_TUPLE1_SCALAR or INS_TT_TUPLE1_FIXED)
@@ -170,13 +186,18 @@ public sealed partial class CodeGen
 
                     return new OperandDesc(Emitter.emitSimdConst(in op.AsVecCon().SimdVal, (emitAttr)size));
                 }
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
+
                 case GT_CNS_MSK:
                 {
+                    if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                    {
+                        throw new FatalJitException(CORJIT_SKIPPED,
+                            "Mask constant operands require masked hardware intrinsics.");
+                    }
+
                     return new OperandDesc(Emitter.emitSimdMaskConst(op.AsMskCon().SimdMaskVal));
                 }
-#endif
+
                 default:
                 {
                     unreached();
@@ -188,17 +209,21 @@ public sealed partial class CodeGen
         assert((varNum != BAD_VAR_NUM) || (temp is not null));
         assert(offset != ushort.MaxValue);
         return new OperandDesc(varNum, offset);
-#endif
     }
 
     public unsafe void inst_TT(instruction ins, emitAttr size, GenTree op1)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Single-operand instruction generation requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Single-operand instruction generation requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var descriptor = genOperandDesc(ins, op1);
         switch (descriptor.GetKind())
         {
@@ -238,17 +263,21 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 
     public unsafe void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree op2)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register/operand instruction generation requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Register/operand instruction generation requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var descriptor = genOperandDesc(ins, op2);
         switch (descriptor.GetKind())
         {
@@ -295,46 +324,51 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 
     public void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, uint value)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register/register/immediate instruction generation requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Register/register/immediate instruction generation requires xarch.");
+        }
+
         assert(ins is INS_shld or INS_shrd or INS_shufps or INS_shufpd or INS_pshufd or
             INS_cmpps or INS_cmppd or INS_dppd or INS_dpps or INS_insertps or INS_roundps or
             INS_roundss or INS_roundpd or INS_roundsd);
 
         Emitter.emitIns_R_R_I(ins, size, reg1, reg2, unchecked((int)value));
-#endif
     }
 
     public unsafe void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg,
         GenTree operand, int value, insOpts options)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register/memory/immediate instruction generation requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Register/memory/immediate instruction generation requires xarch.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(Emitter.emitVerifyEncodable(ins, EA_SIZE(attr), reg));
 
-#if FEATURE_HW_INTRINSICS
-        if (IsEmbeddedBroadcastEnabled(ins, operand))
+        if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            options = AddEmbBroadcastMode(options);
-        }
-        else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
-        {
-            ins = ins switch
+            if (IsEmbeddedBroadcastEnabled(ins, operand))
             {
-                INS_vextractf64x2 => INS_vextractf32x4,
-                INS_vextracti64x2 => INS_vextracti32x4,
-                _ => ins,
-            };
+                options = AddEmbBroadcastMode(options);
+            }
+            else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
+            {
+                ins = ins switch
+                {
+                    INS_vextractf64x2 => INS_vextractf32x4,
+                    INS_vextracti64x2 => INS_vextracti32x4,
+                    _ => ins,
+                };
+            }
         }
-#endif
 
         var descriptor = genOperandDesc(ins, operand);
         switch (descriptor.GetKind())
@@ -369,32 +403,35 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 
     public unsafe void inst_RV_RV_TT_IV(instruction ins, emitAttr size, regNumber targetReg,
         regNumber op1Reg, GenTree op2, sbyte immediate, bool isRMW, insOpts options)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register/operand/immediate generation requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "SIMD register/operand/immediate generation requires xarch.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(Emitter.emitVerifyEncodable(ins, EA_SIZE(size), op1Reg));
-#if FEATURE_HW_INTRINSICS
-        if (IsEmbeddedBroadcastEnabled(ins, op2))
+        if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            options = AddEmbBroadcastMode(options);
-        }
-        else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
-        {
-            ins = ins switch
+            if (IsEmbeddedBroadcastEnabled(ins, op2))
             {
-                INS_vinsertf64x2 => INS_vinsertf32x4,
-                INS_vinserti64x2 => INS_vinserti32x4,
-                _ => ins,
-            };
+                options = AddEmbBroadcastMode(options);
+            }
+            else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
+            {
+                ins = ins switch
+                {
+                    INS_vinsertf64x2 => INS_vinsertf32x4,
+                    INS_vinserti64x2 => INS_vinserti32x4,
+                    _ => ins,
+                };
+            }
         }
-#endif
 
         var descriptor = genOperandDesc(ins, op2);
         switch (descriptor.GetKind())
@@ -440,43 +477,50 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 
-#if TARGET_XARCH && FEATURE_HW_INTRINSICS
     public static insOpts AddEmbBroadcastMode(insOpts options)
     {
+        if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Embedded broadcast instruction options require xarch hardware intrinsics.");
+        }
+
         assert((options & INS_OPTS_EVEX_b_MASK) == 0);
         return options | INS_OPTS_EVEX_eb;
     }
-#endif
 
     public unsafe void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg,
         regNumber op1Reg, GenTree op2, bool isRMW, insOpts options)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-operand register/memory instruction generation requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Three-operand register/memory instruction generation requires xarch.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(Emitter.emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
 
-#if FEATURE_HW_INTRINSICS
-        if (IsEmbeddedBroadcastEnabled(ins, op2))
+        if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            options = AddEmbBroadcastMode(options);
-        }
-        else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
-        {
-            ins = ins switch
+            if (IsEmbeddedBroadcastEnabled(ins, op2))
             {
-                INS_vpandq => INS_pandd,
-                INS_vpandnq => INS_pandnd,
-                INS_vporq => INS_pord,
-                INS_vpxorq => INS_pxord,
-                _ => ins,
-            };
+                options = AddEmbBroadcastMode(options);
+            }
+            else if ((options == INS_OPTS_NONE) && !Emitter.IsVexEncodableInstruction(ins))
+            {
+                ins = ins switch
+                {
+                    INS_vpandq => INS_pandd,
+                    INS_vpandnq => INS_pandnd,
+                    INS_vporq => INS_pord,
+                    INS_vpxorq => INS_pxord,
+                    _ => ins,
+                };
+            }
         }
-#endif
 
         var descriptor = genOperandDesc(ins, op2);
         switch (descriptor.GetKind())
@@ -521,6 +565,5 @@ public sealed partial class CodeGen
                 break;
             }
         }
-#endif
     }
 }

@@ -21,40 +21,39 @@ public enum emitAttr
 
     EA_16BYTE = 0x010,
 
-#if TARGET_ARM64
     EA_SCALABLE = 0x020,
 
-    EA_SIZE_MASK = 0x03F,
-#elif TARGET_XARCH
     EA_32BYTE = 0x020,
 
     EA_64BYTE = 0x040,
 
-    EA_SIZE_MASK = 0x07F,
-#else
-    EA_SIZE_MASK = 0x01F,
-#endif
+    EA_ARM64_SIZE_MASK = 0x03F,
 
-#if TARGET_64BIT
-    EA_PTRSIZE = EA_8BYTE,
-#else
-    EA_PTRSIZE = EA_4BYTE,
-#endif
+    EA_XARCH_SIZE_MASK = 0x07F,
+
+    EA_GENERIC_SIZE_MASK = 0x01F,
 
     EA_OFFSET_FLG = 0x080,
 
-    // size == 0
-    EA_OFFSET = EA_OFFSET_FLG | EA_PTRSIZE,
-
     EA_GCREF_FLG = 0x100,
-
-    // size is -1
-    EA_GCREF = EA_GCREF_FLG | EA_PTRSIZE,
 
     EA_BYREF_FLG = 0x200,
 
-    // size is -2
-    EA_BYREF = EA_BYREF_FLG | EA_PTRSIZE,
+    EA_32BIT_PTRSIZE = EA_4BYTE,
+
+    EA_64BIT_PTRSIZE = EA_8BYTE,
+
+    EA_32BIT_OFFSET = EA_OFFSET_FLG | EA_32BIT_PTRSIZE,
+
+    EA_64BIT_OFFSET = EA_OFFSET_FLG | EA_64BIT_PTRSIZE,
+
+    EA_32BIT_GCREF = EA_GCREF_FLG | EA_32BIT_PTRSIZE,
+
+    EA_64BIT_GCREF = EA_GCREF_FLG | EA_64BIT_PTRSIZE,
+
+    EA_32BIT_BYREF = EA_BYREF_FLG | EA_32BIT_PTRSIZE,
+
+    EA_64BIT_BYREF = EA_BYREF_FLG | EA_64BIT_PTRSIZE,
 
     /// <summary>Is the displacement of the instruction relocatable?</summary>
     EA_DSP_RELOC_FLG = 0x400,

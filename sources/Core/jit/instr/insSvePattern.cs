@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 // Maps directly to the pattern used in SVE instructions such as cntb.
@@ -27,4 +26,3 @@ public enum insSvePattern : uint
     SVE_PATTERN_MUL3 = 30,  // The largest multiple of 3.
     SVE_PATTERN_ALL = 31,   // All available (implicitly a multiple of two).
 }
-#endif

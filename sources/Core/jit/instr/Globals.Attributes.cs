@@ -13,9 +13,30 @@ public static partial class Globals
 
     public const emitAttr EA_4BYTE_DSP_RELOC = EA_4BYTE | EA_DSP_RELOC_FLG;
 
-    public const emitAttr EA_PTR_DSP_RELOC = EA_PTRSIZE | EA_DSP_RELOC_FLG;
+    public static emitAttr EA_PTRSIZE => Configuration.TARGET_64BIT ? EA_64BIT_PTRSIZE : EA_32BIT_PTRSIZE;
 
-    public const emitAttr EA_HANDLE_CNS_RELOC = EA_PTRSIZE | EA_CNS_RELOC_FLG;
+    public static emitAttr EA_OFFSET => Configuration.TARGET_64BIT ? EA_64BIT_OFFSET : EA_32BIT_OFFSET;
+
+    public static emitAttr EA_GCREF => Configuration.TARGET_64BIT ? EA_64BIT_GCREF : EA_32BIT_GCREF;
+
+    public static emitAttr EA_BYREF => Configuration.TARGET_64BIT ? EA_64BIT_BYREF : EA_32BIT_BYREF;
+
+    public static emitAttr EA_SIZE_MASK =>
+        Configuration.TARGET_ARM64 ? EA_ARM64_SIZE_MASK :
+        Configuration.TARGET_XARCH ? EA_XARCH_SIZE_MASK :
+        EA_GENERIC_SIZE_MASK;
+
+    public static emitAttr EA_PTR_DSP_RELOC => EA_PTRSIZE | EA_DSP_RELOC_FLG;
+
+    public static emitAttr EA_HANDLE_CNS_RELOC => EA_PTRSIZE | EA_CNS_RELOC_FLG;
+
+    public static emitAttr GCS => EA_GCREF;
+
+    public static emitAttr BRS => EA_BYREF;
+
+    public static emitAttr EPS => EA_PTRSIZE;
+
+    public const emitAttr EA_SCALABLE_ARM64 = (emitAttr)0x020;
 
     public static emitAttr EA_SET_FLG(emitAttr attr, emitAttr flags) => (emitAttr)((int)attr | (int)flags);
 

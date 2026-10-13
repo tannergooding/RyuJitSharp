@@ -16,12 +16,10 @@ public sealed partial class CodeGen
             {
                 return ins_Store(dstType, aligned);
             }
-#if TARGET_XARCH && FEATURE_SIMD
-            if (genIsValidMaskReg(srcReg))
+            if (Configuration.TARGET_XARCH && Configuration.FEATURE_SIMD && genIsValidMaskReg(srcReg))
             {
                 return ins_Store(TYP_MASK, aligned);
             }
-#endif
             assert(genIsValidFloatReg(srcReg));
             var dstSize = dstType.Size;
             if (dstSize == 4)
@@ -30,21 +28,29 @@ public sealed partial class CodeGen
             }
             else
             {
-#if TARGET_64BIT
-                assert(dstSize == 8);
-                dstType = TYP_DOUBLE;
-#else
-                unreached();
-                throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte floating register store requires a 64-bit target.");
-#endif
+                if (Configuration.TARGET_64BIT)
+                {
+                    assert(dstSize == 8);
+                    dstType = TYP_DOUBLE;
+                }
+                else
+                {
+                    unreached();
+                    throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte floating register store requires a 64-bit target.");
+                }
             }
 
             return ins_Store(dstType, aligned);
         }
 
-#if FEATURE_MASKED_HW_INTRINSICS
         if (varTypeUsesMaskReg(dstType))
         {
+            if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Masked-register stores require masked hardware intrinsics.");
+            }
+
             if (genIsValidMaskReg(srcReg))
             {
                 return ins_Store(dstType, aligned);
@@ -53,7 +59,6 @@ public sealed partial class CodeGen
             assert(genIsValidIntOrFakeReg(srcReg));
             return ins_Store(dstType, aligned);
         }
-#endif
         assert(varTypeUsesFloatReg(dstType));
         if (genIsValidIntOrFakeReg(srcReg))
         {
@@ -64,13 +69,16 @@ public sealed partial class CodeGen
             }
             else
             {
-#if TARGET_64BIT
-                assert(dstSize == 8);
-                dstType = TYP_LONG;
-#else
-                unreached();
-                throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte integer register store requires a 64-bit target.");
-#endif
+                if (Configuration.TARGET_64BIT)
+                {
+                    assert(dstSize == 8);
+                    dstType = TYP_LONG;
+                }
+                else
+                {
+                    unreached();
+                    throw new FatalJitException(CORJIT_SKIPPED, "An eight-byte integer register store requires a 64-bit target.");
+                }
             }
         }
         else

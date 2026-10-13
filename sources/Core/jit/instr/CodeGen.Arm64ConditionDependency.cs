@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.insCond;
 
 namespace RyuJitSharp;
@@ -12,61 +11,66 @@ public sealed partial class CodeGen
 {
     public static insCond JumpKindToInsCond(emitJumpKind condition)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException("ARM64 condition mapping is not available for this target.");
+        }
+
         switch (condition)
         {
-            case EJ_eq:
+            case EJ_ARMARCH_eq:
             {
                 return INS_COND_EQ;
             }
-            case EJ_ne:
+            case EJ_ARMARCH_ne:
             {
                 return INS_COND_NE;
             }
-            case EJ_hs:
+            case EJ_ARMARCH_hs:
             {
                 return INS_COND_HS;
             }
-            case EJ_lo:
+            case EJ_ARMARCH_lo:
             {
                 return INS_COND_LO;
             }
-            case EJ_mi:
+            case EJ_ARMARCH_mi:
             {
                 return INS_COND_MI;
             }
-            case EJ_pl:
+            case EJ_ARMARCH_pl:
             {
                 return INS_COND_PL;
             }
-            case EJ_vs:
+            case EJ_ARMARCH_vs:
             {
                 return INS_COND_VS;
             }
-            case EJ_vc:
+            case EJ_ARMARCH_vc:
             {
                 return INS_COND_VC;
             }
-            case EJ_hi:
+            case EJ_ARMARCH_hi:
             {
                 return INS_COND_HI;
             }
-            case EJ_ls:
+            case EJ_ARMARCH_ls:
             {
                 return INS_COND_LS;
             }
-            case EJ_ge:
+            case EJ_ARMARCH_ge:
             {
                 return INS_COND_GE;
             }
-            case EJ_lt:
+            case EJ_ARMARCH_lt:
             {
                 return INS_COND_LT;
             }
-            case EJ_gt:
+            case EJ_ARMARCH_gt:
             {
                 return INS_COND_GT;
             }
-            case EJ_le:
+            case EJ_ARMARCH_le:
             {
                 return INS_COND_LE;
             }
@@ -78,4 +82,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

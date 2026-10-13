@@ -11,93 +11,119 @@ public sealed partial class CodeGen
     {
         if (varTypeUsesIntReg(srcType))
         {
-#if TARGET_XARCH
-            return !varTypeIsSmall(srcType) ? INS_mov : varTypeIsUnsigned(srcType) ? INS_movzx : INS_movsx;
-#elif TARGET_ARMARCH
-            if (srcInReg)
+            if (Configuration.TARGET_XARCH)
             {
-                if (!varTypeIsSmall(srcType))
-                {
-                    // An int/long fills its register; on ARM64 a four-byte mov
-                    // also clears the unused upper bits of the destination.
-                    return INS_mov;
-                }
-
-                if (varTypeIsUnsigned(srcType))
-                {
-                    return varTypeIsByte(srcType) ? INS_uxtb : INS_uxth;
-                }
-
-                return varTypeIsByte(srcType) ? INS_sxtb : INS_sxth;
+                return !varTypeIsSmall(srcType) ? INS_mov : varTypeIsUnsigned(srcType) ? INS_movzx : INS_movsx;
             }
 
-            return ins_Load(srcType);
-#else
+            if (Configuration.TARGET_ARMARCH)
+            {
+                if (srcInReg)
+                {
+                    if (!varTypeIsSmall(srcType))
+                    {
+                        // An int/long fills its register; on ARM64 a four-byte mov
+                        // also clears the unused upper bits of the destination.
+                        return INS_mov;
+                    }
+
+                    if (varTypeIsUnsigned(srcType))
+                    {
+                        return varTypeIsByte(srcType) ? INS_uxtb : INS_uxth;
+                    }
+
+                    return varTypeIsByte(srcType) ? INS_sxtb : INS_sxth;
+                }
+
+                return ins_Load(srcType);
+            }
+
             NYI("ins_Move_Extend");
             throw new FatalJitException(CORJIT_SKIPPED, "Integer extension instruction selection is not implemented on this target.");
-#endif
         }
 
-#if FEATURE_MASKED_HW_INTRINSICS
         if (varTypeUsesMaskReg(srcType))
         {
-#if TARGET_XARCH
-            return INS_kmovq_msk;
-#elif TARGET_ARM64
-            return INS_sve_mov;
-#endif
+            if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Masked-register extension requires masked hardware intrinsics.");
+            }
+
+            if (Configuration.TARGET_XARCH)
+            {
+                return INS_kmovq_msk;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return INS_sve_mov;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Masked-register extension is not implemented for this target.");
         }
-#endif
+
         assert(varTypeUsesFloatReg(srcType));
 
-#if TARGET_XARCH
-        if (srcInReg)
+        if (Configuration.TARGET_XARCH)
         {
-            return INS_movaps;
+            if (srcInReg)
+            {
+                return INS_movaps;
+            }
+
+            var srcSize = srcType.Size;
+            if (srcSize == 4)
+            {
+                return INS_movss;
+            }
+            else if (srcSize == 8)
+            {
+                return INS_movsd_simd;
+            }
+
+            assert(srcSize is 12 or 16 or 32 or 64);
+
+            return INS_movups;
         }
 
-        var srcSize = srcType.Size;
-        if (srcSize == 4)
+        if (Configuration.TARGET_ARM64)
         {
-            return INS_movss;
-        }
-        else if (srcSize == 8)
-        {
-            return INS_movsd_simd;
+            return srcInReg ? INS_mov : ins_Load(srcType);
         }
 
-        assert(srcSize is 12 or 16 or 32 or 64);
+        if (Configuration.TARGET_ARM)
+        {
+            assert(!varTypeIsSimd(srcType));
+            return INS_vmov;
+        }
 
-        return INS_movups;
-#elif TARGET_ARM64
-        return srcInReg ? INS_mov : ins_Load(srcType);
-#elif TARGET_ARM
-        assert(!varTypeIsSimd(srcType));
-        return INS_vmov;
-#else
         NYI("ins_Move_Extend");
         throw new FatalJitException(CORJIT_SKIPPED, "Floating-point extension instruction selection is not implemented on this target.");
-#endif
     }
 
     public void inst_Mov_Extend(var_types srcType, bool srcInReg, regNumber dstReg, regNumber srcReg,
         bool canSkip, emitAttr size, insFlags flags = INS_FLAGS_DONT_CARE)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var ins = ins_Move_Extend(srcType, srcInReg);
         if (size == EA_UNKNOWN)
         {
             size = srcType.EmitActualSize;
         }
 
-#if TARGET_ARM
-        _ = Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
-#elif TARGET_ARM64
-        Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
-#else
-        _ = Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            _ = Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
+        }
+        else
+        {
+            _ = Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
+        }
     }
 }

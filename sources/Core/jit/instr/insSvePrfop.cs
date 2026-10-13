@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 // Prefetch operation specifier for SVE instructions such as prfb.
@@ -27,4 +26,3 @@ public enum insSvePrfop : uint
     SVE_PRFOP_CONST14 = 0b1110,
     SVE_PRFOP_CONST15 = 0b1111,
 }
-#endif

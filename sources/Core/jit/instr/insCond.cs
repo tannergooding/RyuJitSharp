@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public enum insCond : uint
@@ -26,4 +25,3 @@ public enum insCond : uint
     INS_COND_GT,
     INS_COND_LE,
 }
-#endif

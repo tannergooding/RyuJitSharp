@@ -29,8 +29,7 @@ public sealed partial class CodeGen
         return name;
     }
 
-#if TARGET_XARCH
-    public ReadOnlySpan<char> genInsDisplayName(global::RyuJitSharp.Emitter.instrDesc id)
+    private ReadOnlySpan<char> GetXarchInstructionDisplayName(global::RyuJitSharp.Emitter.instrDesc id)
     {
         var ins = id.idIns();
         var insName = genInsName(ins);
@@ -265,5 +264,4 @@ public sealed partial class CodeGen
         }
         return insName;
     }
-#endif
 }

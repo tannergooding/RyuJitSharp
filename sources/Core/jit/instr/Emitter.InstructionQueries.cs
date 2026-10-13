@@ -9,10 +9,7 @@ public partial class Emitter
 {
     internal static bool IsSimdInstruction(instruction ins)
     {
-#if TARGET_XARCH
-        return InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_AVX512_INSTRUCTION);
-#else
-        return false;
-#endif
+        return Configuration.TARGET_XARCH &&
+            InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_AVX512_INSTRUCTION);
     }
 }

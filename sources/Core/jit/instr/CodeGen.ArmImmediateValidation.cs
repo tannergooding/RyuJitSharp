@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public bool validImmForInstr(instruction ins, int imm, insFlags flags = INS_FLAGS_DONT_CARE)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException("ARM immediate validation is not available for the configured target.");
+        }
+
         if (Emitter.emitInsIsLoadOrStoreForCodeGen(ins) && !instIsFP(ins))
         {
             return validDispForLdSt(imm, TYP_INT);
@@ -94,6 +98,11 @@ public sealed partial class CodeGen
 
     public bool validImmForInstr(instruction ins, nint imm, insFlags flags = INS_FLAGS_DONT_CARE)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException("ARM immediate validation is not available for the configured target.");
+        }
+
         if ((imm < int.MinValue) || (imm > int.MaxValue))
         {
             return false;
@@ -127,4 +136,3 @@ public sealed partial class CodeGen
         return RyuJitSharp.Emitter.emitIns_valid_imm_for_add(imm, flags);
     }
 }
-#endif

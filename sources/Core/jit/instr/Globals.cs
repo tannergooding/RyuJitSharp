@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if TARGET_XARCH
     public const instruction FIRST_SSE_INSTRUCTION = INS_addpd;
     public const instruction LAST_SSE_INSTRUCTION = INS_gf2p8mulb;
     public const instruction FIRST_AVX_INSTRUCTION = INS_vblendvpd;
@@ -28,7 +27,6 @@ public partial class Globals
     public const instruction LAST_AVX_INSTRUCTION = INS_vpmadd52luq;
     public const instruction FIRST_AVX512_INSTRUCTION = INS_kaddb;
     public const instruction LAST_AVX512_INSTRUCTION = INS_vucomxss;
-#if TARGET_AMD64
     public const instruction FIRST_APX_INSTRUCTION = INS_ccmpo;
     public const instruction FIRST_CCMP_INSTRUCTION = INS_ccmpo;
     public const instruction LAST_CCMP_INSTRUCTION = INS_ccmpg;
@@ -37,6 +35,4 @@ public partial class Globals
     public const instruction FIRST_CTEST_INSTRUCTION = INS_ctesto;
     public const instruction LAST_CTEST_INSTRUCTION = INS_ctestg;
     public const instruction LAST_APX_INSTRUCTION = INS_setg_apx;
-#endif
-#endif
 }

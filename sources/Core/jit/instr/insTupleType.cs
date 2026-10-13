@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 global using static RyuJitSharp.insTupleType;
 
 using System;
@@ -30,4 +29,3 @@ public enum insTupleType : ushort
     INS_TT_MOVDDUP = 0x4000,
     INS_TT_IS_NON_BROADCAST = unchecked((ushort)~INS_TT_IS_BROADCAST),
 }
-#endif
