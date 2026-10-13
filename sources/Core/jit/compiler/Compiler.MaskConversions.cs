@@ -11,7 +11,11 @@ public partial class Compiler
 {
     private PhaseStatus fgOptimizeMaskConversions()
     {
-#if FEATURE_MASKED_HW_INTRINSICS
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
         if (opts.OptimizationDisabled)
         {
             JITDUMP("Skipping. Optimizations Disabled\n");
@@ -85,12 +89,8 @@ public partial class Compiler
         }
 
         return PhaseStatus.MODIFIED_EVERYTHING;
-#else
-        return PhaseStatus.MODIFIED_NOTHING;
-#endif
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     // Compare weighted instruction costs across every definition/use of a local,
     // not just a single live range. Ties retain the vector representation.
     private sealed class MaskConversionsWeight
@@ -102,11 +102,7 @@ public partial class Compiler
         public byte SimdSize;
 
         private const double CostOfConvertMaskToVector = 1.0;
-#if TARGET_ARM64
-        private const double CostOfConvertVectorToMask = 2.0;
-#else
-        private const double CostOfConvertVectorToMask = 1.0;
-#endif
+        private static readonly double CostOfConvertVectorToMask = Configuration.TARGET_ARM64 ? 2.0 : 1.0;
 
         public void UpdateWeight(bool isStore, bool hasConvert, double blockWeight)
         {
@@ -311,11 +307,7 @@ public partial class Compiler
 
         public fgWalkResult PostOrderVisit(ref GenTree use, GenTree? user)
         {
-#if TARGET_ARM64
-            const int ConvertVectorToMaskValueOp = 2;
-#else
-            const int ConvertVectorToMaskValueOp = 1;
-#endif
+            var convertVectorToMaskValueOp = Configuration.TARGET_ARM64 ? 2 : 1;
             GenTreeLclVarCommon local;
             var isLocalStore = false;
             var isLocalUse = false;
@@ -335,9 +327,9 @@ public partial class Compiler
                 addConversion = true;
             }
             else if (use.IsConvertVectorToMask &&
-                     (use.AsHWIntrinsic().GetOp(ConvertVectorToMaskValueOp).Oper is GT_LCL_VAR))
+                     (use.AsHWIntrinsic().GetOp(convertVectorToMaskValueOp).Oper is GT_LCL_VAR))
             {
-                local = use.AsHWIntrinsic().GetOp(ConvertVectorToMaskValueOp).AsLclVarCommon();
+                local = use.AsHWIntrinsic().GetOp(convertVectorToMaskValueOp).AsLclVarCommon();
                 isLocalUse = true;
                 removeConversion = true;
             }
@@ -409,5 +401,4 @@ public partial class Compiler
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
             => IGenTreeVisitor<MaskConversionsUpdateVisitor>.WalkTree(ref this, ref use, user, _ancestors);
     }
-#endif
 }

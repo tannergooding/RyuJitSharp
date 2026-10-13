@@ -294,9 +294,13 @@ public partial class Compiler
         return false;
     }
 
-#if FEATURE_HW_INTRINSICS
     public void optAssertionProp_HWIntrinsic(GenTreeHWIntrinsic tree)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsic assertion propagation is not enabled.");
+        }
+
         assert(vnStore is not null);
         if (tree.HWIntrinsicId is not NI_Vector_ExtractMostSignificantBits)
         {
@@ -339,5 +343,4 @@ public partial class Compiler
             lvaGetDesc(local).SetIsVectorPerElementMask(tree.SimdBaseType);
         }
     }
-#endif
 }

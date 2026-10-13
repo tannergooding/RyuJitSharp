@@ -29,26 +29,31 @@ public partial class Compiler
         }
 
         var funcInfo = new FuncInfoDsc[funcCount];
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-        for (uint index = 0; index < funcCount; index++)
+        if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            ref var func = ref funcInfo[index];
-            func.uwi = new UnwindInfo();
+            for (uint index = 0; index < funcCount; index++)
+            {
+                ref var func = ref funcInfo[index];
+                func.uwi = new UnwindInfo();
+            }
         }
-#endif
-#if !HAS_FIXED_REGISTER_SET || TARGET_WASM
-        for (uint index = 0; index < funcCount; index++)
+        if (!Configuration.HAS_FIXED_REGISTER_SET || Configuration.TARGET_WASM)
         {
-#if !HAS_FIXED_REGISTER_SET
-            funcInfo[index].funStackPointerReg = REG_NA;
-            funcInfo[index].funFramePointerReg = REG_NA;
-#endif
-#if TARGET_WASM
-            funcInfo[index].funWasmLocalDecls = null;
-            funcInfo[index].funWasmExnRefLocalIndex = uint.MaxValue;
-#endif
+            for (uint index = 0; index < funcCount; index++)
+            {
+                if (!Configuration.HAS_FIXED_REGISTER_SET)
+                {
+                    funcInfo[index].funStackPointerReg = REG_NA;
+                    funcInfo[index].funFramePointerReg = REG_NA;
+                }
+
+                if (Configuration.TARGET_WASM)
+                {
+                    funcInfo[index].funWasmLocalDecls = null;
+                    funcInfo[index].funWasmExnRefLocalIndex = uint.MaxValue;
+                }
+            }
         }
-#endif
         assert(funcInfo[0].funKind == FUNC_ROOT);
         ushort[]? vmClauseOrderToEHTabOrder = null;
         ushort[]? ehTabOrderToVMClauseOrder = null;

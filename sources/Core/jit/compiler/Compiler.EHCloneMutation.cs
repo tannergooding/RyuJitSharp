@@ -203,10 +203,8 @@ public partial class Compiler
                     acdKeyDsg = add.acdKeyDsg,
                     acdKind = add.acdKind,
                     acdUsed = false,
-#if !FEATURE_FIXED_OUT_ARGS
                     acdStkLvl = 0,
                     acdStkLvlInit = false,
-#endif
 #if DEBUG
                     acdNum = acdCount++,
 #endif

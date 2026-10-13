@@ -25,13 +25,11 @@ public partial class Compiler
         /// <summary>do we need to keep this helper block?</summary>
         public bool acdUsed;
 
-#if !FEATURE_FIXED_OUT_ARGS
         /// <summary>has acdStkLvl value been already set?</summary>
         public bool acdStkLvlInit;
 
         /// <summary>stack level in stack slots.</summary>
         public int acdStkLvl;
-#endif
 
 #if DEBUG
         public int acdNum;

@@ -253,7 +253,7 @@ public partial class Compiler
 
         var op1ObjectVN = ValueNumStore.NoVN;
         var app = new VNFuncApp();
-        if ((op1.Type is TYP_I_IMPL) && vnStore.GetVNFunc(op1VN, ref app) &&
+        if (((op1.Type == TYP_I_IMPL)) && vnStore.GetVNFunc(op1VN, ref app) &&
             app.FuncIs(VNF_InvariantNonNullLoad))
         {
             op1ObjectVN = app.GetArg(0);

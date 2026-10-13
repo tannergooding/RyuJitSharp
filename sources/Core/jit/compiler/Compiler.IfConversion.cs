@@ -25,14 +25,16 @@ public partial class Compiler
         assert(!fgSsaValid);
         optReachableBitVecTraits = null;
 
-#if TARGET_ARM64 || TARGET_XARCH || TARGET_RISCV64
-        var budget = new[] { 20000 };
-        for (var block = fgLastBB; block is not null; block = block.Prev)
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_XARCH || Configuration.TARGET_RISCV64)
         {
-            var descriptor = new OptIfConversionDsc(this, block);
-            madeChanges |= descriptor.optIfConvert(budget);
+            var budget = new[] { 20000 };
+            for (var block = fgLastBB; block is not null; block = block.Prev)
+            {
+                var descriptor = new OptIfConversionDsc(this, block);
+                madeChanges |= descriptor.optIfConvert(budget);
+            }
         }
-#endif
+
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 }

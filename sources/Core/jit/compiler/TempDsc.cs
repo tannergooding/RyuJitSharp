@@ -72,9 +72,12 @@ public sealed class TempDsc
 
     public void tdAdjustTempOffs(int offs)
     {
-#if TARGET_ARM64
+#if DEBUG
         // Cannot adjust temporary offsets on the UnknownSizeFrame.
-        assert(!varTypeHasUnknownSize(_tdType));
+        if (Configuration.TARGET_ARM64)
+        {
+            assert(!varTypeHasUnknownSize(_tdType));
+        }
 #endif
 
         tdTempOffs = _tdOffs + offs;

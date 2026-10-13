@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -21,8 +20,7 @@ public partial class Compiler
     internal bool DoJitStressRex2Encoding()
     {
 #if DEBUG
-        return (JitConfig.JitStressRex2Encoding != 0)
-            && compOpportunisticallyDependsOn(InstructionSet_APX);
+        return (JitConfig.JitStressRex2Encoding != 0) && canUseApxEncoding();
 #else
         return false;
 #endif
@@ -31,11 +29,9 @@ public partial class Compiler
     internal bool DoJitStressPromotedEvexEncoding()
     {
 #if DEBUG
-        return (JitConfig.JitStressPromotedEvexEncoding != 0)
-            && compOpportunisticallyDependsOn(InstructionSet_APX);
+        return (JitConfig.JitStressPromotedEvexEncoding != 0) && canUseApxEncoding();
 #else
         return false;
 #endif
     }
 }
-#endif

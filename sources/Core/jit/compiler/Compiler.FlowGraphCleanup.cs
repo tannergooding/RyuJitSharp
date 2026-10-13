@@ -16,10 +16,12 @@ public partial class Compiler
 {
     public bool fgDedupReturnComparison(BasicBlock block)
     {
-#if JIT32_GCENCODER
-        // The legacy encoder has a hard limit on the number of epilogues.
-        return false;
-#else
+        if (Configuration.JIT32_GCENCODER)
+        {
+            // The legacy encoder has a hard limit on the number of epilogues.
+            return false;
+        }
+
         assert(block.Kind is BBJ_RETURN);
         var statement = block.LastStmt;
         if ((info.compRetType is not TYP_UBYTE) || (block == genReturnBB) || (statement is null))
@@ -73,9 +75,8 @@ public partial class Compiler
         falseEdge.Likelihood = 0.5;
         retTrueBb.inheritWeightPercentage(block, 50);
         retFalseBb.inheritWeightPercentage(block, 50);
-
         return true;
-#endif
+        return true;
     }
 
     public BasicBlock fgNewBBFromTreeAfter(

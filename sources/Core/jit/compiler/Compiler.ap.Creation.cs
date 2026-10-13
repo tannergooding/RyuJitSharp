@@ -83,8 +83,7 @@ public partial class Compiler
                     return optAddAssertion(AssertionDsc.CreateConstLclVarAssertion(this, lclNum, vn1, constant, vn2, equals));
                 }
 
-#if FEATURE_HW_INTRINSICS
-                case GT_CNS_VEC:
+                case GT_CNS_VEC when Configuration.FEATURE_HW_INTRINSICS:
                 {
                     if (!varTypeIsSimd(op1.Type) || (op1.Type != op2.Type))
                     {
@@ -100,7 +99,6 @@ public partial class Compiler
 
                     return optAddAssertion(AssertionDsc.CreateConstLclVarAssertion(this, lclNum, vn1, op2.AsVecCon(), vn2, equals));
                 }
-#endif
 
                 case GT_CNS_INT:
                 {
@@ -260,8 +258,8 @@ public partial class Compiler
         // Look through CSE stores so exact-type checks can still see the indirection.
         var op1 = relop.AsOp().Op1.CommaStoreVal;
         var op2 = relop.AsOp().Op2.CommaStoreVal;
-#if FEATURE_HW_INTRINSICS
-        if (op1.Oper.IsHWIntrinsic && (op2.IsIntegralConst(0) || op2.IsIntegralConst(1)))
+        if (Configuration.FEATURE_HW_INTRINSICS && op1.Oper.IsHWIntrinsic &&
+            (op2.IsIntegralConst(0) || op2.IsIntegralConst(1)))
         {
             if (op2.IsIntegralConst(0))
             {
@@ -304,7 +302,6 @@ public partial class Compiler
 
             assert(varTypeIsSimd(op1.Type) && (op1.Type == op2.Type));
         }
-#endif
         if (optLocalAssertionProp && varTypeIsFloating(op1.Type))
         {
             return new(NO_ASSERTION_INDEX);
@@ -386,7 +383,7 @@ public partial class Compiler
             assert((objectArg is not null) && (typeArg is not null));
             var objectNode = objectArg.Node;
             var typeNode = typeArg.Node;
-            assert((objectNode.Type is TYP_REF or TYP_I_IMPL) && (typeNode.Type is TYP_I_IMPL));
+            assert(((objectNode.Type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_REF || __targetAliasValue0 == TYP_I_IMPL))) && ((typeNode.Type == TYP_I_IMPL)));
             var objVN = optConservativeNormalVN(objectNode);
             var typeVN = optConservativeNormalVN(typeNode);
             assert(vnStore is not null);

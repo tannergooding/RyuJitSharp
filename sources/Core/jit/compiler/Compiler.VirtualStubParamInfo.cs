@@ -11,30 +11,45 @@ public partial class Compiler
     {
         public VirtualStubParamInfo()
         {
-#if TARGET_X86
-            Reg = REG_EAX;
-            RegMask = RBM_EAX;
-#elif TARGET_AMD64
-            Reg = REG_R11;
-            RegMask = RBM_R11;
-#elif TARGET_ARM
-            Reg = REG_R12;
-            RegMask = RBM_R12;
-#elif TARGET_ARM64
-            Reg = REG_R11;
-            RegMask = RBM_R11;
-#elif TARGET_LOONGARCH64
-            Reg = REG_T8;
-            RegMask = RBM_T8;
-#elif TARGET_RISCV64
-            Reg = REG_T5;
-            RegMask = RBM_T5;
-#elif TARGET_WASM
-            Reg = REG_NA;
-            RegMask = RBM_NONE;
-#else
-#error Unsupported or unset target architecture
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                Reg = REG_X86_EAX;
+                RegMask = RBM_X86_EAX;
+            }
+            else if (Configuration.TARGET_AMD64)
+            {
+                Reg = REG_X64_R11;
+                RegMask = RBM_X64_R11;
+            }
+            else if (Configuration.TARGET_ARM)
+            {
+                Reg = REG_ARM32_R12;
+                RegMask = RBM_ARM32_R12;
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                Reg = REG_ARM64_R11;
+                RegMask = RBM_ARM64_R11;
+            }
+            else if (Configuration.TARGET_LOONGARCH64)
+            {
+                Reg = REG_LOONGARCH64_T8;
+                RegMask = new regMaskTP(SRBM_LOONGARCH64_T8);
+            }
+            else if (Configuration.TARGET_RISCV64)
+            {
+                Reg = REG_RISCV64_T5;
+                RegMask = new regMaskTP(SRBM_RISCV64_T5);
+            }
+            else if (Configuration.TARGET_WASM)
+            {
+                Reg = REG_NA;
+                RegMask = RBM_NONE;
+            }
+            else
+            {
+                throw new FatalJitException("Unsupported or unset target architecture.");
+            }
         }
 
         public regNumber Reg { get; }

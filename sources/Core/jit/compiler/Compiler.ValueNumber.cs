@@ -91,12 +91,11 @@ public partial class Compiler
                 {
                     initialValue = vnStore.VNForFunc(type, VNF_InitVal, vnStore.VNForIntCon(local));
                 }
-#if TARGET_X86
-                if ((local == lvaVarargsBaseOfStkArgs) || (local == lvaVarargsHandleArg))
+                if (Configuration.TARGET_X86 &&
+                    ((local == lvaVarargsBaseOfStkArgs) || (local == lvaVarargsHandleArg)))
                 {
                     initialValue = vnStore.VNForExpr(fgFirstBB, TYP_UNKNOWN);
                 }
-#endif
                 assert(initialValue != ValueNumStore.NoVN);
                 ref var definition = ref descriptor.GetPerSsaData(SsaConfig.FIRST_SSA_NUM);
                 definition._vnPair.SetBoth(initialValue);

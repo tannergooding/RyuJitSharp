@@ -86,8 +86,7 @@ public partial class Compiler
         }
 
         var local = operand.EffectiveVal;
-#if TARGET_64BIT
-        if (!cast.IsUnsigned && (local.Type.ActualType is TYP_INT) &&
+        if (Configuration.TARGET_64BIT && !cast.IsUnsigned && (local.Type.ActualType is TYP_INT) &&
             (cast.Type is TYP_LONG))
         {
             assert(statement is not null || optLocalAssertionProp);
@@ -101,7 +100,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         if (optLocalAssertionProp)
         {

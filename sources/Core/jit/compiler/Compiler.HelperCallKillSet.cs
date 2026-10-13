@@ -33,15 +33,40 @@ public partial class Compiler
         return false;
     }
 
-#if TARGET_ARM64
     public regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper)
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            return compHelperCallKillSetArm64(helper);
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            return compHelperCallKillSetAmd64(helper);
+        }
+
+        if (Configuration.TARGET_X86 || Configuration.TARGET_ARM ||
+            Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            return compHelperCallKillSetOther(helper);
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return RBM_CALLEE_TRASH;
+        }
+
+        throw new FatalJitException("Unsupported or unset target architecture.");
+    }
+
+    private regMaskTP compHelperCallKillSetArm64(CorInfoHelpFunc helper)
     {
         switch (helper)
         {
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             {
-                return new regMaskTP(SRBM_CALLEE_TRASH_WRITEBARRIER);
+                return new regMaskTP(SRBM_CALLEE_TRASH_WRITEBARRIER_ARM64);
             }
 
             case CORINFO_HELP_PROF_FCN_ENTER:
@@ -50,23 +75,23 @@ public partial class Compiler
             {
                 return new regMaskTP(
                     (SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH) &
-                    ~(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_FP),
+                    ~(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_ARM64_FP),
                     SRBM_MSK_CALLEE_TRASH);
             }
 
             case CORINFO_HELP_STOP_FOR_GC:
             {
-                return SRBM_STOP_FOR_GC_TRASH;
+                return SRBM_STOP_FOR_GC_TRASH_ARM64;
             }
 
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
             {
-                return SRBM_INIT_PINVOKE_FRAME_TRASH;
+                return SRBM_INIT_PINVOKE_FRAME_TRASH_ARM64;
             }
 
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             {
-                return new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH);
+                return new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64);
             }
 
             case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
@@ -76,81 +101,90 @@ public partial class Compiler
 
             default:
             {
-                return SRBM_CALLEE_TRASH;
+                return SRBM_CALLEE_TRASH_ARM64;
             }
         }
     }
-#elif TARGET_AMD64
-    public regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper)
+    private regMaskTP compHelperCallKillSetAmd64(CorInfoHelpFunc helper)
     {
         switch (helper)
         {
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
+            {
                 return new regMaskTP(SRBM_INT_CALLEE_TRASH_INIT);
+            }
 
             case CORINFO_HELP_PROF_FCN_ENTER:
-#if UNIX_AMD64_ABI
-                return removeRegistersFromCalleeTrash(SRBM_ARG_REGS, SRBM_FLTARG_REGS, SRBM_NONE);
-#else
-                return getCalleeTrashRegisterMask();
-#endif
+            {
+                return Configuration.UNIX_AMD64_ABI
+                    ? removeRegistersFromCalleeTrash(SRBM_ARG_REGS, SRBM_FLTARG_REGS, SRBM_NONE)
+                    : getCalleeTrashRegisterMask();
+            }
 
             case CORINFO_HELP_PROF_FCN_LEAVE:
             case CORINFO_HELP_PROF_FCN_TAILCALL:
-#if UNIX_AMD64_ABI
-                return removeRegistersFromCalleeTrash(
-                    SRBM_INTRET | SRBM_INTRET_1, SRBM_FLOATRET | SRBM_FLOATRET_1, SRBM_NONE);
-#else
-                return removeRegistersFromCalleeTrash(SRBM_INTRET, SRBM_FLOATRET, SRBM_NONE);
-#endif
+            {
+                return Configuration.UNIX_AMD64_ABI
+                    ? removeRegistersFromCalleeTrash(
+                        SRBM_INTRET_AMD64 | SRBM_INTRET_1_AMD64,
+                        SRBM_FLOATRET_AMD64 | SRBM_FLOATRET_1_AMD64, SRBM_NONE)
+                    : removeRegistersFromCalleeTrash(SRBM_INTRET_AMD64, SRBM_FLOATRET_AMD64, SRBM_NONE);
+            }
 
-#if TARGET_X86
-            case CORINFO_HELP_ASSIGN_REF_EAX:
-            case CORINFO_HELP_ASSIGN_REF_ECX:
-            case CORINFO_HELP_ASSIGN_REF_EBX:
-            case CORINFO_HELP_ASSIGN_REF_EBP:
-            case CORINFO_HELP_ASSIGN_REF_ESI:
-            case CORINFO_HELP_ASSIGN_REF_EDI:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
-                return new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_EDX));
-#endif
+            case CORINFO_HELP_ASSIGN_REF_EAX when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_ECX when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_EBX when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_EBP when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_ESI when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_EDI when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI when Configuration.TARGET_X86:
+            {
+                return new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_X86_EDX));
+            }
 
             case CORINFO_HELP_STOP_FOR_GC:
-#if UNIX_AMD64_ABI
-                return removeRegistersFromCalleeTrash(
-                    SRBM_INTRET | SRBM_INTRET_1, SRBM_FLOATRET | SRBM_FLOATRET_1, SRBM_NONE);
-#else
-                return removeRegistersFromCalleeTrash(SRBM_INTRET, SRBM_FLOATRET, SRBM_NONE);
-#endif
+            {
+                return Configuration.UNIX_AMD64_ABI
+                    ? removeRegistersFromCalleeTrash(
+                        SRBM_INTRET_AMD64 | SRBM_INTRET_1_AMD64,
+                        SRBM_FLOATRET_AMD64 | SRBM_FLOATRET_1_AMD64, SRBM_NONE)
+                    : removeRegistersFromCalleeTrash(SRBM_INTRET_AMD64, SRBM_FLOATRET_AMD64, SRBM_NONE);
+            }
 
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            {
                 return getCalleeTrashRegisterMask();
+            }
 
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
-                return removeRegistersFromCalleeTrash(SRBM_R10 | SRBM_RCX, SRBM_NONE, SRBM_NONE,
+            {
+                return removeRegistersFromCalleeTrash(SRBM_X64_R10 | SRBM_X64_RCX, SRBM_NONE, SRBM_NONE,
                     getIntegerCalleeTrashRegisterMask());
+            }
 
             case CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
+            {
                 return removeRegistersFromCalleeTrash(SRBM_ARG_REGS, SRBM_FLTARG_REGS, SRBM_NONE);
+            }
 
             default:
+            {
                 return getCalleeTrashRegisterMask();
+            }
         }
     }
 
     private regMaskTP getCalleeTrashRegisterMask()
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH, SRBM_MSK_CALLEE_TRASH);
-#else
-        return new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH | SRBM_MSK_CALLEE_TRASH);
-#endif
+        return Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH, SRBM_MSK_CALLEE_TRASH)
+            : new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH | SRBM_MSK_CALLEE_TRASH);
     }
 
     private regMaskTP getIntegerCalleeTrashRegisterMask() => new regMaskTP(SRBM_INT_CALLEE_TRASH);
@@ -161,108 +195,121 @@ public partial class Compiler
     private static regMaskTP removeRegistersFromCalleeTrash(
         regMask intRegisters, regMask floatRegisters, regMask maskRegisters, regMaskTP killMask)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters), killMask.Upper & ~maskRegisters);
-#else
-        return new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters | maskRegisters));
-#endif
+        return Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters), killMask.Upper & ~maskRegisters)
+            : new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters | maskRegisters));
     }
-#elif TARGET_X86 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
-    public regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper)
+
+    private regMaskTP compHelperCallKillSetOther(CorInfoHelpFunc helper)
     {
         var calleeTrash = SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH;
-#if FEATURE_MASKED_HW_INTRINSICS
-        calleeTrash |= SRBM_MSK_CALLEE_TRASH;
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            calleeTrash |= SRBM_MSK_CALLEE_TRASH;
+        }
 
         switch (helper)
         {
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             {
-#if TARGET_X86
-                return new regMaskTP(SRBM_EAX | SRBM_EDX);
-#elif TARGET_ARM
-                return new regMaskTP(SRBM_R0 | SRBM_R3 | SRBM_LR | SRBM_R12);
-#elif TARGET_LOONGARCH64
-                return new regMaskTP(SRBM_T0 | SRBM_T1 | SRBM_T3 | SRBM_T4 | SRBM_T7);
-#else
-                return new regMaskTP(SRBM_T0 | SRBM_T1 | SRBM_T2 | SRBM_T4 | SRBM_T6);
-#endif
+                return Configuration.TARGET_X86 ? new regMaskTP(SRBM_X86_EAX | SRBM_X86_EDX) :
+                    Configuration.TARGET_ARM
+                        ? new regMaskTP(SRBM_ARM32_R0 | SRBM_ARM32_R3 | SRBM_ARM32_LR | SRBM_ARM32_R12)
+                        : Configuration.TARGET_LOONGARCH64
+                            ? new regMaskTP(SRBM_LOONGARCH64_T0 | SRBM_LOONGARCH64_T1 |
+                                SRBM_LOONGARCH64_T3 | SRBM_LOONGARCH64_T4 | SRBM_LOONGARCH64_T7)
+                            : new regMaskTP(SRBM_RISCV64_T0 | SRBM_RISCV64_T1 |
+                                SRBM_RISCV64_T2 | SRBM_RISCV64_T4 | SRBM_RISCV64_T6);
             }
 
             case CORINFO_HELP_PROF_FCN_ENTER:
             case CORINFO_HELP_PROF_FCN_LEAVE:
             case CORINFO_HELP_PROF_FCN_TAILCALL:
             {
-#if TARGET_X86
-                return helper == CORINFO_HELP_PROF_FCN_TAILCALL
-                    ? new regMaskTP(calleeTrash & ~(SRBM_ECX | SRBM_EDX))
-                    : RBM_NONE;
-#elif TARGET_ARM
-                return helper == CORINFO_HELP_PROF_FCN_LEAVE ? new regMaskTP(SRBM_R2) : RBM_NONE;
-#elif TARGET_LOONGARCH64
+                if (Configuration.TARGET_X86)
+                {
+                    return helper == CORINFO_HELP_PROF_FCN_TAILCALL
+                        ? new regMaskTP(calleeTrash & ~(SRBM_X86_ECX | SRBM_X86_EDX))
+                        : RBM_NONE;
+                }
+
+                if (Configuration.TARGET_ARM)
+                {
+                    return helper == CORINFO_HELP_PROF_FCN_LEAVE ? new regMaskTP(SRBM_ARM32_R2) : RBM_NONE;
+                }
+
+                if (Configuration.TARGET_LOONGARCH64)
+                {
+                    return new regMaskTP(calleeTrash &
+                        ~(SRBM_LOONGARCH64_A0 | SRBM_LOONGARCH64_A1 | SRBM_LOONGARCH64_A2 | SRBM_LOONGARCH64_A3 |
+                          SRBM_LOONGARCH64_A4 | SRBM_LOONGARCH64_A5 | SRBM_LOONGARCH64_A6 | SRBM_LOONGARCH64_A7 |
+                          SRBM_LOONGARCH64_F0 | SRBM_LOONGARCH64_F1 | SRBM_LOONGARCH64_F2 | SRBM_LOONGARCH64_F3 |
+                          SRBM_LOONGARCH64_F4 | SRBM_LOONGARCH64_F5 | SRBM_LOONGARCH64_F6 | SRBM_LOONGARCH64_F7 |
+                          SRBM_LOONGARCH64_FP));
+                }
+
                 return new regMaskTP(calleeTrash &
-                    ~(SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 | SRBM_A5 | SRBM_A6 | SRBM_A7 |
-                      SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 | SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7 | SRBM_FP));
-#else
-                return new regMaskTP(calleeTrash &
-                    ~(SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 | SRBM_A5 | SRBM_A6 | SRBM_A7 |
-                      SRBM_FA0 | SRBM_FA1 | SRBM_FA2 | SRBM_FA3 | SRBM_FA4 | SRBM_FA5 | SRBM_FA6 | SRBM_FA7 |
-                      SRBM_FP));
-#endif
+                    ~(SRBM_RISCV64_A0 | SRBM_RISCV64_A1 | SRBM_RISCV64_A2 | SRBM_RISCV64_A3 |
+                      SRBM_RISCV64_A4 | SRBM_RISCV64_A5 | SRBM_RISCV64_A6 | SRBM_RISCV64_A7 |
+                      SRBM_RISCV64_FA0 | SRBM_RISCV64_FA1 | SRBM_RISCV64_FA2 | SRBM_RISCV64_FA3 |
+                      SRBM_RISCV64_FA4 | SRBM_RISCV64_FA5 | SRBM_RISCV64_FA6 | SRBM_RISCV64_FA7 |
+                      SRBM_RISCV64_FP));
             }
 
-#if TARGET_X86
-            case CORINFO_HELP_ASSIGN_REF_EAX:
-            case CORINFO_HELP_ASSIGN_REF_ECX:
-            case CORINFO_HELP_ASSIGN_REF_EBX:
-            case CORINFO_HELP_ASSIGN_REF_EBP:
-            case CORINFO_HELP_ASSIGN_REF_ESI:
-            case CORINFO_HELP_ASSIGN_REF_EDI:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI:
-            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
+            case CORINFO_HELP_ASSIGN_REF_EAX when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_ECX when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_EBX when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_EBP when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_ESI when Configuration.TARGET_X86:
+            case CORINFO_HELP_ASSIGN_REF_EDI when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EAX when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ECX when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBX when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EBP when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_ESI when Configuration.TARGET_X86:
+            case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI when Configuration.TARGET_X86:
             {
-                return new regMaskTP(SRBM_EDX);
+                return new regMaskTP(SRBM_X86_EDX);
             }
-#endif
 
             case CORINFO_HELP_STOP_FOR_GC:
             {
-#if TARGET_ARM
-                return new regMaskTP(calleeTrash &
-                    ~(SRBM_R0 | SRBM_R1 | SRBM_R7 | SRBM_R8 | SRBM_R11 |
-                      SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 | SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7));
-#else
-                return new regMaskTP(calleeTrash);
-#endif
+                return Configuration.TARGET_ARM
+                    ? new regMaskTP(calleeTrash &
+                        ~(SRBM_ARM32_R0 | SRBM_ARM32_R1 | SRBM_ARM32_R7 | SRBM_ARM32_R8 | SRBM_ARM32_R11 |
+                          SRBM_ARM32_F0 | SRBM_ARM32_F1 | SRBM_ARM32_F2 | SRBM_ARM32_F3 |
+                          SRBM_ARM32_F4 | SRBM_ARM32_F5 | SRBM_ARM32_F6 | SRBM_ARM32_F7))
+                    : new regMaskTP(calleeTrash);
             }
 
             case CORINFO_HELP_INIT_PINVOKE_FRAME:
             {
-#if TARGET_X86
-                return new regMaskTP(SRBM_EAX | SRBM_ESI);
-#elif TARGET_ARM
-                return new regMaskTP(calleeTrash | SRBM_R5 | SRBM_R6);
-#else
-                return new regMaskTP(calleeTrash);
-#endif
+                return Configuration.TARGET_X86 ? new regMaskTP(SRBM_X86_EAX | SRBM_X86_ESI) :
+                    Configuration.TARGET_ARM ? new regMaskTP(calleeTrash | SRBM_ARM32_R5 | SRBM_ARM32_R6) :
+                    new regMaskTP(calleeTrash);
             }
 
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             {
-#if TARGET_X86
-                return new regMaskTP(SRBM_INT_CALLEE_TRASH & ~SRBM_ECX);
-#elif TARGET_ARM
-                return new regMaskTP(SRBM_INT_CALLEE_TRASH);
-#else
+                if (Configuration.TARGET_X86)
+                {
+                    return new regMaskTP(SRBM_INT_CALLEE_TRASH & ~SRBM_X86_ECX);
+                }
+
+                if (Configuration.TARGET_ARM)
+                {
+                    return new regMaskTP(SRBM_INT_CALLEE_TRASH);
+                }
+
                 return new regMaskTP(SRBM_INT_CALLEE_TRASH &
-                    ~(SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 | SRBM_A5 | SRBM_A6 | SRBM_A7 | SRBM_T3));
-#endif
+                    ~(Configuration.TARGET_LOONGARCH64
+                        ? SRBM_LOONGARCH64_A0 | SRBM_LOONGARCH64_A1 | SRBM_LOONGARCH64_A2 | SRBM_LOONGARCH64_A3 |
+                            SRBM_LOONGARCH64_A4 | SRBM_LOONGARCH64_A5 | SRBM_LOONGARCH64_A6 | SRBM_LOONGARCH64_A7 |
+                            SRBM_LOONGARCH64_T3
+                        : SRBM_RISCV64_A0 | SRBM_RISCV64_A1 | SRBM_RISCV64_A2 | SRBM_RISCV64_A3 |
+                            SRBM_RISCV64_A4 | SRBM_RISCV64_A5 | SRBM_RISCV64_A6 | SRBM_RISCV64_A7 |
+                            SRBM_RISCV64_T3));
             }
 
             default:
@@ -271,10 +318,4 @@ public partial class Compiler
             }
         }
     }
-#elif TARGET_WASM
-    public regMaskTP compHelperCallKillSet(CorInfoHelpFunc helper)
-    {
-        return RBM_CALLEE_TRASH;
-    }
-#endif
 }

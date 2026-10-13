@@ -445,7 +445,7 @@ public struct SubstitutePlaceholdersAndDevirtualizeWalker : IGenTreeVisitor<Subs
                     if ((retType is TYP_BYREF) && (inlineCandidate.Oper is GT_IND))
                     {
                         // - in an RVA static if we've reinterpreted it as a byref;
-                        assert(newType is TYP_I_IMPL);
+                        assert((newType == TYP_I_IMPL));
                         JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
                         inlineCandidate.Type = TYP_BYREF;
                     }

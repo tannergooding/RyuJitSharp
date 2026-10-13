@@ -175,8 +175,7 @@ public interface IGenTreeVisitor<TSelf>
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
-                    case GT_HWINTRINSIC:
+                    case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                     {
                         var hwintrinsic = node.AsHWIntrinsic();
                         var operands = hwintrinsic.Operands;
@@ -205,7 +204,6 @@ public interface IGenTreeVisitor<TSelf>
                         }
                         break;
                     }
-#endif
 
                     case GT_ARR_ELEM:
                     {

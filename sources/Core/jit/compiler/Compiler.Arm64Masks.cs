@@ -3,13 +3,14 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
     public int getFFRegisterVarNum()
     {
+        EnsureArm64HWIntrinsicSupport();
+
         if (lvaFfrRegister == BAD_VAR_NUM)
         {
             lvaFfrRegister = lvaGrabTempWithImplicitUse(false, "Save the FFR value.");
@@ -21,6 +22,8 @@ public partial class Compiler
 
     public GenTreeMskCon gtNewSimdTrueMaskNode(var_types simdBaseType)
     {
+        EnsureArm64HWIntrinsicSupport();
+
 #if DEBUG
         if (JitConfig.JitUseScalableVectorT != 0)
         {
@@ -33,6 +36,4 @@ public partial class Compiler
         assert(found);
         return mask;
     }
-
 }
-#endif

@@ -21,11 +21,7 @@ public static partial class Globals
 
     public static void printRegMaskInt(regMaskTP mask)
     {
-#if TARGET_AMD64
-        var registers = mask.Lower & SRBM_ALLINT_ALL;
-#else
-        var registers = mask.Lower & SRBM_ALLINT;
-#endif
+        var registers = mask.Lower & (Configuration.TARGET_AMD64 ? SRBM_ALLINT_ALL : SRBM_ALLINT);
         jitprintf(string.Format(CultureInfo.InvariantCulture, RegisterDiagnosticFormats.Int, (ulong)registers));
     }
 }

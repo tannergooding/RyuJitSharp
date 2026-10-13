@@ -9,11 +9,7 @@ public static partial class Globals
 {
     public static bool isRegParamType(var_types type)
     {
-#if TARGET_X86
-        return (type <= TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF);
-#else
-        return true;
-#endif
+        return !Configuration.TARGET_X86 || (type <= TYP_INT) || (type == TYP_REF) || (type == TYP_BYREF);
     }
 
 #if DEBUG

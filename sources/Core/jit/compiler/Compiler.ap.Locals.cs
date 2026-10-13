@@ -27,8 +27,7 @@ public partial class Compiler
             score -= 4;
         }
 
-#if TARGET_X86
-        if (local.Type is TYP_DOUBLE)
+        if (Configuration.TARGET_X86 && local.Type is TYP_DOUBLE)
         {
             if (local.lvIsParam)
             {
@@ -40,7 +39,6 @@ public partial class Compiler
                 score -= 2;
             }
         }
-#endif
 
         return score + (preferOp2 ? 1 : -1);
     }
@@ -143,8 +141,7 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case O2K_CONST_VEC:
+            case O2K_CONST_VEC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 if (!varTypeIsSimd(tree.Type) || (tree.Type != lvaGetDesc(local).Type))
                 {
@@ -152,30 +149,25 @@ public partial class Compiler
                 }
 
                 int size = tree.Type.Size;
-#if TARGET_ARM64
-                if (tree.Type is TYP_SIMD_ARM64)
+                if (Configuration.TARGET_ARM64 && tree.Type is TYP_SIMD_ARM64)
                 {
                     size = Unsafe.SizeOf<simdscalable_t>();
                 }
-#endif
+
                 assert(size == assertion.Op2.SimdSize);
-#if TARGET_ARM64
-                if (tree.Type is TYP_SIMD_ARM64)
+                if (Configuration.TARGET_ARM64 && tree.Type is TYP_SIMD_ARM64)
                 {
                     var scalableValue = MemoryMarshal.Read<simdscalable_t>(assertion.Op2.SimdConstant);
                     replacement = gtNewSimdVconNode(tree.Type, scalableValue);
                 }
                 else
-#endif
                 {
                     var vector = gtNewVconNode(tree.Type);
                     assertion.Op2.SimdConstant.CopyTo(vector.SimdVal.AsSpan<byte>());
                     replacement = vector;
                 }
-
                 break;
             }
-#endif
 
             case O2K_CONST_INT:
             {
@@ -202,13 +194,16 @@ public partial class Compiler
                     assert(varTypeIsIntegralOrI(tree.Type));
                     var type = tree.Type.ActualType;
                     assert((type.Size > sizeof(int)) || FitsInI32(assertion.Op2.IntConstant));
-#if TARGET_64BIT
-                    replacement = new GenTreeIntCon(type, assertion.Op2.IntConstant, null, tree, threading);
-#else
-                    replacement = type is TYP_LONG
-                        ? new GenTreeLngCon(assertion.Op2.IntConstant, tree, threading)
-                        : new GenTreeIntCon(type, assertion.Op2.IntConstant, null, tree, threading);
-#endif
+                    if (Configuration.TARGET_64BIT)
+                    {
+                        replacement = new GenTreeIntCon(type, assertion.Op2.IntConstant, null, tree, threading);
+                    }
+                    else
+                    {
+                        replacement = type is TYP_LONG
+                            ? new GenTreeLngCon(assertion.Op2.IntConstant, tree, threading)
+                            : new GenTreeIntCon(type, assertion.Op2.IntConstant, null, tree, threading);
+                    }
                     replacement._vnPair = new ValueNumPair();
                 }
                 break;

@@ -5,15 +5,6 @@
 
 #if DEBUG
 using System.Globalization;
-#if REGMASK_BITS_8
-using MaskFormattingBits = System.Byte;
-#elif REGMASK_BITS_16
-using MaskFormattingBits = System.UInt16;
-#elif REGMASK_BITS_32
-using MaskFormattingBits = System.UInt32;
-#else
-using MaskFormattingBits = System.UInt64;
-#endif
 
 namespace RyuJitSharp;
 
@@ -23,18 +14,14 @@ public static partial class Globals
     public static string regMaskToString(regMaskTP mask, Compiler context)
     {
         return string.Format(CultureInfo.InvariantCulture, RegisterDiagnosticFormats.All,
-            unchecked((MaskFormattingBits)mask.Lower));
+            Configuration.REGMASK_BITS_32 ? (object)unchecked((uint)mask.Lower) : unchecked((ulong)mask.Lower));
     }
 
     public static string regMaskIntToString(regMaskTP mask, Compiler context)
     {
-#if TARGET_AMD64
-        var registers = mask.Lower & SRBM_ALLINT_ALL;
-#else
-        var registers = mask.Lower & SRBM_ALLINT;
-#endif
+        var registers = mask.Lower & (Configuration.TARGET_AMD64 ? SRBM_ALLINT_ALL : SRBM_ALLINT);
         return string.Format(CultureInfo.InvariantCulture, RegisterDiagnosticFormats.Int,
-            unchecked((MaskFormattingBits)registers));
+            Configuration.REGMASK_BITS_32 ? (object)unchecked((uint)registers) : unchecked((ulong)registers));
     }
 }
 #endif

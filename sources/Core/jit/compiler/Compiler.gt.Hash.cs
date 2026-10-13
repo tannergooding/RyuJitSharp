@@ -81,8 +81,7 @@ public partial class Compiler
                         case GT_CNS_VEC when Configuration.FEATURE_SIMD:
                         {
                             var vector = tree.AsVecCon();
-#if TARGET_ARM64
-                            if (tree.Type is TYP_SIMD_ARM64)
+                            if (Configuration.TARGET_ARM64 && (tree.Type is TYP_SIMD_ARM64))
                             {
                                 ref var simdValue = ref vector.SimdScalableVal;
                                 add = genTreeHashAdd((uint)add, (uint)simdValue.Kind);
@@ -93,7 +92,6 @@ public partial class Compiler
                                 add = genTreeHashAdd((uint)add, simdValue.Step.u32[1]);
                                 break;
                             }
-#endif
                             for (var index = tree.Type.Size / sizeof(uint); index > 0; index--)
                             {
                                 add = genTreeHashAdd((uint)add, vector.SimdVal.u32[index - 1]);
@@ -237,8 +235,7 @@ public partial class Compiler
                                 break;
                             }
 
-#if FEATURE_HW_INTRINSICS
-                            case GT_HWINTRINSIC:
+                            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                             {
                                 var intrinsic = tree.AsHWIntrinsic();
                                 hash += (uint)intrinsic.HWIntrinsicId;
@@ -248,7 +245,6 @@ public partial class Compiler
                                 hash += (uint)intrinsic.GetRegByIndex(1);
                                 break;
                             }
-#endif
                             default:
                             {
                                 assert(false, "unexpected ExOp operator");
@@ -315,8 +311,7 @@ public partial class Compiler
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
-                    case GT_HWINTRINSIC:
+                    case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                     {
                         foreach (var operand in tree.AsHWIntrinsic().Operands)
                         {
@@ -324,7 +319,6 @@ public partial class Compiler
                         }
                         break;
                     }
-#endif
                     case GT_PHI:
                     {
                         foreach (var use in tree.AsPhi().Uses)

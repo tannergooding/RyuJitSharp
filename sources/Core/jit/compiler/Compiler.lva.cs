@@ -82,18 +82,14 @@ public partial class Compiler
     public VARSET_TP lvaTrackedVars = [];
 #endif
 
-#if TARGET_32BIT
     /// <summary>set of long (64-bit) variables</summary>
     public VARSET_TP lvaLongVars = [];
-#endif
 
     /// <summary>set of floating-point (32-bit and 64-bit) or simd variables</summary>
     public VARSET_TP lvaFloatVars = [];
 
-#if FEATURE_MASKED_HW_INTRINSICS
     /// <summary>set of mask variables</summary>
     public VARSET_TP lvaMaskVars = [];
-#endif
 
     /// <summary>VarSets are relative to a specific set of tracked var indices. If that changes, this changes.</summary>
     /// <remarks>VarSets from different epochs cannot be meaningfully combined.</remarks>
@@ -113,15 +109,12 @@ public partial class Compiler
 
     public int lvaVarargsHandleArg = BAD_VAR_NUM;
 
-#if TARGET_X86
     /// <summary>Pointer (computed based on incoming varargs handle) to the start of the stack arguments</summary>
     public int lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
-#endif
 
     /// <summary>lcl var index of Wasm stack pointer arg</summary>
     public int lvaWasmSpArg = BAD_VAR_NUM;
 
-#if TARGET_WASM
     /// <summary>Wasm virtual IP slot</summary>
     public int lvaWasmVirtualIP = BAD_VAR_NUM;
 
@@ -130,7 +123,6 @@ public partial class Compiler
 
     /// <summary>Wasm catch resumption IP slot</summary>
     public int lvaWasmResumeIP = BAD_VAR_NUM;
-#endif
 
     /// <summary>variable representing the InlinedCallFrame</summary>
     public int lvaInlinedPInvokeFrameVar = BAD_VAR_NUM;
@@ -168,10 +160,8 @@ public partial class Compiler
     /// <summary>Var that represents outgoing argument space</summary>
     public int lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
 
-#if FEATURE_FIXED_OUT_ARGS
     /// <summary>Size of fixed outgoing argument space</summary>
     public PhasedVar<int> lvaOutgoingArgSpaceSize;
-#endif
 
     /// <summary>Variable representing the return address.</summary>
     /// <remarks>The helper-based tailcall mechanism passes the address of the return address to a runtime helper where it is used to detect tail-call chains.</remarks>
@@ -190,7 +180,6 @@ public partial class Compiler
         return lvaSecretStubArg;
     }
 
-#if SWIFT_SUPPORT
     public int lvaSwiftSelfArg = BAD_VAR_NUM;
 
     public int lvaSwiftIndirectResultArg = BAD_VAR_NUM;
@@ -198,17 +187,16 @@ public partial class Compiler
     public int lvaSwiftErrorArg = BAD_VAR_NUM;
 
     public int lvaSwiftErrorLocal;
-#endif
 
     /// <summary>Variable representing async continuation argument passed.</summary>
     public int lvaAsyncContinuationArg = BAD_VAR_NUM;
 
-#if DEBUG && TARGET_XARCH
+#if DEBUG
     /// <summary>Stores SP to confirm it is not corrupted on return.</summary>
     public int lvaReturnSpCheck = BAD_VAR_NUM;
 #endif
 
-#if DEBUG && TARGET_X86
+#if DEBUG
     /// <summary>Stores SP to confirm it is not corrupted after every call.</summary>
     public int lvaCallSpCheck = BAD_VAR_NUM;
 #endif
@@ -223,27 +211,28 @@ public partial class Compiler
         }
 
         var genericsContextIsThis = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
-#if JIT32_GCENCODER
-        if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+        if (Configuration.JIT32_GCENCODER)
         {
-            return true;
-        }
-
-        if (genericsContextIsThis)
-        {
-            if (opts.compDbgCode)
+            if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
             {
                 return true;
             }
 
-            if (lvaGenericsContextInUse)
+            if (genericsContextIsThis)
             {
-                JITDUMP("Reporting this as generic context\n");
-                return true;
+                if (opts.compDbgCode)
+                {
+                    return true;
+                }
+
+                if (lvaGenericsContextInUse)
+                {
+                    JITDUMP("Reporting this as generic context\n");
+                    return true;
+                }
             }
         }
-#else
-        if (genericsContextIsThis)
+        else if (genericsContextIsThis)
         {
             // Collectible types need a live context for lookups. Patchpoints
             // also retain it for a possible OSR continuation.
@@ -255,7 +244,6 @@ public partial class Compiler
                 return true;
             }
         }
-#endif
 
         return false;
     }
@@ -330,7 +318,11 @@ public partial class Compiler
 
     public void lvaAllocOutgoingArgSpaceVar()
     {
-#if FEATURE_FIXED_OUT_ARGS
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            return;
+        }
+
         // Setup the outgoing argument region, in case we end up using it later
         if (lvaOutgoingArgSpaceVar == BAD_VAR_NUM)
         {
@@ -340,7 +332,6 @@ public partial class Compiler
         }
 
         noway_assert(lvaOutgoingArgSpaceVar >= info.compLocalsCount && lvaOutgoingArgSpaceVar < lvaCount);
-#endif
     }
 
     public void lvaClassifyParameterAbi()
@@ -352,14 +343,12 @@ public partial class Compiler
             HasRetBuff = info.compRetBuffArg != BAD_VAR_NUM,
         };
 
-#if SWIFT_SUPPORT
-        if (info.compCallConv == CorInfoCallConvExtension.Swift)
+        if (Configuration.SWIFT_SUPPORT && (info.compCallConv == CorInfoCallConvExtension.Swift))
         {
             var classifier = new SwiftABIClassifier(cInfo);
             lvaClassifyParameterAbi(ref classifier);
         }
         else
-#endif
         {
             var classifier = new PlatformClassifier(cInfo);
             lvaClassifyParameterAbi(ref classifier);
@@ -372,7 +361,7 @@ public partial class Compiler
 
             if (lvaIsImplicitByRefLocal(lclNum))
             {
-                assert((abiInfo.NumSegments is 1) && (abiInfo.Segments[0].Size == TARGET_POINTER_SIZE));
+                assert((abiInfo.NumSegments is 1) && (abiInfo.Segments[0].Size == Configuration.TARGET_POINTER_SIZE));
             }
             else
             {
@@ -425,20 +414,18 @@ public partial class Compiler
             {
                 wellKnownArg = WellKnownArg.SecretStubParam;
             }
-#if SWIFT_SUPPORT
-            else if (i == lvaSwiftSelfArg)
+            else if (Configuration.SWIFT_SUPPORT && (i == lvaSwiftSelfArg))
             {
                 wellKnownArg = WellKnownArg.SwiftSelf;
             }
-            else if (i == lvaSwiftIndirectResultArg)
+            else if (Configuration.SWIFT_SUPPORT && (i == lvaSwiftIndirectResultArg))
             {
                 wellKnownArg = WellKnownArg.RetBuffer;
             }
-            else if (i == lvaSwiftErrorArg)
+            else if (Configuration.SWIFT_SUPPORT && (i == lvaSwiftErrorArg))
             {
                 wellKnownArg = WellKnownArg.SwiftError;
             }
-#endif
 
             var abiInfo = classifier.Classify(this, dsc.Type, structLayout, wellKnownArg);
             lvaParameterPassingInfo[i] = abiInfo;
@@ -452,9 +439,10 @@ public partial class Compiler
             }
 #endif
 
-#if FEATURE_IMPLICIT_BYREFS
-            dsc.IsImplicitByRef = abiInfo.IsPassedByReference;
-#endif
+            if (SupportsImplicitByRefs)
+            {
+                dsc.IsImplicitByRef = abiInfo.IsPassedByReference;
+            }
 
             var numRegisters = 0;
 
@@ -486,84 +474,85 @@ public partial class Compiler
 
         lvaParameterStackSize = classifier.StackSize;
 
-#if TARGET_ARM
-        assert(codeGen is not null);
-        ref var armRegSet = ref codeGen.RegSet;
-
-        // Prespill all argument regs on to stack in case of Arm when under profiler.
-        // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
-        // these registers, and is called very early.
-        if (compIsProfilerHookNeeded)
+        if (Configuration.TARGET_ARM)
         {
-            armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(SRBM_ARG_REGS);
-        }
+            assert(codeGen is not null);
+            ref var armRegSet = ref codeGen.RegSet;
 
-        var doubleAlignMask = SRBM_NONE;
-
-        // Also prespill struct parameters.
-        for (var i = 0; i < info.compArgsCount; i++)
-        {
-            ref readonly var abiInfo  = ref lvaGetParameterAbiInfo(i);
-            ref var varDsc   = ref lvaGetDesc(i);
-            var preSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc.Type);
-            preSpill |= varDsc.Type is TYP_STRUCT;
-
-            if (!preSpill)
+            // Prespill all argument regs on to stack in case of Arm when under profiler.
+            // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
+            // these registers, and is called very early.
+            if (compIsProfilerHookNeeded)
             {
-                continue;
+                armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(SRBM_ARG_REGS);
             }
 
-            var regs = SRBM_NONE;
+            var doubleAlignMask = SRBM_NONE;
 
-            foreach (ref readonly var segment in abiInfo.Segments)
+            // Also prespill struct parameters.
+            for (var i = 0; i < info.compArgsCount; i++)
             {
-                if (segment.IsPassedInRegister && genIsValidIntReg(segment.Register))
+                ref readonly var abiInfo = ref lvaGetParameterAbiInfo(i);
+                ref var varDsc = ref lvaGetDesc(i);
+                var preSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc.Type);
+                preSpill |= varDsc.Type is TYP_STRUCT;
+
+                if (!preSpill)
                 {
-                    regs |= segment.RegisterMask;
+                    continue;
+                }
+
+                var regs = SRBM_NONE;
+
+                foreach (ref readonly var segment in abiInfo.Segments)
+                {
+                    if (segment.IsPassedInRegister && genIsValidIntReg(segment.Register))
+                    {
+                        regs |= segment.RegisterMask;
+                    }
+                }
+
+                armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(regs);
+
+                if (varDsc.lvStructDoubleAlign || (varDsc.Type is TYP_DOUBLE))
+                {
+                    doubleAlignMask |= regs;
                 }
             }
 
-            armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(regs);
-
-            if (varDsc.lvStructDoubleAlign || (varDsc.Type is TYP_DOUBLE))
+            if (doubleAlignMask != SRBM_NONE)
             {
-                doubleAlignMask |= regs;
-            }
-        }
+                assert(SRBM_ARG_REGS == (regMask)0xF);
+                assert((doubleAlignMask & SRBM_ARG_REGS) == doubleAlignMask);
 
-        if (doubleAlignMask != SRBM_NONE)
-        {
-            assert(SRBM_ARG_REGS == (regMask)0xF);
-            assert((doubleAlignMask & SRBM_ARG_REGS) == doubleAlignMask);
-
-            if ((doubleAlignMask != SRBM_NONE) && (doubleAlignMask != SRBM_ARG_REGS))
-            {
-                // 'double aligned types' can begin only at r0 or r2 and we always expect at least two registers to be used
-                // Note that in rare cases, we can have double-aligned structs of 12 bytes (if specified explicitly with
-                // attributes)
-                assert((doubleAlignMask == (regMask)0b0011) || (doubleAlignMask == (regMask)0b1100) ||
-                       (doubleAlignMask == (regMask)0b0111) /* || 0b1111 is if'ed out */);
-
-                // Now if doubleAlignMask is xyz1 i.e., the struct starts in r0, and we prespill r2 or r3
-                // but not both, then the stack would be misaligned for r0. So spill both
-                // r2 and r3.
-                //
-                // ; +0 --- caller SP double aligned ----
-                // ; -4 r2    r3
-                // ; -8 r1    r1
-                // ; -c r0    r0   <-- misaligned.
-                // ; callee saved regs
-                var startsAtR0 = (doubleAlignMask & (regMask)1) is not 0;
-                var r2XorR3    = ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_R2)) == RBM_NONE) !=
-                                 ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_R3)) == RBM_NONE);
-                if (startsAtR0 && r2XorR3)
+                if ((doubleAlignMask != SRBM_NONE) && (doubleAlignMask != SRBM_ARG_REGS))
                 {
-                    armRegSet.rsMaskPreSpillAlign =
-                        (~armRegSet.rsMaskPreSpillRegArg & ~new regMaskTP(doubleAlignMask)) & new regMaskTP(SRBM_ARG_REGS);
+                    // 'double aligned types' can begin only at r0 or r2 and we always expect at least two registers to be used
+                    // Note that in rare cases, we can have double-aligned structs of 12 bytes (if specified explicitly with
+                    // attributes)
+                    assert((doubleAlignMask == (regMask)0b0011) || (doubleAlignMask == (regMask)0b1100) ||
+                           (doubleAlignMask == (regMask)0b0111) /* || 0b1111 is if'ed out */);
+
+                    // Now if doubleAlignMask is xyz1 i.e., the struct starts in r0, and we prespill r2 or r3
+                    // but not both, then the stack would be misaligned for r0. So spill both
+                    // r2 and r3.
+                    //
+                    // ; +0 --- caller SP double aligned ----
+                    // ; -4 r2    r3
+                    // ; -8 r1    r1
+                    // ; -c r0    r0   <-- misaligned.
+                    // ; callee saved regs
+                    var startsAtR0 = (doubleAlignMask & (regMask)1) is not 0;
+                    var r2XorR3 = ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_ARM32_R2)) == RBM_NONE) !=
+                                     ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_ARM32_R3)) == RBM_NONE);
+                    if (startsAtR0 && r2XorR3)
+                    {
+                        armRegSet.rsMaskPreSpillAlign =
+                            (~armRegSet.rsMaskPreSpillRegArg & ~new regMaskTP(doubleAlignMask)) & new regMaskTP(SRBM_ARG_REGS);
+                    }
                 }
             }
         }
-#endif
     }
 
 #if DEBUG
@@ -590,15 +579,14 @@ public partial class Compiler
                 // missing var numbers if these aren't printed.
                 jitprintf(";* ");
             }
-#if FEATURE_FIXED_OUT_ARGS
             // Since lvaOutgoingArgSpaceSize is a PhasedVar we can't read it for Dumping until
             // after we set it to something.
-            else if ((lclNum == lvaOutgoingArgSpaceVar) && lvaOutgoingArgSpaceSize.HasFinalValue && (lvaOutgoingArgSpaceSize.Value is 0))
+            else if (Configuration.FEATURE_FIXED_OUT_ARGS && (lclNum == lvaOutgoingArgSpaceVar) &&
+                lvaOutgoingArgSpaceSize.HasFinalValue && (lvaOutgoingArgSpaceSize.Value is 0))
             {
                 // Similar to above; print this anyway.
                 jitprintf(";# ");
             }
-#endif
             else
             {
                 jitprintf(";  ");
@@ -709,12 +697,10 @@ public partial class Compiler
                 jitprintf("M");
             }
 
-#if JIT32_GCENCODER
-            if (varDsc.lvPinned)
+            if (Configuration.JIT32_GCENCODER && varDsc.lvPinned)
             {
                 jitprintf("P");
             }
-#endif
 
             jitprintf("]");
         }
@@ -808,12 +794,10 @@ public partial class Compiler
             jitprintf(" multi-def");
         }
 
-#if !TARGET_64BIT
-        if (varDsc.lvStructDoubleAlign)
+        if (!Configuration.TARGET_64BIT && varDsc.lvStructDoubleAlign)
         {
             jitprintf(" double-align");
         }
-#endif
 
         if (compGSReorderStackLayout && !varDsc.lvRegister)
         {
@@ -884,14 +868,12 @@ public partial class Compiler
     {
         ref var varDsc = ref lvaGetDesc(lclNum);
 
-#if TARGET_ARM
-        if (varDsc.Type is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && (varDsc.Type is TYP_DOUBLE))
         {
             // The assigned registers are `lvRegNum:RegNext(lvRegNum)`
             jitprintf($"{varDsc.RegNum.Name,3}:{REG_NEXT(varDsc.RegNum),-3}    ");
         }
         else
-#endif
         {
             jitprintf($"{varDsc.RegNum.Name,3}        ");
         }
@@ -904,8 +886,7 @@ public partial class Compiler
     {
         var message = "";
 
-#if TARGET_ARM64
-        if (lvaLocalIsOnUnknownSizeFrame(lclNum))
+        if (Configuration.TARGET_ARM64 && lvaLocalIsOnUnknownSizeFrame(lclNum))
         {
             ref var varDsc = ref lvaGetDesc(lclNum);
             var offset = unkSizeFrame.GetAddressingOffset(in varDsc);
@@ -913,15 +894,20 @@ public partial class Compiler
                 $"{(varDsc.Type is TYP_MASK ? "PL" : "VL")}] ";
         }
         else
-#endif
         {
-#if TARGET_ARM
-            var offset = lvaFrameAddress(lclNum, compLocallocUsed, out var baseReg, 0, isFloatUsage: false);
-#else
-            assert(codeGen is not null);
-            var offset = lvaFrameAddress(lclNum, out var EBPbased);
-            var baseReg = EBPbased ? codeGen.GetFramePointerReg(ROOT_FUNC_IDX) : codeGen.GetStackPointerReg(ROOT_FUNC_IDX);
-#endif
+            int offset;
+            regNumber baseReg;
+
+            if (Configuration.TARGET_ARM)
+            {
+                offset = lvaFrameAddress(lclNum, compLocallocUsed, out baseReg, 0, isFloatUsage: false);
+            }
+            else
+            {
+                assert(codeGen is not null);
+                offset = lvaFrameAddress(lclNum, out var EBPbased);
+                baseReg = EBPbased ? codeGen.GetFramePointerReg(ROOT_FUNC_IDX) : codeGen.GetStackPointerReg(ROOT_FUNC_IDX);
+            }
 
             message = $"[{baseReg.Name,2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}] ";
         }
@@ -933,7 +919,6 @@ public partial class Compiler
     }
 #endif
 
-#if TARGET_ARM
     /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
     /// <param name="varNum">The variable to inquire about. Positive for user variables or arguments, negative for spill-temporaries.</param>
     /// <param name="mustBeFPBased">True if the base register must be FP. After FINAL_FRAME_LAYOUT, if false, it also requires SP base register.</param>
@@ -942,67 +927,76 @@ public partial class Compiler
     /// <param name="isFloatUsage">True if the instruction being generated is a floating point instruction. This requires using floating-point offset restrictions. Note that a variable can be non-float, e.g., struct, but accessed as a float local field.</param>
     /// <returns>Returns the variable offset from the given base register.</returns>
     public int lvaFrameAddress(int varNum, bool mustBeFPBased, out regNumber baseReg, int addrModeOffset, bool isFloatUsage)
-#elif TARGET_ARM64
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "ARM frame addressing is unavailable on this target.");
+        }
+
+        return lvaFrameAddress(varNum, out _, suppressFPtoSPRewrite: false,
+            mustBeFPBased, out baseReg, addrModeOffset, isFloatUsage);
+    }
+
     /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
     /// <param name="varNum">The variable to inquire about. Positive for user variables or arguments, negative for spill-temporaries.</param>
     /// <param name="fpBased">Set to true if the variable is addressed off of FP, false if it's addressed off of SP.</param>
     /// <param name="suppressFPtoSPRewrite"></param>
     /// <returns>Returns the variable offset from the given base register.</returns>
     public int lvaFrameAddress(int varNum, out bool fpBased, bool suppressFPtoSPRewrite = false)
-#else
+        => lvaFrameAddress(varNum, out fpBased, suppressFPtoSPRewrite,
+            mustBeFPBased: false, out _, addrModeOffset: 0, isFloatUsage: false);
+
     /// <summary>Determine the stack frame offset of the given variable, and how to generate an address to that stack frame.</summary>
     /// <param name="varNum">The variable to inquire about. Positive for user variables or arguments, negative for spill-temporaries.</param>
     /// <param name="fpBased">Set to true if the variable is addressed off of FP, false if it's addressed off of SP.</param>
     /// <returns>Returns the variable offset from the given base register.</returns>
     public int lvaFrameAddress(int varNum, out bool fpBased)
-#endif
+        => lvaFrameAddress(varNum, out fpBased, suppressFPtoSPRewrite: false);
+
+    private int lvaFrameAddress(int varNum, out bool fpBased, bool suppressFPtoSPRewrite,
+        bool mustBeFPBased, out regNumber baseReg, int addrModeOffset, bool isFloatUsage)
     {
         assert(lvaDoneFrameLayout != NO_FRAME_LAYOUT);
 
         int varOffset;
 
-#if TARGET_ARM
-        bool fpBased;
-        assert(codeGen is not null);
-#endif
-
-#if TARGET_ARM
+        baseReg = REG_NA;
         var fConservative = false;
-#endif
+
+        assert(codeGen is not null);
 
         if (varNum >= 0)
         {
             assert(!lvaLocalIsOnUnknownSizeFrame(varNum));
             ref var varDsc = ref lvaGetDesc(varNum);
 
-#if TARGET_ARM && PROFILING_SUPPORTED
-            var isPrespilledArg = varDsc.lvIsParam && compIsProfilerHookNeeded && lvaIsPreSpilled(varNum, codeGen.RegSet.rsMaskPreSpillRegs(false));
-#elif !TARGET_AMD64
-            var isPrespilledArg = false;
-#endif
+            var isPrespilledArg = Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED &&
+                varDsc.lvIsParam && compIsProfilerHookNeeded &&
+                lvaIsPreSpilled(varNum, codeGen.RegSet.rsMaskPreSpillRegs(false));
 
             // If we have finished with register allocation, and this isn't a stack-based local, check that this has a valid stack location.
             if ((lvaDoneFrameLayout > REGALLOC_FRAME_LAYOUT) && !varDsc.lvOnFrame)
             {
-#if !TARGET_AMD64
-                // For other targets, a stack parameter that is enregistered or prespilled for profiling on ARM will have a stack location.
-                assert((varDsc.lvIsParam && !varDsc.lvIsRegArg) || isPrespilledArg);
-#elif !UNIX_AMD64_ABI
-                // On amd64, every param has a stack location, except on Unix-like systems.
-                assert(varDsc.lvIsParam);
-#endif
+                if (!Configuration.TARGET_AMD64)
+                {
+                    // For other targets, a stack parameter that is enregistered or prespilled for profiling on ARM will have a stack location.
+                    assert((varDsc.lvIsParam && !varDsc.lvIsRegArg) || isPrespilledArg);
+                }
+                else if (!Configuration.UNIX_AMD64_ABI)
+                {
+                    // On amd64, every param has a stack location, except on Unix-like systems.
+                    assert(varDsc.lvIsParam);
+                }
             }
 
             fpBased = varDsc.lvFramePointerBased;
 
 #if DEBUG
-#if FEATURE_FIXED_OUT_ARGS
-            if (varNum == lvaOutgoingArgSpaceVar)
+            if (Configuration.FEATURE_FIXED_OUT_ARGS && (varNum == lvaOutgoingArgSpaceVar))
             {
                 assert(!fpBased);
             }
             else
-#endif
             {
                 if (Configuration.DOUBLE_ALIGN)
                 {
@@ -1056,94 +1050,89 @@ public partial class Compiler
                 //   :                         :
                 // ---------------------------------------------------
 
-#if TARGET_ARM
-                fConservative = true;
-#endif
+                fConservative = Configuration.TARGET_ARM;
 
                 if (!fpBased)
                 {
                     // Worst case stack based offset.
-#if FEATURE_FIXED_OUT_ARGS
-                    var outGoingArgSpaceSize = lvaOutgoingArgSpaceSize.Value;
-#else
-                    var outGoingArgSpaceSize = 0;
-#endif
-                    varOffset = outGoingArgSpaceSize + int.Max(-varNum * TARGET_POINTER_SIZE, lvaMaxSpillTempSize);
+                    var outGoingArgSpaceSize = Configuration.FEATURE_FIXED_OUT_ARGS ? lvaOutgoingArgSpaceSize.Value : 0;
+                    varOffset = outGoingArgSpaceSize + int.Max(-varNum * Configuration.TARGET_POINTER_SIZE, lvaMaxSpillTempSize);
                 }
                 else
                 {
                     // Worst case FP based offset.
                     assert(codeGen is not null);
 
-#if TARGET_ARM
-                    varOffset = codeGen.genCallerSPtoInitialSPdelta - codeGen.genCallerSPtoFPdelta;
-#else
-                    varOffset = -codeGen.genTotalFrameSize;
-#endif
+                    varOffset = Configuration.TARGET_ARM
+                        ? codeGen.genCallerSPtoInitialSPdelta - codeGen.genCallerSPtoFPdelta
+                        : -codeGen.genTotalFrameSize;
                 }
             }
         }
 
-#if TARGET_ARM
-        if (fpBased)
+        if (Configuration.TARGET_ARM)
         {
-            if (mustBeFPBased)
+            if (fpBased)
             {
-                baseReg = REG_FPBASE;
-            }
-            else
-            {
-                // Change the Frame Pointer (R11)-based addressing to the SP-based addressing when possible because it generates smaller code on ARM. See frame picture above for the math.
-
-                // If it is the final frame layout phase, we don't have a choice, we should stick
-                // to either FP based or SP based that we decided in the earlier phase. Because
-                // we have already selected the instruction. MinOpts will always reserve R10, so
-                // for MinOpts always use SP-based offsets, using R10 as necessary, for simplicity.
-
-                var spVarOffset = fConservative ? compLclFrameSize : varOffset + codeGen.genSPtoFPdelta;
-                var actualSPOffset = spVarOffset + addrModeOffset;
-                var actualFPOffset = varOffset + addrModeOffset;
-                var encodingLimitUpper = isFloatUsage ? 0x3FC : 0xFFF;
-                var encodingLimitLower = isFloatUsage ? -0x3FC : -0xFF;
-
-                if (opts.MinOpts || (actualSPOffset <= encodingLimitUpper))
+                if (mustBeFPBased)
                 {
-                    // Use SP-based encoding. During encoding, we'll pick the best encoding for the actual offset we have.
-                    varOffset = spVarOffset;
-                    baseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
-                }
-                else if ((encodingLimitLower <= actualFPOffset) && (actualFPOffset <= encodingLimitUpper))
-                {
-                    // Use Frame Pointer (R11)-based encoding.
-                    baseReg = REG_FPBASE;
+                    baseReg = TargetRuntimeMetadata.FramePointerBaseRegister;
                 }
                 else
                 {
-                    // Otherwise, use SP-based encoding. This is either (1) a small positive offset using a single movw,
-                    // (2) a large offset using movw/movt. In either case, we must have already reserved
-                    // the "reserved register", which will get used during encoding.
+                    // Change the Frame Pointer (R11)-based addressing to the SP-based addressing when possible because it generates smaller code on ARM. See frame picture above for the math.
 
-                    varOffset = spVarOffset;
-                    baseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
+                    // If it is the final frame layout phase, we don't have a choice, we should stick
+                    // to either FP based or SP based that we decided in the earlier phase. Because
+                    // we have already selected the instruction. MinOpts will always reserve R10, so
+                    // for MinOpts always use SP-based offsets, using R10 as necessary, for simplicity.
+
+                    var spVarOffset = fConservative ? compLclFrameSize : varOffset + codeGen.genSPtoFPdelta;
+                    var actualSPOffset = spVarOffset + addrModeOffset;
+                    var actualFPOffset = varOffset + addrModeOffset;
+                    var encodingLimitUpper = isFloatUsage ? 0x3FC : 0xFFF;
+                    var encodingLimitLower = isFloatUsage ? -0x3FC : -0xFF;
+
+                    if (opts.MinOpts || (actualSPOffset <= encodingLimitUpper))
+                    {
+                        // Use SP-based encoding. During encoding, we'll pick the best encoding for the actual offset we have.
+                        varOffset = spVarOffset;
+                        baseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : TargetRuntimeMetadata.StackPointerBaseRegister;
+                    }
+                    else if ((encodingLimitLower <= actualFPOffset) && (actualFPOffset <= encodingLimitUpper))
+                    {
+                        // Use Frame Pointer (R11)-based encoding.
+                        baseReg = TargetRuntimeMetadata.FramePointerBaseRegister;
+                    }
+                    else
+                    {
+                        // Otherwise, use SP-based encoding. This is either (1) a small positive offset using a single movw,
+                        // (2) a large offset using movw/movt. In either case, we must have already reserved
+                        // the "reserved register", which will get used during encoding.
+
+                        varOffset = spVarOffset;
+                        baseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : TargetRuntimeMetadata.StackPointerBaseRegister;
+                    }
                 }
             }
+            else
+            {
+                baseReg = TargetRuntimeMetadata.StackPointerBaseRegister;
+            }
         }
-        else
+        else if (Configuration.TARGET_ARM64)
         {
-            baseReg = REG_SPBASE;
-        }
+            assert(codeGen is not null);
+            if (fpBased && !suppressFPtoSPRewrite && !codeGen.IsFramePointerRequired && (varOffset < 0) &&
+                !opts.IsOSR && (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT) && codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
+            {
+                var spVarOffset = varOffset + codeGen.genSPtoFPdelta;
+                JITDUMP($"lvaFrameAddress optimization for V{varNum:D2}: [FP-{-varOffset}] -> [SP+{spVarOffset}]\n");
 
-#elif TARGET_ARM64
-        assert(codeGen is not null);
-        if (fpBased && !suppressFPtoSPRewrite && !codeGen.IsFramePointerRequired && (varOffset < 0) && !opts.IsOSR && (lvaDoneFrameLayout == FINAL_FRAME_LAYOUT) && codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
-        {
-            var spVarOffset = varOffset + codeGen.genSPtoFPdelta;
-            JITDUMP($"lvaFrameAddress optimization for V{varNum:D2}: [FP-{-varOffset}] -> [SP+{spVarOffset}]\n");
-
-            fpBased   = false;
-            varOffset = spVarOffset;
+                fpBased = false;
+                varOffset = spVarOffset;
+            }
         }
-#endif
 
         return varOffset;
     }
@@ -1216,11 +1205,8 @@ public partial class Compiler
     /// <summary>Does the local have an unknown size at compile-time?</summary>
     /// <param name="varNum"></param>
     /// <returns>True if the local does not have an exact size, else false.</returns>
-#if TARGET_ARM64
-    public bool lvaIsUnknownSizeLocal(int varNum) => !lvaLclValueSize(varNum).IsExact;
-#else
-    public bool lvaIsUnknownSizeLocal(int varNum) => false;
-#endif
+    public bool lvaIsUnknownSizeLocal(int varNum) =>
+        Configuration.TARGET_ARM64 && !lvaLclValueSize(varNum).IsExact;
 
     /// <summary>
     /// Returns whether the local resides on the UnknownSizeFrame instead of the traditional stack frame.
@@ -1321,7 +1307,7 @@ public partial class Compiler
         {
             jitprintf($";  TEMP_{-tempDsc.tdTempNum:D2} {new string(' ', 26 + refCntWtdWidth)}{tempDsc.tdTempType.Name,7}  -> ");
             var offset = tempDsc.tdTempOffs;
-            jitprintf($" [{(IsFramePointerUsed ? STR_FPBASE : STR_SPBASE),2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}]\n");
+            jitprintf($" [{(IsFramePointerUsed ? TargetRuntimeMetadata.FramePointerBaseName : TargetRuntimeMetadata.StackPointerBaseName),2}{(offset < 0 ? "-" : "+")}0x{(offset < 0 ? -offset : offset):X2}]\n");
         }
         
         if (curState >= TENTATIVE_FRAME_LAYOUT)
@@ -1620,8 +1606,7 @@ public partial class Compiler
 
     public bool lvaHasAnySwiftStackParamToReassemble()
     {
-#if SWIFT_SUPPORT
-        if (info.compCallConv != CorInfoCallConvExtension.Swift)
+        if (!Configuration.SWIFT_SUPPORT || (info.compCallConv != CorInfoCallConvExtension.Swift))
         {
             return false;
         }
@@ -1634,7 +1619,6 @@ public partial class Compiler
                 return true;
             }
         }
-#endif
         return false;
     }
 
@@ -1646,28 +1630,24 @@ public partial class Compiler
 
     public unsafe void lvaInitArgs(bool hasRetBuffArg)
     {
-#if TARGET_ARM && PROFILING_SUPPORTED
         // Prespill all argument regs on to stack in case of Arm when under profiler.
         // We do this as the arm32 CORINFO_HELP_FCN_ENTER helper does not preserve
         // these registers, and is called very early.
-        if (compIsProfilerHookNeeded)
+        if (Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED && compIsProfilerHookNeeded)
         {
             assert(codeGen is not null);
             codeGen.RegSet.rsMaskPreSpillRegArg |= new regMaskTP(SRBM_ARG_REGS);
         }
-#endif
 
         //----------------------------------------------------------------------
 
         var varNum = 0;
 
-#if TARGET_WASM
-        if (!opts.IsReversePInvoke)
+        if (Configuration.TARGET_WASM && !opts.IsReversePInvoke)
         {
             // Wasm stack pointer is first arg
             lvaInitWasmStackPtrArg(ref varNum);
         }
-#endif
 
         // Is there a "this" pointer ?
         lvaInitThisPtr(ref varNum);
@@ -1675,8 +1655,7 @@ public partial class Compiler
         var numUserArgsToSkip = 0;
         var numUserArgs = info.compMethodInfo->args.numArgs;
 
-#if !TARGET_ARM
-        if (TargetOS.IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
+        if (!Configuration.TARGET_ARM && TargetOS.IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
         {
             // If we are a native instance method, handle the first user arg
             // (the unmanaged this parameter) and then handle the hidden
@@ -1694,7 +1673,6 @@ public partial class Compiler
             }
         }
         else
-#endif
         {
             if (hasRetBuffArg)
             {
@@ -1705,40 +1683,40 @@ public partial class Compiler
 
         //======================================================================
 
-#if USER_ARGS_COME_LAST
-        // @GENERICS: final instantiation-info argument for shared generic methods
-        // and shared generic struct instance methods
-        lvaInitGenericsCtxt(ref varNum);
+        if (Configuration.USER_ARGS_COME_LAST)
+        {
+            // @GENERICS: final instantiation-info argument for shared generic methods
+            // and shared generic struct instance methods
+            lvaInitGenericsCtxt(ref varNum);
 
-        lvaInitAsyncContinuation(ref varNum);
+            lvaInitAsyncContinuation(ref varNum);
 
-        //* If the method is varargs, process the varargs cookie
-        lvaInitVarArgsHandle(ref varNum);
-#endif
+            //* If the method is varargs, process the varargs cookie
+            lvaInitVarArgsHandle(ref varNum);
+        }
 
         //-------------------------------------------------------------------------
         // Now walk the function signature for the explicit user arguments
         //-------------------------------------------------------------------------
         lvaInitUserArgs(ref varNum, numUserArgsToSkip, numUserArgs);
 
-#if !USER_ARGS_COME_LAST
-        lvaInitAsyncContinuation(ref varNum);
+        if (!Configuration.USER_ARGS_COME_LAST)
+        {
+            lvaInitAsyncContinuation(ref varNum);
 
-        //@GENERICS: final instantiation-info argument for shared generic methods
-        // and shared generic struct instance methods
-        lvaInitGenericsCtxt(ref varNum);
+            //@GENERICS: final instantiation-info argument for shared generic methods
+            // and shared generic struct instance methods
+            lvaInitGenericsCtxt(ref varNum);
 
-        // If the method is varargs, process the varargs cookie
-        lvaInitVarArgsHandle(ref varNum);
-#endif
+            // If the method is varargs, process the varargs cookie
+            lvaInitVarArgsHandle(ref varNum);
+        }
 
-#if TARGET_WASM
-        if (!opts.IsReversePInvoke)
+        if (Configuration.TARGET_WASM && !opts.IsReversePInvoke)
         {
             // Wasm portable entry point is the very last arg
             lvaInitWasmPortableEntryPtr(ref varNum);
         }
-#endif
 
         //----------------------------------------------------------------------
 
@@ -1749,18 +1727,16 @@ public partial class Compiler
         lvaClassifyParameterAbi();
 
         // The total argument size must be aligned.
-        noway_assert((lvaParameterStackSize % TARGET_POINTER_SIZE) is 0);
+        noway_assert((lvaParameterStackSize % Configuration.TARGET_POINTER_SIZE) is 0);
 
-#if TARGET_X86
         // We can not pass more than 2^16 dwords as arguments as the "ret"
         // instruction can only pop 2^16 arguments. Could be handled correctly
         // but it will be very difficult for fully interruptible code
 
-        if (lvaParameterStackSize != unchecked((ushort)(lvaParameterStackSize)))
+        if (Configuration.TARGET_X86 && (lvaParameterStackSize != unchecked((ushort)(lvaParameterStackSize))))
         {
             IMPL_LIMITATION("Too many arguments for the \"ret\" instruction to pop");
         }
-#endif
     }
 
     /// <summary>Initialize the async continuation parameter.</summary>
@@ -1788,7 +1764,6 @@ public partial class Compiler
         curVarNum++;
     }
 
-#if TARGET_WASM
     public void lvaInitWasmStackPtrArg(ref int curVarNum)
     {
         ref var varDsc = ref lvaGetDesc(curVarNum);
@@ -1825,7 +1800,6 @@ public partial class Compiler
             curVarNum++;
         }
     }
-#endif
 
     public unsafe void lvaInitGenericsCtxt(ref int curVarNum)
     {
@@ -1873,11 +1847,7 @@ public partial class Compiler
         lvaArg0Var = curVarNum;
         info.compThisArg = lvaArg0Var;
 
-#if TARGET_WASM
-        noway_assert(info.compThisArg is 1);
-#else
-        noway_assert(info.compThisArg is 0);
-#endif
+        noway_assert(info.compThisArg == (Configuration.TARGET_WASM ? 1 : 0));
 
         if (eeIsValueClass(info.compClassHnd))
         {
@@ -1981,8 +1951,9 @@ public partial class Compiler
             info.compRetBuffArg = BAD_VAR_NUM;
         }
 
-#if DEBUG && SWIFT_SUPPORT
-        if (verbose && (info.compCallConv == CorInfoCallConvExtension.Swift) && varTypeIsStruct(info.compRetType))
+#if DEBUG
+        if (Configuration.SWIFT_SUPPORT && verbose &&
+            (info.compCallConv == CorInfoCallConvExtension.Swift) && varTypeIsStruct(info.compRetType))
         {
             var retTypeHnd = methodArgs.retTypeClass;
             ref readonly var lowering = ref GetSwiftLowering(retTypeHnd);
@@ -2026,8 +1997,7 @@ public partial class Compiler
             info.compArgsCount++;
         }
 
-#if TARGET_WASM
-        if (!opts.IsReversePInvoke)
+        if (Configuration.TARGET_WASM && !opts.IsReversePInvoke)
         {
             // Managed Wasm ABI passes stack pointer as first arg...
             info.compArgsCount += 1;
@@ -2038,7 +2008,6 @@ public partial class Compiler
                 info.compArgsCount += 1;
             }
         }
-#endif
 
         ref var methodLocals = ref info.compMethodInfo->locals;
         var localsNumArgs = methodLocals.numArgs;
@@ -2190,9 +2159,10 @@ public partial class Compiler
         // emitter when the varNum is greater that 32767 (see emitLclVarAddr.initLclVarAddr)
         lvaAllocOutgoingArgSpaceVar();
 
-#if TARGET_WASM
-        lvaAllocWasmStackPtr();
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            lvaAllocWasmStackPtr();
+        }
 
 #if DEBUG
         if (verbose)
@@ -2279,8 +2249,7 @@ public partial class Compiler
             // The final home for this incoming parameter might be our local stack frame.
             varDsc.lvOnFrame = true;
 
-#if SWIFT_SUPPORT
-            if (info.compCallConv == CorInfoCallConvExtension.Swift)
+            if (Configuration.SWIFT_SUPPORT && (info.compCallConv == CorInfoCallConvExtension.Swift))
             {
                 if (varTypeIsSimd(varDsc.Type))
                 {
@@ -2301,17 +2270,17 @@ public partial class Compiler
                     lvaSetVarDoNotEnregister(curVarNum, (DoNotEnregisterReason.IsStructArg));
                 }
             }
-#endif
 
             var compUseSoftFP = opts.compUseSoftFP;
 
             if (info.compIsVarArgs || (compUseSoftFP && varTypeIsFloating(varDsc.Type)))
             {
-#if !TARGET_X86
-                // TODO-CQ: We shouldn't have to go as far as to declare these
-                // address-exposed -- DoNotEnregister should suffice.
-                lvaSetVarAddrExposed(curVarNum, (AddressExposedReason.TOO_CONSERVATIVE));
-#endif
+                if (!Configuration.TARGET_X86)
+                {
+                    // TODO-CQ: We shouldn't have to go as far as to declare these
+                    // address-exposed -- DoNotEnregister should suffice.
+                    lvaSetVarAddrExposed(curVarNum, (AddressExposedReason.TOO_CONSERVATIVE));
+                }
             }
 
             curVarNum++;
@@ -2334,18 +2303,20 @@ public partial class Compiler
         varDsc.lvOnFrame = true; // The final home for this incoming register might be our local stack frame
         varDsc.lvHasLdAddrOp = true;
 
-#if TARGET_X86
-        // Codegen will need it for x86 scope info.
-        varDsc.lvImplicitlyReferenced = true;
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            // Codegen will need it for x86 scope info.
+            varDsc.lvImplicitlyReferenced = true;
+        }
 
         lvaSetVarDoNotEnregister(lvaVarargsHandleArg, (DoNotEnregisterReason.VMNeedsStackAddr));
 
-#if TARGET_X86
-        // Allocate a temp to point at the beginning of the args
-        lvaVarargsBaseOfStkArgs = lvaGrabTemp(shortLifetime: false, "Varargs BaseOfStkArgs");
-        lvaTable[lvaVarargsBaseOfStkArgs].Type = TYP_I_IMPL;
-#endif // TARGET_X86
+        if (Configuration.TARGET_X86)
+        {
+            // Allocate a temp to point at the beginning of the args
+            lvaVarargsBaseOfStkArgs = lvaGrabTemp(shortLifetime: false, "Varargs BaseOfStkArgs");
+            lvaTable[lvaVarargsBaseOfStkArgs].Type = TYP_I_IMPL;
+        }
 
         curVarNum++;
     }
@@ -2409,8 +2380,7 @@ public partial class Compiler
 
     internal bool lvaIsArgAccessedViaVarArgsCookie(int lclNum)
     {
-#if TARGET_X86
-        if (!info.compIsVarArgs)
+        if (!Configuration.TARGET_X86 || !info.compIsVarArgs)
         {
             return false;
         }
@@ -2426,9 +2396,6 @@ public partial class Compiler
         assert(abiInfo.HasExactlyOneStackSegment ||
             ((abiInfo.NumSegments == 1) && abiInfo.Segments[0].IsPassedInRegister));
         return abiInfo.HasExactlyOneStackSegment;
-#else
-        return false;
-#endif
     }
 
     /// <summary>Is the local an "implicit byref" parameter?</summary>
@@ -2440,16 +2407,18 @@ public partial class Compiler
     /// </remarks>
     public bool lvaIsImplicitByRefLocal(int lclNum)
     {
-#if FEATURE_IMPLICIT_BYREFS
-        ref var varDsc = ref lvaGetDesc(lclNum);
-
-        if (varDsc.IsImplicitByRef)
+        if (SupportsImplicitByRefs)
         {
-            assert(varDsc.lvIsParam);
-            assert(varTypeIsStruct(varDsc.Type) || (varDsc.Type is TYP_I_IMPL or TYP_BYREF));
-            return true;
+            ref var varDsc = ref lvaGetDesc(lclNum);
+
+            if (varDsc.IsImplicitByRef)
+            {
+                assert(varDsc.lvIsParam);
+                assert(varTypeIsStruct(varDsc.Type) || ((varDsc.Type is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF))));
+                return true;
+            }
         }
-#endif
+
         return false;
     }
 
@@ -2494,20 +2463,17 @@ public partial class Compiler
 
         if (!varTypeIsStruct(varType))
         {
-#if TARGET_64BIT
             // We only need this Quirk for TARGET_64BIT
-            if (varDsc.lvQuirkToLong)
+            if (Configuration.TARGET_64BIT && varDsc.lvQuirkToLong)
             {
                 noway_assert(varDsc.IsAddressExposed);
                 return TYP_LONG.StSz * sizeof(int); // return 8  (2 * 4)
             }
-#endif
 
             return varType.StSz * sizeof(int);
         }
 
-#if TARGET_ARM64
-        if (lvaIsUnknownSizeLocal(varNum))
+        if (Configuration.TARGET_ARM64 && lvaIsUnknownSizeLocal(varNum))
         {
             assert(lvaIsOSRLocal(varNum));
             var vectorLength = getRuntimeVectorTByteLength();
@@ -2520,7 +2486,6 @@ public partial class Compiler
             assert(size != 0);
             return size;
         }
-#endif
 
         if (varDsc.lvIsParam && !varDsc.lvIsStructField)
         {
@@ -2537,7 +2502,7 @@ public partial class Compiler
             // There are other cases where the caller has allocated space for the
             // parameter, like windows-x64 with shadow space for register
             // parameters, but in those cases this rounding is fine.
-            return roundUp(varDsc.lvExactSize, TARGET_POINTER_SIZE);
+            return roundUp(varDsc.lvExactSize, Configuration.TARGET_POINTER_SIZE);
         }
 
         // For 32-bit architectures, we make local variable simd12 types 16 bytes instead of just 12. We can't do
@@ -2549,7 +2514,7 @@ public partial class Compiler
             return 16;
         }
 
-        return roundUp(varDsc.lvExactSize, TARGET_POINTER_SIZE);
+        return roundUp(varDsc.lvExactSize, Configuration.TARGET_POINTER_SIZE);
     }
 
     /// <summary>set class information for a local var.</summary>
@@ -2654,14 +2619,8 @@ public partial class Compiler
 
         if (!layout.IsCustomLayout)
         {
-#if !TARGET_64BIT
-#if TARGET_X86
-            var fDoubleAlignHint = true;
-#else
-            var fDoubleAlignHint = false;
-#endif
-
-            if (info.compCompHnd->getClassAlignmentRequirement(layout.ClassHandle, fDoubleAlignHint) == 8)
+            if (!Configuration.TARGET_64BIT &&
+                (info.compCompHnd->getClassAlignmentRequirement(layout.ClassHandle, Configuration.TARGET_X86) == 8))
             {
 #if DEBUG
                 if (verbose)
@@ -2671,7 +2630,6 @@ public partial class Compiler
 #endif
                 varDsc.lvStructDoubleAlign = true;
             }
-#endif
 
             varDsc.IsSpan = isSpanClass(layout.ClassHandle);
 
@@ -2720,13 +2678,9 @@ public partial class Compiler
             throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD type classification is unsupported on this target.");
         }
 
-#if TARGET_ARM64
-        var maxSize = compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : FP_REGSIZE_BYTES;
-
-#else
-        var maxSize = GetMaxVectorByteLength();
-
-#endif
+        var maxSize = Configuration.TARGET_ARM64
+            ? (compOpportunisticallyDependsOn(InstructionSet_VectorT) ? MAX_SVE_REGSIZE_BYTES : Configuration.FP_REGSIZE_BYTES)
+            : GetMaxVectorByteLength();
         return (structSize >= GetMinVectorByteLength()) && (structSize <= maxSize);
     }
 
@@ -2907,13 +2861,11 @@ public partial class Compiler
                 break;
             }
 
-#if !TARGET_64BIT
-            case DoNotEnregisterReason.LongParamField:
+            case DoNotEnregisterReason.LongParamField when !Configuration.TARGET_64BIT:
             {
                 JITDUMP("it is a decomposed field of a long parameter\n");
                 break;
             }
-#endif
 
             case DoNotEnregisterReason.PinningRef:
             {
@@ -3091,16 +3043,13 @@ public partial class Compiler
             ref var varDsc = ref lvaGetDesc(varNum);
             // Should never write to or take the address of the original 'this' arg
 
-#if !JIT32_GCENCODER
             // With the general encoder/decoder, when the original 'this' arg is needed as a generics context param, we
             // copy to a new local, and mark the original as DoNotEnregister, to
             // ensure that it is stack-allocated.  It should not be the case that the original one can be modified -- it
             // should not be written to, or address-exposed.
             assert(!varDsc.lvHasILStoreOp && (!varDsc.IsAddressExposed ||
-                                               ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
-#else
-            assert(!varDsc.lvHasILStoreOp && !varDsc.IsAddressExposed);
-#endif
+                (!Configuration.JIT32_GCENCODER &&
+                    ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0))));
         }
 #endif
 
@@ -3157,9 +3106,10 @@ public partial class Compiler
         var fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
         impNormStructType(structHandle);
 
-#if TARGET_ARMARCH
-        GetHfaType(structHandle);
-#endif
+        if (Configuration.TARGET_ARMARCH)
+        {
+            GetHfaType(structHandle);
+        }
 
         eeRunExtraSuperPmiQueries(() => QueryLayout(this, structHandle));
 

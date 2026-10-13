@@ -35,35 +35,36 @@ public partial class Compiler
     // This conversion applies to incoming fixed varargs on Windows ARM and soft-float ARM.
     public var_types mangleVarArgsType(var_types type)
     {
-#if TARGET_ARMARCH
-        var compUseSoftFP = opts.compUseSoftFP;
-        if (compUseSoftFP || (TargetOS.IsWindows && info.compIsVarArgs))
+        if (Configuration.TARGET_ARMARCH)
         {
-            switch (type)
+            var compUseSoftFP = opts.compUseSoftFP;
+            if (compUseSoftFP || (TargetOS.IsWindows && info.compIsVarArgs))
             {
-                case TYP_FLOAT:
+                switch (type)
                 {
-                    return TYP_INT;
+                    case TYP_FLOAT:
+                    {
+                        return TYP_INT;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        return TYP_LONG;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
                 }
 
-                case TYP_DOUBLE:
+                if (varTypeIsSimd(type))
                 {
-                    return TYP_LONG;
+                    // Vectors should be considered like passing a struct.
+                    return TYP_STRUCT;
                 }
-
-                default:
-                {
-                    break;
-                }
-            }
-
-            if (varTypeIsSimd(type))
-            {
-                // Vectors should be considered like passing a struct.
-                return TYP_STRUCT;
             }
         }
-#endif
         return type;
     }
 }

@@ -15,9 +15,9 @@ public partial class Compiler
 
     internal bool fgIsThrowHlpBlk(BasicBlock block) => block.HasFlag(BBF_THROW_HELPER);
 
-#if !FEATURE_FIXED_OUT_ARGS
     internal uint fgThrowHlpBlkStkLevel(BasicBlock block)
     {
+        assert(!Configuration.FEATURE_FIXED_OUT_ARGS);
         foreach (var add in fgGetAddCodeDscMap().Values)
         {
             if (ReferenceEquals(block, add.acdDstBlk))
@@ -38,7 +38,6 @@ public partial class Compiler
 
         return 0;
     }
-#endif
 
     private AddCodeDsc fgCreateAddCodeDsc(BasicBlock source, SpecialCodeKind kind)
     {
@@ -124,13 +123,14 @@ public partial class Compiler
             VarSetOps.AddElemD(this, block.bbLiveOut, lvaGetDesc(info.compThisArg)._varIndex);
         }
 
-#if TARGET_WASM
-        ref var wasmSp = ref lvaGetDesc(lvaWasmSpArg);
-        if (wasmSp.lvTracked)
+        if (Configuration.TARGET_WASM)
         {
-            VarSetOps.AddElemD(this, block.bbLiveOut, wasmSp._varIndex);
+            ref var wasmSp = ref lvaGetDesc(lvaWasmSpArg);
+            if (wasmSp.lvTracked)
+            {
+                VarSetOps.AddElemD(this, block.bbLiveOut, wasmSp._varIndex);
+            }
         }
-#endif
 
         if (block.HasPotentialEHSuccs(this))
         {

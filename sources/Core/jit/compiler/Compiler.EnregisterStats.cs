@@ -37,9 +37,7 @@ public partial class Compiler
         private uint _noRegVars;
         private uint _wasmGcVisibility;
         private uint _pinningRef;
-#if !TARGET_64BIT
         private uint _longParamField;
-#endif
         private uint _parentExposed;
         private uint _tooConservative;
         private uint _escapeAddress;
@@ -139,13 +137,11 @@ public partial class Compiler
                             break;
                         }
 
-#if !TARGET_64BIT
-                        case DoNotEnregisterReason.LongParamField:
+                        case DoNotEnregisterReason.LongParamField when !Configuration.TARGET_64BIT:
                         {
                             _longParamField++;
                             break;
                         }
-#endif
 
                         case DoNotEnregisterReason.PinningRef:
                         {
@@ -338,9 +334,10 @@ public partial class Compiler
             PrintStat(writer, "m_structArg", _structArg, notEnreg);
             PrintStat(writer, "m_depField", _depField, notEnreg);
             PrintStat(writer, "m_noRegVars", _noRegVars, notEnreg);
-#if !TARGET_64BIT
-            PrintStat(writer, "m_longParamField", _longParamField, notEnreg);
-#endif
+            if (!Configuration.TARGET_64BIT)
+            {
+                PrintStat(writer, "m_longParamField", _longParamField, notEnreg);
+            }
             PrintStat(writer, "m_PinningRef", _pinningRef, notEnreg);
             PrintStat(writer, "m_lclAddrNode", _lclAddrNode, notEnreg);
             PrintStat(writer, "m_castTakesAddr", _castTakesAddr, notEnreg);

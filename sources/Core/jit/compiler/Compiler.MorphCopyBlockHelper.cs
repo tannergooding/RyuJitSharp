@@ -118,18 +118,19 @@ public partial class Compiler
             // Avoid making enregisterable, register-sized structs into field accesses.
             var requiresCopyBlock = ((_store.Oper is GT_STORE_LCL_VAR) && DstVarDsc.lvRegStruct)
                 || ((_src.Oper is GT_LCL_VAR) && SrcVarDsc.lvRegStruct);
-#if TARGET_ARM
-            if (_store.Oper.IsIndir && _store.AsIndir().IsUnaligned)
+            if (Configuration.TARGET_ARM)
             {
-                JITDUMP(" store is unaligned");
-                requiresCopyBlock = true;
+                if (_store.Oper.IsIndir && _store.AsIndir().IsUnaligned)
+                {
+                    JITDUMP(" store is unaligned");
+                    requiresCopyBlock = true;
+                }
+                if (_src.Oper.IsIndir && _src.AsIndir().IsUnaligned)
+                {
+                    JITDUMP(" src is unaligned");
+                    requiresCopyBlock = true;
+                }
             }
-            if (_src.Oper.IsIndir && _src.AsIndir().IsUnaligned)
-            {
-                JITDUMP(" src is unaligned");
-                requiresCopyBlock = true;
-            }
-#endif
             // Lowering handles call results without spilling them just to access fields.
             if ((_srcLclNum == BAD_VAR_NUM) && !_src.Oper.IsIndir)
             {

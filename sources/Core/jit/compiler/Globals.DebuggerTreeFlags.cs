@@ -136,9 +136,7 @@ public static partial class Globals
                     break;
                 }
                 case GT_MUL:
-#if !TARGET_64BIT
-                case GT_MUL_LONG:
-#endif
+                case GT_MUL_LONG when !Configuration.TARGET_64BIT:
                 {
                     if ((tree.Flags & GTF_MUL_64RSLT) is not 0)
                     {
@@ -309,12 +307,10 @@ public static partial class Globals
                     {
                         jitprintf("[CALL_M_TAILCALL_VIA_JIT_HELPER]");
                     }
-#if FEATURE_TAILCALL_OPT
-                    if ((call._callMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL) is not 0)
+                    if (Configuration.FEATURE_TAILCALL_OPT && ((call._callMoreFlags & GTF_CALL_M_IMPLICIT_TAILCALL) is not 0))
                     {
                         jitprintf("[CALL_M_IMPLICIT_TAILCALL]");
                     }
-#endif
                     if ((call._callMoreFlags & GTF_CALL_M_PINVOKE) is not 0)
                     {
                         jitprintf("[CALL_M_PINVOKE]");

@@ -7,12 +7,20 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    // Multireg struct targets plus Windows AMD64 match the project target list for implicit byrefs.
+    internal static bool SupportsImplicitByRefs =>
+        Configuration.FEATURE_MULTIREG_STRUCT_PROMOTE || Configuration.WINDOWS_AMD64_ABI;
+
     // Mark before morphing so earlier reads gain global effects before a later
     // call can receive the local's address. Otherwise argument reordering could
     // move a read past a call that mutates the reused storage.
     private PhaseStatus fgMarkImplicitByRefCopyOmissionCandidates()
     {
-#if FEATURE_IMPLICIT_BYREFS && !UNIX_AMD64_ABI
+        if (!SupportsImplicitByRefs || Configuration.UNIX_AMD64_ABI)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
         if (!fgDidEarlyLiveness)
         {
             return PhaseStatus.MODIFIED_NOTHING;
@@ -45,12 +53,10 @@ public partial class Compiler
                 });
             }
         }
-#endif
 
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
-#if FEATURE_IMPLICIT_BYREFS && !UNIX_AMD64_ABI
     private struct ImplicitByRefCopyOmissionVisitor : IGenTreeVisitor<ImplicitByRefCopyOmissionVisitor>
     {
         private readonly Compiler _compiler;
@@ -134,5 +140,4 @@ public partial class Compiler
         public fgWalkResult WalkTree(ref GenTree use, GenTree? user)
             => IGenTreeVisitor<ImplicitByRefCopyOmissionVisitor>.WalkTree(ref this, ref use, user, _ancestors);
     }
-#endif
 }

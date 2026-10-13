@@ -249,7 +249,7 @@ public partial class Compiler
             GenTree? dllRef = null;
             if (tlsIndex != 0)
             {
-                var tlsIndexOffset = unchecked((nint)(tlsIndex * (nuint)TARGET_POINTER_SIZE));
+                var tlsIndexOffset = unchecked((nint)(tlsIndex * (nuint)Configuration.TARGET_POINTER_SIZE));
                 dllRef = gtNewIconHandleNode(tlsIndexOffset, GTF_ICON_TLS_HDL);
             }
 
@@ -288,9 +288,11 @@ public partial class Compiler
             _ = tlsRefCall.Args.PushBack(NewCallArg.CreateForPrimitive(tlsArg));
             fgMorphArgs(tlsRefCall);
             tlsRefCall.Flags |= GTF_EXCEPT | (tlsGetAddr.Flags & GTF_GLOB_EFFECT);
-#if UNIX_X86_ABI
-            tlsRefCall.Flags &= ~GTF_CALL_POP_ARGS;
-#endif
+            if (Configuration.UNIX_X86_ABI)
+            {
+                tlsRefCall.Flags &= ~GTF_CALL_POP_ARGS;
+            }
+
             tlsValue = tlsRefCall;
         }
         else if (TargetOS.IsUnix &&
@@ -312,10 +314,12 @@ public partial class Compiler
         if (helper is CORINFO_HELP_GETDYNAMIC_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED2)
         {
             var index = CloneThreadLocalTree(typeIndex);
-#if TARGET_64BIT
-            index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
-            index = gtFoldExpr(index);
-#endif
+            if (Configuration.TARGET_64BIT)
+            {
+                index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
+                index = gtFoldExpr(index);
+            }
+
             var offset = gtFoldExpr(gtNewBinaryNode(GT_ADD, TYP_I_IMPL, index,
                 gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)metadata.offsetOfBaseOfThreadLocalData))));
             var baseAddress = gtNewBinaryNode(GT_ADD, TYP_I_IMPL,
@@ -342,12 +346,14 @@ public partial class Compiler
         var countExceeded = gtNewBinaryNode(GT_LE, TYP_INT, maxCount, CloneThreadLocalTree(typeIndex));
         var maxCondition = gtNewUnaryNode(GT_JTRUE, TYP_VOID, countExceeded);
 
-        var pointerSize = gtNewIconNode(TYP_INT, TARGET_POINTER_SIZE);
+        var pointerSize = gtNewIconNode(TYP_INT, Configuration.TARGET_POINTER_SIZE);
         var scaledIndex = gtFoldExpr(
             gtNewBinaryNode(GT_MUL, TYP_INT, CloneThreadLocalTree(typeIndex), pointerSize));
-#if TARGET_64BIT
-        scaledIndex = gtFoldExpr(gtNewCastNode(TYP_I_IMPL, scaledIndex, true, TYP_I_IMPL));
-#endif
+        if (Configuration.TARGET_64BIT)
+        {
+            scaledIndex = gtFoldExpr(gtNewCastNode(TYP_I_IMPL, scaledIndex, true, TYP_I_IMPL));
+        }
+
         var blockAddress = gtNewBinaryNode(GT_ADD, TYP_BYREF, blocks, scaledIndex);
         var blockValue = gtNewIndir(TYP_BYREF, blockAddress, GTF_IND_NONFAULTING);
         var blockBaseLocal = lvaGrabTemp(shortLifetime: true, "ThreadStaticBlockBase access");

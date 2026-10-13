@@ -2254,7 +2254,7 @@ public partial class Compiler
             // If it hasn't yet been initialized, we'd still like to see the registers printed.
             if (regCount is 0)
             {
-                regCount = MAX_RET_REG_COUNT;
+                regCount = (byte)Configuration.MAX_RET_REG_COUNT;
             }
             return regCount;
         }
@@ -5129,7 +5129,7 @@ public partial class Compiler
                     break;
                 }
 
-                var offset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                var offset = gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE);
                 var addr0 = gtNewBinaryNode(GT_ADD, TYP_BYREF, arg0.Node, offset);
                 var addr1 = gtNewBinaryNode(GT_ADD, TYP_BYREF, arg1.Node, gtCloneExpr(offset));
                 var cmpNode = gtNewBinaryNode(GT_EQ, TYP_INT, gtNewIndir(typ, addr0), gtNewIndir(typ, addr1));
@@ -5931,7 +5931,7 @@ public partial class Compiler
     {
         var result = NO_CLASS_HANDLE;
 
-        if (tree.Oper.IsCnsIntOrI && (tree.Type is TYP_I_IMPL))
+        if (tree.Oper.IsCnsIntOrI && ((tree.Type == TYP_I_IMPL)))
         {
             // The handle could be a literal constant
             var intCon = tree.AsIntCon();
@@ -5954,7 +5954,7 @@ public partial class Compiler
             {
                 var handleTreeInternal = tree.AsUnOp().Op1;
 
-                if (handleTreeInternal.Oper.IsCnsIntOrI && (handleTreeInternal.Type is TYP_I_IMPL))
+                if (handleTreeInternal.Oper.IsCnsIntOrI && ((handleTreeInternal.Type == TYP_I_IMPL)))
                 {
                     // These handle constants should be class handles.
                     var intCon = handleTreeInternal.AsIntCon();
@@ -5976,7 +5976,7 @@ public partial class Compiler
         var result = NO_METHOD_HANDLE;
 
         // The handle could be a literal constant
-        if (tree.Oper.IsCnsIntOrI && (tree.Type is TYP_I_IMPL))
+        if (tree.Oper.IsCnsIntOrI && ((tree.Type == TYP_I_IMPL)))
         {
             var intCon = tree.AsIntCon();
             assert(intCon.IsIconHandle(GTF_ICON_METHOD_HDL));
@@ -5996,7 +5996,7 @@ public partial class Compiler
             {
                 var handleTreeInternal = tree.AsUnOp().Op1;
 
-                if (handleTreeInternal.Oper.IsCnsIntOrI && (handleTreeInternal.Type is TYP_I_IMPL))
+                if (handleTreeInternal.Oper.IsCnsIntOrI && ((handleTreeInternal.Type == TYP_I_IMPL)))
                 {
                     // These handle constants should be method handles.
                     var intCon = handleTreeInternal.AsIntCon();
@@ -8067,7 +8067,7 @@ public partial class Compiler
 
                     if ((index is not null) && (index.Oper is GT_CAST))
                     {
-                        assert(index.Type is TYP_I_IMPL);
+                        assert((index.Type == TYP_I_IMPL));
                         index.Flags |= GTF_ADDRMODE_NO_CSE;
                     }
                 }
@@ -8816,8 +8816,8 @@ public partial class Compiler
 
     public GenTreePhysReg gtNewPhysRegNode(regNumber reg, var_types type)
     {
-        assert(genIsValidIntReg(reg) || (reg is REG_SPBASE) ||
-            (Configuration.TARGET_ARM64 && (reg is REG_FFR)));
+        assert(genIsValidIntReg(reg) || (reg == TargetRuntimeMetadata.StackPointerBaseRegister) ||
+            (Configuration.TARGET_ARM64 && (reg == REG_FFR)));
         return new GenTreePhysReg(reg, type);
     }
 
@@ -13538,7 +13538,7 @@ public partial class Compiler
         ref var varDsc = ref lvaGetDesc(lclNum);
         var dstTyp = varDsc.Type;
 
-        if ((dstTyp is TYP_I_IMPL) && (valType is TYP_BYREF))
+        if (((dstTyp == TYP_I_IMPL)) && (valType is TYP_BYREF))
         {
             impBashVarAddrsToI(val);
         }
@@ -13576,11 +13576,11 @@ public partial class Compiler
             // - TYP_REF or BYREF = TYP_I_IMPL
             var ok = false;
 
-            if (varTypeIsGC(dstTyp) && (valType is TYP_I_IMPL))
+            if (varTypeIsGC(dstTyp) && ((valType == TYP_I_IMPL)))
             {
                 ok = true;
             }
-            else if ((dstTyp is TYP_I_IMPL) && (valType is TYP_BYREF))
+            else if (((dstTyp == TYP_I_IMPL)) && (valType is TYP_BYREF))
             {
                 // - TYP_I_IMPL = TYP_BYREF
                 ok = true;
@@ -14128,7 +14128,7 @@ public partial class Compiler
 
     private void gtPeelOffsetsCore(ref GenTree addr, out target_ssize_t offset, out FieldSeq? fldSeq, bool includeFieldSeq)
     {
-        assert(addr.Type is TYP_I_IMPL or TYP_BYREF or TYP_REF);
+        assert((addr.Type is var __targetAliasValue0 && ((__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF) || __targetAliasValue0 is TYP_REF)));
 
         offset = 0;
         fldSeq = null;
@@ -14142,7 +14142,7 @@ public partial class Compiler
                 var op1 = addrOp.Op1;
                 var op2 = addrOp.Op2;
 
-                if (op2.Oper.IsCnsIntOrI && (op2.Type is TYP_I_IMPL))
+                if (op2.Oper.IsCnsIntOrI && ((op2.Type == TYP_I_IMPL)))
                 {
                     var intCon = op2.AsIntCon();
 
@@ -14160,7 +14160,7 @@ public partial class Compiler
                     }
                 }
 
-                if (op1.Oper.IsCnsIntOrI && (op1.Type is TYP_I_IMPL))
+                if (op1.Oper.IsCnsIntOrI && ((op1.Type == TYP_I_IMPL)))
                 {
                     var intCon = op1.AsIntCon();
 
@@ -17753,7 +17753,7 @@ public partial class Compiler
 
             var copyDstAddrOp2 = copyDstAddr.AsOp().Op2;
 
-            if ((copyDstAddrOp2 is null) || !copyDstAddrOp2.IsIntegralConst(TARGET_POINTER_SIZE))
+            if ((copyDstAddrOp2 is null) || !copyDstAddrOp2.IsIntegralConst(Configuration.TARGET_POINTER_SIZE))
             {
                 JITDUMP("Unexpected copy dest address 2nd addend\n");
                 return null;

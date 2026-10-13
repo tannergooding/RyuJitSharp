@@ -166,23 +166,25 @@ public partial class Compiler
             noway_assert((varType == localType) || ((layout is not null) && layout.IsCustomLayout));
             var padding = lvaStressLclFldPadding(lclNum);
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-            padding = roundUp(padding, TYP_DOUBLE.Size);
-#endif
+            if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 ||
+                Configuration.TARGET_RISCV64)
+            {
+                padding = roundUp(padding, TYP_DOUBLE.Size);
+            }
 
             if (varTypeIsGC(varType) || ((layout is not null) && layout.HasGCPtr))
             {
-                padding = roundUp(padding, TARGET_POINTER_SIZE);
+                padding = roundUp(padding, Configuration.TARGET_POINTER_SIZE);
             }
 
             if (varType is not TYP_STRUCT)
             {
-                var size = roundUp(padding + lvaLclStackHomeSize(lclNum), TARGET_POINTER_SIZE);
+                var size = roundUp(padding + lvaLclStackHomeSize(lclNum), Configuration.TARGET_POINTER_SIZE);
                 var builder = new ClassLayoutBuilder(this, size);
                 builder.SetName($"{varType.Name}_{size}_Stress", $"{varType.Name}_{size}");
                 if (varTypeIsGC(varType))
                 {
-                    builder.SetGCPtrType(padding / TARGET_POINTER_SIZE, varType);
+                    builder.SetGCPtrType(padding / Configuration.TARGET_POINTER_SIZE, varType);
                 }
 
                 layout = typGetCustomLayout(builder);

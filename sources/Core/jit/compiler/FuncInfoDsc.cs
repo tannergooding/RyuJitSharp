@@ -11,10 +11,8 @@ public partial struct FuncInfoDsc
     public byte funFlags;
     public ushort funEHIndex;
 
-#if !HAS_FIXED_REGISTER_SET
     public regNumber funStackPointerReg;
     public regNumber funFramePointerReg;
-#endif
 
     public readonly ref EHblkDsc GetEHDesc(Compiler compiler)
     {

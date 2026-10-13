@@ -214,18 +214,16 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
             }
         }
 
-#if !TARGET_64BIT
         // GT_MUL with GTF_MUL_64RSLT is required to stay with casts on the
         // operands. Note that one operand may also be a constant, but we
         // would have exited early above for that case.
 
-        if ((user is not null) && (user.Oper is GT_MUL) && user.Is64RsltMul)
+        if (!Configuration.TARGET_64BIT && (user is not null) && (user.Oper is GT_MUL) && user.Is64RsltMul)
         {
             assert(use.Oper is GT_CAST);
             SplitOutUse(ref use.AsCast().Op1Ref, use, userIsReturned: false);
             return;
         }
-#endif
 
         if (use.Oper is GT_COMMA)
         {

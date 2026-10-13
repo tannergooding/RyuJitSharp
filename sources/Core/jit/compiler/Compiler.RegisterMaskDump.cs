@@ -10,17 +10,12 @@ public partial class Compiler
 #if DEBUG
     public void dumpRegMask(SingleTypeRegSet regs, var_types type)
     {
-#if FEATURE_MASKED_HW_INTRINSICS
-        if (varTypeIsMask(type))
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeIsMask(type))
         {
-#if HAS_MORE_THAN_64_REGISTERS
-            dumpRegMask(new regMaskTP(SRBM_NONE, regs));
-#else
-            dumpRegMask(new regMaskTP(regs));
-#endif
+            dumpRegMask(Configuration.HAS_MORE_THAN_64_REGISTERS
+                ? new regMaskTP(SRBM_NONE, regs) : new regMaskTP(regs));
             return;
         }
-#endif
 
         assert(varTypeUsesIntReg(type) || varTypeUsesFloatReg(type));
         dumpRegMask(new regMaskTP(regs));
@@ -28,7 +23,13 @@ public partial class Compiler
 
     public void dumpRegMask(regMaskTP regs)
     {
-#if TARGET_AMD64
+        if (!Configuration.TARGET_AMD64)
+        {
+            NYI("Compiler.dumpRegMask outside AMD64");
+            fatal(CORJIT_IMPLLIMITATION);
+            throw new FatalJitException("Compiler.dumpRegMask outside AMD64.");
+        }
+
         // AMD64 aliases RBM_ALLDOUBLE to the current RBM_ALLFLOAT set.
         var allDoubleRegs = new regMaskTP(SRBM_ALLFLOAT);
         if (regs == new regMaskTP(SRBM_ALLINT))
@@ -47,20 +48,14 @@ public partial class Compiler
         {
             jitprintf("[allDouble]");
         }
-#if FEATURE_MASKED_HW_INTRINSICS
-        else if (regs == new regMaskTP(SRBM_NONE, SRBM_ALLMASK))
+        else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && (regs == new regMaskTP(SRBM_NONE, SRBM_ALLMASK)))
         {
             jitprintf("[allMask]");
         }
-#endif
         else
         {
             dspRegMask(regs);
         }
-#else
-        NYI("Compiler.dumpRegMask outside AMD64");
-        fatal(CORJIT_IMPLLIMITATION);
-#endif
     }
 #endif
 }

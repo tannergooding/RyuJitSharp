@@ -20,25 +20,33 @@ public partial class Compiler
         var patchpointInfoSize = unchecked((uint)PatchpointInfo.ComputeSize(info.compLocalsCount));
         var patchpointInfo = (PatchpointInfo*)info.compCompHnd->allocateArray(unchecked((nint)patchpointInfoSize));
 
-#if TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-#if TARGET_AMD64
-        // The OSR prolog pushes a pseudo return address below the Tier0 frame.
-        // Tier0 always uses FP, so its FP-relative offsets are already virtual frame offsets.
-        var totalFrameSize = unchecked(codeGen.genTotalFrameSize + TARGET_POINTER_SIZE);
-        var offsetAdjust = 0;
-#else
-        // Calls do not manipulate SP; FP-relative offsets must refer to the top of the frame.
+        if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64 &&
+            !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Patchpoint metadata generation is not implemented for this target.");
+        }
+
         var totalFrameSize = codeGen.genTotalFrameSize;
-        var offsetAdjust = unchecked(codeGen.genSPtoFPdelta - totalFrameSize);
-#endif
-#if TARGET_ARM64
-        if (compUsesUnknownSizeFrame)
+        int offsetAdjust;
+        if (Configuration.TARGET_AMD64)
+        {
+            // The OSR prolog pushes a pseudo return address below the Tier0 frame.
+            // Tier0 always uses FP, so its FP-relative offsets are already virtual frame offsets.
+            totalFrameSize = unchecked(totalFrameSize + Configuration.TARGET_POINTER_SIZE);
+            offsetAdjust = 0;
+        }
+        else
+        {
+            // Calls do not manipulate SP; FP-relative offsets must refer to the top of the frame.
+            offsetAdjust = unchecked(codeGen.genSPtoFPdelta - totalFrameSize);
+        }
+
+        if (Configuration.TARGET_ARM64 && compUsesUnknownSizeFrame)
         {
             var unknownSizeFrameSize = unchecked((int)(unkSizeFrame.FrameSizeInVectors() * getRuntimeVectorTByteLength()));
             JITDUMP($"--OSR-- UnknownSizeFrame Size {unknownSizeFrameSize}\n");
             totalFrameSize = unchecked(totalFrameSize + unknownSizeFrameSize);
         }
-#endif
         patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
         JITDUMP($"--OSR--- Total Frame Size {patchpointInfo->TotalFrameSize}, local offset adjust is {offsetAdjust}\n");
 
@@ -62,15 +70,13 @@ public partial class Compiler
 
             // OSR partial importation may skip the original address-of operation.
             var stackOffset = 0;
-#if TARGET_ARM64
-            if (lvaLocalIsOnUnknownSizeFrame(varNum))
+            if (Configuration.TARGET_ARM64 && lvaLocalIsOnUnknownSizeFrame(varNum))
             {
                 var unknownSizeFrameOffset = unchecked(-codeGen.genTotalFrameSize);
                 stackOffset = unchecked(unknownSizeFrameOffset +
                     unkSizeFrame.GetExactOffset(in varDsc, getRuntimeVectorTByteLength()));
             }
             else
-#endif
             {
                 stackOffset = unchecked(varDsc.StackOffset + offsetAdjust);
             }
@@ -131,17 +137,20 @@ public partial class Compiler
         }
 
         var pushRegs = codeGen.RegSet.rsGetModifiedCalleeSavedRegsMask() | new regMaskTP(SRBM_FPBASE);
-#if TARGET_ARM64
-        pushRegs |= RBM_LR;
-
-        // The mask records whether FP/LR are stored with the other callee saves.
-        if (!codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
+        if (Configuration.TARGET_ARM64)
         {
-            pushRegs &= ~(RBM_FP | RBM_LR);
+            pushRegs |= RBM_LR;
+
+            // The mask records whether FP/LR are stored with the other callee saves.
+            if (!codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
+            {
+                pushRegs &= ~(RBM_FP | RBM_LR);
+            }
         }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-        pushRegs |= RBM_RA;
-#endif
+        else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            pushRegs |= RBM_RA;
+        }
         patchpointInfo->CalleeSaveRegisters = unchecked((long)pushRegs.Lower);
         JITDUMP("--OSR-- Tier0 callee saves: ");
 #if DEBUG
@@ -153,8 +162,5 @@ public partial class Compiler
         JITDUMP("\n");
 
         info.compCompHnd->setPatchpointInfo(patchpointInfo);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Patchpoint metadata generation is not implemented for this target.");
-#endif
     }
 }

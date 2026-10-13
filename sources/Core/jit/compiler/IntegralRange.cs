@@ -232,8 +232,7 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
                 return ForCastOutput(node.AsCast(), compiler);
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 var hwintrinsic = node.AsHWIntrinsic();
                 var id = hwintrinsic.HWIntrinsicId;
@@ -257,14 +256,11 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
 
                 switch (id)
                 {
-#if TARGET_XARCH
-                    case NI_X86Base_MoveMask:
-                    case NI_AVX_MoveMask:
-                    case NI_AVX2_MoveMask:
-                    case NI_AVX512_MoveMask:
-#elif TARGET_WASM
-                    case NI_PackedSimd_Bitmask:
-#endif
+                    case NI_X86Base_MoveMask when Configuration.TARGET_XARCH:
+                    case NI_AVX_MoveMask when Configuration.TARGET_XARCH:
+                    case NI_AVX2_MoveMask when Configuration.TARGET_XARCH:
+                    case NI_AVX512_MoveMask when Configuration.TARGET_XARCH:
+                    case NI_PackedSimd_Bitmask when Configuration.TARGET_WASM:
                     case NI_Vector_ExtractMostSignificantBits:
                     {
                         // One output bit per element; the remaining high bits are zero.
@@ -287,38 +283,34 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
                         break;
                     }
 
-#if TARGET_XARCH
-                    case NI_AVX2_LeadingZeroCount:
-                    case NI_AVX2_TrailingZeroCount:
-                    case NI_AVX2_X64_LeadingZeroCount:
-                    case NI_AVX2_X64_TrailingZeroCount:
-                    case NI_X86Base_PopCount:
-                    case NI_X86Base_X64_PopCount:
-#elif TARGET_ARM64
-                    case NI_ArmBase_LeadingZeroCount:
-                    case NI_ArmBase_Arm64_LeadingZeroCount:
-                    case NI_ArmBase_Arm64_LeadingSignCount:
-#elif TARGET_WASM
-                    // TODO-WASM: Support CTZ/CLZ ranges here when native does.
-#else
-#error Unsupported platform
-#endif
-#if TARGET_XARCH || TARGET_ARM64
+                    case NI_AVX2_LeadingZeroCount when Configuration.TARGET_XARCH:
+                    case NI_AVX2_TrailingZeroCount when Configuration.TARGET_XARCH:
+                    case NI_AVX2_X64_LeadingZeroCount when Configuration.TARGET_XARCH:
+                    case NI_AVX2_X64_TrailingZeroCount when Configuration.TARGET_XARCH:
+                    case NI_X86Base_PopCount when Configuration.TARGET_XARCH:
+                    case NI_X86Base_X64_PopCount when Configuration.TARGET_XARCH:
+                    case NI_ArmBase_LeadingZeroCount when Configuration.TARGET_ARM64:
+                    case NI_ArmBase_Arm64_LeadingZeroCount when Configuration.TARGET_ARM64:
+                    case NI_ArmBase_Arm64_LeadingSignCount when Configuration.TARGET_ARM64:
                     {
                         // Actual range is [0..32] or [0..64].
                         return new(Zero, ByteMax);
                     }
-#endif
 
                     default:
                     {
+                        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM)
+                        {
+                            throw new FatalJitException("Unsupported platform for hardware intrinsic range analysis.");
+                        }
+
+                        // TODO-WASM: Support CTZ/CLZ ranges here when native does.
                         break;
                     }
                 }
 
                 break;
             }
-#endif
 
             case GT_INTRINSIC:
             {

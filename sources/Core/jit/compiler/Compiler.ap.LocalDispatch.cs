@@ -161,16 +161,14 @@ public partial class Compiler
         var assertion = optGetAssertion(index);
         var assertionIsEqual = assertion.KindIs(OAK_EQUAL);
         bool constantIsEqual;
-        if (type.Size == TARGET_POINTER_SIZE)
+        if (type.Size == Configuration.TARGET_POINTER_SIZE)
         {
             constantIsEqual = assertion.Op2.IntConstant == value;
         }
-#if TARGET_64BIT
-        else if (type.Size == sizeof(int))
+        else if (Configuration.TARGET_64BIT && (type.Size == sizeof(int)))
         {
             constantIsEqual = unchecked((int)assertion.Op2.IntConstant) == unchecked((int)value);
         }
-#endif
         else
         {
             return null;

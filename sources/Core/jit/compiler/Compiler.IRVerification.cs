@@ -182,8 +182,7 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 var intrinsic = tree.AsHWIntrinsic();
                 var intrinsicId = intrinsic.HWIntrinsicId;
@@ -203,62 +202,57 @@ public partial class Compiler
                 {
                     switch (intrinsicId)
                     {
-#if TARGET_XARCH
-                        case NI_X86Base_LoadFence:
-                        case NI_X86Base_MemoryFence:
-                        case NI_X86Base_StoreFence:
-                        case NI_X86Serialize_Serialize:
+                        case NI_X86Base_LoadFence when Configuration.TARGET_XARCH:
+                        case NI_X86Base_MemoryFence when Configuration.TARGET_XARCH:
+                        case NI_X86Base_StoreFence when Configuration.TARGET_XARCH:
+                        case NI_X86Serialize_Serialize when Configuration.TARGET_XARCH:
                         {
                             assert(tree.RequiresAsgFlag);
                             expectedFlags |= GTF_GLOB_REF;
                             break;
                         }
 
-                        case NI_X86Base_Pause:
-                        case NI_X86Base_Prefetch0:
-                        case NI_X86Base_Prefetch1:
-                        case NI_X86Base_Prefetch2:
-                        case NI_X86Base_PrefetchNonTemporal:
+                        case NI_X86Base_Pause when Configuration.TARGET_XARCH:
+                        case NI_X86Base_Prefetch0 when Configuration.TARGET_XARCH:
+                        case NI_X86Base_Prefetch1 when Configuration.TARGET_XARCH:
+                        case NI_X86Base_Prefetch2 when Configuration.TARGET_XARCH:
+                        case NI_X86Base_PrefetchNonTemporal when Configuration.TARGET_XARCH:
                         {
                             assert(tree.RequiresCallFlag(this));
                             expectedFlags |= GTF_GLOB_REF;
                             break;
                         }
 
-                        case NI_Vector_op_Division:
+                        case NI_Vector_op_Division when Configuration.TARGET_XARCH:
                         {
                             assert(intrinsic.SimdSize is 16 or 32);
                             break;
                         }
-#endif
-
-#if TARGET_ARM64
-                        case NI_ArmBase_Yield:
-                        case NI_Sve_GatherPrefetch16Bit:
-                        case NI_Sve_GatherPrefetch32Bit:
-                        case NI_Sve_GatherPrefetch64Bit:
-                        case NI_Sve_GatherPrefetch8Bit:
-                        case NI_Sve_Prefetch16Bit:
-                        case NI_Sve_Prefetch32Bit:
-                        case NI_Sve_Prefetch64Bit:
-                        case NI_Sve_Prefetch8Bit:
-                        case NI_Sve_GetFfrByte:
-                        case NI_Sve_GetFfrDouble:
-                        case NI_Sve_GetFfrInt16:
-                        case NI_Sve_GetFfrInt32:
-                        case NI_Sve_GetFfrInt64:
-                        case NI_Sve_GetFfrSByte:
-                        case NI_Sve_GetFfrSingle:
-                        case NI_Sve_GetFfrUInt16:
-                        case NI_Sve_GetFfrUInt32:
-                        case NI_Sve_GetFfrUInt64:
-                        case NI_Sve_SetFfr:
+                        case NI_ArmBase_Yield when Configuration.TARGET_ARM64:
+                        case NI_Sve_GatherPrefetch16Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_GatherPrefetch32Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_GatherPrefetch64Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_GatherPrefetch8Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_Prefetch16Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_Prefetch32Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_Prefetch64Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_Prefetch8Bit when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrByte when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrDouble when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrInt16 when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrInt32 when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrInt64 when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrSByte when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrSingle when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrUInt16 when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrUInt32 when Configuration.TARGET_ARM64:
+                        case NI_Sve_GetFfrUInt64 when Configuration.TARGET_ARM64:
+                        case NI_Sve_SetFfr when Configuration.TARGET_ARM64:
                         {
                             assert(tree.RequiresCallFlag(this));
                             expectedFlags |= GTF_GLOB_REF;
                             break;
                         }
-#endif
                         default:
                         {
                             assert(false, "Unhandled HWIntrinsic with special side effect");
@@ -268,7 +262,6 @@ public partial class Compiler
                 }
                 break;
             }
-#endif
             default:
             {
                 break;
@@ -327,9 +320,11 @@ public partial class Compiler
 
     private bool fgOperSupportsReverseOpEvalOrder(GenTree tree)
     {
-#if TARGET_WASM
-        return false;
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            return false;
+        }
+
         if (tree.Oper.IsBinary)
         {
             var op = tree.AsOp();
@@ -349,7 +344,6 @@ public partial class Compiler
             return (multiOp.Operands.Length == 2) && !multiOp.IsUserCall;
         }
         return false;
-#endif
     }
 
     private static void fgDebugCheckDispFlags(GenTree tree, GenTreeFlags dispFlags)

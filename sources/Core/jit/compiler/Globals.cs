@@ -20,19 +20,14 @@ public partial class Globals
 
     public const int ROOT_FUNC_IDX = 0;
 
-#if TARGET_XARCH
-    public const instruction INS_BREAKPOINT = INS_int3;
-#elif TARGET_ARM
-    public const instruction INS_BREAKPOINT = INS_bkpt;
-#elif TARGET_ARM64
-    public const instruction INS_BREAKPOINT = INS_brk;
-#elif TARGET_LOONGARCH64
-    public const instruction INS_BREAKPOINT = INS_break;
-#elif TARGET_RISCV64
-    public const instruction INS_BREAKPOINT = INS_ebreak;
-#elif TARGET_WASM
-    public const instruction INS_BREAKPOINT = INS_unreachable;
-#endif
+    public static instruction INS_BREAKPOINT =>
+        Configuration.TARGET_XARCH ? INS_int3 :
+        Configuration.TARGET_ARM ? INS_bkpt :
+        Configuration.TARGET_ARM64 ? INS_brk :
+        Configuration.TARGET_LOONGARCH64 ? INS_break :
+        Configuration.TARGET_RISCV64 ? INS_ebreak :
+        Configuration.TARGET_WASM ? INS_unreachable :
+        throw new FatalJitException("Unsupported or unset target architecture.");
 
     public static int genMapIntRegNumToRegArgNum(regNumber regNum, CorInfoCallConvExtension callConv)
     {
@@ -177,7 +172,7 @@ public partial class Globals
 
     // Quirk for VS debug-launch scenario to work:
     // Bytes of padding between save-reg area and locals.
-    // TODO: public const int VSQUIRK_STACK_PAD = 2 * REGSIZE_BYTES;
+    // TODO: public const int VSQUIRK_STACK_PAD = 2 * Configuration.REGSIZE_BYTES;
 
     /// <summary>Methods with > DEFAULT_MAX_INLINE_SIZE IL bytes will never be inlined.</summary>
     /// <remarks>This can be overwritten by setting DOTNET_JITInlineSize env variable.</remarks>
@@ -313,11 +308,7 @@ public partial class Globals
 
     public static IRegAlloc GetRegisterAllocator(Compiler compiler)
     {
-#if TARGET_WASM
-        return WasmRegAlloc.GetRegisterAllocator(compiler);
-#else
-        return new LinearScan(compiler);
-#endif
+        return Configuration.TARGET_WASM ? WasmRegAlloc.GetRegisterAllocator(compiler) : new LinearScan(compiler);
     }
 
     public static bool handlerGetsXcptnObj(bbCatchType hndType) => hndType is not BBCT_NONE and not BBCT_FAULT and not BBCT_FINALLY;
@@ -326,10 +317,8 @@ public partial class Globals
         CORINFO_HFA_ELEM_NONE => TYP_UNDEF,
         CORINFO_HFA_ELEM_FLOAT => TYP_FLOAT,
         CORINFO_HFA_ELEM_DOUBLE => TYP_DOUBLE,
-#if FEATURE_SIMD
-        CORINFO_HFA_ELEM_VECTOR64 => TYP_SIMD8,
-        CORINFO_HFA_ELEM_VECTOR128 => TYP_SIMD16,
-#endif
+        CORINFO_HFA_ELEM_VECTOR64 when Configuration.FEATURE_SIMD => TYP_SIMD8,
+        CORINFO_HFA_ELEM_VECTOR128 when Configuration.FEATURE_SIMD => TYP_SIMD16,
         _ => TYP_UNKNOWN,
     };
 
@@ -347,17 +336,15 @@ public partial class Globals
                 return CORINFO_HFA_ELEM_DOUBLE;
             }
 
-#if FEATURE_SIMD
-            case TYP_SIMD8:
+            case TYP_SIMD8 when Configuration.FEATURE_SIMD:
             {
                 return CORINFO_HFA_ELEM_VECTOR64;
             }
 
-            case TYP_SIMD16:
+            case TYP_SIMD16 when Configuration.FEATURE_SIMD:
             {
                 return CORINFO_HFA_ELEM_VECTOR128;
             }
-#endif
             case TYP_UNDEF:
             {
                 return CORINFO_HFA_ELEM_NONE;
@@ -373,13 +360,8 @@ public partial class Globals
 
     public static bool IsHfa(CorInfoHFAElemType kind) => kind is not CORINFO_HFA_ELEM_NONE;
 
-#if TARGET_XARCH
-    public static bool jitIsScaleIndexMul(nint val, int naturalMul = 0) => val is 1 or 2 or 4 or 8;
-#elif TARGET_ARM64
-    public static bool jitIsScaleIndexMul(nint val, int naturalMul = 0) => (val == naturalMul);
-#else
-    public static bool jitIsScaleIndexMul(nint val, int naturalMul = 0) => false;
-#endif
+    public static bool jitIsScaleIndexMul(nint val, int naturalMul = 0) =>
+        Configuration.TARGET_XARCH ? val is 1 or 2 or 4 or 8 : Configuration.TARGET_ARM64 && (val == naturalMul);
 
     public static bool jitIsScaleIndexShift(nint value) => value is > 0 and < 4;
 
@@ -544,13 +526,8 @@ public partial class Globals
     }
 #endif
 
-#if PROFILING_SUPPORTED
     // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
     // These are used when DOTNET_JitEltHookEnabled=1
-#if TARGET_AMD64
     internal static void DummyProfilerELTStub(nint ProfilerHandle, nint callerSP) { }
-#else
     internal static void DummyProfilerELTStub(nint ProfilerHandle) { }
-#endif
-#endif
 }

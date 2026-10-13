@@ -3,14 +3,23 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
+    private static void EnsureArm64HWIntrinsicSupport()
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 hardware intrinsic support is not enabled.");
+        }
+    }
+
     public unsafe void getHWIntrinsicImmTypes(NamedIntrinsic intrinsic, in CORINFO_SIG_INFO signature,
         int number, ref byte size, ref var_types baseType)
     {
+        EnsureArm64HWIntrinsicSupport();
+
         var sig = signature;
         var argument = sig.args;
         if (HWIntrinsicInfo.lookupCategory(intrinsic) is HW_Category_SIMDByIndexedElement)
@@ -52,4 +61,3 @@ public partial class Compiler
         }
     }
 }
-#endif

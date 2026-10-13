@@ -27,11 +27,12 @@ public partial class Compiler
 
         public static bool MayNeedShadowCopy(in LclVarDsc varDsc)
         {
-#if WINDOWS_AMD64_ABI
-            return varDsc.lvIsParam;
-#else
+            if (Configuration.WINDOWS_AMD64_ABI)
+            {
+                return varDsc.lvIsParam;
+            }
+
             return varDsc.lvIsParam && !varDsc.lvIsRegArg;
-#endif
         }
     }
 }

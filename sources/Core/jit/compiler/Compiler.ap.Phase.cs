@@ -90,17 +90,14 @@ public partial class Compiler
                 return optAssertionProp_Call(assertions, tree.AsCall(), statement);
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 if (!optLocalAssertionProp)
                 {
                     optAssertionProp_HWIntrinsic(tree.AsHWIntrinsic());
                 }
-
                 return null;
             }
-#endif
 
             case GT_EQ:
             case GT_NE:

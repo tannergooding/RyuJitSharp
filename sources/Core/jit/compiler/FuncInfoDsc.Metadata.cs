@@ -5,9 +5,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if TARGET_WASM || FEATURE_CFI_SUPPORT
 using System.Collections.Generic;
-#endif
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -39,7 +37,6 @@ public partial struct FuncInfoDsc
         return index;
     }
 
-#if TARGET_WASM
     public struct WasmLocalsDecl
     {
         public WasmValueType Type;
@@ -83,9 +80,7 @@ public partial struct FuncInfoDsc
             needsUnwindableFrame = true;
         }
     }
-#endif
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     public UnwindInfo? uwi;
 
     public readonly UnwindInfo GetUnwindInfo()
@@ -94,9 +89,6 @@ public partial struct FuncInfoDsc
     }
 
     public UnwindInfo? uwiCold;
-#endif
 
-#if FEATURE_CFI_SUPPORT
     public List<CFI_CODE>? cfiCodes;
-#endif
 }

@@ -39,10 +39,8 @@ public enum DoNotEnregisterReason
     /// <summary>opts.compFlags &amp; CLFLG_REGVAR is not set</summary>
     NoRegVars,
 
-#if !TARGET_64BIT
     /// <summary>It is a decomposed field of a long parameter.</summary>
     LongParamField,
-#endif
 
     PinningRef,
 

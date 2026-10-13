@@ -53,27 +53,22 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
+            case TYP_SIMD8 when Configuration.FEATURE_SIMD:
+            case TYP_SIMD12 when Configuration.FEATURE_SIMD:
+            case TYP_SIMD16 when Configuration.FEATURE_SIMD:
+            case TYP_SIMD32 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH:
+            case TYP_SIMD64 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH:
             {
                 tree._vnPair.SetBoth(vnStore.VNForGenericCon(type, tree.AsVecCon().SimdVal.AsSpan<byte>()[..type.Size]));
                 break;
             }
 
-#if TARGET_ARM64
-            case TYP_SIMD_ARM64:
+            case TYP_SIMD_ARM64 when Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64:
             {
                 tree._vnPair.SetBoth(vnStore.VNForSimdScalableCon(tree.AsVecCon().SimdScalableVal));
                 break;
             }
-#endif
-            case TYP_MASK:
+            case TYP_MASK when Configuration.FEATURE_SIMD:
             {
 #if DEBUG
                 if (Configuration.TARGET_ARM64 && (JitConfig.JitUseScalableVectorT != 0))
@@ -85,7 +80,6 @@ public partial class Compiler
                 tree._vnPair.SetBoth(vnStore.VNForSimdMaskCon(tree.AsMskCon().SimdMaskVal));
                 break;
             }
-#endif
             case TYP_FLOAT:
             {
                 tree._vnPair.SetBoth(vnStore.VNForFloatCon((float)tree.AsDblCon().DconVal));

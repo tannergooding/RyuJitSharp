@@ -491,13 +491,11 @@ public partial class Compiler
             assert(varTypeIsSimd(cns.Type));
             // Own the active bytes: later node mutations must not change an assertion.
             byte[] payload;
-#if TARGET_ARM64
-            if (cns.Type is TYP_SIMD_ARM64)
+            if (Configuration.TARGET_ARM64 && cns.Type is TYP_SIMD_ARM64)
             {
                 payload = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in cns.SimdScalableVal, 1)).ToArray();
             }
             else
-#endif
             {
                 payload = cns.SimdVal.AsSpan<byte>()[..cns.Type.Size].ToArray();
             }

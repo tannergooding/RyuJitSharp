@@ -134,12 +134,11 @@ public partial class Compiler
             default:
             {
                 assert(intrinsic is not NI_Throw_PlatformNotSupportedException);
-#if FEATURE_HW_INTRINSICS
-                if (intrinsic is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END)
+                if (Configuration.FEATURE_HW_INTRINSICS &&
+                    intrinsic is > NI_HW_INTRINSIC_START and < NI_HW_INTRINSIC_END)
                 {
                     return false;
                 }
-#endif
                 return intrinsic is not (> NI_SRCS_UNSAFE_START and < NI_SRCS_UNSAFE_END);
             }
         }

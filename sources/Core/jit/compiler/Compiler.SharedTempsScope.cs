@@ -6,12 +6,6 @@
 using System;
 using System.Collections.Generic;
 
-#if TARGET_AMD64
-using indexType = ulong;
-#else
-using indexType = uint;
-#endif
-
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -36,7 +30,7 @@ public partial class Compiler
             foreach (var temp in _usedTemps)
             {
                 assert(_compiler.fgAvailableOutgoingArgTemps is not null);
-                _compiler.fgAvailableOutgoingArgTemps.setBit((indexType)temp);
+                _compiler.fgAvailableOutgoingArgTemps.setBit(temp);
             }
         }
     }

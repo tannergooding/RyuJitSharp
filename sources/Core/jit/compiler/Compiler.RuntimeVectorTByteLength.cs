@@ -7,18 +7,27 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_ARM && !FEATURE_HW_INTRINSICS
     private uint getCompileTimeVectorTByteLength()
     {
-        NYI("getCompileTimeVectorTByteLength on ARM32");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("getCompileTimeVectorTByteLength is unsupported on ARM32.");
-    }
-#endif
+        if (Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return Configuration.TARGET_WASM ? (uint)Configuration.FP_REGSIZE_BYTES : (uint)GetVectorTByteLength();
+        }
 
-#if (TARGET_LOONGARCH64 || TARGET_RISCV64) && !FEATURE_HW_INTRINSICS
-    private uint getCompileTimeVectorTByteLength() => unchecked((uint)GetVectorTByteLength());
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            NYI("getCompileTimeVectorTByteLength on ARM32");
+            fatal(CORJIT_IMPLLIMITATION);
+            throw new FatalJitException("getCompileTimeVectorTByteLength is unsupported on ARM32.");
+        }
+
+        if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            return unchecked((uint)GetVectorTByteLength());
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Compile-time Vector<T> length is not supported on this target.");
+    }
 
     public unsafe uint getRuntimeVectorTByteLength()
     {

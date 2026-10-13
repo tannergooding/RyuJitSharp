@@ -159,14 +159,15 @@ public partial class Compiler
                                 (block.isRunRarely == bDest.isRunRarely);
                             var optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
 
-#if TARGET_WASM
-                            var lastNode = block.GetLastNode();
-                            assert(lastNode is not null);
-                            if (lastNode.Oper is GT_WASM_JEXCEPT)
+                            if (Configuration.TARGET_WASM)
                             {
-                                optimizeJump = false;
+                                var lastNode = block.GetLastNode();
+                                assert(lastNode is not null);
+                                if (lastNode.Oper is GT_WASM_JEXCEPT)
+                                {
+                                    optimizeJump = false;
+                                }
                             }
-#endif
                             if (bDest.hasTryIndex && !BasicBlock.sameTryRegion(block, bDest))
                             {
                                 optimizeJump = false;
