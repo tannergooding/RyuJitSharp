@@ -6771,8 +6771,11 @@ public partial class Compiler
 
         if (Configuration.TARGET_XARCH && varTypeIsMask(type))
         {
+            if (Configuration.DEBUG)
+            {
+                assert(!isScalar);
+            }
 #if DEBUG
-            assert(!isScalar);
             assert(canUseEvexEncodingDebugOnly());
 #endif
         }

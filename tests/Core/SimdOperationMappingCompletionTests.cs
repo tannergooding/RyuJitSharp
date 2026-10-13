@@ -231,6 +231,18 @@ internal static unsafe class SimdOperationMappingCompletionTests
             Is.EqualTo(expected)));
     }
 
+    [Test]
+    public static void XarchMaskComparisonMapsToAvx512()
+    {
+        WithCompiler(compiler =>
+        {
+            Enable(compiler, InstructionSet_AVX512);
+            Assert.That(compiler.GetHWIntrinsicIdForCmpOp(GT_EQ, TYP_MASK,
+                Local(compiler, TYP_SIMD16), Local(compiler, TYP_SIMD16), TYP_INT, 16, false),
+                Is.EqualTo(NI_AVX512_CompareEqualMask));
+        });
+    }
+
     private static void Enable(Compiler compiler, ManagedInstructionSet instructionSet)
     {
         compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
