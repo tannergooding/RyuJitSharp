@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_XARCH
     public bool instIsEmbeddedBroadcastCompatible(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         if (Emitter.IsEvexEncodableInstruction(ins))
         {
             return (Emitter.insTupleTypeInfo(ins) & INS_TT_IS_BROADCAST) != 0;
@@ -17,5 +21,4 @@ public sealed partial class CodeGen
 
         return false;
     }
-#endif
 }

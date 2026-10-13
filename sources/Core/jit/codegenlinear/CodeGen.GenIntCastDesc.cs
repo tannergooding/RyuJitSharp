@@ -18,11 +18,9 @@ public sealed partial class CodeGen
             CHECK_NONE,
             CHECK_SMALL_INT_RANGE,
             CHECK_POSITIVE,
-#if TARGET_64BIT || TARGET_WASM
             CHECK_UINT_RANGE,
             CHECK_POSITIVE_INT_RANGE,
             CHECK_INT_RANGE,
-#endif
         }
 
         public enum ExtendKind
@@ -30,16 +28,12 @@ public sealed partial class CodeGen
             COPY,
             ZERO_EXTEND_SMALL_INT,
             SIGN_EXTEND_SMALL_INT,
-#if TARGET_64BIT || TARGET_WASM
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
-#endif
             LOAD_ZERO_EXTEND_SMALL_INT,
             LOAD_SIGN_EXTEND_SMALL_INT,
-#if TARGET_64BIT || TARGET_WASM
             LOAD_ZERO_EXTEND_INT,
             LOAD_SIGN_EXTEND_INT,
-#endif
             LOAD_SOURCE,
         }
 
@@ -61,13 +55,17 @@ public sealed partial class CodeGen
             var castIsLoad = !src.IsUsedFromReg;
 
             assert(castIsLoad == src.IsUsedFromMemory);
-#if TARGET_WASM
-            assert((srcSize == 4) || (srcSize == 8));
-            assert((dstSize == 4) || (dstSize == 8));
-#else
-            assert((srcSize == 4) || (srcSize == TYP_I_IMPL.Size));
-            assert((dstSize == 4) || (dstSize == TYP_I_IMPL.Size));
-#endif
+            if (Configuration.TARGET_WASM)
+            {
+                assert((srcSize == 4) || (srcSize == 8));
+                assert((dstSize == 4) || (dstSize == 8));
+            }
+            else
+            {
+                var targetPointerSize = unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+                assert((srcSize == 4) || (srcSize == targetPointerSize));
+                assert((dstSize == 4) || (dstSize == targetPointerSize));
+            }
             assert(dstSize == castType.ActualType.Size);
 
             if (castSize < 4)
@@ -90,8 +88,7 @@ public sealed partial class CodeGen
                     ExtendSrcSize = castSize;
                 }
             }
-#if TARGET_64BIT || TARGET_WASM
-            else if (castSize > srcSize)
+            else if ((Configuration.TARGET_64BIT || Configuration.TARGET_WASM) && castSize > srcSize)
             {
                 assert((srcSize == 4) && (castSize == 8));
                 if (overflow && !srcUnsigned && castUnsigned)
@@ -109,7 +106,7 @@ public sealed partial class CodeGen
                     ExtendSrcSize = 4;
                 }
             }
-            else if (castSize < srcSize)
+            else if ((Configuration.TARGET_64BIT || Configuration.TARGET_WASM) && castSize < srcSize)
             {
                 assert((srcSize == 8) && (castSize == 4));
                 if (overflow)
@@ -122,15 +119,11 @@ public sealed partial class CodeGen
                 {
                     Check = CHECK_NONE;
                 }
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
                 // These ABIs require sign-extended 32-bit values even after narrowing.
-                Extend = SIGN_EXTEND_INT;
-#else
-                Extend = COPY;
-#endif
+                Extend = (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                    ? SIGN_EXTEND_INT : COPY;
                 ExtendSrcSize = 4;
             }
-#endif
             else
             {
                 assert(castSize == srcSize);
@@ -169,9 +162,14 @@ public sealed partial class CodeGen
                         break;
                     }
 
-#if TARGET_64BIT
                     case ZERO_EXTEND_INT:
                     {
+                        if (!Configuration.TARGET_64BIT)
+                        {
+                            unreached();
+                            break;
+                        }
+
                         assert(varTypeIsUnsigned(srcLoadType) || (srcLoadType == TYP_INT));
                         Extend = varTypeIsSmall(srcLoadType) ? LOAD_ZERO_EXTEND_SMALL_INT : LOAD_ZERO_EXTEND_INT;
                         ExtendSrcSize = srcLoadType.Size;
@@ -180,12 +178,17 @@ public sealed partial class CodeGen
 
                     case SIGN_EXTEND_INT:
                     {
+                        if (!Configuration.TARGET_64BIT)
+                        {
+                            unreached();
+                            break;
+                        }
+
                         assert(varTypeIsSigned(srcLoadType) || (srcLoadType == TYP_INT));
                         Extend = varTypeIsSmall(srcLoadType) ? LOAD_SIGN_EXTEND_SMALL_INT : LOAD_SIGN_EXTEND_INT;
                         ExtendSrcSize = srcLoadType.Size;
                         break;
                     }
-#endif
 
                     case COPY:
                     {

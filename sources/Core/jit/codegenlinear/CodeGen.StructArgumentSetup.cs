@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if !TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -13,6 +12,12 @@ public sealed partial class CodeGen
     private void genConsumePutStructArgStk(GenTreePutArgStk putArgNode,
         regNumber dstReg, regNumber srcReg, regNumber sizeReg)
     {
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Struct stack arguments are not supported on Wasm.");
+        }
+
         var src = putArgNode.Data;
         assert(src.IsContained);
         assert(varTypeIsStruct(src.Type));
@@ -28,17 +33,17 @@ public sealed partial class CodeGen
             srcAddrReg = genConsumeReg(src.AsIndir().Addr);
         }
 
-#if TARGET_X86
-        assert(dstReg != REG_SPBASE);
-        inst_Mov(TYP_I_IMPL, dstReg, REG_SPBASE, canSkip: false);
-#else
-        if (putArgNode.RegNum != dstReg)
+        if (Configuration.TARGET_X86)
+        {
+            assert(dstReg != REG_X86_ESP);
+            inst_Mov(TYP_I_IMPL, dstReg, REG_X86_ESP, canSkip: false);
+        }
+        else if (putArgNode.RegNum != dstReg)
         {
             // The destination is always a stack address, including incoming homes for tail calls.
             assert(_stkArgVarNum != BAD_VAR_NUM);
             Emitter.emitIns_R_S(INS_lea, EA_PTRSIZE, dstReg, _stkArgVarNum, putArgNode.ArgOffset);
         }
-#endif
 
         if (srcAddrReg != REG_NA)
         {
@@ -59,10 +64,15 @@ public sealed partial class CodeGen
         }
     }
 
-#if !TARGET_X86
     // The x86 overload pushes its fields and does not take an outgoing-area local.
     private void genPutArgStkFieldList(GenTreePutArgStk putArgStk, int outArgVarNum)
     {
+        if (Configuration.TARGET_X86 || Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "This struct field-list stack-argument path is not supported on this target.");
+        }
+
         assert(putArgStk.Op1.Oper is GT_FIELD_LIST);
         var argOffset = putArgStk.ArgOffset;
 
@@ -74,14 +84,12 @@ public sealed partial class CodeGen
             var type = use.Type;
             var thisFieldOffset = unchecked(argOffset + use.Offset);
 
-#if FEATURE_SIMD
-            if (type == TYP_SIMD12)
+            if (Configuration.FEATURE_SIMD && type == TYP_SIMD12)
             {
-                Emitter.emitStoreSimd12ToLclOffset(unchecked((uint)outArgVarNum),
+                genStoreSimd12ToLclOffset(unchecked((uint)outArgVarNum),
                     unchecked((uint)thisFieldOffset), reg, nextArgNode);
             }
             else
-#endif
             {
                 Emitter.emitIns_S_R(ins_Store(type), type.EmitSize, reg, outArgVarNum, thisFieldOffset);
             }
@@ -90,27 +98,50 @@ public sealed partial class CodeGen
             // case the first stack argument is the base of the incoming arg area.
 #if DEBUG
             var areaSize = _compiler.lvaLclStackHomeSize(outArgVarNum);
-#if FEATURE_FASTTAILCALL
-            var call = putArgStk.Call;
-            assert(call is not null);
-            if (call.IsFastTailCall)
+            if (Configuration.FEATURE_FASTTAILCALL)
             {
-                areaSize = _compiler.lvaParameterStackSize;
+                var call = putArgStk.Call;
+                assert(call is not null);
+                if (call.IsFastTailCall)
+                {
+                    areaSize = _compiler.lvaParameterStackSize;
+                }
             }
-#endif
             assert(unchecked((uint)(thisFieldOffset + type.Size)) <= unchecked((uint)areaSize));
 #endif
         }
     }
-#endif
+
+    private void genStoreSimd12ToLclOffset(
+        uint varNum, uint offset, regNumber dataReg, GenTree? tmpRegProvider)
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            Emitter.emitStoreSimd12ToLclOffset(varNum, offset, dataReg, tmpRegProvider);
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            Emitter.emitStoreSimd12ToLclOffsetArm64(varNum, offset, dataReg, tmpRegProvider);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Target SIMD12 local-stack store recording is not yet ported.");
+        }
+    }
 }
 
-#if !TARGET_XARCH && FEATURE_SIMD
 public partial class Emitter
 {
-    public void emitStoreSimd12ToLclOffset(uint varNum, uint offset, regNumber dataReg, GenTree? tmpRegProvider)
+    public void emitStoreSimd12ToLclOffsetArm64(
+        uint varNum, uint offset, regNumber dataReg, GenTree? tmpRegProvider)
     {
-#if TARGET_ARM64
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Target SIMD12 local-stack store recording is only implemented for ARM64.");
+        }
+
         assert(varNum != unchecked((uint)BAD_VAR_NUM));
         assert(isVectorRegister(dataReg));
 
@@ -128,10 +159,5 @@ public partial class Emitter
             emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
             emitIns_S_R(INS_str, EA_4BYTE, tmpReg, unchecked((int)varNum), unchecked((int)(offset + 8)));
         }
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Target SIMD12 local-stack store recording is not yet ported.");
-#endif
     }
 }
-#endif
-#endif

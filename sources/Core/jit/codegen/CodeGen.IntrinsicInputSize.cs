@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_XARCH
     public static int instInputSize(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Instruction input size metadata requires xarch.");
+        }
+
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)instInfo.Length);
 
         return (instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & Input_Mask) switch {
@@ -20,5 +24,4 @@ public sealed partial class CodeGen
             _ => throw new System.InvalidOperationException($"Instruction {ins} has no input size."),
         };
     }
-#endif
 }

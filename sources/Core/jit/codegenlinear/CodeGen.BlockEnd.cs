@@ -9,43 +9,44 @@ public sealed partial class CodeGen
 {
     public void genEmitEndBlock(BasicBlock block)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
         var emitNopBeforeEHRegion = false;
-        // Keep return addresses inside their EH region when an eliminated jump follows a call.
-        // Calls immediately before OS epilogs are handled separately by the emitter.
-        if (Emitter.emitIsLastInsCall() &&
-            (block.IsLast || !BasicBlock.sameEHRegion(block, block.Next)))
+        if (Configuration.TARGET_AMD64)
         {
-            switch (block.Kind)
+            Emitter.RequireSupportedInstructionRecording();
+            // Keep return addresses inside their EH region when an eliminated jump follows a call.
+            // Calls immediately before OS epilogs are handled separately by the emitter.
+            if (Emitter.emitIsLastInsCall() &&
+                (block.IsLast || !BasicBlock.sameEHRegion(block, block.Next)))
             {
-                case BBJ_ALWAYS:
+                switch (block.Kind)
                 {
-                    emitNopBeforeEHRegion = true;
-                    break;
-                }
+                    case BBJ_ALWAYS:
+                    {
+                        emitNopBeforeEHRegion = true;
+                        break;
+                    }
 
-                case BBJ_THROW:
-                case BBJ_CALLFINALLY:
-                case BBJ_EHCATCHRET:
-                case BBJ_RETURN:
-                case BBJ_EHFINALLYRET:
-                case BBJ_EHFAULTRET:
-                case BBJ_EHFILTERRET:
-                {
-                    break;
-                }
+                    case BBJ_THROW:
+                    case BBJ_CALLFINALLY:
+                    case BBJ_EHCATCHRET:
+                    case BBJ_RETURN:
+                    case BBJ_EHFINALLYRET:
+                    case BBJ_EHFAULTRET:
+                    case BBJ_EHFILTERRET:
+                    {
+                        break;
+                    }
 
-                case BBJ_COND:
-                case BBJ_SWITCH:
-                default:
-                {
-                    assert(false, conditionExpression: "Unexpected block kind after a call at an EH boundary.");
-                    break;
+                    case BBJ_COND:
+                    case BBJ_SWITCH:
+                    default:
+                    {
+                        assert(false, conditionExpression: "Unexpected block kind after a call at an EH boundary.");
+                        break;
+                    }
                 }
             }
         }
-#endif
         void SetLoopAlignBackEdge(BasicBlock source, BasicBlock target)
         {
             if (target.isLoopAlign && Emitter.emitSetLoopBackEdge(target) && !source.IsLast)
@@ -66,29 +67,32 @@ public sealed partial class CodeGen
 
             case BBJ_THROW:
             {
-#if TARGET_WASM
-                Emitter.emitIns(INS_unreachable);
-                if (block.IsLast || _compiler.bbIsFuncletBeg(block.Next))
+                if (Configuration.TARGET_WASM)
                 {
-                    genEmitFunctionEnd(emitTerminalUnreachable: false);
-                }
-#else
-                // The unreachable breakpoint keeps the unwinder's return address in the right region.
-                if (block.IsLast || !BasicBlock.sameEHRegion(block, block.Next) ||
-                    (!IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block.Next)) ||
-                    _compiler.bbIsFuncletBeg(block.Next) || block.IsLastHotBlock(_compiler))
-                {
-                    instGen(INS_BREAKPOINT);
+                    Emitter.emitIns(INS_unreachable);
+                    if (block.IsLast || _compiler.bbIsFuncletBeg(block.Next))
+                    {
+                        genEmitFunctionEndWasm(emitTerminalUnreachable: false);
+                    }
                 }
                 else
                 {
-                    var call = block.LastNode;
-                    if ((call is GenTreeCall callNode) && callNode.IsNoReturn)
+                    // The unreachable breakpoint keeps the unwinder's return address in the right region.
+                    if (block.IsLast || !BasicBlock.sameEHRegion(block, block.Next) ||
+                        (!IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block.Next)) ||
+                        _compiler.bbIsFuncletBeg(block.Next) || block.IsLastHotBlock(_compiler))
                     {
                         instGen(INS_BREAKPOINT);
                     }
+                    else
+                    {
+                        var call = block.LastNode;
+                        if ((call is GenTreeCall callNode) && callNode.IsNoReturn)
+                        {
+                            instGen(INS_BREAKPOINT);
+                        }
+                    }
                 }
-#endif
                 break;
             }
 
@@ -128,34 +132,37 @@ public sealed partial class CodeGen
 #endif
                 if (block.CanRemoveJumpToNext(_compiler))
                 {
-#if TARGET_AMD64
                     if (emitNopBeforeEHRegion)
                     {
                         instGen(INS_nop);
                     }
-#endif
                     if (Configuration.FEATURE_LOOP_ALIGN)
                     {
                         removedJmp = true;
                     }
                     break;
                 }
-#if TARGET_XARCH
-                var isRemovableJmpCandidate = !_compiler.fgInDifferentRegions(block, block.Target);
-                inst_JMP(EJ_jmp, block.Target, isRemovableJmpCandidate);
-#else
-                inst_JMP(EJ_jmp, block.Target);
-#endif
+                if (Configuration.TARGET_WASM)
+                {
+                    inst_JMP_Wasm(EJ_jmp, block.Target);
+                }
+                else if (Configuration.TARGET_XARCH)
+                {
+                    var isRemovableJmpCandidate = !_compiler.fgInDifferentRegions(block, block.Target);
+                    inst_JMP(EJ_jmp, block.Target, isRemovableJmpCandidate);
+                }
+                else
+                {
+                    inst_JMP(EJ_jmp, block.Target);
+                }
                 if (Configuration.FEATURE_LOOP_ALIGN)
                 {
                     SetLoopAlignBackEdge(block, block.Target);
                 }
-#if TARGET_WASM
-                if (block.IsLast || _compiler.bbIsFuncletBeg(block.Next))
+                if (Configuration.TARGET_WASM && (block.IsLast || _compiler.bbIsFuncletBeg(block.Next)))
                 {
-                    genEmitFunctionEnd();
+                    genEmitFunctionEndWasm(emitTerminalUnreachable: true);
                 }
-#endif
                 break;
             }
 
@@ -193,17 +200,10 @@ public sealed partial class CodeGen
         }
     }
 
-#if TARGET_WASM
-    private void inst_JMP(emitJumpKind jump, BasicBlock target)
+    private void inst_JMP_Wasm(emitJumpKind jump, BasicBlock target)
     {
         var instruction = Emitter.emitJumpKindToIns(jump);
         var depth = unchecked(findTargetDepth(target) + wasmExtraControlFlowDepth);
         GetEmitter().emitIns_J(instruction, EA_4BYTE, depth, target);
     }
-
-    private void genEmitFunctionEnd(bool emitTerminalUnreachable = true)
-    {
-        genEmitFunctionEndWasm(emitTerminalUnreachable);
-    }
-#endif
 }

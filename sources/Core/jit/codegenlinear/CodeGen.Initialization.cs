@@ -15,11 +15,9 @@ public sealed partial class CodeGen
     private List<EmittedCallReturnInfo>? emittedCallReturnInfo;
     private BasicBlock? genPendingCallLabel;
 
-#if TARGET_WASM
     private ArrayStack<WasmInterval>? wasmControlFlowStack;
     private uint wasmCursor;
     private uint wasmExtraControlFlowDepth;
-#endif
 
     private struct EmittedCallReturnInfo
     {
@@ -102,11 +100,12 @@ public sealed partial class CodeGen
         // Stack-home diagnostics may run before the first block is emitted.
         SetStackLevel(0);
 
-#if TARGET_WASM
-        wasmControlFlowStack = new ArrayStack<WasmInterval>();
-        wasmCursor = 0;
-        wasmExtraControlFlowDepth = 0;
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            wasmControlFlowStack = new ArrayStack<WasmInterval>();
+            wasmCursor = 0;
+            wasmExtraControlFlowDepth = 0;
+        }
     }
 
     public void genUpdateLife(GenTree tree)

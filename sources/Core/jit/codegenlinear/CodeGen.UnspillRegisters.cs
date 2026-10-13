@@ -20,9 +20,11 @@ public sealed partial class CodeGen
     public void genUnspillLocal(int varNum, var_types type, GenTreeLclVar lclNode, regNumber regNum,
         bool reSpill, bool isLastUse)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-local reloads are not supported on Wasm.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register-local reloads are not supported on Wasm.");
+        }
+
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
 #if DEBUG
         assert((uint)lclNode.LclNum < (uint)_compiler.lvaCount);
@@ -68,14 +70,16 @@ public sealed partial class CodeGen
         }
 
         _gcInfo.gcMarkRegPtrVal(regNum, type);
-#endif
     }
 
     public void genUnspillRegIfNeeded(GenTree tree, byte multiRegIndex)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register reloads are not supported on Wasm.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Indexed register reloads are not supported on Wasm.");
+        }
+
         var unspillTree = tree;
         assert(unspillTree.IsMultiRegNode);
 
@@ -119,14 +123,15 @@ public sealed partial class CodeGen
             _regSet.tmpRlsTemp(temp);
             _gcInfo.gcMarkRegPtrVal(dstReg, dstType);
         }
-#endif
     }
 
     public void genUnspillRegIfNeeded(GenTree tree)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Register reloads are not supported on Wasm.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register reloads are not supported on Wasm.");
+        }
+
         var unspillTree = tree;
         if (tree.Oper is GT_RELOAD)
         {
@@ -191,6 +196,5 @@ public sealed partial class CodeGen
                 _gcInfo.gcMarkRegPtrVal(dstReg, unspillTree.Type);
             }
         }
-#endif
     }
 }

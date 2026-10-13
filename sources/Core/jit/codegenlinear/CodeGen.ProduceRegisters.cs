@@ -9,9 +9,11 @@ public sealed partial class CodeGen
 {
     public void genSpillLocal(int varNum, var_types type, GenTreeLclVar lclNode, regNumber regNum)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-local spills are not supported on Wasm.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register-local spills are not supported on Wasm.");
+        }
+
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
         assert(!varDsc.lvNormalizeOnStore || (type == varDsc.GetStackSlotHomeType()));
 
@@ -21,7 +23,6 @@ public sealed partial class CodeGen
             Emitter.emitIns_S_R(ins_Store(type, _compiler.isSIMDTypeLocalAligned(varNum)), type.EmitSize,
                 regNum, varNum, 0);
         }
-#endif
     }
 
     public void genProduceReg(GenTree tree)
@@ -30,66 +31,66 @@ public sealed partial class CodeGen
         assert((tree._debugFlags & GTF_DEBUG_NODE_CG_PRODUCED) == 0);
         tree._debugFlags |= GTF_DEBUG_NODE_CG_PRODUCED;
 #endif
-#if HAS_FIXED_REGISTER_SET
-        if ((tree.Flags & GTF_SPILL) != 0)
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            noway_assert(!tree.Oper.IsCopyOrReload);
-
-            if (genIsRegCandidateLocal(tree))
+            if ((tree.Flags & GTF_SPILL) != 0)
             {
-                var lclNode = tree.AsLclVar();
-                ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
-                var spillType = varDsc.GetRegisterType(lclNode);
-                genSpillLocal(lclNode.LclNum, spillType, lclNode, tree.RegNum);
-            }
-            else if (tree.IsMultiRegLclVar)
-            {
-                assert(_compiler.lvaEnregMultiRegVars);
-                var lclNode = tree.AsLclVar();
-                ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
-                var regCount = lclNode.GetFieldCount(_compiler);
+                noway_assert(!tree.Oper.IsCopyOrReload);
 
-                for (byte i = 0; i < regCount; i++)
+                if (genIsRegCandidateLocal(tree))
                 {
-                    var flags = lclNode.GetRegSpillFlagByIdx(i);
-                    if ((flags & GTF_SPILL) != 0)
-                    {
-                        var reg = lclNode.GetRegNumByIdx(i);
-                        var fieldVarNum = varDsc.lvFieldLclStart + i;
-                        var spillType = _compiler.lvaGetDesc(fieldVarNum).GetRegisterType();
-                        genSpillLocal(fieldVarNum, spillType, lclNode, reg);
-                    }
+                    var lclNode = tree.AsLclVar();
+                    ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
+                    var spillType = varDsc.GetRegisterType(lclNode);
+                    genSpillLocal(lclNode.LclNum, spillType, lclNode, tree.RegNum);
                 }
-            }
-            else
-            {
-                if (tree.IsMultiRegNode)
+                else if (tree.IsMultiRegLclVar)
                 {
-                    var regCount = tree.GetMultiRegCount(_compiler);
+                    assert(_compiler.lvaEnregMultiRegVars);
+                    var lclNode = tree.AsLclVar();
+                    ref var varDsc = ref _compiler.lvaGetDesc(lclNode.LclNum);
+                    var regCount = lclNode.GetFieldCount(_compiler);
+
                     for (byte i = 0; i < regCount; i++)
                     {
-                        var flags = tree.GetRegSpillFlagByIdx(i);
+                        var flags = lclNode.GetRegSpillFlagByIdx(i);
                         if ((flags & GTF_SPILL) != 0)
                         {
-                            var reg = tree.GetRegByIndex(i);
-                            _regSet.rsSpillTree(reg, tree, i);
-                            _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask));
+                            var reg = lclNode.GetRegNumByIdx(i);
+                            var fieldVarNum = varDsc.lvFieldLclStart + i;
+                            var spillType = _compiler.lvaGetDesc(fieldVarNum).GetRegisterType();
+                            genSpillLocal(fieldVarNum, spillType, lclNode, reg);
                         }
                     }
                 }
                 else
                 {
-                    _regSet.rsSpillTree(tree.RegNum, tree);
-                    _gcInfo.gcMarkRegSetNpt(tree.RegMask);
-                }
+                    if (tree.IsMultiRegNode)
+                    {
+                        var regCount = tree.GetMultiRegCount(_compiler);
+                        for (byte i = 0; i < regCount; i++)
+                        {
+                            var flags = tree.GetRegSpillFlagByIdx(i);
+                            if ((flags & GTF_SPILL) != 0)
+                            {
+                                var reg = tree.GetRegByIndex(i);
+                                _regSet.rsSpillTree(reg, tree, i);
+                                _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _regSet.rsSpillTree(tree.RegNum, tree);
+                        _gcInfo.gcMarkRegSetNpt(tree.RegMask);
+                    }
 
-                tree.Flags |= GTF_SPILLED;
-                tree.Flags &= ~GTF_SPILL;
-                return;
+                    tree.Flags |= GTF_SPILLED;
+                    tree.Flags &= ~GTF_SPILL;
+                    return;
+                }
             }
         }
-
-#endif
 
         genUpdateLife(tree);
 

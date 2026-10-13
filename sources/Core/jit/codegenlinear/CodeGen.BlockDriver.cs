@@ -12,18 +12,15 @@ public sealed partial class CodeGen
 #if DEBUG
         _genInterruptibleUsed = true;
         _compiler.fgSafeBasicBlockCreation = false;
-#if TARGET_X86
-        if (Interruptible && _compiler.opts.compStackCheckOnCall)
+        if (Configuration.TARGET_X86 && Interruptible && _compiler.opts.compStackCheckOnCall)
         {
             _compiler.opts.compStackCheckOnCall = false;
         }
-#endif
-#if TARGET_XARCH
-        if ((Interruptible || _compiler.compTailCallUsed) && _compiler.opts.compStackCheckOnRet)
+        if (Configuration.TARGET_XARCH && (Interruptible || _compiler.compTailCallUsed) &&
+            _compiler.opts.compStackCheckOnRet)
         {
             _compiler.opts.compStackCheckOnRet = false;
         }
-#endif
 #endif
         genMarkLabelsForCodegen();
         genInitialize();
@@ -79,91 +76,94 @@ public sealed partial class CodeGen
         assert(allocator is not null);
         allocator.recordVarLocationsAtStartOfBB(block);
         genUpdateLife(block.bbLiveIn);
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        // Liveness transitions alone do not restore unchanged register roots after the reset.
         var newLiveRegSet = RBM_NONE;
-        var newRegGCrefSet = RBM_NONE;
-        var newRegByrefSet = RBM_NONE;
-#if DEBUG
-        var removedGCVars = VarSetOps.MakeEmpty(_compiler);
-        var addedGCVars = VarSetOps.MakeEmpty(_compiler);
-#endif
-        _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, varIndex =>
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            ref var varDsc = ref _compiler.lvaGetDesc(_compiler.lvaTrackedIndexToLclNum(varIndex));
-            if (varDsc.lvIsInReg)
+            // Liveness transitions alone do not restore unchanged register roots after the reset.
+            var newRegGCrefSet = RBM_NONE;
+            var newRegByrefSet = RBM_NONE;
+#if DEBUG
+            var removedGCVars = VarSetOps.MakeEmpty(_compiler);
+            var addedGCVars = VarSetOps.MakeEmpty(_compiler);
+#endif
+            _ = VarSetOps.VisitBits(_compiler, block.bbLiveIn, varIndex =>
             {
-                var regMask = genGetRegMask(in varDsc);
-                newLiveRegSet |= regMask;
-                if (varDsc.Type == TYP_REF)
+                ref var varDsc = ref _compiler.lvaGetDesc(_compiler.lvaTrackedIndexToLclNum(varIndex));
+                if (varDsc.lvIsInReg)
                 {
-                    newRegGCrefSet |= regMask;
-                }
-                else if (varDsc.Type == TYP_BYREF)
-                {
-                    newRegByrefSet |= regMask;
-                }
+                    var regMask = genGetRegMask(in varDsc);
+                    newLiveRegSet |= regMask;
+                    if (varDsc.Type == TYP_REF)
+                    {
+                        newRegGCrefSet |= regMask;
+                    }
+                    else if (varDsc.Type == TYP_BYREF)
+                    {
+                        newRegByrefSet |= regMask;
+                    }
 
-                if (!varDsc.IsAlwaysAliveInMemory)
+                    if (!varDsc.IsAlwaysAliveInMemory)
+                    {
+#if DEBUG
+                        if (_verbose && VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varIndex))
+                        {
+                            VarSetOps.AddElemD(_compiler, removedGCVars, varIndex);
+                        }
+#endif
+                        VarSetOps.RemoveElemD(_compiler, _gcInfo.gcVarPtrSetCur, varIndex);
+                    }
+                }
+                if ((!varDsc.lvIsInReg || varDsc.IsAlwaysAliveInMemory) && _compiler.lvaIsGCTracked(in varDsc))
                 {
 #if DEBUG
-                    if (_verbose && VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varIndex))
+                    if (_verbose && !VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varIndex))
                     {
-                        VarSetOps.AddElemD(_compiler, removedGCVars, varIndex);
+                        VarSetOps.AddElemD(_compiler, addedGCVars, varIndex);
                     }
 #endif
-                    VarSetOps.RemoveElemD(_compiler, _gcInfo.gcVarPtrSetCur, varIndex);
+                    VarSetOps.AddElemD(_compiler, _gcInfo.gcVarPtrSetCur, varIndex);
                 }
-            }
-            if ((!varDsc.lvIsInReg || varDsc.IsAlwaysAliveInMemory) && _compiler.lvaIsGCTracked(in varDsc))
-            {
+                return true;
+            });
+            _regSet.SetMaskVars(newLiveRegSet);
 #if DEBUG
-                if (_verbose && !VarSetOps.IsMember(_compiler, _gcInfo.gcVarPtrSetCur, varIndex))
+            if (_compiler.verbose)
+            {
+                if (!VarSetOps.IsEmpty(_compiler, addedGCVars))
                 {
-                    VarSetOps.AddElemD(_compiler, addedGCVars, varIndex);
+                    jitprintf("\t\t\t\t\t\t\tAdded GCVars: ");
+                    dumpConvertedVarSet(_compiler, addedGCVars);
+                    jitprintf("\n");
                 }
-#endif
-                VarSetOps.AddElemD(_compiler, _gcInfo.gcVarPtrSetCur, varIndex);
+                if (!VarSetOps.IsEmpty(_compiler, removedGCVars))
+                {
+                    jitprintf("\t\t\t\t\t\t\tRemoved GCVars: ");
+                    dumpConvertedVarSet(_compiler, removedGCVars);
+                    jitprintf("\n");
+                }
             }
-            return true;
-        });
-        _regSet.SetMaskVars(newLiveRegSet);
-#if DEBUG
-        if (_compiler.verbose)
-        {
-            if (!VarSetOps.IsEmpty(_compiler, addedGCVars))
-            {
-                jitprintf("\t\t\t\t\t\t\tAdded GCVars: ");
-                dumpConvertedVarSet(_compiler, addedGCVars);
-                jitprintf("\n");
-            }
-            if (!VarSetOps.IsEmpty(_compiler, removedGCVars))
-            {
-                jitprintf("\t\t\t\t\t\t\tRemoved GCVars: ");
-                dumpConvertedVarSet(_compiler, removedGCVars);
-                jitprintf("\n");
-            }
-        }
 #endif
-        _gcInfo.gcMarkRegSetGCref(newRegGCrefSet
+            _gcInfo.gcMarkRegSetGCref(newRegGCrefSet
 #if DEBUG
-            , forceOutput: true
+                , forceOutput: true
 #endif
-        );
-        _gcInfo.gcMarkRegSetByref(newRegByrefSet
+            );
+            _gcInfo.gcMarkRegSetByref(newRegByrefSet
 #if DEBUG
-            , forceOutput: true
+                , forceOutput: true
 #endif
-        );
+            );
 
-        if (handlerGetsXcptnObj(block.CatchType))
-        {
-            foreach (var node in block)
+            if (handlerGetsXcptnObj(block.CatchType))
             {
-                if (node.Oper == GT_CATCH_ARG)
+                foreach (var node in block)
                 {
-                    _gcInfo.gcMarkRegSetGCref(new regMaskTP(SRBM_EXCEPTION_OBJECT));
-                    break;
+                    if (node.Oper == GT_CATCH_ARG)
+                    {
+                        _gcInfo.gcMarkRegSetGCref(new regMaskTP(SRBM_EXCEPTION_OBJECT));
+                        break;
+                    }
                 }
             }
         }
@@ -218,25 +218,22 @@ public sealed partial class CodeGen
         genEmitStartBlock(block);
         _compiler.compCurStmt = null;
         _compiler.compCurLifeTree = null;
-#if SWIFT_SUPPORT
-        // Reassembly can require arbitrary amounts of code, so it belongs in the first block after the prolog.
-        if (block.IsFirst && _compiler.lvaHasAnySwiftStackParamToReassemble())
+        if (Configuration.SWIFT_SUPPORT)
         {
-            genHomeSwiftStructStackParameters();
+            // Reassembly can require arbitrary amounts of code, so it belongs in the first block after the prolog.
+            if (block.IsFirst && _compiler.lvaHasAnySwiftStackParamToReassemble())
+            {
+                genHomeSwiftStructStackParameters();
+            }
         }
-#endif
-#if TARGET_ARM64
-        if (_compiler.compUsesUnknownSizeFrame && block.IsFirst)
+        if (Configuration.TARGET_ARM64 && _compiler.compUsesUnknownSizeFrame && block.IsFirst)
         {
             genZeroInitializeUnknownSizeFrame();
         }
-#endif
-#if !TARGET_WASM
-        if (_compiler.compShouldPoisonFrame() && block.IsFirst)
+        if (!Configuration.TARGET_WASM && _compiler.compShouldPoisonFrame() && block.IsFirst)
         {
             genPoisonFrame(newLiveRegSet);
         }
-#endif
 #if DEBUG
         var useNum = 0;
         foreach (var node in block)
@@ -293,11 +290,14 @@ public sealed partial class CodeGen
                 }
 #endif
             }
-#if TARGET_WASM
-            genCodeForTreeNodeWasm(node);
-#else
-            genCodeForTreeNode(node);
-#endif
+            if (Configuration.TARGET_WASM)
+            {
+                genCodeForTreeNodeWasm(node);
+            }
+            else
+            {
+                genCodeForTreeNode(node);
+            }
             if (node.HasReg(_compiler) && node.IsUnusedValue)
             {
                 _ = genConsumeReg(node);
@@ -305,46 +305,49 @@ public sealed partial class CodeGen
         }
 #if DEBUG
         _regSet.rsSpillChk();
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        var ptrRegs = _gcInfo.gcRegGCrefSetCur | _gcInfo.gcRegByrefSetCur;
-        var nonVarPtrRegs = ptrRegs & ~_regSet.GetMaskVars();
-        if (_compiler.compMethodReturnsRetBufAddr)
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            nonVarPtrRegs &= ~new regMaskTP(SRBM_INTRET);
-        }
-        else
-        {
-            ref readonly var retTypeDesc = ref _compiler.compRetTypeDesc;
-            var regCount = retTypeDesc.ReturnRegCount;
-            for (byte i = 0; i < regCount; i++)
+            var ptrRegs = _gcInfo.gcRegGCrefSetCur | _gcInfo.gcRegByrefSetCur;
+            var nonVarPtrRegs = ptrRegs & ~_regSet.GetMaskVars();
+            if (_compiler.compMethodReturnsRetBufAddr)
             {
-                var reg = retTypeDesc.GetAbiReturnReg(i, _compiler.info.compCallConv);
-                nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+                nonVarPtrRegs &= ~new regMaskTP(TargetRuntimeMetadata.IntegerReturnMask);
             }
+            else
+            {
+                ref readonly var retTypeDesc = ref _compiler.compRetTypeDesc;
+                var regCount = retTypeDesc.ReturnRegCount;
+                for (byte i = 0; i < regCount; i++)
+                {
+                    var reg = retTypeDesc.GetAbiReturnReg(i, _compiler.info.compCallConv);
+                    nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+                }
+            }
+            if (_compiler.compIsAsync)
+            {
+                nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(TargetRuntimeMetadata.AsyncContinuationReturnRegister,
+                    TargetRuntimeMetadata.AsyncContinuationReturnRegister.SingleTypeMask);
+            }
+            if (block.HasFlag(BBF_HAS_JMP))
+            {
+                nonVarPtrRegs = RBM_NONE;
+            }
+            if (nonVarPtrRegs.IsNonEmpty)
+            {
+                jitprintf($"Regset after {FMT_BB(block.bbNum)} gcr=");
+                printRegMaskInt(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
+                Emitter.emitDispRegSet(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
+                jitprintf(", byr=");
+                printRegMaskInt(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
+                Emitter.emitDispRegSet(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
+                jitprintf(", regVars=");
+                printRegMaskInt(_regSet.GetMaskVars());
+                Emitter.emitDispRegSet(_regSet.GetMaskVars());
+                jitprintf("\n");
+            }
+            noway_assert(nonVarPtrRegs.IsEmpty);
         }
-        if (_compiler.compIsAsync)
-        {
-            nonVarPtrRegs &= ~regMaskTP.CreateFromRegNum(REG_ASYNC_CONTINUATION_RET,
-                REG_ASYNC_CONTINUATION_RET.SingleTypeMask);
-        }
-        if (block.HasFlag(BBF_HAS_JMP))
-        {
-            nonVarPtrRegs = RBM_NONE;
-        }
-        if (nonVarPtrRegs.IsNonEmpty)
-        {
-            jitprintf($"Regset after {FMT_BB(block.bbNum)} gcr=");
-            printRegMaskInt(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
-            Emitter.emitDispRegSet(_gcInfo.gcRegGCrefSetCur & ~_regSet.GetMaskVars());
-            jitprintf(", byr=");
-            printRegMaskInt(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
-            Emitter.emitDispRegSet(_gcInfo.gcRegByrefSetCur & ~_regSet.GetMaskVars());
-            jitprintf(", regVars=");
-            printRegMaskInt(_regSet.GetMaskVars());
-            Emitter.emitDispRegSet(_regSet.GetMaskVars());
-            jitprintf("\n");
-        }
-        noway_assert(nonVarPtrRegs.IsEmpty);
 #endif
 #endif
 #if DEBUG
@@ -407,11 +410,10 @@ public sealed partial class CodeGen
 
     private void genEmitStartBlock(BasicBlock block)
     {
-#if TARGET_WASM
-        genEmitStartBlockWasm(block);
-#else
-        // The native implementation is empty outside Wasm.
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            genEmitStartBlockWasm(block);
+        }
     }
 
     private void SubtractStackLevel(uint adjustment)

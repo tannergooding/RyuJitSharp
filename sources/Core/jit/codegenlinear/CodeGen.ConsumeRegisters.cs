@@ -58,13 +58,14 @@ public sealed partial class CodeGen
 
     public void genCopyRegIfNeeded(GenTree node, regNumber needReg)
     {
-#if !TARGET_WASM
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register copies are not supported on Wasm.");
+        }
+
         assert((node.RegNum != REG_NA) && (needReg != REG_NA));
         assert(!node.IsUsedFromSpillTemp);
         inst_Mov(node.Type, needReg, node.RegNum, canSkip: true);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Register copies are not supported on Wasm.");
-#endif
     }
 
     public void genConsumeRegAndCopy(GenTree node, regNumber needReg)
@@ -80,9 +81,12 @@ public sealed partial class CodeGen
 
     public regNumber genConsumeReg(GenTree tree, byte multiRegIndex)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register consumption is not supported on Wasm.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Indexed register consumption is not supported on Wasm.");
+        }
+
         var reg = tree.GetRegByIndex(multiRegIndex);
         if (tree.Oper is GT_COPY)
         {
@@ -136,76 +140,80 @@ public sealed partial class CodeGen
         }
 
         return reg;
-#endif
     }
 
     public regNumber genConsumeReg(GenTree tree)
     {
-#if HAS_FIXED_REGISTER_SET
-        if (tree.Oper is GT_COPY)
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            genRegCopy(tree);
-        }
-
-        // Copy before updating lifetime: spilling can replace the old register home with REG_STK.
-        if (genIsRegCandidateLocal(tree))
-        {
-            var lcl = tree.AsLclVarCommon();
-            ref var varDsc = ref _compiler.lvaGetDesc(lcl.LclNum);
-            if (varDsc.RegNum != REG_STK)
+            if (tree.Oper is GT_COPY)
             {
-                inst_Mov(varDsc.GetRegisterType(lcl), tree.RegNum, varDsc.RegNum, canSkip: true);
+                genRegCopy(tree);
             }
+
+            // Copy before updating lifetime: spilling can replace the old register home with REG_STK.
+            if (genIsRegCandidateLocal(tree))
+            {
+                var lcl = tree.AsLclVarCommon();
+                ref var varDsc = ref _compiler.lvaGetDesc(lcl.LclNum);
+                if (varDsc.RegNum != REG_STK)
+                {
+                    inst_Mov(varDsc.GetRegisterType(lcl), tree.RegNum, varDsc.RegNum, canSkip: true);
+                }
+            }
+
+            genUnspillRegIfNeeded(tree);
         }
 
-        genUnspillRegIfNeeded(tree);
-#endif
         genUpdateLife(tree);
 
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        if (genIsRegCandidateLocal(tree))
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            assert(tree.HasReg(_compiler));
-            ref var varDsc = ref _compiler.lvaGetDesc(tree.AsLclVar().LclNum);
-            assert(varDsc.lvLRACandidate);
+            if (genIsRegCandidateLocal(tree))
+            {
+                assert(tree.HasReg(_compiler));
+                ref var varDsc = ref _compiler.lvaGetDesc(tree.AsLclVar().LclNum);
+                assert(varDsc.lvLRACandidate);
 
-            if (varDsc.RegNum == REG_STK)
+                if (varDsc.RegNum == REG_STK)
+                {
+                    _gcInfo.gcMarkRegSetNpt(tree.RegMask);
+                }
+                else if ((tree.Flags & GTF_VAR_DEATH) != 0)
+                {
+                    var reg = varDsc.RegNum;
+                    _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask));
+                }
+            }
+            else if (tree.SkipCopyOrReload.IsMultiRegLclVar)
+            {
+                assert(_compiler.lvaEnregMultiRegVars);
+                var lcl = tree.SkipCopyOrReload.AsLclVar();
+                ref var varDsc = ref _compiler.lvaGetDesc(lcl.LclNum);
+
+                for (byte i = 0; i < varDsc.lvFieldCnt; i++)
+                {
+                    ref var fieldVarDsc = ref _compiler.lvaGetDesc(varDsc.lvFieldLclStart + i);
+                    assert(fieldVarDsc.lvLRACandidate);
+                    var reg = tree.Oper.IsCopyOrReload && (tree.GetRegByIndex(i) != REG_NA)
+                        ? tree.GetRegByIndex(i) : lcl.GetRegNumByIdx(i);
+
+                    if (fieldVarDsc.RegNum == REG_STK)
+                    {
+                        _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask));
+                    }
+                    else if (lcl.IsLastUse(i))
+                    {
+                        var fieldReg = fieldVarDsc.RegNum;
+                        _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(fieldReg, fieldReg.SingleTypeMask));
+                    }
+                }
+            }
+            else
             {
                 _gcInfo.gcMarkRegSetNpt(tree.RegMask);
             }
-            else if ((tree.Flags & GTF_VAR_DEATH) != 0)
-            {
-                var reg = varDsc.RegNum;
-                _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask));
-            }
-        }
-        else if (tree.SkipCopyOrReload.IsMultiRegLclVar)
-        {
-            assert(_compiler.lvaEnregMultiRegVars);
-            var lcl = tree.SkipCopyOrReload.AsLclVar();
-            ref var varDsc = ref _compiler.lvaGetDesc(lcl.LclNum);
-
-            for (byte i = 0; i < varDsc.lvFieldCnt; i++)
-            {
-                ref var fieldVarDsc = ref _compiler.lvaGetDesc(varDsc.lvFieldLclStart + i);
-                assert(fieldVarDsc.lvLRACandidate);
-                var reg = tree.Oper.IsCopyOrReload && (tree.GetRegByIndex(i) != REG_NA)
-                    ? tree.GetRegByIndex(i) : lcl.GetRegNumByIdx(i);
-
-                if (fieldVarDsc.RegNum == REG_STK)
-                {
-                    _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask));
-                }
-                else if (lcl.IsLastUse(i))
-                {
-                    var fieldReg = fieldVarDsc.RegNum;
-                    _gcInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(fieldReg, fieldReg.SingleTypeMask));
-                }
-            }
-        }
-        else
-        {
-            _gcInfo.gcMarkRegSetNpt(tree.RegMask);
         }
 #endif
 
@@ -234,14 +242,12 @@ public sealed partial class CodeGen
 
     public void genConsumeRegs(GenTree tree)
     {
-#if !TARGET_64BIT
-        if (tree.Oper is GT_LONG)
+        if (!Configuration.TARGET_64BIT && tree.Oper is GT_LONG)
         {
             genConsumeRegs(tree.AsOp().Op1);
             genConsumeRegs(tree.AsOp().Op2);
             return;
         }
-#endif
 
         if (tree.IsUsedFromSpillTemp)
         {
@@ -257,32 +263,28 @@ public sealed partial class CodeGen
             {
                 genConsumeAddress(tree);
             }
-#if TARGET_XARCH || TARGET_ARM64
-            else if (tree.Oper.IsCompare)
+            else if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM64) && tree.Oper.IsCompare)
             {
                 genConsumeRegs(tree.AsOp().Op1);
                 genConsumeRegs(tree.AsOp().Op2);
             }
-#endif
-#if TARGET_ARM64
-            else if (tree.Oper is GT_BFIZ)
+            else if (Configuration.TARGET_ARM64 && tree.Oper is GT_BFIZ)
             {
                 var cast = tree.AsOp().Op1.AsCast();
                 assert(cast.IsContained);
                 genConsumeAddress(cast.CastOp);
             }
-            else if (tree.Oper is GT_CAST)
+            else if (Configuration.TARGET_ARM64 && tree.Oper is GT_CAST)
             {
                 var cast = tree.AsCast();
                 assert(cast.IsContained);
                 genConsumeAddress(cast.CastOp);
             }
-            else if (tree.Oper is GT_AND)
+            else if (Configuration.TARGET_ARM64 && tree.Oper is GT_AND)
             {
                 genConsumeRegs(tree.AsOp().Op1);
                 genConsumeRegs(tree.AsOp().Op2);
             }
-#endif
             else if (tree.Oper is GT_FIELD_LIST)
             {
                 foreach (var use in tree.AsFieldList().Uses)
@@ -297,12 +299,10 @@ public sealed partial class CodeGen
                 noway_assert(tree.IsRegOptional || !varDsc.lvLRACandidate);
                 genUpdateLife(tree);
             }
-#if FEATURE_HW_INTRINSICS
-            else if (tree.Oper is GT_HWINTRINSIC)
+            else if (Configuration.FEATURE_HW_INTRINSICS && tree.Oper is GT_HWINTRINSIC)
             {
                 genConsumeMultiOpOperands(tree.AsHWIntrinsic());
             }
-#endif
             else if (tree.Oper is GT_BITCAST or GT_NEG or GT_CAST or GT_LSH or GT_RSH or GT_RSZ or GT_ROR or GT_BSWAP or GT_BSWAP16)
             {
                 genConsumeRegs(tree.AsUnOp().Op1);
@@ -314,11 +314,7 @@ public sealed partial class CodeGen
             }
             else
             {
-#if FEATURE_SIMD
-                assert(tree.Oper.IsLeaf || tree.IsVectorZero);
-#else
-                assert(tree.Oper.IsLeaf);
-#endif
+                assert(tree.Oper.IsLeaf || (Configuration.FEATURE_SIMD && tree.IsVectorZero));
             }
         }
         else
@@ -340,7 +336,6 @@ public sealed partial class CodeGen
         }
     }
 
-#if FEATURE_SIMD || FEATURE_HW_INTRINSICS
     public void genConsumeMultiOpOperands(GenTreeMultiOp tree)
     {
         foreach (var operand in tree.Operands)
@@ -348,5 +343,4 @@ public sealed partial class CodeGen
             genConsumeRegs(operand);
         }
     }
-#endif
 }

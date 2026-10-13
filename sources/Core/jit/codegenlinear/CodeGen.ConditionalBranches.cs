@@ -9,12 +9,17 @@ public sealed partial class CodeGen
 {
     public void genCodeForJcc(GenTreeCC jcc)
     {
-#if TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
-        throw new FatalJitException(CORJIT_SKIPPED, "Flag branch generation has no native implementation for this target.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Flag branch generation has no native implementation for this target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var block = _compiler.compCurBB;
         assert(block is not null);
         assert(block.Kind is BBJ_COND);
@@ -26,17 +31,21 @@ public sealed partial class CodeGen
         {
             inst_JMP(EJ_jmp, falseTarget);
         }
-#endif
     }
 
     public void inst_JCC(GenCondition condition, BasicBlock target)
     {
-#if TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
-        throw new FatalJitException(CORJIT_SKIPPED, "Conditional branch sequences have no native implementation for this target.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Conditional branch sequences have no native implementation for this target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var desc = GenConditionDesc.Get(condition);
         if (desc.Oper is GT_NONE)
         {
@@ -54,20 +63,30 @@ public sealed partial class CodeGen
             inst_JMP(desc.JumpKind2, target);
             genDefineTempLabel(next);
         }
-#endif
     }
 
     public void genCodeForSetcc(GenTreeCC setcc)
     {
-#if TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
-        throw new FatalJitException(CORJIT_SKIPPED, "Flag-result generation has no native implementation for this target.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_WASM || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Flag-result generation has no native implementation for this target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(setcc.Oper is GT_SETCC);
-        inst_SETCC(setcc.Condition, setcc.Type, setcc.RegNum);
+        if (Configuration.TARGET_ARMARCH)
+        {
+            inst_SETCCArmArch(setcc.Condition, setcc.Type, setcc.RegNum);
+        }
+        else
+        {
+            inst_SETCCXarch(setcc.Condition, setcc.Type, setcc.RegNum);
+        }
         genProduceReg(setcc);
-#endif
     }
 }

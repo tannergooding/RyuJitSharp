@@ -7,12 +7,18 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if FEATURE_HW_INTRINSICS
     public void genAvxFamilyIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "AVX family generation requires xarch.");
-#else
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are disabled.");
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "AVX family generation requires xarch.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
         if (HWIntrinsicInfo.IsFmaIntrinsic(intrinsicId))
@@ -216,6 +222,7 @@ public sealed partial class CodeGen
                 var op2 = node.GetOp(2);
                 var op1Reg = op1.RegNum;
                 var op2Reg = op2.RegNum;
+                var rdxReg = Configuration.TARGET_X86 ? REG_X86_EDX : REG_X64_RDX;
                 var op3Reg = REG_NA;
                 regNumber lowReg;
                 if (numArgs == 2)
@@ -228,7 +235,7 @@ public sealed partial class CodeGen
                     assert(!node.GetOp(3).IsContained);
                     assert(op3Reg != op1Reg);
                     assert(op3Reg != targetReg);
-                    assert(op3Reg != REG_RDX);
+                    assert(op3Reg != rdxReg);
                     lowReg = _internalRegisters.GetSingle(node);
                     assert(op3Reg != lowReg);
                     assert(lowReg != targetReg);
@@ -236,8 +243,8 @@ public sealed partial class CodeGen
 
                 assert(!op2.IsContained);
                 attr = targetType.EmitSize;
-                assert((op2Reg != REG_RDX) || (op1Reg == REG_RDX));
-                _ = Emitter.emitIns_Mov(INS_mov, attr, REG_RDX, op1Reg, canSkip: true);
+                assert((op2Reg != rdxReg) || (op1Reg == rdxReg));
+                _ = Emitter.emitIns_Mov(INS_mov, attr, rdxReg, op1Reg, canSkip: true);
                 assert(!node.IsRmwHWIntrinsic(_compiler));
                 inst_RV_RV_TT(ins, attr, targetReg, lowReg, op2, false, INS_OPTS_NONE);
                 if (numArgs == 3)
@@ -271,9 +278,9 @@ public sealed partial class CodeGen
                 }
                 var op1Reg = op1.RegNum;
                 var op2Reg = node.GetOp(2).RegNum;
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 // EA_32BYTE sets VEX.L for three-register mask instructions.
                 Emitter.emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
                 break;
@@ -303,9 +310,9 @@ public sealed partial class CodeGen
                 }
                 var op1Reg = op1.RegNum;
                 var op2Reg = node.GetOp(2).RegNum;
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
                 break;
             }
@@ -334,9 +341,9 @@ public sealed partial class CodeGen
                 }
                 var op1Reg = op1.RegNum;
                 var op2Reg = node.GetOp(2).RegNum;
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
                 break;
             }
@@ -368,7 +375,7 @@ public sealed partial class CodeGen
                     attr = EA_8BYTE;
                 }
                 var op1Reg = op1.RegNum;
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
                 _ = Emitter.emitIns_Mov(ins, attr, targetReg, op1Reg, canSkip: false);
                 break;
             }
@@ -401,8 +408,8 @@ public sealed partial class CodeGen
                 {
                     op2Reg = node.GetOp(2).RegNum;
                 }
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R(ins, EA_8BYTE, op1Reg, op1Reg);
                 break;
             }
@@ -431,8 +438,8 @@ public sealed partial class CodeGen
                 }
                 var op1Reg = op1.RegNum;
                 var op2Reg = node.GetOp(2).RegNum;
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R(ins, EA_8BYTE, op1Reg, op1Reg);
                 break;
             }
@@ -460,8 +467,8 @@ public sealed partial class CodeGen
                     ins = INS_knotq;
                 }
                 var op1Reg = op1.RegNum;
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
                 if (count < 8)
                 {
@@ -495,9 +502,9 @@ public sealed partial class CodeGen
                 }
                 var op1Reg = op1.RegNum;
                 var op2Reg = node.GetOp(2).RegNum;
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
                 break;
             }
@@ -527,8 +534,8 @@ public sealed partial class CodeGen
                 var op1Reg = op1.RegNum;
                 var op2 = node.GetOp(2);
                 assert(op2.Oper.IsCnsIntOrI && op2.IsContained);
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
                 var ival = op2.AsIntCon().IconValue;
                 assert((ival >= 0) && (ival <= 255));
                 Emitter.emitIns_R_R_I(ins, EA_8BYTE, targetReg, op1Reg, unchecked((sbyte)ival));
@@ -560,8 +567,8 @@ public sealed partial class CodeGen
                 var op1Reg = op1.RegNum;
                 var op2 = node.GetOp(2);
                 assert(op2.Oper.IsCnsIntOrI && op2.IsContained);
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
                 var ival = op2.AsIntCon().IconValue;
                 assert((ival >= 0) && (ival <= 255));
                 Emitter.emitIns_R_R_I(ins, EA_8BYTE, targetReg, op1Reg, unchecked((sbyte)ival));
@@ -592,9 +599,9 @@ public sealed partial class CodeGen
                 }
                 var op1Reg = op1.RegNum;
                 var op2Reg = node.GetOp(2).RegNum;
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
                 break;
             }
@@ -623,9 +630,9 @@ public sealed partial class CodeGen
                 }
                 var op1Reg = op1.RegNum;
                 var op2Reg = node.GetOp(2).RegNum;
-                assert(targetReg is >= REG_K0 and <= REG_K7);
-                assert(op1Reg is >= REG_K0 and <= REG_K7);
-                assert(op2Reg is >= REG_K0 and <= REG_K7);
+                assert((targetReg >= REG_MASK_FIRST) && (targetReg <= REG_MASK_LAST));
+                assert((op1Reg >= REG_MASK_FIRST) && (op1Reg <= REG_MASK_LAST));
+                assert((op2Reg >= REG_MASK_FIRST) && (op2Reg <= REG_MASK_LAST));
                 Emitter.emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
                 if (count < 8)
                 {
@@ -875,7 +882,5 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(node);
-#endif
     }
-#endif
 }

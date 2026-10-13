@@ -7,12 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_ARM64
     public void genSimdUpperSave(GenTreeIntrinsic node)
     {
-#if !TARGET_XARCH || !FEATURE_SIMD
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane saves require xarch SIMD support.");
-#else
+        if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane saves require xarch SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(node.IntrinsicName == NI_SIMD_UpperSave);
         var op1 = node.Op1;
@@ -44,16 +45,15 @@ public sealed partial class CodeGen
                 Emitter.emitIns_S_R(INS_movups, EA_64BYTE, op1Reg, varNum, 0);
             }
         }
-#endif
     }
-#endif
 
-#if !TARGET_ARM64
     public void genSimdUpperRestore(GenTreeIntrinsic node)
     {
-#if !TARGET_XARCH || !FEATURE_SIMD
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane restores require xarch SIMD support.");
-#else
+        if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-lane restores require xarch SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(node.IntrinsicName == NI_SIMD_UpperRestore);
         var op1 = node.Op1;
@@ -83,7 +83,5 @@ public sealed partial class CodeGen
                 Emitter.emitIns_R_S(INS_movups, EA_64BYTE, lclVarReg, varNum, 0);
             }
         }
-#endif
     }
-#endif
 }

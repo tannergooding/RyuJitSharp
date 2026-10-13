@@ -7,12 +7,18 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if FEATURE_HW_INTRINSICS
     public void genFmaIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "FMA generation requires xarch.");
-#else
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are disabled.");
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "FMA generation requires xarch.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
         assert(HWIntrinsicInfo.IsFmaIntrinsic(intrinsicId));
@@ -90,14 +96,20 @@ public sealed partial class CodeGen
 
         assert(ins != INS_invalid);
         genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1.RegNum, emitOp2.RegNum, emitOp3, instOptions);
-#endif
     }
 
     public void genPermuteVar2x(GenTreeHWIntrinsic node, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "PermuteVar2x generation requires xarch.");
-#else
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are disabled.");
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "PermuteVar2x generation requires xarch.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
         assert(HWIntrinsicInfo.IsPermuteVar2x(intrinsicId));
@@ -161,8 +173,5 @@ public sealed partial class CodeGen
         assert(ins != INS_invalid);
         genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1.RegNum, emitOp2.RegNum, op3, instOptions);
         genProduceReg(node);
-#endif
     }
-
-#endif
 }

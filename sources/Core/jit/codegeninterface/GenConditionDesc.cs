@@ -36,92 +36,98 @@ public readonly struct GenConditionDesc
 
     private static ReadOnlySpan<GenConditionDesc> GetMap()
     {
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
-        return s_map;
-#else
+        if (Configuration.TARGET_XARCH)
+        {
+            return XarchMap;
+        }
+
+        if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
+        {
+            return ArmArchMap;
+        }
+
         throw new NotImplementedException("Condition instruction mapping is not ported for this target.");
-#endif
     }
 
-#if TARGET_XARCH
     // UCOMIS sets ZF/PF/CF to 111 for unordered, 000 for greater, 001 for
     // less, and 100 for equal. Conditions sharing the unordered ZF/CF bits
     // therefore need a parity check combined with their ordinary comparison.
     // GT_AND/GT_OR describe short-circuit combinations, not emitted ALU operations.
-    private static readonly GenConditionDesc[] s_map = [
+    private static readonly GenConditionDesc[] XarchMap =
+    [
         default, // NONE
         default, // 1
-        new(EJ_jl), // SLT
-        new(EJ_jle), // SLE
-        new(EJ_jge), // SGE
-        new(EJ_jg), // SGT
-        new(EJ_js), // S
-        new(EJ_jns), // NS
+        new(EJ_XARCH_jl), // SLT
+        new(EJ_XARCH_jle), // SLE
+        new(EJ_XARCH_jge), // SGE
+        new(EJ_XARCH_jg), // SGT
+        new(EJ_XARCH_js), // S
+        new(EJ_XARCH_jns), // NS
 
-        new(EJ_je), // EQ
-        new(EJ_jne), // NE
-        new(EJ_jb), // ULT
-        new(EJ_jbe), // ULE
-        new(EJ_jae), // UGE
-        new(EJ_ja), // UGT
-        new(EJ_jb), // C
-        new(EJ_jae), // NC
+        new(EJ_XARCH_je), // EQ
+        new(EJ_XARCH_jne), // NE
+        new(EJ_XARCH_jb), // ULT
+        new(EJ_XARCH_jbe), // ULE
+        new(EJ_XARCH_jae), // UGE
+        new(EJ_XARCH_ja), // UGT
+        new(EJ_XARCH_jb), // C
+        new(EJ_XARCH_jae), // NC
 
-        new(EJ_jnp, GT_AND, EJ_je), // FEQ
-        new(EJ_jne), // FNE
-        new(EJ_jnp, GT_AND, EJ_jb), // FLT
-        new(EJ_jnp, GT_AND, EJ_jbe), // FLE
-        new(EJ_jae), // FGE
-        new(EJ_ja), // FGT
-        new(EJ_jo), // O
-        new(EJ_jno), // NO
+        new(EJ_XARCH_jnp, GT_AND, EJ_XARCH_je), // FEQ
+        new(EJ_XARCH_jne), // FNE
+        new(EJ_XARCH_jnp, GT_AND, EJ_XARCH_jb), // FLT
+        new(EJ_XARCH_jnp, GT_AND, EJ_XARCH_jbe), // FLE
+        new(EJ_XARCH_jae), // FGE
+        new(EJ_XARCH_ja), // FGT
+        new(EJ_XARCH_jo), // O
+        new(EJ_XARCH_jno), // NO
 
-        new(EJ_je), // FEQU
-        new(EJ_jp, GT_OR, EJ_jne), // FNEU
-        new(EJ_jb), // FLTU
-        new(EJ_jbe), // FLEU
-        new(EJ_jp, GT_OR, EJ_jae), // FGEU
-        new(EJ_jp, GT_OR, EJ_ja), // FGTU
-        new(EJ_jp), // P
-        new(EJ_jnp), // NP
+        new(EJ_XARCH_je), // FEQU
+        new(EJ_XARCH_jp, GT_OR, EJ_XARCH_jne), // FNEU
+        new(EJ_XARCH_jb), // FLTU
+        new(EJ_XARCH_jbe), // FLEU
+        new(EJ_XARCH_jp, GT_OR, EJ_XARCH_jae), // FGEU
+        new(EJ_XARCH_jp, GT_OR, EJ_XARCH_ja), // FGTU
+        new(EJ_XARCH_jp), // P
+        new(EJ_XARCH_jnp), // NP
     ];
-#elif TARGET_ARM || TARGET_ARM64
-    private static readonly GenConditionDesc[] s_map = [
+
+    private static readonly GenConditionDesc[] ArmArchMap =
+    [
         default, // NONE
         default, // 1
-        new(EJ_lt), // SLT
-        new(EJ_le), // SLE
-        new(EJ_ge), // SGE
-        new(EJ_gt), // SGT
-        new(EJ_mi), // S
-        new(EJ_pl), // NS
+        new(EJ_ARMARCH_lt), // SLT
+        new(EJ_ARMARCH_le), // SLE
+        new(EJ_ARMARCH_ge), // SGE
+        new(EJ_ARMARCH_gt), // SGT
+        new(EJ_ARMARCH_mi), // S
+        new(EJ_ARMARCH_pl), // NS
 
-        new(EJ_eq), // EQ
-        new(EJ_ne), // NE
-        new(EJ_lo), // ULT
-        new(EJ_ls), // ULE
-        new(EJ_hs), // UGE
-        new(EJ_hi), // UGT
-        new(EJ_hs), // C
-        new(EJ_lo), // NC
+        new(EJ_ARMARCH_eq), // EQ
+        new(EJ_ARMARCH_ne), // NE
+        new(EJ_ARMARCH_lo), // ULT
+        new(EJ_ARMARCH_ls), // ULE
+        new(EJ_ARMARCH_hs), // UGE
+        new(EJ_ARMARCH_hi), // UGT
+        new(EJ_ARMARCH_hs), // C
+        new(EJ_ARMARCH_lo), // NC
 
-        new(EJ_eq), // FEQ
-        new(EJ_gt, GT_AND, EJ_lo), // FNE
-        new(EJ_lo), // FLT
-        new(EJ_ls), // FLE
-        new(EJ_ge), // FGE
-        new(EJ_gt), // FGT
-        new(EJ_vs), // O
-        new(EJ_vc), // NO
+        new(EJ_ARMARCH_eq), // FEQ
+        new(EJ_ARMARCH_gt, GT_AND, EJ_ARMARCH_lo), // FNE
+        new(EJ_ARMARCH_lo), // FLT
+        new(EJ_ARMARCH_ls), // FLE
+        new(EJ_ARMARCH_ge), // FGE
+        new(EJ_ARMARCH_gt), // FGT
+        new(EJ_ARMARCH_vs), // O
+        new(EJ_ARMARCH_vc), // NO
 
-        new(EJ_eq, GT_OR, EJ_vs), // FEQU
-        new(EJ_ne), // FNEU
-        new(EJ_lt), // FLTU
-        new(EJ_le), // FLEU
-        new(EJ_hs), // FGEU
-        new(EJ_hi), // FGTU
+        new(EJ_ARMARCH_eq, GT_OR, EJ_ARMARCH_vs), // FEQU
+        new(EJ_ARMARCH_ne), // FNEU
+        new(EJ_ARMARCH_lt), // FLTU
+        new(EJ_ARMARCH_le), // FLEU
+        new(EJ_ARMARCH_hs), // FGEU
+        new(EJ_ARMARCH_hi), // FGTU
         default, // P
         default, // NP
     ];
-#endif
 }

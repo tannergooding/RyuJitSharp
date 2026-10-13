@@ -9,23 +9,31 @@ namespace RyuJitSharp;
 
 public partial struct NodeInternalRegisters
 {
-#if HAS_FIXED_REGISTER_SET
-    public readonly uint Count(GenTree tree) => Count(tree, ~RBM_NONE);
+    public readonly uint Count(GenTree tree)
+    {
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            return Count(tree, ~RBM_NONE);
+        }
+
+        return GetWasmTable().TryGetValue(tree, out var registers) ? (uint)registers.Count : 0;
+    }
 
     public readonly uint Count(GenTree tree, regMaskTP mask)
     {
-        if (!_table.TryGetValue(tree, out var registers))
+        var table = GetFixedTable();
+        if (!table.TryGetValue(tree, out var registers))
         {
             return 0;
         }
 
         var available = registers & mask;
         var count = BitOperations.PopCount(unchecked((ulong)available.Lower));
-#if HAS_MORE_THAN_64_REGISTERS
-        count += BitOperations.PopCount((ulong)available.Upper);
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            count += BitOperations.PopCount((ulong)available.Upper);
+        }
 
         return (uint)count;
     }
-#endif
 }

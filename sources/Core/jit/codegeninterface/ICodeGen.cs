@@ -49,9 +49,7 @@ public interface ICodeGen
     /// <remarks>Does not prohibit double alignment of the stack.</remarks>
     bool IsFrameRequired { get; set; }
 
-#if TARGET_ARM64
     void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
-#endif
 
     void SetFramePointerRequiredEH(bool value);
 
@@ -64,59 +62,25 @@ public interface ICodeGen
     //        for fully interruptible methods)
     bool IsFullPtrRegMapRequired { get; set; }
 
-#if TARGET_AMD64
-    regMask SRBM_ALLFLOAT { get; }
+    regMask SRBM_ALLFLOAT => Compiler.SRBM_ALLFLOAT;
 
-    regMask SRBM_ALLINT { get; }
+    regMask SRBM_ALLINT => Compiler.SRBM_ALLINT;
 
-    regMask SRBM_FLT_CALLEE_TRASH { get; }
+    regMask SRBM_FLT_CALLEE_TRASH => Compiler.SRBM_FLT_CALLEE_TRASH;
 
-    regMask SRBM_INT_CALLEE_TRASH { get; }
+    regMask SRBM_INT_CALLEE_TRASH => Compiler.SRBM_INT_CALLEE_TRASH;
 
-    regNumber REG_INT_LAST { get; }
-#endif
+    regNumber REG_INT_LAST => Compiler.REG_INT_LAST;
 
-#if TARGET_X86
-    regMask SRBM_FLT_CALLEE_TRASH { get; }
+    regMask SRBM_ALLMASK => Compiler.SRBM_ALLMASK;
 
-    regMask SRBM_INT_CALLEE_TRASH { get; }
-#endif
-
-#if TARGET_ARM
-    regMask SRBM_FLT_CALLEE_TRASH { get; }
-
-    regMask SRBM_INT_CALLEE_TRASH { get; }
-
-    regMask SRBM_MSK_CALLEE_TRASH { get; }
+    regMask SRBM_MSK_CALLEE_TRASH => Compiler.SRBM_MSK_CALLEE_TRASH;
 
     bool validImmForInstr(instruction ins, int imm, insFlags flags = INS_FLAGS_DONT_CARE);
 
     bool validImmForInstr(instruction ins, nint imm, insFlags flags = INS_FLAGS_DONT_CARE);
-#endif
 
-#if TARGET_LOONGARCH64
-    regMask SRBM_FLT_CALLEE_TRASH { get; }
-
-    regMask SRBM_INT_CALLEE_TRASH { get; }
-
-    regMask SRBM_MSK_CALLEE_TRASH { get; }
-#endif
-
-#if TARGET_RISCV64
-    regMask SRBM_FLT_CALLEE_TRASH { get; }
-
-    regMask SRBM_INT_CALLEE_TRASH { get; }
-
-    regMask SRBM_MSK_CALLEE_TRASH { get; }
-#endif
-
-#if TARGET_XARCH
     bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree operand);
-
-    regMask SRBM_ALLMASK { get; }
-
-    regMask SRBM_MSK_CALLEE_TRASH { get; }
-#endif
 
     ref RegSet RegSet { get; }
 
@@ -131,10 +95,8 @@ public interface ICodeGen
     bool Verbose { get; set; }
 #endif
 
-#if TARGET_XARCH
     /// <summary>Call this function after the equivalent fields in Compiler have been initialized.</summary>
     void CopyRegisterInfo();
-#endif
 
     bool genCreateAddrMode(GenTreeOp addr, bool fold, int naturalMul, out bool rev, out GenTree? rv1, out GenTree? rv2, out int mul, out nint cns);
 
@@ -168,11 +130,9 @@ public interface ICodeGen
 
     void genUpdateVarReg(ref LclVarDsc local, GenTree tree, byte registerIndex);
 
-#if !TARGET_WASM
     regMaskTP genGetRegMask(in LclVarDsc local);
 
     regMaskTP genGetRegMask(GenTree tree);
-#endif
 
     void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying
 #if DEBUG
@@ -190,11 +150,9 @@ public interface ICodeGen
 
     regNumber GetStackPointerReg(int funcletIndex);
 
-#if !HAS_FIXED_REGISTER_SET
     void SetFramePointerReg(int funcletIndex, regNumber reg);
 
     void SetStackPointerReg(int funcletIndex, regNumber reg);
-#endif
 
     regMaskTP genGetGSCookieTempRegs(bool tailCall, GenTreeCall? tailCallNode);
 }

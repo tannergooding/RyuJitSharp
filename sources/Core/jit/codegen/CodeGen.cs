@@ -20,9 +20,7 @@ public sealed partial class CodeGen : ICodeGen
 
     private bool _cgInterruptible;
     private bool genSaveFpLrWithAllCalleeSavedRegisters;
-#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     private bool _cgHasTailCalls;
-#endif
     private bool _cgFullPtrRegMap;
 
     private Compiler _compiler;
@@ -32,10 +30,8 @@ public sealed partial class CodeGen : ICodeGen
 
     private NodeInternalRegisters _internalRegisters;
 
-#if !TARGET_X86
     private int _stkArgVarNum;
     private int _stkArgOffset;
-#endif
 
     private regMaskTP _calleeRegArgMaskLiveIn;
 
@@ -44,18 +40,14 @@ public sealed partial class CodeGen : ICodeGen
     private uint _genCurDispOffset;
 #endif
 
-#if TARGET_AMD64
     private regMask _srbmAllFloat;
     private regMask _srbmAllInt;
     private regMask _srbmFltCalleeTrash;
     private regMask _srbmIntCalleeTrash;
     private regNumber _regIntLast;
-#endif
 
-#if TARGET_XARCH
     private regMask _srbmAllMask;
     private regMask _srbmMskCalleeTrash;
-#endif
 
     private bool _verbose;
 
@@ -63,11 +55,9 @@ public sealed partial class CodeGen : ICodeGen
 
     private RegSet _regSet;
 
-#if TARGET_ARM64
     internal bool genReverseAndPairCalleeSavedRegisters;
-#endif
 
-#if DEBUG && TARGET_WASM
+#if DEBUG
     private static ConfigMethodRange s_jitR2RUnsupportedRange;
 #endif
 
@@ -79,14 +69,13 @@ public sealed partial class CodeGen : ICodeGen
         _internalRegisters = new NodeInternalRegisters();
         treeLifeUpdater = null;
 
-#if !TARGET_X86
-        _stkArgVarNum = BAD_VAR_NUM;
-#endif
+        if (!Configuration.TARGET_X86)
+        {
+            _stkArgVarNum = BAD_VAR_NUM;
+        }
 
-#if UNIX_X86_ABI
         curNestedAlignment = 0;
         maxNestedAlignment = 0;
-#endif
 
         _cgEmitter = new Emitter(this);
         _calleeRegArgMaskLiveIn = RBM_NONE;
@@ -105,31 +94,29 @@ public sealed partial class CodeGen : ICodeGen
 #if DEBUG
         _genTrnslLocalVarCount = 0;
 
-#if HAS_FIXED_REGISTER_SET
-        compiler.compCalleeRegsPushed = unchecked((int)INVALID_POINT_CD);
-#endif
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            compiler.compCalleeRegsPushed = unchecked((int)INVALID_POINT_CD);
+        }
 
-#if TARGET_XARCH
-        compiler.compCalleeFPRegsSavedMask = unchecked((regMask)(-1));
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            compiler.compCalleeFPRegsSavedMask = unchecked((regMask)(-1));
+        }
 #endif
 
         compiler.genCallSite2DebugInfoMap = null;
         Interruptible = false;
-#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         HasTailCalls = false;
-#endif
 
 #if DEBUG
         _genInterruptibleUsed = false;
         _genCurDispOffset = uint.MaxValue;
 #endif
 
-#if TARGET_ARM64
         genSaveFpLrWithAllCalleeSavedRegisters = false;
         genForceFuncletFrameType5 = false;
         genReverseAndPairCalleeSavedRegisters = false;
-#endif
     }
 
     public Compiler Compiler => _compiler;
@@ -149,28 +136,45 @@ public sealed partial class CodeGen : ICodeGen
 
     public regMaskTP genGetGSCookieTempRegs(bool tailCall, GenTreeCall? tailCallNode)
     {
-#if TARGET_AMD64
-        if (tailCall)
+        if (Configuration.TARGET_AMD64)
         {
-            if ((tailCallNode is not null) &&
-                (tailCallNode.Args.FindWellKnownArg(WellKnownArg.SecretStubParam) is not null))
+            if (tailCall)
             {
-                return RBM_R11;
+                if ((tailCallNode is not null) &&
+                    (tailCallNode.Args.FindWellKnownArg(WellKnownArg.SecretStubParam) is not null))
+                {
+                    return RBM_R11;
+                }
+
+                // Argument registers and indirection-cell registers must survive the tailcall cookie check.
+                return RBM_R10;
             }
 
-            // Argument registers and indirection-cell registers must survive the tailcall cookie check.
-            return RBM_R10;
+            return RBM_R9;
         }
 
-        return RBM_R9;
-#elif TARGET_X86
-        return tailCall || _compiler.compIsAsync ? RBM_ESI : RBM_ECX;
-#elif TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-        return new regMaskTP(SRBM_GSCOOKIE_TMP);
-#else
+        if (Configuration.TARGET_X86)
+        {
+            return tailCall || _compiler.compIsAsync ? RBM_ESI : RBM_ECX;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return RBM_R12 | RBM_LR;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return RBM_IP0 | RBM_IP1;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            return RBM_T0 | RBM_T1;
+        }
+
         NYI("CodeGen.genGetGSCookieTempRegs outside xarch");
-        throw new FatalJitException("CodeGen.genGetGSCookieTempRegs outside xarch.");
-#endif
+        throw new FatalJitException(CORJIT_SKIPPED, "CodeGen.genGetGSCookieTempRegs is not supported for this target.");
     }
 
     /// <summary>return the offset from Caller-SP to the frame pointer.</summary>
@@ -186,20 +190,25 @@ public sealed partial class CodeGen : ICodeGen
             assert(Debugger.IsAttached || IsFramePointerUsed);
             var callerSPtoFPdelta = 0;
 
-#if TARGET_ARM
-            // On ARM, we first push the prespill registers, then store LR, then R11 (FP), and point R11 at the saved R11.
-            callerSPtoFPdelta -= (System.Numerics.BitOperations.PopCount(
-                unchecked((ulong)(long)(regMask)_regSet.rsMaskPreSpillRegs(true))) * REGSIZE_BYTES);
-            callerSPtoFPdelta -= (2 * REGSIZE_BYTES);
-#elif TARGET_X86
-            // Thanks to ebp chaining, the difference between ebp-based addresses
-            // and caller-SP-relative addresses is just the 2 pointers:
-            //     return address
-            //     pushed ebp
-            callerSPtoFPdelta -= (2 * REGSIZE_BYTES);
-#else
-            callerSPtoFPdelta += genCallerSPtoInitialSPdelta + genSPtoFPdelta;
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                // On ARM, we first push the prespill registers, then store LR, then R11 (FP), and point R11 at the saved R11.
+                callerSPtoFPdelta -= (System.Numerics.BitOperations.PopCount(
+                    unchecked((ulong)(long)(regMask)_regSet.rsMaskPreSpillRegs(true))) * Configuration.REGSIZE_BYTES);
+                callerSPtoFPdelta -= (2 * Configuration.REGSIZE_BYTES);
+            }
+            else if (Configuration.TARGET_X86)
+            {
+                // Thanks to ebp chaining, the difference between ebp-based addresses
+                // and caller-SP-relative addresses is just the 2 pointers:
+                //     return address
+                //     pushed ebp
+                callerSPtoFPdelta -= (2 * Configuration.REGSIZE_BYTES);
+            }
+            else
+            {
+                callerSPtoFPdelta += genCallerSPtoInitialSPdelta + genSPtoFPdelta;
+            }
 
             assert(callerSPtoFPdelta <= 0);
             return callerSPtoFPdelta;
@@ -212,30 +221,34 @@ public sealed partial class CodeGen : ICodeGen
     {
         get
         {
-#if TARGET_WASM
-            unreached();
-            return 0;
-#else
+            if (Configuration.TARGET_WASM)
+            {
+                unreached();
+                return 0;
+            }
+
             var callerSPtoSPdelta = -genTotalFrameSize;
 
-#if TARGET_ARM
-            callerSPtoSPdelta -= (System.Numerics.BitOperations.PopCount(
-                unchecked((ulong)(long)(regMask)_regSet.rsMaskPreSpillRegs(true))) * REGSIZE_BYTES);
-#elif TARGET_XARCH
-            // caller-pushed return address
-            callerSPtoSPdelta -= REGSIZE_BYTES;
-
-            // compCalleeRegsPushed does not account for the frame pointer
-            // TODO-Cleanup: shouldn't this be part of genTotalFrameSize?
-            if (IsFramePointerUsed)
+            if (Configuration.TARGET_ARM)
             {
-                callerSPtoSPdelta -= REGSIZE_BYTES;
+                callerSPtoSPdelta -= (System.Numerics.BitOperations.PopCount(
+                    unchecked((ulong)(long)(regMask)_regSet.rsMaskPreSpillRegs(true))) * Configuration.REGSIZE_BYTES);
             }
-#endif
+            else if (Configuration.TARGET_XARCH)
+            {
+                // caller-pushed return address
+                callerSPtoSPdelta -= Configuration.REGSIZE_BYTES;
+
+                // compCalleeRegsPushed does not account for the frame pointer
+                // TODO-Cleanup: shouldn't this be part of genTotalFrameSize?
+                if (IsFramePointerUsed)
+                {
+                    callerSPtoSPdelta -= Configuration.REGSIZE_BYTES;
+                }
+            }
 
             assert(callerSPtoSPdelta <= 0);
             return callerSPtoSPdelta;
-#endif
         }
     }
 
@@ -248,67 +261,82 @@ public sealed partial class CodeGen : ICodeGen
     {
         get
         {
-#if !TARGET_AMD64
-            assert(Debugger.IsAttached || IsFramePointerUsed);
-#endif
+            if (!Configuration.TARGET_AMD64)
+            {
+                assert(Debugger.IsAttached || IsFramePointerUsed);
+            }
+
             int delta;
 
-#if TARGET_X86 || TARGET_ARM
-            delta = genCallerSPtoFPdelta - genCallerSPtoInitialSPdelta;
-#elif UNIX_AMD64_ABI
-            // We require frame chaining on Unix to support native tool unwinding (such as
-            // unwinding by the native debugger). We have a CLR-only extension to the
-            // unwind codes (UWOP_SET_FPREG_LARGE) to support SP->FP offsets larger than 240.
-            // If Unix ever supports EnC, the RSP == RBP assumption will have to be reevaluated.
-            delta = genTotalFrameSize;
-#elif TARGET_AMD64
-            // As per Amd64 ABI, RBP offset from initial RSP can be between 0 and 240 if
-            // RBP needs to be reported in unwind codes.  This case would arise for methods
-            // with localloc.
-
-            if (_compiler.compLocallocUsed)
+            if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
             {
-                // We cannot base delta computation on compLclFrameSize since it changes from
-                // tentative to final frame layout and hence there is a possibility of
-                // under-estimating offset of vars from FP, which in turn results in under-
-                // estimating instruction size.
-                //
-                // To be predictive and so as never to under-estimate offset of vars from FP
-                // we will always position FP at min(240, outgoing arg area size).
-                delta = int.Min(240, _compiler.lvaOutgoingArgSpaceSize.Value);
+                delta = genCallerSPtoFPdelta - genCallerSPtoInitialSPdelta;
             }
-            else if (_compiler.opts.compDbgEnC)
+            else if (Configuration.UNIX_AMD64_ABI)
             {
-                // vm assumption on EnC methods is that rsp and rbp are equal
-                delta = 0;
-            }
-            else
-            {
+                // We require frame chaining on Unix to support native tool unwinding (such as
+                // unwinding by the native debugger). We have a CLR-only extension to the
+                // unwind codes (UWOP_SET_FPREG_LARGE) to support SP->FP offsets larger than 240.
+                // If Unix ever supports EnC, the RSP == RBP assumption will have to be reevaluated.
                 delta = genTotalFrameSize;
             }
-#elif TARGET_ARM64
-            if (IsSaveFpLrWithAllCalleeSavedRegisters)
+            else if (Configuration.TARGET_AMD64)
             {
-                // The saved frame pointer is at the top of the frame, just beneath the saved varargs register space and the saved LR.
-                delta = genTotalFrameSize - (_compiler.info.compIsVarArgs ? (MAX_REG_ARG * REGSIZE_BYTES) : 0) - (2 * REGSIZE_BYTES);
+                // As per Amd64 ABI, RBP offset from initial RSP can be between 0 and 240 if
+                // RBP needs to be reported in unwind codes. This case would arise for methods
+                // with localloc.
+
+                if (_compiler.compLocallocUsed)
+                {
+                    // We cannot base delta computation on compLclFrameSize since it changes from
+                    // tentative to final frame layout and hence there is a possibility of
+                    // under-estimating offset of vars from FP, which in turn results in under-
+                    // estimating instruction size.
+                    //
+                    // To be predictive and so as never to under-estimate offset of vars from FP
+                    // we will always position FP at min(240, outgoing arg area size).
+                    delta = int.Min(240, _compiler.lvaOutgoingArgSpaceSize.Value);
+                }
+                else if (_compiler.opts.compDbgEnC)
+                {
+                    // vm assumption on EnC methods is that rsp and rbp are equal
+                    delta = 0;
+                }
+                else
+                {
+                    delta = genTotalFrameSize;
+                }
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                if (IsSaveFpLrWithAllCalleeSavedRegisters)
+                {
+                    // The saved frame pointer is at the top of the frame, just beneath the saved varargs register space and the saved LR.
+                    var varArgsRegisterSaveSize = _compiler.info.compIsVarArgs ?
+                        Target.ARM64_MAX_REG_ARG * Configuration.REGSIZE_BYTES : 0;
+                    delta = genTotalFrameSize - varArgsRegisterSaveSize - (2 * Configuration.REGSIZE_BYTES);
+                }
+                else
+                {
+                    // We place the saved frame pointer immediately above the outgoing argument space.
+                    delta = _compiler.lvaOutgoingArgSpaceSize.Value;
+                }
+            }
+            else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            {
+                assert(_compiler.compCalleeRegsPushed >= 2); // always FP/RA.
+                delta = _compiler.compLclFrameSize;
+
+                if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
+                {
+                    delta -= Configuration.TARGET_POINTER_SIZE;
+                }
             }
             else
             {
-                // We place the saved frame pointer immediately above the outgoing argument space.
-                delta = _compiler.lvaOutgoingArgSpaceSize.Value;
+                unreached();
+                delta = 0;
             }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-            assert(_compiler.compCalleeRegsPushed >= 2); // always FP/RA.
-            delta = _compiler.compLclFrameSize;
-
-            if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
-            {
-                delta -= TARGET_POINTER_SIZE;
-            }
-#elif TARGET_WASM
-            unreached();
-            delta = 0;
-#endif
 
             assert(delta >= 0);
             return delta;
@@ -326,22 +354,25 @@ public sealed partial class CodeGen : ICodeGen
     {
         get
         {
-#if !TARGET_X86 && !TARGET_ARM
-            assert(Debugger.IsAttached || (_compiler.compCalleeRegsPushed >= 0));
-#endif
-            var totalFrameSize = (_compiler.compCalleeRegsPushed * REGSIZE_BYTES) + _compiler.compLclFrameSize;
-
-#if TARGET_ARM64
-            // For varargs functions, we home all the incoming register arguments. They are not
-            // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
-            // since we don't use "push" instructions to save them, we don't have to do the
-            // save of these varargs register arguments as the first thing in the prolog.
-
-            if (_compiler.info.compIsVarArgs)
+            if (!Configuration.TARGET_X86 && !Configuration.TARGET_ARM)
             {
-                totalFrameSize += (MAX_REG_ARG * REGSIZE_BYTES);
+                assert(Debugger.IsAttached || (_compiler.compCalleeRegsPushed >= 0));
             }
-#endif
+
+            var totalFrameSize = (_compiler.compCalleeRegsPushed * Configuration.REGSIZE_BYTES) + _compiler.compLclFrameSize;
+
+            if (Configuration.TARGET_ARM64)
+            {
+                // For varargs functions, we home all the incoming register arguments. They are not
+                // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
+                // since we don't use "push" instructions to save them, we don't have to do the
+                // save of these varargs register arguments as the first thing in the prolog.
+
+                if (_compiler.info.compIsVarArgs)
+                {
+                    totalFrameSize += (Target.ARM64_MAX_REG_ARG * Configuration.REGSIZE_BYTES);
+                }
+            }
 
             assert(totalFrameSize >= 0);
             return totalFrameSize;
@@ -363,7 +394,6 @@ public sealed partial class CodeGen : ICodeGen
         }
     }
 
-#if TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     public bool HasTailCalls
     {
         get
@@ -376,7 +406,6 @@ public sealed partial class CodeGen : ICodeGen
             _cgHasTailCalls = value;
         }
     }
-#endif
 
     public bool IsFramePointerRequired
     {
@@ -399,8 +428,7 @@ public sealed partial class CodeGen : ICodeGen
     public void SetFramePointerRequiredEH(bool value)
     {
         _cgFramePointerRequired.Value = value;
-#if !JIT32_GCENCODER && !TARGET_WASM
-        if (value)
+        if (!Configuration.TARGET_X86 && !Configuration.TARGET_WASM && value)
         {
 #if DEBUG
             if (_verbose)
@@ -411,14 +439,14 @@ public sealed partial class CodeGen : ICodeGen
             // Aborted frames expose live catch/finally slots only when fully interruptible.
             _cgInterruptible = true;
         }
-#endif
     }
 
     public void SetFramePointerRequiredGCInfo(bool value)
     {
-#if JIT32_GCENCODER
-        _cgFramePointerRequired.Value = value;
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            _cgFramePointerRequired.Value = value;
+        }
     }
 
     public bool IsFramePointerUsed
@@ -462,53 +490,20 @@ public sealed partial class CodeGen : ICodeGen
         }
     }
 
-#if TARGET_AMD64
-    public regMask SRBM_ALLFLOAT => _srbmAllFloat;
+    public regMask SRBM_ALLFLOAT => Configuration.TARGET_AMD64 ? _srbmAllFloat : _compiler.SRBM_ALLFLOAT;
 
-    public regMask SRBM_ALLINT => _srbmAllInt;
+    public regMask SRBM_ALLINT => Configuration.TARGET_AMD64 ? _srbmAllInt : _compiler.SRBM_ALLINT;
 
-    public regMask SRBM_FLT_CALLEE_TRASH => _srbmFltCalleeTrash;
+    public regMask SRBM_FLT_CALLEE_TRASH => Configuration.TARGET_AMD64 ? _srbmFltCalleeTrash : _compiler.SRBM_FLT_CALLEE_TRASH;
 
-    public regMask SRBM_INT_CALLEE_TRASH => _srbmIntCalleeTrash;
+    public regMask SRBM_INT_CALLEE_TRASH => Configuration.TARGET_AMD64 ? _srbmIntCalleeTrash : _compiler.SRBM_INT_CALLEE_TRASH;
 
-    public regNumber REG_INT_LAST => _regIntLast;
-#endif
+    public regNumber REG_INT_LAST => Configuration.TARGET_AMD64 ? _regIntLast : _compiler.REG_INT_LAST;
 
-#if TARGET_X86
-    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
+    public regMask SRBM_ALLMASK => Configuration.TARGET_XARCH ? _srbmAllMask : _compiler.SRBM_ALLMASK;
 
-    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
-#endif
-
-#if TARGET_XARCH
-    public regMask SRBM_ALLMASK => _srbmAllMask;
-
-    public regMask SRBM_MSK_CALLEE_TRASH => _srbmMskCalleeTrash;
-#endif
-
-#if TARGET_ARM
-    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
-
-    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
-
-    public regMask SRBM_MSK_CALLEE_TRASH => SRBM_NONE;
-#endif
-
-#if TARGET_LOONGARCH64
-    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
-
-    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
-
-    public regMask SRBM_MSK_CALLEE_TRASH => SRBM_NONE;
-#endif
-
-#if TARGET_RISCV64
-    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
-
-    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
-
-    public regMask SRBM_MSK_CALLEE_TRASH => Globals.SRBM_MSK_CALLEE_TRASH;
-#endif
+    public regMask SRBM_MSK_CALLEE_TRASH =>
+        Configuration.TARGET_XARCH ? _srbmMskCalleeTrash : _compiler.SRBM_MSK_CALLEE_TRASH;
 
     public ref RegSet RegSet => ref _regSet;
 
@@ -542,21 +537,23 @@ public sealed partial class CodeGen : ICodeGen
     }
 #endif
 
-#if TARGET_XARCH
     public void CopyRegisterInfo()
     {
-#if TARGET_AMD64
-        _srbmAllFloat = _compiler.SRBM_ALLFLOAT;
-        _srbmFltCalleeTrash = _compiler.SRBM_FLT_CALLEE_TRASH;
-        _srbmAllInt = _compiler.SRBM_ALLINT;
-        _srbmIntCalleeTrash = _compiler.SRBM_INT_CALLEE_TRASH;
-        _regIntLast = _compiler.REG_INT_LAST;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            _srbmAllFloat = _compiler.SRBM_ALLFLOAT;
+            _srbmFltCalleeTrash = _compiler.SRBM_FLT_CALLEE_TRASH;
+            _srbmAllInt = _compiler.SRBM_ALLINT;
+            _srbmIntCalleeTrash = _compiler.SRBM_INT_CALLEE_TRASH;
+            _regIntLast = _compiler.REG_INT_LAST;
+        }
 
-        _srbmAllMask = _compiler.SRBM_ALLMASK;
-        _srbmMskCalleeTrash = _compiler.SRBM_MSK_CALLEE_TRASH;
+        if (Configuration.TARGET_XARCH)
+        {
+            _srbmAllMask = _compiler.SRBM_ALLMASK;
+            _srbmMskCalleeTrash = _compiler.SRBM_MSK_CALLEE_TRASH;
+        }
     }
-#endif
 
     /// <summary>Take an address expression and try to find the best set of components to form an address mode; returns true if this is successful.</summary>
     /// <param name="addr">Tree that potentially computes an address</param>
@@ -576,20 +573,22 @@ public sealed partial class CodeGen : ICodeGen
         mul = 0;
         cns = 0;
 
-#if TARGET_WASM
-        // A GC base and non-negative constant prove the addition cannot wrap (see
-        // Lowering::GetFoldableAddrMode). Relocatable constants must retain their relocation.
-        if ((addr.Oper is not GT_ADD) || addr.HasOverflowCheck || !varTypeIsGC(addr.Op1.Type) ||
-            !addr.Op2.Oper.IsCnsIntOrI || addr.Op2.AsIntCon().ImmedValNeedsReloc(_compiler) ||
-            (addr.Op2.AsIntCon().IconValue < 0))
+        if (Configuration.TARGET_WASM)
         {
-            return false;
+            // A GC base and non-negative constant prove the addition cannot wrap (see
+            // Lowering::GetFoldableAddrMode). Relocatable constants must retain their relocation.
+            if ((addr.Oper is not GT_ADD) || addr.HasOverflowCheck || !varTypeIsGC(addr.Op1.Type) ||
+                !addr.Op2.Oper.IsCnsIntOrI || addr.Op2.AsIntCon().ImmedValNeedsReloc(_compiler) ||
+                (addr.Op2.AsIntCon().IconValue < 0))
+            {
+                return false;
+            }
+
+            rv1 = addr.Op1;
+            cns = addr.Op2.AsIntCon().IconValue;
+            return true;
         }
 
-        rv1 = addr.Op1;
-        cns = addr.Op2.AsIntCon().IconValue;
-        return true;
-#else
         // The following indirections are valid address modes on x86/x64:
         // 
         //     [                  icon]      * not handled here
@@ -679,9 +678,9 @@ public sealed partial class CodeGen : ICodeGen
                 {
                     cns = newCns;
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-                    if (cns == 0)
-#endif
+                    if ((cns == 0) ||
+                        (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 &&
+                            !Configuration.TARGET_RISCV64))
                     {
                         // Inspect the operand the constant is being added to
 
@@ -773,9 +772,8 @@ public sealed partial class CodeGen : ICodeGen
 
             switch (op1.Oper)
             {
-#if TARGET_XARCH || TARGET_RISCV64
                 // TODO-ARM-CQ: For now we don't try to create a scaled index.
-                case GT_ADD:
+                case GT_ADD when Configuration.TARGET_XARCH || Configuration.TARGET_RISCV64:
                 {
                     if (op1.HasOverflowCheck)
                     {
@@ -799,7 +797,6 @@ public sealed partial class CodeGen : ICodeGen
                     }
                     break;
                 }
-#endif
 
                 case GT_MUL:
                 {
@@ -871,11 +868,10 @@ public sealed partial class CodeGen : ICodeGen
 
             switch (op2.Oper)
             {
-#if TARGET_XARCH || TARGET_RISCV64
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
                 // arm doesn't support both scale and offset at the same. Offset is handled
                 // at the emitter as a peephole optimization.
-                case GT_ADD:
+                case GT_ADD when Configuration.TARGET_XARCH || Configuration.TARGET_RISCV64:
                 {
                     if (op2.HasOverflowCheck)
                     {
@@ -899,7 +895,6 @@ public sealed partial class CodeGen : ICodeGen
                     }
                     break;
                 }
-#endif
 
                 case GT_MUL:
                 {
@@ -968,14 +963,16 @@ public sealed partial class CodeGen : ICodeGen
             rv1 = op1;
             rv2 = op2;
 
-#if TARGET_ARM64
-            assert(cns == 0);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(cns == 0);
+            }
         }
 
-#if TARGET_RISCV64
-        assert(mul == 0 || mul == 1);
-#endif
+        if (Configuration.TARGET_RISCV64)
+        {
+            assert(mul == 0 || mul == 1);
+        }
 
         if (rv2 is not null)
         {
@@ -1047,7 +1044,6 @@ public sealed partial class CodeGen : ICodeGen
         }
 
         return true;
-#endif
     }
 
     public unsafe void genGenerateCode(out void* codePtr, out int nativeSizeOfCode)
@@ -1056,9 +1052,10 @@ public sealed partial class CodeGen : ICodeGen
         {
             RequireSupportedLateDisassembly();
         }
-#if TARGET_WASM
-        genCheckWasmFunclets();
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            genCheckWasmFunclets();
+        }
 #if DEBUG
         if (_verbose)
         {
@@ -1087,8 +1084,11 @@ public sealed partial class CodeGen : ICodeGen
                 }
             }
 #endif
-#if DEBUG && TARGET_WASM
-            genCheckWasmR2RRange();
+#if DEBUG
+            if (Configuration.TARGET_WASM)
+            {
+                genCheckWasmR2RRange();
+            }
 #endif
             codePtr = generatedCode;
             nativeSizeOfCode = generatedSize;
@@ -1102,16 +1102,21 @@ public sealed partial class CodeGen : ICodeGen
 
     private void genGenerateMachineCodeForEntry()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Machine-code generation requires Windows AMD64.");
+        }
+
         genGenerateMachineCode();
-#endif
     }
 
-#if TARGET_WASM
     private void genCheckWasmFunclets()
     {
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm funclet validation requires the Wasm target.");
+        }
+
         // Reject before generating relocations: an optimized funclet method may
         // subsequently succeed in MinOpts without those relocations.
         if (JitConfig.JitWasmFunclets == 0)
@@ -1125,11 +1130,15 @@ public sealed partial class CodeGen : ICodeGen
             }
         }
     }
-#endif
 
-#if DEBUG && TARGET_WASM
+#if DEBUG
     private unsafe void genCheckWasmR2RRange()
     {
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm ReadyToRun range validation requires the Wasm target.");
+        }
+
         s_jitR2RUnsupportedRange.EnsureInit(JitConfig.JitR2RUnsupportedRange);
         assert(!s_jitR2RUnsupportedRange.Error);
         var hash = _compiler.impInlineRoot.info.compMethodHash();
@@ -1147,21 +1156,85 @@ public sealed partial class CodeGen : ICodeGen
     }
 #endif
 
-#if HAS_FIXED_REGISTER_SET
-    public regNumber GetFramePointerReg(int funcletIndex) => REG_FPBASE;
-
-    public regNumber GetStackPointerReg(int funcletIndex) => REG_SPBASE;
-#else
     public regNumber GetFramePointerReg(int funcletIndex)
     {
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return REG_X86_EBP;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return REG_X64_RBP;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return REG_ARM32_FP;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return REG_ARM64_FP;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return REG_LOONGARCH64_FP;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return REG_RISCV64_FP;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED, "Frame-pointer register is not available for the configured target.");
+        }
+
         assert(funcletIndex < _compiler.compFuncInfoCount);
         return _compiler.compFuncInfos[funcletIndex].funFramePointerReg;
     }
 
     public regNumber GetStackPointerReg(int funcletIndex)
     {
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return REG_X86_ESP;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return REG_X64_RSP;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return REG_ARM32_SP;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return REG_ARM64_SP;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return REG_LOONGARCH64_SP;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return REG_RISCV64_SP;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-pointer register is not available for the configured target.");
+        }
+
         assert(funcletIndex < _compiler.compFuncInfoCount);
         return _compiler.compFuncInfos[funcletIndex].funStackPointerReg;
     }
-#endif
 }

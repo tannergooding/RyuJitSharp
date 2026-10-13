@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_WASM
     // Keep region endpoints in sync with genReportEH. No blocks may be added or removed afterward.
     private void genMarkLabelsForCodegen()
     {
@@ -22,6 +21,19 @@ public sealed partial class CodeGen
             assert(!block.HasFlag(BBF_HAS_LABEL));
         }
 #endif
+
+        if (Configuration.TARGET_WASM)
+        {
+            foreach (ref readonly var func in _compiler.Funcs)
+            {
+                var firstBlock = func.GetStartBlock(_compiler);
+                firstBlock.SetFlags(BBF_HAS_LABEL);
+                var name = func.funKind == FuncKind.FUNC_ROOT ? "method" : "funclet";
+                JITDUMP($"  {FMT_BB(firstBlock.bbNum)} : {name} begin\n");
+            }
+
+            return;
+        }
 
         // The first label also establishes the initial GC state and switch-table base.
         assert(_compiler.fgFirstBB is not null);
@@ -161,28 +173,4 @@ public sealed partial class CodeGen
         }
 #endif
     }
-#else
-    private void genMarkLabelsForCodegen()
-    {
-#if DEBUG
-        assert(!_compiler.fgSafeBasicBlockCreation);
-#endif
-        JITDUMP("Mark labels for codegen\n");
-
-#if DEBUG
-        foreach (var block in _compiler.Blocks)
-        {
-            assert(!block.HasFlag(BBF_HAS_LABEL));
-        }
-#endif
-
-        foreach (ref readonly var func in _compiler.Funcs)
-        {
-            var firstBlock = func.GetStartBlock(_compiler);
-            firstBlock.SetFlags(BBF_HAS_LABEL);
-            var name = func.funKind == FuncKind.FUNC_ROOT ? "method" : "funclet";
-            JITDUMP($"  {FMT_BB(firstBlock.bbNum)} : {name} begin\n");
-        }
-    }
-#endif
 }

@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
-#if !HAS_FIXED_REGISTER_SET
 public struct InternalRegs
 {
     public const int MAX_REG_COUNT = 2;
@@ -100,102 +99,84 @@ public struct InternalRegs
         throw new FatalJitException(CORJIT_INTERNALERROR, "No internal register is available to extract.");
     }
 }
-#endif
 
 public partial struct NodeInternalRegisters
 {
-    private NodeInternalRegistersTable _table;
+    private NodeInternalRegistersTable? _table;
+    private WasmNodeInternalRegistersTable? _wasmTable;
 
     public NodeInternalRegisters()
     {
-        _table = [];
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            _table = [];
+            _wasmTable = null;
+        }
+        else
+        {
+            _table = null;
+            _wasmTable = [];
+        }
     }
 
-#if HAS_FIXED_REGISTER_SET
     public readonly void Add(GenTree tree, regMaskTP registers)
     {
+        var table = GetFixedTable();
         assert(registers != RBM_NONE);
-        _ = _table.TryGetValue(tree, out var existing);
-        _table[tree] = existing | registers;
-    }
-
-    public readonly regNumber Extract(GenTree tree) => Extract(tree, ~RBM_NONE);
-
-    public readonly regNumber Extract(GenTree tree, regMaskTP mask)
-    {
-        assert(_table.ContainsKey(tree));
-        var registers = _table[tree];
-        var available = registers & mask;
-        assert(available != RBM_NONE);
-        var lower = unchecked((ulong)available.Lower);
-#if HAS_MORE_THAN_64_REGISTERS
-        var result = (regNumber)(lower != 0
-            ? BitOperations.TrailingZeroCount(lower)
-            : 64 + BitOperations.TrailingZeroCount((ulong)available.Upper));
-#else
-        var result = (regNumber)BitOperations.TrailingZeroCount(lower);
-#endif
-        _table[tree] = registers ^ regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
-
-        return result;
-    }
-
-    public readonly regNumber GetSingle(GenTree tree) => GetSingle(tree, ~RBM_NONE);
-
-    public readonly regNumber GetSingle(GenTree tree, regMaskTP mask)
-    {
-        assert(_table.ContainsKey(tree));
-        var registers = _table[tree];
-        var available = registers & mask;
-        var lower = unchecked((ulong)available.Lower);
-#if HAS_MORE_THAN_64_REGISTERS
-        var upper = (ulong)available.Upper;
-        assert((BitOperations.IsPow2(lower) && (upper == 0)) ||
-            ((lower == 0) && BitOperations.IsPow2(upper)));
-        var result = (regNumber)(lower != 0
-            ? BitOperations.TrailingZeroCount(lower)
-            : 64 + BitOperations.TrailingZeroCount(upper));
-#else
-        assert(BitOperations.IsPow2(lower));
-        var result = (regNumber)BitOperations.TrailingZeroCount(lower);
-#endif
-#if DEBUG
-        _table[tree] = registers & ~regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
-#endif
-
-        return result;
-    }
-
-    /// <summary>Get all internal registers for the specified IR node.</summary>
-    /// <param name="tree">IR node whose internal registers to query</param>
-    /// <returns>Mask of registers.</returns>
-    public readonly regMaskTP GetAll(GenTree tree)
-    {
-        _ = _table.TryGetValue(tree, out var regMask);
-        return regMask;
-    }
-
-#else  // !HAS_FIXED_REGISTER_SET
-    public readonly void Add(GenTree tree, regMaskTP registers)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Internal register tracking is not ported for targets without a fixed register set.");
+        _ = table.TryGetValue(tree, out var existing);
+        table[tree] = existing | registers;
     }
 
     public readonly void Add(GenTree tree, regNumber register)
     {
-        ref var registers = ref CollectionsMarshal.GetValueRefOrAddDefault(_table, tree, out _);
+        ref var registers = ref CollectionsMarshal.GetValueRefOrAddDefault(GetWasmTable(), tree, out _);
         registers.Add(register);
     }
 
     public readonly regNumber Extract(GenTree tree)
     {
-        ref var registers = ref GetAll(tree);
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            return Extract(tree, ~RBM_NONE);
+        }
+
+        ref var registers = ref GetAllWasm(tree);
         return registers.Extract();
+    }
+
+    public readonly regNumber Extract(GenTree tree, regMaskTP mask)
+    {
+        var table = GetFixedTable();
+        assert(table.ContainsKey(tree));
+        var registers = table[tree];
+        var available = registers & mask;
+        assert(available != RBM_NONE);
+        var lower = unchecked((ulong)available.Lower);
+        regNumber result;
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            result = (regNumber)(lower != 0
+                ? BitOperations.TrailingZeroCount(lower)
+                : 64 + BitOperations.TrailingZeroCount((ulong)available.Upper));
+        }
+        else
+        {
+            result = (regNumber)BitOperations.TrailingZeroCount(lower);
+        }
+
+        table[tree] = registers ^ regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
+
+        return result;
     }
 
     public readonly regNumber GetSingle(GenTree tree)
     {
-        ref var registers = ref GetAll(tree);
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            return GetSingle(tree, ~RBM_NONE);
+        }
+
+        ref var registers = ref GetAllWasm(tree);
         if (registers.Count != 1)
         {
             throw new FatalJitException(CORJIT_INTERNALERROR, "Exactly one internal register was expected.");
@@ -206,18 +187,77 @@ public partial struct NodeInternalRegisters
 
     public readonly regNumber GetSingle(GenTree tree, regMaskTP mask)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Internal register queries are not ported for targets without a fixed register set.");
+        var table = GetFixedTable();
+        assert(table.ContainsKey(tree));
+        var registers = table[tree];
+        var available = registers & mask;
+        var lower = unchecked((ulong)available.Lower);
+        regNumber result;
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            var upper = (ulong)available.Upper;
+            assert((BitOperations.IsPow2(lower) && (upper == 0)) ||
+                ((lower == 0) && BitOperations.IsPow2(upper)));
+            result = (regNumber)(lower != 0
+                ? BitOperations.TrailingZeroCount(lower)
+                : 64 + BitOperations.TrailingZeroCount(upper));
+        }
+        else
+        {
+            assert(BitOperations.IsPow2(lower));
+            result = (regNumber)BitOperations.TrailingZeroCount(lower);
+        }
+
+#if DEBUG
+        table[tree] = registers & ~regMaskTP.CreateFromRegNum(result, result.SingleTypeMask);
+#endif
+
+        return result;
     }
 
-    public readonly ref InternalRegs GetAll(GenTree tree)
+    /// <summary>Get all internal registers for the specified IR node.</summary>
+    /// <param name="tree">IR node whose internal registers to query</param>
+    /// <returns>Mask of registers.</returns>
+    public readonly regMaskTP GetAll(GenTree tree)
     {
-        if (!_table.ContainsKey(tree))
+        var table = GetFixedTable();
+        _ = table.TryGetValue(tree, out var regMask);
+        return regMask;
+    }
+
+    /// <summary>Get all internal registers for the specified WebAssembly IR node.</summary>
+    /// <param name="tree">IR node whose internal registers to query</param>
+    /// <returns>Reference to the WebAssembly register slots.</returns>
+    public readonly ref InternalRegs GetAllWasm(GenTree tree)
+    {
+        var table = GetWasmTable();
+        if (!table.ContainsKey(tree))
         {
             throw new FatalJitException(CORJIT_INTERNALERROR, "Internal registers are missing for the specified node.");
         }
 
-        return ref CollectionsMarshal.GetValueRefOrAddDefault(_table, tree, out _);
+        return ref CollectionsMarshal.GetValueRefOrAddDefault(table, tree, out _);
     }
 
-#endif
+    private readonly NodeInternalRegistersTable GetFixedTable()
+    {
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register-mask tracking is not available for this target.");
+        }
+
+        return _table ??
+            throw new FatalJitException(CORJIT_INTERNALERROR, "The fixed-register table is not initialized.");
+    }
+
+    private readonly WasmNodeInternalRegistersTable GetWasmTable()
+    {
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "WebAssembly register tracking is not available for this target.");
+        }
+
+        return _wasmTable ??
+            throw new FatalJitException(CORJIT_INTERNALERROR, "The WebAssembly register table is not initialized.");
+    }
 }

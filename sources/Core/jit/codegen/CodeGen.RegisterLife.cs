@@ -20,18 +20,20 @@ public sealed partial class CodeGen
         local.RegNum = tree.GetRegByIndex(registerIndex);
     }
 
-#if !TARGET_WASM
     public regMaskTP genGetRegMask(in LclVarDsc local)
     {
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register masks are unavailable for this target.");
+        }
+
         assert(local.lvIsInReg);
         var reg = local.RegNum;
         if (reg.IsFltReg)
         {
-#if TARGET_ARM
-            return reg.GetFloatMask(local.GetRegisterType());
-#else
-            return reg.GetFloatMask();
-#endif
+            return Configuration.TARGET_ARM
+                ? reg.GetFloatMask(local.GetRegisterType())
+                : reg.GetFloatMask();
         }
 
         return regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
@@ -58,10 +60,8 @@ public sealed partial class CodeGen
         {
             mask = genGetRegMask(in local);
         }
-
         return mask;
     }
-#endif
 
     public void genUpdateRegLife(in LclVarDsc local, bool isBorn, bool isDying
 #if DEBUG
@@ -69,29 +69,30 @@ public sealed partial class CodeGen
 #endif
     )
     {
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        var mask = genGetRegMask(in local);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            jitprintf($"\t\t\t\t\t\t\tV{_compiler.lvaGetLclNum(in local):D2} in reg ");
-            local.PrintVarReg();
-            jitprintf($" is becoming {(isDying ? "dead" : "live")}  ");
-            Compiler.printTreeId(tree);
-            jitprintf("\n");
-        }
+            var mask = genGetRegMask(in local);
+#if DEBUG
+            if (_compiler.verbose)
+            {
+                jitprintf($"\t\t\t\t\t\t\tV{_compiler.lvaGetLclNum(in local):D2} in reg ");
+                local.PrintVarReg();
+                jitprintf($" is becoming {(isDying ? "dead" : "live")}  ");
+                Compiler.printTreeId(tree);
+                jitprintf("\n");
+            }
 #endif
 
-        // A minopts dead store may be born and dying at the same node.
-        if (isDying)
-        {
-            _regSet.RemoveMaskVars(mask);
+            // A minopts dead store may be born and dying at the same node.
+            if (isDying)
+            {
+                _regSet.RemoveMaskVars(mask);
+            }
+            else
+            {
+                assert(local.IsAlwaysAliveInMemory || (_regSet.GetMaskVars() & mask).IsEmpty);
+                _regSet.AddMaskVars(mask);
+            }
         }
-        else
-        {
-            assert(local.IsAlwaysAliveInMemory || (_regSet.GetMaskVars() & mask).IsEmpty);
-            _regSet.AddMaskVars(mask);
-        }
-#endif
     }
 }

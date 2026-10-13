@@ -9,7 +9,12 @@ public sealed partial class CodeGen
 {
     public void genSpillVar(GenTree tree)
     {
-#if HAS_FIXED_REGISTER_SET
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            // ICodeGen exposes this entry point even on targets without a fixed register set.
+            throw new FatalJitException(CORJIT_SKIPPED, "Local-variable spills require a fixed register set.");
+        }
+
         var varNum = tree.AsLclVarCommon().LclNum;
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
         assert(varDsc.lvIsRegCandidate);
@@ -25,14 +30,12 @@ public sealed partial class CodeGen
             if (!varDsc.IsAlwaysAliveInMemory)
             {
                 assert(varDsc.RegNum == tree.RegNum);
-#if FEATURE_SIMD
-                if (lclType == TYP_SIMD12)
+                if (Configuration.FEATURE_SIMD && lclType == TYP_SIMD12)
                 {
-                    Emitter.emitStoreSimd12ToLclOffset(unchecked((uint)varNum), tree.AsLclVarCommon().LclOffs,
+                    genStoreSimd12ToLclOffset(unchecked((uint)varNum), tree.AsLclVarCommon().LclOffs,
                         tree.RegNum, null);
                 }
                 else
-#endif
                 {
                     var storeIns = ins_Store(lclType, _compiler.isSIMDTypeLocalAligned(varNum));
                     inst_TT_RV(storeIns, size, tree, tree.RegNum);
@@ -82,9 +85,5 @@ public sealed partial class CodeGen
             // The live-range location must observe the new stack home, not the old register.
             getVariableLiveKeeper().siUpdateVariableLiveRange(in varDsc, varNum);
         }
-#else
-        // ICodeGen exposes this entry point even on targets without a fixed register set.
-        throw new FatalJitException(CORJIT_SKIPPED, "Local-variable spills require a fixed register set.");
-#endif
     }
 }

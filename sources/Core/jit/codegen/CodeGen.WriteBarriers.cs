@@ -17,11 +17,7 @@ public sealed partial class CodeGen
 
     public bool genUseOptimizedWriteBarriers(GCInfo.WriteBarrierForm writeBarrierForm)
     {
-#if TARGET_X86 && NOGC_WRITE_BARRIERS
-        return true;
-#else
-        return false;
-#endif
+        return Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS;
     }
 
     public CorInfoHelpFunc genWriteBarrierHelperForWriteBarrierForm(GCInfo.WriteBarrierForm writeBarrierForm)
@@ -39,9 +35,11 @@ public sealed partial class CodeGen
 
     public void genGCWriteBarrier(GCInfo.WriteBarrierForm writeBarrierForm)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var helper = genWriteBarrierHelperForWriteBarrierForm(writeBarrierForm);
         genEmitHelperCall(helper, 0, EA_PTRSIZE);
     }
