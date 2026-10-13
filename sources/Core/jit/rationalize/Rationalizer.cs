@@ -510,13 +510,14 @@ public sealed partial class Rationalizer : Phase
                     }
                 }
 
-#if DEBUG
-                // The above means that all argument nodes are now true arguments.
-                foreach (var arg in call.Args.Args)
+                if (Configuration.DEBUG)
                 {
-                    assert((arg.EarlyNode is null) != (arg.LateNode is null));
+                    // The above means that all argument nodes are now true arguments.
+                    foreach (var arg in call.Args.Args)
+                    {
+                        assert((arg.EarlyNode is null) != (arg.LateNode is null));
+                    }
                 }
-#endif
                 break;
             }
 
