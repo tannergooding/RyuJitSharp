@@ -6,9 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if DEBUG
 using System.Globalization;
-#endif
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.Emitter.insFormat;
@@ -17,11 +15,15 @@ namespace RyuJitSharp;
 
 #if DEBUG
 [DebuggerDisplay("[{info.compFullName} ({DebuggerMethodHash})]")]
+#else
+[DebuggerDisplay("[{info.compFullName}]")]
+#endif
 public partial class Compiler
 {
+#if DEBUG
     private string DebuggerMethodHash => unchecked((uint)info.compMethodHash()).ToString("x8", CultureInfo.InvariantCulture);
-}
 #endif
+}
 
 [DebuggerTypeProxy(typeof(StatementDebuggerProxy))]
 public sealed partial class Statement

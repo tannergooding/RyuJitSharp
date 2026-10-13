@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Continue non-ABI debugger-display cleanup in sources\\Core\\jit\\DebuggerDisplays.cs. Interval's Release display omits DEBUG-only intervalIndex to avoid per-interval Release storage; next verify whether Compiler.info.compMethodHash() exists in Release before exposing Compiler's display. Keep register/ABI proxies gated and leave the dynamic TLS input-ownership boundary unchanged.",
+    "nextAction": "Continue non-ABI cleanup in sources\\Core\\jit\\DebuggerDisplays.cs. The Release Compiler display uses compFullName only because compMethodHash remains DEBUG-only. Next inspect the RefPosition debugger proxy's target-register dependencies; leave it gated unless the full helper closure is available in Release, and keep the dynamic TLS input-ownership boundary unchanged.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources."

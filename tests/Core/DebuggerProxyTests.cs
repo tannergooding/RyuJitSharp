@@ -73,6 +73,22 @@ internal static class DebuggerProxyTests
     }
 
     [Test]
+    public static void CompilerMethodDebuggerDisplayIsAvailableInAllConfigurations()
+    {
+#if DEBUG
+        AssertDebuggerDisplay<Compiler>("[{info.compFullName} ({DebuggerMethodHash})]");
+        Assert.That(
+            typeof(Compiler).GetProperty("DebuggerMethodHash", BindingFlags.Instance | BindingFlags.NonPublic),
+            Is.Not.Null);
+#else
+        AssertDebuggerDisplay<Compiler>("[{info.compFullName}]");
+        Assert.That(
+            typeof(Compiler).GetProperty("DebuggerMethodHash", BindingFlags.Instance | BindingFlags.NonPublic),
+            Is.Null);
+#endif
+    }
+
+    [Test]
     public static void StatementAndFlowGraphDebuggerMetadataIsAvailableInAllConfigurations()
     {
         AssertDebuggerProxy<Statement>(typeof(StatementDebuggerProxy));
