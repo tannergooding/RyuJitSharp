@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Inspect the DEBUG guard in sources/Core/jit/emitwasm/Emitter.WasmInstructionOutput.cs; runtime-gate its assertion only if the referenced compiler state is Release-visible, then run focused Wasm target tests.",
+    "nextAction": "Inspect the DEBUG assertion at sources/Core/jit/hwintrinsiccodegenarm64/CodeGen.IntrinsicSupport.cs:205; runtime-gate it only if argReg and use.Node.RegNum are Release-visible, then run focused ARM64 codegen tests.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources.",
@@ -44,12 +44,13 @@
       "The LoongArch64 stack store/load instruction-family assertions in Emitter.InstructionRecording.cs were runtime-gated; focused linux-loongarch64 target tests passed 53/53 in Debug and Release with analyzers disabled. Full-analysis attempts remain blocked by existing IDE0058/IDE0059 diagnostics, including the unchanged IDE0059 assignment at Emitter.InstructionRecording.cs:185 and diagnostics in JitTimer.cs, CodeGen.BlockMemoryCopy.cs, CodeGen.FloatingCasts.cs, CodeGen.FrameInitializationDependencies.cs, and CodeGen.Intrinsics.ArmArch.cs. Broader target filters also included unrelated unfinished-path expectations: the broad local-codegen selector failed 62/81 in Debug and 61/81 in Release, and the wider three-class selector failed 10/63 in both configurations.",
       "The final-frame StackOffset assertions in Compiler.FinalFrameLayout.cs and Compiler.FinalFrameLayout.Locals.cs remain DEBUG-guarded because BAD_STK_OFFS is defined only under DEBUG in Globals.cs. Runtime-gating the assertions caused Release CS0103 errors at those two sites; the source changes were restored.",
       "FlowEdge.cs::_likelihoodSet and the hasLikelihood property are DEBUG-only, so the likelihood assertions in FlowEdge.cs and EfficientEdgeCountReconstructor.cs remain preprocessor-guarded.",
-      "CodeGen.HardwareOperands.cs runtime-gates the two Release-visible ternary-logic operand assertion groups. CodeGenHardwareGenerationTests and HardwareContainmentDispatchTests passed 68/68 in Debug and Release with analyzers disabled; Release excluded the two known unsupported xarch test sources."
+      "CodeGen.HardwareOperands.cs runtime-gates the two Release-visible ternary-logic operand assertion groups. CodeGenHardwareGenerationTests and HardwareContainmentDispatchTests passed 68/68 in Debug and Release with analyzers disabled; Release excluded the two known unsupported xarch test sources.",
+      "Emitter.WasmInstructionOutput.cs runtime-gates the Release-visible compiler null assertion while retaining the DEBUG-only dump block. RyuJitSharp builds for browser-wasm passed in Debug and Release with analyzers disabled and zero warnings/errors. The WasmEmitterOutputTests target selection could not compile because of unrelated missing target identifiers in WasmEmitterSizingTests.cs, TargetRegisterConstantsTests.cs, WasmEmitterDescriptorTests.cs, WasmEmitterOutputTests.cs, FuncletCreationTargetTests.cs, and WasmCallArgumentMorphTests.cs; no test pass or parity claim is made."
     ],
     "activeBatch": {
-      "scope": "Inspect the DEBUG guard in sources/Core/jit/emitwasm/Emitter.WasmInstructionOutput.cs and runtime-gate its assertion only if its compiler-state dependency is Release-visible.",
-      "completion": "Either preserve the guard with evidence that it depends on DEBUG-only state, or runtime-gate it without changing Debug assertion behavior.",
-      "validation": "Run focused Wasm target tests in Debug and Release if the assertion is eligible.",
+      "scope": "Inspect the DEBUG assertion at sources/Core/jit/hwintrinsiccodegenarm64/CodeGen.IntrinsicSupport.cs:205 and runtime-gate it only if argReg and use.Node.RegNum are Release-visible.",
+      "completion": "Either preserve the guard with evidence that a referenced member is DEBUG-only, or runtime-gate it without changing Debug assertion behavior.",
+      "validation": "Run focused ARM64 codegen tests in Debug and Release if the assertion is eligible.",
       "deferred": "Keep FlowEdge likelihood assertions under DEBUG because _likelihoodSet and hasLikelihood are DEBUG-only."
     },
     "parityEvidence": {

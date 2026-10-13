@@ -239,8 +239,12 @@ public partial class Emitter
             }
         }
 
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+        }
+
 #if DEBUG
-        assert(_compiler is not null);
         if (_compiler.opts.disAsm || _compiler.verbose)
         {
             emitDispInsWasm(id, false, _compiler.opts.dspGCtbls, true, emitCurCodeOffs(*dp), *dp,
