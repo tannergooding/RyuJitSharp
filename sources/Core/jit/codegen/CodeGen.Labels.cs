@@ -15,12 +15,13 @@ public sealed partial class CodeGen
 #endif
         JITDUMP("Mark labels for codegen\n");
 
-#if DEBUG
-        foreach (var block in _compiler.Blocks)
+        if (Configuration.DEBUG)
         {
-            assert(!block.HasFlag(BBF_HAS_LABEL));
+            foreach (var block in _compiler.Blocks)
+            {
+                assert(!block.HasFlag(BBF_HAS_LABEL));
+            }
         }
-#endif
 
         if (Configuration.TARGET_WASM)
         {
