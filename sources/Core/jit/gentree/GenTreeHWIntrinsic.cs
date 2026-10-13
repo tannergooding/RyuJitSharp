@@ -20,11 +20,12 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
     {
         get
         {
-#if DEBUG
-            var numArgs = HWIntrinsicInfo.lookupNumArgs(_hwIntrinsicId);
-            assert((numArgs < 0) || (numArgs == Operands.Length));
+            if (Configuration.DEBUG)
+            {
+                var numArgs = HWIntrinsicInfo.lookupNumArgs(_hwIntrinsicId);
+                assert((numArgs < 0) || (numArgs == Operands.Length));
+            }
 
-#endif
             return _hwIntrinsicId;
         }
     }
@@ -233,14 +234,16 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
 
     public void SetHWIntrinsicId(NamedIntrinsic intrinsicId)
     {
-#if DEBUG
-        var newOperandCount = HWIntrinsicInfo.lookupNumArgs(intrinsicId);
-        assert((newOperandCount < 0) || (Operands.Length == newOperandCount));
-        if (!Configuration.TARGET_WASM)
+        if (Configuration.DEBUG)
         {
-            assert(!HWIntrinsicInfo.IsInvalidNodeId(intrinsicId));
+            var newOperandCount = HWIntrinsicInfo.lookupNumArgs(intrinsicId);
+            assert((newOperandCount < 0) || (Operands.Length == newOperandCount));
+
+            if (!Configuration.TARGET_WASM)
+            {
+                assert(!HWIntrinsicInfo.IsInvalidNodeId(intrinsicId));
+            }
         }
-#endif
 
         _hwIntrinsicId = intrinsicId;
         var simdBaseType = SimdBaseType;

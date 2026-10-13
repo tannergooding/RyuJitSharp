@@ -265,20 +265,21 @@ public partial struct CallArgs
     /// <returns>The created representative for the argument.</returns>
     public CallArg InsertAfter(CallArg after, in NewCallArg arg)
     {
-#if DEBUG
-        var found = false;
-
-        foreach (var entry in Args)
+        if (Configuration.DEBUG)
         {
-            if (entry == after)
-            {
-                found = true;
-                break;
-            }
-        }
+            var found = false;
 
-        assert(found, "Could not find arg to insert after in argument list");
-#endif
+            foreach (var entry in Args)
+            {
+                if (entry == after)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            assert(found, "Could not find arg to insert after in argument list");
+        }
 
         return InsertAfterUnchecked(after, arg);
     }
