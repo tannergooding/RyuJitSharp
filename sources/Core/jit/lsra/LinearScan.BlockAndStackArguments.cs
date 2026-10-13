@@ -9,717 +9,727 @@ public sealed partial class LinearScan
 {
     private int buildBlockStore(GenTreeBlk block)
     {
-#if TARGET_XARCH
-        var destinationAddress = block.Addr;
-        var source = block.Data;
-        var size = block.Size;
-        GenTree? sourceAddressOrFill = null;
-        var sourceCandidates = SRBM_NONE;
-#if TARGET_X86
-        RefPosition? internalIntDef = null;
-        var internalIsByte = false;
-#endif
-
-        if (block.IsInitBlkOp)
-        {
-            if (source.Oper is GT_INIT_VAL)
+        if (Configuration.TARGET_XARCH)
             {
-                assert(source.IsContained);
-                source = source.AsUnOp().Op1;
-            }
+            var destinationAddress = block.Addr;
+            var source = block.Data;
+            var size = block.Size;
+            GenTree? sourceAddressOrFill = null;
+            var sourceCandidates = SRBM_NONE;
+            RefPosition? internalIntDef = null;
+            var internalIsByte = false;
 
-            sourceAddressOrFill = source;
-            switch (block._kind)
+            if (block.IsInitBlkOp)
             {
-                case GenTreeBlk.BlkOpKindUnroll:
+                if (source.Oper is GT_INIT_VAL)
                 {
-                    var useSimdMove = size >= XMM_REGSIZE_BYTES;
-                    if (useSimdMove && block.IsOnHeapAndContainsReferences)
+                    assert(source.IsContained);
+                    source = source.AsUnOp().Op1;
+                }
+
+                sourceAddressOrFill = source;
+                switch (block._kind)
+                {
+                    case GenTreeBlk.BlkOpKindUnroll:
                     {
-                        var layout = block.Layout;
-                        var simdCandidates = 0u;
-                        var continuousNonGc = 0u;
-                        for (var slot = 0; slot < layout.SlotCount; slot++)
+                        var useSimdMove = size >= Configuration.XMM_REGSIZE_BYTES;
+                        if (useSimdMove && block.IsOnHeapAndContainsReferences)
                         {
-                            if (layout.IsGCPtr(slot))
+                            var layout = block.Layout;
+                            var simdCandidates = 0u;
+                            var continuousNonGc = 0u;
+                            for (var slot = 0; slot < layout.SlotCount; slot++)
                             {
-                                simdCandidates += (continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES;
-                                continuousNonGc = 0;
+                                if (layout.IsGCPtr(slot))
+                                {
+                                    simdCandidates +=
+                                        unchecked((uint)(continuousNonGc * Configuration.TARGET_POINTER_SIZE /
+                                            Configuration.XMM_REGSIZE_BYTES));
+                                    continuousNonGc = 0;
+                                }
+                                else
+                                {
+                                    continuousNonGc++;
+                                }
+                            }
+
+                            simdCandidates +=
+                                unchecked((uint)(continuousNonGc * Configuration.TARGET_POINTER_SIZE /
+                                    Configuration.XMM_REGSIZE_BYTES));
+                            useSimdMove = simdCandidates > 1;
+                        }
+
+                        if (useSimdMove)
+                        {
+                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                            setContainsAVXFlags(source.IsIntegralConst(0)
+                                ? (uint)Configuration.XMM_REGSIZE_BYTES
+                                : (uint)_compiler.roundDownSimdSize(size));
+                        }
+
+                        if (Configuration.TARGET_X86 && (size & 1) != 0)
+                        {
+                            sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
+                        }
+                        break;
+                    }
+
+                    case GenTreeBlk.BlkOpKindLoop:
+                    {
+                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw new FatalJitException($"Unsupported initialization block kind {block._kind}.");
+                    }
+                }
+            }
+            else
+            {
+                if (source.Oper is GT_IND)
+                {
+                    assert(source.IsContained);
+                    sourceAddressOrFill = source.AsIndir().Addr;
+                }
+
+                switch (block._kind)
+                {
+                    case GenTreeBlk.BlkOpKindUnroll:
+                    {
+                        var registerSize = (uint)_compiler.roundDownSimdSize(size);
+                        var remainder = size;
+                        if ((size >= registerSize) && (registerSize > 0))
+                        {
+                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                            setContainsAVXFlags(registerSize);
+                            remainder %= registerSize;
+                        }
+
+                        if ((remainder > 0) &&
+                            ((registerSize == 0) ||
+                             (uint.IsPow2(remainder) && (remainder <= Configuration.REGSIZE_BYTES))))
+                        {
+                            var registerCandidates = _availableIntRegs;
+                            if (Configuration.TARGET_X86)
+                            {
+                                if ((size & 1) != 0)
+                                {
+                                    registerCandidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
+                                    internalIsByte = true;
+                                }
+
+                                internalIntDef = buildInternalIntRegisterDefForNode(block, registerCandidates);
                             }
                             else
                             {
-                                continuousNonGc++;
+                                _ = buildInternalIntRegisterDefForNode(block, registerCandidates);
                             }
                         }
 
-                        simdCandidates += (continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES;
-                        useSimdMove = simdCandidates > 1;
+                        break;
                     }
 
-                    if (useSimdMove)
+                    case GenTreeBlk.BlkOpKindUnrollMemmove:
                     {
-                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
-                        setContainsAVXFlags(source.IsIntegralConst(0)
-                            ? XMM_REGSIZE_BYTES
-                            : (uint)_compiler.roundDownSimdSize(size));
-                    }
-
-#if TARGET_X86
-                    if ((size & 1) != 0)
-                    {
-                        sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
-                    }
-#endif
-                    break;
-                }
-
-                case GenTreeBlk.BlkOpKindLoop:
-                {
-                    _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    break;
-                }
-
-                default:
-                {
-                    throw new FatalJitException($"Unsupported initialization block kind {block._kind}.");
-                }
-            }
-        }
-        else
-        {
-            if (source.Oper is GT_IND)
-            {
-                assert(source.IsContained);
-                sourceAddressOrFill = source.AsIndir().Addr;
-            }
-
-            switch (block._kind)
-            {
-                case GenTreeBlk.BlkOpKindUnroll:
-                {
-                    var registerSize = (uint)_compiler.roundDownSimdSize(size);
-                    var remainder = size;
-                    if ((size >= registerSize) && (registerSize > 0))
-                    {
-                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
-                        setContainsAVXFlags(registerSize);
-                        remainder %= registerSize;
-                    }
-
-                    if ((remainder > 0) &&
-                        ((registerSize == 0) || (uint.IsPow2(remainder) && (remainder <= REGSIZE_BYTES))))
-                    {
-                        var registerCandidates = _availableIntRegs;
-#if TARGET_X86
-                        if ((size & 1) != 0)
+                        if (Configuration.TARGET_X86)
                         {
-                            registerCandidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
-                            internalIsByte = true;
+                            assert(false, "Configuration.TARGET_POINTER_SIZE == 8");
                         }
-                        internalIntDef = buildInternalIntRegisterDefForNode(block, registerCandidates);
-#else
-                        _ = buildInternalIntRegisterDefForNode(block, registerCandidates);
-#endif
-                    }
-
-                    break;
-                }
-
-                case GenTreeBlk.BlkOpKindUnrollMemmove:
-                {
-#if TARGET_X86
-                    assert(false, "TARGET_POINTER_SIZE == 8");
-#endif
-                    assert(size > 0);
-                    var simdSize = (uint)_compiler.roundDownSimdSize(size);
-                    if ((size >= simdSize) && (simdSize > 0))
-                    {
-                        var simdRegisters = size / simdSize;
-                        if ((size % simdSize) != 0)
+                        assert(size > 0);
+                        var simdSize = (uint)_compiler.roundDownSimdSize(size);
+                        if ((size >= simdSize) && (simdSize > 0))
                         {
-                            simdRegisters++;
+                            var simdRegisters = size / simdSize;
+                            if ((size % simdSize) != 0)
+                            {
+                                simdRegisters++;
+                            }
+
+                            for (var index = 0u; index < simdRegisters; index++)
+                            {
+                                _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                            }
+
+                            setContainsAVXFlags(simdSize);
                         }
-
-                        for (var index = 0u; index < simdRegisters; index++)
-                        {
-                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
-                        }
-
-                        setContainsAVXFlags(simdSize);
-                    }
-                    else if (uint.IsPow2(size))
-                    {
-                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    }
-                    else
-                    {
-                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    }
-
-                    break;
-                }
-
-                default:
-                {
-                    throw new FatalJitException($"Unsupported copy block kind {block._kind}.");
-                }
-            }
-        }
-
-        var useCount = 0;
-        if (!destinationAddress.IsContained)
-        {
-            useCount++;
-            _ = buildUse(destinationAddress,
-                forceLowGprForApxIfNeeded(destinationAddress, SRBM_NONE, _evexIsSupported));
-        }
-        else if (destinationAddress.Oper.IsAddrMode)
-        {
-            useCount += buildAddrUses(destinationAddress,
-                forceLowGprForApxIfNeeded(destinationAddress, SRBM_NONE, _evexIsSupported));
-        }
-
-        if (sourceAddressOrFill is not null)
-        {
-            if (!sourceAddressOrFill.IsContained)
-            {
-                useCount++;
-                _ = buildUse(sourceAddressOrFill,
-                    forceLowGprForApxIfNeeded(sourceAddressOrFill, sourceCandidates, _evexIsSupported));
-            }
-            else if (sourceAddressOrFill.Oper.IsAddrMode)
-            {
-                useCount += buildAddrUses(sourceAddressOrFill,
-                    forceLowGprForApxIfNeeded(sourceAddressOrFill, SRBM_NONE, _evexIsSupported));
-            }
-        }
-
-#if TARGET_X86
-        // x86 has four byte registers; four incoming address uses can otherwise occupy them all.
-        assert((useCount < 4) || !block.IsInitBlkOp);
-        if (internalIsByte && (useCount >= 4))
-        {
-            if (internalIntDef is null)
-            {
-                noway_assert(false, "An x86 byte block store requires an internal integer definition.");
-                throw new FatalJitException("An x86 byte block store requires an internal integer definition.");
-            }
-
-            internalIntDef.registerAssignment = SRBM_RAX;
-        }
-#endif
-
-        buildInternalRegisterUses();
-        buildKills(block, getKillSetForBlockStore(block));
-        return useCount;
-#elif TARGET_ARM64
-        var destinationAddress = block.Addr;
-        var source = block.Data;
-        var size = block.Size;
-        GenTree? sourceAddressOrFill = null;
-
-        if (block.IsInitBlkOp)
-        {
-            if (source.Oper is GT_INIT_VAL)
-            {
-                assert(source.IsContained);
-                source = source.AsUnOp().Op1;
-            }
-
-            sourceAddressOrFill = source;
-            switch (block._kind)
-            {
-                case GenTreeBlk.BlkOpKindUnroll:
-                {
-                    if (destinationAddress.IsContained)
-                    {
-                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    }
-
-                    if (size > 16)
-                    {
-                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
-                    }
-
-                    break;
-                }
-
-                case GenTreeBlk.BlkOpKindLoop:
-                {
-                    _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    break;
-                }
-
-                default:
-                {
-                    throw new FatalJitException($"Unsupported ARM64 initialization block kind {block._kind}.");
-                }
-            }
-        }
-        else
-        {
-            if (source.Oper is GT_IND)
-            {
-                assert(source.IsContained);
-                sourceAddressOrFill = source.AsIndir().Addr;
-            }
-
-            switch (block._kind)
-            {
-                case GenTreeBlk.BlkOpKindUnroll:
-                {
-                    _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    if (size >= (2 * REGSIZE_BYTES))
-                    {
-                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    }
-
-                    if (size >= 32)
-                    {
-                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
-                        _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
-                    }
-
-                    var sourceIsLocal = source.Oper is GT_LCL_VAR or GT_LCL_FLD ||
-                        ((sourceAddressOrFill is not null) && (sourceAddressOrFill.Oper is GT_LCL_ADDR));
-                    var destinationIsLocal = destinationAddress.Oper is GT_LCL_ADDR;
-                    if ((sourceIsLocal || (sourceAddressOrFill?.IsContained is true)) &&
-                        (destinationIsLocal || destinationAddress.IsContained))
-                    {
-                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    }
-
-                    break;
-                }
-
-                case GenTreeBlk.BlkOpKindUnrollMemmove:
-                {
-                    assert(size > 0);
-                    if (size >= 16)
-                    {
-                        var registerCount = (size + 15) / 16;
-                        for (var index = 0; index < registerCount; index++)
-                        {
-                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
-                        }
-                    }
-                    else
-                    {
-                        var registerCount = uint.IsPow2(size) ? 1 : 2;
-                        for (var index = 0; index < registerCount; index++)
+                        else if (uint.IsPow2(size))
                         {
                             _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
                         }
+                        else
+                        {
+                            _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                            _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        }
+
+                        break;
                     }
 
-                    break;
-                }
-
-                default:
-                {
-                    throw new FatalJitException($"Unsupported ARM64 copy block kind {block._kind}.");
+                    default:
+                    {
+                        throw new FatalJitException($"Unsupported copy block kind {block._kind}.");
+                    }
                 }
             }
-        }
 
-        var useCount = 0;
-        if (!destinationAddress.IsContained)
-        {
-            _ = buildUse(destinationAddress);
-            useCount++;
-        }
-        else if (destinationAddress.Oper.IsAddrMode)
-        {
-            var baseAddress = destinationAddress.AsAddrMode().BaseAddress
-                ?? throw new FatalJitException("Contained ARM64 block destination requires a base address.");
-            useCount += buildAddrUses(baseAddress);
-        }
-
-        if (sourceAddressOrFill is not null)
-        {
-            if (!sourceAddressOrFill.IsContained)
+            var useCount = 0;
+            if (!destinationAddress.IsContained)
             {
-                _ = buildUse(sourceAddressOrFill);
+                useCount++;
+                _ = buildUse(destinationAddress,
+                    forceLowGprForApxIfNeeded(destinationAddress, SRBM_NONE, _evexIsSupported));
+            }
+            else if (destinationAddress.Oper.IsAddrMode)
+            {
+                useCount += buildAddrUses(destinationAddress,
+                    forceLowGprForApxIfNeeded(destinationAddress, SRBM_NONE, _evexIsSupported));
+            }
+
+            if (sourceAddressOrFill is not null)
+            {
+                if (!sourceAddressOrFill.IsContained)
+                {
+                    useCount++;
+                    _ = buildUse(sourceAddressOrFill,
+                        forceLowGprForApxIfNeeded(sourceAddressOrFill, sourceCandidates, _evexIsSupported));
+                }
+                else if (sourceAddressOrFill.Oper.IsAddrMode)
+                {
+                    useCount += buildAddrUses(sourceAddressOrFill,
+                        forceLowGprForApxIfNeeded(sourceAddressOrFill, SRBM_NONE, _evexIsSupported));
+                }
+            }
+
+            if (Configuration.TARGET_X86)
+            {
+                // x86 has four byte registers; four incoming address uses can otherwise occupy them all.
+                assert((useCount < 4) || !block.IsInitBlkOp);
+                if (internalIsByte && (useCount >= 4))
+                {
+                    if (internalIntDef is null)
+                    {
+                        noway_assert(false, "An x86 byte block store requires an internal integer definition.");
+                        throw new FatalJitException("An x86 byte block store requires an internal integer definition.");
+                    }
+
+                    internalIntDef.registerAssignment = SRBM_X86_EAX;
+                }
+            }
+
+            buildInternalRegisterUses();
+            buildKills(block, getKillSetForBlockStore(block));
+            return useCount;
+        }
+
+        if (Configuration.TARGET_ARM64)
+            {
+            var destinationAddress = block.Addr;
+            var source = block.Data;
+            var size = block.Size;
+            GenTree? sourceAddressOrFill = null;
+
+            if (block.IsInitBlkOp)
+            {
+                if (source.Oper is GT_INIT_VAL)
+                {
+                    assert(source.IsContained);
+                    source = source.AsUnOp().Op1;
+                }
+
+                sourceAddressOrFill = source;
+                switch (block._kind)
+                {
+                    case GenTreeBlk.BlkOpKindUnroll:
+                    {
+                        if (destinationAddress.IsContained)
+                        {
+                            _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        }
+
+                        if (size > 16)
+                        {
+                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                        }
+
+                        break;
+                    }
+
+                    case GenTreeBlk.BlkOpKindLoop:
+                    {
+                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw new FatalJitException($"Unsupported ARM64 initialization block kind {block._kind}.");
+                    }
+                }
+            }
+            else
+            {
+                if (source.Oper is GT_IND)
+                {
+                    assert(source.IsContained);
+                    sourceAddressOrFill = source.AsIndir().Addr;
+                }
+
+                switch (block._kind)
+                {
+                    case GenTreeBlk.BlkOpKindUnroll:
+                    {
+                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        if (size >= (2 * Configuration.REGSIZE_BYTES))
+                        {
+                            _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        }
+
+                        if (size >= 32)
+                        {
+                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                            _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                        }
+
+                        var sourceIsLocal = source.Oper is GT_LCL_VAR or GT_LCL_FLD ||
+                            ((sourceAddressOrFill is not null) && (sourceAddressOrFill.Oper is GT_LCL_ADDR));
+                        var destinationIsLocal = destinationAddress.Oper is GT_LCL_ADDR;
+                        if ((sourceIsLocal || (sourceAddressOrFill?.IsContained is true)) &&
+                            (destinationIsLocal || destinationAddress.IsContained))
+                        {
+                            _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        }
+
+                        break;
+                    }
+
+                    case GenTreeBlk.BlkOpKindUnrollMemmove:
+                    {
+                        assert(size > 0);
+                        if (size >= 16)
+                        {
+                            var registerCount = (size + 15) / 16;
+                            for (var index = 0; index < registerCount; index++)
+                            {
+                                _ = buildInternalFloatRegisterDefForNode(block, internalFloatRegCandidates());
+                            }
+                        }
+                        else
+                        {
+                            var registerCount = uint.IsPow2(size) ? 1 : 2;
+                            for (var index = 0; index < registerCount; index++)
+                            {
+                                _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                            }
+                        }
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        throw new FatalJitException($"Unsupported ARM64 copy block kind {block._kind}.");
+                    }
+                }
+            }
+
+            var useCount = 0;
+            if (!destinationAddress.IsContained)
+            {
+                _ = buildUse(destinationAddress);
                 useCount++;
             }
-            else if (sourceAddressOrFill.Oper.IsAddrMode)
+            else if (destinationAddress.Oper.IsAddrMode)
             {
-                var baseAddress = sourceAddressOrFill.AsAddrMode().BaseAddress
-                    ?? throw new FatalJitException("Contained ARM64 block source requires a base address.");
+                var baseAddress = destinationAddress.AsAddrMode().BaseAddress
+                    ?? throw new FatalJitException("Contained ARM64 block destination requires a base address.");
                 useCount += buildAddrUses(baseAddress);
             }
-        }
 
-        buildInternalRegisterUses();
-        buildKills(block, getKillSetForBlockStore(block));
-        return useCount;
-#elif TARGET_RISCV64 || TARGET_LOONGARCH64
-#if TARGET_RISCV64
-        assert(block.Oper.IsStoreBlk);
-#endif
-
-        var destinationAddress = block.Addr;
-        var source = block.Data;
-        var size = block.Size;
-        GenTree? sourceAddressOrFill = null;
-
-        var destinationAddressCandidates = SRBM_NONE;
-        var sourceCandidates = SRBM_NONE;
-        var sizeCandidates = SRBM_NONE;
-
-        if (block.IsInitBlkOp)
-        {
-            if (source.Oper is GT_INIT_VAL)
+            if (sourceAddressOrFill is not null)
             {
-                assert(source.IsContained);
-                source = source.AsUnOp().Op1;
+                if (!sourceAddressOrFill.IsContained)
+                {
+                    _ = buildUse(sourceAddressOrFill);
+                    useCount++;
+                }
+                else if (sourceAddressOrFill.Oper.IsAddrMode)
+                {
+                    var baseAddress = sourceAddressOrFill.AsAddrMode().BaseAddress
+                        ?? throw new FatalJitException("Contained ARM64 block source requires a base address.");
+                    useCount += buildAddrUses(baseAddress);
+                }
             }
 
-            sourceAddressOrFill = source;
+            buildInternalRegisterUses();
+            buildKills(block, getKillSetForBlockStore(block));
+            return useCount;
+        }
 
-            switch (block._kind)
+        if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
             {
-                case GenTreeBlk.BlkOpKindUnroll:
+                if (Configuration.TARGET_RISCV64)
                 {
-                    if (destinationAddress.IsContained)
+                    assert(block.Oper.IsStoreBlk);
+                }
+
+            var destinationAddress = block.Addr;
+            var source = block.Data;
+            var size = block.Size;
+            GenTree? sourceAddressOrFill = null;
+
+            var destinationAddressCandidates = SRBM_NONE;
+            var sourceCandidates = SRBM_NONE;
+            var sizeCandidates = SRBM_NONE;
+
+            if (block.IsInitBlkOp)
+            {
+                if (source.Oper is GT_INIT_VAL)
+                {
+                    assert(source.IsContained);
+                    source = source.AsUnOp().Op1;
+                }
+
+                sourceAddressOrFill = source;
+
+                switch (block._kind)
+                {
+                    case GenTreeBlk.BlkOpKindUnroll:
                     {
-                        // Code generation computes contained destinations and may need a register for the address.
-                        _ = buildInternalIntRegisterDefForNode(block);
+                        if (destinationAddress.IsContained)
+                        {
+                            // Code generation computes contained destinations and may need a register for the address.
+                            _ = buildInternalIntRegisterDefForNode(block);
+                        }
+
+                        var destinationAlignmentIsKnown = destinationAddress.Oper is GT_LCL_ADDR;
+                        if (destinationAlignmentIsKnown && (size > Configuration.FP_REGSIZE_BYTES))
+                        {
+                            // Larger aligned blocks may use SIMD instructions; LSRA still reserves an integer temp.
+                            _ = buildInternalIntRegisterDefForNode(block);
+                        }
+
+                        break;
                     }
 
-                    var destinationAlignmentIsKnown = destinationAddress.Oper is GT_LCL_ADDR;
-                    if (destinationAlignmentIsKnown && (size > FP_REGSIZE_BYTES))
+                    case GenTreeBlk.BlkOpKindLoop:
                     {
-                        // Larger aligned blocks may use SIMD instructions; LSRA still reserves an integer temp.
-                        _ = buildInternalIntRegisterDefForNode(block);
+                        _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
+                        break;
                     }
 
-                    break;
-                }
-
-                case GenTreeBlk.BlkOpKindLoop:
-                {
-                    _ = buildInternalIntRegisterDefForNode(block, _availableIntRegs);
-                    break;
-                }
-
-                default:
-                {
-#if TARGET_LOONGARCH64
-                    unreached();
-#else
-                    throw new FatalJitException($"Unsupported RISC-V initialization block kind {block._kind}.");
-#endif
-                    break;
+                    default:
+                    {
+                        if (Configuration.TARGET_LOONGARCH64)
+                        {
+                            unreached();
+                            throw new FatalJitException(CORJIT_SKIPPED,
+                                $"Unsupported LoongArch64 initialization block kind {block._kind}.");
+                        }
+                        throw new FatalJitException($"Unsupported RISC-V initialization block kind {block._kind}.");
+                    }
                 }
             }
-        }
-        else
-        {
-            if (source.Oper is GT_IND)
+            else
             {
-                assert(source.IsContained);
-                sourceAddressOrFill = source.AsIndir().Addr;
-            }
-
-            switch (block._kind)
-            {
-                case GenTreeBlk.BlkOpKindUnroll:
+                if (source.Oper is GT_IND)
                 {
-                    _ = buildInternalIntRegisterDefForNode(block);
-                    break;
+                    assert(source.IsContained);
+                    sourceAddressOrFill = source.AsIndir().Addr;
                 }
 
-                default:
+                switch (block._kind)
                 {
-#if TARGET_LOONGARCH64
-                    unreached();
-#else
-                    throw new FatalJitException($"Unsupported RISC-V copy block kind {block._kind}.");
-#endif
-                    break;
+                    case GenTreeBlk.BlkOpKindUnroll:
+                    {
+                        _ = buildInternalIntRegisterDefForNode(block);
+                        break;
+                    }
+
+                    default:
+                    {
+                        if (Configuration.TARGET_LOONGARCH64)
+                        {
+                            unreached();
+                            throw new FatalJitException(CORJIT_SKIPPED,
+                                $"Unsupported LoongArch64 copy block kind {block._kind}.");
+                        }
+                        throw new FatalJitException($"Unsupported RISC-V copy block kind {block._kind}.");
+                    }
                 }
             }
-        }
 
-        if (sizeCandidates != SRBM_NONE)
-        {
-            _ = buildInternalIntRegisterDefForNode(block, sizeCandidates);
-        }
-
-        var useCount = 0;
-        if (!destinationAddress.IsContained)
-        {
-            _ = buildUse(destinationAddress, destinationAddressCandidates);
-            useCount++;
-        }
-        else if (destinationAddress.Oper.IsAddrMode)
-        {
-            var addressMode = destinationAddress.AsAddrMode();
-            if (addressMode.BaseAddress is { } baseAddress)
+            if (sizeCandidates != SRBM_NONE)
             {
-                useCount += buildAddrUses(baseAddress, destinationAddressCandidates);
+                _ = buildInternalIntRegisterDefForNode(block, sizeCandidates);
             }
-        }
 
-        if (sourceAddressOrFill is not null)
-        {
-            if (!sourceAddressOrFill.IsContained)
+            var useCount = 0;
+            if (!destinationAddress.IsContained)
             {
-                _ = buildUse(sourceAddressOrFill, sourceCandidates);
+                _ = buildUse(destinationAddress, destinationAddressCandidates);
                 useCount++;
             }
-            else if (sourceAddressOrFill.Oper.IsAddrMode)
+            else if (destinationAddress.Oper.IsAddrMode)
             {
-                var addressMode = sourceAddressOrFill.AsAddrMode();
+                var addressMode = destinationAddress.AsAddrMode();
                 if (addressMode.BaseAddress is { } baseAddress)
                 {
-                    useCount += buildAddrUses(baseAddress, sourceCandidates);
+                    useCount += buildAddrUses(baseAddress, destinationAddressCandidates);
                 }
             }
+
+            if (sourceAddressOrFill is not null)
+            {
+                if (!sourceAddressOrFill.IsContained)
+                {
+                    _ = buildUse(sourceAddressOrFill, sourceCandidates);
+                    useCount++;
+                }
+                else if (sourceAddressOrFill.Oper.IsAddrMode)
+                {
+                    var addressMode = sourceAddressOrFill.AsAddrMode();
+                    if (addressMode.BaseAddress is { } baseAddress)
+                    {
+                        useCount += buildAddrUses(baseAddress, sourceCandidates);
+                    }
+                }
+            }
+
+            buildInternalRegisterUses();
+            buildKills(block, getKillSetForBlockStore(block));
+            return useCount;
         }
 
-        buildInternalRegisterUses();
-        buildKills(block, getKillSetForBlockStore(block));
-        return useCount;
-#else
-        NYI("LinearScan.buildBlockStore outside xarch and ARM64");
-        throw new FatalJitException("LinearScan.buildBlockStore outside xarch and ARM64.");
-#endif
+        NYI("LinearScan.buildBlockStore on this target");
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "LinearScan.buildBlockStore on this target is not implemented.");
     }
 
     private int buildPutArgStk(GenTreePutArgStk argument)
     {
-#if TARGET_XARCH
-        var source = argument.Op1;
-        if (source.Oper is GT_FIELD_LIST)
-        {
-            assert(source.IsContained);
-            var fields = source.AsFieldList();
-#if FEATURE_SIMD
-            RefPosition? simdTemp = null;
-#endif
-#if TARGET_X86
-            RefPosition? intTemp = null;
-            var previousOffset = unchecked((uint)argument.StackByteSize);
-#endif
-
-            foreach (var field in fields.Uses)
+        if (Configuration.TARGET_XARCH)
             {
-#if TARGET_X86
-                assert(field.Type is not TYP_LONG);
-#endif
-#if FEATURE_SIMD
-                if ((field.Type is TYP_SIMD12) && (simdTemp is null))
+                var source = argument.Op1;
+            if (source.Oper is GT_FIELD_LIST)
+            {
+                assert(source.IsContained);
+                var fields = source.AsFieldList();
+                RefPosition? simdTemp = null;
+                RefPosition? intTemp = null;
+                var previousOffset = unchecked((uint)argument.StackByteSize);
+
+                foreach (var field in fields.Uses)
                 {
-                    simdTemp = buildInternalFloatRegisterDefForNode(argument, _availableFloatRegs);
+                    if (Configuration.TARGET_X86)
+                    {
+                        assert(field.Type is not TYP_LONG);
+                    }
+                    if (Configuration.FEATURE_SIMD && (field.Type is TYP_SIMD12) && (simdTemp is null))
+                    {
+                        simdTemp = buildInternalFloatRegisterDefForNode(argument, _availableFloatRegs);
+                    }
+                    if (Configuration.TARGET_X86)
+                    {
+                        var fieldNode = field.Node;
+                        var fieldOffset = (uint)field.Offset;
+                        if (varTypeIsIntegralOrI(fieldNode.Type))
+                        {
+                            assert(fieldNode.Type.Size <= Configuration.TARGET_POINTER_SIZE);
+                            var canStoreFullSlot = ((fieldOffset % 4) == 0) &&
+                                (unchecked(previousOffset - fieldOffset) >= 4);
+                            var canLoadFullSlot = (fieldNode.Type.Size == Configuration.TARGET_POINTER_SIZE) ||
+                                (fieldNode.Oper.IsLocalRead && (fieldNode.Type.Size >= field.Type.Size));
+
+                            if ((!canStoreFullSlot || !canLoadFullSlot) && (intTemp is null))
+                            {
+                                intTemp = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                            }
+
+                            if (!canStoreFullSlot && varTypeIsByte(field.Type))
+                            {
+                                var byteTemp = intTemp
+                                    ?? throw new FatalJitException("A partial x86 field store requires an internal register.");
+                                byteTemp.registerAssignment &= _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
+                            }
+                        }
+
+                        previousOffset = fieldOffset;
+                    }
                 }
-#endif
-#if TARGET_X86
-                var fieldNode = field.Node;
-                var fieldOffset = (uint)field.Offset;
-                if (varTypeIsIntegralOrI(fieldNode.Type))
+
+                var fieldCount = 0;
+                foreach (var field in fields.Uses)
                 {
-                    assert(fieldNode.Type.Size <= TARGET_POINTER_SIZE);
-                    var canStoreFullSlot = ((fieldOffset % 4) == 0) &&
-                        (unchecked(previousOffset - fieldOffset) >= 4);
-                    var canLoadFullSlot = (fieldNode.Type.Size == TARGET_POINTER_SIZE) ||
-                        (fieldNode.Oper.IsLocalRead && (fieldNode.Type.Size >= field.Type.Size));
-
-                    if ((!canStoreFullSlot || !canLoadFullSlot) && (intTemp is null))
-                    {
-                        intTemp = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
-                    }
-
-                    if (!canStoreFullSlot && varTypeIsByte(field.Type))
-                    {
-                        var byteTemp = intTemp
-                            ?? throw new FatalJitException("A partial x86 field store requires an internal register.");
-                        byteTemp.registerAssignment &= _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
-                    }
+                    fieldCount += buildOperandUses(field.Node);
                 }
 
-                previousOffset = fieldOffset;
-#endif
+                buildInternalRegisterUses();
+                return fieldCount;
             }
 
-            var fieldCount = 0;
-            foreach (var field in fields.Uses)
+            if (source.Type is not TYP_STRUCT)
             {
-                fieldCount += buildOperandUses(field.Node);
+                if (Configuration.FEATURE_SIMD && Configuration.TARGET_X86 && argument.IsSimd12)
+                {
+                    _ = buildInternalFloatRegisterDefForNode(argument, internalFloatRegCandidates());
+                    _ = buildUse(source);
+                    buildInternalRegisterUses();
+                    return 1;
+                }
+                return buildOperandUses(source);
+            }
+
+            var loadSize = argument.ArgLoadSize;
+            switch (argument._kind)
+            {
+                case GenTreePutArgStk.Kind.Unroll:
+                {
+                    if ((loadSize % Configuration.XMM_REGSIZE_BYTES) != 0)
+                    {
+                        var candidates = _availableIntRegs;
+                        if (Configuration.TARGET_X86 && (loadSize & 1) != 0)
+                        {
+                            candidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
+                        }
+                        _ = buildInternalIntRegisterDefForNode(argument, candidates);
+                    }
+
+                    if (loadSize >= (Configuration.TARGET_X86 ? 8u : Configuration.XMM_REGSIZE_BYTES))
+                    {
+                        _ = buildInternalFloatRegisterDefForNode(argument, internalFloatRegCandidates());
+                        setContainsAVXFlags();
+                    }
+
+                    break;
+                }
+
+                case GenTreePutArgStk.Kind.RepInstr:
+                case GenTreePutArgStk.Kind.PartialRepInstr when !Configuration.TARGET_X86:
+                {
+                    _ = buildInternalIntRegisterDefForNode(argument,
+                        TargetRuntimeMetadata.SelectXarch(SRBM_X86_EDI, SRBM_X64_RDI));
+                    _ = buildInternalIntRegisterDefForNode(argument,
+                        TargetRuntimeMetadata.SelectXarch(SRBM_X86_ECX, SRBM_X64_RCX));
+                    _ = buildInternalIntRegisterDefForNode(argument,
+                        TargetRuntimeMetadata.SelectXarch(SRBM_X86_ESI, SRBM_X64_RSI));
+                    break;
+                }
+
+                case GenTreePutArgStk.Kind.Push when Configuration.TARGET_X86:
+                {
+                    break;
+                }
+                default:
+                {
+                    throw new FatalJitException($"Unsupported stack argument kind {argument._kind}.");
+                }
+            }
+
+            var sourceCount = buildOperandUses(source);
+            buildInternalRegisterUses();
+            if (Configuration.TARGET_X86)
+            {
+                assert(sourceCount < 4);
+            }
+            return sourceCount;
+        }
+
+        if (Configuration.TARGET_ARM64)
+            {
+            var source = argument.Op1;
+            var sourceCount = 0;
+            if (source.Type is TYP_STRUCT)
+            {
+                if (source.Oper is GT_FIELD_LIST)
+                {
+                    assert(source.IsContained);
+                    foreach (var field in source.AsFieldList().Uses)
+                    {
+                        _ = buildUse(field.Node);
+                        sourceCount++;
+                        if (Configuration.FEATURE_SIMD && field.Type is TYP_SIMD12)
+                        {
+                            _ = buildInternalIntRegisterDefForNode(field.Node, _availableIntRegs);
+                        }
+                    }
+                }
+                else
+                {
+                    _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                    _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                    assert(source.IsContained);
+                    if (source.Oper is GT_BLK)
+                    {
+                        sourceCount = buildOperandUses(source.AsBlk().Addr);
+                    }
+                    else
+                    {
+                        assert(source.Oper is GT_LCL_VAR or GT_LCL_FLD);
+                    }
+                }
+            }
+            else
+            {
+                assert(!source.IsContained);
+                sourceCount = buildOperandUses(source);
+                if (Configuration.FEATURE_SIMD && compAppleArm64Abi() && (argument.StackByteSize is 12))
+                {
+                    _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
+                }
             }
 
             buildInternalRegisterUses();
-            return fieldCount;
+            return sourceCount;
         }
 
-        if (source.Type is not TYP_STRUCT)
-        {
-#if FEATURE_SIMD && TARGET_X86
-            if (argument.IsSimd12)
+        if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
             {
-                _ = buildInternalFloatRegisterDefForNode(argument, internalFloatRegCandidates());
-                _ = buildUse(source);
-                buildInternalRegisterUses();
-                return 1;
-            }
-#endif
-            return buildOperandUses(source);
-        }
+            assert(argument.Oper.IsPutArgStk);
 
-        var loadSize = argument.ArgLoadSize;
-        switch (argument._kind)
-        {
-            case GenTreePutArgStk.Kind.Unroll:
+            var source = argument.Op1;
+            var sourceCount = 0;
+
+            if (source.Type is TYP_STRUCT)
             {
-                if ((loadSize % XMM_REGSIZE_BYTES) != 0)
+                if (source.Oper is GT_FIELD_LIST)
                 {
-                    var candidates = _availableIntRegs;
-#if TARGET_X86
-                    if ((loadSize & 1) != 0)
+                    assert(source.IsContained);
+                    foreach (var field in source.AsFieldList().Uses)
                     {
-                        candidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
+                        _ = buildUse(field.Node);
+                        sourceCount++;
                     }
-#endif
-                    _ = buildInternalIntRegisterDefForNode(argument, candidates);
                 }
-
-#if TARGET_X86
-                if (loadSize >= 8)
-#else
-                if (loadSize >= XMM_REGSIZE_BYTES)
-#endif
+                else
                 {
-                    _ = buildInternalFloatRegisterDefForNode(argument, internalFloatRegCandidates());
-                    setContainsAVXFlags();
-                }
+                    _ = buildInternalIntRegisterDefForNode(argument);
+                    _ = buildInternalIntRegisterDefForNode(argument);
 
-                break;
-            }
-
-            case GenTreePutArgStk.Kind.RepInstr:
-#if !TARGET_X86
-            case GenTreePutArgStk.Kind.PartialRepInstr:
-#endif
-            {
-                _ = buildInternalIntRegisterDefForNode(argument, SRBM_RDI);
-                _ = buildInternalIntRegisterDefForNode(argument, SRBM_RCX);
-                _ = buildInternalIntRegisterDefForNode(argument, SRBM_RSI);
-                break;
-            }
-
-#if TARGET_X86
-            case GenTreePutArgStk.Kind.Push:
-            {
-                break;
-            }
-#endif
-            default:
-            {
-                throw new FatalJitException($"Unsupported stack argument kind {argument._kind}.");
-            }
-        }
-
-        var sourceCount = buildOperandUses(source);
-        buildInternalRegisterUses();
-#if TARGET_X86
-        assert(sourceCount < 4);
-#endif
-        return sourceCount;
-#elif TARGET_ARM64
-        var source = argument.Op1;
-        var sourceCount = 0;
-        if (source.Type is TYP_STRUCT)
-        {
-            if (source.Oper is GT_FIELD_LIST)
-            {
-                assert(source.IsContained);
-                foreach (var field in source.AsFieldList().Uses)
-                {
-                    _ = buildUse(field.Node);
-                    sourceCount++;
-#if FEATURE_SIMD
-                    if (field.Type is TYP_SIMD12)
+                    assert(source.IsContained);
+                    if (source.Oper is GT_BLK)
                     {
-                        _ = buildInternalIntRegisterDefForNode(field.Node, _availableIntRegs);
+                        sourceCount = buildOperandUses(source.AsBlk().Addr);
                     }
-#endif
+                    else
+                    {
+                        assert(source.Oper is GT_LCL_VAR or GT_LCL_FLD);
+                    }
                 }
             }
             else
             {
-                _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
-                _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
-                assert(source.IsContained);
-                if (source.Oper is GT_BLK)
-                {
-                    sourceCount = buildOperandUses(source.AsBlk().Addr);
-                }
-                else
-                {
-                    assert(source.Oper is GT_LCL_VAR or GT_LCL_FLD);
-                }
+                assert(!source.IsContained);
+                sourceCount = buildOperandUses(source);
             }
-        }
-        else
-        {
-            assert(!source.IsContained);
-            sourceCount = buildOperandUses(source);
-#if FEATURE_SIMD
-            if (compAppleArm64Abi() && (argument.StackByteSize is 12))
-            {
-                _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
-            }
-#endif
+
+            buildInternalRegisterUses();
+            return sourceCount;
         }
 
-        buildInternalRegisterUses();
-        return sourceCount;
-#elif TARGET_RISCV64 || TARGET_LOONGARCH64
-        assert(argument.Oper.IsPutArgStk);
-
-        var source = argument.Op1;
-        var sourceCount = 0;
-
-        if (source.Type is TYP_STRUCT)
-        {
-            if (source.Oper is GT_FIELD_LIST)
-            {
-                assert(source.IsContained);
-                foreach (var field in source.AsFieldList().Uses)
-                {
-                    _ = buildUse(field.Node);
-                    sourceCount++;
-                }
-            }
-            else
-            {
-                _ = buildInternalIntRegisterDefForNode(argument);
-                _ = buildInternalIntRegisterDefForNode(argument);
-
-                assert(source.IsContained);
-                if (source.Oper is GT_BLK)
-                {
-                    sourceCount = buildOperandUses(source.AsBlk().Addr);
-                }
-                else
-                {
-                    assert(source.Oper is GT_LCL_VAR or GT_LCL_FLD);
-                }
-            }
-        }
-        else
-        {
-            assert(!source.IsContained);
-            sourceCount = buildOperandUses(source);
-        }
-
-        buildInternalRegisterUses();
-        return sourceCount;
-#else
-        NYI("LinearScan.buildPutArgStk outside xarch and ARM64");
-        throw new FatalJitException("LinearScan.buildPutArgStk outside xarch and ARM64.");
-#endif
+        NYI("LinearScan.buildPutArgStk on this target");
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "LinearScan.buildPutArgStk on this target is not implemented.");
     }
 }

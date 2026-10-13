@@ -138,35 +138,36 @@ public sealed partial class LinearScan
             return tree.AsCall().ReturnTypeDesc.GetReturnRegType(index);
         }
 
-#if !TARGET_64BIT
-        if (tree.Oper.IsMultiRegOp)
+        if (!Configuration.TARGET_64BIT && tree.Oper.IsMultiRegOp)
         {
             return tree.AsMultiRegOp().GetRegType(index);
         }
-#endif
 
         if (tree.Oper.IsHWIntrinsic)
         {
             assert(tree.Type is TYP_STRUCT);
-#if TARGET_ARM64
-            var simdSize = tree.AsHWIntrinsic().SimdSize;
-            if (simdSize is 16)
+            if (Configuration.TARGET_ARM64)
             {
-                return TYP_SIMD16;
+                var simdSize = tree.AsHWIntrinsic().SimdSize;
+                if (simdSize is 16)
+                {
+                    return TYP_SIMD16;
+                }
+
+                assert(simdSize is 8);
+                if (simdSize is 8)
+                {
+                    return TYP_SIMD8;
+                }
+
+                throw new FatalJitException($"ARM64 multi-register HW intrinsic has unsupported SIMD size {simdSize}.");
+            }
+            else if (Configuration.TARGET_XARCH)
+            {
+                return tree.AsHWIntrinsic().GetOp(1).Type;
             }
 
-            assert(simdSize is 8);
-            if (simdSize is 8)
-            {
-                return TYP_SIMD8;
-            }
-
-            throw new FatalJitException($"ARM64 multi-register HW intrinsic has unsupported SIMD size {simdSize}.");
-#elif TARGET_XARCH
-            return tree.AsHWIntrinsic().GetOp(1).Type;
-#else
             throw new FatalJitException("Multi-register HW intrinsic register typing is not implemented for this target.");
-#endif
         }
 
         if (tree.Oper.IsScalarLocal)
@@ -188,8 +189,7 @@ public sealed partial class LinearScan
 
     private void setTgtPref(Interval interval, RefPosition? targetPreferredUse)
     {
-#if !TARGET_ARM
-        if (targetPreferredUse is null)
+        if (Configuration.TARGET_ARM || targetPreferredUse is null)
         {
             return;
         }
@@ -200,7 +200,6 @@ public sealed partial class LinearScan
         {
             useInterval.assignRelatedIntervalIfUnassigned(interval);
         }
-#endif
     }
 
     private RefPosition buildDef(GenTree tree, SingleTypeRegSet destinationCandidates, int multiRegIndex = 0)
@@ -208,7 +207,7 @@ public sealed partial class LinearScan
         assert(!tree.IsContained);
         if (destinationCandidates != SRBM_NONE)
         {
-            assert((tree.RegNum is REG_NA) ||
+            assert((tree.RegNum == REG_NA) ||
                 (destinationCandidates == genSingleTypeRegMask(tree.GetRegByIndex(checked((byte)multiRegIndex)))));
         }
 
@@ -221,7 +220,7 @@ public sealed partial class LinearScan
 
         var interval = newInterval(type);
 
-        if (tree.RegNum is not REG_NA)
+        if (tree.RegNum != REG_NA)
         {
             if (!tree.IsMultiRegNode || (multiRegIndex == 0))
             {
@@ -235,8 +234,7 @@ public sealed partial class LinearScan
             }
         }
 
-#if TARGET_X86
-        else if (varTypeIsByte(tree.Type))
+        else if (Configuration.TARGET_X86 && varTypeIsByte(tree.Type))
         {
             if (destinationCandidates == SRBM_NONE)
             {
@@ -246,7 +244,6 @@ public sealed partial class LinearScan
             destinationCandidates &= ~RBM_NON_BYTE_REGS.IntRegSet;
             assert(destinationCandidates != SRBM_NONE);
         }
-#endif
 
         if (_pendingDelayFree)
         {
@@ -265,15 +262,14 @@ public sealed partial class LinearScan
             _definitionList.Append(_listNodePool.GetNode(definition, tree));
         }
 
-#if !TARGET_ARM
         setTgtPref(interval, _targetPreferredUse);
         setTgtPref(interval, _targetPreferredUse2);
         setTgtPref(interval, _targetPreferredUse3);
-#endif
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        assert(!interval.isPartiallySpilled);
-#endif
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            assert(!interval.isPartiallySpilled);
+        }
         return definition;
     }
 
@@ -294,10 +290,11 @@ public sealed partial class LinearScan
                 updatePreferencesOfDyingLocal(interval);
             }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            buildUpperVectorRestoreRefPosition(interval, _referenceBuildLocation, operand, true,
-                checked((uint)multiRegIndex));
-#endif
+            if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+            {
+                buildUpperVectorRestoreRefPosition(interval, _referenceBuildLocation, operand, true,
+                    checked((uint)multiRegIndex));
+            }
         }
         else if (operand.IsMultiRegLclVar)
         {
@@ -310,10 +307,11 @@ public sealed partial class LinearScan
                 VarSetOps.RemoveElemD(_compiler, _currentLiveVariables, fieldLocal._varIndex);
             }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            buildUpperVectorRestoreRefPosition(interval, _referenceBuildLocation, operand, true,
-                checked((uint)multiRegIndex));
-#endif
+            if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+            {
+                buildUpperVectorRestoreRefPosition(interval, _referenceBuildLocation, operand, true,
+                    checked((uint)multiRegIndex));
+            }
         }
         else
         {
@@ -380,16 +378,18 @@ public sealed partial class LinearScan
     private static regMaskTP removeRegister(regMaskTP registers, regNumber register)
     {
         var mask = regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(registers.Lower & ~mask.Lower, registers.Upper & ~mask.Upper);
-#else
-        return new regMaskTP(registers.Lower & ~mask.Lower);
-#endif
+        return Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(registers.Lower & ~mask.Lower, registers.Upper & ~mask.Upper)
+            : new regMaskTP(registers.Lower & ~mask.Lower);
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private Interval getUpperVectorInterval(uint varIndex)
     {
+        if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         foreach (var interval in intervals)
         {
             if (interval.isLocalVar)
@@ -417,6 +417,11 @@ public sealed partial class LinearScan
     private void buildUpperVectorRestoreRefPosition(
         Interval localInterval, LsraLocation location, GenTree? node, bool isUse, uint multiRegIndex)
     {
+        if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         if (!localInterval.isPartiallySpilled)
         {
             return;
@@ -446,11 +451,8 @@ public sealed partial class LinearScan
             restorePosition.liveVarUpperSave = savePosition.liveVarUpperSave;
         }
 
-#if TARGET_XARCH
-        restorePosition.regOptional = true;
-#endif
+        restorePosition.regOptional = Configuration.TARGET_XARCH;
     }
-#endif
 
 #if DEBUG
     private void dumpDefList()

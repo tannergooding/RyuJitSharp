@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -76,13 +75,11 @@ public sealed partial class LinearScan
             }
         }
 
-#if FEATURE_SIMD
-        if (indirection.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && indirection.Type is TYP_SIMD12)
         {
             assert(!address.IsContained);
             _ = buildInternalIntRegisterDefForNode(indirection, _availableIntRegs);
         }
-#endif
 
         var sourceCount = buildIndirUses(indirection, SRBM_NONE);
         buildInternalRegisterUses();
@@ -127,8 +124,9 @@ public sealed partial class LinearScan
             }
             else
             {
-                sizeValue = unchecked((sizeValue + (STACK_ALIGN - 1u)) & ~(STACK_ALIGN - 1u));
-                var pushCount = sizeValue / REGSIZE_BYTES;
+                var stackAlign = unchecked((uint)Configuration.STACK_ALIGN);
+                sizeValue = unchecked((sizeValue + (stackAlign - 1)) & ~(stackAlign - 1));
+                var pushCount = sizeValue / unchecked((uint)Configuration.REGSIZE_BYTES);
                 if (pushCount <= 4)
                 {
                     internalIntCount = 0;
@@ -189,12 +187,10 @@ public sealed partial class LinearScan
                 {
                     _ = buildUse(use.Node);
                     sourceCount++;
-#if FEATURE_SIMD
-                    if (use.Type is TYP_SIMD12)
+                    if (Configuration.FEATURE_SIMD && use.Type is TYP_SIMD12)
                     {
                         _ = buildInternalIntRegisterDefForNode(use.Node, _availableIntRegs);
                     }
-#endif
                 }
             }
             else
@@ -215,12 +211,10 @@ public sealed partial class LinearScan
         {
             assert(!source.IsContained);
             sourceCount = buildOperandUses(source);
-#if FEATURE_SIMD
-            if (compAppleArm64Abi() && (argument.StackByteSize == 12))
+            if (Configuration.FEATURE_SIMD && compAppleArm64Abi() && (argument.StackByteSize == 12))
             {
                 _ = buildInternalIntRegisterDefForNode(argument, _availableIntRegs);
             }
-#endif
         }
 
         buildInternalRegisterUses();
@@ -354,7 +348,7 @@ public sealed partial class LinearScan
             assert(controlExpression.Type is not TYP_VOID);
             if (call.IsFastTailCall)
             {
-                controlCandidates = allRegs(TYP_INT) & _rbmIntCalleeTrash & ~SRBM_LR;
+                controlCandidates = allRegs(TYP_INT) & _rbmIntCalleeTrash & ~TargetRuntimeMetadata.LinkRegisterMask;
                 if (_compiler.NeedsGSSecurityCookie)
                 {
                     controlCandidates &= ~getArmGSCookieTempRegs(true, call).IntRegSet;
@@ -383,7 +377,7 @@ public sealed partial class LinearScan
         if (call.NeedsNullCheck)
         {
             // A fast tailcall's null check must leave R12 available for the target.
-            var candidates = call.IsFastTailCall ? SRBM_LR : _availableIntRegs;
+            var candidates = call.IsFastTailCall ? TargetRuntimeMetadata.LinkRegisterMask : _availableIntRegs;
             _ = buildInternalIntRegisterDefForNode(call, candidates);
         }
 
@@ -391,22 +385,22 @@ public sealed partial class LinearScan
         if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
         {
             // targetarm.h binds REG_PINVOKE_TCB/RBM_PINVOKE_TCB to R5.
-            singleDestinationCandidates = genSingleTypeRegMask(REG_R5);
+            singleDestinationCandidates = genSingleTypeRegMask(REG_ARM32_R5);
         }
         else if (!hasMultiRegRetVal)
         {
             if (varTypeUsesFloatArgReg(registerType))
             {
-                singleDestinationCandidates = genSingleTypeRegMask(REG_FLOATRET);
+                singleDestinationCandidates = genSingleTypeRegMask(TargetRuntimeMetadata.FloatingReturnRegister);
             }
             else if (registerType is TYP_LONG)
             {
-                singleDestinationCandidates = genSingleTypeRegMask(REG_LNGRET_LO) |
-                    genSingleTypeRegMask(REG_LNGRET_HI);
+                singleDestinationCandidates = genSingleTypeRegMask(TargetRuntimeMetadata.LongReturnLowRegister) |
+                    genSingleTypeRegMask(TargetRuntimeMetadata.LongReturnHighRegister);
             }
             else
             {
-                singleDestinationCandidates = genSingleTypeRegMask(REG_INTRET);
+                singleDestinationCandidates = genSingleTypeRegMask(TargetRuntimeMetadata.IntegerReturnRegister);
             }
         }
 
@@ -445,12 +439,10 @@ public sealed partial class LinearScan
             buildKills(call, killMask);
         }
 
-#if SWIFT_SUPPORT
-        if (call.HasSwiftErrorHandling)
+        if (Configuration.SWIFT_SUPPORT && call.HasSwiftErrorHandling)
         {
             markArmSwiftErrorBusyForCall(call);
         }
-#endif
 
         _placedArgumentRegisters = RBM_NONE;
         _placedArgumentLocalCount = 0;
@@ -461,7 +453,7 @@ public sealed partial class LinearScan
     {
         assert(call.Next is not null);
         assert(call.Next.Oper is GT_ASYNC_CONTINUATION);
-        var reference = addKillForRegs(new regMaskTP(genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET)),
+        var reference = addKillForRegs(new regMaskTP(genSingleTypeRegMask(TargetRuntimeMetadata.AsyncContinuationReturnRegister)),
             _referenceBuildLocation + 1);
         setDelayFree(reference);
     }
@@ -470,14 +462,11 @@ public sealed partial class LinearScan
     {
         // Whole ARM32 projection of CodeGenInterface::genGetGSCookieTempRegs;
         // targetarm.h defines RBM_GSCOOKIE_TMP as R12 | LR for both call kinds.
-        return new regMaskTP(SRBM_R12 | SRBM_LR);
+        return new regMaskTP(SRBM_ARM32_R12 | TargetRuntimeMetadata.LinkRegisterMask);
     }
 
-#if SWIFT_SUPPORT
     private static void markArmSwiftErrorBusyForCall(GenTreeCall call)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "ARM32 REG_SWIFT_ERROR is not defined.");
     }
-#endif
 }
-#endif

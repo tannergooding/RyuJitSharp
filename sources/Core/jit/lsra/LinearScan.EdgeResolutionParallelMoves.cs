@@ -13,12 +13,10 @@ public sealed partial class LinearScan
     private static regNumber firstResolutionRegister(regMaskTP registers)
     {
         assert(registers.IsNonEmpty);
-#if HAS_MORE_THAN_64_REGISTERS
-        if (registers.Lower == SRBM_NONE)
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS && registers.Lower == SRBM_NONE)
         {
             return (regNumber)(64 + BitOperations.TrailingZeroCount(unchecked((ulong)registers.Upper)));
         }
-#endif
 
         return (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)registers.Lower));
     }
@@ -72,19 +70,24 @@ public sealed partial class LinearScan
         // Compute scratch registers before changing either side's map.
         var intTemp = getTempRegForResolution(fromBlock, toBlock, TYP_INT, liveSet, terminatorConsumedRegs);
         var floatTemp = REG_NA;
-#if TARGET_ARM
         var doubleTemp = REG_NA;
-#endif
         if (_compiler.compFloatingPointUsed)
         {
-#if TARGET_ARM
-            doubleTemp = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE, liveSet, terminatorConsumedRegs);
-            if (doubleTemp != REG_NA)
+            if (Configuration.TARGET_ARM)
             {
-                floatTemp = doubleTemp;
+                doubleTemp = getTempRegForResolution(
+                    fromBlock, toBlock, TYP_DOUBLE, liveSet, terminatorConsumedRegs);
+                if (doubleTemp != REG_NA)
+                {
+                    floatTemp = doubleTemp;
+                }
+                else
+                {
+                    floatTemp = getTempRegForResolution(
+                        fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
+                }
             }
             else
-#endif
             {
                 floatTemp = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT, liveSet, terminatorConsumedRegs);
             }
@@ -104,9 +107,13 @@ public sealed partial class LinearScan
         var insertionPoint = resolveType is ResolveType.ResolveSplit or ResolveType.ResolveCritical
             ? block.FirstNode : null;
 
-#if TARGET_ARM
         void AddOtherHalfRegToReady(regNumber otherHalf)
         {
+            if (!Configuration.TARGET_ARM)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED);
+            }
+
             var original = source[(int)otherHalf];
             if (original != REG_NA && location[(int)otherHalf] == REG_NA &&
                 sourceIntervals[(int)original] is not null &&
@@ -115,7 +122,6 @@ public sealed partial class LinearScan
                 targetsReady |= regMaskTP.CreateFromRegNum(otherHalf, genSingleTypeRegMask(otherHalf));
             }
         }
-#endif
 
         if (resolveType is ResolveType.ResolveJoin && _compiler.compHndBBtabCount > 0)
         {
@@ -191,36 +197,41 @@ public sealed partial class LinearScan
             var target = popResolutionRegister(ref targetCandidates);
             if (location[(int)target] == REG_NA)
             {
-#if TARGET_ARM
-                var original = source[(int)target];
-                var interval = sourceIntervals[(int)original]
-                    ?? throw new FatalJitException("Ready resolution target requires a source interval.");
-                var otherTarget = REG_NA;
-                Interval? otherInterval = null;
-                if (genIsValidFloatReg(target) && !genIsValidDoubleReg(target))
+                if (Configuration.TARGET_ARM)
                 {
-                    otherTarget = target - 1;
-                    otherInterval = sourceIntervals[(int)otherTarget];
-                }
-
-                if (interval.registerType is TYP_DOUBLE)
-                {
-                    assert(genIsValidDoubleReg(target));
-                    if (location[(int)(target + 1)] == REG_NA)
+                    var original = source[(int)target];
+                    var interval = sourceIntervals[(int)original]
+                        ?? throw new FatalJitException("Ready resolution target requires a source interval.");
+                    var otherTarget = REG_NA;
+                    Interval? otherInterval = null;
+                    if (genIsValidFloatReg(target) && !genIsValidDoubleReg(target))
                     {
-                        targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
+                        otherTarget = target - 1;
+                        otherInterval = sourceIntervals[(int)otherTarget];
                     }
-                }
-                else if (otherInterval is not null && otherInterval.registerType is TYP_DOUBLE)
-                {
-                    assert(otherTarget != REG_NA);
-                    if (location[(int)otherTarget] == REG_NA)
+
+                    if (interval.registerType is TYP_DOUBLE)
+                    {
+                        assert(genIsValidDoubleReg(target));
+                        if (location[(int)(target + 1)] == REG_NA)
+                        {
+                            targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
+                        }
+                    }
+                    else if (otherInterval is not null && otherInterval.registerType is TYP_DOUBLE)
+                    {
+                        assert(otherTarget != REG_NA);
+                        if (location[(int)otherTarget] == REG_NA)
+                        {
+                            targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
+                        }
+                    }
+                    else
                     {
                         targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
                     }
                 }
                 else
-#endif
                 {
                     targetsReady |= regMaskTP.CreateFromRegNum(target, genSingleTypeRegMask(target));
                 }
@@ -253,8 +264,7 @@ public sealed partial class LinearScan
                     if (source[(int)from] != REG_NA && !targetsFromStack.IsSet(from))
                     {
                         targetsReady |= regMaskTP.CreateFromRegNum(from, genSingleTypeRegMask(from));
-#if TARGET_ARM
-                        if (genIsValidDoubleReg(from))
+                        if (Configuration.TARGET_ARM && genIsValidDoubleReg(from))
                         {
                             var nextInterval = sourceIntervals[(int)source[(int)from]]
                                 ?? throw new FatalJitException("Double resolution requires a pending source.");
@@ -268,14 +278,11 @@ public sealed partial class LinearScan
                                 AddOtherHalfRegToReady(upper);
                             }
                         }
-#endif
                     }
-#if TARGET_ARM
-                    else if (genIsValidFloatReg(from) && !genIsValidDoubleReg(from))
+                    else if (Configuration.TARGET_ARM && genIsValidFloatReg(from) && !genIsValidDoubleReg(from))
                     {
                         AddOtherHalfRegToReady(from - 1);
                     }
-#endif
                 }
             }
             if (targetsToDo.IsEmpty)
@@ -295,8 +302,7 @@ public sealed partial class LinearScan
 
             var isFloat = genIsValidFloatReg(targetReg);
             var tempReg = isFloat ? floatTemp : intTemp;
-#if TARGET_ARM
-            if (isFloat)
+            if (Configuration.TARGET_ARM && isFloat)
             {
                 var sourceAtLocation = sourceIntervals[(int)fromReg]
                     ?? throw new FatalJitException("Floating resolution requires a source interval.");
@@ -305,12 +311,7 @@ public sealed partial class LinearScan
                     tempReg = doubleTemp;
                 }
             }
-#endif
-#if TARGET_XARCH
-            var useSwap = !isFloat && tempReg == REG_NA;
-#else
-            const bool useSwap = false;
-#endif
+            var useSwap = Configuration.TARGET_XARCH && !isFloat && tempReg == REG_NA;
             if (useSwap || tempReg == REG_NA)
             {
                 var otherTargetReg = REG_NA;
@@ -368,8 +369,7 @@ public sealed partial class LinearScan
                     if (source[(int)fromReg] != REG_NA && fromReg != otherTargetReg)
                     {
                         targetsReady |= regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
-#if TARGET_ARM
-                        if (genIsValidDoubleReg(fromReg))
+                        if (Configuration.TARGET_ARM && genIsValidDoubleReg(fromReg))
                         {
                             var nextInterval = sourceIntervals[(int)source[(int)fromReg]]
                                 ?? throw new FatalJitException("Double resolution requires a pending source.");
@@ -378,7 +378,6 @@ public sealed partial class LinearScan
                                 targetsReady &= ~regMaskTP.CreateFromRegNum(fromReg, genSingleTypeRegMask(fromReg));
                             }
                         }
-#endif
                     }
                 }
                 targetsToDo &= ~targetMask;
@@ -387,43 +386,50 @@ public sealed partial class LinearScan
             {
                 _compiler.codeGen!.RegSet.rsSetRegsModified(
                     regMaskTP.CreateFromRegNum(tempReg, genSingleTypeRegMask(tempReg)), true);
-#if TARGET_ARM
-                var otherTarget = REG_NA;
-                Interval? otherInterval = null;
-                if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+                if (Configuration.TARGET_ARM)
                 {
-                    otherTarget = targetReg - 1;
-                    otherInterval = sourceIntervals[(int)otherTarget];
-                }
-                var sourceAtLocation = sourceIntervals[(int)fromReg]
-                    ?? throw new FatalJitException("Double resolution requires a source interval.");
-                if (sourceAtLocation.registerType is TYP_DOUBLE)
-                {
-                    assert(genIsValidDoubleReg(targetReg) && genIsValidDoubleReg(tempReg));
-                    addResolutionForDouble(block, insertionPoint, sourceIntervals, location,
-                        tempReg, targetReg, resolveType, fromBlock, toBlock);
-                }
-                else if (otherInterval is not null)
-                {
-                    assert(otherTarget != REG_NA && otherInterval.registerType is TYP_DOUBLE);
-                    addResolutionForDouble(block, insertionPoint, sourceIntervals, location,
-                        tempReg, otherTarget, resolveType, fromBlock, toBlock);
+                    var otherTarget = REG_NA;
+                    Interval? otherInterval = null;
+                    if (genIsValidFloatReg(targetReg) && !genIsValidDoubleReg(targetReg))
+                    {
+                        otherTarget = targetReg - 1;
+                        otherInterval = sourceIntervals[(int)otherTarget];
+                    }
+                    var sourceAtLocation = sourceIntervals[(int)fromReg]
+                        ?? throw new FatalJitException("Double resolution requires a source interval.");
+                    if (sourceAtLocation.registerType is TYP_DOUBLE)
+                    {
+                        assert(genIsValidDoubleReg(targetReg) && genIsValidDoubleReg(tempReg));
+                        addResolutionForDouble(block, insertionPoint, sourceIntervals, location,
+                            tempReg, targetReg, resolveType, fromBlock, toBlock);
+                    }
+                    else if (otherInterval is not null)
+                    {
+                        assert(otherTarget != REG_NA && otherInterval.registerType is TYP_DOUBLE);
+                        addResolutionForDouble(block, insertionPoint, sourceIntervals, location,
+                            tempReg, otherTarget, resolveType, fromBlock, toBlock);
+                    }
+                    else
+                    {
+                        var displaced = sourceIntervals[(int)targetReg]
+                            ?? throw new FatalJitException("Cycle scratch move requires a displaced interval.");
+                        addResolution(block, insertionPoint, displaced, tempReg, targetReg,
+                            fromBlock, toBlock, GetResolveTypeName(resolveType));
+                        location[(int)targetReg] = tempReg;
+                        if (displaced.registerType is TYP_DOUBLE)
+                        {
+                            assert(genIsValidDoubleReg(targetReg));
+                            AddOtherHalfRegToReady(targetReg + 1);
+                        }
+                    }
                 }
                 else
-#endif
                 {
                     var displaced = sourceIntervals[(int)targetReg]
                         ?? throw new FatalJitException("Cycle scratch move requires a displaced interval.");
                     addResolution(block, insertionPoint, displaced, tempReg, targetReg,
                         fromBlock, toBlock, GetResolveTypeName(resolveType));
                     location[(int)targetReg] = tempReg;
-#if TARGET_ARM
-                    if (displaced.registerType is TYP_DOUBLE)
-                    {
-                        assert(genIsValidDoubleReg(targetReg));
-                        AddOtherHalfRegToReady(targetReg + 1);
-                    }
-#endif
                 }
                 targetsReady |= targetMask;
             }

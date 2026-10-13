@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if TARGET_ARM
     private RegRecord getSecondHalfRegRec(RegRecord record)
     {
         assert(genIsValidDoubleReg(record.regNum));
@@ -50,8 +49,6 @@ public sealed partial class LinearScan
         return ReferenceEquals(getRegisterRecord(second), record);
     }
 
-#endif
-
 #if DEBUG
     private regNumber rotateBlockStartLocation(Interval interval, regNumber targetReg, regMaskTP availableRegs)
     {
@@ -65,11 +62,10 @@ public sealed partial class LinearScan
                 var bits = unchecked((ulong)(long)candidates);
                 var offset = BitOperations.TrailingZeroCount(bits);
                 candidates &= ~unchecked((SingleTypeRegSet)(1UL << offset));
-#if HAS_MORE_THAN_64_REGISTERS
-                var registerBase = interval.registerType is TYP_MASK ? REG_HIGH_BASE : REG_LOW_BASE;
-#else
-                var registerBase = REG_LOW_BASE;
-#endif
+                var registerBase = Configuration.HAS_MORE_THAN_64_REGISTERS &&
+                    interval.registerType is TYP_MASK
+                    ? REG_HIGH_BASE
+                    : REG_LOW_BASE;
                 var nextReg = (regNumber)(offset + registerBase);
                 if (nextReg > targetReg)
                 {
@@ -93,7 +89,7 @@ public sealed partial class LinearScan
     }
 #endif
 
-    private void unassignIntervalBlockStart(RegRecord record, regNumber[]? inMap)
+    private void unassignIntervalBlockStart(RegRecord record, regNumberSmall[]? inMap)
     {
         var assigned = record.assignedInterval;
         if (assigned is null)
@@ -129,12 +125,13 @@ public sealed partial class LinearScan
         _availableRegs[(int)TYP_INT] &= ~registers.IntRegSet;
         _availableRegs[(int)TYP_FLOAT] &= ~registers.FltRegSet;
         _availableRegs[(int)TYP_DOUBLE] &= ~registers.FltRegSet;
-#if FEATURE_MASKED_HW_INTRINSICS
-        _availableRegs[(int)TYP_MASK] &= ~registers.MskRegSet;
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            _availableRegs[(int)TYP_MASK] &= ~registers.MskRegSet;
+        }
     }
 
-    private void handleDeadBlockCandidates(SingleTypeRegSet candidates, int registerBase, regNumber[] inMap)
+    private void handleDeadBlockCandidates(SingleTypeRegSet candidates, int registerBase, regNumberSmall[] inMap)
     {
         var remaining = unchecked((ulong)(long)candidates);
         while (remaining != 0)

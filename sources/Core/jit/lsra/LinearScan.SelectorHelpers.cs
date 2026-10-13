@@ -42,55 +42,56 @@ public sealed partial class LinearScan
 
     private SingleTypeRegSet stressLimitRegs(RefPosition? refPosition, RegisterType registerType, SingleTypeRegSet mask)
     {
-#if TARGET_AMD64
-        const int LimitCallee = 0x1;
-        const int LimitCaller = 0x2;
-        const int LimitSmallSet = 0x3;
-        const int LimitUpperSimdSet = 0x2000;
-        const int LimitExtGprSet = 0x4000;
-        const int LimitMask = LimitSmallSet | LimitUpperSimdSet | LimitExtGprSet;
-
-        var limit = _lsraStressMask & LimitMask;
-        if (limit == 0)
+        if (Configuration.TARGET_AMD64)
         {
+            const int LimitCallee = 0x1;
+            const int LimitCaller = 0x2;
+            const int LimitSmallSet = 0x3;
+            const int LimitUpperSimdSet = 0x2000;
+            const int LimitExtGprSet = 0x4000;
+            const int LimitMask = LimitSmallSet | LimitUpperSimdSet | LimitExtGprSet;
+
+            var limit = _lsraStressMask & LimitMask;
+            if (limit == 0)
+            {
+                return mask;
+            }
+
+            var constrainedMask = limit switch
+            {
+                LimitCallee when !_compiler.opts.compDbgEnC => getRegSetForType(
+                    TargetRuntimeMetadata.IntegerCalleeSavedMask, TargetRuntimeMetadata.FloatingCalleeSavedMask, TargetRuntimeMetadata.MaskCalleeSavedMask, registerType),
+                LimitCallee => mask,
+                LimitCaller => getRegSetForType(
+                    _compiler.SRBM_INT_CALLEE_TRASH, _compiler.SRBM_FLT_CALLEE_TRASH, _compiler.SRBM_MSK_CALLEE_TRASH,
+                    registerType),
+                LimitSmallSet => getRegSetForType(
+                    Configuration.UNIX_AMD64_ABI
+                        ? SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_R12 | SRBM_X64_R13
+                        : SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_RSI | SRBM_X64_RDI,
+                    SRBM_X64_XMM0 | SRBM_X64_XMM1 | SRBM_X64_XMM2 | SRBM_X64_XMM6 | SRBM_X64_XMM7,
+                    _compiler.SRBM_MSK_CALLEE_TRASH,
+                    registerType),
+                LimitUpperSimdSet => varTypeUsesFloatReg(registerType) ? SRBM_HIGHFLOAT : mask,
+                LimitExtGprSet => varTypeUsesIntReg(registerType) ? SRBM_HIGHINT | SRBM_ETW_FRAMED_EBP : mask,
+                _ => throw new FatalJitException($"Unsupported LSRA register stress limit: 0x{limit:X}."),
+            };
+
+            if (constrainedMask != mask)
+            {
+                mask = getConstrainedRegMask(
+                    refPosition, registerType, mask, constrainedMask, refPosition?.minRegCandidateCount ?? 1);
+            }
+
+            if (refPosition is not null && refPosition.isFixedRegRef)
+            {
+                mask |= refPosition.registerAssignment;
+            }
+
             return mask;
         }
-
-        var constrainedMask = limit switch
+        else if (Configuration.TARGET_ARM64)
         {
-            LimitCallee when !_compiler.opts.compDbgEnC => getRegSetForType(
-                SRBM_INT_CALLEE_SAVED, SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED, registerType),
-            LimitCallee => mask,
-            LimitCaller => getRegSetForType(
-                _compiler.SRBM_INT_CALLEE_TRASH, _compiler.SRBM_FLT_CALLEE_TRASH, _compiler.SRBM_MSK_CALLEE_TRASH,
-                registerType),
-            LimitSmallSet => getRegSetForType(
-#if UNIX_AMD64_ABI
-                SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_R12 | SRBM_R13,
-#else
-                SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_RDI,
-#endif
-                SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7,
-                SRBM_NONE,
-                registerType),
-            LimitUpperSimdSet => varTypeUsesFloatReg(registerType) ? SRBM_HIGHFLOAT : mask,
-            LimitExtGprSet => varTypeUsesIntReg(registerType) ? SRBM_HIGHINT | SRBM_ETW_FRAMED_EBP : mask,
-            _ => throw new FatalJitException($"Unsupported LSRA register stress limit: 0x{limit:X}."),
-        };
-
-        if (constrainedMask != mask)
-        {
-            mask = getConstrainedRegMask(
-                refPosition, registerType, mask, constrainedMask, refPosition?.minRegCandidateCount ?? 1);
-        }
-
-        if (refPosition is not null && refPosition.isFixedRegRef)
-        {
-            mask |= refPosition.registerAssignment;
-        }
-
-        return mask;
-#elif TARGET_ARM64
         if (refPosition is not null &&
             refPosition.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
         {
@@ -121,7 +122,7 @@ public sealed partial class LinearScan
                 {
                     TYP_INT => SRBM_INT_CALLEE_TRASH,
                     TYP_FLOAT or TYP_DOUBLE => SRBM_FLT_CALLEE_TRASH,
-                    TYP_MASK => SRBM_MSK_CALLEE_TRASH,
+                    TYP_MASK => _compiler.SRBM_MSK_CALLEE_TRASH,
                     _ => throw new FatalJitException("Unsupported ARM64 LSRA stress register type."),
                 };
                 mask = getConstrainedRegMask(refPosition, registerType, mask, trash, count);
@@ -129,8 +130,8 @@ public sealed partial class LinearScan
             }
             case 3:
             {
-                var smallInt = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R19 | SRBM_R20;
-                var smallFloat = SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V8 | SRBM_V9;
+                var smallInt = SRBM_ARM64_R0 | SRBM_ARM64_R1 | SRBM_ARM64_R2 | SRBM_ARM64_R19 | SRBM_ARM64_R20;
+                var smallFloat = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V8 | SRBM_ARM64_V9;
                 var small = regType(registerType) switch
                 {
                     TYP_INT => smallInt,
@@ -152,7 +153,10 @@ public sealed partial class LinearScan
         }
 
         return mask;
-#elif TARGET_X86 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+        }
+        else if (Configuration.TARGET_X86 || Configuration.TARGET_ARM ||
+                 Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
         var limit = _lsraStressMask & 0x3;
         if (limit == 0)
         {
@@ -181,19 +185,34 @@ public sealed partial class LinearScan
             {
                 // The floating subset keeps five registers for Vector4 InitN; ARM32
                 // also needs six integer registers for virtual-call target setup.
-#if TARGET_X86
-                const SingleTypeRegSet smallInt = SRBM_EAX | SRBM_ECX | SRBM_EDI;
-                const SingleTypeRegSet smallFloat = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
-#elif TARGET_ARM
-                const SingleTypeRegSet smallInt = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R4 | SRBM_R5;
-                const SingleTypeRegSet smallFloat = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F16 | SRBM_F17;
-#elif TARGET_LOONGARCH64
-                const SingleTypeRegSet smallInt = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
-                const SingleTypeRegSet smallFloat = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F8 | SRBM_F9;
-#elif TARGET_RISCV64
-                const SingleTypeRegSet smallInt = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
-                const SingleTypeRegSet smallFloat = SRBM_FT0 | SRBM_FT1 | SRBM_FT2 | SRBM_FS0 | SRBM_FS1;
-#endif
+                SingleTypeRegSet smallInt;
+                SingleTypeRegSet smallFloat;
+                if (Configuration.TARGET_X86)
+                {
+                    smallInt = SRBM_X86_EAX | SRBM_X86_ECX | SRBM_X86_EDI;
+                    smallFloat = SRBM_X86_XMM0 | SRBM_X86_XMM1 | SRBM_X86_XMM2 | SRBM_X86_XMM6 | SRBM_X86_XMM7;
+                }
+                else if (Configuration.TARGET_ARM)
+                {
+                    smallInt = SRBM_ARM32_R0 | SRBM_ARM32_R1 | SRBM_ARM32_R2 | SRBM_ARM32_R3 | SRBM_ARM32_R4 | SRBM_ARM32_R5;
+                    smallFloat = SRBM_ARM32_F0 | SRBM_ARM32_F1 | SRBM_ARM32_F2 | SRBM_ARM32_F16 | SRBM_ARM32_F17;
+                }
+                else if (Configuration.TARGET_LOONGARCH64)
+                {
+                    smallInt = SRBM_LOONGARCH64_T1 | SRBM_LOONGARCH64_T3 | SRBM_LOONGARCH64_A0 | SRBM_LOONGARCH64_A1 | SRBM_LOONGARCH64_T0;
+                    smallFloat = SRBM_LOONGARCH64_F0 | SRBM_LOONGARCH64_F1 | SRBM_LOONGARCH64_F2 |
+                        SRBM_LOONGARCH64_F8 | SRBM_LOONGARCH64_F9;
+                }
+                else if (Configuration.TARGET_RISCV64)
+                {
+                    smallInt = SRBM_RISCV64_T1 | SRBM_RISCV64_T3 | SRBM_RISCV64_A0 | SRBM_RISCV64_A1 | SRBM_RISCV64_T0;
+                    smallFloat = SRBM_RISCV64_FT0 | SRBM_RISCV64_FT1 | SRBM_RISCV64_FT2 |
+                        SRBM_RISCV64_FS0 | SRBM_RISCV64_FS1;
+                }
+                else
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED);
+                }
                 if ((mask & smallInt) != SRBM_NONE)
                 {
                     mask = getConstrainedRegMask(refPosition, registerType, mask, smallInt, minimumCount);
@@ -212,100 +231,112 @@ public sealed partial class LinearScan
         }
 
         return mask;
-#else
-        NYI("LSRA stress register limiting on this target");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LSRA stress register limiting on this target is not ported.");
-#endif
+        }
+        else
+        {
+            NYI("LSRA stress register limiting on this target");
+            fatal(CORJIT_IMPLLIMITATION);
+            throw new FatalJitException("LSRA stress register limiting on this target is not ported.");
+        }
     }
 
-#if TARGET_X86 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
     private SingleTypeRegSet getOtherTargetStressCalleeMask(RegisterType registerType, bool saved)
     {
-#if TARGET_X86
-        const SingleTypeRegSet intSaved = SRBM_EBX | SRBM_ESI | SRBM_EDI;
-        const SingleTypeRegSet intTrash = SRBM_EAX | SRBM_ECX | SRBM_EDX;
-        const SingleTypeRegSet floatSaved = SRBM_NONE;
-        const SingleTypeRegSet floatTrash =
-            SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM3 |
-            SRBM_XMM4 | SRBM_XMM5 | SRBM_XMM6 | SRBM_XMM7;
-#elif TARGET_ARM
-        const SingleTypeRegSet intSaved =
-            SRBM_R4 | SRBM_R5 | SRBM_R6 | SRBM_R7 | SRBM_R8 | SRBM_R9 | SRBM_R10;
-        const SingleTypeRegSet intTrash =
-            SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R12 | SRBM_LR;
-        const SingleTypeRegSet floatSaved =
-            SRBM_F16 | SRBM_F17 | SRBM_F18 | SRBM_F19 |
-            SRBM_F20 | SRBM_F21 | SRBM_F22 | SRBM_F23 |
-            SRBM_F24 | SRBM_F25 | SRBM_F26 | SRBM_F27 |
-            SRBM_F28 | SRBM_F29 | SRBM_F30 | SRBM_F31;
-        const SingleTypeRegSet floatTrash =
-            SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 |
-            SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7 |
-            SRBM_F8 | SRBM_F9 | SRBM_F10 | SRBM_F11 |
-            SRBM_F12 | SRBM_F13 | SRBM_F14 | SRBM_F15;
-#elif TARGET_LOONGARCH64
-        const SingleTypeRegSet intSaved =
-            SRBM_S0 | SRBM_S1 | SRBM_S2 | SRBM_S3 | SRBM_S4 |
-            SRBM_S5 | SRBM_S6 | SRBM_S7 | SRBM_S8;
-        const SingleTypeRegSet intTrash =
-            SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 |
-            SRBM_A5 | SRBM_A6 | SRBM_A7 | SRBM_T0 | SRBM_T1 |
-            SRBM_T2 | SRBM_T3 | SRBM_T4 | SRBM_T5 | SRBM_T6 |
-            SRBM_T7 | SRBM_T8;
-        const SingleTypeRegSet floatSaved =
-            SRBM_F24 | SRBM_F25 | SRBM_F26 | SRBM_F27 |
-            SRBM_F28 | SRBM_F29 | SRBM_F30 | SRBM_F31;
-        const SingleTypeRegSet floatTrash =
-            SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F3 |
-            SRBM_F4 | SRBM_F5 | SRBM_F6 | SRBM_F7;
-#else
-        const SingleTypeRegSet intSaved =
-            SRBM_S1 | SRBM_S2 | SRBM_S3 | SRBM_S4 | SRBM_S5 |
-            SRBM_S6 | SRBM_S7 | SRBM_S8 | SRBM_S9 | SRBM_S10 | SRBM_S11;
-        const SingleTypeRegSet intTrash =
-            SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 |
-            SRBM_A5 | SRBM_A6 | SRBM_A7 | SRBM_T0 | SRBM_T1 |
-            SRBM_T2 | SRBM_T3 | SRBM_T4 | SRBM_T5 | SRBM_T6;
-        const SingleTypeRegSet floatSaved =
-            SRBM_FS0 | SRBM_FS1 | SRBM_FS2 | SRBM_FS3 |
-            SRBM_FS4 | SRBM_FS5 | SRBM_FS6 | SRBM_FS7 |
-            SRBM_FS8 | SRBM_FS9 | SRBM_FS10 | SRBM_FS11;
-        const SingleTypeRegSet floatTrash =
-            SRBM_FA0 | SRBM_FA1 | SRBM_FA2 | SRBM_FA3 |
-            SRBM_FA4 | SRBM_FA5 | SRBM_FA6 | SRBM_FA7 |
-            SRBM_FT0 | SRBM_FT1 | SRBM_FT2 | SRBM_FT3 |
-            SRBM_FT4 | SRBM_FT5 | SRBM_FT6 | SRBM_FT7 |
-            SRBM_FT8 | SRBM_FT9 | SRBM_FT10 | SRBM_FT11;
-#endif
+        SingleTypeRegSet intSaved;
+        SingleTypeRegSet intTrash;
+        SingleTypeRegSet floatSaved;
+        SingleTypeRegSet floatTrash;
+        if (Configuration.TARGET_X86)
+        {
+            intSaved = SRBM_X86_EBX | SRBM_X86_ESI | SRBM_X86_EDI;
+            intTrash = SRBM_X86_EAX | SRBM_X86_ECX | SRBM_X86_EDX;
+            floatSaved = SRBM_NONE;
+            floatTrash = SRBM_X86_XMM0 | SRBM_X86_XMM1 | SRBM_X86_XMM2 | SRBM_X86_XMM3 |
+                SRBM_X86_XMM4 | SRBM_X86_XMM5 | SRBM_X86_XMM6 | SRBM_X86_XMM7;
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            intSaved = SRBM_ARM32_R4 | SRBM_ARM32_R5 | SRBM_ARM32_R6 | SRBM_ARM32_R7 |
+                SRBM_ARM32_R8 | SRBM_ARM32_R9 | SRBM_ARM32_R10;
+            intTrash = SRBM_ARM32_R0 | SRBM_ARM32_R1 | SRBM_ARM32_R2 | SRBM_ARM32_R3 |
+                SRBM_ARM32_R12 | SRBM_ARM32_LR;
+            floatSaved = SRBM_ARM32_F16 | SRBM_ARM32_F17 | SRBM_ARM32_F18 | SRBM_ARM32_F19 |
+                SRBM_ARM32_F20 | SRBM_ARM32_F21 | SRBM_ARM32_F22 | SRBM_ARM32_F23 |
+                SRBM_ARM32_F24 | SRBM_ARM32_F25 | SRBM_ARM32_F26 | SRBM_ARM32_F27 |
+                SRBM_ARM32_F28 | SRBM_ARM32_F29 | SRBM_ARM32_F30 | SRBM_ARM32_F31;
+            floatTrash = SRBM_ARM32_F0 | SRBM_ARM32_F1 | SRBM_ARM32_F2 | SRBM_ARM32_F3 |
+                SRBM_ARM32_F4 | SRBM_ARM32_F5 | SRBM_ARM32_F6 | SRBM_ARM32_F7 |
+                SRBM_ARM32_F8 | SRBM_ARM32_F9 | SRBM_ARM32_F10 | SRBM_ARM32_F11 |
+                SRBM_ARM32_F12 | SRBM_ARM32_F13 | SRBM_ARM32_F14 | SRBM_ARM32_F15;
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            intSaved = SRBM_LOONGARCH64_S0 | SRBM_LOONGARCH64_S1 | SRBM_LOONGARCH64_S2 |
+                SRBM_LOONGARCH64_S3 | SRBM_LOONGARCH64_S4 | SRBM_LOONGARCH64_S5 |
+                SRBM_LOONGARCH64_S6 | SRBM_LOONGARCH64_S7 | SRBM_LOONGARCH64_S8;
+            intTrash = SRBM_LOONGARCH64_A0 | SRBM_LOONGARCH64_A1 | SRBM_LOONGARCH64_A2 |
+                SRBM_LOONGARCH64_A3 | SRBM_LOONGARCH64_A4 | SRBM_LOONGARCH64_A5 |
+                SRBM_LOONGARCH64_A6 | SRBM_LOONGARCH64_A7 | SRBM_LOONGARCH64_T0 |
+                SRBM_LOONGARCH64_T1 | SRBM_LOONGARCH64_T2 | SRBM_LOONGARCH64_T3 |
+                SRBM_LOONGARCH64_T4 | SRBM_LOONGARCH64_T5 | SRBM_LOONGARCH64_T6 |
+                SRBM_LOONGARCH64_T7 | SRBM_LOONGARCH64_T8;
+            floatSaved = SRBM_LOONGARCH64_F24 | SRBM_LOONGARCH64_F25 | SRBM_LOONGARCH64_F26 |
+                SRBM_LOONGARCH64_F27 | SRBM_LOONGARCH64_F28 | SRBM_LOONGARCH64_F29 |
+                SRBM_LOONGARCH64_F30 | SRBM_LOONGARCH64_F31;
+            floatTrash = SRBM_LOONGARCH64_F0 | SRBM_LOONGARCH64_F1 | SRBM_LOONGARCH64_F2 |
+                SRBM_LOONGARCH64_F3 | SRBM_LOONGARCH64_F4 | SRBM_LOONGARCH64_F5 |
+                SRBM_LOONGARCH64_F6 | SRBM_LOONGARCH64_F7;
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            intSaved = SRBM_RISCV64_S1 | SRBM_RISCV64_S2 | SRBM_RISCV64_S3 |
+                SRBM_RISCV64_S4 | SRBM_RISCV64_S5 | SRBM_RISCV64_S6 |
+                SRBM_RISCV64_S7 | SRBM_RISCV64_S8 | SRBM_RISCV64_S9 |
+                SRBM_RISCV64_S10 | SRBM_RISCV64_S11;
+            intTrash = SRBM_RISCV64_A0 | SRBM_RISCV64_A1 | SRBM_RISCV64_A2 |
+                SRBM_RISCV64_A3 | SRBM_RISCV64_A4 | SRBM_RISCV64_A5 |
+                SRBM_RISCV64_A6 | SRBM_RISCV64_A7 | SRBM_RISCV64_T0 |
+                SRBM_RISCV64_T1 | SRBM_RISCV64_T2 | SRBM_RISCV64_T3 |
+                SRBM_RISCV64_T4 | SRBM_RISCV64_T5 | SRBM_RISCV64_T6;
+            floatSaved = SRBM_RISCV64_FS0 | SRBM_RISCV64_FS1 | SRBM_RISCV64_FS2 |
+                SRBM_RISCV64_FS3 | SRBM_RISCV64_FS4 | SRBM_RISCV64_FS5 |
+                SRBM_RISCV64_FS6 | SRBM_RISCV64_FS7 | SRBM_RISCV64_FS8 |
+                SRBM_RISCV64_FS9 | SRBM_RISCV64_FS10 | SRBM_RISCV64_FS11;
+            floatTrash = SRBM_RISCV64_FA0 | SRBM_RISCV64_FA1 | SRBM_RISCV64_FA2 |
+                SRBM_RISCV64_FA3 | SRBM_RISCV64_FA4 | SRBM_RISCV64_FA5 |
+                SRBM_RISCV64_FA6 | SRBM_RISCV64_FA7 | SRBM_RISCV64_FT0 |
+                SRBM_RISCV64_FT1 | SRBM_RISCV64_FT2 | SRBM_RISCV64_FT3 |
+                SRBM_RISCV64_FT4 | SRBM_RISCV64_FT5 | SRBM_RISCV64_FT6 |
+                SRBM_RISCV64_FT7 | SRBM_RISCV64_FT8 | SRBM_RISCV64_FT9 |
+                SRBM_RISCV64_FT10 | SRBM_RISCV64_FT11;
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         if (varTypeUsesFloatReg(registerType))
         {
             return saved ? floatSaved : floatTrash;
         }
 
-#if TARGET_X86 && FEATURE_MASKED_HW_INTRINSICS
-        if (varTypeUsesMaskReg(registerType))
+        if (Configuration.TARGET_X86 && Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+            varTypeUsesMaskReg(registerType))
         {
             return saved ? SRBM_NONE : _compiler.SRBM_MSK_CALLEE_TRASH;
         }
-#endif
         return saved ? intSaved : intTrash;
     }
-#endif
 
-#if TARGET_AMD64
     private static SingleTypeRegSet getRegSetForType(
         regMask intRegisters, regMask floatRegisters, regMask maskRegisters, RegisterType registerType) =>
         regType(registerType) switch
         {
             TYP_INT => intRegisters,
             TYP_FLOAT or TYP_DOUBLE => floatRegisters,
-#if FEATURE_MASKED_HW_INTRINSICS
-            TYP_MASK => maskRegisters,
-#endif
+            TYP_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS => maskRegisters,
             _ => throw new FatalJitException($"Unsupported LSRA register type: {registerType}."),
         };
-#endif
 #endif
 
     private void resolveConflictingDefAndUse(Interval interval, RefPosition defRefPosition)
@@ -430,25 +461,21 @@ public sealed partial class LinearScan
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
         _nextIntervalRef[(int)regNum] = MaxLocation;
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             assert(genIsValidDoubleReg(regNum));
             _nextIntervalRef[(int)(regNum + 1)] = MaxLocation;
         }
-#endif
     }
 
     private void updateNextIntervalRef(regNumber regNum, Interval interval)
     {
         var location = interval.getNextRefLocation();
         _nextIntervalRef[(int)regNum] = location;
-#if TARGET_ARM
-        if (interval.registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && interval.registerType is TYP_DOUBLE)
         {
             _nextIntervalRef[(int)(regNum + 1)] = location;
         }
-#endif
     }
 
     private void clearAllSpillCost() => Array.Fill(_spillCost, 0.0);
@@ -457,13 +484,11 @@ public sealed partial class LinearScan
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
         _spillCost[(int)regNum] = 0;
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             assert(genIsValidDoubleReg(regNum));
             _spillCost[(int)(regNum + 1)] = 0;
         }
-#endif
     }
 
     private void updateSpillCost(regNumber regNum, Interval interval)
@@ -472,35 +497,29 @@ public sealed partial class LinearScan
             ? getWeight(interval.recentRefPosition)
             : 0;
         _spillCost[(int)regNum] = cost;
-#if TARGET_ARM
-        if (interval.registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && interval.registerType is TYP_DOUBLE)
         {
             _spillCost[(int)(regNum + 1)] = cost;
         }
-#endif
     }
 
     private SingleTypeRegSet getFreeCandidates(SingleTypeRegSet candidates, RegisterType registerType)
     {
         var available = _availableRegs[(int)regType(registerType)];
         var free = candidates & available;
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             free &= (SingleTypeRegSet)(unchecked((ulong)(long)available) >> 1);
         }
-#endif
         return free;
     }
 
     private SingleTypeRegSet getAvailableGPRsForType(SingleTypeRegSet candidates, var_types registerType)
     {
-#if TARGET_AMD64
-        if (varTypeIsGC(registerType) || varTypeIsLong(registerType))
+        if (Configuration.TARGET_AMD64 && (varTypeIsGC(registerType) || varTypeIsLong(registerType)))
         {
             candidates &= SRBM_LOWINT;
         }
-#endif
         return candidates;
     }
 
@@ -515,32 +534,31 @@ public sealed partial class LinearScan
         assert(ReferenceEquals(refPosition.getInterval(), interval));
         var registerType = interval.registerType;
         var candidates = refPosition.registerAssignment;
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-        // These ABIs can pass floating arguments in integer registers after exhausting the floating bank.
-        if ((candidates & allRegs(registerType)) != SRBM_NONE)
+        if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            return registerType;
+            // These ABIs can pass floating arguments in integer registers after exhausting the floating bank.
+            if ((candidates & allRegs(registerType)) != SRBM_NONE)
+            {
+                return registerType;
+            }
+
+            assert(registerType is TYP_DOUBLE or TYP_FLOAT);
+            assert((candidates & allRegs(TYP_I_IMPL)) != SRBM_NONE);
+            return TYP_I_IMPL;
         }
 
-        assert(registerType is TYP_DOUBLE or TYP_FLOAT);
-        assert((candidates & allRegs(TYP_I_IMPL)) != SRBM_NONE);
-        return TYP_I_IMPL;
-#else
         assert((candidates & allRegs(registerType)) != SRBM_NONE);
         return registerType;
-#endif
     }
 
     private LsraLocation getNextIntervalRef(regNumber regNum, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
         var location = _nextIntervalRef[(int)regNum];
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             location = Math.Min(location, _nextIntervalRef[(int)(regNum + 1)]);
         }
-#endif
         return location;
     }
 
@@ -548,33 +566,25 @@ public sealed partial class LinearScan
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
         var location = _nextFixedRef[(int)regNum];
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             location = Math.Min(location, _nextFixedRef[(int)(regNum + 1)]);
         }
-#endif
         return location;
     }
 
     private void updateNextFixedRef(RegRecord regRecord, RefPosition? nextRefPosition, RefPosition? nextKill)
     {
         var regNum = regRecord.regNum;
-#if HAS_MORE_THAN_64_REGISTERS
-        var isLow = (int)regNum < 64;
-        var regMask = genSingleTypeRegMask(isLow ? regNum : (regNumber)((int)regNum - REG_HIGH_BASE));
-#else
-        var isLow = true;
-        var regMask = genSingleTypeRegMask(regNum);
-#endif
+        var isLow = !Configuration.HAS_MORE_THAN_64_REGISTERS || (int)regNum < 64;
+        var regMask = genSingleTypeRegMask(
+            isLow ? regNum : (regNumber)((int)regNum - REG_HIGH_BASE));
         var nextLocation = nextRefPosition?.nodeLocation ?? MaxLocation;
         for (var kill = nextKill; (kill is not null) && (kill.nodeLocation < nextLocation); kill = kill.nextRefPosition)
         {
-#if HAS_MORE_THAN_64_REGISTERS
-            var killedMask = isLow ? kill.killedRegisters.Lower : kill.killedRegisters.Upper;
-#else
-            var killedMask = kill.killedRegisters.IntRegSet;
-#endif
+            var killedMask = Configuration.HAS_MORE_THAN_64_REGISTERS
+                ? (isLow ? kill.killedRegisters.Lower : kill.killedRegisters.Upper)
+                : kill.killedRegisters.IntRegSet;
             if ((killedMask & regMask) != SRBM_NONE)
             {
                 nextLocation = kill.nodeLocation;
@@ -601,26 +611,22 @@ public sealed partial class LinearScan
     private bool isRegBusy(regNumber regNum, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             var first = genIsValidDoubleReg(regNum) ? regNum : regNum - 1;
             return _regsBusyUntilKill.IsSet(first) || _regsBusyUntilKill.IsSet(first + 1);
         }
-#endif
         return _regsBusyUntilKill.IsSet(regNum);
     }
 
     private bool isRegInUse(regNumber regNum, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             var first = genIsValidDoubleReg(regNum) ? regNum : regNum - 1;
             return _regsInUseThisLocation.IsSet(first) || _regsInUseThisLocation.IsSet(first + 1);
         }
-#endif
         return _regsInUseThisLocation.IsSet(regNum);
     }
 
@@ -680,9 +686,13 @@ public sealed partial class LinearScan
         return false;
     }
 
-#if TARGET_ARM
     private bool canSpillDoubleReg(RegRecord record, LsraLocation location)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         assert(genIsValidDoubleReg(record.regNum));
         var second = getSecondHalfRegRec(record);
         if ((record.assignedInterval is not null) && !canSpillReg(record, location))
@@ -695,7 +705,6 @@ public sealed partial class LinearScan
         }
         return true;
     }
-#endif
 
     private bool isSpillCandidate(Interval current, RefPosition refPosition, RegRecord regRecord)
     {
@@ -707,12 +716,10 @@ public sealed partial class LinearScan
         assert(!refPosition.isFixedRefOfRegMask(candidateBit));
         assert(!conflictingFixedRegReference(regRecord.regNum, refPosition));
 
-#if TARGET_ARM
-        if (current.registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && current.registerType is TYP_DOUBLE)
         {
             return canSpillDoubleReg(regRecord, refLocation);
         }
-#endif
         return canSpillReg(regRecord, refLocation);
     }
 

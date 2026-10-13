@@ -11,9 +11,9 @@ namespace RyuJitSharp;
 public sealed partial class LinearScan
 {
     private uint _regMapCount;
-    private regNumber[]?[]? _inVarToRegMaps;
-    private regNumber[]?[]? _outVarToRegMaps;
-    private regNumber[]? _sharedCriticalVarToRegMap;
+    private regNumberSmall[]?[]? _inVarToRegMaps;
+    private regNumberSmall[]?[]? _outVarToRegMaps;
+    private regNumberSmall[]? _sharedCriticalVarToRegMap;
 
     // Block sequencing captures this boundary before resolution inserts split blocks.
     private uint _bbNumMaxBeforeResolution;
@@ -45,22 +45,22 @@ public sealed partial class LinearScan
         var varCount = _compiler.lvaTrackedCount;
 
         // Retain the native allocator's int-sized rounding, including padding entries.
-        // regNumber's byte-sized managed representation also represents regNumberSmall.
+        // Variable maps use byte-sized regNumberSmall storage, independent of regNumber.
         _regMapCount = (uint)roundUp(varCount, sizeof(int));
         var bbCount = _compiler.fgBBNumMax + 1;
-        _inVarToRegMaps = new regNumber[bbCount][];
-        _outVarToRegMaps = new regNumber[bbCount][];
+        _inVarToRegMaps = new regNumberSmall[bbCount][];
+        _outVarToRegMaps = new regNumberSmall[bbCount][];
 
         if (varCount > 0)
         {
             // Resolution initializes this scratch map before reading it.
-            _sharedCriticalVarToRegMap = new regNumber[_regMapCount];
+            _sharedCriticalVarToRegMap = new regNumberSmall[_regMapCount];
             for (var blockNumber = 0; blockNumber < bbCount; blockNumber++)
             {
-                var inMap = new regNumber[_regMapCount];
-                var outMap = new regNumber[_regMapCount];
-                Array.Fill(inMap, REG_STK);
-                Array.Fill(outMap, REG_STK);
+                var inMap = new regNumberSmall[_regMapCount];
+                var outMap = new regNumberSmall[_regMapCount];
+                Array.Fill(inMap, (regNumberSmall)REG_STK);
+                Array.Fill(outMap, (regNumberSmall)REG_STK);
                 _inVarToRegMaps[blockNumber] = inMap;
                 _outVarToRegMaps[blockNumber] = outMap;
             }
@@ -78,7 +78,7 @@ public sealed partial class LinearScan
         assert(_inVarToRegMaps is not null);
         var map = _inVarToRegMaps[bbNum];
         assert(map is not null);
-        map[_compiler.lvaTable[varNum]._varIndex] = reg;
+        map[_compiler.lvaTable[varNum]._varIndex] = (regNumberSmall)reg;
     }
 
     internal void setOutVarRegForBB(uint bbNum, uint varNum, regNumber reg)
@@ -88,7 +88,7 @@ public sealed partial class LinearScan
         assert(_outVarToRegMaps is not null);
         var map = _outVarToRegMaps[bbNum];
         assert(map is not null);
-        map[_compiler.lvaTable[varNum]._varIndex] = reg;
+        map[_compiler.lvaTable[varNum]._varIndex] = (regNumberSmall)reg;
     }
 
     private SplitEdgeInfo getSplitEdgeInfo(uint bbNum)
@@ -104,7 +104,7 @@ public sealed partial class LinearScan
         return info;
     }
 
-    internal regNumber[]? getInVarToRegMap(uint bbNum)
+    internal regNumberSmall[]? getInVarToRegMap(uint bbNum)
     {
         assert(_enregisterLocalVars);
         assert(bbNum <= _compiler.fgBBNumMax);
@@ -126,7 +126,7 @@ public sealed partial class LinearScan
         return _inVarToRegMaps[bbNum];
     }
 
-    internal regNumber[]? getOutVarToRegMap(uint bbNum)
+    internal regNumberSmall[]? getOutVarToRegMap(uint bbNum)
     {
         assert(_enregisterLocalVars);
         assert(bbNum <= _compiler.fgBBNumMax);
@@ -152,23 +152,23 @@ public sealed partial class LinearScan
         return _outVarToRegMaps[bbNum];
     }
 
-    internal void setVarReg(regNumber[] map, uint trackedVarIndex, regNumber reg)
+    internal void setVarReg(regNumberSmall[] map, uint trackedVarIndex, regNumber reg)
     {
         assert(trackedVarIndex < _compiler.lvaTrackedCount);
-        var regSmall = (byte)reg;
+        var regSmall = (regNumberSmall)reg;
         assert((regNumber)regSmall == reg);
-        map[trackedVarIndex] = (regNumber)regSmall;
+        map[trackedVarIndex] = regSmall;
     }
 
-    internal regNumber getVarReg(regNumber[] map, uint trackedVarIndex)
+    internal regNumber getVarReg(regNumberSmall[] map, uint trackedVarIndex)
     {
         assert(_enregisterLocalVars);
         assert(trackedVarIndex < _compiler.lvaTrackedCount);
 
-        return map[trackedVarIndex];
+        return (regNumber)map[trackedVarIndex];
     }
 
-    internal regNumber[]? setInVarToRegMap(uint bbNum, regNumber[]? srcVarToRegMap)
+    internal regNumberSmall[]? setInVarToRegMap(uint bbNum, regNumberSmall[]? srcVarToRegMap)
     {
         assert(_enregisterLocalVars);
         assert(_inVarToRegMaps is not null);

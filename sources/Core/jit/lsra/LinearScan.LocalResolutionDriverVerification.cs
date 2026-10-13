@@ -380,8 +380,8 @@ public sealed partial class LinearScan
                         {
                             record.assignedInterval = null;
                         }
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                        else if (interval.isUpperVector && !reference.RegOptional())
+                        else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                            interval.isUpperVector && !reference.RegOptional())
                         {
                             if (reference.refType is RefType.RefTypeUpperVectorSave or RefType.RefTypeUpperVectorRestore)
                             {
@@ -391,7 +391,6 @@ public sealed partial class LinearScan
                                     reference.IsExtraUpperVectorSave());
                             }
                         }
-#endif
                         else
                         {
                             assert(reference.RegOptional());

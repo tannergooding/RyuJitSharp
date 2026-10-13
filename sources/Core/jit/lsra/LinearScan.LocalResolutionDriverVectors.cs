@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private unsafe void insertUpperVectorSave(GenTree tree, RefPosition reference, Interval upper, BasicBlock block)
     {
+        if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
 #if DEBUG
         JITDUMP($"Inserting UpperVectorSave for RP #{reference.rpNum} before {tree.TreeId}.{tree.Oper.Name}:\n");
 #endif
@@ -29,17 +33,11 @@ public sealed partial class LinearScan
         }
 #endif
         ref var local = ref _compiler.lvaGetDesc(checked((int)localInterval.varNum));
-        assert(Compiler.varTypeNeedsPartialCalleeSave(local.GetRegisterType()));
+        assert(LsraConfiguration.VarTypeNeedsPartialCalleeSave(local.GetRegisterType()));
         var spillReg = reference.assignedReg();
-#if TARGET_ARM64
-        var spillToMemory = reference.spillAfter;
-        assert(spillReg != REG_NA);
-        const var_types saveType = TYP_DOUBLE;
-#else
-        var spillToMemory = spillReg == REG_NA;
-        assert(!reference.spillAfter);
-        const var_types saveType = TYP_SIMD16;
-#endif
+        var spillToMemory = Configuration.TARGET_ARM64 ? reference.spillAfter : spillReg == REG_NA;
+        assert(Configuration.TARGET_ARM64 ? spillReg != REG_NA : !reference.spillAfter);
+        var saveType = Configuration.TARGET_ARM64 ? TYP_DOUBLE : TYP_SIMD16;
         var source = _compiler.gtNewLclvNode(local.Type, checked((int)localInterval.varNum));
         source.RegNum = localReg;
 #if DEBUG
@@ -64,7 +62,7 @@ public sealed partial class LinearScan
         }
         else
         {
-            assert((genSingleTypeRegMask(spillReg) & SRBM_FLT_CALLEE_SAVED) != SRBM_NONE);
+            assert((genSingleTypeRegMask(spillReg) & TargetRuntimeMetadata.FloatingCalleeSavedMask) != SRBM_NONE);
             upper.physReg = spillReg;
         }
 
@@ -75,6 +73,11 @@ public sealed partial class LinearScan
 
     private unsafe void insertUpperVectorRestore(GenTree? tree, RefPosition reference, Interval upper, BasicBlock block)
     {
+        if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
 #if DEBUG
         JITDUMP($"Inserting UpperVectorRestore for RP #{reference.rpNum} ");
 #endif
@@ -82,7 +85,7 @@ public sealed partial class LinearScan
             ?? throw new FatalJitException("An upper-vector restore requires its local interval.");
         assert(localInterval.isLocalVar && localInterval.physReg != REG_NA);
         ref var local = ref _compiler.lvaGetDesc(checked((int)localInterval.varNum));
-        assert(Compiler.varTypeNeedsPartialCalleeSave(local.GetRegisterType()));
+        assert(LsraConfiguration.VarTypeNeedsPartialCalleeSave(local.GetRegisterType()));
 
         var source = _compiler.gtNewLclvNode(local.Type, checked((int)localInterval.varNum));
         source.RegNum = localInterval.physReg;
@@ -102,14 +105,17 @@ public sealed partial class LinearScan
         if (restoreReg == REG_NA)
         {
             assert(localInterval.isSpilled);
-#if TARGET_AMD64
-            assert(reference.assignedReg() == REG_NA);
-            restore.Flags |= GTF_NOREG_AT_USE;
-#else
-            restore.Flags |= GTF_SPILLED;
-            assert(reference.assignedReg() != REG_NA);
-            restoreReg = reference.assignedReg();
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                assert(reference.assignedReg() == REG_NA);
+                restore.Flags |= GTF_NOREG_AT_USE;
+            }
+            else
+            {
+                restore.Flags |= GTF_SPILLED;
+                assert(reference.assignedReg() != REG_NA);
+                restoreReg = reference.assignedReg();
+            }
         }
         restore.RegNum = restoreReg;
 
@@ -153,5 +159,4 @@ public sealed partial class LinearScan
         DISPTREE(restore);
         JITDUMP("\n");
     }
-#endif
 }

@@ -149,7 +149,7 @@ public sealed partial class LinearScan
         }
 
         jitprintf("} physReg:");
-        jitprintf(interval.physReg is REG_NA ? "NA" : interval.physReg.Name);
+        jitprintf(interval.physReg == REG_NA ? "NA" : interval.physReg.Name);
         jitprintf(" Preferences=");
         _compiler.dumpRegMask(interval.registerPreferences, interval.registerType);
         jitprintf(" Aversions=");

@@ -42,11 +42,14 @@ public sealed partial class LinearScan
         _doDoubleAlign = false;
         identifyCandidatesWithLocals();
         setFrameType();
-#if TARGET_AMD64
-        _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
-#elif TARGET_X86
-        _lowGprRegs = _availableIntRegs;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+        }
+        else if (Configuration.TARGET_X86)
+        {
+            _lowGprRegs = _availableIntRegs;
+        }
 
 #if DEBUG
         if (VERBOSE)
@@ -227,38 +230,38 @@ public sealed partial class LinearScan
             }
 
             var prologUsesScratchRegister = _compiler.lvaHasAnySwiftStackParamToReassemble();
-#if TARGET_X86
-            prologUsesScratchRegister |= _compiler.info.compIsVarArgs;
-#endif
+            prologUsesScratchRegister |= Configuration.TARGET_X86 && _compiler.info.compIsVarArgs;
             if ((block == _compiler.fgFirstBB) && prologUsesScratchRegister)
             {
-                _ = addKillForRegs(regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH)),
+                _ = addKillForRegs(regMaskTP.CreateFromRegNum(TargetRuntimeMetadata.ScratchRegister, genSingleTypeRegMask(TargetRuntimeMetadata.ScratchRegister)),
                     _referenceBuildLocation + 1);
                 _referenceBuildLocation += 2;
             }
 
             if (_compiler.compShouldPoisonFrame() && (block == _compiler.fgFirstBB))
             {
-#if TARGET_XARCH
-                _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
-#else
-                var poisonKills = _compiler.compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
-                poisonKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
-                _ = addKillForRegs(poisonKills, _referenceBuildLocation + 1);
-#endif
+                if (Configuration.TARGET_XARCH)
+                {
+                    _ = addKillForRegs(RBM_EDI | RBM_ECX | RBM_EAX, _referenceBuildLocation + 1);
+                }
+                else
+                {
+                    var poisonKills = _compiler.compHelperCallKillSet(CORINFO_HELP_NATIVE_MEMSET);
+                    poisonKills |= regMaskTP.CreateFromRegNum(TargetRuntimeMetadata.ScratchRegister, genSingleTypeRegMask(TargetRuntimeMetadata.ScratchRegister));
+                    _ = addKillForRegs(poisonKills, _referenceBuildLocation + 1);
+                }
                 _referenceBuildLocation += 2;
             }
 
-#if TARGET_ARM64
-            if (_compiler.compUsesUnknownSizeFrame && (block == _compiler.fgFirstBB))
+            if (Configuration.TARGET_ARM64 && _compiler.compUsesUnknownSizeFrame &&
+                (block == _compiler.fgFirstBB))
             {
-                var frameKills = regMaskTP.CreateFromRegNum(REG_SCRATCH, genSingleTypeRegMask(REG_SCRATCH));
+                var frameKills = regMaskTP.CreateFromRegNum(TargetRuntimeMetadata.ScratchRegister, genSingleTypeRegMask(TargetRuntimeMetadata.ScratchRegister));
                 frameKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH_V, genSingleTypeRegMask(REG_SCRATCH_V));
                 frameKills |= regMaskTP.CreateFromRegNum(REG_SCRATCH_P, genSingleTypeRegMask(REG_SCRATCH_P));
                 _ = addKillForRegs(frameKills, _referenceBuildLocation + 1);
                 _referenceBuildLocation += 2;
             }
-#endif
 
             // Two locations per node keep definitions separate from operand uses.
             foreach (var node in block)
@@ -297,13 +300,14 @@ public sealed partial class LinearScan
                 _referenceBuildLocation += 2;
             }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            _ = VarSetOps.VisitBits(_compiler, _largeVectorVars, variableIndex => {
-                var interval = getIntervalForLocalVar(checked((uint)variableIndex));
-                buildUpperVectorRestoreRefPosition(interval, _referenceBuildLocation, null, false, 0);
-                return true;
-            });
-#endif
+            if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+            {
+                _ = VarSetOps.VisitBits(_compiler, _largeVectorVars, variableIndex => {
+                    var interval = getIntervalForLocalVar(checked((uint)variableIndex));
+                    buildUpperVectorRestoreRefPosition(interval, _referenceBuildLocation, null, false, 0);
+                    return true;
+                });
+            }
 
             markBlockVisited(block);
             if (_definitionList.First is not null)
@@ -468,11 +472,9 @@ public sealed partial class LinearScan
         _needNonIntegerRegisters |= _compiler.compFloatingPointUsed;
         if (!_needNonIntegerRegisters)
         {
-#if HAS_FIXED_REGISTER_SET
-            _availableRegCount = unchecked((int)(_regIntLast - REG_INT_FIRST + 1));
-#else
-            _availableRegCount = 0;
-#endif
+            _availableRegCount = Configuration.HAS_FIXED_REGISTER_SET
+                ? unchecked((int)(_regIntLast - TargetRuntimeMetadata.IntegerRegisterFirst + 1))
+                : 0;
         }
 
         const int maskBitCount = sizeof(ulong) * 8;
@@ -480,21 +482,18 @@ public sealed partial class LinearScan
         {
             _actualRegistersMask = new regMaskTP((regMask)((1UL << _availableRegCount) - 1));
         }
-#if HAS_MORE_THAN_64_REGISTERS
-        else if (_availableRegCount < maskBitCount * 2)
+        else if (Configuration.HAS_MORE_THAN_64_REGISTERS && _availableRegCount < maskBitCount * 2)
         {
             _actualRegistersMask = new regMaskTP(~SRBM_NONE, _availableMaskRegs);
         }
-        else
+        else if (Configuration.HAS_MORE_THAN_64_REGISTERS)
         {
             _actualRegistersMask = new regMaskTP(~SRBM_NONE, ~SRBM_NONE);
         }
-#else
         else
         {
             _actualRegistersMask = new regMaskTP(~SRBM_NONE);
         }
-#endif
 
 #if DEBUG
         foreach (var block in _compiler.Blocks)

@@ -23,12 +23,10 @@ public sealed partial class LinearScan
             return false;
         }
 
-#if LOWER_DECOMPOSE_LONGS
-        if (varDsc.Type is TYP_LONG)
+        if (Configuration.LOWER_DECOMPOSE_LONGS && (varDsc.Type is TYP_LONG))
         {
             return false;
         }
-#endif
 
         if (_compiler.compJmpOpUsed && varDsc.lvIsRegArg)
         {
@@ -52,7 +50,17 @@ public sealed partial class LinearScan
             return false;
         }
 
-        switch (varDsc.Type.ActualType)
+        var actualType = varDsc.Type.ActualType;
+
+        if (Configuration.FEATURE_SIMD &&
+            ((actualType is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16) ||
+             (Configuration.TARGET_XARCH && (actualType is TYP_SIMD32 or TYP_SIMD64)) ||
+             (Configuration.FEATURE_MASKED_HW_INTRINSICS && (actualType is TYP_MASK))))
+        {
+            return !varDsc.lvPromoted;
+        }
+
+        switch (actualType)
         {
             case TYP_FLOAT:
             case TYP_DOUBLE:
@@ -67,22 +75,6 @@ public sealed partial class LinearScan
             {
                 return true;
             }
-
-#if FEATURE_SIMD
-            case TYP_SIMD8:
-            case TYP_SIMD12:
-            case TYP_SIMD16:
-#if TARGET_XARCH
-            case TYP_SIMD32:
-            case TYP_SIMD64:
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-            case TYP_MASK:
-#endif
-            {
-                return !varDsc.lvPromoted;
-            }
-#endif
 
             case TYP_STRUCT:
             {
@@ -153,13 +145,11 @@ public sealed partial class LinearScan
                     return;
                 }
 
-#if TARGET_ARM
-                if (local.lvIsParam)
+                if (Configuration.TARGET_ARM && local.lvIsParam)
                 {
                     _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.IsStructArg);
                     return;
                 }
-#endif
             }
         }
 
@@ -177,14 +167,14 @@ public sealed partial class LinearScan
                 return;
             }
 
-#if JIT32_GCENCODER
-            if (_compiler.lvaKeepAliveAndReportThis() && (localNumber == _compiler.info.compThisArg))
+            if (Configuration.JIT32_GCENCODER &&
+                _compiler.lvaKeepAliveAndReportThis() &&
+                (localNumber == _compiler.info.compThisArg))
             {
                 // EH exposure prevents keeping "this" in one register for the whole method.
                 _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.LiveInOutOfHandler);
                 return;
             }
-#endif
         }
     }
 }

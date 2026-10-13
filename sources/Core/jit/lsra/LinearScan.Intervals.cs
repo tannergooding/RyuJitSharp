@@ -25,9 +25,7 @@ public sealed partial class LinearScan
         {
             VTR_INT => _availableIntRegs,
             VTR_FLOAT => _availableFloatRegs,
-#if FEATURE_MASKED_HW_INTRINSICS
-            VTR_MASK => _availableMaskRegs,
-#endif
+            VTR_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS => _availableMaskRegs,
             _ => throw new FatalJitException($"LSRA has no register bank for {registerType}."),
         };
     }

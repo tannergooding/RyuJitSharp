@@ -66,21 +66,24 @@ public sealed partial class LinearScan
 
         if (tree.IsContained)
         {
-#if TARGET_XARCH
-            if (tree.Oper.IsLocal && ((tree.Flags & GTF_VAR_DEATH) != 0))
+            if (Configuration.TARGET_XARCH)
             {
-                ref var local = ref _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum);
-                if (local.lvLRACandidate)
+                if (tree.Oper.IsLocal && ((tree.Flags & GTF_VAR_DEATH) != 0))
                 {
-                    assert(local.lvTracked);
-                    var varIndex = local._varIndex;
-                    VarSetOps.RemoveElemD(_compiler, _currentLiveVariables, checked((int)varIndex));
-                    updatePreferencesOfDyingLocal(getIntervalForLocalVar(varIndex));
+                    ref var local = ref _compiler.lvaGetDesc(tree.AsLclVarCommon().LclNum);
+                    if (local.lvLRACandidate)
+                    {
+                        assert(local.lvTracked);
+                        var varIndex = local._varIndex;
+                        VarSetOps.RemoveElemD(_compiler, _currentLiveVariables, checked((int)varIndex));
+                        updatePreferencesOfDyingLocal(getIntervalForLocalVar(varIndex));
+                    }
                 }
             }
-#else
-            assert(!isCandidateLocalRef(tree));
-#endif
+            else
+            {
+                assert(!isCandidateLocalRef(tree));
+            }
             JITDUMP("Contained\n");
             return;
         }
@@ -98,11 +101,7 @@ public sealed partial class LinearScan
         _ = produced;
         assert((consumed == 0) || (computeAvailableSrcCount(tree) == consumed));
 
-#if TARGET_AMD64
-        const int registerLimitMask = 0x6003;
-#else
-        const int registerLimitMask = 0x3;
-#endif
+        var registerLimitMask = Configuration.TARGET_AMD64 ? 0x6003 : 0x3;
         const int selectionHeuristicsMask = 0x1c;
         if ((_lsraStressMask & (registerLimitMask | selectionHeuristicsMask)) != 0)
         {
@@ -120,25 +119,21 @@ public sealed partial class LinearScan
                 {
                     minimumRegisterCount++;
                 }
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                else if (reference.refType is RefType.RefTypeUpperVectorSave)
+                else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                    reference.refType is RefType.RefTypeUpperVectorSave)
                 {
                     minimumRegisterCount++;
                 }
-#if TARGET_ARM64
-                else if (reference.needsConsecutive)
+                else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                    Configuration.TARGET_ARM64 && reference.needsConsecutive)
                 {
                     assert(reference.refType is RefType.RefTypeUpperVectorRestore);
                     minimumRegisterCount++;
                 }
-#endif
-#endif
-#if TARGET_ARM64
-                if (reference.needsConsecutive)
+                if (Configuration.TARGET_ARM64 && reference.needsConsecutive)
                 {
                     _consecutiveRegistersLocation = reference.nodeLocation;
                 }
-#endif
                 if (reference.getInterval().isSpecialPutArg)
                 {
                     minimumRegisterCount++;
@@ -165,9 +160,8 @@ public sealed partial class LinearScan
                     var interval = reference.getInterval();
                     var previousCandidates = reference.registerAssignment;
                     var calleeSaved = calleeSaveRegs(interval.registerType);
-#if TARGET_ARM64
-                    if (!reference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
-#endif
+                    if (!Configuration.TARGET_ARM64 ||
+                        !reference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
                     {
                         reference.registerAssignment = getConstrainedRegMask(
                             reference, interval.registerType, previousCandidates, calleeSaved, minimumForReference);
@@ -176,19 +170,26 @@ public sealed partial class LinearScan
                     if ((reference.registerAssignment != previousCandidates) &&
                         (reference.refType is RefType.RefTypeUse) && !interval.isLocalVar)
                     {
-#if TARGET_ARM64
-                        var firstReference = interval.firstRefPosition;
-                        assert(firstReference is not null);
-                        assert(firstReference.treeNode is not null);
-                        if (!firstReference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation))
-#endif
+                        var shouldCheckConflictingDefUse = true;
+                        if (Configuration.TARGET_ARM64)
+                        {
+                            var firstReference = interval.firstRefPosition
+                                ?? throw new FatalJitException("A live interval must have a first reference.");
+                            assert(firstReference.treeNode is not null);
+                            shouldCheckConflictingDefUse =
+                                !firstReference.isLiveAtConsecutiveRegistersLoc(_consecutiveRegistersLocation);
+                        }
+                        if (shouldCheckConflictingDefUse)
                         {
                             checkConflictingDefUse(reference);
                         }
                     }
                 }
             }
-            _consecutiveRegistersLocation = MinLocation;
+            if (Configuration.TARGET_ARM64)
+            {
+                _consecutiveRegistersLocation = MinLocation;
+            }
         }
 #endif
         JITDUMP("\n");

@@ -38,14 +38,10 @@ public sealed partial class Interval : Referenceable
     public bool preferCalleeSave;
     public bool isConstant;
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     public bool isUpperVector;
     public bool isPartiallySpilled;
 
-    public bool IsUpperVector() => isUpperVector;
-#else
-    public bool IsUpperVector() => false;
-#endif
+    public bool IsUpperVector() => Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && isUpperVector;
 
     public bool isWriteThru;
     public bool isSingleDef;

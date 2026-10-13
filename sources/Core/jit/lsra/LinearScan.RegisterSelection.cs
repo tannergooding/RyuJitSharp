@@ -39,22 +39,25 @@ public sealed partial class LinearScan
     {
         private const int HeuristicCount = 17;
 
-#if TARGET_ARM
         private const SingleTypeRegSet OddDoubleRegisters =
-            SRBM_F1 | SRBM_F3 | SRBM_F5 | SRBM_F7 |
-            SRBM_F9 | SRBM_F11 | SRBM_F13 | SRBM_F15 |
-            SRBM_F17 | SRBM_F19 | SRBM_F21 | SRBM_F23 |
-            SRBM_F25 | SRBM_F27 | SRBM_F29 | SRBM_F31;
+            SRBM_ARM32_F1 | SRBM_ARM32_F3 | SRBM_ARM32_F5 | SRBM_ARM32_F7 |
+            SRBM_ARM32_F9 | SRBM_ARM32_F11 | SRBM_ARM32_F13 | SRBM_ARM32_F15 |
+            SRBM_ARM32_F17 | SRBM_ARM32_F19 | SRBM_ARM32_F21 | SRBM_ARM32_F23 |
+            SRBM_ARM32_F25 | SRBM_ARM32_F27 | SRBM_ARM32_F29 | SRBM_ARM32_F31;
 
         private static SingleTypeRegSet excludeBusyDoubleHalves(
             SingleTypeRegSet candidates, SingleTypeRegSet busyRegisters)
         {
+            if (!Configuration.TARGET_ARM)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED);
+            }
+
             // An ARM double occupies an even register and its following odd half.
             // Shift the busy odd halves to exclude their corresponding even candidates.
             var busyOddHalves = unchecked((ulong)(long)(busyRegisters & OddDoubleRegisters));
             return candidates & ~unchecked((SingleTypeRegSet)(busyOddHalves >> 1));
         }
-#endif
 
         private readonly LinearScan _linearScan;
         private Interval? _currentInterval;
@@ -133,9 +136,8 @@ public sealed partial class LinearScan
             {
                 ordering = "ABCDEFGHIJKLMNOPQ";
                 if (!linearScan._enregisterLocalVars && linearScan._compiler.opts.OptimizationDisabled
-#if TARGET_ARM64
-                    && !linearScan._compiler.info.compNeedsConsecutiveRegisters
-#endif
+                    && (!Configuration.TARGET_ARM64 ||
+                        !linearScan._compiler.info.compNeedsConsecutiveRegisters)
                 )
                 {
                     ordering = "MQQQQQQQQQQQQQQQQ";
@@ -222,9 +224,10 @@ public sealed partial class LinearScan
             Interval currentInterval, RefPosition refPosition, out RegisterScore selectionScore)
         {
             selectionScore = RegisterScore.NONE;
-#if TARGET_ARM64
-            assert(!refPosition.needsConsecutive);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(!refPosition.needsConsecutive);
+            }
 #if DEBUG
             if (VERBOSE)
             {
@@ -290,21 +293,16 @@ public sealed partial class LinearScan
                 _linearScan._regsBusyUntilKill | _linearScan._regsInUseThisLocation,
                 _regType);
             _candidates &= ~busyRegs;
-#if TARGET_ARM
-            if (currentInterval.registerType is TYP_DOUBLE)
+            if (Configuration.TARGET_ARM && currentInterval.registerType is TYP_DOUBLE)
             {
                 _candidates = excludeBusyDoubleHalves(_candidates, busyRegs);
             }
-#endif
 
             var checkConflictMask = _candidates;
-#if HAS_MORE_THAN_64_REGISTERS
-            checkConflictMask &= varTypeIsMask(_regType)
+            var fixedRegisterMask = Configuration.HAS_MORE_THAN_64_REGISTERS && varTypeIsMask(_regType)
                 ? _linearScan._fixedRegsHigh
                 : _linearScan._fixedRegsLow;
-#else
-            checkConflictMask &= _linearScan._fixedRegsLow;
-#endif
+            checkConflictMask &= fixedRegisterMask;
             while (checkConflictMask != SRBM_NONE)
             {
                 var conflictReg = firstRegNumFromMask(checkConflictMask, _regType);
@@ -788,26 +786,25 @@ public sealed partial class LinearScan
                 spillCandidates ^= candidateBit;
 
                 var regRecord = _linearScan.getRegisterRecord(regNum);
-#if TARGET_ARM64
                 var assignedInterval = regRecord.assignedInterval;
                 var recentRefPosition = assignedInterval?.recentRefPosition;
-#else
-                var assignedInterval = regRecord.assignedInterval
-                    ?? throw new FatalJitException("Spill-cost selection requires each busy candidate to have an assigned interval.");
-                var recentRefPosition = assignedInterval.recentRefPosition;
-#endif
+                if (!Configuration.TARGET_ARM64 && assignedInterval is null)
+                {
+                    throw new FatalJitException(
+                        "Spill-cost selection requires each busy candidate to have an assigned interval.");
+                }
                 var currentSpillWeight = 0.0;
 
-#if TARGET_ARM64
-                if (recentRefPosition is not null &&
+                if (Configuration.TARGET_ARM64 &&
+                    recentRefPosition is not null &&
                     _linearScan.isRefPositionActive(recentRefPosition, thisLocation) &&
                     recentRefPosition.needsConsecutive)
                 {
                     continue;
                 }
+
                 if (assignedInterval is not null)
                 {
-#endif
                     if (_linearScan.getNextIntervalRef(regNum, _regType) == thisLocation)
                     {
                         var nextIntervalRef = assignedInterval.getNextRefPosition()
@@ -834,29 +831,23 @@ public sealed partial class LinearScan
                             {
                                 currentSpillWeight = _linearScan.getWeight(reloadRefPosition);
                             }
-#if TARGET_ARM64
-                            else if (reloadRefPosition.needsConsecutive)
+                            else if (Configuration.TARGET_ARM64 && reloadRefPosition.needsConsecutive)
                             {
                                 currentSpillWeight = _linearScan.getWeight(reloadRefPosition) * 10;
                             }
-#endif
                         }
                     }
-#if TARGET_ARM64
                 }
-#endif
 
                 if (currentSpillWeight == 0)
                 {
                     currentSpillWeight = _linearScan._spillCost[(int)regNum];
-#if TARGET_ARM
-                    if (CurrentInterval.registerType is TYP_DOUBLE)
+                    if (Configuration.TARGET_ARM && CurrentInterval.registerType is TYP_DOUBLE)
                     {
                         var secondHalfCost = _linearScan._spillCost[(int)(regNum + 1)];
                         currentSpillWeight = currentSpillWeight < secondHalfCost
                             ? secondHalfCost : currentSpillWeight;
                     }
-#endif
                 }
 
                 if (currentSpillWeight < bestSpillWeight)
@@ -936,14 +927,11 @@ public sealed partial class LinearScan
                     hasAssignedInterval = true;
 #endif
                 }
-#if !TARGET_ARM
-                else
+                else if (!Configuration.TARGET_ARM)
                 {
                     foundPrevRegOptReg = false;
                 }
-#endif
-#if TARGET_ARM
-                if (CurrentInterval.registerType is TYP_DOUBLE)
+                if (Configuration.TARGET_ARM && CurrentInterval.registerType is TYP_DOUBLE)
                 {
                     var otherHalfRegNum = _linearScan.findAnotherHalfRegNum(regNum);
                     assignedInterval = _linearScan.physRegs[(int)otherHalfRegNum].assignedInterval;
@@ -959,7 +947,6 @@ public sealed partial class LinearScan
 #endif
                     }
                 }
-#endif
                 if (foundPrevRegOptReg)
                 {
                     prevRegOptSet = candidateBit;
@@ -967,9 +954,7 @@ public sealed partial class LinearScan
 
 #if DEBUG
                 if (!hasAssignedInterval
-#if TARGET_ARM64
-                    && !CurrentRefPosition.needsConsecutive
-#endif
+                    && (!Configuration.TARGET_ARM64 || !CurrentRefPosition.needsConsecutive)
                 )
                 {
                     assert(false, "Spill candidate has no assignedInterval recentRefPosition.");
@@ -988,13 +973,8 @@ public sealed partial class LinearScan
 
         private static SingleTypeRegSet findLowestBit(SingleTypeRegSet registers)
         {
-#if TARGET_X86
-            var bits = unchecked((uint)registers);
-            return unchecked((SingleTypeRegSet)(bits & (0u - bits)));
-#else
             var bits = unchecked((ulong)registers);
             return unchecked((SingleTypeRegSet)(long)(bits & (0UL - bits)));
-#endif
         }
 
         private static regNumber firstRegNumFromMask(SingleTypeRegSet registers, RegisterType registerType) =>

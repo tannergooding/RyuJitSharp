@@ -240,15 +240,13 @@ public sealed partial class LinearScan
                     clearConstantReg(register.regNum, assignedInterval.registerType);
                     register.assignedInterval = null;
                     clearSpillCost(register.regNum, assignedInterval.registerType);
-#if TARGET_ARM
-                    if (assignedInterval.registerType is TYP_DOUBLE)
+                    if (Configuration.TARGET_ARM && assignedInterval.registerType is TYP_DOUBLE)
                     {
                         var otherHalf = findAnotherHalfRegRec(register);
                         assert(ReferenceEquals(otherHalf.assignedInterval, assignedInterval));
                         otherHalf.assignedInterval = null;
                         clearSpillCost(otherHalf.regNum, assignedInterval.registerType);
                     }
-#endif
                 }
 
                 _regsInUseThisLocation |=
@@ -258,13 +256,11 @@ public sealed partial class LinearScan
                     MinimalAllocationEvent.FIXED_REG, currentRefPosition, register: currentRefPosition.assignedReg());
 #endif
 
-#if SWIFT_SUPPORT
-                if (currentRefPosition.delayRegFree)
+                if (Configuration.SWIFT_SUPPORT && currentRefPosition.delayRegFree)
                 {
                     _regsInUseNextLocation |=
                         createRegisterMask(currentRefPosition.registerAssignment, register.registerType);
                 }
-#endif
                 continue;
             }
 
@@ -279,10 +275,11 @@ public sealed partial class LinearScan
 
             var assignedRegister = currentInterval.physReg;
 
-#if FEATURE_SIMD && FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            if (refType is RefType.RefTypeUpperVectorSave)
+            if (Configuration.FEATURE_SIMD &&
+                Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                refType is RefType.RefTypeUpperVectorSave)
             {
-                if (assignedRegister is not REG_NA)
+                if (assignedRegister != REG_NA)
                 {
                     var register = getRegisterRecord(assignedRegister);
                     var assignedInterval = register.assignedInterval
@@ -304,9 +301,8 @@ public sealed partial class LinearScan
                 currentRefPosition.registerAssignment = SRBM_NONE;
                 continue;
             }
-#endif
 
-            if ((assignedRegister is REG_NA) && RefTypeIsUse(refType))
+            if ((assignedRegister == REG_NA) && RefTypeIsUse(refType))
             {
                 currentRefPosition.reload = true;
 #if DEBUG
@@ -317,7 +313,7 @@ public sealed partial class LinearScan
 
             var assignedRegisterMask = SRBM_NONE;
             var isInRegister = false;
-            if (assignedRegister is not REG_NA)
+            if (assignedRegister != REG_NA)
             {
                 isInRegister = true;
                 assignedRegisterMask = genSingleTypeRegMask(assignedRegister);
@@ -338,12 +334,12 @@ public sealed partial class LinearScan
             if (previousRefPosition is not null)
             {
                 assert(ReferenceEquals(previousRefPosition.nextRefPosition, currentRefPosition));
-                assert((assignedRegister is REG_NA) ||
+                assert((assignedRegister == REG_NA) ||
                     (assignedRegisterMask == previousRefPosition.registerAssignment) ||
                     currentRefPosition.outOfOrder || previousRefPosition.copyReg);
             }
 
-            if (assignedRegister is not REG_NA)
+            if (assignedRegister != REG_NA)
             {
                 var register = getRegisterRecord(assignedRegister);
                 assert((assignedRegisterMask == currentRefPosition.registerAssignment) ||
@@ -383,7 +379,7 @@ public sealed partial class LinearScan
                 else if (!RefTypeIsDef(refType))
                 {
                     var copyRegister = assignCopyRegMinimal(currentRefPosition);
-                    if (copyRegister is REG_NA)
+                    if (copyRegister == REG_NA)
                     {
                         throw new FatalJitException("A required copy-register allocation found no register.");
                     }
@@ -425,7 +421,7 @@ public sealed partial class LinearScan
             }
 
             var selectionScore = RegisterScore.NONE;
-            if (assignedRegister is REG_NA)
+            if (assignedRegister == REG_NA)
             {
                 var allocate = true;
                 if (currentRefPosition.RegOptional())
@@ -435,14 +431,14 @@ public sealed partial class LinearScan
                         allocate = false;
                     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_XARCH
-                    if ((refType is RefType.RefTypeUpperVectorRestore) &&
-                        (currentInterval.physReg is REG_NA))
+                    if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                        Configuration.TARGET_XARCH &&
+                        (refType is RefType.RefTypeUpperVectorRestore) &&
+                        (currentInterval.physReg == REG_NA))
                     {
                         assert(currentRefPosition.regOptional);
                         allocate = false;
                     }
-#endif
 
 #if DEBUG
                     if (allocate && regOptionalNoAlloc())
@@ -467,7 +463,7 @@ public sealed partial class LinearScan
                         currentInterval, currentRefPosition, out selectionScore);
                 }
 
-                if (assignedRegister is REG_NA)
+                if (assignedRegister == REG_NA)
                 {
                     assert(currentRefPosition.RegOptional());
 #if DEBUG
@@ -493,13 +489,13 @@ public sealed partial class LinearScan
                 }
 #endif
 
-                if ((assignedRegister is not REG_NA) && RefTypeIsUse(refType) && !isInRegister)
+                if ((assignedRegister != REG_NA) && RefTypeIsUse(refType) && !isInRegister)
                 {
                     assert(currentRefPosition.reload);
                 }
             }
 
-            if (assignedRegister is not REG_NA)
+            if (assignedRegister != REG_NA)
             {
                 assignedRegisterMask = genSingleTypeRegMask(assignedRegister);
                 var assignedRegisterTypeMask = getSingleTypeRegMask(assignedRegister, currentInterval.registerType);
@@ -572,7 +568,7 @@ public sealed partial class LinearScan
 #if DEBUG
         if (extendLifetimes())
         {
-            for (var index = 0; index <= (int)REG_FP_LAST; index++)
+            for (var index = 0; index <= (int)TargetRuntimeMetadata.FloatingRegisterLast; index++)
             {
                 var register = physRegs[index];
                 var interval = register.assignedInterval;
@@ -610,14 +606,12 @@ public sealed partial class LinearScan
 
     private static SingleTypeRegSet getSingleTypeRegMask(regNumber register, RegisterType registerType)
     {
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             // A double occupies both halves, even when its second half is queried.
             var firstHalf = genIsValidDoubleReg(register) ? register : register - 1;
             return firstHalf.GetSingleTypeFloatMask(TYP_DOUBLE);
         }
-#endif
         return genSingleTypeRegMask(register);
     }
 
@@ -656,11 +650,9 @@ public sealed partial class LinearScan
         ref regMaskTP destination, SingleTypeRegSet registers, RegisterType registerType)
     {
         var mask = createRegisterMask(registers, registerType);
-#if HAS_MORE_THAN_64_REGISTERS
-        destination = new regMaskTP(destination.Lower & ~mask.Lower, destination.Upper & ~mask.Upper);
-#else
-        destination = new regMaskTP(destination.Lower & ~mask.Lower);
-#endif
+        destination = Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(destination.Lower & ~mask.Lower, destination.Upper & ~mask.Upper)
+            : new regMaskTP(destination.Lower & ~mask.Lower);
     }
 
     private static bool tryPopRegister(ref regMaskTP registers, out regNumber register)
@@ -674,16 +666,17 @@ public sealed partial class LinearScan
             return true;
         }
 
-#if HAS_MORE_THAN_64_REGISTERS
-        var upper = unchecked((ulong)(long)registers.Upper);
-        if (upper != 0)
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
         {
-            var offset = BitOperations.TrailingZeroCount(upper);
-            registers = new regMaskTP(registers.Lower, registers.Upper & ~(SingleTypeRegSet)(1UL << offset));
-            register = (regNumber)(offset + REG_HIGH_BASE);
-            return true;
+            var upper = unchecked((ulong)(long)registers.Upper);
+            if (upper != 0)
+            {
+                var offset = BitOperations.TrailingZeroCount(upper);
+                registers = new regMaskTP(registers.Lower, registers.Upper & ~(SingleTypeRegSet)(1UL << offset));
+                register = (regNumber)(offset + REG_HIGH_BASE);
+                return true;
+            }
         }
-#endif
 
         register = REG_NA;
         return false;
@@ -714,7 +707,28 @@ public sealed partial class LinearScan
         MinimalAllocationEvent allocationEvent,
         RefPosition refPosition,
         Interval? interval = null,
-        regNumber register = REG_NA,
+        BasicBlock? block = null,
+        RegisterScore selectionScore = RegisterScore.NONE)
+    {
+        dumpMinimalAllocationEvent(allocationEvent, refPosition, interval, REG_NA, block, selectionScore);
+    }
+
+    private void dumpMinimalAllocationEvent(
+        MinimalAllocationEvent allocationEvent,
+        RefPosition refPosition,
+        regNumber register,
+        Interval? interval = null,
+        BasicBlock? block = null,
+        RegisterScore selectionScore = RegisterScore.NONE)
+    {
+        dumpMinimalAllocationEvent(allocationEvent, refPosition, interval, register, block, selectionScore);
+    }
+
+    private void dumpMinimalAllocationEvent(
+        MinimalAllocationEvent allocationEvent,
+        RefPosition refPosition,
+        Interval? interval,
+        regNumber register,
         BasicBlock? block = null,
         RegisterScore selectionScore = RegisterScore.NONE)
     {
@@ -724,7 +738,7 @@ public sealed partial class LinearScan
         }
 
         initializeAllocationDumpFormat();
-        if ((interval is not null) && (register is not REG_NA and not REG_STK))
+        if ((interval is not null) && (register != REG_NA) && (register != REG_STK))
         {
             _allocationDumpRegisters |=
                 regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));

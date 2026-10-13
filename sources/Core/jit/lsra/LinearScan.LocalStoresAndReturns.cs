@@ -37,12 +37,10 @@ public sealed partial class LinearScan
 
         var registerType = local.GetRegisterType();
         var candidates = allRegs(registerType);
-#if TARGET_X86
-        if (varTypeIsByte(registerType))
+        if (Configuration.TARGET_X86 && varTypeIsByte(registerType))
         {
             candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
         }
-#endif
         var definition = newRefPosition(interval, _referenceBuildLocation + 1,
             RefType.RefTypeDef, store, candidates, checked((uint)index));
         if (interval.isWriteThru)
@@ -50,12 +48,11 @@ public sealed partial class LinearScan
             definition.regOptional = true;
         }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        if (Compiler.varTypeNeedsPartialCalleeSave(interval.registerType))
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+            LsraConfiguration.VarTypeNeedsPartialCalleeSave(interval.registerType))
         {
             interval.isPartiallySpilled = false;
         }
-#endif
     }
 
     private int buildMultiRegStoreLoc(GenTreeLclVar store)
@@ -91,12 +88,10 @@ public sealed partial class LinearScan
             if (multiRegSource)
             {
                 var sourceCandidates = SRBM_NONE;
-#if TARGET_X86
-                if (varTypeIsByte(field.Type))
+                if (Configuration.TARGET_X86 && varTypeIsByte(field.Type))
                 {
                     sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
                 }
-#endif
                 singleUse = buildUse(source, sourceCandidates, index);
             }
 
@@ -121,16 +116,18 @@ public sealed partial class LinearScan
             return buildMultiRegStoreLoc(store.AsLclVar());
         }
 
-#if FEATURE_SIMD
-        if (varTypeIsSimd(store.Type) && !source.IsVectorZero && (store.Type is TYP_SIMD12))
+        if (Configuration.FEATURE_SIMD &&
+            varTypeIsSimd(store.Type) && !source.IsVectorZero && (store.Type is TYP_SIMD12))
         {
-#if TARGET_ARM64
-            _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
-#else
-            _ = buildInternalFloatRegisterDefForNode(store, _availableFloatRegs);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
+            }
+            else
+            {
+                _ = buildInternalFloatRegisterDefForNode(store, _availableFloatRegs);
+            }
         }
-#endif
 
         int sourceCount;
         RefPosition? singleUse = null;
@@ -151,15 +148,13 @@ public sealed partial class LinearScan
             assert(regType(singleUse.getInterval().registerType) == registerType);
             sourceCount = 1;
         }
-#if TARGET_32BIT
-        else if (varTypeIsLong(source.Type))
+        else if (!Configuration.TARGET_64BIT && varTypeIsLong(source.Type))
         {
             assert(source.Oper is GT_LONG);
             assert(source.IsContained && !source.AsOp().Op1.IsContained && !source.AsOp().Op2.IsContained);
             sourceCount = buildBinaryUses(source.AsOp());
             assert(sourceCount == 2);
         }
-#endif
         else if (source.IsContained)
         {
             sourceCount = 0;
@@ -167,18 +162,16 @@ public sealed partial class LinearScan
         else
         {
             var sourceCandidates = SRBM_NONE;
-#if TARGET_X86
-            if (varTypeIsByte(local.GetRegisterType(store)))
+            if (Configuration.TARGET_X86 && varTypeIsByte(local.GetRegisterType(store)))
             {
                 sourceCandidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
             }
-#endif
             singleUse = buildUse(source, sourceCandidates);
             sourceCount = 1;
         }
 
-#if TARGET_ARM
-        if ((store.Oper is GT_STORE_LCL_FLD) && store.AsLclFld().IsOffsetMisaligned)
+        if (Configuration.TARGET_ARM &&
+            (store.Oper is GT_STORE_LCL_FLD) && store.AsLclFld().IsOffsetMisaligned)
         {
             _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
             _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
@@ -187,11 +180,11 @@ public sealed partial class LinearScan
                 _ = buildInternalIntRegisterDefForNode(store, _availableIntRegs);
             }
         }
-#endif
 
-#if FEATURE_SIMD || TARGET_ARM
-        buildInternalRegisterUses();
-#endif
+        if (Configuration.FEATURE_SIMD || Configuration.TARGET_ARM)
+        {
+            buildInternalRegisterUses();
+        }
 
         if (local.lvLRACandidate)
         {
@@ -207,26 +200,32 @@ public sealed partial class LinearScan
             ? tree.AsOp().Op2
             : tree.AsUnOp().Op1;
 
-#if !TARGET_64BIT
-        if (tree.Type is TYP_LONG)
+        if (!Configuration.TARGET_64BIT && tree.Type is TYP_LONG)
         {
             assert(value.Oper is GT_LONG && value.IsContained);
             var pair = value.AsOp();
-#if TARGET_X86
-            _ = buildUse(pair.Op1, SRBM_EAX);
-            _ = buildUse(pair.Op2, SRBM_EDX);
-#elif TARGET_ARM
-            _ = buildUse(pair.Op1, genSingleTypeRegMask(REG_R0));
-            _ = buildUse(pair.Op2, genSingleTypeRegMask(REG_R1));
-#elif TARGET_WASM
-            _ = buildUse(pair.Op1, SRBM_NONE);
-            _ = buildUse(pair.Op2, SRBM_NONE);
-#else
-            throw new FatalJitException("The 32-bit long return-register contract is not available on this target.");
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                _ = buildUse(pair.Op1, SRBM_X86_EAX);
+                _ = buildUse(pair.Op2, SRBM_X86_EDX);
+            }
+            else if (Configuration.TARGET_ARM)
+            {
+                _ = buildUse(pair.Op1, genSingleTypeRegMask(TargetRuntimeMetadata.Register0));
+                _ = buildUse(pair.Op2, genSingleTypeRegMask(REG_ARM32_R1));
+            }
+            else if (Configuration.TARGET_WASM)
+            {
+                _ = buildUse(pair.Op1, SRBM_NONE);
+                _ = buildUse(pair.Op2, SRBM_NONE);
+            }
+            else
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "The 32-bit long return-register contract is not available on this target.");
+            }
             return 2;
         }
-#endif
 
         if ((tree.Type is not TYP_VOID) && !value.IsContained)
         {
@@ -268,12 +267,11 @@ public sealed partial class LinearScan
                                 {
                                     _ = buildInternalIntRegisterDefForNode(tree, destinationMask);
                                 }
-#if FEATURE_SIMD && TARGET_XARCH
-                                else if (varTypeUsesMaskReg(destinationType))
+                                else if (Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH &&
+                                    varTypeUsesMaskReg(destinationType))
                                 {
                                     _ = buildInternalMaskRegisterDefForNode(tree, destinationMask);
                                 }
-#endif
                                 else
                                 {
                                     assert(varTypeUsesFloatReg(destinationType));
@@ -305,45 +303,60 @@ public sealed partial class LinearScan
             }
             else
             {
-#if TARGET_X86
-                var candidates = tree.Type switch
+                SingleTypeRegSet candidates;
+                if (Configuration.TARGET_X86)
                 {
-                    TYP_FLOAT or TYP_DOUBLE => SRBM_NONE,
-                    TYP_LONG => SRBM_EAX | SRBM_EDX,
-                    _ => SRBM_EAX,
-                };
-#elif TARGET_ARM
-                var candidates = tree.Type switch
+                    candidates = tree.Type switch
+                    {
+                        TYP_FLOAT or TYP_DOUBLE => SRBM_NONE,
+                        TYP_LONG => SRBM_X86_EAX | SRBM_X86_EDX,
+                        _ => SRBM_X86_EAX,
+                    };
+                }
+                else if (Configuration.TARGET_ARM)
                 {
-                    TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_F0),
-                    TYP_LONG => genSingleTypeRegMask(REG_R0) | genSingleTypeRegMask(REG_R1),
-                    _ => genSingleTypeRegMask(REG_R0),
-                };
-#elif TARGET_LOONGARCH64
-                var candidates = tree.Type switch
+                    candidates = tree.Type switch
+                    {
+                        TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_ARM32_F0),
+                        TYP_LONG => genSingleTypeRegMask(TargetRuntimeMetadata.Register0) | genSingleTypeRegMask(REG_ARM32_R1),
+                        _ => genSingleTypeRegMask(TargetRuntimeMetadata.Register0),
+                    };
+                }
+                else if (Configuration.TARGET_LOONGARCH64)
                 {
-                    TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_F0),
-                    _ => genSingleTypeRegMask(REG_A0),
-                };
-#elif TARGET_RISCV64
-                var candidates = tree.Type switch
+                    candidates = tree.Type switch
+                    {
+                        TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_LOONGARCH64_F0),
+                        _ => genSingleTypeRegMask(REG_LOONGARCH64_A0),
+                    };
+                }
+                else if (Configuration.TARGET_RISCV64)
                 {
-                    TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_FA0),
-                    _ => genSingleTypeRegMask(REG_A0),
-                };
-#elif TARGET_WASM
-                var candidates = SRBM_NONE;
-#elif TARGET_AMD64 || TARGET_ARM64
-                var candidates = tree.Type switch
+                    candidates = tree.Type switch
+                    {
+                        TYP_FLOAT or TYP_DOUBLE => genSingleTypeRegMask(REG_RISCV64_FA0),
+                        _ => genSingleTypeRegMask(REG_RISCV64_A0),
+                    };
+                }
+                else if (Configuration.TARGET_WASM)
                 {
-                    TYP_FLOAT => SRBM_FLOATRET,
-                    TYP_DOUBLE => SRBM_DOUBLERET,
-                    TYP_LONG => SRBM_LNGRET,
-                    _ => SRBM_INTRET,
-                };
-#else
-                throw new FatalJitException("The return-register contract is not available on this target.");
-#endif
+                    candidates = SRBM_NONE;
+                }
+                else if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+                {
+                    candidates = tree.Type switch
+                    {
+                        TYP_FLOAT => TargetRuntimeMetadata.FloatingReturnMask,
+                        TYP_DOUBLE => TargetRuntimeMetadata.DoubleReturnMask,
+                        TYP_LONG => TargetRuntimeMetadata.LongReturnMask,
+                        _ => TargetRuntimeMetadata.IntegerReturnMask,
+                    };
+                }
+                else
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "The return-register contract is not available on this target.");
+                }
                 _ = buildUse(value, candidates);
                 return 1;
             }

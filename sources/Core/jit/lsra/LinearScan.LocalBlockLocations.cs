@@ -48,16 +48,18 @@ public sealed partial class LinearScan
             var interval = getIntervalForLocalVar(checked((uint)variableIndex));
             if (interval.isActive)
             {
-                assert(interval.physReg is not REG_NA and not REG_STK);
+                assert(interval.physReg != REG_NA && interval.physReg != REG_STK);
                 setVarReg(outMap, checked((uint)variableIndex), interval.physReg);
             }
             else
             {
-                outMap[variableIndex] = REG_STK;
+                outMap[variableIndex] = (regNumberSmall)REG_STK;
             }
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            assert(!Compiler.varTypeNeedsPartialCalleeSave(interval.registerType) || !interval.isPartiallySpilled);
-#endif
+            if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+            {
+                assert(!LsraConfiguration.VarTypeNeedsPartialCalleeSave(interval.registerType) ||
+                    !interval.isPartiallySpilled);
+            }
             return true;
         });
         // Native LSRA_EVENT_END_BB has no diagnostic output.
@@ -84,7 +86,7 @@ public sealed partial class LinearScan
                 {
                     if (!extendLifetimes() || VarSetOps.IsMember(_compiler, currentBlock.bbLiveIn, index))
                     {
-                        assert(inMap[index] == REG_STK);
+                        assert((regNumber)inMap[index] == REG_STK);
                     }
                 }
             }
@@ -221,8 +223,7 @@ public sealed partial class LinearScan
                 }
                 if (!ReferenceEquals(targetRecord.assignedInterval, interval))
                 {
-#if TARGET_ARM
-                    if ((interval.registerType is TYP_DOUBLE) &&
+                    if (Configuration.TARGET_ARM && (interval.registerType is TYP_DOUBLE) &&
                         ((targetRecord.assignedInterval is null) ||
                          (targetRecord.assignedInterval.registerType is TYP_FLOAT)))
                     {
@@ -230,14 +231,13 @@ public sealed partial class LinearScan
                         unassignIntervalBlockStart(getSecondHalfRegRec(targetRecord),
                             _allocationPassComplete ? null : inMap);
                     }
-                    if ((interval.registerType is TYP_FLOAT) &&
+                    if (Configuration.TARGET_ARM && (interval.registerType is TYP_FLOAT) &&
                         (targetRecord.assignedInterval?.registerType is TYP_DOUBLE))
                     {
                         var otherHalf = findAnotherHalfRegRec(targetRecord);
                         liveRegs &= ~regMaskTP.CreateFromRegNum(otherHalf.regNum,
                             genSingleTypeRegMask(otherHalf.regNum));
                     }
-#endif
                     unassignIntervalBlockStart(targetRecord, _allocationPassComplete ? null : inMap);
                     assignPhysReg(targetRecord, interval);
                 }
@@ -258,66 +258,68 @@ public sealed partial class LinearScan
             resetRegStateWithLocals();
             setRegsInUseAtBlockStart(liveRegs);
         }
-#if TARGET_ARM
-        for (var register = REG_FIRST; (int)register < _availableRegCount; register++)
+        if (Configuration.TARGET_ARM)
         {
-            var record = getRegisterRecord(register);
-            var assigned = record.assignedInterval;
-            if (!liveRegs.IsSet(register))
+            for (var register = TargetRuntimeMetadata.FirstRegister; (int)register < _availableRegCount; register++)
             {
-                makeRegAvailable(register, record.registerType);
-                if (assigned is not null)
+                var record = getRegisterRecord(register);
+                var assigned = record.assignedInterval;
+                if (!liveRegs.IsSet(register))
                 {
-                    assert(assigned.isLocalVar || assigned.isConstant || assigned.IsUpperVector());
-                    if (!assigned.isConstant && ReferenceEquals(assigned.assignedReg, record))
+                    makeRegAvailable(register, record.registerType);
+                    if (assigned is not null)
                     {
-                        assigned.isActive = false;
-                        if (assigned.getNextRefPosition() is null)
+                        assert(assigned.isLocalVar || assigned.isConstant || assigned.IsUpperVector());
+                        if (!assigned.isConstant && ReferenceEquals(assigned.assignedReg, record))
                         {
-                            unassignPhysReg(record, (RefPosition?)null);
+                            assigned.isActive = false;
+                            if (assigned.getNextRefPosition() is null)
+                            {
+                                unassignPhysReg(record, (RefPosition?)null);
+                            }
+                            if (!assigned.IsUpperVector())
+                            {
+                                setVarReg(inMap, assigned.getVarIndex(_compiler), REG_STK);
+                            }
                         }
-                        if (!assigned.IsUpperVector())
+                        else
                         {
-                            setVarReg(inMap, assigned.getVarIndex(_compiler), REG_STK);
+                            clearAssignedInterval(record, assigned.registerType);
                         }
-                    }
-                    else
-                    {
-                        clearAssignedInterval(record, assigned.registerType);
-                    }
 
-                    assigned = record.assignedInterval ?? assigned;
-                    if (assigned.registerType is TYP_DOUBLE)
-                    {
-                        assert(genIsValidDoubleReg(register));
-                        register++;
-                        makeRegAvailable(register, record.registerType);
+                        assigned = record.assignedInterval ?? assigned;
+                        if (assigned.registerType is TYP_DOUBLE)
+                        {
+                            assert(genIsValidDoubleReg(register));
+                            register++;
+                            makeRegAvailable(register, record.registerType);
+                        }
                     }
                 }
-            }
-            else if ((assigned is not null) && (assigned.registerType is TYP_DOUBLE))
-            {
-                assert(genIsValidDoubleReg(register));
-                register++;
+                else if ((assigned is not null) && (assigned.registerType is TYP_DOUBLE))
+                {
+                    assert(genIsValidDoubleReg(register));
+                    register++;
+                }
             }
         }
-#else
-        var deadCandidates = ~liveRegs & _actualRegistersMask;
-        handleDeadBlockCandidates(deadCandidates.Lower, REG_LOW_BASE, inMap);
-#if HAS_MORE_THAN_64_REGISTERS
-        handleDeadBlockCandidates(deadCandidates.Upper, REG_HIGH_BASE, inMap);
-#endif
-#endif
+        else
+        {
+            var deadCandidates = ~liveRegs & _actualRegistersMask;
+            handleDeadBlockCandidates(deadCandidates.Lower, REG_LOW_BASE, inMap);
+            if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+            {
+                handleDeadBlockCandidates(deadCandidates.Upper, REG_HIGH_BASE, inMap);
+            }
+        }
     }
 
     private static regMaskTP blockLiveRegMask(regNumber register, RegisterType registerType)
     {
-#if TARGET_ARM
-        if (registerType is TYP_FLOAT or TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && (registerType is TYP_FLOAT or TYP_DOUBLE))
         {
             return register.GetFloatMask(registerType);
         }
-#endif
         return regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
     }
 }

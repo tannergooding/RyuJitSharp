@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if TARGET_ARM64
     private readonly Dictionary<RefPosition, RefPosition?> _nextConsecutiveRefPositions = [];
 
     private RefPosition? getNextConsecutiveRefPosition(RefPosition reference)
@@ -44,8 +43,8 @@ public sealed partial class LinearScan
                 current.needsConsecutive = true;
                 current.regCount = 0;
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (refPositions.Count != before + 1)
+                if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                    refPositions.Count != before + 1)
                 {
                     var restore = refPositions[before];
                     assert(restore.refType is RefType.RefTypeUpperVectorRestore);
@@ -63,7 +62,6 @@ public sealed partial class LinearScan
                     }
                 }
                 else
-#endif
                 if (previous is not null)
                 {
                     _nextConsecutiveRefPositions[previous] = current;
@@ -131,5 +129,4 @@ public sealed partial class LinearScan
             previous = current;
         }
     }
-#endif
 }

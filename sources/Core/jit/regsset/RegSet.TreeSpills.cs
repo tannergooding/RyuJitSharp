@@ -28,9 +28,11 @@ public partial struct RegSet
 
     public void rsSpillTree(regNumber reg, GenTree tree, byte regIndex = 0)
     {
-#if !HAS_FIXED_REGISTER_SET
-        throw new FatalJitException(CORJIT_SKIPPED, "Tree spills require a fixed register set.");
-#else
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Tree spills require a fixed register set.");
+        }
+
         var isMultiRegTree = false;
         var treeType = tree.Type;
 
@@ -112,7 +114,6 @@ public partial struct RegSet
             regFlags |= GTF_SPILLED;
             tree.SetRegSpillFlagByIdx(regFlags, regIndex);
         }
-#endif
     }
 
     internal TempDsc rsGetSpillTempWord(regNumber reg, SpillDsc descriptor, SpillDsc? previous)

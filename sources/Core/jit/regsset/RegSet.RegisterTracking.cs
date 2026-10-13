@@ -9,29 +9,44 @@ public partial struct RegSet
 {
     private regMaskTP _rsModifiedRegsMask;
 
-#if SWIFT_SUPPORT
-    private readonly regMaskTP AllCalleeSavedMask => _rsAllCalleeSavedMask;
-#elif HAS_MORE_THAN_64_REGISTERS
     private readonly regMaskTP AllCalleeSavedMask
-        => new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
-#else
-    private readonly regMaskTP AllCalleeSavedMask
-        => new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
-#endif
+    {
+        get
+        {
+            if (Configuration.SWIFT_SUPPORT)
+            {
+                return _rsAllCalleeSavedMask;
+            }
 
-#if SWIFT_SUPPORT
-    private readonly regMaskTP IntCalleeSavedMask => _rsIntCalleeSavedMask;
-#else
-    private readonly regMaskTP IntCalleeSavedMask => new regMaskTP(SRBM_INT_CALLEE_SAVED);
-#endif
+            if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+            {
+                return new regMaskTP(
+                    TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask,
+                    TargetRuntimeMetadata.MaskCalleeSavedMask);
+            }
+
+            return new regMaskTP(TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask);
+        }
+    }
+
+    private readonly regMaskTP IntCalleeSavedMask
+    {
+        get
+        {
+            return Configuration.SWIFT_SUPPORT
+                ? _rsIntCalleeSavedMask
+                : new regMaskTP(TargetRuntimeMetadata.IntegerCalleeSavedMask);
+        }
+    }
 
     private static regMaskTP AndNot(regMaskTP left, regMaskTP right)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(left.Lower & ~right.Lower, left.Upper & ~right.Upper);
-#else
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            return new regMaskTP(left.Lower & ~right.Lower, left.Upper & ~right.Upper);
+        }
+
         return new regMaskTP(left.Lower & ~right.Lower);
-#endif
     }
 
     public readonly regMaskTP rsGetModifiedRegsMask()
@@ -58,22 +73,25 @@ public partial struct RegSet
         return _rsModifiedRegsMask & IntCalleeSavedMask;
     }
 
-#if TARGET_AMD64
     public readonly regMaskTP rsGetModifiedOsrIntCalleeSavedRegsMask()
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "OSR integer callee-saved masks require AMD64.");
+        }
+
 #if DEBUG
         assert(_rsModifiedRegsMaskInitialized);
 #endif
         return _rsModifiedRegsMask & (IntCalleeSavedMask | RBM_EBP);
     }
-#endif
 
     public readonly regMaskTP rsGetModifiedFltCalleeSavedRegsMask()
     {
 #if DEBUG
         assert(_rsModifiedRegsMaskInitialized);
 #endif
-        return _rsModifiedRegsMask & new regMaskTP(SRBM_FLT_CALLEE_SAVED);
+        return _rsModifiedRegsMask & new regMaskTP(TargetRuntimeMetadata.FloatingCalleeSavedMask);
     }
 
     public readonly bool rsRegsModified(regMaskTP mask)
@@ -98,14 +116,12 @@ public partial struct RegSet
 
         _rsModifiedRegsMask = RBM_NONE;
 
-#if SWIFT_SUPPORT
-        if (Compiler.lvaSwiftErrorArg != BAD_VAR_NUM)
+        if (Configuration.SWIFT_SUPPORT && (Compiler.lvaSwiftErrorArg != BAD_VAR_NUM))
         {
-            var swiftError = new regMaskTP(SRBM_SWIFT_ERROR);
+            var swiftError = new regMaskTP(TargetRuntimeMetadata.SwiftErrorMask);
             _rsAllCalleeSavedMask = AndNot(_rsAllCalleeSavedMask, swiftError);
             _rsIntCalleeSavedMask = AndNot(_rsIntCalleeSavedMask, swiftError);
         }
-#endif
     }
 
     public void rsSetRegsModified(regMaskTP mask, bool suppressDump = false)
@@ -170,15 +186,12 @@ public partial struct RegSet
         _rsModifiedRegsMask = remaining;
     }
 
-#if TARGET_WASM
-    public readonly void verifyRegUsed(regNumber reg)
-#else
     public void verifyRegUsed(regNumber reg)
-#endif
     {
-#if !TARGET_WASM
-        rsSetRegsModified(regMaskTP.CreateFromRegNum(reg, (regMask)(1L << ((int)reg & 63))));
-#endif
+        if (!Configuration.TARGET_WASM)
+        {
+            rsSetRegsModified(regMaskTP.CreateFromRegNum(reg, (regMask)(1L << ((int)reg & 63))));
+        }
     }
 
     public void verifyRegistersUsed(regMaskTP regMask)

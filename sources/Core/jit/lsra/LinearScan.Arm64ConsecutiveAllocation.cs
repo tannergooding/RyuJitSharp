@@ -10,18 +10,18 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if TARGET_ARM64
     private SingleTypeRegSet _consecutiveRegsInUseThisLocation;
 
     private static regNumber getNextFPRegWraparound(regNumber register) =>
-        register == REG_FP_LAST ? REG_FP_FIRST : (regNumber)((int)register + 1);
+        register == TargetRuntimeMetadata.FloatingRegisterLast ? TargetRuntimeMetadata.FloatingRegisterFirst : (regNumber)((int)register + 1);
 
     private void assignConsecutiveRegisters(RefPosition first, regNumber firstRegister)
     {
         assert(_compiler.info.compNeedsConsecutiveRegisters);
         assert(first.isFirstRefPositionOfConsecutiveRegisters());
         assert(first.assignedReg() == firstRegister);
-        assert(firstRegister is >= REG_FP_FIRST and <= REG_FP_LAST);
+        assert(((int)firstRegister >= (int)TargetRuntimeMetadata.FloatingRegisterFirst) &&
+            ((int)firstRegister <= (int)TargetRuntimeMetadata.FloatingRegisterLast));
         assert(_consecutiveRegsInUseThisLocation == SRBM_NONE);
         assert(first.refType is not RefType.RefTypeUpperVectorRestore);
 
@@ -41,8 +41,8 @@ public sealed partial class LinearScan
         while (next is not null)
         {
             assert(next.regCount == 0);
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            if (next.refType is RefType.RefTypeUpperVectorRestore)
+            if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                next.refType is RefType.RefTypeUpperVectorRestore)
             {
                 var upper = next.getInterval();
                 assert(upper.isUpperVector && upper.relatedInterval is not null);
@@ -55,7 +55,6 @@ public sealed partial class LinearScan
                 next = getNextConsecutiveRefPosition(next)
                     ?? throw new FatalJitException("A consecutive upper-vector restore must precede a use.");
             }
-#endif
             assert(next.refType is RefType.RefTypeDef or RefType.RefTypeUse);
             next.registerAssignment = genSingleTypeRegMask(register);
             next = getNextConsecutiveRefPosition(next);
@@ -73,7 +72,8 @@ public sealed partial class LinearScan
     {
         assert(_compiler.info.compNeedsConsecutiveRegisters);
         assert(first.regCount > 1);
-        assert(firstRegister is >= REG_FP_FIRST and <= REG_FP_LAST);
+        assert(((int)firstRegister >= (int)TargetRuntimeMetadata.FloatingRegisterFirst) &&
+            ((int)firstRegister <= (int)TargetRuntimeMetadata.FloatingRegisterLast));
 
         var next = first;
         var register = firstRegister;
@@ -84,13 +84,12 @@ public sealed partial class LinearScan
             register = getNextFPRegWraparound(register);
             if (!isFree(getRegisterRecord(register)))
             {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (next.refType is RefType.RefTypeUpperVectorRestore)
+                if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                    next.refType is RefType.RefTypeUpperVectorRestore)
                 {
                     next = getNextConsecutiveRefPosition(next)
                         ?? throw new FatalJitException("A consecutive upper-vector restore must precede a use.");
                 }
-#endif
                 var interval = next.getInterval();
                 if (interval is not null && !isRegInUse(register, interval.registerType) &&
                     interval.assignedReg?.regNum == register)
@@ -134,51 +133,51 @@ public sealed partial class LinearScan
         } while (remaining != 0);
 
         // The floating-point register bank wraps from V31 to V0.
-        var endpoints = SRBM_V0 | SRBM_V31;
+        var endpoints = SRBM_ARM64_V0 | SRBM_ARM64_V31;
         if ((candidates & endpoints) == endpoints)
         {
             switch (needed)
             {
                 case 2:
                 {
-                    starts |= unchecked((ulong)SRBM_V31);
+                    starts |= unchecked((ulong)SRBM_ARM64_V31);
                     all |= unchecked((ulong)endpoints);
                     break;
                 }
                 case 3:
                 {
-                    var fromV30 = SRBM_V0 | SRBM_V30 | SRBM_V31;
+                    var fromV30 = SRBM_ARM64_V0 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
                     if ((candidates & fromV30) != SRBM_NONE)
                     {
-                        starts |= unchecked((ulong)SRBM_V30);
+                        starts |= unchecked((ulong)SRBM_ARM64_V30);
                         all |= unchecked((ulong)fromV30);
                     }
-                    var fromV31 = SRBM_V0 | SRBM_V1 | SRBM_V31;
+                    var fromV31 = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V31;
                     if ((candidates & fromV31) != SRBM_NONE)
                     {
-                        starts |= unchecked((ulong)SRBM_V31);
+                        starts |= unchecked((ulong)SRBM_ARM64_V31);
                         all |= unchecked((ulong)fromV31);
                     }
                     break;
                 }
                 case 4:
                 {
-                    var fromV29 = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
+                    var fromV29 = SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
                     if ((candidates & fromV29) != SRBM_NONE)
                     {
-                        starts |= unchecked((ulong)SRBM_V29);
+                        starts |= unchecked((ulong)SRBM_ARM64_V29);
                         all |= unchecked((ulong)fromV29);
                     }
-                    var fromV30 = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
+                    var fromV30 = SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
                     if ((candidates & fromV30) != SRBM_NONE)
                     {
-                        starts |= unchecked((ulong)SRBM_V30);
+                        starts |= unchecked((ulong)SRBM_ARM64_V30);
                         all |= unchecked((ulong)fromV30);
                     }
-                    var fromV31 = SRBM_V0 | SRBM_V29 | SRBM_V30 | SRBM_V31;
+                    var fromV31 = SRBM_ARM64_V0 | SRBM_ARM64_V29 | SRBM_ARM64_V30 | SRBM_ARM64_V31;
                     if ((candidates & fromV31) != SRBM_NONE)
                     {
-                        starts |= unchecked((ulong)SRBM_V31);
+                        starts |= unchecked((ulong)SRBM_ARM64_V31);
                         all |= unchecked((ulong)fromV31);
                     }
                     break;
@@ -241,9 +240,9 @@ public sealed partial class LinearScan
 #if DEBUG
         if ((_lsraStressMask & 0x3) != 0)
         {
-            free &= SRBM_V0 | SRBM_V2 | SRBM_V4 | SRBM_V6 | SRBM_V8 |
-                SRBM_V10 | SRBM_V12 | SRBM_V14 | SRBM_V16 | SRBM_V18 |
-                SRBM_V20 | SRBM_V22 | SRBM_V24 | SRBM_V26 | SRBM_V28 | SRBM_V30;
+            free &= SRBM_ARM64_V0 | SRBM_ARM64_V2 | SRBM_ARM64_V4 | SRBM_ARM64_V6 | SRBM_ARM64_V8 |
+                SRBM_ARM64_V10 | SRBM_ARM64_V12 | SRBM_ARM64_V14 | SRBM_ARM64_V16 | SRBM_ARM64_V18 |
+                SRBM_ARM64_V20 | SRBM_ARM64_V22 | SRBM_ARM64_V24 | SRBM_ARM64_V26 | SRBM_ARM64_V28 | SRBM_ARM64_V30;
         }
 #endif
         busyCandidates = SRBM_NONE;
@@ -255,8 +254,8 @@ public sealed partial class LinearScan
             {
                 var next = getNextConsecutiveRefPosition(first)
                     ?? throw new FatalJitException("A consecutive sequence requires additional references.");
-                var firstAssigned = REG_NA;
-                var previousAssigned = REG_NA;
+                var firstAssigned = REG_ARM64_NA;
+                var previousAssigned = REG_ARM64_NA;
                 var foundCount = 0;
                 for (var index = 1; index < needed; index++)
                 {
@@ -274,11 +273,11 @@ public sealed partial class LinearScan
 
                     var current = interval.assignedReg?.regNum
                         ?? throw new FatalJitException("An active consecutive interval has no register.");
-                    if (previousAssigned == REG_NA ||
+                    if (previousAssigned == REG_ARM64_NA ||
                         (int)previousAssigned + 1 == (int)current ||
-                        (previousAssigned == REG_FP_LAST && current == REG_FP_FIRST))
+                        (previousAssigned == TargetRuntimeMetadata.FloatingRegisterLast && current == TargetRuntimeMetadata.FloatingRegisterFirst))
                     {
-                        if (previousAssigned == REG_NA)
+                        if (previousAssigned == REG_ARM64_NA)
                         {
                             firstAssigned = current;
                         }
@@ -291,7 +290,7 @@ public sealed partial class LinearScan
                 }
                 if (foundCount != 0)
                 {
-                    assert(firstAssigned != REG_NA);
+                    assert(firstAssigned != REG_ARM64_NA);
                     // Native uses the bit before V0, not V31, when the first assigned register is V0.
                     var start = (int)firstAssigned - 1;
                     var remaining = unchecked((SingleTypeRegSet)(
@@ -321,5 +320,4 @@ public sealed partial class LinearScan
         }
         return SRBM_NONE;
     }
-#endif
 }

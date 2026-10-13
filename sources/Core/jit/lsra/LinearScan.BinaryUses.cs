@@ -11,8 +11,7 @@ public sealed partial class LinearScan
     {
         var op1 = node.Op1;
         var op2 = node is GenTreeOp binary ? binary.Op2 : null;
-#if TARGET_XARCH
-        if (node.Oper.IsBinary && isRMWRegOper(node))
+        if (Configuration.TARGET_XARCH && node.Oper.IsBinary && isRMWRegOper(node))
         {
             var right = node.AsOp().Op2;
             if ((candidates == SRBM_NONE) && varTypeUsesFloatReg(node.Type) &&
@@ -30,13 +29,11 @@ public sealed partial class LinearScan
 
             return buildRmwUses(node, op1, right, candidates, candidates);
         }
-#endif
 
         var srcCount = 0;
         if (op1 is not null)
         {
-#if TARGET_XARCH
-            if (op1.IsContainedIndir && !_evexIsSupported)
+            if (Configuration.TARGET_XARCH && op1.IsContainedIndir && !_evexIsSupported)
             {
                 if (candidates == SRBM_NONE)
                 {
@@ -49,7 +46,6 @@ public sealed partial class LinearScan
                 }
             }
             else
-#endif
             {
                 srcCount += buildOperandUses(op1, candidates);
             }
@@ -57,8 +53,7 @@ public sealed partial class LinearScan
 
         if (op2 is not null)
         {
-#if TARGET_XARCH
-            if (op2.IsContainedIndir && !_evexIsSupported)
+            if (Configuration.TARGET_XARCH && op2.IsContainedIndir && !_evexIsSupported)
             {
                 if (candidates == SRBM_NONE)
                 {
@@ -70,14 +65,12 @@ public sealed partial class LinearScan
                     srcCount += buildOperandUses(node.Op1, candidates & _lowGprRegs);
                 }
             }
-#endif
             srcCount += buildOperandUses(op2, candidates);
         }
 
         return srcCount;
     }
 
-#if TARGET_XARCH
     private int buildRmwUses(
         GenTree node,
         GenTree op1,
@@ -85,8 +78,12 @@ public sealed partial class LinearScan
         SingleTypeRegSet op1Candidates,
         SingleTypeRegSet op2Candidates)
     {
-#if TARGET_X86
-        if (varTypeIsByte(node.Type))
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
+        if (Configuration.TARGET_X86 && varTypeIsByte(node.Type))
         {
             var allByteRegisters = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
             var byteCandidates = (op1Candidates == SRBM_NONE)
@@ -104,7 +101,6 @@ public sealed partial class LinearScan
                 op2Candidates = byteCandidates;
             }
         }
-#endif
 
         var (prefOp1, prefOp2) = getTgtPrefOperands(node, op1, op2);
         assert(!prefOp2 || node.Oper.IsCommutative);
@@ -193,11 +189,14 @@ public sealed partial class LinearScan
 
     private bool isRMWRegOper(GenTree tree)
     {
-#if FEATURE_HW_INTRINSICS
-        assert(tree.Oper.IsBinary || (tree.Oper.IsMultiOp && (tree.AsMultiOp().Operands.Length <= 2)));
-#else
-        assert(tree.Oper.IsBinary);
-#endif
+        if (Configuration.FEATURE_HW_INTRINSICS)
+        {
+            assert(tree.Oper.IsBinary || (tree.Oper.IsMultiOp && (tree.AsMultiOp().Operands.Length <= 2)));
+        }
+        else
+        {
+            assert(tree.Oper.IsBinary);
+        }
 
         if (tree.Oper.IsCompare || tree.Oper is GT_CMP or GT_TEST or GT_BT)
         {
@@ -211,12 +210,10 @@ public sealed partial class LinearScan
             case GT_STORE_BLK:
             case GT_SWITCH_TABLE:
             case GT_LOCKADD:
-#if TARGET_X86
             case GT_LONG:
-#endif
             case GT_SWIFT_ERROR_RET:
             {
-                return false;
+                return (tree.Oper is GT_LONG) ? !Configuration.TARGET_X86 : false;
             }
 
             case GT_ADD:
@@ -227,11 +224,14 @@ public sealed partial class LinearScan
             }
 
             case GT_MUL:
-#if TARGET_X86
             case GT_SUB_HI:
             case GT_LSH_HI:
-#endif
             {
+                if ((tree.Oper is not GT_MUL) && !Configuration.TARGET_X86)
+                {
+                    return true;
+                }
+
                 if (varTypeIsFloating(tree.Type))
                 {
                     return !_compiler.canUseVexEncoding();
@@ -240,21 +240,24 @@ public sealed partial class LinearScan
                 return !tree.AsOp().Op2.IsContainedIntOrIImmed && !tree.AsOp().Op1.IsContainedIntOrIImmed;
             }
 
-#if TARGET_X86
             case GT_MUL_LONG:
-#endif
             case GT_MULHI:
             {
+                if ((tree.Oper is GT_MUL_LONG) && !Configuration.TARGET_X86)
+                {
+                    return true;
+                }
+
                 return ((tree.Flags & GTF_UNSIGNED) == 0) ||
                     !_compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2);
             }
 
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
-                return tree.AsHWIntrinsic().IsRmwHWIntrinsic(_compiler);
+                return Configuration.FEATURE_HW_INTRINSICS
+                    ? tree.AsHWIntrinsic().IsRmwHWIntrinsic(_compiler)
+                    : true;
             }
-#endif
 
             default:
             {
@@ -262,5 +265,4 @@ public sealed partial class LinearScan
             }
         }
     }
-#endif
 }

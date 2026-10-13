@@ -9,11 +9,23 @@ public partial struct RegSet
 {
     private regMaskTP _rsMaskVars;
 
-#if HAS_FIXED_REGISTER_SET
-    public readonly regMaskTP GetMaskVars() => _rsMaskVars;
+    public readonly regMaskTP GetMaskVars()
+    {
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Live register masks require a fixed register set.");
+        }
+
+        return _rsMaskVars;
+    }
 
     public void SetMaskVars(regMaskTP newMaskVars)
     {
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Live register masks require a fixed register set.");
+        }
+
 #if DEBUG
         if (Compiler.verbose)
         {
@@ -51,7 +63,6 @@ public partial struct RegSet
     public void AddMaskVars(regMaskTP mask) => SetMaskVars(_rsMaskVars | mask);
 
     public void RemoveMaskVars(regMaskTP mask) => SetMaskVars(_rsMaskVars & ~mask);
-#endif
 
     public void ClearMaskVars() => _rsMaskVars = RBM_NONE;
 }

@@ -37,7 +37,7 @@ public partial struct RegSet
 #if DEBUG
         assert(tmpGetCount == 0);
 
-        for (var reg = REG_FIRST; reg < REG_COUNT; reg++)
+        for (var reg = TargetRuntimeMetadata.FirstRegister; reg < REG_COUNT; reg++)
         {
             assert(_rsSpillDesc[(int)reg] is null);
         }

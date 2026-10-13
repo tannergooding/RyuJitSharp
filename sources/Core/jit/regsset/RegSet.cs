@@ -19,14 +19,16 @@ public partial struct RegSet
 
     public regMaskTP rsMaskResvd;
 
-#if SWIFT_SUPPORT
     private regMaskTP _rsAllCalleeSavedMask;
     private regMaskTP _rsIntCalleeSavedMask;
-#endif
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     private regMaskTP _rsMaskCalleeSaved;
-#endif
+
+    internal regMaskTP CalleeSavedRegsMask
+    {
+        get => _rsMaskCalleeSaved;
+        set => _rsMaskCalleeSaved = value;
+    }
 
     public regMaskTP rsMaskPreSpillRegArg;
     public regMaskTP rsMaskPreSpillAlign;
@@ -48,19 +50,23 @@ public partial struct RegSet
         rsSpillInit();
         rsMaskResvd = RBM_NONE;
 
-#if SWIFT_SUPPORT
-#if TARGET_AMD64 || TARGET_ARM64
-        _rsIntCalleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED);
-        _rsAllCalleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
-#else
-        NYI("RegSet Swift callee-saved register masks outside AMD64 and ARM64");
-        fatal(CORJIT_IMPLLIMITATION);
-#endif
-#endif
+        if (Configuration.SWIFT_SUPPORT)
+        {
+            if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+            {
+                _rsIntCalleeSavedMask = new regMaskTP(TargetRuntimeMetadata.IntegerCalleeSavedMask);
+                _rsAllCalleeSavedMask = new regMaskTP(
+                    TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask,
+                    TargetRuntimeMetadata.MaskCalleeSavedMask);
+            }
+            else
+            {
+                NYI("RegSet Swift callee-saved register masks outside AMD64 and ARM64");
+                fatal(CORJIT_IMPLLIMITATION);
+            }
+        }
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
         _rsMaskCalleeSaved = RBM_NONE;
-#endif
 
         rsMaskPreSpillRegArg = RBM_NONE;
         rsMaskPreSpillAlign = RBM_NONE;
@@ -117,38 +123,33 @@ public partial struct RegSet
 
     private static int tmpSlot(var_types type)
     {
-        int slot;
-
-        switch (type)
+        if (Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64)
         {
-#if FEATURE_SIMD && TARGET_ARM64
-            // Special slots are allocated for TYP_SIMD_ARM64 and TYP_MASK, because they
-            // have unknown size and therefore can't share slots with other types.
-            case TYP_SIMD_ARM64:
+            switch (type)
             {
-                slot = TEMP_SLOT_COUNT - 1;
-                break;
-            }
+                // Special slots are allocated for TYP_SIMD_ARM64 and TYP_MASK, because they
+                // have unknown size and therefore can't share slots with other types.
+                case TYP_SIMD_ARM64:
+                {
+                    return TEMP_SLOT_COUNT - 1;
+                }
 
-            case TYP_MASK:
-            {
-                slot = TEMP_SLOT_COUNT - 2;
-                break;
-            }
-#endif
-            default:
-            {
-                assert(!varTypeHasUnknownSize(type));
-                var size = type.Size;
-
-                noway_assert(size >= sizeof(int));
-                noway_assert(size <= TEMP_MAX_SIZE);
-                assert((size % sizeof(int)) == 0);
-
-                slot = (size / sizeof(int)) - 1;
-                break;
+                case TYP_MASK:
+                {
+                    return TEMP_SLOT_COUNT - 2;
+                }
             }
         }
+
+        int slot;
+        assert(!varTypeHasUnknownSize(type));
+        var size = type.Size;
+
+        noway_assert(size >= sizeof(int));
+        noway_assert(size <= TEMP_MAX_SIZE);
+        assert((size % sizeof(int)) == 0);
+
+        slot = (size / sizeof(int)) - 1;
 
         assert((slot >= 0) && (slot < TEMP_SLOT_COUNT));
         return slot;

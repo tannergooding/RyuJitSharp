@@ -82,32 +82,31 @@ public sealed partial class LinearScan
         var removeMask = SRBM_NONE;
         if (frameType is FT_EBP_FRAME)
         {
-#if TARGET_AMD64 || TARGET_ARM64
-            removeMask |= SRBM_FPBASE;
-#else
-            removeMask |= getFramePointerBaseMask();
-#endif
+            if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+            {
+                removeMask |= SRBM_FPBASE;
+            }
+            else
+            {
+                removeMask |= getFramePointerBaseMask();
+            }
         }
 
         _compiler.rpFrameType = frameType;
-#if TARGET_ARMARCH || TARGET_RISCV64
-        if (_compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT))
+        if ((Configuration.TARGET_ARMARCH || Configuration.TARGET_RISCV64) &&
+            _compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT))
         {
-#if TARGET_ARM64
-            var reservedRegister = REG_OPT_RSVD;
-#else
-            var reservedRegister = getOptionalFrameReserveRegister();
-#endif
+            var reservedRegister = Configuration.TARGET_ARM64
+                ? REG_ARM64_IP1
+                : getOptionalFrameReserveRegister();
             var reservedMask = genSingleTypeRegMask(reservedRegister);
             codeGen.RegSet.rsMaskResvd |= regMaskTP.CreateFromRegNum(reservedRegister, reservedMask);
-            assert(reservedRegister != REG_FP);
+            assert(reservedRegister != TargetRuntimeMetadata.FramePointerRegister);
             JITDUMP($"  Reserved REG_OPT_RSVD ({reservedRegister.Name}) due to large frame\n");
             removeMask |= reservedMask;
         }
-#endif
 
-#if TARGET_ARM
-        if (_compiler.compLocallocUsed)
+        if (Configuration.TARGET_ARM && _compiler.compLocallocUsed)
         {
             var savedStackPointerRegister = getSavedLocallocStackPointerRegister();
             var savedStackPointerMask = genSingleTypeRegMask(savedStackPointerRegister);
@@ -115,25 +114,25 @@ public sealed partial class LinearScan
             JITDUMP($"  Reserved REG_SAVED_LOCALLOC_SP ({savedStackPointerRegister.Name}) due to localloc\n");
             removeMask |= savedStackPointerMask;
         }
-#endif
 
-#if TARGET_ARM64
-        if (_compiler.compUsesUnknownSizeFrame)
+        if (Configuration.TARGET_ARM64 && _compiler.compUsesUnknownSizeFrame)
         {
             codeGen.RegSet.rsMaskResvd |= new regMaskTP(SRBM_UNKBASE);
             JITDUMP($"  Reserved REG_UNKBASE ({REG_UNKBASE.Name}) due to presence of UnknownSizeFrame\n");
             removeMask |= SRBM_UNKBASE;
         }
-#endif
         if ((removeMask != SRBM_NONE) && ((_availableIntRegs & removeMask) != SRBM_NONE))
         {
             _availableIntRegs &= ~removeMask;
             initializeAvailableRegs();
-#if TARGET_AMD64
-            _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
-#elif TARGET_X86
-            _lowGprRegs = _availableIntRegs;
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+            }
+            else if (Configuration.TARGET_X86)
+            {
+                _lowGprRegs = _availableIntRegs;
+            }
         }
     }
 
@@ -144,27 +143,21 @@ public sealed partial class LinearScan
         codeGen.IsDoubleAligned = enabled;
     }
 
-#if !(TARGET_AMD64 || TARGET_ARM64)
     private regMask getFramePointerBaseMask()
     {
         NYI("RBM_FPBASE on this target");
         throw new FatalJitException(CORJIT_IMPLLIMITATION, "Frame-pointer base register mask is not ported.");
     }
-#endif
 
-#if (TARGET_ARM && !TARGET_ARM64) || TARGET_RISCV64
     private regNumber getOptionalFrameReserveRegister()
     {
         NYI("REG_OPT_RSVD on this target");
         throw new FatalJitException(CORJIT_IMPLLIMITATION, "Reserved frame-offset register is not ported.");
     }
-#endif
 
-#if TARGET_ARM
     private regNumber getSavedLocallocStackPointerRegister()
     {
         NYI("REG_SAVED_LOCALLOC_SP on ARM");
         throw new FatalJitException(CORJIT_IMPLLIMITATION, "Saved localloc stack-pointer register is not ported.");
     }
-#endif
 }

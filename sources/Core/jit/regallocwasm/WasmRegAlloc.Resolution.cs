@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using System.Collections.Generic;
 
@@ -298,7 +297,7 @@ public sealed partial class WasmRegAlloc
 
                     if (_nodesWithInternalRegisters.Contains(node))
                     {
-                        ref var internalRegisters = ref _codeGen.InternalRegisters.GetAll(node);
+                        ref var internalRegisters = ref _codeGen.InternalRegisters.GetAllWasm(node);
                         var count = internalRegisters.Count;
                         for (var internalRegisterIndex = 0; internalRegisterIndex < count; internalRegisterIndex++)
                         {
@@ -431,4 +430,3 @@ public sealed partial class WasmRegAlloc
         _compiler.compRegAllocDone = true;
     }
 }
-#endif

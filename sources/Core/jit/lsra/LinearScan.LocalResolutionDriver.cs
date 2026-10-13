@@ -122,10 +122,16 @@ public sealed partial class LinearScan
                 assert(!reference.copyReg || !reference.moveReg);
                 switch (kind)
                 {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     case RefType.RefTypeUpperVectorSave:
                     case RefType.RefTypeUpperVectorRestore:
-#endif
+                    {
+                        if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+                        {
+                            throw new FatalJitException($"Unexpected local resolution reference: {kind}.");
+                        }
+                        break;
+                    }
+
                     case RefType.RefTypeUse:
                     case RefType.RefTypeDef:
                     {
@@ -162,8 +168,8 @@ public sealed partial class LinearScan
                 updateMaxSpill(reference);
                 var tree = reference.treeNode;
                 var interval = reference.getInterval();
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (kind is RefType.RefTypeUpperVectorSave)
+                if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                    kind is RefType.RefTypeUpperVectorSave)
                 {
                     if (tree is null)
                     {
@@ -221,7 +227,6 @@ public sealed partial class LinearScan
                     local.isPartiallySpilled = false;
                     continue;
                 }
-#endif
                 if (tree is null)
                 {
                     continue;
@@ -241,12 +246,10 @@ public sealed partial class LinearScan
                 }
                 else if (reference.spillAfter || reference.nextRefPosition?.moveReg == true)
                 {
-#if TARGET_XARCH
-                    if (varTypeIsSimd(tree.Type))
+                    if (Configuration.TARGET_XARCH && varTypeIsSimd(tree.Type))
                     {
                         setContainsAVXFlags((uint)tree.Type.Size);
                     }
-#endif
 
                     if (reference.spillAfter)
                     {
@@ -269,8 +272,8 @@ public sealed partial class LinearScan
 #endif
                         nextReference.assignedReg() != reference.assignedReg())
                     {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                        if (!interval.isUpperVector &&
+                        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                            !interval.isUpperVector &&
                             nextReference.refType is RefType.RefTypeUpperVectorSave)
                         {
                             assert(!interval.isLocalVar);
@@ -278,10 +281,9 @@ public sealed partial class LinearScan
                                 ?? throw new FatalJitException("A saved temporary requires a later use.");
                             assert(nextReference.refType is not RefType.RefTypeUpperVectorSave);
                         }
-                        if (!interval.isUpperVector)
-#endif
+                        if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE || !interval.isUpperVector)
                         {
-                            if (nextReference.assignedReg() is not REG_NA)
+                            if (nextReference.assignedReg() != REG_NA)
                             {
                                 insertCopyOrReload(block, tree, reference.getMultiRegIdx(), nextReference);
                             }
@@ -299,8 +301,8 @@ public sealed partial class LinearScan
                     }
                 }
 
-#if TARGET_XARCH
-                if (varTypeIsSimd(tree.Type) && tree.Oper.IsLocalStore && (tree.RegNum is not REG_NA))
+                if (Configuration.TARGET_XARCH &&
+                    varTypeIsSimd(tree.Type) && tree.Oper.IsLocalStore && (tree.RegNum != REG_NA))
                 {
                     var source = tree.AsLclVarCommon().Data;
                     if (!source.IsContained && (source.RegNum != tree.RegNum))
@@ -308,7 +310,6 @@ public sealed partial class LinearScan
                         setContainsAVXFlags((uint)tree.Type.Size);
                     }
                 }
-#endif
             }
 
             processBlockEndLocations(block);

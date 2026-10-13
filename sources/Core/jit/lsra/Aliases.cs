@@ -5,5 +5,6 @@
 
 global using LsraLocation = System.UInt32;
 global using RegisterType = RyuJitSharp.var_types;
+global using regNumberSmall = System.Byte;
 global using SingleTypeRegSet = RyuJitSharp.regMask;
 global using static RyuJitSharp.LsraGlobals;

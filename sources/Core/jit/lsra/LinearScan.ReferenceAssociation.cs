@@ -22,13 +22,11 @@ public sealed partial class LinearScan
 
     private void applyCalleeSaveHeuristics(RefPosition rp)
     {
-#if TARGET_AMD64
-        if (_compiler.opts.compDbgEnC)
+        if (Configuration.TARGET_AMD64 && _compiler.opts.compDbgEnC)
         {
             // EnC only uses RSI and RDI, so do not favor callee-save registers.
             return;
         }
-#endif
         var interval = rp.getInterval();
 #if DEBUG
         if (!doReverseCallerCallee())
@@ -155,7 +153,7 @@ public sealed partial class LinearScan
 #if DEBUG
         if ((interval is not null) && (regType(interval.registerType) is TYP_FLOAT))
         {
-            assert(_compiler.compFloatingPointUsed || ((mask & SRBM_FLT_CALLEE_SAVED) == SRBM_NONE));
+            assert(_compiler.compFloatingPointUsed || ((mask & TargetRuntimeMetadata.FloatingCalleeSavedMask) == SRBM_NONE));
         }
 #endif
 
@@ -185,10 +183,8 @@ public sealed partial class LinearScan
         newRP.setMultiRegIdx(multiRegIdx);
         newRP.setRegOptional(false);
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         newRP.skipSaveRestore = false;
         newRP.liveVarUpperSave = false;
-#endif
         associateRefPosWithInterval(newRP);
 
         if (RefTypeIsDef(newRP.refType))

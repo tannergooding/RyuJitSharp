@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public sealed partial class LinearScan
@@ -380,7 +379,7 @@ public sealed partial class LinearScan
                 {
                     assert(tree.Type is TYP_INT);
                     sourceCount = 1;
-                    _ = buildUse(tree.AsUnOp().Op1, genSingleTypeRegMask(REG_INTRET));
+                    _ = buildUse(tree.AsUnOp().Op1, genSingleTypeRegMask(TargetRuntimeMetadata.IntegerReturnRegister));
                 }
                 break;
             }
@@ -537,7 +536,7 @@ public sealed partial class LinearScan
             {
                 sourceCount = 0;
                 assert(destinationCount == 1);
-                _ = buildDef(tree, genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET));
+                _ = buildDef(tree, genSingleTypeRegMask(TargetRuntimeMetadata.AsyncContinuationReturnRegister));
                 break;
             }
 
@@ -575,7 +574,7 @@ public sealed partial class LinearScan
                 assert(destinationCount == 1);
                 var argumentRegister = tree.RegNum;
                 var argumentMask = SRBM_NONE;
-                if (argumentRegister != REG_COUNT)
+                if (argumentRegister != REG_ARM32_COUNT)
                 {
                     argumentMask = genSingleTypeRegMask(argumentRegister);
                 }
@@ -650,4 +649,3 @@ public sealed partial class LinearScan
         return sourceCount;
     }
 }
-#endif

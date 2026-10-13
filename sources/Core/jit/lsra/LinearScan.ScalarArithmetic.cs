@@ -9,7 +9,12 @@ public sealed partial class LinearScan
 {
     private int buildShiftRotate(GenTree tree)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LSRA shift/rotate reference building is not implemented outside xarch.");
+        }
+
         var shiftBy = tree.AsOp().Op2;
         var source = tree.AsOp().Op1;
         var srcCount = 0;
@@ -44,12 +49,12 @@ public sealed partial class LinearScan
         else
         {
             // The legacy variable-count form reserves RCX for the count operand.
-            srcCandidates = _availableIntRegs & ~SRBM_RCX;
-            dstCandidates = _availableIntRegs & ~SRBM_RCX;
+            var countRegister = TargetRuntimeMetadata.SelectXarch(SRBM_X86_ECX, SRBM_X64_RCX);
+            srcCandidates = _availableIntRegs & ~countRegister;
+            dstCandidates = _availableIntRegs & ~countRegister;
         }
 
-#if TARGET_X86
-        if (tree.Oper is GT_LSH_HI or GT_RSH_LO)
+        if (Configuration.TARGET_X86 && (tree.Oper is GT_LSH_HI or GT_RSH_LO))
         {
             assert(source.Oper is GT_LONG && source.IsContained);
 
@@ -71,9 +76,7 @@ public sealed partial class LinearScan
                 }
             }
         }
-        else
-#endif
-        if (!source.IsContained)
+        else if (!source.IsContained)
         {
             _targetPreferredUse = buildUse(source,
                 forceLowGprForApxIfNeeded(source, srcCandidates, _evexIsSupported));
@@ -90,8 +93,9 @@ public sealed partial class LinearScan
             if (!shiftBy.IsContained)
             {
                 RefPosition? shiftUse = null;
-                srcCount += buildDelayFreeUses(shiftBy, source, SRBM_RCX, ref shiftUse);
-                _ = buildKillPositionsForNode(tree, _referenceBuildLocation + 1, new regMaskTP(SRBM_RCX));
+                var countRegister = TargetRuntimeMetadata.SelectXarch(SRBM_X86_ECX, SRBM_X64_RCX);
+                srcCount += buildDelayFreeUses(shiftBy, source, countRegister, ref shiftUse);
+                _ = buildKillPositionsForNode(tree, _referenceBuildLocation + 1, new regMaskTP(countRegister));
             }
 
 #if DEBUG
@@ -99,7 +103,7 @@ public sealed partial class LinearScan
 #else
             var assignedRegister = tree.RegNum;
 #endif
-            if (assignedRegister is REG_NA)
+            if (assignedRegister == REG_NA)
             {
                 dstCandidates = forceLowGprForApxIfNeeded(tree, dstCandidates, _evexIsSupported);
             }
@@ -108,19 +112,22 @@ public sealed partial class LinearScan
         }
         else if (!shiftBy.IsContained)
         {
-            srcCount += buildOperandUses(shiftBy, SRBM_RCX);
-            _ = buildKillPositionsForNode(tree, _referenceBuildLocation + 1, new regMaskTP(SRBM_RCX));
+            var countRegister = TargetRuntimeMetadata.SelectXarch(SRBM_X86_ECX, SRBM_X64_RCX);
+            srcCount += buildOperandUses(shiftBy, countRegister);
+            _ = buildKillPositionsForNode(tree, _referenceBuildLocation + 1, new regMaskTP(countRegister));
         }
 
         return srcCount;
-#else
-        throw new FatalJitException("LSRA shift/rotate reference building is not implemented outside xarch.");
-#endif
     }
 
     private int buildModDiv(GenTree tree)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LSRA division reference building is not implemented outside xarch.");
+        }
+
         var op1 = tree.AsOp().Op1;
         var op2 = tree.AsOp().Op2;
 
@@ -131,10 +138,11 @@ public sealed partial class LinearScan
 
         // DIV/IDIV takes the dividend in RAX:RDX and produces the quotient in RAX,
         // the remainder in RDX.
-        var dstCandidates = (tree.Oper is GT_MOD or GT_UMOD) ? SRBM_RDX : SRBM_RAX;
+        var dstCandidates = (tree.Oper is GT_MOD or GT_UMOD)
+            ? TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower
+            : TargetRuntimeMetadata.IntegerReturnMask;
         var srcCount = 0;
-#if TARGET_X86
-        if (op1.Oper is GT_LONG)
+        if (Configuration.TARGET_X86 && op1.Oper is GT_LONG)
         {
             assert(op1.IsContained);
 
@@ -145,33 +153,36 @@ public sealed partial class LinearScan
             assert(tree.Oper is GT_UMOD);
 
             _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
-            _ = buildUse(loVal, SRBM_EAX);
-            _ = buildUse(hiVal, SRBM_EDX);
+            _ = buildUse(loVal, SRBM_X86_EAX);
+            _ = buildUse(hiVal, SRBM_X86_EDX);
             srcCount = 2;
         }
         else
-#endif
         {
-            var op1Use = buildUse(op1, SRBM_EAX);
+            var op1Use = buildUse(op1, TargetRuntimeMetadata.IntegerReturnMask);
             _targetPreferredUse = op1Use;
             srcCount = 1;
         }
 
         RefPosition? op2Use = null;
-        srcCount += buildDelayFreeUses(op2, op1, _availableIntRegs & ~(SRBM_RAX | SRBM_RDX), ref op2Use);
+        srcCount += buildDelayFreeUses(op2, op1,
+            _availableIntRegs & ~(TargetRuntimeMetadata.IntegerReturnMask |
+                TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower), ref op2Use);
         buildInternalRegisterUses();
 
         var killMask = getKillSetForModDiv(tree.AsOp());
         buildDefWithKills(tree, 1, dstCandidates, killMask);
         return srcCount;
-#else
-        throw new FatalJitException("LSRA division reference building is not implemented outside xarch.");
-#endif
     }
 
     private int buildMul(GenTree tree)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LSRA multiplication reference building is not implemented outside xarch.");
+        }
+
         assert(tree.Oper.IsMul);
         var op1 = tree.AsOp().Op1;
         var op2 = tree.AsOp().Op2;
@@ -189,14 +200,17 @@ public sealed partial class LinearScan
         var dstCount = 1;
         var dstCandidates = SRBM_NONE;
 
-#if TARGET_X86
-        if (tree.Oper is not GT_MUL_LONG)
+        if (Configuration.TARGET_X86)
+        {
+            if (tree.Oper is not GT_MUL_LONG)
+            {
+                assert((tree.Flags & GTF_MUL_64RSLT) == 0);
+            }
+        }
+        else
         {
             assert((tree.Flags & GTF_MUL_64RSLT) == 0);
         }
-#else
-        assert((tree.Flags & GTF_MUL_64RSLT) == 0);
-#endif
 
         if (useMulx)
         {
@@ -205,23 +219,21 @@ public sealed partial class LinearScan
             if (op1.IsContained)
             {
                 assert(!op2.IsContained);
-                srcCandidates2 = SRBM_RDX;
+                srcCandidates2 = TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower;
             }
             else if (op2.IsContained)
             {
-                srcCandidates1 = SRBM_RDX;
+                srcCandidates1 = TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower;
             }
 
             srcCount = buildOperandUses(op1,
                 forceLowGprForApxIfNeeded(op1, srcCandidates1, _evexIsSupported));
             srcCount += buildOperandUses(op2,
                 forceLowGprForApxIfNeeded(op2, srcCandidates2, _evexIsSupported));
-#if TARGET_X86
-            if (tree.Oper is GT_MUL_LONG)
+            if (Configuration.TARGET_X86 && tree.Oper is GT_MUL_LONG)
             {
                 dstCount = 2;
             }
-#endif
         }
         else
         {
@@ -231,26 +243,22 @@ public sealed partial class LinearScan
 
             if (isUnsignedMultiply && requiresOverflowCheck)
             {
-                dstCandidates = SRBM_RAX;
+                dstCandidates = TargetRuntimeMetadata.IntegerReturnMask;
             }
             else if (tree.Oper is GT_MULHI)
             {
-                dstCandidates = SRBM_RDX;
+                dstCandidates = TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower;
             }
-#if TARGET_X86
-            else if (tree.Oper is GT_MUL_LONG)
+            else if (Configuration.TARGET_X86 && tree.Oper is GT_MUL_LONG)
             {
-                dstCandidates = SRBM_RAX | SRBM_RDX;
+                dstCandidates = TargetRuntimeMetadata.IntegerReturnMask |
+                    TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower;
                 dstCount = 2;
             }
-#endif
         }
 
         var killMask = getKillSetForMul(tree.AsOp());
         buildDefWithKills(tree, dstCount, dstCandidates, killMask);
         return srcCount;
-#else
-        throw new FatalJitException("LSRA multiplication reference building is not implemented outside xarch.");
-#endif
     }
 }

@@ -125,7 +125,7 @@ public sealed partial class LinearScan
                 ? floatingRegisters
                 : integerRegisters;
             var count = 0;
-            for (var registerIndex = (int)REG_FIRST; registerIndex < (int)REG_COUNT; registerIndex++)
+            for (var registerIndex = (int)TargetRuntimeMetadata.FirstRegister; registerIndex < (int)REG_COUNT; registerIndex++)
             {
                 if (registers.IsSet((regNumber)registerIndex))
                 {
@@ -139,7 +139,7 @@ public sealed partial class LinearScan
 
             var bitIndex = random.Next(count);
             var preferredRegister = REG_NA;
-            for (var registerIndex = (int)REG_FIRST; registerIndex < (int)REG_COUNT; registerIndex++)
+            for (var registerIndex = (int)TargetRuntimeMetadata.FirstRegister; registerIndex < (int)REG_COUNT; registerIndex++)
             {
                 var register = (regNumber)registerIndex;
                 if (registers.IsSet(register) && (bitIndex-- == 0))
@@ -148,7 +148,7 @@ public sealed partial class LinearScan
                     break;
                 }
             }
-            assert(preferredRegister is not REG_NA);
+            assert(preferredRegister != REG_NA);
             var chosenMask = regMaskTP.CreateFromRegNum(preferredRegister, genSingleTypeRegMask(preferredRegister));
             if (interval.registerType == TYP_FLOAT)
             {

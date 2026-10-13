@@ -11,23 +11,26 @@ public sealed partial class LinearScan
 {
     private void buildPhysRegRecords()
     {
-        for (var registerNumber = REG_FIRST; (int)registerNumber < _availableRegCount; registerNumber++)
+        for (var registerNumber = TargetRuntimeMetadata.FirstRegister; (int)registerNumber < _availableRegCount; registerNumber++)
         {
             physRegs[(int)registerNumber].init(registerNumber);
         }
 
-        setRegisterOrder(REG_VAR_ORDER);
-#if TARGET_AMD64
-        setRegisterOrder(_evexIsSupported ? REG_VAR_ORDER_FLT_EVEX : REG_VAR_ORDER_FLT);
-#else
-        setRegisterOrder(REG_VAR_ORDER_FLT);
-#endif
-#if TARGET_XARCH
-        if (_evexIsSupported)
+        if (Configuration.TARGET_XARCH)
         {
-            setRegisterOrder(REG_VAR_ORDER_MSK);
+            setRegisterOrder(Configuration.TARGET_AMD64 ? REG_VAR_ORDER_AMD64 : REG_VAR_ORDER_X86);
+
+            var floatRegisterOrder = Configuration.TARGET_AMD64
+                ? _evexIsSupported ? REG_VAR_ORDER_FLT_EVEX : REG_VAR_ORDER_FLT_AMD64
+                : REG_VAR_ORDER_FLT_X86;
+            setRegisterOrder(floatRegisterOrder);
+
+            if (_evexIsSupported)
+            {
+                var maskRegisterOrder = Configuration.TARGET_AMD64 ? REG_VAR_ORDER_MSK_AMD64 : REG_VAR_ORDER_MSK_X86;
+                setRegisterOrder(maskRegisterOrder);
+            }
         }
-#endif
     }
 
     private void setRegisterOrder(ReadOnlySpan<regNumber> registers)

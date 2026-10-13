@@ -9,76 +9,90 @@ public sealed partial class LinearScan
 {
     private int buildCast(GenTreeCast cast)
     {
-#if TARGET_XARCH
-        var source = cast.CastOp;
-        var sourceType = source.Type;
-        var castType = cast.CastType;
-
-        if (cast.IsUnsigned && varTypeIsLong(sourceType) && varTypeIsFloating(castType) && !_evexIsSupported)
+        if (Configuration.TARGET_XARCH)
         {
-            _ = buildInternalIntRegisterDefForNode(cast, forceLowGprForApx(cast, _availableIntRegs, true));
-            _ = buildInternalIntRegisterDefForNode(cast, _availableIntRegs);
-        }
+            var source = cast.CastOp;
+            var sourceType = source.Type;
+            var castType = cast.CastType;
 
-        var candidates = SRBM_NONE;
-#if TARGET_X86
-        if (varTypeIsByte(castType))
-        {
-            candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
-        }
+            if (cast.IsUnsigned && varTypeIsLong(sourceType) && varTypeIsFloating(castType) && !_evexIsSupported)
+            {
+                _ = buildInternalIntRegisterDefForNode(cast, forceLowGprForApx(cast, _availableIntRegs, true));
+                _ = buildInternalIntRegisterDefForNode(cast, _availableIntRegs);
+            }
 
-        assert(!varTypeIsLong(sourceType) || (source.Oper is GT_LONG && source.IsContained));
-#else
-        if (cast.HasOverflowCheckEx && varTypeIsLong(sourceType) && varTypeIsInt(castType))
-        {
-            _ = buildInternalIntRegisterDefForNode(cast, _availableIntRegs);
-        }
+            var candidates = SRBM_NONE;
+            if (Configuration.TARGET_X86)
+            {
+                if (varTypeIsByte(castType))
+                {
+                    candidates = _availableIntRegs & ~RBM_NON_BYTE_REGS.IntRegSet;
+                }
 
-        if ((varTypeUsesIntReg(sourceType) || source.IsContainedIndir) &&
-            varTypeUsesFloatReg(cast.Type) && !_evexIsSupported)
-        {
-            candidates = forceLowGprForApx(cast, candidates, true);
-        }
-#endif
+                assert(!varTypeIsLong(sourceType) || (source.Oper is GT_LONG && source.IsContained));
+            }
+            else
+            {
+                if (cast.HasOverflowCheckEx && varTypeIsLong(sourceType) && varTypeIsInt(castType))
+                {
+                    _ = buildInternalIntRegisterDefForNode(cast, _availableIntRegs);
+                }
 
-        var srcCount = buildCastUses(cast, candidates);
-        buildInternalRegisterUses();
-#if TARGET_AMD64
-        candidates = SRBM_NONE;
-#endif
-        _ = buildDef(cast, candidates);
-        return srcCount;
-#elif TARGET_ARM64
-        var sourceCount = buildCastUses(cast, SRBM_NONE);
-        buildInternalRegisterUses();
-        _ = buildDef(cast, SRBM_NONE);
-        return sourceCount;
-#elif TARGET_LOONGARCH64
-        var sourceCount = buildOperandUses(cast.CastOp);
-        _ = buildDef(cast, SRBM_NONE);
-        return sourceCount;
-#elif TARGET_RISCV64
-        var castDescriptor = new CodeGen.GenIntCastDesc(cast);
-        if (castDescriptor.Check is not CodeGen.GenIntCastDesc.CheckKind.CHECK_NONE)
-        {
-            _ = buildInternalIntRegisterDefForNode(cast);
-        }
+                if ((varTypeUsesIntReg(sourceType) || source.IsContainedIndir) &&
+                    varTypeUsesFloatReg(cast.Type) && !_evexIsSupported)
+                {
+                    candidates = forceLowGprForApx(cast, candidates, true);
+                }
+            }
 
-        buildInternalRegisterUses();
-        var sourceCount = buildOperandUses(cast.CastOp);
-        _ = buildDef(cast, SRBM_NONE);
-
-        if (varTypeIsFloating(cast.CastOp.Type) && !varTypeIsFloating(cast.Type))
-        {
-            _ = buildInternalIntRegisterDefForNode(cast);
+            var srcCount = buildCastUses(cast, candidates);
             buildInternalRegisterUses();
+            if (Configuration.TARGET_AMD64)
+            {
+                candidates = SRBM_NONE;
+            }
+            _ = buildDef(cast, candidates);
+            return srcCount;
         }
 
-        return sourceCount;
-#else
-        NYI("LinearScan.buildCast outside AMD64");
-        throw new FatalJitException("LinearScan.buildCast outside AMD64.");
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            var sourceCount = buildCastUses(cast, SRBM_NONE);
+            buildInternalRegisterUses();
+            _ = buildDef(cast, SRBM_NONE);
+            return sourceCount;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            var sourceCount = buildOperandUses(cast.CastOp);
+            _ = buildDef(cast, SRBM_NONE);
+            return sourceCount;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            var castDescriptor = new CodeGen.GenIntCastDesc(cast);
+            if (castDescriptor.Check is not CodeGen.GenIntCastDesc.CheckKind.CHECK_NONE)
+            {
+                _ = buildInternalIntRegisterDefForNode(cast);
+            }
+
+            buildInternalRegisterUses();
+            var sourceCount = buildOperandUses(cast.CastOp);
+            _ = buildDef(cast, SRBM_NONE);
+
+            if (varTypeIsFloating(cast.CastOp.Type) && !varTypeIsFloating(cast.Type))
+            {
+                _ = buildInternalIntRegisterDefForNode(cast);
+                buildInternalRegisterUses();
+            }
+
+            return sourceCount;
+        }
+
+        NYI("LinearScan.buildCast on this target");
+        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildCast on this target is not implemented.");
     }
 
     private int buildCastUses(GenTreeCast cast, SingleTypeRegSet candidates)
@@ -90,20 +104,19 @@ public sealed partial class LinearScan
         }
 
         var sourceUse = buildUse(source, candidates);
-#if TARGET_64BIT
-        if ((source.Type is TYP_LONG) && (cast.Type is TYP_INT))
+        if (Configuration.TARGET_64BIT && (source.Type is TYP_LONG) && (cast.Type is TYP_INT))
         {
             _targetPreferredUse = sourceUse;
         }
-#endif
 
         return 1;
     }
 
     private int buildIntrinsic(GenTree tree)
     {
-#if TARGET_XARCH
-        var intrinsic = tree.AsIntrinsic();
+        if (Configuration.TARGET_XARCH)
+        {
+            var intrinsic = tree.AsIntrinsic();
         var operand = intrinsic.Op1;
         assert(varTypeIsFloating(operand.Type));
         assert(operand.Type == tree.Type);
@@ -177,8 +190,11 @@ public sealed partial class LinearScan
 
         _ = buildDef(tree, SRBM_NONE);
         return srcCount;
-#elif TARGET_ARM64
-        var intrinsic = tree.AsIntrinsic();
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            var intrinsic = tree.AsIntrinsic();
         var operand = intrinsic.Op1;
         int sourceCount;
         switch (intrinsic.IntrinsicName)
@@ -226,115 +242,119 @@ public sealed partial class LinearScan
 
         _ = buildDef(tree, SRBM_NONE);
         return sourceCount;
-#else
-        NYI("LinearScan.buildIntrinsic outside AMD64");
-        throw new FatalJitException("LinearScan.buildIntrinsic outside AMD64.");
-#endif
+        }
+
+        NYI("LinearScan.buildIntrinsic on this target");
+        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildIntrinsic on this target is not implemented.");
     }
 
     private int buildSelect(GenTreeOp select)
     {
-#if TARGET_XARCH
-        var srcCount = 0;
-        if (select.Oper is GT_SELECT)
+        if (Configuration.TARGET_XARCH)
         {
-            _ = buildUse(select.AsConditional().Cond);
-            srcCount++;
-        }
-
-        var trueValue = select.Op1;
-        var falseValue = select.Op2;
-        assert(refPositions.Count != 0);
-        var firstUsesStart = refPositions.Count - 1;
-
-        RefPosition? uncontainedTrueUse = null;
-        if (trueValue.IsContained)
-        {
-            srcCount += buildOperandUses(trueValue);
-        }
-        else
-        {
-            _targetPreferredUse = uncontainedTrueUse = buildUse(trueValue);
-            srcCount++;
-        }
-
-        var secondUsesStart = refPositions.Count - 1;
-
-        RefPosition? uncontainedFalseUse = null;
-        if (falseValue.IsContained)
-        {
-            srcCount += buildOperandUses(falseValue);
-        }
-        else
-        {
-            _targetPreferredUse2 = uncontainedFalseUse = buildUse(falseValue);
-            srcCount++;
-        }
-
-        if ((_targetPreferredUse is not null) && (_targetPreferredUse2 is not null))
-        {
-            _targetPreferredUse2 = null;
-        }
-
-        // If both values use the same interval, the first value must survive the second operand's use.
-        for (var first = firstUsesStart + 1; first <= secondUsesStart; first++)
-        {
-            var firstUse = refPositions[first];
-            if (firstUse.refType is not RefType.RefTypeUse)
+            var srcCount = 0;
+            if (select.Oper is GT_SELECT)
             {
-                continue;
+                _ = buildUse(select.AsConditional().Cond);
+                srcCount++;
             }
 
-            for (var second = secondUsesStart + 1; second < refPositions.Count; second++)
+            var trueValue = select.Op1;
+            var falseValue = select.Op2;
+            assert(refPositions.Count != 0);
+            var firstUsesStart = refPositions.Count - 1;
+
+            RefPosition? uncontainedTrueUse = null;
+            if (trueValue.IsContained)
             {
-                var secondUse = refPositions[second];
-                if ((secondUse.refType is RefType.RefTypeUse) &&
-                    ReferenceEquals(firstUse.getInterval(), secondUse.getInterval()))
+                srcCount += buildOperandUses(trueValue);
+            }
+            else
+            {
+                _targetPreferredUse = uncontainedTrueUse = buildUse(trueValue);
+                srcCount++;
+            }
+
+            var secondUsesStart = refPositions.Count - 1;
+
+            RefPosition? uncontainedFalseUse = null;
+            if (falseValue.IsContained)
+            {
+                srcCount += buildOperandUses(falseValue);
+            }
+            else
+            {
+                _targetPreferredUse2 = uncontainedFalseUse = buildUse(falseValue);
+                srcCount++;
+            }
+
+            if ((_targetPreferredUse is not null) && (_targetPreferredUse2 is not null))
+            {
+                _targetPreferredUse2 = null;
+            }
+
+            // If both values use the same interval, the first value must survive the second operand's use.
+            for (var first = firstUsesStart + 1; first <= secondUsesStart; first++)
+            {
+                var firstUse = refPositions[first];
+                if (firstUse.refType is not RefType.RefTypeUse)
                 {
-                    setDelayFree(firstUse);
-                    break;
+                    continue;
+                }
+
+                for (var second = secondUsesStart + 1; second < refPositions.Count; second++)
+                {
+                    var secondUse = refPositions[second];
+                    if ((secondUse.refType is RefType.RefTypeUse) &&
+                        ReferenceEquals(firstUse.getInterval(), secondUse.getInterval()))
+                    {
+                        setDelayFree(firstUse);
+                        break;
+                    }
                 }
             }
+
+            if (select.Oper is GT_SELECTCC)
+            {
+                switch (select.AsOpCC().Condition.Code)
+                {
+                    case GenCondition.FEQ:
+                    case GenCondition.FLT:
+                    case GenCondition.FLE:
+                    {
+                        assert(uncontainedFalseUse is not null);
+                        setDelayFree(uncontainedFalseUse);
+                        break;
+                    }
+
+                    case GenCondition.FNEU:
+                    case GenCondition.FGEU:
+                    case GenCondition.FGTU:
+                    {
+                        assert(uncontainedTrueUse is not null);
+                        setDelayFree(uncontainedTrueUse);
+                        break;
+                    }
+                }
+            }
+
+            _ = buildDef(select, SRBM_NONE);
+            return srcCount;
         }
 
-        if (select.Oper is GT_SELECTCC)
+        if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
         {
-            switch (select.AsOpCC().Condition.Code)
-            {
-                case GenCondition.FEQ:
-                case GenCondition.FLT:
-                case GenCondition.FLE:
-                {
-                    assert(uncontainedFalseUse is not null);
-                    setDelayFree(uncontainedFalseUse);
-                    break;
-                }
-
-                case GenCondition.FNEU:
-                case GenCondition.FGEU:
-                case GenCondition.FGTU:
-                {
-                    assert(uncontainedTrueUse is not null);
-                    setDelayFree(uncontainedTrueUse);
-                    break;
-                }
-            }
+            assert(select.Oper is GT_SELECT or GT_SELECTCC);
+            var sourceCount = select.Oper is GT_SELECT
+                ? buildOperandUses(select.AsConditional().Cond)
+                : 0;
+            sourceCount += buildOperandUses(select.Op1);
+            sourceCount += buildOperandUses(select.Op2);
+            _ = buildDef(select, SRBM_NONE);
+            return sourceCount;
         }
 
-        _ = buildDef(select, SRBM_NONE);
-        return srcCount;
-#elif TARGET_ARM || TARGET_ARM64
-        assert(select.Oper is GT_SELECT or GT_SELECTCC);
-        var sourceCount = select.Oper is GT_SELECT
-            ? buildOperandUses(select.AsConditional().Cond)
-            : 0;
-        sourceCount += buildOperandUses(select.Op1);
-        sourceCount += buildOperandUses(select.Op2);
-        _ = buildDef(select, SRBM_NONE);
-        return sourceCount;
-#else
-        NYI("LinearScan.buildSelect outside xarch/ARM/ARM64");
-        throw new FatalJitException("LinearScan.buildSelect outside xarch/ARM/ARM64.");
-#endif
+        NYI("LinearScan.buildSelect on this target");
+        throw new FatalJitException(CORJIT_SKIPPED, "LinearScan.buildSelect on this target is not implemented.");
     }
 }

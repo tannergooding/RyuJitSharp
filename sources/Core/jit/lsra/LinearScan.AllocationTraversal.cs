@@ -31,8 +31,7 @@ public sealed partial class LinearScan
             }
         }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        if (_enregisterLocalVars)
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && _enregisterLocalVars)
         {
             _ = VarSetOps.VisitBits(_compiler, _largeVectorVars, variableIndex =>
             {
@@ -40,7 +39,6 @@ public sealed partial class LinearScan
                 return true;
             });
         }
-#endif
 
         initializeAvailableRegs();
         _regsBusyUntilKill = RBM_NONE;
@@ -51,12 +49,11 @@ public sealed partial class LinearScan
             updateNextFixedRef(register, register.firstRefPosition, _killHead);
             if (register.assignedInterval is Interval incoming)
             {
-#if TARGET_ARM
-                if (incoming.registerType is TYP_DOUBLE && !genIsValidDoubleReg(register.regNum))
+                if (Configuration.TARGET_ARM && incoming.registerType is TYP_DOUBLE &&
+                    !genIsValidDoubleReg(register.regNum))
                 {
                     continue;
                 }
-#endif
                 updateNextIntervalRef(register.regNum, incoming);
                 updateSpillCost(register.regNum, incoming);
                 setRegInUse(register.regNum, incoming.registerType);
@@ -87,9 +84,7 @@ public sealed partial class LinearScan
         var copyRegistersToFree = RBM_NONE;
         _regsInUseThisLocation = RBM_NONE;
         _regsInUseNextLocation = RBM_NONE;
-#if TARGET_ARM64
         _consecutiveRegsInUseThisLocation = SRBM_NONE;
-#endif
         RefPosition? lastAllocatedRefPosition = null;
         var handledBlockEnd = false;
 
@@ -139,9 +134,7 @@ public sealed partial class LinearScan
             _currentAllocationLocation = location;
             if (location > previousLocation)
             {
-#if TARGET_ARM64
                 _consecutiveRegsInUseThisLocation = SRBM_NONE;
-#endif
                 makeRegsAvailable(copyRegistersToFree);
                 copyRegistersToFree = RBM_NONE;
                 _regsInUseThisLocation = _regsInUseNextLocation;
@@ -166,8 +159,8 @@ public sealed partial class LinearScan
             }
             previousLocation = location;
 
-#if TARGET_ARM64 && DEBUG
-            if (_compiler.info.compNeedsConsecutiveRegisters)
+#if DEBUG
+            if (Configuration.TARGET_ARM64 && _compiler.info.compNeedsConsecutiveRegisters)
             {
                 if (reference.needsConsecutive)
                 {
@@ -263,15 +256,13 @@ public sealed partial class LinearScan
                     clearConstantReg(fixedRegister.regNum, assignedInterval.registerType);
                     fixedRegister.assignedInterval = null;
                     clearSpillCost(fixedRegister.regNum, assignedInterval.registerType);
-#if TARGET_ARM
-                    if (assignedInterval.registerType is TYP_DOUBLE)
+                    if (Configuration.TARGET_ARM && assignedInterval.registerType is TYP_DOUBLE)
                     {
                         var otherHalf = findAnotherHalfRegRec(fixedRegister);
                         assert(ReferenceEquals(otherHalf.assignedInterval, assignedInterval));
                         otherHalf.assignedInterval = null;
                         clearSpillCost(otherHalf.regNum, assignedInterval.registerType);
                     }
-#endif
                 }
                 _regsInUseThisLocation |= createRegisterMask(reference.registerAssignment,
                     fixedRegister.registerType);
@@ -279,13 +270,11 @@ public sealed partial class LinearScan
                 dumpMinimalAllocationEvent(MinimalAllocationEvent.FIXED_REG, reference,
                     register: reference.assignedReg());
 #endif
-#if SWIFT_SUPPORT
-                if (reference.delayRegFree)
+                if (Configuration.SWIFT_SUPPORT && reference.delayRegFree)
                 {
                     _regsInUseNextLocation |= createRegisterMask(reference.registerAssignment,
                         fixedRegister.registerType);
                 }
-#endif
                 continue;
             }
 
@@ -305,9 +294,8 @@ public sealed partial class LinearScan
 
             var assignedRegister = interval.physReg;
             var allocate = true;
-#if TARGET_ARM64
-            var needsConsecutive = _compiler.info.compNeedsConsecutiveRegisters && reference.needsConsecutive;
-#endif
+            var needsConsecutive = Configuration.TARGET_ARM64 &&
+                _compiler.info.compNeedsConsecutiveRegisters && reference.needsConsecutive;
 #if DEBUG
             var didDump = false;
 #endif
@@ -365,8 +353,8 @@ public sealed partial class LinearScan
                     }
                 }
             }
-#if FEATURE_SIMD && FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            else if (interval.isUpperVector)
+            else if (Configuration.FEATURE_SIMD &&
+                Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && interval.isUpperVector)
             {
                 var localInterval = interval.relatedInterval
                     ?? throw new FatalJitException("Upper-vector references require a related local.");
@@ -417,13 +405,11 @@ public sealed partial class LinearScan
                         assert(!extraSave);
                         allocate = false;
                     }
-#if TARGET_XARCH
-                    else if (localInterval.registerType is TYP_SIMD64)
+                    else if (Configuration.TARGET_XARCH && localInterval.registerType is TYP_SIMD64)
                     {
                         allocate = false;
                         localInterval.isPartiallySpilled = true;
                     }
-#endif
                     else
                     {
                         localInterval.isPartiallySpilled = true;
@@ -460,7 +446,6 @@ public sealed partial class LinearScan
                 reference.registerAssignment = SRBM_NONE;
                 continue;
             }
-#endif
             if (!allocate)
             {
                 if (assignedRegister != REG_NA)
@@ -529,7 +514,7 @@ public sealed partial class LinearScan
                         var inMap = getInVarToRegMap(_currentBlockNumber)
                             ?? throw new FatalJitException("Exposed use requires an incoming local map.");
                         assert(_enregisterLocalVars &&
-                            (inMap[interval.getVarIndex(_compiler)] == REG_STK) &&
+                            ((regNumber)inMap[interval.getVarIndex(_compiler)] == REG_STK) &&
                             (previousReference is not null) &&
                             (previousReference.nodeLocation <= _currentBlockStartLocation));
                         isInRegister = false;
@@ -616,7 +601,6 @@ public sealed partial class LinearScan
                 }
                 else if ((assignedBit & reference.registerAssignment) != SRBM_NONE)
                 {
-#if TARGET_ARM64
                     if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters())
                     {
                         if (canAssignNextConsecutiveRegisters(reference, assignedRegister))
@@ -666,7 +650,6 @@ public sealed partial class LinearScan
                         }
                     }
                     else
-#endif
                     {
                         reference.registerAssignment = assignedBit;
                         if (!interval.isActive)
@@ -689,27 +672,19 @@ public sealed partial class LinearScan
                 }
                 else if (!RefTypeIsDef(refType))
                 {
-#if TARGET_ARM64
                     var copyRegister = assignCopyReg(
                         reference, needsConsecutive && refType is RefType.RefTypeUse);
-#else
-                    var copyRegister = assignCopyReg(reference);
-#endif
                     lastAllocatedRefPosition = reference;
                     var copyMask = getSingleTypeRegMask(copyRegister, interval.registerType);
-#if TARGET_ARM64
                     if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters())
                     {
                         assignConsecutiveRegisters(reference, copyRegister);
                     }
-#endif
                     var originalMask = getSingleTypeRegMask(assignedRegister, interval.registerType);
-#if TARGET_ARM64
                     if (needsConsecutive && (_consecutiveRegsInUseThisLocation & originalMask) != SRBM_NONE)
                     {
                         originalMask = SRBM_NONE;
                     }
-#endif
                     updateRegsFreeBusyState(reference, interval.registerType, originalMask | copyMask,
                         ref registersToFree, ref delayedRegistersToFree, interval, assignedRegister);
                     if (!reference.lastUse)
@@ -743,7 +718,6 @@ public sealed partial class LinearScan
                 }
             }
 
-#if TARGET_ARM64
             if (needsConsecutive)
             {
                 if (reference.isFirstRefPositionOfConsecutiveRegisters())
@@ -767,7 +741,6 @@ public sealed partial class LinearScan
                     }
                 }
             }
-#endif
             if (assignedRegister == REG_NA)
             {
                 if (reference.RegOptional())
@@ -781,13 +754,13 @@ public sealed partial class LinearScan
                     {
                         allocate = false;
                     }
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_XARCH
-                    if ((refType is RefType.RefTypeUpperVectorRestore) && (interval.physReg == REG_NA))
+                    if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                        Configuration.TARGET_XARCH &&
+                        (refType is RefType.RefTypeUpperVectorRestore) && (interval.physReg == REG_NA))
                     {
                         assert(reference.regOptional);
                         allocate = false;
                     }
-#endif
 #if DEBUG
                     if (allocate && regOptionalNoAlloc())
                     {
@@ -804,18 +777,12 @@ public sealed partial class LinearScan
                     {
                         unassignPhysReg(assigned, (RefPosition?)null);
                     }
-#if TARGET_ARM64
                     assignedRegister = allocateReg(
                         interval, reference, out var selectionScore, needsConsecutive);
-#else
-                    assignedRegister = allocateReg(interval, reference, out var selectionScore);
-#endif
-#if TARGET_ARM64
                     if (needsConsecutive && reference.isFirstRefPositionOfConsecutiveRegisters())
                     {
                         assignConsecutiveRegisters(reference, assignedRegister);
                     }
-#endif
 #if DEBUG
                     if (assignedRegister != REG_NA)
                     {
@@ -917,8 +884,7 @@ public sealed partial class LinearScan
             lastAllocatedRefPosition = reference;
         }
 
-#if JIT32_GCENCODER
-        if (_compiler.lvaKeepAliveAndReportThis())
+        if (Configuration.JIT32_GCENCODER && _compiler.lvaKeepAliveAndReportThis())
         {
             ref var thisLocal = ref _compiler.lvaGetDesc(_compiler.info.compThisArg);
             if (thisLocal.lvLRACandidate)
@@ -977,12 +943,11 @@ public sealed partial class LinearScan
                 }
             }
         }
-#endif
 
 #if DEBUG
         if (extendLifetimes())
         {
-            for (var index = 0; index <= (int)REG_FP_LAST; index++)
+            for (var index = 0; index <= (int)TargetRuntimeMetadata.FloatingRegisterLast; index++)
             {
                 var register = physRegs[index];
                 if (register.assignedInterval is Interval interval)
@@ -1009,21 +974,23 @@ public sealed partial class LinearScan
 #endif
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE && TARGET_ARM64
     private bool canSkipUpperVectorSave(RefPosition reference, Interval localInterval)
     {
+        if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         assert(reference.refType is RefType.RefTypeUpperVectorSave);
-        return localInterval.physReg is not REG_NA &&
+        if (!Configuration.TARGET_ARM64)
+        {
+            // The AMD64 tail-call profiler stub does not preserve the upper YMM halves.
+            return false;
+        }
+
+        return localInterval.physReg != REG_NA &&
             reference.treeNode?.Oper is GT_PROF_HOOK &&
             !getKillSetForProfilerHook().IsSet(localInterval.physReg) &&
-            !new regMaskTP(SRBM_FLT_CALLEE_SAVED).IsSet(localInterval.physReg);
+            !new regMaskTP(TargetRuntimeMetadata.FloatingCalleeSavedMask).IsSet(localInterval.physReg);
     }
-#elif FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    private static bool canSkipUpperVectorSave(RefPosition reference, Interval localInterval)
-    {
-        assert(reference.refType is RefType.RefTypeUpperVectorSave);
-        // The AMD64 tail-call profiler stub does not preserve the upper YMM halves.
-        return false;
-    }
-#endif
 }

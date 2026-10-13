@@ -7,18 +7,31 @@ namespace RyuJitSharp;
 
 public partial struct RegSet
 {
-#if !FEATURE_SIMD
-    public const int TEMP_MAX_SIZE = sizeof(double);
-#elif TARGET_XARCH
-    public const int TEMP_MAX_SIZE = ZMM_REGSIZE_BYTES;
-#elif TARGET_ARM64 || TARGET_WASM
-    public const int TEMP_MAX_SIZE = FP_REGSIZE_BYTES;
-#endif
+    private const int MAX_TEMP_SIZE = 64;
 
-#if TARGET_ARM64 && FEATURE_SIMD
-    // There are two extra slots for temps with unknown size (TYP_SIMD_ARM64/TYP_MASK)
-    public const int TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int)) + 2;
-#else
-    public const int TEMP_SLOT_COUNT = (TEMP_MAX_SIZE / sizeof(int));
-#endif
+    // The shared layout reserves space for the largest vector temp and ARM64's unknown-size slots.
+    public const int TEMP_SLOT_COUNT = (MAX_TEMP_SIZE / sizeof(int)) + 2;
+
+    public static int TEMP_MAX_SIZE
+    {
+        get
+        {
+            if (!Configuration.FEATURE_SIMD)
+            {
+                return sizeof(double);
+            }
+
+            if (Configuration.TARGET_XARCH)
+            {
+                return 64;
+            }
+
+            if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
+            {
+                return 16;
+            }
+
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "SIMD spill temps are unsupported for this target.");
+        }
+    }
 }

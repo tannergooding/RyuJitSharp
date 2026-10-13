@@ -18,9 +18,10 @@ public sealed partial class LinearScan
             bool needsConsecutiveRegisters)
         {
             selectionScore = RegisterScore.NONE;
-#if TARGET_ARM64
-            assert(!needsConsecutiveRegisters || refPosition.needsConsecutive);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(!needsConsecutiveRegisters || refPosition.needsConsecutive);
+            }
             reset(currentInterval, refPosition);
 
             if (RefTypeIsDef(refPosition.refType))
@@ -61,10 +62,9 @@ public sealed partial class LinearScan
 
             var nextRelatedInterval = _relatedInterval;
             var rangeEndInterval = _relatedInterval;
-#if TARGET_X86
-            const SingleTypeRegSet byteRegisters = SRBM_EAX | SRBM_ECX | SRBM_EDX | SRBM_EBX;
-            var avoidByteRegisters = (_relatedPreferences & ~byteRegisters) != SRBM_NONE;
-#endif
+            const SingleTypeRegSet byteRegisters = SRBM_X86_EAX | SRBM_X86_ECX | SRBM_X86_EDX | SRBM_X86_EBX;
+            var avoidByteRegisters = Configuration.TARGET_X86 &&
+                (_relatedPreferences & ~byteRegisters) != SRBM_NONE;
             while (nextRelatedInterval is not null)
             {
                 var nextRelatedReference = nextRelatedInterval.getNextRefPosition();
@@ -74,12 +74,10 @@ public sealed partial class LinearScan
                     nextRelatedInterval = null;
                     var intervalPreferences = finalRelatedInterval.getCurrentPreferences();
                     var relatedPreferences = intervalPreferences & _relatedPreferences;
-#if TARGET_X86
-                    if (avoidByteRegisters && intervalPreferences == byteRegisters)
+                    if (Configuration.TARGET_X86 && avoidByteRegisters && intervalPreferences == byteRegisters)
                     {
                         relatedPreferences = SRBM_NONE;
                     }
-#endif
                     if (relatedPreferences != SRBM_NONE)
                     {
                         // Keep native isFree rather than the stronger availability check: the
@@ -178,7 +176,7 @@ public sealed partial class LinearScan
                 }
             }
 
-#if DEBUG && TARGET_ARM64
+#if DEBUG
             var inUseOrBusyRegsMask = SRBM_NONE;
 #endif
             if (!_found)
@@ -186,21 +184,21 @@ public sealed partial class LinearScan
                 var busy = (_linearScan._regsBusyUntilKill | _linearScan._regsInUseThisLocation)
                     .GetRegSetForType(_regType);
                 _candidates &= ~busy;
-#if TARGET_ARM
-                if (currentInterval.registerType is TYP_DOUBLE)
+                if (Configuration.TARGET_ARM && currentInterval.registerType is TYP_DOUBLE)
                 {
                     _candidates = excludeBusyDoubleHalves(_candidates, busy);
                 }
-#endif
-#if DEBUG && TARGET_ARM64
-                inUseOrBusyRegsMask |= busy;
+#if DEBUG
+                if (Configuration.TARGET_ARM64)
+                {
+                    inUseOrBusyRegsMask |= busy;
+                }
 #endif
                 var conflicts = _candidates;
-#if HAS_MORE_THAN_64_REGISTERS
-                conflicts &= varTypeIsMask(_regType) ? _linearScan._fixedRegsHigh : _linearScan._fixedRegsLow;
-#else
-                conflicts &= _linearScan._fixedRegsLow;
-#endif
+                var fixedRegisterMask = Configuration.HAS_MORE_THAN_64_REGISTERS && varTypeIsMask(_regType)
+                    ? _linearScan._fixedRegsHigh
+                    : _linearScan._fixedRegsLow;
+                conflicts &= fixedRegisterMask;
                 while (conflicts != SRBM_NONE)
                 {
                     var register = firstRegNumFromMask(conflicts, _regType);
@@ -211,8 +209,11 @@ public sealed partial class LinearScan
                         (refPosition.delayRegFree && location == unchecked(refPosition.nodeLocation + 1)))
                     {
                         _candidates &= ~bit;
-#if DEBUG && TARGET_ARM64
-                        inUseOrBusyRegsMask |= bit;
+#if DEBUG
+                        if (Configuration.TARGET_ARM64)
+                        {
+                            inUseOrBusyRegsMask |= bit;
+                        }
 #endif
                     }
                 }
@@ -225,18 +226,14 @@ public sealed partial class LinearScan
                 _prevRegBit = genSingleTypeRegMask(previousRegister.regNum);
                 if (previousRegister.assignedInterval == currentInterval && (_candidates & _prevRegBit) != SRBM_NONE)
                 {
-#if TARGET_ARM64
-                    if (!needsConsecutiveRegisters)
+                    if (!Configuration.TARGET_ARM64 || !needsConsecutiveRegisters)
                     {
-#endif
                         _candidates = _prevRegBit;
                         _found = true;
 #if DEBUG
                         selectionScore = RegisterScore.THIS_ASSIGNED;
 #endif
-#if TARGET_ARM64
                     }
-#endif
                 }
             }
             else
@@ -251,8 +248,7 @@ public sealed partial class LinearScan
                 return SRBM_NONE;
             }
 
-#if TARGET_ARM64
-            if (needsConsecutiveRegisters)
+            if (Configuration.TARGET_ARM64 && needsConsecutiveRegisters)
             {
                 if (refPosition.isFirstRefPositionOfConsecutiveRegisters())
                 {
@@ -305,7 +301,6 @@ public sealed partial class LinearScan
                 }
             }
             else
-#endif
             {
                 _freeCandidates = _linearScan.getFreeCandidates(_candidates, _regType);
             }

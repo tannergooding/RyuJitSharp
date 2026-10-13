@@ -207,7 +207,7 @@ public sealed partial class LinearScan
                     if (reference.reload)
                     {
                         interval.isActive = true;
-                        assert(regNum is not REG_NA);
+                        assert(regNum != REG_NA);
                         interval.physReg = regNum;
                         interval.assignedReg = regRecord;
                         var reloadedRegister = regRecord
@@ -216,9 +216,9 @@ public sealed partial class LinearScan
                         dumpVerificationEvent(reference, $"ReLod    {regNum.Name,-4} ", printRecords: true);
                     }
 
-                    if (regNum is REG_NA)
+                    if (regNum == REG_NA)
                     {
-                        if ((interval.physReg is not REG_NA) && RefTypeIsDef(reference.refType))
+                        if ((interval.physReg != REG_NA) && RefTypeIsDef(reference.refType))
                         {
                             var oldRegister = interval.assignedReg
                                 ?? throw new FatalJitException("An assigned interval requires a register record.");
@@ -272,7 +272,7 @@ public sealed partial class LinearScan
                         interval.isActive = false;
                     }
 
-                    if (regNum is not REG_NA)
+                    if (regNum != REG_NA)
                     {
                         if (reference.spillAfter)
                         {
@@ -293,7 +293,7 @@ public sealed partial class LinearScan
                         else
                         {
                             if (RefTypeIsDef(reference.refType) &&
-                                (interval.physReg is not REG_NA) && (interval.physReg != regNum))
+                                (interval.physReg != REG_NA) && (interval.physReg != regNum))
                             {
                                 var oldRegister = interval.assignedReg
                                     ?? throw new FatalJitException("An assigned interval requires a register record.");
@@ -373,7 +373,7 @@ public sealed partial class LinearScan
                     {
                         assert(!reference.spillAfter || reference.IsActualRef());
                         if (RefTypeIsDef(reference.refType) &&
-                            (interval.physReg is not REG_NA) && (interval.physReg != regNum))
+                            (interval.physReg != REG_NA) && (interval.physReg != regNum))
                         {
                             var oldRegister = interval.assignedReg
                                 ?? throw new FatalJitException("An assigned interval requires a register record.");
@@ -386,18 +386,17 @@ public sealed partial class LinearScan
                         {
                             regRecord.assignedInterval = null;
                         }
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                        else if (interval.isUpperVector && !reference.RegOptional())
+                        else if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                            interval.isUpperVector && !reference.RegOptional())
                         {
                             if (reference.refType is RefType.RefTypeUpperVectorSave or RefType.RefTypeUpperVectorRestore)
                             {
                                 var local = interval.relatedInterval
                                     ?? throw new FatalJitException("Upper-vector references require a related interval.");
-                                assert((local.physReg is REG_NA) || local.isPartiallySpilled ||
+                                assert((local.physReg == REG_NA) || local.isPartiallySpilled ||
                                     reference.IsExtraUpperVectorSave());
                             }
                         }
-#endif
                         else
                         {
                             assert(reference.RegOptional());
@@ -413,15 +412,25 @@ public sealed partial class LinearScan
         }
     }
 
-    private void dumpVerificationEvent(RefPosition reference, string action, Interval? interval = null,
-        regNumber register = REG_NA, bool printRecords = false, regMaskTP registerMask = default)
+    private void dumpVerificationEvent(
+        RefPosition reference,
+        string action,
+        Interval? interval = null,
+        bool printRecords = false,
+        regMaskTP registerMask = default)
+    {
+        dumpVerificationEvent(reference, action, interval, REG_NA, printRecords, registerMask);
+    }
+
+    private void dumpVerificationEvent(RefPosition reference, string action, Interval? interval,
+        regNumber register, bool printRecords = false, regMaskTP registerMask = default)
     {
         if (!VERBOSE)
         {
             return;
         }
 
-        if ((interval is not null) && (register is not REG_NA and not REG_STK))
+        if ((interval is not null) && (register != REG_NA) && (register != REG_STK))
         {
             _allocationDumpRegisters |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
             dumpAllocationRegisterTitleIfNeeded();

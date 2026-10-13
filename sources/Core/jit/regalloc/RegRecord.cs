@@ -27,15 +27,13 @@ public sealed partial class RegRecord : Referenceable
 
     public void init(regNumber reg)
     {
-#if TARGET_ARM64
-        if (reg is REG_ZR or REG_SP)
+        if (Configuration.TARGET_ARM64 && (reg is REG_ARM64_ZR or REG_ARM64_SP))
         {
             regNum = reg;
             registerType = TYP_INT;
             isCalleeSave = false;
             return;
         }
-#endif
 
         if (genIsValidIntReg(reg))
         {
@@ -45,17 +43,11 @@ public sealed partial class RegRecord : Referenceable
         {
             registerType = TYP_FLOAT;
         }
-#if FEATURE_MASKED_HW_INTRINSICS
-        else
+        else if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-#if TARGET_ARM64
-            assert(genIsValidMaskReg(reg) || (reg is REG_FFR));
-#else
-            assert(genIsValidMaskReg(reg));
-#endif
+            assert(genIsValidMaskReg(reg) || (Configuration.TARGET_ARM64 && (reg == REG_FFR)));
             registerType = TYP_MASK;
         }
-#endif
 
         regNum = reg;
         isCalleeSave = (LinearScan.calleeSaveRegs(registerType) & genSingleTypeRegMask(reg)) != SRBM_NONE;

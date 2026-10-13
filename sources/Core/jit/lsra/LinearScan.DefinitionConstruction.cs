@@ -14,10 +14,8 @@ public sealed partial class LinearScan
     private int _internalDefinitionCount;
     private bool _setInternalRegistersDelayFree;
     private VARSET_TP _fpCalleeSaveCandidateVars = [];
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private VARSET_TP _largeVectorVars = [];
     private VARSET_TP _largeVectorCalleeSaveCandidateVars = [];
-#endif
 
     private RefPosition defineNewInternalTemp(GenTree tree, RegisterType registerType, SingleTypeRegSet candidates)
     {
@@ -42,13 +40,16 @@ public sealed partial class LinearScan
         return defineNewInternalTemp(tree, TYP_FLOAT, candidates);
     }
 
-#if FEATURE_SIMD && TARGET_XARCH
     private RefPosition buildInternalMaskRegisterDefForNode(GenTree tree, SingleTypeRegSet candidates)
     {
+        if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         assert((candidates & ~_availableMaskRegs) == SRBM_NONE);
         return defineNewInternalTemp(tree, TYP_MASK, candidates);
     }
-#endif
 
     private void buildInternalRegisterUses()
     {
@@ -99,13 +100,14 @@ public sealed partial class LinearScan
         var killLocation = _referenceBuildLocation + 1;
         _ = buildKillPositionsForNode(tree, killLocation, killMask);
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        var fpCalleeKillSet = _rbmFltCalleeTrash & killMask.Lower;
-        if (fpCalleeKillSet != SRBM_NONE)
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            buildUpperVectorSaveRefPositions(tree, killLocation, fpCalleeKillSet);
+            var fpCalleeKillSet = _rbmFltCalleeTrash & killMask.Lower;
+            if (fpCalleeKillSet != SRBM_NONE)
+            {
+                buildUpperVectorSaveRefPositions(tree, killLocation, fpCalleeKillSet);
+            }
         }
-#endif
     }
 
     private bool buildKillPositionsForNode(GenTree tree, LsraLocation location, regMaskTP killMask)
@@ -125,17 +127,15 @@ public sealed partial class LinearScan
 
                     var interval = getIntervalForLocalVar(checked((uint)varIndex));
                     ref var local = ref _compiler.lvaGetDesc(checked((int)interval.varNum));
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    if (Compiler.varTypeNeedsPartialCalleeSave(local.GetRegisterType()))
+                    if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                        LsraConfiguration.VarTypeNeedsPartialCalleeSave(local.GetRegisterType()))
                     {
                         if (!VarSetOps.IsMember(_compiler, _largeVectorCalleeSaveCandidateVars, varIndex))
                         {
                             continue;
                         }
                     }
-                    else
-#endif
-                    if (varTypeIsFloating(local.Type) &&
+                    else if (varTypeIsFloating(local.Type) &&
                         !VarSetOps.IsMember(_compiler, _fpCalleeSaveCandidateVars, varIndex))
                     {
                         continue;
@@ -171,12 +171,9 @@ public sealed partial class LinearScan
 
     private void updateIntervalPreferencesForKill(Interval interval, regMaskTP killMask)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        var fullCalleeTrash = new regMaskTP(
-            _rbmIntCalleeTrash | _rbmFltCalleeTrash, _rbmMskCalleeTrash);
-#else
-        var fullCalleeTrash = new regMaskTP(_rbmIntCalleeTrash | _rbmFltCalleeTrash | _rbmMskCalleeTrash);
-#endif
+        var fullCalleeTrash = Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(_rbmIntCalleeTrash | _rbmFltCalleeTrash, _rbmMskCalleeTrash)
+            : new regMaskTP(_rbmIntCalleeTrash | _rbmFltCalleeTrash | _rbmMskCalleeTrash);
         var isCallKill = (killMask.Lower == _rbmIntCalleeTrash) || (killMask == fullCalleeTrash);
         var registersKilled = getRegSetForType(killMask, regType(interval.registerType));
 
@@ -200,7 +197,6 @@ public sealed partial class LinearScan
         }
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private void buildUpperVectorSaveRefPositions(GenTree? tree, LsraLocation location, SingleTypeRegSet fpCalleeKillSet)
     {
         if ((tree is not null) && tree.Oper.IsCall &&
@@ -212,7 +208,7 @@ public sealed partial class LinearScan
         if (_enregisterLocalVars && !VarSetOps.IsEmpty(_compiler, _largeVectorVars))
         {
             assert((fpCalleeKillSet & _rbmFltCalleeTrash) != SRBM_NONE);
-            assert((fpCalleeKillSet & SRBM_FLT_CALLEE_SAVED) == SRBM_NONE);
+            assert((fpCalleeKillSet & TargetRuntimeMetadata.FloatingCalleeSavedMask) == SRBM_NONE);
             var block = _compiler.compCurBB
                 ?? throw new FatalJitException("Upper-vector saves require the current basic block.");
             var liveDefinitions = VarSetOps.MakeEmpty(_compiler);
@@ -239,13 +235,11 @@ public sealed partial class LinearScan
 
                 var upperInterval = getUpperVectorInterval(checked((uint)varIndex));
                 var savePosition = newRefPosition(upperInterval, location, RefType.RefTypeUpperVectorSave,
-                    tree, SRBM_FLT_CALLEE_SAVED);
+                    tree, TargetRuntimeMetadata.FloatingCalleeSavedMask);
                 localInterval.isPartiallySpilled = true;
                 savePosition.skipSaveRestore = blockAlwaysReturns;
                 savePosition.liveVarUpperSave = VarSetOps.IsMember(_compiler, _currentLiveVariables, varIndex);
-#if TARGET_XARCH
-                savePosition.regOptional = true;
-#endif
+                savePosition.regOptional = Configuration.TARGET_XARCH;
             }
         }
 
@@ -254,7 +248,7 @@ public sealed partial class LinearScan
             var treeNode = node.treeNode
                 ?? throw new FatalJitException("An LSRA definition-list entry must retain its defining node.");
             var registerType = getUpperVectorTemporaryType(treeNode);
-            if (!Compiler.varTypeNeedsPartialCalleeSave(registerType))
+            if (!LsraConfiguration.VarTypeNeedsPartialCalleeSave(registerType))
             {
                 continue;
             }
@@ -265,7 +259,7 @@ public sealed partial class LinearScan
             if (interval.recentRefPosition?.refType is not RefType.RefTypeUpperVectorSave)
             {
                 _ = newRefPosition(interval, location, RefType.RefTypeUpperVectorSave,
-                    tree, SRBM_FLT_CALLEE_SAVED);
+                    tree, TargetRuntimeMetadata.FloatingCalleeSavedMask);
             }
         }
     }
@@ -295,16 +289,13 @@ public sealed partial class LinearScan
         {
             registerType = _compiler.GetHfaType(call.RetClsHnd);
         }
-#if TARGET_ARM64
-        else if (returnKind is Compiler.SPK_ByValue)
+        else if (Configuration.TARGET_ARM64 && returnKind is Compiler.SPK_ByValue)
         {
             registerType = TYP_LONG;
         }
-#endif
         assert((registerType is not TYP_STRUCT) && (registerType is not TYP_UNDEF));
         return registerType;
     }
-#endif
 
     private void buildCallDefsWithKills(
         GenTree tree, int destinationCount, regMaskTP destinationCandidates, regMaskTP killMask)
@@ -315,44 +306,46 @@ public sealed partial class LinearScan
         buildCallDefs(tree, destinationCount, destinationCandidates);
     }
 
-#if TARGET_ARMARCH || TARGET_RISCV64 || TARGET_LOONGARCH64
     private void buildDefWithKills(GenTree tree, SingleTypeRegSet destinationCandidates, regMaskTP killMask)
     {
+        if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         assert(!tree.AsCall().HasMultiRegRetVal);
         assert(isSingleRegister(destinationCandidates));
         buildKills(tree, killMask);
         _ = buildDef(tree, destinationCandidates);
     }
-#else
+
     private void buildDefWithKills(
         GenTree tree, int destinationCount, SingleTypeRegSet destinationCandidates, regMaskTP killMask)
     {
         buildKills(tree, killMask);
-#if TARGET_64BIT
-        assert(destinationCount == 1);
-        _ = buildDef(tree, destinationCandidates);
-#else
-        if (destinationCount == 1)
+        if (Configuration.TARGET_64BIT)
         {
+            assert(destinationCount == 1);
             _ = buildDef(tree, destinationCandidates);
         }
         else
         {
-            assert(destinationCount == 2);
-            buildDefs(tree, 2, destinationCandidates);
+            if (destinationCount == 1)
+            {
+                _ = buildDef(tree, destinationCandidates);
+            }
+            else
+            {
+                assert(destinationCount == 2);
+                buildDefs(tree, 2, destinationCandidates);
+            }
         }
-#endif
     }
-#endif
 
     private void buildDefs(GenTree tree, int destinationCount, SingleTypeRegSet destinationCandidates)
     {
         assert(destinationCount > 0);
-#if TARGET_X86
-        var candidateCount = BitOperations.PopCount(unchecked((uint)destinationCandidates));
-#else
         var candidateCount = BitOperations.PopCount(unchecked((ulong)destinationCandidates));
-#endif
         if ((destinationCandidates == SRBM_NONE) ||
             (candidateCount != destinationCount))
         {
@@ -366,13 +359,8 @@ public sealed partial class LinearScan
 
         for (var index = 0; index < destinationCount; index++)
         {
-#if TARGET_X86
-            var bits = unchecked((uint)destinationCandidates);
-            var lowestBit = bits & unchecked(0u - bits);
-#else
             var bits = unchecked((ulong)destinationCandidates);
             var lowestBit = bits & unchecked(0ul - bits);
-#endif
             var candidate = unchecked((SingleTypeRegSet)lowestBit);
             _ = buildDef(tree, candidate, index);
             destinationCandidates &= ~candidate;
@@ -382,9 +370,10 @@ public sealed partial class LinearScan
     private static int countRegisterMaskBits(regMaskTP registers)
     {
         var count = BitOperations.PopCount(unchecked((ulong)registers.Lower));
-#if HAS_MORE_THAN_64_REGISTERS
-        count += BitOperations.PopCount(unchecked((ulong)registers.Upper));
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            count += BitOperations.PopCount(unchecked((ulong)registers.Upper));
+        }
         return count;
     }
 }

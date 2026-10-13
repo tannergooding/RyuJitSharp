@@ -25,11 +25,12 @@ public sealed partial class LinearScan
 
         if (codeGen.genUseOptimizedWriteBarriers(form))
         {
-#if TARGET_X86 && NOGC_WRITE_BARRIERS
-            return new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_EDX));
-#else
+            if (Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS)
+            {
+                return new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_X86_EDX));
+            }
+
             throw new FatalJitException("Optimized write barriers are unsupported on this target.");
-#endif
         }
 
         var helper = codeGen.genWriteBarrierHelperForWriteBarrierForm(form);
@@ -39,57 +40,62 @@ public sealed partial class LinearScan
     private static regMaskTP getKillSetForShiftRotate(GenTreeOp shiftNode)
     {
         var killMask = new regMaskTP(SRBM_NONE);
-#if TARGET_XARCH
-        assert(shiftNode.Oper.IsShiftOrRotate);
-        if (!shiftNode.Op2.IsContained)
+        if (Configuration.TARGET_XARCH)
         {
-            killMask = new regMaskTP(SRBM_RCX);
+            assert(shiftNode.Oper.IsShiftOrRotate);
+            if (!shiftNode.Op2.IsContained)
+            {
+                killMask = new regMaskTP(TargetRuntimeMetadata.SelectXarch(SRBM_X86_ECX, SRBM_X64_RCX));
+            }
         }
-#endif
         return killMask;
     }
 
     private regMaskTP getKillSetForMul(GenTreeOp mulNode)
     {
-#if TARGET_XARCH
-        assert(mulNode.Oper.IsMul);
-        if (mulNode.Oper is not GT_MUL)
+        if (Configuration.TARGET_XARCH)
         {
-            if (mulNode.IsUnsigned && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            assert(mulNode.Oper.IsMul);
+            if (mulNode.Oper is not GT_MUL)
             {
-                return (mulNode.Op1.IsContained || mulNode.Op2.IsContained)
-                    ? new regMaskTP(SRBM_NONE)
-                    : new regMaskTP(SRBM_RDX);
+                if (mulNode.IsUnsigned && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    return (mulNode.Op1.IsContained || mulNode.Op2.IsContained)
+                        ? new regMaskTP(SRBM_NONE)
+                        : TargetRuntimeMetadata.IntegerReturnRegister1Mask;
+                }
+
+                return TargetRuntimeMetadata.IntegerReturnRegisterMask |
+                    TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
 
-            return new regMaskTP(SRBM_RAX | SRBM_RDX);
+            return mulNode.IsUnsigned && mulNode.HasOverflowCheckEx
+                ? TargetRuntimeMetadata.IntegerReturnRegisterMask |
+                    TargetRuntimeMetadata.IntegerReturnRegister1Mask
+                : new regMaskTP(SRBM_NONE);
         }
 
-        return mulNode.IsUnsigned && mulNode.HasOverflowCheckEx
-            ? new regMaskTP(SRBM_RAX | SRBM_RDX)
-            : new regMaskTP(SRBM_NONE);
-#else
         return new regMaskTP(SRBM_NONE);
-#endif
     }
 
     private static regMaskTP getKillSetForModDiv(GenTreeOp node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            return new regMaskTP(SRBM_NONE);
+        }
+
         assert(node.Oper is GT_MOD or GT_DIV or GT_UMOD or GT_UDIV);
         return varTypeUsesIntReg(node.Type)
-            ? new regMaskTP(SRBM_RAX | SRBM_RDX)
+            ? TargetRuntimeMetadata.IntegerReturnRegisterMask |
+                TargetRuntimeMetadata.IntegerReturnRegister1Mask
             : new regMaskTP(SRBM_NONE);
-#else
-        return new regMaskTP(SRBM_NONE);
-#endif
     }
 
     private regMaskTP getKillSetForCall(GenTreeCall call)
     {
         var killMask = getCalleeTrashKillMask();
-#if TARGET_X86
-        if (_compiler.compFloatingPointUsed)
+        if (Configuration.TARGET_X86 && _compiler.compFloatingPointUsed)
         {
             if (call.Type is TYP_DOUBLE)
             {
@@ -100,7 +106,6 @@ public sealed partial class LinearScan
                 _needFloatTmpForFPCall = true;
             }
         }
-#endif
         if (call.IsHelperCall())
         {
             killMask = _compiler.compHelperCallKillSet(call.HelperNum);
@@ -109,46 +114,50 @@ public sealed partial class LinearScan
         if (!_needToKillFloatRegisters)
         {
             assert(!_compiler.compFloatingPointUsed || !_enregisterLocalVars);
-#if TARGET_ARM64
-            killMask = removeRegisterSets(killMask, SRBM_NONE, SRBM_FLT_CALLEE_TRASH,
-                SRBM_MSK_CALLEE_TRASH);
-#elif TARGET_WASM
-            assert(killMask.IsEmpty);
-#else
-            var codeGen = _compiler.codeGen
-                ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
-#if TARGET_XARCH
-            killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
-                codeGen.SRBM_MSK_CALLEE_TRASH);
-#else
-            killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
-                SRBM_NONE);
-#endif
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                killMask = removeRegisterSets(killMask, SRBM_NONE, SRBM_FLT_CALLEE_TRASH,
+                    _compiler.SRBM_MSK_CALLEE_TRASH);
+            }
+            else if (Configuration.TARGET_WASM)
+            {
+                assert(killMask.IsEmpty);
+            }
+            else
+            {
+                var codeGen = _compiler.codeGen
+                    ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
+                if (Configuration.TARGET_XARCH)
+                {
+                    killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
+                        codeGen.SRBM_MSK_CALLEE_TRASH);
+                }
+                else
+                {
+                    killMask = removeRegisterSets(killMask, SRBM_NONE, codeGen.SRBM_FLT_CALLEE_TRASH,
+                        SRBM_NONE);
+                }
+            }
         }
 
-#if TARGET_ARM
         if (call.IsVirtualStub)
         {
             var virtualStubParamInfo = _compiler.virtualStubParamInfo
                 ?? throw new FatalJitException("Virtual-stub calls require initialized register metadata.");
-            killMask |= virtualStubParamInfo.RegMask;
+            if (Configuration.TARGET_ARM)
+            {
+                killMask |= virtualStubParamInfo.RegMask;
+            }
+            else
+            {
+                assert((killMask & virtualStubParamInfo.RegMask) == virtualStubParamInfo.RegMask);
+            }
         }
-#else
-        if (call.IsVirtualStub)
-        {
-            var virtualStubParamInfo = _compiler.virtualStubParamInfo
-                ?? throw new FatalJitException("Virtual-stub calls require initialized register metadata.");
-            assert((killMask & virtualStubParamInfo.RegMask) == virtualStubParamInfo.RegMask);
-        }
-#endif
 
-#if SWIFT_SUPPORT
-        if (call.HasSwiftErrorHandling)
+        if (Configuration.SWIFT_SUPPORT && call.HasSwiftErrorHandling)
         {
-            killMask |= new regMaskTP(SRBM_SWIFT_ERROR);
+            killMask |= new regMaskTP(TargetRuntimeMetadata.SwiftErrorMask);
         }
-#endif
         return killMask;
     }
 
@@ -160,21 +169,18 @@ public sealed partial class LinearScan
         return new regMaskTP(SRBM_NONE);
     }
 
-#if FEATURE_HW_INTRINSICS
     private static regMaskTP getKillSetForHWIntrinsic(GenTreeHWIntrinsic node)
     {
         var killMask = new regMaskTP(SRBM_NONE);
-#if TARGET_XARCH
-        if (node.HWIntrinsicId is NI_X86Base_MaskMove)
+        if (Configuration.TARGET_XARCH && node.HWIntrinsicId is NI_X86Base_MaskMove)
         {
             // A fixed address use alone does not reserve implicit EDI when
             // conflicting definitions cause LSRA to reassign that address.
-            killMask = new regMaskTP(LsraGlobals.genSingleTypeRegMask(REG_EDI));
+            killMask = new regMaskTP(LsraGlobals.genSingleTypeRegMask(
+                TargetRuntimeMetadata.SelectXarch(REG_X86_EDI, REG_X64_RDI)));
         }
-#endif
         return killMask;
     }
-#endif
 
     private regMaskTP getKillSetForReturn(GenTree returnNode)
     {
@@ -184,12 +190,10 @@ public sealed partial class LinearScan
         }
 
         var killSet = _compiler.compHelperCallKillSet(CORINFO_HELP_PROF_FCN_LEAVE);
-#if TARGET_ARM
-        if (returnNode.Type is TYP_VOID)
+        if (Configuration.TARGET_ARM && returnNode.Type is TYP_VOID)
         {
-            killSet |= new regMaskTP(SRBM_R0);
+            killSet |= new regMaskTP(SRBM_ARM32_R0);
         }
-#endif
         return killSet;
     }
 
@@ -209,20 +213,32 @@ public sealed partial class LinearScan
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
-#if TARGET_X86
-            case GT_LSH_HI:
-            case GT_RSH_LO:
-#endif
                 killMask = getKillSetForShiftRotate(tree.AsOp());
                 break;
 
+            case GT_LSH_HI:
+            case GT_RSH_LO:
+            {
+                if (Configuration.TARGET_X86)
+                {
+                    killMask = getKillSetForShiftRotate(tree.AsOp());
+                }
+                break;
+            }
+
             case GT_MUL:
             case GT_MULHI:
-#if !TARGET_64BIT || TARGET_ARM64
-            case GT_MUL_LONG:
-#endif
                 killMask = getKillSetForMul(tree.AsOp());
                 break;
+
+            case GT_MUL_LONG:
+            {
+                if (!Configuration.TARGET_64BIT || Configuration.TARGET_ARM64)
+                {
+                    killMask = getKillSetForMul(tree.AsOp());
+                }
+                break;
+            }
 
             case GT_MOD:
             case GT_DIV:
@@ -247,22 +263,31 @@ public sealed partial class LinearScan
                 killMask = getKillSetForStoreInd(tree.AsStoreInd());
                 break;
 
-#if PROFILING_SUPPORTED
             case GT_RETURN:
             case GT_SWIFT_ERROR_RET:
-                killMask = getKillSetForReturn(tree);
+            {
+                if (Configuration.PROFILING_SUPPORTED)
+                {
+                    killMask = getKillSetForReturn(tree);
+                }
                 break;
+            }
 
             case GT_PROF_HOOK:
-                killMask = getKillSetForProfilerHook();
+            {
+                if (Configuration.PROFILING_SUPPORTED)
+                {
+                    killMask = getKillSetForProfilerHook();
+                }
                 break;
-#endif
+            }
 
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
-                killMask = getKillSetForHWIntrinsic(tree.AsHWIntrinsic());
+                if (Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    killMask = getKillSetForHWIntrinsic(tree.AsHWIntrinsic());
+                }
                 break;
-#endif
 
             case GT_PATCHPOINT:
                 killMask = _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT);
@@ -282,31 +307,30 @@ public sealed partial class LinearScan
 
     private regMaskTP getCalleeTrashKillMask()
     {
-#if TARGET_ARM64
-        return SRBM_CALLEE_TRASH;
-#elif TARGET_WASM
-        return RBM_NONE;
-#else
+        if (Configuration.TARGET_ARM64)
+        {
+            return SRBM_CALLEE_TRASH_ARM64;
+        }
+        if (Configuration.TARGET_WASM)
+        {
+            return RBM_NONE;
+        }
+
         var codeGen = _compiler.codeGen
             ?? throw new FatalJitException("Call kill-set construction requires initialized CodeGen.");
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH,
-            codeGen.SRBM_MSK_CALLEE_TRASH);
-#else
-        return new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH |
-            codeGen.SRBM_MSK_CALLEE_TRASH);
-#endif
-#endif
+        return Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH,
+                codeGen.SRBM_MSK_CALLEE_TRASH)
+            : new regMaskTP(codeGen.SRBM_INT_CALLEE_TRASH | codeGen.SRBM_FLT_CALLEE_TRASH |
+                codeGen.SRBM_MSK_CALLEE_TRASH);
     }
 
     private static regMaskTP removeRegisterSets(
         regMaskTP killMask, regMask intRegisters, regMask floatRegisters, regMask maskRegisters)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters),
-            killMask.Upper & ~maskRegisters);
-#else
-        return new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters | maskRegisters));
-#endif
+        return Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters),
+                killMask.Upper & ~maskRegisters)
+            : new regMaskTP(killMask.Lower & ~(intRegisters | floatRegisters | maskRegisters));
     }
 }

@@ -21,8 +21,7 @@ public sealed partial class LinearScan
             return true;
         }
 
-#if TARGET_ARM
-        if (newRegisterType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && newRegisterType is TYP_DOUBLE)
         {
             var otherHalf = getSecondHalfRegRec(regRecord);
             if (otherHalf.assignedInterval is not null)
@@ -30,7 +29,6 @@ public sealed partial class LinearScan
                 return true;
             }
         }
-#endif
         return false;
     }
 
@@ -48,8 +46,7 @@ public sealed partial class LinearScan
             unassignPhysReg(regRecord, (RefPosition?)null);
         }
 
-#if TARGET_ARM
-        if ((interval.registerType is TYP_DOUBLE) &&
+        if (Configuration.TARGET_ARM && (interval.registerType is TYP_DOUBLE) &&
             ((assignedInterval is null) || (assignedInterval.registerType is TYP_FLOAT)))
         {
             var other = getSecondHalfRegRec(regRecord);
@@ -63,7 +60,6 @@ public sealed partial class LinearScan
                 unassignPhysReg(other, (RefPosition?)null);
             }
         }
-#endif
         updateAssignedInterval(regRecord, interval, interval.registerType);
     }
 
@@ -91,24 +87,26 @@ public sealed partial class LinearScan
 
     private void clearAssignedInterval(RegRecord regRecord, RegisterType registerType)
     {
-#if TARGET_ARM
-        var previous = regRecord.assignedInterval;
-        if ((registerType is TYP_DOUBLE) || (previous?.registerType is TYP_DOUBLE))
+        if (Configuration.TARGET_ARM)
         {
-            var other = findAnotherHalfRegRec(regRecord);
-            var first = genIsValidDoubleReg(regRecord.regNum) ? regRecord.regNum : other.regNum;
-            other.assignedInterval = null;
-            clearNextIntervalRef(first, TYP_DOUBLE);
-            clearSpillCost(first, TYP_DOUBLE);
-            clearConstantReg(first, TYP_DOUBLE);
+            var previous = regRecord.assignedInterval;
+            if ((registerType is TYP_DOUBLE) || (previous?.registerType is TYP_DOUBLE))
+            {
+                var other = findAnotherHalfRegRec(regRecord);
+                var first = genIsValidDoubleReg(regRecord.regNum) ? regRecord.regNum : other.regNum;
+                other.assignedInterval = null;
+                clearNextIntervalRef(first, TYP_DOUBLE);
+                clearSpillCost(first, TYP_DOUBLE);
+                clearConstantReg(first, TYP_DOUBLE);
+            }
         }
-#endif
         regRecord.assignedInterval = null;
         clearNextIntervalRef(regRecord.regNum, regRecord.registerType);
         clearSpillCost(regRecord.regNum, regRecord.registerType);
-#if !TARGET_ARM
-        clearConstantReg(regRecord.regNum, regRecord.registerType);
-#endif
+        if (!Configuration.TARGET_ARM)
+        {
+            clearConstantReg(regRecord.regNum, regRecord.registerType);
+        }
     }
 
     private void updateAssignedInterval(RegRecord regRecord, Interval interval)
@@ -118,18 +116,19 @@ public sealed partial class LinearScan
 
     private void updateAssignedInterval(RegRecord regRecord, Interval interval, RegisterType registerType)
     {
-#if TARGET_ARM
-        var previous = regRecord.assignedInterval;
-        if ((registerType is TYP_DOUBLE) || (previous?.registerType is TYP_DOUBLE))
+        if (Configuration.TARGET_ARM)
         {
-            var other = findAnotherHalfRegRec(regRecord);
-            var first = genIsValidDoubleReg(regRecord.regNum) ? regRecord.regNum : other.regNum;
-            other.assignedInterval = registerType is TYP_DOUBLE ? interval : null;
-            clearNextIntervalRef(first, TYP_DOUBLE);
-            clearSpillCost(first, TYP_DOUBLE);
-            clearConstantReg(first, TYP_DOUBLE);
+            var previous = regRecord.assignedInterval;
+            if ((registerType is TYP_DOUBLE) || (previous?.registerType is TYP_DOUBLE))
+            {
+                var other = findAnotherHalfRegRec(regRecord);
+                var first = genIsValidDoubleReg(regRecord.regNum) ? regRecord.regNum : other.regNum;
+                other.assignedInterval = registerType is TYP_DOUBLE ? interval : null;
+                clearNextIntervalRef(first, TYP_DOUBLE);
+                clearSpillCost(first, TYP_DOUBLE);
+                clearConstantReg(first, TYP_DOUBLE);
+            }
         }
-#endif
         regRecord.assignedInterval = interval;
         setRegInUse(regRecord.regNum, interval.registerType);
         if (interval.isConstant)
@@ -157,12 +156,10 @@ public sealed partial class LinearScan
             !ReferenceEquals(previousInterval, assignedInterval) &&
             ReferenceEquals(previousInterval.assignedReg, regRecord) &&
             (previousInterval.getNextRefPosition() is not null);
-#if TARGET_ARM
-        if (canRestore && previousInterval?.registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && canRestore && previousInterval?.registerType is TYP_DOUBLE)
         {
             canRestore = findAnotherHalfRegRec(regRecord).assignedInterval is null;
         }
-#endif
         return canRestore;
     }
 
@@ -188,33 +185,30 @@ public sealed partial class LinearScan
 
     private void unassignPhysReg(RegRecord regRecord, RegisterType newRegisterType)
     {
-#if TARGET_ARM
         var recordToUnassign = regRecord;
         RegRecord? other = null;
-        if (recordToUnassign.assignedInterval?.registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM)
         {
-            if (!genIsValidDoubleReg(recordToUnassign.regNum))
+            if (recordToUnassign.assignedInterval?.registerType is TYP_DOUBLE)
             {
-                recordToUnassign = findAnotherHalfRegRec(regRecord);
+                if (!genIsValidDoubleReg(recordToUnassign.regNum))
+                {
+                    recordToUnassign = findAnotherHalfRegRec(regRecord);
+                }
+            }
+            else if (newRegisterType is TYP_DOUBLE)
+            {
+                other = getSecondHalfRegRec(recordToUnassign);
             }
         }
-        else if (newRegisterType is TYP_DOUBLE)
-        {
-            other = getSecondHalfRegRec(recordToUnassign);
-        }
-#else
-        var recordToUnassign = regRecord;
-#endif
         if (recordToUnassign.assignedInterval is Interval assignedInterval)
         {
             unassignPhysReg(recordToUnassign, assignedInterval.recentRefPosition);
         }
-#if TARGET_ARM
-        if (other?.assignedInterval is Interval otherInterval)
+        if (Configuration.TARGET_ARM && other?.assignedInterval is Interval otherInterval)
         {
             unassignPhysReg(other, otherInterval.recentRefPosition);
         }
-#endif
     }
 
     private void unassignPhysReg(RegRecord regRecord, RefPosition? spillRefPosition)
@@ -228,8 +222,7 @@ public sealed partial class LinearScan
         var intervalIsAssigned = assignedInterval.physReg == register;
         var registerToUnassign = register;
 
-#if TARGET_ARM
-        if (assignedInterval.registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && assignedInterval.registerType is TYP_DOUBLE)
         {
             assert(varTypeUsesFloatReg(regRecord.registerType));
             var firstHalf = genIsValidDoubleReg(register);
@@ -251,7 +244,6 @@ public sealed partial class LinearScan
             assert(regRecord.assignedInterval is null && other.assignedInterval is null);
         }
         else
-#endif
         {
             clearNextIntervalRef(register, assignedInterval.registerType);
             clearSpillCost(register, assignedInterval.registerType);
@@ -319,14 +311,12 @@ public sealed partial class LinearScan
             {
                 updateNextIntervalRef(register, previousInterval);
             }
-#if TARGET_ARM
-            if (previousInterval.registerType is TYP_DOUBLE)
+            if (Configuration.TARGET_ARM && previousInterval.registerType is TYP_DOUBLE)
             {
                 var other = findAnotherHalfRegRec(regRecord);
                 other.assignedInterval = previousInterval;
                 other.previousInterval = null;
             }
-#endif
 
 #if DEBUG
             if (VERBOSE)
@@ -338,48 +328,43 @@ public sealed partial class LinearScan
         else
         {
             clearAssignedInterval(regRecord, assignedInterval.registerType);
-#if TARGET_ARM
-            updatePreviousInterval(regRecord, null, assignedInterval.registerType);
-#else
-            updatePreviousInterval(regRecord, null);
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                updatePreviousInterval(regRecord, null, assignedInterval.registerType);
+            }
+            else
+            {
+                updatePreviousInterval(regRecord, null);
+            }
         }
     }
 
     private void setRegInUse(regNumber register, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE && !genIsValidDoubleReg(register))
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE && !genIsValidDoubleReg(register))
         {
             register -= 1;
         }
-#endif
         _availableRegs[(int)regType(registerType)] &= ~genSingleTypeRegMask(register);
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             _availableRegs[(int)TYP_FLOAT] &= ~genSingleTypeRegMask(register + 1);
         }
-#endif
     }
 
     private void makeRegAvailable(regNumber register, RegisterType registerType)
     {
         assert(registerType is not TYP_UNDEF and not TYP_STRUCT);
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE && !genIsValidDoubleReg(register))
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE && !genIsValidDoubleReg(register))
         {
             register -= 1;
         }
-#endif
         _availableRegs[(int)regType(registerType)] |= genSingleTypeRegMask(register);
-#if TARGET_ARM
-        if (registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && registerType is TYP_DOUBLE)
         {
             _availableRegs[(int)TYP_FLOAT] |= genSingleTypeRegMask(register + 1);
         }
-#endif
     }
 
     private void setConstantReg(regNumber register)
@@ -409,8 +394,7 @@ public sealed partial class LinearScan
 
         // Tracked locals may still be added during lowering, so size this set when spilling begins.
         var splitOrSpilledVars = _splitOrSpilledVars ??= VarSetOps.MakeEmpty(_compiler);
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        if (interval.isUpperVector)
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && interval.isUpperVector)
         {
             var relatedInterval = interval.relatedInterval
                 ?? throw new FatalJitException("An upper-vector interval requires its related local interval.");
@@ -432,7 +416,6 @@ public sealed partial class LinearScan
                 _spillCost[(int)register] = getSpillWeight(getRegisterRecord(register));
             }
         }
-#endif
         if (interval.isLocalVar)
         {
             var varIndex = interval.getVarIndex(_compiler);

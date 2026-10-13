@@ -32,35 +32,36 @@ public sealed partial class LinearScan
         return _compiler.compFloatingPointUsed ? _availableFloatRegs : _rbmFltCalleeTrash;
     }
 
-#if TARGET_XARCH
     private SingleTypeRegSet lowSIMDRegs()
     {
-#if TARGET_AMD64
-        return _availableFloatRegs & SRBM_LOWFLOAT;
-#else
+        if (Configuration.TARGET_AMD64)
+        {
+            return _availableFloatRegs & SRBM_LOWFLOAT;
+        }
+
         return _availableFloatRegs;
-#endif
     }
 
     private SingleTypeRegSet buildEvexIncompatibleMask(GenTree tree)
     {
-#if TARGET_AMD64
-        assert(!varTypeIsMask(tree.Type));
-        if (!varTypeIsFloating(tree.Type) && !varTypeIsSimd(tree.Type))
+        if (Configuration.TARGET_AMD64)
         {
-            return SRBM_NONE;
+            assert(!varTypeIsMask(tree.Type));
+            if (!varTypeIsFloating(tree.Type) && !varTypeIsSimd(tree.Type))
+            {
+                return SRBM_NONE;
+            }
+
+            if (tree.IsContained &&
+                (tree.Oper.IsIndir || tree.Oper is GT_LEA ||
+                 (tree.Oper.IsHWIntrinsic && tree.AsHWIntrinsic().IsMemoryLoad())))
+            {
+                return SRBM_NONE;
+            }
+            return lowSIMDRegs();
         }
 
-        if (tree.IsContained &&
-            (tree.Oper.IsIndir || tree.Oper is GT_LEA ||
-             (tree.Oper.IsHWIntrinsic && tree.AsHWIntrinsic().IsMemoryLoad())))
-        {
-            return SRBM_NONE;
-        }
-        return lowSIMDRegs();
-#else
         return SRBM_NONE;
-#endif
     }
 
     private static bool doesThisUseGPR(GenTree tree)
@@ -70,26 +71,22 @@ public sealed partial class LinearScan
             return true;
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (tree.IsContained && tree.Oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && tree.IsContained && tree.Oper.IsHWIntrinsic)
         {
             var intrinsic = tree.AsHWIntrinsic();
             return intrinsic.IsBroadcastScalar ||
                 (intrinsic.IsMemoryLoad() && doesThisUseGPR(intrinsic.GetOp(1)));
         }
-#endif
         return false;
     }
 
     private SingleTypeRegSet forceLowGprForApx(
         GenTree tree, SingleTypeRegSet candidates = SRBM_NONE, bool forceLowGpr = false)
     {
-#if TARGET_AMD64
-        if (_apxIsSupported && (forceLowGpr || doesThisUseGPR(tree)))
+        if (Configuration.TARGET_AMD64 && _apxIsSupported && (forceLowGpr || doesThisUseGPR(tree)))
         {
             return candidates == SRBM_NONE ? _lowGprRegs : candidates & _lowGprRegs;
         }
-#endif
         return candidates;
     }
 
@@ -101,7 +98,7 @@ public sealed partial class LinearScan
 
     private void setContainsAVXFlags(uint sizeOfSIMDVector = 0)
     {
-        if (!_compiler.canUseVexEncoding())
+        if (!Configuration.TARGET_XARCH || !_compiler.canUseVexEncoding())
         {
             return;
         }
@@ -118,5 +115,4 @@ public sealed partial class LinearScan
             emitter.Contains256BitOrMoreAvxInstruction = true;
         }
     }
-#endif
 }

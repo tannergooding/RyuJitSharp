@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if TARGET_ARM64
     private int buildNodeArm64(GenTree tree)
     {
         assert(!tree.IsContained);
@@ -24,8 +23,8 @@ public sealed partial class LinearScan
                 sourceCount = 0;
                 if (varTypeUsesMaskReg(tree.Type))
                 {
-                    assert(tree.AsPhysReg().SrcReg == REG_FFR);
-                    _ = buildDef(tree, genSingleTypeRegMask(REG_FFR));
+                    assert(tree.AsPhysReg().SrcReg == REG_ARM64_FFR);
+                    _ = buildDef(tree, genSingleTypeRegMask(REG_ARM64_FFR));
                 }
                 else
                 {
@@ -46,14 +45,12 @@ public sealed partial class LinearScan
             case GT_LCL_FLD:
             {
                 sourceCount = 0;
-#if FEATURE_SIMD
-                if (tree.Type is TYP_SIMD12)
+                if (Configuration.FEATURE_SIMD && tree.Type is TYP_SIMD12)
                 {
                     _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
                     _setInternalRegistersDelayFree = true;
                     buildInternalRegisterUses();
                 }
-#endif
                 _ = buildDef(tree, SRBM_NONE);
                 break;
             }
@@ -126,9 +123,14 @@ public sealed partial class LinearScan
                 break;
             }
 
-#if FEATURE_SIMD
             case GT_CNS_VEC:
             {
+                if (!Configuration.FEATURE_SIMD)
+                {
+                    sourceCount = buildSimple(tree);
+                    break;
+                }
+
                 var vector = tree.AsVecCon();
                 if (!vector.IsAllBitsSet && !vector.IsZero)
                 {
@@ -197,11 +199,15 @@ public sealed partial class LinearScan
                 buildDef(tree, SRBM_NONE).getInterval().isConstant = true;
                 break;
             }
-#endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
             case GT_CNS_MSK:
             {
+                if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                {
+                    sourceCount = buildSimple(tree);
+                    break;
+                }
+
                 var mask = tree.AsMskCon();
                 var maskBaseType = TYP_BYTE;
 #if DEBUG
@@ -220,7 +226,6 @@ public sealed partial class LinearScan
                 buildDef(tree, SRBM_NONE).getInterval().isConstant = true;
                 break;
             }
-#endif
 
             case GT_RETURN:
             {
@@ -229,15 +234,13 @@ public sealed partial class LinearScan
                 break;
             }
 
-#if SWIFT_SUPPORT
             case GT_SWIFT_ERROR_RET:
             {
-                _ = buildUse(tree.AsUnOp().Op1, SRBM_SWIFT_ERROR);
+                _ = buildUse(tree.AsUnOp().Op1, TargetRuntimeMetadata.SwiftErrorMask);
                 sourceCount = buildReturn(tree) + 1;
                 buildKills(tree, getKillSetForReturn(tree));
                 break;
             }
-#endif
 
             case GT_RETFILT:
             {
@@ -246,7 +249,7 @@ public sealed partial class LinearScan
                 if (sourceCount != 0)
                 {
                     assert(tree.Type is TYP_INT);
-                    _ = buildUse(tree.AsUnOp().Op1, SRBM_INTRET);
+                    _ = buildUse(tree.AsUnOp().Op1, TargetRuntimeMetadata.IntegerReturnMask);
                 }
                 break;
             }
@@ -260,15 +263,15 @@ public sealed partial class LinearScan
 
             case GT_PATCHPOINT:
             {
-                sourceCount = buildOperandUses(tree.AsOp().Op1, SRBM_ARG_0);
-                sourceCount += buildOperandUses(tree.AsOp().Op2, SRBM_ARG_1);
+                sourceCount = buildOperandUses(tree.AsOp().Op1, TargetRuntimeMetadata.FirstIntegerArgumentMask);
+                sourceCount += buildOperandUses(tree.AsOp().Op2, TargetRuntimeMetadata.SecondIntegerArgumentMask);
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
                 break;
             }
 
             case GT_PATCHPOINT_FORCED:
             {
-                sourceCount = buildOperandUses(tree.AsUnOp().Op1, SRBM_ARG_0);
+                sourceCount = buildOperandUses(tree.AsUnOp().Op1, TargetRuntimeMetadata.FirstIntegerArgumentMask);
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
                 break;
             }
@@ -371,13 +374,17 @@ public sealed partial class LinearScan
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
+                if (!Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    sourceCount = buildSimple(tree);
+                    break;
+                }
+
                 sourceCount = buildHWIntrinsicArm64(tree.AsHWIntrinsic(), out destinationCount);
                 break;
             }
-#endif
 
             case GT_CAST:
             {
@@ -529,7 +536,7 @@ public sealed partial class LinearScan
             {
                 sourceCount = 0;
                 assert(destinationCount == 1);
-                _ = buildDef(tree, genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET));
+                _ = buildDef(tree, genSingleTypeRegMask(TargetRuntimeMetadata.AsyncContinuationReturnRegister));
                 break;
             }
 
@@ -547,14 +554,12 @@ public sealed partial class LinearScan
                 break;
             }
 
-#if SWIFT_SUPPORT
             case GT_SWIFT_ERROR:
             {
                 sourceCount = 0;
-                _ = buildDef(tree, SRBM_SWIFT_ERROR);
+                _ = buildDef(tree, TargetRuntimeMetadata.SwiftErrorMask);
                 break;
             }
-#endif
 
             default:
             {
@@ -692,7 +697,7 @@ public sealed partial class LinearScan
         var indexAddress = tree.AsIndexAddr();
         var sourceCount = buildBinaryUses(tree.AsOp());
         _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
-        if ((indexAddress.Index.Type is not TYP_I_IMPL) &&
+        if (((indexAddress.Index.Type != TYP_I_IMPL)) &&
             !(uint.IsPow2((uint)indexAddress.ElemSize) && (indexAddress.ElemSize <= 32768)))
         {
             _ = buildInternalIntRegisterDefForNode(tree, _availableIntRegs);
@@ -701,5 +706,4 @@ public sealed partial class LinearScan
         _ = buildDef(tree, SRBM_NONE);
         return sourceCount;
     }
-#endif
 }

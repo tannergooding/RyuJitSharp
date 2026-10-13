@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 
 namespace RyuJitSharp;
@@ -273,13 +272,11 @@ public sealed partial class WasmRegAlloc
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 CollectReferencesForHardwareIntrinsic(node.AsHWIntrinsic());
                 break;
             }
-#endif
 
             default:
             {
@@ -424,7 +421,6 @@ public sealed partial class WasmRegAlloc
         return local;
     }
 
-#if FEATURE_HW_INTRINSICS
     private void CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic node)
     {
         if ((node.HWIntrinsicId is NI_PackedSimd_Swizzle) && node.GetOp(2).IsContained)
@@ -467,7 +463,6 @@ public sealed partial class WasmRegAlloc
             ConsumeTemporaryRegForOperand(address, "hardware intrinsic memory address null check");
         }
     }
-#endif
 
     private void RewriteLocalStackStore(GenTreeLclVarCommon localNode)
     {
@@ -639,4 +634,3 @@ public sealed partial class WasmRegAlloc
         return register;
     }
 }
-#endif

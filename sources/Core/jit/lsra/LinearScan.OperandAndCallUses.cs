@@ -41,22 +41,20 @@ public sealed partial class LinearScan
                 _ = buildUse(index, candidates);
                 srcCount++;
             }
-#if TARGET_ARM64
-            else if (index.Oper is GT_BFIZ)
+            else if (Configuration.TARGET_ARM64 && index.Oper is GT_BFIZ)
             {
                 var cast = index.AsOp().Op1.AsCast();
                 assert(cast.IsContained);
                 _ = buildUse(cast.CastOp, candidates);
                 srcCount++;
             }
-            else if (index.Oper is GT_CAST)
+            else if (Configuration.TARGET_ARM64 && index.Oper is GT_CAST)
             {
                 var cast = index.AsCast();
                 assert(cast.IsContained);
                 _ = buildUse(cast.CastOp, candidates);
                 srcCount++;
             }
-#endif
         }
 
         return srcCount;
@@ -70,19 +68,15 @@ public sealed partial class LinearScan
             return 1;
         }
 
-#if TARGET_ARM64
-        if (node.IsVectorZero)
+        if (Configuration.TARGET_ARM64 && node.IsVectorZero)
         {
             return 0;
         }
-#endif
 
-#if !TARGET_64BIT
-        if (node.Oper is GT_LONG)
+        if (!Configuration.TARGET_64BIT && node.Oper is GT_LONG)
         {
             return buildBinaryUses(node.AsOp(), candidates);
         }
-#endif
 
         if (node.Oper.IsIndir)
         {
@@ -99,26 +93,23 @@ public sealed partial class LinearScan
             return buildOperandUses(node.AsUnOp().Op1, candidates);
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (node.Oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && node.Oper.IsHWIntrinsic)
         {
             var intrinsic = node.AsHWIntrinsic();
             var numArgs = intrinsic.Operands.Length;
             if (intrinsic.IsMemoryLoad())
             {
-#if TARGET_ARM64
-                if (numArgs == 2)
+                if (Configuration.TARGET_ARM64 && numArgs == 2)
                 {
                     return buildAddrUses(intrinsic.GetOp(1)) + buildOperandUses(intrinsic.GetOp(2), candidates);
                 }
-#endif
                 return buildAddrUses(intrinsic.GetOp(1));
             }
 
             if (numArgs != 1)
             {
-#if TARGET_ARM64
-                if ((HWIntrinsicInfo.lookupFlags(intrinsic.HWIntrinsicId) & HW_Flag_Scalable) != 0)
+                if (Configuration.TARGET_ARM64 &&
+                    (HWIntrinsicInfo.lookupFlags(intrinsic.HWIntrinsicId) & HW_Flag_Scalable) != 0)
                 {
                     var srcCount = 0;
                     for (var argNum = 1; argNum <= numArgs; argNum++)
@@ -128,33 +119,28 @@ public sealed partial class LinearScan
 
                     return srcCount;
                 }
-#endif
                 assert(numArgs == 2);
                 assert(intrinsic.GetOp(2).IsContained && intrinsic.GetOp(2).Oper.IsCnsIntOrI);
             }
 
             return buildOperandUses(intrinsic.GetOp(1), candidates);
         }
-#endif
 
-#if TARGET_XARCH || TARGET_ARM64
-        if (node.Oper.IsCompare)
-        {
-            return buildBinaryUses(node.AsOp(), candidates);
-        }
-#endif
-
-#if TARGET_ARM64
-        if (node.Oper is GT_MUL or GT_AND)
+        if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM64) && node.Oper.IsCompare)
         {
             return buildBinaryUses(node.AsOp(), candidates);
         }
 
-        if (node.Oper is GT_NEG or GT_CAST or GT_LSH or GT_RSH or GT_RSZ or GT_ROR)
+        if (Configuration.TARGET_ARM64 && (node.Oper is GT_MUL or GT_AND))
+        {
+            return buildBinaryUses(node.AsOp(), candidates);
+        }
+
+        if (Configuration.TARGET_ARM64 &&
+            (node.Oper is GT_NEG or GT_CAST or GT_LSH or GT_RSH or GT_RSZ or GT_ROR))
         {
             return buildOperandUses(node.AsUnOp().Op1, candidates);
         }
-#endif
 
         return 0;
     }
@@ -191,19 +177,15 @@ public sealed partial class LinearScan
         {
             use = buildUse(node, candidates);
         }
-#if TARGET_ARM64
-        else if (node.IsVectorZero)
+        else if (Configuration.TARGET_ARM64 && node.IsVectorZero)
         {
             return 0;
         }
-#endif
-#if FEATURE_HW_INTRINSICS
-        else if (node.Oper.IsHWIntrinsic)
+        else if (Configuration.FEATURE_HW_INTRINSICS && node.Oper.IsHWIntrinsic)
         {
             assert(node.AsHWIntrinsic().Operands.Length == 1);
             return buildDelayFreeUses(node.AsHWIntrinsic().GetOp(1), rmwNode, candidates, ref useRefPositionRef);
         }
-#endif
         else if (!node.Oper.IsIndir)
         {
             return 0;
@@ -221,11 +203,12 @@ public sealed partial class LinearScan
             }
         }
 
-#if TARGET_ARM64
-        assert(!node.IsMultiRegNode);
-        assert((rmwNode is null) || varTypeUsesSameRegType(rmwNode.Type, node.Type) ||
-            (rmwNode.IsMultiRegNode && varTypeUsesFloatReg(node.Type)));
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            assert(!node.IsMultiRegNode);
+            assert((rmwNode is null) || varTypeUsesSameRegType(rmwNode.Type, node.Type) ||
+                (rmwNode.IsMultiRegNode && varTypeUsesFloatReg(node.Type)));
+        }
 
         if (use is not null)
         {

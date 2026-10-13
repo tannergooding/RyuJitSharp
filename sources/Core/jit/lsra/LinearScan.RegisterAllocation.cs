@@ -69,11 +69,12 @@ public sealed partial class LinearScan
                 var otherValue = other.AsIntCon().IconValue;
                 var matches = value == otherValue &&
                     (varTypeIsGC(tree.Type) == varTypeIsGC(other.Type) || value == 0);
-#if TARGET_64BIT
-                // Negative int immediates need not have been sign-extended to 64 bits.
-                // On 32-bit targets, long values occupy multiple registers instead.
-                matches = matches && (tree.Type == other.Type || value >= 0);
-#endif
+                if (Configuration.TARGET_64BIT)
+                {
+                    // Negative int immediates need not have been sign-extended to 64 bits.
+                    // On 32-bit targets, long values occupy multiple registers instead.
+                    matches = matches && (tree.Type == other.Type || value >= 0);
+                }
                 return matches;
             }
 
@@ -83,23 +84,19 @@ public sealed partial class LinearScan
                 return tree.AsDblCon().IsBitwiseEqual(other.AsDblCon()) && tree.Type == other.Type;
             }
 
-#if FEATURE_SIMD
             case GT_CNS_VEC:
             {
-                return
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    !Compiler.varTypeNeedsPartialCalleeSave(assigned.registerType) &&
-#endif
+                return Configuration.FEATURE_SIMD &&
+                    (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE ||
+                        !LsraConfiguration.VarTypeNeedsPartialCalleeSave(assigned.registerType)) &&
                     GenTreeVecCon.Equals(tree.AsVecCon(), other.AsVecCon());
             }
-#endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
             case GT_CNS_MSK:
             {
-                return GenTreeMskCon.Equals(tree.AsMskCon(), other.AsMskCon());
+                return Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+                    GenTreeMskCon.Equals(tree.AsMskCon(), other.AsMskCon());
             }
-#endif
 
             default:
             {
@@ -114,10 +111,8 @@ public sealed partial class LinearScan
     private regNumber allocateReg(Interval currentInterval, RefPosition reference, out RegisterScore score) =>
         allocateReg(currentInterval, reference, out score, false);
 
-#if TARGET_ARM64
     private regNumber allocateReg(Interval currentInterval, RefPosition reference, bool needsConsecutiveRegisters) =>
         allocateReg(currentInterval, reference, out _, needsConsecutiveRegisters);
-#endif
 
     private regNumber allocateReg(
         Interval currentInterval, RefPosition reference, out RegisterScore score,
@@ -136,13 +131,13 @@ public sealed partial class LinearScan
         {
             if (_regSelector.isSpilling())
             {
-#if TARGET_ARM
-                if (currentInterval.registerType is TYP_DOUBLE)
+                if (Configuration.TARGET_ARM && currentInterval.registerType is TYP_DOUBLE)
                 {
                     assert(genIsValidDoubleReg(record.regNum));
                     unassignDoublePhysReg(record);
                 }
-                else if (assigned is Interval assignedDouble && assignedDouble.registerType is TYP_DOUBLE)
+                else if (Configuration.TARGET_ARM &&
+                    assigned is Interval assignedDouble && assignedDouble.registerType is TYP_DOUBLE)
                 {
                     var firstHalf = assignedDouble.assignedReg
                         ?? throw new FatalJitException("An assigned ARM32 double must retain its first register.");
@@ -150,7 +145,6 @@ public sealed partial class LinearScan
                     unassignPhysReg(firstHalf, assignedDouble.recentRefPosition);
                 }
                 else
-#endif
                 {
                     assert(assigned is not null);
                     unassignPhysReg(record, assigned.recentRefPosition);
@@ -171,11 +165,14 @@ public sealed partial class LinearScan
                 else if (wasAssigned)
                 {
                     assert(assigned is not null);
-#if TARGET_ARM
-                    updatePreviousInterval(record, assigned, assigned.registerType);
-#else
-                    updatePreviousInterval(record, assigned);
-#endif
+                    if (Configuration.TARGET_ARM)
+                    {
+                        updatePreviousInterval(record, assigned, assigned.registerType);
+                    }
+                    else
+                    {
+                        updatePreviousInterval(record, assigned);
+                    }
                 }
                 else
                 {
@@ -189,9 +186,13 @@ public sealed partial class LinearScan
         return register;
     }
 
-#if TARGET_ARM
     private void unassignDoublePhysReg(RegRecord record)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         assert(genIsValidDoubleReg(record.regNum));
         var second = getSecondHalfRegRec(record);
         if (record.assignedInterval is Interval firstInterval)
@@ -223,13 +224,17 @@ public sealed partial class LinearScan
     // ARM double intervals use the low register and must update both float-register records.
     private void updatePreviousInterval(RegRecord record, Interval? interval, RegisterType registerType)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         updatePreviousInterval(record, interval);
         if (registerType is TYP_DOUBLE)
         {
             findAnotherHalfRegRec(record).previousInterval = interval;
         }
     }
-#endif
 
     private regNumber assignCopyReg(RefPosition reference) => assignCopyReg(reference, false);
 

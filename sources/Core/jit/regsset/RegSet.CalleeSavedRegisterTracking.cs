@@ -5,19 +5,26 @@
 
 namespace RyuJitSharp;
 
-public partial struct RegSet
+internal static class RegSetCalleeSavedRegisterTrackingExtensions
 {
-#if TARGET_ARMARCH || TARGET_RISCV64
-    internal void rsSetCalleeSavedRegsMask(regMaskTP mask)
+    internal static void rsSetCalleeSavedRegsMask(this ref RegSet regSet, regMaskTP mask)
     {
-        _rsMaskCalleeSaved = mask;
-    }
-#endif
+        if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 &&
+            !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Callee-saved register masks are unavailable for this target.");
+        }
 
-#if TARGET_RISCV64
-    internal readonly regMaskTP rsGetCalleeSavedRegsMask()
-    {
-        return _rsMaskCalleeSaved;
+        regSet.CalleeSavedRegsMask = mask;
     }
-#endif
+
+    internal static regMaskTP rsGetCalleeSavedRegsMask(this ref RegSet regSet)
+    {
+        if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Callee-saved register masks are unavailable for this target.");
+        }
+
+        return regSet.CalleeSavedRegsMask;
+    }
 }

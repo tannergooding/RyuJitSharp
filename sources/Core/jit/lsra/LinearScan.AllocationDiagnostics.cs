@@ -105,7 +105,18 @@ public sealed partial class LinearScan
         LsraDumpEvent dumpEvent,
         Interval? interval,
         RefPosition? activeRefPosition,
-        regNumber register = REG_NA,
+        BasicBlock? currentBlock = null,
+        RegisterScore registerScore = RegisterScore.NONE,
+        regMaskTP registerMask = default)
+    {
+        dumpLsraAllocationEvent(dumpEvent, interval, activeRefPosition, REG_NA, currentBlock, registerScore, registerMask);
+    }
+
+    private void dumpLsraAllocationEvent(
+        LsraDumpEvent dumpEvent,
+        Interval? interval,
+        RefPosition? activeRefPosition,
+        regNumber register,
         BasicBlock? currentBlock = null,
         RegisterScore registerScore = RegisterScore.NONE,
         regMaskTP registerMask = default)
@@ -116,7 +127,7 @@ public sealed partial class LinearScan
         }
 
         initializeAllocationDumpFormat();
-        if ((interval is not null) && (register is not REG_NA and not REG_STK))
+        if ((interval is not null) && (register != REG_NA) && (register != REG_STK))
         {
             _allocationDumpRegisters |=
                 regMaskTP.CreateFromRegNum(register, getSingleTypeRegMask(register, interval.registerType));
@@ -396,42 +407,55 @@ public sealed partial class LinearScan
             return;
         }
 
-#if TARGET_AMD64
-#if UNIX_AMD64_ABI
-        var smallIntegerSet = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_R12 | SRBM_R13;
-#else
-        var smallIntegerSet = SRBM_RAX | SRBM_RCX | SRBM_RBX | SRBM_ETW_FRAMED_EBP | SRBM_RSI | SRBM_RDI;
-#endif
-        var smallFloatSet = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
-        var argumentRegisters = SRBM_ARG_REGS;
-#elif TARGET_ARM
-        var smallIntegerSet = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3 | SRBM_R4 | SRBM_R5;
-        var smallFloatSet = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F16 | SRBM_F17;
-        var argumentRegisters = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R3;
-#elif TARGET_ARM64
-        var smallIntegerSet = SRBM_R0 | SRBM_R1 | SRBM_R2 | SRBM_R19 | SRBM_R20;
-        var smallFloatSet = SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V8 | SRBM_V9;
-        var argumentRegisters = SRBM_ARG_REGS;
-#elif TARGET_X86
-        var smallIntegerSet = SRBM_EAX | SRBM_ECX | SRBM_EDI;
-        var smallFloatSet = SRBM_XMM0 | SRBM_XMM1 | SRBM_XMM2 | SRBM_XMM6 | SRBM_XMM7;
-        var argumentRegisters = SRBM_ECX | SRBM_EDX;
-#elif TARGET_LOONGARCH64
-        var smallIntegerSet = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
-        var smallFloatSet = SRBM_F0 | SRBM_F1 | SRBM_F2 | SRBM_F8 | SRBM_F9;
-        var argumentRegisters = SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 | SRBM_A5 | SRBM_A6 | SRBM_A7;
-#elif TARGET_RISCV64
-        var smallIntegerSet = SRBM_T1 | SRBM_T3 | SRBM_A0 | SRBM_A1 | SRBM_T0;
-        var smallFloatSet = SRBM_FT0 | SRBM_FT1 | SRBM_FT2 | SRBM_FS0 | SRBM_FS1;
-        var argumentRegisters = SRBM_A0 | SRBM_A1 | SRBM_A2 | SRBM_A3 | SRBM_A4 | SRBM_A5 | SRBM_A6 | SRBM_A7;
-#endif
-#if TARGET_AMD64 || TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        SingleTypeRegSet smallIntegerSet;
+        SingleTypeRegSet smallFloatSet;
+        SingleTypeRegSet argumentRegisters;
+        if (Configuration.TARGET_AMD64)
+        {
+            smallIntegerSet = Configuration.UNIX_AMD64_ABI
+                ? SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_R12 | SRBM_X64_R13
+                : SRBM_X64_RAX | SRBM_X64_RCX | SRBM_X64_RBX | SRBM_ETW_FRAMED_EBP | SRBM_X64_RSI | SRBM_X64_RDI;
+            smallFloatSet = SRBM_X64_XMM0 | SRBM_X64_XMM1 | SRBM_X64_XMM2 | SRBM_X64_XMM6 | SRBM_X64_XMM7;
+            argumentRegisters = SRBM_ARG_REGS;
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            smallIntegerSet = SRBM_ARM32_R0 | SRBM_ARM32_R1 | SRBM_ARM32_R2 | SRBM_ARM32_R3 | SRBM_ARM32_R4 | SRBM_ARM32_R5;
+            smallFloatSet = SRBM_ARM32_F0 | SRBM_ARM32_F1 | SRBM_ARM32_F2 | SRBM_ARM32_F16 | SRBM_ARM32_F17;
+            argumentRegisters = SRBM_ARM32_R0 | SRBM_ARM32_R1 | SRBM_ARM32_R2 | SRBM_ARM32_R3;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            smallIntegerSet = SRBM_ARM64_R0 | SRBM_ARM64_R1 | SRBM_ARM64_R2 | SRBM_ARM64_R19 | SRBM_ARM64_R20;
+            smallFloatSet = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V8 | SRBM_ARM64_V9;
+            argumentRegisters = SRBM_ARG_REGS_ARM64;
+        }
+        else if (Configuration.TARGET_X86)
+        {
+            smallIntegerSet = SRBM_X86_EAX | SRBM_X86_ECX | SRBM_X86_EDI;
+            smallFloatSet = SRBM_X86_XMM0 | SRBM_X86_XMM1 | SRBM_X86_XMM2 | SRBM_X86_XMM6 | SRBM_X86_XMM7;
+            argumentRegisters = SRBM_X86_ECX | SRBM_X86_EDX;
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            smallIntegerSet = SRBM_LOONGARCH64_T1 | SRBM_LOONGARCH64_T3 | SRBM_LOONGARCH64_A0 | SRBM_LOONGARCH64_A1 | SRBM_LOONGARCH64_T0;
+            smallFloatSet = SRBM_LOONGARCH64_F0 | SRBM_LOONGARCH64_F1 | SRBM_LOONGARCH64_F2 | SRBM_LOONGARCH64_F8 | SRBM_LOONGARCH64_F9;
+            argumentRegisters = SRBM_ARG_REGS_LOONGARCH64;
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            smallIntegerSet = SRBM_RISCV64_T1 | SRBM_RISCV64_T3 | SRBM_RISCV64_A0 | SRBM_RISCV64_A1 | SRBM_RISCV64_T0;
+            smallFloatSet = SRBM_RISCV64_FT0 | SRBM_RISCV64_FT1 | SRBM_RISCV64_FT2 | SRBM_RISCV64_FS0 | SRBM_RISCV64_FS1;
+            argumentRegisters = SRBM_ARG_REGS_RISCV64;
+        }
+        else
+        {
+            NYI("LSRA allocation table initial register set on this target");
+            fatal(CORJIT_IMPLLIMITATION);
+            throw new FatalJitException("LSRA allocation table initial register set on this target.");
+        }
+
         _allocationDumpRegisters = new regMaskTP(smallIntegerSet | smallFloatSet | argumentRegisters);
-#else
-        NYI("LSRA allocation table initial register set on this target");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("LSRA allocation table initial register set on this target.");
-#endif
 
         jitprintf("\n\nAllocating Registers\n--------------------\n");
         dumpRegRecordHeader();
@@ -498,11 +522,9 @@ public sealed partial class LinearScan
         }
 
         _allocationDumpLastUsedRegNumIndex = 0;
-#if HAS_MORE_THAN_64_REGISTERS
-        var lastRegister = _compiler.compFloatingPointUsed ? REG_MASK_LAST : _compiler.REG_INT_LAST;
-#else
-        var lastRegister = _compiler.compFloatingPointUsed ? REG_FP_LAST : _compiler.REG_INT_LAST;
-#endif
+        var lastRegister = Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? (_compiler.compFloatingPointUsed ? TargetRuntimeMetadata.MaskRegisterLast : TargetRuntimeMetadata.IntegerRegisterLast)
+            : (_compiler.compFloatingPointUsed ? TargetRuntimeMetadata.FloatingRegisterLast : TargetRuntimeMetadata.IntegerRegisterLast);
         for (var registerIndex = 0; registerIndex <= (int)lastRegister; registerIndex++)
         {
             if (_allocationDumpRegisters.IsSet((regNumber)registerIndex))
@@ -580,12 +602,10 @@ public sealed partial class LinearScan
             {
                 jitprintf(getAllocationIntervalName(interval));
                 var activeCharacter = interval.isActive ? 'a' : 'i';
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (interval.isPartiallySpilled)
+                if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && interval.isPartiallySpilled)
                 {
                     activeCharacter = 'p';
                 }
-#endif
                 jitprintf(activeCharacter.ToString());
             }
             else if (_regsBusyUntilKill.IsSet(register))

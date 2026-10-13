@@ -20,7 +20,7 @@ public sealed partial class LinearScan
             ref var parent = ref _compiler.lvaGetDesc(tree.LclNum);
             assert(parent.lvPromoted);
             var registerIndex = checked((int)localNumber - parent.lvFieldLclStart);
-            assert((uint)registerIndex < MAX_MULTIREG_COUNT);
+            assert((uint)registerIndex < Configuration.MAX_MULTIREG_COUNT);
             tree.SetRegNumByIdx(register, checked((byte)registerIndex));
         }
     }

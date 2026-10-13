@@ -48,16 +48,11 @@ public sealed partial class LinearScan
         // typelist.h chooses callee-save sets by this generated register classification.
         return registerType.Register switch
         {
-#if TARGET_WASM
-            VTR_INT => RBM_INT_CALLEE_SAVED.IntRegSet,
-            VTR_FLOAT => RBM_FLT_CALLEE_SAVED.FltRegSet,
-#else
-            VTR_INT => SRBM_INT_CALLEE_SAVED,
-            VTR_FLOAT => SRBM_FLT_CALLEE_SAVED,
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-            VTR_MASK => SRBM_MSK_CALLEE_SAVED,
-#endif
+            VTR_INT when Configuration.TARGET_WASM => RBM_INT_CALLEE_SAVED.IntRegSet,
+            VTR_INT => TargetRuntimeMetadata.IntegerCalleeSavedMask,
+            VTR_FLOAT when Configuration.TARGET_WASM => RBM_FLT_CALLEE_SAVED.FltRegSet,
+            VTR_FLOAT => TargetRuntimeMetadata.FloatingCalleeSavedMask,
+            VTR_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS => TargetRuntimeMetadata.MaskCalleeSavedMask,
             _ => InvalidRegisterType(),
         };
         static SingleTypeRegSet InvalidRegisterType()

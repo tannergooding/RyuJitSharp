@@ -16,12 +16,11 @@ public sealed partial class LinearScan
         local.RegNum = REG_STK;
 
         var type = local.Type;
-#if FEATURE_SIMD
-        if ((type is TYP_SIMD12) && _compiler.lvaMapSimd12ToSimd16(checked((int)localNumber)))
+        if (Configuration.FEATURE_SIMD && (type is TYP_SIMD12) &&
+            _compiler.lvaMapSimd12ToSimd16(checked((int)localNumber)))
         {
             type = TYP_SIMD16;
         }
-#endif
         var source = _compiler.gtNewLclvNode(type, checked((int)localNumber));
 #if DEBUG
         source._debugFlags |= GTF_DEBUG_NODE_LSRA_ADDED;
@@ -87,7 +86,7 @@ public sealed partial class LinearScan
             jitprintf($"   {FMT_BB(block.bbNum)} {(insertionPoint is null ? "bottom" : "top")}: swap V{firstLocal:D2} in {firstReg.Name} with V{secondLocal:D2} in {secondReg.Name}\n");
         }
 #endif
-        assert(firstReg is not REG_STK and not REG_NA && secondReg is not REG_STK and not REG_NA);
+        assert(firstReg != REG_STK && firstReg != REG_NA && secondReg != REG_STK && secondReg != REG_NA);
         ref var firstDesc = ref _compiler.lvaGetDesc(checked((int)firstLocal));
         ref var secondDesc = ref _compiler.lvaGetDesc(checked((int)secondLocal));
         var first = _compiler.gtNewLclvNode(firstDesc.Type, checked((int)firstLocal));
@@ -149,11 +148,15 @@ public sealed partial class LinearScan
 #endif
     }
 
-#if TARGET_ARM
     private void addResolutionForDouble(BasicBlock block, GenTree? insertionPoint,
         Interval?[] sourceIntervals, regNumber[] location, regNumber toReg, regNumber fromReg,
         ResolveType resolveType, BasicBlock fromBlock, BasicBlock? toBlock)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         var upperFrom = fromReg + 1;
         var lowerInterval = sourceIntervals[(int)fromReg];
         var upperInterval = sourceIntervals[(int)upperFrom];
@@ -183,5 +186,4 @@ public sealed partial class LinearScan
             location[(int)upperFrom] = upperTo;
         }
     }
-#endif
 }

@@ -40,17 +40,16 @@ public sealed partial class LinearScan
         var killedRegisters = killRefPosition.getKilledRegisters();
 
         freeKilledRegisters(killRefPosition, killedRegisters.Lower, nextKill, REG_LOW_BASE);
-#if HAS_MORE_THAN_64_REGISTERS
-        freeKilledRegisters(killRefPosition, killedRegisters.Upper, nextKill, REG_HIGH_BASE);
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            freeKilledRegisters(killRefPosition, killedRegisters.Upper, nextKill, REG_HIGH_BASE);
+        }
 
-#if HAS_MORE_THAN_64_REGISTERS
-        _regsBusyUntilKill = new regMaskTP(
-            _regsBusyUntilKill.Lower & ~killedRegisters.Lower,
-            _regsBusyUntilKill.Upper & ~killedRegisters.Upper);
-#else
-        _regsBusyUntilKill = new regMaskTP(_regsBusyUntilKill.Lower & ~killedRegisters.Lower);
-#endif
+        _regsBusyUntilKill = Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(
+                _regsBusyUntilKill.Lower & ~killedRegisters.Lower,
+                _regsBusyUntilKill.Upper & ~killedRegisters.Upper)
+            : new regMaskTP(_regsBusyUntilKill.Lower & ~killedRegisters.Lower);
         dumpKilledRegistersEvent(killRefPosition, killedRegisters);
     }
 
@@ -149,7 +148,7 @@ public sealed partial class LinearScan
         try
         {
             var allocatedRegister = allocateRegMinimal(currentInterval, refPosition, out var selectionScore);
-            assert(allocatedRegister is not REG_NA);
+            assert(allocatedRegister != REG_NA);
             currentInterval.relatedInterval = savedRelatedInterval;
             dumpCopyRegisterEvent(refPosition, allocatedRegister, selectionScore);
             return allocatedRegister;

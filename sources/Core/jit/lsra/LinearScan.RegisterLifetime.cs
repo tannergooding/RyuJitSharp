@@ -40,10 +40,11 @@ public sealed partial class LinearScan
             if (!assignedInterval.isConstant &&
                 ((nextRefPosition is null) || RefTypeIsDef(nextRefPosition.refType)))
             {
-#if TARGET_ARM
-                assert(assignedInterval.registerType is not TYP_DOUBLE ||
-                    genIsValidDoubleReg(regRecord.regNum));
-#endif
+                if (Configuration.TARGET_ARM)
+                {
+                    assert(assignedInterval.registerType is not TYP_DOUBLE ||
+                        genIsValidDoubleReg(regRecord.regNum));
+                }
                 unassignPhysReg(regRecord, (RefPosition?)null);
             }
         }
@@ -79,13 +80,12 @@ public sealed partial class LinearScan
             var registerOffset = BitOperations.TrailingZeroCount(remaining);
             remaining &= remaining - 1;
             var register = (regNumber)(registerOffset + registerBase);
-#if TARGET_ARM
-            if (getRegisterRecord(register).assignedInterval?.registerType is TYP_DOUBLE)
+            if (Configuration.TARGET_ARM &&
+                getRegisterRecord(register).assignedInterval?.registerType is TYP_DOUBLE)
             {
                 assert(genIsValidDoubleReg(register));
                 remaining &= ~unchecked((ulong)genSingleTypeRegMask(register + 1));
             }
-#endif
             freeRegister(getRegisterRecord(register));
         }
     }
@@ -103,9 +103,10 @@ public sealed partial class LinearScan
         makeRegsAvailable(registersToFree);
 
         freeRegistersSingleType(registersToFree.Lower, REG_LOW_BASE);
-#if HAS_MORE_THAN_64_REGISTERS
-        freeRegistersSingleType(registersToFree.Upper, REG_HIGH_BASE);
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            freeRegistersSingleType(registersToFree.Upper, REG_HIGH_BASE);
+        }
     }
 
     private void makeRegsAvailable(regMaskTP registers)
@@ -113,9 +114,10 @@ public sealed partial class LinearScan
         _availableRegs[(int)TYP_INT] |= registers.IntRegSet;
         _availableRegs[(int)TYP_FLOAT] |= registers.FltRegSet;
         _availableRegs[(int)TYP_DOUBLE] |= registers.FltRegSet;
-#if FEATURE_MASKED_HW_INTRINSICS
-        _availableRegs[(int)TYP_MASK] |= registers.MskRegSet;
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            _availableRegs[(int)TYP_MASK] |= registers.MskRegSet;
+        }
     }
 
     private void resetAllRegistersState()
@@ -144,8 +146,19 @@ public sealed partial class LinearScan
         SingleTypeRegSet registersBusy,
         ref regMaskTP registersToFree,
         ref regMaskTP delayRegistersToFree,
-        Interval? interval = null,
-        regNumber assignedRegister = REG_NA)
+        Interval? interval = null)
+    {
+        updateRegsFreeBusyState(refPosition, registerType, registersBusy, ref registersToFree, ref delayRegistersToFree, interval, REG_NA);
+    }
+
+    private void updateRegsFreeBusyState(
+        RefPosition refPosition,
+        RegisterType registerType,
+        SingleTypeRegSet registersBusy,
+        ref regMaskTP registersToFree,
+        ref regMaskTP delayRegistersToFree,
+        Interval? interval,
+        regNumber assignedRegister)
     {
         var busyMask = createRegisterMask(registersBusy, registerType);
         _regsInUseThisLocation |= busyMask;
@@ -176,13 +189,9 @@ public sealed partial class LinearScan
 
     private static regMaskTP createRegisterMask(SingleTypeRegSet registers, RegisterType registerType)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        return registerType is TYP_MASK
+        return Configuration.HAS_MORE_THAN_64_REGISTERS && registerType is TYP_MASK
             ? new regMaskTP(SRBM_NONE, registers)
             : new regMaskTP(registers);
-#else
-        return new regMaskTP(registers);
-#endif
     }
 
     private void verifyFreeRegisters(regMaskTP registersToFree)
@@ -227,10 +236,9 @@ public sealed partial class LinearScan
                     if (!isAssignedToInterval(assignedInterval, regRecord))
                     {
                         var sanityCheck = assignedInterval.isLocalVar;
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                        sanityCheck |= assignedInterval.IsUpperVector() &&
+                        sanityCheck |= Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                            assignedInterval.IsUpperVector() &&
                             (recentRefPosition.refType is RefType.RefTypeUpperVectorSave or RefType.RefTypeUpperVectorRestore);
-#endif
                         assert(sanityCheck);
                     }
 
@@ -260,13 +268,11 @@ public sealed partial class LinearScan
                 }
             }
 
-#if TARGET_ARM
             // A double occupies this register and the next floating-point register.
-            if (assignedInterval.registerType is TYP_DOUBLE)
+            if (Configuration.TARGET_ARM && assignedInterval.registerType is TYP_DOUBLE)
             {
                 index++;
             }
-#endif
         }
 #endif
     }
@@ -279,9 +285,8 @@ public sealed partial class LinearScan
             TYP_INT => (_availableIntRegs & registerMask) != SRBM_NONE,
             TYP_FLOAT => (_availableFloatRegs & registerMask) != SRBM_NONE,
             TYP_DOUBLE => (_availableDoubleRegs & registerMask) != SRBM_NONE,
-#if FEATURE_MASKED_HW_INTRINSICS
-            TYP_MASK => (_availableMaskRegs & registerMask) != SRBM_NONE,
-#endif
+            TYP_MASK when Configuration.FEATURE_MASKED_HW_INTRINSICS =>
+                (_availableMaskRegs & registerMask) != SRBM_NONE,
             _ => false,
         };
     }
@@ -298,12 +303,10 @@ public sealed partial class LinearScan
         {
             return true;
         }
-#if TARGET_ARM
-        if (interval.registerType is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && interval.registerType is TYP_DOUBLE)
         {
             return isSecondHalfReg(regRecord, interval);
         }
-#endif
         return false;
     }
 

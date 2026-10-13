@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 namespace RyuJitSharp;
 
 public partial struct RegSet
 {
     public void rsSpillFPStack(GenTreeCall call)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Floating-point stack spills require x86.");
+        }
+
         var treeType = call.Type;
 
         var spill = _rsSpillFree;
@@ -42,4 +46,3 @@ public partial struct RegSet
         rsMarkSpill(call, reg);
     }
 }
-#endif

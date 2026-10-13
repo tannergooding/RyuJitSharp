@@ -17,11 +17,9 @@ public sealed partial class LinearScan
             ?? throw new FatalJitException("Edge resolution requires the predecessor's register map.");
         var toMap = toBlock is null ? null : getInVarToRegMap(checked((uint)toBlock.bbNum))
             ?? throw new FatalJitException("Edge resolution requires the successor's register map.");
-#if TARGET_ARM
-        var freeRegs = allRegs(type is TYP_DOUBLE ? TYP_FLOAT : type);
-#else
-        var freeRegs = getAvailableGPRsForType(allRegs(type), type is TYP_INT ? TYP_REF : type);
-#endif
+        var freeRegs = Configuration.TARGET_ARM
+            ? allRegs(type is TYP_DOUBLE ? TYP_FLOAT : type)
+            : getAvailableGPRsForType(allRegs(type), type is TYP_INT ? TYP_REF : type);
 #if DEBUG
         // The small-set stress mode deliberately forces integer cycles through XCHG.
         if ((_lsraStressMask & 0x3) == 0x3)
@@ -68,11 +66,10 @@ public sealed partial class LinearScan
             });
         }
 
-#if TARGET_ARM
-        if (type is TYP_DOUBLE)
+        if (Configuration.TARGET_ARM && type is TYP_DOUBLE)
         {
             var freePairs = SRBM_NONE;
-            for (var low = REG_F0; low < REG_F31; low += 2)
+            for (var low = REG_ARM32_F0; low < REG_ARM32_F31; low += 2)
             {
                 var pair = low.GetSingleTypeFloatMask(TYP_DOUBLE);
                 if ((freeRegs & pair) == pair)
@@ -82,7 +79,6 @@ public sealed partial class LinearScan
             }
             freeRegs = freePairs;
         }
-#endif
         if (freeRegs == SRBM_NONE)
         {
             return REG_NA;
@@ -99,12 +95,10 @@ public sealed partial class LinearScan
 
     private SingleTypeRegSet resolutionRegisterMask(regNumber register, uint trackedIndex)
     {
-#if TARGET_ARM
-        if (genIsValidFloatReg(register))
+        if (Configuration.TARGET_ARM && genIsValidFloatReg(register))
         {
             return register.GetSingleTypeFloatMask(getIntervalForLocalVar(trackedIndex).registerType);
         }
-#endif
         return genSingleTypeRegMask(register);
     }
 }

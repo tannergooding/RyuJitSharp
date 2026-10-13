@@ -11,12 +11,10 @@ public partial struct RegSet
     {
         type = type.ActualType;
 
-#if FEATURE_SIMD
-        if (type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (type is TYP_SIMD12))
         {
             type = TYP_SIMD16;
         }
-#endif
 
         return type;
     }
@@ -43,12 +41,10 @@ public partial struct RegSet
                 tmpSize = unchecked(tmpSize + size);
             }
 
-#if TARGET_ARM
-            if (type is TYP_DOUBLE)
+            if (Configuration.TARGET_ARM && (type is TYP_DOUBLE))
             {
-                tmpSize = unchecked(tmpSize + TARGET_POINTER_SIZE);
+                tmpSize = unchecked(tmpSize + Configuration.TARGET_POINTER_SIZE);
             }
-#endif
 
             var temp = new TempDsc(-tmpCount, size, type) {
                 tdNext = tmpFree[slot],

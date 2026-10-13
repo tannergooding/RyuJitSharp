@@ -18,10 +18,8 @@ public sealed partial class RefPosition
     public bool regOptional;
     public byte multiRegIdx;
 
-#if TARGET_ARM64
     public bool needsConsecutive;
     public byte regCount;
-#endif
 
     public bool lastUse;
     public bool reload;
@@ -36,10 +34,8 @@ public sealed partial class RefPosition
     public bool delayRegFree;
     public bool outOfOrder;
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     public bool skipSaveRestore;
     public bool liveVarUpperSave;
-#endif
 
 #if DEBUG
     public uint minRegCandidateCount;
@@ -119,12 +115,11 @@ public sealed partial class RefPosition
         {
             case RefType.RefTypeDef:
             case RefType.RefTypeUse:
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
             case RefType.RefTypeUpperVectorSave:
             case RefType.RefTypeUpperVectorRestore:
-#endif
             {
-                return true;
+                return Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE ||
+                    refType is not (RefType.RefTypeUpperVectorSave or RefType.RefTypeUpperVectorRestore);
             }
 
             case RefType.RefTypeExpUse:
@@ -181,12 +176,17 @@ public sealed partial class RefPosition
 
     public bool isFixedRefOfReg(regNumber reg) => isFixedRefOfRegMask(genSingleTypeRegMask(reg));
 
-#if TARGET_ARM64
-    public bool isFirstRefPositionOfConsecutiveRegisters() => needsConsecutive && (regCount != 0);
+    public bool isFirstRefPositionOfConsecutiveRegisters() =>
+        Configuration.TARGET_ARM64 && needsConsecutive && (regCount != 0);
 
 #if DEBUG
     public bool isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveLocation)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            return false;
+        }
+
         if (needsConsecutive)
         {
             return true;
@@ -207,7 +207,6 @@ public sealed partial class RefPosition
         }
         return refType is RefType.RefTypeUpperVectorRestore && atConsecutiveLocation;
     }
-#endif
 #endif
 
     public bool IsExtraUpperVectorSave()

@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if TARGET_RISCV64
     private int buildNodeRiscV64(GenTree tree)
     {
         assert(!tree.IsContained);
@@ -51,15 +50,13 @@ public sealed partial class LinearScan
             case GT_LCL_FLD:
             {
                 sourceCount = 0;
-#if FEATURE_SIMD
-                if (tree.Type is TYP_SIMD12)
+                if (Configuration.FEATURE_SIMD && tree.Type is TYP_SIMD12)
                 {
                     // Reading the upper four bytes of Vector3 needs a temporary distinct from the result.
                     _ = buildInternalIntRegisterDefForNode(tree);
                     _setInternalRegistersDelayFree = true;
                     buildInternalRegisterUses();
                 }
-#endif
                 _ = buildDef(tree, SRBM_NONE);
                 break;
             }
@@ -159,7 +156,7 @@ public sealed partial class LinearScan
                 {
                     assert(tree.Type is TYP_INT);
                     sourceCount = 1;
-                    _ = buildUse(tree.AsUnOp().Op1, SRBM_INTRET);
+                    _ = buildUse(tree.AsUnOp().Op1, TargetRuntimeMetadata.IntegerReturnMask);
                 }
                 break;
             }
@@ -181,8 +178,8 @@ public sealed partial class LinearScan
 
             case GT_PATCHPOINT:
             {
-                sourceCount = buildOperandUses(tree.AsOp().Op1, SRBM_ARG_0);
-                _ = buildOperandUses(tree.AsOp().Op2, SRBM_ARG_1);
+                sourceCount = buildOperandUses(tree.AsOp().Op1, TargetRuntimeMetadata.FirstIntegerArgumentMask);
+                _ = buildOperandUses(tree.AsOp().Op2, TargetRuntimeMetadata.SecondIntegerArgumentMask);
                 sourceCount++;
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
                 break;
@@ -190,7 +187,7 @@ public sealed partial class LinearScan
 
             case GT_PATCHPOINT_FORCED:
             {
-                sourceCount = buildOperandUses(tree.AsUnOp().Op1, SRBM_ARG_0);
+                sourceCount = buildOperandUses(tree.AsUnOp().Op1, TargetRuntimeMetadata.FirstIntegerArgumentMask);
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
                 break;
             }
@@ -313,7 +310,7 @@ public sealed partial class LinearScan
                 var exceptions = tree.Exceptions(_compiler);
                 if (!varTypeIsFloating(tree.Type) &&
                     !(((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None) &&
-                      (divisor.IsIntegralConst(0) || (divisor.RegNum == REG_ZERO))))
+                      (divisor.IsIntegralConst(0) || (divisor.RegNum == TargetRuntimeMetadata.ZeroRegister))))
                 {
                     var needTemp = false;
                     if (divisor.IsContainedIntOrIImmed && !Emitter.isGeneralRegister(divisor.RegNum))
@@ -386,7 +383,7 @@ public sealed partial class LinearScan
                         assert(op2 is not null);
                         assert(op2.Type == tree.Type);
                         assert(op1.Type == tree.Type);
-                        assert(tree.Type is TYP_I_IMPL);
+                        assert((tree.Type == TYP_I_IMPL));
                         break;
                     }
 
@@ -433,21 +430,17 @@ public sealed partial class LinearScan
                 break;
             }
 
-#if FEATURE_SIMD
-            case GT_SIMD:
-            {
-                sourceCount = buildSIMD(tree.AsSIMD());
-                break;
-            }
-#endif
-
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
-                sourceCount = buildHWIntrinsic(tree.AsHWIntrinsic(), out destinationCount);
+                if (!Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    sourceCount = buildSimple(tree);
+                    break;
+                }
+
+                sourceCount = buildHWIntrinsicRiscV64(tree.AsHWIntrinsic(), out destinationCount);
                 break;
             }
-#endif
 
             case GT_CAST:
             {
@@ -645,11 +638,12 @@ public sealed partial class LinearScan
                     if (sizeValue != 0)
                     {
                         // Recompute the aligned size without changing the tree.
-                        var alignment = (nuint)STACK_ALIGN;
+                        var alignment = (nuint)Configuration.STACK_ALIGN;
                         sizeValue = unchecked(sizeValue + (alignment - 1)) & ~(alignment - 1);
 
                         // Allocations up to four stores need no internal registers.
-                        if (sizeValue > (nuint)(REGSIZE_BYTES * 2 * 4) && !_compiler.info.compInitMem)
+                        if (sizeValue > (nuint)(Configuration.REGSIZE_BYTES * 2 * 4) &&
+                            !_compiler.info.compInitMem)
                         {
                             if (sizeValue < _compiler.eeGetPageSize())
                             {
@@ -769,7 +763,7 @@ public sealed partial class LinearScan
             case GT_ASYNC_CONTINUATION:
             {
                 sourceCount = 0;
-                _ = buildDef(tree, genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET));
+                _ = buildDef(tree, genSingleTypeRegMask(TargetRuntimeMetadata.AsyncContinuationReturnRegister));
                 break;
             }
 
@@ -805,20 +799,25 @@ public sealed partial class LinearScan
         return sourceCount;
     }
 
-#if FEATURE_SIMD
-    private int buildSIMD(GenTreeSIMD simdTree)
+    private int buildSIMDRiscV64()
     {
+        if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD LSRA is not ported.");
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS
-    private int buildHWIntrinsic(GenTreeHWIntrinsic intrinsicTree, out int destinationCount)
+    private int buildHWIntrinsicRiscV64(GenTreeHWIntrinsic intrinsicTree, out int destinationCount)
     {
+        if (!Configuration.TARGET_RISCV64 || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic LSRA is not ported.");
     }
-#endif
-#endif
 }

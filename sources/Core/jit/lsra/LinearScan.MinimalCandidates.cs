@@ -67,9 +67,10 @@ public sealed partial class LinearScan
         {
             ref var local = ref _compiler.lvaGetDesc(localNumber);
             local.RegNum = REG_STK;
-#if !TARGET_64BIT
-            local.OtherReg = REG_STK;
-#endif
+            if (Configuration.TARGET_32BIT)
+            {
+                local.OtherReg = REG_STK;
+            }
             local.lvLRACandidate = false;
         }
 
@@ -87,11 +88,14 @@ public sealed partial class LinearScan
         }
 #endif
 
-#if TARGET_ARM && DEBUG
-        if (VERBOSE)
+#if DEBUG
+        if (Configuration.TARGET_ARM)
         {
-            jitprintf("\nlvaTable after IdentifyCandidates\n");
-            _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
+            if (VERBOSE)
+            {
+                jitprintf("\nlvaTable after IdentifyCandidates\n");
+                _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
+            }
         }
 #endif
     }

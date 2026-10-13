@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class LinearScan
 {
-#if TARGET_ARM64 && FEATURE_HW_INTRINSICS
     private int buildHWIntrinsicArm64(GenTreeHWIntrinsic intrinsic, out int destinationCount)
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         var id = intrinsic.HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(id);
         var operandCount = intrinsic.Operands.Length;
@@ -541,11 +545,11 @@ public sealed partial class LinearScan
                 var elementSize = id is NI_Sve2_DotProductRotateComplexBySelectedIndex
                     ? intrinsic.SimdBaseType is TYP_BYTE ? 4 : 8
                     : intrinsic.SimdBaseType.Size;
-                var lowEight = SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 |
-                    SRBM_V4 | SRBM_V5 | SRBM_V6 | SRBM_V7;
+                var lowEight = SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V3 |
+                    SRBM_ARM64_V4 | SRBM_ARM64_V5 | SRBM_ARM64_V6 | SRBM_ARM64_V7;
                 return elementSize == 8
-                    ? lowEight | SRBM_V8 | SRBM_V9 | SRBM_V10 | SRBM_V11 |
-                        SRBM_V12 | SRBM_V13 | SRBM_V14 | SRBM_V15
+                    ? lowEight | SRBM_ARM64_V8 | SRBM_ARM64_V9 | SRBM_ARM64_V10 | SRBM_ARM64_V11 |
+                        SRBM_ARM64_V12 | SRBM_ARM64_V13 | SRBM_ARM64_V14 | SRBM_ARM64_V15
                     : lowEight;
             }
             return SRBM_NONE;
@@ -562,10 +566,10 @@ public sealed partial class LinearScan
                 ? 3 : 2;
             if (operandNumber == restrictedOperand)
             {
-                return SRBM_V0 | SRBM_V1 | SRBM_V2 | SRBM_V3 |
-                    SRBM_V4 | SRBM_V5 | SRBM_V6 | SRBM_V7 |
-                    SRBM_V8 | SRBM_V9 | SRBM_V10 | SRBM_V11 |
-                    SRBM_V12 | SRBM_V13 | SRBM_V14 | SRBM_V15;
+                return SRBM_ARM64_V0 | SRBM_ARM64_V1 | SRBM_ARM64_V2 | SRBM_ARM64_V3 |
+                    SRBM_ARM64_V4 | SRBM_ARM64_V5 | SRBM_ARM64_V6 | SRBM_ARM64_V7 |
+                    SRBM_ARM64_V8 | SRBM_ARM64_V9 | SRBM_ARM64_V10 | SRBM_ARM64_V11 |
+                    SRBM_ARM64_V12 | SRBM_ARM64_V13 | SRBM_ARM64_V14 | SRBM_ARM64_V15;
             }
         }
         else if (varTypeUsesMaskReg(operand.Type))
@@ -664,5 +668,4 @@ public sealed partial class LinearScan
             }
         }
     }
-#endif
 }

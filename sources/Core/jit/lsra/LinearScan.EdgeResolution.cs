@@ -308,7 +308,7 @@ public sealed partial class LinearScan
                     break;
                 }
             }
-            if (commonTarget is not REG_NA and not REG_STK)
+            if ((commonTarget != REG_NA) && (commonTarget != REG_STK))
             {
                 var targetMask = blockLiveRegMask(
                     commonTarget, getIntervalForLocalVar(trackedIndex).registerType);

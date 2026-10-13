@@ -156,7 +156,7 @@ public sealed partial class LinearScan
         }
     }
 
-    private void dumpVarToRegMap(regNumber[]? map)
+    private void dumpVarToRegMap(regNumberSmall[]? map)
     {
         var printed = false;
         for (var index = 0; index < _compiler.lvaTrackedCount; index++)
@@ -168,8 +168,8 @@ public sealed partial class LinearScan
                 throw new FatalJitException("Tracked locals require a variable-to-register map.");
             }
 
-            var register = map[index];
-            if (register is not REG_STK)
+            var register = (regNumber)map[index];
+            if (register != REG_STK)
             {
                 jitprintf($"V{trackedToLocal[index]:D2}={register.Name} ");
                 printed = true;

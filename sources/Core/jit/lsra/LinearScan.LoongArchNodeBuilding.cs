@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT license.
 
-#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public sealed partial class LinearScan
@@ -39,15 +38,13 @@ public sealed partial class LinearScan
             case GT_LCL_FLD:
             {
                 sourceCount = 0;
-#if FEATURE_SIMD
-                if (tree.Type is TYP_SIMD12)
+                if (Configuration.FEATURE_SIMD && tree.Type is TYP_SIMD12)
                 {
                     // The target and temporary are both live while the upper four bytes are read.
                     _ = buildInternalIntRegisterDefForNode(tree);
                     _setInternalRegistersDelayFree = true;
                     buildInternalRegisterUses();
                 }
-#endif
                 _ = buildDef(tree, SRBM_NONE);
                 break;
             }
@@ -143,7 +140,7 @@ public sealed partial class LinearScan
                 {
                     assert(tree.Type is TYP_INT);
                     sourceCount = 1;
-                    _ = buildUse(tree.AsUnOp().Op1, SRBM_INTRET);
+                    _ = buildUse(tree.AsUnOp().Op1, TargetRuntimeMetadata.IntegerReturnMask);
                 }
                 break;
             }
@@ -165,8 +162,8 @@ public sealed partial class LinearScan
 
             case GT_PATCHPOINT:
             {
-                sourceCount = buildOperandUses(tree.AsOp().Op1, SRBM_ARG_0);
-                _ = buildOperandUses(tree.AsOp().Op2, SRBM_ARG_1);
+                sourceCount = buildOperandUses(tree.AsOp().Op1, TargetRuntimeMetadata.FirstIntegerArgumentMask);
+                _ = buildOperandUses(tree.AsOp().Op2, TargetRuntimeMetadata.SecondIntegerArgumentMask);
                 sourceCount++;
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT));
                 break;
@@ -174,7 +171,7 @@ public sealed partial class LinearScan
 
             case GT_PATCHPOINT_FORCED:
             {
-                sourceCount = buildOperandUses(tree.AsUnOp().Op1, SRBM_ARG_0);
+                sourceCount = buildOperandUses(tree.AsUnOp().Op1, TargetRuntimeMetadata.FirstIntegerArgumentMask);
                 buildKills(tree, _compiler.compHelperCallKillSet(CORINFO_HELP_PATCHPOINT_FORCED));
                 break;
             }
@@ -332,13 +329,17 @@ public sealed partial class LinearScan
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
-                sourceCount = buildHWIntrinsic(tree.AsHWIntrinsic(), out destinationCount);
+                if (!Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    sourceCount = buildSimple(tree);
+                    break;
+                }
+
+                sourceCount = buildHWIntrinsicLoongArch64(tree.AsHWIntrinsic(), out destinationCount);
                 break;
             }
-#endif
 
             case GT_CAST:
             {
@@ -457,9 +458,10 @@ public sealed partial class LinearScan
                     if (sizeValue != 0)
                     {
                         sizeValue = unchecked(
-                            (sizeValue + ((nuint)STACK_ALIGN - 1)) & ~((nuint)STACK_ALIGN - 1));
+                            (sizeValue + ((nuint)Configuration.STACK_ALIGN - 1)) & ~((nuint)Configuration.STACK_ALIGN - 1));
 
-                        if (sizeValue > (nuint)(REGSIZE_BYTES * 2 * 4) && !_compiler.info.compInitMem)
+                        if (sizeValue > (nuint)(Configuration.REGSIZE_BYTES * 2 * 4) &&
+                            !_compiler.info.compInitMem)
                         {
                             if (sizeValue >= _compiler.eeGetPageSize())
                             {
@@ -569,7 +571,7 @@ public sealed partial class LinearScan
             case GT_ASYNC_CONTINUATION:
             {
                 sourceCount = 0;
-                _ = buildDef(tree, genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET));
+                _ = buildDef(tree, genSingleTypeRegMask(TargetRuntimeMetadata.AsyncContinuationReturnRegister));
                 break;
             }
 
@@ -596,12 +598,14 @@ public sealed partial class LinearScan
         return sourceCount;
     }
 
-#if FEATURE_HW_INTRINSICS
-    private int buildHWIntrinsic(GenTreeHWIntrinsic intrinsic, out int destinationCount)
+    private int buildHWIntrinsicLoongArch64(GenTreeHWIntrinsic intrinsic, out int destinationCount)
     {
+        if (!Configuration.TARGET_LOONGARCH64 || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic LSRA is not ported.");
     }
-#endif
 }
-#endif

@@ -27,13 +27,12 @@ public sealed partial class LinearScan
                 var initialMask = parameterReference.registerAssignment;
                 var initialReg = (initialMask == SRBM_NONE || parameterReference.spillAfter)
                     ? REG_STK : genRegNumFromMask(initialMask, interval.registerType);
-#if TARGET_ARM
-                if (varTypeIsMultiReg(local.Type))
+                if (Configuration.TARGET_ARM && varTypeIsMultiReg(local.Type))
                 {
                     assert(false, "Multi-reg types not yet supported");
+                    throw new FatalJitException(CORJIT_SKIPPED, "ARM32 multi-reg parameter assignment is not ported.");
                 }
                 else
-#endif
                 {
                     local.ArgInitReg = initialReg;
                     JITDUMP($"  Set V{localNumber:D2} argument initial register to {initialReg.Name}\n");

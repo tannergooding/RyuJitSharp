@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -110,6 +109,7 @@ public sealed partial class WasmRegAlloc : IRegAlloc
 
     public WasmRegAlloc(Compiler compiler)
     {
+        Configuration.EnsureWasmTarget();
         _compiler = compiler;
         _codeGen = compiler.codeGen ?? throw new InvalidOperationException("Wasm register allocation requires code generation.");
         _perFuncletData = new PerFuncletData?[compiler.compFuncCount()];
@@ -228,12 +228,10 @@ public sealed partial class WasmRegAlloc : IRegAlloc
             return false;
         }
 
-#if LOWER_DECOMPOSE_LONGS
-        if (varDsc.Type is TYP_LONG)
+        if (Configuration.LOWER_DECOMPOSE_LONGS && (varDsc.Type is TYP_LONG))
         {
             return false;
         }
-#endif
 
         if (_compiler.compJmpOpUsed && varDsc.lvIsRegArg)
         {
@@ -273,14 +271,12 @@ public sealed partial class WasmRegAlloc : IRegAlloc
                 return true;
             }
 
-#if FEATURE_SIMD
             case TYP_SIMD8:
             case TYP_SIMD12:
             case TYP_SIMD16:
             {
-                return !varDsc.lvPromoted;
+                return Configuration.FEATURE_SIMD && !varDsc.lvPromoted;
             }
-#endif
 
             case TYP_STRUCT:
             {
@@ -349,13 +345,11 @@ public sealed partial class WasmRegAlloc : IRegAlloc
                     return;
                 }
 
-#if TARGET_ARM
-                if (local.lvIsParam)
+                if (Configuration.TARGET_ARM && local.lvIsParam)
                 {
                     _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.IsStructArg);
                     return;
                 }
-#endif
             }
         }
 
@@ -373,13 +367,13 @@ public sealed partial class WasmRegAlloc : IRegAlloc
                 return;
             }
 
-#if JIT32_GCENCODER
-            if (_compiler.lvaKeepAliveAndReportThis() && (localNumber == _compiler.info.compThisArg))
+            if (Configuration.JIT32_GCENCODER &&
+                _compiler.lvaKeepAliveAndReportThis() &&
+                (localNumber == _compiler.info.compThisArg))
             {
                 _compiler.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.LiveInOutOfHandler);
                 return;
             }
-#endif
         }
     }
 
@@ -389,4 +383,3 @@ public sealed partial class WasmRegAlloc : IRegAlloc
         return _perFuncletData[index] ?? throw new InvalidOperationException("Wasm funclet allocation state is not initialized.");
     }
 }
-#endif

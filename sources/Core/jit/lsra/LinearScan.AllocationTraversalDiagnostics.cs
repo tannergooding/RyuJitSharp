@@ -27,7 +27,26 @@ public sealed partial class LinearScan
         FullAllocationEvent allocationEvent,
         RefPosition reference,
         Interval? interval = null,
-        regNumber register = REG_NA,
+        RegisterScore selectionScore = RegisterScore.NONE)
+    {
+        dumpFullAllocationEvent(allocationEvent, reference, interval, REG_NA, selectionScore);
+    }
+
+    private void dumpFullAllocationEvent(
+        FullAllocationEvent allocationEvent,
+        RefPosition reference,
+        regNumber register,
+        Interval? interval = null,
+        RegisterScore selectionScore = RegisterScore.NONE)
+    {
+        dumpFullAllocationEvent(allocationEvent, reference, interval, register, selectionScore);
+    }
+
+    private void dumpFullAllocationEvent(
+        FullAllocationEvent allocationEvent,
+        RefPosition reference,
+        Interval? interval,
+        regNumber register,
         RegisterScore selectionScore = RegisterScore.NONE)
     {
         if (!VERBOSE)

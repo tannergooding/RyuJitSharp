@@ -30,11 +30,9 @@ public sealed partial class LinearScan
         var maybeFPRefCount = 2 * BB_UNITY_WEIGHT;
         VarSetOps.AssignNoCopy(_compiler, ref _fpCalleeSaveCandidateVars, VarSetOps.MakeEmpty(_compiler));
         var fpMaybeCandidateVars = VarSetOps.MakeEmpty(_compiler);
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
         var thresholdLargeVectorRefCount = 4 * BB_UNITY_WEIGHT;
         VarSetOps.AssignNoCopy(_compiler, ref _largeVectorVars, VarSetOps.MakeEmpty(_compiler));
         VarSetOps.AssignNoCopy(_compiler, ref _largeVectorCalleeSaveCandidateVars, VarSetOps.MakeEmpty(_compiler));
-#endif
 
         uint refCntStk = 0;
         uint refCntReg = 0;
@@ -88,9 +86,10 @@ public sealed partial class LinearScan
         {
             ref var local = ref _compiler.lvaGetDesc(localNumber);
             local.RegNum = REG_STK;
-#if !TARGET_64BIT
-            local.OtherReg = REG_STK;
-#endif
+            if (!Configuration.TARGET_64BIT)
+            {
+                local.OtherReg = REG_STK;
+            }
             if (checkDoubleAlign)
             {
                 if (local.lvIsParam && !local.lvIsRegArg)
@@ -146,9 +145,7 @@ public sealed partial class LinearScan
                                 assert(localVarIntervals is not null);
                                 localVarIntervals[field._varIndex] = null;
                                 VarSetOps.RemoveElemD(_compiler, _registerCandidateVars, field._varIndex);
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                                 VarSetOps.RemoveElemD(_compiler, _largeVectorVars, field._varIndex);
-#endif
                                 JITDUMP("*");
                             }
 
@@ -183,8 +180,8 @@ public sealed partial class LinearScan
                     setIntervalAsSpilled(interval);
                 }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                if (Compiler.varTypeNeedsPartialCalleeSave(local.GetRegisterType()))
+                if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                    LsraConfiguration.VarTypeNeedsPartialCalleeSave(local.GetRegisterType()))
                 {
                     VarSetOps.AddElemD(_compiler, _largeVectorVars, local._varIndex);
                     if (local.lvRefCntWtd() >= thresholdLargeVectorRefCount)
@@ -192,9 +189,7 @@ public sealed partial class LinearScan
                         VarSetOps.AddElemD(_compiler, _largeVectorCalleeSaveCandidateVars, local._varIndex);
                     }
                 }
-                else
-#endif
-                if (type.Register == VTR_FLOAT)
+                else if (type.Register == VTR_FLOAT)
                 {
                     floatVarCount++;
                     var refCount = local.lvRefCntWtd();
@@ -223,15 +218,16 @@ public sealed partial class LinearScan
             }
         }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        for (var varIndex = 0; varIndex < _compiler.lvaTrackedCount; varIndex++)
+        if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE)
         {
-            if (VarSetOps.IsMember(_compiler, _largeVectorVars, varIndex))
+            for (var varIndex = 0; varIndex < _compiler.lvaTrackedCount; varIndex++)
             {
-                makeUpperVectorInterval(checked((uint)varIndex));
+                if (VarSetOps.IsMember(_compiler, _largeVectorVars, varIndex))
+                {
+                    makeUpperVectorInterval(checked((uint)varIndex));
+                }
             }
         }
-#endif
 
         if (checkDoubleAlign)
         {
@@ -280,11 +276,14 @@ public sealed partial class LinearScan
         {
             VarSetOps.IntersectionD(_compiler, _exceptVars, _registerCandidateVars);
         }
-#if TARGET_ARM && DEBUG
+#if DEBUG
         if (VERBOSE)
         {
-            jitprintf("\nlvaTable after IdentifyCandidates\n");
-            _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
+            if (Configuration.TARGET_ARM)
+            {
+                jitprintf("\nlvaTable after IdentifyCandidates\n");
+                _compiler.lvaTableDump(Compiler.PRE_REGALLOC_FRAME_LAYOUT);
+            }
         }
 #endif
     }
@@ -356,22 +355,25 @@ public sealed partial class LinearScan
         return doDoubleAlign;
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     private void makeUpperVectorInterval(uint varIndex)
     {
         var localInterval = getIntervalForLocalVar(varIndex);
-        assert(Compiler.varTypeNeedsPartialCalleeSave(localInterval.registerType));
-#if TARGET_AMD64
-        var upperInterval = newInterval(TYP_SIMD16);
-#elif TARGET_ARM64
-        var upperInterval = newInterval(TYP_DOUBLE);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Upper-vector local intervals are unsupported on this target.");
-#endif
-#if TARGET_AMD64 || TARGET_ARM64
+        assert(LsraConfiguration.VarTypeNeedsPartialCalleeSave(localInterval.registerType));
+        Interval upperInterval;
+        if (Configuration.TARGET_AMD64)
+        {
+            upperInterval = newInterval(TYP_SIMD16);
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            upperInterval = newInterval(TYP_DOUBLE);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Upper-vector local intervals are unsupported on this target.");
+        }
+
         upperInterval.relatedInterval = localInterval;
         upperInterval.isUpperVector = true;
-#endif
     }
-#endif
 }

@@ -96,53 +96,55 @@ public sealed partial class LinearScan : IRegAlloc
 
         _needNonIntegerRegisters = false;
 
-#if TARGET_XARCH
-        _evexIsSupported = compiler.canUseEvexEncoding();
-#else
-        _evexIsSupported = false;
-#endif
+        _evexIsSupported = Configuration.TARGET_XARCH && compiler.canUseEvexEncoding();
 
-#if TARGET_AMD64
-        _rbmAllFloat = compiler.SRBM_ALLFLOAT;
-        _rbmFltCalleeTrash = compiler.SRBM_FLT_CALLEE_TRASH;
-        _rbmAllInt = compiler.SRBM_ALLINT;
-        _rbmIntCalleeTrash = compiler.SRBM_INT_CALLEE_TRASH;
-        _regIntLast = compiler.REG_INT_LAST;
-        _apxIsSupported = compiler.canUseApxEncoding();
-#elif TARGET_WASM
-        _rbmAllFloat = RBM_ALLFLOAT.FltRegSet;
-        _rbmFltCalleeTrash = RBM_FLT_CALLEE_TRASH.FltRegSet;
-        _rbmAllInt = RBM_ALLINT.IntRegSet;
-        _rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH.IntRegSet;
-        _regIntLast = REG_INT_LAST;
-        _apxIsSupported = false;
-#else
-        _rbmAllFloat = SRBM_ALLFLOAT;
-        _rbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH;
-        _rbmAllInt = SRBM_ALLINT;
-        _rbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH;
-        _regIntLast = REG_INT_LAST;
-        _apxIsSupported = false;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            _rbmAllFloat = compiler.SRBM_ALLFLOAT;
+            _rbmFltCalleeTrash = compiler.SRBM_FLT_CALLEE_TRASH;
+            _rbmAllInt = compiler.SRBM_ALLINT;
+            _rbmIntCalleeTrash = compiler.SRBM_INT_CALLEE_TRASH;
+            _regIntLast = compiler.REG_INT_LAST;
+            _apxIsSupported = compiler.canUseApxEncoding();
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            _rbmAllFloat = RBM_ALLFLOAT.FltRegSet;
+            _rbmFltCalleeTrash = RBM_FLT_CALLEE_TRASH.FltRegSet;
+            _rbmAllInt = RBM_ALLINT.IntRegSet;
+            _rbmIntCalleeTrash = RBM_INT_CALLEE_TRASH.IntRegSet;
+            _regIntLast = TargetRuntimeMetadata.IntegerRegisterLast;
+            _apxIsSupported = false;
+        }
+        else
+        {
+            _rbmAllFloat = SRBM_ALLFLOAT;
+            _rbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH;
+            _rbmAllInt = SRBM_ALLINT;
+            _rbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH;
+            _regIntLast = TargetRuntimeMetadata.IntegerRegisterLast;
+            _apxIsSupported = false;
+        }
 
         initializeRegisterIndices();
 
-#if TARGET_XARCH
-        _rbmAllMask = compiler.SRBM_ALLMASK;
-        _rbmMskCalleeTrash = compiler.SRBM_MSK_CALLEE_TRASH;
-#elif TARGET_ARM64
-        _rbmAllMask = SRBM_ALLMASK;
-        _rbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH;
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            _rbmAllMask = compiler.SRBM_ALLMASK;
+            _rbmMskCalleeTrash = compiler.SRBM_MSK_CALLEE_TRASH;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            _rbmAllMask = SRBM_ALLMASK;
+            _rbmMskCalleeTrash = compiler.SRBM_MSK_CALLEE_TRASH;
+        }
 
         initializeVarTypeCalleeTrashRegs();
 
-#if TARGET_XARCH
-        if (!_evexIsSupported)
+        if (Configuration.TARGET_XARCH && !_evexIsSupported)
         {
             _availableRegCount -= CNT_HIGHFLOAT + CNT_MASK_REGS;
         }
-#endif
 
         _firstColdLocation = MaxLocation;
 
@@ -165,11 +167,14 @@ public sealed partial class LinearScan : IRegAlloc
         initializeRegisterSets(codeGen);
         initializeAvailableRegs();
 
-#if TARGET_AMD64
-        _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
-#elif TARGET_X86
-        _lowGprRegs = _availableIntRegs;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            _lowGprRegs = _availableIntRegs & SRBM_LOWINT;
+        }
+        else if (Configuration.TARGET_X86)
+        {
+            _lowGprRegs = _availableIntRegs;
+        }
 
         compiler.rpFrameType = FT_NOT_SET;
         compiler.rpMustCreateEBPCalled = false;
@@ -185,8 +190,32 @@ public sealed partial class LinearScan : IRegAlloc
 
     private void initializeRegisterIndices()
     {
-#if TARGET_AMD64
-        if (_apxIsSupported)
+        if (Configuration.TARGET_AMD64)
+        {
+            if (_apxIsSupported)
+            {
+                _regIndices = new regNumber[(int)ACTUAL_REG_COUNT + 1];
+                for (var index = 0; index < _regIndices.Length; index++)
+                {
+                    _regIndices[index] = (regNumber)index;
+                }
+            }
+            else
+            {
+                _regIndices =
+                [
+                    REG_X64_RAX, REG_X64_RCX, REG_X64_RDX, REG_X64_RBX, REG_X64_RSP, REG_X64_RBP, REG_X64_RSI, REG_X64_RDI,
+                    REG_X64_R8, REG_X64_R9, REG_X64_R10, REG_X64_R11, REG_X64_R12, REG_X64_R13, REG_X64_R14, REG_X64_R15,
+                    REG_X64_XMM0, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3, REG_X64_XMM4, REG_X64_XMM5, REG_X64_XMM6, REG_X64_XMM7,
+                    REG_X64_XMM8, REG_X64_XMM9, REG_X64_XMM10, REG_X64_XMM11, REG_X64_XMM12, REG_X64_XMM13, REG_X64_XMM14, REG_X64_XMM15,
+                    REG_X64_XMM16, REG_X64_XMM17, REG_X64_XMM18, REG_X64_XMM19, REG_X64_XMM20, REG_X64_XMM21, REG_X64_XMM22, REG_X64_XMM23,
+                    REG_X64_XMM24, REG_X64_XMM25, REG_X64_XMM26, REG_X64_XMM27, REG_X64_XMM28, REG_X64_XMM29, REG_X64_XMM30, REG_X64_XMM31,
+                    REG_X64_K0, REG_X64_K1, REG_X64_K2, REG_X64_K3, REG_X64_K4, REG_X64_K5, REG_X64_K6, REG_X64_K7,
+                    REG_X64_COUNT,
+                ];
+            }
+        }
+        else
         {
             _regIndices = new regNumber[(int)ACTUAL_REG_COUNT + 1];
             for (var index = 0; index < _regIndices.Length; index++)
@@ -194,27 +223,6 @@ public sealed partial class LinearScan : IRegAlloc
                 _regIndices[index] = (regNumber)index;
             }
         }
-        else
-        {
-            _regIndices =
-            [
-                REG_RAX, REG_RCX, REG_RDX, REG_RBX, REG_RSP, REG_RBP, REG_RSI, REG_RDI,
-                REG_R8, REG_R9, REG_R10, REG_R11, REG_R12, REG_R13, REG_R14, REG_R15,
-                REG_XMM0, REG_XMM1, REG_XMM2, REG_XMM3, REG_XMM4, REG_XMM5, REG_XMM6, REG_XMM7,
-                REG_XMM8, REG_XMM9, REG_XMM10, REG_XMM11, REG_XMM12, REG_XMM13, REG_XMM14, REG_XMM15,
-                REG_XMM16, REG_XMM17, REG_XMM18, REG_XMM19, REG_XMM20, REG_XMM21, REG_XMM22, REG_XMM23,
-                REG_XMM24, REG_XMM25, REG_XMM26, REG_XMM27, REG_XMM28, REG_XMM29, REG_XMM30, REG_XMM31,
-                REG_K0, REG_K1, REG_K2, REG_K3, REG_K4, REG_K5, REG_K6, REG_K7,
-                REG_COUNT,
-            ];
-        }
-#else
-        _regIndices = new regNumber[(int)ACTUAL_REG_COUNT + 1];
-        for (var index = 0; index < _regIndices.Length; index++)
-        {
-            _regIndices[index] = (regNumber)index;
-        }
-#endif
     }
 
     private void initializeVarTypeCalleeTrashRegs()
@@ -222,13 +230,11 @@ public sealed partial class LinearScan : IRegAlloc
         for (var index = 0; index < (int)TYP_COUNT; index++)
         {
             var type = (var_types)index;
-#if FEATURE_MASKED_HW_INTRINSICS
-            if (varTypeUsesMaskReg(type))
+            if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeUsesMaskReg(type))
             {
                 _varTypeCalleeTrashRegs[index] = _rbmMskCalleeTrash;
                 continue;
             }
-#endif
             _varTypeCalleeTrashRegs[index] = varTypeUsesFloatReg(type) ? _rbmFltCalleeTrash : _rbmIntCalleeTrash;
         }
     }
@@ -242,12 +248,10 @@ public sealed partial class LinearScan : IRegAlloc
             {
                 _availableRegs[index] = _availableDoubleRegs;
             }
-#if FEATURE_MASKED_HW_INTRINSICS
-            else if (varTypeUsesMaskReg(type))
+            else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeUsesMaskReg(type))
             {
                 _availableRegs[index] = _availableMaskRegs;
             }
-#endif
             else if (varTypeUsesFloatReg(type))
             {
                 _availableRegs[index] = _availableFloatRegs;
@@ -286,58 +290,71 @@ public sealed partial class LinearScan : IRegAlloc
 
     private void initializeRegisterSets(ICodeGen codeGen)
     {
-#if TARGET_ARM64
-        // NativeAOT depends on LR not being used as a GPR (dotnet/runtime#101932).
-        _availableIntRegs = _rbmAllInt & ~(SRBM_PR | SRBM_FP | SRBM_LR) &
-            ~codeGen.RegSet.rsMaskResvd.IntRegSet;
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-        _availableIntRegs = _rbmAllInt & ~(SRBM_FP | SRBM_RA) &
-            ~codeGen.RegSet.rsMaskResvd.IntRegSet;
-#else
-        _availableIntRegs = _rbmAllInt & ~codeGen.RegSet.rsMaskResvd.IntRegSet;
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            // NativeAOT depends on LR not being used as a GPR (dotnet/runtime#101932).
+            _availableIntRegs = _rbmAllInt & ~(SRBM_ARM64_PR | SRBM_ARM64_FP | SRBM_ARM64_LR) &
+                ~codeGen.RegSet.rsMaskResvd.IntRegSet;
+        }
+        else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            var frameRegisters = Configuration.TARGET_LOONGARCH64
+                ? SRBM_LOONGARCH64_FP | SRBM_LOONGARCH64_RA
+                : SRBM_RISCV64_FP | SRBM_RISCV64_RA;
+            _availableIntRegs = _rbmAllInt & ~frameRegisters &
+                ~codeGen.RegSet.rsMaskResvd.IntRegSet;
+        }
+        else
+        {
+            _availableIntRegs = _rbmAllInt & ~codeGen.RegSet.rsMaskResvd.IntRegSet;
+        }
 
-#if ETW_EBP_FRAMED
-        _availableIntRegs &= ~SRBM_FPBASE;
-#endif
+        if (Configuration.ETW_EBP_FRAMED)
+        {
+            _availableIntRegs &= ~SRBM_FPBASE;
+        }
         _availableFloatRegs = _rbmAllFloat;
-#if TARGET_AMD64
-        _availableDoubleRegs = _rbmAllFloat;
-#elif TARGET_WASM
-        _availableDoubleRegs = RBM_ALLDOUBLE.FltRegSet;
-#else
-        _availableDoubleRegs = SRBM_ALLDOUBLE;
-#endif
-#if TARGET_XARCH || TARGET_ARM64
-        _availableMaskRegs = _rbmAllMask;
-#endif
-
-#if TARGET_AMD64 || TARGET_ARM64
-        if (_compiler.opts.compDbgEnC)
+        if (Configuration.TARGET_AMD64)
         {
-            _availableIntRegs &= (~SRBM_INT_CALLEE_SAVED | SRBM_ENC_CALLEE_SAVED);
-            _availableFloatRegs &= ~SRBM_FLT_CALLEE_SAVED;
-            _availableDoubleRegs &= ~SRBM_FLT_CALLEE_SAVED;
-#if TARGET_XARCH
-            _availableMaskRegs &= ~SRBM_MSK_CALLEE_SAVED;
-#endif
+            _availableDoubleRegs = _rbmAllFloat;
         }
-#endif
-
-#if TARGET_AMD64
-        if (_compiler.MethodHasPatchpoint)
+        else if (Configuration.TARGET_WASM)
         {
-            _availableFloatRegs &= ~SRBM_FLT_CALLEE_SAVED;
-            _availableDoubleRegs &= ~SRBM_FLT_CALLEE_SAVED;
-            _availableMaskRegs &= ~SRBM_MSK_CALLEE_SAVED;
+            _availableDoubleRegs = RBM_ALLDOUBLE.FltRegSet;
+        }
+        else
+        {
+            _availableDoubleRegs = SRBM_ALLDOUBLE;
+        }
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
+        {
+            _availableMaskRegs = _rbmAllMask;
         }
 
-        if (_evexIsSupported)
+        if ((Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64) &&
+            _compiler.opts.compDbgEnC)
+        {
+            _availableIntRegs &= (~TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.EncodedCalleeSavedMask);
+            _availableFloatRegs &= ~TargetRuntimeMetadata.FloatingCalleeSavedMask;
+            _availableDoubleRegs &= ~TargetRuntimeMetadata.FloatingCalleeSavedMask;
+            if (Configuration.TARGET_XARCH)
+            {
+                _availableMaskRegs &= ~TargetRuntimeMetadata.MaskCalleeSavedMask;
+            }
+        }
+
+        if (Configuration.TARGET_AMD64 && _compiler.MethodHasPatchpoint)
+        {
+            _availableFloatRegs &= ~TargetRuntimeMetadata.FloatingCalleeSavedMask;
+            _availableDoubleRegs &= ~TargetRuntimeMetadata.FloatingCalleeSavedMask;
+            _availableMaskRegs &= ~TargetRuntimeMetadata.MaskCalleeSavedMask;
+        }
+
+        if (Configuration.TARGET_AMD64 && _evexIsSupported)
         {
             _availableFloatRegs |= SRBM_HIGHFLOAT;
             _availableDoubleRegs |= SRBM_HIGHFLOAT;
         }
-#endif
     }
 
     public PhaseStatus DoRegisterAllocation()
@@ -351,9 +368,10 @@ public sealed partial class LinearScan : IRegAlloc
         assert(_compiler.codeGen is not null);
         _compiler.codeGen.RegSet.rsClearRegsModified();
         initMaxSpill();
-#if TARGET_ARM64
-        _nextConsecutiveRefPositions.Clear();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            _nextConsecutiveRefPositions.Clear();
+        }
         if (_enregisterLocalVars)
         {
             buildIntervalsWithLocals();
@@ -377,13 +395,11 @@ public sealed partial class LinearScan : IRegAlloc
 #endif
 
         initVarRegMaps();
-#if TARGET_ARM64
-        if (_compiler.info.compNeedsConsecutiveRegisters)
+        if (Configuration.TARGET_ARM64 && _compiler.info.compNeedsConsecutiveRegisters)
         {
             allocateRegistersWithConsecutiveRegisters();
         }
         else
-#endif
         {
             if (_enregisterLocalVars || _compiler.opts.OptimizationEnabled)
             {
@@ -434,13 +450,16 @@ public sealed partial class LinearScan : IRegAlloc
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
 
-#if TARGET_ARM64
     private void allocateRegistersWithConsecutiveRegisters()
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
         NYI("LinearScan.allocateRegisters<true> consecutive-register allocation");
         throw new FatalJitException("Consecutive-register allocation is not implemented.");
     }
-#endif
 
 #if TRACK_LSRA_STATS
     public void dumpLsraStatsCsv(StreamWriter streamWriter)

@@ -9,385 +9,393 @@ public sealed partial class LinearScan
 {
     private int buildCall(GenTreeCall call)
     {
-#if TARGET_XARCH
-        assert(!call.IsContained);
-
-        var hasMultiRegRetVal = false;
-        var dstCount = 0;
-        var singleDstCandidates = SRBM_NONE;
-        if (call.Type is not TYP_VOID)
+        if (Configuration.TARGET_XARCH)
         {
-            hasMultiRegRetVal = call.HasMultiRegRetVal;
-            dstCount = hasMultiRegRetVal ? call.ReturnTypeDesc.ReturnRegCount : 1;
-        }
+            assert(!call.IsContained);
 
-        if (!hasMultiRegRetVal && (dstCount != 0))
-        {
-#if TARGET_X86
-            if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
+            var hasMultiRegRetVal = false;
+            var dstCount = 0;
+            var singleDstCandidates = SRBM_NONE;
+            if (call.Type is not TYP_VOID)
             {
-                singleDstCandidates = SRBM_ESI;
+                hasMultiRegRetVal = call.HasMultiRegRetVal;
+                dstCount = hasMultiRegRetVal ? call.ReturnTypeDesc.ReturnRegCount : 1;
             }
-            else if (varTypeUsesFloatReg(call.Type))
-            {
-                singleDstCandidates = allRegs(regType(call.Type));
-            }
-            else
-            {
-                assert(varTypeUsesIntReg(call.Type));
-                singleDstCandidates = (call.Type is TYP_LONG) ? SRBM_EAX | SRBM_EDX : SRBM_EAX;
-            }
-#else
-            if (varTypeUsesFloatReg(call.Type))
-            {
-                singleDstCandidates = SRBM_FLOATRET;
-            }
-            else
-            {
-                assert(varTypeUsesIntReg(call.Type));
-                singleDstCandidates = (call.Type is TYP_LONG) ? SRBM_LNGRET : SRBM_INTRET;
-            }
-#endif
-        }
 
-#if WINDOWS_AMD64_ABI
-        var callHasFloatRegArgs = false;
-        if (compFeatureVarArg() && call.Args.IsVarArgs)
-        {
-            foreach (var arg in call.Args.LateArgs)
+            if (!hasMultiRegRetVal && (dstCount != 0))
             {
-                foreach (ref readonly var segment in arg.AbiInfo.Segments)
+                if (Configuration.TARGET_X86)
                 {
-                    if (segment.IsPassedInRegister && genIsValidFloatReg(segment.Register))
+                    if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
                     {
-                        var correspondingReg = getVarargsIntRegister(segment.Register);
-                        _ = buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(correspondingReg));
-                        callHasFloatRegArgs = true;
+                        singleDstCandidates = SRBM_X86_ESI;
+                    }
+                    else if (varTypeUsesFloatReg(call.Type))
+                    {
+                        singleDstCandidates = allRegs(regType(call.Type));
+                    }
+                    else
+                    {
+                        assert(varTypeUsesIntReg(call.Type));
+                        singleDstCandidates = (call.Type is TYP_LONG)
+                            ? SRBM_X86_EAX | SRBM_X86_EDX
+                            : SRBM_X86_EAX;
+                    }
+                }
+                else if (varTypeUsesFloatReg(call.Type))
+                {
+                    singleDstCandidates = TargetRuntimeMetadata.FloatingReturnMask;
+                }
+                else
+                {
+                    assert(varTypeUsesIntReg(call.Type));
+                    singleDstCandidates = (call.Type is TYP_LONG)
+                        ? TargetRuntimeMetadata.LongReturnMask
+                        : TargetRuntimeMetadata.IntegerReturnMask;
+                }
+            }
+
+            var callHasFloatRegArgs = false;
+            if (Configuration.WINDOWS_AMD64_ABI && compFeatureVarArg() && call.Args.IsVarArgs)
+            {
+                foreach (var arg in call.Args.LateArgs)
+                {
+                    foreach (ref readonly var segment in arg.AbiInfo.Segments)
+                    {
+                        if (segment.IsPassedInRegister && genIsValidFloatReg(segment.Register))
+                        {
+                            var correspondingReg = getVarargsIntRegister(segment.Register);
+                            _ = buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(correspondingReg));
+                            callHasFloatRegArgs = true;
+                        }
                     }
                 }
             }
-        }
-#endif
 
-        var srcCount = buildCallArgUses(call);
-        var ctrlExpr = call.ControlExpr;
-        if (ctrlExpr is not null)
+            var srcCount = buildCallArgUses(call);
+            var ctrlExpr = call.ControlExpr;
+            if (ctrlExpr is not null)
+            {
+                var ctrlExprCandidates = SRBM_NONE;
+                if (call.IsFastTailCall)
+                {
+                    ctrlExprCandidates = _rbmIntCalleeTrash;
+                    if (_compiler.NeedsGSSecurityCookie)
+                    {
+                        assert(_compiler.codeGen is not null);
+                        ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
+                    }
+                }
+                else if (Configuration.TARGET_X86 &&
+                    call.IsVirtualStub && (call._callType is CT_INDIRECT) &&
+                    !_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                {
+                    assert(ctrlExpr.IsContainedIndir);
+                    ctrlExprCandidates = SRBM_X86_EAX;
+                }
+
+                if (Configuration.WINDOWS_AMD64_ABI &&
+                    compFeatureVarArg() && call.Args.IsVarArgs && callHasFloatRegArgs &&
+                    (ctrlExprCandidates == SRBM_NONE))
+                {
+                    ctrlExprCandidates = _availableIntRegs & ~SRBM_ARG_REGS;
+                }
+
+                srcCount += buildOperandUses(ctrlExpr, ctrlExprCandidates);
+            }
+
+            if (call.NeedsVzeroupper(_compiler))
+            {
+                var codeGen = _compiler.codeGen
+                    ?? throw new FatalJitException("Call reference building requires initialized codegen state.");
+                codeGen.Emitter.ContainsCallNeedingVzeroupper = true;
+            }
+
+            buildInternalRegisterUses();
+
+            if (call.IsAsync && _compiler.compIsAsync && !call.IsFastTailCall)
+            {
+                markAsyncContinuationBusyForCall(call);
+            }
+
+            var killMask = getKillSetForCall(call);
+            if (dstCount > 0)
+            {
+                if (hasMultiRegRetVal)
+                {
+                    var multiDstCandidates = new regMaskTP(SRBM_NONE);
+                    for (var index = 0; index < dstCount; index++)
+                    {
+                        var register = call.ReturnTypeDesc.GetAbiReturnReg(
+                            checked((byte)index), call.UnmanagedCallConv);
+                        multiDstCandidates |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
+                    }
+
+                    assert(countRegisterMaskBits(multiDstCandidates) == dstCount);
+                    buildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+                }
+                else
+                {
+                    assert(dstCount == 1);
+                    buildDefWithKills(call, dstCount, singleDstCandidates, killMask);
+                }
+            }
+            else
+            {
+                buildKills(call, killMask);
+            }
+
+            if (Configuration.SWIFT_SUPPORT &&
+                (call.UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
+                (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null))
+            {
+                markSwiftErrorBusyForCall(call);
+            }
+
+            _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
+            _placedArgumentLocalCount = 0;
+            return srcCount;
+        }
+
+        if (Configuration.TARGET_ARM64)
         {
+            assert(!call.IsContained);
+
+            var hasMultiRegRetVal = call.Type is not TYP_VOID && call.HasMultiRegRetVal;
+            var dstCount = call.Type is TYP_VOID
+                ? 0
+                : hasMultiRegRetVal ? call.ReturnTypeDesc.ReturnRegCount : 1;
+            var ctrlExpr = call.ControlExpr;
             var ctrlExprCandidates = SRBM_NONE;
-            if (call.IsFastTailCall)
+
+            if (ctrlExpr is not null)
             {
-                ctrlExprCandidates = _rbmIntCalleeTrash;
-                if (_compiler.NeedsGSSecurityCookie)
+                assert(ctrlExpr.Type is not TYP_VOID);
+                if (call.IsFastTailCall)
                 {
-                    assert(_compiler.codeGen is not null);
-                    ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
+                    ctrlExprCandidates = _availableIntRegs & _rbmIntCalleeTrash & ~SRBM_ARM64_LR;
+                    if (_compiler.NeedsGSSecurityCookie)
+                    {
+                        assert(_compiler.codeGen is not null);
+                        ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
+                    }
+                    assert(ctrlExprCandidates != SRBM_NONE);
                 }
             }
-#if TARGET_X86
-            else if (call.IsVirtualStub && (call._callType is CT_INDIRECT) &&
-                !_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+            else if ((call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir) && call.IsFastTailCall)
             {
-                assert(ctrlExpr.IsContainedIndir);
-                ctrlExprCandidates = SRBM_EAX;
+                var candidates = _availableIntRegs & _rbmIntCalleeTrash;
+                assert(candidates != SRBM_NONE);
+                _ = buildInternalIntRegisterDefForNode(call, candidates);
             }
-#endif
 
-#if WINDOWS_AMD64_ABI
-            if (compFeatureVarArg() && call.Args.IsVarArgs && callHasFloatRegArgs &&
-                (ctrlExprCandidates == SRBM_NONE))
+            var singleDstCandidates = SRBM_NONE;
+            if (call.IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
             {
-                ctrlExprCandidates = _availableIntRegs & ~SRBM_ARG_REGS;
+                singleDstCandidates = SRBM_INTERFACELOOKUP_FOR_SLOT_RETURN;
             }
-#endif
-
-            srcCount += buildOperandUses(ctrlExpr, ctrlExprCandidates);
-        }
-
-        if (call.NeedsVzeroupper(_compiler))
-        {
-            var codeGen = _compiler.codeGen
-                ?? throw new FatalJitException("Call reference building requires initialized codegen state.");
-            codeGen.Emitter.ContainsCallNeedingVzeroupper = true;
-        }
-
-        buildInternalRegisterUses();
-
-        if (call.IsAsync && _compiler.compIsAsync && !call.IsFastTailCall)
-        {
-            markAsyncContinuationBusyForCall(call);
-        }
-
-        var killMask = getKillSetForCall(call);
-        if (dstCount > 0)
-        {
-            if (hasMultiRegRetVal)
+            else if (!hasMultiRegRetVal)
             {
-                var multiDstCandidates = new regMaskTP(SRBM_NONE);
-                for (var index = 0; index < dstCount; index++)
+                singleDstCandidates = varTypeUsesFloatArgReg(call.Type)
+                    ? TargetRuntimeMetadata.FloatingReturnMask
+                    : call.Type is TYP_LONG
+                        ? TargetRuntimeMetadata.LongReturnMask
+                        : TargetRuntimeMetadata.IntegerReturnMask;
+            }
+
+            var srcCount = buildCallArgUses(call);
+            if (ctrlExpr is not null)
+            {
+                if (_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS.IsUnix &&
+                    (call.Args.CountArgs() == 0) && ctrlExpr.Oper.IsCnsIntOrI &&
+                    (ctrlExpr.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL) ||
+                     ctrlExpr.AsIntCon().IsIconHandle(GTF_ICON_TLSGD_OFFSET)))
                 {
-                    var register = call.ReturnTypeDesc.GetAbiReturnReg(
-                        checked((byte)index), call.UnmanagedCallConv);
-                    multiDstCandidates |= regMaskTP.CreateFromRegNum(register, genSingleTypeRegMask(register));
+                    assert((call.Flags & GTF_TLS_GET_ADDR) != 0);
+                    _ = newRefPosition(TargetRuntimeMetadata.Register0, _referenceBuildLocation, RefType.RefTypeFixedReg,
+                        null, genSingleTypeRegMask(TargetRuntimeMetadata.Register0));
+                    _ = newRefPosition(REG_ARM64_R1, _referenceBuildLocation, RefType.RefTypeFixedReg,
+                        null, genSingleTypeRegMask(REG_ARM64_R1));
+                    ctrlExprCandidates = SRBM_ARM64_R2;
                 }
 
+                _ = buildUse(ctrlExpr, ctrlExprCandidates);
+                srcCount++;
+            }
+
+            buildInternalRegisterUses();
+
+            if (call.IsAsync && _compiler.compIsAsync && !call.IsFastTailCall)
+            {
+                markAsyncContinuationBusyForCall(call);
+            }
+
+            var killMask = getKillSetForCall(call);
+            if (dstCount == 0)
+            {
+                buildKills(call, killMask);
+            }
+            else if (hasMultiRegRetVal)
+            {
+                var multiDstCandidates = call.ReturnTypeDesc.GetAbiReturnRegs(call.UnmanagedCallConv);
                 assert(countRegisterMaskBits(multiDstCandidates) == dstCount);
                 buildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
             }
             else
             {
-                assert(dstCount == 1);
-                buildDefWithKills(call, dstCount, singleDstCandidates, killMask);
-            }
-        }
-        else
-        {
-            buildKills(call, killMask);
-        }
-
-#if SWIFT_SUPPORT
-        if ((call.UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
-            (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null))
-        {
-            markSwiftErrorBusyForCall(call);
-        }
-#endif
-
-        _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
-        _placedArgumentLocalCount = 0;
-        return srcCount;
-#elif TARGET_ARM64
-        assert(!call.IsContained);
-
-        var hasMultiRegRetVal = call.Type is not TYP_VOID && call.HasMultiRegRetVal;
-        var dstCount = call.Type is TYP_VOID
-            ? 0
-            : hasMultiRegRetVal ? call.ReturnTypeDesc.ReturnRegCount : 1;
-        var ctrlExpr = call.ControlExpr;
-        var ctrlExprCandidates = SRBM_NONE;
-
-        if (ctrlExpr is not null)
-        {
-            assert(ctrlExpr.Type is not TYP_VOID);
-            if (call.IsFastTailCall)
-            {
-                ctrlExprCandidates = _availableIntRegs & _rbmIntCalleeTrash & ~SRBM_LR;
-                if (_compiler.NeedsGSSecurityCookie)
-                {
-                    assert(_compiler.codeGen is not null);
-                    ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
-                }
-                assert(ctrlExprCandidates != SRBM_NONE);
-            }
-        }
-        else if ((call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir) && call.IsFastTailCall)
-        {
-            var candidates = _availableIntRegs & _rbmIntCalleeTrash;
-            assert(candidates != SRBM_NONE);
-            _ = buildInternalIntRegisterDefForNode(call, candidates);
-        }
-
-        var singleDstCandidates = SRBM_NONE;
-        if (call.IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
-        {
-            singleDstCandidates = SRBM_INTERFACELOOKUP_FOR_SLOT_RETURN;
-        }
-        else if (!hasMultiRegRetVal)
-        {
-            singleDstCandidates = varTypeUsesFloatArgReg(call.Type)
-                ? SRBM_FLOATRET
-                : call.Type is TYP_LONG ? SRBM_LNGRET : SRBM_INTRET;
-        }
-
-        var srcCount = buildCallArgUses(call);
-        if (ctrlExpr is not null)
-        {
-            if (_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS.IsUnix &&
-                (call.Args.CountArgs() == 0) && ctrlExpr.Oper.IsCnsIntOrI &&
-                (ctrlExpr.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL) ||
-                 ctrlExpr.AsIntCon().IsIconHandle(GTF_ICON_TLSGD_OFFSET)))
-            {
-                assert((call.Flags & GTF_TLS_GET_ADDR) != 0);
-                _ = newRefPosition(REG_R0, _referenceBuildLocation, RefType.RefTypeFixedReg,
-                    null, genSingleTypeRegMask(REG_R0));
-                _ = newRefPosition(REG_R1, _referenceBuildLocation, RefType.RefTypeFixedReg,
-                    null, genSingleTypeRegMask(REG_R1));
-                ctrlExprCandidates = SRBM_R2;
-            }
-
-            _ = buildUse(ctrlExpr, ctrlExprCandidates);
-            srcCount++;
-        }
-
-        buildInternalRegisterUses();
-
-        if (call.IsAsync && _compiler.compIsAsync && !call.IsFastTailCall)
-        {
-            markAsyncContinuationBusyForCall(call);
-        }
-
-        var killMask = getKillSetForCall(call);
-        if (dstCount == 0)
-        {
-            buildKills(call, killMask);
-        }
-        else if (hasMultiRegRetVal)
-        {
-            var multiDstCandidates = call.ReturnTypeDesc.GetAbiReturnRegs(call.UnmanagedCallConv);
-            assert(countRegisterMaskBits(multiDstCandidates) == dstCount);
-            buildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
-        }
-        else
-        {
-            buildDefWithKills(call, singleDstCandidates, killMask);
-        }
-
-#if SWIFT_SUPPORT
-        if ((call.UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
-            (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null))
-        {
-            markSwiftErrorBusyForCall(call);
-        }
-#endif
-
-        _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
-        _placedArgumentLocalCount = 0;
-        return srcCount;
-#elif TARGET_RISCV64 || TARGET_LOONGARCH64
-        var hasMultiRegRetVal = false;
-        var dstCount = 0;
-        var singleDstCandidates = SRBM_NONE;
-        if (call.Type is not TYP_VOID)
-        {
-            hasMultiRegRetVal = call.HasMultiRegRetVal;
-            dstCount = hasMultiRegRetVal ? call.ReturnTypeDesc.ReturnRegCount : 1;
-        }
-
-        var ctrlExpr = call.ControlExpr;
-        var ctrlExprCandidates = SRBM_NONE;
-        if (ctrlExpr is not null)
-        {
-            assert(ctrlExpr.Type is not TYP_VOID);
-            if (call.IsFastTailCall)
-            {
-                ctrlExprCandidates = allRegs(TYP_INT) & _rbmIntCalleeTrash;
-                if (_compiler.NeedsGSSecurityCookie)
-                {
-                    assert(_compiler.codeGen is not null);
-                    ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
-                }
-                assert(ctrlExprCandidates != SRBM_NONE);
-            }
-
-#if TARGET_RISCV64
-            if (ctrlExpr.IsContainedIntOrIImmed)
-            {
-                _ = buildInternalIntRegisterDefForNode(call);
-            }
-#endif
-        }
-        else if (call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir)
-        {
-            var candidates = SRBM_NONE;
-            if (call.IsFastTailCall)
-            {
-                candidates = allRegs(TYP_INT) & _rbmIntCalleeTrash;
-#if TARGET_LOONGARCH64
-                if (_compiler.NeedsGSSecurityCookie)
-                {
-                    assert(_compiler.codeGen is not null);
-                    ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
-                }
-#endif
-                assert(candidates != SRBM_NONE);
-            }
-
-            _ = buildInternalIntRegisterDefForNode(call, candidates);
-        }
-
-        if (!hasMultiRegRetVal)
-        {
-            if (varTypeUsesFloatArgReg(call.Type))
-            {
-                singleDstCandidates = SRBM_FLOATRET;
-            }
-            else if (call.Type is TYP_LONG)
-            {
-                singleDstCandidates = SRBM_LNGRET;
-            }
-            else
-            {
-                singleDstCandidates = SRBM_INTRET;
-            }
-        }
-
-        var srcCount = buildCallArgUses(call);
-        if (ctrlExpr is not null)
-        {
-#if TARGET_RISCV64
-            if (!ctrlExpr.IsContainedIntOrIImmed)
-            {
-#endif
-                _ = buildUse(ctrlExpr, ctrlExprCandidates);
-                srcCount++;
-#if TARGET_RISCV64
-            }
-#endif
-        }
-
-        buildInternalRegisterUses();
-        if (call.IsAsync && _compiler.compIsAsync && !call.IsFastTailCall)
-        {
-            markAsyncContinuationBusyForCall(call);
-        }
-
-        var killMask = getKillSetForCall(call);
-        if (dstCount > 0)
-        {
-            if (hasMultiRegRetVal)
-            {
-                var multiDstCandidates = call.ReturnTypeDesc.GetAbiReturnRegs(call.UnmanagedCallConv);
-                assert(countRegisterMaskBits(multiDstCandidates) > 0);
-                buildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
-            }
-            else
-            {
-                assert(dstCount == 1);
                 buildDefWithKills(call, singleDstCandidates, killMask);
             }
-        }
-        else
-        {
-            buildKills(call, killMask);
+
+            if (Configuration.SWIFT_SUPPORT &&
+                (call.UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
+                (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null))
+            {
+                markSwiftErrorBusyForCall(call);
+            }
+
+            _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
+            _placedArgumentLocalCount = 0;
+            return srcCount;
         }
 
-        _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
-        _placedArgumentLocalCount = 0;
-        return srcCount;
-#else
-        throw new FatalJitException("LSRA call reference building is not implemented outside AMD64.");
-#endif
+        if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
+        {
+            var hasMultiRegRetVal = false;
+            var dstCount = 0;
+            var singleDstCandidates = SRBM_NONE;
+            if (call.Type is not TYP_VOID)
+            {
+                hasMultiRegRetVal = call.HasMultiRegRetVal;
+                dstCount = hasMultiRegRetVal ? call.ReturnTypeDesc.ReturnRegCount : 1;
+            }
+
+            var ctrlExpr = call.ControlExpr;
+            var ctrlExprCandidates = SRBM_NONE;
+            if (ctrlExpr is not null)
+            {
+                assert(ctrlExpr.Type is not TYP_VOID);
+                if (call.IsFastTailCall)
+                {
+                    ctrlExprCandidates = allRegs(TYP_INT) & _rbmIntCalleeTrash;
+                    if (_compiler.NeedsGSSecurityCookie)
+                    {
+                        assert(_compiler.codeGen is not null);
+                        ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
+                    }
+                    assert(ctrlExprCandidates != SRBM_NONE);
+                }
+
+                if (Configuration.TARGET_RISCV64 && ctrlExpr.IsContainedIntOrIImmed)
+                {
+                    _ = buildInternalIntRegisterDefForNode(call);
+                }
+            }
+            else if (call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir)
+            {
+                var candidates = SRBM_NONE;
+                if (call.IsFastTailCall)
+                {
+                    candidates = allRegs(TYP_INT) & _rbmIntCalleeTrash;
+                    if (Configuration.TARGET_LOONGARCH64 && _compiler.NeedsGSSecurityCookie)
+                    {
+                        assert(_compiler.codeGen is not null);
+                        ctrlExprCandidates &= ~_compiler.codeGen.genGetGSCookieTempRegs(true, call).IntRegSet;
+                    }
+                    assert(candidates != SRBM_NONE);
+                }
+
+                _ = buildInternalIntRegisterDefForNode(call, candidates);
+            }
+
+            if (!hasMultiRegRetVal)
+            {
+                if (varTypeUsesFloatArgReg(call.Type))
+                {
+                    singleDstCandidates = TargetRuntimeMetadata.FloatingReturnMask;
+                }
+                else if (call.Type is TYP_LONG)
+                {
+                    singleDstCandidates = TargetRuntimeMetadata.LongReturnMask;
+                }
+                else
+                {
+                    singleDstCandidates = TargetRuntimeMetadata.IntegerReturnMask;
+                }
+            }
+
+            var srcCount = buildCallArgUses(call);
+            if (ctrlExpr is not null)
+            {
+                if (!Configuration.TARGET_RISCV64 || !ctrlExpr.IsContainedIntOrIImmed)
+                {
+                    _ = buildUse(ctrlExpr, ctrlExprCandidates);
+                    srcCount++;
+                }
+            }
+
+            buildInternalRegisterUses();
+            if (call.IsAsync && _compiler.compIsAsync && !call.IsFastTailCall)
+            {
+                markAsyncContinuationBusyForCall(call);
+            }
+
+            var killMask = getKillSetForCall(call);
+            if (dstCount > 0)
+            {
+                if (hasMultiRegRetVal)
+                {
+                    var multiDstCandidates = call.ReturnTypeDesc.GetAbiReturnRegs(call.UnmanagedCallConv);
+                    assert(countRegisterMaskBits(multiDstCandidates) > 0);
+                    buildCallDefsWithKills(call, dstCount, multiDstCandidates, killMask);
+                }
+                else
+                {
+                    assert(dstCount == 1);
+                    buildDefWithKills(call, singleDstCandidates, killMask);
+                }
+            }
+            else
+            {
+                buildKills(call, killMask);
+            }
+
+            _placedArgumentRegisters = new regMaskTP(SRBM_NONE);
+            _placedArgumentLocalCount = 0;
+            return srcCount;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "LSRA call reference building is not implemented on this target.");
     }
 
-#if TARGET_AMD64
-    private static regNumber getVarargsIntRegister(regNumber floatRegister) => floatRegister switch
+    private static regNumber getVarargsIntRegister(regNumber floatRegister)
     {
-        REG_XMM0 => REG_RCX,
-        REG_XMM1 => REG_RDX,
-        REG_XMM2 => REG_R8,
-        REG_XMM3 => REG_R9,
-        _ => throw new FatalJitException("Windows x64 varargs requires an XMM0-XMM3 argument register."),
-    };
-#endif
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED);
+        }
+
+        return floatRegister switch
+        {
+            REG_X64_XMM0 => REG_X64_RCX,
+            REG_X64_XMM1 => REG_X64_RDX,
+            REG_X64_XMM2 => REG_X64_R8,
+            REG_X64_XMM3 => REG_X64_R9,
+            _ => throw new FatalJitException("Windows x64 varargs requires an XMM0-XMM3 argument register."),
+        };
+    }
 
     private bool supportsSpecialPutArg()
     {
-#if DEBUG && TARGET_X86
-        // Caller-only stress leaves EAX, ECX and EDX. Reserving a pass-through ECX/EDX
-        // can leave too few registers for operands computed before the remaining arguments.
-        return (_lsraStressMask & 0x3) != 0x2;
-#else
-        return true;
+#if DEBUG
+        if (Configuration.TARGET_X86)
+        {
+            // Caller-only stress leaves EAX, ECX and EDX. Reserving a pass-through ECX/EDX
+            // can leave too few registers for operands computed before the remaining arguments.
+            return (_lsraStressMask & 0x3) != 0x2;
+        }
 #endif
+        return true;
     }
 
     private int buildPutArgReg(GenTreeUnOp node)
@@ -395,7 +403,7 @@ public sealed partial class LinearScan
         assert(node is not null);
         assert(node.Oper.IsPutArgReg);
         var argReg = node.RegNum;
-        assert(argReg is not REG_NA);
+        assert(argReg != REG_NA);
         var op1 = node.Op1;
         var argMask = genSingleTypeRegMask(argReg);
         var use = buildUse(op1, argMask);
@@ -431,38 +439,59 @@ public sealed partial class LinearScan
         var addr = tree.AsStoreInd().Addr;
         var src = tree.AsStoreInd().Data;
         assert(!addr.IsContained && !src.IsContained);
-#if TARGET_X86
-        var addrCandidates = SRBM_ECX;
-        var srcCandidates = SRBM_EDX;
-#elif TARGET_ARM
-        var addrCandidates = genSingleTypeRegMask(REG_R0);
-        var srcCandidates = genSingleTypeRegMask(REG_R1);
-#elif TARGET_LOONGARCH64
-        var addrCandidates = genSingleTypeRegMask(REG_T6);
-        var srcCandidates = genSingleTypeRegMask(REG_T7);
-#elif TARGET_RISCV64
-        var addrCandidates = genSingleTypeRegMask(REG_T3);
-        var srcCandidates = genSingleTypeRegMask(REG_T4);
-#elif TARGET_WASM
-        var addrCandidates = SRBM_NONE;
-        var srcCandidates = SRBM_NONE;
-#elif TARGET_AMD64 || TARGET_ARM64
-        var addrCandidates = SRBM_WRITE_BARRIER_DST;
-        var srcCandidates = SRBM_WRITE_BARRIER_SRC;
-#else
-        throw new FatalJitException("The write-barrier register contract is not available on this target.");
-#endif
-
-#if TARGET_X86 && NOGC_WRITE_BARRIERS
-        var codeGen = _compiler.codeGen
-            ?? throw new FatalJitException("Optimized write barriers require initialized CodeGen.");
-        var form = codeGen.GCInfo.gcIsWriteBarrierCandidate(tree.AsStoreInd());
-        if (codeGen.genUseOptimizedWriteBarriers(form))
+        SingleTypeRegSet addrCandidates;
+        SingleTypeRegSet srcCandidates;
+        if (Configuration.TARGET_X86)
         {
-            addrCandidates = SRBM_EDX;
-            srcCandidates = SRBM_EAX | SRBM_ECX | SRBM_EBX | SRBM_ESI | SRBM_EDI;
+            addrCandidates = SRBM_X86_ECX;
+            srcCandidates = SRBM_X86_EDX;
         }
-#endif
+        else if (Configuration.TARGET_ARM)
+        {
+            addrCandidates = genSingleTypeRegMask(TargetRuntimeMetadata.Register0);
+            srcCandidates = genSingleTypeRegMask(REG_ARM32_R1);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            addrCandidates = genSingleTypeRegMask(REG_LOONGARCH64_T6);
+            srcCandidates = genSingleTypeRegMask(REG_LOONGARCH64_T7);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            addrCandidates = genSingleTypeRegMask(REG_RISCV64_T3);
+            srcCandidates = genSingleTypeRegMask(REG_RISCV64_T4);
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            addrCandidates = SRBM_NONE;
+            srcCandidates = SRBM_NONE;
+        }
+        else if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+        {
+            addrCandidates = Configuration.TARGET_AMD64
+                ? SRBM_WRITE_BARRIER_DST_AMD64
+                : SRBM_WRITE_BARRIER_DST_ARM64;
+            srcCandidates = Configuration.TARGET_AMD64
+                ? SRBM_WRITE_BARRIER_SRC_AMD64
+                : SRBM_WRITE_BARRIER_SRC_ARM64;
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "The write-barrier register contract is not available on this target.");
+        }
+
+        if (Configuration.TARGET_X86 && Configuration.NOGC_WRITE_BARRIERS)
+        {
+            var codeGen = _compiler.codeGen
+                ?? throw new FatalJitException("Optimized write barriers require initialized CodeGen.");
+            var form = codeGen.GCInfo.gcIsWriteBarrierCandidate(tree.AsStoreInd());
+            if (codeGen.genUseOptimizedWriteBarriers(form))
+            {
+                addrCandidates = SRBM_X86_EDX;
+                srcCandidates = SRBM_X86_EAX | SRBM_X86_ECX | SRBM_X86_EBX | SRBM_X86_ESI | SRBM_X86_EDI;
+            }
+        }
 
         _ = buildUse(addr, addrCandidates);
         _ = buildUse(src, srcCandidates);
@@ -474,35 +503,34 @@ public sealed partial class LinearScan
 
     private void markSwiftErrorBusyForCall(GenTreeCall call)
     {
-#if (TARGET_AMD64 || TARGET_ARM64) && SWIFT_SUPPORT
-        assert((call.UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
-            (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null));
-        assert(call.Next?.Oper is GT_SWIFT_ERROR);
+        if (Configuration.SWIFT_SUPPORT &&
+            (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64))
+        {
+            assert((call.UnmanagedCallConv is CorInfoCallConvExtension.Swift) &&
+                (call.Args.FindWellKnownArg(WellKnownArg.SwiftError) is not null));
+            assert(call.Next?.Oper is GT_SWIFT_ERROR);
 
-        var use = getRegisterRecord(REG_SWIFT_ERROR).lastRefPosition
-            ?? throw new FatalJitException("Swift error register needs an argument use at the call.");
-        assert(use.nodeLocation == _referenceBuildLocation);
-        setDelayFree(use);
-#else
+            var use = getRegisterRecord(TargetRuntimeMetadata.SwiftErrorRegister).lastRefPosition
+                ?? throw new FatalJitException("Swift error register needs an argument use at the call.");
+            assert(use.nodeLocation == _referenceBuildLocation);
+            setDelayFree(use);
+            return;
+        }
         throw new FatalJitException("LSRA Swift error lifetime is not implemented on this target.");
-#endif
     }
 
     private void markAsyncContinuationBusyForCall(GenTreeCall call)
     {
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
-        assert(call.Next?.Oper is GT_ASYNC_CONTINUATION);
-        var kill = addKillForRegs(
-            new regMaskTP(genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET)),
-            _referenceBuildLocation + 1);
-        setDelayFree(kill);
-#elif TARGET_AMD64
-        assert(call.Next?.Oper is GT_ASYNC_CONTINUATION);
-        var kill = addKillForRegs(new regMaskTP(genSingleTypeRegMask(REG_ASYNC_CONTINUATION_RET)),
-            _referenceBuildLocation + 1);
-        setDelayFree(kill);
-#else
-        throw new FatalJitException("LSRA async continuation register is not defined on this target.");
-#endif
+        if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_AMD64)
+        {
+            assert(call.Next?.Oper is GT_ASYNC_CONTINUATION);
+            var kill = addKillForRegs(new regMaskTP(genSingleTypeRegMask(TargetRuntimeMetadata.AsyncContinuationReturnRegister)),
+                _referenceBuildLocation + 1);
+            setDelayFree(kill);
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "LSRA async continuation register is not defined on this target.");
     }
 }
