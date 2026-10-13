@@ -320,14 +320,12 @@ public sealed partial class ValueNumStore
             }
             case TYP_BYREF:
             {
-#if DEBUG
-                if (Configuration.HOST_WINDOWS)
+                if (Configuration.DEBUG && Configuration.HOST_WINDOWS)
                 {
                     assert((typeof(T) == typeof(nuint)) || (typeof(T) == typeof(nint)) ||
                         ((nuint.Size == 8) && ((typeof(T) == typeof(ulong)) || (typeof(T) == typeof(long)))) ||
                         ((nuint.Size == 4) && ((typeof(T) == typeof(uint)) || (typeof(T) == typeof(int)))));
                 }
-#endif
 
                 goto case TYP_INT;
             }
