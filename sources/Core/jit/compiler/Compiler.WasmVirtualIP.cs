@@ -350,7 +350,11 @@ public partial class Compiler
 
                 JITDUMP($" Handler [{clause.HandlerOffset:D4}..{clause.HandlerLength:D4})\n");
             }
+        }
+#endif
 
+        if (Configuration.DEBUG && (compHndBBtabCount > 0))
+        {
             for (uint func1Index = 0; func1Index < compFuncInfoCount; func1Index++)
             {
                 ref var func1 = ref funGetFunc(func1Index);
@@ -367,7 +371,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         return updatesAdded == 0 ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING;
     }
