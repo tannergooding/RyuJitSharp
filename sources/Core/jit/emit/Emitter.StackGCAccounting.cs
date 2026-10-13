@@ -180,9 +180,10 @@ public partial class Emitter
         assert(u2.emitArgTrackTop >= u2.emitArgTrackTab);
         assert(u2.emitArgTrackTop == u2.emitArgTrackTab + unchecked((uint)emitCurStackLvl) / sizeof(int) - count);
         noway_assert(argRecCnt <= ushort.MaxValue);
-#if DEBUG
-        assert(argRecCnt <= ushort.MaxValue);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(argRecCnt <= ushort.MaxValue);
+        }
         // ClrSafeInt::Value returns zero after overflow if its Debug assertion is ignored.
         var argRecValue = argRecCnt <= ushort.MaxValue ? unchecked((ushort)argRecCnt) : (ushort)0;
         u2.emitGcArgTrackCnt = unchecked((ushort)(u2.emitGcArgTrackCnt - argRecValue));
@@ -206,9 +207,10 @@ public partial class Emitter
             gcrefRegs &= reportedRegs;
             byrefRegs &= reportedRegs;
 
-#if DEBUG
-            assert(argRecCnt <= ushort.MaxValue);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(argRecCnt <= ushort.MaxValue);
+            }
             if (argRecValue == 0)
             {
 #if !FPO_INTERRUPTIBLE
@@ -222,9 +224,10 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        assert(argRecCnt <= ushort.MaxValue);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(argRecCnt <= ushort.MaxValue);
+        }
         var isCallRelatedPop = argRecValue > 1;
         var descriptor = gcInfo.gcRegPtrAllocDsc();
         descriptor.rpdGCtype = GCT_GCREF;
@@ -239,9 +242,10 @@ public partial class Emitter
         descriptor.rpdCallData.rpdCallByrefRegs = byrefRegs;
         descriptor.rpdArg = true;
         descriptor.rpdArgType = GCInfo.rpdArgType_t.rpdARG_POP;
-#if DEBUG
-        assert(argRecCnt <= ushort.MaxValue);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(argRecCnt <= ushort.MaxValue);
+        }
         descriptor.rpdCallData.rpdPtrArg = argRecValue;
 #endif
     }
@@ -285,9 +289,10 @@ public partial class Emitter
 
         if (!emitFullArgInfo)
         {
-#if DEBUG
-            assert(gcCnt <= ushort.MaxValue);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(gcCnt <= ushort.MaxValue);
+            }
             u2.emitGcArgTrackCnt = unchecked((ushort)(u2.emitGcArgTrackCnt - gcCntValue));
         }
         if (!emitFullGCinfo)
@@ -295,9 +300,10 @@ public partial class Emitter
             return;
         }
 
-#if DEBUG
-        assert(gcCnt <= ushort.MaxValue);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(gcCnt <= ushort.MaxValue);
+        }
         if (gcCntValue != 0)
         {
             var descriptor = gcInfo.gcRegPtrAllocDsc();
