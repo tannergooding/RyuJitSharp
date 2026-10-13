@@ -172,9 +172,7 @@ public partial class Compiler
 
         private void SwapPartitions(int s1Start, int s2Start, int s3Start, int s3End, int s4End)
         {
-#if DEBUG
-            var currLayoutCost = GetLayoutCost(s1Start, s4End);
-#endif
+            var currLayoutCost = Configuration.DEBUG ? GetLayoutCost(s1Start, s4End) : BB_ZERO_WEIGHT;
             var s1Size = s2Start - s1Start;
             var s2Size = s3Start - s2Start;
             var s3Size = (s3End + 1) - s3Start;
@@ -194,14 +192,12 @@ public partial class Compiler
                 _blockOrder[i].bbPreorderNum = i;
             }
 
-#if DEBUG
-            if (currLayoutCost < uint.MaxValue)
+            if (Configuration.DEBUG && (currLayoutCost < uint.MaxValue))
             {
                 var newLayoutCost = GetLayoutCost(s1Start, s4End);
                 assert((newLayoutCost < currLayoutCost) ||
                     fgProfileWeightsEqual(newLayoutCost, currLayoutCost, 0.001));
             }
-#endif
         }
 
         private bool ConsiderEdge(FlowEdge edge, bool addToQueue = true)

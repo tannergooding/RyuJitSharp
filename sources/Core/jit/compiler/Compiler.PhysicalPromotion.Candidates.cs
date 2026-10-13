@@ -194,13 +194,12 @@ public partial class Compiler
                     flags = ClassifyLocalAccess(local, effectiveUser);
                 }
 
-#if DEBUG
-                if ((flags & (PhysicalPromotionAccessKindFlags.IsCallRetBuf |
-                              PhysicalPromotionAccessKindFlags.IsStoreDestination)) != 0)
+                if (Configuration.DEBUG &&
+                    ((flags & (PhysicalPromotionAccessKindFlags.IsCallRetBuf |
+                               PhysicalPromotionAccessKindFlags.IsStoreDestination)) != 0))
                 {
                     assert(!IsInsideQmarkArm());
                 }
-#endif
                 GetOrCreateUses(local.LclNum).RecordAccess(local.LclOffs, accessType, layout,
                     flags, _block.getBBWeight(_compiler));
             }
@@ -246,7 +245,6 @@ public partial class Compiler
             return null;
         }
 
-#if DEBUG
         private readonly bool IsInsideQmarkArm()
         {
             var ancestors = _ancestors.ToArray();
@@ -260,7 +258,6 @@ public partial class Compiler
 
             return false;
         }
-#endif
 
         private readonly PhysicalPromotionAccessKindFlags ClassifyLocalAccess(GenTreeLclVarCommon local, GenTree? user)
         {
