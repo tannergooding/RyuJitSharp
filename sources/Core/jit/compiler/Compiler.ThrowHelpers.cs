@@ -62,8 +62,12 @@ public partial class Compiler
 
 #if DEBUG
         JITDUMP($"{FMT_BB(source.bbNum)} requires throw helper block for {sckName(kind)}, created ACD{add.acdNum} with data 0x{unchecked((uint)key.Data):x8}\n");
-        assert(map.TryGetValue(new AddCodeDscKey(kind, source, this), out var found) && (found == add));
 #endif
+        if (Configuration.DEBUG)
+        {
+            assert(map.TryGetValue(new AddCodeDscKey(kind, source, this), out var found) && (found == add));
+        }
+
         return add;
     }
 
