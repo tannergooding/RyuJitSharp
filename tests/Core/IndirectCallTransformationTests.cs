@@ -354,7 +354,8 @@ internal static unsafe partial class IndirectCallTransformationTests
             var mask = compare.Op1.AsOp();
             Assert.That(mask.Oper, Is.EqualTo(GT_AND));
             Assert.That(mask.Op1.AsLclVar().LclNum, Is.EqualTo(pointerLocal));
-            Assert.That(mask.Op2.AsIntCon().IconValue, Is.EqualTo((nint)2));
+            Assert.That(mask.Op2.AsIntCon().IconValue,
+                Is.EqualTo(Configuration.TARGET_WASM ? (nint)int.MinValue : (nint)0x2));
 
             var thinStmt = thin.FirstStmt ?? throw new InvalidOperationException();
             var fatStmt = fat.FirstStmt ?? throw new InvalidOperationException();
@@ -384,7 +385,8 @@ internal static unsafe partial class IndirectCallTransformationTests
             Assert.That(offset.Op2.AsIntCon().IconValue, Is.EqualTo((nint)TYP_I_IMPL.Size));
             Assert.That(offset.Op1, Is.Not.SameAs(target.Addr));
             Assert.That(offset.Op1.AsOp().Op1.AsLclVar().LclNum, Is.EqualTo(pointerLocal));
-            Assert.That(offset.Op1.AsOp().Op2.AsIntCon().IconValue, Is.EqualTo((nint)2));
+            Assert.That(offset.Op1.AsOp().Op2.AsIntCon().IconValue,
+                Is.EqualTo(Configuration.TARGET_WASM ? (nint)int.MinValue : (nint)0x2));
 
             if (returnsValue)
             {
@@ -498,7 +500,8 @@ internal static unsafe partial class IndirectCallTransformationTests
         var subtract = load.Addr.AsOp();
         Assert.That(subtract.Oper, Is.EqualTo(GT_SUB));
         Assert.That(subtract.Op1.AsLclVar().LclNum, Is.EqualTo(local));
-        Assert.That(subtract.Op2.AsIntCon().IconValue, Is.EqualTo((nint)2));
+        Assert.That(subtract.Op2.AsIntCon().IconValue,
+            Is.EqualTo(Configuration.TARGET_WASM ? (nint)int.MinValue : (nint)0x2));
     }
 
     private static GenTreeCall GetCall(Statement stmt)
