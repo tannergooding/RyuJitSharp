@@ -21,6 +21,7 @@ public partial class Compiler
 {
     private string DebuggerMethodHash => unchecked((uint)info.compMethodHash()).ToString("x8", CultureInfo.InvariantCulture);
 }
+#endif
 
 [DebuggerTypeProxy(typeof(StatementDebuggerProxy))]
 public sealed partial class Statement
@@ -51,7 +52,6 @@ internal sealed class StatementDebuggerProxy
         }
     }
 }
-#endif
 
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 public partial class BasicBlock
@@ -71,7 +71,6 @@ public partial class BasicBlock
     };
 }
 
-#if DEBUG
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 public sealed partial class FlowEdge
 {
@@ -162,7 +161,6 @@ internal sealed class FlowGraphNaturalLoopsDebuggerProxy
     [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
     public FlowGraphNaturalLoop[] Loops => [.. _loops.InReversePostOrder()];
 }
-#endif
 
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 public partial class GenTree

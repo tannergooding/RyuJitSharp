@@ -71,6 +71,17 @@ internal static class DebuggerProxyTests
     }
 
     [Test]
+    public static void StatementAndFlowGraphDebuggerMetadataIsAvailableInAllConfigurations()
+    {
+        AssertDebuggerProxy<Statement>(typeof(StatementDebuggerProxy));
+        AssertDebuggerDisplay<FlowEdge>("{DebuggerDisplayText,nq}");
+        AssertDebuggerMetadata<FlowGraphNaturalLoop>(
+            "{DebuggerDisplayText,nq}",
+            typeof(FlowGraphNaturalLoopDebuggerProxy));
+        AssertDebuggerProxy<FlowGraphNaturalLoops>(typeof(FlowGraphNaturalLoopsDebuggerProxy));
+    }
+
+    [Test]
     public static void RangeDebuggerDisplaysPreserveTheToStringContract()
     {
         AssertDebuggerDisplay<Limit>("{DebuggerDisplayText,nq}");
@@ -95,11 +106,14 @@ internal static class DebuggerProxyTests
 
     private static void AssertDebuggerMetadata<T>(string displayValue, Type proxyType)
     {
-        var type = typeof(T);
-
         AssertDebuggerDisplay<T>(displayValue);
+        AssertDebuggerProxy<T>(proxyType);
+    }
+
+    private static void AssertDebuggerProxy<T>(Type proxyType)
+    {
         Assert.That(
-            type.GetCustomAttribute<DebuggerTypeProxyAttribute>(inherit: false)?.ProxyTypeName,
+            typeof(T).GetCustomAttribute<DebuggerTypeProxyAttribute>(inherit: false)?.ProxyTypeName,
             Does.Contain(proxyType.Name));
     }
 
