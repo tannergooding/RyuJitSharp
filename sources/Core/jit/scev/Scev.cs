@@ -4,9 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if DEBUG
 using System.Diagnostics;
-#endif
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 
@@ -47,9 +45,7 @@ public readonly struct SimplificationAssumptions
     }
 }
 
-#if DEBUG
 [DebuggerDisplay("[{Oper}, {Type}]")]
-#endif
 public class Scev
 {
     public ScevOper Oper { get; }

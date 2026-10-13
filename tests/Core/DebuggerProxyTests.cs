@@ -62,16 +62,29 @@ internal static class DebuggerProxyTests
             typeof(JitStdListDebuggerProxy<>));
     }
 
+    [Test]
+    public static void SimpleCompilerDebuggerDisplaysAreAvailableInAllConfigurations()
+    {
+        AssertDebuggerDisplay<EHblkDsc>("type={ebdHandlerType}");
+        AssertDebuggerDisplay<Scev>("[{Oper}, {Type}]");
+        AssertDebuggerDisplay<ValueNumPair>("VNP=[L: {Liberal,h}, C: {Conservative,h}]");
+    }
+
     private static void AssertDebuggerMetadata<T>(string displayValue, Type proxyType)
     {
         var type = typeof(T);
 
-        Assert.That(
-            type.GetCustomAttribute<DebuggerDisplayAttribute>(inherit: false)?.Value,
-            Is.EqualTo(displayValue));
+        AssertDebuggerDisplay<T>(displayValue);
         Assert.That(
             type.GetCustomAttribute<DebuggerTypeProxyAttribute>(inherit: false)?.ProxyTypeName,
             Does.Contain(proxyType.Name));
+    }
+
+    private static void AssertDebuggerDisplay<T>(string displayValue)
+    {
+        Assert.That(
+            typeof(T).GetCustomAttribute<DebuggerDisplayAttribute>(inherit: false)?.Value,
+            Is.EqualTo(displayValue));
     }
 
 #if DEBUG && TARGET_XARCH
