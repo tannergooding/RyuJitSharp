@@ -80,8 +80,11 @@ public partial class Compiler
         }
 
         var assertion = optGetAssertion(index);
+        if (Configuration.DEBUG)
+        {
+            assert(compCurBB is not null);
+        }
 #if DEBUG
-        assert(compCurBB is not null);
         JITDUMP($"\nZEROOBJ Assertion prop in {FMT_BB(compCurBB.bbNum)}:\n");
         if (verbose)
         {
@@ -132,8 +135,11 @@ public partial class Compiler
         noway_assert(operand is not null);
         if (optAssertionIsNonNull(operand, assertions))
         {
+            if (Configuration.DEBUG)
+            {
+                assert(compCurBB is not null);
+            }
 #if DEBUG
-            assert(compCurBB is not null);
             JITDUMP($"Non-null assertion prop for tree [{operand.TreeId:D6}] in {FMT_BB(compCurBB.bbNum)}:\n");
 #endif
             call.Flags &= ~(GTF_CALL_NULLCHECK | GTF_EXCEPT);
@@ -154,8 +160,11 @@ public partial class Compiler
 
         if (optAssertionIsNonNull(indir.IndirOrArrMetaDataAddr, assertions))
         {
+            if (Configuration.DEBUG)
+            {
+                assert(compCurBB is not null);
+            }
 #if DEBUG
-            assert(compCurBB is not null);
             JITDUMP($"Non-null assertion prop for indirection [{indir.TreeId:D6}] in {FMT_BB(compCurBB.bbNum)}:\n");
 #endif
             indir.Flags &= ~GTF_EXCEPT;
