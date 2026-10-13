@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private static int emitSizeOfInsDsc_AMD(instrDesc id)
     {
         assert(!id.idIsSmallDsc());
@@ -107,5 +106,4 @@ public partial class Emitter
 
         return INSTR_DESC_SIZE;
     }
-#endif
 }

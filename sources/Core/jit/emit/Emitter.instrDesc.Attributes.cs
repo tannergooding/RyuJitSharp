@@ -17,18 +17,10 @@ public partial class Emitter
         private regNumber _idReg2;
         private bool _idCnsReloc;
         private bool _idDspReloc;
-#if !TARGET_XARCH
         private bool _idTlsGD;
-#endif
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
         private bool _idLclVar;
-#endif
-#if TARGET_ARM
         private bool _idLclFPBase;
-#endif
-#if TARGET_ARMARCH
         private insOpts _idInsOpt;
-#endif
 
         public bool idIsBound()
         {
@@ -49,14 +41,11 @@ public partial class Emitter
 
         public void idOpSize(emitAttr size)
         {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-            _idOpSize = (opSize)((uint)emitEncodeSize(size) & 7);
-#else
-            _idOpSize = (opSize)((uint)emitEncodeSize(size) & 3);
-#endif
+            var mask = Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 ||
+                Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? 7u : 3u;
+            _idOpSize = (opSize)((uint)emitEncodeSize(size) & mask);
         }
 
-#if TARGET_ARMARCH
         public insOpts idInsOpt()
         {
             return _idInsOpt;
@@ -64,14 +53,10 @@ public partial class Emitter
 
         public void idInsOpt(insOpts options)
         {
-#if TARGET_ARM64
-            _idInsOpt = (insOpts)((uint)options & 0x3F);
-#else
-            _idInsOpt = (insOpts)((uint)options & 7);
-#endif
+            var mask = Configuration.TARGET_ARM ? 7u : 0x3Fu;
+            _idInsOpt = (insOpts)((uint)options & mask);
             assert(options == _idInsOpt);
         }
-#endif
 
         internal GCtype idGCref()
         {
@@ -90,7 +75,8 @@ public partial class Emitter
 
         public void idReg1(regNumber reg)
         {
-            _idReg1 = (regNumber)((uint)reg & ((1u << REGNUM_BITS) - 1));
+            var bits = Configuration.REGNUM_BITS;
+            _idReg1 = (regNumber)((uint)reg & ((1u << bits) - 1));
             assert(reg == _idReg1);
         }
 
@@ -101,7 +87,8 @@ public partial class Emitter
 
         public void idReg2(regNumber reg)
         {
-            _idReg2 = (regNumber)((uint)reg & ((1u << REGNUM_BITS) - 1));
+            var bits = Configuration.REGNUM_BITS;
+            _idReg2 = (regNumber)((uint)reg & ((1u << bits) - 1));
             assert(reg == _idReg2);
         }
 
@@ -139,45 +126,68 @@ public partial class Emitter
         public bool idIsTlsGD()
         {
             assert(!IsSimdInstruction(idIns()));
-#if TARGET_XARCH
-            return (_idCustomBits & 2) != 0;
-#else
+            if (Configuration.TARGET_XARCH)
+            {
+                return (_idCustomBits & 2) != 0;
+            }
+
             return _idTlsGD;
-#endif
         }
 
         public void idSetTlsGD()
         {
             assert(!IsSimdInstruction(idIns()));
-#if TARGET_XARCH
-            _idCustomBits |= 2;
-#else
-            _idTlsGD = true;
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                _idCustomBits |= 2;
+            }
+            else
+            {
+                _idTlsGD = true;
+            }
         }
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
         public bool idIsLclVar()
         {
+            RequireLclVarTarget();
             return _idLclVar;
         }
 
         public void idSetIsLclVar()
         {
+            RequireLclVarTarget();
             _idLclVar = true;
         }
-#endif
 
-#if TARGET_ARM
         public bool idIsLclFPBase()
         {
+            RequireArm32LclFPBase();
             return _idLclFPBase;
         }
 
         public void idSetIsLclFPBase()
         {
+            RequireArm32LclFPBase();
             _idLclFPBase = true;
         }
-#endif
+
+        private static void RequireArm32LclFPBase()
+        {
+            if (!Configuration.TARGET_ARM)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "ARM32 local-frame-pointer descriptor flags are only supported on ARM32.");
+            }
+        }
+
+        private static void RequireLclVarTarget()
+        {
+            if (!(Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 ||
+                Configuration.TARGET_RISCV64))
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Local-variable instruction descriptors are not supported for this target.");
+            }
+        }
     }
 }

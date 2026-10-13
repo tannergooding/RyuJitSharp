@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -16,4 +15,3 @@ public partial class Emitter
         ISZ_48BIT,
     }
 }
-#endif

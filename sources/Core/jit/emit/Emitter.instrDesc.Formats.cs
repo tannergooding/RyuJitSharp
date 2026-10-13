@@ -9,45 +9,81 @@ public partial class Emitter
 {
     public abstract partial class instrDesc
     {
-#if !TARGET_LOONGARCH64 && !TARGET_RISCV64
         private insFormat _idInsFmt;
-#endif
 
         public insFormat idInsFmt()
         {
-#if TARGET_LOONGARCH64
-            return insFormat.IF_NONE;
-#elif TARGET_RISCV64
-            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
-            return (insFormat)0;
-#else
-            return _idInsFmt;
-#endif
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return insFormat.IF_NONE;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
+                return (insFormat)0;
+            }
+
+            if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM ||
+                Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
+            {
+                return _idInsFmt;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Instruction formats are not supported for this target.");
         }
 
         public void idInsFmt(insFormat insFmt)
         {
-#if TARGET_XARCH
-            assert((uint)insFormat.IF_COUNT <= 128);
-            assert(insFmt < insFormat.IF_COUNT);
-            _idInsFmt = (insFormat)((uint)insFmt & 0x7F);
-#elif TARGET_ARM64
-            assert((uint)insFormat.IF_COUNT <= 1024);
-            noway_assert(insFmt != insFormat.IF_NONE);
-            assert(insFmt < insFormat.IF_COUNT);
-            _idInsFmt = (insFormat)((uint)insFmt & 0x3FF);
-#elif TARGET_LOONGARCH64
-            // Native does not use or store instruction formats on LoongArch64.
-#elif TARGET_RISCV64
-            NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
-#else
-            assert((uint)insFormat.IF_COUNT <= 256);
-            assert(insFmt < insFormat.IF_COUNT);
-            _idInsFmt = (insFormat)((uint)insFmt & 0xFF);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                assert(Arm64FrameFormats.Count <= 1024);
+                noway_assert(insFmt != Arm64FrameFormats.IF_NONE);
+                assert((uint)insFmt < Arm64FrameFormats.Count);
+                _idInsFmt = (insFormat)((uint)insFmt & 0x3FF);
+                return;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                assert((uint)emitFmtToOps.Length <= 1024);
+                assert((uint)insFmt < (uint)emitFmtToOps.Length);
+                _idInsFmt = (insFormat)((uint)insFmt & 0x3FF);
+                return;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                assert((uint)emitFmtToOps.Length <= 1024);
+                assert((uint)insFmt < (uint)emitFmtToOps.Length);
+                _idInsFmt = (insFormat)((uint)insFmt & 0x3FF);
+                return;
+            }
+
+            if (Configuration.TARGET_XARCH)
+            {
+                assert((uint)insFmt < 128);
+                assert((uint)insFmt < (uint)emitFmtToOps.Length);
+                _idInsFmt = (insFormat)((uint)insFmt & 0x7F);
+                return;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                NYI_RISCV64("idInsFmt-----unimplemented on RISCV64 yet----");
+                return;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Instruction formats are not supported for this target.");
         }
 
-#if TARGET_XARCH
         public bool idHasReg1()
         {
             var isInfo = emitGetSchedInfo(idInsFmt());
@@ -195,6 +231,5 @@ public partial class Emitter
             var idOp = (ID_OPS)emitFmtToOps[(int)idInsFmt()];
             return idOp is ID_OP_CNS or ID_OP_DSP_CNS or ID_OP_AMD_CNS;
         }
-#endif
     }
 }

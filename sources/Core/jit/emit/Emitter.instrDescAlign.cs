@@ -26,12 +26,7 @@ public partial class Emitter
                 throw new FatalJitException(CorJitResult.CORJIT_SKIPPED,
                     "Xarch alignment padding is unsupported on this target.");
             }
-#if TARGET_XARCH
             idCodeSize(size);
-#else
-            throw new FatalJitException(CorJitResult.CORJIT_SKIPPED,
-                "Xarch alignment padding storage is not available on this target.");
-#endif
         }
 
         public insGroup? loopHeadIG()

@@ -7,12 +7,15 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public static insTupleType insTupleTypeInfo(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch instruction tuple information is not available for this target.");
+        }
+
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_tupleTypes.Length);
 
         return s_tupleTypes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
-#endif
 }

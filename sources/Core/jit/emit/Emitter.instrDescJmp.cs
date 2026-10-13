@@ -29,27 +29,29 @@ public partial class Emitter
             }
             set
             {
-#if TARGET_AMD64
-                _idjOffs = value & 0x0FFF_FFFF;
-#elif TARGET_X86
-                _idjOffs = value & 0x1FFF_FFFF;
-#else
-                _idjOffs = value & 0x3FFF_FFFF;
-#endif
+                var mask = Configuration.TARGET_AMD64 ? 0x0FFF_FFFFu :
+                    Configuration.TARGET_X86 ? 0x1FFF_FFFFu : 0x3FFF_FFFFu;
+                _idjOffs = value & mask;
             }
         }
 
         public bool idjIsRemovableJmpCandidate;
-#if TARGET_AMD64
         public bool idjIsAfterCallBeforeEpilog;
-#endif
         public bool idjShort;
         public bool idjKeepLong;
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
-        public override int NativeLogicalSize => DescriptorSizes.Jump;
-#else
-        public override int NativeLogicalSize => throw new System.PlatformNotSupportedException("Jump descriptor size is not yet ported for this target.");
-#endif
+        public override int NativeLogicalSize
+        {
+            get
+            {
+                if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
+                    Configuration.TARGET_RISCV64)
+                {
+                    return DescriptorSizes.Jump;
+                }
+
+                throw new System.PlatformNotSupportedException("Jump descriptor size is not yet ported for this target.");
+            }
+        }
     }
 }

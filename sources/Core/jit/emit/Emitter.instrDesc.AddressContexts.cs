@@ -7,20 +7,4 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
-    public abstract partial class instrDesc
-    {
-        public bool idIsCallRegPtr()
-        {
-            assert(!IsSimdInstruction(idIns()));
-            return (_idCustomBits & 8) != 0;
-        }
-
-        public void idSetIsCallRegPtr()
-        {
-            assert(!IsSimdInstruction(idIns()));
-            _idCustomBits |= 8;
-        }
-    }
-#endif
 }

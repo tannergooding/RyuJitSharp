@@ -35,19 +35,11 @@ public partial class Emitter
         assert((descriptor is null) || (descriptor.StorageOffset == nextOffset));
     }
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     private static instrDesc? emitFirstInstrDesc(IReadOnlyList<instrDesc> storage)
     {
         return storage.Count == 0 ? null : storage[0];
     }
-#else
-    private static instrDesc? emitFirstInstrDesc(instrDesc[] storage)
-    {
-        return storage.Length == 0 ? null : storage[0];
-    }
-#endif
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
     private void emitGetInstrDescs(insGroup group, out instrDesc? descriptor, out int count)
     {
         assert((group.igFlags & InsGroupFlags.Placeholder) == 0);
@@ -168,27 +160,26 @@ public partial class Emitter
 
     private static void emitGenerateUnwindNop(instrDesc descriptor, Compiler compiler)
     {
-#if TARGET_ARM
-        compiler.unwindNop(descriptor.idCodeSize());
-#else
-        compiler.unwindNop();
-#endif
+        compiler.RecordUnwindPadding(Configuration.TARGET_ARM ? descriptor.idCodeSize() : 4);
     }
 
     public void emitUnwindNopPadding(emitLocation from, Compiler compiler)
     {
+        RequireUnwindFragmentTarget();
         emitWalkIDs(from, emitGenerateUnwindNop, compiler);
     }
-#endif
 
-#if TARGET_ARM
     public uint emitGetInstructionSize(emitLocation location)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Unwind emitter instruction-size queries require ARM32.");
+        }
+
         var anyInstructions = emitGetLocationInfo(location, out _, out var descriptor, out _);
         assert(anyInstructions);
         assert(descriptor is not null);
 
         return descriptor.idCodeSize();
     }
-#endif
 }

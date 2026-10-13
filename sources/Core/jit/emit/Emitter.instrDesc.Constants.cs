@@ -11,35 +11,23 @@ public partial class Emitter
 {
     // emit.h:932-1007: small constants fill the remainder of the second
     // descriptor word after target flags, relocation and predecessor bits.
-#if TARGET_ARM
-    private const int ID_EXTRA_BITFIELD_BITS = 16;
-#elif TARGET_ARM64
-    private const int ID_EXTRA_BITFIELD_BITS = 23;
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-    private const int ID_EXTRA_BITFIELD_BITS = 14;
-#elif TARGET_X86
-    private const int ID_EXTRA_BITFIELD_BITS = 18;
-#elif TARGET_AMD64
-    private const int ID_EXTRA_BITFIELD_BITS = 20;
-#elif TARGET_WASM
-    private const int ID_EXTRA_BITFIELD_BITS = -4;
-#else
-#error Unsupported or unset target architecture
-#endif
+    private static int ID_EXTRA_BITFIELD_BITS =>
+        Configuration.TARGET_ARM ? 16 :
+        Configuration.TARGET_ARM64 ? 23 :
+        Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? 14 :
+        Configuration.TARGET_X86 ? 18 :
+        Configuration.TARGET_AMD64 ? 20 :
+        Configuration.TARGET_WASM ? -4 :
+        throw new FatalJitException(CORJIT_SKIPPED, "Instruction descriptor constants are not supported for this target.");
 
-#if TARGET_XARCH && HOST_64BIT
-    private const int ID_EXTRA_PREV_OFFSET_BITS = 5;
-#elif TARGET_XARCH
-    private const int ID_EXTRA_PREV_OFFSET_BITS = 4;
-#else
-    private const int ID_EXTRA_PREV_OFFSET_BITS = 0;
-#endif
+    private static int ID_EXTRA_PREV_OFFSET_BITS =>
+        Configuration.TARGET_XARCH ? Configuration.HOST_64BIT ? 5 : 4 : 0;
 
     private const int ID_EXTRA_RELOC_BITS = 2;
-    private const int ID_EXTRA_BITS = ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS;
-    private const int ID_BIT_SMALL_CNS = ID_EXTRA_BITS <= 0 ? 30 : 32 - ID_EXTRA_BITS;
-    private const int ID_MIN_SMALL_CNS = -(1 << (ID_BIT_SMALL_CNS - 1));
-    private const int ID_MAX_SMALL_CNS = (1 << (ID_BIT_SMALL_CNS - 1)) - 1;
+    private static int ID_EXTRA_BITS => ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS;
+    private static int ID_BIT_SMALL_CNS => ID_EXTRA_BITS <= 0 ? 30 : 32 - ID_EXTRA_BITS;
+    private static int ID_MIN_SMALL_CNS => -(1 << (ID_BIT_SMALL_CNS - 1));
+    private static int ID_MAX_SMALL_CNS => (1 << (ID_BIT_SMALL_CNS - 1)) - 1;
 
     public abstract partial class instrDesc
     {
@@ -72,41 +60,58 @@ public partial class Emitter
     // payloads add four/eight bytes; CnsDsp's trailing int rounds x64 to 32.
     private static class ConstantDescriptorSizes
     {
-#if TARGET_X86 || TARGET_ARM || (TARGET_WASM && !HOST_64BIT)
-        internal const int Constant = 16;
-        internal const int Displacement = 16;
-        internal const int ConstantDisplacement = 20;
-        internal const int AddressMode = 16;
-        internal const int ConstantAddressMode = 20;
-#else
-        internal const int Constant = 24;
-        internal const int Displacement = 24;
-        internal const int ConstantDisplacement = 32;
-        internal const int AddressMode = 24;
-        internal const int ConstantAddressMode = 32;
-#endif
+        internal static int Constant =>
+            Configuration.TARGET_X86 || Configuration.TARGET_ARM ||
+            (Configuration.TARGET_WASM && !Configuration.HOST_64BIT) ? 16 : 24;
+
+        internal static int Displacement =>
+            Configuration.TARGET_64BIT ? 24 : 16;
+
+        internal static int ConstantDisplacement =>
+            Configuration.TARGET_64BIT ? 32 : 20;
+
+        internal static int AddressMode =>
+            Configuration.TARGET_64BIT ? 24 : 16;
+
+        internal static int ConstantAddressMode =>
+            Configuration.TARGET_64BIT ? 32 : 20;
     }
 
     protected class instrDescCns : instrDesc
     {
         public nint idcCnsVal;
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM
-        public override int NativeLogicalSize => ConstantDescriptorSizes.Constant;
-#else
-        public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant descriptor size is not yet ported for this target.");
-#endif
+        public override int NativeLogicalSize
+        {
+            get
+            {
+                if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64 ||
+                    Configuration.TARGET_WASM))
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Constant descriptor size is not ported for this target.");
+                }
+
+                return ConstantDescriptorSizes.Constant;
+            }
+        }
     }
 
     protected sealed class instrDescDsp : instrDesc
     {
         public nint iddDspVal;
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
-        public override int NativeLogicalSize => ConstantDescriptorSizes.Displacement;
-#else
-        public override int NativeLogicalSize => throw new PlatformNotSupportedException("Displacement descriptor size is not yet ported for this target.");
-#endif
+        public override int NativeLogicalSize
+        {
+            get
+            {
+                if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64))
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Displacement descriptor size is not ported for this target.");
+                }
+
+                return ConstantDescriptorSizes.Displacement;
+            }
+        }
     }
 
     // Native casts to instrDescCns read the common first payload slot. Inheritance
@@ -116,23 +121,36 @@ public partial class Emitter
         public ref nint iddcCnsVal => ref idcCnsVal;
         public int iddcDspVal;
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64
-        public override int NativeLogicalSize => ConstantDescriptorSizes.ConstantDisplacement;
-#else
-        public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant/displacement descriptor size is not yet ported for this target.");
-#endif
+        public override int NativeLogicalSize
+        {
+            get
+            {
+                if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM || Configuration.TARGET_ARM64))
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Constant/displacement descriptor size is not ported for this target.");
+                }
+
+                return ConstantDescriptorSizes.ConstantDisplacement;
+            }
+        }
     }
 
-#if TARGET_XARCH
     protected sealed class instrDescAmd : instrDesc
     {
         public nint idaAmdVal;
 
-#if TARGET_XARCH
-        public override int NativeLogicalSize => ConstantDescriptorSizes.AddressMode;
-#else
-        public override int NativeLogicalSize => throw new PlatformNotSupportedException("Address-mode descriptor size is not yet ported for this target.");
-#endif
+        public override int NativeLogicalSize
+        {
+            get
+            {
+                if (!Configuration.TARGET_XARCH)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Address-mode descriptor size is not ported for this target.");
+                }
+
+                return ConstantDescriptorSizes.AddressMode;
+            }
+        }
     }
 
     protected sealed class instrDescCnsAmd : instrDescCns
@@ -140,11 +158,17 @@ public partial class Emitter
         public ref nint idacCnsVal => ref idcCnsVal;
         public nint idacAmdVal;
 
-#if TARGET_XARCH
-        public override int NativeLogicalSize => ConstantDescriptorSizes.ConstantAddressMode;
-#else
-        public override int NativeLogicalSize => throw new PlatformNotSupportedException("Constant/address-mode descriptor size is not yet ported for this target.");
-#endif
+        public override int NativeLogicalSize
+        {
+            get
+            {
+                if (!Configuration.TARGET_XARCH)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Constant/address-mode descriptor size is not ported for this target.");
+                }
+
+                return ConstantDescriptorSizes.ConstantAddressMode;
+            }
+        }
     }
-#endif
 }

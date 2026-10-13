@@ -7,14 +7,18 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public static bool IsBitwiseInstruction(instruction ins)
     {
-        return ins is INS_pandd or INS_pandnd or INS_pord or INS_pxord;
+        return Configuration.TARGET_XARCH && (ins is INS_pandd or INS_pandnd or INS_pord or INS_pxord);
     }
 
     public static bool DoesWriteZeroFlagForResult(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "xarch instruction flags are unavailable on this target.");
+        }
+
         // BSF/BSR set ZF from the source rather than the result.
         if (ins is INS_bsf or INS_bsr)
         {
@@ -22,8 +26,6 @@ public partial class Emitter
         }
 
         var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
-
         return (flags & Writes_ZF) != 0;
     }
-#endif
 }

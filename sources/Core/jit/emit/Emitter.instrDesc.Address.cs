@@ -13,47 +13,85 @@ public partial class Emitter
     {
         private idAddrUnion _idAddrUnion;
 
-#if TARGET_64BIT
         [StructLayout(LayoutKind.Explicit, Size = 8)]
-#else
-        [StructLayout(LayoutKind.Explicit, Size = 4)]
-#endif
         public partial struct idAddrUnion
         {
             [FieldOffset(0)]
             internal int iiaEncodedInstrCount;
 
-#if TARGET_LOONGARCH64
-            [FieldOffset(4)]
-#else
             [FieldOffset(0)]
-#endif
-            public emitLclVarAddr iiaLclVar;
+            private emitLclVarAddr _iiaLclVarAtZero;
 
-#if TARGET_XARCH
+            [FieldOffset(4)]
+            private emitLclVarAddr _iiaLclVarAtFour;
+
+            public emitLclVarAddr iiaLclVar
+            {
+                get
+                {
+                    if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        return _iiaLclVarAtFour;
+                    }
+
+                    return _iiaLclVarAtZero;
+                }
+            }
+
+            public void iiaInitLclVarAddr(int varNum, uint offset)
+            {
+                if (Configuration.TARGET_LOONGARCH64)
+                {
+                    _iiaLclVarAtFour.initLclVarAddr(varNum, offset);
+                }
+                else
+                {
+                    _iiaLclVarAtZero.initLclVarAddr(varNum, offset);
+                }
+            }
+
+            [FieldOffset(0)]
+            private uint _iiaRegisterBitsAtZero;
+
             [FieldOffset(0)]
             public emitAddrMode iiaAddrMode;
-#endif
 
-#if TARGET_XARCH || TARGET_ARM
-            [FieldOffset(0)]
-            internal uint iiaRegisterBits;
-#elif TARGET_ARM64
             [FieldOffset(4)]
-            internal uint iiaRegisterBits;
+            private uint _iiaRegisterBitsAtFour;
+
+            internal uint iiaRegisterBits
+            {
+                get
+                {
+                    if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64)
+                    {
+                        return _iiaRegisterBitsAtFour;
+                    }
+
+                    return _iiaRegisterBitsAtZero;
+                }
+                set
+                {
+                    if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64)
+                    {
+                        _iiaRegisterBitsAtFour = value;
+                    }
+                    else
+                    {
+                        _iiaRegisterBitsAtZero = value;
+                    }
+                }
+            }
 
             [FieldOffset(0)]
             internal insSvePattern iiaSvePattern;
-#elif TARGET_RISCV64
+
             // Two six-bit register fields precede the aligned instruction code.
             [FieldOffset(4)]
             public uint iiaInstrEncode;
-#endif
 
-#if TARGET_XARCH
             [FieldOffset(0)]
             public bool iiaSecRel;
-#endif
 
             public readonly bool iiaHasInstrCount()
             {

@@ -24,8 +24,6 @@ public enum InsGroupFlags : ushort
     HasAlign = 1 << 10,
     RemovedAlign = 1 << 11,
     HasRemovableJump = 1 << 12,
-#if TARGET_ARM64
     HasRemovedInstruction = 1 << 13,
-#endif
     OutOfOrderHead = 1 << 14,
 }

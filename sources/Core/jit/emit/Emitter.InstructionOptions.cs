@@ -7,9 +7,14 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public insOpts GetEmbRoundingMode(byte mode)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Embedded rounding modes are only supported on xarch.");
+        }
+
         switch (mode)
         {
             case 1:
@@ -34,11 +39,15 @@ public partial class Emitter
             }
         }
     }
-#endif
 
-#if TARGET_XARCH
     public void SetEvexEmbMaskIfNeeded(instrDesc id, insOpts instOptions)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "EVEX embedded masking is only supported on xarch.");
+        }
+
         if ((instOptions & INS_OPTS_EVEX_aaa_MASK) != 0)
         {
             assert(UseEvexEncodings);
@@ -53,7 +62,7 @@ public partial class Emitter
     }
 
 #if DEBUG
-    private static void emitInsSanityCheck(instrDesc id)
+    private static void emitInsSanityCheckXarch(instrDesc id)
     {
         var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
 
@@ -74,6 +83,5 @@ public partial class Emitter
                 ID_OP_SPEC or ID_OP_CALL or ID_OP_JMP);
         }
     }
-#endif
 #endif
 }

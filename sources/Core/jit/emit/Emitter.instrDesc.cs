@@ -11,18 +11,14 @@ public partial class Emitter
 {
     public abstract partial class instrDesc
     {
-#if TARGET_XARCH
         private uint _idCodeSize;
-#endif
         private instruction _idIns;
         private bool _idSmallDsc;
         private bool _idLargeCns;
         private bool _idLargeDsp;
         private bool _idCall;
         private byte _idCustomBits;
-#if TARGET_XARCH
         private uint _idScaledPrevOffset;
-#endif
         private instrDescDebugInfo? _debugInfo;
 
         public abstract int NativeLogicalSize { get; }
@@ -62,26 +58,62 @@ public partial class Emitter
             return false;
         }
 
-#if TARGET_XARCH
-        public uint idCodeSize()
+        public bool idIsEmptyAlign()
         {
-            return _idCodeSize;
+            if (!Configuration.TARGET_ARM64)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "ARM64 empty-alignment descriptors are not supported for this target.");
+            }
+
+            return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
         }
 
-        public void idCodeSize(uint size)
+        public uint idCodeSize()
         {
-            assert(size <= 15);
-            _idCodeSize = size & 0xF;
-            assert(size == _idCodeSize);
+            if (Configuration.TARGET_XARCH || Configuration.TARGET_LOONGARCH64 ||
+                Configuration.TARGET_RISCV64)
+            {
+                return _idCodeSize;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return GetArm32CodeSize();
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return GetArm64CodeSize();
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return GetTargetCodeSize();
+            }
+
+            return GetTargetCodeSize();
         }
 
         public uint idPrevSize()
         {
+            if (!Configuration.TARGET_XARCH)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Previous-instruction sizes are only supported on xarch.");
+            }
+
             return _idScaledPrevOffset * 4;
         }
 
         public void idSetPrevSize(uint previousSize)
         {
+            if (!Configuration.TARGET_XARCH)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Previous-instruction sizes are only supported on xarch.");
+            }
+
             assert((previousSize % 4) == 0);
 #if HOST_64BIT
             _idScaledPrevOffset = (previousSize / 4) & 0x1F;
@@ -90,35 +122,35 @@ public partial class Emitter
 #endif
             assert(idPrevSize() == previousSize);
         }
-#elif TARGET_ARM64
-        public bool idIsEmptyAlign()
+
+        private uint GetArm32CodeSize()
         {
-            return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
+            return _idInsSize == insSize.ISZ_16BIT ? 2u : _idInsSize == insSize.ISZ_32BIT ? 4u : 6u;
         }
 
-        public uint idCodeSize()
+        private uint GetArm64CodeSize()
         {
             uint size = 4;
             switch (idInsFmt())
             {
-                case insFormat.IF_LARGEADR:
-                case insFormat.IF_LARGEJMP:
+                case Arm64FrameFormats.IF_LARGEADR:
+                case Arm64FrameFormats.IF_LARGEJMP:
                 {
                     // adrp + add, or a conditional branch followed by an unconditional branch.
                     size = 8;
                     break;
                 }
 
-                case insFormat.IF_LARGELDC:
+                case Arm64FrameFormats.IF_LARGELDC:
                 {
                     // Vectors need adrp + ldr + fmov (or adrp + add + ld1); scalars need adrp + ldr.
-                    size = idReg1() is >= REG_V0 and <= REG_V31 ? 12u : 8u;
+                    size = idReg1() is >= regNumber.REG_ARM64_V0 and <= regNumber.REG_ARM64_V31 ? 12u : 8u;
                     break;
                 }
 
-                case insFormat.IF_SN_0A:
+                case Arm64FrameFormats.IF_SN_0A:
                 {
-                    if (idIsEmptyAlign())
+                    if ((idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE))
                     {
                         size = 0;
                     }
@@ -128,12 +160,6 @@ public partial class Emitter
 
             return size;
         }
-#else
-        public uint idCodeSize()
-        {
-            return GetTargetCodeSize();
-        }
-#endif
 
         public bool idIsSmallDsc()
         {
@@ -198,27 +224,38 @@ public partial class Emitter
             _idLargeCns = true;
         }
 
-#if TARGET_WASM
         public bool idIsLclVarDecl()
         {
-            return idInsFmt() == insFormat.IF_LOCAL_DECL;
+            RequireWasmDescriptor();
+            return idInsFmt() == insFormat.IF_WASM_LOCAL_DECL;
         }
 
         public bool idIsValTypeImm()
         {
-            return idInsFmt() == insFormat.IF_TRY_TABLE;
+            RequireWasmDescriptor();
+            return idInsFmt() == insFormat.IF_WASM_TRY_TABLE;
         }
 
         public bool idIsV128Imm()
         {
-            return idInsFmt() == insFormat.IF_V128;
+            RequireWasmDescriptor();
+            return idInsFmt() == insFormat.IF_WASM_V128;
         }
 
         public bool idIsMemargLaneImm()
         {
-            return idInsFmt() == insFormat.IF_MEMARG_LANE;
+            RequireWasmDescriptor();
+            return idInsFmt() == insFormat.IF_WASM_MEMARG_LANE;
         }
-#endif
+
+        private static void RequireWasmDescriptor()
+        {
+            if (!Configuration.TARGET_WASM)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "WebAssembly instruction descriptors are not supported for this target.");
+            }
+        }
 
         public instrDescDebugInfo? idDebugOnlyInfo()
         {
