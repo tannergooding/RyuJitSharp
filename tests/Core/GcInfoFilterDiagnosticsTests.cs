@@ -22,7 +22,7 @@ internal static class GcInfoFilterDiagnosticsTests
     public static void FilterSplitsAndPinningDumpNativeOldAndNewDescriptors(
         uint begin, uint end, bool byref)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.verbose = true;
             compiler.opts.dspDiffable = true;
@@ -76,7 +76,7 @@ internal static class GcInfoFilterDiagnosticsTests
     [Test]
     public static void FilterSplittingPreservesDescriptorRangesAndListOrder()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             var filterGroup = new insGroup { igOffs = 4 };
             var handlerGroup = new insGroup { igOffs = 8 };

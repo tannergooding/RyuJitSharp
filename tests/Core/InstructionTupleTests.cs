@@ -23,8 +23,9 @@ internal static class InstructionTupleTests
     [Test]
     public static void TupleMetadataCoversEveryInstruction()
     {
-        for (instruction ins = 0; ins < INS_count; ins++)
+        for (var ordinal = 0; ordinal < InstructionOrdinalMaps.GetNativeInstructionCount(); ordinal++)
         {
+            var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(ordinal);
             _ = Emitter.insTupleTypeInfo(ins);
         }
     }

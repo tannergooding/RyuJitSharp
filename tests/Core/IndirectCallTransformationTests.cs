@@ -97,7 +97,7 @@ internal static unsafe partial class IndirectCallTransformationTests
         WithCompiler(compiler => {
             var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)0x1000);
             call.IsNoReturn = noReturn;
-            call.RegNum = regNumber.REG_RAX;
+            call.RegNum = regNumber.REG_X64_RAX;
             var argument = compiler.gtNewBinaryNode(GT_ADD, TYP_INT,
                 compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 2));
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argument));

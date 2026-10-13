@@ -87,9 +87,9 @@ internal static class UnwindPrologRecordingTests
         WithProlog((compiler, codeGen) =>
         {
             CurrentSize(codeGen.Emitter) = 2;
-            compiler.unwindPush(REG_R12);
+            compiler.unwindPush(REG_X64_R12);
             CurrentSize(codeGen.Emitter) = 5;
-            compiler.unwindPush2(REG_RAX, REG_RBP);
+            compiler.unwindPush2(REG_X64_RAX, REG_X64_RBP);
 
             var func = compiler.funCurrentFunc();
             byte[] expected = [5, 0x50, 5, 0x02, 2, 0xC0];
@@ -105,22 +105,22 @@ internal static class UnwindPrologRecordingTests
         WithProlog((compiler, codeGen) =>
         {
             CurrentSize(codeGen.Emitter) = 7;
-            compiler.unwindSetFrameReg(REG_RBP, offset);
+            compiler.unwindSetFrameReg(REG_X64_RBP, offset);
 
             var func = compiler.funCurrentFunc();
             byte[] expected = [7, 3];
             Assert.That(Codes(in func), Is.EqualTo(expected));
-            Assert.That(func.unwindHeader.FrameRegister, Is.EqualTo((byte)REG_RBP));
+            Assert.That(func.unwindHeader.FrameRegister, Is.EqualTo((byte)REG_X64_RBP));
             Assert.That(func.unwindHeader.FrameOffset, Is.EqualTo(expectedOffset));
-            byte[] expectedHeader = [1, 0, 0, (byte)(((int)expectedOffset << 4) | (int)REG_RBP)];
+            byte[] expectedHeader = [1, 0, 0, (byte)(((int)expectedOffset << 4) | (int)REG_X64_RBP)];
             Assert.That(HeaderBytes(in func), Is.EqualTo(expectedHeader));
         });
     }
 
-    [TestCase(REG_R12, 0x7FFF8u)]
-    [TestCase(REG_R12, 0x80000u)]
-    [TestCase(REG_XMM6, 0x7FFF0u)]
-    [TestCase(REG_XMM6, 0x80000u)]
+    [TestCase(REG_X64_R12, 0x7FFF8u)]
+    [TestCase(REG_X64_R12, 0x80000u)]
+    [TestCase(REG_X64_XMM6, 0x7FFF0u)]
+    [TestCase(REG_X64_XMM6, 0x80000u)]
     public static void SavedRegistersUseNearAndFarWidths(regNumber reg, uint offset)
     {
         WithProlog((compiler, codeGen) =>
@@ -131,10 +131,10 @@ internal static class UnwindPrologRecordingTests
             var func = compiler.funCurrentFunc();
             byte[] expected = (reg, offset) switch
             {
-                (REG_R12, 0x7FFF8) => [19, 0xC4, 0xFF, 0xFF],
-                (REG_R12, 0x80000) => [19, 0xC5, 0, 0, 8, 0],
-                (REG_XMM6, 0x7FFF0) => [19, 0x68, 0xFF, 0x7F],
-                (REG_XMM6, 0x80000) => [19, 0x69, 0, 0, 8, 0],
+                (REG_X64_R12, 0x7FFF8) => [19, 0xC4, 0xFF, 0xFF],
+                (REG_X64_R12, 0x80000) => [19, 0xC5, 0, 0, 8, 0],
+                (REG_X64_XMM6, 0x7FFF0) => [19, 0x68, 0xFF, 0x7F],
+                (REG_X64_XMM6, 0x80000) => [19, 0x69, 0, 0, 8, 0],
                 _ => throw new AssertionException("Unexpected saved register."),
             };
             Assert.That(Codes(in func), Is.EqualTo(expected));
@@ -147,7 +147,7 @@ internal static class UnwindPrologRecordingTests
     {
         WithProlog((compiler, _) =>
         {
-            compiler.unwindSaveReg(REG_R11, 64);
+            compiler.unwindSaveReg(REG_X64_R11, 64);
             var func = compiler.funCurrentFunc();
             Assert.That(func.unwindCodeSlot, Is.EqualTo(514u));
         });
@@ -221,7 +221,7 @@ internal static class UnwindPrologRecordingTests
             var func = compiler.funCurrentFunc();
             Assert.That(func.startLoc?.GetIG(), Is.SameAs(beginGroup));
             Assert.That(func.endLoc?.GetIG(), Is.SameAs(endGroup));
-            compiler.unwindPush(REG_R12);
+            compiler.unwindPush(REG_X64_R12);
             byte[] expected = [0, 0xC0];
             Assert.That(Codes(in compiler.funCurrentFunc()), Is.EqualTo(expected));
         });

@@ -2,6 +2,7 @@
 
 #if HAS_FIXED_REGISTER_SET
 using NUnit.Framework;
+using System.Collections.Generic;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.regNumber;
 
@@ -21,7 +22,8 @@ internal static class ArgumentRegisterValidityTests
     public static void IntegerValidityUsesTheCompleteConventionMask(CorInfoCallConvExtension callConv)
     {
         var arguments = fullIntArgRegMask(callConv);
-        for (var reg = REG_INT_FIRST; reg <= REG_INT_LAST; reg++)
+        for (var reg = TargetRuntimeMetadata.IntegerRegisterFirst;
+            reg <= TargetRuntimeMetadata.IntegerRegisterLast; reg++)
         {
             Assert.That(isValidIntArgReg(reg, callConv), Is.EqualTo(arguments.IsSet(reg)));
         }
@@ -31,11 +33,18 @@ internal static class ArgumentRegisterValidityTests
         Assert.That(isValidIntArgReg(REG_STK, callConv), Is.False);
     }
 
-    [TestCase(FIRST_FP_ARGREG, true)]
-    [TestCase(LAST_FP_ARGREG, true)]
-    [TestCase((regNumber)((int)FIRST_FP_ARGREG - 1), false)]
-    [TestCase((regNumber)((int)LAST_FP_ARGREG + 1), false)]
-    [TestCase(REG_NA, false)]
+    private static IEnumerable<TestCaseData> FloatingArgumentCases()
+    {
+        var first = TargetRuntimeMetadata.FirstFloatingArgumentRegister;
+        var last = TargetRuntimeMetadata.LastFloatingArgumentRegister;
+        yield return new TestCaseData(first, first != REG_NA);
+        yield return new TestCaseData(last, last != REG_NA);
+        yield return new TestCaseData((regNumber)((int)first - 1), false);
+        yield return new TestCaseData((regNumber)((int)last + 1), false);
+        yield return new TestCaseData(REG_NA, false);
+    }
+
+    [TestCaseSource(nameof(FloatingArgumentCases))]
     public static void FloatingValidityPreservesInclusiveEndpointsAndRejectsNoRegister(
         regNumber reg, bool expected)
     {
@@ -49,7 +58,8 @@ internal static class ArgumentRegisterValidityTests
     {
         var lowerArguments = fullIntArgRegMask(callConv).Lower;
         var sawOverlap = false;
-        for (var reg = REG_MASK_FIRST; reg <= REG_MASK_LAST; reg++)
+        for (var reg = TargetRuntimeMetadata.MaskRegisterFirst;
+            reg <= TargetRuntimeMetadata.MaskRegisterLast; reg++)
         {
             var overlaps = (reg.SingleTypeMask & lowerArguments) != 0;
             Assert.That(isValidIntArgReg(reg, callConv), Is.EqualTo(overlaps));

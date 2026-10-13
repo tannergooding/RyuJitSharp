@@ -15,7 +15,7 @@ internal static class CompilerScopeCursorTests
     [Test]
     public static unsafe void DebugBasicBlocksSplitAtSortedScopeBoundaries()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, _, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, _, _) =>
         {
             compiler.opts.compDbgCode = true;
             compiler.compHndBBtab = [];
@@ -48,7 +48,7 @@ internal static class CompilerScopeCursorTests
     [Test]
     public static void SortedCursorsFollowIndicesAndRetainDescriptorIdentity()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, _, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, _, _) =>
         {
             compiler.info.compVarScopes = [
                 new() { vsdLVnum = 0, vsdLifeBeg = 10, vsdLifeEnd = 30 },

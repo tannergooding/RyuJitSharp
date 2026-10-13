@@ -44,8 +44,8 @@ internal static unsafe class UnwindPublicationTests
     {
         WithPublication((compiler, codeGen, context) =>
         {
-            compiler.unwindPush(REG_R12);
-            compiler.unwindSetFrameReg(REG_RBP, 32);
+            compiler.unwindPush(REG_X64_R12);
+            compiler.unwindSetFrameReg(REG_X64_RBP, 32);
             compiler.unwindEndProlog();
             codeGen.Emitter.emitCurIG = new insGroup();
 

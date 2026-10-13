@@ -37,7 +37,7 @@ internal static unsafe class StackArrayExpansionTests
             Assert.That(statements, Has.Count.EqualTo(3));
             var mtStore = statements[0].RootNode.AsIndir();
             Assert.That(mtStore.Oper, Is.EqualTo(GT_STOREIND));
-            Assert.That(mtStore.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(mtStore.Type, Is.EqualTo(TYP_LONG));
             Assert.That(mtStore.Addr.AsLclVarCommon().LclNum, Is.EqualTo(0));
             Assert.That(mtStore.Data.AsIntCon().IconValue, Is.EqualTo((nint)123));
 
@@ -68,7 +68,7 @@ internal static unsafe class StackArrayExpansionTests
                 stackAllocated: false);
             var unsupported = NewArrayCall(compiler, CORINFO_HELP_NEWARR_1_MAYBEFROZEN, 1, 22, 4,
                 stackAllocated: true);
-            var userCall = compiler.gtNewCallNode(TYP_I_IMPL, gtCallTypes.CT_USER_FUNC, NO_METHOD_HANDLE);
+            var userCall = compiler.gtNewCallNode(TYP_LONG, gtCallTypes.CT_USER_FUNC, NO_METHOD_HANDLE);
             var ordinary = Append(compiler, block, compiler.gtNewStoreLclVarNode(2, noStackArg));
             var other = Append(compiler, block, compiler.gtNewStoreLclVarNode(2, unsupported));
             var user = Append(compiler, block, compiler.gtNewStoreLclVarNode(2, userCall));
@@ -112,7 +112,7 @@ internal static unsafe class StackArrayExpansionTests
                 stackAllocated: true);
             var second = NewArrayCall(compiler, CORINFO_HELP_NEWARR_1_ALIGN8, 1, 222, 5,
                 stackAllocated: true);
-            var sum = compiler.gtNewBinaryNode(oper, TYP_I_IMPL, first, second);
+            var sum = compiler.gtNewBinaryNode(oper, TYP_LONG, first, second);
             sum.Flags |= GTF_CALL;
             var store = compiler.gtNewStoreLclVarNode(2, sum);
             var statement = Append(compiler, block, store);
@@ -139,10 +139,10 @@ internal static unsafe class StackArrayExpansionTests
         });
     }
 
-    [TestCase(false, TYP_I_IMPL)]
+    [TestCase(false, TYP_LONG)]
     [TestCase(true, TYP_BYTE)]
     [TestCase(true, TYP_INT)]
-    [TestCase(true, TYP_I_IMPL)]
+    [TestCase(true, TYP_LONG)]
     [TestCase(true, TYP_LONG)]
     [TestCase(true, TYP_FLOAT)]
     [TestCase(true, TYP_DOUBLE)]
@@ -160,7 +160,7 @@ internal static unsafe class StackArrayExpansionTests
             };
             var call = NewArrayCall(compiler, CORINFO_HELP_NEWARR_1_DIRECT, 0, 123, 3,
                 stackAllocated: true);
-            var sequence = compiler.gtNewCommaNode(TYP_I_IMPL, blockInit, call);
+            var sequence = compiler.gtNewCommaNode(TYP_LONG, blockInit, call);
             var store = compiler.gtNewStoreLclVarNode(2, sequence);
             var statement = Append(compiler, block, store);
             compiler.MethodHasStackAllocatedArray = true;
@@ -206,8 +206,8 @@ internal static unsafe class StackArrayExpansionTests
     private static GenTreeCall NewArrayCall(Compiler compiler, CorInfoHelpFunc helper, int local,
         int methodTable, int length, bool stackAllocated)
     {
-        var call = compiler.gtNewHelperCallNode(TYP_I_IMPL, helper,
-            compiler.gtNewIconNode(TYP_I_IMPL, methodTable), compiler.gtNewIconNode(TYP_INT, length));
+        var call = compiler.gtNewHelperCallNode(TYP_LONG, helper,
+            compiler.gtNewIconNode(TYP_LONG, methodTable), compiler.gtNewIconNode(TYP_INT, length));
         if (stackAllocated)
         {
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, local, 0);
@@ -256,7 +256,7 @@ internal static unsafe class StackArrayExpansionTests
         compiler.lvaCount = 4;
         compiler.lvaSetStruct(0, compiler.typGetBlkLayout(32), unsafeValueClsCheck: false);
         compiler.lvaSetStruct(1, compiler.typGetBlkLayout(32), unsafeValueClsCheck: false);
-        compiler.lvaTable[2].Type = TYP_I_IMPL;
+        compiler.lvaTable[2].Type = TYP_LONG;
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.codeGen = new CodeGen(compiler);
         var block = BasicBlock.New(compiler, BBJ_RETURN);

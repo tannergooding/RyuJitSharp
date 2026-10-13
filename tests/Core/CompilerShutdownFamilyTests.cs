@@ -90,11 +90,7 @@ internal static class CompilerShutdownFamilyTests
             writer.Flush();
 
             Assert.That(AltAssemblies(null), Is.Null);
-#if FEATURE_JIT_METHOD_PERF
             Assert.That(CsvFile(null), Is.Null);
-#else
-            Assert.That(CsvFile(null), Is.SameAs(csv));
-#endif
             var text = Encoding.UTF8.GetString(output.ToArray());
             Assert.That(text, Does.Not.Contain("GenTree operator counts"));
             Assert.That(text, Does.Not.Contain("All allocations:"));
@@ -188,10 +184,8 @@ internal static class CompilerShutdownFamilyTests
             Assert.That(text, Does.Contain("Total bashings: 0\n"));
             Assert.That(csvOutput.CanWrite, Is.True);
 #endif
-#if FEATURE_JIT_METHOD_PERF
 #if !NODEBASH_STATS
             Assert.That(CsvFile(null), Is.Null);
-#endif
 #endif
 #if COUNT_AST_OPERS
             Assert.That(text, Does.Not.Contain("GenTree operator counts"));

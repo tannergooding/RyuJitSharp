@@ -170,8 +170,8 @@ internal static unsafe class AsyncResumeGenerationTests
         });
     }
 
-    [TestCase(1L, REG_RAX)]
-    [TestCase(0x100000001L, REG_R11)]
+    [TestCase(1L, REG_X64_RAX)]
+    [TestCase(0x100000001L, REG_X64_R11)]
     public static void AddressGenerationUsesNativeStateTruncationAndProducesTheDestinationRegister(
         long state, regNumber reg)
     {
@@ -180,7 +180,7 @@ internal static unsafe class AsyncResumeGenerationTests
             var emitter = codeGen.Emitter;
             _ = emitter.emitDataConst(new byte[4], 4, TYP_INT);
             codeGen.GCInfo.gcMarkRegPtrVal(reg, TYP_REF);
-            var tree = new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, unchecked((nint)state))
+            var tree = new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_LONG, unchecked((nint)state))
             {
                 RegNum = reg,
             };
@@ -244,9 +244,9 @@ internal static unsafe class AsyncResumeGenerationTests
 
                     case 4:
                     {
-                        codeGen.genAsyncResumeInfo(new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, 0)
+                        codeGen.genAsyncResumeInfo(new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_LONG, 0)
                         {
-                            RegNum = REG_RAX,
+                            RegNum = REG_X64_RAX,
                         });
                         break;
                     }

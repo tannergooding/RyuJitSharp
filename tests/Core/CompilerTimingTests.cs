@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NUnit.Framework;
-#if FEATURE_JIT_METHOD_PERF && MEASURE_CLRAPI_CALLS
+#if MEASURE_CLRAPI_CALLS
 using static RyuJitSharp.API_ICorJitInfo_Names;
 #endif
 using static RyuJitSharp.Globals;
@@ -20,7 +20,6 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class CompilerTimingTests
 {
-#if FEATURE_JIT_METHOD_PERF
 #if MEASURE_CLRAPI_CALLS
     private static int _isIntrinsicCallCount;
 
@@ -667,7 +666,6 @@ internal static unsafe class CompilerTimingTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_maximum")]
     private static extern ref CompTimeInfo MaximumInfo(ref CompTimeSummaryInfo summary);
-#endif
 
     [Test]
     public static void TimingHooksPreserveOtherCompilerState()

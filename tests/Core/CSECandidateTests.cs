@@ -26,6 +26,9 @@ internal static unsafe class CSECandidateTests
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optCSEstop")]
     private static extern void Stop(Compiler compiler);
 
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Encode_Shared_Const_CSE_Value")]
+    private static extern nuint EncodeSharedCseConstant(Compiler? _, nuint key);
+
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "optValnumCSE_InitDataFlow")]
     private static extern void InitializeDataFlow(Compiler compiler);
 
@@ -136,6 +139,29 @@ internal static unsafe class CSECandidateTests
             Assert.That(second._cseNum, Is.EqualTo(1));
         });
     }
+
+#if DEBUG
+    [Test]
+    public static void SharedConstantEncodingPreservesHostPayloadOnThirtyTwoBitTargets()
+    {
+        Assume.That(IntPtr.Size, Is.EqualTo(8));
+
+        const string switchName = "RyuJitSharp.TARGET_64BIT";
+        var hadOriginalValue = AppContext.TryGetSwitch(switchName, out var originalValue);
+        AppContext.SetSwitch(switchName, false);
+
+        try
+        {
+            var value = unchecked((nuint)(nint)(-65536));
+            var key = EncodeSharedCseConstant(null, value);
+            Assert.That(Compiler.DecodeSharedCseConstant(key), Is.EqualTo(value));
+        }
+        finally
+        {
+            AppContext.SetSwitch(switchName, hadOriginalValue && originalValue);
+        }
+    }
+#endif
 
     [TestCase(false)]
     [TestCase(true)]

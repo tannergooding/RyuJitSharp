@@ -15,7 +15,7 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class AsyncResumeTableTargetTests
 {
-    private const uint EntrySize = 2 * TARGET_POINTER_SIZE;
+    private static uint EntrySize => (uint)(2 * Configuration.TARGET_POINTER_SIZE);
 
     [Test]
     public static void EntryLayoutUsesTwoTargetSizedUnsignedFields()

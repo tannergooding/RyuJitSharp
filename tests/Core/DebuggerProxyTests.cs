@@ -12,7 +12,7 @@ internal static class DebuggerProxyTests
     private static readonly int[] s_expectedArrayItems = [1, 0, 3];
     private static readonly int[] s_expectedStackItems = [4, 5, 0, 0, 0, 10];
 #if TARGET_XARCH
-    private static readonly regNumber[] s_expectedRax = [regNumber.REG_RAX];
+    private static readonly regNumber[] s_expectedRax = [regNumber.REG_X64_RAX];
 #endif
 
     [Test]
@@ -48,7 +48,7 @@ internal static class DebuggerProxyTests
     public static void RefPositionProxyMapsTheRegisterAssignmentUsingItsReferentType()
     {
         var record = new RegRecord();
-        record.init(regNumber.REG_RAX);
+        record.init(regNumber.REG_X64_RAX);
 
         var reference = new RefPosition(0, 0, null, RefType.RefTypeFixedReg);
         reference.setReg(record);

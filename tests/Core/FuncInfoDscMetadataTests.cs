@@ -153,13 +153,13 @@ internal static class FuncInfoDscMetadataTests
     [Test]
     public static void RiscvDwarfRegistersUseTheirNativeOrdinalRange()
     {
-        for (var value = (int)regNumber.REG_R0; value <= (int)regNumber.REG_FT11; value++)
+        for (var value = (int)regNumber.REG_RISCV64_R0; value <= (int)regNumber.REG_RISCV64_FT11; value++)
         {
             Assert.That(MapRiscvDwarfRegister(null, (regNumber)value), Is.EqualTo((short)value));
         }
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "mapRegNumToDwarfReg")]
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "MapCfiRegNumToDwarfReg")]
     private static extern short MapRiscvDwarfRegister(Compiler? compiler, regNumber reg);
 #endif
 

@@ -21,7 +21,7 @@ internal static unsafe class StructReturnClassificationTests
     [TestCase(5, TYPE_GC_NONE, TYP_UNKNOWN)]
     [TestCase(6, TYPE_GC_NONE, TYP_UNKNOWN)]
     [TestCase(7, TYPE_GC_NONE, TYP_UNKNOWN)]
-    [TestCase(8, TYPE_GC_NONE, TYP_I_IMPL)]
+    [TestCase(8, TYPE_GC_NONE, TYP_LONG)]
     [TestCase(8, TYPE_GC_REF, TYP_REF)]
     [TestCase(8, TYPE_GC_BYREF, TYP_BYREF)]
     [TestCase(9, TYPE_GC_NONE, TYP_UNKNOWN)]
@@ -87,7 +87,7 @@ internal static unsafe class StructReturnClassificationTests
         WithCompiler(8, TYPE_GC_NONE, intrinsic, namespaceName, name, (compiler, handle, metadata) => {
             var type = compiler.GetReturnTypeForStruct(handle, CorInfoCallConvExtension.CMemberFunction, out var kind);
 
-            Assert.That(type, Is.EqualTo(primitive ? TYP_I_IMPL : TYP_UNKNOWN));
+            Assert.That(type, Is.EqualTo(primitive ? TYP_LONG : TYP_UNKNOWN));
             Assert.That(kind, Is.EqualTo(primitive ? Compiler.SPK_PrimitiveType : Compiler.SPK_ByReference));
             Query[] expectedQueries = !intrinsic
                 ? [Query.ClassSize, Query.Intrinsic]
@@ -114,7 +114,7 @@ internal static unsafe class StructReturnClassificationTests
             if (registerCount != 0)
             {
                 Assert.That(descriptor.GetReturnRegType(0), Is.EqualTo(expectedType));
-                Assert.That(descriptor.GetAbiReturnReg(0, CorInfoCallConvExtension.Managed), Is.EqualTo(regNumber.REG_RAX));
+                Assert.That(descriptor.GetAbiReturnReg(0, CorInfoCallConvExtension.Managed), Is.EqualTo(regNumber.REG_X64_RAX));
             }
             Query[] expectedQueries = size == 8 ? [Query.ClassSize, Query.GcLayout] : [Query.ClassSize];
             Assert.That(metadata.Queries, Is.EqualTo(expectedQueries));

@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -36,7 +37,7 @@ internal static unsafe class LocalMorphTests
     {
         WithCompiler(compiler =>
         {
-            var atomic = new GenTreeCmpXchg(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 8),
+            var atomic = new GenTreeCmpXchg(TYP_INT, compiler.gtNewIconNode(TYP_LONG, 8),
                 compiler.gtNewIconNode(TYP_INT, 1), compiler.gtNewIconNode(TYP_INT, 0));
             GenTree tree = withParent ? compiler.gtNewUnaryNode(GT_NEG, TYP_INT, atomic) : atomic;
 
@@ -147,17 +148,25 @@ internal static unsafe class LocalMorphTests
     }
 
 #if TARGET_XARCH
-    [TestCase(TYP_INT, IND_COST_EX, 2)]
-    [TestCase(TYP_BYTE, IND_COST_EX + 1, 3)]
-    [TestCase(TYP_FLOAT, FLT_IND_COST_EX, 4)]
-    [TestCase(TYP_DOUBLE, FLT_IND_COST_EX, 4)]
-    [TestCase(TYP_SIMD32, FLT_IND_COST_EX + 1, 4)]
-    [TestCase(TYP_SIMD64, FLT_IND_COST_EX + 2, 6)]
+    private static IEnumerable<TestCaseData> XarchIndirectionCostCases()
+    {
+        yield return new TestCaseData(TYP_INT, IND_COST_EX, 2);
+        yield return new TestCaseData(TYP_BYTE, IND_COST_EX + 1, 3);
+        yield return new TestCaseData(TYP_FLOAT, FLT_IND_COST_EX, 4);
+        yield return new TestCaseData(TYP_DOUBLE, FLT_IND_COST_EX, 4);
+        if (Configuration.FEATURE_SIMD)
+        {
+            yield return new TestCaseData(TYP_SIMD32, FLT_IND_COST_EX + 1, 4);
+            yield return new TestCaseData(TYP_SIMD64, FLT_IND_COST_EX + 2, 6);
+        }
+    }
+
+    [TestCaseSource(nameof(XarchIndirectionCostCases))]
     public static void IndirectionNodeCostsPreserveXarchTypeRules(var_types type, int execution, int size)
     {
         WithCompiler(compiler =>
         {
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 16);
+            var address = compiler.gtNewIconNode(TYP_LONG, 16);
             address.SetCosts(3, 4);
             var node = compiler.gtNewIndir(type, address);
 
@@ -371,7 +380,7 @@ internal static unsafe class LocalMorphTests
     public static void AddressOffsetsDoNotWrap(uint offset, uint delta, bool succeeds)
     {
         WithCompiler(compiler => {
-            var stmt = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_I_IMPL, 0));
+            var stmt = compiler.gtNewStmt(compiler.gtNewIconNode(TYP_LONG, 0));
             var source = new LocalAddressVisitor.Value(stmt, ref stmt.RootNodeRef, owner: null);
             source.Address(2, offset);
             var result = new LocalAddressVisitor.Value(stmt, ref stmt.RootNodeRef, owner: null);
@@ -606,7 +615,7 @@ internal static unsafe class LocalMorphTests
     {
         WithCompiler(compiler => {
             InitializePromotedPair(compiler);
-            var data = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 16));
+            var data = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_LONG, 16));
             GenTree tree = compiler.gtNewStoreIndNode(TYP_INT, compiler.gtNewLclVarAddrNode(TYP_BYREF, 0), data);
             var visitor = new LocalAddressVisitor(compiler);
             visitor.MorphLocalIndir(ref tree, 0, 4, user: null);
@@ -727,7 +736,7 @@ internal static unsafe class LocalMorphTests
         WithCompiler(compiler => {
             compiler.lvaTable[0].Type = TYP_INT;
             var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
-            var constant = compiler.gtNewIconNode(TYP_I_IMPL, unchecked((nint)(nuint)offset));
+            var constant = compiler.gtNewIconNode(TYP_LONG, unchecked((nint)(nuint)offset));
             var original = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, address, constant);
             var stmt = compiler.gtNewStmt(original);
             var value = new LocalAddressVisitor.Value(stmt, ref stmt.RootNodeRef, owner: null);
@@ -905,7 +914,7 @@ internal static unsafe class LocalMorphTests
             visitor.VisitStmt(stmt);
 
             Assert.That(stmt.RootNode.Oper, Is.EqualTo(GT_CNS_INT));
-            Assert.That(stmt.RootNode.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(stmt.RootNode.Type, Is.EqualTo(TYP_LONG));
             Assert.That(stmt.RootNode.AsIntCon().IconValue, Is.EqualTo((nint)3));
             Assert.That(stmt.RootNode._vnPair.Liberal, Is.EqualTo(ValueNumStore.NoVN));
             Assert.That(stmt.TreeListBegin, Is.Null);
@@ -936,14 +945,14 @@ internal static unsafe class LocalMorphTests
 #if DEBUG
             compiler.verbose = true;
             var output = InstructionRecordingTestSupport.Capture(() => status = compiler.fgRetypeImplicitByRefArgs());
-            var diagnostic = $"Changing the lvType for struct parameter V00 to {TYP_I_IMPL.Name}.";
+            var diagnostic = $"Changing the lvType for struct parameter V00 to {TYP_LONG.Name}.";
             Assert.That(output, implicitByRef ? Does.Contain(diagnostic) : Does.Not.Contain("Changing the lvType"));
 #else
             status = compiler.fgRetypeImplicitByRefArgs();
 #endif
 
             Assert.That(status, Is.EqualTo(implicitByRef ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING));
-            Assert.That(arg.Type, Is.EqualTo(implicitByRef ? TYP_I_IMPL : TYP_STRUCT));
+            Assert.That(arg.Type, Is.EqualTo(implicitByRef ? TYP_LONG : TYP_STRUCT));
             Assert.That(arg.IsAddressExposed, Is.EqualTo(!implicitByRef));
             Assert.That(arg.lvDoNotEnregister, Is.EqualTo(!implicitByRef));
             Assert.That(arg.IsImplicitByRef, Is.EqualTo(implicitByRef));
@@ -952,7 +961,7 @@ internal static unsafe class LocalMorphTests
         }, minOpts: true);
     }
 
-    [TestCase(false, TYP_I_IMPL)]
+    [TestCase(false, TYP_LONG)]
     [TestCase(true, TYP_BYREF)]
     public static void AsyncImplicitByRefRetainsGcTrackedPointer(bool asyncMethod, var_types pointerType)
     {
@@ -1024,7 +1033,7 @@ internal static unsafe class LocalMorphTests
             Assert.That(compiler.lvaTable, Is.Not.SameAs(originalTable));
             Assert.That(compiler.lvaCount, Is.EqualTo(4));
             ref var pointer = ref compiler.lvaTable[0];
-            Assert.That(pointer.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(pointer.Type, Is.EqualTo(TYP_LONG));
             Assert.That(pointer.lvPromoted, Is.EqualTo(keep));
             Assert.That(pointer.lvFieldLclStart, Is.EqualTo(3));
             Assert.That(pointer.lvFieldCnt, Is.Zero);
@@ -1055,7 +1064,7 @@ internal static unsafe class LocalMorphTests
                 Assert.That(store.LclNum, Is.EqualTo(3));
                 Assert.That(store.Data.Oper, Is.EqualTo(GT_BLK));
                 Assert.That(store.Data.AsBlk().Layout, Is.SameAs(layout));
-                Assert.That(store.Data.AsIndir().Addr.Type, Is.EqualTo(TYP_I_IMPL));
+                Assert.That(store.Data.AsIndir().Addr.Type, Is.EqualTo(TYP_LONG));
                 Assert.That(store.Data.AsIndir().Addr.AsLclVarCommon().LclNum, Is.Zero);
                 Assert.That(stmt.NextStmt, Is.Null);
             }
@@ -1102,7 +1111,7 @@ internal static unsafe class LocalMorphTests
             local._vnPair.SetBoth(42);
             local.SsaNum = 9;
             var statement = compiler.gtNewStmt(local);
-            arg.Type = TYP_I_IMPL;
+            arg.Type = TYP_LONG;
             compiler.fgGlobalMorph = true;
 
             statement.RootNodeRef = compiler.fgMorphExpandLocal(local) ??
@@ -1114,7 +1123,7 @@ internal static unsafe class LocalMorphTests
             var address = result.Oper is GT_ADD ? result : result.AsIndir().Addr;
             var pointer = address.Oper is GT_ADD ? address.AsOp().Op1 : address;
             Assert.That(pointer.Oper, Is.EqualTo(GT_LCL_VAR));
-            Assert.That(pointer.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(pointer.Type, Is.EqualTo(TYP_LONG));
             Assert.That(pointer.AsLclVarCommon().LclNum, Is.Zero);
             Assert.That(pointer.AsLclVarCommon().HasSsaName, Is.False);
             Assert.That(pointer.Flags & GTF_ALL_EFFECT, Is.EqualTo(GTF_EMPTY));
@@ -1157,8 +1166,8 @@ internal static unsafe class LocalMorphTests
             arg.lvIsParam = true;
             arg.IsImplicitByRef = true;
             var original = compiler.gtNewLclvNode(TYP_STRUCT, 0);
-            arg.Type = TYP_I_IMPL;
-            var pointer = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            arg.Type = TYP_LONG;
+            var pointer = compiler.gtNewLclvNode(TYP_LONG, 0);
             Assert.That(compiler.fgMorphExpandLocal(original), Is.Null);
             compiler.fgGlobalMorph = true;
             Assert.That(compiler.fgMorphExpandLocal(pointer), Is.Null);
@@ -1179,7 +1188,7 @@ internal static unsafe class LocalMorphTests
     public static void ImplicitByRefFieldExpansionCombinesOffsetsWithoutClaimingParentDeath()
     {
         WithCompiler(compiler => {
-            compiler.lvaTable[0].Type = TYP_I_IMPL;
+            compiler.lvaTable[0].Type = TYP_LONG;
             compiler.lvaTable[0].lvIsParam = true;
             compiler.lvaTable[0].IsImplicitByRef = true;
             compiler.lvaTable[1].Type = TYP_LONG;
@@ -1214,7 +1223,7 @@ internal static unsafe class LocalMorphTests
             compiler.lvaTable[2].lvPromoted = true;
             compiler.lvaTable[2].lvFieldCnt = 2;
             var local = compiler.gtNewLclvNode(TYP_STRUCT, 0);
-            compiler.lvaTable[0].Type = TYP_I_IMPL;
+            compiler.lvaTable[0].Type = TYP_LONG;
             local.Flags = allFieldsDying ? compiler.lvaTable[2].AllFieldDeathFlags : GTF_VAR_DEATH;
             var expanded = compiler.fgMorphExpandImplicitByRefArg(local) ??
                 throw new InvalidOperationException("Missing demoted-parameter expansion.");
@@ -1377,13 +1386,13 @@ internal static unsafe class LocalMorphTests
         FlowGraphCleanupTests.WithCompiler(NodeThreading.AllLocals, compiler => {
             compiler.lvaTable[0].Type = TYP_STRUCT;
             compiler.lvaTable[0].Layout = new ClassLayout(8);
-            compiler.lvaTable[1].Type = TYP_I_IMPL;
+            compiler.lvaTable[1].Type = TYP_LONG;
 #if DEBUG
             compiler.lvaTable[0].IsDefinedViaAddress = true;
 #endif
             GenTree address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 4);
             address.Flags |= GTF_VAR_DEF;
-            var read = compiler.gtNewLclvNode(TYP_I_IMPL, 1);
+            var read = compiler.gtNewLclvNode(TYP_LONG, 1);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(address).WithWellKnownArg(WellKnownArg.RetBuffer));

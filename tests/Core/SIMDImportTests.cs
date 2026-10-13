@@ -23,7 +23,7 @@ internal static unsafe class SIMDImportTests
     [TestCase("Vector512`1", 64, CORINFO_TYPE_DOUBLE, true, true, TYP_DOUBLE, 64)]
     [TestCase("Vector512`1", 64, CORINFO_TYPE_DOUBLE, true, false, TYP_UNDEF, 0)]
     [TestCase("Vector128`1", 32, CORINFO_TYPE_FLOAT, true, true, TYP_UNDEF, 0)]
-    [TestCase("Vector128`1", 16, CORINFO_TYPE_NATIVEINT, true, true, TYP_I_IMPL, 16)]
+    [TestCase("Vector128`1", 16, CORINFO_TYPE_NATIVEINT, true, true, TYP_LONG, 16)]
     [TestCase("Vector128`1", 16, CORINFO_TYPE_CLASS, true, true, TYP_UNDEF, 0)]
     [TestCase("Vector128`2", 16, CORINFO_TYPE_FLOAT, true, true, TYP_UNDEF, 0)]
     public static void HardwareVectorRecognitionRespectsWidthElementAndAvailableISA(

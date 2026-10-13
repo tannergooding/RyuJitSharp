@@ -622,8 +622,8 @@ internal static unsafe class AbiHeaderTests
         ref readonly var error = ref compiler.lvaGetParameterAbiInfo(1);
         ref readonly var ordinary = ref compiler.lvaGetParameterAbiInfo(2);
         ref readonly var floating = ref compiler.lvaGetParameterAbiInfo(3);
-        Assert.That(self.Segments[0].Register, Is.EqualTo(REG_SWIFT_SELF));
-        Assert.That(error.Segments[0].Register, Is.EqualTo(REG_SWIFT_ERROR));
+        Assert.That(self.Segments[0].Register, Is.EqualTo(TargetRuntimeMetadata.SwiftSelfRegister));
+        Assert.That(error.Segments[0].Register, Is.EqualTo(TargetRuntimeMetadata.SwiftErrorRegister));
         Assert.That(ordinary.Segments[0].Register, Is.EqualTo(IntArgRegs[0]));
         Assert.That(floating.Segments[0].Register, Is.EqualTo(FltArgRegs[0]));
 
@@ -646,8 +646,8 @@ internal static unsafe class AbiHeaderTests
         var ordinary = classifier.Classify(compiler, TYP_INT, null, WellKnownArg.None);
         var expected = argument switch {
             WellKnownArg.RetBuffer => theFixedRetBuffReg(CorInfoCallConvExtension.Swift),
-            WellKnownArg.SwiftSelf => REG_SWIFT_SELF,
-            _ => REG_SWIFT_ERROR,
+            WellKnownArg.SwiftSelf => TargetRuntimeMetadata.SwiftSelfRegister,
+            _ => TargetRuntimeMetadata.SwiftErrorRegister,
         };
 
         Assert.That(special.Segments[0].Register, Is.EqualTo(expected));

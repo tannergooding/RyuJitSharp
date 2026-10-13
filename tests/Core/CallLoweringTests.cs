@@ -82,12 +82,12 @@ internal static unsafe class CallLoweringTests
     {
         WithCompiler(compiler => {
             var arg = compiler.gtNewIconNode(var_types.TYP_INT, 42);
-            var putArg = compiler.gtNewPutArgReg(var_types.TYP_INT, arg, regNumber.REG_RCX);
+            var putArg = compiler.gtNewPutArgReg(var_types.TYP_INT, arg, regNumber.REG_X64_RCX);
 
             Assert.That(putArg.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
             Assert.That(putArg.Type, Is.EqualTo(var_types.TYP_INT));
             Assert.That(putArg.Op1, Is.SameAs(arg));
-            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_RCX));
+            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_X64_RCX));
         });
     }
 
@@ -180,14 +180,14 @@ internal static unsafe class CallLoweringTests
             var arg = call.Args.PushBack(NewCallArg.CreateForPrimitive(value));
             block.InsertAtEnd(value);
             block.InsertAtEnd(call);
-            var segment = AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8);
+            var segment = AbiPassingSegment.InRegister(regNumber.REG_X64_RCX, 0, 8);
 
             InsertPutArgReg(lowering, ref arg.NodeRef, in segment);
 
             var putArg = arg.Node;
             Assert.That(putArg.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
             Assert.That(putArg.Type, Is.EqualTo(var_types.TYP_INT));
-            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_RCX));
+            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_X64_RCX));
             Assert.That(putArg.Next, Is.SameAs(call));
             Assert.That(call.Prev, Is.SameAs(putArg));
             var operand = putArg.AsUnOp().Op1;
@@ -228,7 +228,7 @@ internal static unsafe class CallLoweringTests
             var call = new GenTreeCall(var_types.TYP_VOID);
             var arg = call.Args.PushBack(NewCallArg.CreateForStruct(fields, var_types.TYP_STRUCT, new ClassLayout(8)));
             arg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
-                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8));
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_X64_RCX, 0, 8));
             block.InsertAtEnd(first);
             block.InsertAtEnd(second);
             block.InsertAtEnd(fields);
@@ -238,7 +238,7 @@ internal static unsafe class CallLoweringTests
 
             var putArg = arg.Node;
             Assert.That(putArg.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
-            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_RCX));
+            Assert.That(putArg.RegNum, Is.EqualTo(regNumber.REG_X64_RCX));
             var combined = putArg.AsUnOp().Op1.AsOp();
             Assert.That(combined.Oper, Is.EqualTo(genTreeOps.GT_OR));
             Assert.That(combined.Type, Is.EqualTo(var_types.TYP_LONG));
@@ -336,7 +336,7 @@ internal static unsafe class CallLoweringTests
             var call = new GenTreeCall(var_types.TYP_VOID);
             var arg = call.Args.PushBack(NewCallArg.CreateForStruct(fields, var_types.TYP_STRUCT, compiler.typGetBlkLayout(4)));
             arg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
-                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 4));
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_X64_RCX, 0, 4));
             block.InsertAtEnd(value);
             block.InsertAtEnd(fields);
             block.InsertAtEnd(call);
@@ -344,7 +344,7 @@ internal static unsafe class CallLoweringTests
             LowerArgFieldList(lowering, arg, fields);
 
             Assert.That(arg.Node.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
-            Assert.That(arg.Node.RegNum, Is.EqualTo(regNumber.REG_RCX));
+            Assert.That(arg.Node.RegNum, Is.EqualTo(regNumber.REG_X64_RCX));
             Assert.That(arg.Node.AsUnOp().Op1, Is.SameAs(value));
             Assert.That(block.FirstNode, Is.SameAs(value));
             Assert.That(value.Next, Is.SameAs(arg.Node));
@@ -374,7 +374,7 @@ internal static unsafe class CallLoweringTests
             var secondValue = compiler.gtNewIconNode(var_types.TYP_LONG, 2);
             var firstArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(firstValue));
             firstArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
-                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 4));
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_X64_RCX, 0, 4));
             var secondArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(secondValue));
             secondArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
                 compiler, AbiPassingSegment.OnStack(32, 0, 8));
@@ -392,7 +392,7 @@ internal static unsafe class CallLoweringTests
             LowerArgsForCall(lowering, call);
 
             Assert.That(firstArg.Node.Oper, Is.EqualTo(genTreeOps.GT_PUTARG_REG));
-            Assert.That(firstArg.Node.RegNum, Is.EqualTo(regNumber.REG_RCX));
+            Assert.That(firstArg.Node.RegNum, Is.EqualTo(regNumber.REG_X64_RCX));
             Assert.That(firstArg.Node.AsUnOp().Op1, Is.SameAs(firstValue));
             var stackArg = secondArg.Node.AsPutArgStk();
             Assert.That(stackArg.ArgOffset, Is.EqualTo(32));

@@ -355,8 +355,13 @@ internal static unsafe class ArgumentRegisterMappingTests
         Assert.That(s_assertions, Is.EqualTo(expectedAssertions));
     }
 
-    [TestCase(REG_INT_FIRST)]
-    [TestCase(REG_FP_LAST)]
+    private static IEnumerable<TestCaseData> FloatingReverseCases()
+    {
+        yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast);
+    }
+
+    [TestCaseSource(nameof(FloatingReverseCases))]
     public static void FloatingReverseReportsInvalidArgumentMembershipWithoutObservingItsNumericContinuation(
         regNumber reg)
     {

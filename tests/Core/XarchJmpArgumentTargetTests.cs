@@ -91,7 +91,7 @@ internal static class XarchJmpArgumentTargetTests
                 new LclVarDsc
                 {
                     Type = TYP_FLOAT,
-                    RegNum = REG_XMM2,
+                    RegNum = REG_X64_XMM2,
                     lvLRACandidate = true,
                     lvIsParam = true,
                     lvIsRegArg = true,
@@ -107,22 +107,22 @@ internal static class XarchJmpArgumentTargetTests
                     Layout = new ClassLayout(32),
                     lvOnFrame = true,
                     StackOffset = 0,
-                    RegNum = REG_STK,
+                    RegNum = REG_X64_STK,
                 },
             ];
             compiler.lvaParameterPassingInfo =
             [
                 AbiPassingInformation.FromSegment(compiler, false,
-                    AbiPassingSegment.InRegister(REG_XMM0, 0, 4)),
+                    AbiPassingSegment.InRegister(REG_X64_XMM0, 0, 4)),
             ];
             compiler.compCurLife = VarSetOps.MakeEmpty(compiler);
             VarSetOps.AddElemD(compiler, compiler.compCurLife, 0);
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
             codeGen.GCInfo.gcTrkStkPtrLcls = VarSetOps.MakeEmpty(compiler);
 
-            var integerLive = Mask(REG_RDX);
-            var floatingHome = Mask(REG_XMM2);
-            var floatingArgument = Mask(REG_XMM0);
+            var integerLive = Mask(REG_X64_RDX);
+            var floatingHome = Mask(REG_X64_XMM2);
+            var floatingArgument = Mask(REG_X64_XMM0);
             codeGen.RegSet.ClearMaskVars();
             codeGen.RegSet.AddMaskVars(integerLive | floatingHome);
 
@@ -132,14 +132,14 @@ internal static class XarchJmpArgumentTargetTests
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movss));
             Assert.That(descriptors[0].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_XMM2));
+            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_movss));
             Assert.That(descriptors[1].idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_XMM0));
+            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_X64_XMM0));
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(integerLive | floatingArgument));
             Assert.That((codeGen.RegSet.GetMaskVars() & floatingHome).IsEmpty, Is.True);
             Assert.That(codeGen.RegSet.GetMaskVars() & integerLive, Is.EqualTo(integerLive));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_XMM2));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_XMM2));
         });
     }
 

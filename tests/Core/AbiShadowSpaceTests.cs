@@ -43,7 +43,7 @@ internal static class AbiShadowSpaceTests
     [TestCase(WindowsAmd64R10)]
     [TestCase(WindowsAmd64Rsp)]
     [TestCase(WindowsAmd64Xmm4)]
-    [TestCase(REG_NA)]
+    [TestCase(REG_X64_NA)]
     public static void RegistersWithoutCallerHomesAreRejected(regNumber reg)
     {
         AssumeWindowsAmd64Abi();

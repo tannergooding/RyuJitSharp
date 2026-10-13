@@ -19,11 +19,11 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class SharedStructArgumentSetupTests
 {
 #if TARGET_AMD64
-    private const regNumber DestinationRegister = REG_RDI;
-    private const regNumber SourceRegister = REG_RSI;
-    private const regNumber AddressRegister = REG_R10;
-    private const regNumber FieldRegister = REG_RAX;
-    private const regNumber ReferenceRegister = REG_RDX;
+    private const regNumber DestinationRegister = REG_X64_RDI;
+    private const regNumber SourceRegister = REG_X64_RSI;
+    private const regNumber AddressRegister = REG_X64_R10;
+    private const regNumber FieldRegister = REG_X64_RAX;
+    private const regNumber ReferenceRegister = REG_X64_RDX;
 #else
     private const regNumber DestinationRegister = REG_ARM64_R0;
     private const regNumber SourceRegister = REG_ARM64_R1;
@@ -53,7 +53,7 @@ internal static unsafe class SharedStructArgumentSetupTests
             codeGen.GCInfo.gcMarkRegPtrVal(addressReg, TYP_BYREF);
             codeGen.GCInfo.gcMarkRegPtrVal(ReferenceRegister, TYP_REF);
 
-            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_NA);
+            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_X64_NA);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(sourceReady ? 0 : 1));
@@ -86,7 +86,7 @@ internal static unsafe class SharedStructArgumentSetupTests
             StackArgVariable(codeGen) = 0;
             codeGen.GCInfo.gcMarkRegPtrVal(DestinationRegister, TYP_BYREF);
 
-            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_NA);
+            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_X64_NA);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(3));
@@ -134,7 +134,7 @@ internal static unsafe class SharedStructArgumentSetupTests
             StackArgVariable(codeGen) = 0;
             codeGen.GCInfo.gcMarkRegPtrVal(ReferenceRegister, TYP_REF);
 
-            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_NA);
+            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_X64_NA);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(destinationReady ? 1 : 2));
@@ -195,7 +195,7 @@ internal static unsafe class SharedStructArgumentSetupTests
             {
                 Type = TYP_STRUCT,
                 Layout = new ClassLayout(16),
-                RegNum = REG_STK,
+                RegNum = REG_X64_STK,
                 lvOnFrame = true,
                 StackOffset = 0,
             };
@@ -254,14 +254,14 @@ internal static unsafe class SharedStructArgumentSetupTests
             var argument = Argument(source, 0, unchecked((int)size));
             argument.RegNum = DestinationRegister;
 
-            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_RCX);
+            ConsumeStructArgument(codeGen, argument, DestinationRegister, SourceRegister, REG_X64_RCX);
 
             var descriptors = Descriptors(codeGen);
             Assert.That(descriptors, Has.Count.EqualTo(1));
             var descriptor = descriptors[0];
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_RCX));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_RCX));
             Assert.That(GetConstant(codeGen.Emitter, descriptor), Is.EqualTo((nint)(nuint)size));
         });
     }
@@ -394,9 +394,9 @@ internal static unsafe class SharedStructArgumentSetupTests
         compiler.eeInfoInitialized = true;
         compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
         compiler.lvaTable = [
-            new() { Type = TYP_STRUCT, Layout = new ClassLayout(64), RegNum = REG_STK,
+            new() { Type = TYP_STRUCT, Layout = new ClassLayout(64), RegNum = REG_X64_STK,
                 lvOnFrame = true, StackOffset = 0 },
-            new() { Type = TYP_STRUCT, Layout = new ClassLayout(64), RegNum = REG_STK,
+            new() { Type = TYP_STRUCT, Layout = new ClassLayout(64), RegNum = REG_X64_STK,
                 lvOnFrame = true, StackOffset = -64 },
         ];
         compiler.lvaCount = 2;

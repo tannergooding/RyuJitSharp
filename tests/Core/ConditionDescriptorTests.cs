@@ -12,7 +12,7 @@ internal static class ConditionDescriptorTests
     [Test]
     public static void EveryValidConditionHasACompleteDescriptor()
     {
-        Assert.That((int)EJ_COUNT, Is.EqualTo(18));
+        Assert.That((int)EJ_XARCH_COUNT, Is.EqualTo(18));
         for (var value = 2; value < 32; value++)
         {
             var desc = GenConditionDesc.Get(new GenCondition((GenCondition.CodeKind)value));
@@ -22,9 +22,9 @@ internal static class ConditionDescriptorTests
         }
     }
 
-    [TestCase(GenCondition.SLT, EJ_jl)]
-    [TestCase(GenCondition.C, EJ_jb)]
-    [TestCase(GenCondition.O, EJ_jo)]
+    [TestCase(GenCondition.SLT, EJ_XARCH_jl)]
+    [TestCase(GenCondition.C, EJ_XARCH_jb)]
+    [TestCase(GenCondition.O, EJ_XARCH_jo)]
     public static void IntegerAndFlagConditionsSelectTheirNativeJump(GenCondition.CodeKind code, emitJumpKind jump)
     {
         var desc = GenConditionDesc.Get(new GenCondition(code));
@@ -74,14 +74,14 @@ internal static class ConditionDescriptorTests
     private static bool EvaluateJump(emitJumpKind jump, int flags)
     {
         return jump switch {
-            EJ_je => (flags & 1) != 0,
-            EJ_jne => (flags & 1) == 0,
-            EJ_jb => (flags & 4) != 0,
-            EJ_jbe => (flags & 5) != 0,
-            EJ_jae => (flags & 4) == 0,
-            EJ_ja => (flags & 5) == 0,
-            EJ_jp => (flags & 2) != 0,
-            EJ_jnp => (flags & 2) == 0,
+            EJ_XARCH_je => (flags & 1) != 0,
+            EJ_XARCH_jne => (flags & 1) == 0,
+            EJ_XARCH_jb => (flags & 4) != 0,
+            EJ_XARCH_jbe => (flags & 5) != 0,
+            EJ_XARCH_jae => (flags & 4) == 0,
+            EJ_XARCH_ja => (flags & 5) == 0,
+            EJ_XARCH_jp => (flags & 2) != 0,
+            EJ_XARCH_jnp => (flags & 2) == 0,
             _ => throw new InvalidOperationException(),
         };
     }

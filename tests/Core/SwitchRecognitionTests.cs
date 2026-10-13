@@ -218,7 +218,7 @@ internal static unsafe class SwitchRecognitionTests
     }
 
     [TestCase(TYP_INT)]
-    [TestCase(TYP_I_IMPL)]
+    [TestCase(TYP_LONG)]
     public static void MaximumConstantNormalizesAtItsSignedWidth(var_types type)
     {
         WithCompiler(compiler =>

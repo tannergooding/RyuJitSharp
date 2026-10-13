@@ -18,11 +18,11 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class SharedLocalVariableSpillTests
 {
 #if TARGET_AMD64
-    private const regNumber IntegerRegister = REG_RAX;
-    private const regNumber FloatRegister = REG_XMM0;
-    private const regNumber UnrelatedRegister = REG_RDX;
-    private const regNumber ReferenceRegister = REG_RCX;
-    private const regNumber ByrefRegister = REG_R8;
+    private const regNumber IntegerRegister = REG_X64_RAX;
+    private const regNumber FloatRegister = REG_X64_XMM0;
+    private const regNumber UnrelatedRegister = REG_X64_RDX;
+    private const regNumber ReferenceRegister = REG_X64_RCX;
+    private const regNumber ByrefRegister = REG_X64_R8;
 #else
     private const regNumber IntegerRegister = REG_ARM64_R0;
     private const regNumber FloatRegister = REG_ARM64_V0;
@@ -85,7 +85,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.RegNum, Is.EqualTo(reg));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         }, layoutSize);
@@ -121,7 +121,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.True);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
     }
@@ -145,7 +145,7 @@ internal static unsafe class SharedLocalVariableSpillTests
 #else
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
 #endif
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
         });
     }
     [TestCase(TYP_INT, false)]
@@ -176,7 +176,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.EqualTo(isGc));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.RegNum, Is.EqualTo(IntegerRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
@@ -213,7 +213,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(refs));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(spilled ? IntegerRegister : REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(spilled ? IntegerRegister : REG_X64_STK));
             Assert.That(tree.RegNum, Is.EqualTo(IntegerRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
             Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
@@ -227,7 +227,7 @@ internal static unsafe class SharedLocalVariableSpillTests
     {
         WithCompiler(type, IntegerRegister, (compiler, codeGen, tree) =>
         {
-            compiler.lvaTable[0].RegNum = REG_STK;
+            compiler.lvaTable[0].RegNum = REG_X64_STK;
             codeGen.RegSet.RemoveMaskVars(Mask(IntegerRegister));
             compiler.opts.compDbgInfo = true;
             codeGen.initializeVariableLiveKeeper();
@@ -244,7 +244,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
             Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
         });
@@ -267,7 +267,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.False);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.RegNum, Is.EqualTo(FloatRegister));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
@@ -289,7 +289,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.RegSet.GetMaskVars(), Is.EqualTo(Mask(UnrelatedRegister)));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
         });
     }
@@ -316,7 +316,7 @@ internal static unsafe class SharedLocalVariableSpillTests
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(Mask(ReferenceRegister)));
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur, Is.EqualTo(Mask(ByrefRegister)));
             Assert.That(VarSetOps.IsMember(compiler, codeGen.GCInfo.gcVarPtrSetCur, 0), Is.True);
-            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_X64_STK));
             Assert.That(tree.Flags, Is.EqualTo(flags & ~GTF_SPILL));
             Assert.That(codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0), Is.Empty);
         });

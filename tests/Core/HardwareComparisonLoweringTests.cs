@@ -199,7 +199,7 @@ internal static unsafe class HardwareComparisonLoweringTests
         var_types simdType, byte size, GenTree first, GenTree firstMask, GenTree? second,
         GenCondition condition);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsicCmpOp")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsicCmpOpXarch")]
     private static extern GenTree? LowerHWIntrinsicCmpOp(
         Lowering lowering, GenTreeHWIntrinsic node, genTreeOps operation);
 

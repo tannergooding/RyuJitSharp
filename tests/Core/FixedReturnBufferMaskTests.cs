@@ -46,7 +46,8 @@ internal static unsafe class FixedReturnBufferMaskTests
 #if SWIFT_SUPPORT
         if (callConv == CorInfoCallConvExtension.Swift)
         {
-            expected |= new regMaskTP(SRBM_SWIFT_SELF | SRBM_SWIFT_ERROR);
+            expected |= Globals.genRegMask(TargetRuntimeMetadata.SwiftSelfRegister) |
+                Globals.genRegMask(TargetRuntimeMetadata.SwiftErrorRegister);
         }
 #endif
 

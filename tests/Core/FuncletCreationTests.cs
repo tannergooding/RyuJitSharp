@@ -217,7 +217,7 @@ internal static class FuncletCreationTests
 
     private static void WithCompiler(Action<Compiler, CodeGen> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.compHndBBtab = [];
             compiler.fgPredsComputed = true;

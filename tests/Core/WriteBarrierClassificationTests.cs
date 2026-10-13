@@ -10,7 +10,7 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class WriteBarrierClassificationTests
 {
     [TestCase(var_types.TYP_BYREF, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierChecked)]
-    [TestCase(TYP_I_IMPL, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierChecked)]
+    [TestCase(var_types.TYP_LONG, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierChecked)]
     [TestCase(var_types.TYP_REF, GenTreeFlags.GTF_EMPTY, false, GCInfo.WriteBarrierForm.WBF_BarrierUnchecked)]
     [TestCase(var_types.TYP_BYREF, GenTreeFlags.GTF_IND_TGT_HEAP, false, GCInfo.WriteBarrierForm.WBF_BarrierUnchecked)]
     [TestCase(var_types.TYP_BYREF, GenTreeFlags.GTF_IND_TGT_NOT_HEAP, false, GCInfo.WriteBarrierForm.WBF_NoBarrier)]
@@ -65,18 +65,18 @@ internal static unsafe class WriteBarrierClassificationTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[2];
         compiler.lvaCount = 2;
-        compiler.lvaTable[0].Type = TYP_I_IMPL;
+        compiler.lvaTable[0].Type = var_types.TYP_LONG;
         compiler.lvaTable[0].lvIsParam = true;
         compiler.lvaTable[0].IsImplicitByRef = true;
         compiler.lvaTable[1].Type = var_types.TYP_REF;
         JitTls.Compiler = compiler;
         try
         {
-            GenTree address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            GenTree address = compiler.gtNewLclvNode(var_types.TYP_LONG, 0);
             if (offset)
             {
-                address = new GenTreeOp(genTreeOps.GT_ADD, TYP_I_IMPL, address,
-                    compiler.gtNewIconNode(TYP_I_IMPL, 8));
+                address = new GenTreeOp(genTreeOps.GT_ADD, var_types.TYP_LONG, address,
+                    compiler.gtNewIconNode(var_types.TYP_LONG, 8));
             }
             var store = new GenTreeStoreInd(var_types.TYP_REF, address,
                 compiler.gtNewLclvNode(var_types.TYP_REF, 1));

@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_X86 && JIT32_GCENCODER
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,8 +11,14 @@ using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
-internal static unsafe class Jit32GcInfoTests
+internal unsafe class Jit32GcInfoTests
 {
+    [SetUp]
+    public void RequireJit32GcEncoder()
+    {
+        Assume.That(Configuration.JIT32_GCENCODER);
+    }
+
     [TestCase(false, true, false, true, false, false)]
     [TestCase(false, true, false, false, false, true)]
     [TestCase(false, false, false, false, false, false)]
@@ -22,7 +27,7 @@ internal static unsafe class Jit32GcInfoTests
     [TestCase(true, true, true, false, false, true)]
     [TestCase(true, false, true, true, false, false)]
     [TestCase(true, false, true, true, true, true)]
-    public static void UntrackedLocalClassificationMatchesJit32Rules(
+    public void UntrackedLocalClassificationMatchesJit32Rules(
         bool isParameter, bool onFrame, bool isRegisterArgument, bool tracked, bool usesJmp, bool expected)
     {
 #if DEBUG
@@ -62,7 +67,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void HeaderCountsOnlyUntrackedRootsAndNonemptyLifetimes()
+    public void HeaderCountsOnlyUntrackedRootsAndNonemptyLifetimes()
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -124,7 +129,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void HeaderEncoderUsesExactShortcutWhenAvailable()
+    public void HeaderEncoderUsesExactShortcutWhenAvailable()
     {
         var header = new GCInfo.InfoHdr
         {
@@ -145,7 +150,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void HeaderEncoderAdjustsWideValuesAndOptionalFields()
+    public void HeaderEncoderAdjustsWideValuesAndOptionalFields()
     {
         var header = new GCInfo.InfoHdr
         {
@@ -198,7 +203,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void HeaderSaveMeasurementMatchesSerializedSize()
+    public void HeaderSaveMeasurementMatchesSerializedSize()
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -250,7 +255,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void EmptyPointerTableMeasurementMatchesSerialization()
+    public void EmptyPointerTableMeasurementMatchesSerialization()
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -299,7 +304,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void PointerTableEncodesTrackedLifetimeAndArgumentOffset()
+    public void PointerTableEncodesTrackedLifetimeAndArgumentOffset()
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -381,7 +386,7 @@ internal static unsafe class Jit32GcInfoTests
     [TestCase(0x80u)]
     [TestCase(0x80000000u)]
     [TestCase(uint.MaxValue)]
-    public static void DumpUnsignedDecoderPreservesThirtyTwoBitValues(uint expected)
+    public void DumpUnsignedDecoderPreservesThirtyTwoBitValues(uint expected)
     {
 #pragma warning disable IDE0007 // Unsafe stackalloc requires an explicit pointer local.
         byte* buffer = stackalloc byte[8];
@@ -400,7 +405,7 @@ internal static unsafe class Jit32GcInfoTests
     [TestCase(-64)]
     [TestCase(int.MinValue)]
     [TestCase(int.MaxValue)]
-    public static void DumpSignedDecoderPreservesSignAndOverflow(int expected)
+    public void DumpSignedDecoderPreservesSignAndOverflow(int expected)
     {
 #pragma warning disable IDE0007 // Unsafe stackalloc requires an explicit pointer local.
         byte* buffer = stackalloc byte[8];
@@ -413,7 +418,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void DumpDeltaDecoderWrapsAtUnsignedBoundary()
+    public void DumpDeltaDecoderWrapsAtUnsignedBoundary()
     {
 #pragma warning disable IDE0007 // Unsafe stackalloc requires an explicit pointer local.
         byte* buffer = stackalloc byte[1];
@@ -429,7 +434,7 @@ internal static unsafe class Jit32GcInfoTests
 #if DEBUG
     [TestCase(true)]
 #endif
-    public static void DumpHeaderDecodesWideFieldsOptionalPayloadAndEpilogDeltas(bool verify)
+    public void DumpHeaderDecodesWideFieldsOptionalPayloadAndEpilogDeltas(bool verify)
     {
         var header = new GCInfo.InfoHdr
         {
@@ -540,7 +545,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [TestCaseSource(nameof(PointerDumpCases))]
-    public static void PointerDumpMatchesEveryNativeEncodingFamily(
+    public void PointerDumpMatchesEveryNativeEncodingFamily(
         bool interruptible, bool ebpFrame, byte[] encoding, string expected)
     {
         var header = new GCInfo.InfoHdr
@@ -588,7 +593,7 @@ internal static unsafe class Jit32GcInfoTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public static void PointerDumpPreservesNoGcRegionsStackDeltasFlagsAndLifetimes(bool doubleAlign)
+    public void PointerDumpPreservesNoGcRegionsStackDeltasFlagsAndLifetimes(bool doubleAlign)
     {
         var header = new GCInfo.InfoHdr
         {
@@ -633,7 +638,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void EncodingDumpPreservesNativeUnsignedPaddingAndOffsetGuard()
+    public void EncodingDumpPreservesNativeUnsignedPaddingAndOffsetGuard()
     {
         byte[] buffer = [0xFF, 0xAA, 0xBB, 0xCC, 0xDD];
         fixed (byte* table = buffer)
@@ -662,7 +667,7 @@ internal static unsafe class Jit32GcInfoTests
     }
 
     [Test]
-    public static void PointerDumpPreservesPrintfSignedWidthAndMinusSign()
+    public void PointerDumpPreservesPrintfSignedWidthAndMinusSign()
     {
         var previousCulture = CultureInfo.CurrentCulture;
         var culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
@@ -691,7 +696,7 @@ internal static unsafe class Jit32GcInfoTests
     [TestCase(0x1Eu, "epilog (00 bytes into it)")]
     [TestCase(0x1Fu, "epilog (01 bytes into it)")]
     [TestCase(0x20u, "body")]
-    public static void FrameDumpClassifiesOffsetsWithoutInventingRootEnumeration(uint offset, string location)
+    public void FrameDumpClassifiesOffsetsWithoutInventingRootEnumeration(uint offset, string location)
     {
         var header = new GCInfo.InfoHdr
         {
@@ -715,7 +720,7 @@ internal static unsafe class Jit32GcInfoTests
 
     [TestCase(10u, "epilog (00 bytes into it)")]
     [TestCase(14u, "body")]
-    public static void FrameDumpPreservesPinnedNonaccumulatingEpilogDeltas(uint offset, string location)
+    public void FrameDumpPreservesPinnedNonaccumulatingEpilogDeltas(uint offset, string location)
     {
         var header = new GCInfo.InfoHdr
         {
@@ -738,7 +743,7 @@ internal static unsafe class Jit32GcInfoTests
     [TestCase(false)]
     [TestCase(true)]
     [NonParallelizable]
-    public static void DumpEntryPointsPreserveStdoutBannersAndDebugLoggerRouting(bool noGcRegion)
+    public void DumpEntryPointsPreserveStdoutBannersAndDebugLoggerRouting(bool noGcRegion)
     {
 #if DEBUG
         using var tls = new JitTls(null);
@@ -893,4 +898,3 @@ internal static unsafe class Jit32GcInfoTests
     }
 #endif
 }
-#endif

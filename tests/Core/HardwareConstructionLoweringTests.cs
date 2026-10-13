@@ -186,7 +186,7 @@ internal static unsafe class HardwareConstructionLoweringTests
     public static void CreateScalarDoesNotRetypeAnOverflowingOrContainedLoadCast(bool containedLoad)
     {
         WithCompiler(compiler => {
-            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 1);
+            var address = compiler.gtNewLclvNode(TYP_LONG, 1);
             var value = compiler.gtNewIndir(TYP_INT, address, GTF_IND_NONFAULTING);
             value.IsContained = containedLoad;
             var cast = compiler.gtNewCastNode(TYP_INT, value, false, TYP_SHORT);
@@ -218,7 +218,7 @@ internal static unsafe class HardwareConstructionLoweringTests
     public static void CreateScalarRetypesSmallMemoryLoads(bool field, var_types baseType)
     {
         WithCompiler(compiler => {
-            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 1);
+            var address = compiler.gtNewLclvNode(TYP_LONG, 1);
             GenTree load = field
                 ? compiler.gtNewLclFldNode(baseType, 0, 0)
                 : compiler.gtNewIndir(baseType, address, GTF_IND_NONFAULTING);
@@ -236,7 +236,7 @@ internal static unsafe class HardwareConstructionLoweringTests
     }
 
     [TestCase(TYP_INT)]
-    [TestCase(TYP_I_IMPL)]
+    [TestCase(TYP_LONG)]
     public static void WithElementNormalizesOnlyNarrowVariableIndices(var_types indexType)
     {
         WithCompiler(compiler => {
@@ -252,8 +252,8 @@ internal static unsafe class HardwareConstructionLoweringTests
             Assert.That(LowerWithElement(NewLowering(compiler, block), node), Is.Null);
 
             Assert.That(node.HWIntrinsicId, Is.EqualTo(NI_Vector_WithElement));
-            Assert.That(node.GetOp(2).Type, Is.EqualTo(TYP_I_IMPL));
-            if (indexType == TYP_I_IMPL)
+            Assert.That(node.GetOp(2).Type, Is.EqualTo(TYP_LONG));
+            if (indexType == TYP_LONG)
             {
                 Assert.That(node.GetOp(2), Is.SameAs(index));
             }
@@ -697,7 +697,7 @@ internal static unsafe class HardwareConstructionLoweringTests
         {
             compiler.lvaTable[i] = new LclVarDsc { Type = TYP_INT };
         }
-        compiler.lvaTable[1].Type = TYP_I_IMPL;
+        compiler.lvaTable[1].Type = TYP_LONG;
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try

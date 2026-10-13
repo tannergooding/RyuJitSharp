@@ -82,8 +82,8 @@ internal static unsafe class SwitchOptimizationTests
 
     [TestCase(NodeThreading.None, TYP_INT)]
     [TestCase(NodeThreading.AllTrees, TYP_INT)]
-    [TestCase(NodeThreading.None, TYP_I_IMPL)]
-    [TestCase(NodeThreading.AllTrees, TYP_I_IMPL)]
+    [TestCase(NodeThreading.None, TYP_LONG)]
+    [TestCase(NodeThreading.AllTrees, TYP_LONG)]
     public static void TwoCasesBecomeEqualityAndRetainRootIdentity(NodeThreading threading, var_types type)
     {
         WithCompiler(threading, compiler => {
@@ -292,11 +292,11 @@ internal static unsafe class SwitchOptimizationTests
         });
     }
 
-#if !JIT32_GCENCODER
     [TestCase(false)]
     [TestCase(true)]
     public static void RangeSwitchCanFoldAllTheWayToABooleanReturn(bool reverse)
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.AllTrees, compiler => {
             var (block, node, targets) = CreateSwitch(compiler, [0, 0, 0, 1]);
             compiler.info.compRetType = TYP_UBYTE;
@@ -326,6 +326,7 @@ internal static unsafe class SwitchOptimizationTests
     public static void BooleanReturnFoldingPreservesIdentityWeightsOffsetsAndThreading(
         bool reverse, int trueEnd, int falseEnd, int expectedEnd)
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.AllTrees, compiler => {
             var (block, trueBlock, falseBlock, node, condition) = CreateConditionalReturns(compiler, reverse);
             block.setBBProfileWeight(40);
@@ -374,6 +375,7 @@ internal static unsafe class SwitchOptimizationTests
     [TestCase("global-store")]
     public static void RefusesUnsafeBooleanReturnFolds(string reason)
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.AllTrees, compiler => {
             var (block, trueBlock, falseBlock, node, _) = CreateConditionalReturns(compiler, false);
             var trueReturn = trueBlock.LastStmt?.RootNode ?? throw new AssertionException("Missing true return.");
@@ -456,6 +458,7 @@ internal static unsafe class SwitchOptimizationTests
     [TestCase(true)]
     public static void AllowsDeadLocalStoresButNotAnAdditionalSharedEpilogue(bool bothShared)
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.AllTrees, compiler => {
             var (block, trueBlock, falseBlock, _, _) = CreateConditionalReturns(compiler, false);
             var returnStatement = trueBlock.LastStmt ?? throw new AssertionException("Missing return.");
@@ -482,6 +485,7 @@ internal static unsafe class SwitchOptimizationTests
     [TestCase(true)]
     public static void CompactsEitherReturnProxyBeforeFolding(bool falseProxy)
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.AllTrees, compiler => {
             var (block, trueBlock, falseBlock, _, _) = CreateConditionalReturns(compiler, false);
             var proxy = falseProxy ? falseBlock : trueBlock;
@@ -502,6 +506,7 @@ internal static unsafe class SwitchOptimizationTests
     [Test]
     public static void ReportsCompactionEvenWhenItRemovesTheConditionalInsteadOfFoldingAReturn()
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.AllTrees, compiler => {
             var (block, trueBlock, falseBlock, _, _) = CreateConditionalReturns(compiler, false);
             trueBlock.FirstStmt = null;
@@ -514,17 +519,17 @@ internal static unsafe class SwitchOptimizationTests
             Assert.That(block.FirstStmt, Is.Null);
         });
     }
-#else
+
     [Test]
     public static void LegacyGcEncoderDoesNotIntroduceAnotherEpilogue()
     {
+        Assume.That(Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.AllTrees, compiler => {
             var (block, _, _, _, _) = CreateConditionalReturns(compiler, false);
             Assert.That(compiler.fgFoldCondToReturnBlock(block), Is.False);
             Assert.That(block.Kind, Is.EqualTo(BBJ_COND));
         });
     }
-#endif
 
     [Test]
     public static void UniquePredecessorCountsEdgesRatherThanDuplicateSwitchCasesAndExcludesEntry()
@@ -624,7 +629,7 @@ internal static unsafe class SwitchOptimizationTests
             }
             else
             {
-                var table = new GenTree(GT_JMPTABLE, TYP_I_IMPL);
+                var table = new GenTree(GT_JMPTABLE, TYP_LONG);
                 node = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, value, table);
                 block.InsertAtEnd(value);
                 block.InsertAtEnd(table);

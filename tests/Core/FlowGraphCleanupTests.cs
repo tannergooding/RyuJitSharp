@@ -16,13 +16,13 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class FlowGraphCleanupTests
 {
-#if !JIT32_GCENCODER
     [TestCase(NodeThreading.None, false)]
     [TestCase(NodeThreading.AllTrees, false)]
     [TestCase(NodeThreading.AllLocals, false)]
     [TestCase(NodeThreading.AllTrees, true)]
     public static void ReturnNormalizationPreservesIdentityAndCreatesFalseThenTrueBlocks(NodeThreading threading, bool eh)
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(threading, compiler => {
             compiler.info.compRetType = TYP_UBYTE;
             var block = NewBlock(compiler, BBJ_RETURN);
@@ -118,6 +118,7 @@ internal static unsafe class FlowGraphCleanupTests
     [TestCase("test-compare")]
     public static void ReturnNormalizationRejectsNonComparisonReturns(string reason)
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.None, compiler => {
             compiler.info.compRetType = reason == "type" ? TYP_INT : TYP_UBYTE;
             var block = NewBlock(compiler, BBJ_RETURN);
@@ -146,15 +147,15 @@ internal static unsafe class FlowGraphCleanupTests
             Assert.That(compiler.fgBBcount, Is.EqualTo(count));
         });
     }
-#else
+
     [Test]
     public static void LegacyEncoderDoesNotAddEpilogues()
     {
+        Assume.That(Configuration.JIT32_GCENCODER);
         WithCompiler(NodeThreading.None, compiler => {
             Assert.That(compiler.fgDedupReturnComparison(NewBlock(compiler, BBJ_RETURN)), Is.False);
         });
     }
-#endif
 
     [TestCase(false)]
     [TestCase(true)]

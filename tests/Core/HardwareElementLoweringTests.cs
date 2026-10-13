@@ -83,7 +83,7 @@ internal static unsafe class HardwareElementLoweringTests
     public static void MemoryExtractionUsesNativeImmediateTruncation(int value, int offset)
     {
         WithCompiler(compiler => {
-            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var address = compiler.gtNewLclvNode(TYP_LONG, 0);
             var vector = compiler.gtNewIndir(TYP_SIMD16, address, GTF_IND_NONFAULTING | GTF_IND_UNALIGNED);
             var index = compiler.gtNewIconNode(TYP_INT, value);
             var node = new GenTreeHWIntrinsic(TYP_INT, NI_Vector_GetElement, TYP_UINT, 16, vector, index);
@@ -110,12 +110,12 @@ internal static unsafe class HardwareElementLoweringTests
     }
 
     [TestCase(TYP_INT, true)]
-    [TestCase(TYP_I_IMPL, false)]
+    [TestCase(TYP_LONG, false)]
     public static void DynamicMemoryIndexIsZeroExtendedOnlyWhenNeeded(var_types type, bool needsCast)
     {
         WithCompiler(compiler => {
             compiler.lvaTable[2].Type = type;
-            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var address = compiler.gtNewLclvNode(TYP_LONG, 0);
             var vector = compiler.gtNewIndir(TYP_SIMD16, address, GTF_IND_NONFAULTING);
             var index = compiler.gtNewLclvNode(type, 2);
             var node = new GenTreeHWIntrinsic(TYP_INT, NI_Vector_GetElement, TYP_INT, 16, vector, index);
@@ -128,7 +128,7 @@ internal static unsafe class HardwareElementLoweringTests
             var normalizedIndex = mode.Index;
             assert(normalizedIndex is not null);
             Assert.That(mode.Scale, Is.EqualTo(4));
-            Assert.That(normalizedIndex.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(normalizedIndex.Type, Is.EqualTo(TYP_LONG));
             if (needsCast)
             {
                 var cast = normalizedIndex.AsCast();
@@ -180,8 +180,8 @@ internal static unsafe class HardwareElementLoweringTests
     public static void AddressOffsetFoldingRespectsTheNativeOverflowBoundary(int offset, bool folds)
     {
         WithCompiler(compiler => {
-            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-            var originalMode = new GenTreeAddrMode(TYP_I_IMPL, address, null, 0, offset);
+            var address = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var originalMode = new GenTreeAddrMode(TYP_LONG, address, null, 0, offset);
             var vector = compiler.gtNewIndir(TYP_SIMD16, originalMode, GTF_IND_NONFAULTING);
             var index = compiler.gtNewIconNode(TYP_INT, 1);
             var node = new GenTreeHWIntrinsic(TYP_INT, NI_Vector_GetElement, TYP_INT, 16, vector, index);
@@ -203,7 +203,7 @@ internal static unsafe class HardwareElementLoweringTests
     public static void MovingAFaultingLoadRetainsExceptionOrder()
     {
         WithCompiler(compiler => {
-            var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            var address = compiler.gtNewLclvNode(TYP_LONG, 0);
             var vector = compiler.gtNewIndir(TYP_SIMD16, address);
             var dividend = compiler.gtNewIconNode(TYP_INT, 42);
             var divisor = compiler.gtNewIconNode(TYP_INT, 0);
@@ -268,7 +268,7 @@ internal static unsafe class HardwareElementLoweringTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
-        compiler.lvaTable = [new() { Type = TYP_I_IMPL }, new() { Type = TYP_SIMD16 }, new() { Type = TYP_INT }];
+        compiler.lvaTable = [new() { Type = TYP_LONG }, new() { Type = TYP_SIMD16 }, new() { Type = TYP_INT }];
         compiler.lvaCount = compiler.lvaTable.Length;
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);

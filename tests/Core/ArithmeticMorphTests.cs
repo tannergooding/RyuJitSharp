@@ -100,8 +100,8 @@ internal static unsafe class ArithmeticMorphTests
         WithCompiler(compiler => {
             compiler.opts.compCodeOpt = smallCode ? Compiler.SMALL_CODE : Compiler.BLENDED_CODE;
             Assert.That(compiler.compCodeOpt, Is.EqualTo(Compiler.BLENDED_CODE));
-            var local = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-            var multiply = compiler.gtNewBinaryNode(GT_MUL, TYP_I_IMPL, local, compiler.gtNewIconNode(TYP_I_IMPL, (nint)factor));
+            var local = compiler.gtNewLclvNode(TYP_LONG, 0);
+            var multiply = compiler.gtNewBinaryNode(GT_MUL, TYP_LONG, local, compiler.gtNewIconNode(TYP_LONG, (nint)factor));
             multiply._vnPair.SetBoth(42);
             var result = compiler.fgOptimizeMultiply(multiply);
             if (shift < 0)
@@ -320,7 +320,7 @@ internal static unsafe class ArithmeticMorphTests
 
     [TestCase(TYP_REF)]
     [TestCase(TYP_BYREF)]
-    [TestCase(TYP_I_IMPL)]
+    [TestCase(TYP_LONG)]
     public static void MorphReassociatesAddressOffsetsAndPreservesFieldSequence(var_types baseType)
     {
         WithCompiler(compiler =>
@@ -330,13 +330,13 @@ internal static unsafe class ArithmeticMorphTests
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
             compiler.info.compCompHnd = &jitInfo;
             compiler.lvaTable[1].Type = baseType;
-            var type = varTypeIsGC(baseType) ? TYP_BYREF : TYP_I_IMPL;
+            var type = varTypeIsGC(baseType) ? TYP_BYREF : TYP_LONG;
             var field = (CORINFO_FIELD_STRUCT_*)0x1000;
             var local = compiler.gtNewLclvNode(baseType, 1);
-            var constant = compiler.gtNewIconNode(TYP_I_IMPL, 8);
+            var constant = compiler.gtNewIconNode(TYP_LONG, 8);
             constant.FieldSeq = compiler.FieldSeqStore.Create(field, 8, FieldSeq.FieldKind.Instance);
             var inner = compiler.gtNewBinaryNode(GT_ADD, type, local, constant);
-            var outer = compiler.gtNewBinaryNode(GT_ADD, type, inner, compiler.gtNewIconNode(TYP_I_IMPL, -8));
+            var outer = compiler.gtNewBinaryNode(GT_ADD, type, inner, compiler.gtNewIconNode(TYP_LONG, -8));
 
             var result = compiler.fgMorphTree(outer);
 
@@ -502,8 +502,8 @@ internal static unsafe class ArithmeticMorphTests
     {
         WithCompiler(compiler => {
             var flags = isVolatile ? GTF_IND_VOLATILE : GTF_EMPTY;
-            var first = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 0x1234), flags);
-            var second = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_I_IMPL, 0x1234), flags);
+            var first = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_LONG, 0x1234), flags);
+            var second = compiler.gtNewIndir(TYP_INT, compiler.gtNewIconNode(TYP_LONG, 0x1234), flags);
             var left = compiler.gtNewBinaryNode(GT_LSH, TYP_INT, first, compiler.gtNewIconNode(TYP_INT, 5));
             var right = compiler.gtNewBinaryNode(GT_RSZ, TYP_INT, second, compiler.gtNewIconNode(TYP_INT, 27));
             var root = compiler.gtNewBinaryNode(GT_OR, TYP_INT, left, right);
@@ -571,13 +571,13 @@ internal static unsafe class ArithmeticMorphTests
         WithCompiler(compiler => {
             compiler.lvaTable[0] = new LclVarDsc { Type = TYP_REF };
             var reference = compiler.gtNewLclvNode(TYP_REF, 0);
-            var offsets = compiler.gtNewBinaryNode(GT_ADD, TYP_I_IMPL,
-                compiler.gtNewIconNode(TYP_I_IMPL, -1), compiler.gtNewIconNode(TYP_I_IMPL, 2));
+            var offsets = compiler.gtNewBinaryNode(GT_ADD, TYP_LONG,
+                compiler.gtNewIconNode(TYP_LONG, -1), compiler.gtNewIconNode(TYP_LONG, 2));
             var root = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, reference, offsets);
             compiler.fgMoveOpsLeft(root);
             Assert.That(root.Op1, Is.SameAs(reference));
             Assert.That(root.Op2, Is.SameAs(offsets));
-            Assert.That(offsets.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(offsets.Type, Is.EqualTo(TYP_LONG));
         });
     }
 

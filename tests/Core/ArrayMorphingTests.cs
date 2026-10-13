@@ -77,7 +77,7 @@ internal static unsafe class ArrayMorphingTests
             Assert.That(nodes.FindAll(node => node.Oper is GT_BOUNDS_CHECK), Has.Count.EqualTo(rank));
             Assert.That(nodes.FindAll(node => node.Oper is GT_MDARR_LOWER_BOUND), Has.Count.EqualTo(rank));
             Assert.That(nodes.FindAll(node => node.Oper is GT_MDARR_LENGTH), Has.Count.EqualTo((2 * rank) - 1));
-            var pointerCast = nodes.FindAll(node => node.Oper is GT_CAST && node.Type is TYP_I_IMPL);
+            var pointerCast = nodes.FindAll(node => node.Oper is GT_CAST && (node.Type == TYP_I_IMPL));
             Assert.That(pointerCast, Has.Count.EqualTo(1));
             Assert.That(pointerCast[0].AsCast().CastOp.Type, Is.EqualTo(TYP_INT));
             Assert.That(pointerCast[0].Flags & GTF_UNSIGNED, Is.EqualTo(GTF_UNSIGNED));
@@ -97,9 +97,9 @@ internal static unsafe class ArrayMorphingTests
             }
             Assert.That(nodes.Exists(node => node.Oper is GT_ADD && node.Type is TYP_BYREF), Is.True);
             Assert.That(nodes.Exists(node => node.Oper is GT_MUL or GT_LSH
-                && node.Type is TYP_I_IMPL), Is.True);
+                && (node.Type == TYP_I_IMPL)), Is.True);
             Assert.That(nodes.Exists(node => node.Oper is GT_CNS_INT
-                && node.Type is TYP_I_IMPL
+                && (node.Type == TYP_I_IMPL)
                 && node.AsIntCon().IconValue == Compiler.eeGetMDArrayDataOffset(rank)), Is.True);
             Assert.That(compiler.lvaCount, Is.EqualTo(5 + rank));
         });
@@ -198,7 +198,7 @@ internal static unsafe class ArrayMorphingTests
 
             Assert.That(MorphArrayOps(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
             Assert.That(Nodes(statement.RootNode).Exists(node => node.Oper is GT_CNS_INT
-                && node.Type is TYP_I_IMPL
+                && (node.Type == TYP_I_IMPL)
                 && node.AsIntCon().IconValue == unchecked((nint)4294967294L)), Is.True);
         });
     }

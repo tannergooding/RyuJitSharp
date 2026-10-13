@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -52,8 +53,13 @@ internal static unsafe class CallDispatchLoweringTests
         });
     }
 
-    [TestCase(false, MIN_ARG_AREA_FOR_CALL)]
-    [TestCase(true, 0)]
+    private static IEnumerable<TestCaseData> TailCallSpaceCases()
+    {
+        yield return new TestCaseData(false, Configuration.MIN_ARG_AREA_FOR_CALL);
+        yield return new TestCaseData(true, 0);
+    }
+
+    [TestCaseSource(nameof(TailCallSpaceCases))]
     public static void FastTailCallDispatchDoesNotReserveOrdinaryOutgoingArgumentSpace(bool tailCall, int expectedSpace)
     {
         WithCompiler((compiler, block, lowering) => {
@@ -134,7 +140,7 @@ internal static unsafe class CallDispatchLoweringTests
 #if DEBUG
             Assert.That(target.RegTag, Is.EqualTo(GenTree.GT_REGTAG_REG));
 #endif
-            Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_X64_NA));
             Assert.That(target.Next, Is.SameAs(call));
         });
     }
@@ -146,7 +152,7 @@ internal static unsafe class CallDispatchLoweringTests
         WithCompiler((compiler, block, lowering) => {
             var address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
             var target = compiler.gtNewIndir(TYP_I_IMPL, address);
-            target.RegNum = regNumber.REG_RAX;
+            target.RegNum = regNumber.REG_X64_RAX;
             var call = new GenTreeCall(TYP_VOID) {
                 _callType = CT_INDIRECT,
                 _controlExpr = target,
@@ -161,9 +167,9 @@ internal static unsafe class CallDispatchLoweringTests
             Assert.That(call._controlExpr, Is.SameAs(target));
             Assert.That(target.IsContained, Is.True);
 #if TARGET_X86
-            Assert.That(target.RegNum, Is.EqualTo(virtualStub ? regNumber.REG_RAX : regNumber.REG_NA));
+            Assert.That(target.RegNum, Is.EqualTo(virtualStub ? regNumber.REG_X64_RAX : regNumber.REG_X64_NA));
 #else
-            Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_NA));
+            Assert.That(target.RegNum, Is.EqualTo(regNumber.REG_X64_NA));
 #endif
         });
     }
@@ -187,13 +193,13 @@ internal static unsafe class CallDispatchLoweringTests
             };
             var destinationArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(destination));
             destinationArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
-                compiler, AbiPassingSegment.InRegister(regNumber.REG_RCX, 0, 8));
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_X64_RCX, 0, 8));
             var sourceArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(source));
             sourceArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
-                compiler, AbiPassingSegment.InRegister(regNumber.REG_RDX, 0, source.Type.Size));
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_X64_RDX, 0, source.Type.Size));
             var lengthArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(length));
             lengthArg.AbiInfo = AbiPassingInformation.FromSegmentByValue(
-                compiler, AbiPassingSegment.InRegister(regNumber.REG_R8, 0, 8));
+                compiler, AbiPassingSegment.InRegister(regNumber.REG_X64_R8, 0, 8));
             var successor = compiler.gtNewNothingNode();
             foreach (var node in new GenTree[] { destination, source, length, call, successor })
             {

@@ -76,7 +76,7 @@ internal static unsafe class ImporterEffectsTests
             compiler.compCurBB = block;
 
             var instance = compiler.gtNewLclvNode(var_types.TYP_REF, 0);
-            var target = compiler.gtNewRuntimeLookup(compiler.gtNewIconNode(Globals.TYP_I_IMPL, 0),
+            var target = compiler.gtNewRuntimeLookup(compiler.gtNewIconNode(var_types.TYP_LONG, 0),
                 (CORINFO_GENERIC_STRUCT_*)0x2000, CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS);
             CORINFO_RESOLVED_TOKEN token = new() { hClass = (CORINFO_CLASS_STRUCT_*)0x1000 };
             var booleanCheck = false;
@@ -119,7 +119,7 @@ internal static unsafe class ImporterEffectsTests
 
     [Test]
     public static void StructArgumentNormalizationSinksCommaIntoTheBlockAddress(
-        [Values(var_types.TYP_BYREF, Globals.TYP_I_IMPL)] var_types addressType,
+        [Values(var_types.TYP_BYREF, var_types.TYP_LONG)] var_types addressType,
         [Values(false, true)] bool withCall)
     {
         WithCompiler(compiler => {
@@ -460,8 +460,8 @@ internal static unsafe class ImporterEffectsTests
             compiler.info.compMaxStack = 2;
             compiler.info.compRetBuffArg = Globals.BAD_VAR_NUM;
             compiler.stackState.esStack = new StackEntry[2];
-            compiler.lvaTable[0].Type = nativeFirst ? Globals.TYP_I_IMPL : var_types.TYP_INT;
-            compiler.lvaTable[1].Type = nativeFirst ? var_types.TYP_INT : Globals.TYP_I_IMPL;
+            compiler.lvaTable[0].Type = nativeFirst ? var_types.TYP_LONG : var_types.TYP_INT;
+            compiler.lvaTable[1].Type = nativeFirst ? var_types.TYP_INT : var_types.TYP_LONG;
             var left = compiler.gtNewLclvNode(compiler.lvaTable[0].Type, 0);
             var right = compiler.gtNewLclvNode(compiler.lvaTable[1].Type, 1);
             compiler.impPushOnStack(left, new typeInfo());
@@ -503,8 +503,8 @@ internal static unsafe class ImporterEffectsTests
 
             Assert.That(compiler.stackState.esStackDepth, Is.EqualTo(branch ? 0 : 1));
             Assert.That(comparison.Oper, Is.EqualTo(expectedOper));
-            Assert.That(comparison.Op1.Type, Is.EqualTo(Globals.TYP_I_IMPL));
-            Assert.That(comparison.Op2.Type, Is.EqualTo(Globals.TYP_I_IMPL));
+            Assert.That(comparison.Op1.Type, Is.EqualTo(var_types.TYP_LONG));
+            Assert.That(comparison.Op2.Type, Is.EqualTo(var_types.TYP_LONG));
             Assert.That(comparison.IsUnsigned, Is.EqualTo(unsigned));
             Assert.That(widened.Op1, Is.SameAs(nativeFirst ? right : left));
             Assert.That(widened.IsUnsigned, Is.EqualTo(branch && unsigned));
@@ -736,8 +736,8 @@ internal static unsafe class ImporterEffectsTests
 
     [TestCase(false, var_types.TYP_INT)]
     [TestCase(true, var_types.TYP_INT)]
-    [TestCase(false, Globals.TYP_I_IMPL)]
-    [TestCase(true, Globals.TYP_I_IMPL)]
+    [TestCase(false, var_types.TYP_LONG)]
+    [TestCase(true, var_types.TYP_LONG)]
     public static void ByrefAdditionChecksAndWidensTheIntegerOperand(bool byrefOnRight, var_types offsetType)
     {
         WithCompiler(compiler => {
@@ -752,7 +752,7 @@ internal static unsafe class ImporterEffectsTests
             Assert.That(result, Is.EqualTo(var_types.TYP_BYREF));
             Assert.That(byrefOnRight ? right : left, Is.SameAs(byref));
             Assert.That(byref.Type, Is.EqualTo(var_types.TYP_BYREF));
-            Assert.That((byrefOnRight ? left : right).Type, Is.EqualTo(Globals.TYP_I_IMPL));
+            Assert.That((byrefOnRight ? left : right).Type, Is.EqualTo(var_types.TYP_LONG));
         });
     }
 
@@ -780,7 +780,7 @@ internal static unsafe class ImporterEffectsTests
     public static void OperandEffectsAreRestoredAfterResettingCallOperationEffects()
     {
         WithCompiler(compiler => {
-            var argument = compiler.gtNewIndir(var_types.TYP_INT, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 8),
+            var argument = compiler.gtNewIndir(var_types.TYP_INT, compiler.gtNewIconNode(var_types.TYP_LONG, 8),
                 GenTreeFlags.GTF_IND_VOLATILE);
             var call = compiler.gtNewCallNode(var_types.TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             _ = call.Args.PushBack(NewCallArg.CreateForPrimitive(argument));
@@ -812,8 +812,8 @@ internal static unsafe class ImporterEffectsTests
     public static void IndirectCallsPreserveVolatilePointerEvaluation(bool isVolatile)
     {
         WithCompiler(compiler => {
-            var address = compiler.gtNewIconNode(Globals.TYP_I_IMPL, 8);
-            var pointer = compiler.gtNewIndir(Globals.TYP_I_IMPL, address,
+            var address = compiler.gtNewIconNode(var_types.TYP_LONG, 8);
+            var pointer = compiler.gtNewIndir(var_types.TYP_LONG, address,
                 isVolatile ? GenTreeFlags.GTF_IND_VOLATILE : 0);
             Assert.That((pointer.Flags & GenTreeFlags.GTF_ORDER_SIDEEFF) != 0, Is.EqualTo(isVolatile));
             compiler.info.compMaxStack = 1;
@@ -840,7 +840,7 @@ internal static unsafe class ImporterEffectsTests
     public static void OrderingEffectsSpillEarlierGlobalReads(bool localStore)
     {
         WithCompiler(compiler => {
-            var read = compiler.gtNewIndir(var_types.TYP_INT, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 8));
+            var read = compiler.gtNewIndir(var_types.TYP_INT, compiler.gtNewIconNode(var_types.TYP_LONG, 8));
             compiler.stackState.esStack = [new() { val = read }];
             compiler.stackState.esStackDepth = 1;
             var effect = new GenTree(genTreeOps.GT_CATCH_ARG, var_types.TYP_REF) { Flags = GenTreeFlags.GTF_ORDER_SIDEEFF };
@@ -872,7 +872,7 @@ internal static unsafe class ImporterEffectsTests
             var address = new GenTreeFieldAddr(var_types.TYP_BYREF,
                 compiler.gtNewLclVarAddrNode(var_types.TYP_BYREF, 1), null, 0);
             GenTree value = globalRead
-                ? compiler.gtNewIndir(var_types.TYP_INT, compiler.gtNewIconNode(Globals.TYP_I_IMPL, 8))
+                ? compiler.gtNewIndir(var_types.TYP_INT, compiler.gtNewIconNode(var_types.TYP_LONG, 8))
                 : compiler.gtNewIconNode(var_types.TYP_INT, 1);
             var indir = store
                 ? compiler.gtNewStoreIndNode(var_types.TYP_INT, address, value)

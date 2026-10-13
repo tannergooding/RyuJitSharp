@@ -59,9 +59,12 @@ internal static unsafe class TypedRegisterMaskTests
         var_types[] integerTypes = [TYP_INT, TYP_REF, TYP_BYREF, TYP_I_IMPL];
         foreach (var type in integerTypes)
         {
-            for (var number = (int)REG_INT_FIRST; number <= (int)REG_INT_LAST; number++)
+            for (var number = (int)TargetRuntimeMetadata.IntegerRegisterFirst;
+                number <= (int)TargetRuntimeMetadata.IntegerRegisterLast; number++)
             {
-                var expected = number == (int)REG_INT_LAST ? REG_NA : (regNumber)(number + 1);
+                var expected = number == (int)TargetRuntimeMetadata.IntegerRegisterLast
+                    ? REG_NA
+                    : (regNumber)(number + 1);
                 yield return new TestCaseData((regNumber)number, type, expected);
             }
 
@@ -77,9 +80,12 @@ internal static unsafe class TypedRegisterMaskTests
 #else
             var step = 1;
 #endif
-            for (var number = (int)REG_FP_FIRST; number <= (int)REG_FP_LAST; number += step)
+            for (var number = (int)TargetRuntimeMetadata.FloatingRegisterFirst;
+                number <= (int)TargetRuntimeMetadata.FloatingRegisterLast; number += step)
             {
-                var expected = number + step > (int)REG_FP_LAST ? REG_NA : (regNumber)(number + step);
+                var expected = number + step > (int)TargetRuntimeMetadata.FloatingRegisterLast
+                    ? REG_NA
+                    : (regNumber)(number + step);
                 yield return new TestCaseData((regNumber)number, type, expected);
             }
 
@@ -94,9 +100,12 @@ internal static unsafe class TypedRegisterMaskTests
         }
 
 #if TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS
-        for (var number = (int)REG_MASK_FIRST; number <= (int)REG_MASK_LAST; number++)
+        for (var number = (int)TargetRuntimeMetadata.MaskRegisterFirst;
+            number <= (int)TargetRuntimeMetadata.MaskRegisterLast; number++)
         {
-            var expected = number == (int)REG_MASK_LAST ? REG_NA : (regNumber)(number + 1);
+            var expected = number == (int)TargetRuntimeMetadata.MaskRegisterLast
+                ? REG_NA
+                : (regNumber)(number + 1);
             yield return new TestCaseData((regNumber)number, TYP_MASK, expected);
         }
 
@@ -111,14 +120,22 @@ internal static unsafe class TypedRegisterMaskTests
         Assert.That(regNextOfType(reg, type), Is.EqualTo(expected));
     }
 
-    [TestCase((regNumber)255, TYP_INT, REG_NA)]
-    [TestCase((regNumber)((int)REG_FP_FIRST - 1), TYP_FLOAT, REG_FP_FIRST)]
-    [TestCase(REG_INT_FIRST, TYP_FLOAT, (regNumber)((int)REG_INT_FIRST + 1))]
-    [TestCase(REG_FP_FIRST, TYP_INT, REG_NA)]
+    private static IEnumerable<TestCaseData> InvalidLowerBoundCases()
+    {
+        var integerFirst = TargetRuntimeMetadata.IntegerRegisterFirst;
+        var floatingFirst = TargetRuntimeMetadata.FloatingRegisterFirst;
+        yield return new TestCaseData((regNumber)255, TYP_INT, REG_NA);
+        yield return new TestCaseData((regNumber)((int)floatingFirst - 1), TYP_FLOAT, floatingFirst);
+        yield return new TestCaseData(integerFirst, TYP_FLOAT, (regNumber)((int)integerFirst + 1));
+        yield return new TestCaseData(floatingFirst, TYP_INT, REG_NA);
 #if TARGET_XARCH && FEATURE_MASKED_HW_INTRINSICS
-    [TestCase((regNumber)((int)REG_MASK_FIRST - 1), TYP_MASK, REG_MASK_FIRST)]
-    [TestCase(REG_INT_FIRST, TYP_MASK, (regNumber)((int)REG_INT_FIRST + 1))]
+        var maskFirst = TargetRuntimeMetadata.MaskRegisterFirst;
+        yield return new TestCaseData((regNumber)((int)maskFirst - 1), TYP_MASK, maskFirst);
+        yield return new TestCaseData(integerFirst, TYP_MASK, (regNumber)((int)integerFirst + 1));
 #endif
+    }
+
+    [TestCaseSource(nameof(InvalidLowerBoundCases))]
     public static void NextRegisterRetainsUncheckedArithmeticAndNoLowerBoundValidation(
         regNumber reg, var_types type, regNumber expected)
     {
@@ -126,12 +143,17 @@ internal static unsafe class TypedRegisterMaskTests
     }
 
 #if !TARGET_ARM
-    [TestCase(REG_NA, TYP_INT)]
-    [TestCase(REG_NA, TYP_DOUBLE)]
-    [TestCase(REG_STK, TYP_STRUCT)]
-    [TestCase((regNumber)255, TYP_VOID)]
-    [TestCase(REG_INT_FIRST, TYP_DOUBLE)]
-    [TestCase(REG_FP_LAST, TYP_INT)]
+    private static IEnumerable<TestCaseData> NonArmNormalizationCases()
+    {
+        yield return new TestCaseData(REG_NA, TYP_INT);
+        yield return new TestCaseData(REG_NA, TYP_DOUBLE);
+        yield return new TestCaseData(REG_STK, TYP_STRUCT);
+        yield return new TestCaseData((regNumber)255, TYP_VOID);
+        yield return new TestCaseData(TargetRuntimeMetadata.IntegerRegisterFirst, TYP_DOUBLE);
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast, TYP_INT);
+    }
+
+    [TestCaseSource(nameof(NonArmNormalizationCases))]
     public static void NonArmNormalizationAndFloatCapacityDoNotValidateRegisterOrType(regNumber reg, var_types type)
     {
         Assert.That(getRegForType(reg, type), Is.EqualTo(reg));
@@ -142,7 +164,8 @@ internal static unsafe class TypedRegisterMaskTests
 #if TARGET_ARM
     private static IEnumerable<TestCaseData> ArmFloatCapacityCases()
     {
-        for (var number = (int)REG_FP_FIRST; number <= (int)REG_FP_LAST; number++)
+        for (var number = (int)TargetRuntimeMetadata.FloatingRegisterFirst;
+            number <= (int)TargetRuntimeMetadata.FloatingRegisterLast; number++)
         {
             yield return new TestCaseData((regNumber)number, TYP_FLOAT, true);
             yield return new TestCaseData((regNumber)number, TYP_STRUCT, true);
@@ -158,7 +181,8 @@ internal static unsafe class TypedRegisterMaskTests
 
     private static IEnumerable<TestCaseData> ArmDoubleMaskCases()
     {
-        for (var number = (int)REG_FP_FIRST; number <= (int)REG_FP_LAST; number++)
+        for (var number = (int)TargetRuntimeMetadata.FloatingRegisterFirst;
+            number <= (int)TargetRuntimeMetadata.FloatingRegisterLast; number++)
         {
             yield return new TestCaseData((regNumber)number, (regNumber)(number & ~1));
         }
@@ -239,8 +263,7 @@ internal static unsafe class TypedRegisterMaskTests
     }
 #endif
 
-    [TestCase(REG_FP_FIRST)]
-    [TestCase(REG_FP_LAST)]
+    [TestCaseSource(nameof(FloatingRegisterEndpoints))]
     public static void VoidTypeIterationUsesTheNativeIntegerClassification(regNumber reg)
     {
         Assert.That(varTypeUsesIntReg(TYP_VOID), Is.True);
@@ -248,14 +271,25 @@ internal static unsafe class TypedRegisterMaskTests
     }
 
 #if FEATURE_MASKED_HW_INTRINSICS && !TARGET_XARCH
-    [TestCase(REG_MASK_FIRST)]
-    [TestCase(REG_MASK_LAST)]
+    [TestCaseSource(nameof(MaskRegisterEndpoints))]
     public static void NonXarchMaskIterationRetainsTheNativeFloatBranch(regNumber reg)
     {
         WithAssertionRecorder(() => Assert.That(regNextOfType(reg, TYP_MASK), Is.EqualTo(REG_NA)),
             "varTypeUsesFloatReg(type)");
     }
 #endif
+
+    private static IEnumerable<TestCaseData> FloatingRegisterEndpoints()
+    {
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.FloatingRegisterLast);
+    }
+
+    private static IEnumerable<TestCaseData> MaskRegisterEndpoints()
+    {
+        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterFirst);
+        yield return new TestCaseData(TargetRuntimeMetadata.MaskRegisterLast);
+    }
 
 #if DEBUG
     private static readonly List<string?> s_assertions = [];

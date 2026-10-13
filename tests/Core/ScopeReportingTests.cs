@@ -58,7 +58,7 @@ internal static unsafe class ScopeReportingTests
         WithCompiler((compiler, codeGen, context) =>
         {
             compiler.lvaTable[0].lvIsParam = parameter;
-            AddRange(codeGen, 0, 0, 0, Register(REG_RCX), prolog: parameter);
+            AddRange(codeGen, 0, 0, 0, Register(REG_X64_RCX), prolog: parameter);
 
             codeGen.genSetScopeInfo();
 
@@ -67,7 +67,7 @@ internal static unsafe class ScopeReportingTests
             Assert.That(context->Calls, Is.EqualTo(parameter ? 13 : 123));
             if (parameter)
             {
-                AssertRange(context->Published[0], 0, 1, 0, REG_RCX);
+                AssertRange(context->Published[0], 0, 1, 0, REG_X64_RCX);
             }
             else
             {
@@ -102,31 +102,31 @@ internal static unsafe class ScopeReportingTests
         {
             compiler.lvaTable[0].lvIsParam = true;
             var boundary = zeroLengthProlog ? 0u : 3u;
-            AddRange(codeGen, 0, 0, boundary, Register(REG_RCX), prolog: true);
-            AddRange(codeGen, 0, boundary, 9, Register(REG_RCX));
-            AddRange(codeGen, 0, 9, 13, Register(REG_RCX));
+            AddRange(codeGen, 0, 0, boundary, Register(REG_X64_RCX), prolog: true);
+            AddRange(codeGen, 0, boundary, 9, Register(REG_X64_RCX));
+            AddRange(codeGen, 0, 9, 13, Register(REG_X64_RCX));
 
             codeGen.genSetScopeInfo();
 
             Assert.That(context->AllocatedBytes, Is.EqualTo((nint)(3 * sizeof(ICorDebugInfo.NativeVarInfo))));
             Assert.That(context->Count, Is.EqualTo(1));
-            AssertRange(context->Published[0], 0, 13, 0, REG_RCX);
+            AssertRange(context->Published[0], 0, 13, 0, REG_X64_RCX);
         });
     }
 
-    [TestCase(3u, REG_RDX)]
-    [TestCase(4u, REG_RCX)]
+    [TestCase(3u, REG_X64_RDX)]
+    [TestCase(4u, REG_X64_RCX)]
     public static void ChangedHomesAndGapsRemainSeparate(uint bodyStart, regNumber bodyRegister)
     {
         WithCompiler((_, codeGen, context) =>
         {
-            AddRange(codeGen, 0, 0, 3, Register(REG_RCX), prolog: true);
+            AddRange(codeGen, 0, 0, 3, Register(REG_X64_RCX), prolog: true);
             AddRange(codeGen, 0, bodyStart, 8, Register(bodyRegister));
 
             codeGen.genSetScopeInfo();
 
             Assert.That(context->Count, Is.EqualTo(2));
-            AssertRange(context->Published[0], 0, 3, 0, REG_RCX);
+            AssertRange(context->Published[0], 0, 3, 0, REG_X64_RCX);
             AssertRange(context->Published[1], bodyStart, 8, 0, bodyRegister);
         });
     }
@@ -136,15 +136,15 @@ internal static unsafe class ScopeReportingTests
     {
         WithCompiler((_, codeGen, context) =>
         {
-            AddRange(codeGen, 0, 0, 3, Register(REG_RCX));
+            AddRange(codeGen, 0, 0, 3, Register(REG_X64_RCX));
             AddRange(codeGen, 0, 3, 3, new() { vlType = VLT_INVALID });
-            AddRange(codeGen, 0, 3, 8, Register(REG_RCX));
+            AddRange(codeGen, 0, 3, 8, Register(REG_X64_RCX));
 
             codeGen.genSetScopeInfo();
 
             Assert.That(context->Count, Is.EqualTo(2));
-            AssertRange(context->Published[0], 0, 3, 0, REG_RCX);
-            AssertRange(context->Published[1], 3, 8, 0, REG_RCX);
+            AssertRange(context->Published[0], 0, 3, 0, REG_X64_RCX);
+            AssertRange(context->Published[1], 3, 8, 0, REG_X64_RCX);
         });
     }
 
@@ -154,16 +154,16 @@ internal static unsafe class ScopeReportingTests
         WithCompiler((compiler, codeGen, context) =>
         {
             compiler.lvaOutgoingArgSpaceVar = 1;
-            AddRange(codeGen, 2, 1, 3, Register(REG_R8));
-            AddRange(codeGen, 1, 0, 9, Register(REG_RDX));
-            AddRange(codeGen, 0, 4, 7, Register(REG_RCX));
+            AddRange(codeGen, 2, 1, 3, Register(REG_X64_R8));
+            AddRange(codeGen, 1, 0, 9, Register(REG_X64_RDX));
+            AddRange(codeGen, 0, 4, 7, Register(REG_X64_RCX));
 
             codeGen.genSetScopeInfo();
 
             Assert.That(context->AllocatedBytes, Is.EqualTo((nint)(2 * sizeof(ICorDebugInfo.NativeVarInfo))));
             Assert.That(context->Count, Is.EqualTo(2));
-            AssertRange(context->Published[0], 4, 7, 0, REG_RCX);
-            AssertRange(context->Published[1], 1, 3, 2, REG_R8);
+            AssertRange(context->Published[0], 4, 7, 0, REG_X64_RCX);
+            AssertRange(context->Published[1], 1, 3, 2, REG_X64_R8);
         });
     }
 
@@ -173,14 +173,14 @@ internal static unsafe class ScopeReportingTests
         WithCompiler((compiler, codeGen, context) =>
         {
             compiler.info.compRetBuffArg = 0;
-            AddRange(codeGen, 0, 0, 3, Register(REG_RCX));
-            AddRange(codeGen, 1, 0, 3, Register(REG_RDX));
+            AddRange(codeGen, 0, 0, 3, Register(REG_X64_RCX));
+            AddRange(codeGen, 1, 0, 3, Register(REG_X64_RDX));
 
             codeGen.genSetScopeInfo();
 
             Assert.That(context->Count, Is.EqualTo(2));
-            AssertRange(context->Published[0], 0, 3, unchecked((uint)ICorDebugInfo.RETBUF_ILNUM), REG_RCX);
-            AssertRange(context->Published[1], 0, 3, 0, REG_RDX);
+            AssertRange(context->Published[0], 0, 3, unchecked((uint)ICorDebugInfo.RETBUF_ILNUM), REG_X64_RCX);
+            AssertRange(context->Published[1], 0, 3, 0, REG_X64_RDX);
         });
     }
 
@@ -192,26 +192,26 @@ internal static unsafe class ScopeReportingTests
         {
             if (includeLocal)
             {
-                AddRange(codeGen, 0, 0, 3, Register(REG_RCX));
-                AddRange(codeGen, 0, 3, 8, Register(REG_RCX));
+                AddRange(codeGen, 0, 0, 3, Register(REG_X64_RCX));
+                AddRange(codeGen, 0, 3, 8, Register(REG_X64_RCX));
             }
             else
             {
                 compiler.info.compVarScopesCount = 0;
             }
-            AddCallReturn(codeGen, 12, 8, Register(REG_RAX));
+            AddCallReturn(codeGen, 12, 8, Register(REG_X64_RAX));
             AddCallReturn(codeGen, 13, 9, new() { vlType = VLT_INVALID });
-            AddCallReturn(codeGen, 14, 11, Register(REG_RDX));
+            AddCallReturn(codeGen, 14, 11, Register(REG_X64_RDX));
 
             codeGen.genSetScopeInfo();
 
             var index = includeLocal ? 1 : 0;
             Assert.That(context->Count, Is.EqualTo(index + 2));
             AssertRange(context->Published[index], 8, 9,
-                unchecked((uint)ICorDebugInfo.CALL_RETURN_ILNUM), REG_RAX);
+                unchecked((uint)ICorDebugInfo.CALL_RETURN_ILNUM), REG_X64_RAX);
             Assert.That(context->Published[index].callReturnValueILOffset, Is.EqualTo(12));
             AssertRange(context->Published[index + 1], 11, 12,
-                unchecked((uint)ICorDebugInfo.CALL_RETURN_ILNUM), REG_RDX);
+                unchecked((uint)ICorDebugInfo.CALL_RETURN_ILNUM), REG_X64_RDX);
             Assert.That(context->Published[index + 1].callReturnValueILOffset, Is.EqualTo(14));
         });
     }
@@ -252,12 +252,12 @@ internal static unsafe class ScopeReportingTests
 #endif
             var ranges = (List<CodeGen.VariableLiveKeeper.VariableLiveRange>)
                 codeGen.getVariableLiveKeeper().getLiveRangesForVarForBody(0);
-            ranges.Add(new(Register(REG_RCX), new(group, Emitter.emitSpecifiedOffset(1, 4)),
+            ranges.Add(new(Register(REG_X64_RCX), new(group, Emitter.emitSpecifiedOffset(1, 4)),
                 new(group, Emitter.emitSpecifiedOffset(2, 6))));
 
             codeGen.genSetScopeInfo();
 
-            AssertRange(context->Published[0], 27, 29, 0, REG_RCX);
+            AssertRange(context->Published[0], 27, 29, 0, REG_X64_RCX);
         });
     }
 
@@ -267,14 +267,14 @@ internal static unsafe class ScopeReportingTests
         WithCompiler((compiler, codeGen, context) =>
         {
             compiler.lvaTable[0].lvIsParam = true;
-            AddRange(codeGen, 0, uint.MaxValue, uint.MaxValue, Register(REG_RCX));
-            AddCallReturn(codeGen, 3, uint.MaxValue, Register(REG_RAX));
+            AddRange(codeGen, 0, uint.MaxValue, uint.MaxValue, Register(REG_X64_RCX));
+            AddCallReturn(codeGen, 3, uint.MaxValue, Register(REG_X64_RAX));
 
             codeGen.genSetScopeInfo();
 
             Assert.That(context->Count, Is.EqualTo(1));
             AssertRange(context->Published[0], uint.MaxValue, 0,
-                unchecked((uint)ICorDebugInfo.CALL_RETURN_ILNUM), REG_RAX);
+                unchecked((uint)ICorDebugInfo.CALL_RETURN_ILNUM), REG_X64_RAX);
         });
     }
 
@@ -297,7 +297,8 @@ internal static unsafe class ScopeReportingTests
             Assert.That(context->Published[0].callReturnValueILOffset, Is.EqualTo(17));
             Assert.That(context->Published[0].varNumber, Is.EqualTo(unchecked((uint)ICorDebugInfo.TYPECTXT_ILNUM)));
             Assert.That(context->Published[0].loc.vlType, Is.EqualTo(VLT_STK));
-            Assert.That(context->Published[0].loc.vlStk.vlsBaseReg, Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_RBP));
+            Assert.That(context->Published[0].loc.vlStk.vlsBaseReg,
+                Is.EqualTo((ICorDebugInfo.RegNum)TargetRuntimeMetadata.FramePointerBaseRegister));
             Assert.That(context->Published[0].loc.vlStk.vlsOffset, Is.EqualTo(-64));
             Assert.That(context->Calls, Is.EqualTo(13));
         });
@@ -316,7 +317,7 @@ internal static unsafe class ScopeReportingTests
                 new() { vsdLVnum = 0, vsdName = "last" },
             ];
             compiler.info.compVarScopesCount = 2;
-            AddRange(codeGen, 0, 2, 9, Register(REG_RCX));
+            AddRange(codeGen, 0, 2, 9, Register(REG_X64_RCX));
             codeGen.genSetScopeInfo();
 
             var translations = (Array)typeof(CodeGen).GetField("genTrnslLocalVarInfo", PrivateFields)!.GetValue(codeGen)!;
@@ -338,23 +339,23 @@ internal static unsafe class ScopeReportingTests
         {
             compiler.info.compVarScopes[0].vsdLVnum = 0;
             compiler.info.compVarScopes[0].vsdName = "local";
-            AddRange(codeGen, 0, 2, 9, Register(REG_RCX));
+            AddRange(codeGen, 0, 2, 9, Register(REG_X64_RCX));
             codeGen.genSetScopeInfo();
 
-            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.EqualTo("local"));
-            Assert.That(((ICodeGen)codeGen).siRegVarName(8, 0, (uint)REG_RCX), Is.EqualTo("local"));
-            Assert.That(((ICodeGen)codeGen).siRegVarName(9, 0, (uint)REG_RCX), Is.Null);
-            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 1, (uint)REG_RCX), Is.Null);
-            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RDX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_X64_RCX), Is.EqualTo("local"));
+            Assert.That(((ICodeGen)codeGen).siRegVarName(8, 0, (uint)REG_X64_RCX), Is.EqualTo("local"));
+            Assert.That(((ICodeGen)codeGen).siRegVarName(9, 0, (uint)REG_X64_RCX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 1, (uint)REG_X64_RCX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_X64_RDX), Is.Null);
 
             SetTranslationField(codeGen, 0, "tlviAvailable", false);
-            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_X64_RCX), Is.Null);
 
             compiler.opts.compScopeInfo = false;
-            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_X64_RCX), Is.Null);
             compiler.opts.compScopeInfo = true;
             compiler.info.compVarScopesCount = 0;
-            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_RCX), Is.Null);
+            Assert.That(((ICodeGen)codeGen).siRegVarName(0, 2, (uint)REG_X64_RCX), Is.Null);
         });
     }
 
@@ -385,8 +386,8 @@ internal static unsafe class ScopeReportingTests
             compiler.info.compFullName = "ScopeReporting:Method";
             compiler.info.compRetBuffArg = 0;
             compiler.opts.dspDebugInfo = true;
-            AddRange(codeGen, 0, 0, 3, Register(REG_RCX));
-            AddCallReturn(codeGen, 7, 3, Register(REG_XMM0));
+            AddRange(codeGen, 0, 0, 3, Register(REG_X64_RCX));
+            AddCallReturn(codeGen, 7, 3, Register(REG_X64_XMM0));
 
             var dump = Capture(codeGen.genSetScopeInfo);
 
@@ -404,7 +405,7 @@ internal static unsafe class ScopeReportingTests
     {
         WithCompiler((compiler, _, _) =>
         {
-            var location = Register(REG_RCX);
+            var location = Register(REG_X64_RCX);
             var nativeLocation = Unsafe.As<CodeGen.siVarLoc, ICorDebugInfo.VarLoc>(ref location);
 
             var dump = Capture(() =>
@@ -467,7 +468,7 @@ internal static unsafe class ScopeReportingTests
     private static CodeGen.siVarLoc Register(regNumber reg)
     {
         CodeGen.siVarLoc location = default;
-        location.storeVariableInRegisters(reg, REG_NA);
+        location.storeVariableInRegisters(reg, REG_X64_NA);
 
         return location;
     }

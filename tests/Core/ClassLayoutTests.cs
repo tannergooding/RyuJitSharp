@@ -1,5 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.CorInfoGCType;
@@ -9,16 +10,22 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class ClassLayoutTests
 {
-    [TestCase(0)]
-    [TestCase(1)]
-    [TestCase(ushort.MaxValue * TARGET_POINTER_SIZE)]
-    [TestCase((ushort.MaxValue * TARGET_POINTER_SIZE) + 1)]
-    [TestCase((ushort.MaxValue + 1) * TARGET_POINTER_SIZE)]
-    [TestCase(int.MaxValue)]
+    private static IEnumerable<TestCaseData> SlotCountCases()
+    {
+        var pointerSize = Configuration.TARGET_POINTER_SIZE;
+        yield return new TestCaseData(0);
+        yield return new TestCaseData(1);
+        yield return new TestCaseData(ushort.MaxValue * pointerSize);
+        yield return new TestCaseData((ushort.MaxValue * pointerSize) + 1);
+        yield return new TestCaseData((ushort.MaxValue + 1) * pointerSize);
+        yield return new TestCaseData(int.MaxValue);
+    }
+
+    [TestCaseSource(nameof(SlotCountCases))]
     public static void SlotCountPreservesLargeSizesAndRoundsPartialSlots(int size)
     {
         var layout = new ClassLayout(size);
-        var expected = ((long)size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        var expected = ((long)size + Configuration.TARGET_POINTER_SIZE - 1) / Configuration.TARGET_POINTER_SIZE;
 
         Assert.That(layout.SlotCount, Is.EqualTo(expected));
         Assert.That(layout.Size, Is.EqualTo(size));

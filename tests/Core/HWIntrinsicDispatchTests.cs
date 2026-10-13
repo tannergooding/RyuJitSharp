@@ -215,7 +215,7 @@ internal static unsafe class HWIntrinsicDispatchTests
                 Assert.That(compiler.impStackTop().val, Is.SameAs(scale));
                 Assert.That(s_argumentQueries, Is.Empty);
             }
-        });
+        }, minOpts: true);
     }
 
     [TestCase(false)]
@@ -521,6 +521,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         JitFlags flags = default;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compCompHnd = &jitInfo;
+        compiler.info.compFullName = nameof(HWIntrinsicDispatchTests);
         compiler.info.compMaxStack = 4;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);

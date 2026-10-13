@@ -42,7 +42,7 @@ internal static unsafe class StructCallLoweringTests
     [TestCase(1, TYPE_GC_NONE, TYP_INT)]
     [TestCase(2, TYPE_GC_NONE, TYP_INT)]
     [TestCase(4, TYPE_GC_NONE, TYP_INT)]
-    [TestCase(8, TYPE_GC_NONE, TYP_I_IMPL)]
+    [TestCase(8, TYPE_GC_NONE, TYP_LONG)]
     [TestCase(8, TYPE_GC_REF, TYP_REF)]
     [TestCase(8, TYPE_GC_BYREF, TYP_BYREF)]
     public static void UnusedReturnsNormalizeRegisterTypesWithoutChangingCallMetadata(
@@ -89,7 +89,7 @@ internal static unsafe class StructCallLoweringTests
     [TestCase(GT_RETURN, TYP_SIMD8, 8)]
     [TestCase(GT_STORE_LCL_VAR, TYP_STRUCT, 8)]
     [TestCase(GT_STORE_LCL_FLD, TYP_STRUCT, 8)]
-    [TestCase(GT_STORE_LCL_FLD, TYP_I_IMPL, 8)]
+    [TestCase(GT_STORE_LCL_FLD, TYP_LONG, 8)]
     [TestCase(GT_STORE_LCL_FLD, TYP_UBYTE, 1)]
     [TestCase(GT_STORE_BLK, TYP_STRUCT, 8)]
     public static void StructOwnersRetainTheirRepresentationAndLayout(genTreeOps oper, var_types ownerType, int size)
@@ -143,7 +143,7 @@ internal static unsafe class StructCallLoweringTests
 
             LowerCallStruct(lowering, call);
 
-            Assert.That(call.Type, Is.EqualTo(size == 8 ? TYP_I_IMPL : TYP_INT));
+            Assert.That(call.Type, Is.EqualTo(size == 8 ? TYP_LONG : TYP_INT));
             Assert.That(owner.Type, Is.EqualTo(ownerType));
             Assert.That(owner.Oper, Is.EqualTo(oper));
             Assert.That(owner.Flags, Is.EqualTo(ownerFlags));
@@ -177,8 +177,8 @@ internal static unsafe class StructCallLoweringTests
 
             LowerCallStruct(lowering, call);
 
-            Assert.That(call.Type, Is.EqualTo(TYP_I_IMPL));
-            Assert.That(store.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(call.Type, Is.EqualTo(TYP_LONG));
+            Assert.That(store.Type, Is.EqualTo(TYP_LONG));
             Assert.That(store.Data, Is.SameAs(call));
             Assert.That(store.Addr, Is.SameAs(address));
             Assert.That(store.Flags, Is.EqualTo(flags));
@@ -188,7 +188,7 @@ internal static unsafe class StructCallLoweringTests
     }
 
     [TestCase(TYPE_GC_REF, TYP_REF, CORINFO_CORECLR_ABI)]
-    [TestCase(TYPE_GC_NONE, TYP_I_IMPL, CORINFO_NATIVEAOT_ABI)]
+    [TestCase(TYPE_GC_NONE, TYP_LONG, CORINFO_NATIVEAOT_ABI)]
     public static void ImporterRetypedHelperStoresRetainTheirGcAndNativeAbiTypes(
         CorInfoGCType gcType, var_types storeType, CORINFO_RUNTIME_ABI abi)
     {
@@ -240,7 +240,7 @@ internal static unsafe class StructCallLoweringTests
 
             LowerCallStruct(lowering, call);
 
-            Assert.That(call.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(call.Type, Is.EqualTo(TYP_LONG));
             Assert.That(block.TryGetUse(call, out var use), Is.True);
             Assert.That(use.User(), Is.SameAs(owner));
             Assert.That(call.Next, Is.SameAs(owner));
@@ -269,7 +269,7 @@ internal static unsafe class StructCallLoweringTests
             Assert.That(bitCast.Oper, Is.EqualTo(GT_BITCAST));
             Assert.That(bitCast.Type, Is.EqualTo(TYP_SIMD8));
             Assert.That(bitCast.Op1, Is.SameAs(call));
-            Assert.That(call.Type, Is.EqualTo(TYP_I_IMPL));
+            Assert.That(call.Type, Is.EqualTo(TYP_LONG));
             Assert.That(call.Next, Is.SameAs(bitCast));
             Assert.That(bitCast.Prev, Is.SameAs(call));
             Assert.That(bitCast.Next, Is.SameAs(independentNode));

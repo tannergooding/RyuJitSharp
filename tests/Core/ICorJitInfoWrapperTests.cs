@@ -1,6 +1,6 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if MEASURE_CLRAPI_CALLS && FEATURE_JIT_METHOD_PERF
+#if MEASURE_CLRAPI_CALLS
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;

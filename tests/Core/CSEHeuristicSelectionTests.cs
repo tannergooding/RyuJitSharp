@@ -59,8 +59,8 @@ internal static unsafe class CSEHeuristicSelectionTests
     }
 
     [TestCase(TYP_INT, TYP_INT, true)]
-    [TestCase(TYP_BYREF, TYP_I_IMPL, true)]
-    [TestCase(TYP_I_IMPL, TYP_BYREF, true)]
+    [TestCase(TYP_BYREF, TYP_LONG, true)]
+    [TestCase(TYP_LONG, TYP_BYREF, true)]
     [TestCase(TYP_BYREF, TYP_REF, false)]
     [TestCase(TYP_INT, TYP_LONG, false)]
     public static void RewriteCompatibilityPreservesNativeTypePairs(

@@ -140,6 +140,17 @@ internal static class HashBitVectorTests
     }
 
     [Test]
+    public static void SetBitAcceptsUniversalIntIndex()
+    {
+        var vector = new hashBv();
+        var index = 257;
+
+        vector.setBit(index);
+
+        Assert.That(vector.testBit((indexType)index), Is.True);
+    }
+
+    [Test]
     public static void EnumerationAdvancesAcrossUnsetBits()
     {
         var vector = new hashBv();

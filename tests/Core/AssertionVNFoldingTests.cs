@@ -1,6 +1,7 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
@@ -42,14 +43,14 @@ internal static unsafe class AssertionVNFoldingTests
         });
     }
 
-    [TestCase(-1, false, false)]
-    [TestCase(-1, true, true)]
-    [TestCase(0, false, true)]
-    [TestCase(1, false, true)]
-    [TestCase(1, true, true)]
-    [TestCase(TARGET_POINTER_SIZE - 1, false, true)]
-    [TestCase(TARGET_POINTER_SIZE, false, true)]
-    [TestCase(65537, false, true)]
+    public static IEnumerable<TestCaseData> PointerSizedLengthCases()
+    {
+        yield return new TestCaseData(Configuration.TARGET_POINTER_SIZE - 1, false, true);
+        yield return new TestCaseData(Configuration.TARGET_POINTER_SIZE, false, true);
+        yield return new TestCaseData(65537, false, true);
+    }
+
+    [TestCaseSource(nameof(PointerSizedLengthCases))]
     public static void EqualAddressesRespectLengthAndNullDereferenceBoundaries(
         int count, bool knownNonNull, bool folds)
     {
@@ -75,7 +76,7 @@ internal static unsafe class AssertionVNFoldingTests
                 return;
             }
 
-            if (!knownNonNull && (count > 0) && (count < TARGET_POINTER_SIZE))
+            if (!knownNonNull && (count > 0) && (count < Configuration.TARGET_POINTER_SIZE))
             {
                 Assert.That(result?.Oper, Is.EqualTo(GT_COMMA));
                 Assert.That(result?.AsOp().Op1.Oper, Is.EqualTo(GT_NULLCHECK));

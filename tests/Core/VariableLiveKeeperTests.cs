@@ -56,7 +56,7 @@ internal static unsafe class VariableLiveKeeperTests
             Assert.That(range.m_StartEmitLocation.CodeOffset(codeGen.Emitter), Is.EqualTo(3u));
             Assert.That(range.m_EndEmitLocation.CodeOffset(codeGen.Emitter), Is.EqualTo(8u));
             Assert.That(range.m_VarLocation.vlType, Is.EqualTo(VLT_STK));
-            Assert.That(range.m_VarLocation.vlStk.vlsBaseReg, Is.EqualTo(ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP));
+            Assert.That(range.m_VarLocation.vlStk.vlsBaseReg, Is.EqualTo(ICorDebugInfo.REGNUM_AMBIENT_SP));
             Assert.That(range.m_VarLocation.vlStk.vlsOffset, Is.EqualTo(16));
         });
     }
@@ -159,7 +159,7 @@ internal static unsafe class VariableLiveKeeperTests
         {
             var keeper = codeGen.getVariableLiveKeeper();
             var location = new CodeGen.siVarLoc();
-            location.storeVariableInRegisters(REG_RCX, REG_NA);
+            location.storeVariableInRegisters(REG_X64_RCX, REG_X64_NA);
             keeper.psiStartVariableLiveRange(location, 0);
             keeper.siStartVariableLiveRange(in compiler.lvaTable[0], 0);
             compiler.lvaOutgoingArgSpaceVar = 2;
@@ -212,16 +212,16 @@ internal static unsafe class VariableLiveKeeperTests
         });
     }
 
-    [TestCase(REG_RAX, VLT_REG, 0)]
-    [TestCase(REG_R15, VLT_REG, 15)]
-    [TestCase(REG_XMM0, VLT_REG_FP, 16)]
-    [TestCase(REG_XMM15, VLT_REG_FP, 31)]
-    [TestCase(REG_XMM16, VLT_INVALID, 0)]
-    [TestCase(REG_K1, VLT_INVALID, 0)]
+    [TestCase(REG_X64_RAX, VLT_REG, 0)]
+    [TestCase(REG_X64_R15, VLT_REG, 15)]
+    [TestCase(REG_X64_XMM0, VLT_REG_FP, 16)]
+    [TestCase(REG_X64_XMM15, VLT_REG_FP, 31)]
+    [TestCase(REG_X64_XMM16, VLT_INVALID, 0)]
+    [TestCase(REG_X64_K1, VLT_INVALID, 0)]
     public static void RegisterHomesUseTheNativeDebugEncoding(regNumber reg, ICorDebugInfo.VarLocType type, int number)
     {
         var location = new CodeGen.siVarLoc();
-        location.storeVariableInRegisters(reg, REG_NA);
+        location.storeVariableInRegisters(reg, REG_X64_NA);
 
         Assert.That(location.vlType, Is.EqualTo(type));
         if (type != VLT_INVALID)
@@ -230,10 +230,10 @@ internal static unsafe class VariableLiveKeeperTests
         }
     }
 
-    [TestCase(REG_RAX, REG_XMM15, VLT_REG_REG)]
-    [TestCase(REG_XMM0, REG_XMM15, VLT_REG_REG)]
-    [TestCase(REG_RAX, REG_XMM16, VLT_INVALID)]
-    [TestCase(REG_K1, REG_RAX, VLT_INVALID)]
+    [TestCase(REG_X64_RAX, REG_X64_XMM15, VLT_REG_REG)]
+    [TestCase(REG_X64_XMM0, REG_X64_XMM15, VLT_REG_REG)]
+    [TestCase(REG_X64_RAX, REG_X64_XMM16, VLT_INVALID)]
+    [TestCase(REG_X64_K1, REG_X64_RAX, VLT_INVALID)]
     public static void RegisterPairsRejectUnencodableMembers(regNumber first, regNumber second,
         ICorDebugInfo.VarLocType type)
     {
@@ -248,10 +248,10 @@ internal static unsafe class VariableLiveKeeperTests
         }
     }
 
-    [TestCase(TYP_INT, REG_R8, VLT_REG)]
-    [TestCase(TYP_BYREF, REG_RCX, VLT_REG)]
-    [TestCase(TYP_DOUBLE, REG_XMM15, VLT_REG_FP)]
-    [TestCase(TYP_FLOAT, REG_XMM16, VLT_INVALID)]
+    [TestCase(TYP_INT, REG_X64_R8, VLT_REG)]
+    [TestCase(TYP_BYREF, REG_X64_RCX, VLT_REG)]
+    [TestCase(TYP_DOUBLE, REG_X64_XMM15, VLT_REG_FP)]
+    [TestCase(TYP_FLOAT, REG_X64_XMM16, VLT_INVALID)]
     public static void LocalDescriptorsProduceRegisterHomes(var_types type, regNumber reg,
         ICorDebugInfo.VarLocType expected)
     {
@@ -273,12 +273,15 @@ internal static unsafe class VariableLiveKeeperTests
         });
     }
 
-    [TestCase(false, false, false, ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP, 43)]
-    [TestCase(false, true, false, ICorDebugInfo.RegNum.REGNUM_RSP, 43)]
-    [TestCase(true, true, false, ICorDebugInfo.RegNum.REGNUM_RBP, 19)]
-    [TestCase(false, false, true, ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP, 43)]
-    public static void StackHomesPreserveFrameBiasAndImplicitByref(bool fpBased, bool fpUsed, bool implicitByref,
-        ICorDebugInfo.RegNum baseReg, int offset)
+    [TestCase(false, false, false, 43)]
+    [TestCase(false, true, false, 43)]
+    [TestCase(true, true, false, 19)]
+    [TestCase(false, false, true, 43)]
+    public static void StackHomesPreserveFrameBiasAndImplicitByref(
+        bool fpBased,
+        bool fpUsed,
+        bool implicitByref,
+        int offset)
     {
         WithCompiler((compiler, codeGen) =>
         {
@@ -288,6 +291,19 @@ internal static unsafe class VariableLiveKeeperTests
             local.lvIsParam = implicitByref;
             local.Type = implicitByref ? TYP_BYREF : TYP_LONG;
             var location = codeGen.getSiVarLoc(in local, 3, 24);
+            ICorDebugInfo.RegNum baseReg;
+            if (fpBased)
+            {
+                baseReg = (ICorDebugInfo.RegNum)TargetRuntimeMetadata.FramePointerBaseRegister;
+            }
+            else if (fpUsed)
+            {
+                baseReg = (ICorDebugInfo.RegNum)TargetRuntimeMetadata.StackPointerBaseRegister;
+            }
+            else
+            {
+                baseReg = ICorDebugInfo.REGNUM_AMBIENT_SP;
+            }
 
             Assert.That(location.vlType, Is.EqualTo(implicitByref ? VLT_STK_BYREF : VLT_STK));
             Assert.That(location.vlStk.vlsBaseReg, Is.EqualTo(baseReg));
@@ -299,11 +315,11 @@ internal static unsafe class VariableLiveKeeperTests
     public static void LocationEqualityIgnoresInactiveUnionFieldsAndPreservesNullSemantics()
     {
         var left = new CodeGen.siVarLoc();
-        left.storeVariableInRegisters(REG_RAX, REG_NA);
+        left.storeVariableInRegisters(REG_X64_RAX, REG_X64_NA);
         var right = left;
         right.vlStk.vlsOffset = 42;
         Assert.That(CodeGen.siVarLoc.Equals(left, right), Is.True);
-        right.storeVariableInRegisters(REG_RCX, REG_NA);
+        right.storeVariableInRegisters(REG_X64_RCX, REG_X64_NA);
         Assert.That(CodeGen.siVarLoc.Equals(left, right), Is.False);
         Assert.That(CodeGen.siVarLoc.Equals(null, null), Is.True);
         Assert.That(CodeGen.siVarLoc.Equals(left, null), Is.False);
@@ -391,7 +407,7 @@ internal static unsafe class VariableLiveKeeperTests
             {
                 Type = TYP_INT,
                 lvOnFrame = true,
-                RegNum = REG_STK,
+                RegNum = REG_X64_STK,
                 StackOffset = 16,
             };
         }
