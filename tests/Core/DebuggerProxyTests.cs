@@ -100,10 +100,17 @@ internal static class DebuggerProxyTests
     }
 
     [Test]
+    public static void EmitterInstructionDescriptorProxyIsAvailableInAllConfigurations()
+    {
+        AssertDebuggerProxy<Emitter.instrDesc>(typeof(Emitter.instrDesc.DebuggerProxy));
+    }
+
+    [Test]
     public static void RegisterAllocationDebuggerDisplaysAreAvailableInAllConfigurations()
     {
         AssertDebuggerDisplay<Interval>("{DebuggerDisplayText,nq}");
         AssertDebuggerDisplay<RegRecord>("[reg={regNum}, type={registerType}]");
+        AssertDebuggerProxy<RegRecord>(typeof(RegRecordDebuggerProxy));
 
         var interval = new Interval(TYP_INT, SRBM_NONE) { isLocalVar = true, varNum = 7 };
 #if DEBUG

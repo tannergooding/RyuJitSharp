@@ -289,7 +289,6 @@ public sealed partial class RefPosition
 {
 }
 
-#if DEBUG
 public partial class Emitter
 {
     [DebuggerTypeProxy(typeof(DebuggerProxy))]
@@ -344,7 +343,6 @@ public partial class Emitter
         }
     }
 }
-#endif
 
 #if DEBUG
 [DebuggerDisplay("LinearScan")]
@@ -530,7 +528,6 @@ internal sealed class RefPositionDebuggerProxy
     }
 }
 
-#if DEBUG
 internal sealed class RegRecordDebuggerProxy
 {
     private readonly RegRecord _record;
@@ -544,14 +541,11 @@ internal sealed class RegRecordDebuggerProxy
 
     public Interval? Previous => _record.previousInterval;
 }
-#endif
 
-#if DEBUG
 [DebuggerTypeProxy(typeof(RegRecordDebuggerProxy))]
 public sealed partial class RegRecord
 {
 }
-#endif
 
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 public sealed partial class insGroup
