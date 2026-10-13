@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Continue non-ABI conditional cleanup in sources\\Core\\jit. Next assess the private DEBUG-only mutation snapshot state in arraystack\\ArrayStack.cs and select a runtime representation without changing ABI/layout behavior; keep CILJit.Exports PAL initialization and ABI/layout cases deferred. The dynamic TLS input-ownership boundary remains unresolved.",
+    "nextAction": "Continue non-ABI conditional cleanup in sources\\Core\\jit. Next assess the DEBUG-only debugger metadata and proxy guards in arraystack\\JitExpandArray.cs and the matching jitstd\\JitStd.Vector.cs and JitStd.List.cs collection displays; preserve their debugger output while keeping ABI/layout and native interop cases deferred. The dynamic TLS input-ownership boundary remains unresolved.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources."

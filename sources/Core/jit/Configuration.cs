@@ -5,6 +5,12 @@ namespace RyuJitSharp;
 
 internal static class Configuration
 {
+#if DEBUG
+    internal const bool DEBUG = true;
+#else
+    internal const bool DEBUG = false;
+#endif
+
     private static readonly Architecture s_hostArchitecture = RuntimeInformation.ProcessArchitecture;
 
     private static readonly bool s_hostWindows = OperatingSystem.IsWindows();

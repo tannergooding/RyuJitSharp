@@ -5,6 +5,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
@@ -14,10 +15,6 @@ internal sealed class ArrayStack<T>
 
     private T[] _data;
     private int _count;
-
-#if DEBUG
-    private uint _version;
-#endif
 
     internal ArrayStack(int initialCapacity = BuiltinSize)
     {
@@ -34,10 +31,7 @@ internal sealed class ArrayStack<T>
 
         _data[_count] = item;
         _count++;
-
-#if DEBUG
-        _version = unchecked(_version + 1);
-#endif
+        IncrementVersion();
     }
 
     internal void Emplace(Func<T> createItem)
@@ -49,20 +43,14 @@ internal sealed class ArrayStack<T>
 
         _data[_count] = createItem();
         _count++;
-
-#if DEBUG
-        _version = unchecked(_version + 1);
-#endif
+        IncrementVersion();
     }
 
     internal T Pop()
     {
         Debug.Assert(_count > 0);
         _count--;
-
-#if DEBUG
-        _version = unchecked(_version + 1);
-#endif
+        IncrementVersion();
 
         return _data[_count];
     }
@@ -71,10 +59,7 @@ internal sealed class ArrayStack<T>
     {
         Debug.Assert(_count >= count);
         _count = unchecked(_count - count);
-
-#if DEBUG
-        _version = unchecked(_version + 1);
-#endif
+        IncrementVersion();
     }
 
     internal T Top(int i = 0)
@@ -114,19 +99,13 @@ internal sealed class ArrayStack<T>
     internal void Reset()
     {
         _count = 0;
-
-#if DEBUG
-        _version = unchecked(_version + 1);
-#endif
+        IncrementVersion();
     }
 
     internal void Reverse()
     {
         Array.Reverse(_data, 0, _count);
-
-#if DEBUG
-        _version = unchecked(_version + 1);
-#endif
+        IncrementVersion();
     }
 
     internal Span<T> Data()
@@ -152,11 +131,29 @@ internal sealed class ArrayStack<T>
 
     private uint GetVersion()
     {
-#if DEBUG
-        return _version;
-#else
-        return 0;
-#endif
+        if (!Configuration.DEBUG)
+        {
+            return 0;
+        }
+
+        return DebugDataStorage.Entries.TryGetValue(this, out var debugData) ? debugData.Version : 0;
+    }
+
+    [Conditional("DEBUG")]
+    private void IncrementVersion()
+    {
+        var debugData = DebugDataStorage.Entries.GetValue(this, static _ => new DebugData());
+        debugData.Version = unchecked(debugData.Version + 1);
+    }
+
+    private static class DebugDataStorage
+    {
+        internal static readonly ConditionalWeakTable<ArrayStack<T>, DebugData> Entries = [];
+    }
+
+    private sealed class DebugData
+    {
+        internal uint Version;
     }
 
     internal readonly ref struct BottomUpView
@@ -225,7 +222,7 @@ internal sealed class ArrayStack<T>
 #if DEBUG
         public readonly void Dispose()
         {
-            Debug.Assert(_stack._version == _version, "ArrayStack was modified during BottomUpOrder iteration");
+            Debug.Assert(_stack.GetVersion() == _version, "ArrayStack was modified during BottomUpOrder iteration");
         }
 #endif
     }
@@ -296,7 +293,7 @@ internal sealed class ArrayStack<T>
 #if DEBUG
         public readonly void Dispose()
         {
-            Debug.Assert(_stack._version == _version, "ArrayStack was modified during TopDownOrder iteration");
+            Debug.Assert(_stack.GetVersion() == _version, "ArrayStack was modified during TopDownOrder iteration");
         }
 #endif
     }

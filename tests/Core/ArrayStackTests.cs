@@ -97,4 +97,39 @@ internal static class ArrayStackTests
         Assert.That(stack.Height(), Is.Zero);
         Assert.That(stack.Data().IsEmpty, Is.True);
     }
+
+#if DEBUG
+    [TestCase(true)]
+    [TestCase(false)]
+    public static void EnumeratorsDetectMutations(bool bottomUp)
+    {
+        var stack = new ArrayStack<int>();
+        stack.Push(1);
+
+        if (bottomUp)
+        {
+            Assert.That(
+                () =>
+                {
+                    var enumerator = stack.BottomUpOrder().GetEnumerator();
+                    Assert.That(enumerator.MoveNext(), Is.True);
+                    stack.Push(2);
+                    enumerator.Dispose();
+                },
+                Throws.Exception.With.Message.Contains("ArrayStack was modified during BottomUpOrder iteration"));
+        }
+        else
+        {
+            Assert.That(
+                () =>
+                {
+                    var enumerator = stack.TopDownOrder().GetEnumerator();
+                    Assert.That(enumerator.MoveNext(), Is.True);
+                    stack.Push(2);
+                    enumerator.Dispose();
+                },
+                Throws.Exception.With.Message.Contains("ArrayStack was modified during TopDownOrder iteration"));
+        }
+    }
+#endif
 }
