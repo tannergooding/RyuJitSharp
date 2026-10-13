@@ -117,7 +117,8 @@ public sealed partial class Lowering
 
         if (Configuration.TARGET_X86)
         {
-            var stackPointer = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+            var stackPointer = compiler.gtNewPhysRegNode(
+                TargetRuntimeMetadata.StackPointerBaseRegister, TYP_I_IMPL);
             var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
                 checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
             InsertTreeBeforeAndContainCheck(insertionPoint, stackPointerStore);
@@ -128,14 +129,13 @@ public sealed partial class Lowering
             checked((ushort)frameInfo.offsetOfReturnAddress), label);
         InsertTreeBeforeAndContainCheck(insertionPoint, returnAddressStore);
 
-#if USE_PER_FRAME_PINVOKE_INIT
-        if (!compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
+        if (Configuration.USE_PER_FRAME_PINVOKE_INIT &&
+            !compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
         {
             var link = CreateFrameLinkUpdate(FrameLinkAction.PushFrame);
             BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));
             ContainCheckStoreIndir(link);
         }
-#endif
 
         var gcState = SetGCState(0);
         BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, gcState));
@@ -170,20 +170,23 @@ public sealed partial class Lowering
         BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, returnTrap));
         ContainCheckNode(returnTrap);
 
-#if USE_PER_FRAME_PINVOKE_INIT
-        if (!compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
+        if (Configuration.USE_PER_FRAME_PINVOKE_INIT)
         {
-            var link = CreateFrameLinkUpdate(FrameLinkAction.PopFrame);
-            BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));
-            ContainCheckStoreIndir(link);
+            if (!compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
+            {
+                var link = CreateFrameLinkUpdate(FrameLinkAction.PopFrame);
+                BlockRange().InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));
+                ContainCheckStoreIndir(link);
+            }
         }
-#else
-        var zero = compiler.gtNewIconNode(TYP_I_IMPL, 0);
-        var offset = checked((ushort)compiler.eeGetEEInfo().inlinedCallFrameInfo.offsetOfReturnAddress);
-        var clearCallSite = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar, offset, zero);
-        BlockRange().InsertBefore(insertionPoint, zero, clearCallSite);
-        ContainCheckStoreLoc(clearCallSite);
-#endif
+        else
+        {
+            var zero = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            var offset = checked((ushort)compiler.eeGetEEInfo().inlinedCallFrameInfo.offsetOfReturnAddress);
+            var clearCallSite = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar, offset, zero);
+            BlockRange().InsertBefore(insertionPoint, zero, clearCallSite);
+            ContainCheckStoreLoc(clearCallSite);
+        }
     }
 
     private unsafe GenTree? LowerNonvirtPinvokeCall(GenTreeCall call)
@@ -259,9 +262,13 @@ public sealed partial class Lowering
             InsertPInvokeCallEpilog(call);
         }
 
-#if SWIFT_SUPPORT
         if (call.HasSwiftErrorHandling)
         {
+            if (!Configuration.SWIFT_SUPPORT)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "Swift error handling is not supported for this target.");
+            }
+
             var swiftError = call.Next;
             while ((swiftError is not null) && (swiftError.Oper is not GT_SWIFT_ERROR))
             {
@@ -276,7 +283,6 @@ public sealed partial class Lowering
             BlockRange().Remove(swiftError);
             BlockRange().InsertAfter(call, swiftError);
         }
-#endif
         return result;
     }
 }

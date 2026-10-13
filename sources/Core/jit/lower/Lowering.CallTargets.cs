@@ -32,14 +32,19 @@ public sealed partial class Lowering
         assert(thisArg is not null);
         var thisArgNode = thisArg.Node;
 
-#if HAS_FIXED_REGISTER_SET
-        assert(thisArgNode.Oper is GT_PUTARG_REG);
-        var thisExpr = thisArgNode.AsUnOp().Op1;
-        var thisExprUse = new LIR.Use(BlockRange(), ref thisArgNode.AsUnOp().Op1Ref, thisArgNode);
-#else
-        var thisExpr = thisArgNode;
-        var thisExprUse = new LIR.Use(BlockRange(), ref thisArg.NodeRef, call);
-#endif
+        GenTree thisExpr;
+        LIR.Use thisExprUse;
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            assert(thisArgNode.Oper is GT_PUTARG_REG);
+            thisExpr = thisArgNode.AsUnOp().Op1;
+            thisExprUse = new LIR.Use(BlockRange(), ref thisArgNode.AsUnOp().Op1Ref, thisArgNode);
+        }
+        else
+        {
+            thisExpr = thisArgNode;
+            thisExprUse = new LIR.Use(BlockRange(), ref thisArg.NodeRef, call);
+        }
 
         GenTree baseAddress;
         if (thisExpr.Oper is GT_LCL_VAR)
@@ -63,15 +68,18 @@ public sealed partial class Lowering
         var newThisAddr = new GenTreeAddrMode(TYP_BYREF, thisExpr, null, 0, unchecked((int)instanceOffset));
         var newThis = compiler.gtNewIndir(TYP_REF, newThisAddr);
 
-#if HAS_FIXED_REGISTER_SET
-        thisArgNode.AsUnOp().Op1 = newThis;
-        BlockRange().Remove(thisArgNode);
-        BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
-#else
-        thisExprUse.ReplaceWith(newThis);
-        BlockRange().Remove(thisExpr);
-        BlockRange().InsertBefore(call, thisExpr, newThisAddr, newThis);
-#endif
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            thisArgNode.AsUnOp().Op1 = newThis;
+            BlockRange().Remove(thisArgNode);
+            BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
+        }
+        else
+        {
+            thisExprUse.ReplaceWith(newThis);
+            BlockRange().Remove(thisExpr);
+            BlockRange().InsertBefore(call, thisExpr, newThisAddr, newThis);
+        }
 
         ContainCheckIndir(newThis);
 
@@ -223,11 +231,15 @@ public sealed partial class Lowering
             }
             else
             {
-#if TARGET_ARMARCH || TARGET_AMD64 || TARGET_LOONGARCH64
-                // Codegen uses the call target already computed in the virtual-stub argument register.
-#else
-                result = compiler.gtNewIndir(TYP_I_IMPL, address, GTF_IND_NONFAULTING);
-#endif
+                if (Configuration.TARGET_ARMARCH || Configuration.TARGET_AMD64 ||
+                    Configuration.TARGET_LOONGARCH64)
+                {
+                    // Codegen uses the call target already computed in the virtual-stub argument register.
+                }
+                else
+                {
+                    result = compiler.gtNewIndir(TYP_I_IMPL, address, GTF_IND_NONFAULTING);
+                }
             }
         }
 

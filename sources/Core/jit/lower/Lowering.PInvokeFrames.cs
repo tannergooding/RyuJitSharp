@@ -49,40 +49,44 @@ public sealed partial class Lowering
         var rootLocal = compiler.info.compLvFrameListRoot;
         var rootDesc = compiler.lvaGetDesc(rootLocal);
         noway_assert(!rootDesc.lvIsParam);
-        noway_assert(rootDesc.Type is TYP_I_IMPL);
+        noway_assert((rootDesc.Type == TYP_I_IMPL));
 
         var rootStore = compiler.gtNewStoreLclVarNode(rootLocal, helper);
         var morphedStore = compiler.fgMorphTree(rootStore);
         firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, morphedStore));
         DISPTREERANGE(firstBlockRange, morphedStore);
 
-#if !TARGET_X86 && !TARGET_ARM
-        var stackPointer = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
-        var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
-            checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
-        firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, stackPointerStore));
-        DISPTREERANGE(firstBlockRange, stackPointerStore);
-#endif
-
-#if !TARGET_ARM
-        var framePointer = compiler.gtNewPhysRegNode(REG_FPBASE, TYP_I_IMPL);
-        var framePointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
-            checked((ushort)frameInfo.offsetOfCalleeSavedFP), framePointer);
-        firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, framePointerStore));
-        DISPTREERANGE(firstBlockRange, framePointerStore);
-#endif
-
-#if TARGET_64BIT
-#if USE_PER_FRAME_PINVOKE_INIT
-        if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
-#endif
+        if (!Configuration.TARGET_X86 && !Configuration.TARGET_ARM)
         {
-            var link = CreateFrameLinkUpdate(FrameLinkAction.PushFrame);
-            firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));
-            ContainCheckStoreIndir(link);
-            DISPTREERANGE(firstBlockRange, link);
+            var stackPointer = compiler.gtNewPhysRegNode(
+                TargetRuntimeMetadata.StackPointerBaseRegister, TYP_I_IMPL);
+            var stackPointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
+                checked((ushort)frameInfo.offsetOfCallSiteSP), stackPointer);
+            firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, stackPointerStore));
+            DISPTREERANGE(firstBlockRange, stackPointerStore);
         }
-#endif
+
+        if (!Configuration.TARGET_ARM)
+        {
+            var framePointer = compiler.gtNewPhysRegNode(
+                TargetRuntimeMetadata.FramePointerBaseRegister, TYP_I_IMPL);
+            var framePointerStore = compiler.gtNewStoreLclFldNode(TYP_I_IMPL, compiler.lvaInlinedPInvokeFrameVar,
+                checked((ushort)frameInfo.offsetOfCalleeSavedFP), framePointer);
+            firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, framePointerStore));
+            DISPTREERANGE(firstBlockRange, framePointerStore);
+        }
+
+        if (Configuration.TARGET_64BIT)
+        {
+            if (!Configuration.USE_PER_FRAME_PINVOKE_INIT ||
+                compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
+            {
+                var link = CreateFrameLinkUpdate(FrameLinkAction.PushFrame);
+                firstBlockRange.InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));
+                ContainCheckStoreIndir(link);
+                DISPTREERANGE(firstBlockRange, link);
+            }
+        }
     }
 
     private unsafe void InsertPInvokeMethodEpilog(BasicBlock returnBlock, GenTree? lastExpr)
@@ -102,9 +106,8 @@ public sealed partial class Lowering
         var insertionPoint = returnBlock.LastNode;
         assert(insertionPoint == lastExpr);
 
-#if USE_PER_FRAME_PINVOKE_INIT
-        if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
-#endif
+        if (!Configuration.USE_PER_FRAME_PINVOKE_INIT ||
+            compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
         {
             var link = CreateFrameLinkUpdate(FrameLinkAction.PopFrame);
             returnBlock.InsertBefore(insertionPoint, LIR.SeqTree(compiler, link));

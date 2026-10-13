@@ -30,7 +30,7 @@ public sealed partial class Lowering
             }
             else
             {
-                throw new NotImplementedException("HFA struct-call lowering is not supported for this target.");
+                throw new FatalJitException(CORJIT_SKIPPED, "HFA struct-call lowering is not supported for this target.");
             }
 
             var hfaType = compiler.GetHfaType(call.RetClsHnd);
@@ -81,19 +81,19 @@ public sealed partial class Lowering
 
                     // The importer separately retypes helper-call results.
                     assert((user.Type is TYP_REF) ||
-                        ((user.Type is TYP_I_IMPL) && compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI)));
+                        (((user.Type == TYP_I_IMPL)) && compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI)));
                     assert(call.IsHelperCall());
                     assert(returnType == user.Type);
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
                 {
                     if (!Configuration.FEATURE_HW_INTRINSICS)
                     {
-                        unreached();
-                        break;
+                        throw new FatalJitException(
+                            CORJIT_SKIPPED,
+                            "Hardware-intrinsic struct-call lowering is not available.");
                     }
 
                     if (!varTypeUsesSameRegType(returnType, originalType))
@@ -105,7 +105,6 @@ public sealed partial class Lowering
                     }
                     break;
                 }
-#endif
 
                 default:
                 {

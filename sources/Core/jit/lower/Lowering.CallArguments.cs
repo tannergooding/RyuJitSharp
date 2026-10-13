@@ -28,33 +28,34 @@ public sealed partial class Lowering
         }
 #endif
 
-#if !TARGET_64BIT && !TARGET_WASM
-        if (CompilerInstance.opts.compUseSoftFP && (arg.Type is TYP_DOUBLE))
+        if (!Configuration.TARGET_64BIT && !Configuration.TARGET_WASM)
         {
-            // Doubles remain primitive until lowering, unlike decomposed integer longs.
-            var argLclNum = CompilerInstance.lvaGrabTemp(false, "double arg on softFP");
-            var store = CompilerInstance.gtNewTempStore(argLclNum, arg);
-            var low = CompilerInstance.gtNewLclFldNode(TYP_INT, argLclNum, 0);
-            var high = CompilerInstance.gtNewLclFldNode(TYP_INT, argLclNum, 4);
-            var longNode = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
-            BlockRange().InsertAfter(arg, store, low, high, longNode);
-            argSlot = arg = longNode;
-            CompilerInstance.lvaSetVarDoNotEnregister(argLclNum, DoNotEnregisterReason.LocalField);
-            JITDUMP("Transformed double-typed arg on softFP to LONG node\n");
-        }
+            if (CompilerInstance.opts.compUseSoftFP && (arg.Type is TYP_DOUBLE))
+            {
+                // Doubles remain primitive until lowering, unlike decomposed integer longs.
+                var argLclNum = CompilerInstance.lvaGrabTemp(false, "double arg on softFP");
+                var store = CompilerInstance.gtNewTempStore(argLclNum, arg);
+                var low = CompilerInstance.gtNewLclFldNode(TYP_INT, argLclNum, 0);
+                var high = CompilerInstance.gtNewLclFldNode(TYP_INT, argLclNum, 4);
+                var longNode = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
+                BlockRange().InsertAfter(arg, store, low, high, longNode);
+                argSlot = arg = longNode;
+                CompilerInstance.lvaSetVarDoNotEnregister(argLclNum, DoNotEnregisterReason.LocalField);
+                JITDUMP("Transformed double-typed arg on softFP to LONG node\n");
+            }
 
-        if (varTypeIsLong(arg.Type))
-        {
-            noway_assert(arg.Oper is GT_LONG);
-            var fieldList = new GenTreeFieldList();
-            fieldList.AddFieldLIR(CompilerInstance, arg.AsOp().Op1, 0, TYP_INT);
-            fieldList.AddFieldLIR(CompilerInstance, arg.AsOp().Op2, 4, TYP_INT);
-            BlockRange().InsertBefore(arg, fieldList);
-            BlockRange().Remove(arg);
-            argSlot = arg = fieldList;
-            JITDUMP("Transformed long arg on 32-bit to FIELD_LIST node\n");
+            if (varTypeIsLong(arg.Type))
+            {
+                noway_assert(arg.Oper is GT_LONG);
+                var fieldList = new GenTreeFieldList();
+                fieldList.AddFieldLIR(CompilerInstance, arg.AsOp().Op1, 0, TYP_INT);
+                fieldList.AddFieldLIR(CompilerInstance, arg.AsOp().Op2, 4, TYP_INT);
+                BlockRange().InsertBefore(arg, fieldList);
+                BlockRange().Remove(arg);
+                argSlot = arg = fieldList;
+                JITDUMP("Transformed long arg on 32-bit to FIELD_LIST node\n");
+            }
         }
-#endif
 
         if (Configuration.FEATURE_ARG_SPLIT && compFeatureArgSplit() && abiInfo.IsSplitAcrossRegistersAndStack)
         {
@@ -167,10 +168,10 @@ public sealed partial class Lowering
     {
         assert(putArgStk is not null);
         var compiler = CompilerInstance;
-        GenTree destination = compiler.gtNewPhysRegNode(REG_SPBASE, TYP_I_IMPL);
+        GenTree destination = compiler.gtNewPhysRegNode(TargetRuntimeMetadata.StackPointerBaseRegister, TYP_I_IMPL);
         var localType = compiler.lvaGetRealType(lclNum);
         GenTree source;
-        if (localType is TYP_BYREF or TYP_I_IMPL)
+        if ((localType is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)))
         {
             source = compiler.gtNewLclVarNode(localType, lclNum);
         }

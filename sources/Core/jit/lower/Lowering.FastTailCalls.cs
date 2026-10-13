@@ -12,7 +12,11 @@ public sealed partial class Lowering
 {
     private void LowerFastTailCall(GenTreeCall call)
     {
-#if FEATURE_FASTTAILCALL
+        if (!Configuration.FEATURE_FASTTAILCALL)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Fast tailcall lowering is not available for this target.");
+        }
+
         var compiler = CompilerInstance;
         assert((compiler.info.compFlags & CORINFO_FLG_SYNCH) == 0);
         assert(!compiler.opts.IsReversePInvoke);
@@ -111,12 +115,8 @@ public sealed partial class Lowering
         {
             InsertProfTailCallHook(call, startNonGCNode);
         }
-#else
-        unreached();
-#endif
     }
 
-#if FEATURE_FASTTAILCALL
     private static GenTree FirstNode(GenTree first, GenTree second)
         => ReferenceEquals(LIR.LastNode(first, second), first) ? second : first;
 
@@ -171,15 +171,13 @@ public sealed partial class Lowering
 #endif
 
                 GenTree value;
-#if TARGET_ARM
-                if (tmpType is TYP_LONG)
+                if (Configuration.TARGET_ARM && tmpType is TYP_LONG)
                 {
                     var low = compiler.gtNewLclFldNode(TYP_INT, lclNum, 0);
                     var high = compiler.gtNewLclFldNode(TYP_INT, lclNum, 4);
                     value = new GenTreeOp(GT_LONG, TYP_LONG, low, high);
                 }
                 else
-#endif
                 {
                     value = compiler.gtNewLclvNode(tmpType, lclNum);
                 }
@@ -199,5 +197,4 @@ public sealed partial class Lowering
             local.LclNum = tmpLclNum;
         }
     }
-#endif
 }

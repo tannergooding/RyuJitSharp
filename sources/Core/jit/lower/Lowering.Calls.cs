@@ -110,7 +110,9 @@ public sealed partial class Lowering
 
     private GenTreeIntCon AddrGen(nint address) => CompilerInstance.gtNewIconHandleNode(address, GTF_ICON_FTN_ADDR);
 
-    private GenTreeIndir Ind(GenTree tree, var_types type = TYP_I_IMPL) => CompilerInstance.gtNewIndir(type, tree);
+    private GenTreeIndir Ind(GenTree tree) => Ind(tree, TYP_I_IMPL);
+
+    private GenTreeIndir Ind(GenTree tree, var_types type) => CompilerInstance.gtNewIndir(type, tree);
 
     private unsafe bool IsCallTargetInRange(void* address)
     {
@@ -144,7 +146,7 @@ public sealed partial class Lowering
     private void LegalizeArgPlacement(GenTreeCall call)
     {
         var numMarked = MarkCallPutArgAndFieldListNodes(call);
-#if DEBUG && !FEATURE_FIXED_OUT_ARGS
+#if DEBUG
         var nextPushOffset = uint.MaxValue;
 #endif
         var current = call.Prev;
@@ -155,8 +157,8 @@ public sealed partial class Lowering
             {
                 numMarked--;
                 current._lirFlags &= ~LIR.Flags.Mark;
-#if DEBUG && !FEATURE_FIXED_OUT_ARGS
-                if (current.Oper is GT_PUTARG_STK)
+#if DEBUG
+                if (!Configuration.FEATURE_FIXED_OUT_ARGS && current.Oper is GT_PUTARG_STK)
                 {
                     assert(nextPushOffset > current.AsPutArgStk().ArgOffset);
                     nextPushOffset = (uint)current.AsPutArgStk().ArgOffset;
@@ -192,9 +194,8 @@ public sealed partial class Lowering
             {
                 numMarked--;
                 current._lirFlags &= ~LIR.Flags.Mark;
-#if !FEATURE_FIXED_OUT_ARGS
-                if (current.Oper is GT_FIELD_LIST or GT_PUTARG_REG)
-#endif
+                if (Configuration.FEATURE_FIXED_OUT_ARGS ||
+                    (current.Oper is GT_FIELD_LIST or GT_PUTARG_REG))
                 {
 #if DEBUG
                     JITDUMP($"Relocating [{current.TreeId:D6}] after [{insertionPoint.TreeId:D6}]\n");
@@ -230,12 +231,10 @@ public sealed partial class Lowering
 
     private static nuint MarkPutArgAndFieldListNodes(GenTree node)
     {
-#if !HAS_FIXED_REGISTER_SET
-        if (!node.Oper.IsPutArg && !node.Oper.IsFieldList)
+        if (!Configuration.HAS_FIXED_REGISTER_SET && !node.Oper.IsPutArg && !node.Oper.IsFieldList)
         {
             return 0;
         }
-#endif
         assert(node.Oper.IsPutArg || node.Oper.IsFieldList);
         assert((node._lirFlags & LIR.Flags.Mark) == 0);
         node._lirFlags |= LIR.Flags.Mark;

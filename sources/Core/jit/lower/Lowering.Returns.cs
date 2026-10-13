@@ -70,12 +70,15 @@ public sealed partial class Lowering
     private static ref GenTree GetRetValueRef(GenTreeUnOp ret)
     {
         assert(ret.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);
-#if SWIFT_SUPPORT
         if (ret.Oper is GT_SWIFT_ERROR_RET)
         {
+            if (!Configuration.SWIFT_SUPPORT)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "Swift error returns are not supported for this target.");
+            }
+
             return ref ret.AsOp().Op2Ref;
         }
-#endif
         return ref ret.Op1Ref;
     }
 
@@ -100,11 +103,14 @@ public sealed partial class Lowering
             var value = compiler.gtNewLclvNode(descriptor.Type, localNumber);
             GetRetValueRef(ret) = value;
             BlockRange().InsertBefore(ret, value);
-#if TARGET_ARM64
-            LowerLclVar(value.AsLclVar());
-#else
-            _ = LowerNode(value);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                LowerLclVar(value.AsLclVar());
+            }
+            else
+            {
+                _ = LowerNode(value);
+            }
             BlockRange().Remove(fieldList);
 
             if (registerCount == 1)
@@ -126,14 +132,12 @@ public sealed partial class Lowering
     {
         assert(ret.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);
 
-#if LOWER_DECOMPOSE_LONGS
-        if (ret.Type is TYP_LONG)
+        if (Configuration.LOWER_DECOMPOSE_LONGS && (ret.Type is TYP_LONG))
         {
             var value = GetRetValueRef(ret);
             assert(value.Oper is GT_LONG);
             MakeSrcContained(ret, value);
         }
-#endif
         if (Configuration.FEATURE_MULTIREG_RET && (ret.Type is TYP_STRUCT))
         {
             var value = GetRetValueRef(ret);

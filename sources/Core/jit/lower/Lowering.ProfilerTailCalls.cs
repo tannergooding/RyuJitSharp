@@ -11,11 +11,14 @@ public sealed partial class Lowering
     {
         assert(call.IsTailCall);
         assert(CompilerInstance.compIsProfilerHookNeeded);
-#if TARGET_X86
-        insertionPoint ??= call;
-#else
-        insertionPoint ??= FindEarliestPutArg(call) ?? call;
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            insertionPoint ??= call;
+        }
+        else
+        {
+            insertionPoint ??= FindEarliestPutArg(call) ?? call;
+        }
 
 #if DEBUG
         JITDUMP($"Inserting profiler tail call before [{insertionPoint.TreeId:D6}]\n");

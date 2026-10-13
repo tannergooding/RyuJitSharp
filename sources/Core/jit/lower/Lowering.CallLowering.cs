@@ -126,7 +126,7 @@ public sealed partial class Lowering
             return;
         }
 
-        throw new NotImplementedException("Call operand containment is not ported for this target.");
+        throw new FatalJitException(CORJIT_SKIPPED, "Call operand containment is not ported for this target.");
     }
 
     private unsafe GenTree? LowerCall(GenTree node)
@@ -306,8 +306,9 @@ public sealed partial class Lowering
             RequireOutgoingArgSpace(call, call.Args.OutgoingArgsStackSize);
         }
 
-#if TARGET_WASM
-        if (!call.IsUnmanaged && compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
+        if (Configuration.TARGET_WASM &&
+            !call.IsUnmanaged &&
+            compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_PORTABLE_ENTRY_POINTS))
         {
             if (call._directCallAddress is not null)
             {
@@ -319,7 +320,6 @@ public sealed partial class Lowering
                 LowerPEPCall(call);
             }
         }
-#endif
 
         if (varTypeIsStruct(call.Type))
         {
@@ -333,7 +333,6 @@ public sealed partial class Lowering
         return null;
     }
 
-#if TARGET_WASM
     private void AddWasmPortableEntryPointArg(GenTreeCall call, GenTree value)
     {
         var compiler = CompilerInstance;
@@ -346,7 +345,7 @@ public sealed partial class Lowering
 
         var argIndex = unchecked((uint)(call.Args.CountArgs() - 1));
         var argReg = regNumberExtensions.MakeWasmReg(argIndex, WasmValueType.I);
-        var segment = AbiPassingSegment.InRegister(argReg, 0, TARGET_POINTER_SIZE);
+        var segment = AbiPassingSegment.InRegister(argReg, 0, Configuration.TARGET_POINTER_SIZE);
         arg.AbiInfo = AbiPassingInformation.FromSegmentByValue(compiler, segment);
         BlockRange().InsertBefore(call, value);
         LowerArg(call, arg);
@@ -385,7 +384,6 @@ public sealed partial class Lowering
         JITDUMP("Finished lowering PEP call\n");
         DISPTREERANGE(BlockRange(), call);
     }
-#endif
 
     private unsafe GenTree? LowerTailCallViaJitHelper(GenTreeCall call, GenTree callTarget)
     {
@@ -449,12 +447,10 @@ public sealed partial class Lowering
         var result = LowerDirectCall(call);
         call._callMoreFlags |= GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_JIT_HELPER;
 
-#if PROFILING_SUPPORTED
-        if (compiler.compIsProfilerHookNeeded)
+        if (Configuration.PROFILING_SUPPORTED && compiler.compIsProfilerHookNeeded)
         {
             InsertProfTailCallHook(call, null);
         }
-#endif
 
         return result;
     }

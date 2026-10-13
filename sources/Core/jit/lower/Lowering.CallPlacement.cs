@@ -30,9 +30,10 @@ public sealed partial class Lowering
 
     private void MovePutArgUpToCall(GenTreeCall call, GenTree node)
     {
-#if HAS_FIXED_REGISTER_SET
-        assert(node.Oper.IsPutArg || (node.Oper is GT_FIELD_LIST));
-#endif
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            assert(node.Oper.IsPutArg || (node.Oper is GT_FIELD_LIST));
+        }
         if (node.Oper is GT_FIELD_LIST)
         {
             JITDUMP("Node is a GT_FIELD_LIST; moving all operands\n");
@@ -60,9 +61,11 @@ public sealed partial class Lowering
         }
         else
         {
-#if HAS_FIXED_REGISTER_SET
-            unreached();
-#endif
+            if (Configuration.HAS_FIXED_REGISTER_SET)
+            {
+                unreached();
+            }
+
             return;
         }
 
