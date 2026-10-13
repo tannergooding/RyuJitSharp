@@ -9,35 +9,39 @@ public sealed partial class CodeGen
 {
     public void inst_TT_RV(instruction ins, emitAttr size, GenTree tree, regNumber reg)
     {
-#if DEBUG
-        assert(reg != REG_STK);
-        var isValidInReg = (tree.Flags & GTF_SPILLED) == 0;
-
-        if (!isValidInReg && ((tree.Flags & GTF_SPILL) != 0) && (tree.Oper == GT_STORE_LCL_VAR))
+        if (Configuration.DEBUG)
         {
-            isValidInReg = true;
+            assert(reg != REG_STK);
+            var isValidInReg = (tree.Flags & GTF_SPILLED) == 0;
+
+            if (!isValidInReg && ((tree.Flags & GTF_SPILL) != 0) && (tree.Oper == GT_STORE_LCL_VAR))
+            {
+                isValidInReg = true;
+            }
+
+            assert(isValidInReg);
+            assert(size != EA_UNKNOWN);
+            assert(tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR);
         }
 
-        assert(isValidInReg);
-        assert(size != EA_UNKNOWN);
-        assert(tree.Oper is GT_LCL_VAR or GT_STORE_LCL_VAR);
-#endif
         var varNum = tree.AsLclVarCommon().LclNum;
         assert((uint)varNum < (uint)_compiler.lvaCount);
-#if DEBUG
-        if (Configuration.CPU_LOAD_STORE_ARCH)
+        if (Configuration.DEBUG)
         {
-            if (Configuration.TARGET_ARM64)
+            if (Configuration.CPU_LOAD_STORE_ARCH)
             {
-                // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
-                assert(Emitter.emitInsIsStore(ins) || ins == INS_sve_str);
-            }
-            else
-            {
-                assert(Emitter.emitInsIsStore(ins));
+                if (Configuration.TARGET_ARM64)
+                {
+                    // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
+                    assert(Emitter.emitInsIsStore(ins) || ins == INS_sve_str);
+                }
+                else
+                {
+                    assert(Emitter.emitInsIsStore(ins));
+                }
             }
         }
-#endif
+
         Emitter.emitIns_S_R(ins, size, reg, varNum, 0);
     }
 

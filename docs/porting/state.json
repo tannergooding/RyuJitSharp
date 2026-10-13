@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Review assertion-only DEBUG guards in sources/Core/jit/scev/ for Release-visible dependencies; preserve stress behavior and diagnostics.",
+    "nextAction": "Review assertion-only DEBUG guards in sources/Core/jit/varset/ for Release-visible dependencies; preserve set representation and semantics.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources.",
@@ -61,7 +61,9 @@
       "The GenTree sweep runtime-gates the InsertAfter anchor-membership check and HWIntrinsicId operand-count/invalid-ID checks. CallArgumentMorphTests and HardwareIntrinsicInitializationTests passed 552/552 in Debug and 546/546 in Release with win-x64 semantics; Release used artifacts\\ExcludeKnownReleaseTestSources.targets. Full-analysis focused runs failed before test execution in both configurations on the same 17 existing IDE0058/IDE0059 diagnostics in unchanged Core files; neither changed file reported a diagnostic.",
       "JitStd.Sort now runtime-gates its post-sort assertion without changing its existing comparator expression. JitStdAlgorithmTests passed 2/2 in Debug and Release. The separate JitStd.List.init method remains DEBUG-only.",
       "The register-allocation sweep found only RegRecord.dump, DEBUG-only assertion tracking/diagnostics in RegSet, Wasm debug-dump formatting, and no DEBUG guards in registeropswasm. WasmRegAlloc.recordVarLocationsAtStartOfBB now runtime-gates its verification-only duplicate-funclet call. WasmRegAllocTests passed 4/4 in Debug and Release with browser-wasm target semantics, analyzers/documentation generation disabled, and temporary exclusions for unrelated WasmEmitter*, FuncletCreationTargetTests, WasmCallArgumentMorphTests, and TargetRegisterConstantsTests sources that reference unavailable Wasm identifiers.",
-      "The ssaconfig/ sweep found no DEBUG guards. In ssarenamestate/, verbose logging and DumpStack remain DEBUG-only; PopBlockStacks now runtime-gates its Release-visible post-pop stack/block invariant. SsaRenameStateTests passed 7/7 in Debug and 6/6 in Release with analyzers disabled."
+      "The ssaconfig/ sweep found no DEBUG guards. In ssarenamestate/, verbose logging and DumpStack remain DEBUG-only; PopBlockStacks now runtime-gates its Release-visible post-pop stack/block invariant. SsaRenameStateTests passed 7/7 in Debug and 6/6 in Release with analyzers disabled.",
+      "The scev/ sweep found only DEBUG-only ScevAddRec.Loop/dump state, compiler tree-ID restoration for failed materialization, and verbose diagnostics; typeinfo/, vartype/, likelyclass/, and sideeffects/ contain no DEBUG guards. CodeGen.inst_TT_RV now runtime-gates its Release-visible operand and store-instruction assertions; CodeGenTreeOperandStoreTests passed 4/4 in Debug and Release with analyzers disabled.",
+      "In phase/, Phase.Observations stores DEBUG-only snapshots and phase logging remains diagnostic. In jitmetadata/, the remaining guard adds only a metric dump method. Neither area had an eligible assertion-only conversion."
     ],
     "activeBatch": null,
     "parityEvidence": {
