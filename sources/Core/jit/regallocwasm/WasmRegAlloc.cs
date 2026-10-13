@@ -189,9 +189,11 @@ public sealed partial class WasmRegAlloc : IRegAlloc
 
         if (_currentFunclet == funcletIndex)
         {
-#if DEBUG
-            UpdateOrVerifyAssignments(verify: true);
-#endif
+            if (Configuration.DEBUG)
+            {
+                UpdateOrVerifyAssignments(verify: true);
+            }
+
             return;
         }
 

@@ -81,6 +81,27 @@ internal static unsafe class WasmRegAllocTests
     }
 
     [Test]
+    public static void RepeatedFuncletEntryVerifiesTrackedRegisterAssignments()
+    {
+        WithCompiler(compiler => {
+            compiler.lvaTrackedCount = 1;
+            compiler.lvaTrackedToVarNum = [0];
+            compiler.lvaTable[0].lvTracked = true;
+            compiler.lvaTable[0]._varIndex = 0;
+
+            var allocator = new WasmRegAlloc(compiler);
+
+            Assert.That(allocator.DoRegisterAllocation(), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+
+            var block = new BasicBlock(null, null);
+            compiler.fgFirstBB = block;
+            allocator.recordVarLocationsAtStartOfBB(block);
+
+            Assert.That(compiler.lvaTable[0].RegNum, Is.EqualTo(REG_STK));
+        });
+    }
+
+    [Test]
     public static void PhysicalRegisterSourceCanBeRetargetedAfterLirReplacement()
     {
         WithCompiler(compiler => {
