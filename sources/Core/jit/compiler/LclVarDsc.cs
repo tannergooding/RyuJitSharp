@@ -57,16 +57,13 @@ public partial struct LclVarDsc
     /// <remarks>It is set during codegen any time the variable is enregistered (lvRegister is only set to non-zero if the variable gets the same register assignment for its entire lifetime).</remarks>
     private regNumber _lvRegNum;
 
-#if TARGET_32BIT
     /// <summary>Used for "upper half" of long var.</summary>
     private regNumber _lvOtherReg;
-#endif
 
     /// <summary>the register into which the argument is moved at entry</summary>
     private regNumber _lvArgInitReg;
 
     /// <summary>Set if the argument is an implicit byref.</summary>
-#if FEATURE_IMPLICIT_BYREFS
     public bool IsImplicitByRef
     {
         readonly get
@@ -79,9 +76,6 @@ public partial struct LclVarDsc
             _flags = (_flags & ~Flags.IsImplicitByRef) | (value ? Flags.IsImplicitByRef : Flags.None);
         }
     }
-#else
-    public readonly bool IsImplicitByRef => false;
-#endif
 
     /// <summary>The local is known to be never negative</summary>
     public bool IsNeverNegative
@@ -104,12 +98,8 @@ public partial struct LclVarDsc
     {
         readonly get
         {
-#if FEATURE_IMPLICIT_BYREFS
             assert(Debugger.IsAttached || varTypeIsStruct(Type) ||
-                (IsImplicitByRef && (Type is TYP_I_IMPL or TYP_BYREF)));
-#else
-            assert(Debugger.IsAttached || varTypeIsStruct(Type));
-#endif
+                (Compiler.SupportsImplicitByRefs && IsImplicitByRef && ((Type is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF)))));
             return _layout;
         }
 
@@ -195,7 +185,7 @@ public partial struct LclVarDsc
         }
     }
 
-    /// <summary>0 = off of REG_SPBASE (e.g., ESP), 1 = off of REG_FPBASE (e.g., EBP)</summary>
+    /// <summary>0 = off of the stack-pointer base register, 1 = off of the frame-pointer base register</summary>
     public bool lvFramePointerBased
     {
         readonly get
@@ -848,7 +838,6 @@ public partial struct LclVarDsc
         }
     }
 
-#if FEATURE_IMPLICIT_BYREFS
     /// <summary>Set if the local appears as a last use that will be passed as an implicit byref.</summary>
     public bool lvIsLastUseCopyOmissionCandidate
     {
@@ -862,7 +851,6 @@ public partial struct LclVarDsc
             _flags = (_flags & ~Flags.IsLastUseCopyOmissionCandidate) | (value ? Flags.IsLastUseCopyOmissionCandidate : Flags.None);
         }
     }
-#endif
 
 #if DEBUG
     /// <summary>Tracked but has no lvVarIndex (i.e. only valid GTF_VAR_DEATH flags, used by physical promotion)</summary>
@@ -1150,38 +1138,34 @@ public partial struct LclVarDsc
         }
     }
 
-#if TARGET_64BIT
-    public readonly regNumber OtherReg
-    {
-        get
-        {
-            unreached();
-            return REG_NA;
-        }
-
-        set
-        {
-            unreached();
-        }
-    }
-#else
     public regNumber OtherReg
     {
         readonly get
         {
+            if (Configuration.TARGET_64BIT)
+            {
+                unreached();
+                return REG_NA;
+            }
+
             return _lvOtherReg;
         }
 
         set
         {
-            _lvOtherReg = value;
+            if (Configuration.TARGET_64BIT)
+            {
+                unreached();
+            }
+            else
+            {
+                _lvOtherReg = value;
+            }
         }
     }
-#endif
 
     public readonly bool IsBitcastToSimd() => lvIsBitcastToSimd;
 
-#if FEATURE_HW_INTRINSICS
     public readonly bool IsVectorPerElementMask(var_types simdBaseType)
     {
         return (_flags & Flags.IsVectorPerElementMask) != 0 &&
@@ -1239,7 +1223,6 @@ public partial struct LclVarDsc
             }
         }
     }
-#endif
 
     public bool IsSpan
     {
@@ -1271,11 +1254,15 @@ public partial struct LclVarDsc
 
     public readonly bool lvIsInReg => lvIsRegCandidate && (_lvRegNum != REG_STK);
 
-#if HAS_FIXED_REGISTER_SET
     public readonly regMask lvRegMask
     {
         get
         {
+            if (!Configuration.HAS_FIXED_REGISTER_SET)
+            {
+                throw new FatalJitException("Local register masks require a fixed register set.");
+            }
+
             if (_lvRegNum != REG_STK)
             {
                 return (regMask)(1L << (int)(_lvRegNum));
@@ -1286,7 +1273,6 @@ public partial struct LclVarDsc
             }
         }
     }
-#endif
 
     /// <summary>Get a bitset of flags that represents all fields dying.</summary>
     /// <remarks>Only usable for promoted locals.</remarks>
@@ -1533,10 +1519,8 @@ public partial struct LclVarDsc
 
                 var doubleWeight = lvIsTemp;
 
-#if FEATURE_IMPLICIT_BYREFS
                 // and, for the time being, implicit byref params
-                doubleWeight |= IsImplicitByRef;
-#endif
+                doubleWeight |= Compiler.SupportsImplicitByRefs && IsImplicitByRef;
 
                 if (doubleWeight && (weight * 2 > weight))
                 {
@@ -1675,12 +1659,11 @@ public partial struct LclVarDsc
 
         if (type is not TYP_STRUCT)
         {
-#if LOWER_DECOMPOSE_LONGS
-        if (type is TYP_LONG)
-        {
-            return TYP_UNDEF;
-        }
-#endif
+            if (Configuration.LOWER_DECOMPOSE_LONGS && (type is TYP_LONG))
+            {
+                return TYP_UNDEF;
+            }
+
             return type;
         }
 
@@ -1708,13 +1691,14 @@ public partial struct LclVarDsc
 
             if (lvIsOSRLocal && lvIsStructField)
             {
-#if TARGET_X86
-                // Revisit when we support OSR on x86
-                unreached();
-                return TYP_UNDEF;
-#else
+                if (Configuration.TARGET_X86)
+                {
+                    // Revisit when we support OSR on x86
+                    unreached();
+                    return TYP_UNDEF;
+                }
+
                 return GetRegisterType();
-#endif
             }
         }
 
@@ -1761,17 +1745,17 @@ public partial struct LclVarDsc
             return false;
         }
 
-#if FEATURE_SIMD
         // If we return `struct A { simd16 a; }` we split the struct into several fields.
         // In order to do that we have to have its field `a` in memory. Right now lowering cannot
         // handle RETURN struct(multiple registers)->simd16(one register), but it can be improved.
-        ref var fieldDsc = ref compiler.lvaGetDesc(lvFieldLclStart);
-
-        if (varTypeIsSimd(fieldDsc.Type))
+        if (Configuration.FEATURE_SIMD)
         {
-            return false;
+            ref var fieldDsc = ref compiler.lvaGetDesc(lvFieldLclStart);
+            if (varTypeIsSimd(fieldDsc.Type))
+            {
+                return false;
+            }
         }
-#endif
 
         return true;
     }

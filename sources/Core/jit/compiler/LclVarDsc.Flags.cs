@@ -65,9 +65,7 @@ public partial struct LclVarDsc
 
         IsBitcastToSimd = 1L << 50,
 
-#if FEATURE_IMPLICIT_BYREFS
         IsImplicitByRef = 1L << 48,
         IsLastUseCopyOmissionCandidate = 1L << 49,
-#endif
     }
 }

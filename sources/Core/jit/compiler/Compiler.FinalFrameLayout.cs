@@ -14,7 +14,7 @@ public partial class Compiler
     {
         assert(codeGen is not null);
         var regsPushed = compCalleeRegsPushed + (codeGen.IsFramePointerUsed ? 1 : 0);
-        return (regsPushed % (16 / REGSIZE_BYTES)) == 0;
+        return (regsPushed % (16 / Configuration.REGSIZE_BYTES)) == 0;
     }
 
     public int lvaCachedGenericContextArgOffset()
@@ -26,50 +26,60 @@ public partial class Compiler
     public uint lvaFrameSize(FrameLayoutState curState)
     {
         assert(curState < FINAL_FRAME_LAYOUT);
-#if HAS_FIXED_REGISTER_SET
-        assert(codeGen is not null);
-        compCalleeRegsPushed = CNT_CALLEE_SAVED;
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-        if (compFloatingPointUsed)
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            compCalleeRegsPushed += CNT_CALLEE_SAVED_FLOAT;
-        }
+            assert(codeGen is not null);
+            compCalleeRegsPushed = CNT_CALLEE_SAVED;
 
-        // LR/RA is always saved in addition to the ordinary callee-save set.
-        compCalleeRegsPushed++;
-#elif TARGET_AMD64
-        compCalleeFPRegsSavedMask = compFloatingPointUsed ? SRBM_FLT_CALLEE_SAVED : SRBM_NONE;
-#endif
-        if (Configuration.DOUBLE_ALIGN && genDoubleAlign)
-        {
-            // The x86 "and esp, -8" prolog can introduce one additional four-byte slot.
-            compCalleeRegsPushed++;
+            if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+            {
+                if (compFloatingPointUsed)
+                {
+                    compCalleeRegsPushed += CNT_CALLEE_SAVED_FLOAT;
+                }
+
+                // LR/RA is always saved in addition to the ordinary callee-save set.
+                compCalleeRegsPushed++;
+            }
+            else if (Configuration.TARGET_AMD64)
+            {
+                compCalleeFPRegsSavedMask = compFloatingPointUsed ? TargetRuntimeMetadata.FloatingCalleeSavedMask : SRBM_NONE;
+            }
+
+            if (Configuration.DOUBLE_ALIGN && genDoubleAlign)
+            {
+                // The x86 "and esp, -8" prolog can introduce one additional four-byte slot.
+                compCalleeRegsPushed++;
+            }
+
+            if (Configuration.TARGET_XARCH && codeGen.IsFramePointerUsed)
+            {
+                compCalleeRegsPushed--;
+            }
         }
-#if TARGET_XARCH
-        if (codeGen.IsFramePointerUsed)
-        {
-            compCalleeRegsPushed--;
-        }
-#endif
-#endif
 
         lvaAssignFrameOffsets(curState);
         uint calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-        if (compFloatingPointUsed)
+        if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
-            calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
-        }
+            if (compFloatingPointUsed)
+            {
+                calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
+            }
 
-        calleeSavedRegMaxSz += REGSIZE_BYTES;
-#endif
+            calleeSavedRegMaxSz += (uint)Configuration.REGSIZE_BYTES;
+        }
 
         return (uint)compLclFrameSize + calleeSavedRegMaxSz;
     }
 
-#if TARGET_ARM64 || TARGET_RISCV64
     public bool compRsvdRegCheck(FrameLayoutState curState)
     {
+        if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Reserved-register frame checks are unavailable for this target.");
+        }
+
         var frameSize = lvaFrameSize(curState);
         JITDUMP($"\ncompRsvdRegCheck\n  frame size  = {frameSize,6}\n" +
             $"  lvaParameterStackSize = {lvaParameterStackSize,6}\n");
@@ -86,38 +96,16 @@ public partial class Compiler
             calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
         }
 
-        calleeSavedRegMaxSz += REGSIZE_BYTES;
+        calleeSavedRegMaxSz += (uint)Configuration.REGSIZE_BYTES;
         noway_assert(frameSize >= calleeSavedRegMaxSz);
-#if TARGET_ARM64
-        JITDUMP(" Returning true (ARM64)\n\n");
-#else
-        JITDUMP(" Returning true (RISCV64)\n\n");
-#endif
-        return true;
-    }
-#endif
 
-#if TARGET_ARM
-    public bool compRsvdRegCheck(FrameLayoutState curState)
-    {
-        var frameSize = lvaFrameSize(curState);
-        JITDUMP($"\ncompRsvdRegCheck\n  frame size  = {frameSize,6}\n" +
-            $"  lvaParameterStackSize = {lvaParameterStackSize,6}\n");
-
-        if (opts.MinOpts)
+        if (!Configuration.TARGET_ARM)
         {
-            JITDUMP(" Returning true (MinOpts)\n\n");
+            var targetName = Configuration.TARGET_ARM64 ? "ARM64" : "RISCV64";
+            JITDUMP($" Returning true ({targetName})\n\n");
             return true;
         }
 
-        uint calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
-        if (compFloatingPointUsed)
-        {
-            calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;
-        }
-
-        calleeSavedRegMaxSz += REGSIZE_BYTES;
-        noway_assert(frameSize >= calleeSavedRegMaxSz);
         assert(codeGen is not null);
 
         // R11 is the frame pointer: positive offsets reach incoming arguments and negative offsets reach locals.
@@ -130,7 +118,7 @@ public partial class Compiler
 
         // Exclude the address just beyond the last incoming argument; R11 and LR occupy the first two frame slots.
         var parameterStackSize = unchecked((uint)lvaParameterStackSize);
-        var framePointerAndLinkSize = 2 * (uint)REGSIZE_BYTES;
+        var framePointerAndLinkSize = 2 * (uint)Configuration.REGSIZE_BYTES;
         var maxR11PositiveOffset = unchecked(parameterStackSize + framePointerAndLinkSize - 1);
         JITDUMP($"  maxR11PositiveOffset             = {maxR11PositiveOffset,6}\n");
 
@@ -196,7 +184,6 @@ public partial class Compiler
         JITDUMP(" Returning false\n\n");
         return false;
     }
-#endif
 
     public void lvaAssignFrameOffsets(FrameLayoutState curState)
     {
@@ -223,12 +210,16 @@ public partial class Compiler
             jitprintf("\n");
         }
 #endif
-#if FEATURE_FIXED_OUT_ARGS
-        assert(lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
-#endif
-#if FEATURE_SIMD && TARGET_ARM64
-        lvaInitUnknownSizeFrame();
-#endif
+        if (Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            assert(lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
+        }
+
+        if (Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64)
+        {
+            lvaInitUnknownSizeFrame();
+        }
+
         lvaAssignVirtualFrameOffsetsToArgs();
         lvaAssignVirtualFrameOffsetsToLocals();
         lvaAlignFrame();
@@ -240,8 +231,7 @@ public partial class Compiler
             assert(codeGen is not null);
             ((CodeGen)codeGen).resetFramePointerUsedWritePhase();
         }
-#if FEATURE_SIMD && TARGET_ARM64
-        else
+        else if (Configuration.FEATURE_SIMD && Configuration.TARGET_ARM64)
         {
             assert(curState == FINAL_FRAME_LAYOUT);
             unkSizeFrame.FinalizeLayout();
@@ -256,7 +246,6 @@ public partial class Compiler
                 JITDUMP($"Start offset    : {-codeGen.genTotalFrameSize}\n");
             }
         }
-#endif
     }
 
     public void lvaAssignVirtualFrameOffsetsToArgs()
@@ -274,7 +263,8 @@ public partial class Compiler
             }
 #endif
             JITDUMP("\n");
-            relativeZero = BitOperations.PopCount(unchecked((ulong)prespilled.IntRegSet)) * TARGET_POINTER_SIZE;
+            relativeZero = BitOperations.PopCount(unchecked((ulong)prespilled.IntRegSet)) *
+                Configuration.TARGET_POINTER_SIZE;
         }
 
         for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
@@ -325,7 +315,7 @@ public partial class Compiler
                         var higherMask = new regMaskTP(unchecked((regMask)~((1UL << (int)segment.Register) - 1)));
                         var higherPrespills = prespills & higherMask;
                         offset = -BitOperations.PopCount(unchecked((ulong)higherPrespills.IntRegSet))
-                            * TARGET_POINTER_SIZE;
+                            * Configuration.TARGET_POINTER_SIZE;
                         offset -= segment.Offset;
 
                         return true;
@@ -427,13 +417,13 @@ public partial class Compiler
         var delta = 0;
         if (Configuration.TARGET_XARCH)
         {
-            delta = REGSIZE_BYTES;
-            JITDUMP($"--- delta bump {REGSIZE_BYTES} for RA\n");
+            delta = Configuration.REGSIZE_BYTES;
+            JITDUMP($"--- delta bump {Configuration.REGSIZE_BYTES} for RA\n");
 
             if (lvaDoubleAlignOrFramePointerUsed())
             {
-                JITDUMP($"--- delta bump {REGSIZE_BYTES} for FP\n");
-                delta += REGSIZE_BYTES;
+                JITDUMP($"--- delta bump {Configuration.REGSIZE_BYTES} for FP\n");
+                delta += Configuration.REGSIZE_BYTES;
             }
         }
 
@@ -444,18 +434,18 @@ public partial class Compiler
         }
         else if (Configuration.TARGET_ARM)
         {
-            delta += 2 * REGSIZE_BYTES;
+            delta += 2 * Configuration.REGSIZE_BYTES;
         }
         else if (Configuration.TARGET_ARM64)
         {
             delta += codeGen.genTotalFrameSize - codeGen.genSPtoFPdelta;
             if (!codeGen.IsSaveFpLrWithAllCalleeSavedRegisters)
             {
-                frameLocalsDelta = 2 * REGSIZE_BYTES;
+                frameLocalsDelta = 2 * Configuration.REGSIZE_BYTES;
                 frameBoundary = opts.IsOSR ? -info.compPatchpointInfo->TotalFrameSize : 0;
                 if (info.compIsVarArgs)
                 {
-                    frameBoundary -= Target.ARM64_MAX_REG_ARG * REGSIZE_BYTES;
+                    frameBoundary -= Target.ARM64_MAX_REG_ARG * Configuration.REGSIZE_BYTES;
                 }
             }
 
@@ -530,8 +520,8 @@ public partial class Compiler
                     dsc.lvFramePointerBased)
                 {
                     dsc.StackOffset -= localDelta;
-                    dsc.StackOffset += 2 * TARGET_POINTER_SIZE;
-                    noway_assert(dsc.StackOffset >= (2 * TARGET_POINTER_SIZE));
+                    dsc.StackOffset += 2 * Configuration.TARGET_POINTER_SIZE;
+                    noway_assert(dsc.StackOffset >= (2 * Configuration.TARGET_POINTER_SIZE));
                 }
                 assert(codeGen.IsFramePointerUsed || (dsc.StackOffset >= 0));
             }
@@ -566,7 +556,7 @@ public partial class Compiler
             assert(codeGen.IsFramePointerUsed);
             if (lvaRetAddrVar != BAD_VAR_NUM)
             {
-                lvaTable[lvaRetAddrVar].StackOffset = REGSIZE_BYTES;
+                lvaTable[lvaRetAddrVar].StackOffset = Configuration.REGSIZE_BYTES;
             }
         }
     }

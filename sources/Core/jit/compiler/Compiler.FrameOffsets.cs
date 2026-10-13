@@ -42,13 +42,10 @@ public partial class Compiler
         {
             if (forRootFrame && opts.IsOSR)
             {
-#if TARGET_AMD64
                 // TotalFrameSize accounts for the popped OSR pseudo return address, so the
                 // root caller-SP adjustment is TotalFrameSize plus one register.
-                var adjustment = info.compPatchpointInfo->TotalFrameSize + REGSIZE_BYTES;
-#else
-                var adjustment = info.compPatchpointInfo->TotalFrameSize;
-#endif
+                var adjustment = info.compPatchpointInfo->TotalFrameSize +
+                    (Configuration.TARGET_AMD64 ? Configuration.REGSIZE_BYTES : 0);
                 offset -= adjustment;
             }
         }
@@ -72,7 +69,12 @@ public partial class Compiler
     public int lvaToInitialSPRelativeOffset(uint offset, bool isFpBased)
     {
         assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
-#if TARGET_AMD64
+        if (!Configuration.TARGET_AMD64)
+        {
+            NYI("lvaToInitialSPRelativeOffset");
+            throw new FatalJitException("lvaToInitialSPRelativeOffset is not implemented for this target.");
+        }
+
         if (isFpBased)
         {
             // Native takes an unsigned offset even when the local's FP-relative offset is negative.
@@ -80,9 +82,6 @@ public partial class Compiler
             assert(codeGen.IsFramePointerUsed);
             offset = unchecked(offset + (uint)codeGen.genSPtoFPdelta);
         }
-#else
-        NYI("lvaToInitialSPRelativeOffset");
-#endif
 
         return unchecked((int)offset);
     }

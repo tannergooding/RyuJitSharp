@@ -9,7 +9,13 @@ public partial class Compiler
 {
     internal void raMarkStkVars()
     {
-#if TARGET_AMD64 || TARGET_ARM64 || TARGET_RISCV64 || TARGET_LOONGARCH64 || TARGET_WASM
+        if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64 && !Configuration.TARGET_RISCV64 &&
+            !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_WASM)
+        {
+            NYI("Compiler.raMarkStkVars outside AMD64/ARM64");
+            throw new FatalJitException("Compiler.raMarkStkVars outside AMD64/ARM64.");
+        }
+
         assert(codeGen is not null);
         for (var localNumber = 0; localNumber < lvaCount; localNumber++)
         {
@@ -50,12 +56,9 @@ public partial class Compiler
 
         ON_STK:
             noway_assert(local.Type is not TYP_UNDEF and not TYP_VOID and not TYP_UNKNOWN);
-#if FEATURE_FIXED_OUT_ARGS
-            noway_assert((localNumber == lvaOutgoingArgSpaceVar) || varTypeHasUnknownSize(local.Type) ||
+            noway_assert((Configuration.FEATURE_FIXED_OUT_ARGS && (localNumber == lvaOutgoingArgSpaceVar)) ||
+                varTypeHasUnknownSize(local.Type) ||
                 (lvaLclStackHomeSize(localNumber) != 0));
-#else
-            noway_assert(varTypeHasUnknownSize(local.Type) || (lvaLclStackHomeSize(localNumber) != 0));
-#endif
             local.lvOnFrame = true;
 
         NOT_STK:
@@ -73,9 +76,5 @@ public partial class Compiler
             }
 #endif
         }
-#else
-        NYI("Compiler.raMarkStkVars outside AMD64/ARM64");
-        throw new FatalJitException("Compiler.raMarkStkVars outside AMD64/ARM64.");
-#endif
     }
 }

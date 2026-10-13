@@ -10,10 +10,7 @@ public partial class Compiler
 {
     internal bool generateCFIUnwindCodes()
     {
-#if FEATURE_CFI_SUPPORT
-        return TargetOS.IsUnix && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
-#else
-        return false;
-#endif
+        return Configuration.FEATURE_CFI_SUPPORT
+            && TargetOS.IsUnix && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
     }
 }

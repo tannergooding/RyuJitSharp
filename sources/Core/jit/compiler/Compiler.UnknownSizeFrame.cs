@@ -6,6 +6,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using static RyuJitSharp.CorJitResult;
 
 namespace RyuJitSharp;
 
@@ -13,7 +14,6 @@ public partial class Compiler
 {
     public bool compUsesUnknownSizeFrame;
 
-#if FEATURE_SIMD && TARGET_ARM64
     public UnknownSizeFrame unkSizeFrame;
 
     // This frame is the first allocation in the alloca area, addressed downward from x19.
@@ -22,6 +22,10 @@ public partial class Compiler
     // addressing indices and reduces pressure on the immediate encoding range.
     public struct UnknownSizeFrame
     {
+        // Architectural SVE bounds from the pinned targetarm64.h, independent of the build target.
+        private const uint MinSveRegisterSizeBytes = 16;
+        private const uint MaxSveRegisterSizeBytes = 256;
+
         public uint nVector;
         public uint nMask;
 
@@ -96,8 +100,8 @@ public partial class Compiler
         // JIT mode knows the runtime VL, so scalable frame offsets can be expressed in bytes.
         public readonly int GetExactOffset(in LclVarDsc local, uint vectorLength)
         {
-            assert(BitOperations.IsPow2(vectorLength) && (vectorLength >= (uint)MIN_SVE_REGSIZE_BYTES)
-                && (vectorLength <= (uint)MAX_SVE_REGSIZE_BYTES));
+            assert(BitOperations.IsPow2(vectorLength) && (vectorLength >= MinSveRegisterSizeBytes)
+                && (vectorLength <= MaxSveRegisterSizeBytes));
             var scale = local.Type is TYP_MASK ? vectorLength / 8 : vectorLength;
             return unchecked(GetAddressingOffset(in local) * unchecked((int)scale));
         }
@@ -114,6 +118,11 @@ public partial class Compiler
 
     public void lvaInitUnknownSizeFrame()
     {
+        if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size frame initialization requires SIMD-enabled ARM64.");
+        }
+
         compUsesUnknownSizeFrame = false;
 #if DEBUG
         unkSizeFrame.isFinalized = false;
@@ -124,6 +133,11 @@ public partial class Compiler
 
     public void lvaAllocUnknownSizeLocal(int varNum)
     {
+        if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size local allocation requires SIMD-enabled ARM64.");
+        }
+
         ref var local = ref lvaGetDesc(varNum);
         assert(varTypeHasUnknownSize(local.Type));
         local.UnknownSizeFrameIndex = local.Type switch
@@ -140,6 +154,11 @@ public partial class Compiler
 
     public void lvaAllocateUnknownSizeTemp(TempDsc temp)
     {
+        if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_IMPLLIMITATION, "Unknown-size temporary allocation requires SIMD-enabled ARM64.");
+        }
+
         assert(varTypeHasUnknownSize(temp.tdTempType));
         var offset = temp.tdTempType switch
         {
@@ -150,5 +169,4 @@ public partial class Compiler
         assert(offset >= 0);
         temp.tdTempOffs = offset;
     }
-#endif
 }

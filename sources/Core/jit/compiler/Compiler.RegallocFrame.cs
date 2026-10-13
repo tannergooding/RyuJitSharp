@@ -14,50 +14,48 @@ public partial class Compiler
         string? reasonText = null;
 #endif
 
-#if ETW_EBP_FRAMED
-        if (!result && opts.OptimizationDisabled)
+        if (Configuration.ETW_EBP_FRAMED && !result && opts.OptimizationDisabled)
         {
 #if DEBUG
             reasonText = "Debug Code";
 #endif
             result = true;
         }
-        if (!result && (info.compILCodeSize > DEFAULT_MAX_INLINE_SIZE))
+        if (Configuration.ETW_EBP_FRAMED && !result && (info.compILCodeSize > DEFAULT_MAX_INLINE_SIZE))
         {
 #if DEBUG
             reasonText = "IL Code Size";
 #endif
             result = true;
         }
-        if (!result && (fgBBcount > 3))
+        if (Configuration.ETW_EBP_FRAMED && !result && (fgBBcount > 3))
         {
 #if DEBUG
             reasonText = "BasicBlock Count";
 #endif
             result = true;
         }
-        if (!result && fgHasLoops)
+        if (Configuration.ETW_EBP_FRAMED && !result && fgHasLoops)
         {
 #if DEBUG
             reasonText = "Method has Loops";
 #endif
             result = true;
         }
-        if (!result && (optCallCount >= optFastTailCallCount + 2))
+        if (Configuration.ETW_EBP_FRAMED && !result && (optCallCount >= optFastTailCallCount + 2))
         {
 #if DEBUG
             reasonText = "Call Count";
 #endif
             result = true;
         }
-        if (!result && (optIndirectCallCount >= optIndirectFastTailCallCount + 1))
+        if (Configuration.ETW_EBP_FRAMED && !result && (optIndirectCallCount >= optIndirectFastTailCallCount + 1))
         {
 #if DEBUG
             reasonText = "Indirect Call";
 #endif
             result = true;
         }
-#endif
 
         // The VM identifies an InlinedCallFrame's containing frame through the frame register.
         if (!result && (optNativeCallCount != 0))
@@ -68,35 +66,29 @@ public partial class Compiler
             result = true;
         }
 
-#if TARGET_ARM64
-        if (!result)
+        if (Configuration.TARGET_ARM64 && !result)
         {
 #if DEBUG
             reasonText = "Temporary ARM64 force frame pointer";
 #endif
             result = true;
         }
-#endif
 
-#if TARGET_LOONGARCH64
-        if (!result)
+        if (Configuration.TARGET_LOONGARCH64 && !result)
         {
 #if DEBUG
             reasonText = "Temporary LOONGARCH64 force frame pointer";
 #endif
             result = true;
         }
-#endif
 
-#if TARGET_RISCV64
-        if (!result)
+        if (Configuration.TARGET_RISCV64 && !result)
         {
 #if DEBUG
             reasonText = "Temporary RISCV64 force frame pointer";
 #endif
             result = true;
         }
-#endif
 
 #if DEBUG
         reason = result ? reasonText : null;

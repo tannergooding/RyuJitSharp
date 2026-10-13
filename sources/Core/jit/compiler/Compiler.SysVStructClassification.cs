@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if UNIX_AMD64_ABI
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -103,13 +102,13 @@ public partial class Compiler
             }
             case SystemVClassificationTypeIntegerReference:
             {
-                assert(size == REGSIZE_BYTES);
+                assert(size == Configuration.REGSIZE_BYTES);
                 eightByteType = TYP_REF;
                 break;
             }
             case SystemVClassificationTypeIntegerByRef:
             {
-                assert(size == REGSIZE_BYTES);
+                assert(size == Configuration.REGSIZE_BYTES);
                 eightByteType = TYP_BYREF;
                 break;
             }
@@ -174,4 +173,3 @@ public partial class Compiler
         GetStructTypeOffset(structDesc, type0, type1, offset0, offset1);
     }
 }
-#endif

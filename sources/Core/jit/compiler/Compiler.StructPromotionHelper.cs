@@ -79,10 +79,9 @@ public partial class Compiler
                 return false;
             }
 
-#if TARGET_ARM
             // On ARM, we have a requirement on the struct alignment; see below.
-            var structAlignment = roundUp(compHandle->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
-#endif
+            var structAlignment = Configuration.TARGET_ARM
+                ? roundUp(compHandle->getClassAlignmentRequirement(typeHnd), Configuration.TARGET_POINTER_SIZE) : 0;
 
             // At most 1 (root node) + (4 promoted fields) + (each could be a wrapped primitive)
             const int NumTreeNodes = 1 + (MAX_NumOfFieldsInPromotableStruct * 2);
@@ -166,16 +165,14 @@ public partial class Compiler
 
                 noway_assert(promField.fldOffset + promField.fldSize <= structSize);
 
-#if TARGET_ARM
                 // On ARM, for struct types that don't use explicit layout, the alignment of the struct is
                 // at least the max alignment of its fields.  We take advantage of this invariant in struct promotion,
                 // so verify it here.
-                if (promField.fldSize > structAlignment)
+                if (Configuration.TARGET_ARM && (promField.fldSize > structAlignment))
                 {
                     // Don't promote vars whose struct types violates the invariant.  (Alignment == size for primitives.)
                     return false;
                 }
-#endif
             }
 
             if (fieldsSize != treeNodes[0].size)
@@ -292,16 +289,15 @@ public partial class Compiler
                 return false;
             }
 
-#if SWIFT_SUPPORT
             // Swift structs are not passed in a way that match their layout and
             // require reassembling on the local stack frame. Skip promotion for these
             // (which would result in dependent promotion anyway).
-            if ((_compiler.info.compCallConv == CorInfoCallConvExtension.Swift) && varDsc.lvIsParam)
+            if (Configuration.SWIFT_SUPPORT &&
+                (_compiler.info.compCallConv == CorInfoCallConvExtension.Swift) && varDsc.lvIsParam)
             {
                 JITDUMP($"  struct promotion of V{lclNum:D2} is disabled because it is a parameter to a Swift function\n");
                 return false;
             }
-#endif
 
             var typeHnd = varDsc.Layout.ClassHandle;
             assert(typeHnd != NO_CLASS_HANDLE);
@@ -311,12 +307,11 @@ public partial class Compiler
             if (canPromote && varDsc.lvIsMultiRegArgOrRet)
             {
                 uint fieldCnt = structPromotionInfo.fieldCnt;
-                if (fieldCnt > MAX_MULTIREG_COUNT)
+                if (fieldCnt > Configuration.MAX_MULTIREG_COUNT)
                 {
                     canPromote = false;
                 }
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-                else
+                else if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
                 {
                     for (var i = 0; canPromote && (i < fieldCnt); i++)
                     {
@@ -335,8 +330,7 @@ public partial class Compiler
                         }
                     }
                 }
-#elif UNIX_AMD64_ABI
-                else
+                else if (Configuration.UNIX_AMD64_ABI)
                 {
                     SortStructFields();
 
@@ -375,7 +369,6 @@ public partial class Compiler
                         }
                     }
                 }
-#endif
             }
             return canPromote;
         }
@@ -417,15 +410,14 @@ public partial class Compiler
                 JITDUMP($"Not promoting promotable struct local V{lclNum:D2}: #fields = {structPromotionInfo.fieldCnt}, fieldAccessed = {varDsc.lvFieldAccessed}.\n");
                 shouldPromote = false;
             }
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-            else if ((structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
-                                                             varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
+            else if ((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) &&
+                (structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
+                                                       varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
             {
                 // TODO-LoongArch64 - struct passed by float registers.
                 JITDUMP($"Not promoting promotable struct local V{lclNum:D2}: #fields = {structPromotionInfo.fieldCnt} because it is a struct with float field(s).\n");
                 shouldPromote = false;
             }
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
             else if (varDsc.lvIsParam && !_compiler.lvaIsImplicitByRefLocal(lclNum) && !IsArmHfaParameter(lclNum))
             {
                 // Is this a variable holding a value with exactly two fields passed in
@@ -439,13 +431,12 @@ public partial class Compiler
                         JITDUMP($"Not promoting multireg struct local V{lclNum:D2}, because lvIsParam is true, #fields != 2 and it's not a single simd.\n");
                         shouldPromote = false;
                     }
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-                    else if (_compiler.lvaGetParameterAbiInfo(lclNum).IsSplitAcrossRegistersAndStack)
+                    else if ((Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) &&
+                        _compiler.lvaGetParameterAbiInfo(lclNum).IsSplitAcrossRegistersAndStack)
                     {
                         JITDUMP($"Not promoting multireg struct local V{lclNum:D2}, because it is splitted.\n");
                         shouldPromote = false;
                     }
-#endif
                 }
                 else
                 {
@@ -567,9 +558,10 @@ public partial class Compiler
                     _compiler.compLongUsed = true;
                 }
 
-#if FEATURE_IMPLICIT_BYREFS
-                fieldVarDsc.IsImplicitByRef = false;
-#endif
+                if (Compiler.SupportsImplicitByRefs)
+                {
+                    fieldVarDsc.IsImplicitByRef = false;
+                }
 
                 fieldVarDsc.lvIsRegArg = varDsc.lvIsRegArg;
 
@@ -582,7 +574,7 @@ public partial class Compiler
                     // simd types may be HFAs so we need to set the correct state on
                     // the promoted fields to get the right ABI treatment in the
                     // backend.
-                    if (GlobalJitOptions.compFeatureHfa && (fieldInfo.fldSize <= MAX_PASS_MULTIREG_BYTES))
+                    if (GlobalJitOptions.compFeatureHfa && (fieldInfo.fldSize <= Configuration.MAX_PASS_MULTIREG_BYTES))
                     {
                         // hfaType is set to float, double or simd type if it is an HFA, otherwise TYP_UNDEF
                         var hfaType = _compiler.GetHfaType(fieldInfo.fldSimdTypeHnd);
@@ -600,13 +592,11 @@ public partial class Compiler
 #endif
             }
 
-#if TARGET_ARM
-            if (varDsc.lvIsParam)
+            if (Configuration.TARGET_ARM && varDsc.lvIsParam)
             {
                 // TODO-Cleanup: Allow independent promotion for ARM struct parameters
                 _compiler.lvaSetVarDoNotEnregister(lclNum, DoNotEnregisterReason.IsStructArg);
             }
-#endif
         }
 
         /// <summary>sort the fields according to the increasing order of the field offset.</summary>
@@ -643,16 +633,17 @@ public partial class Compiler
         /// <param name="layout">The local</param>
         /// <returns>True if it sometimes may be passed in two registers.</returns>
         /// <remarks>This is a quirk to match old promotion behavior.</remarks>
-#if UNIX_AMD64_ABI
         private unsafe bool IsSysVMultiRegType(ClassLayout layout)
         {
+            if (!Configuration.UNIX_AMD64_ABI)
+            {
+                return false;
+            }
+
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             _compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(layout.ClassHandle, &structDesc);
             return structDesc.passedInRegisters && (structDesc.eightByteCount == 2);
         }
-#else
-        private bool IsSysVMultiRegType(ClassLayout layout) => false;
-#endif
 
         private unsafe var_types TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes, nint maxTreeNodes, nint index)
         {
@@ -673,13 +664,12 @@ public partial class Compiler
                         return GetSimdTypeForSize(simdSize);
                     }
                 }
-#if TARGET_64BIT
                 // Vector64<T> was historically promotable as a long when SIMD is not in use.
-                if ((namespaceName is "System.Runtime.Intrinsics") && (className is "Vector64`1"))
+                if (Configuration.TARGET_64BIT &&
+                    (namespaceName is "System.Runtime.Intrinsics") && (className is "Vector64`1"))
                 {
                     return TYP_LONG;
                 }
-#endif
             }
 
             if ((node.numFields != 1) || (index + 1 >= maxTreeNodes))
@@ -700,13 +690,13 @@ public partial class Compiler
                 return TYP_UNDEF;
             }
 
-            if (primNode.size > TARGET_POINTER_SIZE)
+            if (primNode.size > Configuration.TARGET_POINTER_SIZE)
             {
                 JITDUMP("Promotion blocked: struct contains struct field with one field, but that field has invalid size.\n");
                 return TYP_UNDEF;
             }
 
-            if ((primNode.size != TARGET_POINTER_SIZE) && ((node.offset % primNode.size) != 0))
+            if ((primNode.size != Configuration.TARGET_POINTER_SIZE) && ((node.offset % primNode.size) != 0))
             {
                 JITDUMP($"Promotion blocked: struct contains struct field with one field, but the outer struct offset {node.offset} is not a multiple of the inner field size {primNode.size}.\n");
                 return TYP_UNDEF;

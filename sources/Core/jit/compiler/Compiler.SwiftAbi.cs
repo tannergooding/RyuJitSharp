@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if SWIFT_SUPPORT
     /// <remarks>Boxed records keep returned references stable when the cache grows.</remarks>
     public unsafe ref readonly CORINFO_SWIFT_LOWERING GetSwiftLowering(CORINFO_CLASS_HANDLE hClass)
     {
@@ -124,5 +123,4 @@ public partial class Compiler
         var swiftErrorStore = gtNewStoreIndNode(swiftErrorNode.Type, swiftErrorNode, errorRegNode);
         _ = impAppendTree(swiftErrorStore, CHECK_SPILL_ALL, impCurStmtDI, checkConsumedDebugInfo: false);
     }
-#endif
 }

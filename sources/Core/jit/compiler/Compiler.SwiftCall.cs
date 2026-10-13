@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if SWIFT_SUPPORT
     private unsafe void impPopArgsForSwiftCall(GenTreeCall call, in CORINFO_SIG_INFO sig, ref GenTree? swiftErrorNode)
     {
 #if DEBUG
@@ -338,5 +337,4 @@ public partial class Compiler
         JITDUMP("\n");
         impRetypeUnmanagedCallArgs(call);
     }
-#endif
 }

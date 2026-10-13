@@ -9,7 +9,6 @@ public partial class Compiler
 {
     public struct FrameInfo
     {
-#if TARGET_ARM64
         // Frame type (1-5).
         public int frameType;
 
@@ -22,6 +21,5 @@ public partial class Compiler
 
         // Distance from established SP to where caller's FP was saved.
         public int offsetSpToSavedFp;
-#endif
     }
 }
