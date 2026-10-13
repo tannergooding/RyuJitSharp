@@ -159,13 +159,14 @@ public partial class Compiler
             previous.Next = end.Next;
         }
 
-#if DEBUG
-        // A moved range cannot include the first funclet or cross the main/funclet boundary.
-        for (var block = begin; block != end.Next; block = block.Next)
+        if (Configuration.DEBUG)
         {
-            assert(block is not null);
-            assert(block != fgFirstFuncletBB);
+            // A moved range cannot include the first funclet or cross the main/funclet boundary.
+            for (var block = begin; block != end.Next; block = block.Next)
+            {
+                assert(block is not null);
+                assert(block != fgFirstFuncletBB);
+            }
         }
-#endif
     }
 }
