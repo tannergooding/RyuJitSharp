@@ -176,19 +176,21 @@ public partial class Compiler
         for (var i = checks.Count - 1; i >= 0; i--)
         {
             var info = checks[i];
-#if DEBUG
-            var statementFound = false;
-            foreach (var stmt in fast.Statements)
+            if (Configuration.DEBUG)
             {
-                if (stmt == info.Stmt)
+                var statementFound = false;
+                foreach (var stmt in fast.Statements)
                 {
-                    statementFound = true;
-                    assert(!Unsafe.IsNullRef(ref gtFindLink(stmt, info.Check).result));
-                    break;
+                    if (stmt == info.Stmt)
+                    {
+                        statementFound = true;
+                        assert(!Unsafe.IsNullRef(ref gtFindLink(stmt, info.Check).result));
+                        break;
+                    }
                 }
+
+                assert(statementFound);
             }
-            assert(statementFound);
-#endif
             RemoveClonedBoundsCheck(info.Check, info.Stmt);
         }
 
