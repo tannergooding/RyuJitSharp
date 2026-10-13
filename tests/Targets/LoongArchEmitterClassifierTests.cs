@@ -38,10 +38,10 @@ internal static class LoongArchEmitterClassifierTests
         Assert.That(Emitter.IsMovInstruction(ins), Is.False);
     }
 
-    [TestCase(REG_R0, "zero")]
-    [TestCase(REG_RA, "ra")]
-    [TestCase(REG_F0, "f0")]
-    [TestCase(REG_F31, "f31")]
+    [TestCase(REG_LOONGARCH64_R0, "zero")]
+    [TestCase(REG_LOONGARCH64_RA, "ra")]
+    [TestCase(REG_LOONGARCH64_F0, "f0")]
+    [TestCase(REG_LOONGARCH64_F31, "f31")]
     public static void RegisterNamesMatchTheLoongArchAbi(regNumber reg, string expected)
     {
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
@@ -116,7 +116,7 @@ internal static class LoongArchEmitterClassifierTests
         var immediate = unchecked((nint)immediateValue);
         descriptor.idInsOpt(INS_OPTS_LOONGARCH64_I);
         descriptor.idCodeSize(8);
-        descriptor.idReg1(REG_R21);
+        descriptor.idReg1(REG_LOONGARCH64_R21);
         descriptor.idReg2((regNumber)specialSequenceMarker);
         descriptor.idAddr().iiaAddr = unchecked((byte*)immediate);
 
@@ -128,23 +128,23 @@ internal static class LoongArchEmitterClassifierTests
         if (specialSequenceMarker != 0)
         {
             expectedFirst = InstructionCode(INS_addi_d) |
-                unchecked((uint)REG_R21) |
-                (unchecked((uint)REG_R0) << 5) |
+                unchecked((uint)REG_LOONGARCH64_R21) |
+                (unchecked((uint)REG_LOONGARCH64_R0) << 5) |
                 (0xfff << 10);
             var shift = immediate == nint.MaxValue ? 1u : 32u;
             expectedSecond = InstructionCode(INS_srli_d) |
-                unchecked((uint)REG_R21) |
-                (unchecked((uint)REG_R21) << 5) |
+                unchecked((uint)REG_LOONGARCH64_R21) |
+                (unchecked((uint)REG_LOONGARCH64_R21) << 5) |
                 (shift << 10);
         }
         else
         {
             expectedFirst = InstructionCode(INS_lu12i_w) |
-                unchecked((uint)REG_R21) |
+                unchecked((uint)REG_LOONGARCH64_R21) |
                 ((unchecked((uint)(immediate >> 12)) & 0xfffff) << 5);
             expectedSecond = InstructionCode(INS_ori) |
-                unchecked((uint)REG_R21) |
-                (unchecked((uint)REG_R21) << 5) |
+                unchecked((uint)REG_LOONGARCH64_R21) |
+                (unchecked((uint)REG_LOONGARCH64_R21) << 5) |
                 ((unchecked((uint)immediate) & 0xfff) << 10);
         }
 

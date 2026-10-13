@@ -41,6 +41,7 @@
     <Compile Include="..\Core\CSELiveAcrossCallCostTests.cs" Link="CSELiveAcrossCallCostTests.cs" />
     <Compile Include="..\Core\ConfigIntegerReinterpretationTests.cs" Link="ConfigIntegerReinterpretationTests.cs" />
     <Compile Include="..\Core\CodeGenLinearCastClosureTests.cs" Link="CodeGenLinearCastClosureTests.cs" />
+    <Compile Include="..\Core\CorInfoTypeMappingTests.cs" Link="CorInfoTypeMappingTests.cs" />
     <Compile Include="..\Core\EnumUtilityTests.cs" Link="EnumUtilityTests.cs" />
     <Compile Include="..\Core\EmitterHotColdBoundaryTests.cs" Link="EmitterHotColdBoundaryTests.cs" />
     <Compile Include="..\Core\EmitterHandleCommentTests.cs" Link="EmitterHandleCommentTests.cs" />
@@ -75,6 +76,7 @@
   <ItemGroup Condition="'$(RyuJitTargetRuntimeIdentifier)' == 'win-x86' or ('$(RyuJitTargetRuntimeIdentifier)' == '' and '$(TargetRuntimeIdentifier)' == 'win-x86')">
     <Compile Include="..\Core\Jit32GcInfoTests.cs" Link="Jit32GcInfoTests.cs" />
     <Compile Include="..\Core\ValueNumConstantExtractionTests.cs" Link="ValueNumConstantExtractionTests.cs" />
+    <Compile Include="..\Core\EmitterOpcodeTests.cs" Link="EmitterOpcodeTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$(RyuJitTargetRuntimeIdentifier.EndsWith('-arm64')) or ('$(RyuJitTargetRuntimeIdentifier)' == '' and $(TargetRuntimeIdentifier.EndsWith('-arm64')))">

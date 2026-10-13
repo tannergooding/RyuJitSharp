@@ -36,7 +36,7 @@ internal static unsafe class WasmRegAllocTests
             var foundFirst = false;
             var foundSecond = false;
             var count = 0;
-            var iterator = codeGen.InternalRegisters.Iterate();
+            var iterator = codeGen.InternalRegisters.IterateWasm();
             while (iterator.MoveNext())
             {
                 var entry = iterator.Current;

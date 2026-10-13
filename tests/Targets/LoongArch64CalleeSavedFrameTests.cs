@@ -14,7 +14,7 @@ internal static class LoongArch64CalleeSavedFrameTests
     [Test]
     public static void CalleeSavedMaskIsRetainedForFuncletCapture()
     {
-        var calleeSavedMask = new regMaskTP(SRBM_S0 | SRBM_FP | SRBM_RA);
+        var calleeSavedMask = new regMaskTP(SRBM_LOONGARCH64_S0 | SRBM_LOONGARCH64_FP | SRBM_LOONGARCH64_RA);
         var regSet = default(RegSet);
 
         regSet.rsSetCalleeSavedRegsMask(calleeSavedMask);

@@ -79,19 +79,7 @@ internal static unsafe class ArmArchStackArgumentTests
         });
     }
 
-    [TestCase(TYP_BYTE, REG_R1)]
-    [TestCase(TYP_USHORT, REG_R2)]
-    [TestCase(TYP_INT, REG_R3)]
-    [TestCase(TYP_REF, REG_R1)]
-    [TestCase(TYP_BYREF, REG_R2)]
-#if TARGET_ARM64
-    [TestCase(TYP_FLOAT, REG_V0)]
-    [TestCase(TYP_DOUBLE, REG_V0)]
-    [TestCase(TYP_LONG, REG_R3)]
-#else
-    [TestCase(TYP_FLOAT, REG_F0)]
-    [TestCase(TYP_DOUBLE, REG_F0)]
-#endif
+    [TestCaseSource(nameof(ScalarRegisterCases))]
     public static void DispatchStoresScalarsAndConsumesTheirGcRegisters(var_types type, regNumber reg)
     {
         WithStackArea((compiler, codeGen) =>
@@ -110,6 +98,23 @@ internal static unsafe class ArmArchStackArgumentTests
             Assert.That(codeGen.GCInfo.gcRegByrefSetCur.IsEmpty, Is.True);
             AssertConsumed(source);
         });
+    }
+
+    private static IEnumerable<TestCaseData> ScalarRegisterCases()
+    {
+        yield return new TestCaseData(TYP_BYTE, REG_R1);
+        yield return new TestCaseData(TYP_USHORT, REG_R2);
+        yield return new TestCaseData(TYP_INT, REG_R3);
+        yield return new TestCaseData(TYP_REF, REG_R1);
+        yield return new TestCaseData(TYP_BYREF, REG_R2);
+#if TARGET_ARM64
+        yield return new TestCaseData(TYP_FLOAT, REG_V0);
+        yield return new TestCaseData(TYP_DOUBLE, REG_V0);
+        yield return new TestCaseData(TYP_LONG, REG_R3);
+#else
+        yield return new TestCaseData(TYP_FLOAT, REG_F0);
+        yield return new TestCaseData(TYP_DOUBLE, REG_F0);
+#endif
     }
 
     [TestCase(1, TYP_BYTE)]
@@ -171,7 +176,7 @@ internal static unsafe class ArmArchStackArgumentTests
             var reference = Physical(TYP_REF, REG_R2);
             var fields = new GenTreeFieldList { IsContained = true };
             fields.AddFieldLIR(compiler, small, 0, TYP_BYTE);
-            fields.AddFieldLIR(compiler, reference, TARGET_POINTER_SIZE, TYP_REF);
+            fields.AddFieldLIR(compiler, reference, checked((ushort)TARGET_POINTER_SIZE), TYP_REF);
 #if DEBUG
             small.UseNum = 0;
             reference.UseNum = 1;
@@ -215,7 +220,7 @@ internal static unsafe class ArmArchStackArgumentTests
         {
             var layout = new ClassLayout(size);
             var source = StructSource(layout, indirect, REG_R3);
-            var stackSize = padded ? (int)roundUp((uint)size, TARGET_POINTER_SIZE) : size;
+            var stackSize = padded ? roundUp(size, TARGET_POINTER_SIZE) : size;
             var argument = Argument(source, 32, stackSize);
             AddTemps(codeGen, argument);
 
@@ -317,8 +322,8 @@ internal static unsafe class ArmArchStackArgumentTests
     }
 
 #if TARGET_ARM64
-    [TestCase(REG_R1, REG_R2, REG_R1)]
-    [TestCase(REG_R2, REG_R1, REG_R2)]
+    [TestCase(REG_ARM64_R1, REG_ARM64_R2, REG_ARM64_R1)]
+    [TestCase(REG_ARM64_R2, REG_ARM64_R1, REG_ARM64_R2)]
     public static void IndirectPairsOnlyOverwriteTheAddressAfterItsLastLoad(
         regNumber addressReg, regNumber lowReg, regNumber highReg)
     {

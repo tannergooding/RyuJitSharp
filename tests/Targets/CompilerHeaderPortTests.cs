@@ -17,54 +17,83 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class CompilerHeaderPortTests
 {
-#if TARGET_XARCH
-    [TestCase(INS_SHIFT_LEFT_LOGICAL, INS_shl)]
-    [TestCase(INS_SHIFT_RIGHT_LOGICAL, INS_shr)]
-    [TestCase(INS_SHIFT_RIGHT_ARITHM, INS_sar)]
-    [TestCase(INS_AND, INS_and)]
-    [TestCase(INS_OR, INS_or)]
-    [TestCase(INS_XOR, INS_xor)]
-    [TestCase(INS_NEG, INS_neg)]
-    [TestCase(INS_TEST, INS_test)]
-    [TestCase(INS_MUL, INS_imul)]
-    [TestCase(INS_SIGNED_DIVIDE, INS_idiv)]
-    [TestCase(INS_UNSIGNED_DIVIDE, INS_div)]
-    [TestCase(INS_ADDC, INS_adc)]
-    [TestCase(INS_SUBC, INS_sbb)]
-    [TestCase(INS_NOT, INS_not)]
-#elif TARGET_ARM
-    [TestCase(INS_SHIFT_LEFT_LOGICAL, INS_lsl)]
-    [TestCase(INS_SHIFT_RIGHT_LOGICAL, INS_lsr)]
-    [TestCase(INS_SHIFT_RIGHT_ARITHM, INS_asr)]
-    [TestCase(INS_AND, INS_and)]
-    [TestCase(INS_OR, INS_orr)]
-    [TestCase(INS_XOR, INS_eor)]
-    [TestCase(INS_NEG, INS_rsb)]
-    [TestCase(INS_TEST, INS_tst)]
-    [TestCase(INS_MUL, INS_mul)]
-    [TestCase(INS_MULADD, INS_mla)]
-    [TestCase(INS_SIGNED_DIVIDE, INS_sdiv)]
-    [TestCase(INS_UNSIGNED_DIVIDE, INS_udiv)]
-    [TestCase(INS_ADDC, INS_adc)]
-    [TestCase(INS_SUBC, INS_sbc)]
-    [TestCase(INS_NOT, INS_mvn)]
-    [TestCase(INS_ABS, INS_vabs)]
-    [TestCase(INS_SQRT, INS_vsqrt)]
-#elif TARGET_ARM64
-    [TestCase(INS_MULADD, INS_madd)]
-    [TestCase(INS_ABS, INS_fabs)]
-    [TestCase(INS_SQRT, INS_fsqrt)]
-#elif TARGET_LOONGARCH64
-    [TestCase(INS_MULADD, INS_fmadd_d)]
-    [TestCase(INS_ABS, INS_fabs_d)]
-    [TestCase(INS_SQRT, INS_fsqrt_d)]
-#endif
 #if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
+    [TestCaseSource(nameof(InstructionAliasCases))]
     public static void InstructionAliasesPreservePinnedTargetOpcodes(instruction alias, instruction opcode)
     {
         Assert.That(alias, Is.EqualTo(opcode));
     }
 #endif
+
+    private static TestCaseData[] InstructionAliasCases()
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return
+            [
+                new(INS_SHIFT_LEFT_LOGICAL, instruction.INS_shl),
+                new(INS_SHIFT_RIGHT_LOGICAL, instruction.INS_shr),
+                new(INS_SHIFT_RIGHT_ARITHM, instruction.INS_sar),
+                new(INS_AND, instruction.INS_and),
+                new(INS_OR, instruction.INS_or),
+                new(INS_XOR, instruction.INS_xor),
+                new(INS_NEG, instruction.INS_neg),
+                new(INS_TEST, instruction.INS_test),
+                new(INS_MUL, instruction.INS_imul),
+                new(INS_SIGNED_DIVIDE, instruction.INS_idiv),
+                new(INS_UNSIGNED_DIVIDE, instruction.INS_div),
+                new(INS_ADDC, instruction.INS_adc),
+                new(INS_SUBC, instruction.INS_sbb),
+                new(INS_NOT, instruction.INS_not),
+            ];
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return
+            [
+                new(INS_SHIFT_LEFT_LOGICAL, instruction.INS_lsl),
+                new(INS_SHIFT_RIGHT_LOGICAL, instruction.INS_lsr),
+                new(INS_SHIFT_RIGHT_ARITHM, instruction.INS_asr),
+                new(INS_AND, instruction.INS_and),
+                new(INS_OR, instruction.INS_orr),
+                new(INS_XOR, instruction.INS_eor),
+                new(INS_NEG, instruction.INS_rsb),
+                new(INS_TEST, instruction.INS_tst),
+                new(INS_MUL, instruction.INS_mul),
+                new(INS_MULADD, instruction.INS_mla),
+                new(INS_SIGNED_DIVIDE, instruction.INS_sdiv),
+                new(INS_UNSIGNED_DIVIDE, instruction.INS_udiv),
+                new(INS_ADDC, instruction.INS_adc),
+                new(INS_SUBC, instruction.INS_sbc),
+                new(INS_NOT, instruction.INS_mvn),
+                new(INS_ABS, instruction.INS_vabs),
+                new(INS_SQRT, instruction.INS_vsqrt),
+            ];
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return
+            [
+                new(INS_MULADD, instruction.INS_madd),
+                new(INS_ABS, instruction.INS_fabs),
+                new(INS_SQRT, instruction.INS_fsqrt),
+            ];
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return
+            [
+                new(INS_MULADD, instruction.INS_fmadd_d),
+                new(INS_ABS, instruction.INS_fabs_d),
+                new(INS_SQRT, instruction.INS_fsqrt_d),
+            ];
+        }
+
+        throw new FatalJitException("Instruction alias tests are unavailable for this target.");
+    }
 
 #if DEBUG
     [TestCase(false, -1)]

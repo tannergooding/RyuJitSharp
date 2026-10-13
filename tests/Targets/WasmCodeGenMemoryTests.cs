@@ -48,7 +48,7 @@ internal static unsafe class WasmCodeGenMemoryTests
         registers.Add(node, first);
         registers.Add(node, second);
 
-        ref var all = ref registers.GetAll(node);
+        ref var all = ref registers.GetAllWasm(node);
         Assert.That(all.Count, Is.EqualTo(2));
         Assert.That(all.GetAt(0), Is.EqualTo(first));
         Assert.That(all.GetAt(1), Is.EqualTo(second));
@@ -57,7 +57,7 @@ internal static unsafe class WasmCodeGenMemoryTests
         Assert.That(registers.Extract(node), Is.EqualTo(first));
         Assert.That(registers.GetSingle(node), Is.EqualTo(first));
         Assert.That(registers.Extract(node), Is.EqualTo(first));
-        Assert.That(registers.GetAll(node).IsEmpty, Is.True);
+        Assert.That(registers.GetAllWasm(node).IsEmpty, Is.True);
     }
 
     [TestCase(8)]

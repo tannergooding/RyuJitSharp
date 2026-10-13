@@ -3,12 +3,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.HWIntrinsicFlag;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.VNFunc;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
+using static RyuJitSharp.var_types_classification;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -27,6 +29,118 @@ internal static class FeatureConfigurationTests
     public static void DoubleAlignmentFeatureMatchesTheTargetArchitecture()
     {
         Assert.That(Configuration.DOUBLE_ALIGN, Is.EqualTo(Configuration.TARGET_X86));
+    }
+
+    [Test]
+    public static void TargetFrameConfigurationMatchesTheRuntimeTarget()
+    {
+        var expectedPointerSize = Configuration.TARGET_64BIT ? 8 : 4;
+        var expectedStackAlignment = Configuration.TARGET_ARM ? 8 :
+            Configuration.TARGET_X86 ? (Configuration.UNIX_X86_ABI ? 16 : 4) : 16;
+
+        Assert.That(Configuration.TARGET_POINTER_SIZE, Is.EqualTo(expectedPointerSize));
+        Assert.That(Configuration.REGSIZE_BYTES, Is.EqualTo(expectedPointerSize));
+        Assert.That(Configuration.STACK_ALIGN, Is.EqualTo(expectedStackAlignment));
+        Assert.That(Configuration.ALIGN_SIMD_TYPES,
+            Is.EqualTo(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64));
+        Assert.That(Configuration.JIT32_GCENCODER, Is.EqualTo(Configuration.TARGET_X86));
+    }
+
+    [Test]
+    public static void MachineSizedTypeTablesMatchTheRuntimeTarget()
+    {
+        var pointerSize = (byte)Configuration.TARGET_POINTER_SIZE;
+        var pointerSlots = (byte)(Configuration.TARGET_POINTER_SIZE / sizeof(int));
+        var pointerAttr = Configuration.TARGET_64BIT ? EA_8BYTE : EA_4BYTE;
+        var gcRefAttr = EA_GCREF_FLG | pointerAttr;
+        var byRefAttr = EA_BYREF_FLG | pointerAttr;
+
+        Assert.That(TYP_REF.Size, Is.EqualTo(pointerSize));
+        Assert.That(TYP_BYREF.Size, Is.EqualTo(pointerSize));
+        Assert.That(TYP_REF.Alignment, Is.EqualTo(pointerSize));
+        Assert.That(TYP_BYREF.Alignment, Is.EqualTo(pointerSize));
+        Assert.That(TYP_REF.StSz, Is.EqualTo(pointerSlots));
+        Assert.That(TYP_BYREF.StSz, Is.EqualTo(pointerSlots));
+
+        Assert.That(TYP_REF.EmitActualSize, Is.EqualTo(gcRefAttr));
+        Assert.That(TYP_REF.EmitSize, Is.EqualTo(gcRefAttr));
+        Assert.That(TYP_BYREF.EmitActualSize, Is.EqualTo(byRefAttr));
+        Assert.That(TYP_BYREF.EmitSize, Is.EqualTo(byRefAttr));
+        Assert.That(TYP_LONG.EmitActualSize, Is.EqualTo(pointerAttr));
+        Assert.That(TYP_LONG.EmitSize, Is.EqualTo(pointerAttr));
+        Assert.That(TYP_ULONG.EmitActualSize, Is.EqualTo(pointerAttr));
+        Assert.That(TYP_ULONG.EmitSize, Is.EqualTo(pointerAttr));
+
+        var is64Bit = Configuration.TARGET_64BIT;
+        Assert.That((TYP_INT.Classification & VTF_I) != VTF_ANY, Is.EqualTo(!is64Bit));
+        Assert.That((TYP_UINT.Classification & VTF_I) != VTF_ANY, Is.EqualTo(!is64Bit));
+        Assert.That((TYP_LONG.Classification & VTF_I) != VTF_ANY, Is.EqualTo(is64Bit));
+        Assert.That((TYP_ULONG.Classification & VTF_I) != VTF_ANY, Is.EqualTo(is64Bit));
+    }
+
+    [Test]
+    public static void TargetCompileFeaturesMatchTheRuntimeTarget()
+    {
+        var supportsLoadStoreArchitecture =
+            Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM;
+        var supportsEtwFraming =
+            Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64 || (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX) ||
+            Configuration.TARGET_X86;
+
+        Assert.That(Configuration.CPU_HAS_BYTE_REGS, Is.EqualTo(Configuration.TARGET_X86));
+        Assert.That(Configuration.CPU_LOAD_STORE_ARCH, Is.EqualTo(supportsLoadStoreArchitecture));
+        Assert.That(Configuration.EMIT_TRACK_STACK_DEPTH, Is.EqualTo(!Configuration.TARGET_WASM));
+        Assert.That(Configuration.ETW_EBP_FRAMED, Is.EqualTo(supportsEtwFraming));
+        Assert.That(Configuration.FEATURE_CFI_SUPPORT,
+            Is.EqualTo(Configuration.TARGET_UNIX || Configuration.TARGET_OS_RUNTIMEDETERMINED));
+        Assert.That(Configuration.FEATURE_IMPLICIT_BYREFS,
+            Is.EqualTo(Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM || Configuration.TARGET_AMD64));
+        Assert.That(Configuration.FEATURE_MULTITHREADING, Is.EqualTo(!Configuration.TARGET_WASM));
+        Assert.That(Configuration.FEATURE_PAL_ANSI, Is.EqualTo(Configuration.TARGET_UNIX));
+        Assert.That(Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE,
+            Is.EqualTo(Configuration.TARGET_ARM64 ||
+                (Configuration.TARGET_AMD64 && !Configuration.TARGET_UNIX)));
+        Assert.That(Configuration.LOWER_DECOMPOSE_LONGS,
+            Is.EqualTo((Configuration.TARGET_ARM && !Configuration.TARGET_ARMV6) || Configuration.TARGET_X86));
+        Assert.That(Configuration.MULTIREG_HAS_SECOND_GC_RET,
+            Is.EqualTo(Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                Configuration.TARGET_RISCV64 || (Configuration.TARGET_AMD64 && Configuration.TARGET_UNIX)));
+        Assert.That(Configuration.TARGET_UNIX_ANYOS, Is.EqualTo(Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED));
+        Assert.That(Configuration.TARGET_UNIX_POSSIBLY_SUPPORTED,
+            Is.EqualTo(Configuration.TARGET_UNIX || Configuration.TARGET_OS_RUNTIMEDETERMINED));
+        Assert.That(Configuration.TARGET_WASM32, Is.EqualTo(Configuration.TARGET_WASM));
+        Assert.That(Configuration.TARGET_WINDOWS_POSSIBLY_SUPPORTED,
+            Is.EqualTo(Configuration.TARGET_WINDOWS ||
+                (Configuration.TARGET_OS_RUNTIMEDETERMINED && !Configuration.TARGET_UNIX_OS_RUNTIMEDETERMINED)));
+        Assert.That(Configuration.UNIX_ARM_ABI,
+            Is.EqualTo(Configuration.TARGET_ARM && !Configuration.TARGET_ARMV6 && Configuration.TARGET_UNIX));
+        Assert.That(Configuration.OSX_ARM64_ABI,
+            Is.EqualTo(Configuration.TARGET_ARM64 && Configuration.TARGET_APPLE));
+        Assert.That(Configuration.USE_HELPERS_FOR_INT_DIV,
+            Is.EqualTo(Configuration.TARGET_ARM && !Configuration.TARGET_ARMV6));
+        Assert.That(Configuration.USER_ARGS_COME_LAST, Is.EqualTo(!Configuration.TARGET_X86));
+        Assert.That(Configuration.USE_PER_FRAME_PINVOKE_INIT, Is.EqualTo(Configuration.TARGET_64BIT));
+    }
+
+    [Test]
+    public static void NonTargetCompileFeaturesMatchCurrentBuildPolicy()
+    {
+        Assert.That(Configuration.FEATURE_JIT_METHOD_PERF, Is.True);
+        Assert.That(Configuration.FEATURE_ITINSTRUCTION, Is.False);
+        Assert.That(Configuration.FEATURE_PLI_INSTRUCTION, Is.False);
+    }
+
+    [Test]
+    public static void NoGcWriteBarrierFeatureMatchesTheTargetArchitecture()
+    {
+        var supportsNoGcWriteBarriers =
+            Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64 || Configuration.TARGET_X86;
+
+        Assert.That(Configuration.NOGC_WRITE_BARRIERS, Is.EqualTo(supportsNoGcWriteBarriers));
     }
 
     [Test]
@@ -351,7 +465,7 @@ internal static class FeatureConfigurationTests
                 Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET));
             Assert.That(CallArgs.GetCustomRegister(compiler, default, WellKnownArg.ValidateIndirectCallTarget, out _),
                 Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET &&
-                    (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)));
+                    (TargetRuntimeMetadata.ValidateIndirectCallAddressRegister != REG_ARG_0)));
             Assert.That(CallArgs.GetCustomRegister(compiler, default, WellKnownArg.DispatchIndirectCallTarget, out _),
                 Is.EqualTo(Configuration.HAS_FIXED_REGISTER_SET &&
                     (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)));

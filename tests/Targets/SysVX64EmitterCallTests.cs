@@ -16,10 +16,10 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class SysVX64EmitterCallTests
 {
-    [TestCase(EmitCallType.EC_FUNC_TOKEN, EA_GCREF, GCT_GCREF)]
-    [TestCase(EmitCallType.EC_FUNC_TOKEN, EA_BYREF, GCT_BYREF)]
-    [TestCase(EmitCallType.EC_INDIR_R, EA_GCREF, GCT_GCREF)]
-    [TestCase(EmitCallType.EC_INDIR_R, EA_BYREF, GCT_BYREF)]
+    [TestCase(EmitCallType.EC_FUNC_TOKEN, EA_64BIT_GCREF, GCT_GCREF)]
+    [TestCase(EmitCallType.EC_FUNC_TOKEN, EA_64BIT_BYREF, GCT_BYREF)]
+    [TestCase(EmitCallType.EC_INDIR_R, EA_64BIT_GCREF, GCT_GCREF)]
+    [TestCase(EmitCallType.EC_INDIR_R, EA_64BIT_BYREF, GCT_BYREF)]
     public static void SecondGcReturnForcesLargeDescriptorAndPreservesBothReturnRegisters(
         EmitCallType type, emitAttr secondReturn, GCInfo.GCtype gcType)
     {
@@ -45,8 +45,8 @@ internal static unsafe class SysVX64EmitterCallTests
         });
     }
 
-    [TestCase(EA_GCREF, GCT_GCREF)]
-    [TestCase(EA_BYREF, GCT_BYREF)]
+    [TestCase(EA_64BIT_GCREF, GCT_GCREF)]
+    [TestCase(EA_64BIT_BYREF, GCT_BYREF)]
     public static void IssuedCallBirthsBothGcReturnRegisters(emitAttr secondReturn, GCInfo.GCtype gcType)
     {
         WithEmitter((compiler, emitter) =>

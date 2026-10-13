@@ -145,6 +145,37 @@ internal static unsafe class CompilerTargetConfigurationTests
     }
 
     [Test]
+    public static void ReservedRegisterFrameCheckStopsOnUnsupportedTargets()
+    {
+        if (Configuration.TARGET_ARMARCH || Configuration.TARGET_RISCV64)
+        {
+            Assert.Ignore("This reserved-register frame check is supported on ARM and RISC-V targets.");
+        }
+
+        WithCompiler(compiler =>
+        {
+            Assert.Throws<FatalJitException>(
+                () => compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT));
+        });
+    }
+
+    [Test]
+    public static void RegisterMaskQueriesStopWithoutFixedRegisterSet()
+    {
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            Assert.Ignore("Register masks are available on targets with a fixed register set.");
+        }
+
+        WithCompiler(compiler =>
+        {
+            var codeGen = new CodeGen(compiler);
+            var local = default(LclVarDsc);
+            Assert.Throws<FatalJitException>(() => codeGen.genGetRegMask(in local));
+        });
+    }
+
+    [Test]
     public static void CallPopArgsFlagUsesConfiguredUnixX86Abi()
     {
         WithCompiler(compiler => {
