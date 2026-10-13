@@ -3,13 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-
 namespace RyuJitSharp;
 
 public static class CorInfoTypeExtensions
 {
-    private static ReadOnlySpan<var_types> s_preciseVarTypes => [
+    private static readonly var_types[] s_preciseVarTypes = [
         TYP_UNDEF,      // CORINFO_TYPE_UNDEF     
         TYP_VOID,       // CORINFO_TYPE_VOID      
         TYP_UBYTE,      // CORINFO_TYPE_BOOL      
@@ -32,7 +30,7 @@ public static class CorInfoTypeExtensions
         TYP_REF,        // CORINFO_TYPE_CLASS     
     ];
 
-    private static ReadOnlySpan<var_types> s_varTypes => [
+    private static readonly var_types[] s_varTypes = [
         // see the definition of enum CorInfoType in file inc/corinfo.h
         TYP_UNDEF,      // CORINFO_TYPE_UNDEF     
         TYP_VOID,       // CORINFO_TYPE_VOID      

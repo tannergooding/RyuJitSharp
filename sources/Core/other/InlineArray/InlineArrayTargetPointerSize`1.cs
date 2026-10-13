@@ -7,7 +7,8 @@ using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
-[InlineArray(TARGET_POINTER_SIZE)]
+// This backing array covers 64-bit targets; callers bound accesses by the configured target pointer size.
+[InlineArray(sizeof(ulong))]
 public struct InlineArrayTargetPointerSize<T>
 {
     public T e0;

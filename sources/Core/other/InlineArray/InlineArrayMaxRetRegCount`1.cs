@@ -7,7 +7,8 @@ using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
-[InlineArray(MAX_RET_REG_COUNT)]
+// Keep capacity for the largest supported target; return-register loops use the target-specific maximum.
+[InlineArray(4)]
 public struct InlineArrayMaxRetRegCount<T>
 {
     public T e0;

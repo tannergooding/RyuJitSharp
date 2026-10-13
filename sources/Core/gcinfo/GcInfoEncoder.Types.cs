@@ -45,11 +45,8 @@ public enum GENERIC_CONTEXTPARAM_TYPE
 
 public sealed unsafe partial class GcInfoEncoder
 {
-#if TARGET_WASM && !TARGET_64BIT
-    internal const bool HAS_INTERRUPTIBLE_RANGES = false;
-#else
-    internal const bool HAS_INTERRUPTIBLE_RANGES = true;
-#endif
+    internal static bool HAS_INTERRUPTIBLE_RANGES =>
+        !Configuration.TARGET_WASM || Configuration.TARGET_64BIT;
 
     private const uint NUM_NORM_CODE_OFFSETS_PER_CHUNK = 64;
     private const uint NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 = 6;

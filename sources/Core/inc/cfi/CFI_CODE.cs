@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_CFI_SUPPORT
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -25,4 +24,3 @@ public struct CFI_CODE
         Offset = offset;
     }
 }
-#endif

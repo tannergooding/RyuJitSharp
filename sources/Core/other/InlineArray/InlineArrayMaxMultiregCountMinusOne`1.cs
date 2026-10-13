@@ -7,7 +7,8 @@ using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
 
-[InlineArray(MAX_MULTIREG_COUNT - 1)]
+// Keep capacity for the largest supported target; register-count loops use the target-specific maximum.
+[InlineArray(3)]
 public struct InlineArrayMaxMultiregCountMinusOne<T>
 {
     public T e0;

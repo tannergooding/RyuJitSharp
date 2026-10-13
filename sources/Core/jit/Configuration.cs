@@ -6,7 +6,15 @@ internal static class Configuration
 {
     internal static bool FEATURE_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_HW_INTRINSICS));
 
+    // RyuJitSharp currently includes timing support in every build.
+    internal static bool FEATURE_JIT_METHOD_PERF => true;
+
     internal static bool FEATURE_MASKED_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_MASKED_HW_INTRINSICS));
+
+    // RyuJitSharp does not currently enable these optional ARM instruction subsets.
+    internal static bool FEATURE_ITINSTRUCTION => false;
+
+    internal static bool FEATURE_PLI_INSTRUCTION => false;
 
     internal static bool FEATURE_READYTORUN => GetFeatureSwitch(nameof(FEATURE_READYTORUN));
 
@@ -22,6 +30,16 @@ internal static class Configuration
     // Native CMake enables this only for the runtime-OS-determined universal ARM JIT.
     internal static bool CONFIGURABLE_ARM_ABI => TARGET_ARM && TARGET_OS_RUNTIMEDETERMINED;
 
+    internal static bool CPU_HAS_BYTE_REGS => TARGET_X86;
+
+    internal static bool CPU_LOAD_STORE_ARCH =>
+        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM;
+
+    internal static bool EMIT_TRACK_STACK_DEPTH => !TARGET_WASM;
+
+    internal static bool ETW_EBP_FRAMED =>
+        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || (TARGET_AMD64 && TARGET_UNIX) || TARGET_X86;
+
     internal static bool FEATURE_REMAP_FUNCTION =>
         TARGET_ARM64 || TARGET_AMD64 || (TARGET_X86 && TARGET_WINDOWS);
 
@@ -29,14 +47,37 @@ internal static class Configuration
     // ARM32, LoongArch64, and RISC-V64 also use split arguments.
     internal static bool FEATURE_ARG_SPLIT => TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64;
 
+    internal static bool FEATURE_CFI_SUPPORT => TARGET_UNIX || TARGET_OS_RUNTIMEDETERMINED;
+
     internal static bool FEATURE_MULTIREG_ARGS =>
         FEATURE_ARG_SPLIT || (TARGET_AMD64 && TARGET_UNIX);
 
     internal static bool FEATURE_FIXED_OUT_ARGS =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_AMD64;
 
+    internal static bool FEATURE_IMPLICIT_BYREFS =>
+        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || TARGET_AMD64;
+
+    internal static bool FEATURE_MULTITHREADING => !TARGET_WASM;
+
+    internal static bool FEATURE_PAL_ANSI => TARGET_UNIX;
+
+    internal static bool FEATURE_PARTIAL_SIMD_CALLEE_SAVE =>
+        TARGET_ARM64 || (TARGET_AMD64 && !TARGET_UNIX);
+
+    internal static bool ALIGN_SIMD_TYPES => TARGET_XARCH || TARGET_ARM64;
+
+    internal static bool JIT32_GCENCODER => TARGET_X86;
+
+    internal static bool LOWER_DECOMPOSE_LONGS => (TARGET_ARM && !TARGET_ARMV6) || TARGET_X86;
+
+    internal static bool USE_HELPERS_FOR_INT_DIV => TARGET_ARM && !TARGET_ARMV6;
+
     internal static bool FEATURE_MULTIREG_STRUCT_PROMOTE =>
         TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || (TARGET_AMD64 && TARGET_UNIX);
+
+    internal static bool MULTIREG_HAS_SECOND_GC_RET =>
+        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || (TARGET_AMD64 && TARGET_UNIX);
 
     internal static bool FEATURE_FASTTAILCALL =>
         TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM || TARGET_AMD64;
@@ -67,12 +108,144 @@ internal static class Configuration
 
     internal static bool REGMASK_BITS_64 => !REGMASK_BITS_32;
 
-    internal static bool CPU_LOAD_STORE_ARCH =>
-        TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM;
+    internal static bool USER_ARGS_COME_LAST => !TARGET_X86;
+
+    internal static bool USE_PER_FRAME_PINVOKE_INIT => TARGET_64BIT;
+
+    internal static int TARGET_POINTER_SIZE => TARGET_64BIT ? 8 : 4;
+
+    internal static int REGSIZE_BYTES => TARGET_POINTER_SIZE;
+
+    internal static int MAX_PASS_SINGLEREG_BYTES => TargetRuntimeMetadata.Select(
+        MAX_PASS_SINGLEREG_BYTES_X86,
+        MAX_PASS_SINGLEREG_BYTES_AMD64,
+        MAX_PASS_SINGLEREG_BYTES_ARM64,
+        MAX_PASS_SINGLEREG_BYTES_ARM,
+        MAX_PASS_SINGLEREG_BYTES_LOONGARCH64,
+        MAX_PASS_SINGLEREG_BYTES_RISCV64,
+        MAX_PASS_SINGLEREG_BYTES_WASM);
+
+    internal static int MAX_PASS_MULTIREG_BYTES =>
+        TARGET_AMD64
+            ? UNIX_AMD64_ABI ? MAX_PASS_MULTIREG_BYTES_X64_UNIX : MAX_PASS_MULTIREG_BYTES_X64_WINDOWS
+            : TargetRuntimeMetadata.Select(
+                MAX_PASS_MULTIREG_BYTES_X86,
+                0,
+                MAX_PASS_MULTIREG_BYTES_ARM64,
+                MAX_PASS_MULTIREG_BYTES_ARM,
+                MAX_PASS_MULTIREG_BYTES_LOONGARCH64,
+                MAX_PASS_MULTIREG_BYTES_RISCV64,
+                MAX_PASS_MULTIREG_BYTES_WASM);
+
+    internal static int MAX_RET_MULTIREG_BYTES =>
+        TARGET_AMD64
+            ? UNIX_AMD64_ABI ? MAX_RET_MULTIREG_BYTES_X64_UNIX : MAX_RET_MULTIREG_BYTES_X64_WINDOWS
+            : TargetRuntimeMetadata.Select(
+                MAX_RET_MULTIREG_BYTES_X86,
+                0,
+                MAX_RET_MULTIREG_BYTES_ARM64,
+                MAX_RET_MULTIREG_BYTES_ARM,
+                MAX_RET_MULTIREG_BYTES_LOONGARCH64,
+                MAX_RET_MULTIREG_BYTES_RISCV64,
+                MAX_RET_MULTIREG_BYTES_WASM);
+
+    internal static int MAX_ARG_REG_COUNT =>
+        TARGET_AMD64
+            ? UNIX_AMD64_ABI ? MAX_ARG_REG_COUNT_X64_UNIX : MAX_ARG_REG_COUNT_X64_WINDOWS
+            : TargetRuntimeMetadata.Select(
+                MAX_ARG_REG_COUNT_X86,
+                0,
+                MAX_ARG_REG_COUNT_ARM64,
+                MAX_ARG_REG_COUNT_ARM,
+                MAX_ARG_REG_COUNT_LOONGARCH64,
+                MAX_ARG_REG_COUNT_RISCV64,
+                MAX_ARG_REG_COUNT_WASM);
+
+    internal static int MAX_RET_REG_COUNT =>
+        TARGET_AMD64
+            ? UNIX_AMD64_ABI ? MAX_RET_REG_COUNT_X64_UNIX : MAX_RET_REG_COUNT_X64_WINDOWS
+            : TargetRuntimeMetadata.Select(
+                MAX_RET_REG_COUNT_X86,
+                0,
+                MAX_RET_REG_COUNT_ARM64,
+                MAX_RET_REG_COUNT_ARM,
+                MAX_RET_REG_COUNT_LOONGARCH64,
+                MAX_RET_REG_COUNT_RISCV64,
+                MAX_RET_REG_COUNT_WASM);
+
+    internal static int MAX_MULTIREG_COUNT =>
+        TARGET_AMD64
+            ? UNIX_AMD64_ABI ? MAX_MULTIREG_COUNT_X64_UNIX : MAX_MULTIREG_COUNT_X64_WINDOWS
+            : TargetRuntimeMetadata.Select(
+                MAX_MULTIREG_COUNT_X86,
+                0,
+                MAX_MULTIREG_COUNT_ARM64,
+                MAX_MULTIREG_COUNT_ARM,
+                MAX_MULTIREG_COUNT_LOONGARCH64,
+                MAX_MULTIREG_COUNT_RISCV64,
+                MAX_MULTIREG_COUNT_WASM);
+
+    internal static int MAX_REG_ARG =>
+        TARGET_AMD64
+            ? UNIX_AMD64_ABI ? MAX_REG_ARG_X64_UNIX : MAX_REG_ARG_X64_WINDOWS
+            : TargetRuntimeMetadata.Select(
+                0,
+                0,
+                MAX_REG_ARG_ARM64,
+                MAX_REG_ARG_ARM,
+                MAX_REG_ARG_LOONGARCH64,
+                MAX_REG_ARG_RISCV64,
+                0);
+
+    internal static int MIN_ARG_AREA_FOR_CALL =>
+        TARGET_AMD64
+            ? UNIX_AMD64_ABI ? MIN_ARG_AREA_FOR_CALL_X64_UNIX : MIN_ARG_AREA_FOR_CALL_X64_WINDOWS
+            : TargetRuntimeMetadata.Select(
+                MIN_ARG_AREA_FOR_CALL_X86,
+                0,
+                MIN_ARG_AREA_FOR_CALL_ARM64,
+                MIN_ARG_AREA_FOR_CALL_ARM,
+                MIN_ARG_AREA_FOR_CALL_LOONGARCH64,
+                MIN_ARG_AREA_FOR_CALL_RISCV64,
+                MIN_ARG_AREA_FOR_CALL_WASM);
+
+    internal static int REGNUM_BITS => TargetRuntimeMetadata.Select(
+        REGNUM_BITS_X86,
+        REGNUM_BITS_AMD64,
+        REGNUM_BITS_ARM64,
+        REGNUM_BITS_ARM,
+        REGNUM_BITS_LOONGARCH64,
+        REGNUM_BITS_RISCV64,
+        REGNUM_BITS_WASM);
+
+    internal static int XMM_REGSIZE_BYTES => 16;
+
+    internal static int YMM_REGSIZE_BYTES => 32;
+
+    internal static int ZMM_REGSIZE_BYTES => 64;
+
+    internal static int FP_REGSIZE_BYTES => TargetRuntimeMetadata.Select(
+        XMM_REGSIZE_BYTES,
+        XMM_REGSIZE_BYTES,
+        FP_REGSIZE_BYTES_ARM64,
+        8,
+        FP_REGSIZE_BYTES_LOONGARCH64,
+        FP_REGSIZE_BYTES_RISCV64,
+        FP_REGSIZE_BYTES_WASM);
+
+    internal static int STACK_ALIGN =>
+        TARGET_ARM ? 8 : TARGET_X86 ? (UNIX_X86_ABI ? 16 : 4) : 16;
+
+    internal static bool NOGC_WRITE_BARRIERS =>
+        TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_X86;
 
     internal static bool TARGET_64BIT => GetFeatureSwitch(nameof(TARGET_64BIT));
 
+    internal static bool HOST_64BIT => Environment.Is64BitProcess;
+
     internal static bool TARGET_ARM => GetFeatureSwitch(nameof(TARGET_ARM));
+
+    internal static bool TARGET_ARMV6 => GetFeatureSwitch(nameof(TARGET_ARMV6));
 
     internal static bool TARGET_ARM64 => GetFeatureSwitch(nameof(TARGET_ARM64));
 
@@ -97,6 +270,24 @@ internal static class Configuration
 
     internal static bool TARGET_WASM => GetFeatureSwitch(nameof(TARGET_WASM));
 
+    internal static bool TARGET_WASM32 => TARGET_WASM;
+
+    internal static int EMIT_JUMPKIND_COUNT =>
+        TARGET_XARCH ? (int)emitJumpKind.EJ_XARCH_COUNT :
+        TARGET_ARMARCH ? (int)emitJumpKind.EJ_ARMARCH_COUNT :
+        TARGET_LOONGARCH64 ? (int)emitJumpKind.EJ_LOONGARCH64_COUNT :
+        TARGET_RISCV64 ? (int)emitJumpKind.EJ_RISCV64_COUNT :
+        TARGET_WASM ? (int)emitJumpKind.EJ_WASM_COUNT :
+        throw new FatalJitException(CORJIT_SKIPPED, "Jump kinds are not supported for this target.");
+
+    internal static void EnsureWasmTarget()
+    {
+        if (!TARGET_WASM)
+        {
+            throw new FatalJitException("WebAssembly-only compiler code requires the WebAssembly target.");
+        }
+    }
+
     internal static bool TARGET_WINDOWS => GetFeatureSwitch(nameof(TARGET_WINDOWS));
 
     internal static bool WINDOWS_AMD64_ABI => GetFeatureSwitch(nameof(WINDOWS_AMD64_ABI));
@@ -105,7 +296,18 @@ internal static class Configuration
 
     internal static bool UNIX_AMD64_ABI => TARGET_AMD64 && TARGET_UNIX;
 
+    internal static bool UNIX_ARM_ABI => TARGET_ARM && !TARGET_ARMV6 && TARGET_UNIX;
+
     internal static bool TARGET_APPLE => GetFeatureSwitch(nameof(TARGET_APPLE));
+
+    internal static bool OSX_ARM64_ABI => TARGET_ARM64 && TARGET_APPLE;
+
+    internal static bool TARGET_UNIX_ANYOS => TARGET_UNIX_OS_RUNTIMEDETERMINED;
+
+    internal static bool TARGET_UNIX_POSSIBLY_SUPPORTED => TARGET_UNIX || TARGET_OS_RUNTIMEDETERMINED;
+
+    internal static bool TARGET_WINDOWS_POSSIBLY_SUPPORTED =>
+        TARGET_WINDOWS || (TARGET_OS_RUNTIMEDETERMINED && !TARGET_UNIX_OS_RUNTIMEDETERMINED);
 
     internal static bool SWIFT_SUPPORT => TARGET_ARM64 || (TARGET_AMD64 && TARGET_UNIX);
 

@@ -11,19 +11,23 @@ public sealed unsafe partial class GcInfoEncoder
 {
     public GcInfoEncoder(ICorJitInfo* pCorJitInfo, CORINFO_METHOD_INFO* pMethodInfo)
     {
-#if TARGET_ARM || TARGET_ARMARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "GC info encoding is not implemented for ARM targets.");
-#elif !TARGET_AMD64
-        throw new PlatformNotSupportedException("Only the AMD64 GC info encoding is implemented.");
-#else
+        if (Configuration.TARGET_ARM || Configuration.TARGET_ARMARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "GC info encoding is not implemented for ARM targets.");
+        }
+
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new PlatformNotSupportedException("Only the AMD64 GC info encoding is implemented.");
+        }
+
         if (pCorJitInfo is null || pMethodInfo is null)
         {
             throw new ArgumentNullException(pCorJitInfo is null ? nameof(pCorJitInfo) : nameof(pMethodInfo));
         }
-
         m_pCorJitInfo = pCorJitInfo;
         m_pMethodInfo = pMethodInfo;
-#endif
+        m_pMethodInfo = pMethodInfo;
     }
 
     public void DefineCallSites(uint* pCallSites, byte* pCallSiteSizes, uint numCallSites)
@@ -180,13 +184,11 @@ public sealed unsafe partial class GcInfoEncoder
         m_SizeOfEditAndContinuePreservedArea = slots;
     }
 
-#if TARGET_ARM64
     public void SetSizeOfEditAndContinueFixedStackFrame(uint size)
     {
         throw new FatalJitException(CORJIT_SKIPPED,
             "ARM64 Edit-and-Continue GC-info metadata is not implemented.");
     }
-#endif
 
     public void SetWantsReportOnlyLeaf()
     {

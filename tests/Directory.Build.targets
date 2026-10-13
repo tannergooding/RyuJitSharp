@@ -23,11 +23,13 @@
     <RyuJitTargetIs64Bit Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIs64Bit>
     <RyuJitTargetIs64Bit Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm64')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-loongarch64')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-mips64')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-ppc64le')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-riscv64')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-s390x')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-x64'))">true</RyuJitTargetIs64Bit>
     <RyuJitTargetIsArm Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsArm>
-    <RyuJitTargetIsArm Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm'))">true</RyuJitTargetIsArm>
+    <RyuJitTargetIsArm Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-armv6'))">true</RyuJitTargetIsArm>
+    <RyuJitTargetIsArmV6 Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsArmV6>
+    <RyuJitTargetIsArmV6 Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-armv6'))">true</RyuJitTargetIsArmV6>
     <RyuJitTargetIsArm64 Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsArm64>
     <RyuJitTargetIsArm64 Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm64'))">true</RyuJitTargetIsArm64>
     <RyuJitTargetIsArmArch Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsArmArch>
-    <RyuJitTargetIsArmArch Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm64'))">true</RyuJitTargetIsArmArch>
+    <RyuJitTargetIsArmArch Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-armv6')) or $(RyuJitTestTargetRuntimeIdentifier.EndsWith('-arm64'))">true</RyuJitTargetIsArmArch>
     <RyuJitTargetIsLoongArch64 Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsLoongArch64>
     <RyuJitTargetIsLoongArch64 Condition="$(RyuJitTestTargetRuntimeIdentifier.EndsWith('-loongarch64'))">true</RyuJitTargetIsLoongArch64>
     <RyuJitTargetIsRiscV64 Condition="'$(RyuJitTestTargetRuntimeIdentifier)' != ''">false</RyuJitTargetIsRiscV64>
@@ -72,7 +74,7 @@
     <RyuJitFeatureProfilingSupported Condition="'$(RyuJitFeatureProfilingSupported)' == ''">false</RyuJitFeatureProfilingSupported>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitWindowsAmd64Abi)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureLoopAlign)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitUnixX86Abi)' != '' and '$(RyuJitFeatureLateDisasm)' != '' and '$(RyuJitFeatureDisasmDebug)' != '' and '$(RyuJitFeatureProfilingSupported)' != ''">
+  <ItemGroup Condition="'$(RyuJitFeatureHasZeroReg)' != '' and '$(RyuJitTargetIs64Bit)' != '' and '$(RyuJitTargetIsArm)' != '' and '$(RyuJitTargetIsArmV6)' != '' and '$(RyuJitTargetIsArm64)' != '' and '$(RyuJitTargetIsArmArch)' != '' and '$(RyuJitTargetIsLoongArch64)' != '' and '$(RyuJitTargetIsRiscV64)' != '' and '$(RyuJitTargetIsXarch)' != '' and '$(RyuJitTargetIsWasm)' != '' and '$(RyuJitTargetIsWindows)' != '' and '$(RyuJitWindowsAmd64Abi)' != '' and '$(RyuJitTargetIsUnix)' != '' and '$(RyuJitTargetIsApple)' != '' and '$(RyuJitTargetOSRuntimeDetermined)' != '' and '$(RyuJitUnixOSRuntimeDetermined)' != '' and '$(RyuJitFeatureSimd)' != '' and '$(RyuJitFeatureHwIntrinsics)' != '' and '$(RyuJitFeatureMaskedHwIntrinsics)' != '' and '$(RyuJitFeatureLoopAlign)' != '' and '$(RyuJitFeatureMultiRegRet)' != '' and '$(RyuJitFeatureVnDumpFuncArgs)' != '' and '$(RyuJitFeatureArmSoftFp)' != '' and '$(RyuJitUnixX86Abi)' != '' and '$(RyuJitFeatureLateDisasm)' != '' and '$(RyuJitFeatureDisasmDebug)' != '' and '$(RyuJitFeatureProfilingSupported)' != ''">
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HW_INTRINSICS" Value="$(RyuJitFeatureHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_MASKED_HW_INTRINSICS" Value="$(RyuJitFeatureMaskedHwIntrinsics)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.FEATURE_HAS_ZERO_REG" Value="$(RyuJitFeatureHasZeroReg)" />
@@ -85,6 +87,7 @@
     <RuntimeHostConfigurationOption Include="RyuJitSharp.ARM_SOFTFP" Value="$(RyuJitFeatureArmSoftFp)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_64BIT" Value="$(RyuJitTargetIs64Bit)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARM" Value="$(RyuJitTargetIsArm)" />
+    <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARMV6" Value="$(RyuJitTargetIsArmV6)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARM64" Value="$(RyuJitTargetIsArm64)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_ARMARCH" Value="$(RyuJitTargetIsArmArch)" />
     <RuntimeHostConfigurationOption Include="RyuJitSharp.TARGET_LOONGARCH64" Value="$(RyuJitTargetIsLoongArch64)" />

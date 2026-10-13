@@ -41,43 +41,47 @@ public partial class Globals
     public const int MAX_FPSTRUCT_LOWERED_ELEMENTS = 2;
 
     /// <summary>MethTable.</summary>
-    public const int SIZEOF__CORINFO_Object = TARGET_POINTER_SIZE;
+    public static int SIZEOF__CORINFO_Object => Configuration.TARGET_POINTER_SIZE;
 
     public const int CORINFO_Array_MaxLength = 0x7FFFFFC7;
 
     public const int CORINFO_String_MaxLength = 0x3FFFFFDF;
 
-    public const ushort OFFSETOF__CORINFO_Array__length = SIZEOF__CORINFO_Object;
+    public static ushort OFFSETOF__CORINFO_Array__length => unchecked((ushort)SIZEOF__CORINFO_Object);
 
-#if TARGET_64BIT
-    public const ushort OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
-                                                      + sizeof(int)  // length
-                                                      + sizeof(int); // alignpad
-#else
-    public const ushort OFFSETOF__CORINFO_Array__data = OFFSETOF__CORINFO_Array__length
-                                                      + sizeof(int);  // length
-#endif
+    public static ushort OFFSETOF__CORINFO_Array__data
+    {
+        get
+        {
+            var dataOffset = OFFSETOF__CORINFO_Array__length + sizeof(int);
+            if (Configuration.TARGET_64BIT)
+            {
+                dataOffset += sizeof(int);
+            }
+
+            return unchecked((ushort)dataOffset);
+        }
+    }
 
     public const ushort OFFSETOF__CORINFO_TypedReference__dataPtr = 0;
 
-    public const ushort OFFSETOF__CORINFO_TypedReference__type = OFFSETOF__CORINFO_TypedReference__dataPtr
-                                                               + TARGET_POINTER_SIZE; // dataPtr
+    public static ushort OFFSETOF__CORINFO_TypedReference__type =>
+        unchecked((ushort)(OFFSETOF__CORINFO_TypedReference__dataPtr + Configuration.TARGET_POINTER_SIZE));
 
-    public const ushort OFFSETOF__CORINFO_String__stringLen = SIZEOF__CORINFO_Object;
+    public static ushort OFFSETOF__CORINFO_String__stringLen => unchecked((ushort)SIZEOF__CORINFO_Object);
 
-    public const ushort OFFSETOF__CORINFO_String__chars = OFFSETOF__CORINFO_String__stringLen
-                                                        + sizeof(int); // stringLen
+    public static ushort OFFSETOF__CORINFO_String__chars =>
+        unchecked((ushort)(OFFSETOF__CORINFO_String__stringLen + sizeof(int)));
 
     public const ushort OFFSETOF__CORINFO_NullableOfT__hasValue = 0;
 
     public const ushort OFFSETOF__CORINFO_Span__reference = 0;
 
-    public const ushort OFFSETOF__CORINFO_Span__length = TARGET_POINTER_SIZE;
+    public static ushort OFFSETOF__CORINFO_Span__length =>
+        unchecked((ushort)Configuration.TARGET_POINTER_SIZE);
 
-    public const ushort OFFSETOF__CORINFO_Continuation__data = SIZEOF__CORINFO_Object
-                                                             + TARGET_POINTER_SIZE // Next
-                                                             + TARGET_POINTER_SIZE // Resume
-                                                             + 8;                  // Flags + State
+    public static ushort OFFSETOF__CORINFO_Continuation__data =>
+        unchecked((ushort)(SIZEOF__CORINFO_Object + (2 * Configuration.TARGET_POINTER_SIZE) + 8));
 
     // Some compilers cannot arbitrarily allow the handler nesting level to grow
     // arbitrarily during Edit'n'Continue.
@@ -90,20 +94,24 @@ public partial class Globals
         return (CorInfoType)(val & CORINFO_TYPE_MASK);
     }
 
-#if TARGET_X86
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsCallerPop(CorInfoCallConvExtension callConv)
     {
-#if UNIX_X86_ABI
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException("Caller-pop conventions are only defined for x86.");
+        }
+
+        if (Configuration.UNIX_X86_ABI)
+        {
             return callConv is CorInfoCallConvExtension.Managed
                             or CorInfoCallConvExtension.C
                             or CorInfoCallConvExtension.CMemberFunction;
-#else
-            return callConv is CorInfoCallConvExtension.C
-                            or CorInfoCallConvExtension.CMemberFunction;
-#endif
+        }
+
+        return callConv is CorInfoCallConvExtension.C
+                        or CorInfoCallConvExtension.CMemberFunction;
     }
-#endif
 
     /// <summary>Determines whether or not this calling convention is an instance method calling convention.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

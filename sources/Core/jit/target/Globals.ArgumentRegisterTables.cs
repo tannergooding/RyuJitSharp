@@ -9,6 +9,49 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
+    public static regMask SRBM_ARG_REGS
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return SRBM_ARG_REGS_X86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return SRBM_ARG_REGS_AMD64;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return SRBM_ARG_REGS_ARM;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return SRBM_ARG_REGS_ARM64;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return SRBM_ARG_REGS_LOONGARCH64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return SRBM_ARG_REGS_RISCV64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return SRBM_ARG_REGS_WASM;
+            }
+
+            return UnsupportedTargetValue<regMask>("Invalid target architecture.");
+        }
+    }
+
     private static ReadOnlySpan<regNumber> UnsupportedTargetRegisterTable()
     {
         throw new FatalJitException("Invalid target architecture.");

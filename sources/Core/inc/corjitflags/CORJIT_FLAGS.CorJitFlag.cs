@@ -37,10 +37,8 @@ public partial struct CORJIT_FLAGS
     public const CorJitFlag CORJIT_FLAG_TIER1 = CorJitFlag.CORJIT_FLAG_TIER1;
     public const CorJitFlag CORJIT_FLAG_NO_INLINING = CorJitFlag.CORJIT_FLAG_NO_INLINING;
 
-#if TARGET_ARM
     public const CorJitFlag CORJIT_FLAG_RELATIVE_CODE_RELOCS = CorJitFlag.CORJIT_FLAG_RELATIVE_CODE_RELOCS;
     public const CorJitFlag CORJIT_FLAG_SOFTFP_ABI = CorJitFlag.CORJIT_FLAG_SOFTFP_ABI;
-#endif
 
     public const CorJitFlag CORJIT_FLAG_USE_DISPATCH_HELPERS = CorJitFlag.CORJIT_FLAG_USE_DISPATCH_HELPERS;
 
@@ -136,13 +134,11 @@ public partial struct CORJIT_FLAGS
         /// <summary>JIT should not inline any called method into this method.</summary>
         CORJIT_FLAG_NO_INLINING = 28,
 
-#if TARGET_ARM
         /// <summary>JIT should generate PC-relative address computations instead of EE relocation records.</summary>
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 29,
 
         /// <summary>Enable armel calling convention.</summary>
         CORJIT_FLAG_SOFTFP_ABI = 30,
-#endif
 
         /// <summary>The JIT should use helpers for interface dispatch instead of virtual stub dispatch</summary>
         CORJIT_FLAG_USE_DISPATCH_HELPERS = 31,

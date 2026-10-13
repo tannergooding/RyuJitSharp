@@ -69,11 +69,7 @@ public static class CorInfoHelpFuncExtensions
         IsPure | IsNoEscape,                        // CORINFO_HELP_UNBOX
         IsPure,                                     // CORINFO_HELP_UNBOX_TYPETEST
         MutatesHeap,                                // CORINFO_HELP_UNBOX_NULLABLE
-#if !WINDOWS_AMD64_ABI && !TARGET_WASM
         IsPure,                                     // CORINFO_HELP_GETREFANY
-#else
-        None,                                       // CORINFO_HELP_GETREFANY
-#endif
         MutatesHeap,                                // CORINFO_HELP_ARRADDR_ST
         IsPure,                                     // CORINFO_HELP_LDELEMA_REF
         AlwaysThrow,                                // CORINFO_HELP_THROW
@@ -445,7 +441,14 @@ public static class CorInfoHelpFuncExtensions
             get
             {
                 assert(s_flags.Length == (int)(CORINFO_HELP_COUNT));
-                return s_flags[(int)(helperId)];
+                var flags = s_flags[(int)(helperId)];
+                if ((helperId == CORINFO_HELP_GETREFANY) &&
+                    (Configuration.WINDOWS_AMD64_ABI || Configuration.TARGET_WASM))
+                {
+                    return Flags.None;
+                }
+
+                return flags;
             }
         }
     }

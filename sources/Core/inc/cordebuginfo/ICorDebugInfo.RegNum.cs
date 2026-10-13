@@ -7,238 +7,336 @@ namespace RyuJitSharp;
 
 public partial struct ICorDebugInfo
 {
-    // Note: The debugger needs to target register numbers on platforms other than which the debugger itself
-    // is running. To this end it maintains its own values for REGNUM_SP and REGNUM_AMBIENT_SP across multiple
-    // platforms. So any change here that may effect these values should be reflected in the definitions
-    // contained in debug/inc/DbgIPCEvents.h.
-
+    // These numeric identities are shared with the debugger definitions in debug/inc/DbgIPCEvents.h.
+    // Keep each target's native numbering explicit; runtime-selected aliases are used at the EE boundary.
     public enum RegNum
     {
-#if TARGET_X86
-        REGNUM_EAX,
-        REGNUM_ECX,
-        REGNUM_EDX,
-        REGNUM_EBX,
-        REGNUM_ESP,
-        REGNUM_EBP,
-        REGNUM_ESI,
-        REGNUM_EDI,
-#elif TARGET_ARM
-        REGNUM_R0,
-        REGNUM_R1,
-        REGNUM_R2,
-        REGNUM_R3,
-        REGNUM_R4,
-        REGNUM_R5,
-        REGNUM_R6,
-        REGNUM_R7,
-        REGNUM_R8,
-        REGNUM_R9,
-        REGNUM_R10,
-        REGNUM_R11,
-        REGNUM_R12,
-        REGNUM_SP,
-        REGNUM_LR,
-        REGNUM_PC,
-#elif TARGET_ARM64
-        REGNUM_X0,
-        REGNUM_X1,
-        REGNUM_X2,
-        REGNUM_X3,
-        REGNUM_X4,
-        REGNUM_X5,
-        REGNUM_X6,
-        REGNUM_X7,
-        REGNUM_X8,
-        REGNUM_X9,
-        REGNUM_X10,
-        REGNUM_X11,
-        REGNUM_X12,
-        REGNUM_X13,
-        REGNUM_X14,
-        REGNUM_X15,
-        REGNUM_X16,
-        REGNUM_X17,
-        REGNUM_X18,
-        REGNUM_X19,
-        REGNUM_X20,
-        REGNUM_X21,
-        REGNUM_X22,
-        REGNUM_X23,
-        REGNUM_X24,
-        REGNUM_X25,
-        REGNUM_X26,
-        REGNUM_X27,
-        REGNUM_X28,
-        REGNUM_FP,
-        REGNUM_LR,
-        REGNUM_SP,
-        REGNUM_PC,
-        REGNUM_FP_FIRST,
-        REGNUM_V0 = REGNUM_FP_FIRST,
-        REGNUM_V1,
-        REGNUM_V2,
-        REGNUM_V3,
-        REGNUM_V4,
-        REGNUM_V5,
-        REGNUM_V6,
-        REGNUM_V7,
-        REGNUM_V8,
-        REGNUM_V9,
-        REGNUM_V10,
-        REGNUM_V11,
-        REGNUM_V12,
-        REGNUM_V13,
-        REGNUM_V14,
-        REGNUM_V15,
-        REGNUM_V16,
-        REGNUM_V17,
-        REGNUM_V18,
-        REGNUM_V19,
-        REGNUM_V20,
-        REGNUM_V21,
-        REGNUM_V22,
-        REGNUM_V23,
-        REGNUM_V24,
-        REGNUM_V25,
-        REGNUM_V26,
-        REGNUM_V27,
-        REGNUM_V28,
-        REGNUM_V29,
-        REGNUM_V30,
-        REGNUM_V31,
-#elif TARGET_AMD64
-        REGNUM_RAX,
-        REGNUM_RCX,
-        REGNUM_RDX,
-        REGNUM_RBX,
-        REGNUM_RSP,
-        REGNUM_RBP,
-        REGNUM_RSI,
-        REGNUM_RDI,
-        REGNUM_R8,
-        REGNUM_R9,
-        REGNUM_R10,
-        REGNUM_R11,
-        REGNUM_R12,
-        REGNUM_R13,
-        REGNUM_R14,
-        REGNUM_R15,
-        REGNUM_FP_FIRST,
-        REGNUM_XMM0 = REGNUM_FP_FIRST,
-        REGNUM_XMM1,
-        REGNUM_XMM2,
-        REGNUM_XMM3,
-        REGNUM_XMM4,
-        REGNUM_XMM5,
-        REGNUM_XMM6,
-        REGNUM_XMM7,
-        REGNUM_XMM8,
-        REGNUM_XMM9,
-        REGNUM_XMM10,
-        REGNUM_XMM11,
-        REGNUM_XMM12,
-        REGNUM_XMM13,
-        REGNUM_XMM14,
-        REGNUM_XMM15,
-#elif TARGET_LOONGARCH64
-        REGNUM_R0,
-        REGNUM_RA,
-        REGNUM_TP,
-        REGNUM_SP,
-        REGNUM_A0,
-        REGNUM_A1,
-        REGNUM_A2,
-        REGNUM_A3,
-        REGNUM_A4,
-        REGNUM_A5,
-        REGNUM_A6,
-        REGNUM_A7,
-        REGNUM_T0,
-        REGNUM_T1,
-        REGNUM_T2,
-        REGNUM_T3,
-        REGNUM_T4,
-        REGNUM_T5,
-        REGNUM_T6,
-        REGNUM_T7,
-        REGNUM_T8,
-        REGNUM_X0,
-        REGNUM_FP,
-        REGNUM_S0,
-        REGNUM_S1,
-        REGNUM_S2,
-        REGNUM_S3,
-        REGNUM_S4,
-        REGNUM_S5,
-        REGNUM_S6,
-        REGNUM_S7,
-        REGNUM_S8,
-        REGNUM_PC,
-#elif TARGET_RISCV64
-        REGNUM_R0,
-        REGNUM_RA,
-        REGNUM_SP,
-        REGNUM_GP,
-        REGNUM_TP,
-        REGNUM_T0,
-        REGNUM_T1,
-        REGNUM_T2,
-        REGNUM_FP,
-        REGNUM_S1,
-        REGNUM_A0,
-        REGNUM_A1,
-        REGNUM_A2,
-        REGNUM_A3,
-        REGNUM_A4,
-        REGNUM_A5,
-        REGNUM_A6,
-        REGNUM_A7,
-        REGNUM_S2,
-        REGNUM_S3,
-        REGNUM_S4,
-        REGNUM_S5,
-        REGNUM_S6,
-        REGNUM_S7,
-        REGNUM_S8,
-        REGNUM_S9,
-        REGNUM_S10,
-        REGNUM_S11,
-        REGNUM_T3,
-        REGNUM_T4,
-        REGNUM_T5,
-        REGNUM_T6,
-        REGNUM_PC,
-#elif TARGET_WASM
-        REGNUM_PC, // wasm doesn't have registers
-#else
-#warning Register numbers not defined on this platform
-#endif
+        REGNUM_X86_EAX = 0,
+        REGNUM_X86_ECX = 1,
+        REGNUM_X86_EDX = 2,
+        REGNUM_X86_EBX = 3,
+        REGNUM_X86_ESP = 4,
+        REGNUM_X86_EBP = 5,
+        REGNUM_X86_ESI = 6,
+        REGNUM_X86_EDI = 7,
+        REGNUM_X86_FP = REGNUM_X86_EBP,
+        REGNUM_X86_SP = REGNUM_X86_ESP,
+        REGNUM_X86_COUNT = 8,
+        REGNUM_X86_AMBIENT_SP = 9,
 
-        REGNUM_COUNT,
+        REGNUM_ARM_R0 = 0,
+        REGNUM_ARM_R1 = 1,
+        REGNUM_ARM_R2 = 2,
+        REGNUM_ARM_R3 = 3,
+        REGNUM_ARM_R4 = 4,
+        REGNUM_ARM_R5 = 5,
+        REGNUM_ARM_R6 = 6,
+        REGNUM_ARM_R7 = 7,
+        REGNUM_ARM_R8 = 8,
+        REGNUM_ARM_R9 = 9,
+        REGNUM_ARM_R10 = 10,
+        REGNUM_ARM_R11 = 11,
+        REGNUM_ARM_R12 = 12,
+        REGNUM_ARM_SP = 13,
+        REGNUM_ARM_LR = 14,
+        REGNUM_ARM_PC = 15,
+        REGNUM_ARM_FP = REGNUM_ARM_R11,
+        REGNUM_ARM_COUNT = 16,
+        REGNUM_ARM_AMBIENT_SP = 17,
 
-        // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
-        // Ambient SP should not change even if there are push/pop operations in the method.
-        REGNUM_AMBIENT_SP,
+        REGNUM_ARM64_X0 = 0,
+        REGNUM_ARM64_X1 = 1,
+        REGNUM_ARM64_X2 = 2,
+        REGNUM_ARM64_X3 = 3,
+        REGNUM_ARM64_X4 = 4,
+        REGNUM_ARM64_X5 = 5,
+        REGNUM_ARM64_X6 = 6,
+        REGNUM_ARM64_X7 = 7,
+        REGNUM_ARM64_X8 = 8,
+        REGNUM_ARM64_X9 = 9,
+        REGNUM_ARM64_X10 = 10,
+        REGNUM_ARM64_X11 = 11,
+        REGNUM_ARM64_X12 = 12,
+        REGNUM_ARM64_X13 = 13,
+        REGNUM_ARM64_X14 = 14,
+        REGNUM_ARM64_X15 = 15,
+        REGNUM_ARM64_X16 = 16,
+        REGNUM_ARM64_X17 = 17,
+        REGNUM_ARM64_X18 = 18,
+        REGNUM_ARM64_X19 = 19,
+        REGNUM_ARM64_X20 = 20,
+        REGNUM_ARM64_X21 = 21,
+        REGNUM_ARM64_X22 = 22,
+        REGNUM_ARM64_X23 = 23,
+        REGNUM_ARM64_X24 = 24,
+        REGNUM_ARM64_X25 = 25,
+        REGNUM_ARM64_X26 = 26,
+        REGNUM_ARM64_X27 = 27,
+        REGNUM_ARM64_X28 = 28,
+        REGNUM_ARM64_FP = 29,
+        REGNUM_ARM64_LR = 30,
+        REGNUM_ARM64_SP = 31,
+        REGNUM_ARM64_PC = 32,
+        REGNUM_ARM64_FP_FIRST = 33,
+        REGNUM_ARM64_V0 = 33,
+        REGNUM_ARM64_V1 = 34,
+        REGNUM_ARM64_V2 = 35,
+        REGNUM_ARM64_V3 = 36,
+        REGNUM_ARM64_V4 = 37,
+        REGNUM_ARM64_V5 = 38,
+        REGNUM_ARM64_V6 = 39,
+        REGNUM_ARM64_V7 = 40,
+        REGNUM_ARM64_V8 = 41,
+        REGNUM_ARM64_V9 = 42,
+        REGNUM_ARM64_V10 = 43,
+        REGNUM_ARM64_V11 = 44,
+        REGNUM_ARM64_V12 = 45,
+        REGNUM_ARM64_V13 = 46,
+        REGNUM_ARM64_V14 = 47,
+        REGNUM_ARM64_V15 = 48,
+        REGNUM_ARM64_V16 = 49,
+        REGNUM_ARM64_V17 = 50,
+        REGNUM_ARM64_V18 = 51,
+        REGNUM_ARM64_V19 = 52,
+        REGNUM_ARM64_V20 = 53,
+        REGNUM_ARM64_V21 = 54,
+        REGNUM_ARM64_V22 = 55,
+        REGNUM_ARM64_V23 = 56,
+        REGNUM_ARM64_V24 = 57,
+        REGNUM_ARM64_V25 = 58,
+        REGNUM_ARM64_V26 = 59,
+        REGNUM_ARM64_V27 = 60,
+        REGNUM_ARM64_V28 = 61,
+        REGNUM_ARM64_V29 = 62,
+        REGNUM_ARM64_V30 = 63,
+        REGNUM_ARM64_V31 = 64,
+        REGNUM_ARM64_COUNT = 65,
+        REGNUM_ARM64_AMBIENT_SP = 66,
 
-#if TARGET_X86
-        REGNUM_FP = REGNUM_EBP,
-        REGNUM_SP = REGNUM_ESP,
-#elif TARGET_AMD64
-        REGNUM_FP = REGNUM_RBP,
-        REGNUM_SP = REGNUM_RSP,
-#elif TARGET_ARM
-        REGNUM_FP = REGNUM_R11,
-#elif TARGET_ARM64
-        //Nothing to do here. FP is already alloted.
-#elif TARGET_LOONGARCH64
-        //Nothing to do here. FP is already alloted.
-#elif TARGET_RISCV64
-        //Nothing to do here. FP is already alloted.
-#else
-        // RegNum values should be properly defined for this platform
-        REGNUM_FP = 0,
-        REGNUM_SP = 1,
-#endif
+        REGNUM_AMD64_RAX = 0,
+        REGNUM_AMD64_RCX = 1,
+        REGNUM_AMD64_RDX = 2,
+        REGNUM_AMD64_RBX = 3,
+        REGNUM_AMD64_RSP = 4,
+        REGNUM_AMD64_RBP = 5,
+        REGNUM_AMD64_RSI = 6,
+        REGNUM_AMD64_RDI = 7,
+        REGNUM_AMD64_R8 = 8,
+        REGNUM_AMD64_R9 = 9,
+        REGNUM_AMD64_R10 = 10,
+        REGNUM_AMD64_R11 = 11,
+        REGNUM_AMD64_R12 = 12,
+        REGNUM_AMD64_R13 = 13,
+        REGNUM_AMD64_R14 = 14,
+        REGNUM_AMD64_R15 = 15,
+        REGNUM_AMD64_FP_FIRST = 16,
+        REGNUM_AMD64_XMM0 = 16,
+        REGNUM_AMD64_XMM1 = 17,
+        REGNUM_AMD64_XMM2 = 18,
+        REGNUM_AMD64_XMM3 = 19,
+        REGNUM_AMD64_XMM4 = 20,
+        REGNUM_AMD64_XMM5 = 21,
+        REGNUM_AMD64_XMM6 = 22,
+        REGNUM_AMD64_XMM7 = 23,
+        REGNUM_AMD64_XMM8 = 24,
+        REGNUM_AMD64_XMM9 = 25,
+        REGNUM_AMD64_XMM10 = 26,
+        REGNUM_AMD64_XMM11 = 27,
+        REGNUM_AMD64_XMM12 = 28,
+        REGNUM_AMD64_XMM13 = 29,
+        REGNUM_AMD64_XMM14 = 30,
+        REGNUM_AMD64_XMM15 = 31,
+        REGNUM_AMD64_FP = REGNUM_AMD64_RBP,
+        REGNUM_AMD64_SP = REGNUM_AMD64_RSP,
+        REGNUM_AMD64_COUNT = 32,
+        REGNUM_AMD64_AMBIENT_SP = 33,
+
+        REGNUM_LOONGARCH64_R0 = 0,
+        REGNUM_LOONGARCH64_RA = 1,
+        REGNUM_LOONGARCH64_TP = 2,
+        REGNUM_LOONGARCH64_SP = 3,
+        REGNUM_LOONGARCH64_A0 = 4,
+        REGNUM_LOONGARCH64_A1 = 5,
+        REGNUM_LOONGARCH64_A2 = 6,
+        REGNUM_LOONGARCH64_A3 = 7,
+        REGNUM_LOONGARCH64_A4 = 8,
+        REGNUM_LOONGARCH64_A5 = 9,
+        REGNUM_LOONGARCH64_A6 = 10,
+        REGNUM_LOONGARCH64_A7 = 11,
+        REGNUM_LOONGARCH64_T0 = 12,
+        REGNUM_LOONGARCH64_T1 = 13,
+        REGNUM_LOONGARCH64_T2 = 14,
+        REGNUM_LOONGARCH64_T3 = 15,
+        REGNUM_LOONGARCH64_T4 = 16,
+        REGNUM_LOONGARCH64_T5 = 17,
+        REGNUM_LOONGARCH64_T6 = 18,
+        REGNUM_LOONGARCH64_T7 = 19,
+        REGNUM_LOONGARCH64_T8 = 20,
+        REGNUM_LOONGARCH64_X0 = 21,
+        REGNUM_LOONGARCH64_FP = 22,
+        REGNUM_LOONGARCH64_S0 = 23,
+        REGNUM_LOONGARCH64_S1 = 24,
+        REGNUM_LOONGARCH64_S2 = 25,
+        REGNUM_LOONGARCH64_S3 = 26,
+        REGNUM_LOONGARCH64_S4 = 27,
+        REGNUM_LOONGARCH64_S5 = 28,
+        REGNUM_LOONGARCH64_S6 = 29,
+        REGNUM_LOONGARCH64_S7 = 30,
+        REGNUM_LOONGARCH64_S8 = 31,
+        REGNUM_LOONGARCH64_PC = 32,
+        REGNUM_LOONGARCH64_COUNT = 33,
+        REGNUM_LOONGARCH64_AMBIENT_SP = 34,
+
+        REGNUM_RISCV64_R0 = 0,
+        REGNUM_RISCV64_RA = 1,
+        REGNUM_RISCV64_SP = 2,
+        REGNUM_RISCV64_GP = 3,
+        REGNUM_RISCV64_TP = 4,
+        REGNUM_RISCV64_T0 = 5,
+        REGNUM_RISCV64_T1 = 6,
+        REGNUM_RISCV64_T2 = 7,
+        REGNUM_RISCV64_FP = 8,
+        REGNUM_RISCV64_S1 = 9,
+        REGNUM_RISCV64_A0 = 10,
+        REGNUM_RISCV64_A1 = 11,
+        REGNUM_RISCV64_A2 = 12,
+        REGNUM_RISCV64_A3 = 13,
+        REGNUM_RISCV64_A4 = 14,
+        REGNUM_RISCV64_A5 = 15,
+        REGNUM_RISCV64_A6 = 16,
+        REGNUM_RISCV64_A7 = 17,
+        REGNUM_RISCV64_S2 = 18,
+        REGNUM_RISCV64_S3 = 19,
+        REGNUM_RISCV64_S4 = 20,
+        REGNUM_RISCV64_S5 = 21,
+        REGNUM_RISCV64_S6 = 22,
+        REGNUM_RISCV64_S7 = 23,
+        REGNUM_RISCV64_S8 = 24,
+        REGNUM_RISCV64_S9 = 25,
+        REGNUM_RISCV64_S10 = 26,
+        REGNUM_RISCV64_S11 = 27,
+        REGNUM_RISCV64_T3 = 28,
+        REGNUM_RISCV64_T4 = 29,
+        REGNUM_RISCV64_T5 = 30,
+        REGNUM_RISCV64_T6 = 31,
+        REGNUM_RISCV64_PC = 32,
+        REGNUM_RISCV64_COUNT = 33,
+        REGNUM_RISCV64_AMBIENT_SP = 34,
+
+        REGNUM_WASM_PC = 0,
+        REGNUM_WASM_FP = 0,
+        REGNUM_WASM_SP = 1,
+        REGNUM_WASM_COUNT = 1,
+        REGNUM_WASM_AMBIENT_SP = 2,
+    }
+
+    internal static RegNum REGNUM_COUNT
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return RegNum.REGNUM_X86_COUNT;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return RegNum.REGNUM_AMD64_COUNT;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return RegNum.REGNUM_ARM_COUNT;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return RegNum.REGNUM_ARM64_COUNT;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return RegNum.REGNUM_LOONGARCH64_COUNT;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return RegNum.REGNUM_RISCV64_COUNT;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return RegNum.REGNUM_WASM_COUNT;
+            }
+
+            throw new FatalJitException("Register numbers are not defined for this target.");
+        }
+    }
+
+    internal static RegNum REGNUM_AMBIENT_SP
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return RegNum.REGNUM_X86_AMBIENT_SP;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return RegNum.REGNUM_AMD64_AMBIENT_SP;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return RegNum.REGNUM_ARM_AMBIENT_SP;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return RegNum.REGNUM_ARM64_AMBIENT_SP;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return RegNum.REGNUM_LOONGARCH64_AMBIENT_SP;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return RegNum.REGNUM_RISCV64_AMBIENT_SP;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return RegNum.REGNUM_WASM_AMBIENT_SP;
+            }
+
+            throw new FatalJitException("Ambient stack-pointer register number is not defined for this target.");
+        }
+    }
+
+    internal static RegNum REGNUM_FP_FIRST
+    {
+        get
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                return RegNum.REGNUM_AMD64_FP_FIRST;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return RegNum.REGNUM_ARM64_FP_FIRST;
+            }
+
+            if (Configuration.TARGET_X86 || Configuration.TARGET_ARM || Configuration.TARGET_LOONGARCH64 ||
+                Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
+            {
+                return (RegNum)0;
+            }
+
+            throw new FatalJitException("Floating-point register numbering is not defined for this target.");
+        }
     }
 }
