@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if SWIFT_SUPPORT
 using System;
 using System.Collections.Generic;
 
@@ -15,6 +14,11 @@ public ref struct SwiftABIClassifier
 
     public SwiftABIClassifier(in ClassifierInfo info)
     {
+        if (!Configuration.SWIFT_SUPPORT)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Swift ABI classification is unsupported for this target.");
+        }
+
         _classifier = new PlatformClassifier(info);
     }
 
@@ -27,13 +31,13 @@ public ref struct SwiftABIClassifier
         {
             var reg = theFixedRetBuffReg(CorInfoCallConvExtension.Swift);
             return AbiPassingInformation.FromSegmentByValue(comp,
-                AbiPassingSegment.InRegister(reg, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(reg, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         if (wellKnownParam is WellKnownArg.SwiftSelf)
         {
             return AbiPassingInformation.FromSegmentByValue(comp,
-                AbiPassingSegment.InRegister(REG_SWIFT_SELF, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(TargetRuntimeMetadata.SwiftSelfRegister, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         if (wellKnownParam is WellKnownArg.SwiftError)
@@ -41,7 +45,7 @@ public ref struct SwiftABIClassifier
             // This pointer parameter is unused. Its nominal error register is handled by
             // the prolog without consuming the ordinary argument-register or stack queues.
             return AbiPassingInformation.FromSegmentByValue(comp,
-                AbiPassingSegment.InRegister(REG_SWIFT_ERROR, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(TargetRuntimeMetadata.SwiftErrorRegister, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         if (type is TYP_STRUCT)
@@ -88,4 +92,3 @@ public ref struct SwiftABIClassifier
         return _classifier.Classify(comp, type, structLayout, wellKnownParam);
     }
 }
-#endif

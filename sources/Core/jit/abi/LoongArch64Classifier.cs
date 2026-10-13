@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System;
 
 namespace RyuJitSharp;
@@ -27,10 +26,12 @@ public ref struct LoongArch64Classifier
     public unsafe AbiPassingInformation Classify(
         Compiler comp, var_types type, ClassLayout? structLayout, WellKnownArg wellKnownParam)
     {
+        var pointerSize = unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+
         if (wellKnownParam is WellKnownArg.SecretStubParam)
         {
             return AbiPassingInformation.FromSegmentByValue(comp,
-                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM_LOONGARCH64, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         assert(!_info.IsVarArgs);
@@ -48,11 +49,11 @@ public ref struct LoongArch64Classifier
             assert(structLayout is not null);
             passedSize = structLayout.Size;
 
-            if (passedSize > MAX_PASS_MULTIREG_BYTES)
+            if (passedSize > MAX_PASS_MULTIREG_BYTES_LOONGARCH64)
             {
                 passedByRef = true;
                 slots = 1;
-                passedSize = TARGET_POINTER_SIZE;
+                passedSize = pointerSize;
                 canPassArgInRegisters = _intRegs.Count > 0;
             }
             else
@@ -95,7 +96,7 @@ public ref struct LoongArch64Classifier
 
                     if (!canPassArgInRegisters)
                     {
-                        slots = (passedSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+                        slots = (passedSize + pointerSize - 1) / pointerSize;
                         // When floating-point registers are exhausted, fall back to integer registers.
                         canPassArgInRegisters = _intRegs.Count >= slots;
                         argRegTypeInStruct1 = TYP_UNKNOWN;
@@ -104,7 +105,7 @@ public ref struct LoongArch64Classifier
                 }
                 else
                 {
-                    slots = (passedSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+                    slots = (passedSize + pointerSize - 1) / pointerSize;
                     canPassArgInRegisters = _intRegs.Count >= slots;
                 }
 
@@ -119,7 +120,7 @@ public ref struct LoongArch64Classifier
         }
         else
         {
-            assert(type.Size <= TARGET_POINTER_SIZE);
+            assert(type.Size <= Configuration.TARGET_POINTER_SIZE);
             slots = 1;
             passedSize = (uint)type.Size;
 
@@ -165,7 +166,7 @@ public ref struct LoongArch64Classifier
             else
             {
                 ref var regs = ref (varTypeIsFloating(type) ? ref _floatRegs : ref _intRegs);
-                var slotSize = Math.Min(passedSize, TARGET_POINTER_SIZE);
+                var slotSize = Math.Min(passedSize, pointerSize);
                 var firstSegment = AbiPassingSegment.InRegister(regs.Dequeue(), 0, unchecked((int)slotSize));
 
                 if (slots == 1)
@@ -176,7 +177,7 @@ public ref struct LoongArch64Classifier
                 {
                     assert(slots == 2);
                     assert(varTypeIsStruct(type));
-                    assert(passedSize > TARGET_POINTER_SIZE);
+                    assert(passedSize > pointerSize);
 
                     info = new AbiPassingInformation(unchecked((int)slots));
                     info.Segments[0] = firstSegment;
@@ -191,22 +192,21 @@ public ref struct LoongArch64Classifier
                     {
                         assert(_intRegs.Count == 0);
                         assert(_stackArgSize == 0);
-                        info.Segments[1] = AbiPassingSegment.OnStack(0, TARGET_POINTER_SIZE, unchecked((int)tailSize));
-                        _stackArgSize = unchecked(_stackArgSize + TARGET_POINTER_SIZE);
+                        info.Segments[1] = AbiPassingSegment.OnStack(0, Configuration.TARGET_POINTER_SIZE, unchecked((int)tailSize));
+                        _stackArgSize = unchecked(_stackArgSize + pointerSize);
                     }
                 }
             }
         }
         else
         {
-            assert((_stackArgSize % TARGET_POINTER_SIZE) == 0);
+            assert((_stackArgSize % Configuration.TARGET_POINTER_SIZE) == 0);
             info = AbiPassingInformation.FromSegment(comp, passedByRef,
                 AbiPassingSegment.OnStack(unchecked((int)_stackArgSize), 0, unchecked((int)passedSize)));
-            _stackArgSize = unchecked(_stackArgSize + roundUp(passedSize, TARGET_POINTER_SIZE));
+            _stackArgSize = unchecked(_stackArgSize + roundUp(passedSize, pointerSize));
             _intRegs.Clear();
         }
 
         return info;
     }
 }
-#endif

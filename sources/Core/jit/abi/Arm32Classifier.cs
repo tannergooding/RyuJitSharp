@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System;
 using System.Numerics;
 
@@ -29,7 +28,7 @@ public ref struct Arm32Classifier
         if (wellKnownParam is WellKnownArg.SecretStubParam)
         {
             return AbiPassingInformation.FromSegmentByValue(comp,
-                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM_ARM, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         var useSoftFP = comp.opts.compUseSoftFP;
@@ -84,7 +83,7 @@ public ref struct Arm32Classifier
         {
             var endOffs = Math.Min((i + 1) * 4, size);
             info.Segments[(int)i] = AbiPassingSegment.InRegister(
-                (regNumber)((uint)REG_R0 + _nextIntReg + i), unchecked((int)(i * 4)),
+                (regNumber)((uint)REG_ARM32_R0 + _nextIntReg + i), unchecked((int)(i * 4)),
                 unchecked((int)(endOffs - (i * 4))));
         }
 
@@ -132,7 +131,7 @@ public ref struct Arm32Classifier
 
             for (uint i = 0; i < numElems; i++)
             {
-                var reg = (regNumber)((uint)REG_F0 + startRegIndex + (i * numRegsPerElem));
+                var reg = (regNumber)((uint)REG_ARM32_F0 + startRegIndex + (i * numRegsPerElem));
                 info.Segments[(int)i] = AbiPassingSegment.InRegister(
                     reg, unchecked((int)(i * (uint)type.Size)), type.Size);
             }
@@ -153,4 +152,3 @@ public ref struct Arm32Classifier
         }
     }
 }
-#endif

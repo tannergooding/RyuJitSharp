@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System.Runtime.CompilerServices;
 
 namespace RyuJitSharp;
@@ -28,10 +27,12 @@ public ref struct RiscV64Classifier
     public unsafe AbiPassingInformation Classify(
         Compiler comp, var_types type, ClassLayout? structLayout, WellKnownArg wellKnownParam)
     {
+        var pointerSize = unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+
         if (wellKnownParam is WellKnownArg.SecretStubParam)
         {
             return AbiPassingInformation.FromSegmentByValue(comp,
-                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM_RISCV64, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         ref readonly var lowering = ref Unsafe.NullRef<CORINFO_FPSTRUCT_LOWERING>();
@@ -45,10 +46,10 @@ public ref struct RiscV64Classifier
             assert(structLayout is not null);
             passedSize = structLayout.Size;
 
-            if (passedSize > MAX_PASS_MULTIREG_BYTES)
+            if (passedSize > MAX_PASS_MULTIREG_BYTES_RISCV64)
             {
                 passedByRef = true;
-                passedSize = TARGET_POINTER_SIZE;
+                passedSize = pointerSize;
             }
             else if (!structLayout.IsBlockLayout)
             {
@@ -79,7 +80,7 @@ public ref struct RiscV64Classifier
         else
         {
             passedSize = (uint)type.Size;
-            assert(passedSize <= TARGET_POINTER_SIZE);
+            assert(passedSize <= pointerSize);
             floatFields = varTypeIsFloating(type) ? 1u : 0u;
         }
 
@@ -128,7 +129,7 @@ public ref struct RiscV64Classifier
         {
             if (_intRegs.Count > 0)
             {
-                if (passedSize <= TARGET_POINTER_SIZE)
+                if (passedSize <= pointerSize)
                 {
                     var segment = AbiPassingSegment.InRegister(_intRegs.Dequeue(), 0, unchecked((int)passedSize));
                     return AbiPassingInformation.FromSegment(comp, passedByRef, segment);
@@ -136,11 +137,11 @@ public ref struct RiscV64Classifier
                 else
                 {
                     assert(varTypeIsStruct(type));
-                    var tailSize = passedSize - TARGET_POINTER_SIZE;
-                    var head = AbiPassingSegment.InRegister(_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE);
+                    var tailSize = passedSize - pointerSize;
+                    var head = AbiPassingSegment.InRegister(_intRegs.Dequeue(), 0, Configuration.TARGET_POINTER_SIZE);
                     var tail = _intRegs.Count > 0
-                        ? AbiPassingSegment.InRegister(_intRegs.Dequeue(), TARGET_POINTER_SIZE, unchecked((int)tailSize))
-                        : PassOnStack(TARGET_POINTER_SIZE, tailSize);
+                        ? AbiPassingSegment.InRegister(_intRegs.Dequeue(), Configuration.TARGET_POINTER_SIZE, unchecked((int)tailSize))
+                        : PassOnStack(Configuration.TARGET_POINTER_SIZE, tailSize);
 
                     return AbiPassingInformation.FromSegments(comp, head, tail);
                 }
@@ -155,12 +156,11 @@ public ref struct RiscV64Classifier
     private AbiPassingSegment PassOnStack(int offset, uint size)
     {
         assert(size > 0);
-        assert(size <= 2 * TARGET_POINTER_SIZE);
-        assert((_stackArgSize % TARGET_POINTER_SIZE) == 0);
+        assert(size <= 2 * Configuration.TARGET_POINTER_SIZE);
+        assert((_stackArgSize % Configuration.TARGET_POINTER_SIZE) == 0);
         var segment = AbiPassingSegment.OnStack(unchecked((int)_stackArgSize), offset, unchecked((int)size));
-        _stackArgSize = unchecked(_stackArgSize + (uint)(size > TARGET_POINTER_SIZE ? 2 * TARGET_POINTER_SIZE : TARGET_POINTER_SIZE));
+        _stackArgSize = unchecked(_stackArgSize + (uint)(size > Configuration.TARGET_POINTER_SIZE ? 2 * Configuration.TARGET_POINTER_SIZE : Configuration.TARGET_POINTER_SIZE));
 
         return segment;
     }
 }
-#endif

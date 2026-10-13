@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public static partial class regNumberExtensions
@@ -15,6 +14,7 @@ public static partial class regNumberExtensions
 
     public static regNumber MakeWasmReg(uint index, WasmValueType type)
     {
+        EnsureWasmTarget();
         assert((WasmValueType.Invalid < type) && (type < WasmValueType.Count));
         if ((index & WASM_REG_TYPE_MASK) != 0)
         {
@@ -27,6 +27,7 @@ public static partial class regNumberExtensions
 
     public static WasmValueType TypeToWasmValueType(var_types type)
     {
+        EnsureWasmTarget();
         return type switch {
             TYP_INT => WasmValueType.I32,
             TYP_LONG => WasmValueType.I64,
@@ -40,6 +41,7 @@ public static partial class regNumberExtensions
 
     public static WasmValueType ActualTypeToWasmValueType(var_types type)
     {
+        EnsureWasmTarget();
         return type switch {
             TYP_BYTE or TYP_UBYTE or TYP_SHORT or TYP_USHORT or TYP_INT => WasmValueType.I32,
             TYP_LONG => WasmValueType.I64,
@@ -53,6 +55,7 @@ public static partial class regNumberExtensions
 
     public static uint UnpackWasmReg(regNumber reg, out WasmValueType type)
     {
+        EnsureWasmTarget();
         var value = (uint)reg;
         type = (WasmValueType)(value >> WASM_REG_TYPE_SHIFT);
         return value & ~WASM_REG_TYPE_MASK;
@@ -78,5 +81,11 @@ public static partial class regNumberExtensions
         return WasmValueType.Invalid;
     }
 
+    private static void EnsureWasmTarget()
+    {
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException("WebAssembly register operations require the WebAssembly target.");
+        }
+    }
 }
-#endif

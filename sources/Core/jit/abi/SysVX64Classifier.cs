@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if UNIX_AMD64_ABI
 namespace RyuJitSharp;
 
 public ref struct SysVX64Classifier
@@ -26,7 +25,7 @@ public ref struct SysVX64Classifier
         if (wellKnownParam is WellKnownArg.SecretStubParam)
         {
             return AbiPassingInformation.FromSegment(comp, false,
-                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM_AMD64, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         var canEnreg = false;
@@ -91,7 +90,7 @@ public ref struct SysVX64Classifier
         }
         else
         {
-            assert((_stackArgSize % TARGET_POINTER_SIZE) == 0);
+            assert((_stackArgSize % Configuration.TARGET_POINTER_SIZE) == 0);
             uint size;
             if (type is TYP_STRUCT)
             {
@@ -105,10 +104,9 @@ public ref struct SysVX64Classifier
 
             passingInfo = AbiPassingInformation.FromSegment(comp, false,
                 AbiPassingSegment.OnStack(_stackArgSize, 0, unchecked((int)size)));
-            _stackArgSize = unchecked(_stackArgSize + (int)roundUp(size, (uint)TARGET_POINTER_SIZE));
+            _stackArgSize = unchecked(_stackArgSize + (int)roundUp(size, (uint)Configuration.TARGET_POINTER_SIZE));
         }
 
         return passingInfo;
     }
 }
-#endif

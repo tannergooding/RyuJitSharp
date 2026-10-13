@@ -3,12 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public partial class Globals
 {
-    // Wasm has no physical callee-saved registers; native CNT_CALLEE_SAVED is zero.
-    public const int CALLEE_SAVED_REG_MAXSZ = 0;
+    // Wasm has no physical callee-saved registers; native CNT_CALLEE_SAVED_WASM is zero.
+    public const int CALLEE_SAVED_REG_MAXSZ_WASM = 0;
 }
-#endif

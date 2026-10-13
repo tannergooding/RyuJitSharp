@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 
 namespace RyuJitSharp;
@@ -22,15 +21,17 @@ public ref struct Arm64Classifier
         _floatRegs = new RegisterQueue(FltArgRegs);
     }
 
-    public readonly int StackSize => unchecked((int)roundUp(_stackArgSize, TARGET_POINTER_SIZE));
+    public readonly int StackSize => unchecked((int)roundUp(_stackArgSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
 
     /// <summary>Classify a parameter for the ARM64 ABI.</summary>
     public unsafe AbiPassingInformation Classify(Compiler comp, var_types type, ClassLayout? structLayout, WellKnownArg wellKnownParam)
     {
+        var pointerSize = unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+
         if (wellKnownParam is WellKnownArg.SecretStubParam)
         {
             return AbiPassingInformation.FromSegment(comp, false,
-                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM_ARM64, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         assert(!varTypeIsMask(type));
@@ -38,7 +39,7 @@ public ref struct Arm64Classifier
         if ((wellKnownParam is WellKnownArg.RetBuffer) && hasFixedRetBuffReg(_info.CallConv))
         {
             return AbiPassingInformation.FromSegment(comp, false,
-                AbiPassingSegment.InRegister(REG_ARG_RET_BUFF, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(REG_ARG_RET_BUFF, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         // HFA/HVAs can use more registers than other structures.
@@ -65,10 +66,10 @@ public ref struct Arm64Classifier
                 }
                 else
                 {
-                    var alignment = compAppleArm64Abi() ? Math.Min(elemSize, (uint)TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+                    var alignment = compAppleArm64Abi() ? Math.Min(elemSize, pointerSize) : pointerSize;
                     _stackArgSize = roundUp(_stackArgSize, alignment);
 
-                    var segment = alignment < TARGET_POINTER_SIZE
+                    var segment = alignment < pointerSize
                         ? AbiPassingSegment.OnStackWithoutConsumingFullSlot(
                             unchecked((int)_stackArgSize), 0, unchecked((int)layout.Size))
                         : AbiPassingSegment.OnStack(unchecked((int)_stackArgSize), 0, unchecked((int)layout.Size));
@@ -98,17 +99,17 @@ public ref struct Arm64Classifier
             {
                 passedByRef = true;
                 slotsNeeded = 1;
-                passedSize = TARGET_POINTER_SIZE;
+                passedSize = pointerSize;
             }
             else
             {
-                slotsNeeded = (structSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+                slotsNeeded = (structSize + pointerSize - 1) / pointerSize;
                 passedSize = structSize;
             }
         }
         else
         {
-            assert(type.Size <= TARGET_POINTER_SIZE);
+            assert(type.Size <= Configuration.TARGET_POINTER_SIZE);
             slotsNeeded = 1;
             passedSize = (uint)type.Size;
         }
@@ -122,11 +123,11 @@ public ref struct Arm64Classifier
             // Only varargs permits splitting a struct between the last register and the stack.
             assert(compFeatureArgSplit());
             result = AbiPassingInformation.FromSegments(comp,
-                AbiPassingSegment.InRegister(_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE),
-                AbiPassingSegment.OnStack(unchecked((int)_stackArgSize), TARGET_POINTER_SIZE,
-                    unchecked((int)(structSize - TARGET_POINTER_SIZE))));
+                AbiPassingSegment.InRegister(_intRegs.Dequeue(), 0, Configuration.TARGET_POINTER_SIZE),
+                AbiPassingSegment.OnStack(unchecked((int)_stackArgSize), Configuration.TARGET_POINTER_SIZE,
+                    unchecked((int)(structSize - Configuration.TARGET_POINTER_SIZE))));
 
-            _stackArgSize = unchecked(_stackArgSize + TARGET_POINTER_SIZE);
+            _stackArgSize = unchecked(_stackArgSize + pointerSize);
         }
         else
         {
@@ -140,7 +141,7 @@ public ref struct Arm64Classifier
 
             if (regs.Count >= slotsNeeded)
             {
-                var slotSize = Math.Min(passedSize, TARGET_POINTER_SIZE);
+                var slotSize = Math.Min(passedSize, pointerSize);
                 var firstSegment = AbiPassingSegment.InRegister(regs.Dequeue(), 0, unchecked((int)slotSize));
 
                 if (slotsNeeded == 1)
@@ -165,17 +166,17 @@ public ref struct Arm64Classifier
 
                 if (compAppleArm64Abi())
                 {
-                    alignment = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : (uint)type.Size;
+                    alignment = varTypeIsStruct(type) ? pointerSize : (uint)type.Size;
                     _stackArgSize = roundUp(_stackArgSize, alignment);
-                    segment = alignment < TARGET_POINTER_SIZE
+                    segment = alignment < pointerSize
                         ? AbiPassingSegment.OnStackWithoutConsumingFullSlot(
                             unchecked((int)_stackArgSize), 0, unchecked((int)passedSize))
                         : AbiPassingSegment.OnStack(unchecked((int)_stackArgSize), 0, unchecked((int)passedSize));
                 }
                 else
                 {
-                    alignment = TARGET_POINTER_SIZE;
-                    assert((_stackArgSize % TARGET_POINTER_SIZE) == 0);
+                    alignment = pointerSize;
+                    assert((_stackArgSize % pointerSize) == 0);
                     segment = AbiPassingSegment.OnStack(unchecked((int)_stackArgSize), 0, unchecked((int)passedSize));
                 }
 
@@ -192,4 +193,3 @@ public ref struct Arm64Classifier
         return result;
     }
 }
-#endif

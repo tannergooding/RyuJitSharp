@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if SWIFT_SUPPORT
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -51,9 +50,10 @@ public partial class Compiler
             }
 #endif
 
-#if FEATURE_IMPLICIT_BYREFS
-            dsc.IsImplicitByRef = abiInfo.IsPassedByReference;
-#endif
+            if (Configuration.FEATURE_IMPLICIT_BYREFS)
+            {
+                dsc.IsImplicitByRef = abiInfo.IsPassedByReference;
+            }
 
             var numRegisters = 0;
 
@@ -85,73 +85,73 @@ public partial class Compiler
 
         lvaParameterStackSize = classifier.StackSize;
 
-#if TARGET_ARM
-        assert(codeGen is not null);
-        ref var armRegSet = ref codeGen.RegSet;
-
-        // The ARM32 profiling enter helper does not preserve argument registers.
-        if (compIsProfilerHookNeeded)
+        if (Configuration.TARGET_ARM)
         {
-            armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(SRBM_ARG_REGS);
-        }
+            assert(codeGen is not null);
+            ref var armRegSet = ref codeGen.RegSet;
 
-        var doubleAlignMask = SRBM_NONE;
-
-        for (var i = 0; i < info.compArgsCount; i++)
-        {
-            ref readonly var abiInfo = ref lvaGetParameterAbiInfo(i);
-            ref var varDsc = ref lvaGetDesc(i);
-            var useSoftFP = opts.compUseSoftFP;
-            var preSpill = useSoftFP && varTypeIsFloating(varDsc.Type);
-            preSpill |= varDsc.Type is TYP_STRUCT;
-
-            if (!preSpill)
+            // The ARM32 profiling enter helper does not preserve argument registers.
+            if (compIsProfilerHookNeeded)
             {
-                continue;
+                armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(SRBM_ARG_REGS);
             }
 
-            var regs = SRBM_NONE;
+            var doubleAlignMask = SRBM_NONE;
 
-            foreach (ref readonly var segment in abiInfo.Segments)
+            for (var i = 0; i < info.compArgsCount; i++)
             {
-                if (segment.IsPassedInRegister && genIsValidIntReg(segment.Register))
+                ref readonly var abiInfo = ref lvaGetParameterAbiInfo(i);
+                ref var varDsc = ref lvaGetDesc(i);
+                var useSoftFP = opts.compUseSoftFP;
+                var preSpill = useSoftFP && varTypeIsFloating(varDsc.Type);
+                preSpill |= varDsc.Type is TYP_STRUCT;
+
+                if (!preSpill)
                 {
-                    regs |= segment.RegisterMask;
+                    continue;
+                }
+
+                var regs = SRBM_NONE;
+
+                foreach (ref readonly var segment in abiInfo.Segments)
+                {
+                    if (segment.IsPassedInRegister && genIsValidIntReg(segment.Register))
+                    {
+                        regs |= segment.RegisterMask;
+                    }
+                }
+
+                armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(regs);
+
+                if (varDsc.lvStructDoubleAlign || (varDsc.Type is TYP_DOUBLE))
+                {
+                    doubleAlignMask |= regs;
                 }
             }
 
-            armRegSet.rsMaskPreSpillRegArg |= new regMaskTP(regs);
-
-            if (varDsc.lvStructDoubleAlign || (varDsc.Type is TYP_DOUBLE))
+            if (doubleAlignMask != SRBM_NONE)
             {
-                doubleAlignMask |= regs;
-            }
-        }
+                assert(SRBM_ARG_REGS == (regMask)0xF);
+                assert((doubleAlignMask & SRBM_ARG_REGS) == doubleAlignMask);
 
-        if (doubleAlignMask != SRBM_NONE)
-        {
-            assert(SRBM_ARG_REGS == (regMask)0xF);
-            assert((doubleAlignMask & SRBM_ARG_REGS) == doubleAlignMask);
-
-            if ((doubleAlignMask != SRBM_NONE) && (doubleAlignMask != SRBM_ARG_REGS))
-            {
-                // Double-aligned arguments start at r0 or r2. A 12-byte struct can
-                // occupy r0-r2, so prespilling r2 without r3 must be padded to preserve alignment.
-                assert((doubleAlignMask == (regMask)0b0011) || (doubleAlignMask == (regMask)0b1100) ||
-                       (doubleAlignMask == (regMask)0b0111));
-
-                var startsAtR0 = (doubleAlignMask & (regMask)1) is not 0;
-                var r2XorR3 = ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_R2)) == RBM_NONE) !=
-                              ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_R3)) == RBM_NONE);
-
-                if (startsAtR0 && r2XorR3)
+                if ((doubleAlignMask != SRBM_NONE) && (doubleAlignMask != SRBM_ARG_REGS))
                 {
-                    armRegSet.rsMaskPreSpillAlign =
-                        (~armRegSet.rsMaskPreSpillRegArg & ~new regMaskTP(doubleAlignMask)) & new regMaskTP(SRBM_ARG_REGS);
+                    // Double-aligned arguments start at r0 or r2. A 12-byte struct can
+                    // occupy r0-r2, so prespilling r2 without r3 must be padded to preserve alignment.
+                    assert((doubleAlignMask == (regMask)0b0011) || (doubleAlignMask == (regMask)0b1100) ||
+                           (doubleAlignMask == (regMask)0b0111));
+
+                    var startsAtR0 = (doubleAlignMask & (regMask)1) is not 0;
+                    var r2XorR3 = ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_ARM64_R2)) == RBM_NONE) !=
+                                  ((armRegSet.rsMaskPreSpillRegArg & new regMaskTP(SRBM_ARM64_R3)) == RBM_NONE);
+
+                    if (startsAtR0 && r2XorR3)
+                    {
+                        armRegSet.rsMaskPreSpillAlign =
+                            (~armRegSet.rsMaskPreSpillRegArg & ~new regMaskTP(doubleAlignMask)) & new regMaskTP(SRBM_ARG_REGS);
+                    }
                 }
             }
         }
-#endif
     }
 }
-#endif

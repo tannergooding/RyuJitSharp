@@ -9,11 +9,15 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_X86
     public unsafe bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Trivial pointer-sized struct classification requires x86.");
+        }
+
         assert(info.compCompHnd->isValueClass(clsHnd));
-        if (info.compCompHnd->getClassSize(clsHnd) != TARGET_POINTER_SIZE)
+        if (info.compCompHnd->getClassSize(clsHnd) != Configuration.TARGET_POINTER_SIZE)
         {
             return false;
         }
@@ -45,12 +49,16 @@ public partial class Compiler
             }
         }
     }
-#endif
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
     /// <remarks>Boxed records keep returned references stable when the cache grows.</remarks>
     public unsafe ref CORINFO_FPSTRUCT_LOWERING GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle)
     {
+        if (!Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Floating-point struct lowering is unsupported for this target.");
+        }
+
         var cache = _fpStructLoweringCache ??= [];
         var key = new Pointer<CORINFO_CLASS_STRUCT_>(structHandle);
 
@@ -92,5 +100,4 @@ public partial class Compiler
 
         return ref lowering.Value;
     }
-#endif
 }

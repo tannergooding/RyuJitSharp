@@ -112,7 +112,7 @@ public partial struct AbiPassingInformation
         {
             count = unchecked(count + (segment.IsPassedInRegister
                 ? 1u
-                : ((uint)segment.Size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE));
+                : ((uint)segment.Size + unchecked((uint)Configuration.TARGET_POINTER_SIZE) - 1) / unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
         }
 
         return unchecked((int)count);
@@ -174,7 +174,7 @@ public partial struct AbiPassingInformation
 #if DEBUG
         if (passedByRef)
         {
-            assert(segment.Size == TARGET_POINTER_SIZE);
+            assert(segment.Size == Configuration.TARGET_POINTER_SIZE);
             assert(!segment.IsPassedInRegister ||
                    (segment.GetRegisterType().ActualType == TYP_I_IMPL.ActualType));
         }

@@ -45,12 +45,10 @@ public struct AbiPassingSegment
             var regNum = Register;
             var regMsk = (regMask)(1L << ((int)(regNum) - RegisterMaskBase));
 
-#if TARGET_ARM
-            if (genIsValidFloatReg(regNum) && (Size == 8))
+            if (Configuration.TARGET_ARM && genIsValidFloatReg(regNum) && (Size == 8))
             {
                 regMsk |= (regMask)((ulong)regMsk << 1);
             }
-#endif
 
             return regMsk;
         }
@@ -62,22 +60,23 @@ public struct AbiPassingSegment
         {
             var regNum = _register;
 
-#if FEATURE_MASKED_HW_INTRINSICS
-            if (regNum >= REG_MASK_FIRST)
+            if (Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+                (regNum >= TargetRuntimeMetadata.MaskRegisterFirst))
             {
-                assert(regNum <= REG_MASK_LAST);
-                return (int)(REG_MASK_FIRST);
-            }
-#endif
-
-            if (regNum >= REG_FP_FIRST)
-            {
-                assert(regNum <= REG_FP_LAST);
-                return (int)(REG_FP_FIRST);
+                assert(regNum <= TargetRuntimeMetadata.MaskRegisterLast);
+                return (int)TargetRuntimeMetadata.MaskRegisterFirst;
             }
 
-            assert(regNum is >= REG_INT_FIRST and <= REG_INT_LAST);
-            return (int)(REG_INT_FIRST);
+            var fpFirst = TargetRuntimeMetadata.FloatingRegisterFirst;
+            if (regNum >= fpFirst)
+            {
+                assert(regNum <= TargetRuntimeMetadata.FloatingRegisterLast);
+                return (int)fpFirst;
+            }
+
+            var intFirst = TargetRuntimeMetadata.IntegerRegisterFirst;
+            assert((regNum >= intFirst) && (regNum <= TargetRuntimeMetadata.IntegerRegisterLast));
+            return (int)intFirst;
         }
     }
 
@@ -110,7 +109,7 @@ public struct AbiPassingSegment
         get
         {
             assert(Debugger.IsAttached || IsPassedOnStack);
-            return _register == REG_STACK_FULL_SLOT ? roundUp(Size, TARGET_POINTER_SIZE) : Size;
+            return _register == REG_STACK_FULL_SLOT ? roundUp(Size, Configuration.TARGET_POINTER_SIZE) : Size;
         }
     }
 
@@ -172,52 +171,56 @@ public struct AbiPassingSegment
     public readonly var_types GetRegisterType()
     {
         var regNum = Register;
-#if TARGET_WASM
-        var isFloatReg = genIsValidFloatReg(regNum);
-#else
-        var regMskBase = RegisterMaskBase;
+        var regMskBase = REG_NA;
+        bool isFloatReg;
 
-#if FEATURE_MASKED_HW_INTRINSICS
-        if (regMskBase == (int)(REG_MASK_FIRST))
+        if (Configuration.TARGET_WASM)
         {
-            assert(Size is 1 or 2 or 4 or 8);
-            return TYP_MASK;
+            isFloatReg = genIsValidFloatReg(regNum);
         }
-#endif
-
-        var isFloatReg = regMskBase == (int)REG_FP_FIRST;
-#endif
+        else
+        {
+            regMskBase = (regNumber)RegisterMaskBase;
+            if (Configuration.FEATURE_MASKED_HW_INTRINSICS &&
+                (regMskBase == TargetRuntimeMetadata.MaskRegisterFirst))
+            {
+                assert(Size is 1 or 2 or 4 or 8);
+                return TYP_MASK;
+            }
+            isFloatReg = regMskBase == TargetRuntimeMetadata.FloatingRegisterFirst;
+        }
 
         if (isFloatReg)
         {
-            return Size switch {
-                4 => TYP_FLOAT,
-                8 => TYP_DOUBLE,
-#if FEATURE_SIMD && TARGET_WASM
-                12 => TYP_SIMD16,
-#endif
-#if FEATURE_SIMD
-                16 => TYP_SIMD16,
-#endif
-                _ => UnexpectedRegisterSize(true),
-            };
+            if (Size is 4)
+            {
+                return TYP_FLOAT;
+            }
+            if (Size is 8)
+            {
+                return TYP_DOUBLE;
+            }
+            if ((Size is 12) && Configuration.TARGET_WASM && Configuration.FEATURE_SIMD)
+            {
+                return TYP_SIMD16;
+            }
+            if ((Size is 16) && Configuration.FEATURE_SIMD)
+            {
+                return TYP_SIMD16;
+            }
+            return UnexpectedRegisterSize(true);
         }
-        
-#if !TARGET_WASM
-        assert(regMskBase == (int)(REG_INT_FIRST));
-#endif
+
+        if (!Configuration.TARGET_WASM)
+        {
+            assert((int)regMskBase == (int)TargetRuntimeMetadata.IntegerRegisterFirst);
+        }
 
         return Size switch {
             1 => TYP_UBYTE,
             2 => TYP_USHORT,
-            3 => TYP_INT,
-            4 => TYP_INT,
-#if TARGET_64BIT || TARGET_WASM
-            5 => TYP_LONG,
-            6 => TYP_LONG,
-            7 => TYP_LONG,
-            8 => TYP_LONG,
-#endif
+            3 or 4 => TYP_INT,
+            _ when (Configuration.TARGET_64BIT || Configuration.TARGET_WASM) && (Size is >= 5 and <= 8) => TYP_LONG,
             _ => UnexpectedRegisterSize(false),
         };
     }
@@ -233,17 +236,16 @@ public struct AbiPassingSegment
 
     public readonly var_types GetRegisterType(ClassLayout? layout)
     {
-#if TARGET_WASM
-        if ((layout is not null) && regNumberExtensions.IsValidWasmIntReg(_register))
-#else
-        if ((layout is not null) && (RegisterMaskBase == (int)(REG_INT_FIRST)))
-#endif
+        if ((layout is not null) &&
+            (Configuration.TARGET_WASM
+                ? regNumberExtensions.IsValidWasmIntReg(_register)
+                : (RegisterMaskBase == (int)TargetRuntimeMetadata.IntegerRegisterFirst)))
         {
             assert(Offset < layout.Size);
 
-            if (((Offset % TARGET_POINTER_SIZE) == 0) && (Size == TARGET_POINTER_SIZE))
+            if (((Offset % Configuration.TARGET_POINTER_SIZE) == 0) && (Size == Configuration.TARGET_POINTER_SIZE))
             {
-                return layout.GetGCPtrType(Offset / TARGET_POINTER_SIZE);
+                return layout.GetGCPtrType(Offset / Configuration.TARGET_POINTER_SIZE);
             }
         }
         return GetRegisterType();

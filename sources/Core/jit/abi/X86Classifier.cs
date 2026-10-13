@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 namespace RyuJitSharp;
 
 public ref struct X86Classifier
@@ -21,7 +20,7 @@ public ref struct X86Classifier
         {
             case CorInfoCallConvExtension.Thiscall:
             {
-                _regs = new RegisterQueue([REG_ECX]);
+                _regs = new RegisterQueue([REG_X86_ECX]);
                 break;
             }
 
@@ -57,7 +56,7 @@ public ref struct X86Classifier
         if (wellKnownParam is WellKnownArg.SecretStubParam)
         {
             return AbiPassingInformation.FromSegmentByValue(comp,
-                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM, 0, TARGET_POINTER_SIZE));
+                AbiPassingSegment.InRegister(REG_SECRET_STUB_PARAM_X86, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         uint size;
@@ -71,7 +70,7 @@ public ref struct X86Classifier
         {
             size = (uint)type.Size;
         }
-        var numSlots = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+        var numSlots = (size + Configuration.TARGET_POINTER_SIZE - 1) / Configuration.TARGET_POINTER_SIZE;
         var canEnreg = false;
 
         if ((_regs.Count >= numSlots) && (wellKnownParam is not WellKnownArg.X86TailCallSpecialArg))
@@ -113,9 +112,9 @@ public ref struct X86Classifier
         }
         else
         {
-            assert((_stackArgSize % TARGET_POINTER_SIZE) == 0);
+            assert((_stackArgSize % Configuration.TARGET_POINTER_SIZE) == 0);
             uint offset;
-            var roundedArgSize = roundUp(size, TARGET_POINTER_SIZE);
+            var roundedArgSize = roundUp(size, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
 
             if (_info.CallConv is CorInfoCallConvExtension.Managed)
             {
@@ -135,4 +134,3 @@ public ref struct X86Classifier
         return AbiPassingInformation.FromSegmentByValue(comp, segment);
     }
 }
-#endif
