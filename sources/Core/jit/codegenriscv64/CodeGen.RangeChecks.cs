@@ -38,12 +38,13 @@ public sealed partial class CodeGen
             indexReg = tempReg;
         }
 
-#if DEBUG
-        var lengthType = genActualType(length);
-        var indexType = genActualType(index);
-        assert(lengthType is TYP_INT or TYP_LONG);
-        assert(indexType is TYP_INT or TYP_LONG);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var lengthType = genActualType(length);
+            var indexType = genActualType(index);
+            assert(lengthType is TYP_INT or TYP_LONG);
+            assert(indexType is TYP_INT or TYP_LONG);
+        }
 
         genJumpToThrowHlpBlk_laRiscV64(boundsCheck.ThrowKind, INS_bgeu, indexReg, null, lengthReg);
     }

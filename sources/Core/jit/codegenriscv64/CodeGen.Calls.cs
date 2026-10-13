@@ -69,16 +69,17 @@ public sealed partial class CodeGen
         genCallInstructionRiscV64(call);
         genDefinePendingCallLabel(call);
 
-#if DEBUG
-        var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH_RISCV64 | SRBM_FLT_CALLEE_TRASH_RISCV64);
-        if (call.IsHelperCall())
+        if (Configuration.DEBUG)
         {
-            killMask = _compiler.compHelperCallKillSet(call.HelperNum);
-        }
+            var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH_RISCV64 | SRBM_FLT_CALLEE_TRASH_RISCV64);
+            if (call.IsHelperCall())
+            {
+                killMask = _compiler.compHelperCallKillSet(call.HelperNum);
+            }
 
-        assert((GCInfo.gcRegGCrefSetCur & killMask).IsEmpty);
-        assert((GCInfo.gcRegByrefSetCur & killMask).IsEmpty);
-#endif
+            assert((GCInfo.gcRegGCrefSetCur & killMask).IsEmpty);
+            assert((GCInfo.gcRegByrefSetCur & killMask).IsEmpty);
+        }
 
         var returnType = call.Type;
         if (returnType is not TYP_VOID)

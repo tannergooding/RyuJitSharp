@@ -274,15 +274,16 @@ public sealed partial class CodeGen
                 // The caller already knows the exception target.
                 excpRaisingBlock = failBlk;
 
-#if DEBUG
-                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
-                assert(add.acdUsed);
-                assert(ReferenceEquals(excpRaisingBlock, add.acdDstBlk));
-                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                if (Configuration.DEBUG)
                 {
-                    assert(add.acdStkLvlInit || IsFramePointerUsed);
+                    var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                    assert(add.acdUsed);
+                    assert(ReferenceEquals(excpRaisingBlock, add.acdDstBlk));
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                    {
+                        assert(add.acdStkLvlInit || IsFramePointerUsed);
+                    }
                 }
-#endif
             }
             else
             {
