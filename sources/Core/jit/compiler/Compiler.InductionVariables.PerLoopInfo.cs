@@ -49,12 +49,13 @@ internal sealed class PerLoopInfo
             return info;
         }
 
-#if DEBUG
-        for (var child = loop.Child; child is not null; child = child.Sibling)
+        if (Configuration.DEBUG)
         {
-            assert(_visitedBlocks.Contains(child.Header));
+            for (var child = loop.Child; child is not null; child = child.Sibling)
+            {
+                assert(_visitedBlocks.Contains(child.Header));
+            }
         }
-#endif
         info.LocalToOccurrences = [];
         _ = loop.VisitLoopBlocksReversePostOrder(block => {
             // Child loop maps already own their blocks, so each occurrence belongs to one map.
@@ -74,7 +75,7 @@ internal sealed class PerLoopInfo
                     }
 
                     var local = node.AsLclVarCommon();
-                    info.LocalToOccurrences.TryGetValue(local.LclNum, out var previous);
+                    _ = info.LocalToOccurrences.TryGetValue(local.LclNum, out var previous);
                     info.LocalToOccurrences[local.LclNum] = new Occurrence(block, stmt, local, previous);
                 }
             }

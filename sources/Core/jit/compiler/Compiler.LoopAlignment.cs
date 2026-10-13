@@ -89,10 +89,10 @@ public partial class Compiler
 
         if (!fgMightHaveNaturalLoops)
         {
-#if DEBUG
-            var checkLoops = FlowGraphNaturalLoops.Find(fgComputeDfs());
-            assert(checkLoops.NumLoops == 0);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(FlowGraphNaturalLoops.Find(fgComputeDfs()).NumLoops == 0);
+            }
             JITDUMP("Not checking for any loops as fgMightHaveNaturalLoops is false\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }

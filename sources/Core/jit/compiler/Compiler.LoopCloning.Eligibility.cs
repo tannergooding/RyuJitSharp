@@ -60,10 +60,11 @@ public partial class Compiler
                     $"({iterInfo.IterOper().ToString()[3..]}) of the loop.\n");
                 return false;
             }
-#if DEBUG
-            assert(iterInfo.Iterator().Oper is genTreeOps.GT_LCL_VAR &&
-                iterInfo.Iterator().AsLclVarCommon().LclNum == iterInfo.IterVar);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(iterInfo.Iterator().Oper is genTreeOps.GT_LCL_VAR &&
+                    iterInfo.Iterator().AsLclVarCommon().LclNum == iterInfo.IterVar);
+            }
         }
         return true;
     }
