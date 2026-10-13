@@ -26,13 +26,11 @@ public sealed partial class CodeGen
 
         var srcNode = tree.Op1;
 
-#if DEBUG
-        if (tree.IntrinsicName is (> NI_SYSTEM_MATH_START) and (< NI_SYSTEM_MATH_END))
+        if (Configuration.DEBUG && tree.IntrinsicName is (> NI_SYSTEM_MATH_START) and (< NI_SYSTEM_MATH_END))
         {
             assert(varTypeIsFloating(srcNode.Type));
             assert(srcNode.Type == tree.Type);
         }
-#endif
 
         switch (tree.IntrinsicName)
         {
