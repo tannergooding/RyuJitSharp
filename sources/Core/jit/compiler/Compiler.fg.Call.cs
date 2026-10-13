@@ -318,30 +318,32 @@ public partial class Compiler
         }
 
         assert(fgMorphStmt is not null);
-#if DEBUG
-        var statementExpression = fgMorphStmt.RootNode;
-        if (statementExpression.Oper is GT_CALL)
+        if (Configuration.DEBUG)
         {
-            assert(statementExpression == call);
-        }
-        else
-        {
-            assert(statementExpression.Oper is GT_RETURN or GT_STORE_LCL_VAR or GT_COMMA);
-            if (statementExpression.Oper is GT_COMMA)
+            var statementExpression = fgMorphStmt.RootNode;
+            if (statementExpression.Oper is GT_CALL)
             {
-                assert(statementExpression.AsOp().Op2.IsNothingNode);
+                assert(statementExpression == call);
             }
-            var treeWithCall = statementExpression.Oper is GT_COMMA
-                ? statementExpression.AsOp().Op1
-                : statementExpression.AsUnOp().Op1;
-            while (treeWithCall.Oper is GT_CAST)
+            else
             {
-                assert(!treeWithCall.HasOverflowCheck);
-                treeWithCall = treeWithCall.AsCast().CastOp;
+                assert(statementExpression.Oper is GT_RETURN or GT_STORE_LCL_VAR or GT_COMMA);
+                if (statementExpression.Oper is GT_COMMA)
+                {
+                    assert(statementExpression.AsOp().Op2.IsNothingNode);
+                }
+
+                var treeWithCall = statementExpression.Oper is GT_COMMA
+                    ? statementExpression.AsOp().Op1
+                    : statementExpression.AsUnOp().Op1;
+                while (treeWithCall.Oper is GT_CAST)
+                {
+                    assert(!treeWithCall.HasOverflowCheck);
+                    treeWithCall = treeWithCall.AsCast().CastOp;
+                }
+                assert(treeWithCall == call);
             }
-            assert(treeWithCall == call);
         }
-#endif
         var originalCallType = call.Type;
         GenTree result;
         if (!canFastTailCall && !tailCallViaJitHelper)
