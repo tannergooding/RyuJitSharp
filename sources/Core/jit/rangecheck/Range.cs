@@ -4,10 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using System.Globalization;
-#if DEBUG
 using System.Diagnostics;
-#endif
+using System.Globalization;
 
 namespace RyuJitSharp;
 
@@ -20,9 +18,7 @@ public enum LimitType
     Unknown,
 }
 
-#if DEBUG
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
-#endif
 public struct Limit
 {
     public Limit(LimitType type)
@@ -115,10 +111,9 @@ public struct Limit
         };
     }
 
-#if DEBUG
-    private readonly string DebuggerDisplayText => IsConstant ? $"const: {Constant}" : ToString();
+    private readonly string DebuggerDisplayText => IsConstant ? $"const: {Constant}" : FormatValue();
 
-    public override readonly string ToString() => Type switch
+    internal readonly string FormatValue() => Type switch
     {
         LimitType.Undef => "Undef",
         LimitType.Unknown => "Unknown",
@@ -127,12 +122,13 @@ public struct Limit
         LimitType.Constant => Constant.ToString(CultureInfo.InvariantCulture),
         _ => FormattableString.Invariant($"InvalidLimit({(int)Type})"),
     };
+
+#if DEBUG
+    public override readonly string ToString() => FormatValue();
 #endif
 }
 
-#if DEBUG
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
-#endif
 public struct Range
 {
     public Range(Limit limit)
@@ -194,12 +190,14 @@ public struct Range
         return false;
     }
 
-#if DEBUG
     private readonly string DebuggerDisplayText =>
         (LowerLimit.IsConstant && UpperLimit.IsConstant)
             ? $"const range: [{LowerLimit.Constant}..{UpperLimit.Constant}]"
-            : ToString();
+            : FormatValue();
 
-    public override readonly string ToString() => $"<{LowerLimit}, {UpperLimit}>";
+    internal readonly string FormatValue() => $"<{LowerLimit.FormatValue()}, {UpperLimit.FormatValue()}>";
+
+#if DEBUG
+    public override readonly string ToString() => FormatValue();
 #endif
 }

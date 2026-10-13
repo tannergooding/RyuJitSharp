@@ -70,6 +70,29 @@ internal static class DebuggerProxyTests
         AssertDebuggerDisplay<ValueNumPair>("VNP=[L: {Liberal,h}, C: {Conservative,h}]");
     }
 
+    [Test]
+    public static void RangeDebuggerDisplaysPreserveTheToStringContract()
+    {
+        AssertDebuggerDisplay<Limit>("{DebuggerDisplayText,nq}");
+        AssertDebuggerDisplay<Range>("{DebuggerDisplayText,nq}");
+
+        const BindingFlags declaredInstanceMethod =
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
+        Assert.That(
+            typeof(Limit).GetMethod(nameof(object.ToString), declaredInstanceMethod) is not null,
+            Is.EqualTo(Configuration.DEBUG));
+        Assert.That(
+            typeof(Range).GetMethod(nameof(object.ToString), declaredInstanceMethod) is not null,
+            Is.EqualTo(Configuration.DEBUG));
+
+#if DEBUG
+        Assert.That(new Limit(LimitType.Unknown).ToString(), Is.EqualTo("Unknown"));
+        Assert.That(
+            new Range(new Limit(LimitType.Unknown), new Limit(LimitType.Constant, 3)).ToString(),
+            Is.EqualTo("<Unknown, 3>"));
+#endif
+    }
+
     private static void AssertDebuggerMetadata<T>(string displayValue, Type proxyType)
     {
         var type = typeof(T);

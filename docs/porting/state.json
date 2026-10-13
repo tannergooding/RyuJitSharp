@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Assess whether the DEBUG-only debugger displays in sources\\Core\\jit\\rangecheck\\Range.cs can be available in Release without adding Release ToString overrides; preserve the current Release ToString contract. Keep register/handle and native-interoperability paths deferred, and leave the dynamic TLS input-ownership boundary unchanged.",
+    "nextAction": "Inspect the DEBUG-gated debugger display attributes and their supporting members in sources\\Core\\jit\\DebuggerDisplays.cs. Separate metadata-only cases from target-specific or behavior-bearing helpers before removing guards; keep register/ABI paths deferred and leave the dynamic TLS input-ownership boundary unchanged.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources."
