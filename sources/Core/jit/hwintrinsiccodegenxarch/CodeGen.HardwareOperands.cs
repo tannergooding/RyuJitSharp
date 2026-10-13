@@ -337,22 +337,25 @@ public sealed partial class CodeGen
             op1Reg = targetReg;
             if (op2.IsContained)
             {
-#if DEBUG
-                assert(node.HWIntrinsicId == NI_AVX512_TernaryLogic);
-                var info = TernaryLogicInfo.Lookup(unchecked((byte)immediate));
-                assert(info.GetAllUseFlags() == TernaryLogicUseFlags.C);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(node.HWIntrinsicId == NI_AVX512_TernaryLogic);
+                    var info = TernaryLogicInfo.Lookup(unchecked((byte)immediate));
+                    assert(info.GetAllUseFlags() == TernaryLogicUseFlags.C);
+                }
+
                 op2Reg = targetReg;
             }
             else
             {
-#if DEBUG
-                if (node.HWIntrinsicId == NI_AVX512_TernaryLogic)
+                if (Configuration.DEBUG)
                 {
-                    var info = TernaryLogicInfo.Lookup(unchecked((byte)immediate));
-                    assert(info.GetAllUseFlags() == TernaryLogicUseFlags.BC);
+                    if (node.HWIntrinsicId == NI_AVX512_TernaryLogic)
+                    {
+                        var info = TernaryLogicInfo.Lookup(unchecked((byte)immediate));
+                        assert(info.GetAllUseFlags() == TernaryLogicUseFlags.BC);
+                    }
                 }
-#endif
             }
         }
         else if (node.HWIntrinsicId == NI_AVX512_TernaryLogic)
