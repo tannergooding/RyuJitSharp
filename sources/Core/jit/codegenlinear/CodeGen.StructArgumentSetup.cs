@@ -96,19 +96,21 @@ public sealed partial class CodeGen
 
             // We can't write beyond the arg area unless this is a tail call, in which
             // case the first stack argument is the base of the incoming arg area.
-#if DEBUG
-            var areaSize = _compiler.lvaLclStackHomeSize(outArgVarNum);
-            if (Configuration.FEATURE_FASTTAILCALL)
+            if (Configuration.DEBUG)
             {
-                var call = putArgStk.Call;
-                assert(call is not null);
-                if (call.IsFastTailCall)
+                var areaSize = _compiler.lvaLclStackHomeSize(outArgVarNum);
+                if (Configuration.FEATURE_FASTTAILCALL)
                 {
-                    areaSize = _compiler.lvaParameterStackSize;
+                    var call = putArgStk.Call;
+                    assert(call is not null);
+                    if (call.IsFastTailCall)
+                    {
+                        areaSize = _compiler.lvaParameterStackSize;
+                    }
                 }
+
+                assert(unchecked((uint)(thisFieldOffset + type.Size)) <= unchecked((uint)areaSize));
             }
-            assert(unchecked((uint)(thisFieldOffset + type.Size)) <= unchecked((uint)areaSize));
-#endif
         }
     }
 
