@@ -37,6 +37,36 @@ internal static unsafe class AsyncResumeTableTargetTests
 #endif
     }
 
+    [Test]
+    public static void CodeGenOffsetsUseTargetSizedEntries()
+    {
+        WithEmitter((compiler, emitter, context) =>
+        {
+            compiler.compSuspensionPoints =
+            [
+                new ICorDebugInfo.AsyncSuspensionPoint(),
+                new ICorDebugInfo.AsyncSuspensionPoint(),
+            ];
+            _ = emitter.emitDataConst(new byte[4], 4, TYP_INT);
+
+            var codeGen = compiler.codeGen as CodeGen
+                ?? throw new AssertionException("The emitter fixture must create a concrete CodeGen.");
+            var baseOffset = codeGen.genEmitAsyncResumeInfoTable(out var table);
+            var targetPointerSize = (uint)TARGET_POINTER_SIZE;
+            var expectedOffset = (4u + targetPointerSize - 1) & ~(targetPointerSize - 1);
+
+            Assert.That(baseOffset, Is.EqualTo(expectedOffset));
+            Assert.That(table.dsSize, Is.EqualTo(2u * EntrySize));
+            for (var state = 0u; state < 2u; state++)
+            {
+                var handle = codeGen.genEmitAsyncResumeInfo(state);
+                Assert.That(Compiler.eeIsJitDataOffs(handle), Is.True);
+                Assert.That(Compiler.eeGetJitDataOffs(handle), Is.EqualTo(baseOffset + (state * EntrySize)));
+            }
+            Assert.That(context->Queries, Is.EqualTo(1));
+        });
+    }
+
     [TestCase(0u, 0u)]
     [TestCase(1u, 0u)]
     [TestCase(3u, 0u)]

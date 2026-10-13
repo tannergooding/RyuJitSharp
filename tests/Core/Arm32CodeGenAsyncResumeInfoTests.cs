@@ -47,11 +47,11 @@ internal static unsafe class Arm32CodeGenAsyncResumeInfoTests
             var descriptors = AsyncResumeCodeGenTestSupport.Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Is.Not.Empty);
             Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_movw));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)4));
+            Assert.That(Emitter.emitGetInsSC(descriptors[0]), Is.EqualTo((nint)4));
             Assert.That(failure, Is.Null);
             Assert.That(descriptors, Has.Count.EqualTo(2));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_movt));
-            Assert.That(codeGen.Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)4));
+            Assert.That(Emitter.emitGetInsSC(descriptors[1]), Is.EqualTo((nint)4));
             Assert.That(Compiler.eeGetJitDataOffs(
                 codeGen.genEmitAsyncResumeInfo(1)), Is.EqualTo(12));
             Assert.That(codeGen.GCInfo.gcRegGCrefSetCur, Is.EqualTo(RBM_NONE));

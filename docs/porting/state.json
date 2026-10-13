@@ -9,11 +9,23 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "B209-target-width-closure",
-    "nextAction": "Port the B209 target-width table/emitter dependency closure for `CORINFO_AsyncResumeInfo`: preserve target-width sizing for both `TARGET_SIZE_T` fields across allocation, serialization, and diagnostics, then validate ARM32 table layout. Keep `genAsyncResumeInfo` deferred until this closure is ported and tested.",
+    "stage": "async-resume-codegen",
+    "nextAction": "Reconcile the target-specific `genAsyncResumeInfo` branches against pinned e23d559 and validate the remaining ARM64/xarch fixtures. Keep the browser-WASM CS9135 failure in `CodeGen.AsyncResumeInfo.cs:27` explicit.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
     "parityEvidence": {
+      "asyncResumeTargetWidth": {
+        "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+        "targets": [
+          "win-arm",
+          "win-x86",
+          "win-x64",
+          "win-arm64"
+        ],
+        "tableTests": "15/15 passed in Debug and Release for each target.",
+        "arm32CodeGenTests": "1/1 passed in Debug and Release for win-arm.",
+        "validation": "Full analyzers enabled with an isolated target-test source selection. The ARM32 caller fixture used a temporary copy of ArmCalleeSavedRegisterTests.WithCodeGen because the full source has unrelated CS0182 attribute-expression errors. Native execution/generated-code parity is not established; the dynamic TLS input-ownership boundary remains unresolved."
+      },
       "corelibCodegen": {
         "architecture": "Windows x64",
         "result": "Identical",
