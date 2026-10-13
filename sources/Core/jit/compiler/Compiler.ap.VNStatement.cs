@@ -69,9 +69,7 @@ public partial class Compiler
             case GT_CAST:
             case GT_BITCAST:
             case GT_INTRINSIC:
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
-#endif
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             case GT_ARR_LENGTH:
             {
                 break;

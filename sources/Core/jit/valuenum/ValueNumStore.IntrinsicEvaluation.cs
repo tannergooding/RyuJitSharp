@@ -412,7 +412,6 @@ public sealed partial class ValueNumStore
         return true;
     }
 
-#if FEATURE_HW_INTRINSICS
     public ValueNum EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic tree, VNFunc func, ValueNum arg0VN,
         ValueNum resultTypeVN)
     {
@@ -1190,7 +1189,6 @@ public sealed partial class ValueNumStore
 
         return VNForFunc(type, func, arg0VN, arg1VN, arg2VN, resultTypeVN);
     }
-#endif
 
     private ValueNum EvaluateSimdWithElementIntegral(var_types simdType, var_types baseType,
         ValueNum vectorVN, int index, long value)

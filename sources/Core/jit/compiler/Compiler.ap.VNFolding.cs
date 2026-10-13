@@ -47,7 +47,7 @@ public partial class Compiler
 
             GenTree result = gtNewIconNode(TYP_INT, 1);
             // Short nonempty sequences dereference both pointers before checking address equality.
-            if (couldBeNull && (length < TARGET_POINTER_SIZE))
+            if (couldBeNull && (length < (nuint)Configuration.TARGET_POINTER_SIZE))
             {
                 var firstAddress = fgMakeMultiUse(ref arg1.NodeRef);
                 var secondAddress = fgMakeMultiUse(ref arg2.NodeRef);
@@ -366,8 +366,7 @@ public partial class Compiler
             case TYP_LONG:
             {
                 var value = vnStore.ConstantValue<long>(constantVN);
-#if TARGET_64BIT
-                if (vnStore.IsVNHandle(constantVN))
+                if (Configuration.TARGET_64BIT && vnStore.IsVNHandle(constantVN))
                 {
                     if (!opts.compReloc)
                     {
@@ -375,7 +374,6 @@ public partial class Compiler
                     }
                 }
                 else
-#endif
                 {
                     switch (tree.Type)
                     {
@@ -427,8 +425,7 @@ public partial class Compiler
             case TYP_INT:
             {
                 var value = vnStore.ConstantValue<int>(constantVN);
-#if !TARGET_64BIT
-                if (vnStore.IsVNHandle(constantVN))
+                if (!Configuration.TARGET_64BIT && vnStore.IsVNHandle(constantVN))
                 {
                     if (!opts.compReloc)
                     {
@@ -436,7 +433,6 @@ public partial class Compiler
                     }
                 }
                 else
-#endif
                 {
                     switch (tree.Type)
                     {
@@ -479,9 +475,7 @@ public partial class Compiler
             }
 
             case TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 when Configuration.FEATURE_SIMD:
-#if TARGET_XARCH
-            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD:
-#endif
+            case TYP_SIMD32 or TYP_SIMD64 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH:
             {
                 var vector = gtNewVconNode(tree.Type);
                 vector.SimdVal = vnStore.GetConstantSimd(constantVN);
@@ -577,9 +571,8 @@ public partial class Compiler
         var local = dest.AsLclVar();
         if (value.Oper.IsCnsVec)
         {
-#if FEATURE_HW_INTRINSICS
             var inspectIntrinsic = false;
-            if (destParent is GenTreeHWIntrinsic intrinsic)
+            if (Configuration.FEATURE_HW_INTRINSICS && destParent is GenTreeHWIntrinsic intrinsic)
             {
                 ref var descriptor = ref lvaGetDesc(local.LclNum);
                 inspectIntrinsic = local.HasSsaName
@@ -595,7 +588,6 @@ public partial class Compiler
                     return intrinsic.ShouldConstantProp(dest, value.AsVecCon());
                 }
             }
-#endif
         }
         else if (!value.Oper.IsCnsFltOrDbl && !value.Oper.IsCnsMsk)
         {

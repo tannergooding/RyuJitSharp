@@ -293,7 +293,7 @@ public sealed partial class ValueNumStore
                 return VNForIntCon(unchecked((int)nativeResult));
             }
 
-            assert(type is TYP_BYREF or TYP_I_IMPL);
+            assert((type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)));
             return VNForByrefCon(nativeResult);
         }
 

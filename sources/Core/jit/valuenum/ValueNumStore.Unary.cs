@@ -110,7 +110,8 @@ public sealed partial class ValueNumStore
                     {
                         // Zero the host-width handle before copying target-width data, including crossgen.
                         CORINFO_OBJECT_HANDLE handle = null;
-                        if (_compiler.info.compCompHnd->getStaticFieldContent(field, (byte*)&handle, TARGET_POINTER_SIZE, 0, false))
+                        if (_compiler.info.compCompHnd->getStaticFieldContent(field, (byte*)&handle,
+                            Configuration.TARGET_POINTER_SIZE, 0, false))
                         {
                             var length = _compiler.info.compCompHnd->getArrayOrStringLength(handle);
                             if (length >= 0)

@@ -60,32 +60,33 @@ public sealed partial class ValueNumStore
             throw new UnreachableException();
         }
 
-#if !TARGET_XARCH
-        // The oracle's FpAdd/FpSub/FpMul/FpDiv use the target's default NaN for invalid infinities.
-        if ((func == VNF_ADD) && T.IsInfinity(value0) && T.IsInfinity(value1) &&
-            (T.IsNegative(value0) != T.IsNegative(value1)))
+        if (!Configuration.TARGET_XARCH)
         {
-            return TargetNaN<T>();
-        }
+            // The oracle's FpAdd/FpSub/FpMul/FpDiv use the target's default NaN for invalid infinities.
+            if ((func == VNF_ADD) && T.IsInfinity(value0) && T.IsInfinity(value1) &&
+                (T.IsNegative(value0) != T.IsNegative(value1)))
+            {
+                return TargetNaN<T>();
+            }
 
-        if ((func == VNF_SUB) && T.IsInfinity(value0) && T.IsInfinity(value1) &&
-            (T.IsNegative(value0) == T.IsNegative(value1)))
-        {
-            return TargetNaN<T>();
-        }
+            if ((func == VNF_SUB) && T.IsInfinity(value0) && T.IsInfinity(value1) &&
+                (T.IsNegative(value0) == T.IsNegative(value1)))
+            {
+                return TargetNaN<T>();
+            }
 
-        if ((func == VNF_MUL) && ((T.IsZero(value0) && T.IsInfinity(value1)) ||
-            (T.IsInfinity(value0) && T.IsZero(value1))))
-        {
-            return TargetNaN<T>();
-        }
+            if ((func == VNF_MUL) && ((T.IsZero(value0) && T.IsInfinity(value1)) ||
+                (T.IsInfinity(value0) && T.IsZero(value1))))
+            {
+                return TargetNaN<T>();
+            }
 
-        if ((func == VNF_DIV) && ((T.IsZero(value0) && T.IsZero(value1)) ||
-            (T.IsInfinity(value0) && T.IsInfinity(value1))))
-        {
-            return TargetNaN<T>();
+            if ((func == VNF_DIV) && ((T.IsZero(value0) && T.IsZero(value1)) ||
+                (T.IsInfinity(value0) && T.IsInfinity(value1))))
+            {
+                return TargetNaN<T>();
+            }
         }
-#endif
 
         switch (func)
         {
@@ -134,13 +135,12 @@ public sealed partial class ValueNumStore
 
     private static T TargetNaN<T>() where T : unmanaged, IFloatingPointIeee754<T>
     {
-#if TARGET_XARCH
-        const int floatBits = unchecked((int)0xFFC00000);
-        const long doubleBits = unchecked((long)0xFFF8000000000000);
-#else
-        const int floatBits = 0x7FC00000;
-        const long doubleBits = 0x7FF8000000000000;
-#endif
+        var floatBits = Configuration.TARGET_XARCH
+            ? unchecked((int)0xFFC00000)
+            : 0x7FC00000;
+        var doubleBits = Configuration.TARGET_XARCH
+            ? unchecked((long)0xFFF8000000000000)
+            : 0x7FF8000000000000;
         if (typeof(T) == typeof(float))
         {
             var result = BitConverter.Int32BitsToSingle(floatBits);

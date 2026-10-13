@@ -124,6 +124,18 @@ public sealed partial class ValueNumStore
 
         for (var func = VNF_NONE; func < VNF_COUNT; func++)
         {
+            if (func is >= VNF_HWI_FIRST and <= VNF_HWI_LAST)
+            {
+                continue;
+            }
+
+            assert(attributes[(int)func] == VNFuncExtensions.GetAttributes(func));
+        }
+
+        for (var tableIndex = 0; tableIndex < HWIntrinsicInfo.GetNativeTableEntryCount(); tableIndex++)
+        {
+            var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
+            var func = VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1);
             assert(attributes[(int)func] == VNFuncExtensions.GetAttributes(func));
         }
 #endif

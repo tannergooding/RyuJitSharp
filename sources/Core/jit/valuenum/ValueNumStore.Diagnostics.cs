@@ -102,13 +102,11 @@ public sealed partial class ValueNumStore
                     break;
                 }
 
-#if FEATURE_SIMD
-                case VNF_SimdType:
+                case VNF_SimdType when Configuration.FEATURE_SIMD:
                 {
                     DumpSimdType(funcApp);
                     break;
                 }
-#endif
 
                 case VNF_Cast:
                 case VNF_CastOvf:
@@ -465,7 +463,6 @@ public sealed partial class ValueNumStore
         });
     }
 
-#if FEATURE_SIMD
     private void DumpSimdType(VNFuncApp app)
     {
         assert(app.FuncIs(VNF_SimdType) && (app.Arity == 2));
@@ -480,7 +477,6 @@ public sealed partial class ValueNumStore
         }
         jitprintf(")");
     }
-#endif
 
     private void DumpCast(Compiler compiler, ValueNum vn, VNFuncApp app)
     {

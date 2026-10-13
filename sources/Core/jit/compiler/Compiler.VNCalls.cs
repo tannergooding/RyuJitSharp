@@ -189,7 +189,7 @@ public partial class Compiler
             }
             case NI_System_Type_GetTypeFromHandle:
             {
-                assert(RuntimeHandleUnderlyingType is TYP_I_IMPL);
+                assert((RuntimeHandleUnderlyingType == TYP_I_IMPL));
                 var bitcast = new VNFuncApp();
                 var argument = call.Args.GetUserArgByIndex(0)!.Node._vnPair.Conservative;
                 if (!vnStore.GetVNFunc(argument, ref bitcast) || !bitcast.FuncIs(VNF_BitCast))

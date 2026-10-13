@@ -62,7 +62,7 @@ public sealed partial class ValueNumStore
     public ValueNum VNForCast(ValueNum source, var_types castToType, var_types castFromType,
         bool srcIsUnsigned = false, bool hasOverflowCheck = false)
     {
-        if ((castFromType is TYP_I_IMPL) && (castToType is TYP_BYREF) && IsVNHandle(source))
+        if (((castFromType == TYP_I_IMPL)) && (castToType is TYP_BYREF) && IsVNHandle(source))
         {
             return source;
         }

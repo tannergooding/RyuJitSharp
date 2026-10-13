@@ -129,9 +129,9 @@ public partial class Compiler
             vnStore.VNPExceptionSet(arrAddr.Addr._vnPair));
     }
 
-#if FEATURE_HW_INTRINSICS
     public void fgValueNumberHWIntrinsic(GenTreeHWIntrinsic tree)
     {
+        assert(Configuration.FEATURE_HW_INTRINSICS);
         assert(vnStore is not null);
         var id = tree.HWIntrinsicId;
         var isMemoryLoad = tree.IsMemoryLoad(out var address);
@@ -141,12 +141,10 @@ public partial class Compiler
         {
             fgMutateGcHeap(tree, "HWIntrinsic - MemoryStore");
         }
-#if TARGET_XARCH
-        else if (HWIntrinsicInfo.HasSpecialSideEffect_Barrier(id))
+        else if (Configuration.TARGET_XARCH && HWIntrinsicInfo.HasSpecialSideEffect_Barrier(id))
         {
             fgMutateGcHeap(tree, "HWIntrinsic - Barrier");
         }
-#endif
 
         var exceptions = ValueNumStore.VNPForEmptyExcSet();
         var normal = default(ValueNumPair);
@@ -228,16 +226,15 @@ public partial class Compiler
         {
             switch (id)
             {
-#if TARGET_XARCH
-                case NI_X86Base_MaskMove:
-                case NI_AVX_MaskStore:
-                case NI_AVX2_MaskStore:
-                case NI_AVX_MaskLoad:
-                case NI_AVX2_MaskLoad:
-                case NI_AVX2_GatherVector128:
-                case NI_AVX2_GatherVector256:
-                case NI_AVX2_GatherMaskVector128:
-                case NI_AVX2_GatherMaskVector256:
+                case NI_X86Base_MaskMove when Configuration.TARGET_XARCH:
+                case NI_AVX_MaskStore when Configuration.TARGET_XARCH:
+                case NI_AVX2_MaskStore when Configuration.TARGET_XARCH:
+                case NI_AVX_MaskLoad when Configuration.TARGET_XARCH:
+                case NI_AVX2_MaskLoad when Configuration.TARGET_XARCH:
+                case NI_AVX2_GatherVector128 when Configuration.TARGET_XARCH:
+                case NI_AVX2_GatherVector256 when Configuration.TARGET_XARCH:
+                case NI_AVX2_GatherMaskVector128 when Configuration.TARGET_XARCH:
+                case NI_AVX2_GatherMaskVector256 when Configuration.TARGET_XARCH:
                 {
                     var uniqueAddress = vnStore.VNPairForExpr(compCurBB, TYP_BYREF);
                     var nullCheck = vnStore.VNPairForFunc(TYP_REF, VNF_NullPtrExc, uniqueAddress);
@@ -245,7 +242,6 @@ public partial class Compiler
                     tree._vnPair = vnStore.VNPWithExc(tree._vnPair, nullSet);
                     break;
                 }
-#endif
 
                 default:
                 {
@@ -271,7 +267,6 @@ public partial class Compiler
             }
         }
     }
-#endif
 
     public void fgValueNumberCastTree(GenTree tree)
     {

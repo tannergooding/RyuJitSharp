@@ -391,8 +391,8 @@ public partial class Compiler
             }
             else
             {
-                assert((varDsc.Type is TYP_I_IMPL && lcl.Type is TYP_BYREF) ||
-                       (varDsc.Type is TYP_BYREF && lcl.Type is TYP_I_IMPL));
+                assert(((varDsc.Type == TYP_I_IMPL) && lcl.Type is TYP_BYREF) ||
+                       (varDsc.Type is TYP_BYREF && (lcl.Type == TYP_I_IMPL)));
                 lcl._vnPair = wholeLclVarVNP;
             }
         }
@@ -623,7 +623,7 @@ public partial class Compiler
                 {
                     if (info.compCompHnd->getObjectContent(obj, content, size, (int)byteOffset))
                     {
-                        if ((size == TARGET_POINTER_SIZE) && (byteOffset == 0))
+                        if ((size == Configuration.TARGET_POINTER_SIZE) && (byteOffset == 0))
                         {
                             var rawHandle = (CORINFO_CLASS_HANDLE)MemoryMarshal.Read<nint>(buffer);
                             void* pEmbedClsHnd;

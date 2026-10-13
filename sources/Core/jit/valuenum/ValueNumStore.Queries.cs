@@ -169,9 +169,8 @@ public sealed partial class ValueNumStore
         assert(IsVNConstant(vn));
         return TypeOfVN(vn) switch {
             TYP_INT => ConstantValue<int>(vn),
-#if !TARGET_64BIT
-            TYP_REF or TYP_BYREF => unchecked((int)ConstantValue<nuint>(vn)),
-#endif
+            TYP_REF when !Configuration.TARGET_64BIT => unchecked((int)ConstantValue<nuint>(vn)),
+            TYP_BYREF when !Configuration.TARGET_64BIT => unchecked((int)ConstantValue<nuint>(vn)),
             _ => throw new UnreachableException(),
         };
     }
@@ -180,7 +179,7 @@ public sealed partial class ValueNumStore
     {
 #if DEBUG
         var type = TypeOfVN(vn);
-        assert(type is TYP_I_IMPL or TYP_REF or TYP_BYREF);
+        assert((type is var __targetAliasValue1 && ((__targetAliasValue1 == TYP_I_IMPL || __targetAliasValue1 is TYP_REF) || __targetAliasValue1 is TYP_BYREF)));
 #endif
         offset = 0;
         var app = new VNFuncApp();
@@ -188,7 +187,7 @@ public sealed partial class ValueNumStore
         {
             if (app.FuncIs(VNF_Cast))
             {
-                if (TypeOfVN(vn) is TYP_I_IMPL)
+                if ((TypeOfVN(vn) == TYP_I_IMPL))
                 {
                     GetCastOperFromVN(app.GetArg(1), out var castToType, out _);
                     if (varTypeIsI(castToType) && varTypeIsI(TypeOfVN(app.GetArg(0))))
@@ -256,7 +255,7 @@ public sealed partial class ValueNumStore
         }
 
         var type = TypeOfVN(vn);
-        if (type is not (TYP_I_IMPL or TYP_REF or TYP_BYREF))
+        if ((type is var __targetAliasValue0 && !((((__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_REF) || __targetAliasValue0 is TYP_BYREF)))))
         {
             return false;
         }
@@ -309,8 +308,8 @@ public sealed partial class ValueNumStore
 
     public bool IsVNHWIntrinsicFunc(ValueNum vn, ref VNFuncApp app, ref NamedIntrinsic id, ref int simdSize, ref var_types simdBaseType)
     {
-#if FEATURE_HW_INTRINSICS
-        if (!GetVNFunc(vn, ref app) || (app.Func < VNF_HWI_FIRST) || (app.Func > VNF_HWI_LAST))
+        if (!Configuration.FEATURE_HW_INTRINSICS ||
+            !GetVNFunc(vn, ref app) || (app.Func < VNF_HWI_FIRST) || (app.Func > VNF_HWI_LAST))
         {
             return false;
         }
@@ -318,15 +317,11 @@ public sealed partial class ValueNumStore
         id = (NamedIntrinsic)((app.Func - VNF_HWI_FIRST) + ((int)NI_HW_INTRINSIC_START + 1));
         simdSize = GetVNHWIntrinsicSizeAndBaseType(app, ref simdBaseType);
         return true;
-#else
-        return false;
-#endif
     }
 
-#if FEATURE_HW_INTRINSICS
     public bool IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, byte simdSize)
     {
-        if (!Configuration.FEATURE_SIMD)
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.FEATURE_SIMD)
         {
             return false;
         }
@@ -376,12 +371,11 @@ public sealed partial class ValueNumStore
         }
 
         var oper = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(id, simdBaseType, out var isScalar);
-#if TARGET_ARM64
-        if (!isScalar && (oper is GT_EQ or GT_NE or GT_GT or GT_GE or GT_LT or GT_LE))
+        if (Configuration.TARGET_ARM64 && !isScalar &&
+            (oper is GT_EQ or GT_NE or GT_GT or GT_GE or GT_LT or GT_LE))
         {
             return intrinsicBaseType.Size >= simdBaseType.Size;
         }
-#endif
 
         bool isMask;
         switch (oper)
@@ -422,6 +416,7 @@ public sealed partial class ValueNumStore
 
     public int GetVNHWIntrinsicSizeAndBaseType(VNFuncApp app, ref var_types simdBaseType)
     {
+        EnsureHardwareIntrinsicsSupported();
         assert((app.Func >= VNF_HWI_FIRST) && (app.Func <= VNF_HWI_LAST));
         assert(app.Arity != 0);
         var simdType = new VNFuncApp();
@@ -432,7 +427,6 @@ public sealed partial class ValueNumStore
             GetConstantInt32(simdType.GetArg(1)) & SimdTypeMask);
         return GetConstantInt32(simdType.GetArg(0));
     }
-#endif
 
     public bool IsVNLog2(ValueNum vn)
     {
@@ -442,26 +436,26 @@ public sealed partial class ValueNumStore
 
     public bool IsVNLog2(ValueNum vn, ref int upperBound)
     {
-#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
-        var xorBy = 0;
-        var op = NoVN;
-        if (IsVNBinFuncWithConst(vn, VNF_XOR, ref op, ref xorBy) && (xorBy is 31 or 63))
+        if (Configuration.FEATURE_HW_INTRINSICS && (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64))
         {
-            var unused = NoVN;
-            _ = IsVNBinFunc(op, VNF_Cast, ref op, ref unused);
-#if TARGET_XARCH
-            var lzcntFunc = xorBy == 31 ? VNF_HWI_AVX2_LeadingZeroCount : VNF_HWI_AVX2_X64_LeadingZeroCount;
-#else
-            var lzcntFunc = xorBy == 31 ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
-#endif
-            var orBy = 0;
-            if (IsVNBinFunc(op, lzcntFunc, ref op, ref unused) && IsVNBinFuncWithConst(op, VNF_OR, ref op, ref orBy) && (orBy == 1))
+            var xorBy = 0;
+            var op = NoVN;
+            if (IsVNBinFuncWithConst(vn, VNF_XOR, ref op, ref xorBy) && (xorBy is 31 or 63))
             {
-                upperBound = xorBy;
-                return true;
+                var unused = NoVN;
+                _ = IsVNBinFunc(op, VNF_Cast, ref op, ref unused);
+                var lzcntFunc = Configuration.TARGET_XARCH
+                    ? xorBy == 31 ? VNF_HWI_AVX2_LeadingZeroCount : VNF_HWI_AVX2_X64_LeadingZeroCount
+                    : xorBy == 31 ? VNF_HWI_ArmBase_LeadingZeroCount : VNF_HWI_ArmBase_Arm64_LeadingZeroCount;
+                var orBy = 0;
+                if (IsVNBinFunc(op, lzcntFunc, ref op, ref unused) &&
+                    IsVNBinFuncWithConst(op, VNF_OR, ref op, ref orBy) && (orBy == 1))
+                {
+                    upperBound = xorBy;
+                    return true;
+                }
             }
         }
-#endif
         return false;
     }
 
@@ -494,19 +488,20 @@ public sealed partial class ValueNumStore
         var app = new VNFuncApp();
         if (GetVNFunc(vn, ref app))
         {
-#if FEATURE_HW_INTRINSICS
-            var id = NI_Illegal;
-            var simdSize = 0;
-            var simdBaseType = TYP_UNDEF;
-            if (IsVNHWIntrinsicFunc(vn, ref app, ref id, ref simdSize, ref simdBaseType))
+            if (Configuration.FEATURE_HW_INTRINSICS)
             {
-                if (HWIntrinsicInfo.ReturnsBoolean(id) ||
-                    (HWIntrinsicInfo.ReturnsScalarT(id) && (simdBaseType is TYP_UBYTE or TYP_USHORT)))
+                var id = NI_Illegal;
+                var simdSize = 0;
+                var simdBaseType = TYP_UNDEF;
+                if (IsVNHWIntrinsicFunc(vn, ref app, ref id, ref simdSize, ref simdBaseType))
                 {
-                    return VNVisit.Continue;
+                    if (HWIntrinsicInfo.ReturnsBoolean(id) ||
+                        (HWIntrinsicInfo.ReturnsScalarT(id) && (simdBaseType is TYP_UBYTE or TYP_USHORT)))
+                    {
+                        return VNVisit.Continue;
+                    }
                 }
             }
-#endif
             switch (app.Func)
             {
                 case VNF_GT:
@@ -522,14 +517,11 @@ public sealed partial class ValueNumStore
                 case VNF_MDArrLowerBound:
                     return VNVisit.Continue;
 
-#if FEATURE_HW_INTRINSICS
-                case VNF_HWI_Vector_ExtractMostSignificantBits:
-#if TARGET_XARCH
-                case VNF_HWI_X86Base_MoveMask:
-                case VNF_HWI_AVX_MoveMask:
-                case VNF_HWI_AVX2_MoveMask:
-                case VNF_HWI_AVX512_MoveMask:
-#endif
+                case VNF_HWI_Vector_ExtractMostSignificantBits when Configuration.FEATURE_HW_INTRINSICS:
+                case VNF_HWI_X86Base_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX512_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
                 {
                     var baseType = TYP_UNDEF;
                     var size = GetVNHWIntrinsicSizeAndBaseType(app, ref baseType);
@@ -541,22 +533,18 @@ public sealed partial class ValueNumStore
                     break;
                 }
 
-#if TARGET_XARCH
-                case VNF_HWI_X86Base_PopCount:
-                case VNF_HWI_X86Base_X64_PopCount:
-                case VNF_HWI_AVX2_LeadingZeroCount:
-                case VNF_HWI_AVX2_TrailingZeroCount:
-                case VNF_HWI_AVX2_X64_LeadingZeroCount:
-                case VNF_HWI_AVX2_X64_TrailingZeroCount:
-#elif TARGET_ARM64
-                case VNF_HWI_ArmBase_LeadingZeroCount:
-                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
-                case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-#endif
-#if TARGET_XARCH || TARGET_ARM64
+                case VNF_HWI_X86Base_PopCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_X86Base_X64_PopCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_TrailingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_X64_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_X64_TrailingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_ArmBase_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                case VNF_HWI_ArmBase_Arm64_LeadingSignCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
                     return VNVisit.Continue;
-#endif
-                case VNF_XOR:
+
+                case VNF_XOR when Configuration.FEATURE_HW_INTRINSICS:
                 {
                     if (IsVNLog2(vn))
                     {
@@ -564,7 +552,6 @@ public sealed partial class ValueNumStore
                     }
                     break;
                 }
-#endif
                 case VNF_LeadingZeroCount:
                 case VNF_PopCount:
                 case VNF_TrailingZeroCount:

@@ -18,8 +18,6 @@ public partial class Globals
     public const var_types TYP_MEM = TYP_UNDEF;
     public const var_types TYP_HEAP = TYP_UNKNOWN;
 
-#if FEATURE_HW_INTRINSICS
     public const VNFunc VNF_HWI_FIRST = (VNFunc)((int)VNF_HWI_INTRINSIC_START + 1);
     public const VNFunc VNF_HWI_LAST = (VNFunc)((int)VNF_HWI_INTRINSIC_END - 1);
-#endif
 }

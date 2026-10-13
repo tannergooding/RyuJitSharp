@@ -32,10 +32,8 @@ public sealed partial class ValueNumStore
 
         switch (sourceType)
         {
-#if !TARGET_64BIT
-            case TYP_REF:
-            case TYP_BYREF:
-#endif
+            case TYP_REF when !Configuration.TARGET_64BIT:
+            case TYP_BYREF when !Configuration.TARGET_64BIT:
             case TYP_INT:
             {
                 var value = GetConstantInt32(arg0VN);
@@ -78,14 +76,15 @@ public sealed partial class ValueNumStore
                     case TYP_ULONG:
                     {
                         assert(!IsVNHandle(arg0VN));
-#if TARGET_64BIT
-                        if (type == TYP_BYREF)
+                        if (Configuration.TARGET_64BIT)
                         {
-                            return VNForByrefCon(unchecked((nuint)value));
-                        }
+                            if (type == TYP_BYREF)
+                            {
+                                return VNForByrefCon(unchecked((nuint)value));
+                            }
 
-                        assert(type == TYP_LONG);
-#endif
+                            assert(type == TYP_LONG);
+                        }
                         return VNForLongCon(srcIsUnsigned ? unchecked((uint)value) : value);
                     }
 
@@ -114,10 +113,8 @@ public sealed partial class ValueNumStore
                 }
             }
 
-#if TARGET_64BIT
-            case TYP_REF:
-            case TYP_BYREF:
-#endif
+            case TYP_REF when Configuration.TARGET_64BIT:
+            case TYP_BYREF when Configuration.TARGET_64BIT:
             case TYP_LONG:
             {
                 var value = GetConstantInt64(arg0VN);
@@ -401,14 +398,12 @@ public sealed partial class ValueNumStore
                 break;
             }
 
-#if FEATURE_SIMD
-            case TYP_SIMD8:
+            case TYP_SIMD8 when Configuration.FEATURE_SIMD:
             {
                 var value = GetConstantSimd8(arg0VN);
                 MemoryMarshal.Write(bytes, in value);
                 break;
             }
-#endif
 
             default:
             {
@@ -432,9 +427,7 @@ public sealed partial class ValueNumStore
             TYP_BYREF => VNForByrefCon(MemoryMarshal.Read<nuint>(bytes)),
             TYP_FLOAT => VNForFloatCon(MemoryMarshal.Read<float>(bytes)),
             TYP_DOUBLE => VNForDoubleCon(MemoryMarshal.Read<double>(bytes)),
-#if FEATURE_SIMD
-            TYP_SIMD8 => VNForSimd8Con(MemoryMarshal.Read<simd8_t>(bytes)),
-#endif
+            TYP_SIMD8 when Configuration.FEATURE_SIMD => VNForSimd8Con(MemoryMarshal.Read<simd8_t>(bytes)),
             _ => throw new UnreachableException(),
         };
     }

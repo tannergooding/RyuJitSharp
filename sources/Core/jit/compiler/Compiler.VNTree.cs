@@ -84,13 +84,11 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 return (VNFunc)((int)VNF_HWI_FIRST +
                     (int)node.AsHWIntrinsic().HWIntrinsicId - (int)NI_HW_INTRINSIC_START - 1);
             }
-#endif
             case GT_CAST:
             {
                 throw new System.Diagnostics.UnreachableException(
@@ -239,7 +237,7 @@ public partial class Compiler
                 {
                     assert(!isVolatile);
                     var returnsTypeHandle = false;
-                    if ((oper is GT_IND) && (addr.Type is TYP_REF) && (type is TYP_I_IMPL))
+                    if ((oper is GT_IND) && (addr.Type is TYP_REF) && ((type == TYP_I_IMPL)))
                     {
                         var handle = gtGetClassHandle(addr, out var isExact, out _);
                         if (isExact && (handle != NO_CLASS_HANDLE))
@@ -290,7 +288,7 @@ public partial class Compiler
                             assert(addrNormal.BothEqual() &&
                                 (addrExceptions == ValueNumStore.VNPForEmptyExcSet()));
                             var fieldSeq = vnStore.VNForFieldSeq(null);
-                            var offset = vnStore.VNForIntPtrCon(-TARGET_POINTER_SIZE);
+                            var offset = vnStore.VNForIntPtrCon(-Configuration.TARGET_POINTER_SIZE);
                             var staticAddr = vnStore.VNForFunc(type, VNF_PtrToStatic,
                                 addrNormal.Liberal, fieldSeq, offset);
                             tree._vnPair.SetBoth(staticAddr);
@@ -557,13 +555,11 @@ public partial class Compiler
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
+                case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                 {
                     fgValueNumberHWIntrinsic(tree.AsHWIntrinsic());
                     break;
                 }
-#endif
                 case GT_CMPXCHG:
                 {
                     fgMutateGcHeap(tree, "Interlocked intrinsic");

@@ -343,12 +343,10 @@ public partial class Compiler
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 break;
             }
-#endif
             default:
             {
                 throw new System.Diagnostics.UnreachableException(
