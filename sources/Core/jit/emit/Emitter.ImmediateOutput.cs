@@ -267,17 +267,18 @@ public partial class Emitter
                 case IF_XARCH_RRW_CNS:
                 {
                     assert(id.idGCref() == GCT_BYREF);
-#if DEBUG
-                    var regMask = reg.SingleTypeMask;
-                    if ((emitThisGCrefRegs & regMask) != SRBM_NONE)
+                    if (Configuration.DEBUG)
                     {
-                        assert(ins == INS_add);
+                        var regMask = reg.SingleTypeMask;
+                        if ((emitThisGCrefRegs & regMask) != SRBM_NONE)
+                        {
+                            assert(ins == INS_add);
+                        }
+                        if ((emitThisByrefRegs & regMask) != SRBM_NONE)
+                        {
+                            assert(ins is INS_add or INS_sub or INS_sub_hide);
+                        }
                     }
-                    if ((emitThisByrefRegs & regMask) != SRBM_NONE)
-                    {
-                        assert(ins is INS_add or INS_sub or INS_sub_hide);
-                    }
-#endif
                     emitGCregLiveUpd(GCT_BYREF, reg, dst);
                     break;
                 }

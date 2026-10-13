@@ -1370,8 +1370,12 @@ public partial class Emitter
             assert(diff >= 0);
             if (diff != 0)
             {
+                if (Configuration.DEBUG)
+                {
+                    assert(id.idIns() != INS_align);
+                }
+
 #if DEBUG
-                assert(id.idIns() != INS_align);
                 JITDUMP($"Added over-estimation compensation: {diff}\n");
                 if (_compiler.opts.disAsm)
                 {
