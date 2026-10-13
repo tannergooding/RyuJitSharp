@@ -7,7 +7,6 @@ using System;
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.instruction;
 
-#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -89,7 +88,7 @@ public partial class Emitter
         for (var nativeOrdinal = 1; nativeOrdinal < InstructionOrdinalMaps.GetNativeInstructionCount(); nativeOrdinal++)
         {
             var candidate = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(nativeOrdinal);
-            if ((code & emitGetInsMask(candidate)) == emitInsCode(candidate))
+            if ((code & emitGetInsMaskLoongArch64(candidate)) == emitInsCodeLoongArch64(candidate))
             {
                 ins = candidate;
                 break;
@@ -104,13 +103,25 @@ public partial class Emitter
 
         if (id.idInsOpt() == INS_OPTS_NONE)
         {
-            assert((ins == id.idIns()) || (emitGetInsFmt(ins) == insDisasmFmt.DF_G_ALIAS));
+            assert((ins == id.idIns()) || (emitGetInsFmtLoongArch64(ins) == insDisasmFmt.DF_G_ALIAS));
         }
 
         emitDispInstLoongArch64(ins);
-        var format = emitGetInsFmt(ins);
+        var format = emitGetInsFmtLoongArch64(ins);
         var thirdRegister = (int)((code >> 10) & 0x1f);
         var operands = string.Empty;
+
+        if (!Configuration.FEATURE_SIMD &&
+            format is insDisasmFmt.DF_S_4R or insDisasmFmt.DF_S_3R or insDisasmFmt.DF_S_RG or
+                insDisasmFmt.DF_S_2R or insDisasmFmt.DF_S_CR or insDisasmFmt.DF_S_RGX or
+                insDisasmFmt.DF_S_GRX or insDisasmFmt.DF_S_2RG or insDisasmFmt.DF_S_2R3IU or
+                insDisasmFmt.DF_S_2R4IU or insDisasmFmt.DF_S_2R5I or insDisasmFmt.DF_S_2R5IU or
+                insDisasmFmt.DF_S_2R6IU or insDisasmFmt.DF_S_2R7IU or insDisasmFmt.DF_S_2R8IU or
+                insDisasmFmt.DF_S_2R8IX or insDisasmFmt.DF_S_R13IU or insDisasmFmt.DF_S_2RX)
+        {
+            jitprintf($"LOONGARCH illegal instruction: {code:X8}\n");
+            return;
+        }
 
         switch (format)
         {
@@ -356,7 +367,6 @@ public partial class Emitter
                 operands = $"{RegName(destination + 32)}, {RegName(source + 32)}, {RegName(thirdRegister + 32)}, fcc{(code >> 15) & 0x7}";
                 break;
             }
-#if FEATURE_SIMD
             case insDisasmFmt.DF_S_4R:
             {
                 operands = $"vr{destination}, vr{source}, vr{thirdRegister}, vr{(code >> 15) & 0x1f}";
@@ -685,7 +695,6 @@ public partial class Emitter
                 operands = $"xr{destination}, {RegName(source)}, {immediate}, {index}";
                 break;
             }
-#endif
             default:
             {
                 jitprintf($"LOONGARCH illegal instruction: {code:X8}\n");
@@ -698,7 +707,7 @@ public partial class Emitter
 
         string RegName(int register)
         {
-            assert((uint)register < (uint)REG_COUNT);
+            assert((uint)register < (uint)REG_LOONGARCH64_COUNT);
             return ((regNumber)register).Name;
         }
 
@@ -715,4 +724,3 @@ public partial class Emitter
         return $"{prefix}{Math.Abs(offset)} ins";
     }
 }
-#endif

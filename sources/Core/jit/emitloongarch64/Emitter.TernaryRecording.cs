@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,16 +14,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree dst, GenTree src)
-    {
-        throw new FatalJitException(
-            CORJIT_SKIPPED,
-            "LoongArch64 binary instruction recording is unused and not ported.");
-    }
-
     // The caller consumes non-contained sources and produces the destination.
-    public regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree dst, GenTree src1, GenTree src2)
+    public regNumber emitInsTernaryLoongArch64(instruction ins, emitAttr attr, GenTree dst, GenTree src1, GenTree src2)
     {
+        RequireLoongArch64Target();
+
         assert(!dst.IsContained);
 
         var intConst = (GenTreeIntConCommon?)null;
@@ -153,7 +147,7 @@ public partial class Emitter
 
             if (needCheckOv)
             {
-                emitIns_R_R_I(INS_ori, attr, REG_R21, nonIntReg.RegNum, 0);
+                emitIns_R_R_I(INS_ori, attr, REG_LOONGARCH64_R21, nonIntReg.RegNum, 0);
             }
 
             emitIns_R_R_I(ins, attr, dstReg, nonIntReg.RegNum, imm);
@@ -164,22 +158,22 @@ public partial class Emitter
                 {
                     if (dst.AsOp().IsUnsigned)
                     {
-                        codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dstReg, null, REG_R21);
+                        codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dstReg, null, REG_LOONGARCH64_R21);
                     }
                     else if (imm > 0)
                     {
                         var tmpLabel = codeGen.genCreateTempLabel();
-                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, REG_R21);
-                        emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_R21, dstReg, imm);
-                        codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
+                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_LOONGARCH64_R0, REG_LOONGARCH64_R21);
+                        emitIns_R_R_I(INS_slti, EA_PTRSIZE, REG_LOONGARCH64_R21, dstReg, imm);
+                        codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_LOONGARCH64_R21);
                         codeGen.genDefineTempLabel(tmpLabel);
                     }
                     else if (imm < 0)
                     {
                         var tmpLabel = codeGen.genCreateTempLabel();
-                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_R21, REG_R0);
-                        emitIns_R_R_I(INS_addi_d, attr, REG_R21, REG_R0, imm);
-                        codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_R21, null, dstReg);
+                        emitIns_J_cond_la(INS_bge, tmpLabel, REG_LOONGARCH64_R21, REG_LOONGARCH64_R0);
+                        emitIns_R_R_I(INS_addi_d, attr, REG_LOONGARCH64_R21, REG_LOONGARCH64_R0, imm);
+                        codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, REG_LOONGARCH64_R21, null, dstReg);
                         codeGen.genDefineTempLabel(tmpLabel);
                     }
                 }
@@ -201,12 +195,12 @@ public partial class Emitter
             }
             else
             {
-                assert(REG_R21 != dstReg);
-                assert(REG_R21 != src1.RegNum);
-                assert(REG_R21 != src2.RegNum);
-                assert(REG_RA != dstReg);
-                assert(REG_RA != src1.RegNum);
-                assert(REG_RA != src2.RegNum);
+                assert(REG_LOONGARCH64_R21 != dstReg);
+                assert(REG_LOONGARCH64_R21 != src1.RegNum);
+                assert(REG_LOONGARCH64_R21 != src2.RegNum);
+                assert(REG_LOONGARCH64_RA != dstReg);
+                assert(REG_LOONGARCH64_RA != src1.RegNum);
+                assert(REG_LOONGARCH64_RA != src2.RegNum);
 
                 var isUnsigned = dst.AsOp().IsUnsigned;
                 instruction highIns;
@@ -219,13 +213,13 @@ public partial class Emitter
                     highIns = isUnsigned ? INS_mulh_wu : INS_mulh_w;
                 }
 
-                emitIns_R_R_R(highIns, EA_8BYTE, REG_R21, src1.RegNum, src2.RegNum);
+                emitIns_R_R_R(highIns, EA_8BYTE, REG_LOONGARCH64_R21, src1.RegNum, src2.RegNum);
                 emitIns_R_R_R(ins, attr, dstReg, src1.RegNum, src2.RegNum);
 
                 regNumber compareReg;
                 if (isUnsigned)
                 {
-                    compareReg = REG_R0;
+                    compareReg = REG_LOONGARCH64_R0;
                 }
                 else
                 {
@@ -233,13 +227,13 @@ public partial class Emitter
                     emitIns_R_R_I(
                         (EA_SIZE(attr) == EA_8BYTE) ? INS_srai_d : INS_srai_w,
                         attr,
-                        REG_RA,
+                        REG_LOONGARCH64_RA,
                         dstReg,
                         shift);
-                    compareReg = REG_RA;
+                    compareReg = REG_LOONGARCH64_RA;
                 }
 
-                codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, null, compareReg);
+                codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_LOONGARCH64_R21, null, compareReg);
             }
         }
         else if (dst.OperIs(GT_AND, GT_AND_NOT) || dst.OperIs(GT_OR, GT_XOR))
@@ -258,14 +252,14 @@ public partial class Emitter
 
             var regOp1 = src1.RegNum;
             var regOp2 = src2.RegNum;
-            var saveOperReg1 = REG_NA;
-            var saveOperReg2 = REG_NA;
+            var saveOperReg1 = REG_LOONGARCH64_NA;
+            var saveOperReg2 = REG_LOONGARCH64_NA;
 
             if (needCheckOv)
             {
                 assert(!varTypeIsFloating(dst.Type));
-                assert(REG_R21 != dstReg);
-                assert(REG_RA != dstReg);
+                assert(REG_LOONGARCH64_R21 != dstReg);
+                assert(REG_LOONGARCH64_RA != dstReg);
 
                 if (dst.OperIs(GT_ADD))
                 {
@@ -275,19 +269,19 @@ public partial class Emitter
                         saveOperReg1 = regOp2;
                         if (regOp1 == regOp2)
                         {
-                            assert(REG_R21 != regOp1);
-                            assert(REG_RA != regOp1);
-                            emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
-                            saveOperReg1 = REG_R21;
+                            assert(REG_LOONGARCH64_R21 != regOp1);
+                            assert(REG_LOONGARCH64_RA != regOp1);
+                            emitIns_R_R_I(INS_ori, attr, REG_LOONGARCH64_R21, regOp1, 0);
+                            saveOperReg1 = REG_LOONGARCH64_R21;
                         }
                     }
                 }
                 else if (dstReg == regOp1)
                 {
-                    assert(REG_R21 != regOp1);
-                    assert(REG_RA != regOp1);
-                    saveOperReg1 = REG_R21;
-                    emitIns_R_R_I(INS_ori, attr, REG_R21, regOp1, 0);
+                    assert(REG_LOONGARCH64_R21 != regOp1);
+                    assert(REG_LOONGARCH64_RA != regOp1);
+                    saveOperReg1 = REG_LOONGARCH64_R21;
+                    emitIns_R_R_I(INS_ori, attr, REG_LOONGARCH64_R21, regOp1, 0);
                 }
                 else
                 {
@@ -297,14 +291,14 @@ public partial class Emitter
                 if (!dst.AsOp().IsUnsigned)
                 {
                     saveOperReg2 = codeGen.InternalRegisters.GetSingle(dst);
-                    assert((saveOperReg2 != REG_RA) && (saveOperReg2 != REG_R21));
-                    assert(REG_RA != regOp1);
+                    assert((saveOperReg2 != REG_LOONGARCH64_RA) && (saveOperReg2 != REG_LOONGARCH64_R21));
+                    assert(REG_LOONGARCH64_RA != regOp1);
                     assert(saveOperReg2 != regOp2);
 
                     var shift = (attr == EA_4BYTE) ? 31 : 63;
                     if (dst.OperIs(GT_ADD))
                     {
-                        emitIns_R_R_I(INS_srli_d, attr, REG_RA, regOp1, shift);
+                        emitIns_R_R_I(INS_srli_d, attr, REG_LOONGARCH64_RA, regOp1, shift);
                     }
 
                     emitIns_R_R_I(INS_srli_d, attr, saveOperReg2, regOp2, shift);
@@ -329,13 +323,13 @@ public partial class Emitter
                     if (dst.OperIs(GT_SUB))
                     {
                         var shift = (attr == EA_4BYTE) ? 31 : 63;
-                        emitIns_R_R_I(INS_srli_d, attr, REG_RA, dstReg, shift);
+                        emitIns_R_R_I(INS_srli_d, attr, REG_LOONGARCH64_RA, dstReg, shift);
                     }
 
-                    emitIns_R_R_R(INS_xor, attr, REG_RA, REG_RA, saveOperReg2);
+                    emitIns_R_R_R(INS_xor, attr, REG_LOONGARCH64_RA, REG_LOONGARCH64_RA, saveOperReg2);
                     if (attr == EA_4BYTE)
                     {
-                        emitIns_R_R_I(INS_andi, attr, REG_RA, REG_RA, 1);
+                        emitIns_R_R_I(INS_andi, attr, REG_LOONGARCH64_RA, REG_LOONGARCH64_RA, 1);
                         emitIns_R_R_I(INS_andi, attr, saveOperReg2, saveOperReg2, 1);
                     }
 
@@ -343,8 +337,8 @@ public partial class Emitter
                     var tmpLabel2 = codeGen.genCreateTempLabel();
                     var tmpLabel3 = codeGen.genCreateTempLabel();
 
-                    emitIns_J_cond_la(INS_bne, tmpLabel1, REG_RA, REG_R0);
-                    emitIns_J_cond_la(INS_bne, tmpLabel3, saveOperReg2, REG_R0);
+                    emitIns_J_cond_la(INS_bne, tmpLabel1, REG_LOONGARCH64_RA, REG_LOONGARCH64_R0);
+                    emitIns_J_cond_la(INS_bne, tmpLabel3, saveOperReg2, REG_LOONGARCH64_R0);
                     emitIns_J_cond_la(
                         INS_bge,
                         tmpLabel1,
@@ -369,4 +363,3 @@ public partial class Emitter
         return dstReg;
     }
 }
-#endif

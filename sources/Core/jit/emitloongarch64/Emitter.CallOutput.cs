@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.Globals;
@@ -16,6 +15,8 @@ public partial class Emitter
 {
     private unsafe uint emitOutputCallLoongArch64(byte* dst, instrDesc id)
     {
+        RequireLoongArch64Target();
+
         var compiler = _compiler
             ?? throw new FatalJitException("LoongArch64 call output requires an active compiler.");
         regMaskTP gcrefRegs;
@@ -50,23 +51,23 @@ public partial class Emitter
         var originalDst = dst;
         if (id.idIsCallRegPtr())
         {
-            var code = emitInsCode(id.idIns());
+            var code = emitInsCodeLoongArch64(id.idIns());
             code |= unchecked((uint)id.idReg4());
             code |= unchecked((uint)id.idReg3()) << 5;
             emitOutputLoongArch64Instruction(dst, code);
         }
         else if (id.idIsReloc())
         {
-            emitOutputLoongArch64Instruction(dst, 0x1e000000 | unchecked((uint)REG_DEFAULT_HELPER_CALL_TARGET));
+            emitOutputLoongArch64Instruction(dst, 0x1e000000 | unchecked((uint)TargetRuntimeMetadata.DefaultHelperCallTargetRegister));
             var address = unchecked((nuint)id.idAddr().iiaAddr);
             var linkRegister = unchecked((int)(address & 1));
             address = unchecked(address - (nuint)linkRegister);
             assert((address & 3) == 0);
 
             dst += sizeof(uint);
-            emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
+            emitGCregDeadUpd(TargetRuntimeMetadata.DefaultHelperCallTargetRegister, dst);
             emitOutputLoongArch64Instruction(dst, 0x4c000000 |
-                (unchecked((uint)REG_DEFAULT_HELPER_CALL_TARGET) << 5) | unchecked((uint)linkRegister));
+                (unchecked((uint)TargetRuntimeMetadata.DefaultHelperCallTargetRegister) << 5) | unchecked((uint)linkRegister));
             emitRecordRelocation(dst - sizeof(uint), unchecked((void*)address), CorInfoReloc.LOONGARCH64_JIR);
         }
         else
@@ -76,40 +77,40 @@ public partial class Emitter
             var linkRegister = unchecked((uint)immediate) & 1;
             immediate = unchecked(immediate - (nint)linkRegister);
 
-            var code = emitInsCode(INS_lu12i_w);
-            code |= unchecked((uint)REG_DEFAULT_HELPER_CALL_TARGET);
+            var code = emitInsCodeLoongArch64(INS_lu12i_w);
+            code |= unchecked((uint)TargetRuntimeMetadata.DefaultHelperCallTargetRegister);
             code |= (unchecked((uint)(immediate >> 12)) & 0xfffff) << 5;
             emitOutputLoongArch64Instruction(dst, code);
             dst += sizeof(uint);
-            emitGCregDeadUpd(REG_DEFAULT_HELPER_CALL_TARGET, dst);
+            emitGCregDeadUpd(TargetRuntimeMetadata.DefaultHelperCallTargetRegister, dst);
 
-            code = emitInsCode(INS_ori);
-            code |= unchecked((uint)REG_DEFAULT_HELPER_CALL_TARGET);
-            code |= unchecked((uint)REG_DEFAULT_HELPER_CALL_TARGET) << 5;
+            code = emitInsCodeLoongArch64(INS_ori);
+            code |= unchecked((uint)TargetRuntimeMetadata.DefaultHelperCallTargetRegister);
+            code |= unchecked((uint)TargetRuntimeMetadata.DefaultHelperCallTargetRegister) << 5;
             code |= (unchecked((uint)immediate) & 0xfff) << 10;
             emitOutputLoongArch64Instruction(dst, code);
             dst += sizeof(uint);
 
-            code = emitInsCode(INS_lu32i_d);
-            code |= unchecked((uint)REG_DEFAULT_HELPER_CALL_TARGET);
+            code = emitInsCodeLoongArch64(INS_lu32i_d);
+            code |= unchecked((uint)TargetRuntimeMetadata.DefaultHelperCallTargetRegister);
             code |= (unchecked((uint)(immediate >> 32)) & 0x7ffff) << 5;
             emitOutputLoongArch64Instruction(dst, code);
             dst += sizeof(uint);
 
-            code = emitInsCode(INS_jirl);
+            code = emitInsCodeLoongArch64(INS_jirl);
             code |= linkRegister;
-            code |= unchecked((uint)REG_DEFAULT_HELPER_CALL_TARGET) << 5;
+            code |= unchecked((uint)TargetRuntimeMetadata.DefaultHelperCallTargetRegister) << 5;
             emitOutputLoongArch64Instruction(dst, code);
         }
 
         dst += sizeof(uint);
         if (id.idGCref() == GCT_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
         else if (id.idGCref() == GCT_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
 
         if (id.idIsLargeCall())
@@ -117,15 +118,15 @@ public partial class Emitter
             var callDescriptor = (instrDescCGCA)id;
             if (callDescriptor.idSecondGCref() == GCT_GCREF)
             {
-                gcrefRegs |= new regMaskTP(SRBM_INTRET_1);
+                gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
             else if (callDescriptor.idSecondGCref() == GCT_BYREF)
             {
-                byrefRegs |= new regMaskTP(SRBM_INTRET_1);
+                byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
             if (callDescriptor.hasAsyncContinuationRet())
             {
-                gcrefRegs |= new regMaskTP(REG_ASYNC_CONTINUATION_RET.SingleTypeMask);
+                gcrefRegs |= TargetRuntimeMetadata.AsyncContinuationReturnRegisterMask;
             }
         }
 
@@ -157,4 +158,3 @@ public partial class Emitter
         Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), code);
     }
 }
-#endif

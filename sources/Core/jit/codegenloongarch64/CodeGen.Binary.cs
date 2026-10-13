@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForBinary(GenTreeOp treeNode)
+    public void genCodeForBinaryLoongArch64(GenTreeOp treeNode)
     {
         var oper = treeNode.Oper;
         var targetReg = treeNode.RegNum;
@@ -25,7 +24,7 @@ public sealed partial class CodeGen
         var op2 = treeNode.Op2;
         var ins = genGetInsForOper(treeNode);
 
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_LOONGARCH64_NA);
 
         var resultReg = genEmitTernaryInstruction(ins, treeNode.Type.EmitActualSize, treeNode, op1, op2);
         assert(resultReg == targetReg);
@@ -92,7 +91,7 @@ public sealed partial class CodeGen
                     isImm = isImmed(treeNode);
                     if (isImm)
                     {
-                        if (attr is EA_8BYTE or EA_BYREF)
+                        if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                         {
                             ins = INS_addi_d;
                         }
@@ -104,7 +103,7 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        if (attr is EA_8BYTE or EA_BYREF)
+                        if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                         {
                             ins = INS_add_d;
                         }
@@ -119,7 +118,7 @@ public sealed partial class CodeGen
 
                 case GT_SUB:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_sub_d;
                     }
@@ -133,7 +132,7 @@ public sealed partial class CodeGen
 
                 case GT_MOD:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_mod_d;
                     }
@@ -147,7 +146,7 @@ public sealed partial class CodeGen
 
                 case GT_DIV:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_div_d;
                     }
@@ -161,7 +160,7 @@ public sealed partial class CodeGen
 
                 case GT_UMOD:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_mod_du;
                     }
@@ -175,7 +174,7 @@ public sealed partial class CodeGen
 
                 case GT_UDIV:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_div_du;
                     }
@@ -189,7 +188,7 @@ public sealed partial class CodeGen
 
                 case GT_MUL:
                 {
-                    ins = (attr is EA_8BYTE or EA_BYREF) ? INS_mul_d : INS_mul_w;
+                    ins = ((attr == EA_8BYTE) || (attr == EA_BYREF)) ? INS_mul_d : INS_mul_w;
                     break;
                 }
 
@@ -322,4 +321,3 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 ternary instruction recording is not ported.");
     }
 }
-#endif

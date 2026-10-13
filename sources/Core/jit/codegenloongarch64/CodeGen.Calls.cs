@@ -2,7 +2,6 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime. Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 #if DEBUG
 using System.Runtime.CompilerServices;
 #endif
@@ -16,10 +15,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void inst_JMP(emitJumpKind jumpKind, BasicBlock targetBlock)
+    public void inst_JMPLoongArch64(emitJumpKind jumpKind, BasicBlock targetBlock, bool isRemovableJmpCandidate)
     {
-#if !FEATURE_FIXED_OUT_ARGS
-        assert((targetBlock.bbTgtStkDepth * sizeof(int) == genStackLevel) || IsFramePointerUsed);
+#if DEBUG
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            assert((targetBlock.bbTgtStkDepth * sizeof(int) == genStackLevel) || IsFramePointerUsed);
+        }
 #endif
 
         Emitter.emitIns_J(Emitter.emitJumpKindToIns(jumpKind), targetBlock, 0);
@@ -54,7 +56,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            inst_JMP(EJ_jmp, finallyContinuation);
+            inst_JMPLoongArch64(EJ_jmp, finallyContinuation, isRemovableJmpCandidate: false);
         }
 
         Emitter.emitEnableGC();
@@ -62,7 +64,7 @@ public sealed partial class CodeGen
 
     private void genEHCatchRetLoongArch64(BasicBlock block)
     {
-        Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, block.Target, REG_INTRET);
+        Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, block.Target, REG_INTRET_LOONGARCH64);
     }
 
     private unsafe void genCallLoongArch64(GenTreeCall call)
@@ -72,7 +74,7 @@ public sealed partial class CodeGen
         if (call.NeedsNullCheck)
         {
             var thisReg = genGetThisArgReg(call);
-            Emitter.emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_R0, thisReg, 0);
+            Emitter.emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_LOONGARCH64_R0, thisReg, 0);
         }
 
         if (call.IsFastTailCall)
@@ -90,7 +92,7 @@ public sealed partial class CodeGen
 
                 var tempReg = InternalRegisters.GetSingle(call);
                 assert((genRegMask(tempReg) &
-                    (new regMaskTP(SRBM_INT_CALLEE_TRASH) & ~new regMaskTP(SRBM_RA))) == genRegMask(tempReg));
+                    (new regMaskTP(SRBM_INT_CALLEE_TRASH_LOONGARCH64) & ~new regMaskTP(SRBM_LOONGARCH64_RA))) == genRegMask(tempReg));
 
                 regNumber callAddressReg;
                 if (call.IsVirtualStubRelativeIndir)
@@ -100,7 +102,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    callAddressReg = REG_R2R_INDIRECT_PARAM;
+                    callAddressReg = REG_R2R_INDIRECT_PARAM_LOONGARCH64;
                 }
                 Emitter.emitIns_R_R_I(ins_Load(TYP_I_IMPL), TYP_I_IMPL.EmitActualSize,
                     tempReg, callAddressReg, 0);
@@ -118,7 +120,7 @@ public sealed partial class CodeGen
         genDefinePendingCallLabel(call);
 
 #if DEBUG
-        var killMask = new regMaskTP(SRBM_CALLEE_TRASH);
+        var killMask = new regMaskTP(SRBM_CALLEE_TRASH_LOONGARCH64);
         if (call.IsHelperCall())
         {
             killMask = _compiler.compHelperCallKillSet(call.HelperNum);
@@ -146,7 +148,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                var returnReg = varTypeUsesFloatArgReg(returnType) ? REG_FLOATRET : REG_INTRET;
+                var returnReg = varTypeUsesFloatArgReg(returnType) ? REG_LOONGARCH64_F0 : REG_INTRET_LOONGARCH64;
                 if (call.RegNum != returnReg)
                 {
                     inst_Mov(returnType, call.RegNum, returnReg, canSkip: false);
@@ -158,7 +160,7 @@ public sealed partial class CodeGen
 
         if ((call.Next is null) && !_compiler.opts.MinOpts && !_compiler.opts.compDbgCode)
         {
-            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INTRET));
+            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INTRET_LOONGARCH64));
         }
     }
 
@@ -174,7 +176,7 @@ public sealed partial class CodeGen
                 parameters.retSize = returnTypeDesc.GetReturnRegType(0).EmitSize;
                 parameters.secondRetSize = returnTypeDesc.GetReturnRegType(1).EmitSize;
 
-                if (returnTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv) is REG_INTRET)
+                if (returnTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv) is REG_INTRET_LOONGARCH64)
                 {
                     assert(!EA_IS_GCREF_OR_BYREF(parameters.retSize));
                     parameters.retSize = parameters.secondRetSize;
@@ -224,13 +226,13 @@ public sealed partial class CodeGen
         }
         else
         {
-            var callThroughIndirReg = REG_NA;
+            var callThroughIndirReg = REG_LOONGARCH64_NA;
             if (!call.IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
             {
                 callThroughIndirReg = getCallIndirectionCellReg(call);
             }
 
-            if (callThroughIndirReg != REG_NA)
+            if (callThroughIndirReg != REG_LOONGARCH64_NA)
             {
                 assert(call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir);
                 var targetAddressReg = InternalRegisters.GetSingle(call);
@@ -242,7 +244,7 @@ public sealed partial class CodeGen
                 else
                 {
                     assert((genRegMask(targetAddressReg) &
-                        (new regMaskTP(SRBM_INT_CALLEE_TRASH) & ~new regMaskTP(SRBM_RA))) ==
+                        (new regMaskTP(SRBM_INT_CALLEE_TRASH_LOONGARCH64) & ~new regMaskTP(SRBM_LOONGARCH64_RA))) ==
                         genRegMask(targetAddressReg));
                 }
 
@@ -268,4 +270,3 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "Varargs are not supported on LoongArch64.");
     }
 }
-#endif

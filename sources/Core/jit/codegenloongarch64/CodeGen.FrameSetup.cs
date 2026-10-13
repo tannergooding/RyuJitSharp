@@ -2,7 +2,6 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime. Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -17,17 +16,17 @@ public sealed partial class CodeGen
 
         if (delta == 0)
         {
-            Emitter.emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE);
+            Emitter.emitIns_R_R(INS_mov, EA_PTRSIZE, REG_FPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64);
         }
         else
         {
             assert(Emitter.isValidSimm12(delta));
-            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
+            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_FPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64, delta);
         }
 
         if (reportUnwindData)
         {
-            _compiler.unwindSetFrameReg(REG_FPBASE, unchecked((uint)delta));
+            _compiler.unwindSetFrameReg(REG_FPBASE_LOONGARCH64, unchecked((uint)delta));
         }
     }
 
@@ -44,7 +43,7 @@ public sealed partial class CodeGen
         }
 
         var pageSize = unchecked((nuint)_compiler.eeGetPageSize());
-        assert(!_compiler.compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
+        assert(!_compiler.compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM_LOONGARCH64 != initReg));
 
         var lastTouchDelta = (nuint)frameSize;
         if (frameSize >= pageSize)
@@ -54,7 +53,7 @@ public sealed partial class CodeGen
                 for (var probeOffset = pageSize; probeOffset <= frameSize; probeOffset = unchecked(probeOffset + pageSize))
                 {
                     Emitter.emitIns_I_la(EA_PTRSIZE, initReg, unchecked(-(nint)probeOffset));
-                    Emitter.emitIns_R_R_R(INS_ldx_w, EA_4BYTE, REG_R0, REG_SPBASE, initReg);
+                    Emitter.emitIns_R_R_R(INS_ldx_w, EA_4BYTE, REG_LOONGARCH64_R0, REG_SPBASE_LOONGARCH64, initReg);
                     _regSet.verifyRegUsed(initReg);
                     initRegZeroed = false;
 
@@ -68,8 +67,8 @@ public sealed partial class CodeGen
             {
                 assert(frameSize >= unchecked(3 * pageSize));
 
-                var availableMask = new regMaskTP(SRBM_ALLINT) &
-                    (_regSet.rsGetModifiedRegsMask() | ~new regMaskTP(SRBM_INT_CALLEE_SAVED));
+                var availableMask = new regMaskTP(SRBM_ALLINT_LOONGARCH64) &
+                    (_regSet.rsGetModifiedRegsMask() | ~new regMaskTP(SRBM_INT_CALLEE_SAVED_LOONGARCH64));
                 availableMask &= ~maskArgRegsLiveIn;
                 availableMask &= ~genRegMask(initReg);
 
@@ -86,13 +85,13 @@ public sealed partial class CodeGen
                 _regSet.verifyRegUsed(limitReg);
 
                 assert((pageSize & 0xfff) == 0);
-                Emitter.emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, unchecked((nint)pageSize) >> 12);
+                Emitter.emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_LOONGARCH64_R21, unchecked((nint)pageSize) >> 12);
 
-                Emitter.emitIns_R_R_R(INS_ldx_w, EA_4BYTE, REG_R0, REG_SPBASE, offsetReg);
-                Emitter.emitIns_R_R_R(INS_sub_d, EA_PTRSIZE, offsetReg, offsetReg, REG_R21);
+                Emitter.emitIns_R_R_R(INS_ldx_w, EA_4BYTE, REG_LOONGARCH64_R0, REG_SPBASE_LOONGARCH64, offsetReg);
+                Emitter.emitIns_R_R_R(INS_sub_d, EA_PTRSIZE, offsetReg, offsetReg, REG_LOONGARCH64_R21);
 
-                assert(REG_R21 != limitReg);
-                assert(REG_R21 != offsetReg);
+                assert(REG_LOONGARCH64_R21 != limitReg);
+                assert(REG_LOONGARCH64_R21 != offsetReg);
                 Emitter.emitIns_R_R_I(INS_bge, EA_PTRSIZE, offsetReg, limitReg, -2 << 2);
 
                 initRegZeroed = false;
@@ -101,12 +100,12 @@ public sealed partial class CodeGen
             }
         }
 
-        if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+        if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES_LOONGARCH64 > pageSize)
         {
-            assert(lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES < unchecked(2 * pageSize));
+            assert(lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES_LOONGARCH64 < unchecked(2 * pageSize));
 
             Emitter.emitIns_I_la(EA_PTRSIZE, initReg, unchecked(-(nint)frameSize));
-            Emitter.emitIns_R_R_R(INS_ldx_w, EA_4BYTE, REG_R0, REG_SPBASE, initReg);
+            Emitter.emitIns_R_R_R(INS_ldx_w, EA_4BYTE, REG_LOONGARCH64_R0, REG_SPBASE_LOONGARCH64, initReg);
             _compiler.unwindPadding();
 
             _regSet.verifyRegUsed(initReg);
@@ -120,7 +119,7 @@ public sealed partial class CodeGen
         regNumber initReg,
         ref bool initRegZeroed)
     {
-        var availableMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH);
+        var availableMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH_LOONGARCH64);
         availableMask &= ~_calleeRegArgMaskLiveIn;
         availableMask &= ~genRegMask(initReg);
 
@@ -153,11 +152,13 @@ public sealed partial class CodeGen
         if (padding != 0)
         {
             assert(padding == 4);
-            Emitter.emitIns_R_R_I(INS_st_w, EA_4BYTE, REG_R0, addressReg, 0);
+            Emitter.emitIns_R_R_I(INS_st_w, EA_4BYTE, REG_LOONGARCH64_R0, addressReg, 0);
             byteCount = unchecked(byteCount - 4);
         }
 
-        var slotCount = byteCount / REGSIZE_BYTES;
+        var regSize = unchecked((uint)Configuration.REGSIZE_BYTES);
+        var regPairSize = unchecked(regSize * 2);
+        var slotCount = byteCount / regSize;
         var useLoop = slotCount >= 10;
         if (useLoop)
         {
@@ -169,50 +170,49 @@ public sealed partial class CodeGen
             assert((genRegMask(counterReg) & _calleeRegArgMaskLiveIn).IsEmpty);
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, counterReg, unchecked((nint)(slotCount / 2)));
 
-            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, addressReg, unchecked((int)(8 + padding)));
-            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, addressReg, unchecked((int)padding));
+            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_R0, addressReg, unchecked((int)(8 + padding)));
+            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_R0, addressReg, unchecked((int)padding));
             Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, counterReg, counterReg, -1);
-            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, addressReg, addressReg, 2 * REGSIZE_BYTES);
-            Emitter.emitIns_R_R_I(INS_bne, EA_PTRSIZE, counterReg, REG_R0, -16);
+            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, addressReg, addressReg, unchecked((int)regPairSize));
+            Emitter.emitIns_R_R_I(INS_bne, EA_PTRSIZE, counterReg, REG_LOONGARCH64_R0, -16);
 
-            byteCount %= REGSIZE_BYTES * 2;
+            byteCount %= regPairSize;
         }
         else
         {
-            while (byteCount >= REGSIZE_BYTES * 2)
+            while (byteCount >= regPairSize)
             {
-                Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, addressReg, unchecked((int)(8 + padding)));
-                Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, addressReg, unchecked((int)padding));
+                Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_R0, addressReg, unchecked((int)(8 + padding)));
+                Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_R0, addressReg, unchecked((int)padding));
                 Emitter.emitIns_R_R_I(
                     INS_addi_d,
                     EA_PTRSIZE,
                     addressReg,
                     addressReg,
-                    unchecked((int)(2 * REGSIZE_BYTES + padding)));
-                byteCount -= REGSIZE_BYTES * 2;
+                    unchecked((int)(regPairSize + padding)));
+                byteCount -= regPairSize;
                 padding = 0;
             }
         }
 
-        if (byteCount >= REGSIZE_BYTES)
+        if (byteCount >= regSize)
         {
-            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, addressReg, unchecked((int)padding));
-            if ((byteCount - REGSIZE_BYTES) != 0)
+            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_R0, addressReg, unchecked((int)padding));
+            if ((byteCount - regSize) != 0)
             {
-                Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, addressReg, addressReg, REGSIZE_BYTES);
+                Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, addressReg, addressReg, unchecked((int)regSize));
             }
 
-            byteCount -= REGSIZE_BYTES;
+            byteCount -= regSize;
         }
 
         if (byteCount > 0)
         {
             assert(byteCount == sizeof(int));
-            Emitter.emitIns_R_R_I(INS_st_w, EA_4BYTE, REG_R0, addressReg, unchecked((int)padding));
+            Emitter.emitIns_R_R_I(INS_st_w, EA_4BYTE, REG_LOONGARCH64_R0, addressReg, unchecked((int)padding));
             byteCount -= sizeof(int);
         }
 
         noway_assert(byteCount == 0);
     }
 }
-#endif

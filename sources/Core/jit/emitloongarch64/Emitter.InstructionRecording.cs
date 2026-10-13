@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insOpts;
@@ -14,25 +13,9 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private void emitInsLoongArch64(instruction ins)
-    {
-        var id = emitNewInstr(EA_8BYTE);
-        id.idIns(ins);
-        var code = emitInsCode(ins);
-#if DEBUG
-        if (ins == INS_break)
-        {
-            code |= 0x5;
-        }
-#endif
-        id.idAddr().iiaSetInstrEncode(code);
-        id.idCodeSize(4);
-        appendToCurIG(id);
-    }
-
     private void emitInsILoongArch64(instruction ins, emitAttr attr, nint imm)
     {
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         switch (ins)
         {
@@ -71,7 +54,7 @@ public partial class Emitter
         assert((offs & 0x3) == 0);
         assert((cc >> 3) == 0);
 
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
         code |= (unchecked((uint)cc) & 0x7) << 5;
         code |= (unchecked((uint)(offs >> 18)) & 0x1f);
         code |= (unchecked((uint)(offs >> 2)) & 0xffff) << 10;
@@ -208,20 +191,20 @@ public partial class Emitter
         var compiler = _compiler ?? throw new FatalJitException("LoongArch64 stack stores require an active compiler.");
         var baseOffset = compiler.lvaFrameAddress(varNum, out var framePointerBased);
         var imm = offset < 0 ? unchecked((nint)(-offset - 8)) : unchecked((nint)(baseOffset + offset));
-        var frameReg = framePointerBased ? REG_FPBASE : REG_SPBASE;
-        var reg2 = offset < 0 ? REG_R21 : frameReg;
+        var frameReg = framePointerBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
+        var reg2 = offset < 0 ? REG_LOONGARCH64_R21 : frameReg;
         offset = offset < 0 ? unchecked(-offset - 8) : offset;
 
         if (!isValidSimm12(imm))
         {
             var roundedImmediate = unchecked(imm + (imm & 0x800));
             assert(isValidSimm20(roundedImmediate >> 12));
-            emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_RA, roundedImmediate >> 12);
-            emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_RA, REG_RA, reg2);
+            emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_LOONGARCH64_RA, roundedImmediate >> 12);
+            emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_LOONGARCH64_RA, reg2);
 
             var lowImmediate = roundedImmediate & 0x7ff;
             imm = (imm & 0x800) != 0 ? lowImmediate - 0x800 : lowImmediate;
-            reg2 = REG_RA;
+            reg2 = REG_LOONGARCH64_RA;
         }
 
         var id = emitNewInstr(attr);
@@ -229,7 +212,7 @@ public partial class Emitter
         id.idReg2(reg2);
         id.idIns(ins);
 
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
         code |= unchecked((uint)reg1) & 0x1f;
         code |= unchecked((uint)reg2) << 5;
         if (ins is INS_stx_d or INS_stx_w or INS_stx_h or INS_stx_b or INS_fstx_s or INS_fstx_d)
@@ -242,7 +225,7 @@ public partial class Emitter
         }
 
         id.idAddr().iiaSetInstrEncode(code);
-        id.idAddr().iiaLclVar.initLclVarAddr(varNum, unchecked((uint)offset));
+        id.idAddr().iiaInitLclVarAddr(varNum, unchecked((uint)offset));
         id.idSetIsLclVar();
         id.idCodeSize(4);
         appendToCurIG(id);
@@ -263,8 +246,8 @@ public partial class Emitter
         var compiler = _compiler ?? throw new FatalJitException("LoongArch64 stack loads require an active compiler.");
         var baseOffset = compiler.lvaFrameAddress(varNum, out var framePointerBased);
         var imm = offset < 0 ? unchecked((nint)(-offset - 8)) : unchecked((nint)(baseOffset + offset));
-        var frameReg = framePointerBased ? REG_FPBASE : REG_SPBASE;
-        var reg2 = offset < 0 ? REG_R21 : frameReg;
+        var frameReg = framePointerBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
+        var reg2 = offset < 0 ? REG_LOONGARCH64_R21 : frameReg;
         offset = offset < 0 ? unchecked(-offset - 8) : offset;
 
         reg1 = unchecked((regNumber)((uint)reg1 & 0x1f));
@@ -276,7 +259,7 @@ public partial class Emitter
                 ins = INS_addi_d;
             }
 
-            code = emitInsCode(ins);
+            code = emitInsCodeLoongArch64(ins);
             code |= unchecked((uint)reg1);
             code |= unchecked((uint)reg2) << 5;
             code |= (unchecked((uint)imm) & 0xfff) << 10;
@@ -284,27 +267,27 @@ public partial class Emitter
         else if (ins == INS_lea)
         {
             assert(isValidSimm20(imm >> 12));
-            emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_RA, imm >> 12);
-            emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_RA, REG_RA, imm & 0xfff);
+            emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_LOONGARCH64_RA, imm >> 12);
+            emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_LOONGARCH64_RA, imm & 0xfff);
 
             ins = INS_add_d;
-            code = emitInsCode(ins);
+            code = emitInsCodeLoongArch64(ins);
             code |= unchecked((uint)reg1);
             code |= unchecked((uint)reg2) << 5;
-            code |= unchecked((uint)REG_RA) << 10;
+            code |= unchecked((uint)REG_LOONGARCH64_RA) << 10;
         }
         else
         {
             var roundedImmediate = unchecked(imm + (imm & 0x800));
             assert(isValidSimm20(roundedImmediate >> 12));
-            emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_RA, roundedImmediate >> 12);
-            emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_RA, REG_RA, reg2);
+            emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_LOONGARCH64_RA, roundedImmediate >> 12);
+            emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_LOONGARCH64_RA, reg2);
 
             var lowImmediate = roundedImmediate & 0x7ff;
             var immediate = (imm & 0x800) != 0 ? lowImmediate - 0x800 : lowImmediate;
-            code = emitInsCode(ins);
+            code = emitInsCodeLoongArch64(ins);
             code |= unchecked((uint)reg1);
-            code |= unchecked((uint)REG_RA) << 5;
+            code |= unchecked((uint)REG_LOONGARCH64_RA) << 5;
             code |= (unchecked((uint)immediate) & 0xfff) << 10;
         }
 
@@ -312,7 +295,7 @@ public partial class Emitter
         id.idReg1(reg1);
         id.idIns(ins);
         id.idAddr().iiaSetInstrEncode(code);
-        id.idAddr().iiaLclVar.initLclVarAddr(varNum, unchecked((uint)offset));
+        id.idAddr().iiaInitLclVarAddr(varNum, unchecked((uint)offset));
         id.idSetIsLclVar();
         id.idCodeSize(4);
         appendToCurIG(id);
@@ -326,7 +309,7 @@ public partial class Emitter
         insOpts instOptions)
     {
         assert(instOptions == INS_OPTS_NONE);
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         switch (ins)
         {
@@ -403,7 +386,7 @@ public partial class Emitter
 
     private void emitInsRRLLoongArch64(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
     {
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         if (ins == INS_mov || (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ext_w_b, INS_cpucfg)))
         {
@@ -447,7 +430,6 @@ public partial class Emitter
             code |= unchecked((uint)reg1);
             code |= unchecked((uint)reg2) << 5;
         }
-#if FEATURE_SIMD
         else if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vreplgr2vr_b, INS_vreplgr2vr_d))) ||
                  ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvreplgr2vr_b, INS_xvreplgr2vr_d))))
         {
@@ -464,7 +446,6 @@ public partial class Emitter
             code |= unchecked((uint)reg1) & 0x1f;
             code |= (unchecked((uint)reg2) & 0x1f) << 5;
         }
-#endif
         else
         {
             unreached();
@@ -488,7 +469,7 @@ public partial class Emitter
         insOpts instOptions)
     {
         assert(instOptions == INS_OPTS_NONE);
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_slli_w, INS_rotri_w))
         {
@@ -586,11 +567,9 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= (unchecked((uint)imm) & 0xffff) << 10;
         }
-#if FEATURE_SIMD
         else if (TryEncodeLoongArchSimdRRI(ins, reg1, reg2, imm, ref code))
         {
         }
-#endif
         else
         {
             unreached();
@@ -614,7 +593,7 @@ public partial class Emitter
         insOpts instOptions)
     {
         assert(instOptions == INS_OPTS_NONE);
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         if (((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_add_w, INS_crcc_w_d_w))) ||
             ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_ldx_b, INS_ldle_d))) ||
@@ -654,7 +633,6 @@ public partial class Emitter
             code |= unchecked((uint)reg2) << 5;
             code |= unchecked((uint)reg3) << 10;
         }
-#if FEATURE_SIMD
         else if (ins is INS_vldx or INS_vstx or INS_xvldx or INS_xvstx)
         {
             assert(isVectorRegister(reg1));
@@ -684,7 +662,6 @@ public partial class Emitter
             code |= (unchecked((uint)reg2) & 0x1f) << 5;
             code |= (unchecked((uint)reg3) & 0x1f) << 10;
         }
-#endif
         else
         {
             unreached();
@@ -710,7 +687,7 @@ public partial class Emitter
         insOpts instOptions)
     {
         assert(instOptions == INS_OPTS_NONE);
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_alsl_w, INS_bytepick_w))
         {
@@ -771,7 +748,7 @@ public partial class Emitter
         insOpts instOptions)
     {
         assert(instOptions == INS_OPTS_NONE);
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         assert(isGeneralRegisterOrR0(reg1));
         assert(isGeneralRegisterOrR0(reg2));
@@ -798,7 +775,6 @@ public partial class Emitter
                 code |= (unchecked((uint)imm2) & 0x3f) << 10;
                 break;
             }
-#if FEATURE_SIMD
             case INS_vstelm_d:
             case INS_vstelm_w:
             case INS_vstelm_h:
@@ -827,7 +803,6 @@ public partial class Emitter
                 code |= (unchecked((uint)imm2) & unchecked((uint)indexMask)) << 18;
                 break;
             }
-#endif
             default:
             {
                 unreached();
@@ -852,7 +827,7 @@ public partial class Emitter
         regNumber reg3,
         regNumber reg4)
     {
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
 
         switch (ins)
         {
@@ -875,7 +850,6 @@ public partial class Emitter
                 code |= (unchecked((uint)reg4) & 0x1f) << 15;
                 break;
             }
-#if FEATURE_SIMD
             case INS_vfmadd_s:
             case INS_vfmadd_d:
             case INS_vfmsub_s:
@@ -907,7 +881,6 @@ public partial class Emitter
                 code |= (unchecked((uint)reg4) & 0x1f) << 15;
                 break;
             }
-#endif
             default:
             {
                 unreached();
@@ -923,7 +896,6 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-#if FEATURE_SIMD
     private static bool TryEncodeLoongArchSimdRRI(
         instruction ins,
         regNumber reg1,
@@ -1046,18 +1018,17 @@ public partial class Emitter
         code |= (unchecked((uint)imm) & immediateMask) << 10;
         return true;
     }
-#endif
-
     public void emitIns_MovLoongArch64(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
     {
+        RequireLoongArch64Target();
+
         assert(IsMovInstruction(ins));
         if (canSkip && dstReg == srcReg)
         {
             return;
         }
 
-#if FEATURE_SIMD
-        if (isVectorRegister(dstReg))
+        if (Configuration.FEATURE_SIMD && isVectorRegister(dstReg))
         {
             assert(attr <= EA_32BYTE);
             if (isVectorRegister(srcReg))
@@ -1070,7 +1041,6 @@ public partial class Emitter
             }
         }
         else
-#endif
         if (attr == EA_4BYTE && ins == INS_mov)
         {
             emitIns_R_R_I(INS_slli_w, attr, dstReg, srcReg, 0);
@@ -1081,4 +1051,3 @@ public partial class Emitter
         }
     }
 }
-#endif

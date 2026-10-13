@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -13,7 +12,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private bool genInstrWithConstant(instruction ins, emitAttr attr, regNumber reg1,
+    private bool genInstrWithConstantLoongArch64(instruction ins, emitAttr attr, regNumber reg1,
         regNumber reg2, nint imm, regNumber tmpReg, bool inUnwindRegion = false)
     {
         var size = EA_SIZE(attr);
@@ -56,7 +55,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            assert(tmpReg != REG_NA);
+            assert(tmpReg != REG_LOONGARCH64_NA);
             assert(!EA_IS_RELOC(size));
 
             Emitter.emitIns_I_la(size, tmpReg, imm);
@@ -80,4 +79,3 @@ public sealed partial class CodeGen
         return immediateFits;
     }
 }
-#endif

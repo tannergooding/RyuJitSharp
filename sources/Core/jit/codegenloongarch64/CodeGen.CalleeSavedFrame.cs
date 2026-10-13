@@ -2,7 +2,6 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime. Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -17,15 +16,15 @@ public sealed partial class CodeGen
 
         var registersToSaveMask = _regSet.rsGetModifiedCalleeSavedRegsMask();
 
-#if ETW_EBP_FRAMED
-        if (!IsFramePointerUsed && _regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE)))
+        if (Configuration.ETW_EBP_FRAMED &&
+            !IsFramePointerUsed &&
+            _regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE_LOONGARCH64)))
         {
             noway_assert(false);
         }
-#endif
 
         assert(IsFramePointerUsed);
-        var allSavedRegistersMask = registersToSaveMask | new regMaskTP(SRBM_FP | SRBM_RA);
+        var allSavedRegistersMask = registersToSaveMask | new regMaskTP(SRBM_LOONGARCH64_FP | SRBM_LOONGARCH64_RA);
         _regSet.rsSetCalleeSavedRegsMask(allSavedRegistersMask);
 
 #if DEBUG
@@ -43,7 +42,7 @@ public sealed partial class CodeGen
 
         if (_verbose)
         {
-            var floatMask = registersToSaveMask & new regMaskTP(SRBM_ALLFLOAT);
+            var floatMask = registersToSaveMask & new regMaskTP(SRBM_ALLFLOAT_LOONGARCH64);
             var intMask = registersToSaveMask & ~floatMask;
             jitprintf("Save float regs: ");
             dspRegMask(floatMask);
@@ -58,7 +57,7 @@ public sealed partial class CodeGen
         var localFrameSize = _compiler.compLclFrameSize;
         if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
         {
-            localFrameSize -= TARGET_POINTER_SIZE;
+            localFrameSize -= Configuration.TARGET_POINTER_SIZE;
         }
 
 #if DEBUG
@@ -72,7 +71,7 @@ public sealed partial class CodeGen
         var fpOffset = localFrameSize;
         if (totalFrameSize <= 2040)
         {
-            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -totalFrameSize);
+            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64, -totalFrameSize);
             _compiler.unwindAllocStack(unchecked((uint)totalFrameSize));
         }
         else
@@ -90,11 +89,11 @@ public sealed partial class CodeGen
             }
         }
 
-        Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
-        _compiler.unwindSaveReg(REG_FP, unchecked((uint)fpOffset));
+        Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_FP, REG_SPBASE_LOONGARCH64, fpOffset);
+        _compiler.unwindSaveReg(REG_LOONGARCH64_FP, unchecked((uint)fpOffset));
 
-        Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
-        _compiler.unwindSaveReg(REG_RA, unchecked((uint)(fpOffset + 8)));
+        Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_SPBASE_LOONGARCH64, fpOffset + 8);
+        _compiler.unwindSaveReg(REG_LOONGARCH64_RA, unchecked((uint)(fpOffset + 8)));
 
         genSaveCalleeSavedRegistersHelp(registersToSaveMask, fpOffset + 16);
         JITDUMP($"    offsetSpToSavedFp={fpOffset}\n");
@@ -127,7 +126,7 @@ public sealed partial class CodeGen
         var localFrameSize = _compiler.compLclFrameSize;
         if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
         {
-            localFrameSize -= TARGET_POINTER_SIZE;
+            localFrameSize -= Configuration.TARGET_POINTER_SIZE;
         }
 
         JITDUMP($"Frame type. #outsz={unchecked((uint)_compiler.lvaOutgoingArgSpaceSize.Value)}; " +
@@ -141,8 +140,8 @@ public sealed partial class CodeGen
             if (_compiler.compLocallocUsed)
             {
                 var spToFpDelta = genSPtoFPdelta;
-                Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -spToFpDelta);
-                _compiler.unwindSetFrameReg(REG_FPBASE, unchecked((uint)spToFpDelta));
+                Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_FPBASE_LOONGARCH64, -spToFpDelta);
+                _compiler.unwindSetFrameReg(REG_FPBASE_LOONGARCH64, unchecked((uint)spToFpDelta));
             }
         }
         else
@@ -152,48 +151,48 @@ public sealed partial class CodeGen
                 var spToFpDelta = genSPtoFPdelta;
                 if (Emitter.isValidSimm12(spToFpDelta))
                 {
-                    Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -spToFpDelta);
+                    Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_FPBASE_LOONGARCH64, -spToFpDelta);
                 }
                 else
                 {
-                    Emitter.emitIns_I_la(EA_PTRSIZE, REG_RA, spToFpDelta);
-                    Emitter.emitIns_R_R_R(INS_sub_d, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, REG_RA);
+                    Emitter.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_RA, spToFpDelta);
+                    Emitter.emitIns_R_R_R(INS_sub_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_FPBASE_LOONGARCH64, REG_LOONGARCH64_RA);
                 }
             }
 
             if ((localFrameSize + (_compiler.compCalleeRegsPushed << 3)) > 2040)
             {
                 remainingStackSize = localFrameSize & -16;
-                genStackPointerAdjustment(remainingStackSize, REG_RA, null, reportUnwindData: false);
+                genStackPointerAdjustment(remainingStackSize, REG_LOONGARCH64_RA, null, reportUnwindData: false);
 
                 remainingStackSize = totalFrameSize - remainingStackSize;
                 fpOffset = localFrameSize & 0xf;
             }
 
-            _compiler.unwindSetFrameReg(REG_FPBASE, unchecked((uint)fpOffset));
+            _compiler.unwindSetFrameReg(REG_FPBASE_LOONGARCH64, unchecked((uint)fpOffset));
         }
 
         JITDUMP($"    calleeSaveSPOffset={fpOffset + 16}\n");
-        genRestoreCalleeSavedRegistersHelp(
+        genRestoreCalleeSavedRegistersHelpLoongArch64(
             registersToRestoreMask,
-            REG_SPBASE,
+            REG_SPBASE_LOONGARCH64,
             fpOffset + 16,
             reportUnwindData: true);
 
-        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
-        _compiler.unwindSaveReg(REG_RA, unchecked((uint)(fpOffset + 8)));
+        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_SPBASE_LOONGARCH64, fpOffset + 8);
+        _compiler.unwindSaveReg(REG_LOONGARCH64_RA, unchecked((uint)(fpOffset + 8)));
 
-        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
-        _compiler.unwindSaveReg(REG_FP, unchecked((uint)fpOffset));
+        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_LOONGARCH64_FP, REG_SPBASE_LOONGARCH64, fpOffset);
+        _compiler.unwindSaveReg(REG_LOONGARCH64_FP, unchecked((uint)fpOffset));
 
         if (Emitter.isValidUimm11(remainingStackSize))
         {
-            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, remainingStackSize);
+            Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64, remainingStackSize);
         }
         else
         {
-            Emitter.emitIns_I_la(EA_PTRSIZE, REG_R21, remainingStackSize);
-            Emitter.emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, REG_R21);
+            Emitter.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_R21, remainingStackSize);
+            Emitter.emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64, REG_LOONGARCH64_R21);
         }
 
         _compiler.unwindAllocStack(unchecked((uint)remainingStackSize));
@@ -205,16 +204,15 @@ public sealed partial class CodeGen
 
             if (Emitter.isValidUimm11(tier0FrameSize))
             {
-                Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tier0FrameSize);
+                Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64, tier0FrameSize);
             }
             else
             {
-                Emitter.emitIns_I_la(EA_PTRSIZE, REG_R21, tier0FrameSize);
-                Emitter.emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, REG_R21);
+                Emitter.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_R21, tier0FrameSize);
+                Emitter.emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64, REG_LOONGARCH64_R21);
             }
 
             _compiler.unwindAllocStack(unchecked((uint)tier0FrameSize));
         }
     }
 }
-#endif

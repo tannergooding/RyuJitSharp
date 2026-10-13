@@ -3,15 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System;
 
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreBlk(GenTreeBlk node)
+    public void genCodeForStoreBlkLoadStore64(GenTreeBlk node)
     {
+        if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "This block-store implementation requires LoongArch64 or RISC-V64.");
+        }
+
         assert(node.Oper is GT_STORE_BLK);
 
         if (node._gcUnsafe)
@@ -26,7 +30,14 @@ public sealed partial class CodeGen
             case GenTreeBlk.BlkOpKindLoop:
             {
                 assert(!isCopyBlk);
-                genCodeForInitBlkLoop(node);
+                if (Configuration.TARGET_LOONGARCH64)
+                {
+                    genCodeForInitBlkLoopLoongArch64(node);
+                }
+                else
+                {
+                    genCodeForInitBlkLoopRiscV64(node);
+                }
                 break;
             }
 
@@ -34,11 +45,25 @@ public sealed partial class CodeGen
             {
                 if (isCopyBlk)
                 {
-                    genCodeForCpBlkUnroll(node);
+                    if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        genCodeForCpBlkUnrollLoongArch64(node);
+                    }
+                    else
+                    {
+                        genCodeForCpBlkUnrollRiscV64(node);
+                    }
                 }
                 else
                 {
-                    genCodeForInitBlkUnroll(node);
+                    if (Configuration.TARGET_LOONGARCH64)
+                    {
+                        genCodeForInitBlkUnrollLoongArch64(node);
+                    }
+                    else
+                    {
+                        genCodeForInitBlkUnrollRiscV64(node);
+                    }
                 }
 
                 break;
@@ -57,12 +82,12 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForCpBlkUnroll(GenTreeBlk node)
+    public void genCodeForCpBlkUnrollLoongArch64(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);
 
         var dstLclNum = BAD_VAR_NUM;
-        var dstAddrBaseReg = REG_NA;
+        var dstAddrBaseReg = REG_LOONGARCH64_NA;
         var dstOffset = 0;
         var dstAddr = node.Addr;
 
@@ -89,7 +114,7 @@ public sealed partial class CodeGen
         }
 
         var srcLclNum = BAD_VAR_NUM;
-        var srcAddrBaseReg = REG_NA;
+        var srcAddrBaseReg = REG_LOONGARCH64_NA;
         var srcOffset = 0;
         var src = node.Data;
         assert(src.IsContained);
@@ -136,13 +161,13 @@ public sealed partial class CodeGen
         assert(srcOffset < int.MaxValue - unchecked((int)size));
         assert(dstOffset < int.MaxValue - unchecked((int)size));
 
-        var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT));
+        var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_LOONGARCH64));
 
-        if (size >= (uint)(2 * REGSIZE_BYTES))
+        if (size >= (uint)(2 * Configuration.REGSIZE_BYTES))
         {
-            var tempReg2 = REG_R21;
+            var tempReg2 = REG_LOONGARCH64_R21;
 
-            for (var regSize = (uint)(2 * REGSIZE_BYTES); size >= regSize;
+            for (var regSize = (uint)(2 * Configuration.REGSIZE_BYTES); size >= regSize;
                  size -= regSize, srcOffset += (int)regSize, dstOffset += (int)regSize)
             {
                 if (srcLclNum != BAD_VAR_NUM)
@@ -169,7 +194,7 @@ public sealed partial class CodeGen
             }
         }
 
-        for (var regSize = (uint)REGSIZE_BYTES; size > 0;
+        for (var regSize = (uint)Configuration.REGSIZE_BYTES; size > 0;
              size -= regSize, srcOffset += (int)regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)
@@ -243,11 +268,11 @@ public sealed partial class CodeGen
 
         if (node.IsVolatile)
         {
-            instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
+            instGen_MemoryBarrierLoongArch64(BARRIER_LOAD_ONLY);
         }
     }
 
-    public void genCodeForInitBlkLoop(GenTreeBlk node)
+    public void genCodeForInitBlkLoopLoongArch64(GenTreeBlk node)
     {
         var dstNode = node.Addr;
         _ = genConsumeReg(dstNode);
@@ -259,18 +284,18 @@ public sealed partial class CodeGen
         }
 
         var size = node.Layout.Size;
-        assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+        assert((size >= Configuration.TARGET_POINTER_SIZE) && ((size % Configuration.TARGET_POINTER_SIZE) == 0));
 
         // Zero the first pointer as a nullcheck before accessing a potentially large offset.
-        Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_R0, dstReg, 0);
-        if (size > TARGET_POINTER_SIZE)
+        Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_R0, dstReg, 0);
+        if (size > Configuration.TARGET_POINTER_SIZE)
         {
             GCInfo.gcMarkRegPtrVal(dstReg, dstNode.Type);
 
             var offsetReg = InternalRegisters.GetSingle(node);
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, unchecked((nint)(size - TARGET_POINTER_SIZE)));
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, unchecked((nint)(size - Configuration.TARGET_POINTER_SIZE)));
 
-            Emitter.emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, REG_R0, dstReg, offsetReg);
+            Emitter.emitIns_R_R_R(INS_stx_d, EA_PTRSIZE, REG_LOONGARCH64_R0, dstReg, offsetReg);
             Emitter.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, offsetReg, offsetReg, -8);
             // Branch back two instructions; the loop keeps the base pointer live, not an interior pointer.
             Emitter.emitIns_R_I(INS_bnez, EA_8BYTE, offsetReg, -2 << 2);
@@ -279,12 +304,12 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForInitBlkUnroll(GenTreeBlk node)
+    public void genCodeForInitBlkUnrollLoongArch64(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);
 
         var dstLclNum = BAD_VAR_NUM;
-        var dstAddrBaseReg = REG_NA;
+        var dstAddrBaseReg = REG_LOONGARCH64_NA;
         var dstOffset = 0;
         var dstAddr = node.Addr;
 
@@ -316,7 +341,7 @@ public sealed partial class CodeGen
             src = src.AsUnOp().Op1;
         }
 
-        var srcReg = REG_R0;
+        var srcReg = REG_LOONGARCH64_R0;
         if (!src.IsContained)
         {
             srcReg = genConsumeReg(src);
@@ -335,7 +360,7 @@ public sealed partial class CodeGen
         assert(size <= int.MaxValue);
         assert(dstOffset < int.MaxValue - unchecked((int)size));
 
-        for (var regSize = (uint)(2 * REGSIZE_BYTES); size >= regSize; size -= regSize, dstOffset += (int)regSize)
+        for (var regSize = (uint)(2 * Configuration.REGSIZE_BYTES); size >= regSize; size -= regSize, dstOffset += (int)regSize)
         {
             if (dstLclNum != BAD_VAR_NUM)
             {
@@ -349,7 +374,7 @@ public sealed partial class CodeGen
             }
         }
 
-        for (var regSize = (uint)REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
+        for (var regSize = (uint)Configuration.REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)
             {
@@ -405,11 +430,23 @@ public sealed partial class CodeGen
 
     public void instGen_MemoryBarrier()
     {
-        instGen_MemoryBarrier(BARRIER_FULL);
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            instGen_MemoryBarrierLoongArch64(BARRIER_FULL);
+        }
+        else
+        {
+            instGen_MemoryBarrier(BARRIER_FULL);
+        }
     }
 
-    public void instGen_MemoryBarrier(BarrierKind barrierKind)
+    public void instGen_MemoryBarrierLoongArch64(BarrierKind barrierKind)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 memory barrier generation requires LoongArch64.");
+        }
+
 #if DEBUG
         if (JitConfig.JitNoMemoryBarriers == 1)
         {
@@ -422,4 +459,3 @@ public sealed partial class CodeGen
         Emitter.emitIns_I(INS_dbar, EA_4BYTE, 0);
     }
 }
-#endif

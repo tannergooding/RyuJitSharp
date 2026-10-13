@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.emitAttr;
@@ -16,7 +15,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForCompare(GenTreeOp tree)
+    public void genCodeForCompareLoongArch64(GenTreeOp tree)
     {
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -153,7 +152,7 @@ public sealed partial class CodeGen
                 }
             }
 
-            if (targetReg != REG_NA)
+            if (targetReg != REG_LOONGARCH64_NA)
             {
                 assert(tree.Type is not TYP_VOID);
                 assert(Emitter.isGeneralRegister(targetReg));
@@ -164,7 +163,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            assert(targetReg != REG_NA);
+            assert(targetReg != REG_LOONGARCH64_NA);
             assert(tree.Type is not TYP_VOID);
 
             assert(!op1.IsContainedIntOrIImmed);
@@ -181,7 +180,7 @@ public sealed partial class CodeGen
                 {
                     case EA_4BYTE:
                     {
-                        var tmpRegOp1 = REG_R21;
+                        var tmpRegOp1 = REG_LOONGARCH64_R21;
                         assert(regOp1 != tmpRegOp1);
                         if (isUnsigned)
                         {
@@ -226,16 +225,16 @@ public sealed partial class CodeGen
                 {
                     if (!isUnsigned && Emitter.isValidSimm12(imm))
                     {
-                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
+                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, unchecked((int)imm));
                     }
                     else if (isUnsigned && Emitter.isValidUimm11(imm))
                     {
-                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm);
+                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, unchecked((int)imm));
                     }
                     else
                     {
-                        emit.emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-                        emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                        emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_RA, imm);
+                        emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_LOONGARCH64_RA);
                     }
                 }
                 else if (tree.Oper is GT_LE)
@@ -243,23 +242,23 @@ public sealed partial class CodeGen
                     var incrementedImm = unchecked(imm + 1);
                     if (!isUnsigned && Emitter.isValidSimm12(incrementedImm))
                     {
-                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, incrementedImm);
+                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, unchecked((int)incrementedImm));
                     }
                     else if (isUnsigned && Emitter.isValidUimm11(incrementedImm) && (imm != ~(nint)0))
                     {
-                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, incrementedImm);
+                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, unchecked((int)incrementedImm));
                     }
                     else
                     {
                         assert(!(!isUnsigned && (imm == nint.MaxValue)));
                         if (isUnsigned && (imm == ~(nint)0))
                         {
-                            emit.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, targetReg, REG_R0, 1);
+                            emit.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, targetReg, REG_LOONGARCH64_R0, 1);
                         }
                         else
                         {
-                            emit.emitIns_I_la(EA_PTRSIZE, REG_RA, incrementedImm);
-                            emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                            emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_RA, incrementedImm);
+                            emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_LOONGARCH64_RA);
                         }
                     }
                 }
@@ -268,34 +267,34 @@ public sealed partial class CodeGen
                     var incrementedImm = unchecked(imm + 1);
                     if (!isUnsigned && Emitter.isValidSimm12(incrementedImm))
                     {
-                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, incrementedImm);
+                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, unchecked((int)incrementedImm));
                         emit.emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                     }
                     else if (isUnsigned && Emitter.isValidUimm11(incrementedImm) && (imm != ~(nint)0))
                     {
-                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, incrementedImm);
+                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, unchecked((int)incrementedImm));
                         emit.emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                     }
                     else
                     {
-                        emit.emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-                        emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
+                        emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_RA, imm);
+                        emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_LOONGARCH64_RA, regOp1);
                     }
                 }
                 else if (tree.Oper is GT_GE)
                 {
                     if (!isUnsigned && Emitter.isValidSimm12(imm))
                     {
-                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
+                        emit.emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, unchecked((int)imm));
                     }
                     else if (isUnsigned && Emitter.isValidUimm11(imm))
                     {
-                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm);
+                        emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, unchecked((int)imm));
                     }
                     else
                     {
-                        emit.emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-                        emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                        emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_RA, imm);
+                        emit.emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_LOONGARCH64_RA);
                     }
 
                     emit.emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
@@ -304,24 +303,24 @@ public sealed partial class CodeGen
                 {
                     if (imm == 0)
                     {
-                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, regOp1);
+                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_LOONGARCH64_R0, regOp1);
                     }
                     else if (Emitter.isValidUimm12(imm))
                     {
-                        emit.emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
-                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                        emit.emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, unchecked((int)imm));
+                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_LOONGARCH64_R0, targetReg);
                     }
                     else if (Emitter.isValidSimm12(imm) && (imm != -2048))
                     {
                         var ins = cmpSize == EA_4BYTE ? INS_addi_w : INS_addi_d;
-                        emit.emitIns_R_R_I(ins, EA_PTRSIZE, targetReg, regOp1, -imm);
-                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                        emit.emitIns_R_R_I(ins, EA_PTRSIZE, targetReg, regOp1, unchecked((int)-imm));
+                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_LOONGARCH64_R0, targetReg);
                     }
                     else
                     {
-                        emit.emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-                        emit.emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                        emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_RA, imm);
+                        emit.emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_LOONGARCH64_RA);
+                        emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_LOONGARCH64_R0, targetReg);
                     }
                 }
                 else if (tree.Oper is GT_EQ)
@@ -332,19 +331,19 @@ public sealed partial class CodeGen
                     }
                     else if (Emitter.isValidUimm12(imm))
                     {
-                        emit.emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
+                        emit.emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, unchecked((int)imm));
                         emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
                     }
                     else if (Emitter.isValidSimm12(imm) && (imm != -2048))
                     {
                         var ins = cmpSize == EA_4BYTE ? INS_addi_w : INS_addi_d;
-                        emit.emitIns_R_R_I(ins, EA_PTRSIZE, targetReg, regOp1, -imm);
+                        emit.emitIns_R_R_I(ins, EA_PTRSIZE, targetReg, regOp1, unchecked((int)-imm));
                         emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
                     }
                     else
                     {
-                        emit.emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-                        emit.emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
+                        emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_RA, imm);
+                        emit.emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_LOONGARCH64_RA);
                         emit.emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, targetReg, 1);
                     }
                 }
@@ -355,8 +354,8 @@ public sealed partial class CodeGen
 
                 if (cmpSize == EA_4BYTE)
                 {
-                    var tmpRegOp1 = REG_RA;
-                    var tmpRegOp2 = REG_R21;
+                    var tmpRegOp1 = REG_LOONGARCH64_RA;
+                    var tmpRegOp2 = REG_LOONGARCH64_R21;
                     assert(regOp1 != tmpRegOp2);
                     assert(regOp2 != tmpRegOp2);
 
@@ -396,7 +395,7 @@ public sealed partial class CodeGen
                 else if (tree.Oper is GT_NE)
                 {
                     emit.emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, regOp2);
-                    emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
+                    emit.emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_LOONGARCH64_R0, targetReg);
                 }
                 else if (tree.Oper is GT_EQ)
                 {
@@ -409,7 +408,7 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForJumpCompare(GenTreeOpCC tree)
+    public void genCodeForJumpCompareLoongArch64(GenTreeOpCC tree)
     {
         var currentBlock = _compiler.compCurBB;
         assert(currentBlock is not null);
@@ -418,7 +417,7 @@ public sealed partial class CodeGen
         assert(tree.Oper is GT_JCMP);
         assert(!varTypeIsFloating(tree.Type));
         assert(tree.Type is TYP_VOID);
-        assert(tree.RegNum == REG_NA);
+        assert(tree.RegNum == REG_LOONGARCH64_NA);
 
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -450,18 +449,18 @@ public sealed partial class CodeGen
                 {
                     case EA_4BYTE:
                     {
-                        assert(regOp1 != REG_R21);
+                        assert(regOp1 != REG_LOONGARCH64_R21);
                         if (cond.IsUnsigned)
                         {
                             imm = unchecked((nint)(uint)imm);
-                            emit.emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_R21, regOp1, 31, 0);
+                            emit.emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_LOONGARCH64_R21, regOp1, 31, 0);
                         }
                         else
                         {
                             imm = unchecked((nint)(int)imm);
-                            emit.emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, regOp1, 0);
+                            emit.emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_LOONGARCH64_R21, regOp1, 0);
                         }
-                        regOp1 = REG_R21;
+                        regOp1 = REG_LOONGARCH64_R21;
                         break;
                     }
                     case EA_8BYTE:
@@ -495,26 +494,26 @@ public sealed partial class CodeGen
                 }
 
 #if DEBUG
-                instGen_Set_Reg_To_Imm(attr, REG_RA, imm, targetHandle: unchecked((nuint)con.TargetHandle),
+                instGen_Set_Reg_To_Imm(attr, REG_LOONGARCH64_RA, imm, targetHandle: unchecked((nuint)con.TargetHandle),
                     gtFlags: con.Flags);
 #else
-                instGen_Set_Reg_To_Imm(attr, REG_RA, imm);
+                instGen_Set_Reg_To_Imm(attr, REG_LOONGARCH64_RA, imm);
 #endif
-                _regSet.verifyRegUsed(REG_RA);
-                regs = (int)REG_RA << 5;
+                _regSet.verifyRegUsed(REG_LOONGARCH64_RA);
+                regs = (int)REG_LOONGARCH64_RA << 5;
             }
             else if (cmpSize is EA_4BYTE)
             {
-                assert(regOp1 != REG_R21);
+                assert(regOp1 != REG_LOONGARCH64_R21);
                 if (cond.IsUnsigned)
                 {
-                    emit.emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_R21, regOp1, 31, 0);
+                    emit.emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, REG_LOONGARCH64_R21, regOp1, 31, 0);
                 }
                 else
                 {
-                    emit.emitIns_R_R_I(INS_slli_w, EA_8BYTE, REG_R21, regOp1, 0);
+                    emit.emitIns_R_R_I(INS_slli_w, EA_8BYTE, REG_LOONGARCH64_R21, regOp1, 0);
                 }
-                regOp1 = REG_R21;
+                regOp1 = REG_LOONGARCH64_R21;
             }
 
             switch (cond.Code)
@@ -541,7 +540,7 @@ public sealed partial class CodeGen
                 case GenCondition.CodeKind.UGT:
                 case GenCondition.CodeKind.SGT:
                 {
-                    regs = imm != 0 ? (((int)regOp1 << 5) | (int)REG_RA) : ((int)regOp1 << 5);
+                    regs = imm != 0 ? (((int)regOp1 << 5) | (int)REG_LOONGARCH64_RA) : ((int)regOp1 << 5);
                     ins = cond.IsUnsigned ? INS_bltu : INS_blt;
                     break;
                 }
@@ -555,7 +554,7 @@ public sealed partial class CodeGen
                 case GenCondition.CodeKind.ULE:
                 case GenCondition.CodeKind.SLE:
                 {
-                    regs = imm != 0 ? (((int)regOp1 << 5) | (int)REG_RA) : ((int)regOp1 << 5);
+                    regs = imm != 0 ? (((int)regOp1 << 5) | (int)REG_LOONGARCH64_RA) : ((int)regOp1 << 5);
                     ins = cond.IsUnsigned ? INS_bgeu : INS_bge;
                     break;
                 }
@@ -571,8 +570,8 @@ public sealed partial class CodeGen
             var regOp2 = op2.RegNum;
             if (cmpSize is EA_4BYTE)
             {
-                var tmpRegOp1 = REG_RA;
-                var tmpRegOp2 = REG_R21;
+                var tmpRegOp1 = REG_LOONGARCH64_RA;
+                var tmpRegOp2 = REG_LOONGARCH64_R21;
                 assert(regOp1 != tmpRegOp2);
                 assert(regOp2 != tmpRegOp2);
 
@@ -648,8 +647,7 @@ public sealed partial class CodeGen
         var falseTarget = block.FalseTarget;
         if (!block.CanRemoveJumpToTarget(falseTarget, _compiler))
         {
-            inst_JMP(EJ_jmp, falseTarget);
+            inst_JMPLoongArch64(EJ_jmp, falseTarget, isRemovableJmpCandidate: false);
         }
     }
 }
-#endif

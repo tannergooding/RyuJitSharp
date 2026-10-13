@@ -3,49 +3,44 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
+using static RyuJitSharp.Globals;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public static bool isValidSimm20(nint value)
+    private static void EnsureLoongArch64Target()
     {
-        const int ImmediateLimit = 1 << 19;
-        return (-ImmediateLimit <= value) && (value < ImmediateLimit);
-    }
-
-    public static uint getBitWidth(emitAttr size)
-    {
-        assert((int)size <= (int)EA_8BYTE);
-        return unchecked((uint)size * (uint)BITS_PER_BYTE);
-    }
-
-    public static bool isGeneralRegisterOrR0(regNumber reg)
-    {
-        return (reg >= REG_FIRST) && (reg <= REG_INT_LAST);
-    }
-
-    public static bool isFloatReg(regNumber reg)
-    {
-        return (reg >= REG_FP_FIRST) && (reg <= REG_FP_LAST);
-    }
-
-#if FEATURE_SIMD
-    public static bool isVectorRegister(regNumber reg)
-    {
-        return isFloatReg(reg);
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 instruction validation is not available for this target.");
+        }
     }
 
     public static bool isValidVectorDatasize(emitAttr size)
     {
+        EnsureLoongArch64Target();
+        EnsureLoongArch64Simd();
+
         return (size == EA_8BYTE) || (size == EA_16BYTE) || (size == EA_32BYTE);
     }
 
     public static bool isValidVectorElemsize(emitAttr size)
     {
+        EnsureLoongArch64Target();
+        EnsureLoongArch64Simd();
+
         return (size == EA_16BYTE) || (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE) ||
                (size == EA_1BYTE);
     }
-#endif
+
+    private static void EnsureLoongArch64Simd()
+    {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 vector validation is not available without SIMD support.");
+        }
+    }
 }
-#endif

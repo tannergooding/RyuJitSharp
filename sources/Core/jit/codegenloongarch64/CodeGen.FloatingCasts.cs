@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,7 +14,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genIntToFloatCast(GenTree treeNode)
+    public void genIntToFloatCastLoongArch64(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
@@ -42,22 +41,22 @@ public sealed partial class CodeGen
         if (cast.IsUnsigned)
         {
             // Keep the original bits so the correction can distinguish unsigned values above Int64.MaxValue.
-            emit.emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, REG_SCRATCH_FLT, op1.RegNum);
+            emit.emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, REG_LOONGARCH64_F11, op1.RegNum);
 
             if (srcSize == EA_8BYTE)
             {
                 // Convert a rounded-up half as signed, then double it to cover the unsigned high half.
-                var skipAdjustment = (nint)(4 << 2);
-                emit.emitIns_R_R_I(INS_bge, EA_8BYTE, op1.RegNum, REG_R0, skipAdjustment);
+                var skipAdjustment = 4 << 2;
+                emit.emitIns_R_R_I(INS_bge, EA_8BYTE, op1.RegNum, REG_LOONGARCH64_R0, skipAdjustment);
 
-                emit.emitIns_R_R_I(INS_andi, EA_8BYTE, REG_R21, op1.RegNum, 1);
+                emit.emitIns_R_R_I(INS_andi, EA_8BYTE, REG_LOONGARCH64_R21, op1.RegNum, 1);
                 emit.emitIns_R_R_I(INS_srli_d, EA_8BYTE, op1.RegNum, op1.RegNum, 1);
-                emit.emitIns_R_R_R(INS_or, EA_8BYTE, op1.RegNum, op1.RegNum, REG_R21);
+                emit.emitIns_R_R_R(INS_or, EA_8BYTE, op1.RegNum, op1.RegNum, REG_LOONGARCH64_R21);
             }
             else
             {
                 srcSize = EA_8BYTE;
-                emit.emitIns_R_R_I_I(INS_bstrins_d, EA_8BYTE, op1.RegNum, REG_R0, 63, 32);
+                emit.emitIns_R_R_I_I(INS_bstrins_d, EA_8BYTE, op1.RegNum, REG_LOONGARCH64_R0, 63, 32);
             }
         }
 
@@ -96,25 +95,25 @@ public sealed partial class CodeGen
         if (cast.IsUnsigned)
         {
             srcSize = op1.Type.ActualType.EmitSize;
-            emit.emitIns_R_R(INS_movfr2gr_d, attr, op1.RegNum, REG_SCRATCH_FLT);
+            emit.emitIns_R_R(INS_movfr2gr_d, attr, op1.RegNum, REG_LOONGARCH64_F11);
 
             if (srcSize is EA_8BYTE)
             {
-                var skipCorrection = (nint)(3 << 2);
-                emit.emitIns_R_R_I(INS_bge, EA_8BYTE, op1.RegNum, REG_R0, skipCorrection);
+                var skipCorrection = 3 << 2;
+                emit.emitIns_R_R_I(INS_bge, EA_8BYTE, op1.RegNum, REG_LOONGARCH64_R0, skipCorrection);
 
                 var moveFloatIns = dstType is TYP_DOUBLE ? INS_fmov_d : INS_fmov_s;
-                emit.emitIns_R_R(moveFloatIns, attr, REG_SCRATCH_FLT, targetReg);
+                emit.emitIns_R_R(moveFloatIns, attr, REG_LOONGARCH64_F11, targetReg);
 
                 var addFloatIns = dstType is TYP_DOUBLE ? INS_fadd_d : INS_fadd_s;
-                emit.emitIns_R_R_R(addFloatIns, attr, targetReg, REG_SCRATCH_FLT, targetReg);
+                emit.emitIns_R_R_R(addFloatIns, attr, targetReg, REG_LOONGARCH64_F11, targetReg);
             }
         }
 
         genProduceReg(cast);
     }
 
-    public void genFloatToFloatCast(GenTreeCast treeNode)
+    public void genFloatToFloatCastLoongArch64(GenTreeCast treeNode)
     {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
@@ -147,7 +146,7 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 
-    public void genFloatToIntCast(GenTreeCast treeNode)
+    public void genFloatToIntCastLoongArch64(GenTreeCast treeNode)
     {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
@@ -171,7 +170,7 @@ public sealed partial class CodeGen
         instruction ins2;
         var isUnsigned = varTypeIsUnsigned(dstType);
 
-        var tempReg = REG_SCRATCH_FLT;
+        var tempReg = REG_LOONGARCH64_F11;
         assert(tempReg != op1.RegNum);
 
         if (srcType is TYP_DOUBLE)
@@ -209,7 +208,7 @@ public sealed partial class CodeGen
         // Convert unsigned values above the signed limit relative to that limit, then restore the high bit.
         if (isUnsigned)
         {
-            nint imm;
+            int imm;
             if (srcType is TYP_DOUBLE)
             {
                 if (dstSize == EA_4BYTE)
@@ -234,9 +233,9 @@ public sealed partial class CodeGen
                 }
             }
 
-            emit.emitIns_R_R_I(INS_ori, dstSize, targetReg, REG_R0, 0);
+            emit.emitIns_R_R_I(INS_ori, dstSize, targetReg, REG_LOONGARCH64_R0, 0);
             var intToFloatIns = srcType is TYP_DOUBLE ? INS_movgr2fr_d : INS_movgr2fr_w;
-            emit.emitIns_R_R(intToFloatIns, EA_8BYTE, tempReg, REG_R0);
+            emit.emitIns_R_R(intToFloatIns, EA_8BYTE, tempReg, REG_LOONGARCH64_R0);
 
             emit.emitIns_R_R_I(
                 srcType is TYP_DOUBLE ? INS_fcmp_cult_d : INS_fcmp_cult_s, EA_8BYTE, op1.RegNum, tempReg, 2);
@@ -246,30 +245,30 @@ public sealed partial class CodeGen
 
             if (srcType is TYP_DOUBLE)
             {
-                emit.emitIns_R_R_I(INS_lu52i_d, EA_8BYTE, REG_R21, REG_R0, imm >> 8);
+                emit.emitIns_R_R_I(INS_lu52i_d, EA_8BYTE, REG_LOONGARCH64_R21, REG_LOONGARCH64_R0, imm >> 8);
             }
             else
             {
-                emit.emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, imm);
+                emit.emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_LOONGARCH64_R21, imm);
             }
 
-            emit.emitIns_R_R(intToFloatIns, EA_8BYTE, tempReg, REG_R21);
+            emit.emitIns_R_R(intToFloatIns, EA_8BYTE, tempReg, REG_LOONGARCH64_R21);
 
             emit.emitIns_R_R_I(
                 srcType is TYP_DOUBLE ? INS_fcmp_clt_d : INS_fcmp_clt_s, EA_8BYTE, op1.RegNum, tempReg, 2);
 
-            emit.emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, 0);
+            emit.emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_LOONGARCH64_R21, REG_LOONGARCH64_R0, 0);
             emit.emitIns_I_I(INS_bcnez, EA_PTRSIZE, 2, 4 << 2);
 
             var floatSubtractIns = srcType is TYP_DOUBLE ? INS_fsub_d : INS_fsub_s;
             emit.emitIns_R_R_R(floatSubtractIns, EA_8BYTE, tempReg, op1.RegNum, tempReg);
 
-            emit.emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R0, 1);
+            emit.emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_LOONGARCH64_R21, REG_LOONGARCH64_R0, 1);
             emit.emitIns_R_R_I(
                 dstSize == EA_8BYTE ? INS_slli_d : INS_slli_w,
                 EA_PTRSIZE,
-                REG_R21,
-                REG_R21,
+                REG_LOONGARCH64_R21,
+                REG_LOONGARCH64_R21,
                 dstSize == EA_8BYTE ? 63 : 31);
 
             emit.emitIns_R_R_R_I(INS_fsel, EA_PTRSIZE, tempReg, tempReg, op1.RegNum, 2);
@@ -279,12 +278,12 @@ public sealed partial class CodeGen
 
             if (dstType is TYP_UINT)
             {
-                emit.emitIns_R_R_I(INS_addu16i_d, EA_PTRSIZE, REG_RA, REG_R0, -32768);
-                emit.emitIns_R_R_I(INS_bne, EA_PTRSIZE, targetReg, REG_RA, 2 << 2);
-                emit.emitIns_R_R_I(INS_ori, dstSize, targetReg, REG_R0, 0);
+                emit.emitIns_R_R_I(INS_addu16i_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_LOONGARCH64_R0, -32768);
+                emit.emitIns_R_R_I(INS_bne, EA_PTRSIZE, targetReg, REG_LOONGARCH64_RA, 2 << 2);
+                emit.emitIns_R_R_I(INS_ori, dstSize, targetReg, REG_LOONGARCH64_R0, 0);
             }
 
-            emit.emitIns_R_R_R(INS_or, dstSize, targetReg, REG_R21, targetReg);
+            emit.emitIns_R_R_R(INS_or, dstSize, targetReg, REG_LOONGARCH64_R21, targetReg);
         }
         else
         {
@@ -295,13 +294,13 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 
-    public void genCkfinite(GenTree treeNode)
+    public void genCkfiniteLoongArch64(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CKFINITE);
 
         var op1 = treeNode.AsUnOp().Op1;
         var targetType = treeNode.Type;
-        nint expMask = targetType is TYP_FLOAT ? 0xFF : 0x7FF;
+        int expMask = targetType is TYP_FLOAT ? 0xFF : 0x7FF;
         var exponentSize = targetType is TYP_FLOAT ? 8 : 11;
         var exponentPosition = targetType is TYP_FLOAT ? 23 : 52;
 
@@ -335,4 +334,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

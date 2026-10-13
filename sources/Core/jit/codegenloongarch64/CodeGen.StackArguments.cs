@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -23,12 +22,13 @@ public sealed partial class CodeGen
             varNumOut = getFirstArgWithStackSlot();
             argOffsetMax = unchecked((uint)_compiler.lvaParameterStackSize);
 
-#if FEATURE_FASTTAILCALL
-            var call = treeNode.Call;
-            assert(call is not null);
-            assert(call.IsFastTailCall);
-            assert(varNumOut != BAD_VAR_NUM);
-#endif
+            if (Configuration.FEATURE_FASTTAILCALL)
+            {
+                var call = treeNode.Call;
+                assert(call is not null);
+                assert(call.IsFastTailCall);
+                assert(varNumOut != BAD_VAR_NUM);
+            }
         }
         else
         {
@@ -52,7 +52,7 @@ public sealed partial class CodeGen
                 assert(source.Oper is GT_CNS_INT);
                 assert(source.AsIntConCommon().IconValue == 0);
 
-                Emitter.emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, unchecked((int)argOffsetOut));
+                Emitter.emitIns_S_R(storeIns, storeAttr, REG_LOONGARCH64_R0, varNumOut, unchecked((int)argOffsetOut));
             }
             else
             {
@@ -64,7 +64,7 @@ public sealed partial class CodeGen
                         EA_4BYTE,
                         source.RegNum,
                         source.RegNum,
-                        REG_R0);
+                        REG_LOONGARCH64_R0);
                     storeIns = INS_st_d;
                     storeAttr = EA_8BYTE;
                 }
@@ -96,7 +96,7 @@ public sealed partial class CodeGen
             noway_assert(varTypeIsStruct(targetType));
 
             var loReg = InternalRegisters.Extract(treeNode);
-            var addrReg = REG_NA;
+            var addrReg = REG_LOONGARCH64_NA;
 
             GenTreeLclVarCommon? varNode = null;
             GenTree? addrNode = null;
@@ -159,10 +159,10 @@ public sealed partial class CodeGen
 
             while (remainingSize > 0)
             {
-                var nextIndex = structOffset / TARGET_POINTER_SIZE;
+                var nextIndex = structOffset / Configuration.TARGET_POINTER_SIZE;
 
                 var type = TYP_UBYTE;
-                if (remainingSize >= TARGET_POINTER_SIZE)
+                if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
                 {
                     type = layout.GetGCPtrType(unchecked((int)nextIndex));
                 }
@@ -226,4 +226,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

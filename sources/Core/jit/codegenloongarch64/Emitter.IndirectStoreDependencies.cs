@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,8 +14,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
+    public void emitInsLoadStoreOpLoongArch64(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 indirect load/store recording requires LoongArch64.");
+        }
+
         var compiler = _compiler ??
             throw new FatalJitException(CORJIT_INTERNALERROR, "LoongArch64 indirect load/store recording requires an active compiler.");
         var addr = indir.Addr;
@@ -59,8 +63,8 @@ public partial class Emitter
                     {
                         if (shift > 0)
                         {
-                            emitIns_R_R_I(INS_slli_d, addType, REG_R21, indexReg, shift);
-                            emitIns_R_R_R(INS_add_d, addType, tmpReg, baseReg, REG_R21);
+                            emitIns_R_R_I(INS_slli_d, addType, REG_LOONGARCH64_R21, indexReg, shift);
+                            emitIns_R_R_R(INS_add_d, addType, tmpReg, baseReg, REG_LOONGARCH64_R21);
                         }
                         else
                         {
@@ -78,8 +82,8 @@ public partial class Emitter
                         assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                         assert(tmpReg != indexReg);
 
-                        emitIns_R_R_I(INS_slli_d, addType, REG_R21, indexReg, shift);
-                        emitIns_R_R_R(INS_add_d, addType, tmpReg, tmpReg, REG_R21);
+                        emitIns_R_R_I(INS_slli_d, addType, REG_LOONGARCH64_R21, indexReg, shift);
+                        emitIns_R_R_R(INS_add_d, addType, tmpReg, tmpReg, REG_LOONGARCH64_R21);
                         emitIns_R_R_I(ins, attr, dataReg, tmpReg, 0);
                     }
                 }
@@ -177,8 +181,8 @@ public partial class Emitter
 
                     if (shift > 0)
                     {
-                        emitIns_R_R_I(INS_slli_d, index.Type.EmitActualSize, REG_R21, indexReg, shift);
-                        emitIns_R_R_R(ins, attr, dataReg, baseReg, REG_R21);
+                        emitIns_R_R_I(INS_slli_d, index.Type.EmitActualSize, REG_LOONGARCH64_R21, indexReg, shift);
+                        emitIns_R_R_R(ins, attr, dataReg, baseReg, REG_LOONGARCH64_R21);
                     }
                     else
                     {
@@ -228,4 +232,3 @@ public partial class Emitter
         }
     }
 }
-#endif

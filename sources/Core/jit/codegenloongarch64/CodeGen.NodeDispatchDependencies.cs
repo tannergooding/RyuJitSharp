@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -18,7 +17,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private unsafe void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree tree)
+    private unsafe void genSetRegToConstLoongArch64(regNumber targetReg, var_types targetType, GenTree tree)
     {
         switch (tree.Oper)
         {
@@ -55,15 +54,15 @@ public sealed partial class CodeGen
 
                 if (BitConverter.DoubleToInt64Bits(value) == 0)
                 {
-                    emit.emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, targetReg, REG_R0);
+                    emit.emitIns_R_R(INS_movgr2fr_d, EA_8BYTE, targetReg, REG_LOONGARCH64_R0);
                 }
                 else
                 {
                     var handle = emit.emitFltOrDblConst(value, size);
-                    assert(targetReg >= REG_F0);
+                    assert(targetReg >= REG_LOONGARCH64_F0);
 
                     var ins = size == EA_4BYTE ? INS_fld_s : INS_fld_d;
-                    emit.emitIns_R_C(ins, size, targetReg, REG_NA, handle, 0);
+                    emit.emitIns_R_CLoongArch64(ins, size, targetReg, REG_LOONGARCH64_NA, handle, 0);
                 }
                 break;
             }
@@ -75,12 +74,12 @@ public sealed partial class CodeGen
         }
     }
 
-    private void genCodeForShift(GenTree tree)
+    private void genCodeForShiftLoongArch64(GenTree tree)
     {
         var ins = genGetInsForOper(tree);
         var size = tree.Type.EmitActualSize;
 
-        assert(tree.RegNum != REG_NA);
+        assert(tree.RegNum != REG_LOONGARCH64_NA);
         genConsumeOperands(tree.AsOp());
 
         var operand = tree.AsOp().Op1;
@@ -116,26 +115,13 @@ public sealed partial class CodeGen
                 ins = INS_rotri_d;
             }
 
-            GetEmitter().emitIns_R_R_I(ins, size, tree.RegNum, operand.RegNum, unchecked((nint)shiftByImm));
+            GetEmitter().emitIns_R_R_I(ins, size, tree.RegNum, operand.RegNum, unchecked((int)shiftByImm));
         }
 
         genProduceReg(tree);
     }
 
-    private void genCodeForLclAddr(GenTreeLclFld tree)
-    {
-        assert(tree.Oper is GT_LCL_ADDR);
-
-        var targetType = tree.Type;
-        var size = targetType.EmitSize;
-        var targetReg = tree.RegNum;
-        noway_assert(targetType is TYP_BYREF or TYP_I_IMPL);
-
-        GetEmitter().emitIns_R_S(INS_lea, size, targetReg, tree.LclNum, tree.LclOffs);
-        genProduceReg(tree);
-    }
-
-    private void genCodeForLclFld(GenTreeLclFld tree)
+    private void genCodeForLclFldLoongArch64(GenTreeLclFld tree)
     {
         assert(tree.Oper is GT_LCL_FLD);
 
@@ -147,7 +133,7 @@ public sealed partial class CodeGen
         }
 
         var targetReg = tree.RegNum;
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_LOONGARCH64_NA);
 
         var size = targetType.EmitSize;
         var offset = tree.LclOffs;
@@ -158,7 +144,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    private void genLeaInstruction(GenTreeAddrMode tree)
+    private void genLeaInstructionLoongArch64(GenTreeAddrMode tree)
     {
         genConsumeOperands(tree);
 
@@ -232,7 +218,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    private void genCodeForIndexAddr(GenTreeIndexAddr tree)
+    private void genCodeForIndexAddrLoongArch64(GenTreeIndexAddr tree)
     {
         var baseAddress = tree.Arr;
         var index = tree.Index;
@@ -246,8 +232,8 @@ public sealed partial class CodeGen
 
         if (tree.IsBoundsChecked)
         {
-            GetEmitter().emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_R21, baseAddress.RegNum, tree.LenOffset);
-            genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index.RegNum, null, REG_R21);
+            GetEmitter().emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_LOONGARCH64_R21, baseAddress.RegNum, tree.LenOffset);
+            genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index.RegNum, null, REG_LOONGARCH64_R21);
         }
 
         var attr = tree.Type.EmitActualSize;
@@ -262,22 +248,22 @@ public sealed partial class CodeGen
             }
             else
             {
-                GetEmitter().emitIns_I_la(EA_PTRSIZE, REG_R21, scale);
+                GetEmitter().emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_R21, scale);
 
                 var shiftIns = attr == EA_4BYTE ? INS_sll_w : INS_sll_d;
                 var addIns = attr == EA_4BYTE ? INS_add_w : INS_add_d;
-                GetEmitter().emitIns_R_R_R(shiftIns, attr, REG_R21, index.RegNum, REG_R21);
-                GetEmitter().emitIns_R_R_R(addIns, attr, tree.RegNum, REG_R21, baseAddress.RegNum);
+                GetEmitter().emitIns_R_R_R(shiftIns, attr, REG_LOONGARCH64_R21, index.RegNum, REG_LOONGARCH64_R21);
+                GetEmitter().emitIns_R_R_R(addIns, attr, tree.RegNum, REG_LOONGARCH64_R21, baseAddress.RegNum);
             }
         }
         else
         {
-            GetEmitter().emitIns_I_la(EA_4BYTE, REG_R21, unchecked((nint)elementSize));
+            GetEmitter().emitIns_I_la(EA_4BYTE, REG_LOONGARCH64_R21, unchecked((nint)elementSize));
 
             var multiplyIns = attr == EA_4BYTE ? INS_mul_w : INS_mul_d;
             var addIns = attr == EA_4BYTE ? INS_add_w : INS_add_d;
-            GetEmitter().emitIns_R_R_R(multiplyIns, EA_PTRSIZE, REG_R21, index.RegNum, REG_R21);
-            GetEmitter().emitIns_R_R_R(addIns, attr, tree.RegNum, REG_R21, baseAddress.RegNum);
+            GetEmitter().emitIns_R_R_R(multiplyIns, EA_PTRSIZE, REG_LOONGARCH64_R21, index.RegNum, REG_LOONGARCH64_R21);
+            GetEmitter().emitIns_R_R_R(addIns, attr, tree.RegNum, REG_LOONGARCH64_R21, baseAddress.RegNum);
         }
 
         GetEmitter().emitIns_R_R_I(INS_addi_d, attr, tree.RegNum, tree.RegNum, tree.ElemOffset);
@@ -304,14 +290,14 @@ public sealed partial class CodeGen
             var shiftIns = attr == EA_4BYTE ? INS_slli_w : INS_slli_d;
             var addIns = attr == EA_4BYTE ? INS_add_w : INS_add_d;
 
-            emit.emitIns_R_R_I(shiftIns, attr, REG_R21, indexReg, scale);
-            emit.emitIns_R_R_R(addIns, attr, targetReg, baseReg, REG_R21);
+            emit.emitIns_R_R_I(shiftIns, attr, REG_LOONGARCH64_R21, indexReg, scale);
+            emit.emitIns_R_R_R(addIns, attr, targetReg, baseReg, REG_LOONGARCH64_R21);
         }
     }
 
     private void genIntCastOverflowCheck(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
     {
-        assert(REG_R21 != reg);
+        assert(REG_LOONGARCH64_R21 != reg);
 
         switch (desc.Check)
         {
@@ -320,8 +306,8 @@ public sealed partial class CodeGen
                 if (desc.CheckSrcSize == 4)
                 {
                     // Sign-extend 32-bit sources so unsigned values above INT32_MAX fail the signed check.
-                    GetEmitter().emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg, 0);
-                    reg = REG_R21;
+                    GetEmitter().emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_LOONGARCH64_R21, reg, 0);
+                    reg = REG_LOONGARCH64_R21;
                 }
 
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg);
@@ -331,24 +317,24 @@ public sealed partial class CodeGen
             case CHECK_UINT_RANGE:
             {
                 // The value fits in uint only if its upper 32 bits are zero.
-                GetEmitter().emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg, 32);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
+                GetEmitter().emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_LOONGARCH64_R21, reg, 32);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_LOONGARCH64_R21);
                 break;
             }
 
             case CHECK_POSITIVE_INT_RANGE:
             {
                 // The value fits in int only if its upper 33 bits are zero.
-                GetEmitter().emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg, 31);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
+                GetEmitter().emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_LOONGARCH64_R21, reg, 31);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_LOONGARCH64_R21);
                 break;
             }
 
             case CHECK_INT_RANGE:
             {
                 // Compare the input against the sign-extended low 32 bits.
-                GetEmitter().emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg, 0);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, reg, null, REG_R21);
+                GetEmitter().emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_LOONGARCH64_R21, reg, 0);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, reg, null, REG_LOONGARCH64_R21);
                 break;
             }
 
@@ -364,26 +350,26 @@ public sealed partial class CodeGen
                     var isDstSigned = !varTypeIsUnsigned(cast.CastType);
                     var excludeMsb = isDstSigned ? 1u : 0u;
                     var typeSize = (8 * castSize) - excludeMsb;
-                    GetEmitter().emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg,
-                        unchecked((nint)typeSize));
-                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
+                    GetEmitter().emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_LOONGARCH64_R21, reg,
+                        unchecked((int)typeSize));
+                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_LOONGARCH64_R21);
                 }
                 else
                 {
                     // Sign-extend the destination width, then compare it with the source value.
                     var extensionSize = (8 - castSize) * 8;
-                    GetEmitter().emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_R21, reg,
-                        unchecked((nint)extensionSize));
-                    GetEmitter().emitIns_R_R_I(INS_srai_d, EA_8BYTE, REG_R21, REG_R21,
-                        unchecked((nint)extensionSize));
+                    GetEmitter().emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_LOONGARCH64_R21, reg,
+                        unchecked((int)extensionSize));
+                    GetEmitter().emitIns_R_R_I(INS_srai_d, EA_8BYTE, REG_LOONGARCH64_R21, REG_LOONGARCH64_R21,
+                        unchecked((int)extensionSize));
 
                     if (desc.CheckSrcSize == 4)
                     {
-                        GetEmitter().emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_RA, reg, 0);
-                        reg = REG_RA;
+                        GetEmitter().emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_LOONGARCH64_RA, reg, 0);
+                        reg = REG_LOONGARCH64_RA;
                     }
 
-                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, null, reg);
+                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_LOONGARCH64_R21, null, reg);
                 }
 
                 break;
@@ -391,7 +377,7 @@ public sealed partial class CodeGen
         }
     }
 
-    private void genIntToIntCast(GenTreeCast cast)
+    private void genIntToIntCastLoongArch64(GenTreeCast cast)
     {
         genConsumeRegs(cast.CastOp);
 
@@ -461,7 +447,7 @@ public sealed partial class CodeGen
         genProduceReg(cast);
     }
 
-    private void genIntrinsic(GenTreeIntrinsic tree)
+    private void genIntrinsicLoongArch64(GenTreeIntrinsic tree)
     {
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -574,22 +560,56 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-#if FEATURE_HW_INTRINSICS
-    private void genHWIntrinsic(GenTreeHWIntrinsic tree)
+    public void genHWIntrinsic(GenTreeHWIntrinsic tree)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsics are unavailable for this target.");
+        }
+
+        if (Configuration.TARGET_XARCH)
+        {
+            genHWIntrinsicXarch(tree);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            genHWIntrinsicArm64(tree);
+            return;
+        }
+
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic generation is not ported for this target.");
+        }
+
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic generation is not ported.");
     }
-#endif
 
-    private void genCodeForNullCheck(GenTreeIndir tree)
+    private void genCodeForNullCheckLoongRiscV64(GenTreeIndir tree)
     {
+        if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Zero-register null-check generation requires LoongArch64 or RISC-V64.");
+        }
+
         assert(tree.Oper is GT_NULLCHECK);
         genConsumeRegs(tree.Op1);
 
-        GetEmitter().emitInsLoadStoreOp(ins_Load(tree.Type), tree.Type.EmitActualSize, REG_R0, tree);
+        var zeroReg = Configuration.TARGET_LOONGARCH64 ? REG_LOONGARCH64_R0 : REG_RISCV64_R0;
+        var emit = GetEmitter();
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emit.emitInsLoadStoreOpLoongArch64(ins_Load(tree.Type), tree.Type.EmitActualSize, zeroReg, tree);
+        }
+        else
+        {
+            emit.emitInsLoadStoreOpRiscV64(ins_Load(tree.Type), tree.Type.EmitActualSize, zeroReg, tree);
+        }
     }
 
-    private void genRangeCheck(GenTree tree)
+    private void genRangeCheckLoongArch64(GenTree tree)
     {
         noway_assert(tree.Oper is GT_BOUNDS_CHECK);
         var boundsCheck = tree.AsBoundsChk();
@@ -609,18 +629,18 @@ public sealed partial class CodeGen
         {
             src1 = arrayLength;
             src2 = arrayIndex;
-            reg1 = REG_R21;
+            reg1 = REG_LOONGARCH64_R21;
             reg2 = src1.RegNum;
 
             var imm = src2.AsIntConCommon().IconValue;
             if (imm == nint.MaxValue)
             {
-                emit.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R0, -1);
-                emit.emitIns_R_R_I(INS_srli_d, EA_PTRSIZE, REG_R21, REG_R21, 1);
+                emit.emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_LOONGARCH64_R21, REG_LOONGARCH64_R0, -1);
+                emit.emitIns_R_R_I(INS_srli_d, EA_PTRSIZE, REG_LOONGARCH64_R21, REG_LOONGARCH64_R21, 1);
             }
             else
             {
-                emit.emitIns_I_la(EA_PTRSIZE, REG_R21, imm);
+                emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_R21, imm);
             }
         }
         else
@@ -631,16 +651,16 @@ public sealed partial class CodeGen
 
             if (src2.IsContainedIntOrIImmed)
             {
-                reg2 = REG_R21;
+                reg2 = REG_LOONGARCH64_R21;
                 var imm = src2.AsIntConCommon().IconValue;
-                emit.emitIns_I_la(EA_PTRSIZE, REG_R21, imm);
+                emit.emitIns_I_la(EA_PTRSIZE, REG_LOONGARCH64_R21, imm);
             }
             else
             {
                 if (genActualType(src1.Type) is TYP_INT)
                 {
-                    emit.emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg1, 0);
-                    reg1 = REG_R21;
+                    emit.emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_LOONGARCH64_R21, reg1, 0);
+                    reg1 = REG_LOONGARCH64_R21;
                 }
 
                 reg2 = src2.RegNum;
@@ -657,4 +677,3 @@ public sealed partial class CodeGen
         genJumpToThrowHlpBlk_la(boundsCheck.ThrowKind, INS_bgeu, reg1, null, reg2);
     }
 }
-#endif

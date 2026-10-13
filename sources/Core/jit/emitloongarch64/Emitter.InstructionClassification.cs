@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -13,43 +12,65 @@ public partial class Emitter
 
     private bool emitInsIsLoad(instruction ins)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 instruction classification requires LoongArch64.");
+        }
+
         // Pseudo instructions such as LEA are not represented in the instruction table.
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
                (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
-               ((CodeGen.instInfo[nativeOrdinal] & LOONGARCH64_LD) != 0);
+               (((byte)CodeGen.instInfo[nativeOrdinal] & LOONGARCH64_LD) != 0);
     }
 
     private bool emitInsIsLoadOrStore(instruction ins)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 instruction classification requires LoongArch64.");
+        }
+
         // Pseudo instructions such as LEA are not represented in the instruction table.
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
                (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
-               ((CodeGen.instInfo[nativeOrdinal] & (LOONGARCH64_LD | LOONGARCH64_ST)) != 0);
-    }
-
-    public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
-    {
-        emitIns_R_R(ins, attr, reg1, reg2);
+               (((byte)CodeGen.instInfo[nativeOrdinal] & (LOONGARCH64_LD | LOONGARCH64_ST)) != 0);
     }
 
     public bool emitInsMayWriteToGCReg(instruction ins)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 GC-register classification requires LoongArch64.");
+        }
+
         assert(ins != INS_invalid);
 
         // Register-writing ranges follow the instruction groupings in instrsloongarch64.h.
-        return InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_mov, INS_jirl) ||
-               (ins == INS_movfcsr2gr) ||
-               (ins == INS_movcf2gr)
-#if FEATURE_SIMD
-               || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_d, INS_vpickve2gr_wu)
-               || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_h, INS_vpickve2gr_bu)
-               || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvpickve2gr_d, INS_xvpickve2gr_wu)
-#endif
-               ;
+        var writesToGCReg = InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_mov, INS_jirl) ||
+                            (ins == INS_movfcsr2gr) ||
+                            (ins == INS_movcf2gr);
+
+        if (Configuration.FEATURE_SIMD)
+        {
+            writesToGCReg |= InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_d, INS_vpickve2gr_wu) ||
+                             InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_vpickve2gr_h, INS_vpickve2gr_bu) ||
+                             InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_xvpickve2gr_d, INS_xvpickve2gr_wu);
+        }
+
+        return writesToGCReg;
     }
 
     public bool emitInsWritesToLclVarStackLoc(instrDesc id)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 stack-store classification requires LoongArch64.");
+        }
+
         if (!id.idIsLclVar())
         {
             return false;
@@ -71,15 +92,4 @@ public partial class Emitter
         };
     }
 
-    public static bool IsMovInstruction(instruction ins)
-    {
-        return ins is INS_mov or
-            INS_fmov_s or
-            INS_fmov_d or
-            INS_movgr2fr_w or
-            INS_movgr2fr_d or
-            INS_movfr2gr_s or
-            INS_movfr2gr_d;
-    }
 }
-#endif

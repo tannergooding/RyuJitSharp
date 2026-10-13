@@ -3,41 +3,31 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     // Arithmetic right shift rejects negative values and bits outside the unsigned immediate field.
-    public static bool isValidUimm11(nint value)
-    {
-        return (value >> 11) == 0;
-    }
-
-    public static bool isValidUimm12(nint value)
-    {
-        return (value >> 12) == 0;
-    }
-
-    public static bool isGeneralRegister(regNumber reg)
-    {
-        return (reg >= Globals.REG_INT_FIRST) && (reg <= Globals.REG_INT_LAST);
-    }
-
     public unsafe void emitIns_I_la(emitAttr attr, regNumber reg, nint immediate)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 immediate materialization requires LoongArch64.");
+        }
+
         assert(!EA_IS_RELOC(attr));
         assert(isGeneralRegister(reg));
 
         if ((immediate >> 11) is -1 or 0)
         {
-            emitIns_R_R_I(INS_addi_w, attr, reg, REG_R0, immediate);
+            emitIns_R_R_I(INS_addi_w, attr, reg, REG_LOONGARCH64_R0, immediate);
             return;
         }
 
         if ((immediate >> 12) == 0)
         {
-            emitIns_R_R_I(INS_ori, attr, reg, REG_R0, immediate);
+            emitIns_R_R_I(INS_ori, attr, reg, REG_LOONGARCH64_R0, immediate);
             return;
         }
 
@@ -63,7 +53,7 @@ public partial class Emitter
 
         descriptor.idIns(INS_lu12i_w);
         descriptor.idReg1(reg);
-        assert(reg != REG_R0);
+        assert(reg != REG_LOONGARCH64_R0);
 
         descriptor.idInsOpt(INS_OPTS_LOONGARCH64_I);
         descriptor.idAddr().iiaAddr = (byte*)immediate;
@@ -71,4 +61,3 @@ public partial class Emitter
         appendToCurIG(descriptor);
     }
 }
-#endif

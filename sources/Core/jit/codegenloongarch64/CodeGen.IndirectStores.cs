@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.regNumber;
@@ -13,17 +12,15 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreInd(GenTreeStoreInd tree)
+    public void genCodeForStoreIndLoongArch64(GenTreeStoreInd tree)
     {
         assert(tree.Oper is GT_STOREIND);
 
-#if FEATURE_SIMD
-        if (tree.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && tree.Type is TYP_SIMD12)
         {
-            genStoreIndTypeSimd12(tree);
+            genStoreIndTypeSimd12LoongArch64(tree);
             return;
         }
-#endif
 
         var data = tree.Data;
         var addr = tree.Addr;
@@ -32,9 +29,9 @@ public sealed partial class CodeGen
         {
             genConsumeOperands(tree);
 
-            noway_assert(data.RegNum != REG_WRITE_BARRIER_DST);
-            genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
-            genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
+            noway_assert(data.RegNum != REG_WRITE_BARRIER_DST_LOONGARCH64);
+            genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST_LOONGARCH64);
+            genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC_LOONGARCH64);
             genGCWriteBarrier(writeBarrierForm);
         }
         else
@@ -49,7 +46,7 @@ public sealed partial class CodeGen
             if (data.IsContainedIntOrIImmed)
             {
                 assert(data.IsIntegralConst(0));
-                dataReg = REG_R0;
+                dataReg = REG_LOONGARCH64_R0;
             }
             else
             {
@@ -64,16 +61,13 @@ public sealed partial class CodeGen
                 instGen_MemoryBarrier();
             }
 
-            Emitter.emitInsLoadStoreOp(ins, type.EmitActualSize, dataReg, tree);
+            Emitter.emitInsLoadStoreOpLoongArch64(ins, type.EmitActualSize, dataReg, tree);
             genUpdateLife(tree);
         }
     }
 
-#if FEATURE_SIMD
-    private void genStoreIndTypeSimd12(GenTreeStoreInd tree)
+    private void genStoreIndTypeSimd12LoongArch64(GenTreeStoreInd tree)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 SIMD12 indirect stores are not ported.");
     }
-#endif
 }
-#endif

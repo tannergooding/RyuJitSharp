@@ -2,7 +2,6 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime. Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 
@@ -28,18 +27,18 @@ public sealed partial class CodeGen
         var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
         assert(frameSize < 0);
 
-        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED);
+        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED_LOONGARCH64);
         var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
 
         if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) << 3)) <= (2040 - 16))
         {
-            genStackPointerAdjustment(frameSize, REG_R21, null, reportUnwindData: true);
+            genStackPointerAdjustment(frameSize, REG_LOONGARCH64_R21, null, reportUnwindData: true);
 
-            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
-            _compiler.unwindSaveReg(REG_FP, fpOffset);
+            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_FP, REG_SPBASE_LOONGARCH64, fpOffset);
+            _compiler.unwindSaveReg(REG_LOONGARCH64_FP, fpOffset);
 
-            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
-            _compiler.unwindSaveReg(REG_RA, fpOffset + 8);
+            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_SPBASE_LOONGARCH64, fpOffset + 8);
+            _compiler.unwindSaveReg(REG_LOONGARCH64_RA, fpOffset + 8);
 
             genSaveCalleeSavedRegistersHelp(maskSaveRegs, fpOffset + 16);
         }
@@ -47,20 +46,20 @@ public sealed partial class CodeGen
         {
             assert(frameSize < -2040);
 
-            genStackPointerAdjustment(frameSize + (fpOffset & -16), REG_R21, null, reportUnwindData: true);
+            genStackPointerAdjustment(frameSize + (fpOffset & -16), REG_LOONGARCH64_R21, null, reportUnwindData: true);
 
             frameSize = -(fpOffset & -16);
             fpOffset &= 0xf;
 
-            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
-            _compiler.unwindSaveReg(REG_FP, fpOffset);
+            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_FP, REG_SPBASE_LOONGARCH64, fpOffset);
+            _compiler.unwindSaveReg(REG_LOONGARCH64_FP, fpOffset);
 
-            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
-            _compiler.unwindSaveReg(REG_RA, fpOffset + 8);
+            Emitter.emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_SPBASE_LOONGARCH64, fpOffset + 8);
+            _compiler.unwindSaveReg(REG_LOONGARCH64_RA, fpOffset + 8);
 
             genSaveCalleeSavedRegistersHelp(maskSaveRegs, fpOffset + 16);
 
-            genStackPointerAdjustment(frameSize, REG_R21, null, reportUnwindData: true);
+            genStackPointerAdjustment(frameSize, REG_LOONGARCH64_R21, null, reportUnwindData: true);
         }
 
         _compiler.unwindEndProlog();
@@ -80,31 +79,31 @@ public sealed partial class CodeGen
         var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
         assert(frameSize < 0);
 
-        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED);
+        var maskSaveRegs = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_CALLEE_SAVED_LOONGARCH64);
         var fpOffset = genFuncletInfo.fiSP_to_CalleeSave_delta;
 
         if ((fpOffset + (unchecked((int)genCountBits(maskSaveRegs)) << 3)) > (2040 - 16))
         {
             assert(frameSize < -2040);
 
-            genStackPointerAdjustment(fpOffset & -16, REG_R21, null, reportUnwindData: true);
+            genStackPointerAdjustment(fpOffset & -16, REG_LOONGARCH64_R21, null, reportUnwindData: true);
 
             frameSize += fpOffset & -16;
             fpOffset &= 0xf;
         }
 
-        genRestoreCalleeSavedRegistersHelp(maskSaveRegs, REG_SPBASE, fpOffset + 16, reportUnwindData: true);
+        genRestoreCalleeSavedRegistersHelpLoongArch64(maskSaveRegs, REG_SPBASE_LOONGARCH64, fpOffset + 16, reportUnwindData: true);
 
-        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
-        _compiler.unwindSaveReg(REG_RA, fpOffset + 8);
+        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_LOONGARCH64_RA, REG_SPBASE_LOONGARCH64, fpOffset + 8);
+        _compiler.unwindSaveReg(REG_LOONGARCH64_RA, fpOffset + 8);
 
-        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
-        _compiler.unwindSaveReg(REG_FP, fpOffset);
+        Emitter.emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_LOONGARCH64_FP, REG_SPBASE_LOONGARCH64, fpOffset);
+        _compiler.unwindSaveReg(REG_LOONGARCH64_FP, fpOffset);
 
-        genStackPointerAdjustment(-frameSize, REG_R21, null, reportUnwindData: true);
+        genStackPointerAdjustment(-frameSize, REG_LOONGARCH64_R21, null, reportUnwindData: true);
 
-        Emitter.emitIns_R_R_I(INS_jirl, TYP_I_IMPL.EmitActualSize, REG_R0, REG_RA, 0);
-        _compiler.unwindReturn(REG_RA);
+        Emitter.emitIns_R_R_I(INS_jirl, TYP_I_IMPL.EmitActualSize, REG_LOONGARCH64_R0, REG_LOONGARCH64_RA, 0);
+        _compiler.unwindReturn(REG_LOONGARCH64_RA);
 
         _compiler.unwindEndEpilog();
     }
@@ -120,21 +119,21 @@ public sealed partial class CodeGen
         assert(_compiler.lvaDoneFrameLayout == Compiler.FINAL_FRAME_LAYOUT);
 
         var saveRegs = _regSet.rsGetCalleeSavedRegsMask();
-        assert((saveRegs & new regMaskTP(SRBM_RA)).IsNonEmpty);
-        assert((saveRegs & new regMaskTP(SRBM_FP)).IsNonEmpty);
+        assert((saveRegs & new regMaskTP(SRBM_LOONGARCH64_RA)).IsNonEmpty);
+        assert((saveRegs & new regMaskTP(SRBM_LOONGARCH64_FP)).IsNonEmpty);
 
         var frameSize = _compiler.lvaOutgoingArgSpaceSize.Value;
         genFuncletInfo.fiSP_to_CalleeSave_delta = frameSize;
-        frameSize = unchecked(frameSize + unchecked((int)genCountBits(saveRegs)) * REGSIZE_BYTES);
+        frameSize = unchecked(frameSize + unchecked((int)genCountBits(saveRegs)) * Configuration.REGSIZE_BYTES);
 
-        var deltaPsp = -TARGET_POINTER_SIZE;
+        var deltaPsp = -Configuration.TARGET_POINTER_SIZE;
         if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
         {
-            deltaPsp -= TARGET_POINTER_SIZE;
+            deltaPsp -= Configuration.TARGET_POINTER_SIZE;
         }
 
         frameSize = unchecked(frameSize - deltaPsp);
-        frameSize = unchecked((int)roundUp(unchecked((uint)frameSize), STACK_ALIGN));
+        frameSize = unchecked((int)roundUp(unchecked((uint)frameSize), (uint)Configuration.STACK_ALIGN));
 
         genFuncletInfo.fiSpDelta = unchecked((uint)-frameSize);
         genFuncletInfo.fiSaveRegs = saveRegs;
@@ -155,4 +154,3 @@ public sealed partial class CodeGen
 #endif
     }
 }
-#endif

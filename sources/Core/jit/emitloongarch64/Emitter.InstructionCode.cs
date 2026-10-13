@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -45,7 +44,6 @@ public partial class Emitter
         DF_F_3R,
         DF_F_4R,
         DF_F_3RX3,
-#if FEATURE_SIMD
         DF_S_4R,
         DF_S_3R,
         DF_S_RG,
@@ -82,29 +80,38 @@ public partial class Emitter
         DF_A_2R8IU,
         DF_A_R13IU,
         DF_A_RG8IX,
-#endif
     }
 
-    private static uint emitInsCode(instruction ins)
+    private static uint emitInsCodeLoongArch64(instruction ins)
     {
-        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodes.Length);
-        assert(insCodes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != Globals.BAD_CODE);
+        RequireLoongArch64Target();
+        if (!Configuration.FEATURE_SIMD &&
+            (uint)ins >= (uint)INS_vfmadd_s &&
+            (uint)ins <= (uint)INS_xvsetallnez_d)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 SIMD instruction encoding requires FEATURE_SIMD.");
+        }
 
-        return insCodes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insCodesLoongArch64.Length);
+        assert(insCodesLoongArch64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != Globals.BAD_CODE);
+
+        return insCodesLoongArch64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
-    private static uint emitGetInsMask(instruction ins)
+    private static uint emitGetInsMaskLoongArch64(instruction ins)
     {
-        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insMasks.Length);
+        RequireLoongArch64Target();
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insMasksLoongArch64.Length);
 
-        return insMasks[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+        return insMasksLoongArch64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
-    private static insDisasmFmt emitGetInsFmt(instruction ins)
+    private static insDisasmFmt emitGetInsFmtLoongArch64(instruction ins)
     {
-        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insDisasmFormats.Length);
+        RequireLoongArch64Target();
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)insDisasmFormatsLoongArch64.Length);
 
-        return insDisasmFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+        return insDisasmFormatsLoongArch64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 }
-#endif

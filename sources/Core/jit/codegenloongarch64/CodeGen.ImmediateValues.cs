@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -19,6 +18,57 @@ public sealed partial class CodeGen
 #endif
         )
     {
+        if (Configuration.TARGET_ARM)
+        {
+            instGen_Set_Reg_To_ImmArm(size, reg, imm, flags
+#if DEBUG
+                , targetHandle, gtFlags
+#endif
+                );
+            return;
+        }
+
+        if (Configuration.TARGET_XARCH)
+        {
+            instGen_Set_Reg_To_ImmXarch(size, reg, imm, flags
+#if DEBUG
+                , targetHandle, gtFlags
+#endif
+                );
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            instGen_Set_Reg_To_ImmArm64(size, reg, imm, flags
+#if DEBUG
+                , targetHandle, gtFlags
+#endif
+                );
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            assert(genIsValidIntReg(reg));
+            if (EA_IS_RELOC(size))
+            {
+                Emitter.emitIns_R_AI(INS_addi, size, reg, reg, imm);
+            }
+            else
+            {
+                _ = Emitter.emitLoadImmediate(true, size, reg, imm);
+            }
+
+            _regSet.verifyRegUsed(reg);
+            return;
+        }
+
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Immediate materialization uses a separate target implementation.");
+        }
+
         if (!_compiler.opts.compReloc)
         {
             size = EA_SIZE(size);
@@ -41,4 +91,3 @@ public sealed partial class CodeGen
         _regSet.verifyRegUsed(reg);
     }
 }
-#endif

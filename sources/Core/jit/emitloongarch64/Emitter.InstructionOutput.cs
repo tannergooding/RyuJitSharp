@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.Globals;
@@ -32,7 +31,7 @@ public partial class Emitter
                 var reg = id.idReg1();
                 emitOutputLoongArch64Instruction(dst, 0x1a000000 | unchecked((uint)reg));
                 var secondInstruction = id.idIsCnsReloc() ? INS_addi_d : INS_ld_d;
-                var code = emitInsCode(secondInstruction);
+                var code = emitInsCodeLoongArch64(secondInstruction);
                 code |= unchecked((uint)reg);
                 code |= unchecked((uint)reg) << 5;
                 emitOutputLoongArch64Instruction(dst + sizeof(uint), code);
@@ -115,7 +114,7 @@ public partial class Emitter
         {
             var varNum = id.idAddr().iiaLclVar.lvaVarNum();
             var localOffset = id.idAddr().iiaLclVar.lvaOffset();
-            var offset = localOffset - (localOffset % TARGET_POINTER_SIZE);
+            var offset = localOffset - (localOffset % Configuration.TARGET_POINTER_SIZE);
             var address = compiler.lvaFrameAddress(varNum, out _);
             if (id.idGCref() != GCT_NONE)
             {
@@ -194,14 +193,14 @@ public partial class Emitter
         {
             case 8:
             {
-                if (id.idReg2() != REG_R0)
+                if (id.idReg2() != REG_LOONGARCH64_R0)
                 {
-                    code = emitInsCode(INS_addi_d);
+                    code = emitInsCodeLoongArch64(INS_addi_d);
                     code |= unchecked((uint)reg);
-                    code |= (unchecked((uint)REG_R0) << 5);
+                    code |= (unchecked((uint)REG_LOONGARCH64_R0) << 5);
                     code |= 0xfff << 10;
                     emitOutputLoongArch64Instruction(dst, code);
-                    code = emitInsCode(INS_srli_d);
+                    code = emitInsCodeLoongArch64(INS_srli_d);
                     var shift = immediate == nint.MaxValue ? 1u : 32u;
                     code |= unchecked((uint)reg);
                     code |= unchecked((uint)reg) << 5;
@@ -217,7 +216,7 @@ public partial class Emitter
             case 12:
             {
                 EmitOutputLoongArch64LuiOri(dst, reg, immediate);
-                code = emitInsCode(INS_lu32i_d);
+                code = emitInsCodeLoongArch64(INS_lu32i_d);
                 code |= unchecked((uint)reg);
                 code |= (unchecked((uint)(immediate >> 32)) & 0xfffff) << 5;
                 emitOutputLoongArch64Instruction(dst + 2 * sizeof(uint), code);
@@ -226,11 +225,11 @@ public partial class Emitter
             case 16:
             {
                 EmitOutputLoongArch64LuiOri(dst, reg, immediate);
-                code = emitInsCode(INS_lu32i_d);
+                code = emitInsCodeLoongArch64(INS_lu32i_d);
                 code |= unchecked((uint)reg);
                 code |= (unchecked((uint)(immediate >> 32)) & 0xfffff) << 5;
                 emitOutputLoongArch64Instruction(dst + 2 * sizeof(uint), code);
-                code = emitInsCode(INS_lu52i_d);
+                code = emitInsCodeLoongArch64(INS_lu52i_d);
                 code |= unchecked((uint)reg);
                 code |= unchecked((uint)reg) << 5;
                 code |= (unchecked((uint)(immediate >> 52)) & 0xfff) << 10;
@@ -247,11 +246,11 @@ public partial class Emitter
 
     private unsafe void EmitOutputLoongArch64LuiOri(byte* dst, regNumber reg, nint immediate)
     {
-        var code = emitInsCode(INS_lu12i_w);
+        var code = emitInsCodeLoongArch64(INS_lu12i_w);
         code |= unchecked((uint)reg);
         code |= (unchecked((uint)(immediate >> 12)) & 0xfffff) << 5;
         emitOutputLoongArch64Instruction(dst, code);
-        code = emitInsCode(INS_ori);
+        code = emitInsCodeLoongArch64(INS_ori);
         code |= unchecked((uint)reg);
         code |= unchecked((uint)reg) << 5;
         code |= (unchecked((uint)immediate) & 0xfff) << 10;
@@ -300,9 +299,9 @@ public partial class Emitter
             }
             else
             {
-                code = emitInsCode(ins);
+                code = emitInsCodeLoongArch64(ins);
                 code |= unchecked((uint)reg) & 0x1f;
-                code |= unchecked((uint)REG_R21) << 5;
+                code |= unchecked((uint)REG_LOONGARCH64_R21) << 5;
                 code |= (unchecked((uint)lowImmediate) & 0xfff) << 10;
             }
             emitOutputLoongArch64Instruction(dst + sizeof(uint), code);
@@ -313,16 +312,16 @@ public partial class Emitter
         if (ins == INS_bl)
         {
             assert(unchecked((nuint)(address >> 32)) <= 0x7ffff);
-            var code = emitInsCode(INS_lu12i_w);
-            code |= unchecked((uint)REG_R21);
+            var code = emitInsCodeLoongArch64(INS_lu12i_w);
+            code |= unchecked((uint)REG_LOONGARCH64_R21);
             code |= (unchecked((uint)(address >> 12)) & 0xfffff) << 5;
             emitOutputLoongArch64Instruction(dst, code);
-            code = emitInsCode(INS_ori);
+            code = emitInsCodeLoongArch64(INS_ori);
             code |= unchecked((uint)reg);
-            code |= unchecked((uint)REG_R21) << 5;
+            code |= unchecked((uint)REG_LOONGARCH64_R21) << 5;
             code |= (unchecked((uint)address) & 0xfff) << 10;
             emitOutputLoongArch64Instruction(dst + sizeof(uint), code);
-            code = emitInsCode(INS_lu32i_d);
+            code = emitInsCodeLoongArch64(INS_lu32i_d);
             code |= unchecked((uint)reg);
             code |= (unchecked((uint)(address >> 32)) & 0x7ffff) << 5;
             emitOutputLoongArch64Instruction(dst + 2 * sizeof(uint), code);
@@ -334,17 +333,17 @@ public partial class Emitter
             var rounded = unchecked(address + adjustment);
             var lowImmediate = (rounded & 0x7ff) - adjustment;
             assert(unchecked((nuint)(rounded >> 32)) <= 0x7ffff);
-            var code = emitInsCode(INS_lu12i_w);
-            code |= unchecked((uint)REG_R21);
+            var code = emitInsCodeLoongArch64(INS_lu12i_w);
+            code |= unchecked((uint)REG_LOONGARCH64_R21);
             code |= (unchecked((uint)(rounded >> 12)) & 0xfffff) << 5;
             emitOutputLoongArch64Instruction(dst, code);
-            code = emitInsCode(INS_lu32i_d);
-            code |= unchecked((uint)REG_R21);
+            code = emitInsCodeLoongArch64(INS_lu32i_d);
+            code |= unchecked((uint)REG_LOONGARCH64_R21);
             code |= (unchecked((uint)(rounded >> 32)) & 0x7ffff) << 5;
             emitOutputLoongArch64Instruction(dst + sizeof(uint), code);
-            code = emitInsCode(ins);
+            code = emitInsCodeLoongArch64(ins);
             code |= unchecked((uint)reg) & 0x1f;
-            code |= unchecked((uint)REG_R21) << 5;
+            code |= unchecked((uint)REG_LOONGARCH64_R21) << 5;
             code |= (unchecked((uint)lowImmediate) & 0xfff) << 10;
             emitOutputLoongArch64Instruction(dst + 2 * sizeof(uint), code);
         }
@@ -397,16 +396,16 @@ public partial class Emitter
 
         var address = unchecked((nint)(emitCodeBlock + group.igOffs));
         assert(unchecked((nuint)(address >> 32)) <= 0x7ffff);
-        var code = emitInsCode(INS_lu12i_w);
-        code |= unchecked((uint)REG_R21);
+        var code = emitInsCodeLoongArch64(INS_lu12i_w);
+        code |= unchecked((uint)REG_LOONGARCH64_R21);
         code |= (unchecked((uint)(address >> 12)) & 0xfffff) << 5;
         emitOutputLoongArch64Instruction(dst, code);
-        code = emitInsCode(INS_ori);
+        code = emitInsCodeLoongArch64(INS_ori);
         code |= unchecked((uint)reg);
-        code |= unchecked((uint)REG_R21) << 5;
+        code |= unchecked((uint)REG_LOONGARCH64_R21) << 5;
         code |= (unchecked((uint)address) & 0xfff) << 10;
         emitOutputLoongArch64Instruction(dst + sizeof(uint), code);
-        code = emitInsCode(INS_lu32i_d);
+        code = emitInsCodeLoongArch64(INS_lu32i_d);
         code |= unchecked((uint)reg);
         code |= (unchecked((uint)(address >> 32)) & 0x7ffff) << 5;
         emitOutputLoongArch64Instruction(dst + 2 * sizeof(uint), code);
@@ -435,14 +434,14 @@ public partial class Emitter
         uint code;
         if (ins is INS_beq or INS_bne && immediate >= -0x400000 && immediate < 0x400000)
         {
-            code = emitInsCode(INS_xor);
-            code |= unchecked((uint)REG_R21);
+            code = emitInsCodeLoongArch64(INS_xor);
+            code |= unchecked((uint)REG_LOONGARCH64_R21);
             code |= unchecked((uint)reg1) << 5;
             code |= unchecked((uint)reg2) << 10;
             emitOutputLoongArch64Instruction(dst, code);
 
-            code = emitInsCode(ins == INS_beq ? INS_beqz : INS_bnez);
-            code |= unchecked((uint)REG_R21) << 5;
+            code = emitInsCodeLoongArch64(ins == INS_beq ? INS_beqz : INS_bnez);
+            code |= unchecked((uint)REG_LOONGARCH64_R21) << 5;
             code |= (unchecked((uint)immediate) << 8) & 0x3fffc00;
             code |= (unchecked((uint)(immediate >> 18)) & 0x1f);
             emitOutputLoongArch64Instruction(dst + sizeof(uint), code);
@@ -453,14 +452,14 @@ public partial class Emitter
             if (ins is INS_beq or INS_bne or INS_blt or INS_bge or INS_bltu or INS_bgeu)
             {
                 inverse = (instruction)(InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) ^ 1);
-                code = emitInsCode(inverse);
+                code = emitInsCodeLoongArch64(inverse);
                 code |= unchecked((uint)reg1) << 5;
                 code |= unchecked((uint)reg2);
             }
             else if (ins is INS_bceqz or INS_bcnez)
             {
                 inverse = (instruction)(InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) ^ 1);
-                code = emitInsCode(inverse);
+                code = emitInsCodeLoongArch64(inverse);
                 code |= unchecked((uint)reg1) << 5;
             }
             else
@@ -471,7 +470,7 @@ public partial class Emitter
 
             code |= 0x800;
             emitOutputLoongArch64Instruction(dst, code);
-            code = emitInsCode(INS_b);
+            code = emitInsCodeLoongArch64(INS_b);
             code |= (unchecked((uint)(immediate >> 18)) & 0x3ff);
             code |= (unchecked((uint)immediate) << 8) & 0x3fffc00;
             emitOutputLoongArch64Instruction(dst + sizeof(uint), code);
@@ -483,7 +482,7 @@ public partial class Emitter
     private static uint EncodeLoongArch64Branch(instruction ins, instrDesc id, nint immediate)
     {
         assert((immediate & 3) == 0);
-        var code = emitInsCode(ins);
+        var code = emitInsCodeLoongArch64(ins);
         if (ins is INS_b or INS_bl)
         {
             code |= (unchecked((uint)(immediate >> 18)) & 0x3ff);
@@ -505,4 +504,3 @@ public partial class Emitter
         return code;
     }
 }
-#endif

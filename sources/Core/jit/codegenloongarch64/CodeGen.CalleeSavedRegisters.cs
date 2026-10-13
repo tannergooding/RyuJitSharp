@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -17,7 +16,7 @@ public sealed partial class CodeGen
         bool* pTmpRegIsZero, bool reportUnwindData)
     {
         var wasTempRegisterUsedForImmediate =
-            !genInstrWithConstant(INS_addi_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg,
+            !genInstrWithConstantLoongArch64(INS_addi_d, EA_PTRSIZE, REG_SPBASE_LOONGARCH64, REG_SPBASE_LOONGARCH64, spDelta, tmpReg,
                 inUnwindRegion: true);
         if (wasTempRegisterUsedForImmediate && (pTmpRegIsZero != null))
         {
@@ -42,40 +41,40 @@ public sealed partial class CodeGen
             return;
         }
 
-        var calleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
+        var calleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED_LOONGARCH64 | SRBM_FLT_CALLEE_SAVED_LOONGARCH64);
         assert((regsToSaveMask & ~calleeSavedMask).IsEmpty);
         assert(lowestCalleeSavedOffset >= 0);
 
-        var integerMask = new regMaskTP(SRBM_INT_CALLEE_SAVED);
+        var integerMask = new regMaskTP(SRBM_INT_CALLEE_SAVED_LOONGARCH64);
         var registersToSave = regsToSaveMask & integerMask;
-        var maskSaveRegisters = unchecked((ulong)registersToSave.Lower) >> (int)REG_S0;
-        var registerNumber = (int)REG_S0;
+        var maskSaveRegisters = unchecked((ulong)registersToSave.Lower) >> (int)REG_LOONGARCH64_S0;
+        var registerNumber = (int)REG_LOONGARCH64_S0;
         do
         {
             if ((maskSaveRegisters & 1) != 0)
             {
-                Emitter.emitIns_R_R_I(INS_st_d, EA_8BYTE, (regNumber)registerNumber, REG_SP,
+                Emitter.emitIns_R_R_I(INS_st_d, EA_8BYTE, (regNumber)registerNumber, REG_SPBASE_LOONGARCH64,
                     lowestCalleeSavedOffset);
                 _compiler.unwindSaveReg((regNumber)registerNumber, unchecked((uint)lowestCalleeSavedOffset));
-                lowestCalleeSavedOffset += REGSIZE_BYTES;
+                lowestCalleeSavedOffset += Configuration.REGSIZE_BYTES;
             }
 
             maskSaveRegisters >>= 1;
             registerNumber++;
         } while (maskSaveRegisters != 0);
 
-        var floatMask = new regMaskTP(SRBM_FLT_CALLEE_SAVED);
+        var floatMask = new regMaskTP(SRBM_FLT_CALLEE_SAVED_LOONGARCH64);
         registersToSave = regsToSaveMask & floatMask;
-        maskSaveRegisters = unchecked((ulong)registersToSave.Lower) >> (int)REG_F24;
-        registerNumber = (int)REG_F24;
+        maskSaveRegisters = unchecked((ulong)registersToSave.Lower) >> (int)REG_LOONGARCH64_F24;
+        registerNumber = (int)REG_LOONGARCH64_F24;
         do
         {
             if ((maskSaveRegisters & 1) != 0)
             {
-                Emitter.emitIns_R_R_I(INS_fst_d, EA_8BYTE, (regNumber)registerNumber, REG_SP,
+                Emitter.emitIns_R_R_I(INS_fst_d, EA_8BYTE, (regNumber)registerNumber, REG_SPBASE_LOONGARCH64,
                     lowestCalleeSavedOffset);
                 _compiler.unwindSaveReg((regNumber)registerNumber, unchecked((uint)lowestCalleeSavedOffset));
-                lowestCalleeSavedOffset += REGSIZE_BYTES;
+                lowestCalleeSavedOffset += Configuration.REGSIZE_BYTES;
             }
 
             maskSaveRegisters >>= 1;
@@ -83,10 +82,10 @@ public sealed partial class CodeGen
         } while (maskSaveRegisters != 0);
     }
 
-    private void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, regNumber baseReg,
+    private void genRestoreCalleeSavedRegistersHelpLoongArch64(regMaskTP regsToRestoreMask, regNumber baseReg,
         int lowestCalleeSavedOffset, bool reportUnwindData)
     {
-        var calleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
+        var calleeSavedMask = new regMaskTP(SRBM_INT_CALLEE_SAVED_LOONGARCH64 | SRBM_FLT_CALLEE_SAVED_LOONGARCH64);
         assert((regsToRestoreMask & ~calleeSavedMask).IsEmpty);
         if (regsToRestoreMask.IsEmpty)
         {
@@ -98,15 +97,15 @@ public sealed partial class CodeGen
         assert((highestCalleeSavedOffset & 7) == 0);
         assert(highestCalleeSavedOffset >= 16);
 
-        var floatMask = new regMaskTP(SRBM_FLT_CALLEE_SAVED);
+        var floatMask = new regMaskTP(SRBM_FLT_CALLEE_SAVED_LOONGARCH64);
         var registersToRestore = regsToRestoreMask & floatMask;
-        var maskSaveRegisters = unchecked((long)registersToRestore.Lower) << (63 - (int)REG_F31);
-        var registerNumber = (int)REG_F31;
+        var maskSaveRegisters = unchecked((long)registersToRestore.Lower) << (63 - (int)REG_LOONGARCH64_F31);
+        var registerNumber = (int)REG_LOONGARCH64_F31;
         do
         {
             if (maskSaveRegisters < 0)
             {
-                highestCalleeSavedOffset -= REGSIZE_BYTES;
+                highestCalleeSavedOffset -= Configuration.REGSIZE_BYTES;
                 Emitter.emitIns_R_R_I(INS_fld_d, EA_8BYTE, (regNumber)registerNumber, baseReg,
                     highestCalleeSavedOffset);
                 if (reportUnwindData)
@@ -120,15 +119,15 @@ public sealed partial class CodeGen
             registerNumber--;
         } while (maskSaveRegisters != 0);
 
-        var integerMask = new regMaskTP(SRBM_INT_CALLEE_SAVED);
+        var integerMask = new regMaskTP(SRBM_INT_CALLEE_SAVED_LOONGARCH64);
         registersToRestore = regsToRestoreMask & integerMask;
-        maskSaveRegisters = unchecked((long)registersToRestore.Lower) << (63 - (int)REG_S8);
-        registerNumber = (int)REG_S8;
+        maskSaveRegisters = unchecked((long)registersToRestore.Lower) << (63 - (int)REG_LOONGARCH64_S8);
+        registerNumber = (int)REG_LOONGARCH64_S8;
         do
         {
             if (maskSaveRegisters < 0)
             {
-                highestCalleeSavedOffset -= REGSIZE_BYTES;
+                highestCalleeSavedOffset -= Configuration.REGSIZE_BYTES;
                 Emitter.emitIns_R_R_I(INS_ld_d, EA_8BYTE, (regNumber)registerNumber, baseReg,
                     highestCalleeSavedOffset);
                 if (reportUnwindData)
@@ -145,4 +144,3 @@ public sealed partial class CodeGen
         assert(highestCalleeSavedOffset >= 16, "the callee-saved regs always above ra/fp");
     }
 }
-#endif

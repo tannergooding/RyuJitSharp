@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Emitter.insDisasmFmt;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
@@ -12,12 +11,10 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private const float PERFSCORE_THROUGHPUT_7C = 7.0f;
-    private const float PERFSCORE_THROUGHPUT_9X = 1.0f / 9.0f;
-    private const float PERFSCORE_LATENCY_22C = 22.0f;
-
     internal insExecutionCharacteristics getInsExecutionCharacteristicsLoongArch64(instrDesc id)
     {
+        RequireLoongArch64Target();
+
         var ins = id.idIns();
         assert(ins != INS_invalid);
 
@@ -27,6 +24,14 @@ public partial class Emitter
             insLatency = PERFSCORE_LATENCY_ILLEGAL,
             insMemoryAccessKind = PerfScoreMemoryAccessKind.None,
         };
+
+        if (!Configuration.FEATURE_SIMD &&
+            (uint)ins >= (uint)INS_vfmadd_s &&
+            (uint)ins <= (uint)INS_xvsetallnez_d)
+        {
+            perfScoreUnhandledInstruction(id, ref result);
+            return result;
+        }
 
         var combinedInstructionCount = unchecked((int)(id.idCodeSize() / 4));
         assert(combinedInstructionCount >= 1);
@@ -63,14 +68,12 @@ public partial class Emitter
                             ? PERFSCORE_LATENCY_6C
                             : PERFSCORE_LATENCY_7C;
                     }
-#if FEATURE_SIMD
                     else if (id.idInsIs(INS_vld, INS_xvld))
                     {
                         result.insLatency = combinedInstructionCount == 2
                             ? PERFSCORE_LATENCY_6C
                             : PERFSCORE_LATENCY_7C;
                     }
-#endif
                     else
                     {
                         assert(false, "perfscore: unexpected load instruction with INS_OPTS_RC.");
@@ -144,7 +147,7 @@ public partial class Emitter
             }
         }
 
-        switch (emitGetInsFmt(ins))
+        switch (emitGetInsFmtLoongArch64(ins))
         {
             case DF_G_ALIAS:
             case DF_G_2R5IU:
@@ -541,7 +544,6 @@ public partial class Emitter
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 break;
             }
-#if FEATURE_SIMD
             case DF_S_4R:
             case DF_A_4R:
             {
@@ -1211,7 +1213,6 @@ public partial class Emitter
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 break;
             }
-#endif
             default:
             {
                 perfScoreUnhandledInstruction(id, ref result);
@@ -1222,4 +1223,3 @@ public partial class Emitter
         return result;
     }
 }
-#endif

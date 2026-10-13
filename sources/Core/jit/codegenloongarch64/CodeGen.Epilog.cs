@@ -2,7 +2,6 @@
 //
 // Based on the RyuJIT compiler from dotnet/runtime. Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.InfoAccessType;
@@ -70,19 +69,22 @@ public sealed partial class CodeGen
             noway_assert(block.FirstNode is not null);
 
             var jumpNode = lastNode;
-#if !FEATURE_FASTTAILCALL
-            noway_assert(jumpNode.OperIs(GT_JMP));
-#else
-            noway_assert(!jumpNode.OperIs(GT_JMP) || (jumpNode.Next is null));
-            noway_assert(jumpNode.OperIs(GT_JMP) ||
-                (jumpNode.OperIs(GT_CALL) && jumpNode.AsCall().IsFastTailCall));
+            var supportsFastTailCall = Configuration.FEATURE_FASTTAILCALL;
+            if (supportsFastTailCall)
+            {
+                noway_assert(!jumpNode.OperIs(GT_JMP) || (jumpNode.Next is null));
+                noway_assert(jumpNode.OperIs(GT_JMP) ||
+                    (jumpNode.OperIs(GT_CALL) && jumpNode.AsCall().IsFastTailCall));
+            }
+            else
+            {
+                noway_assert(jumpNode.OperIs(GT_JMP));
+            }
 
-            if (jumpNode.OperIs(GT_JMP))
-#endif
+            if (!supportsFastTailCall || jumpNode.OperIs(GT_JMP))
             {
                 assert(methodHandle is not null);
                 assert(addressInfo.addr is not null);
-
                 var parameters = new EmitCallParams { methHnd = methodHandle };
                 switch (addressInfo.accessType)
                 {
@@ -90,7 +92,7 @@ public sealed partial class CodeGen
                     case IAT_PVALUE:
                     {
                         parameters.callType = EC_INDIR_R;
-                        parameters.ireg = REG_INDIRECT_CALL_TARGET_REG;
+                        parameters.ireg = REG_INDIRECT_CALL_TARGET_REG_LOONGARCH64;
                         instGen_Set_Reg_To_Imm(
                             EA_HANDLE_CNS_RELOC, parameters.ireg, unchecked((nint)addressInfo.addr));
                         if (addressInfo.accessType == IAT_PVALUE)
@@ -105,7 +107,7 @@ public sealed partial class CodeGen
                     case IAT_RELPVALUE:
                     {
                         parameters.callType = EC_INDIR_R;
-                        parameters.ireg = REG_T2;
+                        parameters.ireg = REG_LOONGARCH64_T2;
                         _regSet.verifyRegUsed(parameters.ireg);
                         break;
                     }
@@ -121,20 +123,17 @@ public sealed partial class CodeGen
                 parameters.isJump = true;
                 genEmitCallWithCurrentGC(ref parameters);
             }
-#if FEATURE_FASTTAILCALL
             else
             {
                 genCallInstructionLoongArch64(jumpNode.AsCall());
             }
-#endif
         }
         else
         {
-            Emitter.emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_RA, 0);
-            _compiler.unwindReturn(REG_RA);
+            Emitter.emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_LOONGARCH64_R0, REG_LOONGARCH64_RA, 0);
+            _compiler.unwindReturn(REG_LOONGARCH64_RA);
         }
 
         _compiler.unwindEndEpilog();
     }
 }
-#endif

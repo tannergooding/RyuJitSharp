@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
@@ -25,8 +24,8 @@ public partial class Emitter
 
         var linkingEndState = unchecked((uint)emitTotalCodeSize) <= (0x7fffu << 2) ? 2u : 0u;
         const int smallJumpDelaySlot = 0;
-        const int smallJumpMaxNegativeDistance = B_DIST_SMALL_MAX_NEG;
-        var smallJumpMaxPositiveDistance = B_DIST_SMALL_MAX_POS -
+        const int smallJumpMaxNegativeDistance = B_DIST_SMALL_MAX_NEG_LOONGARCH64;
+        var smallJumpMaxPositiveDistance = B_DIST_SMALL_MAX_POS_LOONGARCH64 -
             emitCounts_INS_OPTS_J * (3 << 2);
 
         while (true)
@@ -156,4 +155,3 @@ public partial class Emitter
 #endif
     }
 }
-#endif

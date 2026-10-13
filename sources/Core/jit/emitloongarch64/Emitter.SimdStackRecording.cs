@@ -3,13 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64 && FEATURE_SIMD
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public static bool isValidVectorIndex(emitAttr datasize, emitAttr elemsize, nint index)
+    private static bool isValidVectorIndexLoongArch64(emitAttr datasize, emitAttr elemsize, nint index)
     {
+        EnsureLoongArch64Target();
+        EnsureLoongArch64Simd();
+
         assert(isValidVectorDatasize(datasize));
         assert(isValidVectorElemsize(elemsize));
 
@@ -68,7 +70,7 @@ public partial class Emitter
         if (offset < 512)
         {
             assert(offset >= 0);
-            var baseReg = fpBased ? REG_FPBASE : REG_SPBASE;
+            var baseReg = fpBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
             emitIns_R_R_I_I(INS_vstelm_w, EA_4BYTE, reg, baseReg, offset >> 2, 2);
         }
         else
@@ -84,4 +86,3 @@ public partial class Emitter
         return false;
     }
 }
-#endif

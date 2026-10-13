@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64
 using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.Globals;
@@ -17,16 +16,21 @@ public partial class Emitter
 {
     private unsafe void emitIns_CallLoongArch64(in EmitCallParams parameters)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 call recording is only supported on LoongArch64.");
+        }
+
         var compiler = _compiler
             ?? throw new FatalJitException("LoongArch64 call recording requires an active compiler.");
 
-        assert(parameters.callType < EC_COUNT);
-        assert(parameters.xreg == REG_NA && parameters.xmul == 0 && parameters.disp == 0);
-        assert(parameters.callType == EC_INDIR_R || parameters.callType == EC_FUNC_TOKEN);
+        assert(parameters.xreg == REG_LOONGARCH64_NA && parameters.xmul == 0 && parameters.disp == 0);
+        assert(parameters.callType is EC_INDIR_R or EC_FUNC_TOKEN);
         assert(parameters.callType != EC_FUNC_TOKEN ||
-            (parameters.ireg == REG_NA && parameters.addr != null));
+            (parameters.ireg == REG_LOONGARCH64_NA && parameters.addr != null));
         assert(parameters.callType != EC_INDIR_R ||
-            (parameters.ireg < REG_COUNT && parameters.addr == null));
+            (parameters.ireg < REG_LOONGARCH64_COUNT && parameters.addr == null));
 
         var argSize = parameters.argSize;
         var absArgSize = argSize < 0 ? unchecked((nuint)(-argSize)) : (nuint)argSize;
@@ -51,47 +55,37 @@ public partial class Emitter
         }
 #endif
 
-        assert((parameters.argSize % REGSIZE_BYTES) == 0);
-        var argCount = unchecked((int)(parameters.argSize / REGSIZE_BYTES));
+        assert((parameters.argSize % Configuration.REGSIZE_BYTES) == 0);
+        var argCount = unchecked((int)(parameters.argSize / Configuration.REGSIZE_BYTES));
         instrDesc id;
         if (parameters.callType == EC_INDIR_R)
         {
             id = emitNewInstrCallInd(argCount, parameters.disp, parameters.ptrVars, gcrefRegs, byrefRegs,
-                parameters.retSize,
-#if MULTIREG_HAS_SECOND_GC_RET
-                parameters.secondRetSize,
-#endif
-                parameters.hasAsyncRet);
+                parameters.retSize, parameters.secondRetSize, parameters.hasAsyncRet);
         }
         else
         {
             id = emitNewInstrCallDir(argCount, parameters.ptrVars, gcrefRegs, byrefRegs,
-                parameters.retSize,
-#if MULTIREG_HAS_SECOND_GC_RET
-                parameters.secondRetSize,
-#endif
-                parameters.hasAsyncRet);
+                parameters.retSize, parameters.secondRetSize, parameters.hasAsyncRet);
         }
 
         if (parameters.retSize == EA_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
         else if (parameters.retSize == EA_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
 
-#if MULTIREG_HAS_SECOND_GC_RET
-        if (parameters.secondRetSize == EA_GCREF)
+        if (Configuration.MULTIREG_HAS_SECOND_GC_RET && parameters.secondRetSize == EA_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET_1);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
         }
-        else if (parameters.secondRetSize == EA_BYREF)
+        else if (Configuration.MULTIREG_HAS_SECOND_GC_RET && parameters.secondRetSize == EA_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET_1);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
         }
-#endif
 
         VarSetOps.Assign(compiler, ref emitThisGCrefVars, parameters.ptrVars);
         emitThisGCrefRegs = (regMask)gcrefRegs;
@@ -104,7 +98,7 @@ public partial class Emitter
         if (parameters.callType == EC_INDIR_R)
         {
             id.idSetIsCallRegPtr();
-            id.idReg4(parameters.isJump ? REG_R0 : REG_RA);
+            id.idReg4(parameters.isJump ? REG_LOONGARCH64_R0 : REG_LOONGARCH64_RA);
             id.idReg3(parameters.ireg);
             id.idCodeSize(4);
         }
@@ -133,7 +127,6 @@ public partial class Emitter
             jitprintf($"[{debugInfo.idNum:D2}] Rec call GC vars = " +
                 $"{VarSetOps.ToString(compiler, ((instrDescCGCA)id).idcGCvars)}\n");
         }
-#endif
 
         if (_debugInfoSize > 0)
         {
@@ -149,8 +142,8 @@ public partial class Emitter
         {
             codeGen.Disassembler.disSetMethod((nuint)parameters.addr, parameters.methHnd);
         }
+#endif
 
         appendToCurIG(id);
     }
 }
-#endif
