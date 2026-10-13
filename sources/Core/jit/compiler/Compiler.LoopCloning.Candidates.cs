@@ -6,8 +6,8 @@
 using System;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp;
@@ -322,7 +322,7 @@ public partial class Compiler
         {
             (left, right) = (right, left);
         }
-        if (left.Oper is not GT_IND || (left.Type is var __targetAliasValue0 && ((!(__targetAliasValue0 == TYP_I_IMPL) && !(__targetAliasValue0 is TYP_REF)) && !(__targetAliasValue0 is TYP_BYREF))))
+        if (left.Oper is not GT_IND || (left.Type is var __targetAliasValue0 && ((!(__targetAliasValue0 == TYP_I_IMPL) && __targetAliasValue0 is not TYP_REF) && __targetAliasValue0 is not TYP_BYREF)))
         {
             return WALK_CONTINUE;
         }

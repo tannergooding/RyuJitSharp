@@ -91,7 +91,7 @@ internal static unsafe class CompilerTargetConfigurationTests
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
             compiler.lvaCount = 0;
-            compiler.lvaTable = Array.Empty<LclVarDsc>();
+            compiler.lvaTable = [];
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaMonAcquired = BAD_VAR_NUM;
@@ -123,7 +123,7 @@ internal static unsafe class CompilerTargetConfigurationTests
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
             compiler.lvaCount = 0;
-            compiler.lvaTable = Array.Empty<LclVarDsc>();
+            compiler.lvaTable = [];
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaMonAcquired = BAD_VAR_NUM;
@@ -152,11 +152,8 @@ internal static unsafe class CompilerTargetConfigurationTests
             Assert.Ignore("This reserved-register frame check is supported on ARM and RISC-V targets.");
         }
 
-        WithCompiler(compiler =>
-        {
-            Assert.Throws<FatalJitException>(
-                () => compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT));
-        });
+        WithCompiler(compiler => _ = Assert.Throws<FatalJitException>(
+            () => compiler.compRsvdRegCheck(Compiler.REGALLOC_FRAME_LAYOUT)));
     }
 
     [Test]
@@ -171,7 +168,7 @@ internal static unsafe class CompilerTargetConfigurationTests
         {
             var codeGen = new CodeGen(compiler);
             var local = default(LclVarDsc);
-            Assert.Throws<FatalJitException>(() => codeGen.genGetRegMask(in local));
+            _ = Assert.Throws<FatalJitException>(() => codeGen.genGetRegMask(in local));
         });
     }
 
@@ -785,14 +782,12 @@ internal static unsafe class CompilerTargetConfigurationTests
             if (Configuration.TARGET_WASM)
             {
                 var input = compiler.gtNewVconNode(TYP_SIMD16);
-                var lowerFailure = Assert.Throws<FatalJitException>(() => {
-                    _ = compiler.gtNewSimdGetLowerNode(TYP_SIMD8, input, TYP_INT, 16);
-                });
+                var lowerFailure = Assert.Throws<FatalJitException>(
+                    () => _ = compiler.gtNewSimdGetLowerNode(TYP_SIMD8, input, TYP_INT, 16));
                 Assert.That(lowerFailure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
 
-                var upperFailure = Assert.Throws<FatalJitException>(() => {
-                    _ = compiler.gtNewSimdGetUpperNode(TYP_SIMD8, input, TYP_INT, 16);
-                });
+                var upperFailure = Assert.Throws<FatalJitException>(
+                    () => _ = compiler.gtNewSimdGetUpperNode(TYP_SIMD8, input, TYP_INT, 16));
                 Assert.That(upperFailure?.Result, Is.EqualTo(CorJitResult.CORJIT_SKIPPED));
                 return;
             }
@@ -853,9 +848,8 @@ internal static unsafe class CompilerTargetConfigurationTests
 
             if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_WASM))
             {
-                var failure = Assert.Throws<FatalJitException>(() => {
-                    _ = compiler.gtNewSimdMinMaxNativeNode(TYP_SIMD16, op1, op2, TYP_INT, 16, isMax);
-                });
+                var failure = Assert.Throws<FatalJitException>(
+                    () => _ = compiler.gtNewSimdMinMaxNativeNode(TYP_SIMD16, op1, op2, TYP_INT, 16, isMax));
                 Assert.That(failure?.Result, Is.EqualTo(CorJitResult.CORJIT_IMPLLIMITATION));
                 return;
             }

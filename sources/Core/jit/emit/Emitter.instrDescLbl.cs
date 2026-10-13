@@ -13,6 +13,10 @@ public partial class Emitter
     {
         // The managed target is separate, so the destination remains in iiaLclVar.
         // Retain native instrDescLbl's aligned footprint for descriptor traversal.
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Design",
+            "CA1065:Do not raise exceptions in unexpected locations",
+            Justification = "Unsupported target descriptor layouts must terminate compilation.")]
         public override int NativeLogicalSize
         {
             get

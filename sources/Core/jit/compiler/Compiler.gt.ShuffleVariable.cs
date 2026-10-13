@@ -229,7 +229,6 @@ public partial class Compiler
                 op2 = gtNewSimdBinOpNode(GT_OR, type, op2, offsets, baseType, simdSize);
                 result = gtNewSimdHWIntrinsicNode(type, NI_X86Base_Shuffle, baseType, simdSize, op1, op2);
             }
-
         }
         else if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
         {

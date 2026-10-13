@@ -74,5 +74,4 @@ public partial class Emitter
         RequireArm32Target();
         return opt == INS_OPTS_RRX;
     }
-
 }

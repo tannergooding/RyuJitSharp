@@ -1064,6 +1064,10 @@ public partial class GenTree
     };
 
     /// <summary>If the given tree is a scaled index (i.e. "op * 4" or "op &lt;&lt; 2") that does not require an overflow check, returns the multiplier: 2, 4, or 8; otherwise returns 0. Note that "1" is never returned.</summary>
+    [SuppressMessage(
+        "Design",
+        "CA1065:Do not raise exceptions in unexpected locations",
+        Justification = "Target-specific scale-index operations must fail when used on another target.")]
     public int ScaledIndex
     {
         get

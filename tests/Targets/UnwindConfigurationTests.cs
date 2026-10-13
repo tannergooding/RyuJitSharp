@@ -24,7 +24,7 @@ internal static unsafe class UnwindConfigurationTests
 
         var descriptor = new FuncInfoDsc { cfiCodes = [new CFI_CODE(7, 2, 3, 32)] };
         Assert.That(descriptor.cfiCodes.Count, Is.EqualTo(1));
-        Assert.Throws<InvalidOperationException>(() => descriptor.GetUnwindInfo());
+        _ = Assert.Throws<InvalidOperationException>(() => descriptor.GetUnwindInfo());
     }
 
     [Test]
@@ -37,12 +37,13 @@ internal static unsafe class UnwindConfigurationTests
             return;
         }
 
-        var policy = GetRegisterPolicy(null);
-        Assert.That(policy.CalleeSavedMask, Is.EqualTo(new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED)));
-        Assert.That(policy.FirstFloatRegister, Is.EqualTo(REG_FP_FIRST));
-        Assert.That(policy.LastFloatRegister, Is.EqualTo(REG_FP_LAST));
-        Assert.That(policy.LastIntegerRegister, Is.EqualTo(TargetRuntimeMetadata.IntegerRegisterLast));
-        Assert.That(policy.RegisterSize, Is.EqualTo(REGSIZE_BYTES));
+        var (calleeSavedMask, firstFloatRegister, lastFloatRegister, lastIntegerRegister, registerSize) =
+            GetRegisterPolicy(null);
+        Assert.That(calleeSavedMask, Is.EqualTo(new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED)));
+        Assert.That(firstFloatRegister, Is.EqualTo(REG_FP_FIRST));
+        Assert.That(lastFloatRegister, Is.EqualTo(REG_FP_LAST));
+        Assert.That(lastIntegerRegister, Is.EqualTo(TargetRuntimeMetadata.IntegerRegisterLast));
+        Assert.That(registerSize, Is.EqualTo(REGSIZE_BYTES));
     }
 
     [Test]
@@ -60,7 +61,7 @@ internal static unsafe class UnwindConfigurationTests
             for (var register = 0u; register < 16; register++)
             {
                 Assert.That(MapRegister(null, (regNumber)register), Is.EqualTo((short)register));
-                Assert.That(MapRegister(null, REG_ARM32_F0 + 2 * register), Is.EqualTo((short)(256 + register)));
+                Assert.That(MapRegister(null, REG_ARM32_F0 + (2 * register)), Is.EqualTo((short)(256 + register)));
             }
         }
         else if (Configuration.TARGET_ARM64)

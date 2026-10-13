@@ -99,12 +99,12 @@ internal static unsafe class LinearScanSmallRegisterMapTests
     [TestCase(uint.MaxValue)]
     public static void FullWidthValuesCannotBeTruncatedIntoVariableMaps(uint value)
     {
-        WithMaps(1, (_, allocator) =>
+        WithMaps(1, (unusedCompiler, allocator) =>
         {
             var map = allocator.getInVarToRegMap(1) ?? throw new AssertionException("Missing incoming map.");
             allocator.setVarReg(map, 0, REG_NA);
 
-            Assert.Throws<OverflowException>(() => allocator.setVarReg(map, 0, (regNumber)value));
+            _ = Assert.Throws<OverflowException>(() => allocator.setVarReg(map, 0, (regNumber)value));
 
             Assert.That(allocator.getVarReg(map, 0), Is.EqualTo(REG_NA));
         });

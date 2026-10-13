@@ -1,10 +1,10 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.insFlags;
-using static RyuJitSharp.instruction;
 using static RyuJitSharp.insOpts;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
 
@@ -36,7 +36,7 @@ public sealed partial class CodeGen
             {
                 var floatAsIntReg = _internalRegisters.GetSingle(tree);
                 Emitter.emitIns_R_R(INS_ldr, EA_4BYTE, floatAsIntReg, addressReg);
-                Emitter.emitIns_Mov(INS_vmov_i2f, EA_4BYTE, targetReg, floatAsIntReg, false);
+                _ = Emitter.emitIns_Mov(INS_vmov_i2f, EA_4BYTE, targetReg, floatAsIntReg, false);
             }
             else
             {

@@ -300,11 +300,11 @@ public sealed partial class CodeGen
 
         if (Configuration.TARGET_ARM)
         {
-            Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
+            _ = Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
         }
         else
         {
-            Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
+            _ = Emitter.emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
         }
     }
 }

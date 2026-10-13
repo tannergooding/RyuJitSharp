@@ -300,10 +300,10 @@ public sealed partial class Rationalizer : Phase
                 // since they are independent trees. If we have a convert node, it will indirectly
                 // insert the local node.
 
-                CompilerInstance.gtSetEvalOrder(result);
+                _ = CompilerInstance.gtSetEvalOrder(result);
                 block.InsertAfter(insertionPoint, new LIR.Range(CompilerInstance.fgSetTreeSeq(result), result));
 
-                CompilerInstance.gtSetEvalOrder(call);
+                _ = CompilerInstance.gtSetEvalOrder(call);
                 block.InsertAfter(insertionPoint, new LIR.Range(CompilerInstance.fgSetTreeSeq(call), call));
             }
             else
@@ -311,7 +311,7 @@ public sealed partial class Rationalizer : Phase
                 // We don't have a return buffer, so we only need to insert the result, which
                 // will indirectly insert the call in the case we have a convert node as well.
 
-                CompilerInstance.gtSetEvalOrder(result);
+                _ = CompilerInstance.gtSetEvalOrder(result);
                 block.InsertAfter(insertionPoint, new LIR.Range(CompilerInstance.fgSetTreeSeq(result), result));
             }
         }
@@ -321,7 +321,7 @@ public sealed partial class Rationalizer : Phase
             // statement (and no special handling is necessary).
             use = result;
 
-            CompilerInstance.gtSetEvalOrder(call);
+            _ = CompilerInstance.gtSetEvalOrder(call);
             block.InsertAfter(insertionPoint, new LIR.Range(CompilerInstance.fgSetTreeSeq(call), call));
         }
 

@@ -140,7 +140,7 @@ public sealed partial class CodeGen
             var tmpReg = InternalRegisters.GetSingle(tree);
             assert(insVcvt is not INS_invalid);
             Emitter.emitIns_R_R(insVcvt, dstSize, tmpReg, op1.RegNum);
-            Emitter.emitIns_Mov(INS_vmov_f2i, dstSize, targetReg, tmpReg, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_vmov_f2i, dstSize, targetReg, tmpReg, canSkip: false);
 
             genProduceReg(tree);
         }
@@ -367,7 +367,7 @@ public sealed partial class CodeGen
 
             if (srcReg != REG_NA)
             {
-                Emitter.emitIns_Mov(ins, (emitAttr)insSize, dstReg, srcReg, canSkip: false);
+                _ = Emitter.emitIns_Mov(ins, (emitAttr)insSize, dstReg, srcReg, canSkip: false);
             }
             else
             {

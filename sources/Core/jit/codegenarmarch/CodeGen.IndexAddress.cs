@@ -4,13 +4,13 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Numerics;
-using static RyuJitSharp.Globals;
-using static RyuJitSharp.SpecialCodeKind;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
+using static RyuJitSharp.SpecialCodeKind;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp;
@@ -63,7 +63,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempReg, indexReg, canSkip: false);
+                    _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempReg, indexReg, canSkip: false);
                     indexReg = tempReg;
                     genScaledAddArmArch(tree.Type.EmitActualSize, tree.RegNum, baseAddress.RegNum, indexReg, scale);
                 }
@@ -78,7 +78,7 @@ public sealed partial class CodeGen
             if (Configuration.TARGET_ARM64 && (index.Type != TYP_I_IMPL))
             {
                 var tempIndexReg = _internalRegisters.Extract(tree);
-                Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempIndexReg, indexReg, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tempIndexReg, indexReg, canSkip: false);
                 indexReg = tempIndexReg;
             }
 

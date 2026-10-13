@@ -80,6 +80,10 @@ public ref struct PlatformClassifier
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Design",
+        "CA1065:Do not raise exceptions in unexpected locations",
+        Justification = "An invalid ABI classifier kind indicates corrupt compiler state and must terminate compilation.")]
     public readonly int StackSize => _kind switch
     {
         ClassifierKind.X86 => _x86.StackSize,

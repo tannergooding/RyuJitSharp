@@ -141,7 +141,7 @@ public sealed partial class LinearScan
         var dstCandidates = (tree.Oper is GT_MOD or GT_UMOD)
             ? TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower
             : TargetRuntimeMetadata.IntegerReturnMask;
-        var srcCount = 0;
+        int srcCount;
         if (Configuration.TARGET_X86 && op1.Oper is GT_LONG)
         {
             assert(op1.IsContained);
@@ -196,7 +196,7 @@ public sealed partial class LinearScan
         var requiresOverflowCheck = tree.HasOverflowCheckEx;
         var useMulx = (tree.Oper is not GT_MUL) && isUnsignedMultiply &&
             _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2);
-        var srcCount = 0;
+        int srcCount;
         var dstCount = 1;
         var dstCandidates = SRBM_NONE;
 

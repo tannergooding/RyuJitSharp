@@ -18,7 +18,7 @@ public partial class Compiler
         assert(op1 is not null && op1.Type == type);
         assert(varTypeIsFloating(simdBaseType));
 
-        var intrinsic = NI_Illegal;
+        NamedIntrinsic intrinsic;
 
         if (Configuration.TARGET_XARCH)
         {
@@ -65,7 +65,7 @@ public partial class Compiler
         assert(op1 is not null && op1.Type == type);
         assert(varTypeIsFloating(simdBaseType));
 
-        var intrinsic = NI_Illegal;
+        NamedIntrinsic intrinsic;
 
         if (Configuration.TARGET_XARCH)
         {

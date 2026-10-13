@@ -1096,7 +1096,6 @@ public sealed partial class CodeGen
         var offset = 0;
         var xmmTmpReg = REG_NA;
         var intTmpReg = REG_NA;
-        var longTmpReg = REG_NA;
 
         if (loadSize >= (Configuration.TARGET_X86 ? 8 : Configuration.XMM_REGSIZE_BYTES))
         {
@@ -1107,7 +1106,7 @@ public sealed partial class CodeGen
             intTmpReg = _internalRegisters.GetSingle(putArgNode, new regMaskTP(SRBM_ALLINT));
         }
 
-        longTmpReg = Configuration.TARGET_X86 ? xmmTmpReg : intTmpReg;
+        var longTmpReg = Configuration.TARGET_X86 ? xmmTmpReg : intTmpReg;
 
         var slots = loadSize / Configuration.XMM_REGSIZE_BYTES;
         while (slots-- > 0)

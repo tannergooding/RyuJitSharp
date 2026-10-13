@@ -78,7 +78,6 @@ public partial class Emitter
                             InstructionOrdinalMaps.GetNativeInstructionOrdinal(INS_seto)) == 0xF);
                     assert(attr == EA_1BYTE);
                     assert((insEncodeMRreg(id, reg, attr, insCodeMR(ins)) & 0x00FF0000) != 0);
-                    size = attr;
                     sz = 3;
                 }
                 else

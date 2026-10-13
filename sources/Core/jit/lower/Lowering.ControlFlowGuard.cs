@@ -96,8 +96,11 @@ public sealed partial class Lowering
             var cellUse = new LIR.Use(BlockRange(), ref putArg.Op1Ref, putArg);
 
             var cloneConsts = Configuration.TARGET_XARCH;
+
             // Native allocates this first clone before selecting the final clone below.
-            var cellClone = CloneCFGUse(ref cellUse, cloneConsts);
+            _ = CloneCFGUse(ref cellUse, cloneConsts);
+
+            GenTree? cellClone;
             if ((cellUse.Def().Oper is GT_LCL_VAR) || (cloneConsts && cellUse.Def().Oper.IsCnsIntOrI))
             {
                 var clone = compiler.gtClone(cellUse.Def());
@@ -137,7 +140,7 @@ public sealed partial class Lowering
 
                 var placeholder = compiler.gtNewZeroConNode(callTarget.Type);
                 var validate = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_VALIDATE_INDIRECT_CALL);
-                validate.Args.PushFront(NewCallArg.CreateForPrimitive(placeholder)
+                _ = validate.Args.PushFront(NewCallArg.CreateForPrimitive(placeholder)
                     .WithWellKnownArg(WellKnownArg.ValidateIndirectCallTarget));
                 _ = compiler.fgMorphTree(validate);
 

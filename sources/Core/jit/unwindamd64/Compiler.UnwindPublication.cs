@@ -248,5 +248,4 @@ public partial class Compiler
             info.compCompHnd->reserveUnwindInfo(isFunclet, isColdCode, unwindSize);
         }
     }
-
 }

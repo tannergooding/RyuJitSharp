@@ -4,12 +4,12 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Numerics;
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
+using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
-using static RyuJitSharp.genTreeOps;
 
 namespace RyuJitSharp;
 
@@ -109,7 +109,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    Emitter.emitIns_Mov(INS_mov, size, lea.RegNum, baseAddress.RegNum, canSkip: true);
+                    _ = Emitter.emitIns_Mov(INS_mov, size, lea.RegNum, baseAddress.RegNum, canSkip: true);
                 }
             }
             else

@@ -27,7 +27,7 @@ public sealed partial class CodeGen
 
             if (!genCanOmitNormalizationForBswap16(tree))
             {
-                Emitter.emitIns_Mov(INS_uxth, EA_4BYTE, targetReg, targetReg, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_uxth, EA_4BYTE, targetReg, targetReg, canSkip: false);
             }
         }
 

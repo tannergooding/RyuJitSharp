@@ -194,11 +194,11 @@ public sealed partial class CodeGen
                     (nint)_compiler.eeGetPageSize());
                 Emitter.emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);
                 inst_JMP(EJ_lo, done);
-                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM64, regTmp, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM64, regTmp, canSkip: false);
                 inst_JMP(EJ_jmp, loop);
 
                 genDefineTempLabel(done);
-                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM64, regCnt, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM64, regCnt, canSkip: false);
             }
 
         ALLOC_DONE:

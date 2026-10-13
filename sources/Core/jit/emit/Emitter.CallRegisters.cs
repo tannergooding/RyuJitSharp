@@ -365,7 +365,6 @@ public partial class Emitter
             {
                 regmask |= SRBM_X64_R15;
             }
-
         }
         else if (Configuration.TARGET_ARM)
         {
@@ -407,7 +406,6 @@ public partial class Emitter
             {
                 regmask |= SRBM_ARM32_R11;
             }
-
         }
         else if (Configuration.TARGET_ARM64)
         {
@@ -457,7 +455,6 @@ public partial class Emitter
             {
                 regmask |= SRBM_ARM64_R28;
             }
-
         }
         else if (Configuration.TARGET_LOONGARCH64)
         {
@@ -503,7 +500,6 @@ public partial class Emitter
             {
                 regmask |= SRBM_LOONGARCH64_S8;
             }
-
         }
         else if (Configuration.TARGET_RISCV64)
         {

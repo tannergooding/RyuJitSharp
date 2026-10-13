@@ -2710,7 +2710,6 @@ public partial class Compiler
                     jitprintf($" ({tree.AsMDArr().Dim})");
                 }
             }
-
         }
     }
 
@@ -3387,7 +3386,7 @@ public partial class Compiler
                 var call = tree.AsCall();
                 var lastChild = null as GenTree;
 
-                call.VisitOperands((GenTree operand) => {
+                _ = call.VisitOperands((GenTree operand) => {
                     lastChild = operand;
                     return GenTree.VisitResult.Continue;
                 });
@@ -7786,7 +7785,7 @@ public partial class Compiler
 
         assert(codeGen is not null);
 
-        if (codeGen.genCreateAddrMode(addr.AsOp(), fold: false, naturalMul, out var rev, out var baseAddr, out var idx, out var mul, out var cns))
+        if (codeGen.genCreateAddrMode(addr.AsOp(), fold: false, naturalMul, out _, out var baseAddr, out var idx, out var mul, out var cns))
         {
             if (Configuration.TARGET_ARM64)
             {
@@ -9002,9 +9001,8 @@ public partial class Compiler
             // been rewritten and so may have struct type still.
             ref var varDsc = ref lvaGetDesc(lclNum);
 
-            var simd12ToSimd16Widening = false;
             // We can additionally have a simd12 that was widened to a simd16, generally as part of lowering
-            simd12ToSimd16Widening = Configuration.FEATURE_SIMD && (type is TYP_SIMD16) && (varDsc.Type == TYP_SIMD12);
+            var simd12ToSimd16Widening = Configuration.FEATURE_SIMD && (type is TYP_SIMD16) && (varDsc.Type == TYP_SIMD12);
             assert((type == varDsc.Type) || simd12ToSimd16Widening ||
                    (lvaIsImplicitByRefLocal(lclNum) && fgGlobalMorph &&
                     (varDsc.Type == lvaGetImplicitByRefParamType())));
@@ -11345,16 +11343,7 @@ public partial class Compiler
                 }
                 else if ((cnsNode is not null) && !otherNode.Oper.IsConst)
                 {
-                    var isNaN = false;
-
-                    if (isScalar)
-                    {
-                        isNaN = cnsNode.IsFloatNaN;
-                    }
-                    else
-                    {
-                        isNaN = cnsNode.IsVectorNaN(simdBaseType);
-                    }
+                    var isNaN = isScalar ? cnsNode.IsFloatNaN : cnsNode.IsVectorNaN(simdBaseType);
 
                     if (isNaN)
                     {
@@ -11721,13 +11710,13 @@ public partial class Compiler
                 var op1Dup = fgMakeMultiUse(ref op1);
                 var op2Dup = fgMakeMultiUse(ref op2);
 
-                var absOp1Dup = null as GenTree;
-                var absOp2Dup = null as GenTree;
+                GenTree? absOp1Dup;
+                GenTree? absOp2Dup;
 
-                var equalsMask = null as GenTree;
-                var signMask = null as GenTree;
-                var nanMask = null as GenTree;
-                var cmpMask = null as GenTree;
+                GenTree? equalsMask;
+                GenTree? signMask;
+                GenTree? nanMask;
+                GenTree? cmpMask;
 
                 // | name               | cmpMask                 | nanMask     | equalsMask         | signMask      |
                 // | ------------------ | ----------------------- | ----------- | ------------------ | ------------- |
@@ -11829,10 +11818,10 @@ public partial class Compiler
 
             var equalsMask = gtNewSimdCmpOpNode(GT_EQ, type, absOp1, absOp2, simdBaseType, simdSize);
 
-            var signMask1 = null as GenTree;
-            var signMask2 = null as GenTree;
-            var signMask3 = null as GenTree;
-            var cmpMask = null as GenTree;
+            GenTree? signMask1;
+            GenTree? signMask2;
+            GenTree? signMask3;
+            GenTree? cmpMask;
 
             if (isMax)
             {
@@ -12518,7 +12507,7 @@ public partial class Compiler
 
         assert(varTypeIsFloating(simdBaseType));
 
-        var intrinsic = NI_Illegal;
+        NamedIntrinsic intrinsic;
 
         if (Configuration.TARGET_XARCH)
         {
@@ -13032,7 +13021,8 @@ public partial class Compiler
             else
             {
                 assert(simdSize is 8);
-                var index = 8 / simdBaseType.Size;
+
+                _ = 8 / simdBaseType.Size;
 
                 if (varTypeIsFloating(simdBaseType))
                 {
@@ -16532,7 +16522,7 @@ public partial class Compiler
 
         if (oper.IsSimple)
         {
-            var op1 = null as GenTree;
+            GenTree? op1;
             var op2 = null as GenTree;
 
             if (oper.IsUnary)
@@ -16564,7 +16554,7 @@ public partial class Compiler
 
             if (op2 is null)
             {
-                gtSetEvalOrderMinOpts(op1);
+                _ = gtSetEvalOrderMinOpts(op1);
                 return 1;
             }
 
@@ -16629,7 +16619,6 @@ public partial class Compiler
                         op.Op1 = op2;
                         op.Op2 = op1;
 
-                        (op1, op2) = (op2, op1);
                     }
                     else
                     {
@@ -16667,7 +16656,7 @@ public partial class Compiler
             foreach (var arg in call.Args.EarlyArgs)
             {
                 assert(arg.EarlyNode is not null);
-                gtSetEvalOrderMinOpts(arg.EarlyNode);
+                _ = gtSetEvalOrderMinOpts(arg.EarlyNode);
             }
 
             level = 3;
@@ -17412,7 +17401,7 @@ public partial class Compiler
         // The binary case is special because of GTF_REVERSE_OPS.
         if (opCount is 2)
         {
-            var lvl2 = 0;
+            int lvl2;
 
             var op1 = multiOp.GetOp(1);
             var op2 = multiOp.GetOp(2);

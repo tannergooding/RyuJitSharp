@@ -4301,7 +4301,7 @@ public partial class Compiler
                         result = compiler.impDuplicateWithProfiledArg(result.AsCall(), opcodeOffs);
                     }
 
-                    compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
+                    _ = compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
                 }
                 else
                 {
@@ -4310,7 +4310,7 @@ public partial class Compiler
                         result = compiler.impThrowIfNull(result.AsCall());
                     }
 
-                    compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
+                    _ = compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI);
                 }
             }
             else
@@ -4381,7 +4381,7 @@ public partial class Compiler
                         // important if we give up on the inline, in which case the
                         // call will typically end up in the statement that contains
                         // the GT_RET_EXPR that we leave on the stack.
-                        compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI, false);
+                        _ = compiler.impAppendTree(result, CHECK_SPILL_ALL, compiler.impCurStmtDI, false);
 
                         // TODO: Still using the widened type.
                         var retExpr = compiler.gtNewInlineCandidateReturnExpr(call, callRetTyp.ActualType);

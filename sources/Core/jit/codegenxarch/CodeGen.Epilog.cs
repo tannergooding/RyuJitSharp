@@ -39,8 +39,8 @@ public sealed partial class CodeGen
                 var tier0 = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters)
                     & new regMaskTP(SRBM_OSR_INT_CALLEE_SAVED);
                 var additional = popRegs & ~tier0;
-                genPopCalleeSavedRegistersFromMaskXarch(additional);
-                genPopCalleeSavedRegistersFromMaskXarch(tier0 & ~new regMaskTP(SRBM_X86_EBP));
+                _ = genPopCalleeSavedRegistersFromMaskXarch(additional);
+                _ = genPopCalleeSavedRegistersFromMaskXarch(tier0 & ~new regMaskTP(SRBM_X86_EBP));
                 return;
             }
 

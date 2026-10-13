@@ -73,7 +73,7 @@ internal static class RegNumberNameTests
         }
         else
         {
-            Assert.Throws<FatalJitException>(() => regNumberExtensions.GetWasmRegName((regNumber)0));
+            _ = Assert.Throws<FatalJitException>(() => regNumberExtensions.GetWasmRegName((regNumber)0));
         }
     }
 }

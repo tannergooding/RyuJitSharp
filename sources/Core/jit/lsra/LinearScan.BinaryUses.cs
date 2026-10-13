@@ -213,7 +213,7 @@ public sealed partial class LinearScan
             case GT_LONG:
             case GT_SWIFT_ERROR_RET:
             {
-                return (tree.Oper is GT_LONG) ? !Configuration.TARGET_X86 : false;
+                return (tree.Oper is GT_LONG) && !Configuration.TARGET_X86;
             }
 
             case GT_ADD:
@@ -254,9 +254,7 @@ public sealed partial class LinearScan
 
             case GT_HWINTRINSIC:
             {
-                return Configuration.FEATURE_HW_INTRINSICS
-                    ? tree.AsHWIntrinsic().IsRmwHWIntrinsic(_compiler)
-                    : true;
+                return !Configuration.FEATURE_HW_INTRINSICS || tree.AsHWIntrinsic().IsRmwHWIntrinsic(_compiler);
             }
 
             default:

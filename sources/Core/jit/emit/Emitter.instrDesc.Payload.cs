@@ -185,6 +185,5 @@ public partial class Emitter
                     "Register-pointer call descriptors are not supported for this target.");
             }
         }
-
     }
 }

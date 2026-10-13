@@ -53,5 +53,4 @@ public partial class Emitter
 
         throw new FatalJitException(CORJIT_SKIPPED, "Target instruction store classification is not implemented.");
     }
-
 }

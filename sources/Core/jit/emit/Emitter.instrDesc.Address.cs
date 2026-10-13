@@ -25,7 +25,7 @@ public partial class Emitter
             [FieldOffset(4)]
             private emitLclVarAddr _iiaLclVarAtFour;
 
-            public emitLclVarAddr iiaLclVar
+            public readonly emitLclVarAddr iiaLclVar
             {
                 get
                 {
@@ -61,7 +61,7 @@ public partial class Emitter
 
             internal uint iiaRegisterBits
             {
-                get
+                readonly get
                 {
                     if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64)
                     {

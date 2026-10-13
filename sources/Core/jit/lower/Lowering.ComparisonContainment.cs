@@ -197,7 +197,7 @@ public sealed partial class Lowering
                 MakeSrcContained(cmp, cmp.Op1);
             }
 
-            CheckImmedAndMakeContained(cmp, cmp.Op2);
+            _ = CheckImmedAndMakeContained(cmp, cmp.Op2);
             return;
         }
 
@@ -224,7 +224,7 @@ public sealed partial class Lowering
 
         if (Configuration.TARGET_LOONGARCH64)
         {
-            CheckImmedAndMakeContained(cmp, cmp.Op2);
+            _ = CheckImmedAndMakeContained(cmp, cmp.Op2);
             return;
         }
 

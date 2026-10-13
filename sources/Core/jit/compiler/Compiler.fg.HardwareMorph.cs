@@ -795,7 +795,6 @@ public partial class Compiler
                         tree = gtNewSimdCvtMaskToVectorNode(type, tree, baseType, size).AsHWIntrinsic();
                         return fgMorphHWIntrinsicRequired(tree);
                     }
-
                 }
             }
         }
@@ -846,7 +845,6 @@ public partial class Compiler
                 }
             }
         }
-
 
         switch (operation)
         {

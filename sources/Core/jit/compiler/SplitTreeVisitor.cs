@@ -282,7 +282,7 @@ public partial struct SplitTreeVisitor : IGenTreeVisitor<SplitTreeVisitor>
 
             if (value.Type is TYP_REF)
             {
-                var clsHnd = _compiler.gtGetClassHandle(value, out var isExact, out var isNonNull);
+                var clsHnd = _compiler.gtGetClassHandle(value, out var isExact, out _);
 
                 if (clsHnd != NO_CLASS_HANDLE)
                 {

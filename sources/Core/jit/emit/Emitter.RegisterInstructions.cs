@@ -377,7 +377,7 @@ public partial class Emitter
         if (IsMovInstruction(ins))
         {
             assert(false, "Please use emitIns_Mov() to correctly handle move elision");
-            emitIns_Mov(ins, attr, reg1, reg2, canSkip: false);
+            _ = emitIns_Mov(ins, attr, reg1, reg2, canSkip: false);
         }
 
         // The ND slot is shared with other features, so check instruction compatibility.

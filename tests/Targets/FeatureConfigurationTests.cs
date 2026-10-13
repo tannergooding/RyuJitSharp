@@ -155,7 +155,9 @@ internal static class FeatureConfigurationTests
         {
             var codeGen = new CodeGen(compiler);
             compiler.codeGen = codeGen;
+#pragma warning disable CA1859 // Exercise the ICodeGen interface contract.
             ICodeGen codeGenContract = codeGen;
+#pragma warning restore CA1859
 
             Assert.That(codeGenContract.IsDoubleAligned, Is.False);
             Assert.That(compiler.genDoubleAlign, Is.False);
@@ -241,8 +243,8 @@ internal static class FeatureConfigurationTests
             Assert.That(JCC_SIZE_LARGE, Is.EqualTo(6));
             Assert.That(PUSH_INST_SIZE, Is.EqualTo(5));
             Assert.That(CALL_INST_SIZE, Is.EqualTo(5));
-            Assert.Throws<FatalJitException>(() => _ = JCC_DIST_MEDIUM_MAX_NEG);
-            Assert.Throws<FatalJitException>(() => _ = JCC_SIZE_MEDIUM);
+            _ = Assert.Throws<FatalJitException>(() => _ = JCC_DIST_MEDIUM_MAX_NEG);
+            _ = Assert.Throws<FatalJitException>(() => _ = JCC_SIZE_MEDIUM);
             return;
         }
 
@@ -253,14 +255,14 @@ internal static class FeatureConfigurationTests
             Assert.That(JMP_SIZE_SMALL, Is.EqualTo(4));
             Assert.That(JCC_SIZE_SMALL, Is.EqualTo(4));
             Assert.That(JCC_SIZE_LARGE, Is.EqualTo(8));
-            Assert.Throws<FatalJitException>(() => _ = JMP_DIST_SMALL_MAX_NEG);
-            Assert.Throws<FatalJitException>(() => _ = JCC_DIST_MEDIUM_MAX_NEG);
-            Assert.Throws<FatalJitException>(() => _ = JMP_SIZE_LARGE);
+            _ = Assert.Throws<FatalJitException>(() => _ = JMP_DIST_SMALL_MAX_NEG);
+            _ = Assert.Throws<FatalJitException>(() => _ = JCC_DIST_MEDIUM_MAX_NEG);
+            _ = Assert.Throws<FatalJitException>(() => _ = JMP_SIZE_LARGE);
             return;
         }
 
-        Assert.Throws<FatalJitException>(() => _ = JMP_SIZE_SMALL);
-        Assert.Throws<FatalJitException>(() => _ = JCC_SIZE_SMALL);
+        _ = Assert.Throws<FatalJitException>(() => _ = JMP_SIZE_SMALL);
+        _ = Assert.Throws<FatalJitException>(() => _ = JCC_SIZE_SMALL);
     }
 
     [Test]

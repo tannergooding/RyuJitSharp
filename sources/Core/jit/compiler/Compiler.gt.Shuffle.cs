@@ -448,7 +448,6 @@ public partial class Compiler
                     return gtNewSimdHWIntrinsicNode(type, NI_AdvSimd_ExtractVector128, TYP_ULONG, simdSize,
                         op1, duplicate, gtNewIconNode(TYP_INT, 1));
                 }
-
             }
             baseType = varTypeIsUnsigned(baseType) ? TYP_UBYTE : TYP_BYTE;
             var byteIndices = gtNewVconNode(type);

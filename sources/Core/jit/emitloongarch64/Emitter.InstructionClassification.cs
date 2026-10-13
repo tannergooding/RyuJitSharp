@@ -91,5 +91,4 @@ public partial class Emitter
             _ => false,
         };
     }
-
 }

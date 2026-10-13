@@ -181,7 +181,7 @@ internal static unsafe class UniversalSimdStorageTests
             }
             else
             {
-                Assert.Throws<FatalJitException>(() => compiler.gtNewGenericCon(type, bytes));
+                _ = Assert.Throws<FatalJitException>(() => compiler.gtNewGenericCon(type, bytes));
             }
         });
     }

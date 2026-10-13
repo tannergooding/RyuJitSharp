@@ -13,8 +13,8 @@ public sealed partial class CodeGen
         var source = treeNode.Op1;
         var targetType = source.Type.ActualType;
 
-        var varNumOut = BAD_VAR_NUM;
-        var argOffsetMax = uint.MaxValue;
+        int varNumOut;
+        uint argOffsetMax;
         var argOffsetOut = unchecked((uint)treeNode.ArgOffset);
 
         if (treeNode.PutInIncomingArgArea)

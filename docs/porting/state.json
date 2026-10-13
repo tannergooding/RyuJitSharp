@@ -10,14 +10,9 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "universal-compilation",
-    "nextAction": "Migrate the remaining target/feature preprocessor dispatch in `Compiler.FinalFrameLayout.cs`, starting with its frame-layout and local-allocation helpers; preserve Debug-only guards. Then continue through the remaining JIT files by coherent file batches. Keep emitter API conflicts tracked as a separate closure. Keep `Arm64CodeGenAsyncResumeInfoTests.cs` deferred until the B209 dependency closure is ported and tested.",
+    "nextAction": "Port `runtime-port/src/coreclr/jit/simd.h::EvaluateSimdIsNaN` and its helper family. Keep `genAsyncResumeInfo` and its ABI conditional deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
-    "activeBatch": {
-      "scope": "Runtime-dispatch `lvaFixVirtualFrameOffsets` for xarch, ARM, ARM64, AMD64, LoongArch, RISC-V, and Wasm while exposing only the shared API/state required by those paths.",
-      "doneWhen": "The method preserves each backend's frame-offset and OSR rules through Configuration dispatch, its target/feature guards are removed, and Debug/Release target-frame tests pass across applicable RIDs.",
-      "validation": "Frame-offset tests passed in Debug and Release for x86, AMD64, ARM32, Wasm, LoongArch64, RISC-V64, and SysV x64; ARM64 frame-layout tests passed 26/26 in Debug on Windows and Linux and 25/25 in Release on Linux. FeatureConfigurationTests and CompilerTargetConfigurationTests passed across all eight configured RIDs in Debug and Release. The four xarch cases passed with analyzers disabled. An analyzer-enabled xarch build is blocked by unrelated existing IDE2002, IDE0058, and IDE0059 errors in Compiler.gt.cs, Compiler.gt.Shuffle.cs, and Compiler.gt.ShuffleVariable.cs. The preceding DOUBLE_ALIGN batch passed FeatureConfigurationTests in Debug/Release for win-x86 (36/36) and for win-x64, win-arm, win-arm64, linux-loongarch64, linux-riscv64, browser-wasm, and linux-x64 (35 passed, 1 x86-only test skipped on each RID).",
-      "deferred": "Prolog emitter API conflicts remain a separate closure. Keep `Arm64CodeGenAsyncResumeInfoTests` deferred until the B209 target-width table/emitter dependency closure is ported and tested."
-    },
+    "activeBatch": null,
     "parityEvidence": {
       "corelibCodegen": {
         "architecture": "Windows x64",
@@ -852,6 +847,42 @@
       "disposition": "The floating return-register alias now selects the same target-qualified register through Configuration, retaining the existing not-available value on x86 and Wasm. Debug float names preserve ARM32 double-register spellings, ARM64/LoongArch register names, xarch SIMD prefixes, and lazy diagnostic-name initialization. No observable deviation is accepted.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
       "validation": "FeatureConfigurationTests and FloatingRegisterNameTests passed with analyzers disabled in Debug and Release for win-x86, win-x64, win-arm64, osx-arm64, linux-x64, linux-arm64, and browser-wasm (33-59 selected tests per target, no failures or skips). Full-analyzer validation was blocked only by existing IDE2002/IDE0059/IDE0058 diagnostics in untouched Compiler.gt*.cs files; the changed files had no analyzer diagnostics."
+    },
+    {
+      "area": "universal-target-metadata",
+      "native": [
+        "src\\coreclr\\jit\\target.h",
+        "src\\coreclr\\jit\\targetamd64.h",
+        "src\\coreclr\\jit\\targetarm.h",
+        "src\\coreclr\\jit\\targetarm64.h",
+        "src\\coreclr\\jit\\targetloongarch64.h",
+        "src\\coreclr\\jit\\targetriscv64.h",
+        "src\\coreclr\\jit\\targetwasm.h",
+        "src\\coreclr\\jit\\targetx86.h"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\target\\Globals.ArgumentRegisterTables.cs",
+        "sources\\Core\\jit\\target\\Globals.RegisterNavigation.cs",
+        "sources\\Core\\jit\\jit\\Globals.cs",
+        "sources\\Core\\jit\\targetamd64\\Globals.cs",
+        "sources\\Core\\jit\\targetarm\\Globals.cs",
+        "sources\\Core\\jit\\targetarm\\Globals.Registers.cs",
+        "sources\\Core\\jit\\targetarm64\\Globals.cs",
+        "sources\\Core\\jit\\targetarm64\\Globals.Registers.cs",
+        "sources\\Core\\jit\\targetloongarch64\\Globals.cs",
+        "sources\\Core\\jit\\targetloongarch64\\Globals.Registers.cs",
+        "sources\\Core\\jit\\targetriscv64\\Globals.cs",
+        "sources\\Core\\jit\\targetriscv64\\Globals.Registers.cs",
+        "sources\\Core\\jit\\targetwasm\\Globals.CallRegisterAliases.cs",
+        "sources\\Core\\jit\\targetwasm\\Globals.FrameConstants.cs",
+        "sources\\Core\\jit\\targetwasm\\Globals.cs",
+        "sources\\Core\\jit\\targetwasm\\regNumberExtensions.Wasm.cs",
+        "sources\\Core\\jit\\targetx86\\Globals.cs",
+        "sources\\Core\\jit\\targetx86\\Globals.Registers.cs"
+      ],
+      "disposition": "Architecture metadata members with cross-target name collisions use architecture suffixes, while register and mask references retain the existing target-qualified generated identities and ordinals. Identical register navigation and argument-register-mask selectors use runtime Configuration dispatch. The shared Globals initializer requires exactly one target among X86, AMD64, ARM, ARM64, LoongArch64, RISCV64, and WASM32, and requires TARGET_64BIT to equal AMD64 || ARM64 || LOONGARCH64 || RISCV64; UNIX ABI flags are checked against their matching x86 target. LoongArch SIMD remains an explicit fatal unsupported path when selected; Wasm-only register helpers reject other targets. Unsuffixed consumers outside these directories remain deferred.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Target/feature guard scan found zero directives in 35 non-generated owned C# files; nesting validation passed; the target invariant formula accepts exactly seven of 256 target/width combinations; cross-directory public-member conflicts fell from 202 to zero; all 18 changed C# files parsed in the language server; git diff --check passed. FEATURE_JIT_METHOD_PERF is unconditionally defined in RyuJitSharp.csproj, so its nested compile dependency was removed while MEASURE_CLRAPI_CALLS restrictions remain. Build and runtime tests are deferred until other lanes are idle and external consumer wiring is complete."
     }
   ],
   "generatorInputMapping": {

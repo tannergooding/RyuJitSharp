@@ -14,7 +14,7 @@ public sealed partial class CodeGen
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (delta == 0)
         {
-            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE_ARM64, REG_SPBASE_ARM64, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE_ARM64, REG_SPBASE_ARM64, canSkip: false);
         }
         else
         {

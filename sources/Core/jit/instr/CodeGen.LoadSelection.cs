@@ -110,7 +110,7 @@ public sealed partial class CodeGen
             if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 ||
                 Configuration.TARGET_RISCV64)
             {
-                instruction ins = INS_invalid;
+                var ins = INS_invalid;
                 if (Configuration.TARGET_ARMARCH)
                 {
                     if (!varTypeIsSmall(srcType))

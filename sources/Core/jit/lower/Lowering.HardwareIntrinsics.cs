@@ -78,7 +78,7 @@ public sealed partial class Lowering
             const byte B = 0xCC;
             const byte C = 0xAA;
             var simdType = node.Type;
-            var baseType = node.SimdBaseType;
+            _ = node.SimdBaseType;
             var size = node.SimdSize;
             var op1 = node.GetOp(1);
             var op2 = node.GetOp(2);
@@ -89,7 +89,7 @@ public sealed partial class Lowering
             {
                 var user = use.User().AsHWIntrinsic();
                 var userOperation = user.GetOperForHWIntrinsicId(out _);
-                baseType = user.SimdBaseType;
+                var baseType = user.SimdBaseType;
                 if (GenTreeHWIntrinsic.OperIsBitwiseHWIntrinsic(userOperation))
                 {
                     if (isNot && (userOperation is GT_AND))
@@ -337,7 +337,7 @@ public sealed partial class Lowering
             case NI_AVX512_CompareEqualMask:
             case NI_AVX512_CompareNotEqualMask:
             {
-                var first = node.GetOp(1);
+                _ = node.GetOp(1);
                 var second = node.GetOp(2);
                 if (!varTypeIsFloating(node.SimdBaseType) && second.IsVectorZero)
                 {
@@ -354,7 +354,7 @@ public sealed partial class Lowering
                     BlockRange().Remove(second);
                     var firstUse = new LIR.Use(BlockRange(), ref node.GetOpRef(1), node);
                     _ = ReplaceWithLclVar(firstUse);
-                    first = node.GetOp(1);
+                    var first = node.GetOp(1);
                     second = CompilerInstance.gtClone(first);
                     assert(second is not null);
                     BlockRange().InsertAfter(first, second);

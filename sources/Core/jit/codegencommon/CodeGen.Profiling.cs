@@ -36,7 +36,7 @@ public sealed partial class CodeGen
             GCInfo.gcMarkRegSetNpt(genRegMask(profilerFuncIdReg));
 
             var callerSPOffset = _compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed);
-            genInstrWithConstant(INS_add, EA_PTRSIZE, profilerCallerSpReg, genFramePointerReg(),
+            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, profilerCallerSpReg, genFramePointerReg(),
                 unchecked(-(nint)callerSPOffset), profilerCallerSpReg);
 
             GCInfo.gcMarkRegSetNpt(genRegMask(profilerCallerSpReg));
@@ -91,7 +91,7 @@ public sealed partial class CodeGen
                     attr = EA_PTRSIZE;
                 }
 
-                Emitter.emitIns_Mov(INS_mov, attr, REG_PROFILER_RET_SCRATCH, TargetRuntimeMetadata.Register0, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_mov, attr, REG_PROFILER_RET_SCRATCH, TargetRuntimeMetadata.Register0, canSkip: false);
                 genTransferRegGCState(REG_PROFILER_RET_SCRATCH, TargetRuntimeMetadata.Register0);
                 _regSet.verifyRegUsed(REG_PROFILER_RET_SCRATCH);
             }
@@ -112,7 +112,7 @@ public sealed partial class CodeGen
 
             if (r0InUse)
             {
-                Emitter.emitIns_Mov(INS_mov, attr, TargetRuntimeMetadata.Register0, REG_PROFILER_RET_SCRATCH, canSkip: false);
+                _ = Emitter.emitIns_Mov(INS_mov, attr, TargetRuntimeMetadata.Register0, REG_PROFILER_RET_SCRATCH, canSkip: false);
                 genTransferRegGCState(TargetRuntimeMetadata.Register0, REG_PROFILER_RET_SCRATCH);
                 GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_PROFILER_RET_SCRATCH));
             }
@@ -147,7 +147,7 @@ public sealed partial class CodeGen
             GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_PROFILER_LEAVE_ARG_FUNC_ID_RISCV64));
 
             var callerSPOffset = unchecked(-(nint)_compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed));
-            genInstrWithConstant(
+            _ = genInstrWithConstant(
                 INS_addi,
                 EA_PTRSIZE,
                 REG_PROFILER_LEAVE_ARG_CALLER_SP_RISCV64,

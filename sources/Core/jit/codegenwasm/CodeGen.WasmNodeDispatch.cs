@@ -1617,7 +1617,7 @@ public sealed partial class CodeGen
 
         var needsZeroing = _compiler.info.compInitMem;
         var size = tree.AsOp().Op1;
-        nuint reservedSpace = unchecked((nuint)Configuration.STACK_ALIGN);
+        var reservedSpace = unchecked((nuint)Configuration.STACK_ALIGN);
 
         if (size.IsContainedIntOrIImmed)
         {

@@ -3,9 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -137,7 +137,7 @@ public sealed partial class CodeGen
 
         genConsumeRegs(data);
 
-        var dataReg = REG_LOONGARCH64_NA;
+        regNumber dataReg;
         if (data.IsContained)
         {
             // Contained store operands are zero-inits, constants, or bitcasts.

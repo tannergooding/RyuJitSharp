@@ -134,5 +134,4 @@ public sealed partial class CodeGen
 
         genUpdateLifeStore(tree, targetReg, ref varDsc);
     }
-
 }

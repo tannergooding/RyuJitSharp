@@ -26,8 +26,15 @@ public partial struct RegSet
 
     internal regMaskTP CalleeSavedRegsMask
     {
-        get => _rsMaskCalleeSaved;
-        set => _rsMaskCalleeSaved = value;
+        readonly get
+        {
+            return _rsMaskCalleeSaved;
+        }
+
+        set
+        {
+            _rsMaskCalleeSaved = value;
+        }
     }
 
     public regMaskTP rsMaskPreSpillRegArg;

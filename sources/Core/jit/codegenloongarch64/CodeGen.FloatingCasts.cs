@@ -3,9 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -300,7 +300,7 @@ public sealed partial class CodeGen
 
         var op1 = treeNode.AsUnOp().Op1;
         var targetType = treeNode.Type;
-        int expMask = targetType is TYP_FLOAT ? 0xFF : 0x7FF;
+        var expMask = targetType is TYP_FLOAT ? 0xFF : 0x7FF;
         var exponentSize = targetType is TYP_FLOAT ? 8 : 11;
         var exponentPosition = targetType is TYP_FLOAT ? 23 : 52;
 

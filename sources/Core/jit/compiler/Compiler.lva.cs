@@ -884,7 +884,7 @@ public partial class Compiler
     /// <param name="minLength"></param>
     public void lvaDumpFrameLocation(int lclNum, int minLength)
     {
-        var message = "";
+        string message;
 
         if (Configuration.TARGET_ARM64 && lvaLocalIsOnUnknownSizeFrame(lclNum))
         {
@@ -2234,7 +2234,7 @@ public partial class Compiler
                 if (typeWithoutMod is CORINFO_TYPE_VALUECLASS or  CORINFO_TYPE_PTR or CORINFO_TYPE_BYREF)
                 {
                     JITDUMP($"Marking user arg{i:D2} as requiring special copy semantics\n");
-                    recordArgRequiresSpecialCopy(i);
+                    _ = recordArgRequiresSpecialCopy(i);
                 }
             }
 
@@ -3104,11 +3104,11 @@ public partial class Compiler
         var typeFlags = info.compCompHnd->getClassAttribs(structHandle);
 
         var fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
-        impNormStructType(structHandle);
+        _ = impNormStructType(structHandle);
 
         if (Configuration.TARGET_ARMARCH)
         {
-            GetHfaType(structHandle);
+            _ = GetHfaType(structHandle);
         }
 
         eeRunExtraSuperPmiQueries(() => QueryLayout(this, structHandle));

@@ -90,17 +90,12 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
         }
     }
 
-    public GenTreeCall? Call
-    {
-        get
-        {
+    public GenTreeCall? Call =>
 #if DEBUG
-            return _call;
+            _call;
 #else
-            return Configuration.UNIX_X86_ABI ? _call : null;
+            Configuration.UNIX_X86_ABI ? _call : null;
 #endif
-        }
-    }
 
     public new GenTree Data => Op1;
 

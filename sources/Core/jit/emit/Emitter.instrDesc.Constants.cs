@@ -81,6 +81,10 @@ public partial class Emitter
     {
         public nint idcCnsVal;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Design",
+            "CA1065:Do not raise exceptions in unexpected locations",
+            Justification = "Unsupported target descriptor layouts must terminate compilation.")]
         public override int NativeLogicalSize
         {
             get
@@ -100,6 +104,10 @@ public partial class Emitter
     {
         public nint iddDspVal;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Design",
+            "CA1065:Do not raise exceptions in unexpected locations",
+            Justification = "Unsupported target descriptor layouts must terminate compilation.")]
         public override int NativeLogicalSize
         {
             get
@@ -121,6 +129,10 @@ public partial class Emitter
         public ref nint iddcCnsVal => ref idcCnsVal;
         public int iddcDspVal;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Design",
+            "CA1065:Do not raise exceptions in unexpected locations",
+            Justification = "Unsupported target descriptor layouts must terminate compilation.")]
         public override int NativeLogicalSize
         {
             get
@@ -139,6 +151,10 @@ public partial class Emitter
     {
         public nint idaAmdVal;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Design",
+            "CA1065:Do not raise exceptions in unexpected locations",
+            Justification = "Unsupported target descriptor layouts must terminate compilation.")]
         public override int NativeLogicalSize
         {
             get
@@ -158,6 +174,10 @@ public partial class Emitter
         public ref nint idacCnsVal => ref idcCnsVal;
         public nint idacAmdVal;
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Design",
+            "CA1065:Do not raise exceptions in unexpected locations",
+            Justification = "Unsupported target descriptor layouts must terminate compilation.")]
         public override int NativeLogicalSize
         {
             get

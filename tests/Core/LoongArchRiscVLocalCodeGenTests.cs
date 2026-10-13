@@ -43,7 +43,7 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         WithCodeGen((compiler, codeGen) =>
         {
             compiler.lvaCount = 0;
-            compiler.lvaTable = Array.Empty<LclVarDsc>();
+            compiler.lvaTable = [];
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaMonAcquired = BAD_VAR_NUM;

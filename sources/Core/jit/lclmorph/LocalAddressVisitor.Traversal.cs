@@ -588,7 +588,7 @@ internal partial struct LocalAddressVisitor
     {
         assert((local.Oper is GT_LCL_VAR) && (_lclAddrAssertions is not null));
 
-        if ((local.Type is var __targetAliasValue2 && (!(__targetAliasValue2 == TYP_I_IMPL) && !(__targetAliasValue2 is TYP_BYREF))))
+        if ((local.Type is var __targetAliasValue2 && (!(__targetAliasValue2 == TYP_I_IMPL) && __targetAliasValue2 is not TYP_BYREF)))
         {
             return;
         }

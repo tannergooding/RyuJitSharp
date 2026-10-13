@@ -54,7 +54,7 @@ public sealed partial class Lowering
         {
             if (!CheckImmedAndMakeContained(node, node.Index))
             {
-                CheckImmedAndMakeContained(node, node.ArrayLength);
+                _ = CheckImmedAndMakeContained(node, node.ArrayLength);
             }
 
             return;

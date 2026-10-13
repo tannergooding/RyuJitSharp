@@ -439,5 +439,4 @@ public partial class Emitter
 
         id.idjShort = true;
     }
-
 }

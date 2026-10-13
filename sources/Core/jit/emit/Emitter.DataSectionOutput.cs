@@ -117,9 +117,9 @@ public partial class Emitter
                 for (uint i = 0; i < numElems; i++)
                 {
                     var location = dsc.Locations[i];
-                    byte* entry = (byte*)dstRW + unchecked((nint)(i * entrySize));
-                    byte* resumeSlot = entry;
-                    byte* diagnosticSlot = entry + targetPointerSize;
+                    var entry = (byte*)dstRW + unchecked((nint)(i * entrySize));
+                    var resumeSlot = entry;
+                    var diagnosticSlot = entry + targetPointerSize;
                     byte* target;
                     if (Configuration.TARGET_WASM)
                     {

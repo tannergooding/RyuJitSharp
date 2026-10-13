@@ -97,7 +97,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                genInstrWithConstant(INS_sub, EA_PTRSIZE, TargetRuntimeMetadata.StackProbeHelperArgumentRegister, TargetRuntimeMetadata.StackPointerBaseRegister,
+                _ = genInstrWithConstant(INS_sub, EA_PTRSIZE, TargetRuntimeMetadata.StackProbeHelperArgumentRegister, TargetRuntimeMetadata.StackPointerBaseRegister,
                     unchecked((nint)frameSize), TargetRuntimeMetadata.StackProbeHelperArgumentRegister, INS_FLAGS_DONT_CARE);
                 _regSet.verifyRegUsed(TargetRuntimeMetadata.StackProbeHelperArgumentRegister);
                 genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);

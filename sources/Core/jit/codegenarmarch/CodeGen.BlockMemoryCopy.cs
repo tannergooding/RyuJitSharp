@@ -3,12 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
-using static RyuJitSharp.instruction;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
+using static RyuJitSharp.instruction;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
 
@@ -275,7 +275,7 @@ public sealed partial class CodeGen
         {
         var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_ARM));
 
-        for (uint regSize = (uint)Configuration.REGSIZE_BYTES; size > 0; size -= regSize,
+        for (var regSize = (uint)Configuration.REGSIZE_BYTES; size > 0; size -= regSize,
             srcOffset += (int)regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)

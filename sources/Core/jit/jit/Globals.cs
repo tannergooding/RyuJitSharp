@@ -128,7 +128,7 @@ public partial class Globals
 
     private static void ValidateTargetConfiguration()
     {
-        int targetCount =
+        var targetCount =
             (Configuration.TARGET_X86 ? 1 : 0) +
             (Configuration.TARGET_AMD64 ? 1 : 0) +
             (Configuration.TARGET_ARM ? 1 : 0) +
@@ -142,7 +142,7 @@ public partial class Globals
             throw new FatalJitException("Exactly one target architecture must be selected.");
         }
 
-        bool targetIs64Bit =
+        var targetIs64Bit =
             Configuration.TARGET_AMD64 ||
             Configuration.TARGET_ARM64 ||
             Configuration.TARGET_LOONGARCH64 ||

@@ -15,7 +15,7 @@ public sealed partial class CodeGen
 
             var continuation = tree.Op1;
             assert(continuation.Type is TYP_REF);
-            genConsumeReg(continuation);
+            _ = genConsumeReg(continuation);
             genStoreAsyncContinuationGlobal();
 
             var retNativeType = _compiler.info.compRetNativeType;

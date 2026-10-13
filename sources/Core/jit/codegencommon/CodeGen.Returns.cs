@@ -193,7 +193,7 @@ public sealed partial class CodeGen
         var size = type.EmitActualSize;
         if (Configuration.TARGET_ARM64)
         {
-            Emitter.emitIns_Mov(INS_mov, size, returnReg, value.RegNum, canSkip: !movRequired);
+            _ = Emitter.emitIns_Mov(INS_mov, size, returnReg, value.RegNum, canSkip: !movRequired);
         }
         else if (movRequired)
         {

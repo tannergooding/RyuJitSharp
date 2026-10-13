@@ -75,7 +75,7 @@ public sealed partial class CodeGen
                 if (RyuJitSharp.Emitter.IsMovInstruction(ins))
                 {
                     assert(options == INS_OPTS_NONE);
-                    Emitter.emitIns_Mov(ins, attr, reg, rmReg, canSkip: false);
+                    _ = Emitter.emitIns_Mov(ins, attr, reg, rmReg, canSkip: false);
                 }
                 else
                 {
@@ -114,7 +114,7 @@ public sealed partial class CodeGen
                             var move = Configuration.TARGET_AMD64 && (moveSize != EA_4BYTE)
                                 ? INS_movd64
                                 : INS_movd32;
-                            Emitter.emitIns_Mov(move, moveSize, reg, rmReg, canSkip: false);
+                            _ = Emitter.emitIns_Mov(move, moveSize, reg, rmReg, canSkip: false);
                             rmReg = reg;
                         }
                         else if (instructionFixup)

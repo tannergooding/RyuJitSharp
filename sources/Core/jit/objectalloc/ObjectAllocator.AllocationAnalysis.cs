@@ -303,7 +303,7 @@ public sealed partial class ObjectAllocator
             foreach (var stmt in block.Statements)
             {
                 var visitor = new BuildConnGraphVisitor(this, block, stmt);
-                visitor.WalkTree(ref stmt.RootNodeRef, null);
+                _ = visitor.WalkTree(ref stmt.RootNodeRef, null);
             }
         }
     }

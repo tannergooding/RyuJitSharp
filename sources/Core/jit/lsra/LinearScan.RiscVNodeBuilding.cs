@@ -12,7 +12,7 @@ public sealed partial class LinearScan
         assert(!tree.IsContained);
 
         var sourceCount = 0;
-        var destinationCount = 0;
+        int destinationCount;
         var isLocalDefUse = false;
 
         clearBuildState();

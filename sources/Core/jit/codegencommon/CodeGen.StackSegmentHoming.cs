@@ -81,7 +81,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            genInstrWithConstant(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset, initReg);
+            _ = genInstrWithConstant(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset, initReg);
         }
         Emitter.emitIns_S_R(ins_Store(loadType), size, initReg, lclNum, segment.Offset);
         if (initRegStillZeroed != null)

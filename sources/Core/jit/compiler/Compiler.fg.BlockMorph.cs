@@ -575,7 +575,6 @@ public partial class Compiler
                 fgRemoveStmt(block, lastStatement);
                 var newStatement = gtNewStmt(tree, debugInfo);
                 fgInsertStmtAfter(block, afterStatement, newStatement);
-                lastStatement = newStatement;
             }
         }
         else if ((ret is not null) && (ret.Oper is GT_RETURN or GT_SWIFT_ERROR_RET))

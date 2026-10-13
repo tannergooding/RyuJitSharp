@@ -12,6 +12,10 @@ public partial struct RegSet
     // The shared layout reserves space for the largest vector temp and ARM64's unknown-size slots.
     public const int TEMP_SLOT_COUNT = (MAX_TEMP_SIZE / sizeof(int)) + 2;
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Design",
+        "CA1065:Do not raise exceptions in unexpected locations",
+        Justification = "Targets without supported SIMD spill temps must terminate compilation.")]
     public static int TEMP_MAX_SIZE
     {
         get

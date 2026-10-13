@@ -94,6 +94,6 @@ internal static class RegMaskRuntimeTests
             Assert.Ignore("Wasm-specific fixed-register behavior.");
         }
 
-        Assert.Throws<System.PlatformNotSupportedException>(() => genSingleTypeRegMask(REG_WASM_STK, TYP_INT));
+        _ = Assert.Throws<System.PlatformNotSupportedException>(() => genSingleTypeRegMask(REG_WASM_STK, TYP_INT));
     }
 }

@@ -339,7 +339,7 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "ARM64 generic-context storage is unavailable.");
         }
 
-        genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+        _ = genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             offset, rsGetRsvdReg());
     }
 
@@ -350,7 +350,7 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 generic-context storage is unavailable.");
         }
 
-        genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+        _ = genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             offset, REG_LOONGARCH64_R21);
     }
 
@@ -361,7 +361,7 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 generic-context storage is unavailable.");
         }
 
-        genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
+        _ = genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             offset, rsGetRsvdReg());
     }
 

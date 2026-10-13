@@ -15,5 +15,4 @@ public partial class Emitter
 
         return unchecked((sbyte)ival);
     }
-
 }

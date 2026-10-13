@@ -198,7 +198,7 @@ public sealed partial class LinearScan
         if (!useInterval.isLocalVar || (targetPreferredUse.treeNode is null) ||
             ((targetPreferredUse.treeNode.Flags & GTF_VAR_DEATH) != 0))
         {
-            useInterval.assignRelatedIntervalIfUnassigned(interval);
+            _ = useInterval.assignRelatedIntervalIfUnassigned(interval);
         }
     }
 

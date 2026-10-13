@@ -8,8 +8,8 @@ using System.Diagnostics;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
-using static RyuJitSharp.VNFunc;
 using static RyuJitSharp.var_types;
+using static RyuJitSharp.VNFunc;
 
 namespace RyuJitSharp;
 
@@ -571,11 +571,10 @@ public partial class Compiler
         var local = dest.AsLclVar();
         if (value.Oper.IsCnsVec)
         {
-            var inspectIntrinsic = false;
             if (Configuration.FEATURE_HW_INTRINSICS && destParent is GenTreeHWIntrinsic intrinsic)
             {
                 ref var descriptor = ref lvaGetDesc(local.LclNum);
-                inspectIntrinsic = local.HasSsaName
+                var inspectIntrinsic = local.HasSsaName
                     ? descriptor.GetPerSsaData(local.SsaNum).NumUses > 1
                     : descriptor.lvRefCnt() > 2;
 

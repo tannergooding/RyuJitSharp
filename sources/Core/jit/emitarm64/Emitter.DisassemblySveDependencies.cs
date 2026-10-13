@@ -5146,5 +5146,4 @@ public partial class Emitter
             }
         }
     }
-
 }

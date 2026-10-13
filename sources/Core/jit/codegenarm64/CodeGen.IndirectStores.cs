@@ -3,9 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 using static RyuJitSharp.var_types;
@@ -107,5 +107,4 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R_IArm64(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
         Emitter.emitIns_R_R_IArm64(INS_str, EA_4BYTE, tmpReg, addrReg, 8);
     }
-
 }

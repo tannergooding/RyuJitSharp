@@ -1586,7 +1586,7 @@ public partial class Compiler
             {
                 var gcPtr = TYPE_GC_NONE;
                 // Check if this pointer-sized struct is wrapping a GC object
-                info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
+                _ = info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
                 useType = getJitGCType(gcPtr);
                 break;
             }

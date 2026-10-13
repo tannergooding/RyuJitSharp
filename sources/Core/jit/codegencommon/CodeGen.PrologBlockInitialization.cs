@@ -61,7 +61,6 @@ public sealed partial class CodeGen
                 noway_assert(availMask.IsNonEmpty);
                 var rCntMask = genFindLowestBit(availMask);
                 rCnt = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rCntMask.Lower));
-                availMask &= ~rCntMask;
             }
 
             assert((genRegMask(rAddr) & _calleeRegArgMaskLiveIn).IsEmpty);
@@ -154,7 +153,6 @@ public sealed partial class CodeGen
                 noway_assert(availMask.IsNonEmpty);
                 var endAddrMask = genFindLowestBit(availMask);
                 var endAddrReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)endAddrMask.Lower));
-                availMask &= ~endAddrMask;
 
                 assert((genRegMask(endAddrReg) & _calleeRegArgMaskLiveIn).IsEmpty);
                 var loopBytes = (regSlots & ~((nint)0x3)) * Configuration.REGSIZE_BYTES;
@@ -225,7 +223,6 @@ public sealed partial class CodeGen
             assert(UseBlockInit);
             assert(untrLclHi > untrLclLo);
             var frameReg = genFramePointerReg();
-            var zeroReg = REG_NA;
             var blkSize = untrLclHi - untrLclLo;
             assert(blkSize >= 0);
             noway_assert((blkSize % sizeof(int)) == 0);
@@ -249,6 +246,7 @@ public sealed partial class CodeGen
                 alignedLclLo = untrLclLo;
             }
 
+            regNumber zeroReg;
             if (blkSize < Configuration.XMM_REGSIZE_BYTES)
             {
                 zeroReg = genGetZeroReg(initReg, ref initRegZeroed);

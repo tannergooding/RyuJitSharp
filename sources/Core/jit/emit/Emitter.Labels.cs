@@ -183,5 +183,4 @@ public partial class Emitter
                 "LoongArch64 emitter operations require LoongArch64.");
         }
     }
-
 }

@@ -3,10 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.Globals;
-using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
@@ -132,10 +132,10 @@ public partial class Emitter
     {
         var imm = unchecked((int)value);
         var format = IF_NONE;
-        var hasLr = false;
+        bool hasLr;
         var hasPc = false;
         var useThumb2 = false;
-        var isSingleBit = false;
+        bool isSingleBit;
 
         switch (ins)
         {
@@ -1021,8 +1021,8 @@ public partial class Emitter
         regNumber reg3, insFlags flags)
     {
         var size = EA_SIZE(attr);
-        var format = IF_NONE;
-        var recordedFlags = INS_FLAGS_DONT_CARE;
+        insFormat format;
+        insFlags recordedFlags;
 
         switch (ins)
         {

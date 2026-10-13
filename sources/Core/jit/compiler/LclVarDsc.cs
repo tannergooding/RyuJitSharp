@@ -1254,6 +1254,10 @@ public partial struct LclVarDsc
 
     public readonly bool lvIsInReg => lvIsRegCandidate && (_lvRegNum != REG_STK);
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Design",
+        "CA1065:Do not raise exceptions in unexpected locations",
+        Justification = "Targets without fixed register sets cannot provide a local register mask.")]
     public readonly regMask lvRegMask
     {
         get

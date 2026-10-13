@@ -4,8 +4,8 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp;
@@ -33,7 +33,7 @@ public sealed partial class ScalarEvolutionContext
                 else
                 {
                     Span<byte> bytes = stackalloc byte[sizeof(long)];
-                    BitConverter.TryWriteBytes(bytes, constant.Value);
+                    _ = BitConverter.TryWriteBytes(bytes, constant.Value);
                     resultVNP.SetBoth(vnStore.VNForGenericCon(constant.Type, bytes));
                 }
 

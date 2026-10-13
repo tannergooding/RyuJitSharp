@@ -219,7 +219,7 @@ public sealed partial class CodeGen
                 if (varTypeIsSmall(node.Type) && varTypeIsSigned(node.Type))
                 {
                     var mov = varTypeIsShort(node.Type) ? INS_sxth : INS_sxtb;
-                    Emitter.emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, canSkip: false);
+                    _ = Emitter.emitIns_Mov(mov, EA_4BYTE, targetReg, targetReg, canSkip: false);
                 }
 
                 genProduceReg(node);
@@ -303,7 +303,7 @@ public sealed partial class CodeGen
                 Emitter.emitIns_R_AR(INS_mov, size, TargetRuntimeMetadata.IntegerReturnRegister, addr.RegNum, 0);
                 var loop = genCreateTempLabel();
                 genDefineTempLabel(loop);
-                Emitter.emitIns_Mov(INS_mov, size, tmpReg,
+                _ = Emitter.emitIns_Mov(INS_mov, size, tmpReg,
                     TargetRuntimeMetadata.IntegerReturnRegister, canSkip: false);
                 Emitter.emitIns_R_R(ins, size, tmpReg, data.RegNum);
                 instGen(INS_lock);
@@ -318,7 +318,7 @@ public sealed partial class CodeGen
         }
 
         assert((node.RegNum != addr.RegNum) || (node.RegNum == data.RegNum));
-        Emitter.emitIns_Mov(INS_mov, size, node.RegNum, data.RegNum, canSkip: true);
+        _ = Emitter.emitIns_Mov(INS_mov, size, node.RegNum, data.RegNum, canSkip: true);
         var instruction = (node.Oper is GT_XADD) ? INS_xadd : INS_xchg;
         if (instruction != INS_xchg)
         {
@@ -329,7 +329,7 @@ public sealed partial class CodeGen
         if (varTypeIsSmall(node.Type))
         {
             var mov = varTypeIsSigned(node.Type) ? INS_movsx : INS_movzx;
-            Emitter.emitIns_Mov(mov, size, node.RegNum, node.RegNum, canSkip: false);
+            _ = Emitter.emitIns_Mov(mov, size, node.RegNum, node.RegNum, canSkip: false);
         }
         genProduceReg(node);
     }
@@ -426,7 +426,7 @@ public sealed partial class CodeGen
             if (_compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
             {
                 // CASAL uses the result register for the expected value and replaces it with the observed value.
-                Emitter.emitIns_Mov(INS_mov, dataSize, arm64TargetReg, comparandReg, canSkip: true);
+                _ = Emitter.emitIns_Mov(INS_mov, dataSize, arm64TargetReg, comparandReg, canSkip: true);
 
                 noway_assert((addressReg != arm64TargetReg) || (arm64TargetReg == comparandReg));
                 noway_assert((dataReg != arm64TargetReg) || (arm64TargetReg == comparandReg));
@@ -515,7 +515,7 @@ public sealed partial class CodeGen
             if (varTypeIsSmall(arm64TargetType) && varTypeIsSigned(arm64TargetType))
             {
                 var mov = varTypeIsShort(arm64TargetType) ? INS_sxth : INS_sxtb;
-                Emitter.emitIns_Mov(mov, EA_4BYTE, arm64TargetReg, arm64TargetReg, canSkip: false);
+                _ = Emitter.emitIns_Mov(mov, EA_4BYTE, arm64TargetReg, arm64TargetReg, canSkip: false);
             }
 
             genProduceReg(tree);
@@ -542,9 +542,9 @@ public sealed partial class CodeGen
         assert(location.RegNum != REG_NA && location.RegNum != integerReturnRegister);
         assert(value.RegNum != REG_NA && value.RegNum != integerReturnRegister);
 
-        genConsumeReg(location);
-        genConsumeReg(value);
-        genConsumeReg(comparand);
+        _ = genConsumeReg(location);
+        _ = genConsumeReg(value);
+        _ = genConsumeReg(comparand);
         // Consume all operands first: a GT_COPY may still need the original RAX.
         inst_Mov(comparand.Type, integerReturnRegister, comparand.RegNum, canSkip: true);
         instGen(INS_lock);
@@ -553,7 +553,7 @@ public sealed partial class CodeGen
         if (varTypeIsSmall(targetType))
         {
             var mov = varTypeIsSigned(targetType) ? INS_movsx : INS_movzx;
-            Emitter.emitIns_Mov(mov, size, targetReg, integerReturnRegister, canSkip: false);
+            _ = Emitter.emitIns_Mov(mov, size, targetReg, integerReturnRegister, canSkip: false);
         }
         else
         {

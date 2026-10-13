@@ -26,7 +26,8 @@ public partial class Emitter
                 "ARM32 local-variable immediate resolution requires an active compiler.");
             var varNum = id.idAddr().iiaLclVar.lvaVarNum();
             var offs = unchecked((int)id.idAddr().iiaLclVar.lvaOffset());
-            var adr = compiler.lvaFrameAddress(varNum, id.idIsLclFPBase(), out var baseReg, offs,
+
+            var adr = compiler.lvaFrameAddress(varNum, id.idIsLclFPBase(), out _, offs,
                 CodeGen.instIsFP(id.idIns()));
             var displacement = unchecked(adr + offs);
             if (id.idIns() is INS_sub or INS_subw)

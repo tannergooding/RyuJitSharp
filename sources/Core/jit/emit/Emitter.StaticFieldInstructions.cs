@@ -99,7 +99,7 @@ public partial class Emitter
             }
 
             var dataOffset = Compiler.eeGetJitDataOffs(fldHnd);
-            nint address = 0;
+            nint address;
             if (dataOffset >= 0)
             {
                 NYI("JitDataOffset static fields");

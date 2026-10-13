@@ -67,5 +67,4 @@ public partial class Emitter
 
         return dst;
     }
-
 }

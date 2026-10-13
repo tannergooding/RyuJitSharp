@@ -704,7 +704,7 @@ public sealed partial class Lowering
         if (Configuration.TARGET_RISCV64 &&
             CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba))
         {
-            TryLowerZextLeftShiftToSlliUw(shift, out _);
+            _ = TryLowerZextLeftShiftToSlliUw(shift, out _);
         }
     }
 

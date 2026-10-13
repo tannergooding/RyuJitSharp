@@ -113,10 +113,8 @@ public partial class Compiler
                 return;
             }
 
-            var imm1Pos = -1;
-            var imm2Pos = -1;
             var numArgs = HWIntrinsicInfo.lookupNumArgs(intrinsic);
-            HWIntrinsicInfo.GetImmOpsPositions(intrinsic, out imm1Pos, out imm2Pos);
+            HWIntrinsicInfo.GetImmOpsPositions(intrinsic, out var imm1Pos, out var imm2Pos);
             if (imm1Pos >= 0)
             {
                 var imm1StackPos = numArgs - imm1Pos;

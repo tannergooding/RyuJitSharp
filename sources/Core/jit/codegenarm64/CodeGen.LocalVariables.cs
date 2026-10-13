@@ -52,7 +52,7 @@ public sealed partial class CodeGen
         var data = tree.Op1;
         genConsumeRegs(data);
 
-        var dataReg = REG_ARM64_NA;
+        regNumber dataReg;
         if (data.IsContainedIntOrIImmed)
         {
             assert(data.IsIntegralConst(0));
@@ -134,7 +134,7 @@ public sealed partial class CodeGen
 
         genConsumeRegs(data);
 
-        var dataReg = REG_ARM64_NA;
+        regNumber dataReg;
         if (data.IsContained)
         {
             var zeroInit = data.IsIntegralConst(0) || data.IsVectorZero;
@@ -242,5 +242,4 @@ public sealed partial class CodeGen
 
         genUpdateLifeStore(treeNode, targetReg, ref varDsc);
     }
-
 }

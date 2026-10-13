@@ -59,7 +59,7 @@ public partial class Compiler
         }
 
         lvaAssignFrameOffsets(curState);
-        uint calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
+        var calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
         if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
         {
             if (compFloatingPointUsed)
@@ -90,7 +90,7 @@ public partial class Compiler
             return true;
         }
 
-        uint calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
+        var calleeSavedRegMaxSz = CALLEE_SAVED_REG_MAXSZ;
         if (compFloatingPointUsed)
         {
             calleeSavedRegMaxSz += CALLEE_SAVED_FLOAT_MAXSZ;

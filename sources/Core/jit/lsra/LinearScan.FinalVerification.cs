@@ -100,7 +100,6 @@ public sealed partial class LinearScan
         }
 
         BasicBlock? currentBlock = null;
-        var currentLocation = MinLocation;
         foreach (var reference in refPositions)
         {
             Interval? interval = null;
@@ -135,7 +134,7 @@ public sealed partial class LinearScan
                 }
             }
 
-            currentLocation = reference.nodeLocation;
+            var currentLocation = reference.nodeLocation;
             switch (reference.refType)
             {
                 case RefType.RefTypeBB:

@@ -23,7 +23,7 @@ public sealed partial class ObjectAllocator
 
         if (alignTo8)
         {
-            blockSize = (blockSize + 7) & ~7;
+            _ = (blockSize + 7) & ~7;
         }
 
         compiler.lvaSetStruct(local, compiler.typGetArrayLayout(clsHnd, checked((int)length)),

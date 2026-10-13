@@ -85,5 +85,4 @@ public partial class Emitter
         emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, unchecked((int)varNum), unchecked((int)offset));
         emitIns_S_R_I(INS_extractps, EA_16BYTE, unchecked((int)varNum), unchecked((int)(offset + 8)), dataReg, 2);
     }
-
 }

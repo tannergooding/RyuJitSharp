@@ -136,7 +136,7 @@ public partial class Globals
             TargetRuntimeMetadata.FloatingRegisterFirst, TargetRuntimeMetadata.FloatingRegisterLast);
         if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            sep = dspRegRange(regMask, ref minSiz, sep,
+            _ = dspRegRange(regMask, ref minSiz, sep,
                 TargetRuntimeMetadata.MaskRegisterFirst, TargetRuntimeMetadata.MaskRegisterLast);
         }
 

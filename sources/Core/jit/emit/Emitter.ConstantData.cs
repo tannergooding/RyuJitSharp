@@ -49,7 +49,7 @@ public partial class Emitter
     public uint emitBBTableDataGenBeg(uint numEntries, bool relativeAddr)
     {
         assert(emitDataSecCur is null);
-        uint elemSize = relativeAddr ? 4u : (uint)Configuration.TARGET_POINTER_SIZE;
+        var elemSize = relativeAddr ? 4u : (uint)Configuration.TARGET_POINTER_SIZE;
         var emittedSize = unchecked(numEntries * elemSize);
         var secOffs = roundUp(emitConsDsc.dsdOffs, elemSize);
         emitConsDsc.dsdOffs = unchecked(secOffs + emittedSize);
@@ -92,7 +92,7 @@ public partial class Emitter
         var section = emitDataSecCur;
         assert(section is not null);
         assert(section.dsType is dataSection.sectionType.blockAbsoluteAddr or dataSection.sectionType.blockRelative32);
-        uint elemSize = section.dsType == dataSection.sectionType.blockAbsoluteAddr
+        var elemSize = section.dsType == dataSection.sectionType.blockAbsoluteAddr
             ? (uint)Configuration.TARGET_POINTER_SIZE
             : 4u;
         assert(section.dsSize >= unchecked(elemSize * (index + 1)));

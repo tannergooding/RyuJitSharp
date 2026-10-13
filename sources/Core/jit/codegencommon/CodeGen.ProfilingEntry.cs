@@ -33,7 +33,7 @@ public sealed partial class CodeGen
             }
 
             var arm64CallerSPOffset = _compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed);
-            genInstrWithConstant(INS_add, EA_PTRSIZE, profilerCallerSpReg, genFramePointerReg(),
+            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, profilerCallerSpReg, genFramePointerReg(),
                 unchecked(-(nint)arm64CallerSPOffset), profilerCallerSpReg);
 
             genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN);
@@ -101,7 +101,7 @@ public sealed partial class CodeGen
                 _compiler.compProfilerMethHnd);
 
             var riscvCallerSPOffset = unchecked(-(nint)_compiler.lvaToCallerSPRelativeOffset(0, IsFramePointerUsed));
-            genInstrWithConstant(
+            _ = genInstrWithConstant(
                 INS_addi,
                 EA_PTRSIZE,
                 REG_PROFILER_ENTER_ARG_CALLER_SP_RISCV64,

@@ -7,6 +7,8 @@ using System;
 
 namespace RyuJitSharp;
 
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1065:Do not raise exceptions in unexpected locations",
+    Justification = "Target-qualified globals fail fast when the selected runtime target or ABI does not provide them.")]
 public partial class Globals
 {
     public const CorInfoArch CORINFO_ARCH_TARGET_AMD64 = CORINFO_ARCH_X64;

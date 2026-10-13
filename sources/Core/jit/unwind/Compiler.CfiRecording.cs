@@ -33,8 +33,9 @@ public partial class Compiler
 
         ref var func = ref funCurrentFunc();
         var cbProlog = unwindGetCurrentOffset(in func);
-        var policy = GetCfiRegisterPolicy();
-        var relOffsetMask = policy.CalleeSavedMask;
+
+        var (CalleeSavedMask, FirstFloatRegister, _, _, RegisterSize) = GetCfiRegisterPolicy();
+        var relOffsetMask = CalleeSavedMask;
 
         if (Configuration.UNIX_AMD64_ABI && Configuration.ETW_EBP_FRAMED)
         {
@@ -46,12 +47,12 @@ public partial class Compiler
         {
             relOffsetMask |= new regMaskTP(regMask.SRBM_ARM32_R11 | regMask.SRBM_ARM32_LR | regMask.SRBM_ARM32_PC);
             createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL,
-                reg >= policy.FirstFloatRegister ? 2 * policy.RegisterSize : policy.RegisterSize);
+                reg >= FirstFloatRegister ? 2 * RegisterSize : RegisterSize);
         }
         else
         {
-            assert(reg < policy.FirstFloatRegister);
-            createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, policy.RegisterSize);
+            assert(reg < FirstFloatRegister);
+            createCfiCode(in func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, RegisterSize);
         }
 
         if ((bool)(relOffsetMask & genRegMask(reg)))
@@ -84,11 +85,11 @@ public partial class Compiler
     private void unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
     {
         // LLVM DWARF names D0-D15, so pair the ARM emitter's S0-S31 registers.
-        var policy = GetCfiRegisterPolicy();
+        var (_, _, LastFloatRegister, LastIntegerRegister, _) = GetCfiRegisterPolicy();
         var pairFloatRegisters = Configuration.TARGET_ARM && isFloat;
         var regNum = isFloat
-            ? (pairFloatRegisters ? policy.LastFloatRegister - 1 : policy.LastFloatRegister)
-            : policy.LastIntegerRegister;
+            ? (pairFloatRegisters ? LastFloatRegister - 1 : LastFloatRegister)
+            : LastIntegerRegister;
         var regBit = pairFloatRegisters ? genRegMask(regNum) | genRegMask(regNum + 1) : genRegMask(regNum);
 
         while (!regMask.IsEmpty && !regBit.IsEmpty)

@@ -124,7 +124,7 @@ public sealed partial class Rationalizer
             var insertionPoint = first.Prev;
             BlockRange.Remove(first, node);
             ReplaceUse(ref use, parents, node, result);
-            CompilerInstance.gtSetEvalOrder(result);
+            _ = CompilerInstance.gtSetEvalOrder(result);
             BlockRange.InsertAfter(insertionPoint, new LIR.Range(CompilerInstance.fgSetTreeSeq(result), result));
             return;
         }

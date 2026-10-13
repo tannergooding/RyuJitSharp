@@ -12993,7 +12993,7 @@ public partial class Compiler
             assert(constValTree is not null);
 
             var fieldStoreTree = gtNewStoreLclFldNode(fieldVarType, structTempNum, fldOffset, constValTree);
-            impAppendTree(fieldStoreTree, CHECK_SPILL_NONE, impCurStmtDI);
+            _ = impAppendTree(fieldStoreTree, CHECK_SPILL_NONE, impCurStmtDI);
 
             JITDUMP($"Folding 'static readonly {eeGetClassName(fieldClsHnd)}' field to a STORE_LCL_FLD(CNS) node\n");
             return impCreateLocalNode(structTempNum, (0));
@@ -15868,14 +15868,14 @@ public partial class Compiler
             if ((val.Flags & GTF_ORDER_SIDEEFF) is not 0)
             {
                 assert(lastLevelWithSideEffects is -1);
-                impSpillStackEntry(level, BAD_VAR_NUM, assertOnRecursion: false, "impPopArgsForUnmanagedCall - other side effect");
+                _ = impSpillStackEntry(level, BAD_VAR_NUM, assertOnRecursion: false, "impPopArgsForUnmanagedCall - other side effect");
             }
             else if ((val.Flags & GTF_SIDE_EFFECT) is not 0)
             {
                 if (lastLevelWithSideEffects is not -1)
                 {
                     // We had a previous side effect - must spill it
-                    impSpillStackEntry(lastLevelWithSideEffects, BAD_VAR_NUM, assertOnRecursion: false, "impPopArgsForUnmanagedCall - side effect");
+                    _ = impSpillStackEntry(lastLevelWithSideEffects, BAD_VAR_NUM, assertOnRecursion: false, "impPopArgsForUnmanagedCall - side effect");
 
                     // Record the level for the current side effect in case we will spill it
                     lastLevelWithSideEffects = level;
@@ -16601,7 +16601,6 @@ public partial class Compiler
                         impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
                         result = gtNewLclvNode(retType, tmp);
                     }
-
                 }
                 break;
             }
@@ -16691,7 +16690,7 @@ public partial class Compiler
                 if (op1.Oper.IsIntegralConst)
                 {
                     // Pop the value from the stack
-                    impPopStack();
+                    _ = impPopStack();
 
                     if (varTypeIsLong(baseType))
                     {
@@ -19340,10 +19339,10 @@ public partial class Compiler
                 // Do the side-effect as a separate statement.
                 if (sideEffectAddressStore is not null)
                 {
-                    impAppendTree(sideEffectAddressStore, curLevel, usedDI);
+                    _ = impAppendTree(sideEffectAddressStore, curLevel, usedDI);
                 }
 
-                impAppendTree(comma.Op1, curLevel, usedDI);
+                _ = impAppendTree(comma.Op1, curLevel, usedDI);
             }
             else
             {
@@ -22216,7 +22215,7 @@ public partial class Compiler
 
                             if (Configuration.FEATURE_HW_INTRINSICS)
                             {
-                                ReadOnlySpan<byte> platformNamespaceName =
+                                var platformNamespaceName =
                                     Configuration.TARGET_XARCH ? ".X86"u8 :
                                     Configuration.TARGET_ARM64 ? ".Arm"u8 :
                                     Configuration.TARGET_WASM ? ".Wasm"u8 :
@@ -23140,7 +23139,7 @@ public partial class Compiler
             }
             else
             {
-                ReadOnlySpan<byte> platformNamespaceName =
+                var platformNamespaceName =
                     Configuration.TARGET_XARCH ? "System.Runtime.Intrinsics.X86"u8 :
                     Configuration.TARGET_ARM64 ? "System.Runtime.Intrinsics.Arm"u8 :
                     Configuration.TARGET_WASM ? "System.Runtime.Intrinsics.Wasm"u8 :

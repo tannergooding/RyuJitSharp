@@ -1082,29 +1082,29 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_tst, EA_8BYTE, REG_ARM64_R7, REG_ARM64_R10);
 
         // mov reg, reg
-        theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_R8, REG_ARM64_SP, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_SP, REG_ARM64_R9, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_R8, REG_ARM64_SP, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_SP, REG_ARM64_R9, /* canSkip */ false);
 
         theEmitter.emitIns_R_R(INS_mvn, EA_8BYTE, REG_ARM64_R5, REG_ARM64_R11);
         theEmitter.emitIns_R_R(INS_neg, EA_8BYTE, REG_ARM64_R4, REG_ARM64_R12);
         theEmitter.emitIns_R_R(INS_negs, EA_8BYTE, REG_ARM64_R3, REG_ARM64_R13);
 
-        theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
         theEmitter.emitIns_R_R(INS_mvn, EA_4BYTE, REG_ARM64_R5, REG_ARM64_R11);
         theEmitter.emitIns_R_R(INS_neg, EA_4BYTE, REG_ARM64_R4, REG_ARM64_R12);
         theEmitter.emitIns_R_R(INS_negs, EA_4BYTE, REG_ARM64_R3, REG_ARM64_R13);
 
-        theEmitter.emitIns_Mov(INS_sxtb, EA_8BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_sxth, EA_8BYTE, REG_ARM64_R5, REG_ARM64_R11, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_sxtw, EA_8BYTE, REG_ARM64_R4, REG_ARM64_R12, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_uxtb, EA_8BYTE, REG_ARM64_R3, REG_ARM64_R13, /* canSkip */ false); // map to Wt
-        theEmitter.emitIns_Mov(INS_uxth, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R14, /* canSkip */ false); // map to Wt
+        _ = theEmitter.emitIns_Mov(INS_sxtb, EA_8BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_sxth, EA_8BYTE, REG_ARM64_R5, REG_ARM64_R11, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_sxtw, EA_8BYTE, REG_ARM64_R4, REG_ARM64_R12, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_uxtb, EA_8BYTE, REG_ARM64_R3, REG_ARM64_R13, /* canSkip */ false); // map to Wt
+        _ = theEmitter.emitIns_Mov(INS_uxth, EA_8BYTE, REG_ARM64_R2, REG_ARM64_R14, /* canSkip */ false); // map to Wt
 
-        theEmitter.emitIns_Mov(INS_sxtb, EA_4BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_sxth, EA_4BYTE, REG_ARM64_R5, REG_ARM64_R11, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_uxtb, EA_4BYTE, REG_ARM64_R3, REG_ARM64_R13, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_uxth, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R14, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_sxtb, EA_4BYTE, REG_ARM64_R7, REG_ARM64_R10, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_sxth, EA_4BYTE, REG_ARM64_R5, REG_ARM64_R11, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_uxtb, EA_4BYTE, REG_ARM64_R3, REG_ARM64_R13, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_uxth, EA_4BYTE, REG_ARM64_R2, REG_ARM64_R14, /* canSkip */ false);
 
         //
         // R_I_I
@@ -2108,24 +2108,24 @@ public sealed partial class CodeGen
         //
 
         // mov vector to vector
-        theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V1, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_16BYTE, REG_ARM64_V2, REG_ARM64_V3, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V1, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_16BYTE, REG_ARM64_V2, REG_ARM64_V3, /* canSkip */ false);
 
-        theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_V12, REG_ARM64_V13, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_2BYTE, REG_ARM64_V14, REG_ARM64_V15, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_1BYTE, REG_ARM64_V16, REG_ARM64_V17, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_V12, REG_ARM64_V13, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_2BYTE, REG_ARM64_V14, REG_ARM64_V15, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_1BYTE, REG_ARM64_V16, REG_ARM64_V17, /* canSkip */ false);
 
         // mov vector to general
-        theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_R0, REG_ARM64_V4, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_R1, REG_ARM64_V5, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_2BYTE, REG_ARM64_R2, REG_ARM64_V6, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_1BYTE, REG_ARM64_R3, REG_ARM64_V7, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_R0, REG_ARM64_V4, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_R1, REG_ARM64_V5, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_2BYTE, REG_ARM64_R2, REG_ARM64_V6, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_1BYTE, REG_ARM64_R3, REG_ARM64_V7, /* canSkip */ false);
 
         // mov general to vector
-        theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_V8, REG_ARM64_R4, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_V9, REG_ARM64_R5, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_2BYTE, REG_ARM64_V10, REG_ARM64_R6, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_mov, EA_1BYTE, REG_ARM64_V11, REG_ARM64_R7, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_ARM64_V8, REG_ARM64_R4, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_ARM64_V9, REG_ARM64_R5, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_2BYTE, REG_ARM64_V10, REG_ARM64_R6, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_mov, EA_1BYTE, REG_ARM64_V11, REG_ARM64_R7, /* canSkip */ false);
 
         // mov vector[index] to vector
         theEmitter.emitIns_R_R_I(INS_mov, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V1, 1);
@@ -2340,19 +2340,19 @@ public sealed partial class CodeGen
         theEmitter.emitIns_R_R(INS_cmeq, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V1);
 
         // fmov to vector to vector
-        theEmitter.emitIns_Mov(INS_fmov, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V2, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_fmov, EA_4BYTE, REG_ARM64_V1, REG_ARM64_V3, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_fmov, EA_8BYTE, REG_ARM64_V0, REG_ARM64_V2, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_fmov, EA_4BYTE, REG_ARM64_V1, REG_ARM64_V3, /* canSkip */ false);
 
         // fmov to vector to general
-        theEmitter.emitIns_Mov(INS_fmov, EA_8BYTE, REG_ARM64_R0, REG_ARM64_V4, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_fmov, EA_4BYTE, REG_ARM64_R1, REG_ARM64_V5, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_fmov, EA_8BYTE, REG_ARM64_R0, REG_ARM64_V4, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_fmov, EA_4BYTE, REG_ARM64_R1, REG_ARM64_V5, /* canSkip */ false);
         //    using the optional conversion specifier
         theEmitter.emitInsMovArm64(INS_fmov, EA_8BYTE, REG_ARM64_R2, REG_ARM64_V6, /* canSkip */ false, INS_OPTS_D_TO_8BYTE);
         theEmitter.emitInsMovArm64(INS_fmov, EA_4BYTE, REG_ARM64_R3, REG_ARM64_V7, /* canSkip */ false, INS_OPTS_S_TO_4BYTE);
 
         // fmov to general to vector
-        theEmitter.emitIns_Mov(INS_fmov, EA_8BYTE, REG_ARM64_V8, REG_ARM64_R4, /* canSkip */ false);
-        theEmitter.emitIns_Mov(INS_fmov, EA_4BYTE, REG_ARM64_V9, REG_ARM64_R5, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_fmov, EA_8BYTE, REG_ARM64_V8, REG_ARM64_R4, /* canSkip */ false);
+        _ = theEmitter.emitIns_Mov(INS_fmov, EA_4BYTE, REG_ARM64_V9, REG_ARM64_R5, /* canSkip */ false);
         //   using the optional conversion specifier
         theEmitter.emitInsMovArm64(INS_fmov, EA_4BYTE, REG_ARM64_V11, REG_ARM64_R7, /* canSkip */ false, INS_OPTS_4BYTE_TO_S);
         theEmitter.emitInsMovArm64(INS_fmov, EA_8BYTE, REG_ARM64_V10, REG_ARM64_R6, /* canSkip */ false, INS_OPTS_8BYTE_TO_D);

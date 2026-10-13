@@ -48,7 +48,7 @@ public sealed partial class CodeGen
         if (srcAddrReg != REG_NA)
         {
             // Source is not known to be on the stack. Use EA_BYREF.
-            Emitter.emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddrReg, canSkip: true);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_BYREF, srcReg, srcAddrReg, canSkip: true);
         }
         else
         {
