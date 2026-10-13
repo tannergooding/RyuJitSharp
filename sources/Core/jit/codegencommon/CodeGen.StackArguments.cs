@@ -1152,9 +1152,7 @@ public sealed partial class CodeGen
         var src = putArgNode.Data;
         var layout = src.GetLayout(_compiler);
         var srcAddrAttr = src.Oper.IsLocalRead ? EA_PTRSIZE : EA_BYREF;
-#if DEBUG
         var numGCSlotsCopied = 0;
-#endif
         assert(layout.HasGCPtr);
         var argSize = putArgNode.StackByteSize;
         assert((argSize % Configuration.TARGET_POINTER_SIZE) == 0);
@@ -1192,9 +1190,10 @@ public sealed partial class CodeGen
                 var memType = layout.GetGCPtrType(i);
                 Emitter.emitIns_R_AR(ins_Load(memType), memType.EmitSize, REG_X64_RCX, REG_X64_RSI, 0);
                 genStoreRegToStackArg(memType, REG_X64_RCX, i * Configuration.TARGET_POINTER_SIZE);
-#if DEBUG
-                numGCSlotsCopied++;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    numGCSlotsCopied++;
+                }
                 i++;
                 if (i < numSlots)
                 {
@@ -1204,8 +1203,9 @@ public sealed partial class CodeGen
             }
         }
 
-#if DEBUG
-        assert(numGCSlotsCopied == layout.GCPtrCount);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(numGCSlotsCopied == layout.GCPtrCount);
+        }
     }
 }
