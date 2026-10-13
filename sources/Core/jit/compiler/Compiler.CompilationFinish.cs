@@ -54,8 +54,11 @@ public partial class Compiler
         AddLoopHoistStats();
 #endif
 
+        if (Configuration.DEBUG)
+        {
+            assert(_inlineStrategy is not null);
+        }
 #if DEBUG
-        assert(_inlineStrategy is not null);
         _inlineStrategy.DumpData();
         if (JitConfig.JitInlineDumpXmlFile is not null)
         {

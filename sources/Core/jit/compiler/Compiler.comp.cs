@@ -1533,9 +1533,11 @@ public partial class Compiler
 
     public unsafe void compFunctionTraceEnd(void* methodCodePtr, int methodCodeSize, bool isNyi)
     {
+        if (Configuration.DEBUG)
+        {
+            assert(!compIsForInlining);
+        }
 #if DEBUG
-        assert(!compIsForInlining);
-
         if ((JitConfig.JitFunctionTrace != 0) && !opts.disDiffable)
         {
             var newJitNestingLevel = Interlocked.Decrement(ref jitNestingLevel);
