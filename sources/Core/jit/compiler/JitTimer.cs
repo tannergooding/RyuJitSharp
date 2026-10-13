@@ -104,13 +104,11 @@ public sealed class JitTimer
                 streamWriter.Write("\"Loops\",");
                 streamWriter.Write("\"Loops Cloned\",");
 
-#if DEBUG
-                if (Configuration.FEATURE_LOOP_ALIGN)
+                if (Configuration.DEBUG && Configuration.FEATURE_LOOP_ALIGN)
                 {
                     streamWriter.Write("\"Alignment Candidates\",");
                     streamWriter.Write("\"Loops Aligned\",");
                 }
-#endif
                 for (var phase = default(Phases); phase < PHASE_NUMBER_OF; phase++)
                 {
                     streamWriter.Write($"\"{phase.Name}\",");
@@ -227,15 +225,10 @@ public sealed class JitTimer
         }
 
         // eeGetMethodFullName uses locks, so don't enter crit sec before this call.
-#if DEBUG
-        // If we already have computed the name because for some reason we're generating the CSV
-        // for a DEBUG build (presumably not for the time info), just re-use it.
-        var methName = compiler.info.compFullName;
-#else
-        var methName = Configuration.LATE_DISASM
+        // Reuse the name already computed for a DEBUG or late-disassembly build.
+        var methName = (Configuration.DEBUG || Configuration.LATE_DISASM)
             ? compiler.info.compFullName
             : compiler.eeGetMethodFullName(compiler.info.compMethodHnd);
-#endif
 
         // Try and access the SPMI index to report in the data set.
         //
@@ -281,13 +274,11 @@ public sealed class JitTimer
             streamWriter.Write($"{compiler.Metrics.LoopsFoundDuringOpts},");
             streamWriter.Write($"{compiler.Metrics.LoopsCloned},");
 
-#if DEBUG
-            if (Configuration.FEATURE_LOOP_ALIGN)
+            if (Configuration.DEBUG && Configuration.FEATURE_LOOP_ALIGN)
             {
                 streamWriter.Write($"{compiler.Metrics.LoopAlignmentCandidates},");
                 streamWriter.Write($"{compiler.Metrics.LoopsAligned},");
             }
-#endif
 
             var totCycles = 0UL;
 

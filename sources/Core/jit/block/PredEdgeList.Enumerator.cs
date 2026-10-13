@@ -31,11 +31,7 @@ public partial struct PredEdgeList
         {
             _pred = pred;
 
-#if DEBUG
-            _allowEdits = true;
-#else
-            _allowEdits = allowEdits;
-#endif
+            _allowEdits = Configuration.DEBUG || allowEdits;
         }
 
 #nullable disable
@@ -60,9 +56,10 @@ public partial struct PredEdgeList
                     var actualNext = current.NextPredEdge;
                     assert(next == actualNext);
 
-#if DEBUG
-                    _next = next?.NextPredEdge;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        _next = next?.NextPredEdge;
+                    }
 
                     current = actualNext;
                 }

@@ -358,12 +358,13 @@ public sealed partial class InlineStrategy
             context._actualCallOffset = info.ilOffset;
             context._runtimeContext = info.exactContextHandle;
 
-#if DEBUG
-            // All inline candidates should get their own statements that have
-            // appropriate debug info (or no debug info).
-            var diInlineContext = stmt.DebugInfo.InlineContext;
-            assert((diInlineContext is null) || (diInlineContext == parentContext));
-#endif
+            if (Configuration.DEBUG)
+            {
+                // All inline candidates should get their own statements that have
+                // appropriate debug info (or no debug info).
+                var diInlineContext = stmt.DebugInfo.InlineContext;
+                assert((diInlineContext is null) || (diInlineContext == parentContext));
+            }
         }
         else
         {
