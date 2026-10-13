@@ -9,51 +9,68 @@ public sealed partial class Lowering
 {
     private void ContainCheckBoundsChk(GenTreeBoundsChk node)
     {
-#if TARGET_XARCH
-        assert(node.Oper is GT_BOUNDS_CHECK);
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(node.Oper is GT_BOUNDS_CHECK);
 
-        GenTree other;
-        if (CheckImmedAndMakeContained(node, node.Index))
-        {
-            other = node.ArrayLength;
-        }
-        else if (CheckImmedAndMakeContained(node, node.ArrayLength))
-        {
-            other = node.Index;
-        }
-        else if (IsContainableMemoryOp(node.Index))
-        {
-            other = node.Index;
-        }
-        else
-        {
-            other = node.ArrayLength;
+            GenTree other;
+            if (CheckImmedAndMakeContained(node, node.Index))
+            {
+                other = node.ArrayLength;
+            }
+            else if (CheckImmedAndMakeContained(node, node.ArrayLength))
+            {
+                other = node.Index;
+            }
+            else if (IsContainableMemoryOp(node.Index))
+            {
+                other = node.Index;
+            }
+            else
+            {
+                other = node.ArrayLength;
+            }
+
+            if (node.Index.Type == node.ArrayLength.Type)
+            {
+                TryMakeSrcContainedOrRegOptional(node, other);
+            }
+
+            return;
         }
 
-        if (node.Index.Type == node.ArrayLength.Type)
-        {
-            TryMakeSrcContainedOrRegOptional(node, other);
-        }
-#elif TARGET_ARM64
         assert(node.Oper is GT_BOUNDS_CHECK);
-        if (!CheckImmedAndMakeContained(node, node.Index))
+        if (Configuration.TARGET_ARM64)
         {
-            _ = CheckImmedAndMakeContained(node, node.ArrayLength);
+            if (!CheckImmedAndMakeContained(node, node.Index))
+            {
+                _ = CheckImmedAndMakeContained(node, node.ArrayLength);
+            }
+
+            return;
         }
-#elif TARGET_RISCV64
-        assert(node.Oper is GT_BOUNDS_CHECK);
-        if (!CheckImmedAndMakeContained(node, node.Index))
+
+        if (Configuration.TARGET_RISCV64)
         {
-            CheckImmedAndMakeContained(node, node.ArrayLength);
+            if (!CheckImmedAndMakeContained(node, node.Index))
+            {
+                CheckImmedAndMakeContained(node, node.ArrayLength);
+            }
+
+            return;
         }
-#elif TARGET_LOONGARCH64
-        assert(node.Oper is GT_BOUNDS_CHECK);
-        if (!CheckImmedAndMakeContained(node, node.Index))
+
+        if (Configuration.TARGET_LOONGARCH64)
         {
-            _ = CheckImmedAndMakeContained(node, node.ArrayLength);
+            if (!CheckImmedAndMakeContained(node, node.Index))
+            {
+                _ = CheckImmedAndMakeContained(node, node.ArrayLength);
+            }
+
+            return;
         }
-#else
-        throw new System.NotImplementedException("Bounds-check containment outside xarch and ARM64 is not ported.");
-#endif
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Bounds-check containment outside xarch, ARM64, LoongArch64 and RISC-V64 is not ported.");
     }
 }

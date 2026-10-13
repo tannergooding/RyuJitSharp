@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if TARGET_XARCH
     private bool LowerRMWMemOp(GenTreeStoreInd store)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         assert(!varTypeIsFloating(store.Type));
         if (!IsRMWMemOpRootedAtStoreInd(store, out var candidate, out var operand))
         {
@@ -89,6 +93,11 @@ public sealed partial class Lowering
 
     private bool IsBinOpInRMWStoreInd(GenTreeOp tree)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         assert(!varTypeIsFloating(tree.Type));
         assert(tree.Oper.IsBinary);
         if ((tree.Op1.Oper is not GT_IND) && (tree.Op2.Oper is not GT_IND))
@@ -273,8 +282,6 @@ public sealed partial class Lowering
         storeInd.RmwStatus = status;
         return true;
     }
-
-#endif
 
     public static bool IndirsAreEquivalent(GenTree candidate, GenTree storeInd)
     {

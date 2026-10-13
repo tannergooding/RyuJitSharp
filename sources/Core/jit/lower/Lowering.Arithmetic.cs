@@ -77,7 +77,7 @@ public sealed partial class Lowering
                     !op1.AsIntCon().ImmedValNeedsReloc(CompilerInstance) &&
                     !op2.AsIntCon().ImmedValNeedsReloc(CompilerInstance))
                 {
-                    assert(node.Type is TYP_I_IMPL or TYP_BYREF);
+                    assert((node.Type is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF)));
                     var value = unchecked(op1.AsIntCon().IconValue + op2.AsIntCon().IconValue);
                     BlockRange().Remove(op1);
                     BlockRange().Remove(op2);
@@ -88,24 +88,24 @@ public sealed partial class Lowering
                 }
             }
 
-#if TARGET_XARCH
-            if (BlockRange().TryGetUse(node, out var use))
+            if (Configuration.TARGET_XARCH)
             {
-                var parent = use.User();
-                if ((!parent.Oper.IsIndir || parent.Oper.IsAtomic) && (parent.Oper is not GT_ADD))
+                if (BlockRange().TryGetUse(node, out var use))
                 {
-                    GenTree address = node;
-                    if (TryCreateAddrMode(ref address, false, parent))
+                    var parent = use.User();
+                    if ((!parent.Oper.IsIndir || parent.Oper.IsAtomic) && (parent.Oper is not GT_ADD))
                     {
-                        return address.Next;
+                        GenTree address = node;
+                        if (TryCreateAddrMode(ref address, false, parent))
+                        {
+                            return address.Next;
+                        }
                     }
                 }
             }
-#endif
         }
 
-#if TARGET_ARM64
-        if (node.Oper is GT_ADD)
+        if (Configuration.TARGET_ARM64 && (node.Oper is GT_ADD))
         {
             if (TryLowerAddForPossibleContainment(node, out var next))
             {
@@ -117,10 +117,9 @@ public sealed partial class Lowering
                 return next;
             }
         }
-#endif
 
-#if TARGET_RISCV64
-        if (CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba))
+        if (Configuration.TARGET_RISCV64 &&
+            CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba))
         {
             if (TryLowerShiftAddToShxadd(node, out var next))
             {
@@ -131,14 +130,11 @@ public sealed partial class Lowering
                 return next;
             }
         }
-#endif
 
-#if TARGET_WASM
-        if (node.Oper is GT_ADD)
+        if (Configuration.TARGET_WASM && (node.Oper is GT_ADD))
         {
             _ = LowerBinaryArithmetic(node);
         }
-#endif
         if (node.Oper is GT_ADD)
         {
             ContainCheckBinary(node);
@@ -146,7 +142,6 @@ public sealed partial class Lowering
         return null;
     }
 
-#if TARGET_RISCV64
     private bool TryLowerShiftAddToShxadd(GenTreeOp node, out GenTree? next)
     {
         next = null;
@@ -323,9 +318,7 @@ public sealed partial class Lowering
             _ => throw new System.InvalidOperationException(),
         };
     }
-#endif
 
-#if TARGET_XARCH
     private GenTreeOp? TryLowerMulWithConstant(GenTreeOp node)
     {
         assert(node.Oper is GT_MUL);
@@ -356,9 +349,11 @@ public sealed partial class Lowering
             return node;
         }
 
-#if TARGET_X86
-        return null;
-#else
+        if (Configuration.TARGET_X86)
+        {
+            return null;
+        }
+
         var plusOne = unchecked(value + 1);
         var minusOne = unchecked(value - 1);
         var useSub = nint.IsPow2(plusOne);
@@ -388,214 +383,215 @@ public sealed partial class Lowering
         ContainCheckBinary(node);
         ContainCheckShiftRotate(node.Op1.AsOp());
         return node;
-#endif
     }
-#endif
 
     private void ContainCheckMul(GenTreeOp node)
     {
-#if TARGET_XARCH
-#if TARGET_X86
-        assert(node.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG);
-#else
-        assert(node.Oper is GT_MUL or GT_MULHI);
-#endif
-        if (varTypeIsFloating(node.Type))
+        if (Configuration.TARGET_XARCH)
         {
-            ContainCheckFloatBinary(node);
-            return;
-        }
-
-        var op1 = node.Op1;
-        var op2 = node.Op2;
-        var safeOp1 = true;
-        var safeOp2 = true;
-        var impliedFirstOperand = (node.IsUnsigned && node.HasOverflowCheckEx) || (node.Oper is GT_MULHI);
-        var useLeaEncoding = false;
-        GenTreeIntConCommon? immediate = null;
-        GenTree? other = null;
-        GenTree? memory = null;
-        var nodeType = node.Type;
-#if TARGET_X86
-        if (node.Oper is GT_MUL_LONG)
-        {
-            impliedFirstOperand = true;
-            nodeType = TYP_INT;
-        }
-#endif
-        assert(!varTypeIsSmall(node.Type));
-        if (!impliedFirstOperand && (IsContainableImmed(node, op2) || IsContainableImmed(node, op1)))
-        {
-            if (IsContainableImmed(node, op2))
+            assert(Configuration.TARGET_X86
+                ? node.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG
+                : node.Oper is GT_MUL or GT_MULHI);
+            if (varTypeIsFloating(node.Type))
             {
-                immediate = op2.AsIntConCommon();
-                other = op1;
-            }
-            else
-            {
-                immediate = op1.AsIntConCommon();
-                other = op2;
+                ContainCheckFloatBinary(node);
+                return;
             }
 
-            var value = immediate.IconValue;
-            useLeaEncoding = !node.HasOverflowCheckEx && (value is 3 or 5 or 9);
-            MakeSrcContained(node, immediate);
-            if (IsContainableMemoryOp(other))
+            var op1 = node.Op1;
+            var op2 = node.Op2;
+            var safeOp1 = true;
+            var safeOp2 = true;
+            var impliedFirstOperand = (node.IsUnsigned && node.HasOverflowCheckEx) || (node.Oper is GT_MULHI);
+            var useLeaEncoding = false;
+            GenTreeIntConCommon? immediate = null;
+            GenTree? other = null;
+            GenTree? memory = null;
+            var nodeType = node.Type;
+            if (Configuration.TARGET_X86 && (node.Oper is GT_MUL_LONG))
             {
-                memory = other;
+                impliedFirstOperand = true;
+                nodeType = TYP_INT;
             }
-        }
 
-        if (memory is null)
-        {
-            if ((op2.Type == nodeType) && IsContainableMemoryOp(op2))
+            assert(!varTypeIsSmall(node.Type));
+            if (!impliedFirstOperand && (IsContainableImmed(node, op2) || IsContainableImmed(node, op1)))
             {
-                safeOp2 = IsSafeToContainMem(node, op2);
-                if (safeOp2)
+                if (IsContainableImmed(node, op2))
                 {
-                    memory = op2;
-                }
-            }
-            if ((memory is null) && (op1.Type == nodeType) && IsContainableMemoryOp(op1))
-            {
-                safeOp1 = IsSafeToContainMem(node, op1);
-                if (safeOp1)
-                {
-                    memory = op1;
-                }
-            }
-        }
-        else if (memory.Type != nodeType)
-        {
-            memory = null;
-        }
-        else if (!IsSafeToContainMem(node, memory))
-        {
-            if (memory == op1)
-            {
-                safeOp1 = false;
-            }
-            else
-            {
-                safeOp2 = false;
-            }
-            memory = null;
-        }
-
-        if (!useLeaEncoding)
-        {
-            if (memory is not null)
-            {
-                MakeSrcContained(node, memory);
-            }
-            else
-            {
-                if (immediate is not null)
-                {
-                    assert(other is not null);
-                    safeOp1 = (other == op1) && IsSafeToMarkRegOptional(node, op1);
-                    safeOp2 = (other == op2) && IsSafeToMarkRegOptional(node, op2);
-                }
-                else if (impliedFirstOperand)
-                {
-                    safeOp1 = false;
-                    safeOp2 = safeOp2 && IsSafeToMarkRegOptional(node, op2);
+                    immediate = op2.AsIntConCommon();
+                    other = op1;
                 }
                 else
                 {
-                    safeOp1 = safeOp1 && IsSafeToMarkRegOptional(node, op1);
-                    safeOp2 = safeOp2 && IsSafeToMarkRegOptional(node, op2);
+                    immediate = op1.AsIntConCommon();
+                    other = op2;
                 }
-                SetRegOptionalForBinOp(node, safeOp1, safeOp2);
+
+                var value = immediate.IconValue;
+                useLeaEncoding = !node.HasOverflowCheckEx && (value is 3 or 5 or 9);
+                MakeSrcContained(node, immediate);
+                if (IsContainableMemoryOp(other))
+                {
+                    memory = other;
+                }
             }
+
+            if (memory is null)
+            {
+                if ((op2.Type == nodeType) && IsContainableMemoryOp(op2))
+                {
+                    safeOp2 = IsSafeToContainMem(node, op2);
+                    if (safeOp2)
+                    {
+                        memory = op2;
+                    }
+                }
+                if ((memory is null) && (op1.Type == nodeType) && IsContainableMemoryOp(op1))
+                {
+                    safeOp1 = IsSafeToContainMem(node, op1);
+                    if (safeOp1)
+                    {
+                        memory = op1;
+                    }
+                }
+            }
+            else if (memory.Type != nodeType)
+            {
+                memory = null;
+            }
+            else if (!IsSafeToContainMem(node, memory))
+            {
+                if (memory == op1)
+                {
+                    safeOp1 = false;
+                }
+                else
+                {
+                    safeOp2 = false;
+                }
+                memory = null;
+            }
+
+            if (!useLeaEncoding)
+            {
+                if (memory is not null)
+                {
+                    MakeSrcContained(node, memory);
+                }
+                else
+                {
+                    if (immediate is not null)
+                    {
+                        assert(other is not null);
+                        safeOp1 = (other == op1) && IsSafeToMarkRegOptional(node, op1);
+                        safeOp2 = (other == op2) && IsSafeToMarkRegOptional(node, op2);
+                    }
+                    else if (impliedFirstOperand)
+                    {
+                        safeOp1 = false;
+                        safeOp2 = safeOp2 && IsSafeToMarkRegOptional(node, op2);
+                    }
+                    else
+                    {
+                        safeOp1 = safeOp1 && IsSafeToMarkRegOptional(node, op1);
+                        safeOp2 = safeOp2 && IsSafeToMarkRegOptional(node, op2);
+                    }
+                    SetRegOptionalForBinOp(node, safeOp1, safeOp2);
+                }
+            }
+
+            return;
         }
-#elif TARGET_ARM64
-        ContainCheckBinary(node);
-#elif TARGET_ARM
-        ContainCheckBinary(node);
-#elif TARGET_RISCV64
-        ContainCheckBinary(node);
-#elif TARGET_LOONGARCH64
-        ContainCheckBinary(node);
-#elif TARGET_WASM
-        // Wasm multiplication does not contain operands.
-#else
-        throw new NotImplementedException("Multiply containment is not ported for this target.");
-#endif
+
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 ||
+            Configuration.TARGET_LOONGARCH64)
+        {
+            ContainCheckBinary(node);
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            // Wasm multiplication does not contain operands.
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Multiply containment is not ported for this target.");
     }
 
     private GenTree? LowerMul(GenTreeOp mul)
     {
-#if TARGET_XARCH
-#if TARGET_X86
-        assert(mul.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG);
-#else
-        assert(mul.Oper is GT_MUL or GT_MULHI);
-#endif
-        if (mul.Oper is GT_MUL)
+        if (Configuration.TARGET_XARCH)
         {
-            var replacement = TryLowerMulWithConstant(mul);
-            if (replacement is not null)
+            assert(Configuration.TARGET_X86
+                ? mul.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG
+                : mul.Oper is GT_MUL or GT_MULHI);
+            if (mul.Oper is GT_MUL)
             {
-                return replacement.Next;
+                var replacement = TryLowerMulWithConstant(mul);
+                if (replacement is not null)
+                {
+                    return replacement.Next;
+                }
             }
+
+            ContainCheckMul(mul);
+            return mul.Next;
         }
 
-        ContainCheckMul(mul);
-        return mul.Next;
-#elif TARGET_ARM64
-        assert(mul.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG);
-        if (CompilerInstance.opts.OptimizationEnabled && (mul.Oper is GT_MUL) && mul.IsValidLongMul())
+        if (Configuration.TARGET_ARM64)
         {
-            var op1 = mul.Op1.AsCast();
-            var op2 = mul.Op2;
-            mul.Flags &= ~(GTF_OVERFLOW | GTF_UNSIGNED);
-            if (op1.IsUnsigned)
+            assert(mul.Oper is GT_MUL or GT_MULHI or GT_MUL_LONG);
+            if (CompilerInstance.opts.OptimizationEnabled && (mul.Oper is GT_MUL) && mul.IsValidLongMul())
             {
-                mul.Flags |= GTF_UNSIGNED;
+                var op1 = mul.Op1.AsCast();
+                var op2 = mul.Op2;
+                mul.Flags &= ~(GTF_OVERFLOW | GTF_UNSIGNED);
+                if (op1.IsUnsigned)
+                {
+                    mul.Flags |= GTF_UNSIGNED;
+                }
+
+                op1.CastOp.IsContained = false;
+                mul.Op1 = op1.CastOp;
+                BlockRange().Remove(op1);
+                if (op2 is GenTreeCast cast)
+                {
+                    cast.CastOp.IsContained = false;
+                    mul.Op2 = cast.CastOp;
+                    BlockRange().Remove(op2);
+                }
+                else
+                {
+                    assert(op2.Oper.IsIntegralConst);
+                    assert(FitsIn(TYP_INT, op2.AsIntConCommon().IntegralValue));
+                    op2.Type = TYP_INT;
+                }
+
+                mul.SetOper(GT_MUL_LONG);
+                mul.Flags &= GTF_COMMON_MASK;
             }
 
-            op1.CastOp.IsContained = false;
-            mul.Op1 = op1.CastOp;
-            BlockRange().Remove(op1);
-            if (op2 is GenTreeCast cast)
-            {
-                cast.CastOp.IsContained = false;
-                mul.Op2 = cast.CastOp;
-                BlockRange().Remove(op2);
-            }
-            else
-            {
-                assert(op2.Oper.IsIntegralConst);
-                assert(FitsIn(TYP_INT, op2.AsIntConCommon().IntegralValue));
-                op2.Type = TYP_INT;
-            }
-
-            mul.SetOper(GT_MUL_LONG);
-            mul.Flags &= GTF_COMMON_MASK;
+            ContainCheckMul(mul);
+            return mul.Next;
         }
 
-        ContainCheckMul(mul);
-        return mul.Next;
-#elif TARGET_ARM
-        assert(mul.Oper.IsMul);
-        ContainCheckMul(mul);
-        return mul.Next;
-#elif TARGET_RISCV64
-        assert(mul.Oper.IsMul);
-        ContainCheckMul(mul);
-        return mul.Next;
-#elif TARGET_LOONGARCH64
-        assert(mul.Oper.IsMul);
-        ContainCheckMul(mul);
-        return mul.Next;
-#elif TARGET_WASM
-        assert(mul.Oper is GT_MUL);
-        _ = LowerBinaryArithmetic(mul);
-        ContainCheckMul(mul);
-        return mul.Next;
-#else
-        throw new NotImplementedException("Multiply lowering is not ported for this target.");
-#endif
+        if (Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
+        {
+            assert(mul.Oper.IsMul);
+            ContainCheckMul(mul);
+            return mul.Next;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            assert(mul.Oper is GT_MUL);
+            _ = LowerBinaryArithmetic(mul);
+            ContainCheckMul(mul);
+            return mul.Next;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Multiply lowering is not ported for this target.");
     }
 }

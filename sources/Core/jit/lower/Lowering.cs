@@ -29,50 +29,52 @@ public sealed partial class Lowering : Phase
 
     public void FinalizeOutgoingArgSpace()
     {
-#if FEATURE_FIXED_OUT_ARGS
-        var compiler = CompilerInstance;
-        if (_outgoingArgSpaceSize < (uint)MIN_ARG_AREA_FOR_CALL)
+        if (Configuration.FEATURE_FIXED_OUT_ARGS)
         {
-            if (compiler.opts.compDbgCode || compiler.compUsesThrowHelper || compiler.compIsProfilerHookNeeded ||
-                (compiler.compMethodRequiresPInvokeFrame && !compiler.opts.ShouldUsePInvokeHelpers) ||
-                compiler.NeedsGSSecurityCookie)
+            var compiler = CompilerInstance;
+            if (_outgoingArgSpaceSize < (uint)Configuration.MIN_ARG_AREA_FOR_CALL)
             {
-                _outgoingArgSpaceSize = (uint)MIN_ARG_AREA_FOR_CALL;
-                JITDUMP($"Bumping outgoing arg space size to {_outgoingArgSpaceSize} for possible helper or profile hook call");
+                if (compiler.opts.compDbgCode || compiler.compUsesThrowHelper || compiler.compIsProfilerHookNeeded ||
+                    (compiler.compMethodRequiresPInvokeFrame && !compiler.opts.ShouldUsePInvokeHelpers) ||
+                    compiler.NeedsGSSecurityCookie)
+                {
+                    _outgoingArgSpaceSize = (uint)Configuration.MIN_ARG_AREA_FOR_CALL;
+                    JITDUMP($"Bumping outgoing arg space size to {_outgoingArgSpaceSize} for possible helper or profile hook call");
+                }
             }
+
+            if (compiler.compLocallocUsed)
+            {
+                // Localloc moves the outgoing area; aligning its size avoids holes when that area is moved.
+                _outgoingArgSpaceSize = roundUp(_outgoingArgSpaceSize, (uint)Configuration.STACK_ALIGN);
+                JITDUMP($"Bumping outgoing arg space size to {_outgoingArgSpaceSize} for localloc");
+            }
+
+            assert((_outgoingArgSpaceSize % Configuration.TARGET_POINTER_SIZE) == 0);
+            compiler.lvaOutgoingArgSpaceSize.Value = unchecked((int)_outgoingArgSpaceSize);
+            compiler.lvaOutgoingArgSpaceSize.MarkAsReadOnly();
+            compiler.lvaGetDesc(compiler.lvaOutgoingArgSpaceVar)
+                .GrowBlockLayout(compiler.typGetBlkLayout(_outgoingArgSpaceSize));
+
+            SetFramePointerFromArgSpaceSize();
         }
-
-        if (compiler.compLocallocUsed)
-        {
-            // Localloc moves the outgoing area; aligning its size avoids holes when that area is moved.
-            _outgoingArgSpaceSize = roundUp(_outgoingArgSpaceSize, (uint)STACK_ALIGN);
-            JITDUMP($"Bumping outgoing arg space size to {_outgoingArgSpaceSize} for localloc");
-        }
-
-        assert((_outgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
-        compiler.lvaOutgoingArgSpaceSize.Value = unchecked((int)_outgoingArgSpaceSize);
-        compiler.lvaOutgoingArgSpaceSize.MarkAsReadOnly();
-        compiler.lvaGetDesc(compiler.lvaOutgoingArgSpaceVar)
-            .GrowBlockLayout(compiler.typGetBlkLayout(_outgoingArgSpaceSize));
-
-        SetFramePointerFromArgSpaceSize();
-#endif
     }
 
     private void RequireOutgoingArgSpace(GenTree node, int size)
     {
-#if FEATURE_FIXED_OUT_ARGS
-        var unsignedSize = unchecked((uint)size);
-        if (unsignedSize <= _outgoingArgSpaceSize)
+        if (Configuration.FEATURE_FIXED_OUT_ARGS)
         {
-            return;
-        }
+            var unsignedSize = unchecked((uint)size);
+            if (unsignedSize <= _outgoingArgSpaceSize)
+            {
+                return;
+            }
 
 #if DEBUG
-        JITDUMP($"Bumping outgoing arg space size from {_outgoingArgSpaceSize} to {unsignedSize} for [{node.TreeId:D6}]\n");
+            JITDUMP($"Bumping outgoing arg space size from {_outgoingArgSpaceSize} to {unsignedSize} for [{node.TreeId:D6}]\n");
 #endif
-        _outgoingArgSpaceSize = unsignedSize;
-#endif
+            _outgoingArgSpaceSize = unsignedSize;
+        }
     }
 
     private void SetFramePointerFromArgSpaceSize()
@@ -92,8 +94,8 @@ public sealed partial class Lowering : Phase
             }
         }
 
-        var stackLevel = (uint.Max(stackLevelSpace, (uint)MIN_ARG_AREA_FOR_CALL) - (uint)MIN_ARG_AREA_FOR_CALL) /
-            TARGET_POINTER_SIZE;
+        var stackLevel = (uint.Max(stackLevelSpace, (uint)Configuration.MIN_ARG_AREA_FOR_CALL) - (uint)Configuration.MIN_ARG_AREA_FOR_CALL) /
+            Configuration.TARGET_POINTER_SIZE;
         // Four or more argument slots beyond the mandatory call area require a frame pointer.
         if (stackLevel >= 4)
         {
@@ -113,13 +115,15 @@ public sealed partial class Lowering : Phase
             InsertPInvokeMethodProlog();
         }
 
-#if LOWER_DECOMPOSE_LONGS
-        var decomp = new DecomposeLongs(compiler, this);
-        if (compiler.compLongUsed)
+        DecomposeLongs? decomp = null;
+        if (Configuration.LOWER_DECOMPOSE_LONGS)
         {
-            decomp.PrepareForDecomposition();
+            decomp = new DecomposeLongs(compiler, this);
+            if (compiler.compLongUsed)
+            {
+                decomp.PrepareForDecomposition();
+            }
         }
-#endif
 
         // Containment needs to know which locals cannot be enregistered.
         if (!compiler.compEnregLocals)
@@ -139,12 +143,10 @@ public sealed partial class Lowering : Phase
         foreach (var block in compiler.Blocks)
         {
             compiler.compCurBB = block;
-#if LOWER_DECOMPOSE_LONGS
-            if (compiler.compLongUsed)
+            if ((decomp is not null) && compiler.compLongUsed)
             {
                 decomp.DecomposeBlock(block);
             }
-#endif
             LowerBlock(block);
         }
 
@@ -157,8 +159,9 @@ public sealed partial class Lowering : Phase
 
     private void AfterLowerBlocks()
     {
-#if TARGET_WASM
-        AfterLowerBlocksWasm();
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            AfterLowerBlocksWasm();
+        }
     }
 }

@@ -9,187 +9,197 @@ public sealed partial class Lowering
 {
     private unsafe void LowerPutArgStk(GenTreePutArgStk putArgStk)
     {
-#if TARGET_XARCH
-        var src = putArgStk.Data;
-        var srcIsLocal = src.Oper.IsLocalRead;
-        if (src.Oper is GT_FIELD_LIST)
+        if (Configuration.TARGET_XARCH)
         {
-#if TARGET_X86
-            var fieldList = src.AsFieldList();
-            // Expose the reverse push order to LSRA. Integral fields must be contained or
-            // reg-optional because the call may consume more fields than available registers.
-            assert(fieldList.Uses.IsSorted);
-            fieldList.Uses.Reverse();
-            foreach (var use in fieldList.Uses)
+            var src = putArgStk.Data;
+            var srcIsLocal = src.Oper.IsLocalRead;
+            if (src.Oper is GT_FIELD_LIST)
             {
-                var field = use.Node;
-                assert(field.Type is not TYP_LONG);
-                if (varTypeIsIntegralOrI(field.Type))
+                if (Configuration.TARGET_X86)
                 {
-                    if (IsContainableImmed(putArgStk, field) ||
-                        (IsContainableMemoryOp(field) && IsSafeToContainMem(putArgStk, field)))
+                    var fieldList = src.AsFieldList();
+                    // Expose the reverse push order to LSRA. Integral fields must be contained or
+                    // reg-optional because the call may consume more fields than available registers.
+                    assert(fieldList.Uses.IsSorted);
+                    fieldList.Uses.Reverse();
+                    foreach (var use in fieldList.Uses)
                     {
-                        MakeSrcContained(putArgStk, field);
+                        var field = use.Node;
+                        assert(field.Type is not TYP_LONG);
+                        if (varTypeIsIntegralOrI(field.Type))
+                        {
+                            if (IsContainableImmed(putArgStk, field) ||
+                                (IsContainableMemoryOp(field) && IsSafeToContainMem(putArgStk, field)))
+                            {
+                                MakeSrcContained(putArgStk, field);
+                            }
+                            else
+                            {
+                                field.IsRegOptional = true;
+                            }
+                        }
                     }
-                    else
-                    {
-                        field.IsRegOptional = true;
-                    }
+                    putArgStk._kind = GenTreePutArgStk.Kind.Push;
                 }
-            }
-            putArgStk._kind = GenTreePutArgStk.Kind.Push;
-#endif
-            return;
-        }
 
-        if (src.Type is TYP_STRUCT)
-        {
-            assert((src.Oper is GT_BLK) || srcIsLocal);
-            var layout = src.GetLayout(CompilerInstance);
-            var regType = layout.RegisterType;
-            if (regType is TYP_UNDEF)
+                return;
+            }
+
+            if (src.Type is TYP_STRUCT)
             {
-                // A copy helper could kill outgoing arguments that have already been set up.
-                // A local's stack slot can be read through its padding; an arbitrary address cannot.
-                var loadSize = srcIsLocal
-                    ? unchecked((uint)(((ulong)layout.Size + (TARGET_POINTER_SIZE - 1)) &
-                        ~(ulong)(TARGET_POINTER_SIZE - 1)))
-                    : layout.Size;
-                putArgStk.ArgLoadSize = checked((int)loadSize);
-                if (!layout.HasGCPtr)
+                assert((src.Oper is GT_BLK) || srcIsLocal);
+                var layout = src.GetLayout(CompilerInstance);
+                var regType = layout.RegisterType;
+                if (regType is TYP_UNDEF)
                 {
-#if TARGET_X86
-                    if ((loadSize < XMM_REGSIZE_BYTES) && ((loadSize % TARGET_POINTER_SIZE) == 0))
+                    // A copy helper could kill outgoing arguments that have already been set up.
+                    // A local's stack slot can be read through its padding; an arbitrary address cannot.
+                    var loadSize = srcIsLocal
+                        ? unchecked((uint)(((ulong)layout.Size + (ulong)(Configuration.TARGET_POINTER_SIZE - 1)) &
+                            ~(ulong)(Configuration.TARGET_POINTER_SIZE - 1)))
+                        : layout.Size;
+                    putArgStk.ArgLoadSize = checked((int)loadSize);
+                    if (!layout.HasGCPtr)
                     {
-                        putArgStk._kind = GenTreePutArgStk.Kind.Push;
+                        if (Configuration.TARGET_X86 && (loadSize < Configuration.XMM_REGSIZE_BYTES) &&
+                            ((loadSize % Configuration.TARGET_POINTER_SIZE) == 0))
+                        {
+                            putArgStk._kind = GenTreePutArgStk.Kind.Push;
+                        }
+                        else if (loadSize <= CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memcpy))
+                        {
+                            putArgStk._kind = GenTreePutArgStk.Kind.Unroll;
+                        }
+                        else
+                        {
+                            putArgStk._kind = GenTreePutArgStk.Kind.RepInstr;
+                        }
                     }
                     else
-#endif
-                    if (loadSize <= CompilerInstance.GetUnrollThreshold(Compiler.UnrollKind.Memcpy))
                     {
-                        putArgStk._kind = GenTreePutArgStk.Kind.Unroll;
+                        // GC references must be pushed so the emitter updates their stack liveness.
+                        putArgStk._kind = Configuration.TARGET_X86
+                            ? GenTreePutArgStk.Kind.Push
+                            : GenTreePutArgStk.Kind.PartialRepInstr;
                     }
-                    else
+
+                    if (src.Oper is GT_LCL_VAR)
                     {
-                        putArgStk._kind = GenTreePutArgStk.Kind.RepInstr;
+                        CompilerInstance.lvaSetVarDoNotEnregister(src.AsLclVar().LclNum, DoNotEnregisterReason.IsStructArg);
                     }
+                    MakeSrcContained(putArgStk, src);
                 }
                 else
                 {
-#if TARGET_X86
-                    // GC references must be pushed so the emitter updates their stack liveness.
-                    putArgStk._kind = GenTreePutArgStk.Kind.Push;
-#else
-                    putArgStk._kind = GenTreePutArgStk.Kind.PartialRepInstr;
-#endif
+                    if (varTypeIsSmall(regType) && srcIsLocal)
+                    {
+                        assert(TYP_INT.Size <= putArgStk.StackByteSize);
+                        regType = TYP_INT;
+                    }
+                    src.Type = regType;
+                    if (src.Oper is GT_BLK)
+                    {
+                        var indir = new GenTreeIndir(GT_IND, regType, src.AsBlk().Addr, null, src, NodeThreading.LIR) {
+                            Flags = src.Flags,
+                        };
+                        BlockRange().ReplaceNode(src, indir);
+                        src = indir;
+                        _ = LowerIndir(indir);
+                    }
                 }
+            }
 
-                if (src.Oper is GT_LCL_VAR)
-                {
-                    CompilerInstance.lvaSetVarDoNotEnregister(src.AsLclVar().LclNum, DoNotEnregisterReason.IsStructArg);
-                }
+            if (src.Type is TYP_STRUCT)
+            {
+                return;
+            }
+
+            // AMD64 can store zero more cheaply after XOR-zeroing a register; x86 can push zero directly.
+            if (IsContainableImmed(putArgStk, src) &&
+                (!Configuration.TARGET_AMD64 || !src.IsIntegralConst(0)))
+            {
                 MakeSrcContained(putArgStk, src);
             }
-            else
+            else if (Configuration.TARGET_X86 && (src.Type.Size == Configuration.TARGET_POINTER_SIZE))
             {
-                if (varTypeIsSmall(regType) && srcIsLocal)
-                {
-                    assert(TYP_INT.Size <= putArgStk.StackByteSize);
-                    regType = TYP_INT;
-                }
-                src.Type = regType;
-                if (src.Oper is GT_BLK)
-                {
-                    var indir = new GenTreeIndir(GT_IND, regType, src.AsBlk().Addr, null, src, NodeThreading.LIR) {
-                        Flags = src.Flags,
-                    };
-                    BlockRange().ReplaceNode(src, indir);
-                    src = indir;
-                    _ = LowerIndir(indir);
-                }
+                TryMakeSrcContainedOrRegOptional(putArgStk, src);
             }
-        }
-
-        if (src.Type is TYP_STRUCT)
-        {
             return;
         }
 
-        // AMD64 can store zero more cheaply after XOR-zeroing a register; x86 can push zero directly.
-        if (IsContainableImmed(putArgStk, src)
-#if TARGET_AMD64
-            && !src.IsIntegralConst(0)
-#endif
-        )
+        if (Configuration.TARGET_ARMARCH)
         {
-            MakeSrcContained(putArgStk, src);
-        }
-#if TARGET_X86
-        else if (src.Type.Size == TARGET_POINTER_SIZE)
-        {
-            TryMakeSrcContainedOrRegOptional(putArgStk, src);
-        }
-#endif
-#elif TARGET_ARMARCH
-        var source = putArgStk.Data;
-        if (source.Type is TYP_STRUCT)
-        {
-            MakeSrcContained(putArgStk, source);
-            if (source.Oper is GT_LCL_VAR)
+            var source = putArgStk.Data;
+            if (source.Type is TYP_STRUCT)
             {
-                CompilerInstance.lvaSetVarDoNotEnregister(source.AsLclVar().LclNum, DoNotEnregisterReason.IsStructArg);
-            }
-        }
-#elif TARGET_RISCV64
-        var source = putArgStk.Data;
-        if (source.Type is TYP_STRUCT)
-        {
-            MakeSrcContained(putArgStk, source);
-            if (source.Oper is GT_LCL_VAR)
-            {
-                CompilerInstance.lvaSetVarDoNotEnregister(source.AsLclVar().LclNum,
-                    DoNotEnregisterReason.IsStructArg);
-            }
-        }
-#elif TARGET_LOONGARCH64
-        var source = putArgStk.Data;
-        if (source.Type is TYP_STRUCT)
-        {
-            MakeSrcContained(putArgStk, source);
-
-            if (source.Oper.IsLocalRead)
-            {
-                var localNumber = source.AsLclVarCommon().LclNum;
-                var layout = source.GetLayout(CompilerInstance);
-                GenTree localAddress;
+                MakeSrcContained(putArgStk, source);
                 if (source.Oper is GT_LCL_VAR)
                 {
-                    localAddress = CompilerInstance.gtNewLclVarAddrNode(TYP_BYREF, localNumber);
-                    CompilerInstance.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.IsStructArg);
+                    CompilerInstance.lvaSetVarDoNotEnregister(source.AsLclVar().LclNum, DoNotEnregisterReason.IsStructArg);
                 }
-                else
-                {
-                    localAddress = CompilerInstance.gtNewLclAddrNode(TYP_BYREF, localNumber,
-                        source.AsLclFld().LclOffs, layout);
-                }
-
-                var block = new GenTreeBlk(TYP_STRUCT, localAddress, layout, source, NodeThreading.LIR);
-                BlockRange().ReplaceNode(source, block);
-                BlockRange().InsertBefore(block, localAddress);
-                source = block;
             }
-
-            if ((source.Oper is GT_BLK) && source.AsBlk().Addr.IsLclVarAddr &&
-                IsContainableLclAddr(source.AsBlk().Addr.AsLclFld(), source.AsBlk().Size))
-            {
-                MakeSrcContained(source, source.AsBlk().Addr);
-            }
+            return;
         }
-#elif TARGET_WASM
-        unreached();
-#else
-        throw new System.NotImplementedException("Stack argument lowering is not ported for this target.");
-#endif
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            var source = putArgStk.Data;
+            if (source.Type is TYP_STRUCT)
+            {
+                MakeSrcContained(putArgStk, source);
+                if (source.Oper is GT_LCL_VAR)
+                {
+                    CompilerInstance.lvaSetVarDoNotEnregister(source.AsLclVar().LclNum,
+                        DoNotEnregisterReason.IsStructArg);
+                }
+            }
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            var source = putArgStk.Data;
+            if (source.Type is TYP_STRUCT)
+            {
+                MakeSrcContained(putArgStk, source);
+
+                if (source.Oper.IsLocalRead)
+                {
+                    var localNumber = source.AsLclVarCommon().LclNum;
+                    var layout = source.GetLayout(CompilerInstance);
+                    GenTree localAddress;
+                    if (source.Oper is GT_LCL_VAR)
+                    {
+                        localAddress = CompilerInstance.gtNewLclVarAddrNode(TYP_BYREF, localNumber);
+                        CompilerInstance.lvaSetVarDoNotEnregister(localNumber, DoNotEnregisterReason.IsStructArg);
+                    }
+                    else
+                    {
+                        localAddress = CompilerInstance.gtNewLclAddrNode(TYP_BYREF, localNumber,
+                            source.AsLclFld().LclOffs, layout);
+                    }
+
+                    var block = new GenTreeBlk(TYP_STRUCT, localAddress, layout, source, NodeThreading.LIR);
+                    BlockRange().ReplaceNode(source, block);
+                    BlockRange().InsertBefore(block, localAddress);
+                    source = block;
+                }
+
+                if ((source.Oper is GT_BLK) && source.AsBlk().Addr.IsLclVarAddr &&
+                    IsContainableLclAddr(source.AsBlk().Addr.AsLclFld(), source.AsBlk().Size))
+                {
+                    MakeSrcContained(source, source.AsBlk().Addr);
+                }
+            }
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not supported for Wasm.");
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument lowering is not ported for this target.");
     }
 
     private void InsertBitCastIfNecessary(ref GenTree argNode, in AbiPassingSegment registerSegment)
@@ -224,10 +234,11 @@ public sealed partial class Lowering
         assert(registerSegment.IsPassedInRegister);
         InsertBitCastIfNecessary(ref argNode, in registerSegment);
 
-#if HAS_FIXED_REGISTER_SET
-        var putArg = CompilerInstance.gtNewPutArgReg(argNode.Type.ActualType, argNode, registerSegment.Register);
-        BlockRange().InsertAfter(argNode, putArg);
-        argNode = putArg;
-#endif
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            var putArg = CompilerInstance.gtNewPutArgReg(argNode.Type.ActualType, argNode, registerSegment.Register);
+            BlockRange().InsertAfter(argNode, putArg);
+            argNode = putArg;
+        }
     }
 }

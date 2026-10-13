@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LOWER_DECOMPOSE_LONGS
 using System;
 
 namespace RyuJitSharp;
@@ -319,4 +318,3 @@ public sealed partial class Lowering
         }
     }
 }
-#endif

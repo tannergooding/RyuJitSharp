@@ -27,36 +27,35 @@ public sealed partial class Lowering
     private bool TryLowerConstIntUDivOrUMod(GenTreeOp divMod, out GenTree? nextNode)
     {
         assert(divMod.Oper is GT_UDIV or GT_UMOD);
-#if USE_HELPERS_FOR_INT_DIV
-        assert(varTypeIsFloating(divMod.Type));
-#endif
-#if TARGET_ARMARCH
-        assert(divMod.Oper is not GT_UMOD);
-#endif
+        if (Configuration.USE_HELPERS_FOR_INT_DIV)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Unsigned integer division should be lowered to helper calls for this target.");
+        }
+        if (Configuration.TARGET_ARMARCH)
+        {
+            assert(divMod.Oper is not GT_UMOD);
+        }
         nextNode = null;
         var compiler = CompilerInstance;
         var dividend = divMod.Op1;
         var divisor = divMod.Op2;
-#if !TARGET_64BIT
-        if (dividend.Oper is GT_LONG)
+        if (!Configuration.TARGET_64BIT && (dividend.Oper is GT_LONG))
         {
             return false;
         }
-#endif
         if (!divisor.Oper.IsCnsIntOrI || dividend.Oper.IsCnsIntOrI)
         {
             return false;
         }
 
         var type = divMod.Type;
-        assert(type is TYP_INT or TYP_I_IMPL);
+        assert((type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_INT || __targetAliasValue0 == TYP_I_IMPL)));
         var divisorValue = type is TYP_INT
             ? unchecked((ulong)(uint)divisor.AsIntCon().IconValue)
-#if TARGET_64BIT
-            : unchecked((ulong)(nuint)divisor.AsIntCon().IconValue);
-#else
-            : unchecked((ulong)(uint)divisor.AsIntCon().IconValue);
-#endif
+            : Configuration.TARGET_64BIT
+                ? unchecked((ulong)(nuint)divisor.AsIntCon().IconValue)
+                : unchecked((ulong)(uint)divisor.AsIntCon().IconValue);
         if (divisorValue == 0)
         {
             return false;
@@ -75,19 +74,17 @@ public sealed partial class Lowering
         }
 
         if (isDiv && (((type is TYP_INT) && (divisorValue > uint.MaxValue / 2))
-            || ((type is TYP_I_IMPL) && (divisorValue > ulong.MaxValue / 2))))
+            || (((type == TYP_I_IMPL)) && (divisorValue > ulong.MaxValue / 2))))
         {
             ChangeDivisionOper(divMod, GT_GE);
             divMod.IsUnsigned = true;
-#if TARGET_ARM64
-            nextNode = LowerCompare(divMod);
-#else
-            nextNode = LowerNode(divMod);
-#endif
+            nextNode = Configuration.TARGET_ARM64 ? LowerCompare(divMod) : LowerNode(divMod);
             return true;
         }
 
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 ||
+            Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
         if (compiler.opts.MinOpts || divisorValue < 3)
         {
             return false;
@@ -119,30 +116,29 @@ public sealed partial class Lowering
         if (type is TYP_INT)
         {
             magic = MagicDivide.GetUnsigned32Magic((uint)divisorValue, out increment, out preShift, out postShift, bits);
-#if TARGET_64BIT
-#if TARGET_XARCH
-            var useNativeWidthMagic = increment || ((preShift != 0) && (unchecked((int)magic) < 0));
-#else
-            var useNativeWidthMagic = increment || (preShift != 0);
-#endif
-            if (useNativeWidthMagic)
+            if (Configuration.TARGET_64BIT)
             {
-                magic = MagicDivide.GetUnsigned64Magic(divisorValue, out increment, out preShift, out postShift, bits);
+                var useNativeWidthMagic = increment ||
+                    ((preShift != 0) && (!Configuration.TARGET_XARCH || (unchecked((int)magic) < 0)));
+                if (useNativeWidthMagic)
+                {
+                    magic = MagicDivide.GetUnsigned64Magic(divisorValue, out increment, out preShift, out postShift, bits);
+                }
+                else
+                {
+                    postShift += 32;
+                    simpleMul = true;
+                }
             }
-            else
-            {
-                postShift += 32;
-                simpleMul = true;
-            }
-#endif
+        }
+        else if (Configuration.TARGET_64BIT)
+        {
+            magic = MagicDivide.GetUnsigned64Magic(divisorValue, out increment, out preShift, out postShift, bits);
         }
         else
         {
-#if TARGET_64BIT
-            magic = MagicDivide.GetUnsigned64Magic(divisorValue, out increment, out preShift, out postShift, bits);
-#else
-            throw new InvalidOperationException("Native-width division must use the 32-bit path on this target.");
-#endif
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Native-width division must use the 32-bit path on this target.");
         }
 
         if (!isDiv)
@@ -153,11 +149,9 @@ public sealed partial class Lowering
 
         GenTree? firstNode = null;
         var adjustedDividend = dividend;
-#if TARGET_ARM64
-        var widen = (type is not TYP_I_IMPL) && !simpleMul;
-#else
-        var widen = type is not TYP_I_IMPL;
-#endif
+        var widen = Configuration.TARGET_ARM64
+            ? ((type != TYP_I_IMPL)) && !simpleMul
+            : (type != TYP_I_IMPL);
         if (increment)
         {
             adjustedDividend = new GenTreeUnOp(GT_INC_SATURATE, type, adjustedDividend);
@@ -179,13 +173,12 @@ public sealed partial class Lowering
             firstNode = adjustedDividend;
         }
 
-#if TARGET_XARCH
-        if ((firstNode is not null) && !simpleMul)
+        if (Configuration.TARGET_XARCH && (firstNode is not null) && !simpleMul)
         {
             adjustedDividend.RegNum = compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2)
-                ? REG_RDX : REG_RAX;
+                ? TargetRuntimeMetadata.SelectXarch(REG_X86_EDX, REG_X64_RDX)
+                : TargetRuntimeMetadata.SelectXarch(REG_X86_EAX, REG_X64_RAX);
         }
-#endif
         if (widen)
         {
             divisor.Type = TYP_I_IMPL;
@@ -193,7 +186,7 @@ public sealed partial class Lowering
         divisor.AsIntCon().IconValue = unchecked((nint)magic);
 
         GenTree lastNode = divMod;
-        if (isDiv && (postShift == 0) && (type is TYP_I_IMPL))
+        if (isDiv && (postShift == 0) && ((type == TYP_I_IMPL)))
         {
             ChangeDivisionOper(divMod, GT_MULHI);
             divMod.Op1 = adjustedDividend;
@@ -201,11 +194,9 @@ public sealed partial class Lowering
         }
         else
         {
-#if TARGET_ARM64
-            var multiplyOper = simpleMul ? GT_MUL_LONG : GT_MULHI;
-#else
-            var multiplyOper = simpleMul ? GT_MUL : GT_MULHI;
-#endif
+            var multiplyOper = Configuration.TARGET_ARM64
+                ? simpleMul ? GT_MUL_LONG : GT_MULHI
+                : simpleMul ? GT_MUL : GT_MULHI;
             var mulhi = compiler.gtNewBinaryNode(multiplyOper,
                 TYP_I_IMPL, adjustedDividend, divisor);
             mulhi.IsUnsigned = true;
@@ -216,7 +207,7 @@ public sealed partial class Lowering
             {
                 var shiftBy = compiler.gtNewIconNode(TYP_INT, postShift);
                 BlockRange().InsertBefore(divMod, shiftBy);
-                if (isDiv && (type is TYP_I_IMPL))
+                if (isDiv && ((type == TYP_I_IMPL)))
                 {
                     ChangeDivisionOper(divMod, GT_RSZ);
                     divMod.Op1 = mulhi;
@@ -239,7 +230,7 @@ public sealed partial class Lowering
                 divMod.Op1 = original;
                 divMod.Op2 = product;
             }
-            else if (type is not TYP_I_IMPL)
+            else if ((type != TYP_I_IMPL))
             {
                 var cast = new GenTreeCast(TYP_INT, quotient, TYP_INT, divMod, NodeThreading.LIR);
                 BlockRange().ReplaceNode(divMod, cast);
@@ -254,8 +245,8 @@ public sealed partial class Lowering
 
         nextNode = lastNode.Next;
         return true;
-#else
+        }
+
         return false;
-#endif
     }
 }

@@ -37,22 +37,24 @@ public sealed partial class Lowering
         var divisor = divMod.Op2;
         var type = divMod.Type;
         assert(type is TYP_INT or TYP_LONG);
-#if USE_HELPERS_FOR_INT_DIV
-        assert(false, "unreachable: integral GT_DIV/GT_MOD should get morphed into helper calls");
-#endif
+        if (Configuration.USE_HELPERS_FOR_INT_DIV)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Integral division should be lowered to helper calls for this target.");
+        }
 
-#if TARGET_ARM64
-        if ((divMod.Oper is GT_MOD) && divisor.IsIntegralConstPow2)
+        if (Configuration.TARGET_ARM64 && (divMod.Oper is GT_MOD) && divisor.IsIntegralConstPow2)
         {
             var loweredMod = LowerModPow2(divMod);
             nextNode = loweredMod.Next;
             return true;
         }
 
-#endif
-#if TARGET_ARMARCH
-        assert(divMod.Oper is not GT_MOD);
-#endif
+        if (Configuration.TARGET_ARMARCH)
+        {
+            assert(divMod.Oper is not GT_MOD);
+        }
+
         if (Configuration.TARGET_WASM)
         {
             return false;
@@ -63,11 +65,11 @@ public sealed partial class Lowering
             return false;
         }
 
-#if TARGET_ARM64
-        var divisorValue = (long)divisor.AsIntCon().IconValue;
-#else
-        var divisorValue = type is TYP_INT ? (long)(int)divisor.AsIntCon().IconValue : (long)divisor.AsIntCon().IconValue;
-#endif
+        var divisorValue = Configuration.TARGET_ARM64
+            ? (long)divisor.AsIntCon().IconValue
+            : type is TYP_INT
+                ? (long)(int)divisor.AsIntCon().IconValue
+                : (long)divisor.AsIntCon().IconValue;
         if (divisorValue is 0 or -1)
         {
             return false;
@@ -75,9 +77,7 @@ public sealed partial class Lowering
 
         var isDiv = divMod.Oper is GT_DIV;
         if (isDiv && (((type is TYP_INT) && (divisorValue == int.MinValue))
-#if TARGET_64BIT
-            || ((type is TYP_LONG) && (divisorValue == long.MinValue))
-#endif
+            || (Configuration.TARGET_64BIT && (type is TYP_LONG) && (divisorValue == long.MinValue))
             ))
         {
             ChangeDivisionOper(divMod, GT_EQ);
@@ -96,80 +96,87 @@ public sealed partial class Lowering
                 return false;
             }
 
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-            long magic;
-            int shift;
-            if (type is TYP_INT)
+            if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 ||
+                Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
             {
-                magic = MagicDivide.GetSigned32Magic((int)divisorValue, out shift);
+                long magic;
+                int shift;
+                if (type is TYP_INT)
+                {
+                    magic = MagicDivide.GetSigned32Magic((int)divisorValue, out shift);
+                }
+                else if (Configuration.TARGET_64BIT)
+                {
+                    magic = MagicDivide.GetSigned64Magic(divisorValue, out shift);
+                }
+                else
+                {
+                    throw new FatalJitException(
+                        CORJIT_SKIPPED,
+                        "64-bit signed magic division requires a 64-bit target.");
+                }
+
+                divisor.AsIntCon().IconValue = (nint)magic;
+
+                var mulhi = compiler.gtNewBinaryNode(GT_MULHI, type, divisor, dividend);
+                BlockRange().InsertBefore(divMod, mulhi);
+
+                var requiresAdjustment = (divisorValue < 0) != (magic < 0);
+                if (requiresAdjustment || !isDiv)
+                {
+                    var use = new LIR.Use(BlockRange(), ref mulhi.Op2Ref, mulhi);
+                    dividend = ReplaceWithLclVar(use);
+                }
+
+                GenTree adjusted = mulhi;
+                if (requiresAdjustment)
+                {
+                    var clone = compiler.gtNewLclvNode(dividend.Type, dividend.AsLclVar().LclNum);
+                    adjusted = compiler.gtNewBinaryNode(divisorValue > 0 ? GT_ADD : GT_SUB, type, mulhi, clone);
+                    BlockRange().InsertBefore(divMod, clone, adjusted);
+                }
+
+                var signShift = compiler.gtNewIconNode(type, type is TYP_INT ? 31 : 63);
+                var signBit = compiler.gtNewBinaryNode(GT_RSZ, type, adjusted, signShift);
+                BlockRange().InsertBefore(divMod, signShift, signBit);
+
+                var adjustedUse = new LIR.Use(BlockRange(), ref signBit.Op1Ref, signBit);
+                var adjustedRead = ReplaceWithLclVar(adjustedUse);
+                adjusted = compiler.gtNewLclvNode(type, adjustedRead.LclNum);
+                BlockRange().InsertBefore(divMod, adjusted);
+
+                if (shift != 0)
+                {
+                    var shiftBy = compiler.gtNewIconNode(TYP_INT, shift);
+                    adjusted = compiler.gtNewBinaryNode(GT_RSH, type, adjusted, shiftBy);
+                    BlockRange().InsertBefore(divMod, shiftBy, adjusted);
+                }
+
+                if (isDiv)
+                {
+                    ChangeDivisionOper(divMod, GT_ADD);
+                    divMod.Op1 = adjusted;
+                    divMod.Op2 = signBit;
+                }
+                else
+                {
+                    var quotient = compiler.gtNewBinaryNode(GT_ADD, type, adjusted, signBit);
+                    var original = compiler.gtNewLclvNode(type, dividend.AsLclVar().LclNum);
+                    var constant = compiler.gtNewIconNode(type, (nint)divisorValue);
+                    var product = compiler.gtNewBinaryNode(GT_MUL, type, quotient, constant);
+                    BlockRange().InsertBefore(divMod, original, quotient, constant, product);
+                    ChangeDivisionOper(divMod, GT_SUB);
+                    divMod.Op1 = original;
+                    divMod.Op2 = product;
+                }
+
+                nextNode = mulhi;
+                return true;
             }
             else
             {
-#if TARGET_64BIT
-                magic = MagicDivide.GetSigned64Magic(divisorValue, out shift);
-#else
-                throw new InvalidOperationException("64-bit signed magic division requires a 64-bit target.");
-#endif
+                return false;
             }
-            divisor.AsIntCon().IconValue = (nint)magic;
-
-            var mulhi = compiler.gtNewBinaryNode(GT_MULHI, type, divisor, dividend);
-            BlockRange().InsertBefore(divMod, mulhi);
-
-            var requiresAdjustment = (divisorValue < 0) != (magic < 0);
-            if (requiresAdjustment || !isDiv)
-            {
-                var use = new LIR.Use(BlockRange(), ref mulhi.Op2Ref, mulhi);
-                dividend = ReplaceWithLclVar(use);
-            }
-
-            GenTree adjusted = mulhi;
-            if (requiresAdjustment)
-            {
-                var clone = compiler.gtNewLclvNode(dividend.Type, dividend.AsLclVar().LclNum);
-                adjusted = compiler.gtNewBinaryNode(divisorValue > 0 ? GT_ADD : GT_SUB, type, mulhi, clone);
-                BlockRange().InsertBefore(divMod, clone, adjusted);
-            }
-
-            var signShift = compiler.gtNewIconNode(type, type is TYP_INT ? 31 : 63);
-            var signBit = compiler.gtNewBinaryNode(GT_RSZ, type, adjusted, signShift);
-            BlockRange().InsertBefore(divMod, signShift, signBit);
-
-            var adjustedUse = new LIR.Use(BlockRange(), ref signBit.Op1Ref, signBit);
-            var adjustedRead = ReplaceWithLclVar(adjustedUse);
-            adjusted = compiler.gtNewLclvNode(type, adjustedRead.LclNum);
-            BlockRange().InsertBefore(divMod, adjusted);
-
-            if (shift != 0)
-            {
-                var shiftBy = compiler.gtNewIconNode(TYP_INT, shift);
-                adjusted = compiler.gtNewBinaryNode(GT_RSH, type, adjusted, shiftBy);
-                BlockRange().InsertBefore(divMod, shiftBy, adjusted);
-            }
-
-            if (isDiv)
-            {
-                ChangeDivisionOper(divMod, GT_ADD);
-                divMod.Op1 = adjusted;
-                divMod.Op2 = signBit;
-            }
-            else
-            {
-                var quotient = compiler.gtNewBinaryNode(GT_ADD, type, adjusted, signBit);
-                var original = compiler.gtNewLclvNode(type, dividend.AsLclVar().LclNum);
-                var constant = compiler.gtNewIconNode(type, (nint)divisorValue);
-                var product = compiler.gtNewBinaryNode(GT_MUL, type, quotient, constant);
-                BlockRange().InsertBefore(divMod, original, quotient, constant, product);
-                ChangeDivisionOper(divMod, GT_SUB);
-                divMod.Op1 = original;
-                divMod.Op2 = product;
-            }
-
-            nextNode = mulhi;
-            return true;
-#else
-            return false;
-#endif
         }
 
         if (!BlockRange().TryGetUse(divMod, out var resultUse))

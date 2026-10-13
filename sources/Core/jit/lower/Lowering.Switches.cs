@@ -103,12 +103,10 @@ public sealed partial class Lowering
         switchBlock.scaleBBWeight(switchLikelihood);
 
         var useJumpSequence = jumpCount < minimumTableCases;
-#if TARGET_ARM
-        if (TargetOS.IsUnix && CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        if (Configuration.TARGET_ARM && TargetOS.IsUnix && CompilerInstance.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             useJumpSequence = true;
         }
-#endif
         if ((targetCount == 2) && (defaultEdge.DupCount == 0))
         {
             var remaining = successors[0] == defaultEdge ? successors[1] : successors[0];
@@ -237,18 +235,14 @@ public sealed partial class Lowering
             if (!TryLowerSwitchToBitTest(cases, jumpCount, targetCount, switchBlock, switchValue, defaultLikelihood))
             {
                 JITDUMP($"Lowering switch {FMT_BB(original.bbNum)}: using jump table expansion\n");
-#if TARGET_64BIT
-#if TARGET_RISCV64
-                if (!compiler.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba) &&
-                    (indexType is not TYP_I_IMPL))
-#else
-                if (indexType is not TYP_I_IMPL)
-#endif
+                if (Configuration.TARGET_64BIT && ((indexType != TYP_I_IMPL)) &&
+                    (!Configuration.TARGET_RISCV64 ||
+                        !compiler.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba)))
                 {
                     switchValue = compiler.gtNewCastNode(TYP_I_IMPL, switchValue, true, TYP_U_IMPL);
                     switchBlock.InsertAtEnd(switchValue);
                 }
-#endif
+
                 var table = new GenTree(GT_JMPTABLE, TYP_I_IMPL);
                 var jump = new GenTreeOp(GT_SWITCH_TABLE, TYP_VOID, switchValue, table);
                 switchBlock.InsertAfter(switchValue, table, jump);
@@ -360,15 +354,13 @@ public sealed partial class Lowering
         // LowerSwitch eliminates the single non-default target case before
         // calling this helper, so both target edges must have been found.
         assert(case0Edge is not null);
-#if TARGET_64BIT && TARGET_XARCH
-        if (~bitTable <= uint.MaxValue)
+        if (Configuration.TARGET_64BIT && Configuration.TARGET_XARCH && (~bitTable <= uint.MaxValue))
         {
             // Loading a 32-bit immediate zero-extends it on x64. Invert a table
             // with all upper bits set to avoid loading an eight-byte immediate.
             bitTable = ~bitTable;
             (case0Edge, case1Edge) = (case1Edge, case0Edge);
         }
-#endif
 
         var case0Block = case0Edge.DestinationBlock;
         var case1Block = case1Edge.DestinationBlock;
@@ -407,21 +399,24 @@ public sealed partial class Lowering
 
         var tableType = bitCount <= TYP_INT.Size * BITS_PER_BYTE ? TYP_INT : TYP_LONG;
         var table = CompilerInstance.gtNewIconNode(tableType, unchecked((nint)bitTable));
-#if TARGET_XARCH
-        var bitTest = new GenTreeOp(GT_BT, TYP_VOID, table, switchValue);
-        bitTest.Flags |= GTF_SET_FLAGS;
-        var jump = CompilerInstance.gtNewCC(GT_JCC, TYP_VOID, new GenCondition(GenCondition.C));
-        switchBlock.InsertAfter(switchValue, table, bitTest, jump);
-#else
-        var test = CompilerInstance.gtNewIconNode(tableType, 1);
-        var shift = new GenTreeOp(GT_RSZ, tableType, table, switchValue);
-        var one = CompilerInstance.gtNewIconNode(tableType, 1);
-        var and = new GenTreeOp(GT_AND, tableType, shift, one);
-        var compare = new GenTreeOp(GT_EQ, TYP_INT, and, test);
-        var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, compare);
-        switchBlock.InsertAfter(switchValue, table, shift, test, one);
-        switchBlock.InsertAfter(one, and, compare, branch);
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            var bitTest = new GenTreeOp(GT_BT, TYP_VOID, table, switchValue);
+            bitTest.Flags |= GTF_SET_FLAGS;
+            var jump = CompilerInstance.gtNewCC(GT_JCC, TYP_VOID, new GenCondition(GenCondition.C));
+            switchBlock.InsertAfter(switchValue, table, bitTest, jump);
+        }
+        else
+        {
+            var test = CompilerInstance.gtNewIconNode(tableType, 1);
+            var shift = new GenTreeOp(GT_RSZ, tableType, table, switchValue);
+            var one = CompilerInstance.gtNewIconNode(tableType, 1);
+            var and = new GenTreeOp(GT_AND, tableType, shift, one);
+            var compare = new GenTreeOp(GT_EQ, TYP_INT, and, test);
+            var branch = new GenTreeUnOp(GT_JTRUE, TYP_VOID, compare);
+            switchBlock.InsertAfter(switchValue, table, shift, test, one);
+            switchBlock.InsertAfter(one, and, compare, branch);
+        }
 
         return true;
     }

@@ -3,11 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LOWER_DECOMPOSE_LONGS
 using System;
-#if FEATURE_HW_INTRINSICS && TARGET_X86
 using System.Runtime.Intrinsics.X86;
-#endif
 
 namespace RyuJitSharp;
 
@@ -27,8 +24,8 @@ public sealed partial class Lowering
                 srcType = varTypeToUnsigned(srcType);
             }
 
-#if FEATURE_HW_INTRINSICS && TARGET_X86
-            if (varTypeIsFloating(srcType) || varTypeIsFloating(dstType))
+            if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_X86 &&
+                (varTypeIsFloating(srcType) || varTypeIsFloating(dstType)))
             {
                 assert(!cast.HasOverflowCheck);
                 assert(_compiler.compIsaSupportedDebugOnly(InstructionSet_AVX512));
@@ -131,7 +128,6 @@ public sealed partial class Lowering
                 use.ReplaceWith(toScalar);
                 return toScalar;
             }
-#endif
 
             GenTree loResult;
             GenTree hiResult;
@@ -155,7 +151,8 @@ public sealed partial class Lowering
                 else
                 {
                     NYI("Unimplemented long->long no-op cast decomposition");
-                    throw new NotImplementedException("Unimplemented long->long no-op cast decomposition");
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Long-to-long no-op cast decomposition is not ported.");
                 }
             }
             else if (varTypeIsIntegralOrI(srcType))
@@ -196,11 +193,10 @@ public sealed partial class Lowering
             else
             {
                 NYI("Unimplemented cast decomposition");
-                throw new NotImplementedException("Unimplemented cast decomposition");
+                throw new FatalJitException(CORJIT_SKIPPED, "Cast decomposition is not ported.");
             }
 
             return FinalizeDecomposition(ref use, loResult, hiResult, hiResult);
         }
     }
 }
-#endif

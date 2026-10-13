@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LOWER_DECOMPOSE_LONGS
 using System;
 
 namespace RyuJitSharp;
@@ -269,24 +268,30 @@ public sealed partial class Lowering
             loResult.Type = TYP_INT;
             loResult.Op1 = loOp1;
             var zero = _compiler.gtNewZeroConNode(TYP_INT);
-#if TARGET_X86
-            var hiAdjust = _compiler.gtNewBinaryNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
-            var hiResult = _compiler.gtNewUnaryNode(GT_NEG, TYP_INT, hiAdjust);
-            Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
-            loResult.Flags |= GTF_SET_FLAGS;
-#elif TARGET_ARM
-            // MOVS may materialize zero, so it must precede the low NEG's carry flags.
-            var hiResult = _compiler.gtNewBinaryNode(GT_SUB_HI, TYP_INT, zero, hiOp1);
-            Range().InsertBefore(loResult, zero);
-            Range().InsertAfter(loResult, hiResult);
-            loResult.Flags |= GTF_SET_FLAGS;
-#else
-            throw new NotImplementedException("Long negation decomposition requires x86 or ARM32.");
-#endif
+            GenTree hiResult;
+            if (Configuration.TARGET_X86)
+            {
+                var hiAdjust = _compiler.gtNewBinaryNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
+                hiResult = _compiler.gtNewUnaryNode(GT_NEG, TYP_INT, hiAdjust);
+                Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
+                loResult.Flags |= GTF_SET_FLAGS;
+            }
+            else if (Configuration.TARGET_ARM)
+            {
+                // MOVS may materialize zero, so it must precede the low NEG's carry flags.
+                hiResult = _compiler.gtNewBinaryNode(GT_SUB_HI, TYP_INT, zero, hiOp1);
+                Range().InsertBefore(loResult, zero);
+                Range().InsertAfter(loResult, hiResult);
+                loResult.Flags |= GTF_SET_FLAGS;
+            }
+            else
+            {
+                throw new FatalJitException(
+                    CORJIT_SKIPPED,
+                    "Long negation decomposition is not ported for this target.");
+            }
 
-#if TARGET_X86 || TARGET_ARM
             return FinalizeDecomposition(ref use, loResult, hiResult, hiResult);
-#endif
         }
 
         private GenTree? DecomposeArith(ref LIR.Use use)
@@ -416,4 +421,3 @@ public sealed partial class Lowering
         }
     }
 }
-#endif

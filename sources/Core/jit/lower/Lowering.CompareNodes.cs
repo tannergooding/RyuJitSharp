@@ -12,12 +12,10 @@ public sealed partial class Lowering
     private GenTree? LowerCompare(GenTree cmp)
     {
         var comparison = cmp.AsOp();
-#if LOWER_DECOMPOSE_LONGS
-        if (comparison.Op1.Type is TYP_LONG)
+        if (Configuration.LOWER_DECOMPOSE_LONGS && (comparison.Op1.Type is TYP_LONG))
         {
             return DecomposeLongCompare(comparison);
         }
-#endif
 
         if (comparison.Op2.Oper.IsIntegralConst && !CompilerInstance.opts.MinOpts)
         {
@@ -28,8 +26,7 @@ public sealed partial class Lowering
             }
         }
 
-#if TARGET_RISCV64
-        if (varTypeUsesIntReg(comparison.Op1.Type))
+        if (Configuration.TARGET_RISCV64 && varTypeUsesIntReg(comparison.Op1.Type))
         {
             var next = LowerSavedIntegerCompare(comparison);
             if (next != cmp)
@@ -40,7 +37,6 @@ public sealed partial class Lowering
             SignExtendIfNecessary(ref comparison.Op1Ref);
             SignExtendIfNecessary(ref comparison.Op2Ref);
         }
-#endif
 
         ContainCheckCompare(comparison);
 
@@ -53,78 +49,78 @@ public sealed partial class Lowering
         var op1 = cmp.Op1;
         var op2 = cmp.Op2.AsIntConCommon();
         var op2Value = op2.IntegralValue;
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
-        if ((op1.Oper is GT_CAST) && !op1.HasOverflowCheck)
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_RISCV64)
         {
-            var cast = op1.AsCast();
-            var castToType = cast.CastType;
-            var castOp = cast.CastOp;
-            if ((castToType is TYP_UBYTE) && FitsIn(TYP_UBYTE, op2Value))
+            if ((op1.Oper is GT_CAST) && !op1.HasOverflowCheck)
             {
-                // Narrow only operations whose low byte is unaffected by narrowing.
-                // In particular, shifts, division and multiplication are excluded.
-#if TARGET_ARM64
-                var removeCast = (op2Value == 0) && (cmp.Oper is GT_EQ or GT_NE or GT_GT) &&
-                    !castOp.IsContained && (castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND);
-#elif TARGET_RISCV64
-                var removeCast = false;
-#else
-                var removeCast = (castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND) ||
-                    IsContainableMemoryOp(castOp);
-#endif
-                if (removeCast)
+                var cast = op1.AsCast();
+                var castToType = cast.CastType;
+                var castOp = cast.CastOp;
+                if ((castToType is TYP_UBYTE) && FitsIn(TYP_UBYTE, op2Value))
                 {
-                    assert(!castOp.HasOverflowCheckEx);
-#if TARGET_ARM64
-                    cmp.SetOper(cmp.Oper is GT_EQ ? GT_TEST_EQ : GT_TEST_NE, GenTree.PRESERVE_VN);
-                    op2.IntegralValue = 0xFF;
-                    op2.Type = castOp.Type;
-#else
-                    castOp.Type = castToType;
-                    op2.Type = castToType;
-#endif
-                    castOp.IsContained = false;
-                    if (castOp.Oper is GT_OR or GT_XOR or GT_AND)
+                    // Narrow only operations whose low byte is unaffected by narrowing.
+                    // In particular, shifts, division and multiplication are excluded.
+                    var removeCast = Configuration.TARGET_ARM64
+                        ? (op2Value == 0) && (cmp.Oper is GT_EQ or GT_NE or GT_GT) &&
+                            !castOp.IsContained && (castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND)
+                        : !Configuration.TARGET_RISCV64 &&
+                            ((castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND) ||
+                                IsContainableMemoryOp(castOp));
+                    if (removeCast)
                     {
-                        castOp.AsOp().Op1.IsContained = false;
-                        castOp.AsOp().Op2.IsContained = false;
-                        ContainCheckBinary(castOp.AsOp());
-                    }
+                        assert(!castOp.HasOverflowCheckEx);
+                        if (Configuration.TARGET_ARM64)
+                        {
+                            cmp.SetOper(cmp.Oper is GT_EQ ? GT_TEST_EQ : GT_TEST_NE, GenTree.PRESERVE_VN);
+                            op2.IntegralValue = 0xFF;
+                            op2.Type = castOp.Type;
+                        }
+                        else
+                        {
+                            castOp.Type = castToType;
+                            op2.Type = castToType;
+                        }
 
-                    cmp.Op1 = castOp;
-                    BlockRange().Remove(cast);
+                        castOp.IsContained = false;
+                        if (castOp.Oper is GT_OR or GT_XOR or GT_AND)
+                        {
+                            castOp.AsOp().Op1.IsContained = false;
+                            castOp.AsOp().Op2.IsContained = false;
+                            ContainCheckBinary(castOp.AsOp());
+                        }
+
+                        cmp.Op1 = castOp;
+                        BlockRange().Remove(cast);
+                    }
+                }
+                else if (Configuration.TARGET_XARCH && (castToType is TYP_BYTE) && FitsIn(TYP_BYTE, op2Value))
+                {
+                    // The sign-bit-shift encoding of x < 0 / x >= 0 assumes a value
+                    // sign-extended to the actual register width; retain those casts.
+                    var isSignBitTest = (op2Value == 0) && (cmp.Oper is GT_LT or GT_GE);
+                    var removeCast = !isSignBitTest &&
+                        ((castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND) ||
+                            IsContainableMemoryOp(castOp));
+                    if (removeCast)
+                    {
+                        assert(!castOp.HasOverflowCheckEx);
+                        castOp.Type = castToType;
+                        op2.Type = castToType;
+                        castOp.IsContained = false;
+                        if (castOp.Oper is GT_OR or GT_XOR or GT_AND)
+                        {
+                            castOp.AsOp().Op1.IsContained = false;
+                            castOp.AsOp().Op2.IsContained = false;
+                            ContainCheckBinary(castOp.AsOp());
+                        }
+
+                        cmp.Op1 = castOp;
+                        BlockRange().Remove(cast);
+                    }
                 }
             }
-#if TARGET_XARCH
-            else if ((castToType is TYP_BYTE) && FitsIn(TYP_BYTE, op2Value))
+            else if ((op1.Oper is GT_AND) && (cmp.Oper is GT_EQ or GT_NE))
             {
-                // The sign-bit-shift encoding of x < 0 / x >= 0 assumes a value
-                // sign-extended to the actual register width; retain those casts.
-                var isSignBitTest = (op2Value == 0) && (cmp.Oper is GT_LT or GT_GE);
-                var removeCast = !isSignBitTest &&
-                    ((castOp.Oper is GT_LCL_VAR or GT_CALL or GT_OR or GT_XOR or GT_AND) ||
-                        IsContainableMemoryOp(castOp));
-                if (removeCast)
-                {
-                    assert(!castOp.HasOverflowCheckEx);
-                    castOp.Type = castToType;
-                    op2.Type = castToType;
-                    castOp.IsContained = false;
-                    if (castOp.Oper is GT_OR or GT_XOR or GT_AND)
-                    {
-                        castOp.AsOp().Op1.IsContained = false;
-                        castOp.AsOp().Op2.IsContained = false;
-                        ContainCheckBinary(castOp.AsOp());
-                    }
-
-                    cmp.Op1 = castOp;
-                    BlockRange().Remove(cast);
-                }
-            }
-#endif
-        }
-        else if ((op1.Oper is GT_AND) && (cmp.Oper is GT_EQ or GT_NE))
-        {
             var andOp1 = op1.AsOp().Op1;
             var andOp2 = op1.AsOp().Op2;
 
@@ -137,15 +133,15 @@ public sealed partial class Lowering
                 cmp.SetOper(cmp.Oper.ReverseRelop, GenTree.PRESERVE_VN);
             }
 
-#if TARGET_RISCV64
-            if ((op2Value == 0) && !andOp2.IsContained && TryReduceSingleBitTestOps(op1.AsOp()))
+            if (Configuration.TARGET_RISCV64 && (op2Value == 0) && !andOp2.IsContained &&
+                TryReduceSingleBitTestOps(op1.AsOp()))
             {
                 var testedOp = op1.AsOp().Op1;
                 var bitIndexOp = op1.AsOp().Op2;
                 if (bitIndexOp.Oper.IsIntegralConst)
                 {
                     var bitIndex = bitIndexOp.AsIntConCommon().IntegralValue;
-                    var signBitIndex = (TARGET_POINTER_SIZE * 8) - 1;
+                    var signBitIndex = (Configuration.TARGET_POINTER_SIZE * 8) - 1;
                     if (bitIndex < signBitIndex)
                     {
                         bitIndexOp.AsIntConCommon().IntegralValue = signBitIndex - bitIndex;
@@ -156,7 +152,7 @@ public sealed partial class Lowering
                     else
                     {
                         assert(bitIndex == signBitIndex);
-                        assert(testedOp.Type.ActualType is TYP_I_IMPL);
+                        assert((testedOp.Type.ActualType == TYP_I_IMPL));
                         BlockRange().Remove(bitIndexOp);
                         BlockRange().Remove(op1);
                         cmp.Op1 = testedOp;
@@ -176,7 +172,6 @@ public sealed partial class Lowering
                 BlockRange().InsertBefore(op1, andOp1, andOp2);
                 andOp2.IsContained = true;
             }
-#endif
             var optimizeToAnd = (op2Value == 0) && (cmp.Oper is GT_NE);
             var optimizeToNotAnd = (op2Value == 0) && (cmp.Oper is GT_EQ);
             if (andOp2.IsIntegralConst(1) && (op1.Type.ActualType == cmp.Type) &&
@@ -202,9 +197,8 @@ public sealed partial class Lowering
                 }
             }
 
-            if (op2Value == 0)
+            if (!Configuration.TARGET_RISCV64 && (op2Value == 0))
             {
-#if !TARGET_RISCV64
                 BlockRange().Remove(op1);
                 BlockRange().Remove(op2);
                 cmp.SetOper(cmp.Oper is GT_EQ ? GT_TEST_EQ : GT_TEST_NE, GenTree.PRESERVE_VN);
@@ -213,8 +207,8 @@ public sealed partial class Lowering
                 andOp1.IsContained = false;
                 andOp2.IsContained = false;
 
-#if TARGET_XARCH
-                if (IsContainableMemoryOp(andOp1) && andOp2.Oper.IsIntegralConst)
+                if (Configuration.TARGET_XARCH &&
+                    IsContainableMemoryOp(andOp1) && andOp2.Oper.IsIntegralConst)
                 {
                     var mask = unchecked((nuint)andOp2.AsIntCon().IconValue);
                     if (mask <= byte.MaxValue)
@@ -230,8 +224,6 @@ public sealed partial class Lowering
                         andOp2.Type = TYP_USHORT;
                     }
                 }
-#endif
-#endif
             }
             else if (andOp2.Oper.IsIntegralConst && GenTree.Compare(andOp2, op2))
             {
@@ -250,18 +242,16 @@ public sealed partial class Lowering
                 BlockRange().InsertBefore(afterConstant, op2);
                 cmp.Op2 = op2;
             }
-        }
+            }
 
-#if TARGET_XARCH
-        if ((cmp.Oper is GT_TEST_EQ or GT_TEST_NE) && TryReduceSingleBitTestOps(cmp))
-        {
-            cmp.SetOper(cmp.Oper is GT_TEST_EQ ? GT_BITTEST_EQ : GT_BITTEST_NE);
-            cmp.Op2.IsContained = false;
-
-            return cmp.Next;
+            if (Configuration.TARGET_XARCH &&
+                (cmp.Oper is GT_TEST_EQ or GT_TEST_NE) && TryReduceSingleBitTestOps(cmp))
+            {
+                cmp.SetOper(cmp.Oper is GT_TEST_EQ ? GT_BITTEST_EQ : GT_BITTEST_NE);
+                cmp.Op2.IsContained = false;
+                return cmp.Next;
+            }
         }
-#endif
-#endif
 
         if ((cmp.Oper is GT_EQ or GT_NE) && op2.IsIntegralConst(0) &&
             (op1.Oper.IsCompare || (op1.Oper is GT_SETCC)) && BlockRange().TryGetUse(cmp, out var use))

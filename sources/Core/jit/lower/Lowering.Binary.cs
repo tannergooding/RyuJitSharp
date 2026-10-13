@@ -9,120 +9,144 @@ public sealed partial class Lowering
 {
     private void ContainCheckBinary(GenTreeOp node)
     {
-#if TARGET_XARCH
-        assert(node.Oper.IsBinary);
-        if (varTypeIsFloating(node.Type))
+        if (Configuration.TARGET_XARCH)
         {
-            assert(node.Oper is GT_ADD or GT_SUB);
-            ContainCheckFloatBinary(node);
-            return;
-        }
-
-        var op1 = node.Op1;
-        var op2 = node.Op2;
-        var binOpInRmw = false;
-        GenTree? operand = null;
-        if (IsContainableImmed(node, op2))
-        {
-            operand = op2;
-        }
-        else
-        {
-            binOpInRmw = IsBinOpInRMWStoreInd(node);
-            if (!binOpInRmw)
+            assert(node.Oper.IsBinary);
+            if (varTypeIsFloating(node.Type))
             {
-                // Different memory widths would lose the normalization performed by a register load.
-                if (IsContainableMemoryOpSize(node, op2) && IsContainableMemoryOp(op2) &&
-                    IsSafeToContainMem(node, op2))
-                {
-                    operand = op2;
-                }
-                if ((operand is null) && node.Oper.IsCommutative)
-                {
-                    if (IsContainableImmed(node, op1) ||
-                        (IsContainableMemoryOpSize(node, op1) && IsContainableMemoryOp(op1) &&
-                            IsSafeToContainMem(node, op1)))
-                    {
-                        operand = op1;
-                    }
-                }
-            }
-        }
-
-        if (operand is not null)
-        {
-            MakeSrcContained(node, operand);
-        }
-        else if (!binOpInRmw)
-        {
-            SetRegOptionalForBinOp(node, IsSafeToMarkRegOptional(node, op1), IsSafeToMarkRegOptional(node, op2));
-        }
-#elif TARGET_ARM
-        var op1 = node.Op1;
-        var op2 = node.Op2;
-        if (CheckImmedAndMakeContained(node, op2))
-        {
-            return;
-        }
-
-        if (node.Oper.IsCommutative && CheckImmedAndMakeContained(node, op1))
-        {
-            MakeSrcContained(node, op1);
-            (node.Op1, node.Op2) = (node.Op2, node.Op1);
-        }
-#elif TARGET_LOONGARCH64
-        CheckImmedAndMakeContained(node, node.Op2);
-#elif TARGET_ARM64
-        var op1 = node.Op1;
-        var op2 = node.Op2;
-        if (CheckImmedAndMakeContained(node, op2))
-        {
-            return;
-        }
-
-        if (node.Oper.IsCommutative && CheckImmedAndMakeContained(node, op1))
-        {
-            MakeSrcContained(node, op1);
-            (node.Op1, node.Op2) = (node.Op2, node.Op1);
-            return;
-        }
-
-        if (CompilerInstance.opts.OptimizationEnabled)
-        {
-            if (IsContainableUnaryOrBinaryOp(node, op2))
-            {
-                if ((node.Oper is GT_ADD or GT_SUB or GT_CMP) && (op2.Oper is GT_CAST))
-                {
-                    // Prefer the extended-register operation over extension in the cast's load.
-                    op2.AsCast().CastOp.IsContained = false;
-                }
-
-                MakeSrcContained(node, op2);
+                assert(node.Oper is GT_ADD or GT_SUB);
+                ContainCheckFloatBinary(node);
                 return;
             }
 
-            if (node.Oper.IsCommutative && IsContainableUnaryOrBinaryOp(node, op1))
+            var op1 = node.Op1;
+            var op2 = node.Op2;
+            var binOpInRmw = false;
+            GenTree? operand = null;
+            if (IsContainableImmed(node, op2))
             {
-                if ((node.Oper is GT_ADD or GT_SUB or GT_CMP) && (op1.Oper is GT_CAST))
+                operand = op2;
+            }
+            else
+            {
+                binOpInRmw = IsBinOpInRMWStoreInd(node);
+                if (!binOpInRmw)
                 {
-                    op1.AsCast().CastOp.IsContained = false;
+                    // Different memory widths would lose the normalization performed by a register load.
+                    if (IsContainableMemoryOpSize(node, op2) && IsContainableMemoryOp(op2) &&
+                        IsSafeToContainMem(node, op2))
+                    {
+                        operand = op2;
+                    }
+                    if ((operand is null) && node.Oper.IsCommutative)
+                    {
+                        if (IsContainableImmed(node, op1) ||
+                            (IsContainableMemoryOpSize(node, op1) && IsContainableMemoryOp(op1) &&
+                                IsSafeToContainMem(node, op1)))
+                        {
+                            operand = op1;
+                        }
+                    }
                 }
+            }
 
+            if (operand is not null)
+            {
+                MakeSrcContained(node, operand);
+            }
+            else if (!binOpInRmw)
+            {
+                SetRegOptionalForBinOp(node, IsSafeToMarkRegOptional(node, op1), IsSafeToMarkRegOptional(node, op2));
+            }
+
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            var op1 = node.Op1;
+            var op2 = node.Op2;
+            if (CheckImmedAndMakeContained(node, op2))
+            {
+                return;
+            }
+
+            if (node.Oper.IsCommutative && CheckImmedAndMakeContained(node, op1))
+            {
+                MakeSrcContained(node, op1);
+                (node.Op1, node.Op2) = (node.Op2, node.Op1);
+            }
+
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            _ = CheckImmedAndMakeContained(node, node.Op2);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            var op1 = node.Op1;
+            var op2 = node.Op2;
+            if (CheckImmedAndMakeContained(node, op2))
+            {
+                return;
+            }
+
+            if (node.Oper.IsCommutative && CheckImmedAndMakeContained(node, op1))
+            {
                 MakeSrcContained(node, op1);
                 (node.Op1, node.Op2) = (node.Op2, node.Op1);
                 return;
             }
+
+            if (CompilerInstance.opts.OptimizationEnabled)
+            {
+                if (IsContainableUnaryOrBinaryOp(node, op2))
+                {
+                    if ((node.Oper is GT_ADD or GT_SUB or GT_CMP) && (op2.Oper is GT_CAST))
+                    {
+                        // Prefer the extended-register operation over extension in the cast's load.
+                        op2.AsCast().CastOp.IsContained = false;
+                    }
+
+                    MakeSrcContained(node, op2);
+                    return;
+                }
+
+                if (node.Oper.IsCommutative && IsContainableUnaryOrBinaryOp(node, op1))
+                {
+                    if ((node.Oper is GT_ADD or GT_SUB or GT_CMP) && (op1.Oper is GT_CAST))
+                    {
+                        op1.AsCast().CastOp.IsContained = false;
+                    }
+
+                    MakeSrcContained(node, op1);
+                    (node.Op1, node.Op2) = (node.Op2, node.Op1);
+                    return;
+                }
+            }
+
+            return;
         }
-#elif TARGET_RISCV64
-        CheckImmedAndMakeContained(node, node.Op2);
-#elif TARGET_WASM
-        // Wasm binary operators do not contain operands.
-#else
-        throw new System.NotImplementedException("Binary containment is not ported for this target.");
-#endif
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            _ = CheckImmedAndMakeContained(node, node.Op2);
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            // Wasm binary operators do not contain operands.
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Binary containment is not ported for this target.");
     }
 
-#if TARGET_XARCH
     private void ContainCheckFloatBinary(GenTreeOp node)
     {
         assert((node.Oper is GT_ADD or GT_SUB or GT_MUL or GT_DIV) && varTypeIsFloating(node.Type));
@@ -202,5 +226,4 @@ public sealed partial class Lowering
 
         return preferred;
     }
-#endif
 }

@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if TARGET_XARCH || TARGET_RISCV64
     private GenTreeOp? TryLowerBitwiseOpToBitOp(GenTreeOp binOp)
     {
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_RISCV64)
+        {
+            return null;
+        }
+
         assert(binOp.Oper is GT_OR or GT_XOR or GT_AND);
 
         if (binOp.Type is not (TYP_INT or TYP_LONG))
@@ -88,7 +92,6 @@ public sealed partial class Lowering
 
         return binOp;
     }
-#endif
 
     private bool TryLowerAndNegativeOne(GenTreeOp node, out GenTree? nextNode)
     {
@@ -106,9 +109,10 @@ public sealed partial class Lowering
             return false;
         }
 
-#if LOWER_DECOMPOSE_LONGS
-        assert(op2.Type is TYP_INT);
-#endif
+        if (Configuration.LOWER_DECOMPOSE_LONGS)
+        {
+            assert(op2.Type is TYP_INT);
+        }
         var op1 = node.Op1;
         if (BlockRange().TryGetUse(node, out var use))
         {

@@ -57,9 +57,14 @@ public sealed partial class Lowering
             varTypeIsIntegralOrI(operand.AsOp().Op1.Type) && IsInvariantInRange(operand, tree);
     }
 
-#if TARGET_AMD64 || TARGET_ARM64
     private bool TryLowerAndOrToCCMP(GenTreeOp tree, out GenTree? next)
     {
+        if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
+        {
+            next = null;
+            return false;
+        }
+
         assert(tree.Oper is GT_AND or GT_OR);
         next = null;
         if (!CompilerInstance.opts.OptimizationEnabled)
@@ -156,6 +161,11 @@ public sealed partial class Lowering
 
     private void ContainCheckConditionalCompare(GenTreeCCMP compare)
     {
+        if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Conditional compare containment is not ported for this target.");
+        }
+
         var operand = compare.Op2;
         if (operand.Oper.IsCnsIntOrI && !operand.AsIntCon().ImmedValNeedsReloc(CompilerInstance) &&
             Emitter.emitIns_valid_imm_for_ccmp(operand.AsIntCon().IconValue))
@@ -163,5 +173,4 @@ public sealed partial class Lowering
             MakeSrcContained(compare, operand);
         }
     }
-#endif
 }

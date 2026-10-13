@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if LOWER_DECOMPOSE_LONGS
     private GenTree? DecomposeLongCompare(GenTreeOp comparison)
     {
         assert(comparison.Op1.Type is TYP_LONG);
@@ -167,5 +166,4 @@ public sealed partial class Lowering
 
         return next;
     }
-#endif
 }

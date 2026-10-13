@@ -15,16 +15,24 @@ public sealed partial class Lowering
 
     private CFGCallKind GetCFGCallKind(GenTreeCall call)
     {
-#if TARGET_AMD64
-        var mayUseDispatcher = call.IndirectionCellArgKind is WellKnownArg.None;
-        var shouldUseDispatcher = true;
-#elif TARGET_ARM64
-        var mayUseDispatcher = true;
-        var shouldUseDispatcher = false;
-#else
-        var mayUseDispatcher = false;
-        var shouldUseDispatcher = false;
-#endif
+        bool mayUseDispatcher;
+        bool shouldUseDispatcher;
+        if (Configuration.TARGET_AMD64)
+        {
+            mayUseDispatcher = call.IndirectionCellArgKind is WellKnownArg.None;
+            shouldUseDispatcher = true;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            mayUseDispatcher = true;
+            shouldUseDispatcher = false;
+        }
+        else
+        {
+            mayUseDispatcher = false;
+            shouldUseDispatcher = false;
+        }
+
 #if DEBUG
         switch (JitConfig.JitCFGUseDispatcher)
         {
@@ -87,11 +95,7 @@ public sealed partial class Lowering
             var putArg = cellArg.Node.AsUnOp();
             var cellUse = new LIR.Use(BlockRange(), ref putArg.Op1Ref, putArg);
 
-#if TARGET_XARCH
-            const bool cloneConsts = true;
-#else
-            const bool cloneConsts = false;
-#endif
+            var cloneConsts = Configuration.TARGET_XARCH;
             // Native allocates this first clone before selecting the final clone below.
             var cellClone = CloneCFGUse(ref cellUse, cloneConsts);
             if ((cellUse.Def().Oper is GT_LCL_VAR) || (cloneConsts && cellUse.Def().Oper.IsCnsIntOrI))
@@ -123,21 +127,8 @@ public sealed partial class Lowering
             {
                 // The validator preserves its target in a designated register; reloading it
                 // from memory after validation would allow the checked and called targets to differ.
-#if TARGET_AMD64 || TARGET_ARM64
-                var regNode = compiler.gtNewPhysRegNode(REG_VALIDATE_INDIRECT_CALL_ADDR, TYP_I_IMPL);
-#elif TARGET_X86
-                var regNode = compiler.gtNewPhysRegNode(REG_ECX, TYP_I_IMPL);
-#elif TARGET_ARM
-                var regNode = compiler.gtNewPhysRegNode(REG_R0, TYP_I_IMPL);
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                var regNode = compiler.gtNewPhysRegNode(REG_T3, TYP_I_IMPL);
-#elif TARGET_WASM
-                var regNode = compiler.gtNewPhysRegNode(REG_NA, TYP_I_IMPL);
-#else
-                NYI("Lowering.LowerCFGCall validation register for this target");
-                fatal(CORJIT_IMPLLIMITATION);
-                return;
-#endif
+                var validationRegister = TargetRuntimeMetadata.ValidateIndirectCallAddressRegister;
+                var regNode = compiler.gtNewPhysRegNode(validationRegister, TYP_I_IMPL);
                 var gotUse = BlockRange().TryGetUse(callTarget, out var targetUse);
                 assert(gotUse);
                 // Managed LIR.Use requires its replacement to be linked before updating the edge.
@@ -170,21 +161,23 @@ public sealed partial class Lowering
 
             case CFGCallKind.Dispatch:
             {
-#if TARGET_AMD64 || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-                const regNumber dispatchRegister = REG_T0;
-#elif TARGET_WASM
-                const regNumber dispatchRegister = REG_NA;
-#else
-                const regNumber dispatchRegister = REG_DISPATCH_INDIRECT_CALL_ADDR;
-#endif
+                if (!Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64 &&
+                    !Configuration.TARGET_WASM && !Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64)
+                {
+                    throw new FatalJitException(
+                        CORJIT_IMPLLIMITATION,
+                        "Lowering.LowerCFGCall dispatcher register is not ported for this target.");
+                }
+
+                var dispatchRegister = TargetRuntimeMetadata.DispatchIndirectCallAddressRegister;
+
                 var targetArg = call.Args.PushBack(NewCallArg.CreateForPrimitive(callTarget)
                     .WithWellKnownArg(WellKnownArg.DispatchIndirectCallTarget));
                 targetArg.EarlyNode = null;
                 targetArg.LateNode = callTarget;
                 call.Args.PushLateBack(targetArg);
                 targetArg.AbiInfo = AbiPassingInformation.FromSegment(compiler, false,
-                    AbiPassingSegment.InRegister(dispatchRegister, 0, TARGET_POINTER_SIZE));
+                    AbiPassingSegment.InRegister(dispatchRegister, 0, Configuration.TARGET_POINTER_SIZE));
 
                 LowerArg(call, targetArg);
 
@@ -204,9 +197,6 @@ public sealed partial class Lowering
                     ContainCheckRange(dispatchRange);
                     BlockRange().InsertBefore(call, dispatchRange);
                 }
-#else
-                unreached();
-#endif
                 break;
             }
 

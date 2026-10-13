@@ -10,10 +10,6 @@ public sealed partial class Lowering
     private GenTree? LowerSelect(GenTreeConditional select)
     {
         var condition = select.Cond;
-#if TARGET_ARM64
-        var trueValue = select.Op1;
-        var falseValue = select.Op2;
-#endif
         JITDUMP("Lowering select:\n");
         DISPTREERANGE(BlockRange(), select);
         JITDUMP("\n");
@@ -41,133 +37,158 @@ public sealed partial class Lowering
             ContainCheckSelect(select);
         }
 
-#if TARGET_ARM64
-        GenTreeOp result = newSelect is not null ? newSelect : select;
-        if ((trueValue.Oper is GT_NOT or GT_NEG or GT_ADD) || (falseValue.Oper is GT_NOT or GT_NEG or GT_ADD))
+        if (Configuration.TARGET_ARM64)
         {
-            TryLowerCselToCSOp(result, condition);
+            var trueValue = select.Op1;
+            var falseValue = select.Op2;
+            GenTreeOp result = newSelect is not null ? newSelect : select;
+            if ((trueValue.Oper is GT_NOT or GT_NEG or GT_ADD) ||
+                (falseValue.Oper is GT_NOT or GT_NEG or GT_ADD))
+            {
+                TryLowerCselToCSOp(result, condition);
+            }
+            else if (trueValue.Oper.IsCnsIntOrI || falseValue.Oper.IsCnsIntOrI)
+            {
+                TryLowerCnsIntCselToCinc(result, condition);
+            }
         }
-        else if (trueValue.Oper.IsCnsIntOrI || falseValue.Oper.IsCnsIntOrI)
-        {
-            TryLowerCnsIntCselToCinc(result, condition);
-        }
-#endif
 
         return newSelect is not null ? newSelect.Next : select.Next;
     }
 
     private void ContainCheckSelect(GenTreeOp select)
     {
-#if TARGET_XARCH
-        assert(select.Oper is GT_SELECT or GT_SELECTCC);
-        if (select.Oper is GT_SELECTCC)
+        if (Configuration.TARGET_XARCH)
         {
-            // These floating conditions require two CMOVs. Containing an operand
-            // would repeat its memory access/address calculation; LSRA does not
-            // yet support permitting just one memory operand for these cases.
-            switch (select.AsOpCC().Condition.Code)
+            assert(select.Oper is GT_SELECT or GT_SELECTCC);
+            if (select.Oper is GT_SELECTCC)
             {
-                case GenCondition.FEQ:
-                case GenCondition.FLT:
-                case GenCondition.FLE:
-                case GenCondition.FNEU:
-                case GenCondition.FGEU:
-                case GenCondition.FGTU:
+                // These floating conditions require two CMOVs. Containing an operand
+                // would repeat its memory access/address calculation; LSRA does not
+                // yet support permitting just one memory operand for these cases.
+                switch (select.AsOpCC().Condition.Code)
                 {
-                    return;
-                }
-            }
-        }
-
-        var op1 = select.Op1;
-        var op2 = select.Op2;
-        var operSize = select.Type.Size;
-        assert((operSize == 4) || (operSize == TARGET_POINTER_SIZE));
-
-        // Each value has its own conditional instruction, so both can be memory
-        // operands unless the condition required the two-CMOV sequence above.
-        if (op1.Type.Size == operSize)
-        {
-            if (IsContainableMemoryOp(op1) && IsSafeToContainMem(select, op1))
-            {
-                MakeSrcContained(select, op1);
-            }
-            else if (IsSafeToMarkRegOptional(select, op1))
-            {
-                MakeSrcRegOptional(select, op1);
-            }
-        }
-
-        if (op2.Type.Size == operSize)
-        {
-            if (IsContainableMemoryOp(op2) && IsSafeToContainMem(select, op2))
-            {
-                MakeSrcContained(select, op2);
-            }
-            else if (IsSafeToMarkRegOptional(select, op2))
-            {
-                MakeSrcRegOptional(select, op2);
-            }
-        }
-#elif TARGET_ARM
-        noway_assert(false, "GT_SELECT nodes are not supported on ARM32.");
-#elif TARGET_ARM64
-        if (select.Op1.IsIntegralConst(0))
-        {
-            MakeSrcContained(select, select.Op1);
-        }
-        if (select.Op2.IsIntegralConst(0))
-        {
-            MakeSrcContained(select, select.Op2);
-        }
-#elif TARGET_RISCV64
-        assert(select.Oper is GT_SELECT);
-        assert(CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zicond));
-        assert(varTypeIsIntegralOrI(select.Type));
-
-        var conditional = select.AsConditional();
-        var condition = conditional.Cond;
-        if (condition.Oper.IsCompare)
-        {
-            var relop = condition.AsOp();
-            if (relop.Oper is GT_EQ or GT_NE)
-            {
-                var relopOp2 = relop.Op2;
-                if (relopOp2.IsIntegralConst(0))
-                {
-                    conditional.CondRef = relop.Op1;
-                    if (relop.Oper is GT_EQ)
+                    case GenCondition.FEQ:
+                    case GenCondition.FLT:
+                    case GenCondition.FLE:
+                    case GenCondition.FNEU:
+                    case GenCondition.FGEU:
+                    case GenCondition.FGTU:
                     {
-                        (conditional.Op1, conditional.Op2) = (conditional.Op2, conditional.Op1);
+                        return;
                     }
-
-                    BlockRange().Remove(relopOp2);
-                    BlockRange().Remove(relop);
                 }
             }
-            else if ((relop.Oper is GT_GE or GT_LE) ||
-                (varTypeIsFloating(relop.Op1.Type) && ((relop.Flags & GTF_RELOP_NAN_UN) != 0)))
+
+            var op1 = select.Op1;
+            var op2 = select.Op2;
+            var operSize = select.Type.Size;
+            assert((operSize == 4) || (operSize == Configuration.TARGET_POINTER_SIZE));
+
+            // Each value has its own conditional instruction, so both can be memory
+            // operands unless the condition required the two-CMOV sequence above.
+            if (op1.Type.Size == operSize)
             {
-                var reversed = CompilerInstance.gtTryReverseCond(condition);
-                assert(reversed);
-                (conditional.Op1, conditional.Op2) = (conditional.Op2, conditional.Op1);
+                if (IsContainableMemoryOp(op1) && IsSafeToContainMem(select, op1))
+                {
+                    MakeSrcContained(select, op1);
+                }
+                else if (IsSafeToMarkRegOptional(select, op1))
+                {
+                    MakeSrcRegOptional(select, op1);
+                }
             }
+
+            if (op2.Type.Size == operSize)
+            {
+                if (IsContainableMemoryOp(op2) && IsSafeToContainMem(select, op2))
+                {
+                    MakeSrcContained(select, op2);
+                }
+                else if (IsSafeToMarkRegOptional(select, op2))
+                {
+                    MakeSrcRegOptional(select, op2);
+                }
+            }
+
+            return;
         }
 
-        if (conditional.Op1.IsIntegralConst(0))
+        if (Configuration.TARGET_ARM64)
         {
-            MakeSrcContained(select, conditional.Op1);
+            if (select.Op1.IsIntegralConst(0))
+            {
+                MakeSrcContained(select, select.Op1);
+            }
+            if (select.Op2.IsIntegralConst(0))
+            {
+                MakeSrcContained(select, select.Op2);
+            }
+
+            return;
         }
-        if (conditional.Op2.IsIntegralConst(0))
+
+        if (Configuration.TARGET_RISCV64)
         {
-            MakeSrcContained(select, conditional.Op2);
+            assert(select.Oper is GT_SELECT);
+            if (!CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zicond))
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "RISC-V conditional select requires Zicond.");
+            }
+            assert(varTypeIsIntegralOrI(select.Type));
+
+            var conditional = select.AsConditional();
+            var condition = conditional.Cond;
+            if (condition.Oper.IsCompare)
+            {
+                var relop = condition.AsOp();
+                if (relop.Oper is GT_EQ or GT_NE)
+                {
+                    var relopOp2 = relop.Op2;
+                    if (relopOp2.IsIntegralConst(0))
+                    {
+                        conditional.CondRef = relop.Op1;
+                        if (relop.Oper is GT_EQ)
+                        {
+                            (conditional.Op1, conditional.Op2) = (conditional.Op2, conditional.Op1);
+                        }
+
+                        BlockRange().Remove(relopOp2);
+                        BlockRange().Remove(relop);
+                    }
+                }
+                else if ((relop.Oper is GT_GE or GT_LE) ||
+                    (varTypeIsFloating(relop.Op1.Type) && ((relop.Flags & GTF_RELOP_NAN_UN) != 0)))
+                {
+                    var reversed = CompilerInstance.gtTryReverseCond(condition);
+                    assert(reversed);
+                    (conditional.Op1, conditional.Op2) = (conditional.Op2, conditional.Op1);
+                }
+            }
+
+            if (conditional.Op1.IsIntegralConst(0))
+            {
+                MakeSrcContained(select, conditional.Op1);
+            }
+            if (conditional.Op2.IsIntegralConst(0))
+            {
+                MakeSrcContained(select, conditional.Op2);
+            }
+
+            return;
         }
-#elif TARGET_WASM
-        // Wasm select operands remain on the stack in their existing order.
-#elif TARGET_LOONGARCH64
-        assert(false, "GT_SELECT nodes are not supported on LoongArch64.");
-#else
-        throw new System.NotImplementedException("Select containment is not ported for this target.");
-#endif
+
+        if (Configuration.TARGET_WASM)
+        {
+            // Wasm select operands remain on the stack in their existing order.
+            return;
+        }
+
+        var message = Configuration.TARGET_ARM
+            ? "GT_SELECT nodes are not supported on ARM32."
+            : Configuration.TARGET_LOONGARCH64
+                ? "GT_SELECT nodes are not supported on LoongArch64."
+                : "Select containment is not ported for this target.";
+        throw new FatalJitException(CORJIT_SKIPPED, message);
     }
 }

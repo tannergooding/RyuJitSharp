@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LOWER_DECOMPOSE_LONGS
 using System;
 
 namespace RyuJitSharp;
@@ -13,17 +12,13 @@ public sealed partial class Lowering
     private sealed partial class DecomposeLongs
     {
         private readonly Compiler _compiler;
-#if FEATURE_HW_INTRINSICS && TARGET_X86
         private readonly Lowering _lowering;
-#endif
         private LIR.Range? _range;
 
         public DecomposeLongs(Compiler compiler, Lowering lowering)
         {
             _compiler = compiler;
-#if FEATURE_HW_INTRINSICS && TARGET_X86
             _lowering = lowering;
-#endif
         }
 
         private LIR.Range Range()
@@ -76,12 +71,10 @@ public sealed partial class Lowering
                 }
             }
 
-#if FEATURE_HW_INTRINSICS && TARGET_X86
             if ((tree.Type is not TYP_LONG) &&
-                !((tree.Oper is GT_CAST) && varTypeIsLong(tree.AsCast().CastOp.Type) && varTypeIsFloating(tree.Type)))
-#else
-            if (tree.Type is not TYP_LONG)
-#endif
+                (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_X86 ||
+                    !((tree.Oper is GT_CAST) && varTypeIsLong(tree.AsCast().CastOp.Type) &&
+                        varTypeIsFloating(tree.Type))))
             {
                 return tree.Next;
             }
@@ -97,8 +90,7 @@ public sealed partial class Lowering
 
         private GenTree? DecomposeNode(GenTree tree, ref LIR.Use use)
         {
-#if FEATURE_HW_INTRINSICS && TARGET_X86
-            if (!use.IsDummyUse())
+            if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_X86 && !use.IsDummyUse())
             {
                 var user = use.User();
                 if ((tree.Type is TYP_LONG) &&
@@ -129,12 +121,12 @@ public sealed partial class Lowering
                 }
             }
 
-            if ((tree.Oper is GT_STOREIND) && (tree.AsStoreInd().Data.Oper is GT_HWINTRINSIC))
+            if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_X86 &&
+                (tree.Oper is GT_STOREIND) && (tree.AsStoreInd().Data.Oper is GT_HWINTRINSIC))
             {
                 assert(HWIntrinsicInfo.IsVectorToScalar(tree.AsStoreInd().Data.AsHWIntrinsic().HWIntrinsicId));
                 return tree.Next;
             }
-#endif
 
             JITDUMP("Decomposing TYP_LONG tree.  BEFORE:\n");
             DISPTREERANGE(Range(), tree);
@@ -252,13 +244,18 @@ public sealed partial class Lowering
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
                 case GT_HWINTRINSIC:
                 {
+                    if (!Configuration.FEATURE_HW_INTRINSICS)
+                    {
+                        throw new FatalJitException(
+                            CORJIT_SKIPPED,
+                            "Hardware-intrinsic long decomposition is not available.");
+                    }
+
                     nextNode = DecomposeHWIntrinsic(ref use);
                     break;
                 }
-#endif
 
                 case GT_SELECT:
                 {
@@ -274,7 +271,7 @@ public sealed partial class Lowering
                 case GT_CMPXCHG:
                 {
                     NYI("Interlocked operations on TYP_LONG");
-                    throw new NotImplementedException("Interlocked operations on TYP_LONG");
+                    throw new FatalJitException(CORJIT_SKIPPED, "Interlocked operations on TYP_LONG are not ported.");
                 }
 
                 default:
@@ -517,13 +514,11 @@ public sealed partial class Lowering
                 return;
             }
 
-#if FEATURE_HW_INTRINSICS && TARGET_X86
-            if (varDsc.lvIsParam)
+            if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_X86 && varDsc.lvIsParam)
             {
                 // Promotion blocks combined SIMD reads of long parameters.
                 return;
             }
-#endif
             varDsc.lvFieldCnt = 2;
             varDsc.lvFieldLclStart = _compiler.lvaCount;
             varDsc.lvPromoted = true;
@@ -551,13 +546,10 @@ public sealed partial class Lowering
                 }
             }
 
-#if TARGET_ARM
-            if (varDsc.lvIsParam)
+            if (Configuration.TARGET_ARM && varDsc.lvIsParam)
             {
                 _compiler.lvaSetVarDoNotEnregister(lclNum, DoNotEnregisterReason.IsStructArg);
             }
-#endif
         }
     }
 }
-#endif

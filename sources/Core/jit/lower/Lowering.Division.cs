@@ -9,50 +9,68 @@ public sealed partial class Lowering
 {
     private void ContainCheckDivOrMod(GenTreeOp node)
     {
-#if TARGET_XARCH
-        assert(node.Oper is GT_DIV or GT_MOD or GT_UDIV or GT_UMOD);
-
-        if (varTypeIsFloating(node.Type))
+        if (Configuration.TARGET_XARCH)
         {
-            ContainCheckFloatBinary(node);
+            assert(node.Oper is GT_DIV or GT_MOD or GT_UDIV or GT_UMOD);
+
+            if (varTypeIsFloating(node.Type))
+            {
+                ContainCheckFloatBinary(node);
+                return;
+            }
+
+            var divisor = node.Op2;
+            var divisorCanBeRegOptional = true;
+            if (Configuration.TARGET_X86)
+            {
+                var dividend = node.Op1;
+                if (dividend.Oper is GT_LONG)
+                {
+                    divisorCanBeRegOptional = false;
+                    MakeSrcContained(node, dividend);
+                }
+            }
+
+            if (IsContainableMemoryOp(divisor) && (divisor.Type == node.Type) &&
+                IsInvariantInRange(divisor, node))
+            {
+                MakeSrcContained(node, divisor);
+            }
+            else if (divisorCanBeRegOptional && IsSafeToMarkRegOptional(node, divisor))
+            {
+                MakeSrcRegOptional(node, divisor);
+            }
+
             return;
         }
 
-        var divisor = node.Op2;
-        var divisorCanBeRegOptional = true;
-#if TARGET_X86
-        var dividend = node.Op1;
-        if (dividend.Oper is GT_LONG)
+        if (Configuration.TARGET_ARM)
         {
-            divisorCanBeRegOptional = false;
-            MakeSrcContained(node, dividend);
+            assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
+            // ARM32 division has no immediate or memory containment.
+            return;
         }
-#endif
 
-        if (IsContainableMemoryOp(divisor) && (divisor.Type == node.Type) &&
-            IsInvariantInRange(divisor, node))
+        if (Configuration.TARGET_ARM64)
         {
-            MakeSrcContained(node, divisor);
+            assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
+            // Native ARM64 division has no immediate or memory containment.
+            return;
         }
-        else if (divisorCanBeRegOptional && IsSafeToMarkRegOptional(node, divisor))
+
+        if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
         {
-            MakeSrcRegOptional(node, divisor);
+            assert(node.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);
+            return;
         }
-#elif TARGET_ARM
-        assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
-        // ARM32 division has no immediate or memory containment.
-#elif TARGET_ARM64
-        assert(node.Oper is GT_DIV or GT_UDIV or GT_MOD);
-        // Native ARM64 division has no immediate or memory containment.
-#elif TARGET_RISCV64
-        assert(node.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);
-#elif TARGET_WASM
-        // Wasm does not contain operands for integer division.
-#elif TARGET_LOONGARCH64
-        assert(node.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);
-#else
-        throw new System.NotImplementedException("Division containment is not ported for this target.");
-#endif
+
+        if (Configuration.TARGET_WASM)
+        {
+            // Wasm does not contain operands for integer division.
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Division containment is not ported for this target.");
     }
 
     private void LowerDivOrMod(GenTreeOp divMod)

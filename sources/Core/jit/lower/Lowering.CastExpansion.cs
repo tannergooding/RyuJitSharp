@@ -9,386 +9,406 @@ public sealed partial class Lowering
 {
     private unsafe void LowerCast(GenTreeCast tree)
     {
-#if TARGET_XARCH
-        assert(tree.Oper is GT_CAST);
-        var compiler = CompilerInstance;
-        var castOp = tree.CastOp;
-        var dstType = tree.CastType;
-        var srcType = castOp.Type.ActualType;
-        if (tree.IsUnsigned)
+        if (Configuration.TARGET_XARCH)
         {
-            srcType = varTypeToUnsigned(srcType);
-        }
-        if (varTypeIsFloating(srcType))
-        {
-            // Morph handles checked conversions and inserts the intermediate cast for small types.
-            noway_assert(!tree.HasOverflowCheck);
-            assert(!varTypeIsSmall(dstType));
-            assert(!varTypeIsLong(dstType) || TargetArchitecture.Is64Bit);
-        }
-
-#if TARGET_X86
-        if ((srcType is TYP_UINT) && varTypeIsFloating(dstType) &&
-            !compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))
-        {
-            LABELEDDISPTREERANGE("LowerCast before", BlockRange(), tree);
-
-            var castRange = new LIR.Range(null, null);
-            var zero = compiler.gtNewZeroConNode(TYP_SIMD16);
-            GenTree castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
-                NI_X86Base_ConvertScalarToVector128Double, TYP_INT, 16, zero, castOp);
-            castRange.InsertAtEnd(zero);
-            castRange.InsertAtEnd(castResult);
-
-            LIR.Use.MakeDummyUse(castRange, castResult, out var resultUse);
-            _ = resultUse.ReplaceWithLclVar(compiler);
-            castResult = resultUse.Def();
-
-            var addConstant = compiler.gtNewVconNode(TYP_SIMD16);
-            addConstant.SimdVal.f64[0] = 4294967296.0;
-            var addResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_AddScalar,
-                TYP_DOUBLE, 16, castResult, addConstant);
-            castRange.InsertAtEnd(addConstant);
-            castRange.InsertAtEnd(addResult);
-
-            var firstClone = CloneLocal(castResult);
-            var secondClone = CloneLocal(castResult);
-            castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_BlendVariable,
-                TYP_DOUBLE, 16, firstClone, addResult, secondClone);
-            castRange.InsertAtEnd(firstClone);
-            castRange.InsertAtEnd(secondClone);
-            castRange.InsertAtEnd(castResult);
-
-            if (dstType is TYP_FLOAT)
+            assert(tree.Oper is GT_CAST);
+            var compiler = CompilerInstance;
+            var castOp = tree.CastOp;
+            var dstType = tree.CastType;
+            var srcType = castOp.Type.ActualType;
+            if (tree.IsUnsigned)
             {
-                castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
-                    NI_X86Base_ConvertToVector128Single, TYP_DOUBLE, 16, castResult);
+                srcType = varTypeToUnsigned(srcType);
+            }
+            if (varTypeIsFloating(srcType))
+            {
+                // Morph handles checked conversions and inserts the intermediate cast for small types.
+                noway_assert(!tree.HasOverflowCheck);
+                assert(!varTypeIsSmall(dstType));
+                assert(!varTypeIsLong(dstType) || TargetArchitecture.Is64Bit);
+            }
+
+            if (Configuration.TARGET_X86 && (srcType is TYP_UINT) && varTypeIsFloating(dstType) &&
+                !compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                LABELEDDISPTREERANGE("LowerCast before", BlockRange(), tree);
+
+                var castRange = new LIR.Range(null, null);
+                var zero = compiler.gtNewZeroConNode(TYP_SIMD16);
+                GenTree castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                    NI_X86Base_ConvertScalarToVector128Double, TYP_INT, 16, zero, castOp);
+                castRange.InsertAtEnd(zero);
                 castRange.InsertAtEnd(castResult);
-            }
 
-            var toScalar = compiler.gtNewSimdToScalarNode(dstType, castResult, dstType, 16);
-            castRange.InsertAtEnd(toScalar);
+                LIR.Use.MakeDummyUse(castRange, castResult, out var resultUse);
+                _ = resultUse.ReplaceWithLclVar(compiler);
+                castResult = resultUse.Def();
 
-            var first = castRange.FirstNode;
-            var last = castRange.LastNode;
-            BlockRange().InsertBefore(tree, castRange);
-            LABELEDDISPTREERANGE("LowerCast after", BlockRange(), toScalar);
-            if (BlockRange().TryGetUse(tree, out var castUse))
-            {
-                castUse.ReplaceWith(toScalar);
-            }
-            else
-            {
-                toScalar.IsUnusedValue = true;
-            }
-            BlockRange().Remove(tree);
-            LowerRange(first, last);
-            return;
-        }
-#endif
+                var addConstant = compiler.gtNewVconNode(TYP_SIMD16);
+                addConstant.SimdVal.f64[0] = 4294967296.0;
+                var addResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_AddScalar,
+                    TYP_DOUBLE, 16, castResult, addConstant);
+                castRange.InsertAtEnd(addConstant);
+                castRange.InsertAtEnd(addResult);
 
-        if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
-        {
-            LABELEDDISPTREERANGE("LowerCast before", BlockRange(), tree);
-            var castRange = new LIR.Range(null, null);
-            GenTree castResult;
-            if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
-            {
-                var intrinsic = dstType switch {
-                    TYP_INT => NI_AVX10v2_ConvertToInt32WithTruncatedSaturation,
-                    TYP_UINT => NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation,
-                    TYP_LONG => NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation,
-                    TYP_ULONG => NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation,
-                    _ => throw new System.InvalidOperationException("Unexpected floating conversion destination."),
-                };
-                castResult = compiler.gtNewSimdHWIntrinsicNode(dstType.ActualType, intrinsic, srcType, 16, castOp);
+                var firstClone = CloneLocal(castResult);
+                var secondClone = CloneLocal(castResult);
+                castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_BlendVariable,
+                    TYP_DOUBLE, 16, firstClone, addResult, secondClone);
+                castRange.InsertAtEnd(firstClone);
+                castRange.InsertAtEnd(secondClone);
                 castRange.InsertAtEnd(castResult);
-            }
-            else
-            {
-                var srcVector = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, castOp, srcType, 16);
-                castRange.InsertAtEnd(srcVector);
-                if (srcVector.Oper is GT_CNS_VEC)
+
+                if (dstType is TYP_FLOAT)
                 {
-                    castOp.IsUnusedValue = true;
+                    castResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                        NI_X86Base_ConvertToVector128Single, TYP_DOUBLE, 16, castResult);
+                    castRange.InsertAtEnd(castResult);
                 }
 
-                if (varTypeIsUnsigned(dstType) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                var toScalar = compiler.gtNewSimdToScalarNode(dstType, castResult, dstType, 16);
+                castRange.InsertAtEnd(toScalar);
+
+                var first = castRange.FirstNode;
+                var last = castRange.LastNode;
+                BlockRange().InsertBefore(tree, castRange);
+                LABELEDDISPTREERANGE("LowerCast after", BlockRange(), toScalar);
+                if (BlockRange().TryGetUse(tree, out var castUse))
                 {
-                    // EVEX saturates positive overflow. MAX with zero as its second operand also fixes NaN.
-                    var intrinsic = dstType is TYP_UINT
-                        ? NI_AVX512_ConvertToUInt32WithTruncation
-                        : NI_AVX512_X64_ConvertToUInt64WithTruncation;
-                    var zero = compiler.gtNewZeroConNode(TYP_SIMD16);
-                    var fixup = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_MaxScalar, srcType, 16,
-                        srcVector, zero);
-                    castResult = compiler.gtNewSimdHWIntrinsicNode(dstType.ActualType, intrinsic, srcType, 16, fixup);
-                    castRange.InsertAtEnd(zero);
-                    castRange.InsertAtEnd(fixup);
+                    castUse.ReplaceWith(toScalar);
+                }
+                else
+                {
+                    toScalar.IsUnusedValue = true;
+                }
+                BlockRange().Remove(tree);
+                LowerRange(first, last);
+                return;
+            }
+
+            if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
+            {
+                LABELEDDISPTREERANGE("LowerCast before", BlockRange(), tree);
+                var castRange = new LIR.Range(null, null);
+                GenTree castResult;
+                if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v2))
+                {
+                    var intrinsic = dstType switch {
+                        TYP_INT => NI_AVX10v2_ConvertToInt32WithTruncatedSaturation,
+                        TYP_UINT => NI_AVX10v2_ConvertToUInt32WithTruncatedSaturation,
+                        TYP_LONG => NI_AVX10v2_X64_ConvertToInt64WithTruncatedSaturation,
+                        TYP_ULONG => NI_AVX10v2_X64_ConvertToUInt64WithTruncatedSaturation,
+                        _ => throw new System.InvalidOperationException("Unexpected floating conversion destination."),
+                    };
+                    castResult = compiler.gtNewSimdHWIntrinsicNode(dstType.ActualType, intrinsic, srcType, 16, castOp);
                     castRange.InsertAtEnd(castResult);
                 }
                 else
                 {
-                    NamedIntrinsic intrinsic;
-                    GenTree maxIntegralValue;
-                    double minFloatOverflow;
-                    switch (dstType)
+                    var srcVector = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, castOp, srcType, 16);
+                    castRange.InsertAtEnd(srcVector);
+                    if (srcVector.Oper is GT_CNS_VEC)
                     {
-                        case TYP_INT:
-                        {
-                            intrinsic = NI_X86Base_ConvertToInt32WithTruncation;
-                            maxIntegralValue = compiler.gtNewIconNode(TYP_INT, int.MaxValue);
-                            minFloatOverflow = 2147483648.0; // 2^31
-                            break;
-                        }
-
-                        case TYP_UINT:
-                        {
-#if TARGET_X86
-                            intrinsic = NI_X86Base_ConvertToVector128Int32WithTruncation;
-                            maxIntegralValue = compiler.gtNewIconNode(TYP_INT, -1);
-#else
-                            intrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                            maxIntegralValue = compiler.gtNewIconNode(TYP_INT, unchecked((nint)uint.MaxValue));
-#endif
-                            minFloatOverflow = 4294967296.0; // 2^32
-                            break;
-                        }
-
-                        case TYP_LONG:
-                        {
-                            intrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                            maxIntegralValue = compiler.gtNewLconNode(long.MaxValue);
-                            minFloatOverflow = 9223372036854775808.0; // 2^63
-                            break;
-                        }
-
-                        case TYP_ULONG:
-                        {
-                            intrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
-                            maxIntegralValue = compiler.gtNewLconNode(-1);
-                            minFloatOverflow = 18446744073709551616.0; // 2^64
-                            break;
-                        }
-
-                        default:
-                        {
-                            throw new System.InvalidOperationException("Unexpected floating conversion destination.");
-                        }
+                        castOp.IsUnusedValue = true;
                     }
 
-                    var overflowVector = compiler.gtNewVconNode(TYP_SIMD16);
-                    if (srcType is TYP_FLOAT)
+                    if (varTypeIsUnsigned(dstType) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))
                     {
-                        overflowVector.SimdVal.f32[0] = (float)minFloatOverflow;
-                    }
-                    else
-                    {
-                        overflowVector.SimdVal.f64[0] = minFloatOverflow;
-                    }
-                    GenTree overflowValue = overflowVector;
-                    LIR.Use.MakeDummyUse(castRange, srcVector, out var srcUse);
-                    _ = srcUse.ReplaceWithLclVar(compiler);
-                    srcVector = srcUse.Def();
-
-                    GenTree convertResult;
-                    if (varTypeIsSigned(dstType))
-                    {
-                        // Clear NaN before converting. Positive saturation must happen afterwards:
-                        // the destination's MaxValue need not be exactly representable as a float.
-                        var srcClone = CloneLocal(srcVector);
-                        var nanMask = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_CompareScalarOrdered,
-                            srcType, 16, srcVector, srcClone);
-                        castRange.InsertAtEnd(srcClone);
-                        castRange.InsertAtEnd(nanMask);
-                        srcClone = CloneLocal(srcVector);
-                        var fixup = compiler.gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, nanMask, srcClone, srcType, 16);
-                        castRange.InsertAtEnd(srcClone);
-                        castRange.InsertAtEnd(fixup);
-                        convertResult = compiler.gtNewSimdHWIntrinsicNode(dstType, intrinsic, srcType, 16, fixup);
-                    }
-                    else
-                    {
+                        // EVEX saturates positive overflow. MAX with zero as its second operand also fixes NaN.
+                        var intrinsic = dstType is TYP_UINT
+                            ? NI_AVX512_ConvertToUInt32WithTruncation
+                            : NI_AVX512_X64_ConvertToUInt64WithTruncation;
                         var zero = compiler.gtNewZeroConNode(TYP_SIMD16);
                         var fixup = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_MaxScalar, srcType, 16,
                             srcVector, zero);
+                        castResult = compiler.gtNewSimdHWIntrinsicNode(dstType.ActualType, intrinsic, srcType, 16, fixup);
                         castRange.InsertAtEnd(zero);
                         castRange.InsertAtEnd(fixup);
-                        if ((dstType is TYP_UINT) && (intrinsic == NI_X86Base_X64_ConvertToInt64WithTruncation))
+                        castRange.InsertAtEnd(castResult);
+                    }
+                    else
+                    {
+                        NamedIntrinsic intrinsic;
+                        GenTree maxIntegralValue;
+                        double minFloatOverflow;
+                        switch (dstType)
                         {
-                            // X64's signed long conversion covers the entire uint range.
-                            convertResult = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, fixup);
+                            case TYP_INT:
+                            {
+                                intrinsic = NI_X86Base_ConvertToInt32WithTruncation;
+                                maxIntegralValue = compiler.gtNewIconNode(TYP_INT, int.MaxValue);
+                                minFloatOverflow = 2147483648.0; // 2^31
+                                break;
+                            }
+
+                            case TYP_UINT:
+                            {
+                                if (Configuration.TARGET_X86)
+                                {
+                                    intrinsic = NI_X86Base_ConvertToVector128Int32WithTruncation;
+                                    maxIntegralValue = compiler.gtNewIconNode(TYP_INT, -1);
+                                }
+                                else
+                                {
+                                    intrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
+                                    maxIntegralValue = compiler.gtNewIconNode(TYP_INT, unchecked((nint)uint.MaxValue));
+                                }
+
+                                minFloatOverflow = 4294967296.0; // 2^32
+                                break;
+                            }
+
+                            case TYP_LONG:
+                            {
+                                intrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
+                                maxIntegralValue = compiler.gtNewLconNode(long.MaxValue);
+                                minFloatOverflow = 9223372036854775808.0; // 2^63
+                                break;
+                            }
+
+                            case TYP_ULONG:
+                            {
+                                intrinsic = NI_X86Base_X64_ConvertToInt64WithTruncation;
+                                maxIntegralValue = compiler.gtNewLconNode(-1);
+                                minFloatOverflow = 18446744073709551616.0; // 2^64
+                                break;
+                            }
+
+                            default:
+                            {
+                                throw new System.InvalidOperationException("Unexpected floating conversion destination.");
+                            }
+                        }
+
+                        var overflowVector = compiler.gtNewVconNode(TYP_SIMD16);
+                        if (srcType is TYP_FLOAT)
+                        {
+                            overflowVector.SimdVal.f32[0] = (float)minFloatOverflow;
                         }
                         else
                         {
-                            castRange.InsertAtEnd(overflowValue);
-                            LIR.Use.MakeDummyUse(castRange, overflowValue, out var overflowUse);
-                            _ = overflowUse.ReplaceWithLclVar(compiler);
-                            overflowValue = overflowUse.Def();
-                            var floor = CloneLocal(srcVector);
-                            castRange.InsertAtEnd(floor);
+                            overflowVector.SimdVal.f64[0] = minFloatOverflow;
+                        }
+                        GenTree overflowValue = overflowVector;
+                        LIR.Use.MakeDummyUse(castRange, srcVector, out var srcUse);
+                        _ = srcUse.ReplaceWithLclVar(compiler);
+                        srcVector = srcUse.Def();
 
-                            if ((srcType is TYP_DOUBLE) && (dstType is TYP_UINT))
+                        GenTree convertResult;
+                        if (varTypeIsSigned(dstType))
+                        {
+                            // Clear NaN before converting. Positive saturation must happen afterwards:
+                            // the destination's MaxValue need not be exactly representable as a float.
+                            var srcClone = CloneLocal(srcVector);
+                            var nanMask = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_CompareScalarOrdered,
+                                srcType, 16, srcVector, srcClone);
+                            castRange.InsertAtEnd(srcClone);
+                            castRange.InsertAtEnd(nanMask);
+                            srcClone = CloneLocal(srcVector);
+                            var fixup = compiler.gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, nanMask, srcClone, srcType, 16);
+                            castRange.InsertAtEnd(srcClone);
+                            castRange.InsertAtEnd(fixup);
+                            convertResult = compiler.gtNewSimdHWIntrinsicNode(dstType, intrinsic, srcType, 16, fixup);
+                        }
+                        else
+                        {
+                            var zero = compiler.gtNewZeroConNode(TYP_SIMD16);
+                            var fixup = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_MaxScalar, srcType, 16,
+                                srcVector, zero);
+                            castRange.InsertAtEnd(zero);
+                            castRange.InsertAtEnd(fixup);
+                            if ((dstType is TYP_UINT) && (intrinsic == NI_X86Base_X64_ConvertToInt64WithTruncation))
                             {
-                                floor = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
-                                    NI_X86Base_RoundToZeroScalar, srcType, 16, floor);
-                                castRange.InsertAtEnd(floor);
-                            }
-
-                            var wrap = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_SubtractScalar,
-                                srcType, 16, floor, overflowValue);
-                            castRange.InsertAtEnd(wrap);
-                            overflowValue = CloneLocal(overflowValue);
-
-                            if (dstType is TYP_UINT)
-                            {
-                                GenTree result = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic,
-                                    srcType, 16, fixup);
-                                var negated = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic,
-                                    srcType, 16, wrap);
-                                castRange.InsertAtEnd(result);
-                                castRange.InsertAtEnd(negated);
-                                LIR.Use.MakeDummyUse(castRange, result, out var resultUse);
-                                _ = resultUse.ReplaceWithLclVar(compiler);
-                                result = resultUse.Def();
-
-                                var resultClone = CloneLocal(result);
-                                castRange.InsertAtEnd(resultClone);
-                                convertResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
-                                    NI_X86Base_BlendVariable, TYP_FLOAT, 16, result, negated, resultClone);
-                                castRange.InsertAtEnd(convertResult);
-                                convertResult = compiler.gtNewSimdToScalarNode(TYP_INT, convertResult, dstType, 16);
+                                // X64's signed long conversion covers the entire uint range.
+                                convertResult = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, fixup);
                             }
                             else
                             {
-                                assert(dstType is TYP_ULONG);
-                                // For the upper half of ulong, convert x - 2^64 as a signed long.
-                                // Double's precision guarantees whole numbers at that magnitude, so
-                                // the positive and negative truncating conversions have identical low bits.
-                                GenTree result = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType,
-                                    16, fixup);
-                                var negated = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, wrap);
-                                castRange.InsertAtEnd(result);
-                                castRange.InsertAtEnd(negated);
-                                LIR.Use.MakeDummyUse(castRange, result, out var resultUse);
-                                _ = resultUse.ReplaceWithLclVar(compiler);
-                                result = resultUse.Def();
+                                castRange.InsertAtEnd(overflowValue);
+                                LIR.Use.MakeDummyUse(castRange, overflowValue, out var overflowUse);
+                                _ = overflowUse.ReplaceWithLclVar(compiler);
+                                overflowValue = overflowUse.Def();
+                                var floor = CloneLocal(srcVector);
+                                castRange.InsertAtEnd(floor);
 
-                                // Signed conversion overflow returns MinValue. Its sign selects the wrapped result.
-                                var sixtyThree = compiler.gtNewIconNode(TYP_INT, 63);
-                                var mask = new GenTreeOp(GT_RSH, TYP_LONG, result, sixtyThree);
-                                var andMask = new GenTreeOp(GT_AND, TYP_LONG, mask, negated);
-                                var resultClone = CloneLocal(result);
-                                castRange.InsertAtEnd(sixtyThree);
-                                castRange.InsertAtEnd(mask);
-                                castRange.InsertAtEnd(andMask);
-                                castRange.InsertAtEnd(resultClone);
-                                convertResult = new GenTreeOp(GT_OR, TYP_LONG, andMask, resultClone);
+                                if ((srcType is TYP_DOUBLE) && (dstType is TYP_UINT))
+                                {
+                                    floor = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                                        NI_X86Base_RoundToZeroScalar, srcType, 16, floor);
+                                    castRange.InsertAtEnd(floor);
+                                }
+
+                                var wrap = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_X86Base_SubtractScalar,
+                                    srcType, 16, floor, overflowValue);
+                                castRange.InsertAtEnd(wrap);
+                                overflowValue = CloneLocal(overflowValue);
+
+                                if (dstType is TYP_UINT)
+                                {
+                                    GenTree result = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic,
+                                        srcType, 16, fixup);
+                                    var negated = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, intrinsic,
+                                        srcType, 16, wrap);
+                                    castRange.InsertAtEnd(result);
+                                    castRange.InsertAtEnd(negated);
+                                    LIR.Use.MakeDummyUse(castRange, result, out var resultUse);
+                                    _ = resultUse.ReplaceWithLclVar(compiler);
+                                    result = resultUse.Def();
+
+                                    var resultClone = CloneLocal(result);
+                                    castRange.InsertAtEnd(resultClone);
+                                    convertResult = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                                        NI_X86Base_BlendVariable, TYP_FLOAT, 16, result, negated, resultClone);
+                                    castRange.InsertAtEnd(convertResult);
+                                    convertResult = compiler.gtNewSimdToScalarNode(TYP_INT, convertResult, dstType, 16);
+                                }
+                                else
+                                {
+                                    assert(dstType is TYP_ULONG);
+                                    // For the upper half of ulong, convert x - 2^64 as a signed long.
+                                    // Double's precision guarantees whole numbers at that magnitude, so
+                                    // the positive and negative truncating conversions have identical low bits.
+                                    GenTree result = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType,
+                                        16, fixup);
+                                    var negated = compiler.gtNewSimdHWIntrinsicNode(TYP_LONG, intrinsic, srcType, 16, wrap);
+                                    castRange.InsertAtEnd(result);
+                                    castRange.InsertAtEnd(negated);
+                                    LIR.Use.MakeDummyUse(castRange, result, out var resultUse);
+                                    _ = resultUse.ReplaceWithLclVar(compiler);
+                                    result = resultUse.Def();
+
+                                    // Signed conversion overflow returns MinValue. Its sign selects the wrapped result.
+                                    var sixtyThree = compiler.gtNewIconNode(TYP_INT, 63);
+                                    var mask = new GenTreeOp(GT_RSH, TYP_LONG, result, sixtyThree);
+                                    var andMask = new GenTreeOp(GT_AND, TYP_LONG, mask, negated);
+                                    var resultClone = CloneLocal(result);
+                                    castRange.InsertAtEnd(sixtyThree);
+                                    castRange.InsertAtEnd(mask);
+                                    castRange.InsertAtEnd(andMask);
+                                    castRange.InsertAtEnd(resultClone);
+                                    convertResult = new GenTreeOp(GT_OR, TYP_LONG, andMask, resultClone);
+                                }
                             }
                         }
+
+                        castRange.InsertAtEnd(overflowValue);
+                        castRange.InsertAtEnd(maxIntegralValue);
+                        castRange.InsertAtEnd(convertResult);
+                        var compareSource = CloneLocal(srcVector);
+                        var compareMax = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                            NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual, srcType, 16, compareSource, overflowValue);
+                        var select = new GenTreeConditional(GT_SELECT, dstType.ActualType, compareMax,
+                            maxIntegralValue, convertResult);
+                        select.Flags |= (compareMax.Flags | maxIntegralValue.Flags | convertResult.Flags) & GTF_ALL_EFFECT;
+                        castResult = select;
+                        castRange.InsertAtEnd(compareSource);
+                        castRange.InsertAtEnd(compareMax);
+                        castRange.InsertAtEnd(castResult);
                     }
-
-                    castRange.InsertAtEnd(overflowValue);
-                    castRange.InsertAtEnd(maxIntegralValue);
-                    castRange.InsertAtEnd(convertResult);
-                    var compareSource = CloneLocal(srcVector);
-                    var compareMax = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16,
-                        NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual, srcType, 16, compareSource, overflowValue);
-                    var select = new GenTreeConditional(GT_SELECT, dstType.ActualType, compareMax,
-                        maxIntegralValue, convertResult);
-                    select.Flags |= (compareMax.Flags | maxIntegralValue.Flags | convertResult.Flags) & GTF_ALL_EFFECT;
-                    castResult = select;
-                    castRange.InsertAtEnd(compareSource);
-                    castRange.InsertAtEnd(compareMax);
-                    castRange.InsertAtEnd(castResult);
                 }
+
+                var first = castRange.FirstNode;
+                var last = castRange.LastNode;
+                BlockRange().InsertBefore(tree, castRange);
+                LABELEDDISPTREERANGE("LowerCast after", BlockRange(), castResult);
+                if (BlockRange().TryGetUse(tree, out var castUse))
+                {
+                    castUse.ReplaceWith(castResult);
+                }
+                else
+                {
+                    castResult.IsUnusedValue = true;
+                }
+                BlockRange().Remove(tree);
+                LowerRange(first, last);
+                return;
             }
 
-            var first = castRange.FirstNode;
-            var last = castRange.LastNode;
-            BlockRange().InsertBefore(tree, castRange);
-            LABELEDDISPTREERANGE("LowerCast after", BlockRange(), castResult);
-            if (BlockRange().TryGetUse(tree, out var castUse))
+            ContainCheckCast(tree);
+            return;
+
+            GenTree CloneLocal(GenTree node)
             {
-                castUse.ReplaceWith(castResult);
+                assert(node.Oper.IsLocalRead);
+                var clone = compiler.gtClone(node);
+                assert(clone is not null);
+                return clone;
             }
-            else
+        }
+
+        if (Configuration.TARGET_ARMARCH)
+        {
+            assert(tree.Oper is GT_CAST);
+            JITDUMP("LowerCast for: ");
+            DISPNODE(tree);
+            JITDUMP("\n");
+
+            var srcType = tree.CastOp.Type.ActualType;
+            if (varTypeIsFloating(srcType))
             {
-                castResult.IsUnusedValue = true;
+                noway_assert(!tree.HasOverflowCheck);
+                assert(!varTypeIsSmall(tree.CastType));
             }
-            BlockRange().Remove(tree);
-            LowerRange(first, last);
+
+            assert(!varTypeIsSmall(srcType));
+            ContainCheckCast(tree);
             return;
         }
 
-        ContainCheckCast(tree);
-
-        GenTree CloneLocal(GenTree node)
+        if (Configuration.TARGET_RISCV64)
         {
-            assert(node.Oper.IsLocalRead);
-            var clone = compiler.gtClone(node);
-            assert(clone is not null);
-            return clone;
-        }
-#elif TARGET_ARMARCH
-        assert(tree.Oper is GT_CAST);
-        JITDUMP("LowerCast for: ");
-        DISPNODE(tree);
-        JITDUMP("\n");
+            assert(tree.Oper is GT_CAST);
+            JITDUMP("LowerCast for: ");
+            DISPNODE(tree);
+            JITDUMP("\n");
 
-        var srcType = tree.CastOp.Type.ActualType;
-        if (varTypeIsFloating(srcType))
-        {
-            noway_assert(!tree.HasOverflowCheck);
-            assert(!varTypeIsSmall(tree.CastType));
+            var srcType = tree.CastOp.Type.ActualType;
+            if (varTypeIsFloating(srcType))
+            {
+                noway_assert(!tree.HasOverflowCheck);
+                assert(!varTypeIsSmall(tree.CastType));
+            }
+
+            assert(!varTypeIsSmall(srcType));
+            ContainCheckCast(tree);
+            return;
         }
 
-        assert(!varTypeIsSmall(srcType));
-        ContainCheckCast(tree);
-#elif TARGET_RISCV64
-        assert(tree.Oper is GT_CAST);
-        JITDUMP("LowerCast for: ");
-        DISPNODE(tree);
-        JITDUMP("\n");
-
-        var srcType = tree.CastOp.Type.ActualType;
-        if (varTypeIsFloating(srcType))
+        if (Configuration.TARGET_WASM)
         {
-            noway_assert(!tree.HasOverflowCheck);
-            assert(!varTypeIsSmall(tree.CastType));
-        }
-
-        assert(!varTypeIsSmall(srcType));
-        ContainCheckCast(tree);
-#elif TARGET_WASM
-        assert(tree.Oper is GT_CAST);
-        if (tree.HasOverflowCheck)
-        {
-            SetMultiplyUsed(tree.CastOp
+            assert(tree.Oper is GT_CAST);
+            if (tree.HasOverflowCheck)
+            {
+                SetMultiplyUsed(tree.CastOp
 #if DEBUG
-                , "LowerCast op1 (overflow exception)"
+                    , "LowerCast op1 (overflow exception)"
 #endif
-            );
+                );
+            }
+
+            ContainCheckCast(tree);
+            return;
         }
 
-        ContainCheckCast(tree);
-#elif TARGET_LOONGARCH64
-        assert(tree.Oper is GT_CAST);
-        JITDUMP("LowerCast for: ");
-        DISPNODE(tree);
-        JITDUMP("\n");
-
-        var srcType = tree.CastOp.Type.ActualType;
-        if (varTypeIsFloating(srcType))
+        if (Configuration.TARGET_LOONGARCH64)
         {
-            noway_assert(!tree.HasOverflowCheck);
-            assert(!varTypeIsSmall(tree.CastType));
+            assert(tree.Oper is GT_CAST);
+            JITDUMP("LowerCast for: ");
+            DISPNODE(tree);
+            JITDUMP("\n");
+
+            var srcType = tree.CastOp.Type.ActualType;
+            if (varTypeIsFloating(srcType))
+            {
+                noway_assert(!tree.HasOverflowCheck);
+                assert(!varTypeIsSmall(tree.CastType));
+            }
+
+            assert(!varTypeIsSmall(srcType));
+            ContainCheckCast(tree);
+            return;
         }
 
-        assert(!varTypeIsSmall(srcType));
-        ContainCheckCast(tree);
-#else
-        throw new System.NotImplementedException("Cast lowering is not ported for this target.");
-#endif
+        throw new FatalJitException(CORJIT_SKIPPED, "Cast lowering is not ported for this target.");
     }
 }

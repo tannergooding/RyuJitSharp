@@ -9,13 +9,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_WASM
-    private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
-    {
-        ContainCheckHWIntrinsicWasm(node);
-    }
-#endif
-
     private void ContainCheckRange(LIR.ReadOnlyRange range)
     {
         foreach (var node in range)
@@ -45,12 +38,10 @@ public sealed partial class Lowering
             case GT_AND:
             case GT_OR:
             case GT_XOR:
-#if !TARGET_64BIT
             case GT_ADD_LO:
             case GT_ADD_HI:
             case GT_SUB_LO:
             case GT_SUB_HI:
-#endif
             {
                 ContainCheckBinary(node.AsOp());
                 break;
@@ -58,9 +49,7 @@ public sealed partial class Lowering
 
             case GT_MUL:
             case GT_MULHI:
-#if TARGET_X86
             case GT_MUL_LONG:
-#endif
             {
                 ContainCheckMul(node.AsOp());
                 break;
@@ -71,10 +60,8 @@ public sealed partial class Lowering
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
-#if !TARGET_64BIT
             case GT_LSH_HI:
             case GT_RSH_LO:
-#endif
             {
                 ContainCheckShiftRotate(node.AsOp());
                 break;
@@ -125,7 +112,7 @@ public sealed partial class Lowering
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
             {
-                assert(node.RegNum is not REG_NA);
+                assert(node.RegNum != REG_NA);
                 break;
             }
 
@@ -160,13 +147,15 @@ public sealed partial class Lowering
                 break;
             }
 
-#if TARGET_XARCH
             case GT_INTRINSIC:
             {
-                ContainCheckIntrinsic(node.AsIntrinsic());
+                if (Configuration.TARGET_XARCH)
+                {
+                    ContainCheckIntrinsic(node.AsIntrinsic());
+                }
+
                 break;
             }
-#endif
 
             case GT_NONLOCAL_JMP:
             {
@@ -180,25 +169,28 @@ public sealed partial class Lowering
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
-                ContainCheckHWIntrinsic(node.AsHWIntrinsic());
+                if (Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    ContainCheckHWIntrinsic(node.AsHWIntrinsic());
+                }
+
                 break;
             }
-#endif
         }
     }
 
     private void ContainCheckReturnTrap(GenTreeUnOp node)
     {
-#if TARGET_XARCH
-        assert(node.Oper is GT_RETURNTRAP);
-        if (node.Op1.Oper is GT_IND or GT_STOREIND)
+        if (Configuration.TARGET_XARCH)
         {
-            MakeSrcContained(node, node.Op1);
+            assert(node.Oper is GT_RETURNTRAP);
+            if (node.Op1.Oper is GT_IND or GT_STOREIND)
+            {
+                MakeSrcContained(node, node.Op1);
+            }
         }
-#endif
     }
 
     public void LowerRange(BasicBlock block, LIR.ReadOnlyRange range)
@@ -254,7 +246,7 @@ public sealed partial class Lowering
             case GT_PATCHPOINT:
             case GT_PATCHPOINT_FORCED:
             {
-                RequireOutgoingArgSpace(node, MIN_ARG_AREA_FOR_CALL);
+                RequireOutgoingArgSpace(node, Configuration.MIN_ARG_AREA_FOR_CALL);
                 break;
             }
 
@@ -267,22 +259,24 @@ public sealed partial class Lowering
                 {
                     return next;
                 }
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
-                LowerShift(node.AsOp());
-#else
-                ContainCheckShiftRotate(node.AsOp());
-#endif
+                if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                    Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
+                {
+                    LowerShift(node.AsOp());
+                }
+                else
+                {
+                    ContainCheckShiftRotate(node.AsOp());
+                }
                 break;
             }
 
-#if !TARGET_64BIT
             case GT_LSH_HI:
             case GT_RSH_LO:
             {
                 ContainCheckShiftRotate(node.AsOp());
                 break;
             }
-#endif
 
             case GT_ROL:
             case GT_ROR:
@@ -292,34 +286,26 @@ public sealed partial class Lowering
                 {
                     return next;
                 }
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
-                TryRemoveShiftRotateMask(node.AsOp());
-#endif
+                if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                    Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
+                {
+                    TryRemoveShiftRotateMask(node.AsOp());
+                }
                 LowerRotate(node);
                 break;
             }
 
             case GT_NEG:
             {
-#if TARGET_ARM64
-                if (TryLowerNegToMulLongOp(node.AsUnOp(), out var next))
-                {
-                    return next;
-                }
-
-                ContainCheckNeg(node.AsUnOp());
-#endif
-#if TARGET_WASM
                 return LowerNeg(node.AsUnOp());
-#endif
-                break;
             }
 
             case GT_NOT:
             {
-#if TARGET_ARM64
-                ContainCheckNot(node.AsUnOp());
-#endif
+                if (Configuration.TARGET_ARM64)
+                {
+                    ContainCheckNot(node.AsUnOp());
+                }
                 break;
             }
 
@@ -341,12 +327,10 @@ public sealed partial class Lowering
             case GT_AND:
             case GT_OR:
             case GT_XOR:
-#if !TARGET_64BIT
             case GT_ADD_LO:
             case GT_ADD_HI:
             case GT_SUB_LO:
             case GT_SUB_HI:
-#endif
             case GT_SUB:
             {
                 if (CompilerInstance.opts.OptimizationEnabled)
@@ -382,9 +366,7 @@ public sealed partial class Lowering
 
             case GT_MUL:
             case GT_MULHI:
-#if TARGET_X86 || TARGET_ARM64
             case GT_MUL_LONG:
-#endif
             {
                 return LowerMul(node.AsOp());
             }
@@ -413,9 +395,10 @@ public sealed partial class Lowering
                 {
                     return next;
                 }
-#if TARGET_ARM64
-                _ffrTrashed = true;
-#endif
+                if (Configuration.TARGET_ARM64)
+                {
+                    _ffrTrashed = true;
+                }
                 break;
             }
 
@@ -432,40 +415,51 @@ public sealed partial class Lowering
                 return LowerCompare(node);
             }
 
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             case GT_BOUNDS_CHECK:
             {
-                ContainCheckBoundsChk(node.AsBoundsChk());
+                if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 ||
+                    Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                {
+                    ContainCheckBoundsChk(node.AsBoundsChk());
+                }
+
                 break;
             }
-#endif
 
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             case GT_XADD:
             {
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-                _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
-#else
-                if (node.IsUnusedValue)
+                if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
                 {
-                    node.IsUnusedValue = false;
-                    // Codegen uses the data operand's type once the result becomes void.
-                    assert(node.AsOp().Op2.Type.ActualType == node.Type);
-                    node.SetOper(GT_LOCKADD);
-                    node.Type = TYP_VOID;
                     _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
                 }
-#endif
+                else if (Configuration.TARGET_XARCH)
+                {
+                    if (node.IsUnusedValue)
+                    {
+                        node.IsUnusedValue = false;
+                        // Codegen uses the data operand's type once the result becomes void.
+                        assert(node.AsOp().Op2.Type.ActualType == node.Type);
+                        node.SetOper(GT_LOCKADD);
+                        node.Type = TYP_VOID;
+                        _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
+                    }
+                }
+
                 break;
             }
 
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
             case GT_CMPXCHG:
             {
-#if TARGET_RISCV64
-                _ = CheckImmedAndMakeContained(node, node.AsCmpXchg().Data);
-#endif
-                _ = CheckImmedAndMakeContained(node, node.AsCmpXchg().Comparand);
+                if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                    Configuration.TARGET_RISCV64)
+                {
+                    if (Configuration.TARGET_RISCV64)
+                    {
+                        _ = CheckImmedAndMakeContained(node, node.AsCmpXchg().Data);
+                    }
+
+                    _ = CheckImmedAndMakeContained(node, node.AsCmpXchg().Comparand);
+                }
                 break;
             }
 
@@ -473,11 +467,14 @@ public sealed partial class Lowering
             case GT_XAND:
             case GT_XCHG:
             {
-                _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
+                if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                    Configuration.TARGET_RISCV64)
+                {
+                    _ = CheckImmedAndMakeContained(node, node.AsOp().Op2);
+                }
+
                 break;
             }
-#endif
-#endif
 
             case GT_JTRUE:
             {
@@ -507,29 +504,39 @@ public sealed partial class Lowering
                 break;
             }
 
-#if TARGET_XARCH
             case GT_INTRINSIC:
             {
-                ContainCheckIntrinsic(node.AsIntrinsic());
+                if (Configuration.TARGET_XARCH)
+                {
+                    ContainCheckIntrinsic(node.AsIntrinsic());
+                }
+
                 break;
             }
-#endif
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
             case GT_BSWAP:
             case GT_BSWAP16:
             {
+                if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Byte-swap intrinsic lowering requires xarch hardware intrinsics.");
+                }
+
                 LowerBswapOp(node.AsUnOp());
                 break;
             }
-#endif
 
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
+                if (!Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Hardware-intrinsic lowering requires hardware intrinsics to be enabled.");
+                }
+
                 return LowerHWIntrinsic(node.AsHWIntrinsic());
             }
-#endif
 
             case GT_ARR_LENGTH:
             case GT_MDARR_LENGTH:
@@ -594,12 +601,15 @@ public sealed partial class Lowering
                 return LowerStoreIndirCommon(node.AsStoreInd());
             }
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
             case GT_CNS_MSK:
             {
-                return LowerCnsMask(node.AsMskCon());
+                if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64)
+                {
+                    return LowerCnsMask(node.AsMskCon());
+                }
+
+                break;
             }
-#endif
 
             case GT_IND:
             case GT_NULLCHECK:
@@ -607,19 +617,25 @@ public sealed partial class Lowering
                 return LowerIndir(node.AsIndir());
             }
 
-#if TARGET_WASM
             case GT_INDEX_ADDR:
             {
+                if (!Configuration.TARGET_WASM)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Index-address lowering is only supported on Wasm.");
+                }
+
                 LowerIndexAddr(node.AsIndexAddr());
                 break;
             }
 
             case GT_CKFINITE:
             {
-                LowerCkfinite(node.AsOp());
+                if (Configuration.TARGET_WASM)
+                {
+                    LowerCkfinite(node.AsOp());
+                }
                 break;
             }
-#endif
 
             default:
             {
@@ -633,12 +649,14 @@ public sealed partial class Lowering
     private void TryRemoveShiftRotateMask(GenTreeOp operation)
     {
         assert(operation.Oper is GT_LSH or GT_RSH or GT_RSZ or GT_ROL or GT_ROR);
-#if LOWER_DECOMPOSE_LONGS
-        assert(!varTypeIsLong(operation.Type));
-        var mask = 0x1fL;
-#else
-        var mask = varTypeIsLong(operation.Type) ? 0x3fL : 0x1fL;
-#endif
+        if (Configuration.LOWER_DECOMPOSE_LONGS)
+        {
+            assert(!varTypeIsLong(operation.Type));
+        }
+
+        var mask = !Configuration.LOWER_DECOMPOSE_LONGS && varTypeIsLong(operation.Type)
+            ? 0x3fL
+            : 0x1fL;
         var block = _block;
         assert(block is not null);
 
@@ -663,8 +681,7 @@ public sealed partial class Lowering
         assert(shift.Oper is GT_LSH or GT_RSH or GT_RSZ);
         TryRemoveShiftRotateMask(shift);
         ContainCheckShiftRotate(shift);
-#if TARGET_ARM64
-        if (CompilerInstance.opts.OptimizationEnabled && (shift.Oper is GT_LSH) &&
+        if (Configuration.TARGET_ARM64 && CompilerInstance.opts.OptimizationEnabled && (shift.Oper is GT_LSH) &&
             (shift.Op1 is GenTreeCast cast) && shift.Op2.Oper.IsCnsIntOrI && !shift.IsContained)
         {
             var constant = shift.Op2.AsIntCon();
@@ -684,16 +701,13 @@ public sealed partial class Lowering
                 }
             }
         }
-#endif
-#if TARGET_RISCV64
-        if (CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba))
+        if (Configuration.TARGET_RISCV64 &&
+            CompilerInstance.compOpportunisticallyDependsOn(ManagedInstructionSet.InstructionSet_Zba))
         {
             TryLowerZextLeftShiftToSlliUw(shift, out _);
         }
-#endif
     }
 
-#if TARGET_RISCV64
     private bool TryLowerZextLeftShiftToSlliUw(GenTreeOp shift, out GenTree? next)
     {
         next = null;
@@ -739,12 +753,26 @@ public sealed partial class Lowering
         next = shift.Next;
         return true;
     }
-#endif
 
-#if TARGET_WASM
     private GenTree? LowerNeg(GenTreeUnOp node)
     {
         assert(node.Oper is GT_NEG);
+        if (Configuration.TARGET_ARM64)
+        {
+            if (TryLowerNegToMulLongOp(node, out var next))
+            {
+                return next;
+            }
+
+            ContainCheckNeg(node);
+            return node.Next;
+        }
+
+        if (!Configuration.TARGET_WASM)
+        {
+            return node.Next;
+        }
+
         if (node.Type is not (TYP_INT or TYP_LONG))
         {
             return node.Next;
@@ -791,5 +819,4 @@ public sealed partial class Lowering
 #endif
         );
     }
-#endif
 }

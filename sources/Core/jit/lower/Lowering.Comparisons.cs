@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if TARGET_RISCV64
     private GenTree? LowerSavedIntegerCompare(GenTree comparison)
     {
         if (!BlockRange().TryGetUse(comparison, out var compareUse) ||
@@ -112,12 +111,11 @@ public sealed partial class Lowering
         BlockRange().InsertAfter(operand, cast);
         operand = cast;
     }
-#endif
 
     private bool IsProfitableToSetZeroFlag(GenTree op)
     {
-#if TARGET_XARCH
-        if (op.Oper is GT_LSH or GT_RSH or GT_RSZ or GT_ROR or GT_ROL)
+        if (Configuration.TARGET_XARCH &&
+            (op.Oper is GT_LSH or GT_RSH or GT_RSZ or GT_ROR or GT_ROL))
         {
             // BMI2's SHLX, SARX, SHRX and RORX do not set the zero flag.
             if (!op.AsOp().Op2.Oper.IsConst)
@@ -125,7 +123,6 @@ public sealed partial class Lowering
                 return false;
             }
         }
-#endif
 
         return true;
     }
@@ -134,18 +131,21 @@ public sealed partial class Lowering
     // TEST_EQ/NE to BITTEST_EQ/NE and clears containment on the resulting bit index.
     private bool TryReduceSingleBitTestOps(GenTreeOp test)
     {
-#if TARGET_XARCH || TARGET_RISCV64
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_RISCV64)
+        {
+            return false;
+        }
+
         assert(test.Oper is GT_AND or GT_TEST_EQ or GT_TEST_NE);
         var testedOp = test.Op1;
         var bitOp = test.Op2;
-#if TARGET_RISCV64
-        if (bitOp.IsIntegralConstUnsignedPow2)
+        if (Configuration.TARGET_RISCV64 && bitOp.IsIntegralConstUnsignedPow2)
         {
             var constant = bitOp.AsIntConCommon();
             constant.IntegralValue = System.Numerics.BitOperations.Log2(constant.UnsignedIntegralValue);
             return true;
         }
-#endif
+
         if (bitOp.Oper is not GT_LSH)
         {
             (bitOp, testedOp) = (testedOp, bitOp);
@@ -161,36 +161,34 @@ public sealed partial class Lowering
             return true;
         }
 
-#if TARGET_XARCH
-        // (x >> y) & 1 tests the same bit for either signed or unsigned shifts.
-        // BT masks the index modulo the operand width, just like the shift. Keep
-        // constant-index shifts: the existing constant-mask TEST is already optimal.
-        var shiftOp = test.Op1;
-        var oneOp = test.Op2;
-        if (!oneOp.IsIntegralConst(1))
+        if (Configuration.TARGET_XARCH)
         {
-            (shiftOp, oneOp) = (oneOp, shiftOp);
+            // (x >> y) & 1 tests the same bit for either signed or unsigned shifts.
+            // BT masks the index modulo the operand width, just like the shift. Keep
+            // constant-index shifts: the existing constant-mask TEST is already optimal.
+            var shiftOp = test.Op1;
+            var oneOp = test.Op2;
+            if (!oneOp.IsIntegralConst(1))
+            {
+                (shiftOp, oneOp) = (oneOp, shiftOp);
+            }
+
+            if (oneOp.IsIntegralConst(1) && (shiftOp.Oper is GT_RSH or GT_RSZ) &&
+                varTypeIsIntOrI(shiftOp.Type) && !shiftOp.AsOp().Op2.Oper.IsIntegralConst)
+            {
+                BlockRange().Remove(oneOp);
+                BlockRange().Remove(shiftOp);
+                test.Op1 = shiftOp.AsOp().Op1;
+                test.Op2 = shiftOp.AsOp().Op2;
+
+                // Compare containment is skipped after this reduction. A memory value
+                // contained by the removed shift must become a register for reg,reg BT.
+                test.Op1.IsContained = false;
+
+                return true;
+            }
         }
-
-        if (oneOp.IsIntegralConst(1) && (shiftOp.Oper is GT_RSH or GT_RSZ) &&
-            varTypeIsIntOrI(shiftOp.Type) && !shiftOp.AsOp().Op2.Oper.IsIntegralConst)
-        {
-            BlockRange().Remove(oneOp);
-            BlockRange().Remove(shiftOp);
-            test.Op1 = shiftOp.AsOp().Op1;
-            test.Op2 = shiftOp.AsOp().Op2;
-
-            // Compare containment is skipped after this reduction. A memory value
-            // contained by the removed shift must become a register for reg,reg BT.
-            test.Op1.IsContained = false;
-
-            return true;
-        }
-#endif
 
         return false;
-#else
-        throw new System.NotImplementedException("Non-xarch single-bit comparison reduction is not ported.");
-#endif
     }
 }

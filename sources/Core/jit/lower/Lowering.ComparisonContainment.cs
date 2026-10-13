@@ -9,196 +9,225 @@ public sealed partial class Lowering
 {
     private void ContainCheckCompare(GenTreeOp cmp)
     {
-#if TARGET_XARCH
-        assert(cmp.Oper.IsCompare || (cmp.Oper is GT_CMP or GT_TEST));
-        var op1 = cmp.Op1;
-        var op2 = cmp.Op2;
-        var op1Type = op1.Type;
-        var op2Type = op2.Type;
-
-        if (varTypeIsFloating(op1Type))
+        if (Configuration.TARGET_XARCH)
         {
-            assert(op1Type == op2Type);
+            assert(cmp.Oper.IsCompare || (cmp.Oper is GT_CMP or GT_TEST));
+            var op1 = cmp.Op1;
+            var op2 = cmp.Op2;
+            var op1Type = op1.Type;
+            var op2Type = op2.Type;
 
-            // UCOMIS[S/D] allows memory only in its second operand. Codegen swaps
-            // operands for certain ordered/unordered conditions, not the LIR here.
-            var otherOp = GenCondition.FromFloatRelop(cmp).PreferSwap ? op1 : op2;
-            if (otherOp.IsCnsNonZeroFltOrDbl)
+            if (varTypeIsFloating(op1Type))
             {
-                MakeSrcContained(cmp, otherOp);
-            }
-            else if (IsContainableMemoryOp(otherOp) && IsSafeToContainMem(cmp, otherOp))
-            {
-                MakeSrcContained(cmp, otherOp);
-            }
+                assert(op1Type == op2Type);
 
-            if (!otherOp.IsContained && IsSafeToMarkRegOptional(cmp, otherOp))
-            {
-                // This may use a spilled value even when containing the original
-                // memory operation would move it across an interfering operation.
-                MakeSrcRegOptional(cmp, otherOp);
-            }
-
-            return;
-        }
-
-        bool CanCompareAtMemoryWidth(GenTree memoryOp, GenTree otherOp)
-        {
-            if (memoryOp.Type == otherOp.Type)
-            {
-                return true;
-            }
-
-            if ((cmp.Oper is not (GT_EQ or GT_NE or GT_LT or GT_LE or GT_GE or GT_GT)) ||
-                !CompilerInstance.opts.OptimizationEnabled ||
-                !varTypeIsSmall(memoryOp.Type) || !varTypeIsIntegral(otherOp.Type))
-            {
-                return false;
-            }
-
-            var range = IntegralRange.ForType(memoryOp.Type);
-            return otherOp.Oper.IsIntegralConst
-                ? range.Contains(otherOp.AsIntConCommon().IntegralValue)
-                : range.Contains(IntegralRange.ForNode(otherOp, CompilerInstance));
-        }
-
-        if (CheckImmedAndMakeContained(cmp, op2))
-        {
-            if (op1Type == op2Type)
-            {
-                TryMakeSrcContainedOrRegOptional(cmp, op1);
-            }
-            else if (IsContainableMemoryOp(op1) && CanCompareAtMemoryWidth(op1, op2) && IsSafeToContainMem(cmp, op1))
-            {
-                MakeSrcContained(cmp, op1);
-            }
-        }
-        else
-        {
-            // TEST has no r,rm encoding, but the emitter maps it to rm,r.
-            if (IsContainableMemoryOp(op2) && CanCompareAtMemoryWidth(op2, op1) && IsSafeToContainMem(cmp, op2))
-            {
-                MakeSrcContained(cmp, op2);
-            }
-
-            if (!op2.IsContained && IsContainableMemoryOp(op1) &&
-                CanCompareAtMemoryWidth(op1, op2) && IsSafeToContainMem(cmp, op1))
-            {
-                MakeSrcContained(cmp, op1);
-            }
-
-            if ((op1Type == op2Type) && !op1.IsContained && !op2.IsContained)
-            {
-                var candidate = op1.Oper.IsCnsIntOrI ? op2 : PreferredRegOptionalOperand(op1, op2);
-                if (IsSafeToMarkRegOptional(cmp, candidate))
+                // UCOMIS[S/D] allows memory only in its second operand. Codegen swaps
+                // operands for certain ordered/unordered conditions, not the LIR here.
+                var otherOp = GenCondition.FromFloatRelop(cmp).PreferSwap ? op1 : op2;
+                if (otherOp.IsCnsNonZeroFltOrDbl)
                 {
-                    MakeSrcRegOptional(cmp, candidate);
+                    MakeSrcContained(cmp, otherOp);
                 }
-            }
-        }
-
-        // A contained memory operand bounds both values; otherwise small compares
-        // have matching operand types.
-        var rangeSource = op2.IsContained && !op2.Oper.IsCnsIntOrI ? op2 : op1;
-        if (cmp.Oper.IsCompare && (cmp.GetCompareSize() < TYP_INT.Size) && varTypeIsUnsigned(rangeSource.Type))
-        {
-            cmp.IsUnsigned = true;
-        }
-#elif TARGET_ARM
-        var op1 = cmp.Op1;
-        var op2 = cmp.Op2;
-        if (CheckImmedAndMakeContained(cmp, op2))
-        {
-            return;
-        }
-
-        if (cmp.Oper.IsCompare && CheckImmedAndMakeContained(cmp, op1))
-        {
-            (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
-            cmp.SetOper(cmp.Oper.SwapRelop);
-        }
-#elif TARGET_ARM64
-        var op1 = cmp.Op1;
-        var op2 = cmp.Op2;
-        if (CheckImmedAndMakeContained(cmp, op2))
-        {
-            return;
-        }
-
-        if (cmp.Oper.IsCompare && CheckImmedAndMakeContained(cmp, op1))
-        {
-            (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
-            cmp.SetOper(cmp.Oper.SwapRelop);
-            return;
-        }
-
-        if (CompilerInstance.opts.OptimizationEnabled && (cmp.Oper.IsCompare || (cmp.Oper is GT_CMP)))
-        {
-            static void ForceCastOpInRegister(GenTree operand)
-            {
-                GenTreeCast? cast = operand as GenTreeCast;
-                if ((operand.Oper is GT_NEG) && (operand.AsUnOp().Op1 is GenTreeCast negatedCast))
+                else if (IsContainableMemoryOp(otherOp) && IsSafeToContainMem(cmp, otherOp))
                 {
-                    cast = negatedCast;
+                    MakeSrcContained(cmp, otherOp);
                 }
 
-                cast?.CastOp.IsRegOptional = false;
-            }
-
-            if (IsContainableUnaryOrBinaryOp(cmp, op2))
-            {
-                if (cmp.Oper.IsCmpCompare)
+                if (!otherOp.IsContained && IsSafeToMarkRegOptional(cmp, otherOp))
                 {
-                    ForceCastOpInRegister(op2);
+                    // This may use a spilled value even when containing the original
+                    // memory operation would move it across an interfering operation.
+                    MakeSrcRegOptional(cmp, otherOp);
                 }
 
-                MakeSrcContained(cmp, op2);
                 return;
             }
 
-            if (IsContainableUnaryOrBinaryOp(cmp, op1))
+            bool CanCompareAtMemoryWidth(GenTree memoryOp, GenTree otherOp)
             {
-                if (cmp.Oper.IsCmpCompare)
+                if (memoryOp.Type == otherOp.Type)
                 {
-                    ForceCastOpInRegister(op1);
+                    return true;
                 }
 
-                MakeSrcContained(cmp, op1);
+                if ((cmp.Oper is not (GT_EQ or GT_NE or GT_LT or GT_LE or GT_GE or GT_GT)) ||
+                    !CompilerInstance.opts.OptimizationEnabled ||
+                    !varTypeIsSmall(memoryOp.Type) || !varTypeIsIntegral(otherOp.Type))
+                {
+                    return false;
+                }
+
+                var range = IntegralRange.ForType(memoryOp.Type);
+                return otherOp.Oper.IsIntegralConst
+                    ? range.Contains(otherOp.AsIntConCommon().IntegralValue)
+                    : range.Contains(IntegralRange.ForNode(otherOp, CompilerInstance));
+            }
+
+            if (CheckImmedAndMakeContained(cmp, op2))
+            {
+                if (op1Type == op2Type)
+                {
+                    TryMakeSrcContainedOrRegOptional(cmp, op1);
+                }
+                else if (IsContainableMemoryOp(op1) && CanCompareAtMemoryWidth(op1, op2) &&
+                    IsSafeToContainMem(cmp, op1))
+                {
+                    MakeSrcContained(cmp, op1);
+                }
+            }
+            else
+            {
+                // TEST has no r,rm encoding, but the emitter maps it to rm,r.
+                if (IsContainableMemoryOp(op2) && CanCompareAtMemoryWidth(op2, op1) &&
+                    IsSafeToContainMem(cmp, op2))
+                {
+                    MakeSrcContained(cmp, op2);
+                }
+
+                if (!op2.IsContained && IsContainableMemoryOp(op1) &&
+                    CanCompareAtMemoryWidth(op1, op2) && IsSafeToContainMem(cmp, op1))
+                {
+                    MakeSrcContained(cmp, op1);
+                }
+
+                if ((op1Type == op2Type) && !op1.IsContained && !op2.IsContained)
+                {
+                    var candidate = op1.Oper.IsCnsIntOrI ? op2 : PreferredRegOptionalOperand(op1, op2);
+                    if (IsSafeToMarkRegOptional(cmp, candidate))
+                    {
+                        MakeSrcRegOptional(cmp, candidate);
+                    }
+                }
+            }
+
+            // A contained memory operand bounds both values; otherwise small compares
+            // have matching operand types.
+            var rangeSource = op2.IsContained && !op2.Oper.IsCnsIntOrI ? op2 : op1;
+            if (cmp.Oper.IsCompare && (cmp.GetCompareSize() < TYP_INT.Size) && varTypeIsUnsigned(rangeSource.Type))
+            {
+                cmp.IsUnsigned = true;
+            }
+
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            var op1 = cmp.Op1;
+            var op2 = cmp.Op2;
+            if (CheckImmedAndMakeContained(cmp, op2))
+            {
+                return;
+            }
+
+            if (cmp.Oper.IsCompare && CheckImmedAndMakeContained(cmp, op1))
+            {
                 (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
-                if (cmp.Oper.IsCompare)
-                {
-                    cmp.SetOper(cmp.Oper.SwapRelop);
-                }
-                return;
+                cmp.SetOper(cmp.Oper.SwapRelop);
             }
-        }
-#elif TARGET_RISCV64
-        if (cmp.Op1.IsIntegralConst(0) && !cmp.Op1.AsIntCon().ImmedValNeedsReloc(CompilerInstance))
-        {
-            MakeSrcContained(cmp, cmp.Op1);
-        }
 
-        CheckImmedAndMakeContained(cmp, cmp.Op2);
-#elif TARGET_WASM
-        if (!cmp.OperIs(GT_EQ, GT_NE))
-        {
             return;
         }
 
-        var zero = cmp.Op2;
-        if (!zero.IsIntegralConst(0))
+        if (Configuration.TARGET_ARM64)
         {
-            zero = cmp.Op1;
+            var op1 = cmp.Op1;
+            var op2 = cmp.Op2;
+            if (CheckImmedAndMakeContained(cmp, op2))
+            {
+                return;
+            }
+
+            if (cmp.Oper.IsCompare && CheckImmedAndMakeContained(cmp, op1))
+            {
+                (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
+                cmp.SetOper(cmp.Oper.SwapRelop);
+                return;
+            }
+
+            if (CompilerInstance.opts.OptimizationEnabled && (cmp.Oper.IsCompare || (cmp.Oper is GT_CMP)))
+            {
+                static void ForceCastOpInRegister(GenTree operand)
+                {
+                    GenTreeCast? cast = operand as GenTreeCast;
+                    if ((operand.Oper is GT_NEG) && (operand.AsUnOp().Op1 is GenTreeCast negatedCast))
+                    {
+                        cast = negatedCast;
+                    }
+
+                    cast?.CastOp.IsRegOptional = false;
+                }
+
+                if (IsContainableUnaryOrBinaryOp(cmp, op2))
+                {
+                    if (cmp.Oper.IsCmpCompare)
+                    {
+                        ForceCastOpInRegister(op2);
+                    }
+
+                    MakeSrcContained(cmp, op2);
+                    return;
+                }
+
+                if (IsContainableUnaryOrBinaryOp(cmp, op1))
+                {
+                    if (cmp.Oper.IsCmpCompare)
+                    {
+                        ForceCastOpInRegister(op1);
+                    }
+
+                    MakeSrcContained(cmp, op1);
+                    (cmp.Op1, cmp.Op2) = (cmp.Op2, cmp.Op1);
+                    if (cmp.Oper.IsCompare)
+                    {
+                        cmp.SetOper(cmp.Oper.SwapRelop);
+                    }
+
+                    return;
+                }
+            }
+
+            return;
         }
 
-        if (zero.IsIntegralConst(0))
+        if (Configuration.TARGET_RISCV64)
         {
-            MakeSrcContained(cmp, zero);
+            if (cmp.Op1.IsIntegralConst(0) && !cmp.Op1.AsIntCon().ImmedValNeedsReloc(CompilerInstance))
+            {
+                MakeSrcContained(cmp, cmp.Op1);
+            }
+
+            CheckImmedAndMakeContained(cmp, cmp.Op2);
+            return;
         }
-#elif TARGET_LOONGARCH64
-        CheckImmedAndMakeContained(cmp, cmp.Op2);
-#else
-        throw new System.NotImplementedException("Comparison containment is not ported for this target.");
-#endif
+
+        if (Configuration.TARGET_WASM)
+        {
+            if (!cmp.OperIs(GT_EQ, GT_NE))
+            {
+                return;
+            }
+
+            var zero = cmp.Op2;
+            if (!zero.IsIntegralConst(0))
+            {
+                zero = cmp.Op1;
+            }
+
+            if (zero.IsIntegralConst(0))
+            {
+                MakeSrcContained(cmp, zero);
+            }
+
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            CheckImmedAndMakeContained(cmp, cmp.Op2);
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Comparison containment is not ported for this target.");
     }
 }
