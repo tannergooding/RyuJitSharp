@@ -16,13 +16,12 @@ public partial class Compiler
             return tree;
         }
 
-#if !TARGET_64BIT && !TARGET_WASM
-        // Do not turn inline additions into a 64-bit multiplication helper.
-        if (tree.Type is TYP_LONG)
+        if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM && (tree.Type is TYP_LONG))
         {
+            // Do not turn inline additions into a 64-bit multiplication helper.
             return tree;
         }
-#endif
+
         var local = tree.AsOp().Op2;
         var constantSource = tree.AsOp().Op1;
         var op1 = constantSource;
@@ -57,13 +56,16 @@ public partial class Compiler
 
         // Replace the left subtree rather than retagging its managed object.
         // Retain its logical identity; only the multiply allocates a new node ID.
-#if TARGET_64BIT
-        GenTree constant = new GenTreeIntCon(tree.Type, foldCount, fields: null, constantSource);
-#else
-        GenTree constant = tree.Type is TYP_LONG
-            ? new GenTreeLngCon(foldCount, constantSource)
-            : new GenTreeIntCon(tree.Type, foldCount, fields: null, constantSource);
-#endif
+        GenTree constant;
+        if (Configuration.TARGET_64BIT || (tree.Type is not TYP_LONG))
+        {
+            constant = new GenTreeIntCon(tree.Type, foldCount, fields: null, constantSource);
+        }
+        else
+        {
+            constant = new GenTreeLngCon(foldCount, constantSource);
+        }
+
         constant._vnPair.SetBoth(ValueNumStore.NoVN);
         return gtNewBinaryNode(GT_MUL, tree.Type, local, constant);
     }
@@ -219,7 +221,7 @@ public partial class Compiler
 
             // Splitting ref + (offset + offset) could expose an out-of-object
             // intermediate byref to a GC in fully interruptible code.
-            if (varTypeIsGC(left.Type) && (right.Type is TYP_I_IMPL))
+            if (varTypeIsGC(left.Type) && ((right.Type == TYP_I_IMPL)))
             {
                 assert(varTypeIsGC(tree.Type) && (operation is GT_ADD));
                 break;
@@ -235,13 +237,13 @@ public partial class Compiler
             if (varTypeIsGC(left.Type))
             {
                 noway_assert(
-                    (varTypeIsGC(tree.Type) && (right.Type is TYP_I_IMPL) && (operation is GT_ADD)) ||
-                    (varTypeIsI(tree.Type) && (right.Type is TYP_I_IMPL) && (operation is GT_OR)));
+                    (varTypeIsGC(tree.Type) && ((right.Type == TYP_I_IMPL)) && (operation is GT_ADD)) ||
+                    (varTypeIsI(tree.Type) && ((right.Type == TYP_I_IMPL)) && (operation is GT_OR)));
                 newLeft.Type = tree.Type;
             }
             else if (varTypeIsGC(second.Type))
             {
-                noway_assert((left.Type is TYP_I_IMPL) && (first.Type is TYP_I_IMPL));
+                noway_assert(((left.Type == TYP_I_IMPL)) && ((first.Type == TYP_I_IMPL)));
                 newLeft.Type = TYP_I_IMPL;
             }
 
@@ -420,13 +422,12 @@ public partial class Compiler
                 (indexWithAdd.Op1.Oper is GT_NEG) &&
                 GenTree.Compare(indexWithAdd.Op1.AsUnOp().Op1, indexWithoutAdd))
             {
-#if !TARGET_64BIT
-                // Variable long shifts have helpers on x86; rotations do not.
-                if (!indexWithoutAdd.Oper.IsCnsIntOrI && (bitSize == 64))
-                {
-                    return null;
-                }
-#endif
+            // Variable long shifts have helpers on 32-bit targets; rotations do not.
+            if (Configuration.TARGET_32BIT && !indexWithoutAdd.Oper.IsCnsIntOrI && (bitSize == 64))
+            {
+                return null;
+            }
+
                 rotateIndex = indexWithoutAdd;
             }
         }
@@ -480,13 +481,12 @@ public partial class Compiler
     public GenTree? fgOptimizeMultiply(GenTreeOp multiply)
     {
         assert(multiply.Oper is GT_MUL);
-#if TARGET_WASM
         // The native transform does not support 64-bit integer operations on wasm32.
-        if (multiply.Type is TYP_LONG)
+        if (Configuration.TARGET_WASM && (multiply.Type is TYP_LONG))
         {
             return null;
         }
-#endif
+
         assert(varTypeIsIntOrI(multiply.Type) || varTypeIsFloating(multiply.Type));
         assert(!multiply.HasOverflowCheck);
         var left = multiply.Op1;
@@ -564,11 +564,7 @@ public partial class Compiler
                 return multiply;
             }
 
-#if TARGET_XARCH
-            var optimizeScale = compCodeOpt is not SMALL_CODE;
-#else
-            var optimizeScale = false;
-#endif
+            var optimizeScale = Configuration.TARGET_XARCH && (compCodeOpt is not SMALL_CODE);
             var magnitude = unchecked((nuint)(multiplier >= 0 ? multiplier : -multiplier));
             var lowestBit = magnitude & unchecked(0 - magnitude);
             var changeToShift = false;

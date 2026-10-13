@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS
 namespace RyuJitSharp;
 
 public partial class Compiler
 {
     public GenTree? fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic tree)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return null;
+        }
+
         assert(opts.OptimizationEnabled);
         var intrinsic = tree.HWIntrinsicId;
         var type = tree.Type;
@@ -106,4 +110,3 @@ public partial class Compiler
         return tree;
     }
 }
-#endif

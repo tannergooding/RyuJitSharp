@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS
 using System.Runtime.Intrinsics.X86;
 
 namespace RyuJitSharp;
@@ -12,6 +11,11 @@ public partial class Compiler
 {
     public GenTree fgOptimizeHWIntrinsic(GenTreeHWIntrinsic node)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+        }
+
         assert(opts.OptimizationEnabled);
         var optimized = fgOptimizeHWIntrinsicAssociative(node);
         if (optimized is not null)
@@ -475,27 +479,32 @@ public partial class Compiler
                     {
                         inner.ResetHWIntrinsicId(id, left, right);
                         _ = ExtractEffectiveOp(GT_NOT, node, destroy: true);
-#if FEATURE_MASKED_HW_INTRINSICS
-                        if (lookupType != innerType)
+                        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
                         {
-                            assert(conversion is null);
-                            assert(varTypeIsSimd(innerType) && varTypeIsMask(lookupType));
-                            inner.Type = lookupType;
-                            inner = gtNewSimdCvtMaskToVectorNode(type, inner, innerBaseType, innerSize).AsHWIntrinsic();
+                            if (lookupType != innerType)
+                            {
+                                assert(conversion is null);
+                                assert(varTypeIsSimd(innerType) && varTypeIsMask(lookupType));
+                                inner.Type = lookupType;
+                                inner = gtNewSimdCvtMaskToVectorNode(type, inner, innerBaseType, innerSize)
+                                    .AsHWIntrinsic();
+                            }
+                            else if (conversion is not null)
+                            {
+                                conversion.SetOp(1, inner);
+                                inner = conversion;
+                            }
                         }
-                        else if (conversion is not null)
+                        else
                         {
-                            conversion.SetOp(1, inner);
-                            inner = conversion;
+                            assert((lookupType == innerType) && (conversion is null));
                         }
-#else
-                        assert((lookupType == innerType) && (conversion is null));
-#endif
+
                         return fgMorphHWIntrinsicRequired(inner);
                     }
                 }
-#if TARGET_XARCH
-                else if (innerId is NI_AVX_Compare or NI_AVX512_CompareMask)
+                else if (Configuration.TARGET_XARCH &&
+                         (innerId is NI_AVX_Compare or NI_AVX512_CompareMask))
                 {
                     assert(inner.Operands.Length == 3);
                     var modeNode = inner.GetOp(3);
@@ -530,7 +539,7 @@ public partial class Compiler
                         return fgMorphHWIntrinsicRequired(inner);
                     }
                 }
-#endif
+
                 break;
             }
 
@@ -642,12 +651,11 @@ public partial class Compiler
             // Folding can insert an inner mask operation whose comparison
             // can now be inverted; morph it before the outer conversion.
             var operandIndex = tree.IsConvertVectorToMask || tree.IsConvertMaskToVector ? 1 : 0;
-#if TARGET_ARM64
-            if (tree.IsConvertVectorToMask)
+            if (Configuration.TARGET_ARM64 && tree.IsConvertVectorToMask)
             {
                 operandIndex = 2;
             }
-#endif
+
             if (operandIndex != 0)
             {
                 var inner = tree.GetOp(operandIndex);
@@ -676,6 +684,11 @@ public partial class Compiler
 
     public GenTree fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic tree)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException("Hardware intrinsic morphing is unsupported for this target.");
+        }
+
         var intrinsic = tree.HWIntrinsicId;
         var type = tree.Type;
         var baseType = tree.SimdBaseType;
@@ -704,31 +717,37 @@ public partial class Compiler
                 {
                     GenTree? replacement = null;
                     var firstType = first.Type;
-#if FEATURE_MASKED_HW_INTRINSICS
-                    if (first.IsConvertVectorToMask)
+                    if (Configuration.FEATURE_MASKED_HW_INTRINSICS && first.IsConvertVectorToMask)
                     {
                         var conversion = first.AsHWIntrinsic();
-#if TARGET_XARCH
-                        first = conversion.GetOp(1);
-#elif TARGET_ARM64
-                        first = conversion.GetOp(2);
-                        DEBUG_DESTROY_NODE(conversion.GetOp(1));
-#else
-#error Unsupported platform
-#endif
+                        if (Configuration.TARGET_XARCH)
+                        {
+                            first = conversion.GetOp(1);
+                        }
+                        else if (Configuration.TARGET_ARM64)
+                        {
+                            first = conversion.GetOp(2);
+                            DEBUG_DESTROY_NODE(conversion.GetOp(1));
+                        }
+                        else
+                        {
+                            throw new FatalJitException("Unsupported masked intrinsic conversion target.");
+                        }
+
                         tree.SetOp(1, first);
                         firstType = first.Type;
                         DEBUG_DESTROY_NODE(conversion);
                     }
 
-                    if (firstType is TYP_MASK)
+                    if (Configuration.FEATURE_MASKED_HW_INTRINSICS && (firstType is TYP_MASK))
                     {
-#if TARGET_XARCH
-                        replacement = gtNewSimdHWIntrinsicNode(firstType, NI_AVX512_NotMask, baseType, size, first);
-#endif
+                        if (Configuration.TARGET_XARCH)
+                        {
+                            replacement =
+                                gtNewSimdHWIntrinsicNode(firstType, NI_AVX512_NotMask, baseType, size, first);
+                        }
                     }
                     else
-#endif
                     {
                         replacement = gtNewSimdUnOpNode(GT_NOT, firstType, first, baseType, size);
                     }
@@ -737,8 +756,7 @@ public partial class Compiler
                     {
                         DEBUG_DESTROY_NODE(second);
                         DEBUG_DESTROY_NODE(tree);
-#if FEATURE_MASKED_HW_INTRINSICS
-                        if (firstType != type)
+                        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && (firstType != type))
                         {
                             replacement = fgMorphHWIntrinsicRequired(replacement.AsHWIntrinsic());
                             if (replacement.Oper.IsHWIntrinsic)
@@ -749,7 +767,7 @@ public partial class Compiler
                                 ? gtNewSimdCvtVectorToMaskNode(type, replacement, baseType, size)
                                 : gtNewSimdCvtMaskToVectorNode(type, replacement, baseType, size);
                         }
-#endif
+
                         return fgMorphHWIntrinsicRequired(replacement.AsHWIntrinsic());
                     }
                 }
@@ -770,20 +788,19 @@ public partial class Compiler
                 if (id != NI_Illegal)
                 {
                     tree.ResetHWIntrinsicId(id, second, first);
-#if FEATURE_MASKED_HW_INTRINSICS
-                    if (lookupType != type)
+                    if (Configuration.FEATURE_MASKED_HW_INTRINSICS && (lookupType != type))
                     {
                         assert(varTypeIsSimd(type) && varTypeIsMask(lookupType));
                         tree.Type = lookupType;
                         tree = gtNewSimdCvtMaskToVectorNode(type, tree, baseType, size).AsHWIntrinsic();
                         return fgMorphHWIntrinsicRequired(tree);
                     }
-#endif
+
                 }
             }
         }
-#if TARGET_XARCH
-        else if (intrinsic is NI_AVX_Compare or NI_AVX512_CompareMask)
+        else if (Configuration.TARGET_XARCH &&
+                 (intrinsic is NI_AVX_Compare or NI_AVX512_CompareMask))
         {
             assert(tree.Operands.Length == 3);
             var first = tree.GetOp(1);
@@ -800,31 +817,36 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
-#if !TARGET_WASM
-        if (intrinsic is NI_Vector_CreateGeometricSequence)
+        if (!Configuration.TARGET_WASM && (intrinsic is NI_Vector_CreateGeometricSequence))
         {
             assert(tree.Operands.Length == 2);
             var first = tree.GetOp(1);
             var second = tree.GetOp(2);
             if (second.Oper.IsConst)
             {
-#if TARGET_ARM64
-                var canGenerate = !varTypeIsLong(baseType) || first.Oper.IsConst || (size == 8);
-#elif TARGET_XARCH
-                var canGenerate = first.Oper.IsConst || (size != 32) || !varTypeIsIntegral(baseType) ||
-                    compOpportunisticallyDependsOn(InstructionSet_AVX2);
-#else
-#error Unsupported platform
-#endif
+                bool canGenerate;
+                if (Configuration.TARGET_ARM64)
+                {
+                    canGenerate = !varTypeIsLong(baseType) || first.Oper.IsConst || (size == 8);
+                }
+                else if (Configuration.TARGET_XARCH)
+                {
+                    canGenerate = first.Oper.IsConst || (size != 32) || !varTypeIsIntegral(baseType) ||
+                        compOpportunisticallyDependsOn(InstructionSet_AVX2);
+                }
+                else
+                {
+                    throw new FatalJitException("Geometric-sequence intrinsic is unsupported for this target.");
+                }
+
                 if (canGenerate)
                 {
                     return fgMorphTree(gtNewSimdCreateGeometricSequenceNode(type, first, second, baseType, size));
                 }
             }
         }
-#endif
+
 
         switch (operation)
         {
@@ -852,13 +874,14 @@ public partial class Compiler
                 {
                     if (first.IsVectorZero)
                     {
-#if TARGET_ARM64
-                        // Xarch represents integer negation as zero minus the operand.
-                        second = gtNewSimdUnOpNode(GT_NEG, type, second, baseType, size);
-                        DEBUG_DESTROY_NODE(first);
-                        DEBUG_DESTROY_NODE(tree);
-                        return fgMorphHWIntrinsicRequired(second.AsHWIntrinsic());
-#endif
+                        if (Configuration.TARGET_ARM64)
+                        {
+                            // Xarch represents integer negation as zero minus the operand.
+                            second = gtNewSimdUnOpNode(GT_NEG, type, second, baseType, size);
+                            DEBUG_DESTROY_NODE(first);
+                            DEBUG_DESTROY_NODE(tree);
+                            return fgMorphHWIntrinsicRequired(second.AsHWIntrinsic());
+                        }
                     }
                     else
                     {
@@ -877,9 +900,13 @@ public partial class Compiler
                 break;
             }
 
-#if TARGET_ARM64
             case GT_XOR:
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    break;
+                }
+
                 var first = tree.GetOp(1);
                 var second = tree.GetOp(2);
                 if (second.IsVectorAllBitsSet)
@@ -899,7 +926,6 @@ public partial class Compiler
                 }
                 break;
             }
-#endif
         }
 
         return opts.OptimizationEnabled ? fgOptimizeHWIntrinsic(tree) : tree;
@@ -907,4 +933,3 @@ public partial class Compiler
 
     public static GenTree fgMorphHWIntrinsicOptional(GenTreeHWIntrinsic tree) => tree;
 }
-#endif

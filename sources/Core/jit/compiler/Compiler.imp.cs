@@ -130,7 +130,7 @@ public partial class Compiler
             // "this" is managed
             // -or-
             // "this" is unmgd but the method's class doesnt care
-            assert(varTypeIsGC(thisArgNode.Type) || ((thisArgNode.Type is TYP_I_IMPL) && isValueClassThis));
+            assert(varTypeIsGC(thisArgNode.Type) || (((thisArgNode.Type == TYP_I_IMPL)) && isValueClassThis));
 
             if (thisArgNode.Type.ActualType != sigType.ActualType)
             {
@@ -144,7 +144,7 @@ public partial class Compiler
                 // This can only happen with byrefs <-> ints/shorts
 
                 assert(sigType is TYP_BYREF);
-                assert((thisArgNode.Type.ActualType is TYP_I_IMPL) || (thisArgNode.Type is TYP_BYREF));
+                assert(((thisArgNode.Type.ActualType == TYP_I_IMPL)) || (thisArgNode.Type is TYP_BYREF));
             }
         }
 
@@ -245,7 +245,7 @@ public partial class Compiler
                         return;
                     }
                 }
-                else if (sigType.Size < TARGET_POINTER_SIZE)
+                else if (sigType.Size < Configuration.TARGET_POINTER_SIZE)
                 {
                     // Narrowing cast.
                     if (inlArgNode.Oper is GT_LCL_VAR)
@@ -272,8 +272,7 @@ public partial class Compiler
 
                     inlArgNodeRef = inlArgNode;
                 }
-#if TARGET_64BIT
-                else if (inlArgNode.Type.ActualType.Size < sigType.Size)
+                else if (Configuration.TARGET_64BIT && (inlArgNode.Type.ActualType.Size < sigType.Size))
                 {
                     // This should only happen for int -> native int widening
                     inlArgNode = gtNewCastNode(sigType.ActualType, inlArgNode, false, sigType);
@@ -288,7 +287,6 @@ public partial class Compiler
 
                     inlArgNodeRef = inlArgNode;
                 }
-#endif
             }
         }
 
@@ -615,9 +613,7 @@ public partial class Compiler
         => InlinePInvokeEnabled
             && !opts.compDbgCode
             && (compCodeOpt is not SMALL_CODE)
-#if TARGET_XARCH
-            && !opts.compNoPInvokeInlineCB
-#endif
+            && (!Configuration.TARGET_XARCH || !opts.compNoPInvokeInlineCB)
             ;
 
     public NodeToUnsignedMap ImpEnumeratorGdvLocalMap
@@ -1253,7 +1249,7 @@ public partial class Compiler
             };
 
             var ctxTree = impInlineFetchArg(ref impInlineInfo.inlInstParamArgInfo[0], lclInfo);
-            assert(ctxTree.Type is TYP_I_IMPL);
+            assert((ctxTree.Type == TYP_I_IMPL));
 
             // We don't need to worry about GTF_VAR_CONTEXT here, it should be set on the callsite anyway.
             return ctxTree;
@@ -1405,7 +1401,7 @@ public partial class Compiler
 
                     var retBuf = args.RetBufferArg.Node;
 
-                    assert(retBuf.Type is TYP_I_IMPL or TYP_BYREF);
+                    assert((retBuf.Type is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF)));
 
                     if (retBuf.Oper is GT_LCL_ADDR)
                     {
@@ -2117,7 +2113,6 @@ public partial class Compiler
                 return false;
             }
 
-#if USE_PER_FRAME_PINVOKE_INIT
             // For platforms that use per-P/Invoke InlinedCallFrame initialization,
             // we can't inline P/Invokes inside of try blocks where we can resume execution in the same function.
             // The runtime can correctly unwind out of an InlinedCallFrame and out of managed code. However,
@@ -2125,7 +2120,7 @@ public partial class Compiler
             // at least one managed frame. In particular, the runtime struggles to restore non-volatile registers
             // from the top-most unmanaged call before the InlinedCallFrame. As a result, the runtime does not support
             // re-entering the same method frame as the InlinedCallFrame after an exception in unmanaged code.
-            if (block.hasTryIndex)
+            if (Configuration.USE_PER_FRAME_PINVOKE_INIT && block.hasTryIndex)
             {
                 // Check if this block's try block or any containing try blocks have catch handlers.
                 // If any of the containing try blocks have catch handlers,
@@ -2140,7 +2135,6 @@ public partial class Compiler
                     }
                 }
             }
-#endif
         }
 
         if (!compIsForInlining)
@@ -2655,7 +2649,7 @@ public partial class Compiler
 
         if (sigType is >= TYP_BYTE and <= TYP_UINT)
         {
-            if (nodeType is (>= TYP_BYTE and <= TYP_UINT) or TYP_I_IMPL)
+            if ((nodeType is var __targetAliasValue1 && (((__targetAliasValue1 is >= TYP_BYTE && __targetAliasValue1 is <= TYP_UINT)) || __targetAliasValue1 == TYP_I_IMPL)))
             {
                 return true;
             }
@@ -2676,7 +2670,7 @@ public partial class Compiler
         }
         else if (sigType is TYP_BYREF)
         {
-            if (nodeType is TYP_I_IMPL)
+            if ((nodeType == TYP_I_IMPL))
             {
                 return true;
             }
@@ -2700,11 +2694,11 @@ public partial class Compiler
 
         // This condition should not be under `else` because `TYP_I_IMPL`
         // intersects with `TYP_LONG` or `TYP_INT`.
-        if (sigType is TYP_I_IMPL or TYP_U_IMPL)
+        if ((sigType is var __targetAliasValue2 && (__targetAliasValue2 == TYP_I_IMPL || __targetAliasValue2 == TYP_U_IMPL)))
         {
             // Note that it allows `ldc.i8 1; call(nint)` on 64-bit platforms,
             // but we can't distinguish `nint` from `long` there.
-            if (nodeType is TYP_I_IMPL or TYP_U_IMPL or TYP_INT or TYP_UINT)
+            if ((nodeType is var __targetAliasValue3 && (((__targetAliasValue3 == TYP_I_IMPL || __targetAliasValue3 == TYP_U_IMPL) || __targetAliasValue3 is TYP_INT) || __targetAliasValue3 is TYP_UINT)))
             {
                 return true;
             }
@@ -3684,7 +3678,6 @@ public partial class Compiler
             return null;
         }
 
-#if FEATURE_HW_INTRINSICS
         // We use compExactlyDependsOn since these are estimate APIs where
         // the behavior is explicitly allowed to differ across machines
 
@@ -3692,97 +3685,90 @@ public partial class Compiler
         var intrinsicId = NI_Illegal;
         var swapOp1AndOp3 = false;
 
-        switch (intrinsicName)
+        if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            case NI_System_Math_MultiplyAddEstimate:
+            switch (intrinsicName)
             {
-                assert(sigInfo.numArgs is 3);
-
-#if TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_AVX2, true))
+                case NI_System_Math_MultiplyAddEstimate:
                 {
-                    simdType = TYP_SIMD16;
-                    intrinsicId = NI_AVX2_MultiplyAddScalar;
-                }
-#elif TARGET_ARM64
-                if (compExactlyDependsOn(InstructionSet_AdvSimd))
-                {
-                    simdType = TYP_SIMD8;
-                    intrinsicId = NI_AdvSimd_FusedMultiplyAddScalar;
+                    assert(sigInfo.numArgs is 3);
 
-                    // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
+                    if (Configuration.TARGET_XARCH && compExactlyDependsOn(InstructionSet_AVX2, true))
+                    {
+                        simdType = TYP_SIMD16;
+                        intrinsicId = NI_AVX2_MultiplyAddScalar;
+                    }
+                    else if (Configuration.TARGET_ARM64 && compExactlyDependsOn(InstructionSet_AdvSimd))
+                    {
+                        simdType = TYP_SIMD8;
+                        intrinsicId = NI_AdvSimd_FusedMultiplyAddScalar;
 
-                    impSpillSideEffect(true, stackState.esStackDepth - 3, "Spilling op1 side effects for MultiplyAddEstimate");
-                    impSpillSideEffect(true, stackState.esStackDepth - 2, "Spilling op2 side effects for MultiplyAddEstimate");
+                        // AdvSimd.FusedMultiplyAdd expects (addend, left, right), while the APIs take (left, right, addend)
 
-                    swapOp1AndOp3 = true;
-                }
+                        impSpillSideEffect(true, stackState.esStackDepth - 3, "Spilling op1 side effects for MultiplyAddEstimate");
+                        impSpillSideEffect(true, stackState.esStackDepth - 2, "Spilling op2 side effects for MultiplyAddEstimate");
 
-#endif
-                break;
-            }
+                        swapOp1AndOp3 = true;
+                    }
 
-            case NI_System_Math_ReciprocalEstimate:
-            {
-                assert(sigInfo.numArgs is 1);
-
-#if TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_AVX512, true))
-                {
-                    simdType = TYP_SIMD16;
-                    intrinsicId = NI_AVX512_Reciprocal14Scalar;
-                }
-                else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
-                {
-                    simdType = TYP_SIMD16;
-                    intrinsicId = NI_X86Base_ReciprocalScalar;
+                    break;
                 }
 
-#elif TARGET_ARM64
-                if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
+                case NI_System_Math_ReciprocalEstimate:
                 {
-                    simdType = TYP_SIMD8;
-                    intrinsicId = NI_AdvSimd_Arm64_ReciprocalEstimateScalar;
+                    assert(sigInfo.numArgs is 1);
+
+                    if (Configuration.TARGET_XARCH && compExactlyDependsOn(InstructionSet_AVX512, true))
+                    {
+                        simdType = TYP_SIMD16;
+                        intrinsicId = NI_AVX512_Reciprocal14Scalar;
+                    }
+                    else if (Configuration.TARGET_XARCH && (callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
+                    {
+                        simdType = TYP_SIMD16;
+                        intrinsicId = NI_X86Base_ReciprocalScalar;
+                    }
+
+                    else if (Configuration.TARGET_ARM64 && compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
+                    {
+                        simdType = TYP_SIMD8;
+                        intrinsicId = NI_AdvSimd_Arm64_ReciprocalEstimateScalar;
+                    }
+
+                    break;
                 }
 
-#endif
-                break;
-            }
-
-            case NI_System_Math_ReciprocalSqrtEstimate:
-            {
-                assert(sigInfo.numArgs is 1);
-
-#if TARGET_XARCH
-                if (compExactlyDependsOn(InstructionSet_AVX512, true))
+                case NI_System_Math_ReciprocalSqrtEstimate:
                 {
-                    simdType = TYP_SIMD16;
-                    intrinsicId = NI_AVX512_ReciprocalSqrt14Scalar;
-                }
-                else if ((callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
-                {
-                    simdType = TYP_SIMD16;
-                    intrinsicId = NI_X86Base_ReciprocalSqrtScalar;
-                }
+                    assert(sigInfo.numArgs is 1);
 
-#elif TARGET_ARM64
-                if (compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
-                {
-                    simdType = TYP_SIMD8;
-                    intrinsicId = NI_AdvSimd_Arm64_ReciprocalSquareRootEstimateScalar;
+                    if (Configuration.TARGET_XARCH && compExactlyDependsOn(InstructionSet_AVX512, true))
+                    {
+                        simdType = TYP_SIMD16;
+                        intrinsicId = NI_AVX512_ReciprocalSqrt14Scalar;
+                    }
+                    else if (Configuration.TARGET_XARCH && (callType == TYP_FLOAT) && compExactlyDependsOn(InstructionSet_X86Base))
+                    {
+                        simdType = TYP_SIMD16;
+                        intrinsicId = NI_X86Base_ReciprocalSqrtScalar;
+                    }
+
+                    else if (Configuration.TARGET_ARM64 && compExactlyDependsOn(InstructionSet_AdvSimd_Arm64))
+                    {
+                        simdType = TYP_SIMD8;
+                        intrinsicId = NI_AdvSimd_Arm64_ReciprocalSquareRootEstimateScalar;
+                    }
+
+                    break;
                 }
 
-#endif
-                break;
-            }
-
-            default:
-            {
-                unreached();
-                break;
+                default:
+                {
+                    unreached();
+                    break;
+                }
             }
         }
-#endif
 
         var op3 = null as GenTree;
         var op2 = null as GenTree;
@@ -3815,16 +3801,9 @@ public partial class Compiler
             }
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (intrinsicId is not NI_Illegal)
+        if (Configuration.FEATURE_HW_INTRINSICS && (intrinsicId is not NI_Illegal))
         {
-#if TARGET_XARCH
-            var simdSize = (byte)(16);
-#elif TARGET_ARM64
-            var simdSize = (byte)((simdType is TYP_SIMD8) ? 8 : 16);
-#elif TARGET_WASM
-            var simdSize = (byte)16;
-#endif
+            var simdSize = (byte)((Configuration.TARGET_ARM64 && (simdType is TYP_SIMD8)) ? 8 : 16);
 
             var simdBaseType = callJitType.PreciseVarType;
 
@@ -3867,7 +3846,6 @@ public partial class Compiler
         }
 
         assert(!swapOp1AndOp3);
-#endif
 
         callType = callType.ActualType;
 
@@ -4159,20 +4137,18 @@ public partial class Compiler
         // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):
         static GenTree BitwiseOp(Compiler compiler, genTreeOps oper, var_types type, GenTree op1, GenTree op2)
         {
-#if FEATURE_HW_INTRINSICS
-            if (varTypeIsSimd(type))
+            if (Configuration.FEATURE_HW_INTRINSICS && varTypeIsSimd(type))
             {
                 return compiler.gtNewSimdBinOpNode(oper, type, op1, op2, TYP_U_IMPL, type.Size);
             }
 
-            if (varTypeIsSimd(op1.Type))
+            if (Configuration.FEATURE_HW_INTRINSICS && varTypeIsSimd(op1.Type))
             {
                 // E.g. a comparison of SIMD ops returning TYP_INT;
                 assert(varTypeIsSimd(op2.Type));
                 return compiler.gtNewSimdCmpOpAllNode(oper, type, op1, op2, TYP_U_IMPL, op1.Type.Size);
             }
 
-#endif
             return compiler.gtNewBinaryNode(oper, type, op1, op2);
         }
     }
@@ -4469,15 +4445,12 @@ public partial class Compiler
                 {
                     // In contrast, we can only use multi-reg calls directly if they have the exact same ABI.
                     // Calling convention equality is a conservative approximation for that check.
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-                    if (!call.Args.IsVarArgs)
+                    if (!(Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) ||
+                        !call.Args.IsVarArgs)
                     {
                         // TODO-Review: this seems unnecessary. Return ABI doesn't change under varargs.
                         return op;
                     }
-#else
-                    return op;
-#endif
                 }
 
                 // We cannot tail call because control needs to return to fixup the calling convention for result return.
@@ -4601,30 +4574,31 @@ public partial class Compiler
             // int + long => gives long
             // long + int => gives long
 
-#if TARGET_64BIT
-            // We get this because in the IL the long isn't Int64, it's just IntPtr.
-            // Insert explicit upcasts if needed.
-
-            if (actualType is not TYP_I_IMPL)
+            if (Configuration.TARGET_64BIT)
             {
-                // insert an explicit upcast
-                op1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
-            }
-            else if (op2.Type.ActualType is not TYP_I_IMPL)
-            {
-                // insert an explicit upcast
-                op2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
-            }
+                // We get this because in the IL the long isn't Int64, it's just IntPtr.
+                // Insert explicit upcasts if needed.
 
-            if (opts.OptimizationEnabled)
-            {
-                op1 = gtFoldExpr(op1);
-                op2 = gtFoldExpr(op2);
-            }
+                if ((actualType != TYP_I_IMPL))
+                {
+                    // insert an explicit upcast
+                    op1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, TYP_I_IMPL);
+                }
+                else if ((op2.Type.ActualType != TYP_I_IMPL))
+                {
+                    // insert an explicit upcast
+                    op2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, TYP_I_IMPL);
+                }
 
-            op1Ref = op1;
-            op2Ref = op2;
-#endif
+                if (opts.OptimizationEnabled)
+                {
+                    op1 = gtFoldExpr(op1);
+                    op2 = gtFoldExpr(op2);
+                }
+
+                op1Ref = op1;
+                op2Ref = op2;
+            }
 
             return TYP_LONG;
         }
@@ -5198,25 +5172,21 @@ public partial class Compiler
                 {
                     tree.Type = TYP_I_IMPL;
                 }
-#if TARGET_64BIT
-                else if (currType == TYP_INT)
+                else if (Configuration.TARGET_64BIT && (currType == TYP_INT))
                 {
                     tree.Type = TYP_I_IMPL;
                 }
-#endif
             }
-#if TARGET_64BIT
-            else if (varTypeIsI(wantedType) && (currType is TYP_INT))
+            else if (Configuration.TARGET_64BIT && varTypeIsI(wantedType) && (currType is TYP_INT))
             {
                 // Note that this allows TYP_INT to be cast to a TYP_I_IMPL when wantedType is a TYP_BYREF or TYP_REF
                 tree = gtNewCastNode(TYP_I_IMPL, tree, zeroExtend, TYP_I_IMPL);
             }
-            else if ((wantedType is TYP_INT) && varTypeIsI(currType))
+            else if (Configuration.TARGET_64BIT && (wantedType is TYP_INT) && varTypeIsI(currType))
             {
                 // Note that this allows TYP_BYREF or TYP_REF to be cast to a TYP_INT
                 tree = gtNewCastNode(TYP_INT, tree, fromUnsigned: false, TYP_INT);
             }
-#endif
         }
 
         return tree;
@@ -5629,7 +5599,7 @@ public partial class Compiler
             // Create a pointer to the box payload in op1.
             //
             op1 = gtNewLclvNode(TYP_REF, impBoxTemp);
-            op2 = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+            op2 = gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE);
             op1 = gtNewBinaryNode(GT_ADD, TYP_BYREF, op1, op2);
 
             // Copy from the exprToBox to the box payload.
@@ -5774,7 +5744,7 @@ public partial class Compiler
         var objLclNum = lvaGrabTemp(shortLifetime: true, "obj nullable box");
         var storeAlloc = gtNewTempStore(objLclNum, allocObj);
         var objLcl = gtNewLclvNode(TYP_REF, objLclNum);
-        var pOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+        var pOffset = gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE);
         var dataPtr = gtNewBinaryNode(GT_ADD, TYP_BYREF, gtCloneExpr(objLcl), pOffset);
         var storeData = gtNewStoreValueNode(valueType, dataPtr, gtCloneExpr(value), layout, GTF_IND_NONFAULTING);
 
@@ -5995,21 +5965,20 @@ public partial class Compiler
                 // change the temp to TYP_BYREF and reimport the clique.
                 ref var tempDsc = ref lvaGetDesc(tempNum);
 
-                if ((tree.Type is TYP_BYREF) && (tempDsc.Type is TYP_I_IMPL))
+                if ((tree.Type is TYP_BYREF) && ((tempDsc.Type == TYP_I_IMPL)))
                 {
                     tempDsc.Type = TYP_BYREF;
                     reimportSpillClique = true;
                 }
 
-#if TARGET_64BIT
-                if ((treeActualType is TYP_I_IMPL) && (tempDsc.Type is TYP_INT))
+                if (Configuration.TARGET_64BIT && ((treeActualType == TYP_I_IMPL)) && (tempDsc.Type is TYP_INT))
                 {
                     // Some other block in the spill clique set this to "int", but now we have "native int".
                     // Change the type and go back to re-import any blocks that used the wrong type.
                     tempDsc.Type = TYP_I_IMPL;
                     reimportSpillClique = true;
                 }
-                else if ((treeActualType is TYP_INT) && (tempDsc.Type is TYP_I_IMPL))
+                else if (Configuration.TARGET_64BIT && (treeActualType is TYP_INT) && ((tempDsc.Type == TYP_I_IMPL)))
                 {
                     // Spill clique has decided this should be "native int", but this block only pushes an "int".
                     // Insert a sign-extension to "native int" so we match the clique.
@@ -6024,21 +5993,19 @@ public partial class Compiler
                 // imported already, we need to change the type of the local and reimport the spill clique.
                 // If the 'byref' side has imported, we insert a cast from int to 'native int' to match
                 // the 'byref' size.
-                if ((treeActualType is TYP_BYREF) && (tempDsc.Type is TYP_INT))
+                if (Configuration.TARGET_64BIT && (treeActualType is TYP_BYREF) && (tempDsc.Type is TYP_INT))
                 {
                     // Some other block in the spill clique set this to "int", but now we have "byref".
                     // Change the type and go back to re-import any blocks that used the wrong type.
                     tempDsc.Type = TYP_BYREF;
                     reimportSpillClique = true;
                 }
-                else if ((treeActualType is TYP_INT) && (tempDsc.Type is TYP_BYREF))
+                else if (Configuration.TARGET_64BIT && (treeActualType is TYP_INT) && (tempDsc.Type is TYP_BYREF))
                 {
                     // Spill clique has decided this should be "byref", but this block only pushes an "int".
                     // Insert a sign-extension to "native int" so we match the clique size.
                     stackEntry.val = gtNewCastNode(TYP_I_IMPL, tree, fromUnsigned: false, TYP_I_IMPL);
                 }
-
-#endif
 
                 if ((treeType is TYP_DOUBLE) && (tempDsc.Type is TYP_FLOAT))
                 {
@@ -8043,11 +8010,14 @@ public partial class Compiler
 
                 case CEE_CONV_U:
                 {
-#if TARGET_AMD64
-                    ConvUn(this, TYP_U_IMPL);
-#else
-                    Conv(this, TYP_U_IMPL);
-#endif
+                    if (Configuration.TARGET_AMD64)
+                    {
+                        ConvUn(this, TYP_U_IMPL);
+                    }
+                    else
+                    {
+                        Conv(this, TYP_U_IMPL);
+                    }
                     break;
                 }
 
@@ -8206,7 +8176,7 @@ public partial class Compiler
                             // Duplicate locals and addresses of them
                             clone = true;
                         }
-                        else if ((op1.Type is TYP_BYREF or TYP_I_IMPL) && impIsAddressInLocal(op1))
+                        else if (((op1.Type is var __targetAliasValue4 && (__targetAliasValue4 is TYP_BYREF || __targetAliasValue4 == TYP_I_IMPL))) && impIsAddressInLocal(op1))
                         {
                             clone = true;
                         }
@@ -9032,15 +9002,16 @@ public partial class Compiler
 
                         case CORINFO_FIELD_STATIC_TLS:
                         {
-#if TARGET_X86
-                            // Legacy TLS access is implemented as intrinsic on x86 only
-                            op1 = gtNewFieldAddrNode(TYP_I_IMPL, obj: null, resolvedToken.hField, fieldInfo.offset);
-                            op1.Flags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
-                            break;
-#else
+                            if (Configuration.TARGET_X86)
+                            {
+                                // Legacy TLS access is implemented as intrinsic on x86 only
+                                op1 = gtNewFieldAddrNode(TYP_I_IMPL, obj: null, resolvedToken.hField, fieldInfo.offset);
+                                op1.Flags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
+                                break;
+                            }
+
                             fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
                             goto case CORINFO_FIELD_STATIC_ADDR_HELPER;
-#endif
                         }
 
                         case CORINFO_FIELD_STATIC_ADDR_HELPER:
@@ -9115,11 +9086,7 @@ public partial class Compiler
 
                             // Widen to stack type
                             lclTyp = lclTyp.ActualType;
-#if BIGENDIAN
-                            op1 = gtNewIconNode(lclTyp, 0);
-#else
-                            op1 = gtNewIconNode(lclTyp, 1);
-#endif
+                            op1 = gtNewIconNode(lclTyp, System.BitConverter.IsLittleEndian ? 1 : 0);
                             done = true;
                             break;
                         }
@@ -9386,7 +9353,7 @@ public partial class Compiler
                                     }
                                     else
                                     {
-                                        var addrType = (obj.Type is TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
+                                        var addrType = ((obj.Type == TYP_I_IMPL)) ? TYP_I_IMPL : TYP_BYREF;
                                         op1 = gtNewBinaryNode(GT_ADD, addrType, obj, gtNewIconNode(fieldInfo.offset, fieldSeq));
                                         op1 = gtFoldExpr(op1);
                                     }
@@ -9418,15 +9385,16 @@ public partial class Compiler
 
                         case CORINFO_FIELD_STATIC_TLS:
                         {
-#if TARGET_X86
-                            // Legacy TLS access is implemented as intrinsic on x86 only.
-                            op1 = gtNewFieldAddrNode(TYP_I_IMPL, obj: null, resolvedToken.hField, fieldInfo.offset);
-                            op1.Flags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
-                            break;
-#else
+                            if (Configuration.TARGET_X86)
+                            {
+                                // Legacy TLS access is implemented as intrinsic on x86 only.
+                                op1 = gtNewFieldAddrNode(TYP_I_IMPL, obj: null, resolvedToken.hField, fieldInfo.offset);
+                                op1.Flags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
+                                break;
+                            }
+
                             fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
                             goto case CORINFO_FIELD_STATIC_ADDR_HELPER;
-#endif
                         }
 
                         case CORINFO_FIELD_STATIC_ADDR_HELPER:
@@ -9477,19 +9445,17 @@ public partial class Compiler
                     // Note that this is limited to x86 alone as there is no back compat to be addressed for Arm JIT
                     // for V4.0.
 
-#if !TARGET_64BIT
                     // In UWP6.0 and beyond (post-.NET Core 2.0), we decided to let this cast from int to long be
                     // generated for ARM as well as x86, so the following IR will be accepted:
                     // STMTx (IL 0x... ???)
                     //   *  STORE_LCL_VAR long
                     //   \--*  CNS_INT   int    2
 
-                    if ((lclTyp != op2.Type) && op2.Oper.IsConst && varTypeIsIntOrI(op2.Type) && (lclTyp is TYP_LONG))
+                    if (!Configuration.TARGET_64BIT && (lclTyp != op2.Type) && op2.Oper.IsConst && varTypeIsIntOrI(op2.Type) && (lclTyp is TYP_LONG))
                     {
                         op2 = gtNewCastNode(lclTyp, op2, fromUnsigned: false, lclTyp);
                     }
 
-#endif
                     // Allow a downcast of op2 from TYP_I_IMPL into a 32-bit Int for x86 JIT compatibility.
                     // Allow an upcast of op2 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility.
                     op2 = impImplicitIorI4Cast(op2, lclTyp);
@@ -10140,7 +10106,7 @@ public partial class Compiler
                                 {
                                     op1 = impCloneExpr(op1, out cloneOperand, CHECK_SPILL_ALL, "optimized unbox clone");
 
-                                    var boxPayloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                                    var boxPayloadOffset = gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE);
                                     var boxPayloadAddress = gtNewBinaryNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
 
                                     if (fgAddrCouldBeNull(op1))
@@ -10170,7 +10136,7 @@ public partial class Compiler
 
                                 // For UNBOX.ANY load the struct from the box payload byref (the load will nullcheck)
                                 assert(opcode is CEE_UNBOX_ANY);
-                                var boxPayloadOffsetAny = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                                var boxPayloadOffsetAny = gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE);
                                 var boxPayloadAddressAny = gtNewBinaryNode(GT_ADD, TYP_BYREF, op1, boxPayloadOffsetAny);
                                 impPushOnStack(boxPayloadAddressAny, new typeInfo());
 
@@ -10196,7 +10162,7 @@ public partial class Compiler
                         // UNBOX(exp) morphs into
                         // clone = pop(exp);
                         // ((*clone == typeToken) ? nop : helper(clone, typeToken));
-                        // push(clone + TARGET_POINTER_SIZE)
+                        // push(clone + Configuration.TARGET_POINTER_SIZE)
 
                         op1 = impCloneExpr(op1, out cloneOperand, CHECK_SPILL_ALL, "inline UNBOX clone1");
 
@@ -10227,7 +10193,7 @@ public partial class Compiler
                         // to the beginning of the value-type. Today this means adjusting
                         // past the base of the objects vtable field which is pointer sized.
 
-                        op2 = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                        op2 = gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE);
                         op1 = gtNewBinaryNode(GT_ADD, TYP_BYREF, cloneOperand, op2);
                     }
                     else if (helper is CORINFO_HELP_UNBOX_NULLABLE)
@@ -10484,14 +10450,12 @@ public partial class Compiler
                     var indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
                     var isVolatile = (indirFlags & GTF_IND_VOLATILE) is not 0;
 
-#if !TARGET_X86
-                    if (isVolatile && !impStackTop(0).val.Oper.IsCnsIntOrI)
+                    if (!Configuration.TARGET_X86 && isVolatile && !impStackTop(0).val.Oper.IsCnsIntOrI)
                     {
                         // We're going to emit a helper call surrounded by memory barriers, so we need to spill any side
                         // effects.
                         impSpillSideEffects(spillGlobEffects: true, CHECK_SPILL_ALL, "spilling side-effects");
                     }
-#endif
 
                     var op3 = gtFoldExpr(impPopStack().val); // Size
                     var op2 = gtFoldExpr(impPopStack().val); // Value / Src addr
@@ -10532,10 +10496,11 @@ public partial class Compiler
                     }
                     else
                     {
-#if TARGET_64BIT
                         // Cast size to TYP_LONG on 64-bit targets
-                        op3 = gtNewCastNode(TYP_LONG, op3, /* fromuint */ true, TYP_LONG);
-#endif
+                        if (Configuration.TARGET_64BIT)
+                        {
+                            op3 = gtNewCastNode(TYP_LONG, op3, /* fromuint */ true, TYP_LONG);
+                        }
 
                         var call = null as GenTreeCall;
 
@@ -10664,7 +10629,7 @@ public partial class Compiler
 
                     // @SPECVIOLATION: TYP_INT should not be allowed here by a strict reading of the spec.
                     // But JIT32 allowed it, so we continue to allow it.
-                    assertImp(op1.Type is TYP_BYREF or TYP_I_IMPL or TYP_INT, op1, op2);
+                    assertImp((op1.Type is var __targetAliasValue5 && ((__targetAliasValue5 is TYP_BYREF || __targetAliasValue5 == TYP_I_IMPL) || __targetAliasValue5 is TYP_INT)), op1, op2);
 
                     var refAnyLcl = lvaGrabTemp(shortLifetime: false, "mkrefany temp");
                     lvaSetStruct(refAnyLcl, impRefAnyClass, unsafeValueClsCheck: false);
@@ -10854,16 +10819,14 @@ public partial class Compiler
                 uns = false;
             }
 
-#if TARGET_64BIT
-            if (varTypeIsI(op1.Type) && genActualTypeIsInt(op2.Type))
+            if (Configuration.TARGET_64BIT && varTypeIsI(op1.Type) && genActualTypeIsInt(op2.Type))
             {
                 op2 = compiler.impImplicitIorI4Cast(op2, TYP_I_IMPL);
             }
-            else if (varTypeIsI(op2.Type) && genActualTypeIsInt(op1.Type))
+            else if (Configuration.TARGET_64BIT && varTypeIsI(op2.Type) && genActualTypeIsInt(op1.Type))
             {
                 op1 = compiler.impImplicitIorI4Cast(op1, TYP_I_IMPL);
             }
-#endif
 
             var op1Type = op1.Type;
             var op2Type = op2.Type;
@@ -10896,17 +10859,15 @@ public partial class Compiler
             var op2 = compiler.impPopStack().val;
             var op1 = compiler.impPopStack().val;
 
-#if TARGET_64BIT
             // TODO-Review: this differs in the extending behavior from plain relop import. Why?
-            if ((op1.Type is TYP_I_IMPL) && genActualTypeIsInt(op2.Type))
+            if (Configuration.TARGET_64BIT && ((op1.Type == TYP_I_IMPL)) && genActualTypeIsInt(op2.Type))
             {
                 op2 = compiler.impImplicitIorI4Cast(op2, TYP_I_IMPL, uns);
             }
-            else if ((op2.Type is TYP_I_IMPL) && genActualTypeIsInt(op1.Type))
+            else if (Configuration.TARGET_64BIT && ((op2.Type == TYP_I_IMPL)) && genActualTypeIsInt(op1.Type))
             {
                 op1 = compiler.impImplicitIorI4Cast(op1, TYP_I_IMPL, uns);
             }
-#endif
 
             var op1Type = op1.Type;
             var op2Type = op2.Type;
@@ -11177,13 +11138,11 @@ public partial class Compiler
             var op1 = compiler.impPopStack().val; // address to load from
             impBashVarAddrsToI(op1);
 
-#if TARGET_64BIT
-            if (op1.Type.ActualType == TYP_INT)
+            if (Configuration.TARGET_64BIT && (op1.Type.ActualType == TYP_INT))
             {
                 // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatibility
                 op1 = compiler.gtNewCastNode(TYP_I_IMPL, op1, fromUnsigned: false, TYP_I_IMPL);
             }
-#endif
 
             compiler.assertImp((op1.Type.ActualType == TYP_I_IMPL) || (op1.Type is TYP_BYREF), op1);
 
@@ -11318,7 +11277,7 @@ public partial class Compiler
             var tiRetVal = compiler.makeTypeInfo(resolvedToken.hClass);
 
             var op1 = compiler.impPopStack().val;
-            compiler.assertImp((op1.Type.ActualType is TYP_I_IMPL) || (op1.Type is TYP_BYREF), op1);
+            compiler.assertImp(((op1.Type.ActualType == TYP_I_IMPL)) || (op1.Type is TYP_BYREF), op1);
 
             if (Configuration.FEATURE_SIMD && isLdobj && varTypeIsSimd(lclTyp))
             {
@@ -11355,8 +11314,8 @@ public partial class Compiler
             // We had better assign it a value of the correct type
             compiler.assertImp(
                 (actualTyp == op1.Type.ActualType) ||
-                (actualTyp is TYP_I_IMPL && ((op1.Oper is GT_LCL_ADDR) || (op1.Type is TYP_BYREF or TYP_REF))) ||
-                ((op1.Type.ActualType is TYP_I_IMPL) && (lclTyp is TYP_BYREF)) ||
+                ((actualTyp == TYP_I_IMPL) && ((op1.Oper is GT_LCL_ADDR) || (op1.Type is TYP_BYREF or TYP_REF))) ||
+                (((op1.Type.ActualType == TYP_I_IMPL)) && (lclTyp is TYP_BYREF)) ||
                 (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1.Type)) ||
                 ((actualTyp == TYP_BYREF) && (op1.Type.ActualType is TYP_REF)),
                 op1
@@ -11543,7 +11502,7 @@ public partial class Compiler
             var op1 = compiler.impPopStack().val; // address to store to
 
             // you can indirect off of a TYP_I_IMPL (if we are in C) or a BYREF
-            compiler.assertImp((op1.Type.ActualType is TYP_I_IMPL) || (op1.Type is TYP_BYREF), op1, op2);
+            compiler.assertImp(((op1.Type.ActualType == TYP_I_IMPL)) || (op1.Type is TYP_BYREF), op1, op2);
 
             impBashVarAddrsToI(op1);
             impBashVarAddrsToI(op2);
@@ -11566,7 +11525,7 @@ public partial class Compiler
             {
                 if (op2.Type is TYP_BYREF)
                 {
-                    compiler.assertImp(lclTyp is TYP_BYREF or TYP_I_IMPL, op1, op2);
+                    compiler.assertImp((lclTyp is var __targetAliasValue11 && (__targetAliasValue11 is TYP_BYREF || __targetAliasValue11 == TYP_I_IMPL)), op1, op2);
                 }
                 else if (lclTyp is TYP_BYREF)
                 {
@@ -11577,7 +11536,7 @@ public partial class Compiler
             {
                 compiler.assertImp(
                     (op2.Type.ActualType == lclTyp.ActualType) ||
-                    ((lclTyp is TYP_I_IMPL) && (op2.Type.ActualType is TYP_INT)) ||
+                    (((lclTyp == TYP_I_IMPL)) && (op2.Type.ActualType is TYP_INT)) ||
                     (varTypeIsFloating(op2.Type) && varTypeIsFloating(lclTyp)),
                     op1, op2
                 );
@@ -11928,7 +11887,7 @@ public partial class Compiler
         // The function pointer is typically a sized to match the target pointer size
         // However, stubgen IL optimization can change LDC.I8 to LDC.I4
         // See ILCodeStream.LowerOpcode
-        assert(fptr.Type.ActualType is TYP_I_IMPL or TYP_INT);
+        assert((fptr.Type.ActualType is var __targetAliasValue6 && (__targetAliasValue6 == TYP_I_IMPL || __targetAliasValue6 is TYP_INT)));
 
 #if DEBUG
         // This temporary must never be converted to a double in stress mode,
@@ -11945,9 +11904,10 @@ public partial class Compiler
         var call = gtNewIndCallNode(callRetTyp, fptr, di);
 
         call.Flags |= fptr.Flags & GTF_ALL_EFFECT;
-#if UNIX_X86_ABI
-        call.Flags &= ~GTF_CALL_POP_ARGS;
-#endif
+        if (Configuration.UNIX_X86_ABI)
+        {
+            call.Flags &= ~GTF_CALL_POP_ARGS;
+        }
 
         return call;
     }
@@ -12596,7 +12556,7 @@ public partial class Compiler
         if (isBoxedStatic)
         {
             innerFldSeq = null;
-            outerFldSeq = FieldSeqStore.Create(resolvedToken.hField, TARGET_POINTER_SIZE, fieldKind);
+            outerFldSeq = FieldSeqStore.Create(resolvedToken.hField, Configuration.TARGET_POINTER_SIZE, fieldKind);
         }
         else
         {
@@ -12808,9 +12768,9 @@ public partial class Compiler
             {
                 var isStaticReadOnlyInitedRef = false;
 
-#if TARGET_64BIT
                 // TODO-CQ: enable this optimization for 32 bit targets.
-                if (!isBoxedStatic && (lclTyp is TYP_REF) && ((access & CORINFO_ACCESS_GET) is not 0) && ((indirFlags & GTF_IND_VOLATILE) is 0))
+                if (Configuration.TARGET_64BIT && !isBoxedStatic && (lclTyp is TYP_REF) &&
+                    ((access & CORINFO_ACCESS_GET) is not 0) && ((indirFlags & GTF_IND_VOLATILE) is 0))
                 {
                     var isSpeculative = true;
 
@@ -12819,7 +12779,6 @@ public partial class Compiler
                         isStaticReadOnlyInitedRef = !isSpeculative;
                     }
                 }
-#endif
 
                 assert(fieldInfo.fieldLookup.accessType == IAT_VALUE);
                 var fldAddr = unchecked((nint)(fieldInfo.fieldLookup.addr));
@@ -12865,7 +12824,7 @@ public partial class Compiler
         if (isBoxedStatic)
         {
             op1 = gtNewIndir(TYP_REF, op1, GTF_IND_NONFAULTING | GTF_IND_INVARIANT | GTF_IND_NONNULL | additionalIndirFlags);
-            op1 = gtNewBinaryNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
+            op1 = gtNewBinaryNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(Configuration.TARGET_POINTER_SIZE, outerFldSeq));
 
             additionalIndirFlags &= ~GTF_IND_INITCLASS;
         }
@@ -12924,7 +12883,7 @@ public partial class Compiler
             // For large structs we only want to handle "initialized with zero" case
             // e.g. Guid.Empty and decimal.Zero static readonly fields.
 
-            if ((totalSize > TARGET_POINTER_SIZE) || (fieldsCnt is not 1))
+            if ((totalSize > Configuration.TARGET_POINTER_SIZE) || (fieldsCnt is not 1))
             {
                 const int LargeStructBufferSize = 64;
 
@@ -12952,17 +12911,15 @@ public partial class Compiler
 
                         var hwAccelerated = true;
 
-#if TARGET_XARCH
-                        if (simdType is TYP_SIMD64)
+                        if (Configuration.TARGET_XARCH && (simdType is TYP_SIMD64))
                         {
                             hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX512);
                         }
-                        else if (simdType is TYP_SIMD32)
+                        else if (Configuration.TARGET_XARCH && (simdType is TYP_SIMD32))
                         {
                             hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX);
                         }
                         else
-#endif
                         {
                             // SIMD8, SIMD12, SIMD16 are covered by baseline ISA requirement
                             assert(simdType is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16);
@@ -13023,7 +12980,8 @@ public partial class Compiler
             Unsafe.SkipInit(out InlineArrayTargetPointerSize<byte> inlineSmallStructBuffer);
             var smallStructBuffer = (Span<byte>)(inlineSmallStructBuffer);
 
-            if ((totalSize > smallStructBuffer.Length) || !info.compCompHnd->getStaticFieldContent(field, &inlineSmallStructBuffer.e0, totalSize))
+            if ((totalSize > Configuration.TARGET_POINTER_SIZE) ||
+                !info.compCompHnd->getStaticFieldContent(field, &inlineSmallStructBuffer.e0, totalSize))
             {
                 return null;
             }
@@ -13766,7 +13724,7 @@ public partial class Compiler
             // then we change the argument tree (of "ldloca.s V_1") to TYP_I_IMPL to match the callee signature. We'll
             // soon afterwards reject the inlining anyway, since the tree we return isn't a GT_LCL_VAR.
 
-            assert(argNode.Type is TYP_BYREF or TYP_I_IMPL);
+            assert((argNode.Type is var __targetAliasValue7 && (__targetAliasValue7 is TYP_BYREF || __targetAliasValue7 == TYP_I_IMPL)));
             op1 = gtCloneExpr(argNode);
         }
         else
@@ -14101,7 +14059,7 @@ public partial class Compiler
 
         var hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
         var valueOffset = (ushort)(info.compCompHnd->getFieldOffset(valueFldHnd));
-        var boxedContentAddr = gtNewBinaryNode(GT_ADD, TYP_BYREF, gtCloneExpr(objClone), gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE));
+        var boxedContentAddr = gtNewBinaryNode(GT_ADD, TYP_BYREF, gtCloneExpr(objClone), gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE));
 
         // Load the boxed content from the object (op1):
         var boxedContent = gtNewLoadValueNode(valueType, boxedContentAddr, layout);
@@ -14354,8 +14312,7 @@ public partial class Compiler
     }
     public unsafe bool impIsImplicitTailCallCandidate(OPCODE opcode, byte* codeAddrOfNextOpcode, byte* codeEnd, int prefixFlags, bool isRecursive)
     {
-#if FEATURE_TAILCALL_OPT
-        if (!opts.compTailCallOpt)
+        if (!Configuration.FEATURE_TAILCALL_OPT || !opts.compTailCallOpt)
         {
             return false;
         }
@@ -14391,9 +14348,6 @@ public partial class Compiler
         }
 
         return true;
-#else
-        return false;
-#endif
     }
 
     /// <summary>check if a tree (created during import) is invariant.</summary>
@@ -15428,9 +15382,8 @@ public partial class Compiler
 
         var isIntrinsicImplementedByUserCall = IsIntrinsicImplementedByUserCall(intrinsicName);
 
-        if (isIntrinsicImplementedByUserCall)
+        if (Configuration.TARGET_XARCH && isIntrinsicImplementedByUserCall)
         {
-#if TARGET_XARCH
             // We want to track math intrinsics implemented as user calls as special
             // to ensure we don't lose track of the fact it will call into native code
             //
@@ -15438,23 +15391,18 @@ public partial class Compiler
             // avoid the perf penalty on some hardware.
 
             isSpecial = true;
-#endif
         }
 
-#if !TARGET_X86
         // Intrinsics that are not implemented directly by target instructions will
         // be re-materialized as users calls in rationalizer. For prefixed tail calls,
         // don't do this optimization, because
         //  a) For back compatibility reasons on desktop .NET Framework 4.6 / 4.6.1
         //  b) It will be non-trivial task or too late to re-materialize a surviving
         //     tail prefixed GT_INTRINSIC as tail call in rationalizer.
-        if (!isIntrinsicImplementedByUserCall || !tailCall)
-#else
         // On x86 RyuJIT, importing intrinsics that are implemented as user calls can cause incorrect calculation
         // of the depth of the stack if these intrinsics are used as arguments to another call. This causes bad
         // code generation for certain EH constructs.
-        if (!isIntrinsicImplementedByUserCall)
-#endif
+        if (!isIntrinsicImplementedByUserCall || (!Configuration.TARGET_X86 && !tailCall))
         {
             var arg = sigInfo.args;
 
@@ -15627,7 +15575,7 @@ public partial class Compiler
                     // GT_COMMA below the blockNode addr.
 
                     var blockNodeAddr = blockNode.AsBlk().Addr;
-                    assert(blockNodeAddr.Type is TYP_BYREF or TYP_I_IMPL);
+                    assert((blockNodeAddr.Type is var __targetAliasValue8 && (__targetAliasValue8 is TYP_BYREF || __targetAliasValue8 == TYP_I_IMPL)));
 
                     var commaNode = parent.AsOp();
 
@@ -15831,7 +15779,7 @@ public partial class Compiler
 
             for (ushort curSlot = 0; curSlot < numSlots; curSlot++)
             {
-                var offs = (ushort)(curSlot * TARGET_POINTER_SIZE);
+                var offs = (ushort)(curSlot * Configuration.TARGET_POINTER_SIZE);
                 var gcPtr = layout.GetGCPtrType(curSlot);
 
                 if (!varTypeIsGC(gcPtr))
@@ -15844,7 +15792,7 @@ public partial class Compiler
                 var zeroField = gtNewStoreLclFldNode(gcPtr, lclNum, offs, gtNewZeroConNode(gcPtr));
                 _ = impAppendTree(zeroField, CHECK_SPILL_NONE, new DebugInfo());
 
-                startOffs = (ushort)(offs + TARGET_POINTER_SIZE);
+                startOffs = (ushort)(offs + Configuration.TARGET_POINTER_SIZE);
             }
 
             assert(startOffs <= lvaLclExactSize(lclNum));
@@ -15881,13 +15829,11 @@ public partial class Compiler
     {
         assert((call.Flags & GTF_CALL_UNMANAGED) is not 0);
 
-#if SWIFT_SUPPORT
-        if (call._unmgdCallConv is CorInfoCallConvExtension.Swift)
+        if (Configuration.SWIFT_SUPPORT && (call._unmgdCallConv is CorInfoCallConvExtension.Swift))
         {
             impPopArgsForSwiftCall(call, sig, ref swiftErrorNode);
             return;
         }
-#endif
 
         // Since we push the arguments in reverse order (i.e. right -> left)
         // spill any side effects from the stack
@@ -15907,10 +15853,11 @@ public partial class Compiler
             argsToReverse--;
         }
 
-#if !TARGET_X86
         // Don't reverse args on ARM or x64 - first four args always placed in regs in order
-        argsToReverse = 0;
-#endif
+        if (!Configuration.TARGET_X86)
+        {
+            argsToReverse = 0;
+        }
 
         var esStack = stackState.esStack.AsSpan(0, stackState.esStackDepth);
 
@@ -15954,7 +15901,7 @@ public partial class Compiler
             var thisPtr = arg.Node;
             impBashVarAddrsToI(thisPtr);
 
-            assert(thisPtr.Type is TYP_I_IMPL or TYP_BYREF);
+            assert((thisPtr.Type is var __targetAliasValue9 && (__targetAliasValue9 == TYP_I_IMPL || __targetAliasValue9 is TYP_BYREF)));
         }
 
         impRetypeUnmanagedCallArgs(call);
@@ -16205,9 +16152,7 @@ public partial class Compiler
             return null;
         }
 
-#if TARGET_XARCH || TARGET_ARM64
         var hwintrinsic = NI_Illegal;
-#endif
 
         var args = sigInfo.args;
         assert(sigInfo.numArgs is 1 or 2);
@@ -16239,8 +16184,8 @@ public partial class Compiler
                 var res = null as GenTree;
                 var op1 = null as GenTree;
 
-#if TARGET_XARCH && FEATURE_HW_INTRINSICS
-                if (intrinsic is NI_PRIMITIVE_ConvertToIntegerNative)
+                if (Configuration.TARGET_XARCH && Configuration.FEATURE_HW_INTRINSICS &&
+                    (intrinsic is NI_PRIMITIVE_ConvertToIntegerNative))
                 {
                     var hwIntrinsicId = NI_Illegal;
 
@@ -16271,8 +16216,7 @@ public partial class Compiler
                             }
                         }
                     }
-#if TARGET_AMD64
-                    else
+                    else if (Configuration.TARGET_AMD64)
                     {
                         assert(retType is TYP_LONG);
 
@@ -16301,7 +16245,6 @@ public partial class Compiler
                             }
                         }
                     }
-#endif
 
                     if (hwIntrinsicId is not NI_Illegal)
                     {
@@ -16316,7 +16259,6 @@ public partial class Compiler
                         return res;
                     }
                 }
-#endif
 
                 op1 = impPopStack().val;
 
@@ -16359,8 +16301,7 @@ public partial class Compiler
 
                 baseType = baseJitType.VarType;
 
-#if !TARGET_64BIT
-                if (varTypeIsLong(baseType))
+                if (!Configuration.TARGET_64BIT && varTypeIsLong(baseType))
                 {
                     // TODO-CQ: Adding long decomposition support is more complex
                     // and not supported today so early exit if we have a long and
@@ -16368,30 +16309,29 @@ public partial class Compiler
 
                     break;
                 }
-#endif
-
-#if FEATURE_HW_INTRINSICS
-#if TARGET_XARCH
-                var op2 = impPopStack().val;
-                var op1 = impPopStack().val;
-
-                if (varTypeIsLong(baseType))
+                if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
                 {
-                    hwintrinsic = NI_X86Base_X64_Crc32;
-                    op1 = gtFoldExpr(gtNewCastNode(baseType, op1, fromUnsigned: true, baseType));
-                }
-                else
-                {
-                    hwintrinsic = NI_X86Base_Crc32;
-                    baseType = baseType.ActualType;
-                }
+                    var op2 = impPopStack().val;
+                    var op1 = impPopStack().val;
 
-                result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1, op2);
+                    if (varTypeIsLong(baseType))
+                    {
+                        hwintrinsic = NI_X86Base_X64_Crc32;
+                        op1 = gtFoldExpr(gtNewCastNode(baseType, op1, fromUnsigned: true, baseType));
+                    }
+                    else
+                    {
+                        hwintrinsic = NI_X86Base_Crc32;
+                        baseType = baseType.ActualType;
+                    }
 
-                // We use the simdBaseJitType to bring the type of the second argument to codegen
-                result.AsHWIntrinsic().SimdBaseType = baseJitType.PreciseVarType;
-#elif TARGET_ARM64
-                if (compOpportunisticallyDependsOn(InstructionSet_Crc32))
+                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1, op2);
+
+                    // We use the simdBaseJitType to bring the type of the second argument to codegen
+                    result.AsHWIntrinsic().SimdBaseType = baseJitType.PreciseVarType;
+                }
+                else if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64 &&
+                    compOpportunisticallyDependsOn(InstructionSet_Crc32))
                 {
                     var op2 = impPopStack().val;
                     var op1 = impPopStack().val;
@@ -16403,8 +16343,6 @@ public partial class Compiler
                     // We use the simdBaseJitType to bring the type of the second argument to codegen
                     result.AsHWIntrinsic().SimdBaseType = baseJitType.PreciseVarType;
                 }
-#endif
-#endif
 
                 break;
             }
@@ -16435,8 +16373,7 @@ public partial class Compiler
                     break;
                 }
 
-#if !TARGET_64BIT && !TARGET_WASM
-                if (varTypeIsLong(baseType))
+                if (!Configuration.TARGET_64BIT && !Configuration.TARGET_WASM && varTypeIsLong(baseType))
                 {
                     // TODO-CQ: Adding long decomposition support is more complex
                     // and not supported today so early exit if we have a long and
@@ -16444,76 +16381,79 @@ public partial class Compiler
 
                     break;
                 }
-#endif
-
-#if TARGET_RISCV64
-                if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                if (Configuration.TARGET_RISCV64)
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                    {
+                        _ = impPopStack();
+                        result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount, methodHandle: null);
+                    }
+                }
+                else if (Configuration.TARGET_WASM)
                 {
                     _ = impPopStack();
                     result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount, methodHandle: null);
                 }
-#elif TARGET_WASM
-                _ = impPopStack();
-                result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount, methodHandle: null);
-#elif FEATURE_HW_INTRINSICS
-#if TARGET_XARCH
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                else if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
                 {
-                    // Pop the value from the stack
-                    _ = impPopStack();
-
-                    hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
-                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
-                }
-                else
-                {
-                    // Pop the value from the stack
-                    _ = impPopStack();
-
-                    // We're importing this as the following...
-                    // * 32-bit lzcnt: (value is 0) ? 32 : (31 ^ BSR(value))
-                    // * 64-bit lzcnt: (value is 0) ? 64 : (63 ^ BSR(value))
-
-                    op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for LeadingZeroCount");
-
-                    hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
-                    op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
-
-                    var cond = gtNewBinaryNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)) as GenTree;
-                    cond = gtFoldExpr(cond);
-
-                    GenTree trueRes;
-                    GenTree icon;
-
-                    if (varTypeIsLong(baseType))
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        trueRes = gtNewLconNode(64);
-                        icon = gtNewLconNode(63);
+                        // Pop the value from the stack
+                        _ = impPopStack();
+
+                        hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
+                        result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
                     }
                     else
                     {
-                        trueRes = gtNewIconNode(baseType, 32);
-                        icon = gtNewIconNode(baseType, 31);
+                        // Pop the value from the stack
+                        _ = impPopStack();
+
+                        // We're importing this as the following...
+                        // * 32-bit lzcnt: (value is 0) ? 32 : (31 ^ BSR(value))
+                        // * 64-bit lzcnt: (value is 0) ? 64 : (63 ^ BSR(value))
+
+                        op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for LeadingZeroCount");
+
+                        hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                        op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
+
+                        var cond = gtNewBinaryNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)) as GenTree;
+                        cond = gtFoldExpr(cond);
+
+                        GenTree trueRes;
+                        GenTree icon;
+
+                        if (varTypeIsLong(baseType))
+                        {
+                            trueRes = gtNewLconNode(64);
+                            icon = gtNewLconNode(63);
+                        }
+                        else
+                        {
+                            trueRes = gtNewIconNode(baseType, 32);
+                            icon = gtNewIconNode(baseType, 31);
+                        }
+
+                        var falseRes = gtNewBinaryNode(GT_XOR, baseType, op1Dup, icon);
+                        var colon = gtNewColonNode(baseType, trueRes, falseRes);
+
+                        result = gtNewQmarkNode(baseType, cond, colon);
+
+                        var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for LeadingZeroCount Qmark");
+                        impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
+                        result = gtNewLclvNode(baseType, tmp);
                     }
-
-                    var falseRes = gtNewBinaryNode(GT_XOR, baseType, op1Dup, icon);
-                    var colon = gtNewColonNode(baseType, trueRes, falseRes);
-
-                    result = gtNewQmarkNode(baseType, cond, colon);
-
-                    var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for LeadingZeroCount Qmark");
-                    impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
-                    result = gtNewLclvNode(baseType, tmp);
                 }
-#elif TARGET_ARM64
-                // Pop the value from the stack
-                _ = impPopStack();
+                else if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64)
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result = gtNewScalarHWIntrinsicNode(TYP_INT, hwintrinsic, op1);
-                baseType = TYP_INT;
-#endif
-#endif
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                    result = gtNewScalarHWIntrinsicNode(TYP_INT, hwintrinsic, op1);
+                    baseType = TYP_INT;
+                }
                 break;
             }
 
@@ -16550,8 +16490,7 @@ public partial class Compiler
                     break;
                 }
 
-#if !TARGET_64BIT
-                if (varTypeIsLong(baseType))
+                if (!Configuration.TARGET_64BIT && varTypeIsLong(baseType))
                 {
                     // TODO-CQ: Adding long decomposition support is more complex
                     // and not supported today so early exit if we have a long and
@@ -16559,107 +16498,111 @@ public partial class Compiler
 
                     break;
                 }
-#endif
-
-#if FEATURE_HW_INTRINSICS && !TARGET_WASM
-                _ = impPopStack();
-
-                var op1Dup = null as GenTree;
-
-                if (!varTypeIsUnsigned(baseJitType.PreciseVarType))
+                if (Configuration.FEATURE_HW_INTRINSICS && !Configuration.TARGET_WASM)
                 {
-                    op1 = impCloneExpr(op1, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
+                    _ = impPopStack();
 
-                    // We will insert a qmark below that is the first use
-                    (op1, op1Dup) = (op1Dup, op1);
-                }
+                    var op1Dup = null as GenTree;
 
-                // The 0->0 contract is fulfilled by setting the LSB to 1.
-                // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
-                op1 = gtNewBinaryNode(GT_OR, baseType, op1, gtNewIconNode(baseType, 1));
-
-                var isLzcnt = true;
-                var isLong = varTypeIsLong(baseType);
-
-#if TARGET_XARCH
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
-                {
-                    hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
-                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
-                }
-                else
-                {
-                    hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
-                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
-                    isLzcnt = false;
-                }
-#elif TARGET_ARM64
-                hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
-                result = gtNewScalarHWIntrinsicNode(TYP_INT, hwintrinsic, op1);
-                baseType = TYP_INT;
-#else
-#error Unsupported platform
-#endif
-
-                if (isLzcnt)
-                {
-                    GenTree icon;
-
-                    if (isLong)
+                    if (!varTypeIsUnsigned(baseJitType.PreciseVarType))
                     {
-                        if (varTypeIsLong(baseType))
+                        op1 = impCloneExpr(op1, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
+
+                        // We will insert a qmark below that is the first use
+                        (op1, op1Dup) = (op1Dup, op1);
+                    }
+
+                    // The 0->0 contract is fulfilled by setting the LSB to 1.
+                    // Log(1) is 0, and setting the LSB for values > 1 does not change the log2 result.
+                    op1 = gtNewBinaryNode(GT_OR, baseType, op1, gtNewIconNode(baseType, 1));
+
+                    var isLzcnt = true;
+                    var isLong = varTypeIsLong(baseType);
+
+                    if (Configuration.TARGET_XARCH)
+                    {
+                        if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
                         {
-                            icon = gtNewLconNode(63);
+                            hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_LeadingZeroCount : NI_AVX2_LeadingZeroCount;
+                            result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
                         }
                         else
                         {
-                            icon = gtNewIconNode(TYP_INT, 63);
+                            hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanReverse : NI_X86Base_BitScanReverse;
+                            result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                            isLzcnt = false;
                         }
+                    }
+                    else if (Configuration.TARGET_ARM64)
+                    {
+                        hwintrinsic = varTypeIsLong(baseType) ? NI_ArmBase_Arm64_LeadingZeroCount : NI_ArmBase_LeadingZeroCount;
+                        result = gtNewScalarHWIntrinsicNode(TYP_INT, hwintrinsic, op1);
+                        baseType = TYP_INT;
                     }
                     else
                     {
-                        icon = gtNewIconNode(TYP_INT, 31);
+                        throw new PlatformNotSupportedException("Unsupported platform");
                     }
 
-                    result = gtNewBinaryNode(GT_XOR, baseType, result, icon);
+                    if (isLzcnt)
+                    {
+                        GenTree icon;
+
+                        if (isLong)
+                        {
+                            if (varTypeIsLong(baseType))
+                            {
+                                icon = gtNewLconNode(63);
+                            }
+                            else
+                            {
+                                icon = gtNewIconNode(TYP_INT, 63);
+                            }
+                        }
+                        else
+                        {
+                            icon = gtNewIconNode(TYP_INT, 31);
+                        }
+
+                        result = gtNewBinaryNode(GT_XOR, baseType, result, icon);
+                    }
+
+                    if (retType != baseType)
+                    {
+                        result = gtFoldExpr(gtNewCastNode(retType, result, fromUnsigned: true, retType));
+                        baseType = retType;
+                    }
+
+                    if (op1Dup is not null)
+                    {
+                        // The logical operation is:
+                        //   result = (value < 0) ? throw new ArgumentOutOfRangeException() : log2(value);
+                        //
+                        // However, we don't want the exception message to deviate in the case `(value < 0)`
+                        // and so we track it as a rewritable intrinsic node instead. This allows rationalization
+                        // to ensure we actually get the CALL, but still allows DCE and other opts the rest of
+                        // the JIT.
+
+                        assert(!varTypeIsUnsigned(baseJitType.PreciseVarType));
+                        op1 = impCloneExpr(op1Dup, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
+
+                        var fallback = new GenTreeIntrinsic(retType, op1Dup, intrinsic, method) {
+                            EntryPoint = entryPoint,
+                        };
+                        fallback.Flags |= GTF_CALL | GTF_EXCEPT;
+                        var cond = gtNewBinaryNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
+                        var colon = gtNewColonNode(retType, fallback, result);
+                        var qmark = gtNewQmarkNode(retType, cond, colon);
+
+                        // Ensure the fallback will end up set to run rarely
+                        qmark.ThenNodeLikelihood = 0;
+
+                        var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for Log2 Qmark");
+                        impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
+                        result = gtNewLclvNode(retType, tmp);
+                    }
+
                 }
-
-                if (retType != baseType)
-                {
-                    result = gtFoldExpr(gtNewCastNode(retType, result, fromUnsigned: true, retType));
-                    baseType = retType;
-                }
-
-                if (op1Dup is not null)
-                {
-                    // The logical operation is:
-                    //   result = (value < 0) ? throw new ArgumentOutOfRangeException() : log2(value);
-                    //
-                    // However, we don't want the exception message to deviate in the case `(value < 0)`
-                    // and so we track it as a rewritable intrinsic node instead. This allows rationalization
-                    // to ensure we actually get the CALL, but still allows DCE and other opts the rest of
-                    // the JIT.
-
-                    assert(!varTypeIsUnsigned(baseJitType.PreciseVarType));
-                    op1 = impCloneExpr(op1Dup, out op1Dup, CHECK_SPILL_ALL, "Cloning op1 for signed Log2");
-
-                    var fallback = new GenTreeIntrinsic(retType, op1Dup, intrinsic, method) {
-                        EntryPoint = entryPoint,
-                    };
-                    fallback.Flags |= GTF_CALL | GTF_EXCEPT;
-                    var cond = gtNewBinaryNode(GT_LT, TYP_INT, op1, gtNewZeroConNode(isLong ? TYP_LONG : TYP_INT));
-                    var colon = gtNewColonNode(retType, fallback, result);
-                    var qmark = gtNewQmarkNode(retType, cond, colon);
-
-                    // Ensure the fallback will end up set to run rarely
-                    qmark.ThenNodeLikelihood = 0;
-
-                    var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for Log2 Qmark");
-                    impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
-                    result = gtNewLclvNode(retType, tmp);
-                }
-
-#endif
                 break;
             }
 
@@ -16689,8 +16632,7 @@ public partial class Compiler
                     break;
                 }
 
-#if !TARGET_64BIT && !TARGET_WASM
-                if (varTypeIsLong(baseType))
+                if (!Configuration.TARGET_64BIT && !Configuration.TARGET_WASM && varTypeIsLong(baseType))
                 {
                     // TODO-CQ: Adding long decomposition support is more complex
                     // and not supported today so early exit if we have a long and
@@ -16698,32 +16640,35 @@ public partial class Compiler
 
                     break;
                 }
-#endif
-
-#if TARGET_RISCV64
-                if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                if (Configuration.TARGET_RISCV64)
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                    {
+                        _ = impPopStack();
+                        result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
+                    }
+                }
+                else if (Configuration.TARGET_WASM)
                 {
                     _ = impPopStack();
                     result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
                 }
-#elif TARGET_WASM
-                _ = impPopStack();
-                result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
-#elif FEATURE_HW_INTRINSICS
-#if TARGET_XARCH
-                // Pop the value from the stack
-                _ = impPopStack();
+                else if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
 
-                hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_PopCount : NI_X86Base_PopCount;
-                result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
-#elif TARGET_ARM64
-                _ = impPopStack();
+                    hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_PopCount : NI_X86Base_PopCount;
+                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
+                }
+                else if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64)
+                {
+                    _ = impPopStack();
 
-                compFloatingPointUsed = true;
-                result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
-                baseType = TYP_INT;
-#endif
-#endif
+                    compFloatingPointUsed = true;
+                    result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_PopCount, methodHandle: null);
+                    baseType = TYP_INT;
+                }
                 break;
             }
 
@@ -16762,8 +16707,7 @@ public partial class Compiler
                     break;
                 }
 
-#if !TARGET_64BIT && !TARGET_WASM
-                if (varTypeIsLong(baseType))
+                if (!Configuration.TARGET_64BIT && !Configuration.TARGET_WASM && varTypeIsLong(baseType))
                 {
                     // TODO-CQ: Adding long decomposition support is more complex
                     // and not supported today so early exit if we have a long and
@@ -16771,72 +16715,75 @@ public partial class Compiler
 
                     break;
                 }
-#endif
-
-#if TARGET_RISCV64
-                if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                if (Configuration.TARGET_RISCV64)
+                {
+                    if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                    {
+                        _ = impPopStack();
+                        result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
+                    }
+                }
+                else if (Configuration.TARGET_WASM)
                 {
                     _ = impPopStack();
                     result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
                 }
-#elif TARGET_WASM
-                _ = impPopStack();
-                result = new GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
-#elif FEATURE_HW_INTRINSICS
-#if TARGET_XARCH
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                else if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
                 {
-                    // Pop the value from the stack
-                    _ = impPopStack();
-
-                    hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_TrailingZeroCount : NI_AVX2_TrailingZeroCount;
-                    result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
-                }
-                else
-                {
-                    // Pop the value from the stack
-                    _ = impPopStack();
-
-                    // We're importing this as the following...
-                    // * 32-bit tzcnt: (value is 0) ? 32 : BSF(value)
-                    // * 64-bit tzcnt: (value is 0) ? 64 : BSF(value)
-
-                    op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for TrailingZeroCount");
-
-                    hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
-                    op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
-
-                    var cond = gtNewBinaryNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)) as GenTree;
-                    cond = gtFoldExpr(cond);
-
-                    GenTree trueRes;
-
-                    if (varTypeIsLong(baseType))
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        trueRes = gtNewLconNode(64);
+                        // Pop the value from the stack
+                        _ = impPopStack();
+
+                        hwintrinsic = varTypeIsLong(baseType) ? NI_AVX2_X64_TrailingZeroCount : NI_AVX2_TrailingZeroCount;
+                        result = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1);
                     }
                     else
                     {
-                        trueRes = gtNewIconNode(baseType, 32);
+                        // Pop the value from the stack
+                        _ = impPopStack();
+
+                        // We're importing this as the following...
+                        // * 32-bit tzcnt: (value is 0) ? 32 : BSF(value)
+                        // * 64-bit tzcnt: (value is 0) ? 64 : BSF(value)
+
+                        op1 = impCloneExpr(op1, out var op1Dup, CHECK_SPILL_ALL, "Cloning op1 for TrailingZeroCount");
+
+                        hwintrinsic = varTypeIsLong(baseType) ? NI_X86Base_X64_BitScanForward : NI_X86Base_BitScanForward;
+                        op1Dup = gtNewScalarHWIntrinsicNode(baseType, hwintrinsic, op1Dup);
+
+                        var cond = gtNewBinaryNode(GT_EQ, TYP_INT, op1, gtNewZeroConNode(baseType)) as GenTree;
+                        cond = gtFoldExpr(cond);
+
+                        GenTree trueRes;
+
+                        if (varTypeIsLong(baseType))
+                        {
+                            trueRes = gtNewLconNode(64);
+                        }
+                        else
+                        {
+                            trueRes = gtNewIconNode(baseType, 32);
+                        }
+
+                        var falseRes = op1Dup;
+                        var colon = gtNewColonNode(baseType, trueRes, falseRes);
+
+                        result = gtNewQmarkNode(baseType, cond, colon);
+
+                        var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for TrailingZeroCount Qmark");
+                        impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
+                        result = gtNewLclvNode(baseType, tmp);
                     }
-
-                    var falseRes = op1Dup;
-                    var colon = gtNewColonNode(baseType, trueRes, falseRes);
-
-                    result = gtNewQmarkNode(baseType, cond, colon);
-
-                    var tmp = lvaGrabTemp(shortLifetime: true, "Grabbing temp for TrailingZeroCount Qmark");
-                    impStoreToTemp(tmp, result, CHECK_SPILL_NONE);
-                    result = gtNewLclvNode(baseType, tmp);
                 }
-#elif TARGET_ARM64
-                // Pop the value from the stack
-                _ = impPopStack();
+                else if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64)
+                {
+                    // Pop the value from the stack
+                    _ = impPopStack();
 
-                result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
-                baseType = TYP_INT;
-#endif
-#endif
+                    result = new GenTreeIntrinsic(TYP_INT, op1, NI_PRIMITIVE_TrailingZeroCount, methodHandle: null);
+                    baseType = TYP_INT;
+                }
 
                 break;
             }
@@ -16898,11 +16845,8 @@ public partial class Compiler
             HasOrderingSideEffect = true
         };
 
-#if JIT32_GCENCODER
-        var forceInsertNewBlock = isSingleBlockFilter || compStressCompile(STRESS_CATCH_ARG, 5);
-#else
-        var forceInsertNewBlock = compStressCompile(STRESS_CATCH_ARG, 5);
-#endif
+        var forceInsertNewBlock = (Configuration.JIT32_GCENCODER && isSingleBlockFilter) ||
+            compStressCompile(STRESS_CATCH_ARG, 5);
 
         // Spill GT_CATCH_ARG to a temp if there are jumps to the beginning of the handler.
         //
@@ -17339,8 +17283,8 @@ public partial class Compiler
 
                 assertImp(
                     (op2.Type.ActualType == info.compRetType.ActualType) ||
-                    ((op2.Type is TYP_I_IMPL) && (info.compRetType is TYP_BYREF)) ||
-                    ((op2.Type is TYP_BYREF) && (info.compRetType is TYP_I_IMPL)) ||
+                    (((op2.Type == TYP_I_IMPL)) && (info.compRetType is TYP_BYREF)) ||
+                    ((op2.Type is TYP_BYREF) && ((info.compRetType == TYP_I_IMPL))) ||
                     (varTypeIsFloating(op2.Type) && varTypeIsFloating(info.compRetType)) ||
                     (varTypeIsStruct(op2.Type) && varTypeIsStruct(info.compRetType))
                 );
@@ -17797,13 +17741,11 @@ public partial class Compiler
         {
             asyncInfo.IsTailAwait = (inliningCall is null) || inliningCall.GetAsyncInfo().IsTailAwait;
 
-#if FEATURE_TAILCALL_OPT
             // This implementation-detail call intentionally does not consult the EE's canTailCall.
-            if (asyncInfo.IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled)
+            if (Configuration.FEATURE_TAILCALL_OPT && asyncInfo.IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled)
             {
                 awaitCall._callMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
             }
-#endif
             awaitCall.SetIsAsync(asyncInfo);
         }
         else
@@ -19231,9 +19173,8 @@ public partial class Compiler
 
                 ref var args = ref call.Args;
 
-#if !TARGET_ARM
                 // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
-                if ((TargetOS.IsWindows || compUnixX86Abi()) && call.IsUnmanaged)
+                if (!Configuration.TARGET_ARM && (TargetOS.IsWindows || compUnixX86Abi()) && call.IsUnmanaged)
                 {
                     if (callConvIsInstanceMethodCallConv(call.UnmanagedCallConv))
                     {
@@ -19248,19 +19189,18 @@ public partial class Compiler
                             // Empty arg list
                             _ = args.PushFront(newArg);
                         }
-#if TARGET_X86
-                        else if (call.UnmanagedCallConv == CorInfoCallConvExtension.Thiscall)
+                        else if (Configuration.TARGET_X86 && (call.UnmanagedCallConv == CorInfoCallConvExtension.Thiscall))
                         {
                             // For thiscall, the "this" parameter is not included in the argument list reversal,
                             // so we need to put the return buffer as the last parameter.
                             _ = args.PushBack(newArg);
                         }
-                        else if (head.Next is null)
+                        else if (Configuration.TARGET_X86 && (head.Next is null))
                         {
                             // Only 1 arg, so insert at beginning
                             _ = args.PushFront(newArg);
                         }
-                        else
+                        else if (Configuration.TARGET_X86)
                         {
                             // Find second last arg
                             var  secondLastArg = null as CallArg;
@@ -19279,28 +19219,28 @@ public partial class Compiler
                             assert(secondLastArg is not null, "Expected to find second last arg");
                             _ = args.InsertAfter(secondLastArg, newArg);
                         }
-#else
                         else
                         {
                             _ = args.InsertAfter(head, newArg);
                         }
-#endif
                     }
                     else
                     {
-#if TARGET_X86
-                        // The argument list has already been reversed.
-                        // Insert the return buffer as the last node so it will be pushed on to the stack last
-                        // as required by the native ABI.
-                        _ = args.PushBack(newArg);
-#else
-                        // insert the return value buffer into the argument list as first byref parameter
-                        _ = args.PushFront(newArg);
-#endif
+                        if (Configuration.TARGET_X86)
+                        {
+                            // The argument list has already been reversed.
+                            // Insert the return buffer as the last node so it will be pushed on to the stack last
+                            // as required by the native ABI.
+                            _ = args.PushBack(newArg);
+                        }
+                        else
+                        {
+                            // insert the return value buffer into the argument list as first byref parameter
+                            _ = args.PushFront(newArg);
+                        }
                     }
                 }
                 else
-#endif
                 {
                     // insert the return value buffer into the argument list as first byref parameter after 'this'
                     _ = args.InsertAfterThisOrFirst(newArg);
@@ -19313,13 +19253,11 @@ public partial class Compiler
                 return dataRef;
             }
 
-#if UNIX_AMD64_ABI
-            if (store.Oper is GT_STORE_LCL_VAR)
+            if (Configuration.UNIX_AMD64_ABI && (store.Oper is GT_STORE_LCL_VAR))
             {
                 // TODO-Cleanup: delete this quirk.
                 lvaGetDesc(store.AsLclVar().LclNum).lvIsMultiRegRet = true;
             }
-#endif
         }
         else if (dataOper is GT_RET_EXPR)
         {
@@ -19526,33 +19464,34 @@ public partial class Compiler
             return true;
         }
 
-#if TARGET_64BIT
-        // Jit64 compat:
-        if (callerRetType is TYP_VOID)
+        if (Configuration.TARGET_64BIT)
         {
-            // This needs to be allowed to support the following IL pattern that Jit64 allows:
-            //     tail.call
-            //     pop
-            //     ret
-            //
-            // Note that the above IL pattern is not valid as per IL verification rules.
-            // Therefore, only full trust code can take advantage of this pattern.
-            return true;
-        }
+            // Jit64 compat:
+            if (callerRetType is TYP_VOID)
+            {
+                // This needs to be allowed to support the following IL pattern that Jit64 allows:
+                //     tail.call
+                //     pop
+                //     ret
+                //
+                // Note that the above IL pattern is not valid as per IL verification rules.
+                // Therefore, only full trust code can take advantage of this pattern.
+                return true;
+            }
 
-        // These checks return true if the return value type sizes are the same and
-        // get returned in the same return register i.e. caller doesn't need to normalize
-        // return value. Some of the tail calls permitted by below checks would have
-        // been rejected by IL Verifier before we reached here.  Therefore, only full
-        // trust code can make those tail calls.
-        var isCallerRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, out var callerRetTypeSize, info.compIsVarArgs, callerCallConv);
-        var isCalleeRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, out var calleeRetTypeSize, info.compIsVarArgs, calleeCallConv);
+            // These checks return true if the return value type sizes are the same and
+            // get returned in the same return register i.e. caller doesn't need to normalize
+            // return value. Some of the tail calls permitted by below checks would have
+            // been rejected by IL Verifier before we reached here.  Therefore, only full
+            // trust code can make those tail calls.
+            var isCallerRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, out var callerRetTypeSize, info.compIsVarArgs, callerCallConv);
+            var isCalleeRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, out var calleeRetTypeSize, info.compIsVarArgs, calleeCallConv);
 
-        if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
-        {
-            return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
+            if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
+            {
+                return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
+            }
         }
-#endif
 
         return false;
     }
@@ -19956,13 +19895,11 @@ public partial class Compiler
                             lvaGetDesc(localCopyThis.AsLclFld().LclNum).lvHasLdAddrOp = true;
                             madeLocalCopy = true;
 
-#if FEATURE_TAILCALL_OPT
-                            if (call.IsImplicitTailCall)
+                            if (Configuration.FEATURE_TAILCALL_OPT && call.IsImplicitTailCall)
                             {
                                 JITDUMP("Clearing the implicit tail call flag\n");
                                 call._callMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
                             }
-#endif
                         }
                     }
 
@@ -20010,7 +19947,7 @@ public partial class Compiler
                         if (!madeLocalCopy)
                         {
                             // The callee may return an interior pointer to the box; keep it on the heap.
-                            var payloadOffset = gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE);
+                            var payloadOffset = gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE);
                             var boxPayload = gtNewBinaryNode(GT_ADD, TYP_BYREF, thisArg.EarlyNode, payloadOffset);
                             thisArg.EarlyNode = boxPayload;
                         }
@@ -20133,7 +20070,7 @@ public partial class Compiler
 
                 // This does a LDIND on the obj, which should be a byref. pointing to a ref
                 impBashVarAddrsToI(obj);
-                assert((obj.Type.ActualType is TYP_I_IMPL) || (obj.Type is TYP_BYREF));
+                assert(((obj.Type.ActualType == TYP_I_IMPL)) || (obj.Type is TYP_BYREF));
 
                 var constraintTyp = info.compCompHnd->asCorInfoType(constrainedResolvedToken.hClass);
                 return gtNewLoadValueNode(constraintTyp.VarType, obj, layout: null);
@@ -20150,7 +20087,7 @@ public partial class Compiler
 
                 var obj = thisPtr;
 
-                assert(obj.Type is TYP_BYREF or TYP_I_IMPL);
+                assert((obj.Type is var __targetAliasValue10 && (__targetAliasValue10 is TYP_BYREF || __targetAliasValue10 == TYP_I_IMPL)));
                 var objType = TypeHandleToVarType(constrainedResolvedToken.hClass, out var layout);
 
                 if (objType is TYP_STRUCT)
@@ -21336,13 +21273,11 @@ public partial class Compiler
 
         if (!op2.Oper.IsIntegralConst)
         {
-#if LOWER_DECOMPOSE_LONGS
-            if (varTypeIsLong(baseType))
+            if (Configuration.LOWER_DECOMPOSE_LONGS && varTypeIsLong(baseType))
             {
                 // Variable-sized long rotates need special handling on 32-bit.
                 return null;
             }
-#endif
             // Lowering removes the explicit mask when the target's rotate implicitly masks its operand.
             _ = impPopStack();
             var rotateValue = impPopStack().val;
@@ -21446,147 +21381,200 @@ public partial class Compiler
 
     public bool IsTargetIntrinsic(NamedIntrinsic intrinsicName)
     {
-        switch (intrinsicName)
+        if (Configuration.TARGET_XARCH)
         {
-#if TARGET_XARCH
-            case NI_System_Math_Abs:
-            case NI_System_Math_Ceiling:
-            case NI_System_Math_Floor:
-            case NI_System_Math_Max:
-            case NI_System_Math_MaxMagnitude:
-            case NI_System_Math_MaxMagnitudeNumber:
-            case NI_System_Math_MaxNative:
-            case NI_System_Math_MaxNumber:
-            case NI_System_Math_Min:
-            case NI_System_Math_MinMagnitude:
-            case NI_System_Math_MinMagnitudeNumber:
-            case NI_System_Math_MinNative:
-            case NI_System_Math_MinNumber:
-            case NI_System_Math_MultiplyAddEstimate:
-            case NI_System_Math_ReciprocalEstimate:
-            case NI_System_Math_ReciprocalSqrtEstimate:
-            case NI_System_Math_Round:
-            case NI_System_Math_Sqrt:
-            case NI_System_Math_Truncate:
+            switch (intrinsicName)
             {
-                return true;
-            }
+                case NI_System_Math_Abs:
+                case NI_System_Math_Ceiling:
+                case NI_System_Math_Floor:
+                case NI_System_Math_Max:
+                case NI_System_Math_MaxMagnitude:
+                case NI_System_Math_MaxMagnitudeNumber:
+                case NI_System_Math_MaxNative:
+                case NI_System_Math_MaxNumber:
+                case NI_System_Math_Min:
+                case NI_System_Math_MinMagnitude:
+                case NI_System_Math_MinMagnitudeNumber:
+                case NI_System_Math_MinNative:
+                case NI_System_Math_MinNumber:
+                case NI_System_Math_MultiplyAddEstimate:
+                case NI_System_Math_ReciprocalEstimate:
+                case NI_System_Math_ReciprocalSqrtEstimate:
+                case NI_System_Math_Round:
+                case NI_System_Math_Sqrt:
+                case NI_System_Math_Truncate:
+                {
+                    return true;
+                }
 
-            case NI_System_Math_FusedMultiplyAdd:
-            {
-                return compOpportunisticallyDependsOn(InstructionSet_AVX2);
-            }
-#elif TARGET_ARM64
-            case NI_System_Math_Abs:
-            case NI_System_Math_Ceiling:
-            case NI_System_Math_Floor:
-            case NI_System_Math_FusedMultiplyAdd:
-            case NI_System_Math_Max:
-            case NI_System_Math_MaxMagnitude:
-            case NI_System_Math_MaxMagnitudeNumber:
-            case NI_System_Math_MaxNative:
-            case NI_System_Math_MaxNumber:
-            case NI_System_Math_Min:
-            case NI_System_Math_MinMagnitude:
-            case NI_System_Math_MinMagnitudeNumber:
-            case NI_System_Math_MinNative:
-            case NI_System_Math_MinNumber:
-            case NI_System_Math_MultiplyAddEstimate:
-            case NI_System_Math_ReciprocalEstimate:
-            case NI_System_Math_ReciprocalSqrtEstimate:
-            case NI_System_Math_Round:
-            case NI_System_Math_Sqrt:
-            case NI_System_Math_Truncate:
-            case NI_PRIMITIVE_PopCount:
-            case NI_PRIMITIVE_TrailingZeroCount:
-            {
-                return true;
-            }
-#elif TARGET_ARM
-            case NI_System_Math_Abs:
-            case NI_System_Math_Sqrt:
-            case NI_System_Math_MultiplyAddEstimate:
-            case NI_System_Math_ReciprocalEstimate:
-            case NI_System_Math_ReciprocalSqrtEstimate:
-            case NI_PRIMITIVE_SaturateToInt8:
-            case NI_PRIMITIVE_SaturateToInt16:
-            case NI_PRIMITIVE_SaturateToUInt8:
-            case NI_PRIMITIVE_SaturateToUInt16:
-            {
-                return true;
-            }
-#elif TARGET_RISCV64
-            case NI_System_Math_Abs:
-            case NI_System_Math_Sqrt:
-            case NI_System_Math_Max:
-            case NI_System_Math_MaxNumber:
-            case NI_System_Math_MaxNative:
-            case NI_System_Math_Min:
-            case NI_System_Math_MinNumber:
-            case NI_System_Math_MinNative:
-            case NI_System_Math_MultiplyAddEstimate:
-            case NI_System_Math_ReciprocalEstimate:
-            case NI_System_Math_ReciprocalSqrtEstimate:
-            case NI_PRIMITIVE_SaturateToInt8:
-            case NI_PRIMITIVE_SaturateToInt16:
-            case NI_PRIMITIVE_SaturateToUInt8:
-            case NI_PRIMITIVE_SaturateToUInt16:
-            {
-                return true;
-            }
+                case NI_System_Math_FusedMultiplyAdd:
+                {
+                    return compOpportunisticallyDependsOn(InstructionSet_AVX2);
+                }
 
-            case NI_System_Math_MinUnsigned:
-            case NI_System_Math_MaxUnsigned:
-            case NI_PRIMITIVE_LeadingZeroCount:
-            case NI_PRIMITIVE_TrailingZeroCount:
-            case NI_PRIMITIVE_PopCount:
-            {
-                return compOpportunisticallyDependsOn(InstructionSet_Zbb);
-            }
-#elif TARGET_LOONGARCH64
-            case NI_System_Math_Abs:
-            case NI_System_Math_Sqrt:
-            case NI_System_Math_ReciprocalSqrtEstimate:
-            {
-                // TODO-LoongArch64: support these standard intrinsics
-                return false;
-            }
-
-            case NI_System_Math_MultiplyAddEstimate:
-            case NI_System_Math_ReciprocalEstimate:
-            case NI_System_Math_MaxNative:
-            case NI_System_Math_MinNative:
-            case NI_PRIMITIVE_SaturateToInt8:
-            case NI_PRIMITIVE_SaturateToInt16:
-            case NI_PRIMITIVE_SaturateToUInt8:
-            case NI_PRIMITIVE_SaturateToUInt16:
-            {
-                return true;
-            }
-#elif TARGET_WASM
-            case NI_System_Math_Abs:
-            case NI_System_Math_Ceiling:
-            case NI_System_Math_Floor:
-            case NI_System_Math_Max:
-            case NI_System_Math_MaxNative:
-            case NI_System_Math_Min:
-            case NI_System_Math_MinNative:
-            case NI_System_Math_Round:
-            case NI_System_Math_Sqrt:
-            case NI_System_Math_Truncate:
-            case NI_PRIMITIVE_LeadingZeroCount:
-            case NI_PRIMITIVE_TrailingZeroCount:
-            case NI_PRIMITIVE_PopCount:
-            {
-                return true;
-            }
-#endif
-
-            default:
-            {
-                return false;
+                default:
+                {
+                    return false;
+                }
             }
         }
+        else if (Configuration.TARGET_ARM64)
+        {
+            switch (intrinsicName)
+            {
+                case NI_System_Math_Abs:
+                case NI_System_Math_Ceiling:
+                case NI_System_Math_Floor:
+                case NI_System_Math_FusedMultiplyAdd:
+                case NI_System_Math_Max:
+                case NI_System_Math_MaxMagnitude:
+                case NI_System_Math_MaxMagnitudeNumber:
+                case NI_System_Math_MaxNative:
+                case NI_System_Math_MaxNumber:
+                case NI_System_Math_Min:
+                case NI_System_Math_MinMagnitude:
+                case NI_System_Math_MinMagnitudeNumber:
+                case NI_System_Math_MinNative:
+                case NI_System_Math_MinNumber:
+                case NI_System_Math_MultiplyAddEstimate:
+                case NI_System_Math_ReciprocalEstimate:
+                case NI_System_Math_ReciprocalSqrtEstimate:
+                case NI_System_Math_Round:
+                case NI_System_Math_Sqrt:
+                case NI_System_Math_Truncate:
+                case NI_PRIMITIVE_PopCount:
+                case NI_PRIMITIVE_TrailingZeroCount:
+                {
+                    return true;
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            switch (intrinsicName)
+            {
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
+                case NI_System_Math_MultiplyAddEstimate:
+                case NI_System_Math_ReciprocalEstimate:
+                case NI_System_Math_ReciprocalSqrtEstimate:
+                case NI_PRIMITIVE_SaturateToInt8:
+                case NI_PRIMITIVE_SaturateToInt16:
+                case NI_PRIMITIVE_SaturateToUInt8:
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return true;
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            switch (intrinsicName)
+            {
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
+                case NI_System_Math_Max:
+                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MaxNative:
+                case NI_System_Math_Min:
+                case NI_System_Math_MinNumber:
+                case NI_System_Math_MinNative:
+                case NI_System_Math_MultiplyAddEstimate:
+                case NI_System_Math_ReciprocalEstimate:
+                case NI_System_Math_ReciprocalSqrtEstimate:
+                case NI_PRIMITIVE_SaturateToInt8:
+                case NI_PRIMITIVE_SaturateToInt16:
+                case NI_PRIMITIVE_SaturateToUInt8:
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return true;
+                }
+
+                case NI_System_Math_MinUnsigned:
+                case NI_System_Math_MaxUnsigned:
+                case NI_PRIMITIVE_LeadingZeroCount:
+                case NI_PRIMITIVE_TrailingZeroCount:
+                case NI_PRIMITIVE_PopCount:
+                {
+                    return compOpportunisticallyDependsOn(InstructionSet_Zbb);
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            switch (intrinsicName)
+            {
+                case NI_System_Math_Abs:
+                case NI_System_Math_Sqrt:
+                case NI_System_Math_ReciprocalSqrtEstimate:
+                {
+                    // TODO-LoongArch64: support these standard intrinsics
+                    return false;
+                }
+
+                case NI_System_Math_MultiplyAddEstimate:
+                case NI_System_Math_ReciprocalEstimate:
+                case NI_System_Math_MaxNative:
+                case NI_System_Math_MinNative:
+                case NI_PRIMITIVE_SaturateToInt8:
+                case NI_PRIMITIVE_SaturateToInt16:
+                case NI_PRIMITIVE_SaturateToUInt8:
+                case NI_PRIMITIVE_SaturateToUInt16:
+                {
+                    return true;
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            switch (intrinsicName)
+            {
+                case NI_System_Math_Abs:
+                case NI_System_Math_Ceiling:
+                case NI_System_Math_Floor:
+                case NI_System_Math_Max:
+                case NI_System_Math_MaxNative:
+                case NI_System_Math_Min:
+                case NI_System_Math_MinNative:
+                case NI_System_Math_Round:
+                case NI_System_Math_Sqrt:
+                case NI_System_Math_Truncate:
+                case NI_PRIMITIVE_LeadingZeroCount:
+                case NI_PRIMITIVE_TrailingZeroCount:
+                case NI_PRIMITIVE_PopCount:
+                {
+                    return true;
+                }
+
+                default:
+                {
+                    return false;
+                }
+            }
+        }
+
+        return false;
     }
 
     public unsafe NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
@@ -21955,21 +21943,19 @@ public partial class Compiler
             {
                 namespaceName = namespaceName[1..];
 
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-                if (NameEquals(namespaceName, "Buffers.Binary"u8))
+                if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 ||
+                    Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) &&
+                    NameEquals(namespaceName, "Buffers.Binary"u8))
                 {
                     if (NameEquals(className, "BinaryPrimitives"u8) && NameEquals(methodName, "ReverseEndianness"u8))
                     {
-#if TARGET_RISCV64
-                        if (compOpportunisticallyDependsOn(InstructionSet_Zbb))
-#endif
+                        if (!Configuration.TARGET_RISCV64 || compOpportunisticallyDependsOn(InstructionSet_Zbb))
                         {
                             result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
                         }
                     }
                 }
                 else
-#endif
                     if (NameEquals(namespaceName, "Collections.Generic"u8))
                     {
                         if (NameEquals(className, "Comparer`1"u8) && NameEquals(methodName, "get_Default"u8))
@@ -21993,115 +21979,116 @@ public partial class Compiler
                         }
                         else
                         {
-#if FEATURE_HW_INTRINSICS
-                            var isVectorT = NameEquals(className, "Vector`1"u8);
-                            var isVector = NameEquals(className, "Vector"u8);
-
-                            if (isVectorT || isVector)
+                            if (Configuration.FEATURE_HW_INTRINSICS)
                             {
-                                var lookupMethodName = methodName;
+                                var isVectorT = NameEquals(className, "Vector`1"u8);
+                                var isVector = NameEquals(className, "Vector"u8);
 
-                                var vectorInterfacePrefixUtf8 = "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector"u8;
-
-                                if (NameStartsWith(methodName, vectorInterfacePrefixUtf8))
+                                if (isVectorT || isVector)
                                 {
-                                    var interfaceSuffix = methodName[vectorInterfacePrefixUtf8.Length..];
+                                    var lookupMethodName = methodName;
 
-                                    if (NameStartsWith(interfaceSuffix, "<T>,T>."u8))
+                                    var vectorInterfacePrefixUtf8 = "System.Runtime.Intrinsics.ISimdVector<System.Numerics.Vector"u8;
+
+                                    if (NameStartsWith(methodName, vectorInterfacePrefixUtf8))
                                     {
-                                        lookupMethodName = interfaceSuffix[7..];
-                                    }
-                                }
+                                        var interfaceSuffix = methodName[vectorInterfacePrefixUtf8.Length..];
 
-                                if (NameStartsWith(lookupMethodName, "As"u8) && (lookupMethodName.Length > 2))
-                                {
-                                    var vectorConversion = lookupMethodName[2..];
-                                    var converted = false;
-
-                                    if (NameStartsWith(vectorConversion, "Vector"u8))
-                                    {
-                                        var conversionType = vectorConversion[6..];
-
-                                        if (NameEquals(conversionType, "Byte"u8))
+                                        if (NameStartsWith(interfaceSuffix, "<T>,T>."u8))
                                         {
-                                            lookupMethodName = "AsByte"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "Double"u8))
-                                        {
-                                            lookupMethodName = "AsDouble"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "Int16"u8))
-                                        {
-                                            lookupMethodName = "AsInt16"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "Int32"u8))
-                                        {
-                                            lookupMethodName = "AsInt32"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "Int64"u8))
-                                        {
-                                            lookupMethodName = "AsInt64"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "NInt"u8))
-                                        {
-                                            lookupMethodName = "AsNInt"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "NUInt"u8))
-                                        {
-                                            lookupMethodName = "AsNUInt"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "SByte"u8))
-                                        {
-                                            lookupMethodName = "AsSByte"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "Single"u8))
-                                        {
-                                            lookupMethodName = "AsSingle"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "UInt16"u8))
-                                        {
-                                            lookupMethodName = "AsUInt16"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "UInt32"u8))
-                                        {
-                                            lookupMethodName = "AsUInt32"u8;
-                                            converted = true;
-                                        }
-                                        else if (NameEquals(conversionType, "UInt64"u8))
-                                        {
-                                            lookupMethodName = "AsUInt64"u8;
-                                            converted = true;
+                                            lookupMethodName = interfaceSuffix[7..];
                                         }
                                     }
 
-                                    if (!converted)
+                                    if (NameStartsWith(lookupMethodName, "As"u8) && (lookupMethodName.Length > 2))
                                     {
-                                        lookupMethodName = default;
-                                    }
-                                }
-                                else if (NameEquals(lookupMethodName, "SquareRoot"u8))
-                                {
-                                    lookupMethodName = "Sqrt"u8;
-                                }
+                                        var vectorConversion = lookupMethodName[2..];
+                                        var converted = false;
 
-                                if (!lookupMethodName.IsEmpty)
-                                {
-                                    CORINFO_SIG_INFO sig;
-                                    info.compCompHnd->getMethodSig(method, &sig);
-                                    result = HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, lookupMethodName);
+                                        if (NameStartsWith(vectorConversion, "Vector"u8))
+                                        {
+                                            var conversionType = vectorConversion[6..];
+
+                                            if (NameEquals(conversionType, "Byte"u8))
+                                            {
+                                                lookupMethodName = "AsByte"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "Double"u8))
+                                            {
+                                                lookupMethodName = "AsDouble"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "Int16"u8))
+                                            {
+                                                lookupMethodName = "AsInt16"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "Int32"u8))
+                                            {
+                                                lookupMethodName = "AsInt32"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "Int64"u8))
+                                            {
+                                                lookupMethodName = "AsInt64"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "NInt"u8))
+                                            {
+                                                lookupMethodName = "AsNInt"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "NUInt"u8))
+                                            {
+                                                lookupMethodName = "AsNUInt"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "SByte"u8))
+                                            {
+                                                lookupMethodName = "AsSByte"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "Single"u8))
+                                            {
+                                                lookupMethodName = "AsSingle"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "UInt16"u8))
+                                            {
+                                                lookupMethodName = "AsUInt16"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "UInt32"u8))
+                                            {
+                                                lookupMethodName = "AsUInt32"u8;
+                                                converted = true;
+                                            }
+                                            else if (NameEquals(conversionType, "UInt64"u8))
+                                            {
+                                                lookupMethodName = "AsUInt64"u8;
+                                                converted = true;
+                                            }
+                                        }
+
+                                        if (!converted)
+                                        {
+                                            lookupMethodName = default;
+                                        }
+                                    }
+                                    else if (NameEquals(lookupMethodName, "SquareRoot"u8))
+                                    {
+                                        lookupMethodName = "Sqrt"u8;
+                                    }
+
+                                    if (!lookupMethodName.IsEmpty)
+                                    {
+                                        CORINFO_SIG_INFO sig;
+                                        info.compCompHnd->getMethodSig(method, &sig);
+                                        result = HWIntrinsicInfo.LookupId(&sig, InstructionSet_Vector, lookupMethodName);
+                                    }
                                 }
                             }
-#endif
 
                             if (result is NI_Illegal)
                             {
@@ -22227,49 +22214,45 @@ public partial class Compiler
                             namespaceName = namespaceName[10..];
                             var isXplatIntrinsic = namespaceName.IsEmpty;
 
-#if FEATURE_HW_INTRINSICS
-                            ReadOnlySpan<byte> platformNamespaceName;
-#if TARGET_XARCH
-                            platformNamespaceName = ".X86"u8;
-#elif TARGET_ARM64
-                        platformNamespaceName = ".Arm"u8;
-#elif TARGET_WASM
-                        platformNamespaceName = ".Wasm"u8;
-#else
-#error Unsupported hardware intrinsic platform
-#endif
-
-                            var interfacePrefix = "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"u8;
-
-                            if (NameStartsWith(methodName, interfacePrefix))
+                            if (Configuration.FEATURE_HW_INTRINSICS)
                             {
-                                var suffix = methodName[interfacePrefix.Length..];
+                                ReadOnlySpan<byte> platformNamespaceName =
+                                    Configuration.TARGET_XARCH ? ".X86"u8 :
+                                    Configuration.TARGET_ARM64 ? ".Arm"u8 :
+                                    Configuration.TARGET_WASM ? ".Wasm"u8 :
+                                    throw new PlatformNotSupportedException("Unsupported hardware intrinsic platform");
 
-                                if (NameStartsWith(suffix, "64<T>,T>."u8))
+                                var interfacePrefix = "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector"u8;
+
+                                if (NameStartsWith(methodName, interfacePrefix))
                                 {
-                                    methodName = suffix[9..];
+                                    var suffix = methodName[interfacePrefix.Length..];
+
+                                    if (NameStartsWith(suffix, "64<T>,T>."u8))
+                                    {
+                                        methodName = suffix[9..];
+                                    }
+                                    else if (NameStartsWith(suffix, "128<T>,T>."u8) || NameStartsWith(suffix, "256<T>,T>."u8) || NameStartsWith(suffix, "512<T>,T>."u8))
+                                    {
+                                        methodName = suffix[10..];
+                                    }
                                 }
-                                else if (NameStartsWith(suffix, "128<T>,T>."u8) || NameStartsWith(suffix, "256<T>,T>."u8) || NameStartsWith(suffix, "512<T>,T>."u8))
+
+                                if (isXplatIntrinsic || NameEquals(namespaceName, platformNamespaceName))
                                 {
-                                    methodName = suffix[10..];
+                                    CORINFO_SIG_INFO sig;
+                                    info.compCompHnd->getMethodSig(method, &sig);
+                                    var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
+                                        ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
+                                        : default;
+                                    var isa = lookupIsa(className, enclosingClassName, outerEnclosingClassName);
+
+                                    if (isa is not InstructionSet_ILLEGAL)
+                                    {
+                                        result = HWIntrinsicInfo.LookupId(&sig, isa, methodName);
+                                    }
                                 }
                             }
-
-                            if (isXplatIntrinsic || NameEquals(namespaceName, platformNamespaceName))
-                            {
-                                CORINFO_SIG_INFO sig;
-                                info.compCompHnd->getMethodSig(method, &sig);
-                                var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
-                                    ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
-                                    : default;
-                                var isa = lookupIsa(className, enclosingClassName, outerEnclosingClassName);
-
-                                if (isa is not InstructionSet_ILLEGAL)
-                                {
-                                    result = HWIntrinsicInfo.LookupId(&sig, isa, methodName);
-                                }
-                            }
-#endif
 
                             if (result is NI_Illegal)
                             {
@@ -22453,8 +22436,8 @@ public partial class Compiler
         {
             JITDUMP("Not recognized - inlining boost\n");
         }
-#if DEBUG && FEATURE_HW_INTRINSICS
-        else if ((result > NI_HW_INTRINSIC_START) && (result < NI_HW_INTRINSIC_END))
+#if DEBUG
+        else if (Configuration.FEATURE_HW_INTRINSICS && (result > NI_HW_INTRINSIC_START) && (result < NI_HW_INTRINSIC_END))
         {
             JITDUMP($"Recognized hardware intrinsic: {HWIntrinsicInfo.lookupName(result)} ({(uint)result})\n");
         }
@@ -22618,32 +22601,38 @@ public partial class Compiler
         return NI_Illegal;
     }
 
-#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
     private NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic intrinsic)
     {
-#if TARGET_XARCH
-        assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
 
-        // Unordered compares use quiet NaN predicates, matching float/double lowering.
-        return intrinsic switch {
-            NI_System_Half_op_Addition or NI_System_Half_op_Increment => NI_AVX10v1_AddScalar,
-            NI_System_Half_op_Subtraction or NI_System_Half_op_Decrement => NI_AVX10v1_SubtractScalar,
-            NI_System_Half_op_Multiply => NI_AVX10v1_MultiplyScalar,
-            NI_System_Half_op_Division => NI_AVX10v1_DivideScalar,
-            NI_System_Half_Sqrt => NI_AVX10v1_SqrtScalar,
-            NI_System_Half_ReciprocalEstimate => NI_AVX10v1_ReciprocalScalar,
-            NI_System_Half_ReciprocalSqrtEstimate => NI_AVX10v1_ReciprocalSqrtScalar,
-            NI_System_Half_FusedMultiplyAdd => NI_AVX10v1_FusedMultiplyAddScalar,
-            NI_System_Half_op_GreaterThan => NI_AVX10v1_CompareScalarUnorderedGreaterThan,
-            NI_System_Half_op_GreaterThanOrEqual => NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual,
-            NI_System_Half_op_LessThan => NI_AVX10v1_CompareScalarUnorderedLessThan,
-            NI_System_Half_op_LessThanOrEqual => NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual,
-            NI_System_Half_op_Equality => NI_AVX10v1_CompareScalarUnorderedEqual,
-            NI_System_Half_op_Inequality => NI_AVX10v1_CompareScalarUnorderedNotEqual,
-            NI_System_Half_Round or NI_System_Half_Ceiling or NI_System_Half_Floor or NI_System_Half_Truncate => NI_AVX10v1_RoundScaleScalar,
-            _ => NI_Illegal,
-        };
-#else
+            // Unordered compares use quiet NaN predicates, matching float/double lowering.
+            return intrinsic switch {
+                NI_System_Half_op_Addition or NI_System_Half_op_Increment => NI_AVX10v1_AddScalar,
+                NI_System_Half_op_Subtraction or NI_System_Half_op_Decrement => NI_AVX10v1_SubtractScalar,
+                NI_System_Half_op_Multiply => NI_AVX10v1_MultiplyScalar,
+                NI_System_Half_op_Division => NI_AVX10v1_DivideScalar,
+                NI_System_Half_Sqrt => NI_AVX10v1_SqrtScalar,
+                NI_System_Half_ReciprocalEstimate => NI_AVX10v1_ReciprocalScalar,
+                NI_System_Half_ReciprocalSqrtEstimate => NI_AVX10v1_ReciprocalSqrtScalar,
+                NI_System_Half_FusedMultiplyAdd => NI_AVX10v1_FusedMultiplyAddScalar,
+                NI_System_Half_op_GreaterThan => NI_AVX10v1_CompareScalarUnorderedGreaterThan,
+                NI_System_Half_op_GreaterThanOrEqual => NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual,
+                NI_System_Half_op_LessThan => NI_AVX10v1_CompareScalarUnorderedLessThan,
+                NI_System_Half_op_LessThanOrEqual => NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual,
+                NI_System_Half_op_Equality => NI_AVX10v1_CompareScalarUnorderedEqual,
+                NI_System_Half_op_Inequality => NI_AVX10v1_CompareScalarUnorderedNotEqual,
+                NI_System_Half_Round or NI_System_Half_Ceiling or NI_System_Half_Floor or NI_System_Half_Truncate => NI_AVX10v1_RoundScaleScalar,
+                _ => NI_Illegal,
+            };
+        }
+
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new PlatformNotSupportedException("Unsupported Half hardware intrinsic platform");
+        }
+
         assert(compOpportunisticallyDependsOn(InstructionSet_Fp16));
 
         return intrinsic switch {
@@ -22667,11 +22656,8 @@ public partial class Compiler
             NI_System_Half_Truncate => NI_Fp16_Truncate,
             _ => NI_Illegal,
         };
-#endif
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private static int lookupHalfRoundingMode(NamedIntrinsic intrinsic)
     {
         switch (intrinsic)
@@ -22703,7 +22689,6 @@ public partial class Compiler
             }
         }
     }
-#endif
 
     private static NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(ReadOnlySpan<byte> methodName)
     {
@@ -23119,11 +23104,8 @@ public partial class Compiler
     {
         var isSupportQuery = (intrinsic is NI_IsSupported) || (intrinsic is NI_IsHardwareAccelerated);
         var isPlatformIntrinsic = intrinsic is NI_System_Runtime_Intrinsics_PlatformIntrinsic;
-        var isHWIntrinsic = false;
-
-#if FEATURE_HW_INTRINSICS
-        isHWIntrinsic = (intrinsic > NI_HW_INTRINSIC_START) && (intrinsic < NI_HW_INTRINSIC_END);
-#endif
+        var isHWIntrinsic = Configuration.FEATURE_HW_INTRINSICS &&
+            (intrinsic > NI_HW_INTRINSIC_START) && (intrinsic < NI_HW_INTRINSIC_END);
 
         if (!isSupportQuery && !isPlatformIntrinsic && !isHWIntrinsic)
         {
@@ -23133,59 +23115,56 @@ public partial class Compiler
         var result = NI_Illegal;
         var fallback = NI_System_Runtime_Intrinsics_Intrinsic;
 
-#if FEATURE_HW_INTRINSICS
-        byte* classNamePointer = null;
-        byte* namespaceNamePointer = null;
-        MetadataNamePointerArray enclosingClassNamePointers = stackalloc byte*[2];
-        enclosingClassNamePointers[0] = null;
-        enclosingClassNamePointers[1] = null;
-        _ = info.compCompHnd->getMethodNameFromMetadata(method, &classNamePointer, &namespaceNamePointer, enclosingClassNamePointers, 2);
-
-        assert(!isNullPointer(classNamePointer));
-        assert(!isNullPointer(namespaceNamePointer));
-
-        var className = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(classNamePointer);
-        var namespaceName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(namespaceNamePointer);
-        var isNumerics = NameEquals(namespaceName, "System.Numerics"u8);
-        var isXplatIntrinsic = isNumerics || NameEquals(namespaceName, "System.Runtime.Intrinsics"u8);
-        var isa = InstructionSet_ILLEGAL;
-
-        if (isNumerics)
+        if (Configuration.FEATURE_HW_INTRINSICS)
         {
-            fallback = NI_System_Numerics_Intrinsic;
-            isa = lookupVectorIsa(getCompileTimeVectorTByteLength());
-        }
-        else
-        {
-#if TARGET_XARCH
-            ReadOnlySpan<byte> platformNamespaceName = "System.Runtime.Intrinsics.X86"u8;
-#elif TARGET_ARM64
-            ReadOnlySpan<byte> platformNamespaceName = "System.Runtime.Intrinsics.Arm"u8;
-#elif TARGET_WASM
-            ReadOnlySpan<byte> platformNamespaceName = "System.Runtime.Intrinsics.Wasm"u8;
-#else
-#error Unsupported hardware intrinsic platform
-#endif
+            byte* classNamePointer = null;
+            byte* namespaceNamePointer = null;
+            MetadataNamePointerArray enclosingClassNamePointers = stackalloc byte*[2];
+            enclosingClassNamePointers[0] = null;
+            enclosingClassNamePointers[1] = null;
+            _ = info.compCompHnd->getMethodNameFromMetadata(method, &classNamePointer, &namespaceNamePointer, enclosingClassNamePointers, 2);
 
-            if (!isXplatIntrinsic && !NameEquals(namespaceName, platformNamespaceName))
+            assert(!isNullPointer(classNamePointer));
+            assert(!isNullPointer(namespaceNamePointer));
+
+            var className = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(classNamePointer);
+            var namespaceName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(namespaceNamePointer);
+            var isNumerics = NameEquals(namespaceName, "System.Numerics"u8);
+            var isXplatIntrinsic = isNumerics || NameEquals(namespaceName, "System.Runtime.Intrinsics"u8);
+            var isa = InstructionSet_ILLEGAL;
+
+            if (isNumerics)
             {
-                return isSupportQuery ? NI_IsSupported_False : NI_Throw_PlatformNotSupportedException;
+                fallback = NI_System_Numerics_Intrinsic;
+                isa = lookupVectorIsa(getCompileTimeVectorTByteLength());
+            }
+            else
+            {
+                ReadOnlySpan<byte> platformNamespaceName =
+                    Configuration.TARGET_XARCH ? "System.Runtime.Intrinsics.X86"u8 :
+                    Configuration.TARGET_ARM64 ? "System.Runtime.Intrinsics.Arm"u8 :
+                    Configuration.TARGET_WASM ? "System.Runtime.Intrinsics.Wasm"u8 :
+                    throw new PlatformNotSupportedException("Unsupported hardware intrinsic platform");
+
+                if (!isXplatIntrinsic && !NameEquals(namespaceName, platformNamespaceName))
+                {
+                    return isSupportQuery ? NI_IsSupported_False : NI_Throw_PlatformNotSupportedException;
+                }
+
+                var innerEnclosingClassName = enclosingClassNamePointers[0] is not null
+                    ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[0])
+                    : default;
+                var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
+                    ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
+                    : default;
+                isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
             }
 
-            var innerEnclosingClassName = enclosingClassNamePointers[0] is not null
-                ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[0])
-                : default;
-            var outerEnclosingClassName = enclosingClassNamePointers[1] is not null
-                ? MemoryMarshal.CreateReadOnlySpanFromNullTerminated(enclosingClassNamePointers[1])
-                : default;
-            isa = lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
+            if (isa is not InstructionSet_ILLEGAL)
+            {
+                result = resolveHardwareIntrinsicId(intrinsic, isa, isXplatIntrinsic);
+            }
         }
-
-        if (isa is not InstructionSet_ILLEGAL)
-        {
-            result = resolveHardwareIntrinsicId(intrinsic, isa, isXplatIntrinsic);
-        }
-#endif
 
         if (isSupportQuery)
         {
@@ -23200,7 +23179,6 @@ public partial class Compiler
         return result;
     }
 
-#if FEATURE_HW_INTRINSICS
     private NamedIntrinsic resolveHardwareIntrinsicId(NamedIntrinsic intrinsic, ManagedInstructionSet isa, bool isXplatIntrinsic)
     {
         assert(isa is not InstructionSet_ILLEGAL);
@@ -23213,8 +23191,7 @@ public partial class Compiler
         var isSupportedProperty = intrinsic is NI_IsSupported;
         var vectorByteLength = 0;
 
-#if TARGET_XARCH
-        if (isHardwareAcceleratedProperty)
+        if (Configuration.TARGET_XARCH && isHardwareAcceleratedProperty)
         {
             if (isa is InstructionSet_Vector128)
             {
@@ -23232,7 +23209,6 @@ public partial class Compiler
                 vectorByteLength = 64;
             }
         }
-#endif
 
         if (isSupportedProperty || isHardwareAcceleratedProperty)
         {
@@ -23264,34 +23240,31 @@ public partial class Compiler
                 return NI_Illegal;
             }
         }
-#if TARGET_XARCH
-        else if (isa is InstructionSet_Vector256)
+        else if (Configuration.TARGET_XARCH && (isa is InstructionSet_Vector256))
         {
             if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 return NI_Illegal;
             }
         }
-        else if (isa is InstructionSet_Vector512)
+        else if (Configuration.TARGET_XARCH && (isa is InstructionSet_Vector512))
         {
             if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 return NI_Illegal;
             }
         }
-#elif TARGET_ARM64
-        else if (isa is InstructionSet_Vector64)
+        else if (Configuration.TARGET_ARM64 && (isa is InstructionSet_Vector64))
         {
             if (!isHWIntrinsicEnabled)
             {
                 return NI_Illegal;
             }
         }
-        else if (isa is InstructionSet_VectorT)
+        else if (Configuration.TARGET_ARM64 && (isa is InstructionSet_VectorT))
         {
             return NI_Illegal;
         }
-#endif
 
         return intrinsic;
     }
@@ -23307,15 +23280,6 @@ public partial class Compiler
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
-    private uint getCompileTimeVectorTByteLength()
-    {
-#if TARGET_WASM
-        return FP_REGSIZE_BYTES;
-#else
-        return (uint)GetVectorTByteLength();
-#endif
-    }
-
     private static ManagedInstructionSet lookupVectorIsa(uint size)
     {
         switch (size)
@@ -23325,24 +23289,21 @@ public partial class Compiler
                 return InstructionSet_Vector128;
             }
 
-#if TARGET_XARCH
-            case 32:
+            case 32 when Configuration.TARGET_XARCH:
             {
                 return InstructionSet_Vector256;
             }
 
-            case 64:
+            case 64 when Configuration.TARGET_XARCH:
             {
                 return InstructionSet_Vector512;
             }
 
-#elif TARGET_ARM64
-            case SIZE_UNKNOWN:
+            case SIZE_UNKNOWN when Configuration.TARGET_ARM64:
             {
                 return InstructionSet_VectorT;
             }
 
-#endif
             default:
             {
                 unreached();
@@ -23360,254 +23321,253 @@ public partial class Compiler
 
         var enclosingIsa = lookupIsa(innerEnclosingClassName, outerEnclosingClassName, default);
 
-#if TARGET_XARCH
-        if (NameEquals(className, "X64"u8))
+        if (Configuration.TARGET_XARCH && NameEquals(className, "X64"u8))
         {
             return X64VersionOfIsa(enclosingIsa);
         }
-        else if (NameEquals(className, "V256"u8))
+        else if (Configuration.TARGET_XARCH && NameEquals(className, "V256"u8))
         {
             return V256VersionOfIsa(enclosingIsa);
         }
-        else if (NameEquals(className, "V512"u8))
+        else if (Configuration.TARGET_XARCH && NameEquals(className, "V512"u8))
         {
             return V512VersionOfIsa(enclosingIsa);
         }
-        else if (NameEquals(className, "VL"u8))
+        else if (Configuration.TARGET_XARCH && NameEquals(className, "VL"u8))
         {
             return VLVersionOfIsa(enclosingIsa);
         }
-#elif TARGET_ARM64
-        if (NameEquals(className, "Arm64"u8))
+        else if (Configuration.TARGET_ARM64 && NameEquals(className, "Arm64"u8))
         {
             return Arm64VersionOfIsa(enclosingIsa);
         }
-#elif TARGET_WASM
-        _ = enclosingIsa;
-#endif
 
         return InstructionSet_ILLEGAL;
     }
 
     private ManagedInstructionSet lookupInstructionSet(ReadOnlySpan<byte> className)
     {
-#if TARGET_XARCH
-        if (NameEquals(className, "Aes"u8))
+        if (Configuration.TARGET_XARCH)
         {
-            return InstructionSet_AES;
-        }
-        else if (NameEquals(className, "Avx"u8))
-        {
-            return InstructionSet_AVX;
-        }
-        else if (NameEquals(className, "Avx2"u8) || NameEquals(className, "Bmi1"u8) ||
-                 NameEquals(className, "Bmi2"u8) || NameEquals(className, "Fma"u8) ||
-                 NameEquals(className, "F16c"u8) || NameEquals(className, "Lzcnt"u8))
-        {
-            return InstructionSet_AVX2;
-        }
-        else if (NameEquals(className, "Avx10v1"u8))
-        {
-            return InstructionSet_AVX10v1;
-        }
-        else if (NameEquals(className, "Avx10v2"u8))
-        {
-            return InstructionSet_AVX10v2;
-        }
-        else if (NameEquals(className, "Avx512Bitalg"u8) || NameEquals(className, "Avx512Vpopcntdq"u8))
-        {
-            return InstructionSet_AVX512v3;
-        }
-        else if (NameEquals(className, "Avx512Bf16"u8) || NameEquals(className, "Avx512Fp16"u8))
-        {
-            return InstructionSet_AVX10v1;
-        }
-        else if (NameEquals(className, "Avx512BW"u8) || NameEquals(className, "Avx512CD"u8) ||
-                 NameEquals(className, "Avx512DQ"u8) || NameEquals(className, "Avx512F"u8))
-        {
-            return InstructionSet_AVX512;
-        }
-        else if (NameEquals(className, "Avx512Bmm"u8))
-        {
-            return InstructionSet_AVX512BMM;
-        }
-        else if (NameEquals(className, "Avx512Vbmi"u8))
-        {
-            return InstructionSet_AVX512v2;
-        }
-        else if (NameEquals(className, "Avx512Vbmi2"u8))
-        {
-            return InstructionSet_AVX512v3;
-        }
-        else if (NameEquals(className, "Avx512Vp2intersect"u8))
-        {
-            return InstructionSet_AVX512VP2INTERSECT;
-        }
-        else if (NameEquals(className, "AvxIfma"u8))
-        {
-            return InstructionSet_AVXIFMA;
-        }
-        else if (NameEquals(className, "AvxVnni"u8))
-        {
-            return compSupportsHWIntrinsic(InstructionSet_AVXVNNI) ? InstructionSet_AVXVNNI : InstructionSet_AVX512v3;
-        }
-        else if (NameEquals(className, "AvxVnniInt8"u8) || NameEquals(className, "AvxVnniInt16"u8))
-        {
-            return compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT) ? InstructionSet_AVXVNNIINT : InstructionSet_AVXVNNIINT_V512;
-        }
-        else if (NameEquals(className, "Gfni"u8))
-        {
-            return InstructionSet_GFNI;
-        }
-        else if (NameEquals(className, "Pclmulqdq"u8))
-        {
-            return InstructionSet_AES;
-        }
-        else if (NameEquals(className, "Popcnt"u8) || NameEquals(className, "Sse"u8) ||
-                 NameEquals(className, "Sse2"u8) || NameEquals(className, "Sse3"u8) ||
-                 NameEquals(className, "Sse41"u8) || NameEquals(className, "Sse42"u8) ||
-                 NameEquals(className, "Ssse3"u8) || NameEquals(className, "X86Base"u8))
-        {
-            return InstructionSet_X86Base;
-        }
-        else if (NameEquals(className, "Sha"u8))
-        {
-            return InstructionSet_SHA;
-        }
-        else if (NameEquals(className, "WaitPkg"u8))
-        {
-            return InstructionSet_WAITPKG;
-        }
-        else if (NameEquals(className, "X86Serialize"u8))
-        {
-            return InstructionSet_X86Serialize;
-        }
-        else if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
-        {
-            return InstructionSet_Vector128;
-        }
-        else if (NameEquals(className, "Vector256"u8) || NameEquals(className, "Vector256`1"u8))
-        {
-            return InstructionSet_Vector256;
-        }
-        else if (NameEquals(className, "Vector512"u8) || NameEquals(className, "Vector512`1"u8))
-        {
-            return InstructionSet_Vector512;
-        }
-#elif TARGET_ARM64
-        if (NameEquals(className, "AdvSimd"u8))
-        {
-            return InstructionSet_AdvSimd;
-        }
-
-        if (NameEquals(className, "Aes"u8))
-        {
-            return InstructionSet_Aes;
-        }
-
-        if (NameEquals(className, "ArmBase"u8))
-        {
-            return InstructionSet_ArmBase;
-        }
-
-        if (NameEquals(className, "Crc32"u8))
-        {
-            return InstructionSet_Crc32;
-        }
-
-        if (NameEquals(className, "Dp"u8))
-        {
-            return InstructionSet_Dp;
-        }
-
-        if (NameEquals(className, "Rdm"u8))
-        {
-            return InstructionSet_Rdm;
-        }
-
-        if (NameEquals(className, "Sha1"u8))
-        {
-            return InstructionSet_Sha1;
-        }
-
-        if (NameEquals(className, "Sha256"u8))
-        {
-            return InstructionSet_Sha256;
-        }
-
-        if (NameEquals(className, "Sve2"u8))
-        {
-            return InstructionSet_Sve2;
-        }
-
-        if (NameEquals(className, "Sve"u8))
-        {
-            return InstructionSet_Sve;
-        }
-
-        if (NameEquals(className, "Sha3"u8))
-        {
-            return InstructionSet_Sha3;
-        }
-
-        if (NameEquals(className, "Sm4"u8))
-        {
-            return InstructionSet_Sm4;
-        }
-
-        if (NameEquals(className, "SveAes"u8))
-        {
-            return InstructionSet_SveAes;
-        }
-
-        if (NameEquals(className, "SveSha3"u8))
-        {
-            return InstructionSet_SveSha3;
-        }
-
-        if (NameEquals(className, "SveSm4"u8))
-        {
-            return InstructionSet_SveSm4;
-        }
-
-        if (NameStartsWith(className, "Vector"u8))
-        {
-            var suffix = className[6..];
-
-            if (suffix.IsEmpty || NameEquals(suffix, "`1"u8))
+            if (NameEquals(className, "Aes"u8))
             {
-                return InstructionSet_VectorT;
+                return InstructionSet_AES;
+            }
+            else if (NameEquals(className, "Avx"u8))
+            {
+                return InstructionSet_AVX;
+            }
+            else if (NameEquals(className, "Avx2"u8) || NameEquals(className, "Bmi1"u8) ||
+                     NameEquals(className, "Bmi2"u8) || NameEquals(className, "Fma"u8) ||
+                     NameEquals(className, "F16c"u8) || NameEquals(className, "Lzcnt"u8))
+            {
+                return InstructionSet_AVX2;
+            }
+            else if (NameEquals(className, "Avx10v1"u8))
+            {
+                return InstructionSet_AVX10v1;
+            }
+            else if (NameEquals(className, "Avx10v2"u8))
+            {
+                return InstructionSet_AVX10v2;
+            }
+            else if (NameEquals(className, "Avx512Bitalg"u8) || NameEquals(className, "Avx512Vpopcntdq"u8))
+            {
+                return InstructionSet_AVX512v3;
+            }
+            else if (NameEquals(className, "Avx512Bf16"u8) || NameEquals(className, "Avx512Fp16"u8))
+            {
+                return InstructionSet_AVX10v1;
+            }
+            else if (NameEquals(className, "Avx512BW"u8) || NameEquals(className, "Avx512CD"u8) ||
+                     NameEquals(className, "Avx512DQ"u8) || NameEquals(className, "Avx512F"u8))
+            {
+                return InstructionSet_AVX512;
+            }
+            else if (NameEquals(className, "Avx512Bmm"u8))
+            {
+                return InstructionSet_AVX512BMM;
+            }
+            else if (NameEquals(className, "Avx512Vbmi"u8))
+            {
+                return InstructionSet_AVX512v2;
+            }
+            else if (NameEquals(className, "Avx512Vbmi2"u8))
+            {
+                return InstructionSet_AVX512v3;
+            }
+            else if (NameEquals(className, "Avx512Vp2intersect"u8))
+            {
+                return InstructionSet_AVX512VP2INTERSECT;
+            }
+            else if (NameEquals(className, "AvxIfma"u8))
+            {
+                return InstructionSet_AVXIFMA;
+            }
+            else if (NameEquals(className, "AvxVnni"u8))
+            {
+                return compSupportsHWIntrinsic(InstructionSet_AVXVNNI) ? InstructionSet_AVXVNNI : InstructionSet_AVX512v3;
+            }
+            else if (NameEquals(className, "AvxVnniInt8"u8) || NameEquals(className, "AvxVnniInt16"u8))
+            {
+                return compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT) ? InstructionSet_AVXVNNIINT : InstructionSet_AVXVNNIINT_V512;
+            }
+            else if (NameEquals(className, "Gfni"u8))
+            {
+                return InstructionSet_GFNI;
+            }
+            else if (NameEquals(className, "Pclmulqdq"u8))
+            {
+                return InstructionSet_AES;
+            }
+            else if (NameEquals(className, "Popcnt"u8) || NameEquals(className, "Sse"u8) ||
+                     NameEquals(className, "Sse2"u8) || NameEquals(className, "Sse3"u8) ||
+                     NameEquals(className, "Sse41"u8) || NameEquals(className, "Sse42"u8) ||
+                     NameEquals(className, "Ssse3"u8) || NameEquals(className, "X86Base"u8))
+            {
+                return InstructionSet_X86Base;
+            }
+            else if (NameEquals(className, "Sha"u8))
+            {
+                return InstructionSet_SHA;
+            }
+            else if (NameEquals(className, "WaitPkg"u8))
+            {
+                return InstructionSet_WAITPKG;
+            }
+            else if (NameEquals(className, "X86Serialize"u8))
+            {
+                return InstructionSet_X86Serialize;
+            }
+            else if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
+            {
+                return InstructionSet_Vector128;
+            }
+            else if (NameEquals(className, "Vector256"u8) || NameEquals(className, "Vector256`1"u8))
+            {
+                return InstructionSet_Vector256;
+            }
+            else if (NameEquals(className, "Vector512"u8) || NameEquals(className, "Vector512`1"u8))
+            {
+                return InstructionSet_Vector512;
+            }
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            if (NameEquals(className, "AdvSimd"u8))
+            {
+                return InstructionSet_AdvSimd;
             }
 
-            if (NameStartsWith(suffix, "64"u8))
+            if (NameEquals(className, "Aes"u8))
             {
-                return InstructionSet_Vector64;
+                return InstructionSet_Aes;
             }
 
-            if (NameStartsWith(suffix, "128"u8))
+            if (NameEquals(className, "ArmBase"u8))
+            {
+                return InstructionSet_ArmBase;
+            }
+
+            if (NameEquals(className, "Crc32"u8))
+            {
+                return InstructionSet_Crc32;
+            }
+
+            if (NameEquals(className, "Dp"u8))
+            {
+                return InstructionSet_Dp;
+            }
+
+            if (NameEquals(className, "Rdm"u8))
+            {
+                return InstructionSet_Rdm;
+            }
+
+            if (NameEquals(className, "Sha1"u8))
+            {
+                return InstructionSet_Sha1;
+            }
+
+            if (NameEquals(className, "Sha256"u8))
+            {
+                return InstructionSet_Sha256;
+            }
+
+            if (NameEquals(className, "Sve2"u8))
+            {
+                return InstructionSet_Sve2;
+            }
+
+            if (NameEquals(className, "Sve"u8))
+            {
+                return InstructionSet_Sve;
+            }
+
+            if (NameEquals(className, "Sha3"u8))
+            {
+                return InstructionSet_Sha3;
+            }
+
+            if (NameEquals(className, "Sm4"u8))
+            {
+                return InstructionSet_Sm4;
+            }
+
+            if (NameEquals(className, "SveAes"u8))
+            {
+                return InstructionSet_SveAes;
+            }
+
+            if (NameEquals(className, "SveSha3"u8))
+            {
+                return InstructionSet_SveSha3;
+            }
+
+            if (NameEquals(className, "SveSm4"u8))
+            {
+                return InstructionSet_SveSm4;
+            }
+
+            if (NameStartsWith(className, "Vector"u8))
+            {
+                var suffix = className[6..];
+
+                if (suffix.IsEmpty || NameEquals(suffix, "`1"u8))
+                {
+                    return InstructionSet_VectorT;
+                }
+
+                if (NameStartsWith(suffix, "64"u8))
+                {
+                    return InstructionSet_Vector64;
+                }
+
+                if (NameStartsWith(suffix, "128"u8))
+                {
+                    return InstructionSet_Vector128;
+                }
+            }
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            if (NameEquals(className, "WasmBase"u8))
+            {
+                return InstructionSet_WasmBase;
+            }
+            if (NameEquals(className, "PackedSimd"u8))
+            {
+                return InstructionSet_PackedSimd;
+            }
+            if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
             {
                 return InstructionSet_Vector128;
             }
         }
-#elif TARGET_WASM
-        if (NameEquals(className, "WasmBase"u8))
-        {
-            return InstructionSet_WasmBase;
-        }
-        if (NameEquals(className, "PackedSimd"u8))
-        {
-            return InstructionSet_PackedSimd;
-        }
-        if (NameEquals(className, "Vector128"u8) || NameEquals(className, "Vector128`1"u8))
-        {
-            return InstructionSet_Vector128;
-        }
-#endif
 
         return InstructionSet_ILLEGAL;
     }
 
-#if TARGET_XARCH
     private static ManagedInstructionSet X64VersionOfIsa(ManagedInstructionSet isa)
     {
         return isa switch {
@@ -23664,7 +23624,7 @@ public partial class Compiler
             _ => InstructionSet_NONE,
         };
     }
-#elif TARGET_ARM64
+
     private static ManagedInstructionSet Arm64VersionOfIsa(ManagedInstructionSet isa)
     {
         return isa switch
@@ -23687,8 +23647,6 @@ public partial class Compiler
             _ => InstructionSet_NONE,
         };
     }
-#endif
-#endif
 
     /// <summary>Use profile information to pick a GDV/cast type candidate for a call site.</summary>
     /// <param name="call">the call (either virtual or cast helper)</param>

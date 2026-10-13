@@ -28,8 +28,7 @@ public partial class Compiler
     {
         assert(indirection.Oper.IsIndir);
         var address = indirection.Addr;
-#if TARGET_ARM
-        if (varTypeIsFloating(indirection.Type))
+        if (Configuration.TARGET_ARM && varTypeIsFloating(indirection.Type))
         {
             var effectiveAddress = address.EffectiveVal;
             gtPeelOffsets(ref effectiveAddress, out var offset);
@@ -39,7 +38,7 @@ public partial class Compiler
                 indirection.Flags |= GTF_IND_UNALIGNED;
             }
         }
-#endif
+
         if (!indirection.IsVolatile && (indirection.Type is not TYP_STRUCT) && (address.Oper is GT_LCL_ADDR))
         {
             var local = address.AsLclFld();
@@ -264,11 +263,10 @@ public partial class Compiler
     public GenTree fgMorphRetInd(GenTreeUnOp ret)
     {
         assert(ret.Oper is GT_RETURN or GT_SWIFT_ERROR_RET);
-#if SWIFT_SUPPORT
-        var value = ret.Oper is GT_SWIFT_ERROR_RET ? ret.AsOp().Op2 : ret.Op1;
-#else
-        var value = ret.Op1;
-#endif
+        var value = Configuration.SWIFT_SUPPORT && (ret.Oper is GT_SWIFT_ERROR_RET)
+            ? ret.AsOp().Op2
+            : ret.Op1;
+
         assert(value.Oper is GT_LCL_FLD);
         var field = value.AsLclFld();
         var localNumber = field.LclNum;
@@ -278,12 +276,10 @@ public partial class Compiler
             var fieldSize = field.Size;
             var localSize = lvaLclExactSize(localNumber);
             assert(fieldSize <= localSize);
-#if TARGET_64BIT
-            var canFold = fieldSize == localSize;
-#else
             // Long/double bitcasts are not supported on 32-bit targets.
-            var canFold = (fieldSize == localSize) && (localSize <= REGSIZE_BYTES);
-#endif
+            var canFold = fieldSize == localSize &&
+                          (Configuration.TARGET_64BIT || (localSize <= Configuration.REGSIZE_BYTES));
+
             if (canFold)
             {
                 // Lowering handles differing return types. Keep the whole local

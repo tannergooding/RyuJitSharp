@@ -8,7 +8,7 @@ namespace RyuJitSharp;
 public partial class Compiler
 {
     public static int GetOutgoingArgByteSize(int sizeWithoutPadding)
-        => roundUp(sizeWithoutPadding, TARGET_POINTER_SIZE);
+        => roundUp(sizeWithoutPadding, Configuration.TARGET_POINTER_SIZE);
 
     public unsafe GenTree fgGetStubAddrArg(GenTreeCall call)
     {
@@ -92,7 +92,7 @@ public partial class Compiler
             }
             else
             {
-                for (var offset = 0; offset < segment.Size; offset += TARGET_POINTER_SIZE)
+                for (var offset = 0; offset < segment.Size; offset += Configuration.TARGET_POINTER_SIZE)
                 {
                     if (lvaGetFieldLocal(variable, (uint)(segment.Offset + offset)) == BAD_VAR_NUM)
                     {

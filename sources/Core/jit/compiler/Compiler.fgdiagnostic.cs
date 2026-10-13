@@ -308,11 +308,8 @@ public partial class Compiler
             return;
         }
 
-#if !JIT32_GCENCODER
-        var copiedForGenericsCtxt = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
-#else
-        var copiedForGenericsCtxt = false;
-#endif
+        var copiedForGenericsCtxt = !Configuration.JIT32_GCENCODER &&
+            ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 
         if (info.compIsStatic)
         {
@@ -323,9 +320,10 @@ public partial class Compiler
             assert(info.compThisArg != BAD_VAR_NUM);
             var compThisArgAddrExposedOK = !lvaTable[info.compThisArg].IsAddressExposed;
 
-#if !JIT32_GCENCODER
-            compThisArgAddrExposedOK = compThisArgAddrExposedOK || copiedForGenericsCtxt;
-#endif
+            if (!Configuration.JIT32_GCENCODER)
+            {
+                compThisArgAddrExposedOK = compThisArgAddrExposedOK || copiedForGenericsCtxt;
+            }
 
             assert(compThisArgAddrExposedOK && !lvaTable[info.compThisArg].lvHasILStoreOp &&
                    ((lvaArg0Var == info.compThisArg) ||
@@ -388,11 +386,7 @@ public partial class Compiler
 
     internal bool fgTrysContiguous()
     {
-#if TARGET_WASM
-        return fgIndexToBlockMap is null;
-#else
-        return true;
-#endif
+        return !Configuration.TARGET_WASM || (fgIndexToBlockMap is null);
     }
 
     private bool ehCallFinallyInCorrectRegion(BasicBlock blockCallFinally, ushort finallyIndex)
@@ -506,12 +500,11 @@ public partial class Compiler
                 return true;
             }
 
-#if TARGET_WASM
-            if (_compiler.fgWasmHasCatchResumptions && blockPred.HasFlag(BBF_CATCH_RESUMPTION))
+            if (Configuration.TARGET_WASM &&
+                _compiler.fgWasmHasCatchResumptions && blockPred.HasFlag(BBF_CATCH_RESUMPTION))
             {
                 return true;
             }
-#endif
 
             JITDUMP($"Jump into the middle of try region: {FMT_BB(blockPred.bbNum)} branches to {FMT_BB(block.bbNum)}\n");
             assert(false, "Jump into middle of try region");

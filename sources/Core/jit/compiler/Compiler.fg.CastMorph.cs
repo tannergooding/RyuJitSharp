@@ -9,11 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_X86
     private bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false)
-#else
-    private static bool fgCastRequiresHelper(var_types fromType, var_types toType, bool overflow = false)
-#endif
     {
         if (overflow && varTypeIsFloating(fromType))
         {
@@ -21,17 +17,13 @@ public partial class Compiler
             return true;
         }
 
-#if TARGET_X86 || TARGET_ARM
-        if ((varTypeIsLong(fromType) && varTypeIsFloating(toType))
-            || (varTypeIsFloating(fromType) && varTypeIsLong(toType)))
+        if ((Configuration.TARGET_X86 || Configuration.TARGET_ARM) &&
+            ((varTypeIsLong(fromType) && varTypeIsFloating(toType))
+            || (varTypeIsFloating(fromType) && varTypeIsLong(toType))))
         {
-#if TARGET_X86
-            return !compOpportunisticallyDependsOn(InstructionSet_AVX512);
-#else
-            return true;
-#endif
+            return !Configuration.TARGET_X86 || !compOpportunisticallyDependsOn(InstructionSet_AVX512);
         }
-#endif
+
         return false;
     }
 
@@ -75,9 +67,11 @@ public partial class Compiler
 #endif
         };
         call.ClearInlineInfo();
-#if UNIX_X86_ABI
-        call.Flags |= GTF_CALL_POP_ARGS;
-#endif
+        if (Configuration.UNIX_X86_ABI)
+        {
+            call.Flags |= GTF_CALL_POP_ARGS;
+        }
+
         if (Configuration.FEATURE_READYTORUN)
         {
             call._entryPoint = new CORINFO_CONST_LOOKUP { accessType = IAT_VALUE };
@@ -132,41 +126,52 @@ public partial class Compiler
             {
                 // Saturate before the truncating small-type cast. Checked casts
                 // must instead retain the original value so overflow can throw.
-#if FEATURE_HW_INTRINSICS || TARGET_WASM
-                if (!tree.HasOverflowCheck)
+                if (Configuration.FEATURE_HW_INTRINSICS || Configuration.TARGET_WASM)
                 {
-                    (double Minimum, double Maximum) limits = destinationType switch {
-                        TYP_BYTE => (sbyte.MinValue, sbyte.MaxValue),
-                        TYP_UBYTE => (0, byte.MaxValue),
-                        TYP_SHORT => (short.MinValue, short.MaxValue),
-                        TYP_USHORT => (0, ushort.MaxValue),
-                        _ => throw new System.Diagnostics.UnreachableException(),
-                    };
+                    if (!tree.HasOverflowCheck)
+                    {
+                        (double Minimum, double Maximum) limits = destinationType switch {
+                            TYP_BYTE => (sbyte.MinValue, sbyte.MaxValue),
+                            TYP_UBYTE => (0, byte.MaxValue),
+                            TYP_SHORT => (short.MinValue, short.MaxValue),
+                            TYP_USHORT => (0, ushort.MaxValue),
+                            _ => throw new System.Diagnostics.UnreachableException(),
+                        };
 
-                    // Native min/max on these targets preserves NaN through
-                    // the clamp; the subsequent floating-to-int cast yields zero.
-#if FEATURE_HW_INTRINSICS && !TARGET_WASM
-                    operand = gtNewSimdMinMaxNativeNode(sourceType, gtNewDconNode(sourceType, limits.Minimum),
-                        operand, sourceType, 0, isMax: true);
-                    operand = gtNewSimdMinMaxNativeNode(sourceType, gtNewDconNode(sourceType, limits.Maximum),
-                        operand, sourceType, 0, isMax: false);
-#else
-                    operand = new GenTreeIntrinsic(sourceType, gtNewDconNode(sourceType, limits.Minimum),
-                        operand, NI_System_Math_MaxNative, null);
-                    operand = new GenTreeIntrinsic(sourceType, gtNewDconNode(sourceType, limits.Maximum),
-                        operand, NI_System_Math_MinNative, null);
-#endif
+                        // Native min/max on these targets preserves NaN through
+                        // the clamp; the subsequent floating-to-int cast yields zero.
+                        if (Configuration.FEATURE_HW_INTRINSICS && !Configuration.TARGET_WASM)
+                        {
+                            operand = gtNewSimdMinMaxNativeNode(sourceType,
+                                gtNewDconNode(sourceType, limits.Minimum), operand, sourceType, 0, isMax: true);
+                            operand = gtNewSimdMinMaxNativeNode(sourceType,
+                                gtNewDconNode(sourceType, limits.Maximum), operand, sourceType, 0, isMax: false);
+                        }
+                        else
+                        {
+                            operand = new GenTreeIntrinsic(sourceType,
+                                gtNewDconNode(sourceType, limits.Minimum), operand, NI_System_Math_MaxNative, null);
+                            operand = new GenTreeIntrinsic(sourceType,
+                                gtNewDconNode(sourceType, limits.Maximum), operand, NI_System_Math_MinNative, null);
+                        }
+                    }
                 }
-#elif TARGET_ARM || TARGET_RISCV64 || TARGET_LOONGARCH64
-                // These targets clamp in the integer domain after NaN becomes zero.
-#else
-#error New target requires floating-to-small-integer saturation support.
-#endif
+                else if (Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 ||
+                         Configuration.TARGET_LOONGARCH64)
+                {
+                    // These targets clamp in the integer domain after NaN becomes zero.
+                }
+                else
+                {
+                    throw new FatalJitException("New target requires floating-to-small-integer saturation support.");
+                }
+
                 operand = gtNewCastNode(TYP_INT, operand, false, TYP_INT);
                 operand.Flags |= tree.Flags & (GTF_OVERFLOW | GTF_EXCEPT);
 
-#if TARGET_ARM || TARGET_RISCV64 || TARGET_LOONGARCH64
-                if (!tree.HasOverflowCheck)
+                if ((Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 ||
+                     Configuration.TARGET_LOONGARCH64) &&
+                    !tree.HasOverflowCheck)
                 {
                     var intrinsic = destinationType switch {
                         TYP_BYTE => NI_PRIMITIVE_SaturateToInt8,
@@ -177,7 +182,7 @@ public partial class Compiler
                     };
                     operand = new GenTreeIntrinsic(TYP_INT, operand, intrinsic, null);
                 }
-#endif
+
                 tree.Op1 = operand;
                 // The new int operand is signed even when the target is unsigned.
                 assert(!tree.IsUnsigned);
@@ -213,8 +218,7 @@ public partial class Compiler
             operand.AsCast().CastType = TYP_FLOAT;
             return fgMorphTree(operand);
         }
-#if !TARGET_64BIT
-        else if (varTypeIsLong(sourceType))
+        else if (Configuration.TARGET_32BIT && varTypeIsLong(sourceType))
         {
             if (varTypeIsSmall(destinationType))
             {
@@ -238,9 +242,8 @@ public partial class Compiler
                 return fgMorphCastIntoHelper(tree, helper, operand);
             }
         }
-#endif
-#if TARGET_AMD64
-        else if (tree.IsUnsigned && varTypeIsInt(sourceType) && varTypeIsFloating(destinationType)
+        else if (Configuration.TARGET_AMD64 && tree.IsUnsigned &&
+                 varTypeIsInt(sourceType) && varTypeIsFloating(destinationType)
             && !compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             // Without EVEX unsigned conversion, widen uint to long first.
@@ -249,7 +252,6 @@ public partial class Compiler
             tree.Flags &= ~GTF_UNSIGNED;
             tree.Op1 = operand;
         }
-#endif
         else if (varTypeIsGC(sourceType) != varTypeIsGC(destinationType))
         {
             noway_assert(!varTypeIsGC(destinationType), "How can we have a cast to a GCRef here?");

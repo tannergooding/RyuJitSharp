@@ -349,12 +349,10 @@ public partial class Compiler
         {
             var operand = left.AsUnOp().Op1;
             var shouldFold = true;
-#if TARGET_ARM64
-            if (operand.Oper.IsShift && operand.AsOp().Op2.Oper.IsCnsIntOrI)
+            if (Configuration.TARGET_ARM64 && operand.Oper.IsShift && operand.AsOp().Op2.Oper.IsCnsIntOrI)
             {
                 shouldFold = false;
             }
-#endif
             if (shouldFold)
             {
                 comparison.Op1 = operand;

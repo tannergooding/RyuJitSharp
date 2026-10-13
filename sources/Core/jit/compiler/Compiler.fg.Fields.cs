@@ -19,7 +19,7 @@ public partial class Compiler
             while ((address.Oper is GT_ADD) && !address.HasOverflowCheck)
             {
                 var offset = address.AsOp().Op2;
-                if (!offset.Oper.IsCnsIntOrI || (offset.Type is not TYP_I_IMPL) || offset.IsIconHandle())
+                if (!offset.Oper.IsCnsIntOrI || ((offset.Type != TYP_I_IMPL)) || offset.IsIconHandle())
                 {
                     break;
                 }
@@ -147,7 +147,7 @@ public partial class Compiler
 #if DEBUG
             offset.Addr.AsIntCon().TargetHandle = (nint)fieldHandle;
 #endif
-            address = gtNewBinaryNode(GT_ADD, objectType is TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF, address, offset);
+            address = gtNewBinaryNode(GT_ADD, (objectType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, address, offset);
             if (explicitNullCheck && (address.Type is TYP_BYREF))
             {
                 address.HasOrderingSideEffect = true;
@@ -160,7 +160,7 @@ public partial class Compiler
         }
         if (fieldOffset != 0)
         {
-            address = gtNewBinaryNode(GT_ADD, objectType is TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF,
+            address = gtNewBinaryNode(GT_ADD, (objectType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF,
                 address, gtNewIconNode(unchecked((nint)fieldOffset), fields));
             // Do not form a potentially out-of-object byref before its null check.
             if (explicitNullCheck && (address.Type is TYP_BYREF))

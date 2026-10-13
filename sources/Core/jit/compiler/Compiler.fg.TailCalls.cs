@@ -9,7 +9,12 @@ public partial class Compiler
 {
     public unsafe bool fgCanFastTailCall(GenTreeCall callee, out string? failReason)
     {
-#if FEATURE_FASTTAILCALL
+        if (!Configuration.FEATURE_FASTTAILCALL)
+        {
+            failReason = "Fast tailcalls are not supported on this platform";
+            return false;
+        }
+
 #if DEBUG
         if (callee.IsTailPrefixedCall)
         {
@@ -21,7 +26,7 @@ public partial class Compiler
         callee.Args.AddFinalArgsAndDetermineAbiInfo(this, callee);
 
         var calleeArgStackSize = callee.Args.OutgoingArgsStackSize;
-        var callerArgStackSize = roundUp(lvaParameterStackSize, TARGET_POINTER_SIZE);
+        var callerArgStackSize = roundUp(lvaParameterStackSize, Configuration.TARGET_POINTER_SIZE);
 
 #if !DEBUG
         static
@@ -56,42 +61,46 @@ public partial class Compiler
 #endif
         }
 
-#if TARGET_ARM || TARGET_RISCV64 || TARGET_LOONGARCH64
-        foreach (var argument in callee.Args.Args)
+        if (Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
         {
-            if (argument.AbiInfo.IsSplitAcrossRegistersAndStack)
+            foreach (var argument in callee.Args.Args)
             {
-                ReportFastTailCallDecision("Argument splitting in callee is not supported on " + TARGET_READABLE_NAME,
-                    out failReason);
+                if (argument.AbiInfo.IsSplitAcrossRegistersAndStack)
+                {
+                    ReportFastTailCallDecision("Argument splitting in callee is not supported on " + TARGET_READABLE_NAME,
+                        out failReason);
+                    return false;
+                }
+            }
+
+            for (var localNumber = 0; localNumber < info.compArgsCount; localNumber++)
+            {
+                var abiInfo = lvaGetParameterAbiInfo(localNumber);
+                if (abiInfo.IsSplitAcrossRegistersAndStack)
+                {
+                    ReportFastTailCallDecision("Argument splitting in caller is not supported on " + TARGET_READABLE_NAME,
+                        out failReason);
+                    return false;
+                }
+            }
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            if (compIsProfilerHookNeeded)
+            {
+                ReportFastTailCallDecision("Profiler is not supported on ARM32", out failReason);
+                return false;
+            }
+
+            // ARM32's only non-parameter volatile register is needed for the cookie check.
+            if (NeedsGSSecurityCookie)
+            {
+                ReportFastTailCallDecision("Not enough registers available due to the GS security cookie check", out failReason);
                 return false;
             }
         }
 
-        for (var localNumber = 0; localNumber < info.compArgsCount; localNumber++)
-        {
-            var abiInfo = lvaGetParameterAbiInfo(localNumber);
-            if (abiInfo.IsSplitAcrossRegistersAndStack)
-            {
-                ReportFastTailCallDecision("Argument splitting in caller is not supported on " + TARGET_READABLE_NAME,
-                    out failReason);
-                return false;
-            }
-        }
-#endif
-#if TARGET_ARM
-        if (compIsProfilerHookNeeded)
-        {
-            ReportFastTailCallDecision("Profiler is not supported on ARM32", out failReason);
-            return false;
-        }
-
-        // ARM32's only non-parameter volatile register is needed for the cookie check.
-        if (NeedsGSSecurityCookie)
-        {
-            ReportFastTailCallDecision("Not enough registers available due to the GS security cookie check", out failReason);
-            return false;
-        }
-#endif
         if (!opts.compFastTailCalls)
         {
             ReportFastTailCallDecision("Configuration doesn't allow fast tail calls", out failReason);
@@ -104,14 +113,12 @@ public partial class Compiler
             return false;
         }
 
-#if TARGET_ARM
-        if (callee.IsR2RRelativeIndir || callee.HasNonStandardAddedArgs(this))
+        if (Configuration.TARGET_ARM && (callee.IsR2RRelativeIndir || callee.HasNonStandardAddedArgs(this)))
         {
             ReportFastTailCallDecision("Method with non-standard args passed in callee saved register cannot be tail called",
                 out failReason);
             return false;
         }
-#endif
         // A vararg caller guarantees space for its fixed arguments, but Windows ARM
         // varargs still require argument shuffling that fast tail calls do not support.
         if (TargetOS.IsWindows && TargetArchitecture.IsArmArch && (info.compIsVarArgs || callee.Args.IsVarArgs))
@@ -140,13 +147,11 @@ public partial class Compiler
 
         // Fast tail calls reuse the incoming argument area. Its GC shape need not
         // match because argument setup is non-interruptible. Wasm uses fresh locals.
-#if !TARGET_WASM
-        if (calleeArgStackSize > callerArgStackSize)
+        if (!Configuration.TARGET_WASM && (calleeArgStackSize > callerArgStackSize))
         {
             ReportFastTailCallDecision("Not enough incoming arg space", out failReason);
             return false;
         }
-#endif
         if (fgCallHasMustCopyByrefParameter(callee))
         {
             ReportFastTailCallDecision("Callee has a byref parameter", out failReason);
@@ -155,29 +160,36 @@ public partial class Compiler
 
         ReportFastTailCallDecision(null, out failReason);
         return true;
-#else
-        failReason = "Fast tailcalls are not supported on this platform";
-        return false;
-#endif
     }
 
-#if FEATURE_FASTTAILCALL
     public bool fgCallHasMustCopyByrefParameter(GenTreeCall call)
     {
-#if FEATURE_IMPLICIT_BYREFS
-        foreach (var argument in call.Args.Args)
+        if (!Configuration.FEATURE_FASTTAILCALL)
         {
-            if (fgCallArgWillPointIntoLocalFrame(call, argument))
+            throw new FatalJitException(CORJIT_SKIPPED, "Fast tail-call argument checks are not supported on this platform.");
+        }
+
+        if (SupportsImplicitByRefs)
+        {
+            foreach (var argument in call.Args.Args)
             {
-                return true;
+                if (fgCallArgWillPointIntoLocalFrame(call, argument))
+                {
+                    return true;
+                }
             }
         }
-#endif
+
         return false;
     }
 
     public bool fgCallArgWillPointIntoLocalFrame(GenTreeCall call, CallArg argument)
     {
+        if (!Configuration.FEATURE_FASTTAILCALL)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Fast tail-call argument checks are not supported on this platform.");
+        }
+
         if (!argument.AbiInfo.IsPassedByReference)
         {
             return false;
@@ -222,7 +234,6 @@ public partial class Compiler
         JITDUMP("... no, arg is not a last use\n");
         return true;
     }
-#endif
 
     public static int fgGetArgParameterLclNum(GenTreeCall call, CallArg argument)
     {
@@ -305,20 +316,17 @@ public partial class Compiler
         {
             for (var localNumber = 0; localNumber < lvaCount; localNumber++)
             {
-#if FEATURE_FIXED_OUT_ARGS
-                if (localNumber == lvaOutgoingArgSpaceVar)
+                if (Configuration.FEATURE_FIXED_OUT_ARGS && (localNumber == lvaOutgoingArgSpaceVar))
                 {
                     continue;
                 }
-#endif
                 ref var variable = ref lvaGetDesc(localNumber);
                 if (variable.lvIsParam)
                 {
                     continue;
                 }
 
-#if FEATURE_IMPLICIT_BYREFS
-                if (variable.lvPromoted)
+                if (SupportsImplicitByRefs && variable.lvPromoted)
                 {
                     ref var firstField = ref lvaGetDesc(variable.lvFieldLclStart);
                     if (firstField.lvParentLcl != localNumber)
@@ -332,7 +340,6 @@ public partial class Compiler
                         continue;
                     }
                 }
-#endif
                 var localType = variable.Type;
                 var isUserLocal = localNumber < info.compLocalsCount;
                 var structWithGcFields = false;

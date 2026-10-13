@@ -368,13 +368,14 @@ public partial class Compiler
             fgConvertBBToThrowBB(block);
         }
 
-#if FEATURE_FASTTAILCALL
-        if (block.EndsWithTailCall(this, fastTailCallsOnly: false, tailCallsConvertibleToLoopOnly: true, out var recursiveTailCall))
+        if (Configuration.FEATURE_FASTTAILCALL &&
+            block.EndsWithTailCall(this, fastTailCallsOnly: false, tailCallsConvertibleToLoopOnly: true,
+                out var recursiveTailCall))
         {
             assert(recursiveTailCall is not null);
             fgMorphRecursiveFastTailCallIntoLoop(block, recursiveTailCall);
         }
-#endif
+
         fgRemoveRestOfBlock = false;
     }
 
@@ -529,28 +530,25 @@ public partial class Compiler
             return;
         }
 
-#if !TARGET_X86
-        if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+        if (!Configuration.TARGET_X86 && ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
         {
             fgConvertSyncReturnToLeave(block);
         }
         else
-#endif
         {
             var edge = fgAddRefPred(genReturnBB, block);
             block.SetKindAndTargetEdge(BBJ_ALWAYS, edge);
             fgReturnCount--;
         }
 
-#if SWIFT_SUPPORT
-        if ((ret is not null) && (ret.Oper is GT_SWIFT_ERROR_RET))
+        if (Configuration.SWIFT_SUPPORT && (ret is not null) && (ret.Oper is GT_SWIFT_ERROR_RET))
         {
             assert(genReturnErrorLocal != BAD_VAR_NUM);
             assert(lastStatement is not null);
             var errorStore = gtNewTempStore(genReturnErrorLocal, ret.AsOp().Op1);
             fgInsertStmtBefore(block, lastStatement, gtNewStmt(errorStore, lastStatement.DebugInfo));
         }
-#endif
+
         if (genReturnLocal != BAD_VAR_NUM)
         {
             noway_assert(compMethodHasRetVal);

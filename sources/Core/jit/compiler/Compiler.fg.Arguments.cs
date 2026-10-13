@@ -67,12 +67,10 @@ public partial class Compiler
         {
             call.Args.ArgsComplete(this, call);
         }
-#if FEATURE_FIXED_OUT_ARGS && UNIX_AMD64_ABI
-        if (!call.IsFastTailCall)
+        if (Configuration.FEATURE_FIXED_OUT_ARGS && Configuration.UNIX_AMD64_ABI && !call.IsFastTailCall)
         {
             opts.compNeedToAlignFrame = true;
         }
-#endif
         call.Flags &= ~GTF_ASG;
         if (!call.MayThrow(this))
         {
@@ -115,22 +113,19 @@ public partial class Compiler
         }
 
         var isSplit = argument.AbiInfo.IsSplitAcrossRegistersAndStack;
-#if TARGET_ARM
-        if ((isSplit && (argument.AbiInfo.CountRegsAndStackSlots() > 4)) || (!isSplit && argument.AbiInfo.HasAnyStackSegment))
-#else
-        if (!argument.AbiInfo.HasAnyRegisterSegment)
-#endif
+        var useStack = Configuration.TARGET_ARM
+            ? (isSplit && (argument.AbiInfo.CountRegsAndStackSlots() > 4)) ||
+                (!isSplit && argument.AbiInfo.HasAnyStackSegment)
+            : !argument.AbiInfo.HasAnyRegisterSegment;
+
+        if (useStack)
         {
             if ((node.Oper is GT_LCL_VAR) && (lvaGetPromotionType(node.AsLclVar().LclNum) is PROMOTION_TYPE_INDEPENDENT))
             {
                 if (!isSplit)
                 {
                     var fields = fgMorphLclToFieldList(node.AsLclVar());
-#if TARGET_X86
-                    use = fields;
-#else
-                    use = fields.SoleFieldOrThis;
-#endif
+                    use = Configuration.TARGET_X86 ? fields : fields.SoleFieldOrThis;
                     use = fgMorphTree(use);
                 }
                 else
@@ -216,8 +211,8 @@ public partial class Compiler
 
             if (node.Oper.IsLoad)
             {
-                var lastLoadSize = structSize % TARGET_POINTER_SIZE;
-                if ((lastLoadSize != 0) && !uint.IsPow2(lastLoadSize))
+                var lastLoadSize = structSize % Configuration.TARGET_POINTER_SIZE;
+                if ((lastLoadSize != 0) && !uint.IsPow2(unchecked((uint)lastLoadSize)))
                 {
                     // Unlike local slots, a non-local tail cannot be overread.
                     return false;
@@ -236,7 +231,7 @@ public partial class Compiler
                 if (type is TYP_UNDEF)
                 {
                     var sizeLeft = structSize - offset;
-                    if (sizeLeft < TARGET_POINTER_SIZE)
+                    if (sizeLeft < Configuration.TARGET_POINTER_SIZE)
                     {
                         type = sizeLeft switch {
                             1 => TYP_UBYTE,
@@ -245,17 +240,15 @@ public partial class Compiler
                             5 or 6 or 7 or 8 => TYP_LONG,
                             _ => throw new UnreachableException(),
                         };
-#if TARGET_ARM64
-                        if ((offset > 0) && node.Oper.IsLocalRead)
+                        if (Configuration.TARGET_ARM64 && (offset > 0) && node.Oper.IsLocalRead)
                         {
                             // Native-sized local tails permit paired loads.
                             type = TYP_I_IMPL;
                         }
-#endif
                     }
-                    else if ((layout is not null) && ((offset % TARGET_POINTER_SIZE) == 0))
+                    else if ((layout is not null) && ((offset % Configuration.TARGET_POINTER_SIZE) == 0))
                     {
-                        type = layout.GetGCPtrType(offset / TARGET_POINTER_SIZE);
+                        type = layout.GetGCPtrType(offset / Configuration.TARGET_POINTER_SIZE);
                     }
                     else
                     {
@@ -304,7 +297,7 @@ public partial class Compiler
                 }
                 else
                 {
-                    for (var slotOffset = 0; slotOffset < segment.Size; slotOffset += TARGET_POINTER_SIZE)
+                    for (var slotOffset = 0; slotOffset < segment.Size; slotOffset += Configuration.TARGET_POINTER_SIZE)
                     {
                         var layoutOffset = segment.Offset + slotOffset;
                         var access = CreateSlotAccess(layoutOffset, TYP_UNDEF);
@@ -327,8 +320,7 @@ public partial class Compiler
     {
         var value = argument.EarlyNode;
         assert(value is not null);
-#if FEATURE_IMPLICIT_BYREFS
-        if (opts.OptimizationEnabled && argument.AbiInfo.IsPassedByReference)
+        if (SupportsImplicitByRefs && opts.OptimizationEnabled && argument.AbiInfo.IsPassedByReference)
         {
             GenTree? implicitAddress = null;
             var implicitOffset = (target_ssize_t)0;
@@ -391,7 +383,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
         JITDUMP("making an outgoing copy for struct arg\n");
         assert(!call.IsTailCall || !argument.AbiInfo.IsPassedByReference);
         var copyClass = argument.SignatureClassHandle;
@@ -441,13 +432,16 @@ public partial class Compiler
         {
             argumentNode = gtNewLclvNode(lvaTable[temporary].Type, temporary);
         }
-#if FEATURE_FIXED_OUT_ARGS
-        argument.EarlyNode = copy;
-        argument.LateNode = argumentNode;
-#else
-        argumentNode = gtNewCommaNode(argumentNode.Type, copy, argumentNode);
-        argument.EarlyNode = argumentNode;
-#endif
+        if (Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            argument.EarlyNode = copy;
+            argument.LateNode = argumentNode;
+        }
+        else
+        {
+            argumentNode = gtNewCommaNode(argumentNode.Type, copy, argumentNode);
+            argument.EarlyNode = argumentNode;
+        }
         if (!argument.AbiInfo.IsPassedByReference)
         {
             var morphed = fgTryMorphStructArg(argument);
@@ -480,14 +474,15 @@ public partial struct CallArgs
             assert(value is not null);
             GenTree? setup = null;
             GenTree late;
-#if !FEATURE_FIXED_OUT_ARGS
-            assert(!argument.NeedPlace);
-            // On push-based targets, stack arguments are evaluated in order.
-            if (!argument.AbiInfo.HasAnyRegisterSegment)
+            if (!Configuration.FEATURE_FIXED_OUT_ARGS)
             {
-                continue;
+                assert(!argument.NeedPlace);
+                // On push-based targets, stack arguments are evaluated in order.
+                if (!argument.AbiInfo.HasAnyRegisterSegment)
+                {
+                    continue;
+                }
             }
-#endif
             if (argument.NeedTmp)
             {
 #if DEBUG

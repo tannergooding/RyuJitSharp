@@ -290,13 +290,11 @@ public partial class Compiler
                 canTailCall = false;
                 canTailCallFailReasonUtf8 = "Caller is Reverse P/Invoke"u8;
             }
-#if !FEATURE_FIXED_OUT_ARGS
-            else if (compiler.info.compIsVarArgs)
+            else if (!Configuration.FEATURE_FIXED_OUT_ARGS && compiler.info.compIsVarArgs)
             {
                 canTailCall = false;
                 canTailCallFailReasonUtf8 = "Caller is varargs"u8;
             }
-#endif
 
             var varArgsCookie = null as GenTree;
             var instParam = null as GenTree;
@@ -541,11 +539,12 @@ public partial class Compiler
 
                             call.Flags |= GTF_CALL_VIRT_STUB | (stubAddr.Flags & GTF_ALL_EFFECT);
 
-#if TARGET_X86
-                            // No tailcalls allowed for these yet...
-                            canTailCall = false;
-                            canTailCallFailReasonUtf8 = "VirtualCall with runtime lookup"u8;
-#endif
+                            if (Configuration.TARGET_X86)
+                            {
+                                // No tailcalls allowed for these yet...
+                                canTailCall = false;
+                                canTailCallFailReasonUtf8 = "VirtualCall with runtime lookup"u8;
+                            }
                         }
                         else
                         {
@@ -676,10 +675,9 @@ public partial class Compiler
                         // Since we are jumping over some code, check that its OK to skip that code
                         assert((sigInfo.callConv & CORINFO_CALLCONV_MASK) is not CORINFO_CALLCONV_VARARG and not CORINFO_CALLCONV_NATIVEVARARG);
 
-#if TARGET_WASM
                         // LDVIRTFTN bypasses the shared hidden-argument path. Wasm indirect
                         // call signatures still require the type context, including array Address.
-                        if (sigInfo.hasTypeArg())
+                        if (Configuration.TARGET_WASM && sigInfo.hasTypeArg())
                         {
                             GenTree? wasmInstParam;
 
@@ -702,7 +700,6 @@ public partial class Compiler
 
                             _ = indCall.Args.InsertInstParam(compiler, wasmInstParam);
                         }
-#endif
 
                         return Devirt(compiler, indCall);
                     }
@@ -834,13 +831,11 @@ public partial class Compiler
                 // are hosed. There are ways around this (caller remembers esp value,
                 // varargs is not caller-pop, etc), but not worth it.
 
-#if TARGET_X86
-                if (canTailCall)
+                if (Configuration.TARGET_X86 && canTailCall)
                 {
                     canTailCall = false;
                     canTailCallFailReasonUtf8 = "Callee is varargs"u8;
                 }
-#endif
 
                 // Get the total number of arguments - this is already correct for CALLI - for methods we have to get it from the call site
 
@@ -886,13 +881,11 @@ public partial class Compiler
 
             compiler.impCheckForPInvokeCall(call, methHnd, sigInfo, mflags, compiler.compCurBB);
 
-#if UNIX_X86_ABI
-            if ((call.Flags & GTF_CALL_UNMANAGED) is 0)
+            if (Configuration.UNIX_X86_ABI && ((call.Flags & GTF_CALL_UNMANAGED) is 0))
             {
                 // On Unix x86 we use caller-cleaned convention.
                 call.Flags |= GTF_CALL_POP_ARGS;
             }
-#endif
 
             if ((call.Flags & GTF_CALL_UNMANAGED) is not 0)
             {
@@ -1309,8 +1302,7 @@ public partial class Compiler
                 }
             }
 
-#if FEATURE_HW_INTRINSICS
-            if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
+            if (Configuration.FEATURE_HW_INTRINSICS && (ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
             {
                 if (!isIntrinsic)
                 {
@@ -1340,7 +1332,6 @@ public partial class Compiler
                 // Fold result, if possible
                 return compiler.gtFoldExpr(hwintrinsic);
             }
-#endif
 
             if (ni is NI_System_Numerics_Intrinsic or NI_System_Runtime_Intrinsics_Intrinsic)
             {
@@ -1936,7 +1927,7 @@ public partial class Compiler
                         var ptrToSpan = compiler.impStackTop().val;
 
                         assert(index.Type.ActualType is TYP_INT);
-                        assert(ptrToSpan.Type is TYP_BYREF or  TYP_I_IMPL);
+                        assert((ptrToSpan.Type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)));
 
 #if DEBUG
                         if (compiler.verbose)
@@ -2145,7 +2136,7 @@ public partial class Compiler
                             }
                         }
 
-                        if (compiler.RuntimeHandleUnderlyingType is TYP_I_IMPL)
+                        if ((compiler.RuntimeHandleUnderlyingType == TYP_I_IMPL))
                         {
                             // We'll try to expand it later.
                             isSpecial = true;
@@ -2456,17 +2447,19 @@ public partial class Compiler
                         break;
                     }
 
-#if TARGET_ARM64 || TARGET_RISCV64 || TARGET_XARCH
                     case NI_System_Threading_Interlocked_Or:
                     case NI_System_Threading_Interlocked_And:
                     {
-#if TARGET_X86
-                        // On x86, TYP_LONG is not supported as an intrinsic
-                        if (callType.ActualType is TYP_LONG)
+                        if (!(Configuration.TARGET_ARM64 || Configuration.TARGET_RISCV64 || Configuration.TARGET_XARCH))
                         {
                             break;
                         }
-#endif
+
+                        // On x86, TYP_LONG is not supported as an intrinsic
+                        if (Configuration.TARGET_X86 && (callType.ActualType is TYP_LONG))
+                        {
+                            break;
+                        }
 
                         if (callType is not TYP_INT and not TYP_LONG)
                         {
@@ -2474,9 +2467,7 @@ public partial class Compiler
                             break;
                         }
 
-#if TARGET_ARM64
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
-#endif
+                        if (!Configuration.TARGET_ARM64 || compiler.compOpportunisticallyDependsOn(InstructionSet_Atomics))
                         {
                             assert(sigInfo.numArgs is 2);
 
@@ -2488,24 +2479,24 @@ public partial class Compiler
                         }
                         break;
                     }
-#endif
-
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
                     // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
                     case NI_System_Threading_Interlocked_CompareExchange:
                     {
+                        if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_RISCV64))
+                        {
+                            break;
+                        }
+
                         var retType = sigInfo.retType.VarType;
 
-                        if (retType.Size > TARGET_POINTER_SIZE)
+                        if (retType.Size > Configuration.TARGET_POINTER_SIZE)
                         {
                             break;
                         }
-#if !TARGET_XARCH && !TARGET_ARM64
-                        else if (retType.Size < 4)
+                        else if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && (retType.Size < 4))
                         {
                             break;
                         }
-#endif
 
                         var op2 = compiler.impStackTop(1).val;
                         var canHandle = varTypeIsIntegral(retType);
@@ -2547,18 +2538,21 @@ public partial class Compiler
                     case NI_System_Threading_Interlocked_Exchange:
                     case NI_System_Threading_Interlocked_ExchangeAdd:
                     {
+                        if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_RISCV64))
+                        {
+                            break;
+                        }
+
                         var retType = sigInfo.retType.VarType;
 
-                        if (retType.Size > TARGET_POINTER_SIZE)
+                        if (retType.Size > Configuration.TARGET_POINTER_SIZE)
                         {
                             break;
                         }
-#if !TARGET_XARCH && !TARGET_ARM64
-                        else if (retType.Size < 4)
+                        else if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && (retType.Size < 4))
                         {
                             break;
                         }
-#endif
                         var op2 = compiler.impStackTop().val;
                         var canHandle = varTypeIsIntegral(retType);
 
@@ -2593,7 +2587,6 @@ public partial class Compiler
                         retNode = compiler.gtNewAtomicNode((ni is NI_System_Threading_Interlocked_ExchangeAdd) ? GT_XADD : GT_XCHG, callType, op1, op2);
                         break;
                     }
-#endif
 
                     case NI_System_Threading_Interlocked_MemoryBarrier:
                     {
@@ -2621,9 +2614,13 @@ public partial class Compiler
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
                     case NI_System_Half_op_Explicit:
                     {
+                        if (!Configuration.FEATURE_HW_INTRINSICS)
+                        {
+                            break;
+                        }
+
                         assert(sigInfo.numArgs is 1);
 
                         var retClsHnd = sigInfo.retTypeSigClass;
@@ -2645,15 +2642,11 @@ public partial class Compiler
                             assert(compiler.IsSystemHalfClass(retClsHnd));
                             assert(varTypeIsArithmetic(op1Type));
 
-#if TARGET_XARCH
-                            if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                            if (Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                             {
                                 var supported = op1Type is TYP_FLOAT or TYP_DOUBLE or TYP_INT or TYP_UINT;
 
-#if TARGET_AMD64
-                                supported |= op1Type is TYP_LONG or TYP_ULONG;
-
-#endif
+                                supported |= Configuration.TARGET_AMD64 && (op1Type is TYP_LONG or TYP_ULONG);
                                 if (supported)
                                 {
                                     var op1 = compiler.impPopStack().val;
@@ -2672,30 +2665,28 @@ public partial class Compiler
                                 }
                             }
 
-                            if ((op1Type is TYP_FLOAT) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            if (Configuration.TARGET_XARCH && (op1Type is TYP_FLOAT) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
                             {
                                 var op1 = compiler.impPopStack().val;
                                 op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_FLOAT, 16);
                                 retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX2_ConvertToVector128Half, TYP_FLOAT, 16, op1, compiler.gtNewIconNode(TYP_INT, 0));
                                 retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
                             }
-#elif TARGET_ARM64
                             // Floating-point FCVT is part of the Armv8.0 baseline. Integer -> Half
                             // conversions require FEAT_FP16 and read a general-purpose register.
-                            if (varTypeIsFloating(op1Type))
+                            if (Configuration.TARGET_ARM64 && varTypeIsFloating(op1Type))
                             {
                                 var op1 = compiler.impPopStack().val;
                                 op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, op1Type, 16);
                                 retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_ArmBase_ConvertToHalf, op1Type, 16, op1);
                                 retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
                             }
-                            else if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
+                            else if (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
                             {
                                 var op1 = compiler.impPopStack().val;
                                 retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Fp16_ConvertToHalf, op1Type, 16, op1);
                                 retNode = compiler.impSimdToScalarHalf(retNode, retClsHnd);
                             }
-#endif
                         }
                         else
                         {
@@ -2703,11 +2694,10 @@ public partial class Compiler
                             assert(varTypeIsArithmetic(retType));
                             assert((op1Type is TYP_STRUCT) && compiler.IsSystemHalfClass(op1ClsHnd));
 
-#if TARGET_XARCH
                             // Half -> integer deliberately uses the IL fallback: vcvttsh2si/vcvttsh2usi
                             // produce integer-indefinite for NaN/overflow, rather than .NET saturation.
                             // Accelerating Half -> float still lets lowering fix up the subsequent GT_CAST.
-                            if (varTypeIsFloating(retType) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                            if (Configuration.TARGET_XARCH && varTypeIsFloating(retType) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                             {
                                 var opId = retType is TYP_FLOAT ? NI_AVX10v1_ConvertScalarToVector128Single : NI_AVX10v1_ConvertScalarToVector128Double;
                                 var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
@@ -2717,32 +2707,33 @@ public partial class Compiler
                                 break;
                             }
 
-                            if ((retType is TYP_FLOAT) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                            if (Configuration.TARGET_XARCH && (retType is TYP_FLOAT) && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
                             {
                                 var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
                                 retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX2_ConvertToVector128Single, TYP_USHORT, 16, op1);
                                 retNode = compiler.gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
                             }
-#elif TARGET_ARM64
-                            // FCVTZS/FCVTZU saturate and map NaN to zero, matching .NET.
-                            var opId = retType switch {
-                                TYP_FLOAT => NI_ArmBase_ConvertToSingle,
-                                TYP_DOUBLE => NI_ArmBase_ConvertToDouble,
-                                TYP_INT => NI_Fp16_ConvertToInt32,
-                                TYP_UINT => NI_Fp16_ConvertToUInt32,
-                                TYP_LONG => NI_Fp16_ConvertToInt64,
-                                TYP_ULONG => NI_Fp16_ConvertToUInt64,
-                                _ => NI_Illegal,
-                            };
-                            var isFp16 = retType is TYP_INT or TYP_UINT or TYP_LONG or TYP_ULONG;
-
-                            if ((opId is not NI_Illegal) && (!isFp16 || compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16)))
+                            if (Configuration.TARGET_ARM64)
                             {
-                                var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
-                                // Scalar conversions produce their result directly in the target register.
-                                retNode = compiler.gtNewSimdHWIntrinsicNode(retType.ActualType, opId, TYP_USHORT, 16, op1);
+                                // FCVTZS/FCVTZU saturate and map NaN to zero, matching .NET.
+                                var opId = retType switch {
+                                    TYP_FLOAT => NI_ArmBase_ConvertToSingle,
+                                    TYP_DOUBLE => NI_ArmBase_ConvertToDouble,
+                                    TYP_INT => NI_Fp16_ConvertToInt32,
+                                    TYP_UINT => NI_Fp16_ConvertToUInt32,
+                                    TYP_LONG => NI_Fp16_ConvertToInt64,
+                                    TYP_ULONG => NI_Fp16_ConvertToUInt64,
+                                    _ => NI_Illegal,
+                                };
+                                var isFp16 = retType is TYP_INT or TYP_UINT or TYP_LONG or TYP_ULONG;
+
+                                if ((opId is not NI_Illegal) && (!isFp16 || compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16)))
+                                {
+                                    var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
+                                    // Scalar conversions produce their result directly in the target register.
+                                    retNode = compiler.gtNewSimdHWIntrinsicNode(retType.ActualType, opId, TYP_USHORT, 16, op1);
+                                }
                             }
-#endif
                         }
 
                         break;
@@ -2753,12 +2744,9 @@ public partial class Compiler
                     case NI_System_Half_op_Multiply:
                     case NI_System_Half_op_Division:
                     {
-#if TARGET_XARCH || TARGET_ARM64
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-#else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
-#endif
+                        if (Configuration.FEATURE_HW_INTRINSICS &&
+                            ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
+                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))))
                         {
                             var opId = compiler.lookupHalfIntrinsic(ni);
                             assert(opId is not NI_Illegal);
@@ -2768,7 +2756,6 @@ public partial class Compiler
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
 
-#endif
                         break;
                     }
 
@@ -2776,53 +2763,45 @@ public partial class Compiler
                     case NI_System_Half_ReciprocalEstimate:
                     case NI_System_Half_ReciprocalSqrtEstimate:
                     {
-#if TARGET_XARCH || TARGET_ARM64
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-#else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
-#endif
+                        if (Configuration.FEATURE_HW_INTRINSICS &&
+                            ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
+                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))))
                         {
                             var opId = compiler.lookupHalfIntrinsic(ni);
                             assert(opId is not NI_Illegal);
                             var op1 = compiler.impPopStack().val;
-#if TARGET_XARCH
-                            // Lane 0 comes from the second operand; the unused upper bits can be zero.
-                            var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
-                            op1 = compiler.impSimdCreateScalarHalf(op1);
-                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op2, op1);
-#else
-                            op1 = compiler.impSimdCreateScalarHalf(op1);
-                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1);
-#endif
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                // Lane 0 comes from the second operand; the unused upper bits can be zero.
+                                var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
+                                op1 = compiler.impSimdCreateScalarHalf(op1);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op2, op1);
+                            }
+                            else
+                            {
+                                op1 = compiler.impSimdCreateScalarHalf(op1);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1);
+                            }
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
 
-#endif
                         break;
                     }
 
                     case NI_System_Half_FusedMultiplyAdd:
                     {
-#if TARGET_XARCH || TARGET_ARM64
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-#else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
-#endif
+                        if (Configuration.FEATURE_HW_INTRINSICS &&
+                            ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
+                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))))
                         {
                             var op3 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
                             var op2 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
                             var op1 = compiler.impSimdCreateScalarHalf(compiler.impPopStack().val);
-#if TARGET_XARCH
-                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_AVX10v1_FusedMultiplyAddScalar, TYP_USHORT, 16, op1, op2, op3);
-#else
-                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, NI_Fp16_FusedMultiplyAdd, TYP_USHORT, 16, op1, op2, op3);
-#endif
+                            var opId = Configuration.TARGET_XARCH ? NI_AVX10v1_FusedMultiplyAddScalar : NI_Fp16_FusedMultiplyAdd;
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1, op2, op3);
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
 
-#endif
                         break;
                     }
 
@@ -2831,39 +2810,39 @@ public partial class Compiler
                     case NI_System_Half_Floor:
                     case NI_System_Half_Truncate:
                     {
-#if TARGET_XARCH || TARGET_ARM64
                         // Only the single-argument overloads are optimized.
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1) && (sigInfo.numArgs is 1))
-#else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16) && (sigInfo.numArgs is 1))
-#endif
+                        if (Configuration.FEATURE_HW_INTRINSICS &&
+                            ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
+                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))) &&
+                            (sigInfo.numArgs is 1))
                         {
                             var op1 = compiler.impPopStack().val;
-#if TARGET_XARCH
-                            var roundingMode = lookupHalfRoundingMode(ni);
-                            var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
-                            op1 = compiler.impSimdCreateScalarHalf(op1);
-                            retNode = compiler.gtNewSimdHWIntrinsicNode(
-                                TYP_SIMD16,
-                                NI_AVX10v1_RoundScaleScalar,
-                                TYP_USHORT,
-                                16,
-                                op2,
-                                op1,
-                                compiler.gtNewIconNode(
-                                    TYP_INT,
-                                    roundingMode));
-#else
-                            var opId = compiler.lookupHalfIntrinsic(ni);
-                            assert(opId is not NI_Illegal);
-                            op1 = compiler.impSimdCreateScalarHalf(op1);
-                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1);
-#endif
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                var roundingMode = lookupHalfRoundingMode(ni);
+                                var op2 = compiler.gtNewZeroConNode(TYP_SIMD16);
+                                op1 = compiler.impSimdCreateScalarHalf(op1);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(
+                                    TYP_SIMD16,
+                                    NI_AVX10v1_RoundScaleScalar,
+                                    TYP_USHORT,
+                                    16,
+                                    op2,
+                                    op1,
+                                    compiler.gtNewIconNode(
+                                        TYP_INT,
+                                        roundingMode));
+                            }
+                            else
+                            {
+                                var opId = compiler.lookupHalfIntrinsic(ni);
+                                assert(opId is not NI_Illegal);
+                                op1 = compiler.impSimdCreateScalarHalf(op1);
+                                retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD16, opId, TYP_USHORT, 16, op1);
+                            }
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
 
-#endif
                         break;
                     }
 
@@ -2874,12 +2853,9 @@ public partial class Compiler
                     case NI_System_Half_op_Equality:
                     case NI_System_Half_op_Inequality:
                     {
-#if TARGET_XARCH || TARGET_ARM64
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-#else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
-#endif
+                        if (Configuration.FEATURE_HW_INTRINSICS &&
+                            ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
+                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))))
                         {
                             var opId = compiler.lookupHalfIntrinsic(ni);
                             assert(opId is not NI_Illegal);
@@ -2888,19 +2864,15 @@ public partial class Compiler
                             retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_INT, opId, TYP_USHORT, 16, op1, op2);
                         }
 
-#endif
                         break;
                     }
 
                     case NI_System_Half_op_Increment:
                     case NI_System_Half_op_Decrement:
                     {
-#if TARGET_XARCH || TARGET_ARM64
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-#else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
-#endif
+                        if (Configuration.FEATURE_HW_INTRINSICS &&
+                            ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
+                             (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))))
                         {
                             var opId = compiler.lookupHalfIntrinsic(ni);
                             assert(opId is not NI_Illegal);
@@ -2912,7 +2884,6 @@ public partial class Compiler
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
 
-#endif
                         break;
                     }
 
@@ -2925,7 +2896,12 @@ public partial class Compiler
                     case NI_System_Half_get_One:
                     case NI_System_Half_get_Zero:
                     {
-#if TARGET_XARCH || TARGET_ARM64
+                        if (!Configuration.FEATURE_HW_INTRINSICS ||
+                            !(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64))
+                        {
+                            break;
+                        }
+
                         var halfBits = ni switch {
                             NI_System_Half_get_MinValue => 0xFBFF, // -65504
                             NI_System_Half_get_MaxValue => 0x7BFF, // 65504
@@ -2938,26 +2914,26 @@ public partial class Compiler
                             _ => throw new System.Diagnostics.UnreachableException(),
                         };
 
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-#else
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16))
-#endif
+                        if ((Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX10v1)) ||
+                            (Configuration.TARGET_ARM64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Fp16)))
                         {
                             // The signature carries the Half class even for generic constrained calls.
                             retNode = compiler.gtNewSimdCreateScalarNode(TYP_SIMD16, compiler.gtNewIconNode(TYP_INT, halfBits), TYP_USHORT, 16);
                             retNode = compiler.impSimdToScalarHalf(retNode, sigInfo.retTypeSigClass);
                         }
 
-#endif
                         break;
                     }
 
                     case NI_System_Math_FusedMultiplyAdd:
                     {
+                        if (!Configuration.FEATURE_HW_INTRINSICS)
+                        {
+                            break;
+                        }
+
                         assert(varTypeIsFloating(callType));
-#if TARGET_XARCH
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                        if (Configuration.TARGET_XARCH && compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
                         {
                             // We are constructing a chain of intrinsics similar to:
                             //    return FMA.MultiplyAddScalar(
@@ -2980,34 +2956,35 @@ public partial class Compiler
                             retNode = compiler.gtNewSimdToScalarNode(callType, retNode, simdBaseType, 16);
                             break;
                         }
-#elif TARGET_ARM64
-                        // We are constructing a chain of intrinsics similar to:
-                        //    return AdvSimd.FusedMultiplyAddScalar(
-                        //        Vector64.Create{ScalarUnsafe}(z),
-                        //        Vector64.Create{ScalarUnsafe}(y),
-                        //        Vector64.Create{ScalarUnsafe}(x)
-                        //    ).ToScalar();
+                        if (Configuration.TARGET_ARM64)
+                        {
+                            // We are constructing a chain of intrinsics similar to:
+                            //    return AdvSimd.FusedMultiplyAddScalar(
+                            //        Vector64.Create{ScalarUnsafe}(z),
+                            //        Vector64.Create{ScalarUnsafe}(y),
+                            //        Vector64.Create{ScalarUnsafe}(x)
+                            //    ).ToScalar();
 
-                        compiler.impSpillSideEffect(spillGlobEffects: true, compiler.stackState.esStackDepth - 3, "Spilling op1 side effects for FusedMultiplyAdd");
-                        compiler.impSpillSideEffect(spillGlobEffects: true, compiler.stackState.esStackDepth - 2, "Spilling op2 side effects for FusedMultiplyAdd");
+                            compiler.impSpillSideEffect(spillGlobEffects: true, compiler.stackState.esStackDepth - 3, "Spilling op1 side effects for FusedMultiplyAdd");
+                            compiler.impSpillSideEffect(spillGlobEffects: true, compiler.stackState.esStackDepth - 2, "Spilling op2 side effects for FusedMultiplyAdd");
 
-                        var op3 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
-                        var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
-                        var op1 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
+                            var op3 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
+                            var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
+                            var op1 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
 
-                        var simdBaseType = callJitType.PreciseVarType;
+                            var simdBaseType = callJitType.PreciseVarType;
 
-                        op3 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, simdBaseType, 8);
-                        op2 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, simdBaseType, 8);
-                        op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, simdBaseType, 8);
+                            op3 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op3, simdBaseType, 8);
+                            op2 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op2, simdBaseType, 8);
+                            op1 = compiler.gtNewSimdCreateScalarUnsafeNode(TYP_SIMD8, op1, simdBaseType, 8);
 
-                        // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
-                        // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
+                            // Note that AdvSimd.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 + op2 * op3
+                            // while Math{F}.FusedMultiplyAddScalar(op1,op2,op3) corresponds to op1 * op2 + op3
 
-                        retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_FusedMultiplyAddScalar, simdBaseType, 8, op3, op2, op1);
-                        retNode = compiler.gtNewSimdToScalarNode(callType, retNode, simdBaseType, 8);
-                        break;
-#endif
+                            retNode = compiler.gtNewSimdHWIntrinsicNode(TYP_SIMD8, NI_AdvSimd_FusedMultiplyAddScalar, simdBaseType, 8, op3, op2, op1);
+                            retNode = compiler.gtNewSimdToScalarNode(callType, retNode, simdBaseType, 8);
+                            break;
+                        }
 
                         // TODO-CQ-XArch: Ideally we would create a GT_INTRINSIC node for fma, however, that currently
                         // requires more extensive changes to valuenum to support methods with 3 operands
@@ -3017,7 +2994,6 @@ public partial class Compiler
 
                         break;
                     }
-#endif
 
                     case NI_System_Math_Abs:
                     case NI_System_Math_Acos:
@@ -3386,10 +3362,8 @@ public partial class Compiler
 
                             case CORINFO_TYPE_INT:
                             case CORINFO_TYPE_UINT:
-#if TARGET_64BIT
-                            case CORINFO_TYPE_LONG:
-                            case CORINFO_TYPE_ULONG:
-#endif
+                            case CORINFO_TYPE_LONG when Configuration.TARGET_64BIT:
+                            case CORINFO_TYPE_ULONG when Configuration.TARGET_64BIT:
                             {
                                 retNode = compiler.gtNewUnaryNode(GT_BSWAP, callType, compiler.impPopStack().val);
                                 break;
@@ -3513,8 +3487,7 @@ public partial class Compiler
                             var f64Cns = op1.AsDblCon().DconVal;
                             retNode = compiler.gtNewLconNode(BitConverter.DoubleToInt64Bits(f64Cns));
                         }
-#if TARGET_64BIT
-                        else
+                        else if (Configuration.TARGET_64BIT)
                         {
                             // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
                             compiler.impPopStack();
@@ -3522,7 +3495,6 @@ public partial class Compiler
                             op1 = compiler.impImplicitR4orR8Cast(op1, TYP_DOUBLE);
                             retNode = compiler.gtNewBitCastNode(TYP_LONG, op1);
                         }
-#endif
                         break;
                     }
 
@@ -3555,15 +3527,13 @@ public partial class Compiler
                             var i64Cns = op1.AsIntConCommon().LngValue;
                             retNode = compiler.gtNewDconNode(TYP_DOUBLE, BitConverter.Int64BitsToDouble(i64Cns));
                         }
-#if TARGET_64BIT
-                        else
+                        else if (Configuration.TARGET_64BIT)
                         {
                             // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
                             _ = compiler.impPopStack();
 
                             retNode = compiler.gtNewBitCastNode(TYP_DOUBLE, op1);
                         }
-#endif
                         break;
                     }
 
@@ -3596,12 +3566,10 @@ public partial class Compiler
                         assert(sigInfo.sigInst.methInstCount is 0 or 1);
                         var retType = (sigInfo.sigInst.methInstCount is 0) ? sigInfo.retType.VarType : TYP_REF;
 
-#if !TARGET_64BIT
-                        if (retType is TYP_LONG or TYP_DOUBLE)
+                        if (!Configuration.TARGET_64BIT && (retType is TYP_LONG or TYP_DOUBLE))
                         {
                             break;
                         }
-#endif
                         assert((retType is TYP_REF) || compiler.impIsPrimitive(sigInfo.retType));
                         retNode = compiler.gtNewIndir(retType, compiler.impPopStack().val, GTF_IND_VOLATILE);
                         break;
@@ -3623,12 +3591,10 @@ public partial class Compiler
                             assert(compiler.impIsPrimitive(jitType));
 
                             type = jitType.VarType;
-#if !TARGET_64BIT
-                            if (type is TYP_LONG or TYP_DOUBLE)
+                            if (!Configuration.TARGET_64BIT && (type is TYP_LONG or TYP_DOUBLE))
                             {
                                 break;
                             }
-#endif
                         }
                         else
                         {
@@ -3704,8 +3670,7 @@ public partial class Compiler
                     {
                         assert(!isMagnitude && !isNative && !isNumber);
 
-#if TARGET_RISCV64
-                        if (compiler.compOpportunisticallyDependsOn(InstructionSet_Zbb))
+                        if (Configuration.TARGET_RISCV64 && compiler.compOpportunisticallyDependsOn(InstructionSet_Zbb))
                         {
                             var op2 = compiler.impPopStack().val;
                             var op1 = compiler.impPopStack().val;
@@ -3715,7 +3680,7 @@ public partial class Compiler
                             // 'uint'.
                             var preciseType = callJitType.PreciseVarType;
 
-                            if (preciseType.Size < REGSIZE_BYTES)
+                            if (preciseType.Size < Configuration.REGSIZE_BYTES)
                             {
                                 // Zero-extended 'uint' is unnatural on RISC-V
                                 var zeroExtend = varTypeIsUnsigned(preciseType) && (preciseType is not TYP_UINT);
@@ -3736,27 +3701,26 @@ public partial class Compiler
 
                             retNode = minMax;
                         }
-#endif
                     }
                     else
                     {
-#if FEATURE_HW_INTRINSICS
-                        var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
-                        var op1 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
-
-                        if (isNative)
+                        if (Configuration.FEATURE_HW_INTRINSICS)
                         {
-                            assert(!isMagnitude && !isNumber);
-                            retNode = compiler.gtNewSimdMinMaxNativeNode(callType, op1, op2, callJitType.PreciseVarType, 0, isMax);
-                        }
-                        else
-                        {
-                            retNode = compiler.gtNewSimdMinMaxNode(callType, op1, op2, callJitType.PreciseVarType, 0, isMax, isMagnitude, isNumber);
-                        }
-#endif
+                            var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
+                            var op1 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
 
-#if TARGET_RISCV64
-                        if (!isMagnitude)
+                            if (isNative)
+                            {
+                                assert(!isMagnitude && !isNumber);
+                                retNode = compiler.gtNewSimdMinMaxNativeNode(callType, op1, op2, callJitType.PreciseVarType, 0, isMax);
+                            }
+                            else
+                            {
+                                retNode = compiler.gtNewSimdMinMaxNode(callType, op1, op2, callJitType.PreciseVarType, 0, isMax, isMagnitude, isNumber);
+                            }
+                        }
+
+                        if (Configuration.TARGET_RISCV64 && !isMagnitude)
                         {
                             var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
                             var op1 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
@@ -3833,10 +3797,8 @@ public partial class Compiler
                             }
                             retNode = minMax;
                         }
-#endif
 
-#if !FEATURE_HW_INTRINSICS && !TARGET_RISCV64
-                        if (isNative)
+                        if (!Configuration.FEATURE_HW_INTRINSICS && !Configuration.TARGET_RISCV64 && isNative)
                         {
                             var op2 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
                             var op1 = compiler.impImplicitR4orR8Cast(compiler.impPopStack().val, callType);
@@ -3850,7 +3812,6 @@ public partial class Compiler
                             compiler.impStoreToTemp(temp, minMax, CHECK_SPILL_NONE);
                             retNode = compiler.gtNewLclvNode(callType, temp);
                         }
-#endif
                     }
 
                     // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
@@ -3864,11 +3825,14 @@ public partial class Compiler
 
             if (mustExpand && (retNode is null))
             {
-#if TARGET_WASM
-                NYI_WASM("Unhandled must expand intrinsic");
-#else
-                NO_WAY("Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
-#endif
+                if (Configuration.TARGET_WASM)
+                {
+                    NYI_WASM("Unhandled must expand intrinsic");
+                }
+                else
+                {
+                    NO_WAY("Unhandled must expand intrinsic, throwing PlatformNotSupportedException");
+                }
                 return compiler.impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, methHnd, sigInfo, mustExpand);
             }
 
@@ -4111,24 +4075,27 @@ public partial class Compiler
                         }
                         else
                         {
-#if FEATURE_TAILCALL_OPT
-                            // Must be an implicit tail call.
-                            assert(isImplicitTailCall);
+                            if (Configuration.FEATURE_TAILCALL_OPT)
+                            {
+                                // Must be an implicit tail call.
+                                assert(isImplicitTailCall);
 
-                            // It is possible that a call node is both an inline candidate and marked
-                            // for opportunistic tail calling.  Inlining happens before morphing of
-                            // trees.  If inlining of an inline candidate gets aborted for whatever
-                            // reason, it will survive to the morphing stage at which point it will be
-                            // transformed into a tail call after performing additional checks.
+                                // It is possible that a call node is both an inline candidate and marked
+                                // for opportunistic tail calling.  Inlining happens before morphing of
+                                // trees.  If inlining of an inline candidate gets aborted for whatever
+                                // reason, it will survive to the morphing stage at which point it will be
+                                // transformed into a tail call after performing additional checks.
 
-                            call._callMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+                                call._callMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
 
 #if DEBUG
-                            JITDUMP($"\nGTF_CALL_M_IMPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
+                                JITDUMP($"\nGTF_CALL_M_IMPLICIT_TAILCALL set for call [{call.TreeId:D6}]\n");
 #endif
-#else
-                            NYI("Implicit tail call prefix on a target which doesn't support opportunistic tail calls");
-#endif
+                            }
+                            else
+                            {
+                                NYI("Implicit tail call prefix on a target which doesn't support opportunistic tail calls");
+                            }
                         }
 
                         // This might or might not turn into a tailcall. We do more
@@ -4507,14 +4474,12 @@ public partial class Compiler
                 compiler.impPushOnStack(result, tiRetVal);
             }
 
-#if SWIFT_SUPPORT
             // If call is a Swift call with error handling, append additional IR
             // to handle storing the error register's value post-call.
-            if (swiftErrorNode is not null)
+            if (Configuration.SWIFT_SUPPORT && (swiftErrorNode is not null))
             {
                 compiler.impAppendSwiftErrorStore(swiftErrorNode);
             }
-#endif
 
             return callRetTyp;
         }

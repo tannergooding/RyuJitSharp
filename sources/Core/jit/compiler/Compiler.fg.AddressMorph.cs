@@ -115,12 +115,11 @@ public partial class Compiler
             }
 
             var boundsType = TYP_INT;
-#if TARGET_64BIT
-            if (index.Type is TYP_I_IMPL)
+            if (Configuration.TARGET_64BIT && ((index.Type == TYP_I_IMPL)))
             {
                 boundsType = TYP_I_IMPL;
             }
-#endif
+
             GenTree length = gtNewArrLen(TYP_INT, array, indexAddress.LenOffset);
             if (boundsType is not TYP_INT)
             {
@@ -131,8 +130,7 @@ public partial class Compiler
             index = secondIndex;
         }
 
-#if TARGET_64BIT
-        if (index.Type is not TYP_I_IMPL)
+        if (Configuration.TARGET_64BIT && ((index.Type != TYP_I_IMPL)))
         {
             if (index.Oper is GT_CNS_INT)
             {
@@ -143,7 +141,7 @@ public partial class Compiler
                 index = gtNewCastNode(TYP_I_IMPL, index, true, TYP_I_IMPL);
             }
         }
-#endif
+
         GenTree address;
         if (elementSize > 1)
         {
@@ -158,14 +156,13 @@ public partial class Compiler
         }
 
         var groupArrayWithOffset = false;
-#if TARGET_ARMARCH
-        groupArrayWithOffset = !varTypeIsStruct(elementType);
-#endif
+        groupArrayWithOffset =
+            Configuration.TARGET_ARMARCH && !varTypeIsStruct(elementType);
+
         var groupArrayWithIndex = false;
-#if TARGET_RISCV64
-        groupArrayWithIndex = !varTypeIsStruct(elementType);
-#endif
-        var pointerType = array.Type is TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF;
+        groupArrayWithIndex =
+            Configuration.TARGET_RISCV64 && !varTypeIsStruct(elementType);
+        var pointerType = (array.Type == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
         var firstElement = gtNewIconNode(TYP_I_IMPL, elementOffset);
         if (groupArrayWithOffset)
         {

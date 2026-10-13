@@ -875,9 +875,10 @@ public partial class Compiler
 
         lvaGenericsContextInUse |= InlineeCompiler.lvaGenericsContextInUse;
 
-#if TARGET_ARM64
-        info.compNeedsConsecutiveRegisters |= InlineeCompiler.info.compNeedsConsecutiveRegisters;
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            info.compNeedsConsecutiveRegisters |= InlineeCompiler.info.compNeedsConsecutiveRegisters;
+        }
 
         if (InlineeCompiler.fgHasSwitch)
         {
@@ -2079,7 +2080,6 @@ public partial class Compiler
     /// <summary>The max bbNum that has been assigned to basic blocks</summary>
     public int fgBBNumMax;
 
-#if TARGET_WASM
     public List<WasmInterval>? fgWasmIntervals;
 
     public BasicBlock[]? fgIndexToBlockMap;
@@ -2089,7 +2089,6 @@ public partial class Compiler
     public FlowGraphTryRegions? fgTryRegions;
 
     public EHClauseInfo[]? fgWasmEHInfo;
-#endif
 
     public bool fgBBVarSetsInited;
 
@@ -5032,7 +5031,6 @@ public partial class Compiler
 
         static BasicBlock Done(BasicBlock bestBlk, bool insertingIntoFilter, BasicBlock startBlk, BasicBlock? endBlk)
         {
-#if JIT32_GCENCODER
             // If we are inserting into a filter and the best block is the end of the filter region, we need to
             // insert after its predecessor instead: the JIT32 GC encoding used by the x86 CLR ABI  states that the
             // terminal block of a filter region is its exit block. If the filter region consists of a single block,
@@ -5041,7 +5039,7 @@ public partial class Compiler
             // inserted block is marked as the entry block for the filter. Becuase this sort of split can be complex
             // (especially given that it must ensure that the liveness of the exception object is properly tracked),
             // we avoid this situation by never generating single-block filters on x86 (see impPushCatchArgOnStack).
-            if (insertingIntoFilter)
+            if (Configuration.JIT32_GCENCODER && insertingIntoFilter)
             {
                 var filterEndBlk = endBlk
                     ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Filter end block is missing.");
@@ -5052,7 +5050,6 @@ public partial class Compiler
                     bestBlk = bestBlk.Prev;
                 }
             }
-#endif
 
             return bestBlk;
         }
@@ -5325,8 +5322,7 @@ public partial class Compiler
                         break;
                     }
 
-#if !TARGET_X86 && !TARGET_ARM
-                    case CEE_JMP:
+                    case CEE_JMP when !Configuration.TARGET_X86 && !Configuration.TARGET_ARM:
                     {
                         if (!compIsForInlining)
                         {
@@ -5340,7 +5336,6 @@ public partial class Compiler
 
                         break;
                     }
-#endif
 
                     case CEE_CALL:
                     case CEE_CALLVIRT:
@@ -5496,8 +5491,7 @@ public partial class Compiler
                         {
                             retBlocks++;
 
-#if !TARGET_X86 && !TARGET_ARM
-                            if (!compIsForInlining)
+                            if (!Configuration.TARGET_X86 && !Configuration.TARGET_ARM && !compIsForInlining)
                             {
                                 // We transform this into a set of ldarg's + tail call and
                                 // thus may push more onto the stack than originally thought.
@@ -5508,7 +5502,6 @@ public partial class Compiler
                                 break;
                             }
 
-#endif
                             // If we are inlining, we need to fail for a CEE_JMP opcode, just like the list of other opcodes (for all platforms).
                             goto case CEE_MKREFANY;
                         }
@@ -6502,28 +6495,23 @@ public partial class Compiler
                     }
 
                     // These are foldable if the first argument is a constant
-#if FEATURE_HW_INTRINSICS
-                    case NI_Vector_Create:
-                    case NI_Vector_CreateScalar:
-                    case NI_Vector_CreateScalarUnsafe:
-#if TARGET_ARM64
-                    case NI_ArmBase_LeadingZeroCount:
-                    case NI_ArmBase_ReverseElementBits:
-                    case NI_ArmBase_Arm64_LeadingZeroCount:
-                    case NI_ArmBase_Arm64_ReverseElementBits:
-#elif TARGET_XARCH
-                    case NI_X86Base_BitScanForward:
-                    case NI_X86Base_BitScanReverse:
-                    case NI_X86Base_PopCount:
-                    case NI_X86Base_X64_BitScanForward:
-                    case NI_X86Base_X64_BitScanReverse:
-                    case NI_X86Base_X64_PopCount:
-                    case NI_AVX2_LeadingZeroCount:
-                    case NI_AVX2_TrailingZeroCount:
-                    case NI_AVX2_X64_LeadingZeroCount:
-                    case NI_AVX2_X64_TrailingZeroCount:
-#endif
-#endif
+                    case NI_Vector_Create when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_CreateScalar when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_CreateScalarUnsafe when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_ArmBase_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                    case NI_ArmBase_ReverseElementBits when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                    case NI_ArmBase_Arm64_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                    case NI_ArmBase_Arm64_ReverseElementBits when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                    case NI_X86Base_BitScanForward when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_X86Base_BitScanReverse when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_X86Base_PopCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_X86Base_X64_BitScanForward when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_X86Base_X64_BitScanReverse when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_X86Base_X64_PopCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_AVX2_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_AVX2_TrailingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_AVX2_X64_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                    case NI_AVX2_X64_TrailingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
                     case NI_PRIMITIVE_LeadingZeroCount:
                     case NI_PRIMITIVE_Log2:
                     case NI_PRIMITIVE_PopCount:
@@ -6688,23 +6676,21 @@ public partial class Compiler
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
-                    case NI_Vector_As:
-                    case NI_Vector_AsByte:
-                    case NI_Vector_AsDouble:
-                    case NI_Vector_AsInt16:
-                    case NI_Vector_AsInt32:
-                    case NI_Vector_AsInt64:
-                    case NI_Vector_AsNInt:
-                    case NI_Vector_AsNUInt:
-                    case NI_Vector_AsSByte:
-                    case NI_Vector_AsSingle:
-                    case NI_Vector_AsUInt16:
-                    case NI_Vector_AsUInt32:
-                    case NI_Vector_AsUInt64:
-                    case NI_Vector_AsVector4:
-                    case NI_Vector_op_UnaryPlus:
-#endif
+                    case NI_Vector_As when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsByte when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsDouble when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsInt16 when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsInt32 when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsInt64 when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsNInt when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsNUInt when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsSByte when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsSingle when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsUInt16 when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsUInt32 when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsUInt64 when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_AsVector4 when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_op_UnaryPlus when Configuration.FEATURE_HW_INTRINSICS:
                     case NI_SRCS_UNSAFE_As:
                     case NI_SRCS_UNSAFE_AsRef:
                     case NI_SRCS_UNSAFE_BitCast:
@@ -6719,19 +6705,18 @@ public partial class Compiler
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
-                    case NI_Vector_get_AllBitsSet:
-                    case NI_Vector_get_E:
-                    case NI_Vector_get_Epsilon:
-                    case NI_Vector_get_NaN:
-                    case NI_Vector_get_NegativeInfinity:
-                    case NI_Vector_get_NegativeOne:
-                    case NI_Vector_get_NegativeZero:
-                    case NI_Vector_get_One:
-                    case NI_Vector_get_Pi:
-                    case NI_Vector_get_PositiveInfinity:
-                    case NI_Vector_get_Tau:
-                    case NI_Vector_get_Zero:
+                    case NI_Vector_get_AllBitsSet when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_E when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_Epsilon when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_NaN when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_NegativeInfinity when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_NegativeOne when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_NegativeZero when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_One when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_Pi when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_PositiveInfinity when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_Tau when Configuration.FEATURE_HW_INTRINSICS:
+                    case NI_Vector_get_Zero when Configuration.FEATURE_HW_INTRINSICS:
                     {
                         // These always produce a vector constant
 
@@ -6744,7 +6729,6 @@ public partial class Compiler
 
                         break;
                     }
-#endif
 
                     case NI_SRCS_UNSAFE_NullRef:
                     case NI_SRCS_UNSAFE_SizeOf:
@@ -8425,18 +8409,15 @@ public partial class Compiler
             return false;
         }
 
-#if !FEATURE_FIXED_OUT_ARGS
-        if (info.compIsVarArgs)
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS && info.compIsVarArgs)
         {
             // Caller is varargs
             return false;
         }
-#endif // FEATURE_FIXED_OUT_ARGS
 
         return true;
     }
 
-#if FEATURE_JIT_METHOD_PERF
     /// <summary>count and return the number of IR nodes in the function.</summary>
     /// <returns>The number of IR nodes in the function.</returns>
     public int fgMeasureIR()
@@ -8463,7 +8444,6 @@ public partial class Compiler
         }
         return nodeCount + visitor.NodeCount;
     }
-#endif
 
     /// <summary>Insert a new BasicBlock after the given block.</summary>
     /// <param name="jumpKind">the jump kind of the new block</param>
@@ -9400,7 +9380,7 @@ public partial class Compiler
         assert(arg is not null);
 
         var targetMethod = arg.Node;
-        noway_assert(targetMethod.Type is TYP_I_IMPL);
+        noway_assert((targetMethod.Type == TYP_I_IMPL));
 
         var oper = targetMethod.Oper;
         var targetMethodHnd = (CORINFO_METHOD_HANDLE)(null);
@@ -10382,7 +10362,11 @@ public partial class Compiler
     {
         JITDUMP("\n*************** In fgMarkDemotedImplicitByRefArgs()\n");
 
-#if FEATURE_IMPLICIT_BYREFS
+        if (!SupportsImplicitByRefs)
+        {
+            return;
+        }
+
         for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             ref var varDsc = ref lvaGetDesc(lclNum);
@@ -10427,7 +10411,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
     }
 
     /// <summary>check if two profile weights are within some small percentage of one another, or are both less than some epsilon.</summary>
@@ -11450,36 +11433,37 @@ public partial class Compiler
     public unsafe void fgSetOptions()
     {
         assert(codeGen is not null);
-#if TARGET_WASM
-        optMethodFlags |= OMF_NEEDS_GCPOLLS;
-        assert(!codeGen.Interruptible);
-#else
-#if DEBUG
-        if ((JitConfig.JitFullyInt != 0) || compStressCompile(STRESS_GENERIC_VARN, 30))
+        if (Configuration.TARGET_WASM)
         {
-            noway_assert(!codeGen.IsGcTypeFixed);
-            codeGen.Interruptible = true;
+            optMethodFlags |= OMF_NEEDS_GCPOLLS;
+            assert(!codeGen.Interruptible);
         }
-#endif
-        if (opts.compDbgCode)
+        else
         {
 #if DEBUG
-            assert(!codeGen.IsGcTypeFixed);
+            if ((JitConfig.JitFullyInt != 0) || compStressCompile(STRESS_GENERIC_VARN, 30))
+            {
+                noway_assert(!codeGen.IsGcTypeFixed);
+                codeGen.Interruptible = true;
+            }
 #endif
-            codeGen.Interruptible = true;
+            if (opts.compDbgCode)
+            {
+#if DEBUG
+                assert(!codeGen.IsGcTypeFixed);
+#endif
+                codeGen.Interruptible = true;
+            }
         }
-#endif
 
         if (compLocallocUsed)
         {
             codeGen.IsFramePointerRequired = true;
         }
-#if TARGET_X86
-        if (compTailCallUsed)
+        if (Configuration.TARGET_X86 && compTailCallUsed)
         {
             codeGen.IsFramePointerRequired = true;
         }
-#endif
         if (!opts.genFPopt)
         {
             codeGen.IsFramePointerRequired = true;
@@ -11489,12 +11473,13 @@ public partial class Compiler
         if (compHndBBtabCount > 0)
         {
             codeGen.SetFramePointerRequiredEH(true);
-#if TARGET_X86
+            if (Configuration.TARGET_X86)
+            {
 #if DEBUG
-            assert(!codeGen.IsGcTypeFixed);
+                assert(!codeGen.IsGcTypeFixed);
 #endif
-            codeGen.Interruptible = true;
-#endif
+                codeGen.Interruptible = true;
+            }
         }
         if (compMethodRequiresPInvokeFrame)
         {
@@ -12915,11 +12900,8 @@ public partial class Compiler
         // precise type initialization when IL stores have been redirected.
         if (!info.compIsStatic && (lvaArg0Var != info.compThisArg))
         {
-#if !JIT32_GCENCODER
-            var lva0CopiedForGenericsCtxt = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
-#else
-            var lva0CopiedForGenericsCtxt = false;
-#endif
+            var lva0CopiedForGenericsCtxt = !Configuration.JIT32_GCENCODER &&
+                ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
             noway_assert(lva0CopiedForGenericsCtxt || !lvaGetDesc(info.compThisArg).IsAddressExposed);
             noway_assert(!lvaGetDesc(info.compThisArg).lvHasILStoreOp);
             noway_assert(lvaGetDesc(lvaArg0Var).IsAddressExposed || lvaGetDesc(lvaArg0Var).lvHasILStoreOp || lva0CopiedForGenericsCtxt);
@@ -12966,13 +12948,11 @@ public partial class Compiler
             else
             {
                 var limit = MergedReturns.ReturnCountHardLimit;
-#if JIT32_GCENCODER
-                if (compIsAsync)
+                if (Configuration.JIT32_GCENCODER && compIsAsync)
                 {
                     // Reserve the extra epilog introduced by async transformation.
                     limit--;
                 }
-#endif
                 merger.SetMaxReturns(limit);
             }
         }
@@ -13009,12 +12989,10 @@ public partial class Compiler
 
         CORINFO_JUST_MY_CODE_HANDLE* pDbgHandle = null;
         CORINFO_JUST_MY_CODE_HANDLE dbgHandle = null;
-#if !TARGET_WASM
-        if (opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
+        if (!Configuration.TARGET_WASM && opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
         {
             dbgHandle = info.compCompHnd->getJustMyCodeHandle(info.compMethodHnd, &pDbgHandle);
         }
-#endif
 #pragma warning disable CA1508 // The EE writes pDbgHandle through the double pointer passed to getJustMyCodeHandle.
         noway_assert((dbgHandle == null) || (pDbgHandle is null));
 
@@ -13047,7 +13025,6 @@ public partial class Compiler
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
 
-#if SWIFT_SUPPORT
     private struct ReplaceSwiftErrorVisitor : IGenTreeVisitor<ReplaceSwiftErrorVisitor>
     {
         public static bool DoPreOrder => true;
@@ -13133,7 +13110,6 @@ public partial class Compiler
 
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
-#endif
 
     /// <summary>Canonicalize the method entry to be dominate all blocks in the BB and to be executed exactly once.</summary>
     /// <returns></returns>
@@ -13837,8 +13813,8 @@ public partial class Compiler
         }
 #endif
 
-#if DEBUG && TARGET_XARCH
-        if (opts.compStackCheckOnRet)
+#if DEBUG
+        if (Configuration.TARGET_XARCH && opts.compStackCheckOnRet)
         {
             lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false, "ReturnSpCheck");
             lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason.ReturnSpCheck);
@@ -13847,8 +13823,8 @@ public partial class Compiler
         }
 #endif
 
-#if DEBUG && TARGET_X86
-        if (opts.compStackCheckOnCall)
+#if DEBUG
+        if (Configuration.TARGET_X86 && opts.compStackCheckOnCall)
         {
             lvaCallSpCheck = lvaGrabTempWithImplicitUse(false, "CallSpCheck");
             lvaSetVarDoNotEnregister(lvaCallSpCheck, DoNotEnregisterReason.CallSpCheck);
@@ -14905,13 +14881,16 @@ public partial class Compiler
 #endif
         if (fgHasCycleWithoutGCSafePoint())
         {
-#if TARGET_WASM
-            JITDUMP("NOTE: Method requires GC polls -- Wasm does not insert these yet\n");
-#else
-            JITDUMP("Marking method as fully interruptible\n");
-            assert(codeGen is not null);
-            codeGen.Interruptible = true;
-#endif
+            if (Configuration.TARGET_WASM)
+            {
+                JITDUMP("NOTE: Method requires GC polls -- Wasm does not insert these yet\n");
+            }
+            else
+            {
+                JITDUMP("Marking method as fully interruptible\n");
+                assert(codeGen is not null);
+                codeGen.Interruptible = true;
+            }
         }
 
         foreach (var block in Blocks)
@@ -15132,13 +15111,9 @@ public partial class Compiler
                   || (varNum == lvaInlinedPInvokeFrameVar)
                   || (varNum == lvaRetAddrVar);
 
-#if TARGET_ARM64
-        result |= (varNum == lvaFfrRegister);
-#endif
+        result |= Configuration.TARGET_ARM64 && (varNum == lvaFfrRegister);
 
-#if FEATURE_FIXED_OUT_ARGS
-        result |= (varNum == lvaOutgoingArgSpaceVar);
-#endif
+        result |= Configuration.FEATURE_FIXED_OUT_ARGS && (varNum == lvaOutgoingArgSpaceVar);
 
         return result;
     }
@@ -15201,26 +15176,22 @@ public partial class Compiler
             // Below conditions guarantee block initialization, which will initialize
             // all struct fields. If the logic for block initialization in CodeGen.genCheckUseBlockInit()
             // changes, these conditions need to be updated.
-#if TARGET_WASM
-            // On WASM the prolog always uses a single memory.fill to zero any
-            // locals that need initialization, regardless of size.
-            return false;
-#else // !TARGET_WASM
+            if (Configuration.TARGET_WASM)
+            {
+                // On WASM the prolog always uses a single memory.fill to zero any
+                // locals that need initialization, regardless of size.
+                return false;
+            }
+
             var stackHomeSize = lvaLclStackHomeSize(varNum);
 
-#if TARGET_AMD64
-            // We can clear using aligned SIMD so the threshold is lower,
+            // AMD64 can clear using aligned SIMD so the threshold is lower,
             // and clears in order which is better for auto-prefetching
-            if ((roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int)) > 4)
-#elif TARGET_64BIT
-            if ((roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int)) > 8)
-#else
-            if ((roundUp(stackHomeSize, TARGET_POINTER_SIZE) / sizeof(int)) > 4)
-#endif
+            var threshold = Configuration.TARGET_64BIT && !Configuration.TARGET_AMD64 ? 8 : 4;
+            if ((roundUp(stackHomeSize, Configuration.TARGET_POINTER_SIZE) / sizeof(int)) > threshold)
             {
                 return false;
             }
-#endif
         }
 
         return !info.compInitMem || (varDsc.lvIsTemp && !varDsc.HasGCPtr);
@@ -15305,7 +15276,7 @@ public partial class Compiler
                     if (((occurrence.Flags & GTF_VAR_DEF) != 0) && (local.Oper is not GT_LCL_ADDR))
                     {
                         var accessType = occurrence.GetAccessType(this);
-                        if ((accessType is TYP_I_IMPL or TYP_BYREF) && ((local.Data.Flags & GTF_SIDE_EFFECT) == 0))
+                        if (((accessType is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF))) && ((local.Data.Flags & GTF_SIDE_EFFECT) == 0))
                         {
                             stores.Add((stmt, local, occurrence.LclNum));
                         }
@@ -15600,7 +15571,6 @@ public partial class Compiler
         return PhaseStatus.MODIFIED_NOTHING;
     }
 
-#if TARGET_X86
     private GenTree? fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon local)
     {
         if (!lvaIsArgAccessedViaVarArgsCookie(local.LclNum))
@@ -15630,7 +15600,6 @@ public partial class Compiler
 
         return local.Oper.IsLocalRead ? gtNewIndir(local.Type, address) : address;
     }
-#endif
 
     internal GenTree? fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon local)
     {
@@ -15744,10 +15713,11 @@ public partial class Compiler
     internal GenTree? fgMorphExpandLocal(GenTreeLclVarCommon local)
     {
         GenTree? expandedTree = null;
-#if TARGET_X86
-        expandedTree = fgMorphExpandStackArgForVarArgs(local);
-#elif FEATURE_IMPLICIT_BYREFS
-        if (fgGlobalMorph)
+        if (Configuration.TARGET_X86)
+        {
+            expandedTree = fgMorphExpandStackArgForVarArgs(local);
+        }
+        else if (SupportsImplicitByRefs && fgGlobalMorph)
         {
             ref var varDsc = ref lvaGetDesc(local.LclNum);
 
@@ -15756,7 +15726,7 @@ public partial class Compiler
                 expandedTree = fgMorphExpandImplicitByRefArg(local);
             }
         }
-#endif
+
         if (expandedTree is not null)
         {
             return expandedTree;
@@ -15769,11 +15739,8 @@ public partial class Compiler
             if (varDsc.lvNormalizeOnStore)
             {
                 var value = local.Data;
-#if TARGET_64BIT
-                noway_assert(genActualTypeIsInt(value.Type));
-#else
-                noway_assert(genActualTypeIsInt(value.Type) || (value.Type is TYP_BYREF));
-#endif
+                noway_assert(genActualTypeIsInt(value.Type) ||
+                    (!Configuration.TARGET_64BIT && (value.Type is TYP_BYREF)));
                 local.Type = TYP_INT;
 
                 if (fgCastNeeded(value, varDsc.Type))
@@ -15790,7 +15757,11 @@ public partial class Compiler
     internal unsafe PhaseStatus fgRetypeImplicitByRefArgs()
     {
         var madeChanges = false;
-#if FEATURE_IMPLICIT_BYREFS
+        if (!SupportsImplicitByRefs)
+        {
+            return PhaseStatus.MODIFIED_NOTHING;
+        }
+
         for (var lclNum = 0; lclNum < info.compArgsCount; lclNum++)
         {
             ref var varDsc = ref lvaGetDesc(lclNum);
@@ -15909,7 +15880,6 @@ public partial class Compiler
             JITDUMP($"Changing the lvType for struct parameter V{lclNum:D2} to {varDsc.Type.Name}.\n");
 #endif
         }
-#endif
 
         return madeChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }

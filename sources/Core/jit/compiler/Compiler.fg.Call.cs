@@ -40,9 +40,10 @@ public partial class Compiler
             }
 
             call._callMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
-#if FEATURE_TAILCALL_OPT
-            call._callMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
-#endif
+            if (Configuration.FEATURE_TAILCALL_OPT)
+            {
+                call._callMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
+            }
         }
 
         if (call.IsSpecialIntrinsic())
@@ -98,9 +99,7 @@ public partial class Compiler
             return null;
         }
 #endif
-#if FEATURE_TAILCALL_OPT
         var hasStructParam = false;
-#endif
         for (var localNumber = 0; localNumber < lvaCount; localNumber++)
         {
             ref var descriptor = ref lvaTable[localNumber];
@@ -126,12 +125,11 @@ public partial class Compiler
                     {
                         // Stack objects cannot currently be passed to callees.
                     }
-#if FEATURE_FIXED_OUT_ARGS
-                    else if (localNumber == lvaOutgoingArgSpaceVar)
+                    else if (Configuration.FEATURE_FIXED_OUT_ARGS &&
+                             (localNumber == lvaOutgoingArgSpaceVar))
                     {
                         // Only callees expose the outgoing argument area.
                     }
-#endif
                     else
                     {
                         FailTailCall("Local address taken", localNumber);
@@ -146,12 +144,11 @@ public partial class Compiler
                 }
             }
 
-#if FEATURE_TAILCALL_OPT
-            if (varTypeIsStruct(descriptor.Type) && descriptor.lvIsParam)
+            if (Configuration.FEATURE_TAILCALL_OPT &&
+                varTypeIsStruct(descriptor.Type) && descriptor.lvIsParam)
             {
                 hasStructParam = true;
             }
-#endif
         }
 
         var canFastTailCall = fgCanFastTailCall(call, out var failReason);
@@ -215,16 +212,16 @@ public partial class Compiler
         }
 
         var fastTailCallToLoop = false;
-#if FEATURE_TAILCALL_OPT
         // Generic context updates and register-passed struct parameters/results
         // are not yet supported by the recursive-call-to-loop transformation.
-        if (opts.compTailCallLoopOpt && canFastTailCall && !opts.IsOSR && gtIsRecursiveCall(call)
+        if (Configuration.FEATURE_TAILCALL_OPT &&
+            opts.compTailCallLoopOpt && canFastTailCall && !opts.IsOSR && gtIsRecursiveCall(call)
             && !lvaReportParamTypeArg() && !lvaKeepAliveAndReportThis() && !call.IsVirtual
             && !hasStructParam && !varTypeIsStruct(call.Type))
         {
             fastTailCallToLoop = true;
         }
-#endif
+
         var tailCallResult = fastTailCallToLoop ? TAILCALL_RECURSIVE
             : canFastTailCall ? TAILCALL_OPTIMIZED : TAILCALL_HELPER;
         info.compCompHnd->reportTailCallDecision(null,
@@ -255,17 +252,18 @@ public partial class Compiler
         {
             call._callMoreFlags |= GTF_CALL_M_TAILCALL_VIA_JIT_HELPER;
         }
-#if FEATURE_TAILCALL_OPT
-        if (fastTailCallToLoop)
+        if (Configuration.FEATURE_TAILCALL_OPT && fastTailCallToLoop)
         {
             call._callMoreFlags |= GTF_CALL_M_TAILCALL_TO_LOOP;
         }
-#endif
+
         // Clear the pending state before recursively morphing the accepted call.
         call._callMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
-#if FEATURE_TAILCALL_OPT
-        call._callMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
-#endif
+        if (Configuration.FEATURE_TAILCALL_OPT)
+        {
+            call._callMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
+        }
+
 #if DEBUG
         if (verbose)
         {
@@ -286,9 +284,10 @@ public partial class Compiler
             {
                 info.compCompHnd->updateEntryPointForTailCall(entryPoint);
             }
-#if TARGET_XARCH
-            call.Args.ResetFinalArgsAndAbiInfo();
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                call.Args.ResetFinalArgsAndAbiInfo();
+            }
         }
 
         fgValidateIRForTailCall(call);

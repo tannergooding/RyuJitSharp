@@ -38,10 +38,12 @@ public partial class Compiler
 
     public bool fgCanTailCallViaJitHelper(GenTreeCall call)
     {
-#if !TARGET_X86 || UNIX_X86_ABI
-        // Only Windows x86 has the faster JIT-helper mechanism.
-        return false;
-#else
+        if (!Configuration.TARGET_X86 || Configuration.UNIX_X86_ABI)
+        {
+            // Only Windows x86 has the faster JIT-helper mechanism.
+            return false;
+        }
+
         // R2R must use the portable path so the EE can request a runtime JIT.
         if (IsAot)
         {
@@ -58,9 +60,8 @@ public partial class Compiler
         {
             return false;
         }
-
         return true;
-#endif
+        return true;
     }
 
     public unsafe GenTree fgCreateCallDispatcherAndGetResult(GenTreeCall originalCall,
@@ -212,7 +213,7 @@ public partial class Compiler
         // Lowering replaces the 9/8/7 placeholders with the final values.
         // Flags select callee-save restoration (bit 0) and VSD dispatch (bit 1);
         // the helper requires saved registers in EDI, ESI, EBX order below EBP.
-        var oldStackWords = lvaParameterStackSize / REGSIZE_BYTES;
+        var oldStackWords = lvaParameterStackSize / Configuration.REGSIZE_BYTES;
         var oldCount = call.Args.PushBack(NewCallArg.CreateForPrimitive(gtNewIconNode(TYP_I_IMPL, oldStackWords))
             .WithWellKnownArg(WellKnownArg.X86TailCallSpecialArg));
         var newCount = call.Args.InsertAfter(oldCount, NewCallArg.CreateForPrimitive(gtNewIconNode(TYP_I_IMPL, 9))

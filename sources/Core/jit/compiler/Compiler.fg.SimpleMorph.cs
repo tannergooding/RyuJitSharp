@@ -48,9 +48,7 @@ public partial class Compiler
             {
                 ref var descriptor = ref lvaGetDesc(tree.AsLclVarCommon().LclNum);
                 if (descriptor.IsAddressExposed
-#if FEATURE_IMPLICIT_BYREFS
-                    || descriptor.lvIsLastUseCopyOmissionCandidate
-#endif
+                    || (SupportsImplicitByRefs && descriptor.lvIsLastUseCopyOmissionCandidate)
                 )
                 {
                     tree.AddAllEffectsFlags(GTF_GLOB_REF);
@@ -117,8 +115,7 @@ public partial class Compiler
             case GT_MUL:
             {
                 assert(op2 is not null);
-#if !TARGET_64BIT && !TARGET_WASM
-                if (type is TYP_LONG)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM && (type is TYP_LONG))
                 {
                     if (tree.Is64RsltMul)
                     {
@@ -137,13 +134,11 @@ public partial class Compiler
                         : CORINFO_HELP_LMUL;
                     return MorphArithmeticHelper(helper);
                 }
-#endif
-#if TARGET_WASM
-                if (tree.HasOverflowCheck && (tree.Type is TYP_LONG))
+                if (Configuration.TARGET_WASM && tree.HasOverflowCheck && (tree.Type is TYP_LONG))
                 {
                     return MorphArithmeticHelper((tree.Flags & GTF_UNSIGNED) != 0 ? CORINFO_HELP_ULMUL_OVF : CORINFO_HELP_LMUL_OVF);
                 }
-#endif
+
                 break;
             }
 
@@ -205,35 +200,29 @@ public partial class Compiler
                     tree.Flags &= GTF_COMMON_MASK;
                     return fgMorphSmpOp(tree, out _);
                 }
-#if !TARGET_64BIT && !TARGET_WASM
-                if (type is TYP_LONG)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM && (type is TYP_LONG))
                 {
                     return MorphArithmeticHelper(CORINFO_HELP_LDIV);
                 }
-#if USE_HELPERS_FOR_INT_DIV
-                if (type is TYP_INT)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM &&
+                    Configuration.USE_HELPERS_FOR_INT_DIV && (type is TYP_INT))
                 {
                     return MorphArithmeticHelper(CORINFO_HELP_DIV);
                 }
-#endif
-#endif
                 break;
             }
 
             case GT_UDIV:
             {
-#if !TARGET_64BIT && !TARGET_WASM
-                if (type is TYP_LONG)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM && (type is TYP_LONG))
                 {
                     return MorphArithmeticHelper(CORINFO_HELP_ULDIV);
                 }
-#if USE_HELPERS_FOR_INT_DIV
-                if (type is TYP_INT)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM &&
+                    Configuration.USE_HELPERS_FOR_INT_DIV && (type is TYP_INT))
                 {
                     return MorphArithmeticHelper(CORINFO_HELP_UDIV);
                 }
-#endif
-#endif
                 break;
             }
 
@@ -270,8 +259,7 @@ public partial class Compiler
                         return fgMorphSmpOp(tree, out _);
                     }
                 }
-#if !TARGET_ARMARCH
-                else if ((type is TYP_LONG) && opts.OptimizationEnabled
+                else if (!Configuration.TARGET_ARMARCH && (type is TYP_LONG) && opts.OptimizationEnabled
                     && op2.Oper.IsCnsNativeLong && (op2.AsIntConCommon().IntegralValue is >= 2 and <= 0x3FFFFFFF))
                 {
                     tree.AsOp().Op1 = op1 = fgMorphTree(op1);
@@ -287,7 +275,6 @@ public partial class Compiler
                     }
                     return tree;
                 }
-#endif
                 if (op2.IsIntegralConst(1))
                 {
                     var optimized = fgMorphModToZero(tree.AsOp());
@@ -308,29 +295,23 @@ public partial class Compiler
                         break;
                     }
                 }
-#if !TARGET_64BIT && !TARGET_WASM
-                if (type is TYP_LONG)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM && (type is TYP_LONG))
                 {
                     return MorphArithmeticHelper(operation is GT_UMOD ? CORINFO_HELP_ULMOD : CORINFO_HELP_LMOD);
                 }
-#if TARGET_ARM
-                if (type is TYP_INT)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM &&
+                    Configuration.TARGET_ARM && (type is TYP_INT))
                 {
                     return MorphArithmeticHelper(operation is GT_UMOD ? CORINFO_HELP_UMOD : CORINFO_HELP_MOD);
                 }
-#endif
-#endif
                 if ((tree.Oper is GT_UMOD) && op2.IsIntegralConstUnsignedPow2)
                 {
                     tree = fgMorphUModToAndSub(tree.AsOp());
                     op1 = tree.AsOp().Op1;
                     op2 = tree.AsOp().Op2;
                 }
-#if TARGET_ARM64
-                else
-#else
-                else if ((tree.Oper is GT_MOD) && op2.Oper.IsIntegralConst && !op2.IsIntegralConstAbsPow2)
-#endif
+                else if (Configuration.TARGET_ARM64 ||
+                         ((tree.Oper is GT_MOD) && op2.Oper.IsIntegralConst && !op2.IsIntegralConstAbsPow2))
                 {
                     tree = fgMorphModToSubMulDiv(tree.AsOp());
                     op1 = tree.AsOp().Op1;
@@ -354,15 +335,13 @@ public partial class Compiler
                 if (fgGlobalMorph && varTypeIsSmall(info.compRetType) && (value is not null)
                     && (value.Type is not TYP_VOID) && fgCastNeeded(value, info.compRetType))
                 {
-#if SWIFT_SUPPORT
-                    if (operation is GT_SWIFT_ERROR_RET)
+                    if (Configuration.SWIFT_SUPPORT && (operation is GT_SWIFT_ERROR_RET))
                     {
                         assert(op1 is not null);
                         var error = fgMorphTree(op1);
                         tree.AsUnOp().Op1 = error;
                         tree.SetAllEffectsFlags(error);
                     }
-#endif
                     value = gtNewCastNode(TYP_INT, value, false, info.compRetType);
                     value.Flags |= tree.Flags & GTF_COLON_COND;
                     value = fgMorphTree(value);
@@ -489,9 +468,7 @@ public partial class Compiler
                 BitVecOps.IntersectionD(apTraits, apLocal, thenAssertions);
             }
         }
-#if !TARGET_64BIT && !TARGET_WASM
     DoneMorphingChildren:
-#endif
         gtUpdateNodeOperSideEffects(tree);
         if (op1 is not null)
         {
@@ -628,15 +605,13 @@ public partial class Compiler
 
             case GT_MUL:
             {
-#if !TARGET_64BIT && !TARGET_WASM
-                if (type is TYP_LONG)
+                if (Configuration.TARGET_32BIT && !Configuration.TARGET_WASM && (type is TYP_LONG))
                 {
 #if DEBUG
                     tree.AsOp().DebugCheckLongMul();
 #endif
                     return tree;
                 }
-#endif
                 goto case GT_ADD;
             }
 
@@ -701,14 +676,19 @@ public partial class Compiler
 
             case GT_DIV:
             case GT_UDIV:
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
             case GT_MOD:
             case GT_UMOD:
-#endif
             {
+                if ((operation is GT_MOD or GT_UMOD) &&
+                    !(Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64))
+                {
+                    break;
+                }
+
                 assert((op1 is not null) && (op2 is not null));
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-                if (!varTypeIsFloating(tree.Type))
+                if ((Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                     Configuration.TARGET_RISCV64) &&
+                    !varTypeIsFloating(tree.Type))
                 {
                     var exceptions = tree.Exceptions(this);
                     if ((operation is GT_DIV or GT_MOD) && ((exceptions & ExceptionSetFlags.ArithmeticException) == 0))
@@ -720,7 +700,6 @@ public partial class Compiler
                         tree.Flags |= GTF_DIV_MOD_NO_BY_ZERO;
                     }
                 }
-#endif
                 if (opts.OptimizationDisabled)
                 {
                     break;

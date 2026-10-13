@@ -9,38 +9,39 @@ public partial class Compiler
 {
     public regNumber getCallArgIntRegister(regNumber floatReg)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "Varargs register mapping requires Windows AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Varargs register mapping requires Windows AMD64.");
+        }
+
         assert(compFeatureVarArg());
         switch (floatReg)
         {
-            case REG_XMM0:
+            case REG_X64_XMM0:
             {
-                return REG_RCX;
+                return REG_X64_RCX;
             }
 
-            case REG_XMM1:
+            case REG_X64_XMM1:
             {
-                return REG_RDX;
+                return REG_X64_RDX;
             }
 
-            case REG_XMM2:
+            case REG_X64_XMM2:
             {
-                return REG_R8;
+                return REG_X64_R8;
             }
 
-            case REG_XMM3:
+            case REG_X64_XMM3:
             {
-                return REG_R9;
+                return REG_X64_R9;
             }
 
             default:
             {
                 unreached();
-                return REG_NA;
+                return REG_X64_NA;
             }
         }
-#endif
     }
 }

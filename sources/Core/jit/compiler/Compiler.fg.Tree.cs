@@ -76,13 +76,11 @@ public partial class Compiler
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
+                case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                 {
                     tree = fgMorphHWIntrinsic(tree.AsHWIntrinsic());
                     break;
                 }
-#endif
 
                 case GT_ARR_ELEM:
                 {
@@ -290,9 +288,7 @@ public partial class Compiler
         // Copy-omission candidates can still use assertions, but must not reorder
         // across the call that will expose their address.
         if (descriptor.IsAddressExposed
-#if FEATURE_IMPLICIT_BYREFS
-            || descriptor.lvIsLastUseCopyOmissionCandidate
-#endif
+            || (SupportsImplicitByRefs && descriptor.lvIsLastUseCopyOmissionCandidate)
         )
         {
             local.Flags |= GTF_GLOB_REF;
