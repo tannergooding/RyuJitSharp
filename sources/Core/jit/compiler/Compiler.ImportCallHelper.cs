@@ -841,9 +841,7 @@ public partial class Compiler
 
                 if (opcode is not CEE_CALLI)
                 {
-#if DEBUG
                     var numArgsDef = sigInfo.numArgs;
-#endif
                     compiler.eeGetCallSiteSig(resolvedToken.token, resolvedToken.tokenScope, resolvedToken.tokenContext, out otherSigInfo);
                     sigInfo = ref Unsafe.AsRef(in otherSigInfo);
 
@@ -866,9 +864,10 @@ public partial class Compiler
                         }
                     }
 
-#if DEBUG
-                    assert(numArgsDef <= sigInfo.numArgs);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(numArgsDef <= sigInfo.numArgs);
+                    }
                 }
 
                 // We will have "cookie" as the last argument but we cannot push
