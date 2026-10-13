@@ -1,17 +1,19 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
+using System;
+using System.Diagnostics;
+using System.Reflection;
 using NUnit.Framework;
 
 namespace RyuJitSharp.UnitTests;
 
 internal static class DebuggerProxyTests
 {
-#if DEBUG
     private static readonly int[] s_expectedListItems = [10, 20];
     private static readonly int[] s_expectedVectorItems = [30, 40];
     private static readonly int[] s_expectedArrayItems = [1, 0, 3];
     private static readonly int[] s_expectedStackItems = [4, 5, 0, 0, 0, 10];
-#if TARGET_XARCH
+#if DEBUG && TARGET_XARCH
     private static readonly regNumber[] s_expectedRax = [regNumber.REG_X64_RAX];
 #endif
 
@@ -43,7 +45,36 @@ internal static class DebuggerProxyTests
         Assert.That(new JitExpandArrayStackDebuggerProxy<int>(stack).Items, Is.EqualTo(s_expectedStackItems));
     }
 
-#if TARGET_XARCH
+    [Test]
+    public static void CollectionDebuggerMetadataIsAvailableInAllConfigurations()
+    {
+        AssertDebuggerMetadata<JitExpandArray<int>>(
+            "{DebuggerDisplayText,nq}",
+            typeof(JitExpandArrayDebuggerProxy<>));
+        AssertDebuggerMetadata<JitExpandArrayStack<int>>(
+            "{DebuggerStackDisplayText,nq}",
+            typeof(JitExpandArrayStackDebuggerProxy<>));
+        AssertDebuggerMetadata<JitStdVector<int>>(
+            "{DebuggerDisplayText,nq}",
+            typeof(JitStdVectorDebuggerProxy<>));
+        AssertDebuggerMetadata<JitStdList<int>>(
+            "{DebuggerDisplayText,nq}",
+            typeof(JitStdListDebuggerProxy<>));
+    }
+
+    private static void AssertDebuggerMetadata<T>(string displayValue, Type proxyType)
+    {
+        var type = typeof(T);
+
+        Assert.That(
+            type.GetCustomAttribute<DebuggerDisplayAttribute>(inherit: false)?.Value,
+            Is.EqualTo(displayValue));
+        Assert.That(
+            type.GetCustomAttribute<DebuggerTypeProxyAttribute>(inherit: false)?.ProxyTypeName,
+            Does.Contain(proxyType.Name));
+    }
+
+#if DEBUG && TARGET_XARCH
     [Test]
     public static void RefPositionProxyMapsTheRegisterAssignmentUsingItsReferentType()
     {
@@ -55,6 +86,5 @@ internal static class DebuggerProxyTests
 
         Assert.That(new RefPositionDebuggerProxy(reference).Registers, Is.EqualTo(s_expectedRax));
     }
-#endif
 #endif
 }

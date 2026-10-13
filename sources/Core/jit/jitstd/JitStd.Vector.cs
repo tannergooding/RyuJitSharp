@@ -6,21 +6,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-#if DEBUG
 using System.Diagnostics;
-#endif
 
 namespace RyuJitSharp;
 
-#if DEBUG
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 [DebuggerTypeProxy(typeof(JitStdVectorDebuggerProxy<>))]
-#endif
 internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
 {
-#if DEBUG
     private string DebuggerDisplayText => _size is 0 ? "Empty" : $"size={_size} capacity={_data.Length}";
-#endif
 
     internal readonly struct Iterator : IJitStdIterator, IEquatable<Iterator>
     {
@@ -883,7 +877,6 @@ internal sealed class JitStdVector<T> : IDisposable, IEnumerable<T>
     }
 }
 
-#if DEBUG
 internal sealed class JitStdVectorDebuggerProxy<T>
 {
     private readonly JitStdVector<T> _vector;
@@ -908,4 +901,3 @@ internal sealed class JitStdVectorDebuggerProxy<T>
         }
     }
 }
-#endif
