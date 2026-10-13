@@ -193,6 +193,11 @@ public readonly struct IntegralRange : IEquatable<IntegralRange>
             case GT_CNS_INT:
             case GT_CNS_LNG:
             {
+                if (node.AsIntConCommon().ImmedValNeedsReloc(compiler))
+                {
+                    break;
+                }
+
                 if (node.IsIntegralConst(0) || node.IsIntegralConst(1))
                 {
                     return new(Zero, One);

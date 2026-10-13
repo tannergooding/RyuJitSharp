@@ -519,6 +519,55 @@ internal static unsafe class HardwareConstructionLoweringTests
         });
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public static void InsertRecognizesScalarExtractionAfterCreateScalarLowering(bool hasCreateScalar)
+    {
+        WithCompiler(compiler => {
+            EnableIsa(compiler, InstructionSet_X86Base);
+            EnableIsa(compiler, InstructionSet_X86Base_X64);
+            compiler.lvaTable[0].Type = TYP_SIMD16;
+            compiler.lvaTable[1].Type = TYP_SIMD16;
+            var destination = compiler.gtNewLclvNode(TYP_SIMD16, 0);
+            var source = compiler.gtNewLclvNode(TYP_SIMD16, 1);
+            var index = compiler.gtNewIconNode(TYP_INT, 2);
+            var extract = new GenTreeHWIntrinsic(TYP_FLOAT, NI_Vector_GetElement, TYP_FLOAT, 16, source, index);
+            GenTreeHWIntrinsic? createScalar = null;
+            GenTree second = extract;
+            if (hasCreateScalar)
+            {
+                createScalar = new GenTreeHWIntrinsic(
+                    TYP_SIMD16, NI_Vector_CreateScalarUnsafe, TYP_FLOAT, 16, extract);
+                second = createScalar;
+            }
+
+            var immediate = compiler.gtNewIconNode(TYP_INT, 0);
+            var insert = new GenTreeHWIntrinsic(
+                TYP_SIMD16, NI_X86Base_Insert, TYP_FLOAT, 16, destination, second, immediate)
+            {
+                IsUnusedValue = true,
+            };
+            var block = createScalar is not null
+                ? NewBlock(destination, source, index, extract, createScalar, immediate, insert)
+                : NewBlock(destination, source, index, extract, immediate, insert);
+
+            _ = LowerHardwareIntrinsic(NewLowering(compiler, block), insert);
+
+            Assert.That(insert.GetOp(2), Is.SameAs(source));
+            Assert.That(immediate.AsIntCon().IconValue, Is.EqualTo((nint)(2 << 6)));
+            Assert.That(extract.Next, Is.Null);
+            Assert.That(extract.Prev, Is.Null);
+            Assert.That(index.Next, Is.Null);
+            Assert.That(index.Prev, Is.Null);
+            if (createScalar is not null)
+            {
+                Assert.That(createScalar.Next, Is.Null);
+                Assert.That(createScalar.Prev, Is.Null);
+            }
+            CheckLir(compiler, block);
+        });
+    }
+
     [Category("HardwareRecursiveDispatch")]
     [TestCase((byte)32, 0)]
     [TestCase((byte)32, 6)]
@@ -619,6 +668,9 @@ internal static unsafe class HardwareConstructionLoweringTests
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsicWithElement")]
     private static extern GenTree? LowerWithElement(Lowering lowering, GenTreeHWIntrinsic node);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "LowerHWIntrinsic")]
+    private static extern GenTree? LowerHardwareIntrinsic(Lowering lowering, GenTreeHWIntrinsic node);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "InsertNewSimdCreateScalarUnsafeNode")]
     private static extern GenTree InsertScalarUnsafe(Lowering lowering, var_types type, GenTree value, var_types baseType, byte size);

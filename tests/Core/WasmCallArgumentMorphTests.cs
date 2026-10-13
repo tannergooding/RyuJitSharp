@@ -5,9 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.BasicBlockFlags;
+using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.CorInfoHelpFunc;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
+using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.gtCallTypes;
 using static RyuJitSharp.var_types;
 
@@ -81,6 +84,64 @@ internal static unsafe class WasmCallArgumentMorphTests
             Assert.That(Emitter.emitGetLclVarDeclCount(descriptors[0]), Is.EqualTo(1u));
             Assert.That(Emitter.emitGetLclVarDeclType(descriptors[0]), Is.EqualTo(WasmValueType.I32));
             Assert.That(descriptors[1].idIns(), Is.EqualTo(instruction.INS_i32_store));
+        });
+    }
+
+    [Test]
+    public static void NativeAotFuncletAddressUsesAnAbsoluteTableIndex()
+    {
+        WithCompiler(compiler => {
+            compiler.eeInfoInitialized = true;
+            compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
+            compiler.opts.jitFlags->Set(JitFlags.JIT_FLAG_AOT);
+            var codeGen = new CodeGen(compiler);
+            compiler.codeGen = codeGen;
+            var emitter = codeGen.Emitter;
+            emitter.emitBegCG(compiler, default);
+            emitter.Init();
+            emitter.emitBegFN(false
+#if DEBUG
+                , true
+#endif
+                );
+
+            emitter.emitFuncletAddressConstant(17);
+
+            var descriptors = CurrentDescriptors(emitter);
+            Assert.That(descriptors, Has.Count.EqualTo(1));
+            Assert.That(descriptors[0].idIns(), Is.EqualTo(instruction.INS_i32_const_funcletptr));
+        });
+    }
+
+    [Test]
+    public static void FatPointerTransformUsesWasmHighBit()
+    {
+        WithCompiler(compiler => {
+#if DEBUG
+            compiler.fgSafeBasicBlockCreation = true;
+            compiler.fgSafeFlowEdgeCreation = true;
+#endif
+            compiler.compHndBBtab = [];
+            compiler.fgPredsComputed = true;
+            var block = BasicBlock.New(compiler, BBJ_RETURN);
+            block.bbRefs = 0;
+            compiler.fgFirstBB = block;
+            compiler.fgLastBB = block;
+            compiler.lvaTable[0].Type = TYP_I_IMPL;
+
+            var call = compiler.gtNewCallNode(TYP_VOID, CT_INDIRECT, null);
+            call.ControlExpr = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+            call.IsFatPointerCandidate = true;
+            var statement = compiler.gtNewStmt(call);
+            compiler.fgInsertStmtAtEnd(block, statement);
+
+            new IndirectCallTransformer.FatPointerCallTransformer(compiler, block, statement).Run();
+
+            var check = block.Target;
+            var checkStatement = check.FirstStmt ?? throw new InvalidOperationException();
+            var condition = checkStatement.RootNode.AsUnOp().Op1.AsOp();
+            var mask = condition.Op1.AsOp().Op2.AsIntCon().IconValue;
+            Assert.That(mask, Is.EqualTo((nint)int.MinValue));
         });
     }
 

@@ -104,14 +104,24 @@ public partial class Emitter
     public void emitFuncletAddressConstant(nint funcletId)
     {
         assert(_compiler is not null);
-        nint tableBase;
-        unsafe
+
+        // NativeAOT uses absolute table indices; R2R adds the module's table base.
+        if (!_compiler.IsNativeAot)
         {
-            tableBase = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().tableBase);
+            nint tableBase;
+            unsafe
+            {
+                tableBase = unchecked((nint)_compiler.eeGetWasmWellKnownGlobals().tableBase);
+            }
+            emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, tableBase);
         }
-        emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC, tableBase);
+
         emitIns_I(INS_i32_const_funcletptr, EA_PTRSIZE, funcletId);
-        emitIns(INS_i32_add);
+
+        if (!_compiler.IsNativeAot)
+        {
+            emitIns(INS_i32_add);
+        }
     }
 
     public void emitAddressConstant(nint address)

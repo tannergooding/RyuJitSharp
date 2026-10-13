@@ -3,6 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime, helperexpansion.cpp.
 
 using System;
+using System.Runtime.InteropServices;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.GenTreeFlags;
@@ -51,20 +52,6 @@ public partial class Compiler
         assert(call.Args.CountUserArgs() == 4);
 
         var srcPtr = call.Args.GetUserArgByIndex(0)!.Node;
-        if (!GetObjectHandleAndOffset(srcPtr, out var strObjOffset, out var strObj) ||
-            (unchecked((nuint)strObjOffset) > int.MaxValue))
-        {
-            JITDUMP("ReadUtf8: srcPtr is not an object handle\n");
-            return false;
-        }
-
-        assert(strObj != NO_OBJECT_HANDLE);
-        if (!info.compCompHnd->isObjectImmutable(strObj))
-        {
-            JITDUMP("ReadUtf8: srcPtr is not immutable (not a frozen string object?)\n");
-            return false;
-        }
-
         var srcLen = call.Args.GetUserArgByIndex(1)!.Node;
         if (!srcLen._vnPair.BothEqual() || !vnStore!.IsVNInt32Constant(srcLen._vnPair.Liberal))
         {
@@ -80,16 +67,14 @@ public partial class Compiler
             return false;
         }
 
-        Span<ushort> bufferU16 = stackalloc ushort[maxU16BufferSizeInChars];
-        fixed (ushort* content = bufferU16)
+        if (!GetImmutableDataFromAddress(srcPtr, (int)(srcLenCnsU16 * sizeof(ushort)), out var sourceData) ||
+            sourceData is null)
         {
-            if (!info.compCompHnd->getObjectContent(strObj, (byte*)content,
-                (int)srcLenCnsU16 * sizeof(ushort), (int)strObjOffset))
-            {
-                JITDUMP("ReadUtf8: getObjectContent returned false.\n");
-                return false;
-            }
+            JITDUMP("ReadUtf8: source data is not available at compile time\n");
+            return false;
         }
+
+        var bufferU16 = MemoryMarshal.Cast<byte, ushort>(sourceData);
 
         const int maxU8BufferSizeInBytes = 256;
         Span<byte> bufferU8 = stackalloc byte[maxU8BufferSizeInBytes];

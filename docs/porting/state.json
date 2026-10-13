@@ -3,14 +3,14 @@
   "upstream": {
     "repository": "https://github.com/dotnet/runtime",
     "sourceCommit": "65b74673d27d0f35325d9b2e078d9d863fbd1f91",
-    "targetCommit": "8630d8988107478d249e2fdb8162f8c7dcbd3dbb",
-    "targetObservedAt": "2026-10-10",
-    "reconciledCommit": "8630d8988107478d249e2fdb8162f8c7dcbd3dbb"
+    "targetCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
+    "targetObservedAt": "2026-10-13",
+    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Select the next dependency-coherent batch from docs/porting/BACKLOG.md; the 8630d898 oracle refresh is reconciled. Preserve the unresolved dynamic TLS input-ownership boundary and defer genAsyncResumeInfo until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Select the next dependency-coherent batch from docs/porting/BACKLOG.md; the 7462dfde source refresh passed focused Core and Wasm target tests. The fast full-Core run had three failures outside the changed paths; do not treat source-sync validation as runtime parity. Preserve the unresolved dynamic TLS input-ownership boundary and defer genAsyncResumeInfo until the B209 target-width table/emitter dependency closure is ported and tested.",
     "activeBatch": null,
     "parityEvidence": {
       "corelibCodegen": {
@@ -291,6 +291,37 @@
       ],
       "disposition": "The managed compiler retains GetLayoutNum/GetLayoutByNum as internal per-compiler identity tokens for zero-object value numbering and diagnostics; native uses pointer identity. This is an implementation mapping, not an observable JIT/EE difference.",
       "sourceCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605"
+    },
+    {
+      "area": "relocatable-integral-range",
+      "native": [
+        "src\\coreclr\\jit\\assertionprop.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\IntegralRange.cs"
+      ],
+      "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
+    },
+    {
+      "area": "readutf8-immutable-source-data",
+      "native": [
+        "src\\coreclr\\jit\\helperexpansion.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\compiler\\Compiler.VNIntrinsicExpansion.cs",
+        "sources\\Core\\jit\\compiler\\Compiler.VNMemoryAccess.cs"
+      ],
+      "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
+    },
+    {
+      "area": "xarch-scalar-insert-lowering",
+      "native": [
+        "src\\coreclr\\jit\\lowerxarch.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\lower\\Lowering.HardwareIntrinsics.cs"
+      ],
+      "sourceCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0"
     }
   ],
   "generatorInputMapping": {
@@ -302,7 +333,7 @@
       "opcode.def": "src\\coreclr\\inc\\opcode.def"
     },
     "targetInputCommit": "6ff62b1d7ff026f8718b2dc941979539d2076605",
-    "reconciledCommit": "8630d8988107478d249e2fdb8162f8c7dcbd3dbb",
+    "reconciledCommit": "7462dfde2f76321b730888f1102a8c3a4bcdecb0",
     "managedInputExceptions": {
       "gtlist.h": "The five interlocked nodes use GenTreeIndir as their managed base; the current generator produces the checked-in generated definitions.",
       "ternarylogic.inc": "Supplemental 256-row table mirrored from src/coreclr/jit/hwintrinsic.cpp::ternaryLogicFlags; no standalone native input file."

@@ -13,6 +13,7 @@ using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
+using static RyuJitSharp.VNFunc;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -23,6 +24,7 @@ internal static unsafe class VNIntrinsicExpansionTests
     private static bool s_immutable = true;
     private static bool s_contentAvailable = true;
     private static int s_contentQueries;
+    private static int s_staticContentQueries;
 
 #if DEBUG
     [TestCase("", "")]
@@ -38,6 +40,32 @@ internal static unsafe class VNIntrinsicExpansionTests
         {
             var output = CodeGenLifeTransitionTests.Capture(() => compiler.eePrintObjectDescription("object", null));
             Assert.That(output, Is.EqualTo($"object '{expected}'"));
+        });
+    }
+
+    [Test]
+    public static void ReadonlyStaticDataProducesGuardedCopy()
+    {
+        WithCompiler("Hi", (compiler, entry, body, store) =>
+        {
+            var field = compiler.FieldSeqStore.Create((CORINFO_FIELD_STRUCT_*)0x1234, 0,
+                FieldSeq.FieldKind.SimpleStatic);
+            var addressVN = store.VNForFunc(TYP_BYREF, VNF_PtrToStatic, store.VNForExpr(null, TYP_REF),
+                store.VNForFieldSeq(field), store.VNForIntPtrCon(0));
+            var sourcePointer = compiler.gtNewIconNode(TYP_BYREF, 0);
+            sourcePointer._vnPair.SetBoth(addressVN);
+            var call = NewReadUtf8Call(compiler, store, 2, sourcePointer);
+            _ = Append(compiler, body, compiler.gtNewStoreLclVarNode(1, call));
+            compiler.MethodHasSpecialIntrinsics = true;
+
+            Assert.That(Expand(compiler), Is.EqualTo(PhaseStatus.MODIFIED_EVERYTHING));
+            Assert.That(s_contentQueries, Is.Zero);
+            Assert.That(s_staticContentQueries, Is.EqualTo(1));
+            Assert.That(call.IsSpecialIntrinsic(), Is.False);
+            Assert.That(entry.Target.Kind, Is.EqualTo(BBJ_COND));
+            var fast = entry.Target.Next ?? throw new InvalidOperationException();
+            var firstStore = fast.FirstStmt ?? throw new InvalidOperationException();
+            Assert.That(firstStore.RootNode.AsIndir().Data.AsIntCon().IconValue, Is.EqualTo((nint)0x6948));
         });
     }
 
@@ -322,13 +350,17 @@ internal static unsafe class VNIntrinsicExpansionTests
 
     private static PhaseStatus Expand(Compiler compiler) => compiler.fgVNBasedIntrinsicExpansion();
 
-    private static GenTreeCall NewReadUtf8Call(Compiler compiler, ValueNumStore store, int length)
+    private static GenTreeCall NewReadUtf8Call(Compiler compiler, ValueNumStore store, int length,
+        GenTree? sourcePointer = null)
     {
         var call = compiler.gtNewCallNode(TYP_INT, gtCallTypes.CT_USER_FUNC, (CORINFO_METHOD_STRUCT_*)0x1234);
         call._callMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
 
-        var srcPtr = compiler.gtNewIconNode(TYP_BYREF, 0);
-        srcPtr._vnPair.SetBoth(store.VNForHandle(0x1000, GTF_ICON_OBJ_HDL));
+        var srcPtr = sourcePointer ?? compiler.gtNewIconNode(TYP_BYREF, 0);
+        if (sourcePointer is null)
+        {
+            srcPtr._vnPair.SetBoth(store.VNForHandle(0x1000, GTF_ICON_OBJ_HDL));
+        }
         var srcLen = compiler.gtNewIconNode(TYP_INT, length);
         srcLen._vnPair.SetBoth(store.VNForIntCon(length));
 
@@ -355,11 +387,17 @@ internal static unsafe class VNIntrinsicExpansionTests
         s_immutable = true;
         s_contentAvailable = true;
         s_contentQueries = 0;
+        s_staticContentQueries = 0;
 
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.Base.Base.getMethodNameFromMetadata = &GetMethodName;
+        vtable.Base.Base.isFieldStatic = &IsFieldStatic;
         vtable.Base.Base.isObjectImmutable = &IsImmutable;
         vtable.Base.getObjectContent = &GetContent;
+        vtable.Base.getStaticFieldContent =
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_STRUCT_*, byte*, int, int, bool, byte>)
+            (delegate* unmanaged[MemberFunction]<ICorJitInfo*, CORINFO_FIELD_STRUCT_*, byte*, int, int, byte, byte>)
+            &GetStaticFieldContent;
 #if DEBUG
         vtable.Base.Base.printObjectDescription = &GetDescription;
         vtable.Base.Base.getStringLiteral = &GetLiteral;
@@ -429,6 +467,9 @@ internal static unsafe class VNIntrinsicExpansionTests
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static byte IsImmutable(ICorJitInfo* self, CORINFO_OBJECT_STRUCT_* obj) => s_immutable ? (byte)1 : (byte)0;
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte IsFieldStatic(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field) => 1;
+
 #if DEBUG
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
     private static nint GetDescription(ICorJitInfo* self, CORINFO_OBJECT_STRUCT_* obj,
@@ -480,6 +521,25 @@ internal static unsafe class VNIntrinsicExpansionTests
         }
 
         bytes.Slice(offset, bufferSize).CopyTo(new Span<byte>(buffer, bufferSize));
+        return 1;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static byte GetStaticFieldContent(ICorJitInfo* self, CORINFO_FIELD_STRUCT_* field, byte* buffer,
+        int size, int offset, byte ignoreMovableObjects)
+    {
+        s_staticContentQueries++;
+        var content = MemoryMarshal.AsBytes(s_content.AsSpan());
+        if (!s_contentAvailable || (offset < 0) || (size < 0) || (offset > content.Length - size))
+        {
+            return 0;
+        }
+
+        fixed (byte* source = content)
+        {
+            Unsafe.CopyBlockUnaligned(buffer, source + offset, (uint)size);
+        }
+
         return 1;
     }
 }

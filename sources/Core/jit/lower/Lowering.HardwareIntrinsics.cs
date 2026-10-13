@@ -491,39 +491,51 @@ public sealed partial class Lowering
                     return next;
                 }
 
-                if ((source == 0) && second is GenTreeHWIntrinsic { HWIntrinsicId: NI_Vector_CreateScalarUnsafe } create &&
-                    create.GetOp(1) is GenTreeHWIntrinsic extract && (extract.SimdBaseType.Size == 4))
+                // Operands are lowered before their users, so CreateScalarUnsafe may already be removed.
+                if ((source == 0) && (second is GenTreeHWIntrinsic secondIntrinsic))
                 {
-                    GenTree? sourceVector = null;
-                    GenTree? sourceIndex = null;
-                    nint newSource = 0;
-                    if (extract.HWIntrinsicId is NI_Vector_ToScalar)
-                    {
-                        sourceVector = extract.GetOp(1);
-                    }
-                    else if ((extract.HWIntrinsicId is NI_Vector_GetElement) && extract.GetOp(2).Oper.IsCnsIntOrI)
-                    {
-                        sourceVector = extract.GetOp(1);
-                        sourceIndex = extract.GetOp(2);
-                        newSource = sourceIndex.AsIntConCommon().IconValue;
-                    }
+                    var createScalar = secondIntrinsic.HWIntrinsicId is NI_Vector_CreateScalarUnsafe
+                        ? secondIntrinsic
+                        : null;
+                    var scalarOp = createScalar is not null ? createScalar.GetOp(1) : secondIntrinsic;
 
-                    // Only low-128-bit register lanes fit count_s. Contained scalar
-                    // loads already give the optimal m32 form and must not become vector loads.
-                    if (sourceVector is not null && !sourceVector.IsContained &&
-                        (newSource >= 0) && (newSource <= 3) && IsInvariantInRange(sourceVector, node))
+                    if (scalarOp is GenTreeHWIntrinsic extract && (extract.SimdBaseType.Size == 4))
                     {
-                        source = newSource;
-                        value = (source << 6) | (destination << 4) | zeroMask;
-                        immediate.AsIntConCommon().IconValue = value;
-                        node.SetOp(2, sourceVector);
-                        second = sourceVector;
-                        if (sourceIndex is not null)
+                        GenTree? sourceVector = null;
+                        GenTree? sourceIndex = null;
+                        nint newSource = 0;
+                        if (extract.HWIntrinsicId is NI_Vector_ToScalar)
                         {
-                            BlockRange().Remove(sourceIndex);
+                            sourceVector = extract.GetOp(1);
                         }
-                        BlockRange().Remove(extract);
-                        BlockRange().Remove(create);
+                        else if ((extract.HWIntrinsicId is NI_Vector_GetElement) && extract.GetOp(2).Oper.IsCnsIntOrI)
+                        {
+                            sourceVector = extract.GetOp(1);
+                            sourceIndex = extract.GetOp(2);
+                            newSource = sourceIndex.AsIntConCommon().IconValue;
+                        }
+
+                        // Only low-128-bit register lanes fit count_s. Contained scalar
+                        // loads already give the optimal m32 form and must not become vector loads.
+                        if (sourceVector is not null && !sourceVector.IsContained &&
+                            (newSource >= 0) && (newSource <= 3) && IsInvariantInRange(sourceVector, node))
+                        {
+                            source = newSource;
+                            value = (source << 6) | (destination << 4) | zeroMask;
+                            immediate.AsIntConCommon().IconValue = value;
+                            node.SetOp(2, sourceVector);
+                            second = sourceVector;
+                            if (sourceIndex is not null)
+                            {
+                                BlockRange().Remove(sourceIndex);
+                            }
+                            BlockRange().Remove(extract);
+
+                            if (createScalar is not null)
+                            {
+                                BlockRange().Remove(createScalar);
+                            }
+                        }
                     }
                 }
 

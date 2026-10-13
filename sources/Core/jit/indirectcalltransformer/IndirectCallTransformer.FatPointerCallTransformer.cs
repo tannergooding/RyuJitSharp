@@ -9,7 +9,11 @@ public sealed partial class IndirectCallTransformer
 {
     public sealed class FatPointerCallTransformer : Transformer
     {
+#if TARGET_WASM
+        private const int FAT_POINTER_MASK = unchecked((int)0x80000000);
+#else
         private const int FAT_POINTER_MASK = 0x2;
+#endif
 
         private GenTree _fptrAddress;
         private readonly var_types _pointerType;

@@ -2580,7 +2580,7 @@ public partial class GenTree
 
         if (_oper.IsIntegralConst)
         {
-            return AsIntConCommon().IntegralValue >= 0;
+            return !AsIntConCommon().ImmedValNeedsReloc(comp) && (AsIntConCommon().IntegralValue >= 0);
         }
 
         if (_oper is GT_LCL_VAR)

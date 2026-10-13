@@ -153,6 +153,18 @@ internal static unsafe class IntegralRangeTests
     }
 
     [Test]
+    public static void RelocatableHandlesDoNotImplyNonnegativeRanges()
+    {
+        WithCompiler(compiler => {
+            compiler.opts.compReloc = true;
+            var handle = compiler.gtNewIconHandleNode(1, GTF_ICON_CLASS_HDL);
+
+            Assert.That(IntegralRange.ForNode(handle, compiler), Is.EqualTo(IntegralRange.ForType(handle.Type)));
+            Assert.That(handle.IsNeverNegative(compiler), Is.False);
+        });
+    }
+
+    [Test]
     public static void BooleanAndMaskRangesFeedWideningCasts()
     {
         WithCompiler(compiler => {

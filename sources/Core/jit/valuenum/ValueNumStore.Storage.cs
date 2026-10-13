@@ -411,7 +411,7 @@ public sealed partial class ValueNumStore
 
     public bool IsVNIntegralConstant<T>(ValueNum vn, out T value) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
-        if (IsVNConstant(vn) && varTypeIsIntegral(TypeOfVN(vn)))
+        if (IsVNConstantNonHandle(vn) && varTypeIsIntegral(TypeOfVN(vn)))
         {
             var constant = CoercedConstantValue<long>(vn);
             if ((constant >= long.CreateSaturating(T.MinValue)) && (constant <= long.CreateSaturating(T.MaxValue)))

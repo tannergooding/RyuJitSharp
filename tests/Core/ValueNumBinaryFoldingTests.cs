@@ -72,8 +72,9 @@ internal static unsafe class ValueNumBinaryFoldingTests
             if (nativeIntType == TYP_LONG)
             {
                 Assert.That(store.TypeOfVN(handle), Is.EqualTo(TYP_LONG));
-                Assert.That(store.IsVNIntegralConstant(handle, out int _), Is.True);
             }
+            Assert.That(store.IsVNIntegralConstant(handle, out int _), Is.False);
+            Assert.That(store.IsVNNeverNegative(handle), Is.False);
             Assert.That(store.VNIgnoreIntToLongCast(handle), Is.EqualTo(handle));
 
             var constant = store.VNForLongCon(0x1000);

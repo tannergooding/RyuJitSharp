@@ -465,7 +465,7 @@ public sealed partial class ValueNumStore
 
     private VNVisit VisitNeverNegative(ValueNum vn)
     {
-        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
+        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)) || IsVNHandle(vn))
         {
             return VNVisit.Abort;
         }
