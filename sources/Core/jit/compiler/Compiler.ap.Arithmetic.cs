@@ -205,11 +205,13 @@ public partial class Compiler
 
         GenTree DropBoundsCheck(string reason)
         {
-#if DEBUG
-            assert(compCurBB is not null);
-            JITDUMP($"\nRemoving redundant ({reason}) bounds check in {FMT_BB(compCurBB.bbNum)}:\n");
-            DISPTREE(tree);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(compCurBB is not null);
+                JITDUMP($"\nRemoving redundant ({reason}) bounds check in {FMT_BB(compCurBB.bbNum)}:\n");
+                DISPTREE(tree);
+            }
+
             GenTree? sideEffects = null;
             // Proving the bounds check redundant also proves the length load cannot fault.
             gtExtractSideEffList(lengthTree, ref sideEffects, GTF_ASG);

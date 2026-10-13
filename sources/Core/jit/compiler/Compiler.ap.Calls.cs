@@ -86,10 +86,12 @@ public partial class Compiler
                 var castVN = optConservativeNormalVN(castTree);
                 if (optAssertionVNIsSubtype(objectVN, castVN, assertions))
                 {
-#if DEBUG
-                    assert(compCurBB is not null);
-                    JITDUMP($"\nDid VN based subtype prop in {FMT_BB(compCurBB.bbNum)}:\n");
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(compCurBB is not null);
+                        JITDUMP($"\nDid VN based subtype prop in {FMT_BB(compCurBB.bbNum)}:\n");
+                    }
+
                     DISPTREE(call);
                     // Spill an effectful object before extracting argument effects
                     // so returning the object cannot evaluate it a second time.
