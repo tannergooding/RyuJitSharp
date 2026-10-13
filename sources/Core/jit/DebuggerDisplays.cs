@@ -281,11 +281,15 @@ public sealed partial class Interval
 
 #if DEBUG
 [DebuggerDisplay("[#{rpNum} - {refType}]")]
+#else
+[DebuggerDisplay("[{refType}]")]
+#endif
 [DebuggerTypeProxy(typeof(RefPositionDebuggerProxy))]
 public sealed partial class RefPosition
 {
 }
 
+#if DEBUG
 public partial class Emitter
 {
     [DebuggerTypeProxy(typeof(DebuggerProxy))]
@@ -469,6 +473,7 @@ internal readonly struct DebuggerVarReg
 
     public regNumber Register { get; }
 }
+#endif
 
 internal static class DebuggerDisplayHelpers
 {
@@ -525,6 +530,7 @@ internal sealed class RefPositionDebuggerProxy
     }
 }
 
+#if DEBUG
 internal sealed class RegRecordDebuggerProxy
 {
     private readonly RegRecord _record;

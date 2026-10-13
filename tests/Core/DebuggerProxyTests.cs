@@ -15,7 +15,7 @@ internal static class DebuggerProxyTests
     private static readonly int[] s_expectedVectorItems = [30, 40];
     private static readonly int[] s_expectedArrayItems = [1, 0, 3];
     private static readonly int[] s_expectedStackItems = [4, 5, 0, 0, 0, 10];
-#if DEBUG && TARGET_XARCH
+#if TARGET_XARCH
     private static readonly regNumber[] s_expectedRax = [regNumber.REG_X64_RAX];
 #endif
 
@@ -162,10 +162,17 @@ internal static class DebuggerProxyTests
             Is.EqualTo(displayValue));
     }
 
-#if DEBUG && TARGET_XARCH
+#if TARGET_XARCH
     [Test]
     public static void RefPositionProxyMapsTheRegisterAssignmentUsingItsReferentType()
     {
+#if DEBUG
+        AssertDebuggerDisplay<RefPosition>("[#{rpNum} - {refType}]");
+#else
+        AssertDebuggerDisplay<RefPosition>("[{refType}]");
+#endif
+        AssertDebuggerProxy<RefPosition>(typeof(RefPositionDebuggerProxy));
+
         var record = new RegRecord();
         record.init(regNumber.REG_X64_RAX);
 
