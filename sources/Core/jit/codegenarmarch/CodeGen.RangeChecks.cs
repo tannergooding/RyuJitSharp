@@ -52,10 +52,11 @@ public sealed partial class CodeGen
         }
 
         var boundsType = genActualType(src2.Type);
-#if DEBUG
-        assert(boundsType is TYP_INT or TYP_LONG);
-        assert(boundsType.EmitSize >= genActualType(src1.Type).EmitSize);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(boundsType is TYP_INT or TYP_LONG);
+            assert(boundsType.EmitSize >= genActualType(src1.Type).EmitSize);
+        }
 
         var size = boundsType.EmitSize;
         if (src2.IsContainedIntOrIImmed)

@@ -194,10 +194,11 @@ public sealed partial class CodeGen
             }
         }
 
-#if DEBUG
-        assert(helper.CanEncodeAllOffsets(
-            shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES_ARM64 : Configuration.REGSIZE_BYTES));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(helper.CanEncodeAllOffsets(
+                shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES_ARM64 : Configuration.REGSIZE_BYTES));
+        }
 
         if (!node._gcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
         {
