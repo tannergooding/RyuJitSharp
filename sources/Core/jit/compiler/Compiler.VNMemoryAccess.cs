@@ -135,22 +135,26 @@ public partial class Compiler
 
         var elemType = DecodeElemType(elemTypeEq);
         var elemTypeEqVN = vnStore.VNForHandle((nint)elemTypeEq, GTF_ICON_CLASS_HDL);
-#if DEBUG
-        JITDUMP($"  Array element load: elemTypeEq is ${elemTypeEqVN:x} for " +
-            $"{(elemType is TYP_STRUCT ? eeGetClassName(elemTypeEq) : elemType.Name)}[]\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"  Array element load: elemTypeEq is ${elemTypeEqVN:x} for " +
+                $"{(elemType is TYP_STRUCT ? eeGetClassName(elemTypeEq) : elemType.Name)}[]\n");
+        }
         var atType = vnStore.VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[(int)GcHeap], elemTypeEqVN);
-#if DEBUG
-        JITDUMP($"  GcHeap[elemTypeEq: ${elemTypeEqVN:x}] is ${atType:x}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"  GcHeap[elemTypeEq: ${elemTypeEqVN:x}] is ${atType:x}\n");
+        }
         var atArray = vnStore.VNForMapSelect(VNK_Liberal, TYP_MEM, atType, arrVN);
-#if DEBUG
-        JITDUMP($"  GcHeap[elemTypeEq][array: ${arrVN:x}] is ${atArray:x}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"  GcHeap[elemTypeEq][array: ${arrVN:x}] is ${atArray:x}\n");
+        }
         var wholeElem = vnStore.VNForMapSelect(VNK_Liberal, elemType, atArray, inxVN);
-#if DEBUG
-        JITDUMP($"  GcHeap[elemTypeEq][array][index: ${inxVN:x}] is ${wholeElem:x}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"  GcHeap[elemTypeEq][array][index: ${inxVN:x}] is ${wholeElem:x}\n");
+        }
         var elemSize = elemType is TYP_STRUCT ? new ValueSize(info.compCompHnd->getClassSize(elemTypeEq))
             : ValueSize.FromJitType(elemType);
         var loadType = loadTree.Type;
@@ -174,18 +178,21 @@ public partial class Compiler
         var offset = vnStore.ConstantValue<nint>(addrFunc.GetArg(3));
         var elemType = DecodeElemType(elemTypeEq);
         var elemTypeEqVN = vnStore.VNForHandle((nint)elemTypeEq, GTF_ICON_CLASS_HDL);
-#if DEBUG
-        JITDUMP($"  Array element store: elemTypeEq is ${elemTypeEqVN:x} for " +
-            $"{(elemType is TYP_STRUCT ? eeGetClassName(elemTypeEq) : elemType.Name)}[]\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"  Array element store: elemTypeEq is ${elemTypeEqVN:x} for " +
+                $"{(elemType is TYP_STRUCT ? eeGetClassName(elemTypeEq) : elemType.Name)}[]\n");
+        }
         var atType = vnStore.VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[(int)GcHeap], elemTypeEqVN);
-#if DEBUG
-        JITDUMP($"  GcHeap[elemTypeEq: ${elemTypeEqVN:x}] is ${atType:x}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"  GcHeap[elemTypeEq: ${elemTypeEqVN:x}] is ${atType:x}\n");
+        }
         var atArray = vnStore.VNForMapSelect(VNK_Liberal, TYP_MEM, atType, arrVN);
-#if DEBUG
-        JITDUMP($"  GcHeap[elemTypeEq][array: ${arrVN:x}] is ${atArray:x}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"  GcHeap[elemTypeEq][array: ${arrVN:x}] is ${atArray:x}\n");
+        }
         var elemSize = elemType is TYP_STRUCT ? new ValueSize(info.compCompHnd->getClassSize(elemTypeEq))
             : ValueSize.FromJitType(elemType);
 
@@ -197,25 +204,29 @@ public partial class Compiler
         else
         {
             var oldWholeElem = vnStore.VNForMapSelect(VNK_Liberal, elemType, atArray, inxVN);
-#if DEBUG
-            JITDUMP($"  GcHeap[elemTypeEq][array][index: ${inxVN:x}] is ${oldWholeElem:x}\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"  GcHeap[elemTypeEq][array][index: ${inxVN:x}] is ${oldWholeElem:x}\n");
+            }
             newWholeElem = vnStore.VNForStore(oldWholeElem, elemSize, offset, storeSize, value);
         }
 
         if (newWholeElem != ValueNumStore.NoVN)
         {
-#if DEBUG
-            JITDUMP($"  GcHeap[elemTypeEq][array][index: ${inxVN:x}] = ${newWholeElem:x}:\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"  GcHeap[elemTypeEq][array][index: ${inxVN:x}] = ${newWholeElem:x}:\n");
+            }
             var newAtArray = vnStore.VNForMapStore(atArray, inxVN, newWholeElem);
-#if DEBUG
-            JITDUMP($"  GcHeap[elemTypeEq][array: ${arrVN:x}] = ${newAtArray:x}:\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"  GcHeap[elemTypeEq][array: ${arrVN:x}] = ${newAtArray:x}:\n");
+            }
             var newAtType = vnStore.VNForMapStore(atType, arrVN, newAtArray);
-#if DEBUG
-            JITDUMP($"  GcHeap[elemTypeEq: ${elemTypeEqVN:x}] = ${newAtType:x}:\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"  GcHeap[elemTypeEq: ${elemTypeEqVN:x}] = ${newAtType:x}:\n");
+            }
             var newHeap = vnStore.VNForMapStore(fgCurMemoryVN[(int)GcHeap], elemTypeEqVN, newAtType);
             recordGcHeapStore(storeNode, newHeap, "array element store");
         }
@@ -686,9 +697,10 @@ public partial class Compiler
         if ((index < int.MaxValue) && (objHandle != NO_OBJECT_HANDLE) &&
             info.compCompHnd->getStringChar(objHandle, (int)index, &character))
         {
-#if DEBUG
-            JITDUMP($"Folding \"cns_str\"[{index}] into {character}");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"Folding \"cns_str\"[{index}] into {character}");
+            }
             tree._vnPair.SetBoth(vnStore.VNForIntCon(character));
             return true;
         }
