@@ -5,11 +5,7 @@
 
 using System;
 
-#if TARGET_AMD64
 using indexType = ulong;
-#else
-using indexType = uint;
-#endif
 
 namespace RyuJitSharp;
 

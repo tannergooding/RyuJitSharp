@@ -6,11 +6,7 @@
 using System;
 using System.Numerics;
 
-#if TARGET_AMD64
 using indexType = ulong;
-#else
-using indexType = uint;
-#endif
 
 namespace RyuJitSharp;
 
@@ -30,10 +26,11 @@ public sealed partial class hashBv
     public int hashtable_size() => 1 << log2_hashSize;
 
     private static int getHashForIndex(indexType index, int tableSize)
-        => (int)((index >> LOG2_BITS_PER_NODE) & (indexType)(tableSize - 1));
+        => (int)((Globals.NormalizeIndex(index) >> LOG2_BITS_PER_NODE) & (indexType)(tableSize - 1));
 
     public ref hashBvNode? getInsertionPointForIndex(indexType index)
     {
+        index = Globals.NormalizeIndex(index);
         var hashIndex = getHashForIndex(index, hashtable_size());
         var baseIndex = index & ~(indexType)(BITS_PER_NODE - 1);
         ref var prev = ref nodeArr[hashIndex];
@@ -55,6 +52,7 @@ public sealed partial class hashBv
 
     private hashBvNode? getNodeForIndexHelper(indexType index, bool canAdd)
     {
+        index = Globals.NormalizeIndex(index);
         index &= ~(indexType)(BITS_PER_NODE - 1);
         ref var prev = ref getInsertionPointForIndex(index);
         var node = prev;
@@ -85,10 +83,12 @@ public sealed partial class hashBv
 
     public void setAll(indexType numToSet)
     {
-        for (uint index = 0; index < numToSet; index = unchecked(index + (uint)BITS_PER_NODE))
+        numToSet = Globals.NormalizeIndex(numToSet);
+
+        for (indexType index = 0; index < numToSet; index = Globals.AddIndex(index, BITS_PER_NODE))
         {
             var node = getOrAddNodeForIndex(index);
-            var bitsToSet = numToSet - index;
+            var bitsToSet = Globals.NormalizeIndex(numToSet - index);
 
             if (bitsToSet > BITS_PER_NODE)
             {
@@ -264,6 +264,7 @@ public sealed partial class hashBv
 
     public void setBit(indexType index)
     {
+        index = Globals.NormalizeIndex(index);
         assert(numNodes == getNodeCount());
 
         var baseIndex = index & ~(indexType)(BITS_PER_NODE - 1);
@@ -286,8 +287,11 @@ public sealed partial class hashBv
         }
     }
 
+    public void setBit(int index) => setBit(unchecked((indexType)index));
+
     public void clearBit(indexType index)
     {
+        index = Globals.NormalizeIndex(index);
         assert(numNodes == getNodeCount());
         var baseIndex = index & ~(indexType)(BITS_PER_NODE - 1);
         var hashIndex = getHashForIndex(index, hashtable_size());
@@ -324,6 +328,7 @@ public sealed partial class hashBv
 
     public bool testBit(indexType index)
     {
+        index = Globals.NormalizeIndex(index);
         var baseIndex = index & ~(indexType)(BITS_PER_NODE - 1);
 
         if ((nodeArr[0] is hashBvNode first) && (first.baseIndex == baseIndex))

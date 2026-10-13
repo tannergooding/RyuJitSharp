@@ -54,7 +54,7 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
 
         var gcPtrs = _gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(_inlineGCPtrs);
         var otherGcPtrs = other._gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(other._inlineGCPtrs);
-        var slotCount = (int)(_size / TARGET_POINTER_SIZE);
+        var slotCount = (int)(_size / Configuration.TARGET_POINTER_SIZE);
 
         return gcPtrs[..slotCount].SequenceEqual(otherGcPtrs[..slotCount]);
     }
@@ -68,7 +68,7 @@ public readonly struct CustomLayoutKey : IEquatable<CustomLayoutKey>
         if (_hasGCPtr)
         {
             var gcPtrs = _gcPtrs ?? (ReadOnlySpan<CorInfoGCType>)(_inlineGCPtrs);
-            hashCode.AddBytes(MemoryMarshal.AsBytes(gcPtrs[..(int)(_size / TARGET_POINTER_SIZE)]));
+            hashCode.AddBytes(MemoryMarshal.AsBytes(gcPtrs[..(int)(_size / Configuration.TARGET_POINTER_SIZE)]));
         }
 
         return hashCode.ToHashCode();

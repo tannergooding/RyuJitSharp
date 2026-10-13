@@ -7,13 +7,8 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-#if TARGET_AMD64
 using elemType = ulong;
 using indexType = ulong;
-#else
-using elemType = uint;
-using indexType = uint;
-#endif
 
 namespace RyuJitSharp;
 
@@ -31,6 +26,7 @@ public sealed class hashBvNode
 
     public hashBvNode(indexType baseIndex)
     {
+        baseIndex = Globals.NormalizeIndex(baseIndex);
         assert((baseIndex % BITS_PER_NODE) == 0);
         this.baseIndex = baseIndex;
     }
@@ -39,19 +35,20 @@ public sealed class hashBvNode
 
     public void setLowest(indexType numToSet)
     {
+        numToSet = Globals.NormalizeIndex(numToSet);
         assert(numToSet <= BITS_PER_NODE);
 
         var elementIndex = 0;
+        var allOnes = Globals.NormalizeElement(ulong.MaxValue);
         while (numToSet > BITS_PER_ELEMENT)
         {
-            elements[elementIndex] = ~(elemType)0;
+            elements[elementIndex] = allOnes;
             numToSet -= BITS_PER_ELEMENT;
             elementIndex++;
         }
 
         if (numToSet != 0)
         {
-            var allOnes = ~(elemType)0;
             var numToShift = BITS_PER_ELEMENT - (int)numToSet;
             elements[elementIndex] = allOnes >> numToShift;
         }
@@ -63,7 +60,7 @@ public sealed class hashBvNode
 
         for (var i = 0; i < numElements(); i++)
         {
-            var bits = elements[i];
+            var bits = Globals.NormalizeElement(elements[i]);
             result = unchecked(result + BitOperations.PopCount(bits));
             result = unchecked(result + (int)bits);
         }
@@ -86,8 +83,8 @@ public sealed class hashBvNode
 
         for (var i = 0; i < numElements(); i++)
         {
-            baseIndex = unchecked(this.baseIndex + (indexType)(i * BITS_PER_ELEMENT));
-            var bits = elements[i];
+            baseIndex = Globals.AddIndex(this.baseIndex, (indexType)(i * BITS_PER_ELEMENT));
+            var bits = Globals.NormalizeElement(elements[i]);
 
             while (bits != 0)
             {
@@ -97,48 +94,55 @@ public sealed class hashBvNode
                 }
 
                 bits >>= 1;
-                baseIndex = unchecked(baseIndex + 1);
+                baseIndex = Globals.AddIndex(baseIndex, 1);
             }
         }
     }
 
     public void setBit(indexType index)
     {
+        index = Globals.NormalizeIndex(index);
         assert(index >= baseIndex);
         assert(index - baseIndex < BITS_PER_NODE);
         index -= baseIndex;
         var elem = (int)(index / BITS_PER_ELEMENT);
         var pos = (int)(index % BITS_PER_ELEMENT);
-        elements[elem] |= (elemType)1 << pos;
+        elements[elem] = Globals.NormalizeElement(elements[elem] | ((elemType)1 << pos));
     }
 
     public void clrBit(indexType index)
     {
+        index = Globals.NormalizeIndex(index);
         assert(index >= baseIndex);
         assert(index - baseIndex < BITS_PER_NODE);
         index -= baseIndex;
         var elem = (int)(index / BITS_PER_ELEMENT);
         var pos = (int)(index % BITS_PER_ELEMENT);
-        elements[elem] &= ~((elemType)1 << pos);
+        elements[elem] = Globals.NormalizeElement(elements[elem] & ~((elemType)1 << pos));
     }
 
     public bool getBit(indexType index)
     {
+        index = Globals.NormalizeIndex(index);
         assert(index >= baseIndex);
         assert(index - baseIndex < BITS_PER_NODE);
         index -= baseIndex;
         var elem = (int)(index / BITS_PER_ELEMENT);
         var pos = (int)(index % BITS_PER_ELEMENT);
-        return (elements[elem] & ((elemType)1 << pos)) != 0;
+        return (Globals.NormalizeElement(elements[elem]) & ((elemType)1 << pos)) != 0;
     }
 
-    public bool belongsIn(indexType index) => (index >= baseIndex) && (index < baseIndex + BITS_PER_NODE);
+    public bool belongsIn(indexType index)
+    {
+        index = Globals.NormalizeIndex(index);
+        return (index >= baseIndex) && (index < Globals.AddIndex(baseIndex, BITS_PER_NODE));
+    }
 
     public bool anySet()
     {
         for (var i = 0; i < numElements(); i++)
         {
-            if (elements[i] != 0)
+            if (Globals.NormalizeElement(elements[i]) != 0)
             {
                 return true;
             }
@@ -149,11 +153,11 @@ public sealed class hashBvNode
 
     public void copyFrom(hashBvNode other)
     {
-        baseIndex = other.baseIndex;
+        baseIndex = Globals.NormalizeIndex(other.baseIndex);
 
         for (var i = 0; i < numElements(); i++)
         {
-            elements[i] = other.elements[i];
+            elements[i] = Globals.NormalizeElement(other.elements[i]);
         }
     }
 
@@ -163,8 +167,8 @@ public sealed class hashBvNode
 
         for (var i = 0; i < numElements(); i++)
         {
-            var source = elements[i];
-            var destination = source & other.elements[i];
+            var source = Globals.NormalizeElement(elements[i]);
+            var destination = Globals.NormalizeElement(source & Globals.NormalizeElement(other.elements[i]));
             result |= source ^ destination;
             elements[i] = destination;
         }
@@ -178,8 +182,8 @@ public sealed class hashBvNode
 
         for (var i = 0; i < numElements(); i++)
         {
-            var source = elements[i];
-            var destination = source | other.elements[i];
+            var source = Globals.NormalizeElement(elements[i]);
+            var destination = Globals.NormalizeElement(source | Globals.NormalizeElement(other.elements[i]));
             result |= source ^ destination;
             elements[i] = destination;
         }
@@ -193,8 +197,8 @@ public sealed class hashBvNode
 
         for (var i = 0; i < numElements(); i++)
         {
-            var source = elements[i];
-            var destination = source ^ other.elements[i];
+            var source = Globals.NormalizeElement(elements[i]);
+            var destination = Globals.NormalizeElement(source ^ Globals.NormalizeElement(other.elements[i]));
             result |= source ^ destination;
             elements[i] = destination;
         }
@@ -208,8 +212,8 @@ public sealed class hashBvNode
 
         for (var i = 0; i < numElements(); i++)
         {
-            var source = elements[i];
-            var destination = source & ~other.elements[i];
+            var source = Globals.NormalizeElement(elements[i]);
+            var destination = Globals.NormalizeElement(source & ~Globals.NormalizeElement(other.elements[i]));
             result |= source ^ destination;
             elements[i] = destination;
         }
@@ -221,7 +225,7 @@ public sealed class hashBvNode
     {
         for (var i = 0; i < numElements(); i++)
         {
-            if ((elements[i] & other.elements[i]) != 0)
+            if ((Globals.NormalizeElement(elements[i]) & Globals.NormalizeElement(other.elements[i])) != 0)
             {
                 return true;
             }
@@ -234,7 +238,8 @@ public sealed class hashBvNode
     {
         for (var i = 0; i < numElements(); i++)
         {
-            elements[i] &= other.elements[i];
+            elements[i] = Globals.NormalizeElement(
+                Globals.NormalizeElement(elements[i]) & Globals.NormalizeElement(other.elements[i]));
         }
     }
 
@@ -242,7 +247,8 @@ public sealed class hashBvNode
     {
         for (var i = 0; i < numElements(); i++)
         {
-            elements[i] |= other.elements[i];
+            elements[i] = Globals.NormalizeElement(
+                Globals.NormalizeElement(elements[i]) | Globals.NormalizeElement(other.elements[i]));
         }
     }
 
@@ -250,7 +256,8 @@ public sealed class hashBvNode
     {
         for (var i = 0; i < numElements(); i++)
         {
-            elements[i] ^= other.elements[i];
+            elements[i] = Globals.NormalizeElement(
+                Globals.NormalizeElement(elements[i]) ^ Globals.NormalizeElement(other.elements[i]));
         }
     }
 
@@ -258,7 +265,8 @@ public sealed class hashBvNode
     {
         for (var i = 0; i < numElements(); i++)
         {
-            elements[i] &= ~other.elements[i];
+            elements[i] = Globals.NormalizeElement(
+                Globals.NormalizeElement(elements[i]) & ~Globals.NormalizeElement(other.elements[i]));
         }
     }
 }

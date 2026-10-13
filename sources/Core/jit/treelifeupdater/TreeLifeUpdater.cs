@@ -168,8 +168,7 @@ public sealed class TreeLifeUpdater
                 }
             }
 
-#if HAS_FIXED_REGISTER_SET
-            if (_forCodeGen && ((lclVarTree.Flags & GTF_SPILL) != 0))
+            if (Configuration.HAS_FIXED_REGISTER_SET && _forCodeGen && ((lclVarTree.Flags & GTF_SPILL) != 0))
             {
                 assert(_compiler.codeGen is not null);
                 _compiler.codeGen.genSpillVar(tree);
@@ -188,7 +187,6 @@ public sealed class TreeLifeUpdater
                     }
                 }
             }
-#endif
         }
         else if (varDsc.lvPromoted)
         {

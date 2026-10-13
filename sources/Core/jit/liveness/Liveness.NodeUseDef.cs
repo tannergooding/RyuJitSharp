@@ -89,13 +89,11 @@ public partial class Liveness<TLiveness>
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 PerNodeLocalVarLiveness(tree.AsHWIntrinsic());
                 break;
             }
-#endif
 
             case GT_CALL:
             {
@@ -138,7 +136,6 @@ public partial class Liveness<TLiveness>
         }
     }
 
-#if FEATURE_HW_INTRINSICS
     private void PerNodeLocalVarLiveness(GenTreeHWIntrinsic intrinsic)
     {
         if (TLiveness.ComputeMemoryLiveness)
@@ -153,7 +150,6 @@ public partial class Liveness<TLiveness>
             }
         }
     }
-#endif
 
     private void MarkUseDef(GenTreeLclVarCommon tree)
         => MarkUseDef(new LocalOccurrence(tree));

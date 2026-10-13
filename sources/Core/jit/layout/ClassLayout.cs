@@ -121,13 +121,9 @@ public sealed class ClassLayout
                 1 => TYP_UBYTE,
                 2 => TYP_USHORT,
                 4 => TYP_INT,
-#if TARGET_64BIT || TARGET_WASM
-                8 => TYP_LONG,
-#endif
-#if FEATURE_SIMD
+                8 when Configuration.TARGET_64BIT || Configuration.TARGET_WASM => TYP_LONG,
                 // TODO: check TYP_SIMD12 profitability, it will need additional support in `BuildStoreLoc`.
-                16 => TYP_SIMD16,
-#endif
+                16 when Configuration.FEATURE_SIMD => TYP_SIMD16,
                 _ => TYP_UNDEF,
             };
         }
@@ -136,7 +132,9 @@ public sealed class ClassLayout
     // Round in unsigned arithmetic so sizes near Int32.MaxValue do not overflow.
     // Native roundUp widens to size_t on 64-bit hosts, then narrows back to unsigned.
     // Rounding sizes in the last pointer-width interval of UINT_MAX therefore wraps to zero.
-    public int SlotCount => (int)(unchecked(_size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
+    public int SlotCount =>
+        (int)(unchecked(_size + (uint)Configuration.TARGET_POINTER_SIZE - 1u) /
+              (uint)Configuration.TARGET_POINTER_SIZE);
 
     public uint Size => _size;
 
@@ -144,7 +142,7 @@ public sealed class ClassLayout
     {
         if (IsCustomLayout)
         {
-            return HasGCPtr ? TARGET_POINTER_SIZE : 1;
+            return HasGCPtr ? Configuration.TARGET_POINTER_SIZE : 1;
         }
         else
         {
@@ -258,7 +256,7 @@ public sealed class ClassLayout
 
         var layout = new ClassLayout(classHandle, isValueClass, unchecked((uint)size), type, className, shortClassName);
 
-        if (layout._size < TARGET_POINTER_SIZE)
+        if (layout._size < Configuration.TARGET_POINTER_SIZE)
         {
             assert(layout.SlotCount == 1);
             assert(layout.GCPtrCount == 0);
@@ -269,7 +267,7 @@ public sealed class ClassLayout
         {
             Span<CorInfoGCType> gcPtrs;
 
-            if (layout.SlotCount <= TARGET_POINTER_SIZE)
+            if (layout.SlotCount <= Configuration.TARGET_POINTER_SIZE)
             {
                 gcPtrs = layout._inlineGCPtrs;
             }
@@ -313,7 +311,7 @@ public sealed class ClassLayout
 #endif
         };
 
-        if (builder._gcPtrCount > 0 && newLayout.SlotCount <= TARGET_POINTER_SIZE)
+        if (builder._gcPtrCount > 0 && newLayout.SlotCount <= Configuration.TARGET_POINTER_SIZE)
         {
             builder._gcPtrs.CopyTo(newLayout._inlineGCPtrs);
         }
@@ -485,11 +483,11 @@ public sealed class ClassLayout
         builder.SetName($"{ClassName}[{offset:D3}..{end:D3}]", $"{ShortClassName}[{offset:D3}..{end:D3}]");
 #endif
 
-        if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && HasGCPtr)
+        if (((offset % Configuration.TARGET_POINTER_SIZE) == 0) && ((size % Configuration.TARGET_POINTER_SIZE) == 0) && HasGCPtr)
         {
-            for (var i = 0; i < size; i += TARGET_POINTER_SIZE)
+            for (var i = 0; i < size; i += Configuration.TARGET_POINTER_SIZE)
             {
-                builder.SetGCPtrType(i / TARGET_POINTER_SIZE, GetGCPtrType((offset + i) / TARGET_POINTER_SIZE));
+                builder.SetGCPtrType(i / Configuration.TARGET_POINTER_SIZE, GetGCPtrType((offset + i) / Configuration.TARGET_POINTER_SIZE));
             }
         }
         else
@@ -547,8 +545,8 @@ public sealed class ClassLayout
             return false;
         }
 
-        var startSlot = offset / TARGET_POINTER_SIZE;
-        var endSlot = (offset + size - 1) / TARGET_POINTER_SIZE;
+        var startSlot = offset / Configuration.TARGET_POINTER_SIZE;
+        var endSlot = (offset + size - 1) / Configuration.TARGET_POINTER_SIZE;
 
         assert((startSlot < SlotCount) && (endSlot < SlotCount));
 

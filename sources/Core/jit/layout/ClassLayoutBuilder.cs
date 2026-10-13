@@ -74,7 +74,7 @@ public struct ClassLayoutBuilder
 
         // should never overflow if caller used IsArrayTooLarge beforehand
         var overflow = !CheckedOps.TryMul(elementSize, length, out var totalSize);
-        overflow |= !CheckedOps.TryAlignUp(totalSize, TARGET_POINTER_SIZE, out totalSize);
+        overflow |= !CheckedOps.TryAlignUp(totalSize, Configuration.TARGET_POINTER_SIZE, out totalSize);
         overflow |= !CheckedOps.TryAdd(totalSize, OFFSETOF__CORINFO_Array__data, out totalSize);
         assert(!overflow);
 
@@ -99,8 +99,8 @@ public struct ClassLayoutBuilder
 
             for (var i = 0; i < length; i++)
             {
-                assert((offset % TARGET_POINTER_SIZE) == 0);
-                var slot = offset / TARGET_POINTER_SIZE;
+                assert((offset % Configuration.TARGET_POINTER_SIZE) == 0);
+                var slot = offset / Configuration.TARGET_POINTER_SIZE;
 
                 builder.SetGCPtrType(slot, type);
                 offset += elementSize;
@@ -134,8 +134,8 @@ public struct ClassLayoutBuilder
 
         if (layout.GCPtrCount > 0)
         {
-            assert(offset % TARGET_POINTER_SIZE == 0);
-            var startSlot = offset / TARGET_POINTER_SIZE;
+            assert(offset % Configuration.TARGET_POINTER_SIZE == 0);
+            var startSlot = offset / Configuration.TARGET_POINTER_SIZE;
 
             for (var slot = 0; slot < layout.SlotCount; slot++)
             {
@@ -188,9 +188,9 @@ public struct ClassLayoutBuilder
     }
 
     /// <summary>Set a slot to have specified type.</summary>
-    /// <param name="slot">The GC pointer slot. The slot number corresponds to offset slot * TARGET_POINTER_SIZE.</param>
+    /// <param name="slot">The GC pointer slot. The slot number corresponds to offset slot * Configuration.TARGET_POINTER_SIZE.</param>
     /// <param name="type">Type that this slot contains. Must be TYP_REF, TYP_BYREF or TYP_I_IMPL.</param>
-    /// <remarks>GC pointer information can only be set in layouts of size divisible by TARGET_POINTER_SIZE.</remarks>
+    /// <remarks>GC pointer information can only be set in layouts of size divisible by Configuration.TARGET_POINTER_SIZE.</remarks>
     public void SetGCPtrType(int slot, var_types type)
     {
         switch (type)
@@ -207,7 +207,7 @@ public struct ClassLayoutBuilder
                 break;
             }
 
-            case TYP_I_IMPL:
+            case var __targetAliasValue0 when __targetAliasValue0 == TYP_I_IMPL:
             {
                 SetGCPtr(slot, TYPE_GC_NONE);
                 break;
@@ -253,19 +253,19 @@ public struct ClassLayoutBuilder
     /// <returns>The array of CorInfoGCType.</returns>
     private CorInfoGCType[] GetOrCreateGCPtrs()
     {
-        assert(_size % TARGET_POINTER_SIZE == 0);
-        _gcPtrs ??= new CorInfoGCType[_size / TARGET_POINTER_SIZE];
+        assert(_size % Configuration.TARGET_POINTER_SIZE == 0);
+        _gcPtrs ??= new CorInfoGCType[_size / Configuration.TARGET_POINTER_SIZE];
         return _gcPtrs;
     }
 
     /// <summary>Set a slot to have specified GC pointer type.</summary>
-    /// <param name="slot">The GC pointer slot. The slot number corresponds to offset slot * TARGET_POINTER_SIZE.</param>
+    /// <param name="slot">The GC pointer slot. The slot number corresponds to offset slot * Configuration.TARGET_POINTER_SIZE.</param>
     /// <param name="type">Type of GC pointer that this slot contains.</param>
-    /// <remarks>GC pointer information can only be set in layouts of size divisible by TARGET_POINTER_SIZE.</remarks>
+    /// <remarks>GC pointer information can only be set in layouts of size divisible by Configuration.TARGET_POINTER_SIZE.</remarks>
     private void SetGCPtr(int slot, CorInfoGCType type)
     {
         var ptrs = GetOrCreateGCPtrs();
-        assert((slot * TARGET_POINTER_SIZE) < _size);
+        assert((slot * Configuration.TARGET_POINTER_SIZE) < _size);
 
         if (ptrs[slot] != TYPE_GC_NONE)
         {

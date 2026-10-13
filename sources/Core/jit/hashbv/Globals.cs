@@ -6,11 +6,8 @@
 using System;
 using System.Numerics;
 
-#if TARGET_AMD64
+using elemType = ulong;
 using indexType = ulong;
-#else
-using indexType = uint;
-#endif
 
 namespace RyuJitSharp;
 
@@ -22,6 +19,17 @@ public static partial class Globals
     public const int BITS_PER_ELEMENT = 1 << LOG2_BITS_PER_ELEMENT;
     public const int ELEMENTS_PER_NODE = 1 << LOG2_ELEMENTS_PER_NODE;
     public const int BITS_PER_NODE = 1 << LOG2_BITS_PER_NODE;
+
+    // Native hash-bit-vector indices and elements are 64-bit only for AMD64; use wide storage
+    // while retaining the original 32-bit truncation for every other target.
+    internal static indexType NormalizeIndex(indexType index)
+        => Configuration.TARGET_AMD64 ? index : unchecked((uint)index);
+
+    internal static elemType NormalizeElement(elemType element)
+        => Configuration.TARGET_AMD64 ? element : unchecked((uint)element);
+
+    internal static indexType AddIndex(indexType left, indexType right)
+        => NormalizeIndex(unchecked(left + right));
 
     public static int nearest_pow2(uint number)
     {
@@ -54,12 +62,12 @@ public static partial class Globals
 
                 for (var el = 0; el < node.numElements(); el++)
                 {
-                    var bits = node.elements[el];
+                    var bits = NormalizeElement(node.elements[el]);
 
                     while (bits != 0)
                     {
                         var bit = BitOperations.TrailingZeroCount(bits);
-                        var index = baseIndex + (indexType)(el * BITS_PER_ELEMENT) + (indexType)bit;
+                        var index = AddIndex(AddIndex(baseIndex, (indexType)(el * BITS_PER_ELEMENT)), (indexType)bit);
                         bits ^= (indexType)1 << bit;
 
                         if (func(index) == HbvWalk.Abort)

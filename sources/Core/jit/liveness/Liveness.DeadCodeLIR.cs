@@ -87,14 +87,15 @@ public partial class Liveness<TLiveness>
 
     private bool CanUncontainOrRemoveOperands(GenTree node)
     {
-#if FEATURE_HW_INTRINSICS
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return true;
+        }
+
         return node.VisitOperands(operand =>
             operand.IsContained && (operand.Oper is GT_HWINTRINSIC) &&
             ((operand.Flags & GTF_HW_EM_OP) != 0) && operand.NodeOrContainedOperandsMayThrow(_compiler)
                 ? GenTree.VisitResult.Abort
                 : GenTree.VisitResult.Continue) is not GenTree.VisitResult.Abort;
-#else
-        return true;
-#endif
     }
 }

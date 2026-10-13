@@ -113,9 +113,8 @@ public partial class Liveness<TLiveness>
                 if (!_compiler.opts.ShouldUsePInvokeHelpers)
                 {
                     // On 64-bit, only IL stubs pop the frame in the epilog.
-#if TARGET_64BIT
-                    if (_compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
-#endif
+                    if (!Configuration.TARGET_64BIT ||
+                        _compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB))
                     {
                         MarkFrameRootUse();
                     }

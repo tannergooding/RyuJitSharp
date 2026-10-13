@@ -5,13 +5,8 @@
 
 using System;
 
-#if TARGET_AMD64
 using elemType = ulong;
 using indexType = ulong;
-#else
-using elemType = uint;
-using indexType = uint;
-#endif
 
 namespace RyuJitSharp;
 
@@ -38,8 +33,8 @@ public sealed partial class hashBv
 
     public void dumpFancy()
     {
-        var lastOne = unchecked((indexType)(-1));
-        var lastZero = unchecked((indexType)(-1));
+        var lastOne = Globals.NormalizeIndex(ulong.MaxValue);
+        var lastZero = Globals.NormalizeIndex(ulong.MaxValue);
 
         jitprintf("{");
         jitprintf($"count:{countBits()}");
@@ -79,7 +74,7 @@ public sealed partial class hashBv
 
 public sealed class hashBvIterator
 {
-    public const indexType NOMOREBITS = unchecked((indexType)(-1));
+    public static indexType NOMOREBITS => Globals.NormalizeIndex(ulong.MaxValue);
 
     public uint hashtable_size;
     public uint hashtable_index;
@@ -134,7 +129,7 @@ public sealed class hashBvIterator
 
         current_element = 0;
         current_base = currNode.baseIndex;
-        current_data = currNode.elements[0];
+        current_data = Globals.NormalizeElement(currNode.elements[0]);
     }
 
     public indexType nextBit()
@@ -157,9 +152,10 @@ public sealed class hashBvIterator
                 }
 
                 assert(current_element < (indexType)currNode.numElements());
-                current_data = currNode.elements[unchecked((int)current_element)];
-                current_base = unchecked(
-                    currNode.baseIndex + current_element * BITS_PER_ELEMENT);
+                current_data = Globals.NormalizeElement(currNode.elements[unchecked((int)current_element)]);
+                current_base = Globals.AddIndex(
+                    currNode.baseIndex,
+                    current_element * BITS_PER_ELEMENT);
                 continue;
             }
 
@@ -168,12 +164,12 @@ public sealed class hashBvIterator
                 if ((current_data & 1) != 0)
                 {
                     current_data >>= 1;
-                    current_base = unchecked(current_base + 1);
-                    return unchecked(current_base - 1);
+                    current_base = Globals.AddIndex(current_base, 1);
+                    return Globals.NormalizeIndex(current_base - 1);
                 }
 
                 current_data >>= 1;
-                current_base = unchecked(current_base + 1);
+                current_base = Globals.AddIndex(current_base, 1);
             }
         }
 

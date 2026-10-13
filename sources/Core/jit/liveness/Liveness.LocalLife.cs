@@ -173,9 +173,7 @@ public partial class Liveness<TLiveness>
         for (var local = descriptor.lvFieldLclStart; local < descriptor.lvFieldLclStart + descriptor.lvFieldCnt; local++)
         {
             ref var field = ref _compiler.lvaGetDesc(local);
-#if !TARGET_64BIT
-            if (!varTypeIsLong(field.Type) || !field.lvPromoted)
-#endif
+            if (Configuration.TARGET_64BIT || !varTypeIsLong(field.Type) || !field.lvPromoted)
             {
                 noway_assert(field.lvIsStructField);
             }

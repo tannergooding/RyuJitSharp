@@ -33,22 +33,23 @@ public partial class Liveness<TLiveness>
 
             uint firstWeight = firstLocal.lvRefCnt(_state);
             uint secondWeight = secondLocal.lvRefCnt(_state);
-#if !TARGET_ARM
-            var firstIsFloat = varTypeUsesFloatReg(firstLocal.Type);
-            var secondIsFloat = varTypeUsesFloatReg(secondLocal.Type);
-            if (firstIsFloat != secondIsFloat)
+            if (!Configuration.TARGET_ARM)
             {
-                if ((secondWeight != 0) && firstIsFloat)
+                var firstIsFloat = varTypeUsesFloatReg(firstLocal.Type);
+                var secondIsFloat = varTypeUsesFloatReg(secondLocal.Type);
+                if (firstIsFloat != secondIsFloat)
                 {
-                    return false;
-                }
+                    if ((secondWeight != 0) && firstIsFloat)
+                    {
+                        return false;
+                    }
 
-                if ((firstWeight != 0) && secondIsFloat)
-                {
-                    return true;
+                    if ((firstWeight != 0) && secondIsFloat)
+                    {
+                        return true;
+                    }
                 }
             }
-#endif
             if (firstWeight != secondWeight)
             {
                 return firstWeight > secondWeight;
@@ -117,22 +118,23 @@ public partial class Liveness<TLiveness>
 
             var firstWeight = firstLocal.lvRefCntWtd(_state);
             var secondWeight = secondLocal.lvRefCntWtd(_state);
-#if !TARGET_ARM
-            var firstIsFloat = varTypeUsesFloatReg(firstLocal.Type);
-            var secondIsFloat = varTypeUsesFloatReg(secondLocal.Type);
-            if (firstIsFloat != secondIsFloat)
+            if (!Configuration.TARGET_ARM)
             {
-                if (!Compiler.fgProfileWeightsEqual(secondWeight, 0) && firstIsFloat)
+                var firstIsFloat = varTypeUsesFloatReg(firstLocal.Type);
+                var secondIsFloat = varTypeUsesFloatReg(secondLocal.Type);
+                if (firstIsFloat != secondIsFloat)
                 {
-                    return false;
-                }
+                    if (!Compiler.fgProfileWeightsEqual(secondWeight, 0) && firstIsFloat)
+                    {
+                        return false;
+                    }
 
-                if (!Compiler.fgProfileWeightsEqual(firstWeight, 0) && secondIsFloat)
-                {
-                    return true;
+                    if (!Compiler.fgProfileWeightsEqual(firstWeight, 0) && secondIsFloat)
+                    {
+                        return true;
+                    }
                 }
             }
-#endif
             if (!Compiler.fgProfileWeightsEqual(firstWeight, 0) && firstLocal.lvIsRegArg)
             {
                 firstWeight += 2 * BB_UNITY_WEIGHT;

@@ -203,12 +203,8 @@ public partial class Liveness<TLiveness>
                 case GT_CNS_LNG:
                 case GT_CNS_DBL:
                 case GT_CNS_STR:
-#if FEATURE_SIMD
-                case GT_CNS_VEC:
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-                case GT_CNS_MSK:
-#endif
+                case GT_CNS_VEC when Configuration.FEATURE_SIMD:
+                case GT_CNS_MSK when Configuration.FEATURE_MASKED_HW_INTRINSICS:
                 case GT_PHYSREG:
                 {
                     if (TLiveness.EliminateDeadCode && node.IsUnusedValue)
@@ -263,8 +259,7 @@ public partial class Liveness<TLiveness>
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
+                case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                 {
                     var intrinsic = node.AsHWIntrinsic();
                     if (!intrinsic.IsMemoryStore(out _) && !HWIntrinsicInfo.HasSpecialSideEffect(intrinsic.HWIntrinsicId))
@@ -273,7 +268,6 @@ public partial class Liveness<TLiveness>
                     }
                     break;
                 }
-#endif
 
                 case GT_NO_OP:
                 {
