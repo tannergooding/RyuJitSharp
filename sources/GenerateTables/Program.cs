@@ -14,6 +14,8 @@ namespace RyuJitSharp;
 
 internal static class Program
 {
+    private static readonly Dictionary<string, Dictionary<string, string>> s_instructionFormatIdentifiers = [];
+
     private static readonly (string Target, string Identity, string InputFile)[] s_registerTargetHeaders = [
         ("X86", "X86", @"Inputs\registerx86.h"),
         ("AMD64", "X64", @"Inputs\registeramd64.h"),
@@ -26,17 +28,18 @@ internal static class Program
 
     public static void Main()
     {
-        var workingDirectory = Environment.CurrentDirectory;
-        if (!File.Exists(Path.Combine(workingDirectory, "GenerateTables.csproj"))
-            || !Directory.Exists(Path.Combine(workingDirectory, "Inputs")))
+        var executableDirectory = AppContext.BaseDirectory;
+        if (!Directory.Exists(Path.Combine(executableDirectory, "Inputs")))
         {
             throw new InvalidOperationException(
-                "GenerateTables must run from its project directory, which contains GenerateTables.csproj and Inputs.");
+                "GenerateTables requires its Inputs directory beside the executable.");
         }
 
+        // The generator deletes Outputs before writing it, so anchor relative I/O beside the executable.
+        Directory.SetCurrentDirectory(executableDirectory);
         ValidateUniversalVarTypeEntries();
 
-        var outputDirectory = Path.Combine(workingDirectory, "Outputs");
+        var outputDirectory = Path.Combine(executableDirectory, "Outputs");
         if (Directory.Exists(outputDirectory))
         {
             Directory.Delete(outputDirectory, recursive: true);
@@ -224,9 +227,9 @@ public static partial class API_ICorJitInfo_NamesExtensions
         var vtableAssignments = new StringBuilder();
         var apiCount = 0;
 
-        AddVtablePaths(@"..\Core\inc\corjit\ICorJitInfo.cs", "vtable->");
-        AddVtablePaths(@"..\Core\inc\corinfo\ICorDynamicInfo.cs", "vtable->Base.");
-        AddVtablePaths(@"..\Core\inc\corinfo\ICorStaticInfo.cs", "vtable->Base.Base.");
+        AddVtablePaths(@"Core\inc\corjit\ICorJitInfo.cs", "vtable->");
+        AddVtablePaths(@"Core\inc\corinfo\ICorDynamicInfo.cs", "vtable->Base.");
+        AddVtablePaths(@"Core\inc\corinfo\ICorStaticInfo.cs", "vtable->Base.Base.");
 
         void AddVtablePaths(string path, string prefix)
         {
@@ -260,7 +263,7 @@ public static partial class API_ICorJitInfo_NamesExtensions
             }
         }
 
-        foreach (var line in File.ReadLines(@"..\Core\inc\corjit\ICorJitInfo.cs"))
+        foreach (var line in File.ReadLines(@"Core\inc\corjit\ICorJitInfo.cs"))
         {
             var match = Regex.Match(line, @"^    public (?!static)(?<signature>.+? (?<name>\w+)\(.*\)) => ");
 
@@ -533,11 +536,9 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_XARCH
     private void compInitVarTypeCalleeTrashRegMasks()
     {
 {{compInitVarTypeCalleeTrashRegMasksBuilder}}    }
-#endif
 
     private void gtDispIconHandleFlag(GenTreeIntCon intCon)
     {
@@ -1525,6 +1526,24 @@ internal static class InstructionOrdinalMaps
         var ordinals = GetCurrentTargetOrdinals();
         var instructionIndex = (int)ins;
 
+        // LoongArch LSX/LASX instructions are a contiguous suffix after INS_fst_d.
+        if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
+        {
+            if (ins == INS_none)
+            {
+                ordinal = Globals.GetRvaSpanEntry(s_loongarch64Ordinals, (int)INS_none) +
+                    (int)INS_xvsetallnez_d - (int)INS_vfmadd_s + 1;
+                return true;
+            }
+
+            if (instructionIndex >= (int)INS_vfmadd_s && instructionIndex <= (int)INS_xvsetallnez_d)
+            {
+                var firstSimdOrdinal = Globals.GetRvaSpanEntry(s_loongarch64Ordinals, (int)INS_fst_d) + 1;
+                ordinal = firstSimdOrdinal + instructionIndex - (int)INS_vfmadd_s;
+                return true;
+            }
+        }
+
         if (instructionIndex < 0 || instructionIndex >= ordinals.Length)
         {
             ordinal = 0;
@@ -1576,6 +1595,17 @@ internal static class InstructionOrdinalMaps
 
     internal static instruction GetInstructionFromNativeOrdinal(int ordinal)
     {
+        if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
+        {
+            var firstSimdOrdinal = Globals.GetRvaSpanEntry(s_loongarch64Ordinals, (int)INS_fst_d) + 1;
+            var simdInstructionCount = (int)INS_xvsetallnez_d - (int)INS_vfmadd_s + 1;
+
+            if (ordinal >= firstSimdOrdinal && ordinal < firstSimdOrdinal + simdInstructionCount)
+            {
+                return (instruction)((int)INS_vfmadd_s + ordinal - firstSimdOrdinal);
+            }
+        }
+
         var instructions = GetCurrentTargetInstructionsByNativeOrdinal();
 
         if (ordinal < 0 || ordinal >= instructions.Length)
@@ -2491,14 +2521,29 @@ public static partial class InlineObservationExtensions
 
     private static void GenerateEmitJumpKind()
     {
-        var builder = ProcessMacroBasedFile(@"Inputs\emitjmps.h", "JMP_SMALL(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 3)
+        var targetNames = new[] { "XARCH", "ARMARCH", "LOONGARCH64", "RISCV64", "WASM" };
+        var jumpRows = ReadEmitJumpKindRows();
+
+        var jumpKindBuilder = new StringBuilder();
+        _ = jumpKindBuilder.AppendLine("    EJ_NONE = 0,");
+        _ = jumpKindBuilder.AppendLine("    EJ_jmp = 1,");
+        foreach (var targetName in targetNames)
+        {
+            var rows = jumpRows[targetName];
+            if (rows.Count == 0 || rows[0].JumpKind != "jmp")
             {
-                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+                throw new InvalidDataException($"The {targetName} jump-kind table must begin with jmp.");
             }
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    EJ_{parts[0].Trim()},");
-        });
+            for (var index = 1; index < rows.Count; index++)
+            {
+                _ = jumpKindBuilder.AppendLine(CultureInfo.InvariantCulture,
+                    $"    EJ_{targetName}_{rows[index].JumpKind} = {index + 1},");
+            }
+
+            _ = jumpKindBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"    EJ_{targetName}_COUNT = {rows.Count + 1},");
+        }
 
         _ = Directory.CreateDirectory(@"Outputs\jit\instr");
         File.WriteAllText(@"Outputs\jit\instr\emitJumpKind.generated.cs", $$"""
@@ -2513,32 +2558,50 @@ namespace RyuJitSharp;
 
 public enum emitJumpKind
 {
-    EJ_NONE,
-{{builder}}
-    EJ_COUNT,
+{{jumpKindBuilder}}
 }
 """);
 
-        var instructionBuilder = ProcessMacroBasedFile(@"Inputs\emitjmps.h", "JMP_SMALL(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 3)
+        var instructionTablesBuilder = new StringBuilder();
+        var reverseTablesBuilder = new StringBuilder();
+        foreach (var targetName in targetNames)
+        {
+            var rowsByKind = jumpRows[targetName].ToDictionary(static row => row.JumpKind, StringComparer.Ordinal);
+            _ = instructionTablesBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"    private static ReadOnlySpan<instruction> s_emitJumpKindInstructions{targetName} => [");
+            _ = instructionTablesBuilder.AppendLine("        INS_nop, // EJ_NONE");
+            foreach (var (jumpKind, _, instruction) in jumpRows[targetName])
             {
-                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+                _ = instructionTablesBuilder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        INS_{instruction}, // {GetEmitJumpKindName(targetName, jumpKind)}");
             }
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        INS_{parts[2].Trim()}, // EJ_{parts[0].Trim()}");
-        });
-
-        var reverseBuilder = ProcessMacroBasedFile(@"Inputs\emitjmps.h", "JMP_SMALL(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 3)
+            if (targetName == "XARCH")
             {
-                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+                _ = instructionTablesBuilder.AppendLine("        INS_call, // EJ_XARCH_COUNT");
             }
+            _ = instructionTablesBuilder.AppendLine("    ];");
 
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        EJ_{parts[1].Trim()}, // EJ_{parts[0].Trim()}");
-        });
+            _ = reverseTablesBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"    private static ReadOnlySpan<emitJumpKind> s_emitReverseJumpKinds{targetName} => [");
+            _ = reverseTablesBuilder.AppendLine("        EJ_NONE, // EJ_NONE");
+            foreach (var (jumpKind, reverseJumpKind, _) in jumpRows[targetName])
+            {
+                if (rowsByKind.ContainsKey(reverseJumpKind))
+                {
+                    _ = reverseTablesBuilder.AppendLine(CultureInfo.InvariantCulture,
+                        $"        {GetEmitJumpKindName(targetName, reverseJumpKind)}, // {GetEmitJumpKindName(targetName, jumpKind)}");
+                }
+                else
+                {
+                    _ = reverseTablesBuilder.AppendLine(CultureInfo.InvariantCulture,
+                        $"        EJ_NONE, // {GetEmitJumpKindName(targetName, jumpKind)}");
+                }
+            }
+            _ = reverseTablesBuilder.AppendLine("    ];");
+        }
 
-        _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
-        File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.JumpInstructions.generated.cs", $$"""
+        _ = Directory.CreateDirectory(@"Outputs\jit\emit");
+        File.WriteAllText(@"Outputs\jit\emit\Emitter.JumpInstructions.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
@@ -2550,21 +2613,106 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
-    private static ReadOnlySpan<instruction> emitJumpKindInstructions => [
-        INS_nop, // EJ_NONE
-{{instructionBuilder}}
-#if TARGET_XARCH
-        INS_call, // EJ_COUNT
-#endif
-    ];
+{{instructionTablesBuilder}}
 
-    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds => [
-        EJ_NONE,
-{{reverseBuilder}}    ];
-#endif
+{{reverseTablesBuilder}}
+
+    private static ReadOnlySpan<instruction> emitJumpKindInstructions =>
+        Configuration.TARGET_XARCH ? s_emitJumpKindInstructionsXARCH :
+        Configuration.TARGET_ARMARCH ? s_emitJumpKindInstructionsARMARCH :
+        Configuration.TARGET_LOONGARCH64 ? s_emitJumpKindInstructionsLOONGARCH64 :
+        Configuration.TARGET_RISCV64 ? s_emitJumpKindInstructionsRISCV64 :
+        Configuration.TARGET_WASM ? s_emitJumpKindInstructionsWASM :
+        throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping is not supported for this target.");
+
+    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds =>
+        Configuration.TARGET_XARCH ? s_emitReverseJumpKindsXARCH :
+        Configuration.TARGET_ARMARCH ? s_emitReverseJumpKindsARMARCH :
+        Configuration.TARGET_LOONGARCH64 ? s_emitReverseJumpKindsLOONGARCH64 :
+        Configuration.TARGET_RISCV64 ? s_emitReverseJumpKindsRISCV64 :
+        Configuration.TARGET_WASM ? s_emitReverseJumpKindsWASM :
+        throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping is not supported for this target.");
 }
 """);
+    }
+
+    private static string GetEmitJumpKindName(string targetName, string jumpKind) =>
+        jumpKind == "jmp" ? "EJ_jmp" : $"EJ_{targetName}_{jumpKind}";
+
+    private static Dictionary<string, List<(string JumpKind, string ReverseJumpKind, string Instruction)>> ReadEmitJumpKindRows()
+    {
+        var targetNames = new[] { "XARCH", "ARMARCH", "LOONGARCH64", "RISCV64", "WASM" };
+        var result = targetNames.ToDictionary(
+            static targetName => targetName,
+            static _ => new List<(string JumpKind, string ReverseJumpKind, string Instruction)>(),
+            StringComparer.Ordinal);
+        string? activeTarget = null;
+
+        foreach (var line in File.ReadAllLines(@"Inputs\emitjmps.h"))
+        {
+            var trimmedLine = line.AsSpan().Trim();
+            if (trimmedLine.StartsWith("#if defined(TARGET_", StringComparison.Ordinal) ||
+                trimmedLine.StartsWith("#elif defined(TARGET_", StringComparison.Ordinal))
+            {
+                var targetStart = trimmedLine.IndexOf("TARGET_", StringComparison.Ordinal) + "TARGET_".Length;
+                var targetConditionEnd = trimmedLine[targetStart..].IndexOf(')');
+                if (targetConditionEnd is -1)
+                {
+                    throw new InvalidDataException($"Invalid emitjmps.h target condition: '{line}'");
+                }
+
+                var targetEnd = targetStart + targetConditionEnd;
+                activeTarget = trimmedLine[targetStart..targetEnd].ToString();
+                if (!result.ContainsKey(activeTarget))
+                {
+                    throw new InvalidDataException($"Unsupported emitjmps.h target '{activeTarget}'.");
+                }
+                continue;
+            }
+
+            if (trimmedLine.StartsWith("#else", StringComparison.Ordinal) ||
+                trimmedLine.StartsWith("#endif", StringComparison.Ordinal))
+            {
+                activeTarget = null;
+                continue;
+            }
+
+            if (activeTarget is null)
+            {
+                continue;
+            }
+
+            var commentStart = trimmedLine.IndexOf("//", StringComparison.Ordinal);
+            if (commentStart is not -1)
+            {
+                trimmedLine = trimmedLine[..commentStart].TrimEnd();
+            }
+
+            const string macroPrefix = "JMP_SMALL(";
+            if (!trimmedLine.StartsWith(macroPrefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var closingParen = trimmedLine.LastIndexOf(')');
+            if (closingParen < macroPrefix.Length)
+            {
+                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+            }
+
+            var parts = trimmedLine[macroPrefix.Length..closingParen].ToString().Split(',');
+            if (parts.Length != 3)
+            {
+                throw new InvalidDataException($"Invalid jump mapping format: '{line}'");
+            }
+
+            result[activeTarget].Add((
+                parts[0].Trim(),
+                parts[1].Trim(),
+                parts[2].Trim()));
+        }
+
+        return result;
     }
 
     private static void AppendCharacterLiteral(StringBuilder builder, char value)
@@ -2645,6 +2793,29 @@ public enum instruction
         var otherNameOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
         var xarchNameDataLength = 0;
         var otherNameDataLength = 0;
+        var x86DefinedSymbols = new HashSet<string>(
+            ["TARGET_XARCH", "TARGET_X86", "TARGET_32BIT", "FEATURE_SIMD"], StringComparer.Ordinal);
+        var amd64DefinedSymbols = new HashSet<string>(
+            ["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT", "FEATURE_SIMD"], StringComparer.Ordinal);
+        var armDefinedSymbols = new HashSet<string>(
+            ["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"], StringComparer.Ordinal);
+        var armPliDefinedSymbols = new HashSet<string>(armDefinedSymbols, StringComparer.Ordinal);
+        _ = armPliDefinedSymbols.Add("FEATURE_PLI_INSTRUCTION");
+        var armItDefinedSymbols = new HashSet<string>(armDefinedSymbols, StringComparer.Ordinal);
+        _ = armItDefinedSymbols.Add("FEATURE_ITINSTRUCTION");
+        var armPliItDefinedSymbols = new HashSet<string>(armDefinedSymbols, StringComparer.Ordinal);
+        _ = armPliItDefinedSymbols.Add("FEATURE_PLI_INSTRUCTION");
+        _ = armPliItDefinedSymbols.Add("FEATURE_ITINSTRUCTION");
+        var arm64DefinedSymbols = new HashSet<string>(
+            ["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT", "FEATURE_SIMD"], StringComparer.Ordinal);
+        var loongArch64DefinedSymbols = new HashSet<string>(
+            ["TARGET_LOONGARCH64", "TARGET_64BIT", "FEATURE_SIMD"], StringComparer.Ordinal);
+        var loongArch64NoSimdDefinedSymbols = new HashSet<string>(
+            ["TARGET_LOONGARCH64", "TARGET_64BIT"], StringComparer.Ordinal);
+        var riscv64DefinedSymbols = new HashSet<string>(
+            ["TARGET_RISCV64", "TARGET_64BIT"], StringComparer.Ordinal);
+        var wasmDefinedSymbols = new HashSet<string>(
+            ["TARGET_WASM", "TARGET_WASM32", "TARGET_32BIT", "FEATURE_SIMD"], StringComparer.Ordinal);
 
         var nameRangesBuilder = ProcessInstrs((rangeBuilder, inputFile, line, prefix, parts) => {
             if (parts.Length is 0)
@@ -2707,6 +2878,18 @@ public enum instruction
             _ = rangeBuilder.AppendLine(CultureInfo.InvariantCulture,
                 $"        {characterIndex}, {characters.Length}, // INS_{id}");
         });
+        var x86NameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), x86DefinedSymbols);
+        var amd64NameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), amd64DefinedSymbols);
+        var armNameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), armDefinedSymbols);
+        var armPliNameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), armPliDefinedSymbols);
+        var armItNameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), armItDefinedSymbols);
+        var armPliItNameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), armPliItDefinedSymbols);
+        var arm64NameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), arm64DefinedSymbols);
+        var loongArch64NameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), loongArch64DefinedSymbols);
+        var loongArch64NoSimdNameRangesBuilder = GetActivePreprocessorLines(
+            nameRangesBuilder.ToString(), loongArch64NoSimdDefinedSymbols);
+        var riscv64NameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), riscv64DefinedSymbols);
+        var wasmNameRangesBuilder = GetActivePreprocessorLines(nameRangesBuilder.ToString(), wasmDefinedSymbols);
 
         _ = Directory.CreateDirectory(@"Outputs\jit\instr");
         File.WriteAllText(@"Outputs\jit\instr\CodeGen.InstructionNames.generated.cs", $$"""
@@ -2721,15 +2904,101 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private static ReadOnlySpan<char> s_instructionNameData => [
-#if TARGET_XARCH
-{{xarchNameDataBuilder}}    ];
-#else
-{{otherNameDataBuilder}}    ];
-#endif
+    private static ReadOnlySpan<char> s_instructionNameData =>
+        Configuration.TARGET_XARCH ? s_instructionNameDataXarch : s_instructionNameDataOther;
 
-    private static ReadOnlySpan<int> s_instructionNameRanges => [
-{{nameRangesBuilder}}    ];
+    private static ReadOnlySpan<char> s_instructionNameDataXarch => [
+{{xarchNameDataBuilder}}    ];
+
+    private static ReadOnlySpan<char> s_instructionNameDataOther => [
+{{otherNameDataBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRanges
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return s_instructionNameRangesX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return s_instructionNameRangesAmd64;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                if (Configuration.FEATURE_PLI_INSTRUCTION)
+                {
+                    return Configuration.FEATURE_ITINSTRUCTION
+                        ? s_instructionNameRangesArmPliIt
+                        : s_instructionNameRangesArmPli;
+                }
+
+                return Configuration.FEATURE_ITINSTRUCTION
+                    ? s_instructionNameRangesArmIt
+                    : s_instructionNameRangesArm;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return s_instructionNameRangesArm64;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return Configuration.FEATURE_SIMD
+                    ? s_instructionNameRangesLoongArch64
+                    : s_instructionNameRangesLoongArch64NoSimd;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_instructionNameRangesRiscv64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_instructionNameRangesWasm;
+            }
+
+            throw new FatalJitException("No instruction-name table is defined for the configured target.");
+        }
+    }
+
+    private static ReadOnlySpan<int> s_instructionNameRangesX86 => [
+{{x86NameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesAmd64 => [
+{{amd64NameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArm => [
+{{armNameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArmPli => [
+{{armPliNameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArmIt => [
+{{armItNameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArmPliIt => [
+{{armPliItNameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArm64 => [
+{{arm64NameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesLoongArch64 => [
+{{loongArch64NameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesLoongArch64NoSimd => [
+{{loongArch64NoSimdNameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesRiscv64 => [
+{{riscv64NameRangesBuilder}}    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesWasm => [
+{{wasmNameRangesBuilder}}    ];
 }
 """);
 
@@ -2753,6 +3022,8 @@ public sealed partial class CodeGen
             }
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {maskSize}, // INS_{parts[0].Trim()}");
         });
+        var x86MaskBuilder = new StringBuilder(GetActivePreprocessorLines(maskBuilder.ToString(), x86DefinedSymbols));
+        var amd64MaskBuilder = new StringBuilder(GetActivePreprocessorLines(maskBuilder.ToString(), amd64DefinedSymbols));
 
         var tupleBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
@@ -2760,23 +3031,33 @@ public sealed partial class CodeGen
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {parts[^2].Trim()}, // INS_{parts[0].Trim()}");
             }
         });
+        var x86TupleBuilder = new StringBuilder(
+            GetActivePreprocessorLines(tupleBuilder.ToString(), x86DefinedSymbols));
+        var amd64TupleBuilder = new StringBuilder(
+            GetActivePreprocessorLines(tupleBuilder.ToString(), amd64DefinedSymbols));
 
         var flagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
             {
                 var flags = string.Join(" | ", parts[^1].Split('|', StringSplitOptions.TrimEntries));
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // INS_{parts[0].Trim()}");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        (insInfoFlags)({flags}), // INS_{parts[0].Trim()}");
             }
         });
+        var x86FlagsBuilder = new StringBuilder(GetActivePreprocessorLines(flagsBuilder.ToString(), x86DefinedSymbols));
+        var amd64FlagsBuilder = new StringBuilder(GetActivePreprocessorLines(flagsBuilder.ToString(), amd64DefinedSymbols));
 
         var arm64FlagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsarm64.h", StringComparison.Ordinal)
                 || inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
             {
                 var flags = string.Join(" | ", parts[2].Split('|', StringSplitOptions.TrimEntries));
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // {parts[0].Trim()}");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        (insInfoFlags)({flags}), // {parts[0].Trim()}");
             }
         });
+        var arm64TargetFlagsBuilder = new StringBuilder(
+            GetActivePreprocessorLines(arm64FlagsBuilder.ToString(), arm64DefinedSymbols));
 
         var otherFlagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal)
@@ -2786,11 +3067,30 @@ public sealed partial class CodeGen
                 return;
             }
 
-            var flags = inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal)
-                ? $"({parts[3].Trim()}) | (INST_FP * ({parts[2].Trim()}))"
-                : parts[2].Trim();
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // INS_{parts[0].Trim()}");
+            var flags = parts[2].Trim();
+
+            if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
+            {
+                var armFlags = parts[3].Trim() switch
+                {
+                    "LD" => "ARM_LD",
+                    "ST" => "ARM_ST",
+                    "0" => "0",
+                    "CMP" => "ARM_CMP",
+                    _ => throw new InvalidDataException($"Unexpected ARM instruction flags: '{line}'."),
+                };
+                flags = $"({armFlags}) | (INST_FP * ({flags}))";
+            }
+
+            _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                $"        (insInfoFlags)({flags}), // INS_{parts[0].Trim()}");
         });
+        var armFlagsBuilder = new StringBuilder(GetActivePreprocessorLines(otherFlagsBuilder.ToString(), armDefinedSymbols));
+        var loongArch64FlagsBuilder = new StringBuilder(
+            GetActivePreprocessorLines(otherFlagsBuilder.ToString(), loongArch64DefinedSymbols));
+        var riscv64FlagsBuilder = new StringBuilder(
+            GetActivePreprocessorLines(otherFlagsBuilder.ToString(), riscv64DefinedSymbols));
+        var wasmFlagsBuilder = new StringBuilder(GetActivePreprocessorLines(otherFlagsBuilder.ToString(), wasmDefinedSymbols));
 
         var latencyBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
@@ -2798,6 +3098,10 @@ public sealed partial class CodeGen
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        PERFSCORE_LATENCY_{parts[^4].Trim()}, // INS_{parts[0].Trim()}");
             }
         });
+        var x86LatencyBuilder = new StringBuilder(
+            GetActivePreprocessorLines(latencyBuilder.ToString(), x86DefinedSymbols));
+        var amd64LatencyBuilder = new StringBuilder(
+            GetActivePreprocessorLines(latencyBuilder.ToString(), amd64DefinedSymbols));
 
         var throughputBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) => {
             if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
@@ -2805,6 +3109,10 @@ public sealed partial class CodeGen
                 _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        PERFSCORE_THROUGHPUT_{parts[^3].Trim()}, // INS_{parts[0].Trim()}");
             }
         });
+        var x86ThroughputBuilder = new StringBuilder(
+            GetActivePreprocessorLines(throughputBuilder.ToString(), x86DefinedSymbols));
+        var amd64ThroughputBuilder = new StringBuilder(
+            GetActivePreprocessorLines(throughputBuilder.ToString(), amd64DefinedSymbols));
 
         _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
         File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.ExecutionInfo.generated.cs", $$"""
@@ -2819,13 +3127,27 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
-    private static ReadOnlySpan<float> insLatencyInfos => [
-{{latencyBuilder}}    ];
+    private static ReadOnlySpan<float> insLatencyInfosX86 => [
+{{x86LatencyBuilder}}    ];
 
-    private static ReadOnlySpan<float> insThroughputInfos => [
-{{throughputBuilder}}    ];
-#endif
+    private static ReadOnlySpan<float> insLatencyInfosAMD64 => [
+{{amd64LatencyBuilder}}    ];
+
+    private static ReadOnlySpan<float> insLatencyInfos =>
+        Configuration.TARGET_X86 ? insLatencyInfosX86 :
+        Configuration.TARGET_AMD64 ? insLatencyInfosAMD64 :
+        throw new FatalJitException("xarch instruction latency data is not available for this target.");
+
+    private static ReadOnlySpan<float> insThroughputInfosX86 => [
+{{x86ThroughputBuilder}}    ];
+
+    private static ReadOnlySpan<float> insThroughputInfosAMD64 => [
+{{amd64ThroughputBuilder}}    ];
+
+    private static ReadOnlySpan<float> insThroughputInfos =>
+        Configuration.TARGET_X86 ? insThroughputInfosX86 :
+        Configuration.TARGET_AMD64 ? insThroughputInfosAMD64 :
+        throw new FatalJitException("xarch instruction throughput data is not available for this target.");
 }
 """);
 
@@ -2841,11 +3163,16 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
-    private static ReadOnlySpan<insTupleType> s_tupleTypes => [
-{{tupleBuilder}}
-    ];
-#endif
+    private static ReadOnlySpan<insTupleType> s_tupleTypesX86 => [
+{{x86TupleBuilder}}    ];
+
+    private static ReadOnlySpan<insTupleType> s_tupleTypesAMD64 => [
+{{amd64TupleBuilder}}    ];
+
+    private static ReadOnlySpan<insTupleType> s_tupleTypes =>
+        Configuration.TARGET_X86 ? s_tupleTypesX86 :
+        Configuration.TARGET_AMD64 ? s_tupleTypesAMD64 :
+        throw new FatalJitException("xarch instruction tuple data is not available for this target.");
 }
 """);
 
@@ -2862,12 +3189,16 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_XARCH
-    private static ReadOnlySpan<byte> s_kMaskBaseSizes => [
-{{maskBuilder}}
-    ];
+    private static ReadOnlySpan<byte> s_kMaskBaseSizesX86 => [
+{{x86MaskBuilder}}    ];
 
-#endif
+    private static ReadOnlySpan<byte> s_kMaskBaseSizesAMD64 => [
+{{amd64MaskBuilder}}    ];
+
+    internal static ReadOnlySpan<byte> s_kMaskBaseSizes =>
+        Configuration.TARGET_X86 ? s_kMaskBaseSizesX86 :
+        Configuration.TARGET_AMD64 ? s_kMaskBaseSizesAMD64 :
+        ReadOnlySpan<byte>.Empty;
 }
 """);
 
@@ -2883,11 +3214,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_XARCH
-    internal static ReadOnlySpan<insInfoFlags> instInfo => [
-{{flagsBuilder}}
-    ];
-#elif TARGET_ARM64
     private const byte INST_FP = 1;
     internal const byte LD = 1;
     internal const byte ST = 2;
@@ -2897,30 +3223,78 @@ public sealed partial class CodeGen
     private const byte LNG = 32;
     private const byte NRW = 64;
     private const byte WR2 = 128;
+    private const byte ARM_LD = 2;
+    private const byte ARM_ST = 4;
+    private const byte ARM_CMP = 8;
 
-    internal static ReadOnlySpan<byte> instInfo => [
-{{arm64FlagsBuilder}}
-        0, // INS_lea is zero-initialized in native instInfo[INS_count].
+    private static ReadOnlySpan<insInfoFlags> s_instInfoX86 => [
+{{x86FlagsBuilder}}    ];
+
+    private static ReadOnlySpan<insInfoFlags> s_instInfoAMD64 => [
+{{amd64FlagsBuilder}}    ];
+
+    private static ReadOnlySpan<insInfoFlags> s_instInfoARM => [
+{{armFlagsBuilder}}        (insInfoFlags)0, // INS_lea is zero-initialized in native instInfo[INS_count].
     ];
-#elif TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
-    private const byte INST_FP = 1;
 
-#if TARGET_ARM
-    private const byte LD = 2;
-    private const byte ST = 4;
-    private const byte CMP = 8;
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-    private const byte LD = 1;
-    private const byte ST = 2;
-#endif
-
-    internal static ReadOnlySpan<byte> instInfo => [
-{{otherFlagsBuilder}}
-#if TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
-        0, // INS_lea is zero-initialized in native instInfo[INS_count].
-#endif
+    private static ReadOnlySpan<insInfoFlags> s_instInfoARM64 => [
+{{arm64TargetFlagsBuilder}}        (insInfoFlags)0, // INS_lea is zero-initialized in native instInfo[INS_count].
     ];
-#endif
+
+    private static ReadOnlySpan<insInfoFlags> s_instInfoLOONGARCH64 => [
+{{loongArch64FlagsBuilder}}        (insInfoFlags)0, // INS_lea is zero-initialized in native instInfo[INS_count].
+    ];
+
+    private static ReadOnlySpan<insInfoFlags> s_instInfoRISCV64 => [
+{{riscv64FlagsBuilder}}        (insInfoFlags)0, // INS_lea is zero-initialized in native instInfo[INS_count].
+    ];
+
+    private static ReadOnlySpan<insInfoFlags> s_instInfoWASM => [
+{{wasmFlagsBuilder}}    ];
+
+    internal static ReadOnlySpan<insInfoFlags> instInfo
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return s_instInfoX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return s_instInfoAMD64;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return s_instInfoARM;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return s_instInfoARM64;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return s_instInfoLOONGARCH64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_instInfoRISCV64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_instInfoWASM;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Instruction metadata is not available for the configured target.");
+        }
+    }
 }
 """);
     }
@@ -2940,68 +3314,128 @@ public sealed partial class CodeGen
         return lines[firstFormat..(lastFormat + 1)];
     }
 
-    private static void AppendInstructionFormat(StringBuilder builder, string inputFile, string line,
-        string prefix, string[] parts)
-    {
-        if (parts.Length != 3)
-        {
-            throw new InvalidDataException($"Invalid line format: '{line}'");
-        }
-
-        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        IF_{parts[0].Trim()},");
-    }
-
     private static void GenerateInstructionFormats()
     {
         const string formatInput = @"Inputs\emitfmtsxarch.h";
         var formatLines = ReadInstructionFormatLines(formatInput);
-        var formatBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
-            AppendInstructionFormat);
         const string armFormatInput = @"Inputs\emitfmtsarm.h";
         var armFormatLines = ReadInstructionFormatLines(armFormatInput);
-        var armFormatBuilder = ProcessMacroBasedFile(armFormatInput, armFormatLines, ["IF_DEF("],
-            AppendInstructionFormat);
-        var armOperandBuilder = ProcessMacroBasedFile(armFormatInput, armFormatLines, ["IF_DEF("],
-            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
-        var arm64FormatBuilder = new StringBuilder();
-        var arm64OperandBuilder = new StringBuilder();
         string[] arm64Inputs = [@"Inputs\emitfmtsarm64.h", @"Inputs\emitfmtsarm64sve.h"];
-        foreach (var input in arm64Inputs)
-        {
-            var lines = ReadInstructionFormatLines(input);
-            _ = arm64FormatBuilder.Append(ProcessMacroBasedFile(input, lines,
-                ["IF_DEF("], AppendInstructionFormat));
-            _ = arm64OperandBuilder.Append(ProcessMacroBasedFile(input, lines, ["IF_DEF("],
-                (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                    $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}")));
-        }
-
         const string wasmFormatInput = @"Inputs\emitfmtswasm.h";
         var wasmFormatLines = ReadInstructionFormatLines(wasmFormatInput);
-        var wasmFormatBuilder = ProcessMacroBasedFile(wasmFormatInput, wasmFormatLines, ["IF_DEF("],
-            AppendInstructionFormat);
-        var wasmOperandBuilder = ProcessMacroBasedFile(wasmFormatInput, wasmFormatLines, ["IF_DEF("],
-            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
         const string loongArchFormatInput = @"Inputs\emitfmtsloongarch64.h";
         var loongArchFormatLines = ReadInstructionFormatLines(loongArchFormatInput);
-        var loongArchFormatBuilder = ProcessMacroBasedFile(loongArchFormatInput, loongArchFormatLines, ["IF_DEF("],
-            AppendInstructionFormat);
-        var loongArchOperandBuilder = ProcessMacroBasedFile(loongArchFormatInput, loongArchFormatLines, ["IF_DEF("],
-            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
         const string riscvFormatInput = @"Inputs\emitfmtsriscv64.h";
         var riscvFormatLines = ReadInstructionFormatLines(riscvFormatInput);
-        var riscvFormatBuilder = ProcessMacroBasedFile(riscvFormatInput, riscvFormatLines, ["IF_DEF("],
-            AppendInstructionFormat);
-        var riscvOperandBuilder = ProcessMacroBasedFile(riscvFormatInput, riscvFormatLines, ["IF_DEF("],
-            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
 
-        var operandBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
-            (builder, inputFile, line, prefix, parts) => _ = builder.AppendLine(CultureInfo.InvariantCulture,
-                $"        (byte)ID_OP_{parts[2].Trim()}, // IF_{parts[0].Trim()}"));
+        var formatInputsByTarget = new Dictionary<string, (string Input, string[] Lines)[]>(StringComparer.Ordinal)
+        {
+            ["XARCH"] = [(formatInput, formatLines)],
+            ["ARM32"] = [(armFormatInput, armFormatLines)],
+            ["ARM64"] = [
+                (arm64Inputs[0], ReadInstructionFormatLines(arm64Inputs[0])),
+                (arm64Inputs[1], ReadInstructionFormatLines(arm64Inputs[1])),
+            ],
+            ["WASM"] = [(wasmFormatInput, wasmFormatLines)],
+            ["LOONGARCH64"] = [(loongArchFormatInput, loongArchFormatLines)],
+            ["RISCV64"] = [(riscvFormatInput, riscvFormatLines)],
+        };
+        var formatDefinitionsByTarget = new Dictionary<string, List<(string Name, string OperandKind)>>(StringComparer.Ordinal);
+        foreach (var (target, inputs) in formatInputsByTarget)
+        {
+            var definitions = new List<(string Name, string OperandKind)>();
+            var definitionsByName = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var (input, lines) in inputs)
+            {
+                _ = ProcessMacroBasedFile(input, lines, ["IF_DEF("], (builder, inputFile, line, prefix, parts) =>
+                {
+                    if (parts.Length != 3)
+                    {
+                        throw new InvalidDataException($"Invalid line format: '{line}'");
+                    }
+
+                    var name = parts[0].Trim();
+                    var operandKind = parts[2].Trim();
+                    if (definitionsByName.TryGetValue(name, out var existingOperandKind))
+                    {
+                        if (!existingOperandKind.Equals(operandKind, StringComparison.Ordinal))
+                        {
+                            throw new InvalidDataException(
+                                $"Instruction format '{name}' has different operand kinds in '{inputFile}'.");
+                        }
+
+                        return;
+                    }
+
+                    definitionsByName.Add(name, operandKind);
+                    definitions.Add((name, operandKind));
+                });
+            }
+
+            if (target.Equals("ARM32", StringComparison.Ordinal))
+            {
+                definitions.Add(("ARM_INVALID", "NONE"));
+            }
+
+            formatDefinitionsByTarget.Add(target, definitions);
+        }
+
+        var formatsByName = new Dictionary<string, List<(string Target, uint Ordinal, string OperandKind)>>(StringComparer.Ordinal);
+        foreach (var (target, definitions) in formatDefinitionsByTarget)
+        {
+            for (var ordinal = 0; ordinal < definitions.Count; ordinal++)
+            {
+                var (name, operandKind) = definitions[ordinal];
+                if (!formatsByName.TryGetValue(name, out var occurrences))
+                {
+                    occurrences = [];
+                    formatsByName.Add(name, occurrences);
+                }
+
+                occurrences.Add((target, (uint)ordinal, operandKind));
+            }
+        }
+
+        var commonFormatNames = new HashSet<string>(
+            formatsByName
+                .Where(pair => pair.Value.Count == formatInputsByTarget.Count
+                    && pair.Value.Select(occurrence => occurrence.Ordinal).Distinct().Count() == 1
+                    && pair.Value.Select(occurrence => occurrence.OperandKind).Distinct(StringComparer.Ordinal).Count() == 1)
+                .Select(pair => pair.Key),
+            StringComparer.Ordinal);
+        var unionFormatBuilder = new StringBuilder();
+        var emittedFormatIdentifiers = new HashSet<string>(StringComparer.Ordinal);
+        var emitFmtToOpsBuilders = new Dictionary<string, StringBuilder>(StringComparer.Ordinal);
+        var emitFmtNamesBuilders = new Dictionary<string, StringBuilder>(StringComparer.Ordinal);
+        s_instructionFormatIdentifiers.Clear();
+        foreach (var (target, definitions) in formatDefinitionsByTarget)
+        {
+            var identifiers = new Dictionary<string, string>(StringComparer.Ordinal);
+            var operandBuilder = new StringBuilder();
+            var namesBuilder = new StringBuilder();
+            for (var ordinal = 0; ordinal < definitions.Count; ordinal++)
+            {
+                var (name, operandKind) = definitions[ordinal];
+                var identifier = commonFormatNames.Contains(name) ? $"IF_{name}" : $"IF_{target}_{name}";
+                identifiers.Add(name, identifier);
+
+                if (emittedFormatIdentifiers.Add(identifier))
+                {
+                    _ = unionFormatBuilder.AppendLine(CultureInfo.InvariantCulture, $"        {identifier} = {ordinal},");
+                }
+
+                _ = operandBuilder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        (byte)ID_OP_{operandKind}, // IF_{name}");
+                _ = namesBuilder.AppendLine(CultureInfo.InvariantCulture, $"        \"IF_{name}\",");
+            }
+
+            _ = unionFormatBuilder.AppendLine(CultureInfo.InvariantCulture,
+                $"        IF_{target}_COUNT = {definitions.Count},");
+            emitFmtToOpsBuilders.Add(target, operandBuilder);
+            emitFmtNamesBuilders.Add(target, namesBuilder);
+            s_instructionFormatIdentifiers.Add(target, identifiers);
+        }
+
         var schedulingBuilder = ProcessMacroBasedFile(formatInput, formatLines, ["IF_DEF("],
             (builder, inputFile, line, prefix, parts) =>
             {
@@ -3016,24 +3450,97 @@ public sealed partial class CodeGen
                     $"        (byte){parts[2].Trim()}, // INS_{parts[0].Trim()}");
             }
         });
+        var updateModeX86Builder = new StringBuilder(GetActivePreprocessorLines(
+            updateModeBuilder.ToString(),
+            new HashSet<string>(["TARGET_XARCH", "TARGET_X86"], StringComparer.Ordinal)));
+        var updateModeAmd64Builder = new StringBuilder(GetActivePreprocessorLines(
+            updateModeBuilder.ToString(),
+            new HashSet<string>(["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT"], StringComparer.Ordinal)));
+        var instructionNddFlagsBuilder = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrsxarch.h", StringComparison.Ordinal))
+            {
+                var hasNdd = parts[^1].Split('|', StringSplitOptions.TrimEntries)
+                    .Contains("INS_FLAGS_HasNDD", StringComparer.Ordinal);
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        {(hasNdd ? 1 : 0)}, // INS_{parts[0].Trim()}");
+            }
+        });
+        var x86InstructionNddFlagsBuilder = new StringBuilder(GetActivePreprocessorLines(
+            instructionNddFlagsBuilder.ToString(),
+            new HashSet<string>(["TARGET_XARCH", "TARGET_X86"], StringComparer.Ordinal)));
+        var amd64InstructionNddFlagsBuilder = new StringBuilder(GetActivePreprocessorLines(
+            instructionNddFlagsBuilder.ToString(),
+            new HashSet<string>(["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT"], StringComparer.Ordinal)));
 
         var arm64InstructionFormats = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
         {
             if (inputFile.Equals(@"Inputs\instrsarm64.h", StringComparison.Ordinal)
                 || inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {parts[3].Trim()}, // {parts[0].Trim()}");
+                var format = GetInstructionFormatIdentifier("ARM64", parts[3].Trim());
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        insFormat.{format}, // {parts[0].Trim()}");
             }
         });
+        arm64InstructionFormats = new StringBuilder(GetActivePreprocessorLines(
+            arm64InstructionFormats.ToString(),
+            new HashSet<string>(["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT"], StringComparer.Ordinal)));
+        var arm64InstructionLoadStoreFlags = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrsarm64.h", StringComparison.Ordinal)
+                || inputFile.Equals(@"Inputs\instrsarm64sve.h", StringComparison.Ordinal))
+            {
+                var flags = parts[2].Split('|', StringSplitOptions.TrimEntries);
+                var isLoadOrStore = flags.Any(flag => flag is "LD" or "ST");
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        {(isLoadOrStore ? 1 : 0)}, // {parts[0].Trim()}");
+            }
+        });
+        arm64InstructionLoadStoreFlags = new StringBuilder(GetActivePreprocessorLines(
+            arm64InstructionLoadStoreFlags.ToString(),
+            new HashSet<string>(["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT"], StringComparer.Ordinal)));
         var armInstructionFormats = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
         {
             if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
             {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {parts[4].Trim()}, // {parts[0].Trim()}");
+                var format = GetInstructionFormatIdentifier("ARM32", parts[4].Trim());
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        insFormat.{format}, // {parts[0].Trim()}");
             }
         });
+        var armInstructionLoadStoreFlags = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
+            {
+                var flags = parts[3].Trim() switch
+                {
+                    "LD" => 2,
+                    "ST" => 4,
+                    "0" or "CMP" => 0,
+                    _ => throw new InvalidDataException($"Unexpected ARM load/store flags: '{line}'."),
+                };
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {flags}, // {parts[0].Trim()}");
+            }
+        });
+        armInstructionFormats = new StringBuilder(GetActivePreprocessorLines(armInstructionFormats.ToString(),
+            new HashSet<string>(["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"], StringComparer.Ordinal)));
+        armInstructionLoadStoreFlags = new StringBuilder(GetActivePreprocessorLines(
+            armInstructionLoadStoreFlags.ToString(),
+            new HashSet<string>(["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"], StringComparer.Ordinal)));
+        var armInstructionCompareFlags = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
+        {
+            if (inputFile.Equals(@"Inputs\instrsarm.h", StringComparison.Ordinal))
+            {
+                var isCompare = parts[3].Trim().Equals("CMP", StringComparison.Ordinal);
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        {(isCompare ? 8 : 0)}, // {parts[0].Trim()}");
+            }
+        });
+        armInstructionCompareFlags = new StringBuilder(GetActivePreprocessorLines(
+            armInstructionCompareFlags.ToString(),
+            new HashSet<string>(["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"], StringComparer.Ordinal)));
 
         _ = Directory.CreateDirectory(@"Outputs\jit\emit");
+        GenerateArm64FrameFormatAliases(arm64Inputs);
         File.WriteAllText(@"Outputs\jit\emit\Emitter.InstructionFormats.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
@@ -3041,6 +3548,7 @@ public sealed partial class CodeGen
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
+using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
@@ -3048,37 +3556,145 @@ public partial class Emitter
 {
     public enum insFormat : uint
     {
-#if TARGET_XARCH
-{{formatBuilder}}#elif TARGET_ARM
-{{armFormatBuilder}}#elif TARGET_ARM64
-{{arm64FormatBuilder}}#elif TARGET_WASM
-{{wasmFormatBuilder}}#elif TARGET_LOONGARCH64
-{{loongArchFormatBuilder}}#elif TARGET_RISCV64
-{{riscvFormatBuilder}}#endif
-        IF_COUNT,
+{{unionFormatBuilder}}    }
+
+    internal static ReadOnlySpan<byte> emitFmtToOps
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return s_emitFmtToOpsXarch;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return s_emitFmtToOpsArm32;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return s_emitFmtToOpsArm64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_emitFmtToOpsWasm;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return s_emitFmtToOpsLoongArch64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_emitFmtToOpsRiscV64;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED, "Unsupported instruction format target.");
+        }
     }
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_WASM || TARGET_LOONGARCH64 || TARGET_RISCV64
-    internal static ReadOnlySpan<byte> emitFmtToOps => [
-#if TARGET_ARM
-{{armOperandBuilder}}#elif TARGET_ARM64
-{{arm64OperandBuilder}}#elif TARGET_WASM
-{{wasmOperandBuilder}}#elif TARGET_LOONGARCH64
-{{loongArchOperandBuilder}}#elif TARGET_RISCV64
-{{riscvOperandBuilder}}#else
-{{operandBuilder}}#endif
-    ];
-#endif
+    internal static ReadOnlySpan<string> emitFmtNames
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return s_emitFmtNamesXarch;
+            }
 
-#if TARGET_XARCH
+            if (Configuration.TARGET_ARM)
+            {
+                return s_emitFmtNamesArm32;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return s_emitFmtNamesArm64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_emitFmtNamesWasm;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return s_emitFmtNamesLoongArch64;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_emitFmtNamesRiscV64;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED, "Unsupported instruction format target.");
+        }
+    }
+
+    private static ReadOnlySpan<byte> s_emitFmtToOpsXarch => [
+{{emitFmtToOpsBuilders["XARCH"]}}    ];
+
+    private static ReadOnlySpan<byte> s_emitFmtToOpsArm32 => [
+{{emitFmtToOpsBuilders["ARM32"]}}    ];
+
+    private static ReadOnlySpan<byte> s_emitFmtToOpsArm64 => [
+{{emitFmtToOpsBuilders["ARM64"]}}    ];
+
+    private static ReadOnlySpan<byte> s_emitFmtToOpsWasm => [
+{{emitFmtToOpsBuilders["WASM"]}}    ];
+
+    private static ReadOnlySpan<byte> s_emitFmtToOpsLoongArch64 => [
+{{emitFmtToOpsBuilders["LOONGARCH64"]}}    ];
+
+    private static ReadOnlySpan<byte> s_emitFmtToOpsRiscV64 => [
+{{emitFmtToOpsBuilders["RISCV64"]}}    ];
+
+    private static readonly string[] s_emitFmtNamesXarch = [
+{{emitFmtNamesBuilders["XARCH"]}}    ];
+
+    private static readonly string[] s_emitFmtNamesArm32 = [
+{{emitFmtNamesBuilders["ARM32"]}}    ];
+
+    private static readonly string[] s_emitFmtNamesArm64 = [
+{{emitFmtNamesBuilders["ARM64"]}}    ];
+
+    private static readonly string[] s_emitFmtNamesWasm = [
+{{emitFmtNamesBuilders["WASM"]}}    ];
+
+    private static readonly string[] s_emitFmtNamesLoongArch64 = [
+{{emitFmtNamesBuilders["LOONGARCH64"]}}    ];
+
+    private static readonly string[] s_emitFmtNamesRiscV64 = [
+{{emitFmtNamesBuilders["RISCV64"]}}    ];
+
     private static ReadOnlySpan<IS_INFO> emitFmtToSchedInfo => [
 {{schedulingBuilder}}    ];
-#endif
+
+    private static ReadOnlySpan<byte> s_arm64InstructionLoadStoreFlags => [
+{{arm64InstructionLoadStoreFlags}}        0, // INS_lea is zero-initialized in native instInfo[INS_count].
+    ];
+
+    private static ReadOnlySpan<insFormat> s_armInstructionFormats => [
+{{armInstructionFormats}}    ];
+
+    private static ReadOnlySpan<byte> s_armInstructionLoadStoreFlags => [
+{{armInstructionLoadStoreFlags}}    ];
+
+    private static ReadOnlySpan<byte> s_armInstructionCompareFlags => [
+{{armInstructionCompareFlags}}    ];
+
+    private static ReadOnlySpan<byte> s_x86InstructionNddFlags => [
+{{x86InstructionNddFlagsBuilder}}    ];
+
+    private static ReadOnlySpan<byte> s_amd64InstructionNddFlags => [
+{{amd64InstructionNddFlagsBuilder}}    ];
 }
 """);
 
-        _ = Directory.CreateDirectory(@"Outputs\jit\emitxarch");
-        File.WriteAllText(@"Outputs\jit\emitxarch\Emitter.InstructionUpdateModes.generated.cs", $$"""
+        File.WriteAllText(@"Outputs\jit\emit\Emitter.InstructionUpdateModes.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
@@ -3090,20 +3706,40 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
-    internal static ReadOnlySpan<byte> emitInsModeFmtTab => [
-{{updateModeBuilder}}
-    ];
-#endif
+    internal static ReadOnlySpan<byte> emitInsModeFmtTab =>
+        Configuration.TARGET_64BIT ? emitInsModeFmtTabAmd64 : emitInsModeFmtTabX86;
+
+    internal static ReadOnlySpan<byte> emitInsModeFmtTabX86 => [
+{{updateModeX86Builder}}    ];
+
+    internal static ReadOnlySpan<byte> emitInsModeFmtTabAmd64 => [
+{{updateModeAmd64Builder}}    ];
 }
 """);
 
-        var xarchOperandKinds = ReadNativeEnumBody(formatInput, "ID_OPS");
-        var armOperandKinds = ReadNativeEnumBody(armFormatInput, "ID_OPS");
-        var arm64OperandKinds = ReadNativeEnumBody(arm64Inputs[0], "ID_OPS");
-        var wasmOperandKinds = ReadNativeEnumBody(wasmFormatInput, "ID_OPS");
-        var loongArchOperandKinds = ReadNativeEnumBody(loongArchFormatInput, "ID_OPS");
-        var riscvOperandKinds = ReadNativeEnumBody(riscvFormatInput, "ID_OPS");
+        var unionOperandKindsBuilder = new StringBuilder();
+        var unionOperandKindNames = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var input in new[]
+        {
+            formatInput,
+            armFormatInput,
+            arm64Inputs[0],
+            wasmFormatInput,
+            loongArchFormatInput,
+            riscvFormatInput,
+        })
+        {
+            foreach (var line in ReadNativeEnumBody(input, "ID_OPS").ToString().Split('\n'))
+            {
+                var match = Regex.Match(line, @"^\s*(ID_OP_[A-Z0-9_]+)\b", RegexOptions.CultureInvariant);
+                if (match.Success && unionOperandKindNames.Add(match.Groups[1].Value))
+                {
+                    _ = unionOperandKindsBuilder.AppendLine(CultureInfo.InvariantCulture,
+                        $"    {match.Groups[1].Value},");
+                }
+            }
+        }
+
         File.WriteAllText(@"Outputs\jit\emit\ID_OPS.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
@@ -3116,15 +3752,9 @@ namespace RyuJitSharp;
 
 public enum ID_OPS
 {
-#if TARGET_ARM
-{{armOperandKinds}}#elif TARGET_ARM64
-{{arm64OperandKinds}}#elif TARGET_WASM
-{{wasmOperandKinds}}#elif TARGET_LOONGARCH64
-{{loongArchOperandKinds}}#elif TARGET_RISCV64
-{{riscvOperandKinds}}#else
-{{xarchOperandKinds}}#endif
-}
+{{unionOperandKindsBuilder}}}
 """);
+
         GenerateNativeEnum(formatInput, "IS_INFO", @"Outputs\jit\emit\IS_INFO.generated.cs", isFlags: true);
         GenerateNativeEnum(@"Inputs\instr.h", "insUpdateModes",
             @"Outputs\jit\instr\insUpdateModes.generated.cs", isFlags: false);
@@ -3143,33 +3773,72 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM64
-    private static ReadOnlySpan<insFormat> s_instructionFormats => [
+    private static ReadOnlySpan<insFormat> s_instructionFormats_ARM64 => [
 {{arm64InstructionFormats}}
     ];
-#endif
 }
 """);
 
-        _ = Directory.CreateDirectory(@"Outputs\jit\emitarm");
-        File.WriteAllText(@"Outputs\jit\emitarm\Emitter.InstructionFormats.generated.cs", $$"""
+    }
+
+    private static string GetInstructionFormatIdentifier(string target, string name)
+    {
+        var formatName = name.StartsWith("IF_", StringComparison.Ordinal) ? name[3..] : name;
+        if (!s_instructionFormatIdentifiers.TryGetValue(target, out var identifiers)
+            || !identifiers.TryGetValue(formatName, out var identifier))
+        {
+            throw new InvalidDataException($"Instruction format '{name}' is not defined for target '{target}'.");
+        }
+
+        return identifier;
+    }
+
+    private static void GenerateArm64FrameFormatAliases(string[] inputs)
+    {
+        string[] names = [
+            "NONE", "LARGEJMP", "LARGEADR", "LARGELDC", "DI_1B", "DI_1D", "DR_2C", "DR_2E",
+            "DR_2G", "DR_4A", "SN_0A", "SVE_BB_2A", "SVE_BC_1A", "SVE_EB_1A", "SVE_JH_2A",
+        ];
+        var remaining = new HashSet<string>(names, StringComparer.Ordinal);
+        var aliases = new StringBuilder();
+        foreach (var input in inputs)
+        {
+            var lines = ReadInstructionFormatLines(input);
+            if (lines.Any(line => line.TrimStart().StartsWith('#', StringComparison.Ordinal)))
+            {
+                throw new InvalidDataException($"Conditional ARM64 format ordinals in '{input}' require explicit alias handling.");
+            }
+
+            _ = ProcessMacroBasedFile(input, lines, ["IF_DEF("], (builder, inputFile, line, prefix, parts) =>
+            {
+                var name = parts[0].Trim();
+                if (remaining.Remove(name))
+                {
+                    _ = aliases.AppendLine(CultureInfo.InvariantCulture,
+                        $"        internal const insFormat IF_{name} = insFormat.{GetInstructionFormatIdentifier("ARM64", name)};");
+                }
+            });
+        }
+
+        if (remaining.Count != 0)
+        {
+            throw new InvalidDataException($"Missing ARM64 frame formats: {string.Join(", ", remaining)}.");
+        }
+
+        File.WriteAllText(@"Outputs\jit\emit\Emitter.Arm64FrameFormats.generated.cs", $$"""
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 //
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-using System;
-using static RyuJitSharp.Emitter.insFormat;
-
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM
-    private static ReadOnlySpan<insFormat> s_instructionFormats => [
-{{armInstructionFormats}}
-    ];
-#endif
+    internal static class Arm64FrameFormats
+    {
+{{aliases}}        internal const uint Count = (uint)insFormat.IF_ARM64_COUNT;
+    }
 }
 """);
     }
@@ -3177,6 +3846,11 @@ public partial class Emitter
     private static void GenerateInstructionOpcodes()
     {
         var macros = new Dictionary<string, (string[] Parameters, string Body)>(StringComparer.Ordinal);
+        var x86DefinedSymbols = new HashSet<string>(
+            ["TARGET_XARCH", "TARGET_X86", "TARGET_32BIT", "FEATURE_SIMD"], StringComparer.Ordinal);
+        var x64DefinedSymbols = new HashSet<string>(
+            ["TARGET_XARCH", "TARGET_AMD64", "TARGET_64BIT", "FEATURE_SIMD"], StringComparer.Ordinal);
+
         foreach (var line in File.ReadLines(@"Inputs\instrsxarch.h"))
         {
             var match = Regex.Match(line, @"^#define\s+(\w+)\(([^)]*)\)\s+(.+)$");
@@ -3188,16 +3862,16 @@ public partial class Emitter
         }
 
         var tables = new StringBuilder();
-        (string Name, int MinimumArity, int Column, bool NativeWidth)[] layouts = [
-            ("insCodes", 0, 3, false),
-            ("insCodesACC", 4, 6, false),
-            ("insCodesRR", 5, 7, false),
-            ("insCodesRM", 3, 5, true),
-            ("insCodesMI", 2, 4, true),
-            ("insCodesMR", 1, 3, false),
+        (string Name, int MinimumArity, int Column)[] layouts = [
+            ("insCodes", 0, 3),
+            ("insCodesACC", 4, 6),
+            ("insCodesRR", 5, 7),
+            ("insCodesRM", 3, 5),
+            ("insCodesMI", 2, 4),
+            ("insCodesMR", 1, 3),
         ];
 
-        foreach (var (name, minimumArity, column, nativeWidth) in layouts)
+        foreach (var (name, minimumArity, column) in layouts)
         {
             var entries = ProcessInstrs((builder, inputFile, line, prefix, parts) =>
             {
@@ -3218,23 +3892,33 @@ public partial class Emitter
                 if (arity >= minimumArity)
                 {
                     var opcode = ExpandOpcode(arguments[column], macros);
-                    var expression = $"unchecked(({(nativeWidth ? "OpcodeNative" : "uint")})({opcode}))";
+                    var expression = $"unchecked((ulong)({opcode}))";
                     _ = builder.AppendLine(CultureInfo.InvariantCulture,
                         $"        {expression}, // INS_{arguments[0]}");
                 }
             });
 
-            if (nativeWidth)
-            {
-                _ = tables.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<OpcodeNative> {name} => [");
-            }
-            else
-            {
-                _ = tables.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<uint> {name} => [");
-            }
+            var x86Entries = GetActivePreprocessorLines(entries.ToString(), x86DefinedSymbols);
+            var x64Entries = GetActivePreprocessorLines(entries.ToString(), x64DefinedSymbols);
 
-            _ = tables.Append(entries);
+            _ = tables.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<ulong> {name}X86 => [");
+            _ = tables.Append(x86Entries);
             _ = tables.AppendLine("    ];");
+            _ = tables.AppendLine();
+
+            _ = tables.AppendLine(CultureInfo.InvariantCulture, $"    private static ReadOnlySpan<ulong> {name}X64 => [");
+            _ = tables.Append(x64Entries);
+            _ = tables.AppendLine("    ];");
+            _ = tables.AppendLine();
+
+            _ = tables.AppendLine(CultureInfo.InvariantCulture,
+                $"    private static ReadOnlySpan<ulong> {name} =>");
+            _ = tables.AppendLine(CultureInfo.InvariantCulture,
+                $"        Configuration.TARGET_X86 ? {name}X86 :");
+            _ = tables.AppendLine(CultureInfo.InvariantCulture,
+                $"        Configuration.TARGET_AMD64 ? {name}X64 :");
+            _ = tables.AppendLine(
+                "        throw new FatalJitException(\"xarch opcode table is not available for this target.\");");
             _ = tables.AppendLine();
         }
 
@@ -3246,18 +3930,12 @@ public partial class Emitter
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if TARGET_AMD64
-using OpcodeNative = System.UInt64;
-#else
-using OpcodeNative = System.UInt32;
-#endif
 
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if TARGET_XARCH
-{{tables}}#endif
+{{tables}}
 }
 """);
 
@@ -3269,7 +3947,9 @@ public static partial class Globals
 
     private static void GenerateRiscVInstructionOpcodes()
     {
-        var opcodes = ProcessMacroBasedFile(@"Inputs\instrsriscv64.h", "INST(", (builder, inputFile, line, prefix, parts) =>
+        // Treat the native target symbol as defined so its include guard is not emitted into the universal table.
+        ReadOnlySpan<string> prefixes = ["INST(", "TARGET_RISCV64("];
+        var opcodes = ProcessMacroBasedFile(@"Inputs\instrsriscv64.h", prefixes, (builder, inputFile, line, prefix, parts) =>
         {
             var arguments = SplitOpcodeArguments(line);
             if (arguments.Length != 4)
@@ -3300,10 +3980,8 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_RISCV64
-    private static ReadOnlySpan<uint> insCodes => [
+    private static ReadOnlySpan<uint> insCodesRiscV64 => [
 {{opcodes}}    ];
-#endif
 }
 """);
     }
@@ -3326,7 +4004,7 @@ public partial class Emitter
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture,
                 $"        unchecked((uint)({code})), // INS_{arguments[0].Trim()}");
-        });
+        }, includeAllConditionalBranches: true);
         var masks = ProcessMacroBasedFile(@"Inputs\instrsloongarch64.h", "INST(", (builder, inputFile, line, prefix, parts) =>
         {
             var arguments = SplitOpcodeArguments(line);
@@ -3337,7 +4015,7 @@ public partial class Emitter
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture,
                 $"        unchecked((uint)({arguments[4].Trim()})), // INS_{arguments[0].Trim()}");
-        });
+        }, includeAllConditionalBranches: true);
         var formats = ProcessMacroBasedFile(@"Inputs\instrsloongarch64.h", "INST(", (builder, inputFile, line, prefix, parts) =>
         {
             var arguments = SplitOpcodeArguments(line);
@@ -3348,7 +4026,7 @@ public partial class Emitter
 
             _ = builder.AppendLine(CultureInfo.InvariantCulture,
                 $"        insDisasmFmt.{arguments[5].Trim()}, // INS_{arguments[0].Trim()}");
-        });
+        }, includeAllConditionalBranches: true);
 
         _ = Directory.CreateDirectory(@"Outputs\jit\emitloongarch64");
         File.WriteAllText(@"Outputs\jit\emitloongarch64\Emitter.InstructionOpcodes.generated.cs", $$"""
@@ -3363,16 +4041,14 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_LOONGARCH64
-    private static ReadOnlySpan<uint> insCodes => [
+    private static ReadOnlySpan<uint> insCodesLoongArch64 => [
 {{codes}}    ];
 
-    private static ReadOnlySpan<uint> insMasks => [
+    private static ReadOnlySpan<uint> insMasksLoongArch64 => [
 {{masks}}    ];
 
-    private static ReadOnlySpan<insDisasmFmt> insDisasmFormats => [
+    private static ReadOnlySpan<insDisasmFmt> insDisasmFormatsLoongArch64 => [
 {{formats}}    ];
-#endif
 }
 """);
     }
@@ -3410,7 +4086,7 @@ public partial class Emitter
             _ = prefixes.AppendLine(CultureInfo.InvariantCulture,
                 $"        unchecked((byte)({prefix})), // {name}");
             _ = formats.AppendLine(CultureInfo.InvariantCulture,
-                $"        insFormat.{format}, // {name}");
+                $"        insFormat.{GetInstructionFormatIdentifier("WASM", format)}, // {name}");
         }
 
         _ = Directory.CreateDirectory(@"Outputs\jit\emitwasm");
@@ -3426,7 +4102,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_WASM
     private static ReadOnlySpan<uint> s_wasmOpcodes => [
 {{opcodes}}    ];
 
@@ -3436,7 +4111,6 @@ public partial class Emitter
     private static ReadOnlySpan<insFormat> s_wasmInstructionFormats => [
 {{formats}}    ];
 
-#endif
 }
 
 """);
@@ -3448,6 +4122,7 @@ public partial class Emitter
         ReadOnlySpan<string> prefixes = [
             "INST1(", "INST2(", "INST3(", "INST4(", "INST5(", "INST6(", "INST9(",
         ];
+        var definedSymbols = new HashSet<string>(["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT"], StringComparer.Ordinal);
         var tables = new StringBuilder();
 
         for (var encoding = 1; encoding <= 9; encoding++)
@@ -3478,10 +4153,11 @@ public partial class Emitter
                         $"        unchecked((uint)({opcode})), // INS_{arguments[0]}");
                 }
             });
+            var activeEntries = GetActivePreprocessorLines(entries.ToString(), definedSymbols);
 
             _ = tables.AppendLine(CultureInfo.InvariantCulture,
-                $"    private static ReadOnlySpan<uint> ordinaryInsCodes{encoding} => [");
-            _ = tables.Append(entries);
+                $"    private static ReadOnlySpan<uint> ordinaryInsCodes{encoding}_ARM64 => [");
+            _ = tables.Append(activeEntries);
             _ = tables.AppendLine("    ];");
             _ = tables.AppendLine();
         }
@@ -3499,8 +4175,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM64
-{{tables}}#endif
+{{tables}}
 }
 """);
     }
@@ -3511,6 +4186,7 @@ public partial class Emitter
         ReadOnlySpan<string> prefixes = [
             "INST1(", "INST2(", "INST3(", "INST4(", "INST5(", "INST6(", "INST8(", "INST9(",
         ];
+        var definedSymbols = new HashSet<string>(["TARGET_ARM", "TARGET_ARMARCH", "TARGET_32BIT"], StringComparer.Ordinal);
         var tables = new StringBuilder();
 
         for (var encoding = 1; encoding <= 9; encoding++)
@@ -3541,10 +4217,11 @@ public partial class Emitter
                         $"        unchecked((uint)({opcode})), // INS_{arguments[0]}");
                 }
             });
+            var activeEntries = GetActivePreprocessorLines(entries.ToString(), definedSymbols);
 
             _ = tables.AppendLine(CultureInfo.InvariantCulture,
-                $"    private static ReadOnlySpan<uint> ordinaryInsCodes{encoding} => [");
-            _ = tables.Append(entries);
+                $"    private static ReadOnlySpan<uint> ordinaryInsCodes{encoding}_ARM => [");
+            _ = tables.Append(activeEntries);
             _ = tables.AppendLine("    ];");
             _ = tables.AppendLine();
         }
@@ -3562,8 +4239,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM
-{{tables}}#endif
+{{tables}}
 }
 """);
     }
@@ -3575,6 +4251,7 @@ public partial class Emitter
             "INST1(", "INST2(", "INST3(", "INST4(", "INST5(", "INST6(",
             "INST7(", "INST8(", "INST9(", "INST11(", "INST13(",
         ];
+        var definedSymbols = new HashSet<string>(["TARGET_ARM64", "TARGET_ARMARCH", "TARGET_64BIT"], StringComparer.Ordinal);
         var tables = new StringBuilder();
 
         for (var encoding = 1; encoding <= 13; encoding++)
@@ -3605,10 +4282,11 @@ public partial class Emitter
                         $"        unchecked((uint)({opcode})), // INS_sve_{arguments[0]}");
                 }
             });
+            var activeEntries = GetActivePreprocessorLines(entries.ToString(), definedSymbols);
 
             _ = tables.AppendLine(CultureInfo.InvariantCulture,
-                $"    private static ReadOnlySpan<uint> insCodes{encoding} => [");
-            _ = tables.Append(entries);
+                $"    private static ReadOnlySpan<uint> insCodes{encoding}_ARM64 => [");
+            _ = tables.Append(activeEntries);
             _ = tables.AppendLine("    ];");
             _ = tables.AppendLine();
         }
@@ -3626,8 +4304,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM64
-{{tables}}#endif
+{{tables}}
 }
 """);
     }
@@ -3905,6 +4582,13 @@ namespace RyuJitSharp;
         EmitIfdefWhereRequired(initializeBuilder, FLAG_NONE, lastFlags);
         lastFlags = FLAG_NONE;
 
+        fieldBuilder = RewriteJitConfigConditionalCompilation(fieldBuilder, includeAllTargetBranches: true,
+            declarationKind: JitConfigDeclarationKind.Field);
+        propertyBuilder = RewriteJitConfigConditionalCompilation(propertyBuilder, includeAllTargetBranches: true,
+            declarationKind: JitConfigDeclarationKind.Property);
+        destroyBuilder = RewriteJitConfigConditionalCompilation(destroyBuilder, includeAllTargetBranches: false);
+        initializeBuilder = RewriteJitConfigConditionalCompilation(initializeBuilder, includeAllTargetBranches: false);
+
         _ = Directory.CreateDirectory(@"Outputs\jit\jitconfig");
 
         File.WriteAllText(@"Outputs\jit\jitconfig\JitConfigValues.generated.cs", $$"""
@@ -4037,6 +4721,259 @@ public partial struct JitConfigValues
                  : (kind == FLAG_METHODSET) ? "MethodSet"
                  : throw new InvalidOperationException($"Unexpected kind: '{kind}'");
         }
+    }
+
+    private enum JitConfigDeclarationKind
+    {
+        None,
+        Field,
+        Property,
+    }
+
+    private readonly record struct JitConfigConditionalScope(
+        bool IsTargetCondition,
+        int GroupId,
+        int BranchIndex);
+
+    private static StringBuilder RewriteJitConfigConditionalCompilation(
+        StringBuilder input,
+        bool includeAllTargetBranches,
+        JitConfigDeclarationKind declarationKind = JitConfigDeclarationKind.None)
+    {
+        var output = new StringBuilder();
+        var conditionalScopes = new Stack<JitConfigConditionalScope>();
+        var declarations = new Dictionary<string, string>(StringComparer.Ordinal);
+        var runtimeDepth = 0;
+        var targetConditionalDepth = 0;
+        var nextConditionalGroupId = 0;
+
+        using var reader = new StringReader(input.ToString());
+        while (reader.ReadLine() is { } line)
+        {
+            var trimmedLine = line.AsSpan().Trim();
+            if (!trimmedLine.StartsWith('#'))
+            {
+                AppendLine(line);
+                continue;
+            }
+
+            var directive = trimmedLine[1..].TrimStart();
+            if (directive.StartsWith("if ", StringComparison.Ordinal))
+            {
+                var condition = directive[3..].Trim().ToString();
+                var isTargetCondition = IsJitConfigTargetCondition(condition);
+                conditionalScopes.Push(new JitConfigConditionalScope(
+                    isTargetCondition,
+                    nextConditionalGroupId++,
+                    BranchIndex: 0));
+                if (isTargetCondition)
+                {
+                    targetConditionalDepth++;
+                }
+
+                if (isTargetCondition && !includeAllTargetBranches)
+                {
+                    AppendRuntimeBranch("if", condition);
+                    runtimeDepth++;
+                }
+                else if (!isTargetCondition)
+                {
+                    AppendLine(line);
+                }
+                continue;
+            }
+
+            if (directive.StartsWith("elif ", StringComparison.Ordinal))
+            {
+                if (conditionalScopes.Count == 0)
+                {
+                    throw new InvalidDataException($"Unmatched JitConfigValues #elif directive: '{line}'");
+                }
+
+                if (conditionalScopes.Peek().IsTargetCondition && !includeAllTargetBranches)
+                {
+                    var condition = directive[5..].Trim().ToString();
+                    runtimeDepth--;
+                    AppendRuntimeBranch("else if", condition);
+                    runtimeDepth++;
+                }
+                else if (!conditionalScopes.Peek().IsTargetCondition)
+                {
+                    AppendLine(line);
+                    AdvanceConditionalArm();
+                }
+                continue;
+            }
+
+            if (directive.StartsWith("else", StringComparison.Ordinal))
+            {
+                if (conditionalScopes.Count == 0)
+                {
+                    throw new InvalidDataException($"Unmatched JitConfigValues #else directive: '{line}'");
+                }
+
+                if (conditionalScopes.Peek().IsTargetCondition && !includeAllTargetBranches)
+                {
+                    runtimeDepth--;
+                    AppendRuntimeBranch("else", condition: null);
+                    runtimeDepth++;
+                }
+                else if (!conditionalScopes.Peek().IsTargetCondition)
+                {
+                    AppendLine(line);
+                    AdvanceConditionalArm();
+                }
+                continue;
+            }
+
+            if (directive.StartsWith("endif", StringComparison.Ordinal))
+            {
+                if (conditionalScopes.Count == 0)
+                {
+                    throw new InvalidDataException($"Unmatched JitConfigValues #endif directive: '{line}'");
+                }
+
+                var isTargetCondition = conditionalScopes.Pop().IsTargetCondition;
+                if (isTargetCondition)
+                {
+                    targetConditionalDepth--;
+                }
+                if (isTargetCondition && !includeAllTargetBranches)
+                {
+                    runtimeDepth--;
+                    _ = output.AppendLine(CultureInfo.InvariantCulture,
+                        $"{new string(' ', 8 + (4 * runtimeDepth))}}}");
+                }
+                else if (!isTargetCondition)
+                {
+                    AppendLine(line);
+                }
+                continue;
+            }
+
+            AppendLine(line);
+        }
+
+        if (conditionalScopes.Count != 0)
+        {
+            throw new InvalidDataException("Unclosed JitConfigValues conditional directive.");
+        }
+
+        return output;
+
+        void AppendLine(string line)
+        {
+            if (declarationKind is not JitConfigDeclarationKind.None &&
+                (targetConditionalDepth > 0) &&
+                TryGetJitConfigDeclarationName(line, declarationKind, out var name))
+            {
+                var declaration = line.Trim();
+                var compileTimeBranchPath = string.Join(
+                    ",",
+                    conditionalScopes
+                        .Where(static scope => !scope.IsTargetCondition)
+                        .Reverse()
+                        .Select(static scope => $"{scope.GroupId}:{scope.BranchIndex}"));
+                var targetConditionalPath = string.Join(
+                    ",",
+                    conditionalScopes
+                        .Where(static scope => scope.IsTargetCondition)
+                        .Reverse()
+                        .Select(static scope => scope.GroupId));
+                var declarationKey = $"{name}\0{targetConditionalPath}\0{compileTimeBranchPath}";
+                if (declarations.TryGetValue(declarationKey, out var existingDeclaration))
+                {
+                    if (!existingDeclaration.Equals(declaration, StringComparison.Ordinal))
+                    {
+                        throw new InvalidDataException(
+                            $"Conflicting JitConfigValues {declarationKind} declarations for '{name}'.");
+                    }
+                    return;
+                }
+
+                declarations.Add(declarationKey, declaration);
+            }
+
+            if ((runtimeDepth > 0) && !string.IsNullOrWhiteSpace(line) &&
+                !line.AsSpan().TrimStart().StartsWith('#'))
+            {
+                _ = output.Append(' ', 4 * runtimeDepth);
+            }
+            _ = output.AppendLine(line);
+        }
+
+        void AppendRuntimeBranch(string branch, string? condition)
+        {
+            var indent = new string(' ', 8 + (4 * runtimeDepth));
+            if (branch is "if")
+            {
+                _ = output.Append(indent);
+                _ = output.Append("if (");
+                _ = output.Append(TranslateJitConfigCondition(condition
+                    ?? throw new InvalidDataException("A JitConfigValues runtime if requires a condition.")));
+                _ = output.AppendLine(")");
+            }
+            else if (branch is "else if")
+            {
+                _ = output.Append(indent);
+                _ = output.AppendLine("}");
+                _ = output.Append(indent);
+                _ = output.Append("else if (");
+                _ = output.Append(TranslateJitConfigCondition(condition
+                    ?? throw new InvalidDataException("A JitConfigValues runtime else-if requires a condition.")));
+                _ = output.AppendLine(")");
+            }
+            else
+            {
+                _ = output.Append(indent);
+                _ = output.AppendLine("}");
+                _ = output.Append(indent);
+                _ = output.AppendLine("else");
+            }
+
+            _ = output.Append(indent);
+            _ = output.AppendLine("{");
+        }
+
+        void AdvanceConditionalArm()
+        {
+            var scope = conditionalScopes.Pop();
+            conditionalScopes.Push(scope with { BranchIndex = scope.BranchIndex + 1 });
+        }
+    }
+
+    private static bool IsJitConfigTargetCondition(string condition)
+    {
+        return condition.Contains("TARGET_", StringComparison.Ordinal) ||
+               condition.Contains("FEATURE_", StringComparison.Ordinal);
+    }
+
+    private static string TranslateJitConfigCondition(string condition)
+    {
+        if (!IsJitConfigTargetCondition(condition))
+        {
+            throw new InvalidDataException(
+                $"JitConfigValues runtime branch lacks a target or feature condition: '{condition}'");
+        }
+
+        return Regex.Replace(condition, @"\b(TARGET|FEATURE)_[A-Za-z0-9_]+\b",
+            static match => $"Configuration.{match.Value}");
+    }
+
+    private static bool TryGetJitConfigDeclarationName(
+        string line,
+        JitConfigDeclarationKind declarationKind,
+        out string name)
+    {
+        var declarationPattern = declarationKind switch
+        {
+            JitConfigDeclarationKind.Field => @"^\s*private\s+.+\s(?<name>_[A-Za-z0-9_]+);$",
+            JitConfigDeclarationKind.Property => @"^\s*public\s+.+\s(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*=>",
+            _ => throw new ArgumentOutOfRangeException(nameof(declarationKind)),
+        };
+        var match = Regex.Match(line, declarationPattern, RegexOptions.CultureInvariant);
+        name = match.Success ? match.Groups["name"].Value : "";
+        return match.Success;
     }
 
     private static void GenerateJitMetadata()
@@ -4521,14 +5458,11 @@ namespace RyuJitSharp;
 
 public static partial class PhasesExtensions
 {
-#if FEATURE_JIT_METHOD_PERF || DUMP_FLOWGRAPHS
     private static string GetName(Phases phase) => phase switch
     {
 {{namesBuilder}}        _ => throw new FatalJitException("Invalid compiler phase."),
     };
-#endif
 
-#if FEATURE_JIT_METHOD_PERF
     private static ReadOnlySpan<bool> s_hasChildren => [
 {{hasChildrenBuilder}}    ];
 
@@ -4537,127 +5471,14 @@ public static partial class PhasesExtensions
 
     private static ReadOnlySpan<bool> s_reportsIRSize => [
 {{reportsIRSizeBuilder}}    ];
-#endif
 }
 """);
     }
 
     private static void GenerateRegMask()
     {
-        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 2 and not 4 and not 5)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            if (name.SequenceEqual("STK"))
-            {
-                return;
-            }
-
-            if (parts.Length is 2)
-            {
-                var realName = parts[1].AsSpan().Trim();
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    SRBM_{name} = SRBM_{realName},");
-            }
-            else
-            {
-                var mask = parts[2].AsSpan().Trim();
-                _ = builder.Append(CultureInfo.InvariantCulture, $"    SRBM_{name} = ");
-
-                if (inputFile.Equals(@"Inputs\registerx86.h", StringComparison.Ordinal))
-                {
-                    if (mask.StartsWith("XMMMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1 << ({mask[8..^1]} + XMMBASE)");
-                    }
-                    else if (mask.StartsWith("KMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1 << ({mask[6..^1]} + KBASE)");
-                    }
-                    else
-                    {
-                        Debug.Assert(!mask.Contains('('));
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
-                    }
-                }
-                else if (inputFile.Equals(@"Inputs\registeramd64.h", StringComparison.Ordinal))
-                {
-                    if (mask.StartsWith("GPRMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[8..^1]}");
-                    }
-                    else if (mask.StartsWith("XMMMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[8..^1]} + XMMBASE)");
-                    }
-                    else if (mask.StartsWith("KMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[6..^1]}");
-                    }
-                    else
-                    {
-                        Debug.Assert(!mask.Contains('('));
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
-                    }
-                }
-                else if (inputFile.Equals(@"Inputs\registerarm.h", StringComparison.Ordinal))
-                {
-                    if (mask.StartsWith("VFPMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[8..^1]} + FPBASE)");
-                    }
-                    else
-                    {
-                        Debug.Assert(!mask.Contains('('));
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
-                    }
-                }
-                else if (inputFile.Equals(@"Inputs\registerarm64.h", StringComparison.Ordinal))
-                {
-                    if (mask.StartsWith("VMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[6..^1]} + VBASE)");
-                    }
-                    else if (mask.StartsWith("RMASK(", StringComparison.Ordinal) ||
-                             mask.StartsWith("PMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[6..^1]}");
-                    }
-                    else
-                    {
-                        Debug.Assert(!mask.Contains('('));
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
-                    }
-                }
-                else if (inputFile.Equals(@"Inputs\registerloongarch64.h", StringComparison.Ordinal) ||
-                         inputFile.Equals(@"Inputs\registerriscv64.h", StringComparison.Ordinal))
-                {
-                    if (mask.StartsWith("FMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << ({mask[6..^1]} + FBASE)");
-                    }
-                    else if (mask.StartsWith("RMASK(", StringComparison.Ordinal))
-                    {
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"1L << {mask[6..^1]}");
-                    }
-                    else
-                    {
-                        Debug.Assert(!mask.Contains('('));
-                        _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
-                    }
-                }
-                else
-                {
-                    Debug.Assert(inputFile.Equals(@"Inputs\registerwasm.h", StringComparison.Ordinal));
-                    Debug.Assert(!mask.Contains('('));
-                    _ = builder.Append(CultureInfo.InvariantCulture, $"{mask}");
-                }
-                _ = builder.AppendLine(",");
-            }
-        }, includeRegAlias: true);
         var targetQualifiedBuilder = ProcessTargetQualifiedRegisterMasks();
+        var aliasesBuilder = ProcessTargetRegisterAliases("regMask", "SRBM_", skipStackRegister: true);
 
         _ = Directory.CreateDirectory(@"Outputs\jit\target");
 
@@ -4677,7 +5498,20 @@ public enum regMask : long
     // REG_STK has no register mask on any supported target.
     SRBM_STK = 0,
 {{targetQualifiedBuilder}}
-{{builder}}}
+}
+""");
+
+        File.WriteAllText(@"Outputs\jit\target\Globals.RegMaskAliases.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public static partial class Globals
+{
+{{aliasesBuilder}}}
 """);
     }
 
@@ -4736,6 +5570,63 @@ public enum regMask : long
         }
 
         return builder;
+    }
+
+    private static StringBuilder ProcessTargetRegisterAliases(string valueType, string prefix, bool skipStackRegister)
+    {
+        var aliases = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        var prefixes = new[] { "REGDEF(", "REGALIAS(" };
+
+        foreach (var (target, identity, inputFile) in s_registerTargetHeaders)
+        {
+            _ = ProcessMacroBasedFileUnion(inputFile, prefixes, (_, _, line, _, parts) => {
+                if (parts.Length is not 2 and not 4 and not 5)
+                {
+                    throw new InvalidDataException($"Invalid line format: '{line}'");
+                }
+
+                var name = parts[0].AsSpan().Trim().ToString();
+                if (skipStackRegister && name.Equals("STK", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                if (!aliases.TryGetValue(name, out var targetValues))
+                {
+                    targetValues = [];
+                    aliases.Add(name, targetValues);
+                }
+
+                targetValues.Add(target, $"{valueType}.{prefix}{identity}_{name}");
+            });
+        }
+
+        var builder = new StringBuilder();
+        foreach (var (name, targetValues) in aliases.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+        {
+            AppendTargetRegisterAlias(builder, valueType, $"{prefix}{name}", targetValues);
+        }
+
+        return builder;
+    }
+
+    private static void AppendTargetRegisterAlias(
+        StringBuilder builder, string valueType, string memberName, Dictionary<string, string> targetValues)
+    {
+        _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    public static {valueType} {memberName} =>");
+
+        foreach (var (target, _, _) in s_registerTargetHeaders)
+        {
+            if (targetValues.TryGetValue(target, out var targetValue))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture,
+                    $"        Configuration.TARGET_{target} ? {targetValue} :");
+            }
+        }
+
+        _ = builder.AppendLine(CultureInfo.InvariantCulture,
+            $"        UnsupportedTargetValue<{valueType}>(nameof({memberName}));");
+        _ = builder.AppendLine();
     }
 
     private static long ParseRegisterMask(
@@ -4799,30 +5690,25 @@ public enum regMask : long
     private static void GenerateRegNumber()
     {
         var targetQualifiedBuilder = ProcessTargetQualifiedRegisterNumbers();
+        var aliasesBuilder = ProcessTargetRegisterAliases("regNumber", "REG_", skipStackRegister: false);
 
-        var builder = ProcessRegister((builder, inputFile, line, prefix, parts) => {
-            if (parts.Length is not 2 and not 4 and not 5)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
+        var countValues = s_registerTargetHeaders.ToDictionary(
+            header => header.Target,
+            header => $"regNumber.REG_{header.Identity}_COUNT",
+            StringComparer.Ordinal);
+        AppendTargetRegisterAlias(aliasesBuilder, "regNumber", "REG_COUNT", countValues);
 
-            var name = parts[0].AsSpan().Trim();
-            if (name.SequenceEqual("FFR"))
-            {
-                return;
-            }
+        var notAvailableValues = s_registerTargetHeaders.ToDictionary(
+            header => header.Target,
+            header => $"regNumber.REG_{header.Identity}_NA",
+            StringComparer.Ordinal);
+        AppendTargetRegisterAlias(aliasesBuilder, "regNumber", "REG_NA", notAvailableValues);
 
-            if (parts.Length is 2)
-            {
-                var realName = parts[1].AsSpan().Trim();
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_{name} = REG_{realName},");
-            }
-            else
-            {
-                var rnum = parts[1].AsSpan().Trim();
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"    REG_{name} = {rnum},");
-            }
-        }, includeRegAlias: true);
+        var actualCountValues = s_registerTargetHeaders.ToDictionary(
+            header => header.Target,
+            header => $"regNumber.ACTUAL_REG_{header.Identity}_COUNT",
+            StringComparer.Ordinal);
+        AppendTargetRegisterAlias(aliasesBuilder, "regNumber", "ACTUAL_REG_COUNT", actualCountValues);
 
         _ = Directory.CreateDirectory(@"Outputs\jit\target");
 
@@ -4840,16 +5726,20 @@ public enum regNumber : uint
 {
     // Target-qualified identities preserve each target's native register ordinals.
 {{targetQualifiedBuilder}}
-{{builder}}    REG_COUNT,
-
-    REG_NA = REG_COUNT,
-
-    // everything but REG_STK (only real regs)
-    ACTUAL_REG_COUNT = REG_COUNT - 1,
-
-    // registerarm64.h defines FFR as 1 + NBASE (80); keep the alias after the count sentinels.
-    REG_FFR = 81,
 }
+""");
+
+        File.WriteAllText(@"Outputs\jit\target\Globals.RegNumberAliases.generated.cs", $$"""
+// Copyright © Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+//
+// Based on the RyuJIT compiler from dotnet/runtime.
+// Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
+
+namespace RyuJitSharp;
+
+public static partial class Globals
+{
+{{aliasesBuilder}}}
 """);
     }
 
@@ -5459,79 +6349,16 @@ public enum var_types : byte
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {actualType}, // TYP_{name}");
         });
 
-        var genTypeSizesBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 13)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            var size = parts[3].AsSpan().Trim();
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {size}, // TYP_{name}");
-        });
-
-        var emitTypeSizesBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 13)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            var size = parts[4].AsSpan().Trim();
-
-            if (int.TryParse(size, out _))
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        (emitAttr)({size}), // TYP_{name}");
-            }
-            else
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {size}, // TYP_{name}");
-            }
-        });
-
-        var emitTypeActSzBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 13)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            var actualSize = parts[5].AsSpan().Trim();
-
-            if (int.TryParse(actualSize, out _))
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        (emitAttr)({actualSize}), // TYP_{name}");
-            }
-            else
-            {
-                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {actualSize}, // TYP_{name}");
-            }
-        });
-
-        var genTypeStSzsBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 13)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            var stSz = parts[6].AsSpan().Trim();
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {stSz}, // TYP_{name}");
-        });
-
-        var genTypeAlignmentsBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 13)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            var alignment = parts[7].AsSpan().Trim();
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {alignment}, // TYP_{name}");
-        });
+        var genTypeSizesBuilder32 = GenerateVarTypeTableField(3, target64Bit: false);
+        var genTypeSizesBuilder64 = GenerateVarTypeTableField(3, target64Bit: true);
+        var emitTypeSizesBuilder32 = GenerateVarTypeTableField(4, target64Bit: false, emitAttr: true);
+        var emitTypeSizesBuilder64 = GenerateVarTypeTableField(4, target64Bit: true, emitAttr: true);
+        var emitTypeActSzBuilder32 = GenerateVarTypeTableField(5, target64Bit: false, emitAttr: true);
+        var emitTypeActSzBuilder64 = GenerateVarTypeTableField(5, target64Bit: true, emitAttr: true);
+        var genTypeStSzsBuilder32 = GenerateVarTypeTableField(6, target64Bit: false);
+        var genTypeStSzsBuilder64 = GenerateVarTypeTableField(6, target64Bit: true);
+        var genTypeAlignmentsBuilder32 = GenerateVarTypeTableField(7, target64Bit: false);
+        var genTypeAlignmentsBuilder64 = GenerateVarTypeTableField(7, target64Bit: true);
 
         var varTypeRegisterBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
             if (parts.Length != 13)
@@ -5545,17 +6372,8 @@ public enum var_types : byte
             _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {register}, // TYP_{name}");
         });
 
-        var varTypeClassificationBuilder = ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
-            if (parts.Length != 13)
-            {
-                throw new InvalidDataException($"Invalid line format: '{line}'");
-            }
-
-            var name = parts[0].AsSpan().Trim();
-            var classification = parts[12].AsSpan().Trim();
-
-            _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {classification}, // TYP_{name}");
-        });
+        var varTypeClassificationBuilder32 = GenerateVarTypeTableField(12, target64Bit: false);
+        var varTypeClassificationBuilder64 = GenerateVarTypeTableField(12, target64Bit: true);
 
         _ = Directory.CreateDirectory(@"Outputs\jit\vartypesdef");
 
@@ -5574,17 +6392,42 @@ public static partial class var_typesExtensions
     private static ReadOnlySpan<var_types> s_actualTypes => [
 {{genActualTypesBuilder}}    ];
 
-    private static ReadOnlySpan<byte> s_alignments => [
-{{genTypeAlignmentsBuilder}}    ];
+    // Keep each target's table literal constant so the spans can use RVA-backed data.
+    private static ReadOnlySpan<byte> s_alignments =>
+        Configuration.TARGET_64BIT ? s_alignments64 : s_alignments32;
 
-    private static ReadOnlySpan<var_types_classification> s_classifications => [
-{{varTypeClassificationBuilder}}    ];
+    private static ReadOnlySpan<byte> s_alignments32 => [
+{{genTypeAlignmentsBuilder32}}    ];
 
-    private static ReadOnlySpan<emitAttr> s_emitActualSizes => [
-{{emitTypeActSzBuilder}}    ];
+    private static ReadOnlySpan<byte> s_alignments64 => [
+{{genTypeAlignmentsBuilder64}}    ];
 
-    private static ReadOnlySpan<emitAttr> s_emitSizes => [
-{{emitTypeSizesBuilder}}    ];
+    private static ReadOnlySpan<var_types_classification> s_classifications =>
+        Configuration.TARGET_64BIT ? s_classifications64 : s_classifications32;
+
+    private static ReadOnlySpan<var_types_classification> s_classifications32 => [
+{{varTypeClassificationBuilder32}}    ];
+
+    private static ReadOnlySpan<var_types_classification> s_classifications64 => [
+{{varTypeClassificationBuilder64}}    ];
+
+    private static ReadOnlySpan<emitAttr> s_emitActualSizes =>
+        Configuration.TARGET_64BIT ? s_emitActualSizes64 : s_emitActualSizes32;
+
+    private static ReadOnlySpan<emitAttr> s_emitActualSizes32 => [
+{{emitTypeActSzBuilder32}}    ];
+
+    private static ReadOnlySpan<emitAttr> s_emitActualSizes64 => [
+{{emitTypeActSzBuilder64}}    ];
+
+    private static ReadOnlySpan<emitAttr> s_emitSizes =>
+        Configuration.TARGET_64BIT ? s_emitSizes64 : s_emitSizes32;
+
+    private static ReadOnlySpan<emitAttr> s_emitSizes32 => [
+{{emitTypeSizesBuilder32}}    ];
+
+    private static ReadOnlySpan<emitAttr> s_emitSizes64 => [
+{{emitTypeSizesBuilder64}}    ];
 
 #if DEBUG
     private static readonly string[] s_names = [
@@ -5594,13 +6437,62 @@ public static partial class var_typesExtensions
     private static ReadOnlySpan<var_types_register> s_registers => [
 {{varTypeRegisterBuilder}}    ];
 
-    private static ReadOnlySpan<byte> s_sizes => [
-{{genTypeSizesBuilder}}    ];
+    private static ReadOnlySpan<byte> s_sizes =>
+        Configuration.TARGET_64BIT ? s_sizes64 : s_sizes32;
 
-    private static ReadOnlySpan<byte> s_stSzs => [
-{{genTypeStSzsBuilder}}    ];
+    private static ReadOnlySpan<byte> s_sizes32 => [
+{{genTypeSizesBuilder32}}    ];
+
+    private static ReadOnlySpan<byte> s_sizes64 => [
+{{genTypeSizesBuilder64}}    ];
+
+    private static ReadOnlySpan<byte> s_stSzs =>
+        Configuration.TARGET_64BIT ? s_stSzs64 : s_stSzs32;
+
+    private static ReadOnlySpan<byte> s_stSzs32 => [
+{{genTypeStSzsBuilder32}}    ];
+
+    private static ReadOnlySpan<byte> s_stSzs64 => [
+{{genTypeStSzsBuilder64}}    ];
 }
 """);
+    }
+
+    private static StringBuilder GenerateVarTypeTableField(int fieldIndex, bool target64Bit, bool emitAttr = false)
+    {
+        // Resolve target-width macros before emitting the span literals.
+        return ProcessMacroBasedFile(@"Inputs\typelist.h", "DEF_TP(", (builder, inputFile, line, prefix, parts) => {
+            if (parts.Length != 13)
+            {
+                throw new InvalidDataException($"Invalid line format: '{line}'");
+            }
+
+            var name = parts[0].AsSpan().Trim();
+            var value = GetVarTypeTableValue(parts[fieldIndex].AsSpan().Trim().ToString(), target64Bit);
+
+            if (emitAttr && int.TryParse(value, out _))
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        (emitAttr)({value}), // TYP_{name}");
+            }
+            else
+            {
+                _ = builder.AppendLine(CultureInfo.InvariantCulture, $"        {value}, // TYP_{name}");
+            }
+        });
+    }
+
+    private static string GetVarTypeTableValue(string value, bool target64Bit)
+    {
+        return value switch {
+            "PS" => target64Bit ? "8" : "4",
+            "PST" => target64Bit ? "2" : "1",
+            "EPS" => target64Bit ? "EA_8BYTE" : "EA_4BYTE",
+            "GCS" => target64Bit ? "EA_GCREF_FLG | EA_8BYTE" : "EA_GCREF_FLG | EA_4BYTE",
+            "BRS" => target64Bit ? "EA_BYREF_FLG | EA_8BYTE" : "EA_BYREF_FLG | EA_4BYTE",
+            _ => value
+                .Replace("VTF_I32", target64Bit ? "VTF_ANY" : "VTF_I", StringComparison.Ordinal)
+                .Replace("VTF_I64", target64Bit ? "VTF_I" : "VTF_ANY", StringComparison.Ordinal),
+        };
     }
 
     private static void GenerateVNFunc()
@@ -5744,7 +6636,7 @@ public enum VNFunc
             for (var tableIndex = 0; tableIndex < HWIntrinsicInfo.GetNativeTableEntryCount(); tableIndex++)
             {
                 var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
-                var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START - 1);
+                var func = VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1);
                 var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
                 ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
                     HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);
@@ -6711,6 +7603,17 @@ public partial class Globals
 
     private static StringBuilder ProcessMacroBasedFile(string inputFile, string prefix, Action<StringBuilder, string, string, string, string[]> callback)
         => ProcessMacroBasedFile(inputFile, [prefix], callback);
+
+    private static StringBuilder ProcessMacroBasedFile(
+        string inputFile,
+        string prefix,
+        Action<StringBuilder, string, string, string, string[]> callback,
+        bool includeAllConditionalBranches)
+    {
+        var lines = File.ReadAllLines(inputFile);
+        return ProcessMacroBasedFile(inputFile, lines, [prefix], callback,
+            includeAllConditionalBranches: includeAllConditionalBranches);
+    }
 
     private static StringBuilder ProcessMacroBasedFile(string inputFile, ReadOnlySpan<string> prefixes, Action<StringBuilder, string, string, string, string[]> callback)
     {

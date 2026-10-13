@@ -12,6 +12,18 @@
     <None Include="Inputs\*.*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="..\Core\inc\corjit\ICorJitInfo.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>Core\inc\corjit\ICorJitInfo.cs</TargetPath>
+    </None>
+    <None Include="..\Core\inc\corinfo\ICorDynamicInfo.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>Core\inc\corinfo\ICorDynamicInfo.cs</TargetPath>
+    </None>
+    <None Include="..\Core\inc\corinfo\ICorStaticInfo.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>Core\inc\corinfo\ICorStaticInfo.cs</TargetPath>
+    </None>
   </ItemGroup>
 
 </Project>

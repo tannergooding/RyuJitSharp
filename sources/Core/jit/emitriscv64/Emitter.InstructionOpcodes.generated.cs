@@ -9,11 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_RISCV64
-    private static ReadOnlySpan<uint> insCodes => [
-#if !TARGET_RISCV64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodesRiscV64 => [
         unchecked((uint)(Globals.BAD_CODE)), // INS_invalid
         unchecked((uint)(0x00000013)), // INS_nop
         unchecked((uint)(0x00000013)), // INS_mov
@@ -228,5 +224,4 @@ public partial class Emitter
         unchecked((uint)(0x00009c21)), // INS_c_addw
         unchecked((uint)(0x00009c01)), // INS_c_subw
     ];
-#endif
 }

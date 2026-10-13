@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_XARCH
     private void compInitVarTypeCalleeTrashRegMasks()
     {
         varTypeCalleeTrashRegMasks[(int)(TYP_UNDEF)] = SRBM_INT_CALLEE_TRASH;
@@ -34,7 +33,6 @@ public partial class Compiler
         varTypeCalleeTrashRegMasks[(int)(TYP_MASK)] = SRBM_MSK_CALLEE_TRASH;
         varTypeCalleeTrashRegMasks[(int)(TYP_UNKNOWN)] = SRBM_INT_CALLEE_TRASH;
     }
-#endif
 
     private void gtDispIconHandleFlag(GenTreeIntCon intCon)
     {

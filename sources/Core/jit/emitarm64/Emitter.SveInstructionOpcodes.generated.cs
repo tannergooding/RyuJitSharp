@@ -9,11 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM64
-    private static ReadOnlySpan<uint> insCodes1 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes1_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x04603000)), // INS_sve_mov
         unchecked((uint)(0xE5404000)), // INS_sve_st1w
@@ -622,10 +618,7 @@ public partial class Emitter
         unchecked((uint)(0xE4202000)), // INS_sve_st1q
     ];
 
-    private static ReadOnlySpan<uint> insCodes2 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes2_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x05C00000)), // INS_sve_mov
         unchecked((uint)(0xE5004000)), // INS_sve_st1w
@@ -870,10 +863,7 @@ public partial class Emitter
         unchecked((uint)(0xE4E00000)), // INS_sve_st4q
     ];
 
-    private static ReadOnlySpan<uint> insCodes3 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes3_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x05100000)), // INS_sve_mov
         unchecked((uint)(0xE540A000)), // INS_sve_st1w
@@ -993,10 +983,7 @@ public partial class Emitter
         unchecked((uint)(0xE590E000)), // INS_sve_stnt1d
     ];
 
-    private static ReadOnlySpan<uint> insCodes4 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes4_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x05104000)), // INS_sve_mov
         unchecked((uint)(0xE5608000)), // INS_sve_st1w
@@ -1053,10 +1040,7 @@ public partial class Emitter
         unchecked((uint)(0xE510E000)), // INS_sve_stnt1w
     ];
 
-    private static ReadOnlySpan<uint> insCodes5 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes5_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x05202000)), // INS_sve_mov
         unchecked((uint)(0xE5208000)), // INS_sve_st1w
@@ -1092,10 +1076,7 @@ public partial class Emitter
         unchecked((uint)(0xA4006000)), // INS_sve_ldff1b
     ];
 
-    private static ReadOnlySpan<uint> insCodes6 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes6_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x05203800)), // INS_sve_mov
         unchecked((uint)(0xE5008000)), // INS_sve_st1w
@@ -1123,10 +1104,7 @@ public partial class Emitter
         unchecked((uint)(0xE400E000)), // INS_sve_st1b
     ];
 
-    private static ReadOnlySpan<uint> insCodes7 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes7_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x05208000)), // INS_sve_mov
         unchecked((uint)(0xE5408000)), // INS_sve_st1w
@@ -1143,10 +1121,7 @@ public partial class Emitter
         unchecked((uint)(0xC5208000)), // INS_sve_ld1sw
     ];
 
-    private static ReadOnlySpan<uint> insCodes8 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes8_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x0528A000)), // INS_sve_mov
         unchecked((uint)(0xE520A000)), // INS_sve_st1w
@@ -1162,10 +1137,7 @@ public partial class Emitter
         unchecked((uint)(0xA4806000)), // INS_sve_ldff1h
     ];
 
-    private static ReadOnlySpan<uint> insCodes9 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes9_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x0520C000)), // INS_sve_mov
         unchecked((uint)(0xE500A000)), // INS_sve_st1w
@@ -1177,39 +1149,27 @@ public partial class Emitter
         unchecked((uint)(0xE5C0E000)), // INS_sve_st1d
     ];
 
-    private static ReadOnlySpan<uint> insCodes10 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes10_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x25004000)), // INS_sve_mov
         unchecked((uint)(0xE540E000)), // INS_sve_st1w
     ];
 
-    private static ReadOnlySpan<uint> insCodes11 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes11_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x25004210)), // INS_sve_mov
         unchecked((uint)(0xE500E000)), // INS_sve_st1w
     ];
 
-    private static ReadOnlySpan<uint> insCodes12 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes12_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x25804000)), // INS_sve_mov
     ];
 
-    private static ReadOnlySpan<uint> insCodes13 => [
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodes13_ARM64 => [
         unchecked((uint)(BAD_CODE)), // INS_sve_invalid
         unchecked((uint)(0x2538C000)), // INS_sve_mov
     ];
 
-#endif
+
 }

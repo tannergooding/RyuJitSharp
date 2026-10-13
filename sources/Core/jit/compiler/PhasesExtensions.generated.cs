@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public static partial class PhasesExtensions
 {
-#if FEATURE_JIT_METHOD_PERF || DUMP_FLOWGRAPHS
     private static string GetName(Phases phase) => phase switch
     {
         Phases.PHASE_PRE_IMPORT => "Pre-import",
@@ -144,9 +143,7 @@ public static partial class PhasesExtensions
 #endif
         _ => throw new FatalJitException("Invalid compiler phase."),
     };
-#endif
 
-#if FEATURE_JIT_METHOD_PERF
     private static ReadOnlySpan<bool> s_hasChildren => [
         false, // PHASE_PRE_IMPORT
         false, // PHASE_IMPORTATION
@@ -545,5 +542,4 @@ public static partial class PhasesExtensions
         false, // PHASE_CLR_API
 #endif
     ];
-#endif
 }

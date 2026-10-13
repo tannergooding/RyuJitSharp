@@ -9,11 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM
-    private static ReadOnlySpan<uint> ordinaryInsCodes1 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes1_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0x4400)), // INS_add
         unchecked((uint)(BAD_CODE)), // INS_sub
@@ -33,9 +29,6 @@ public partial class Emitter
         unchecked((uint)(0x41C0)), // INS_ror
         unchecked((uint)(0xF890F000)), // INS_pld
         unchecked((uint)(0xF8B0F000)), // INS_pldw
-#if FEATURE_PLI_INSTRUCTION
-        unchecked((uint)(0xF990F000)), // INS_pli
-#endif
         unchecked((uint)(0xF2C00000)), // INS_movt
         unchecked((uint)(0xF2400000)), // INS_movw
         unchecked((uint)(0x4000)), // INS_and
@@ -116,23 +109,6 @@ public partial class Emitter
         unchecked((uint)(0xFBE00000)), // INS_umlal
         unchecked((uint)(0xFBA00000)), // INS_umull
         unchecked((uint)(0xF3800000)), // INS_usat
-#if FEATURE_ITINSTRUCTION
-        unchecked((uint)(0xBF08)), // INS_it
-        unchecked((uint)(0xBF04)), // INS_itt
-        unchecked((uint)(0xBF0C)), // INS_ite
-        unchecked((uint)(0xBF02)), // INS_ittt
-        unchecked((uint)(0xBF06)), // INS_itte
-        unchecked((uint)(0xBF0A)), // INS_itet
-        unchecked((uint)(0xBF0E)), // INS_itee
-        unchecked((uint)(0xBF01)), // INS_itttt
-        unchecked((uint)(0xBF01)), // INS_ittte
-        unchecked((uint)(0xBF01)), // INS_ittet
-        unchecked((uint)(0xBF01)), // INS_ittee
-        unchecked((uint)(0xBF01)), // INS_itett
-        unchecked((uint)(0xBF01)), // INS_itete
-        unchecked((uint)(0xBF01)), // INS_iteet
-        unchecked((uint)(0xBF01)), // INS_iteee
-#endif
         unchecked((uint)(0xED000A00)), // INS_vstr
         unchecked((uint)(0xED100A00)), // INS_vldr
         unchecked((uint)(0xEC800A00)), // INS_vstm
@@ -166,10 +142,7 @@ public partial class Emitter
         unchecked((uint)(0xEE100A10)), // INS_vmov_f2i
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes2 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes2_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0x1800)), // INS_add
         unchecked((uint)(0x1A00)), // INS_sub
@@ -189,9 +162,6 @@ public partial class Emitter
         unchecked((uint)(BAD_CODE)), // INS_ror
         unchecked((uint)(0xF810FC00)), // INS_pld
         unchecked((uint)(0xF830FC00)), // INS_pldw
-#if FEATURE_PLI_INSTRUCTION
-        unchecked((uint)(0xF910FC00)), // INS_pli
-#endif
         unchecked((uint)(0xF2C00000)), // INS_movt
         unchecked((uint)(0xF2400000)), // INS_movw
         unchecked((uint)(0xEA000000)), // INS_and
@@ -233,14 +203,9 @@ public partial class Emitter
         unchecked((uint)(0xFA1FF080)), // INS_uxth
         unchecked((uint)(0xFB00F000)), // INS_mul
         unchecked((uint)(0xF20F0000)), // INS_adr
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes3 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes3_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0x3000)), // INS_add
         unchecked((uint)(0x3800)), // INS_sub
@@ -260,9 +225,6 @@ public partial class Emitter
         unchecked((uint)(0xFA60F000)), // INS_ror
         unchecked((uint)(0xF810F000)), // INS_pld
         unchecked((uint)(0xF830F000)), // INS_pldw
-#if FEATURE_PLI_INSTRUCTION
-        unchecked((uint)(0xF910F000)), // INS_pli
-#endif
         unchecked((uint)(0xF2C00000)), // INS_movt
         unchecked((uint)(0xF2400000)), // INS_movw
         unchecked((uint)(0xF0000000)), // INS_and
@@ -280,14 +242,9 @@ public partial class Emitter
         unchecked((uint)(0xE92D0000)), // INS_push
         unchecked((uint)(0xE8BD0000)), // INS_pop
         unchecked((uint)(0xF0009000)), // INS_b
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes4 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes4_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0x1C00)), // INS_add
         unchecked((uint)(0x1E00)), // INS_sub
@@ -307,19 +264,11 @@ public partial class Emitter
         unchecked((uint)(0xEA4F0030)), // INS_ror
         unchecked((uint)(0xF81FF000)), // INS_pld
         unchecked((uint)(BAD_CODE)), // INS_pldw
-#if FEATURE_PLI_INSTRUCTION
-        unchecked((uint)(0xF91FF000)), // INS_pli
-#endif
         unchecked((uint)(0xF2C00000)), // INS_movt
         unchecked((uint)(0xF2400000)), // INS_movw
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes5 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes5_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0xF1000000)), // INS_add
         unchecked((uint)(0xF1A00000)), // INS_sub
@@ -333,16 +282,9 @@ public partial class Emitter
         unchecked((uint)(0xF9B00000)), // INS_ldrsh
         unchecked((uint)(0xEA5F0000)), // INS_mov
         unchecked((uint)(0xEBB00F00)), // INS_cmp
-#if FEATURE_PLI_INSTRUCTION
-#endif
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes6 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes6_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0xEB000000)), // INS_add
         unchecked((uint)(0xEBA00000)), // INS_sub
@@ -354,52 +296,27 @@ public partial class Emitter
         unchecked((uint)(BAD_CODE)), // INS_strh
         unchecked((uint)(0xF91F0000)), // INS_ldrsb
         unchecked((uint)(0xF93F0000)), // INS_ldrsh
-#if FEATURE_PLI_INSTRUCTION
-#endif
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes7 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes7_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0xB000)), // INS_add
         unchecked((uint)(0xB080)), // INS_sub
         unchecked((uint)(0x9800)), // INS_ldr
-#if FEATURE_PLI_INSTRUCTION
-#endif
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes8 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes8_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0xA800)), // INS_add
         unchecked((uint)(BAD_CODE)), // INS_sub
         unchecked((uint)(0x4800)), // INS_ldr
-#if FEATURE_PLI_INSTRUCTION
-#endif
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-    private static ReadOnlySpan<uint> ordinaryInsCodes9 => [
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> ordinaryInsCodes9_ARM => [
         unchecked((uint)(BAD_CODE)), // INS_invalid
         unchecked((uint)(0xA000)), // INS_add
         unchecked((uint)(BAD_CODE)), // INS_sub
-#if FEATURE_PLI_INSTRUCTION
-#endif
-#if FEATURE_ITINSTRUCTION
-#endif
     ];
 
-#endif
+
 }

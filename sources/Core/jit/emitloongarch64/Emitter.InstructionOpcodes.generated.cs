@@ -9,11 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_LOONGARCH64
-    private static ReadOnlySpan<uint> insCodes => [
-#if !TARGET_LOONGARCH64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insCodesLoongArch64 => [
         unchecked((uint)(Globals.BAD_CODE)), // INS_invalid
         unchecked((uint)(0x03400000)), // INS_nop
         unchecked((uint)(0x48000000)), // INS_bceqz
@@ -388,7 +384,6 @@ public partial class Emitter
         unchecked((uint)(0x2b800000)), // INS_fld_d
         unchecked((uint)(0x2b400000)), // INS_fst_s
         unchecked((uint)(0x2bc00000)), // INS_fst_d
-#if FEATURE_SIMD
         unchecked((uint)(0x09100000)), // INS_vfmadd_s
         unchecked((uint)(0x09200000)), // INS_vfmadd_d
         unchecked((uint)(0x09500000)), // INS_vfmsub_s
@@ -1839,13 +1834,9 @@ public partial class Emitter
         unchecked((uint)(0x769cb400)), // INS_xvsetallnez_h
         unchecked((uint)(0x769cb800)), // INS_xvsetallnez_w
         unchecked((uint)(0x769cbc00)), // INS_xvsetallnez_d
-#endif
     ];
 
-    private static ReadOnlySpan<uint> insMasks => [
-#if !TARGET_LOONGARCH64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<uint> insMasksLoongArch64 => [
         unchecked((uint)(0)), // INS_invalid
         unchecked((uint)(0xffffffff)), // INS_nop
         unchecked((uint)(0xfc000300)), // INS_bceqz
@@ -2220,7 +2211,6 @@ public partial class Emitter
         unchecked((uint)(0xffc00000)), // INS_fld_d
         unchecked((uint)(0xffc00000)), // INS_fst_s
         unchecked((uint)(0xffc00000)), // INS_fst_d
-#if FEATURE_SIMD
         unchecked((uint)(0xfff00000)), // INS_vfmadd_s
         unchecked((uint)(0xfff00000)), // INS_vfmadd_d
         unchecked((uint)(0xfff00000)), // INS_vfmsub_s
@@ -3671,13 +3661,9 @@ public partial class Emitter
         unchecked((uint)(0xfffffc18)), // INS_xvsetallnez_h
         unchecked((uint)(0xfffffc18)), // INS_xvsetallnez_w
         unchecked((uint)(0xfffffc18)), // INS_xvsetallnez_d
-#endif
     ];
 
-    private static ReadOnlySpan<insDisasmFmt> insDisasmFormats => [
-#if !TARGET_LOONGARCH64
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<insDisasmFmt> insDisasmFormatsLoongArch64 => [
         insDisasmFmt.DF_G_INVALID, // INS_invalid
         insDisasmFmt.DF_G_ALIAS, // INS_nop
         insDisasmFmt.DF_F_B1, // INS_bceqz
@@ -4052,7 +4038,6 @@ public partial class Emitter
         insDisasmFmt.DF_F_RG12I, // INS_fld_d
         insDisasmFmt.DF_F_RG12I, // INS_fst_s
         insDisasmFmt.DF_F_RG12I, // INS_fst_d
-#if FEATURE_SIMD
         insDisasmFmt.DF_S_4R, // INS_vfmadd_s
         insDisasmFmt.DF_S_4R, // INS_vfmadd_d
         insDisasmFmt.DF_S_4R, // INS_vfmsub_s
@@ -5503,7 +5488,5 @@ public partial class Emitter
         insDisasmFmt.DF_A_CR, // INS_xvsetallnez_h
         insDisasmFmt.DF_A_CR, // INS_xvsetallnez_w
         insDisasmFmt.DF_A_CR, // INS_xvsetallnez_d
-#endif
     ];
-#endif
 }

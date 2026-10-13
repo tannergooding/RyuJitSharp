@@ -74,9 +74,7 @@ public partial struct JitConfigValues
     private int _jitLongAddress;
     private int _jitMaxUncheckedOffset;
 #endif
-#if TARGET_ARM64
     private int _jitPacEnabled;
-#endif
     private int _jitEnableGenericVirtualDevirtualization;
 #if DEBUG
     private int _jitMinOpts;
@@ -207,17 +205,10 @@ public partial struct JitConfigValues
     private int _jitStressPromotedEvexEncoding;
 #endif
 #endif
-#if TARGET_AMD64 || TARGET_X86
 #if DEBUG
     private int _jitStressEvexEncoding;
 #endif
-#endif
-#if TARGET_LOONGARCH64
     private int _enableHWIntrinsic;
-#else
-    private int _enableHWIntrinsic;
-#endif
-#if TARGET_AMD64 || TARGET_X86
     private int _enableAVX;
     private int _enableAVX2;
     private int _enableAVX512;
@@ -237,7 +228,6 @@ public partial struct JitConfigValues
     private int _enableVAES;
     private int _enableWAITPKG;
     private int _enableX86Serialize;
-#elif TARGET_ARM64
     private int _enableArm64Aes;
     private int _enableArm64Atomics;
     private int _enableArm64Crc32;
@@ -255,12 +245,10 @@ public partial struct JitConfigValues
     private int _enableArm64SveAes;
     private int _enableArm64SveSha3;
     private int _enableArm64SveSm4;
-#elif TARGET_RISCV64
     private int _enableRiscV64Zba;
     private int _enableRiscV64Zbb;
     private int _enableRiscV64Zbs;
     private int _enableRiscV64Zicond;
-#endif
     private int _enableEmbeddedBroadcast;
     private int _enableEmbeddedMasking;
     private int _enableApxNDD;
@@ -268,9 +256,7 @@ public partial struct JitConfigValues
     private int _enableApxPPHint;
     private int _enableApxPP2;
     private int _enableApxZU;
-#if FEATURE_SIMD
     private int _jitDisableSimdVN;
-#endif
     private int _jitConstCSE;
     private int _jitRLCSEGreedy;
     private int _jitRLCSEVerbose;
@@ -468,25 +454,19 @@ public partial struct JitConfigValues
     private MethodSet _jitRawHexCode;
     private unsafe byte* _jitRawHexCodeFile;
 #endif
-#if TARGET_ARM64
 #if DEBUG
     private int _jitSaveFpLrWithCalleeSavedRegisters;
-#endif
 #endif
 #if DEBUG
     private int _jitUseScalableVectorT;
 #endif
-#if TARGET_LOONGARCH64
 #if DEBUG
     private int _jitDispIns;
 #endif
-#endif
-#if TARGET_WASM
 #if DEBUG
     private unsafe byte* _jitR2RUnsupportedRange;
 #endif
     private int _jitWasmFunclets;
-#endif
     private int _jitEnregStructLocals;
 
 #if DEBUG
@@ -553,9 +533,7 @@ public partial struct JitConfigValues
     public int JitLongAddress => _jitLongAddress;
     public int JitMaxUncheckedOffset => _jitMaxUncheckedOffset;
 #endif
-#if TARGET_ARM64
     public int JitPacEnabled => _jitPacEnabled;
-#endif
     public int JitEnableGenericVirtualDevirtualization => _jitEnableGenericVirtualDevirtualization;
 #if DEBUG
     public int JitMinOpts => _jitMinOpts;
@@ -686,17 +664,10 @@ public partial struct JitConfigValues
     public int JitStressPromotedEvexEncoding => _jitStressPromotedEvexEncoding;
 #endif
 #endif
-#if TARGET_AMD64 || TARGET_X86
 #if DEBUG
     public int JitStressEvexEncoding => _jitStressEvexEncoding;
 #endif
-#endif
-#if TARGET_LOONGARCH64
     public int EnableHWIntrinsic => _enableHWIntrinsic;
-#else
-    public int EnableHWIntrinsic => _enableHWIntrinsic;
-#endif
-#if TARGET_AMD64 || TARGET_X86
     public int EnableAVX => _enableAVX;
     public int EnableAVX2 => _enableAVX2;
     public int EnableAVX512 => _enableAVX512;
@@ -716,7 +687,6 @@ public partial struct JitConfigValues
     public int EnableVAES => _enableVAES;
     public int EnableWAITPKG => _enableWAITPKG;
     public int EnableX86Serialize => _enableX86Serialize;
-#elif TARGET_ARM64
     public int EnableArm64Aes => _enableArm64Aes;
     public int EnableArm64Atomics => _enableArm64Atomics;
     public int EnableArm64Crc32 => _enableArm64Crc32;
@@ -734,12 +704,10 @@ public partial struct JitConfigValues
     public int EnableArm64SveAes => _enableArm64SveAes;
     public int EnableArm64SveSha3 => _enableArm64SveSha3;
     public int EnableArm64SveSm4 => _enableArm64SveSm4;
-#elif TARGET_RISCV64
     public int EnableRiscV64Zba => _enableRiscV64Zba;
     public int EnableRiscV64Zbb => _enableRiscV64Zbb;
     public int EnableRiscV64Zbs => _enableRiscV64Zbs;
     public int EnableRiscV64Zicond => _enableRiscV64Zicond;
-#endif
     public int EnableEmbeddedBroadcast => _enableEmbeddedBroadcast;
     public int EnableEmbeddedMasking => _enableEmbeddedMasking;
     public int EnableApxNDD => _enableApxNDD;
@@ -747,9 +715,7 @@ public partial struct JitConfigValues
     public int EnableApxPPHint => _enableApxPPHint;
     public int EnableApxPP2 => _enableApxPP2;
     public int EnableApxZU => _enableApxZU;
-#if FEATURE_SIMD
     public int JitDisableSimdVN => _jitDisableSimdVN;
-#endif
     public int JitConstCSE => _jitConstCSE;
     public int JitRLCSEGreedy => _jitRLCSEGreedy;
     public int JitRLCSEVerbose => _jitRLCSEVerbose;
@@ -947,25 +913,19 @@ public partial struct JitConfigValues
     public MethodSet JitRawHexCode => _jitRawHexCode;
     public unsafe byte* JitRawHexCodeFile => _jitRawHexCodeFile;
 #endif
-#if TARGET_ARM64
 #if DEBUG
     public int JitSaveFpLrWithCalleeSavedRegisters => _jitSaveFpLrWithCalleeSavedRegisters;
-#endif
 #endif
 #if DEBUG
     public int JitUseScalableVectorT => _jitUseScalableVectorT;
 #endif
-#if TARGET_LOONGARCH64
 #if DEBUG
     public int JitDispIns => _jitDispIns;
 #endif
-#endif
-#if TARGET_WASM
 #if DEBUG
     public unsafe byte* JitR2RUnsupportedRange => _jitR2RUnsupportedRange;
 #endif
     public int JitWasmFunclets => _jitWasmFunclets;
-#endif
     public int JitEnregStructLocals => _jitEnregStructLocals;
 
     public unsafe void destroy(ICorJitHost* jitHost)
@@ -1039,9 +999,10 @@ public partial struct JitConfigValues
         // _jitLongAddress = unchecked((int)(0xCDCDCDCD));
         // _jitMaxUncheckedOffset = unchecked((int)(0xCDCDCDCD));
 #endif
-#if TARGET_ARM64
-        // _jitPacEnabled = unchecked((int)(0xCDCDCDCD));
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            // _jitPacEnabled = unchecked((int)(0xCDCDCDCD));
+        }
         // _jitEnableGenericVirtualDevirtualization = unchecked((int)(0xCDCDCDCD));
 #if DEBUG
         // _jitMinOpts = unchecked((int)(0xCDCDCDCD));
@@ -1172,60 +1133,69 @@ public partial struct JitConfigValues
         // _jitStressPromotedEvexEncoding = unchecked((int)(0xCDCDCDCD));
 #endif
 #endif
-#if TARGET_AMD64 || TARGET_X86
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_X86)
+        {
 #if DEBUG
-        // _jitStressEvexEncoding = unchecked((int)(0xCDCDCDCD));
+            // _jitStressEvexEncoding = unchecked((int)(0xCDCDCDCD));
 #endif
-#endif
-#if TARGET_LOONGARCH64
-        // _enableHWIntrinsic = unchecked((int)(0xCDCDCDCD));
-#else
-        // _enableHWIntrinsic = unchecked((int)(0xCDCDCDCD));
-#endif
-#if TARGET_AMD64 || TARGET_X86
-        // _enableAVX = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX2 = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX512 = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX512BMM = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX512v2 = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX512v3 = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX10v1 = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX10v2 = unchecked((int)(0xCDCDCDCD));
-        // _enableAPX = unchecked((int)(0xCDCDCDCD));
-        // _enableAES = unchecked((int)(0xCDCDCDCD));
-        // _enableAVX512VP2INTERSECT = unchecked((int)(0xCDCDCDCD));
-        // _enableAVXIFMA = unchecked((int)(0xCDCDCDCD));
-        // _enableAVXVNNI = unchecked((int)(0xCDCDCDCD));
-        // _enableAVXVNNIINT = unchecked((int)(0xCDCDCDCD));
-        // _enableGFNI = unchecked((int)(0xCDCDCDCD));
-        // _enableSHA = unchecked((int)(0xCDCDCDCD));
-        // _enableVAES = unchecked((int)(0xCDCDCDCD));
-        // _enableWAITPKG = unchecked((int)(0xCDCDCDCD));
-        // _enableX86Serialize = unchecked((int)(0xCDCDCDCD));
-#elif TARGET_ARM64
-        // _enableArm64Aes = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Atomics = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Crc32 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Cssc = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Dczva = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Dp = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Fp16 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Rdm = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Sha1 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Sha256 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Sve = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Sve2 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Sha3 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64Sm4 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64SveAes = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64SveSha3 = unchecked((int)(0xCDCDCDCD));
-        // _enableArm64SveSm4 = unchecked((int)(0xCDCDCDCD));
-#elif TARGET_RISCV64
-        // _enableRiscV64Zba = unchecked((int)(0xCDCDCDCD));
-        // _enableRiscV64Zbb = unchecked((int)(0xCDCDCDCD));
-        // _enableRiscV64Zbs = unchecked((int)(0xCDCDCDCD));
-        // _enableRiscV64Zicond = unchecked((int)(0xCDCDCDCD));
-#endif
+        }
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            // _enableHWIntrinsic = unchecked((int)(0xCDCDCDCD));
+        }
+        else
+        {
+            // _enableHWIntrinsic = unchecked((int)(0xCDCDCDCD));
+        }
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_X86)
+        {
+            // _enableAVX = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX2 = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX512 = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX512BMM = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX512v2 = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX512v3 = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX10v1 = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX10v2 = unchecked((int)(0xCDCDCDCD));
+            // _enableAPX = unchecked((int)(0xCDCDCDCD));
+            // _enableAES = unchecked((int)(0xCDCDCDCD));
+            // _enableAVX512VP2INTERSECT = unchecked((int)(0xCDCDCDCD));
+            // _enableAVXIFMA = unchecked((int)(0xCDCDCDCD));
+            // _enableAVXVNNI = unchecked((int)(0xCDCDCDCD));
+            // _enableAVXVNNIINT = unchecked((int)(0xCDCDCDCD));
+            // _enableGFNI = unchecked((int)(0xCDCDCDCD));
+            // _enableSHA = unchecked((int)(0xCDCDCDCD));
+            // _enableVAES = unchecked((int)(0xCDCDCDCD));
+            // _enableWAITPKG = unchecked((int)(0xCDCDCDCD));
+            // _enableX86Serialize = unchecked((int)(0xCDCDCDCD));
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            // _enableArm64Aes = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Atomics = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Crc32 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Cssc = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Dczva = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Dp = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Fp16 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Rdm = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Sha1 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Sha256 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Sve = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Sve2 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Sha3 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64Sm4 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64SveAes = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64SveSha3 = unchecked((int)(0xCDCDCDCD));
+            // _enableArm64SveSm4 = unchecked((int)(0xCDCDCDCD));
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            // _enableRiscV64Zba = unchecked((int)(0xCDCDCDCD));
+            // _enableRiscV64Zbb = unchecked((int)(0xCDCDCDCD));
+            // _enableRiscV64Zbs = unchecked((int)(0xCDCDCDCD));
+            // _enableRiscV64Zicond = unchecked((int)(0xCDCDCDCD));
+        }
         // _enableEmbeddedBroadcast = unchecked((int)(0xCDCDCDCD));
         // _enableEmbeddedMasking = unchecked((int)(0xCDCDCDCD));
         // _enableApxNDD = unchecked((int)(0xCDCDCDCD));
@@ -1233,9 +1203,10 @@ public partial struct JitConfigValues
         // _enableApxPPHint = unchecked((int)(0xCDCDCDCD));
         // _enableApxPP2 = unchecked((int)(0xCDCDCDCD));
         // _enableApxZU = unchecked((int)(0xCDCDCDCD));
-#if FEATURE_SIMD
-        // _jitDisableSimdVN = unchecked((int)(0xCDCDCDCD));
-#endif
+        if (Configuration.FEATURE_SIMD)
+        {
+            // _jitDisableSimdVN = unchecked((int)(0xCDCDCDCD));
+        }
         // _jitConstCSE = unchecked((int)(0xCDCDCDCD));
         // _jitRLCSEGreedy = unchecked((int)(0xCDCDCDCD));
         // _jitRLCSEVerbose = unchecked((int)(0xCDCDCDCD));
@@ -1433,25 +1404,28 @@ public partial struct JitConfigValues
         _jitRawHexCode.destroy(jitHost);
         jitHost->freeStringConfigValue(_jitRawHexCodeFile);
 #endif
-#if TARGET_ARM64
+        if (Configuration.TARGET_ARM64)
+        {
 #if DEBUG
-        // _jitSaveFpLrWithCalleeSavedRegisters = unchecked((int)(0xCDCDCDCD));
+            // _jitSaveFpLrWithCalleeSavedRegisters = unchecked((int)(0xCDCDCDCD));
 #endif
-#endif
+        }
 #if DEBUG
         // _jitUseScalableVectorT = unchecked((int)(0xCDCDCDCD));
 #endif
-#if TARGET_LOONGARCH64
+        if (Configuration.TARGET_LOONGARCH64)
+        {
 #if DEBUG
-        // _jitDispIns = unchecked((int)(0xCDCDCDCD));
+            // _jitDispIns = unchecked((int)(0xCDCDCDCD));
 #endif
-#endif
-#if TARGET_WASM
+        }
+        if (Configuration.TARGET_WASM)
+        {
 #if DEBUG
-        jitHost->freeStringConfigValue(_jitR2RUnsupportedRange);
+            jitHost->freeStringConfigValue(_jitR2RUnsupportedRange);
 #endif
-        // _jitWasmFunclets = unchecked((int)(0xCDCDCDCD));
-#endif
+            // _jitWasmFunclets = unchecked((int)(0xCDCDCDCD));
+        }
         // _jitEnregStructLocals = unchecked((int)(0xCDCDCDCD));
         _isInitialized = false;
     }
@@ -1524,9 +1498,10 @@ public partial struct JitConfigValues
         _jitLongAddress = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitLongAddress"u8))), 0);
         _jitMaxUncheckedOffset = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitMaxUncheckedOffset"u8))), 8);
 #endif
-#if TARGET_ARM64
-        _jitPacEnabled = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitPacEnabled"u8))), 0);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            _jitPacEnabled = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitPacEnabled"u8))), 0);
+        }
         _jitEnableGenericVirtualDevirtualization = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnableGenericVirtualDevirtualization"u8))), 1);
 #if DEBUG
         _jitMinOpts = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JITMinOpts"u8))), 0);
@@ -1685,60 +1660,69 @@ public partial struct JitConfigValues
         _jitStressPromotedEvexEncoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressPromotedEvexEncoding"u8))), 0);
 #endif
 #endif
-#if TARGET_AMD64 || TARGET_X86
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_X86)
+        {
 #if DEBUG
-        _jitStressEvexEncoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressEvexEncoding"u8))), 0);
+            _jitStressEvexEncoding = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitStressEvexEncoding"u8))), 0);
 #endif
-#endif
-#if TARGET_LOONGARCH64
-        _enableHWIntrinsic = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableHWIntrinsic"u8))), 0);
-#else
-        _enableHWIntrinsic = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableHWIntrinsic"u8))), 1);
-#endif
-#if TARGET_AMD64 || TARGET_X86
-        _enableAVX = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX"u8))), 1);
-        _enableAVX2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX2"u8))), 1);
-        _enableAVX512 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512"u8))), 1);
-        _enableAVX512BMM = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512BMM"u8))), 1);
-        _enableAVX512v2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512v2"u8))), 1);
-        _enableAVX512v3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512v3"u8))), 1);
-        _enableAVX10v1 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX10v1"u8))), 1);
-        _enableAVX10v2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX10v2"u8))), 0);
-        _enableAPX = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAPX"u8))), 0);
-        _enableAES = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAES"u8))), 1);
-        _enableAVX512VP2INTERSECT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512VP2INTERSECT"u8))), 1);
-        _enableAVXIFMA = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXIFMA"u8))), 1);
-        _enableAVXVNNI = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXVNNI"u8))), 1);
-        _enableAVXVNNIINT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXVNNIINT"u8))), 1);
-        _enableGFNI = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableGFNI"u8))), 1);
-        _enableSHA = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableSHA"u8))), 1);
-        _enableVAES = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableVAES"u8))), 1);
-        _enableWAITPKG = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableWAITPKG"u8))), 1);
-        _enableX86Serialize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableX86Serialize"u8))), 1);
-#elif TARGET_ARM64
-        _enableArm64Aes = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Aes"u8))), 1);
-        _enableArm64Atomics = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Atomics"u8))), 1);
-        _enableArm64Crc32 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Crc32"u8))), 1);
-        _enableArm64Cssc = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Cssc"u8))), 1);
-        _enableArm64Dczva = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Dczva"u8))), 1);
-        _enableArm64Dp = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Dp"u8))), 1);
-        _enableArm64Fp16 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Fp16"u8))), 1);
-        _enableArm64Rdm = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Rdm"u8))), 1);
-        _enableArm64Sha1 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha1"u8))), 1);
-        _enableArm64Sha256 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha256"u8))), 1);
-        _enableArm64Sve = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sve"u8))), 1);
-        _enableArm64Sve2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sve2"u8))), 1);
-        _enableArm64Sha3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha3"u8))), 1);
-        _enableArm64Sm4 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sm4"u8))), 1);
-        _enableArm64SveAes = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveAes"u8))), 1);
-        _enableArm64SveSha3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveSha3"u8))), 1);
-        _enableArm64SveSm4 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveSm4"u8))), 1);
-#elif TARGET_RISCV64
-        _enableRiscV64Zba = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zba"u8))), 1);
-        _enableRiscV64Zbb = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zbb"u8))), 1);
-        _enableRiscV64Zbs = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zbs"u8))), 1);
-        _enableRiscV64Zicond = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zicond"u8))), 1);
-#endif
+        }
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            _enableHWIntrinsic = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableHWIntrinsic"u8))), 0);
+        }
+        else
+        {
+            _enableHWIntrinsic = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableHWIntrinsic"u8))), 1);
+        }
+        if (Configuration.TARGET_AMD64 || Configuration.TARGET_X86)
+        {
+            _enableAVX = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX"u8))), 1);
+            _enableAVX2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX2"u8))), 1);
+            _enableAVX512 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512"u8))), 1);
+            _enableAVX512BMM = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512BMM"u8))), 1);
+            _enableAVX512v2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512v2"u8))), 1);
+            _enableAVX512v3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512v3"u8))), 1);
+            _enableAVX10v1 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX10v1"u8))), 1);
+            _enableAVX10v2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX10v2"u8))), 0);
+            _enableAPX = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAPX"u8))), 0);
+            _enableAES = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAES"u8))), 1);
+            _enableAVX512VP2INTERSECT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVX512VP2INTERSECT"u8))), 1);
+            _enableAVXIFMA = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXIFMA"u8))), 1);
+            _enableAVXVNNI = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXVNNI"u8))), 1);
+            _enableAVXVNNIINT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableAVXVNNIINT"u8))), 1);
+            _enableGFNI = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableGFNI"u8))), 1);
+            _enableSHA = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableSHA"u8))), 1);
+            _enableVAES = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableVAES"u8))), 1);
+            _enableWAITPKG = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableWAITPKG"u8))), 1);
+            _enableX86Serialize = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableX86Serialize"u8))), 1);
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            _enableArm64Aes = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Aes"u8))), 1);
+            _enableArm64Atomics = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Atomics"u8))), 1);
+            _enableArm64Crc32 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Crc32"u8))), 1);
+            _enableArm64Cssc = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Cssc"u8))), 1);
+            _enableArm64Dczva = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Dczva"u8))), 1);
+            _enableArm64Dp = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Dp"u8))), 1);
+            _enableArm64Fp16 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Fp16"u8))), 1);
+            _enableArm64Rdm = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Rdm"u8))), 1);
+            _enableArm64Sha1 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha1"u8))), 1);
+            _enableArm64Sha256 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha256"u8))), 1);
+            _enableArm64Sve = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sve"u8))), 1);
+            _enableArm64Sve2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sve2"u8))), 1);
+            _enableArm64Sha3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sha3"u8))), 1);
+            _enableArm64Sm4 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64Sm4"u8))), 1);
+            _enableArm64SveAes = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveAes"u8))), 1);
+            _enableArm64SveSha3 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveSha3"u8))), 1);
+            _enableArm64SveSm4 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableArm64SveSm4"u8))), 1);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            _enableRiscV64Zba = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zba"u8))), 1);
+            _enableRiscV64Zbb = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zbb"u8))), 1);
+            _enableRiscV64Zbs = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zbs"u8))), 1);
+            _enableRiscV64Zicond = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableRiscV64Zicond"u8))), 1);
+        }
         _enableEmbeddedBroadcast = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableEmbeddedBroadcast"u8))), 1);
         _enableEmbeddedMasking = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableEmbeddedMasking"u8))), 1);
         _enableApxNDD = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxNDD"u8))), 0);
@@ -1746,9 +1730,10 @@ public partial struct JitConfigValues
         _enableApxPPHint = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxPPHint"u8))), 0);
         _enableApxPP2 = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxPP2"u8))), 0);
         _enableApxZU = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("EnableApxZU"u8))), 0);
-#if FEATURE_SIMD
-        _jitDisableSimdVN = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisableSimdVN"u8))), 0);
-#endif
+        if (Configuration.FEATURE_SIMD)
+        {
+            _jitDisableSimdVN = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDisableSimdVN"u8))), 0);
+        }
         _jitConstCSE = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitConstCSE"u8))), CONST_CSE_ENABLE_ARM_RISCV64);
         _jitRLCSEGreedy = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRLCSEGreedy"u8))), 0);
         _jitRLCSEVerbose = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRLCSEVerbose"u8))), 0);
@@ -1950,25 +1935,28 @@ public partial struct JitConfigValues
         _jitRawHexCode = new MethodSet(jitRawHexCodeValue, jitHost);
         _jitRawHexCodeFile = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitRawHexCodeFile"u8))));
 #endif
-#if TARGET_ARM64
+        if (Configuration.TARGET_ARM64)
+        {
 #if DEBUG
-        _jitSaveFpLrWithCalleeSavedRegisters = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitSaveFpLrWithCalleeSavedRegisters"u8))), 0);
+            _jitSaveFpLrWithCalleeSavedRegisters = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitSaveFpLrWithCalleeSavedRegisters"u8))), 0);
 #endif
-#endif
+        }
 #if DEBUG
         _jitUseScalableVectorT = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitUseScalableVectorT"u8))), 0);
 #endif
-#if TARGET_LOONGARCH64
+        if (Configuration.TARGET_LOONGARCH64)
+        {
 #if DEBUG
-        _jitDispIns = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDispIns"u8))), 0);
+            _jitDispIns = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitDispIns"u8))), 0);
 #endif
-#endif
-#if TARGET_WASM
+        }
+        if (Configuration.TARGET_WASM)
+        {
 #if DEBUG
-        _jitR2RUnsupportedRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitR2RUnsupportedRange"u8))));
+            _jitR2RUnsupportedRange = jitHost->getStringConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitR2RUnsupportedRange"u8))));
 #endif
-        _jitWasmFunclets = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmFunclets"u8))), 1);
-#endif
+            _jitWasmFunclets = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitWasmFunclets"u8))), 1);
+        }
         _jitEnregStructLocals = jitHost->getIntConfigValue((byte*)(Unsafe.AsPointer(in MemoryMarshal.GetReference("JitEnregStructLocals"u8))), 1);
         _isInitialized = true;
     }

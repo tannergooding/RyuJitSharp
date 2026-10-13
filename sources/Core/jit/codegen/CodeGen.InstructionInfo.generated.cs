@@ -9,12 +9,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_XARCH
-    private static ReadOnlySpan<byte> s_kMaskBaseSizes => [
-#if TARGET_XARCH
-#if !TARGET_XARCH
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<byte> s_kMaskBaseSizesX86 => [
         0, // INS_invalid
         0, // INS_push
         0, // INS_pop
@@ -46,9 +41,6 @@ public sealed partial class CodeGen
         0, // INS_bsr
         0, // INS_bsf
         0, // INS_movsx
-#if TARGET_AMD64
-        0, // INS_movsxd
-#endif
         0, // INS_movzx
         0, // INS_cmovo
         0, // INS_cmovno
@@ -76,32 +68,6 @@ public sealed partial class CodeGen
         0, // INS_imul_BP
         0, // INS_imul_SI
         0, // INS_imul_DI
-#if TARGET_AMD64
-        0, // INS_imul_08
-        0, // INS_imul_09
-        0, // INS_imul_10
-        0, // INS_imul_11
-        0, // INS_imul_12
-        0, // INS_imul_13
-        0, // INS_imul_14
-        0, // INS_imul_15
-        0, // INS_imul_16
-        0, // INS_imul_17
-        0, // INS_imul_18
-        0, // INS_imul_19
-        0, // INS_imul_20
-        0, // INS_imul_21
-        0, // INS_imul_22
-        0, // INS_imul_23
-        0, // INS_imul_24
-        0, // INS_imul_25
-        0, // INS_imul_26
-        0, // INS_imul_27
-        0, // INS_imul_28
-        0, // INS_imul_29
-        0, // INS_imul_30
-        0, // INS_imul_31
-#endif
         2, // INS_addpd
         4, // INS_addps
         1, // INS_addsd
@@ -968,7 +934,1073 @@ public sealed partial class CodeGen
         8, // INS_vmpsadbw
         0, // INS_vucomxsd
         0, // INS_vucomxss
-#if TARGET_AMD64
+        0, // INS_crc32
+        0, // INS_tzcnt
+        0, // INS_lzcnt
+        0, // INS_movbe
+        0, // INS_popcnt
+        0, // INS_tpause
+        0, // INS_umonitor
+        0, // INS_umwait
+        0, // INS_neg
+        0, // INS_not
+        0, // INS_rol
+        0, // INS_rol_1
+        0, // INS_rol_N
+        0, // INS_ror
+        0, // INS_ror_1
+        0, // INS_ror_N
+        0, // INS_rcl
+        0, // INS_rcl_1
+        0, // INS_rcl_N
+        0, // INS_rcr
+        0, // INS_rcr_1
+        0, // INS_rcr_N
+        0, // INS_shl
+        0, // INS_shl_1
+        0, // INS_shl_N
+        0, // INS_shr
+        0, // INS_shr_1
+        0, // INS_shr_N
+        0, // INS_sar
+        0, // INS_sar_1
+        0, // INS_sar_N
+        0, // INS_ret
+        0, // INS_loop
+        0, // INS_call
+        0, // INS_r_movsb
+        0, // INS_r_movsd
+        0, // INS_movsb
+        0, // INS_movsd
+        0, // INS_r_stosb
+        0, // INS_r_stosd
+        0, // INS_stosb
+        0, // INS_stosd
+        0, // INS_int3
+        0, // INS_nop
+        0, // INS_pause
+        0, // INS_lock
+        0, // INS_leave
+        0, // INS_serialize
+        0, // INS_cwde
+        0, // INS_cdq
+        0, // INS_idiv
+        0, // INS_imulEAX
+        0, // INS_div
+        0, // INS_mulEAX
+        0, // INS_sahf
+        0, // INS_xadd
+        0, // INS_cmpxchg
+        0, // INS_shld
+        0, // INS_shrd
+        0, // INS_fld
+        0, // INS_fstp
+        0, // INS_seto
+        0, // INS_setno
+        0, // INS_setb
+        0, // INS_setae
+        0, // INS_sete
+        0, // INS_setne
+        0, // INS_setbe
+        0, // INS_seta
+        0, // INS_sets
+        0, // INS_setns
+        0, // INS_setp
+        0, // INS_setnp
+        0, // INS_setl
+        0, // INS_setge
+        0, // INS_setle
+        0, // INS_setg
+        0, // INS_tail_i_jmp
+        0, // INS_i_jmp
+        0, // INS_jmp
+        0, // INS_jo
+        0, // INS_jno
+        0, // INS_jb
+        0, // INS_jae
+        0, // INS_je
+        0, // INS_jne
+        0, // INS_jbe
+        0, // INS_ja
+        0, // INS_js
+        0, // INS_jns
+        0, // INS_jp
+        0, // INS_jnp
+        0, // INS_jl
+        0, // INS_jge
+        0, // INS_jle
+        0, // INS_jg
+        0, // INS_l_jmp
+        0, // INS_l_jo
+        0, // INS_l_jno
+        0, // INS_l_jb
+        0, // INS_l_jae
+        0, // INS_l_je
+        0, // INS_l_jne
+        0, // INS_l_jbe
+        0, // INS_l_ja
+        0, // INS_l_js
+        0, // INS_l_jns
+        0, // INS_l_jp
+        0, // INS_l_jnp
+        0, // INS_l_jl
+        0, // INS_l_jge
+        0, // INS_l_jle
+        0, // INS_l_jg
+        0, // INS_align
+        0, // INS_data16
+    ];
+
+    private static ReadOnlySpan<byte> s_kMaskBaseSizesAMD64 => [
+        0, // INS_invalid
+        0, // INS_push
+        0, // INS_pop
+        0, // INS_push_hide
+        0, // INS_pop_hide
+        0, // INS_push2
+        0, // INS_pop2
+        0, // INS_inc
+        0, // INS_inc_l
+        0, // INS_dec
+        0, // INS_dec_l
+        0, // INS_bswap
+        0, // INS_add
+        0, // INS_or
+        0, // INS_adc
+        0, // INS_sbb
+        0, // INS_and
+        0, // INS_sub
+        0, // INS_sub_hide
+        0, // INS_xor
+        0, // INS_cmp
+        0, // INS_test
+        0, // INS_mov
+        0, // INS_lea
+        0, // INS_bt
+        0, // INS_bts
+        0, // INS_btr
+        0, // INS_btc
+        0, // INS_bsr
+        0, // INS_bsf
+        0, // INS_movsx
+        0, // INS_movsxd
+        0, // INS_movzx
+        0, // INS_cmovo
+        0, // INS_cmovno
+        0, // INS_cmovb
+        0, // INS_cmovae
+        0, // INS_cmove
+        0, // INS_cmovne
+        0, // INS_cmovbe
+        0, // INS_cmova
+        0, // INS_cmovs
+        0, // INS_cmovns
+        0, // INS_cmovp
+        0, // INS_cmovnp
+        0, // INS_cmovl
+        0, // INS_cmovge
+        0, // INS_cmovle
+        0, // INS_cmovg
+        0, // INS_xchg
+        0, // INS_imul
+        0, // INS_imul_AX
+        0, // INS_imul_CX
+        0, // INS_imul_DX
+        0, // INS_imul_BX
+        0, // INS_imul_SP
+        0, // INS_imul_BP
+        0, // INS_imul_SI
+        0, // INS_imul_DI
+        0, // INS_imul_08
+        0, // INS_imul_09
+        0, // INS_imul_10
+        0, // INS_imul_11
+        0, // INS_imul_12
+        0, // INS_imul_13
+        0, // INS_imul_14
+        0, // INS_imul_15
+        0, // INS_imul_16
+        0, // INS_imul_17
+        0, // INS_imul_18
+        0, // INS_imul_19
+        0, // INS_imul_20
+        0, // INS_imul_21
+        0, // INS_imul_22
+        0, // INS_imul_23
+        0, // INS_imul_24
+        0, // INS_imul_25
+        0, // INS_imul_26
+        0, // INS_imul_27
+        0, // INS_imul_28
+        0, // INS_imul_29
+        0, // INS_imul_30
+        0, // INS_imul_31
+        2, // INS_addpd
+        4, // INS_addps
+        1, // INS_addsd
+        1, // INS_addss
+        0, // INS_addsubpd
+        0, // INS_addsubps
+        2, // INS_andnpd
+        4, // INS_andnps
+        2, // INS_andpd
+        4, // INS_andps
+        0, // INS_blendpd
+        0, // INS_blendps
+        0, // INS_blendvpd
+        0, // INS_blendvps
+        0, // INS_cmppd
+        0, // INS_cmpps
+        0, // INS_cmpsd
+        0, // INS_cmpss
+        0, // INS_comisd
+        0, // INS_comiss
+        2, // INS_cvtdq2pd
+        4, // INS_cvtdq2ps
+        2, // INS_cvtpd2dq
+        2, // INS_cvtpd2ps
+        4, // INS_cvtps2dq
+        2, // INS_cvtps2pd
+        0, // INS_cvtsd2si32
+        0, // INS_cvtsd2si64
+        1, // INS_cvtsd2ss
+        0, // INS_cvtsi2sd32
+        0, // INS_cvtsi2sd64
+        0, // INS_cvtsi2ss32
+        0, // INS_cvtsi2ss64
+        1, // INS_cvtss2sd
+        0, // INS_cvtss2si32
+        0, // INS_cvtss2si64
+        2, // INS_cvttpd2dq
+        4, // INS_cvttps2dq
+        0, // INS_cvttsd2si32
+        0, // INS_cvttsd2si64
+        0, // INS_cvttss2si32
+        0, // INS_cvttss2si64
+        2, // INS_divpd
+        4, // INS_divps
+        1, // INS_divsd
+        1, // INS_divss
+        0, // INS_dppd
+        0, // INS_dpps
+        0, // INS_extractps
+        0, // INS_haddpd
+        0, // INS_haddps
+        0, // INS_hsubpd
+        0, // INS_hsubps
+        0, // INS_insertps
+        0, // INS_lddqu
+        0, // INS_lfence
+        0, // INS_maskmovdqu
+        2, // INS_maxpd
+        4, // INS_maxps
+        1, // INS_maxsd
+        1, // INS_maxss
+        0, // INS_mfence
+        2, // INS_minpd
+        4, // INS_minps
+        1, // INS_minsd
+        1, // INS_minss
+        0, // INS_movapd
+        0, // INS_movaps
+        0, // INS_movd32
+        0, // INS_movd64
+        2, // INS_movddup
+        0, // INS_movdqa32
+        0, // INS_movdqu32
+        0, // INS_movhlps
+        0, // INS_movhpd
+        0, // INS_movhps
+        0, // INS_movlhps
+        0, // INS_movlpd
+        0, // INS_movlps
+        0, // INS_movmskpd
+        0, // INS_movmskps
+        0, // INS_movntdq
+        0, // INS_movntdqa
+        0, // INS_movnti32
+        0, // INS_movnti64
+        0, // INS_movntpd
+        0, // INS_movntps
+        0, // INS_movq
+        0, // INS_movsd_simd
+        4, // INS_movshdup
+        4, // INS_movsldup
+        0, // INS_movss
+        0, // INS_movupd
+        0, // INS_movups
+        0, // INS_mpsadbw
+        2, // INS_mulpd
+        4, // INS_mulps
+        1, // INS_mulsd
+        1, // INS_mulss
+        2, // INS_orpd
+        4, // INS_orps
+        16, // INS_pabsb
+        4, // INS_pabsd
+        8, // INS_pabsw
+        8, // INS_packssdw
+        16, // INS_packsswb
+        8, // INS_packusdw
+        16, // INS_packuswb
+        16, // INS_paddb
+        4, // INS_paddd
+        2, // INS_paddq
+        16, // INS_paddsb
+        8, // INS_paddsw
+        16, // INS_paddusb
+        8, // INS_paddusw
+        8, // INS_paddw
+        16, // INS_palignr
+        4, // INS_pandd
+        4, // INS_pandnd
+        16, // INS_pavgb
+        8, // INS_pavgw
+        0, // INS_pblendvb
+        0, // INS_pblendw
+        0, // INS_pcmpeqb
+        0, // INS_pcmpeqd
+        0, // INS_pcmpeqq
+        0, // INS_pcmpeqw
+        0, // INS_pcmpgtb
+        0, // INS_pcmpgtd
+        0, // INS_pcmpgtq
+        0, // INS_pcmpgtw
+        0, // INS_pextrb
+        0, // INS_pextrd
+        0, // INS_pextrq
+        0, // INS_phaddd
+        0, // INS_pextrw
+        0, // INS_phaddsw
+        0, // INS_phaddw
+        0, // INS_phminposuw
+        0, // INS_phsubd
+        0, // INS_phsubsw
+        0, // INS_phsubw
+        0, // INS_pinsrb
+        0, // INS_pinsrd
+        0, // INS_pinsrq
+        0, // INS_pinsrw
+        8, // INS_pmaddubsw
+        4, // INS_pmaddwd
+        16, // INS_pmaxsb
+        4, // INS_pmaxsd
+        8, // INS_pmaxsw
+        16, // INS_pmaxub
+        4, // INS_pmaxud
+        8, // INS_pmaxuw
+        16, // INS_pminsb
+        4, // INS_pminsd
+        8, // INS_pminsw
+        16, // INS_pminub
+        4, // INS_pminud
+        8, // INS_pminuw
+        0, // INS_pmovmskb
+        4, // INS_pmovsxbd
+        2, // INS_pmovsxbq
+        8, // INS_pmovsxbw
+        2, // INS_pmovsxdq
+        4, // INS_pmovsxwd
+        2, // INS_pmovsxwq
+        4, // INS_pmovzxbd
+        2, // INS_pmovzxbq
+        8, // INS_pmovzxbw
+        2, // INS_pmovzxdq
+        4, // INS_pmovzxwd
+        2, // INS_pmovzxwq
+        2, // INS_pmuldq
+        8, // INS_pmulhrsw
+        8, // INS_pmulhuw
+        8, // INS_pmulhw
+        4, // INS_pmulld
+        2, // INS_pmuludq
+        8, // INS_pmullw
+        4, // INS_pord
+        0, // INS_prefetchnta
+        0, // INS_prefetcht0
+        0, // INS_prefetcht1
+        0, // INS_prefetcht2
+        0, // INS_psadbw
+        16, // INS_pshufb
+        4, // INS_pshufd
+        8, // INS_pshufhw
+        8, // INS_pshuflw
+        0, // INS_psignb
+        0, // INS_psignd
+        0, // INS_psignw
+        4, // INS_pslld
+        0, // INS_pslldq
+        2, // INS_psllq
+        8, // INS_psllw
+        4, // INS_psrad
+        8, // INS_psraw
+        4, // INS_psrld
+        0, // INS_psrldq
+        2, // INS_psrlq
+        8, // INS_psrlw
+        16, // INS_psubb
+        4, // INS_psubd
+        2, // INS_psubq
+        16, // INS_psubsb
+        8, // INS_psubsw
+        16, // INS_psubusb
+        8, // INS_psubusw
+        8, // INS_psubw
+        0, // INS_ptest
+        16, // INS_punpckhbw
+        4, // INS_punpckhdq
+        2, // INS_punpckhqdq
+        8, // INS_punpckhwd
+        16, // INS_punpcklbw
+        4, // INS_punpckldq
+        2, // INS_punpcklqdq
+        8, // INS_punpcklwd
+        4, // INS_pxord
+        0, // INS_rcpps
+        0, // INS_rcpss
+        2, // INS_roundpd
+        4, // INS_roundps
+        2, // INS_roundsd
+        4, // INS_roundss
+        0, // INS_rsqrtps
+        0, // INS_rsqrtss
+        0, // INS_sfence
+        2, // INS_shufpd
+        4, // INS_shufps
+        2, // INS_sqrtpd
+        4, // INS_sqrtps
+        1, // INS_sqrtsd
+        1, // INS_sqrtss
+        2, // INS_subpd
+        4, // INS_subps
+        1, // INS_subsd
+        1, // INS_subss
+        0, // INS_ucomisd
+        0, // INS_ucomiss
+        2, // INS_unpckhpd
+        4, // INS_unpckhps
+        2, // INS_unpcklpd
+        4, // INS_unpcklps
+        2, // INS_xorpd
+        4, // INS_xorps
+        0, // INS_aesdec
+        0, // INS_aesdeclast
+        0, // INS_aesenc
+        0, // INS_aesenclast
+        0, // INS_aesimc
+        0, // INS_aeskeygenassist
+        1, // INS_pclmulqdq
+        0, // INS_sha1msg1
+        0, // INS_sha1msg2
+        0, // INS_sha1nexte
+        0, // INS_sha1rnds4
+        0, // INS_sha256msg1
+        0, // INS_sha256msg2
+        0, // INS_sha256rnds2
+        2, // INS_gf2p8affineinvqb
+        2, // INS_gf2p8affineqb
+        16, // INS_gf2p8mulb
+        0, // INS_vblendvpd
+        0, // INS_vblendvps
+        4, // INS_vbroadcastf32x4
+        2, // INS_vbroadcastsd
+        4, // INS_vbroadcastss
+        4, // INS_vextractf32x4
+        4, // INS_vinsertf32x4
+        0, // INS_vmaskmovpd
+        0, // INS_vmaskmovps
+        0, // INS_vpblendvb
+        0, // INS_vperm2f128
+        2, // INS_vpermilpd
+        2, // INS_vpermilpdvar
+        4, // INS_vpermilps
+        4, // INS_vpermilpsvar
+        0, // INS_vtestpd
+        0, // INS_vtestps
+        0, // INS_vzeroupper
+        4, // INS_vbroadcasti32x4
+        4, // INS_vcvtph2ps
+        4, // INS_vcvtps2ph
+        4, // INS_vextracti32x4
+        0, // INS_vgatherdpd
+        0, // INS_vgatherdps
+        0, // INS_vgatherqpd
+        0, // INS_vgatherqps
+        4, // INS_vinserti32x4
+        0, // INS_vpblendd
+        16, // INS_vpbroadcastb
+        4, // INS_vpbroadcastd
+        2, // INS_vpbroadcastq
+        8, // INS_vpbroadcastw
+        0, // INS_vperm2i128
+        4, // INS_vpermd
+        2, // INS_vpermpd
+        4, // INS_vpermps
+        2, // INS_vpermq
+        4, // INS_vpgatherdd
+        2, // INS_vpgatherdq
+        2, // INS_vpgatherqd
+        2, // INS_vpgatherqq
+        0, // INS_vpmaskmovd
+        0, // INS_vpmaskmovq
+        4, // INS_vpsllvd
+        2, // INS_vpsllvq
+        4, // INS_vpsravd
+        4, // INS_vpsrlvd
+        2, // INS_vpsrlvq
+        2, // INS_vfmadd132pd
+        2, // INS_vfmadd213pd
+        2, // INS_vfmadd231pd
+        4, // INS_vfmadd132ps
+        4, // INS_vfmadd213ps
+        4, // INS_vfmadd231ps
+        1, // INS_vfmadd132sd
+        1, // INS_vfmadd213sd
+        1, // INS_vfmadd231sd
+        1, // INS_vfmadd132ss
+        1, // INS_vfmadd213ss
+        1, // INS_vfmadd231ss
+        2, // INS_vfmaddsub132pd
+        2, // INS_vfmaddsub213pd
+        2, // INS_vfmaddsub231pd
+        4, // INS_vfmaddsub132ps
+        4, // INS_vfmaddsub213ps
+        4, // INS_vfmaddsub231ps
+        2, // INS_vfmsubadd132pd
+        2, // INS_vfmsubadd213pd
+        2, // INS_vfmsubadd231pd
+        4, // INS_vfmsubadd132ps
+        4, // INS_vfmsubadd213ps
+        4, // INS_vfmsubadd231ps
+        2, // INS_vfmsub132pd
+        2, // INS_vfmsub213pd
+        2, // INS_vfmsub231pd
+        4, // INS_vfmsub132ps
+        4, // INS_vfmsub213ps
+        4, // INS_vfmsub231ps
+        1, // INS_vfmsub132sd
+        1, // INS_vfmsub213sd
+        1, // INS_vfmsub231sd
+        1, // INS_vfmsub132ss
+        1, // INS_vfmsub213ss
+        1, // INS_vfmsub231ss
+        2, // INS_vfnmadd132pd
+        2, // INS_vfnmadd213pd
+        2, // INS_vfnmadd231pd
+        4, // INS_vfnmadd132ps
+        4, // INS_vfnmadd213ps
+        4, // INS_vfnmadd231ps
+        1, // INS_vfnmadd132sd
+        1, // INS_vfnmadd213sd
+        1, // INS_vfnmadd231sd
+        1, // INS_vfnmadd132ss
+        1, // INS_vfnmadd213ss
+        1, // INS_vfnmadd231ss
+        2, // INS_vfnmsub132pd
+        2, // INS_vfnmsub213pd
+        2, // INS_vfnmsub231pd
+        4, // INS_vfnmsub132ps
+        4, // INS_vfnmsub213ps
+        4, // INS_vfnmsub231ps
+        1, // INS_vfnmsub132sd
+        1, // INS_vfnmsub213sd
+        1, // INS_vfnmsub231sd
+        1, // INS_vfnmsub132ss
+        1, // INS_vfnmsub213ss
+        1, // INS_vfnmsub231ss
+        0, // INS_andn
+        0, // INS_bextr
+        0, // INS_blsi
+        0, // INS_blsmsk
+        0, // INS_blsr
+        0, // INS_bzhi
+        0, // INS_mulx
+        0, // INS_pdep
+        0, // INS_pext
+        0, // INS_rorx
+        0, // INS_sarx
+        0, // INS_shlx
+        0, // INS_shrx
+        4, // INS_vpdpbusd
+        4, // INS_vpdpbusds
+        4, // INS_vpdpwssd
+        4, // INS_vpdpwssds
+        4, // INS_vpdpwsud
+        4, // INS_vpdpwsuds
+        4, // INS_vpdpwusd
+        4, // INS_vpdpwusds
+        4, // INS_vpdpwuud
+        4, // INS_vpdpwuuds
+        4, // INS_vpdpbssd
+        4, // INS_vpdpbssds
+        4, // INS_vpdpbsud
+        4, // INS_vpdpbsuds
+        4, // INS_vpdpbuud
+        4, // INS_vpdpbuuds
+        0, // INS_vbmacor16x16x16
+        0, // INS_vbmacxor16x16x16
+        16, // INS_vbitrev
+        2, // INS_vpmadd52huq
+        2, // INS_vpmadd52luq
+        0, // INS_kaddb
+        0, // INS_kaddd
+        0, // INS_kaddq
+        0, // INS_kaddw
+        0, // INS_kandb
+        0, // INS_kandd
+        0, // INS_kandnb
+        0, // INS_kandnd
+        0, // INS_kandnq
+        0, // INS_kandnw
+        0, // INS_kandq
+        0, // INS_kandw
+        0, // INS_kmovb_gpr
+        0, // INS_kmovb_msk
+        0, // INS_kmovd_gpr
+        0, // INS_kmovd_msk
+        0, // INS_kmovq_gpr
+        0, // INS_kmovq_msk
+        0, // INS_kmovw_gpr
+        0, // INS_kmovw_msk
+        0, // INS_knotb
+        0, // INS_knotd
+        0, // INS_knotq
+        0, // INS_knotw
+        0, // INS_korb
+        0, // INS_kord
+        0, // INS_korq
+        0, // INS_kortestb
+        0, // INS_kortestd
+        0, // INS_kortestq
+        0, // INS_kortestw
+        0, // INS_korw
+        0, // INS_kshiftlb
+        0, // INS_kshiftld
+        0, // INS_kshiftlq
+        0, // INS_kshiftlw
+        0, // INS_kshiftrb
+        0, // INS_kshiftrd
+        0, // INS_kshiftrq
+        0, // INS_kshiftrw
+        0, // INS_ktestb
+        0, // INS_ktestd
+        0, // INS_ktestq
+        0, // INS_ktestw
+        0, // INS_kunpckbw
+        0, // INS_kunpckdq
+        0, // INS_kunpckwd
+        0, // INS_kxnorb
+        0, // INS_kxnord
+        0, // INS_kxnorq
+        0, // INS_kxnorw
+        0, // INS_kxorb
+        0, // INS_kxord
+        0, // INS_kxorq
+        0, // INS_kxorw
+        4, // INS_valignd
+        2, // INS_valignq
+        0, // INS_vblendmpd
+        0, // INS_vblendmps
+        4, // INS_vbroadcastf32x2
+        4, // INS_vbroadcastf32x8
+        2, // INS_vbroadcastf64x2
+        2, // INS_vbroadcastf64x4
+        4, // INS_vbroadcasti32x2
+        4, // INS_vbroadcasti32x8
+        2, // INS_vbroadcasti64x2
+        2, // INS_vbroadcasti64x4
+        2, // INS_vcmppd
+        4, // INS_vcmpps
+        1, // INS_vcmpsd
+        1, // INS_vcmpss
+        0, // INS_vcompresspd
+        0, // INS_vcompressps
+        2, // INS_vcvtpd2qq
+        2, // INS_vcvtpd2udq
+        2, // INS_vcvtpd2uqq
+        2, // INS_vcvtps2qq
+        4, // INS_vcvtps2udq
+        2, // INS_vcvtps2uqq
+        2, // INS_vcvtqq2pd
+        2, // INS_vcvtqq2ps
+        0, // INS_vcvtsd2usi32
+        0, // INS_vcvtsd2usi64
+        0, // INS_vcvtss2usi32
+        0, // INS_vcvtss2usi64
+        2, // INS_vcvttpd2qq
+        2, // INS_vcvttpd2udq
+        2, // INS_vcvttpd2uqq
+        2, // INS_vcvttps2qq
+        4, // INS_vcvttps2udq
+        2, // INS_vcvttps2uqq
+        0, // INS_vcvttsd2usi32
+        0, // INS_vcvttsd2usi64
+        0, // INS_vcvttss2usi32
+        0, // INS_vcvttss2usi64
+        2, // INS_vcvtudq2pd
+        4, // INS_vcvtudq2ps
+        2, // INS_vcvtuqq2pd
+        2, // INS_vcvtuqq2ps
+        0, // INS_vcvtusi2sd32
+        0, // INS_vcvtusi2sd64
+        0, // INS_vcvtusi2ss32
+        0, // INS_vcvtusi2ss64
+        8, // INS_vdbpsadbw
+        0, // INS_vexpandpd
+        0, // INS_vexpandps
+        4, // INS_vextractf32x8
+        2, // INS_vextractf64x2
+        2, // INS_vextractf64x4
+        4, // INS_vextracti32x8
+        2, // INS_vextracti64x2
+        2, // INS_vextracti64x4
+        2, // INS_vfixupimmpd
+        4, // INS_vfixupimmps
+        1, // INS_vfixupimmsd
+        1, // INS_vfixupimmss
+        2, // INS_vfpclasspd
+        4, // INS_vfpclassps
+        1, // INS_vfpclasssd
+        1, // INS_vfpclassss
+        2, // INS_vgatherdpd_msk
+        4, // INS_vgatherdps_msk
+        2, // INS_vgatherqpd_msk
+        2, // INS_vgatherqps_msk
+        2, // INS_vgetexppd
+        4, // INS_vgetexpps
+        1, // INS_vgetexpsd
+        1, // INS_vgetexpss
+        2, // INS_vgetmantpd
+        4, // INS_vgetmantps
+        1, // INS_vgetmantsd
+        1, // INS_vgetmantss
+        4, // INS_vinsertf32x8
+        2, // INS_vinsertf64x2
+        2, // INS_vinsertf64x4
+        4, // INS_vinserti32x8
+        2, // INS_vinserti64x2
+        2, // INS_vinserti64x4
+        0, // INS_vmovdqa64
+        0, // INS_vmovdqu16
+        0, // INS_vmovdqu64
+        0, // INS_vmovdqu8
+        2, // INS_vpabsq
+        2, // INS_vpandnq
+        2, // INS_vpandq
+        0, // INS_vpblendmb
+        0, // INS_vpblendmd
+        0, // INS_vpblendmq
+        0, // INS_vpblendmw
+        16, // INS_vpbroadcastb_gpr
+        4, // INS_vpbroadcastd_gpr
+        2, // INS_vpbroadcastq_gpr
+        8, // INS_vpbroadcastw_gpr
+        16, // INS_vpcmpb
+        4, // INS_vpcmpd
+        16, // INS_vpcmpeqb
+        4, // INS_vpcmpeqd
+        2, // INS_vpcmpeqq
+        8, // INS_vpcmpeqw
+        16, // INS_vpcmpgtb
+        4, // INS_vpcmpgtd
+        2, // INS_vpcmpgtq
+        8, // INS_vpcmpgtw
+        2, // INS_vpcmpq
+        16, // INS_vpcmpub
+        4, // INS_vpcmpud
+        2, // INS_vpcmpuq
+        8, // INS_vpcmpuw
+        8, // INS_vpcmpw
+        0, // INS_vpcompressd
+        0, // INS_vpcompressq
+        4, // INS_vpconflictd
+        2, // INS_vpconflictq
+        4, // INS_vpermi2d
+        2, // INS_vpermi2pd
+        4, // INS_vpermi2ps
+        2, // INS_vpermi2q
+        8, // INS_vpermi2w
+        2, // INS_vpermpd_reg
+        2, // INS_vpermq_reg
+        4, // INS_vpermt2d
+        2, // INS_vpermt2pd
+        4, // INS_vpermt2ps
+        2, // INS_vpermt2q
+        8, // INS_vpermt2w
+        8, // INS_vpermw
+        0, // INS_vpexpandd
+        0, // INS_vpexpandq
+        4, // INS_vpgatherdd_msk
+        2, // INS_vpgatherdq_msk
+        2, // INS_vpgatherqd_msk
+        2, // INS_vpgatherqq_msk
+        4, // INS_vplzcntd
+        2, // INS_vplzcntq
+        2, // INS_vpmaxsq
+        2, // INS_vpmaxuq
+        2, // INS_vpminsq
+        2, // INS_vpminuq
+        0, // INS_vpmovb2m
+        0, // INS_vpmovd2m
+        4, // INS_vpmovdb
+        4, // INS_vpmovdw
+        0, // INS_vpmovm2b
+        0, // INS_vpmovm2d
+        0, // INS_vpmovm2q
+        0, // INS_vpmovm2w
+        0, // INS_vpmovq2m
+        2, // INS_vpmovqb
+        2, // INS_vpmovqd
+        2, // INS_vpmovqw
+        4, // INS_vpmovsdb
+        4, // INS_vpmovsdw
+        2, // INS_vpmovsqb
+        2, // INS_vpmovsqd
+        2, // INS_vpmovsqw
+        8, // INS_vpmovswb
+        4, // INS_vpmovusdb
+        4, // INS_vpmovusdw
+        2, // INS_vpmovusqb
+        2, // INS_vpmovusqd
+        2, // INS_vpmovusqw
+        8, // INS_vpmovuswb
+        0, // INS_vpmovw2m
+        8, // INS_vpmovwb
+        2, // INS_vpmullq
+        2, // INS_vporq
+        4, // INS_vprold
+        2, // INS_vprolq
+        4, // INS_vprolvd
+        2, // INS_vprolvq
+        4, // INS_vprord
+        2, // INS_vprorq
+        4, // INS_vprorvd
+        2, // INS_vprorvq
+        4, // INS_vpscatterdd_msk
+        2, // INS_vpscatterdq_msk
+        2, // INS_vpscatterqd_msk
+        2, // INS_vpscatterqq_msk
+        8, // INS_vpsllvw
+        2, // INS_vpsraq
+        2, // INS_vpsravq
+        8, // INS_vpsravw
+        8, // INS_vpsrlvw
+        4, // INS_vpternlogd
+        2, // INS_vpternlogq
+        16, // INS_vptestmb
+        4, // INS_vptestmd
+        2, // INS_vptestmq
+        8, // INS_vptestmw
+        16, // INS_vptestnmb
+        4, // INS_vptestnmd
+        2, // INS_vptestnmq
+        8, // INS_vptestnmw
+        2, // INS_vpxorq
+        2, // INS_vrangepd
+        4, // INS_vrangeps
+        1, // INS_vrangesd
+        1, // INS_vrangess
+        2, // INS_vrcp14pd
+        4, // INS_vrcp14ps
+        1, // INS_vrcp14sd
+        1, // INS_vrcp14ss
+        2, // INS_vreducepd
+        4, // INS_vreduceps
+        1, // INS_vreducesd
+        1, // INS_vreducess
+        2, // INS_vrndscalepd
+        4, // INS_vrndscaleps
+        1, // INS_vrndscalesd
+        1, // INS_vrndscaless
+        2, // INS_vrsqrt14pd
+        4, // INS_vrsqrt14ps
+        1, // INS_vrsqrt14sd
+        1, // INS_vrsqrt14ss
+        2, // INS_vscalefpd
+        4, // INS_vscalefps
+        1, // INS_vscalefsd
+        1, // INS_vscalefss
+        2, // INS_vscatterdpd_msk
+        4, // INS_vscatterdps_msk
+        2, // INS_vscatterqpd_msk
+        2, // INS_vscatterqps_msk
+        4, // INS_vshuff32x4
+        2, // INS_vshuff64x2
+        4, // INS_vshufi32x4
+        2, // INS_vshufi64x2
+        16, // INS_vpermb
+        16, // INS_vpermi2b
+        16, // INS_vpermt2b
+        2, // INS_vpmultishiftqb
+        0, // INS_vpcompressb
+        0, // INS_vpcompressw
+        0, // INS_vpexpandb
+        0, // INS_vpexpandw
+        16, // INS_vpopcntb
+        4, // INS_vpopcntd
+        2, // INS_vpopcntq
+        8, // INS_vpopcntw
+        4, // INS_vpshldd
+        2, // INS_vpshldq
+        4, // INS_vpshldvd
+        2, // INS_vpshldvq
+        8, // INS_vpshldvw
+        8, // INS_vpshldw
+        4, // INS_vpshrdd
+        2, // INS_vpshrdq
+        4, // INS_vpshrdvd
+        2, // INS_vpshrdvq
+        8, // INS_vpshrdvw
+        8, // INS_vpshrdw
+        16, // INS_vpshufbitqmb
+        8, // INS_vaddph
+        1, // INS_vaddsh
+        8, // INS_vcmpph
+        1, // INS_vcmpsh
+        0, // INS_vcomish
+        4, // INS_vcvtdq2ph
+        8, // INS_vcvtne2ps2bf16
+        8, // INS_vcvtneps2bf16
+        2, // INS_vcvtpd2ph
+        4, // INS_vcvtph2dq
+        2, // INS_vcvtph2pd
+        4, // INS_vcvtph2psx
+        2, // INS_vcvtph2qq
+        4, // INS_vcvtph2udq
+        2, // INS_vcvtph2uqq
+        8, // INS_vcvtph2uw
+        8, // INS_vcvtph2w
+        4, // INS_vcvtps2phx
+        2, // INS_vcvtqq2ph
+        1, // INS_vcvtsd2sh
+        1, // INS_vcvtsh2sd
+        1, // INS_vcvtsh2si32
+        1, // INS_vcvtsh2si64
+        1, // INS_vcvtsh2ss
+        1, // INS_vcvtsh2usi32
+        1, // INS_vcvtsh2usi64
+        1, // INS_vcvtsi2sh32
+        1, // INS_vcvtsi2sh64
+        1, // INS_vcvtss2sh
+        4, // INS_vcvttph2dq
+        2, // INS_vcvttph2qq
+        4, // INS_vcvttph2udq
+        2, // INS_vcvttph2uqq
+        8, // INS_vcvttph2uw
+        8, // INS_vcvttph2w
+        1, // INS_vcvttsh2si32
+        1, // INS_vcvttsh2si64
+        1, // INS_vcvttsh2usi32
+        1, // INS_vcvttsh2usi64
+        4, // INS_vcvtudq2ph
+        2, // INS_vcvtuqq2ph
+        1, // INS_vcvtusi2sh32
+        1, // INS_vcvtusi2sh64
+        8, // INS_vcvtuw2ph
+        8, // INS_vcvtw2ph
+        8, // INS_vdivph
+        1, // INS_vdivsh
+        4, // INS_vdpbf16ps
+        4, // INS_vfcmaddcph
+        1, // INS_vfcmaddcsh
+        4, // INS_vfcmulcph
+        1, // INS_vfcmulcsh
+        4, // INS_vfmulcph
+        1, // INS_vfmulcsh
+        8, // INS_vfmadd132ph
+        8, // INS_vfmadd213ph
+        8, // INS_vfmadd231ph
+        1, // INS_vfmadd132sh
+        1, // INS_vfmadd213sh
+        1, // INS_vfmadd231sh
+        4, // INS_vfmaddcph
+        1, // INS_vfmaddcsh
+        8, // INS_vfmaddsub132ph
+        8, // INS_vfmaddsub213ph
+        8, // INS_vfmaddsub231ph
+        8, // INS_vfmsub132ph
+        8, // INS_vfmsub213ph
+        8, // INS_vfmsub231ph
+        1, // INS_vfmsub132sh
+        1, // INS_vfmsub213sh
+        1, // INS_vfmsub231sh
+        8, // INS_vfmsubadd132ph
+        8, // INS_vfmsubadd213ph
+        8, // INS_vfmsubadd231ph
+        8, // INS_vfnmadd132ph
+        8, // INS_vfnmadd213ph
+        8, // INS_vfnmadd231ph
+        1, // INS_vfnmadd132sh
+        1, // INS_vfnmadd213sh
+        1, // INS_vfnmadd231sh
+        8, // INS_vfnmsub132ph
+        8, // INS_vfnmsub213ph
+        8, // INS_vfnmsub231ph
+        1, // INS_vfnmsub132sh
+        1, // INS_vfnmsub213sh
+        1, // INS_vfnmsub231sh
+        8, // INS_vfpclassph
+        1, // INS_vfpclasssh
+        8, // INS_vgetexpph
+        1, // INS_vgetexpsh
+        8, // INS_vgetmantph
+        1, // INS_vgetmantsh
+        8, // INS_vmaxph
+        1, // INS_vmaxsh
+        1, // INS_vminsh
+        8, // INS_vminph
+        0, // INS_vmovsh
+        0, // INS_vmovw
+        8, // INS_vmulph
+        1, // INS_vmulsh
+        8, // INS_vrcpph
+        1, // INS_vrcpsh
+        8, // INS_vreduceph
+        1, // INS_vreducesh
+        8, // INS_vrndscaleph
+        1, // INS_vrndscalesh
+        8, // INS_vrsqrtph
+        1, // INS_vrsqrtsh
+        8, // INS_vscalefph
+        1, // INS_vscalefsh
+        8, // INS_vsqrtph
+        1, // INS_vsqrtsh
+        8, // INS_vsubph
+        1, // INS_vsubsh
+        0, // INS_vucomish
+        4, // INS_vp2intersectd
+        2, // INS_vp2intersectq
+        0, // INS_vcomxsd
+        0, // INS_vcomxss
+        4, // INS_vcvtps2ibs
+        4, // INS_vcvtps2iubs
+        2, // INS_vcvttpd2dqs
+        2, // INS_vcvttpd2qqs
+        2, // INS_vcvttpd2udqs
+        2, // INS_vcvttpd2uqqs
+        4, // INS_vcvttps2dqs
+        4, // INS_vcvttps2ibs
+        4, // INS_vcvttps2iubs
+        2, // INS_vcvttps2qqs
+        4, // INS_vcvttps2udqs
+        2, // INS_vcvttps2uqqs
+        0, // INS_vcvttsd2sis32
+        0, // INS_vcvttsd2sis64
+        0, // INS_vcvttsd2usis32
+        0, // INS_vcvttsd2usis64
+        0, // INS_vcvttss2sis32
+        0, // INS_vcvttss2sis64
+        0, // INS_vcvttss2usis32
+        0, // INS_vcvttss2usis64
+        2, // INS_vminmaxpd
+        4, // INS_vminmaxps
+        1, // INS_vminmaxsd
+        1, // INS_vminmaxss
+        0, // INS_vmovd_simd
+        0, // INS_vmovw_simd
+        8, // INS_vmpsadbw
+        0, // INS_vucomxsd
+        0, // INS_vucomxss
         0, // INS_ccmpo
         0, // INS_ccmpno
         0, // INS_ccmpb
@@ -1035,21 +2067,14 @@ public sealed partial class CodeGen
         0, // INS_setge_apx
         0, // INS_setle_apx
         0, // INS_setg_apx
-#endif
         0, // INS_crc32
         0, // INS_tzcnt
-#if TARGET_AMD64
         0, // INS_tzcnt_apx
-#endif
         0, // INS_lzcnt
-#if TARGET_AMD64
         0, // INS_lzcnt_apx
-#endif
         0, // INS_movbe
         0, // INS_popcnt
-#if TARGET_AMD64
         0, // INS_popcnt_apx
-#endif
         0, // INS_tpause
         0, // INS_umonitor
         0, // INS_umwait
@@ -1081,24 +2106,16 @@ public sealed partial class CodeGen
         0, // INS_call
         0, // INS_r_movsb
         0, // INS_r_movsd
-#if TARGET_AMD64
         0, // INS_r_movsq
-#endif
         0, // INS_movsb
         0, // INS_movsd
-#if TARGET_AMD64
         0, // INS_movsq
-#endif
         0, // INS_r_stosb
         0, // INS_r_stosd
-#if TARGET_AMD64
         0, // INS_r_stosq
-#endif
         0, // INS_stosb
         0, // INS_stosd
-#if TARGET_AMD64
         0, // INS_stosq
-#endif
         0, // INS_int3
         0, // INS_nop
         0, // INS_pause
@@ -1116,10 +2133,6 @@ public sealed partial class CodeGen
         0, // INS_cmpxchg
         0, // INS_shld
         0, // INS_shrd
-#if TARGET_X86
-        0, // INS_fld
-        0, // INS_fstp
-#endif
         0, // INS_seto
         0, // INS_setno
         0, // INS_setb
@@ -1174,40 +2187,10 @@ public sealed partial class CodeGen
         0, // INS_l_jg
         0, // INS_align
         0, // INS_data16
-#elif TARGET_ARM
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
-#if FEATURE_PLI_INSTRUCTION
-#endif
-#if FEATURE_ITINSTRUCTION
-#endif
-#elif TARGET_ARM64
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
-#elif TARGET_LOONGARCH64
-#if !TARGET_LOONGARCH64
-#error Unexpected target type
-#endif
-#if FEATURE_SIMD
-#endif
-#elif TARGET_RISCV64
-#if !TARGET_RISCV64
-#error Unexpected target type
-#endif
-#elif TARGET_WASM
-#if !TARGET_WASM
-#error Unexpected target type
-#endif
-#else
-#error Unsupported or unset target architecture
-#endif
-
     ];
 
-#endif
+    internal static ReadOnlySpan<byte> s_kMaskBaseSizes =>
+        Configuration.TARGET_X86 ? s_kMaskBaseSizesX86 :
+        Configuration.TARGET_AMD64 ? s_kMaskBaseSizesAMD64 :
+        ReadOnlySpan<byte>.Empty;
 }

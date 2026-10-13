@@ -2451,7 +2451,7 @@ public static partial class VNFuncExtensions
             for (var tableIndex = 0; tableIndex < HWIntrinsicInfo.GetNativeTableEntryCount(); tableIndex++)
             {
                 var id = HWIntrinsicInfo.GetIntrinsicIdForNativeTableIndex(tableIndex);
-                var func = VNF_HWI_INTRINSIC_START + (id - NI_HW_INTRINSIC_START - 1);
+                var func = VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1);
                 var numArgs = HWIntrinsicInfo.lookupNumArgs(id);
                 ValueNumStore.SetValidationAttributes(attributes, func, numArgs == -1 ? -1 : numArgs + 1,
                     HWIntrinsicInfo.IsCommutative(id), knownNonNull: false);

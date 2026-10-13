@@ -9,8 +9,10 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private static ReadOnlySpan<char> s_instructionNameData => [
-#if TARGET_XARCH
+    private static ReadOnlySpan<char> s_instructionNameData =>
+        Configuration.TARGET_XARCH ? s_instructionNameDataXarch : s_instructionNameDataOther;
+
+    private static ReadOnlySpan<char> s_instructionNameDataXarch => [
 'I', 'N', 'V', 'A', 'L', 'I', 'D', '\0', // "INVALID"
 'p', 'u', 's', 'h', '\0', // "push"
 'p', 'o', 'p', '\0', // "pop"
@@ -1015,7 +1017,8 @@ public sealed partial class CodeGen
 'a', 'l', 'i', 'g', 'n', '\0', // "align"
 'd', 'a', 't', 'a', '1', '6', '\0', // "data16"
     ];
-#else
+
+    private static ReadOnlySpan<char> s_instructionNameDataOther => [
 'I', 'N', 'V', 'A', 'L', 'I', 'D', '\0', // "INVALID"
 'a', 'd', 'd', '\0', // "add"
 's', 'u', 'b', '\0', // "sub"
@@ -4465,13 +4468,62 @@ public sealed partial class CodeGen
 'f', '6', '4', 'x', '2', '.', 'c', 'o', 'n', 'v', 'e', 'r', 't', '_', 'l', 'o', 'w', '_', 's', '_', 'i', '3', '2', 'x', '4', '\0', // "f64x2.convert_low_s_i32x4"
 'f', '6', '4', 'x', '2', '.', 'c', 'o', 'n', 'v', 'e', 'r', 't', '_', 'l', 'o', 'w', '_', 'u', '_', 'i', '3', '2', 'x', '4', '\0', // "f64x2.convert_low_u_i32x4"
     ];
-#endif
 
-    private static ReadOnlySpan<int> s_instructionNameRanges => [
-#if TARGET_XARCH
-#if !TARGET_XARCH
-#error Unexpected target type
-#endif
+    private static ReadOnlySpan<int> s_instructionNameRanges
+    {
+        get
+        {
+            if (Configuration.TARGET_X86)
+            {
+                return s_instructionNameRangesX86;
+            }
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return s_instructionNameRangesAmd64;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                if (Configuration.FEATURE_PLI_INSTRUCTION)
+                {
+                    return Configuration.FEATURE_ITINSTRUCTION
+                        ? s_instructionNameRangesArmPliIt
+                        : s_instructionNameRangesArmPli;
+                }
+
+                return Configuration.FEATURE_ITINSTRUCTION
+                    ? s_instructionNameRangesArmIt
+                    : s_instructionNameRangesArm;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return s_instructionNameRangesArm64;
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                return Configuration.FEATURE_SIMD
+                    ? s_instructionNameRangesLoongArch64
+                    : s_instructionNameRangesLoongArch64NoSimd;
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return s_instructionNameRangesRiscv64;
+            }
+
+            if (Configuration.TARGET_WASM)
+            {
+                return s_instructionNameRangesWasm;
+            }
+
+            throw new FatalJitException("No instruction-name table is defined for the configured target.");
+        }
+    }
+
+    private static ReadOnlySpan<int> s_instructionNameRangesX86 => [
         0, 7, // INS_invalid
         8, 4, // INS_push
         13, 3, // INS_pop
@@ -4503,9 +4555,6 @@ public sealed partial class CodeGen
         101, 3, // INS_bsr
         105, 3, // INS_bsf
         109, 5, // INS_movsx
-#if TARGET_AMD64
-        115, 6, // INS_movsxd
-#endif
         122, 5, // INS_movzx
         128, 5, // INS_cmovo
         134, 6, // INS_cmovno
@@ -4533,32 +4582,6 @@ public sealed partial class CodeGen
         237, 4, // INS_imul_BP
         237, 4, // INS_imul_SI
         237, 4, // INS_imul_DI
-#if TARGET_AMD64
-        237, 4, // INS_imul_08
-        237, 4, // INS_imul_09
-        237, 4, // INS_imul_10
-        237, 4, // INS_imul_11
-        237, 4, // INS_imul_12
-        237, 4, // INS_imul_13
-        237, 4, // INS_imul_14
-        237, 4, // INS_imul_15
-        237, 4, // INS_imul_16
-        237, 4, // INS_imul_17
-        237, 4, // INS_imul_18
-        237, 4, // INS_imul_19
-        237, 4, // INS_imul_20
-        237, 4, // INS_imul_21
-        237, 4, // INS_imul_22
-        237, 4, // INS_imul_23
-        237, 4, // INS_imul_24
-        237, 4, // INS_imul_25
-        237, 4, // INS_imul_26
-        237, 4, // INS_imul_27
-        237, 4, // INS_imul_28
-        237, 4, // INS_imul_29
-        237, 4, // INS_imul_30
-        237, 4, // INS_imul_31
-#endif
         242, 6, // INS_addpd
         249, 6, // INS_addps
         256, 6, // INS_addsd
@@ -5425,7 +5448,1073 @@ public sealed partial class CodeGen
         963, 8, // INS_vmpsadbw
         8077, 8, // INS_vucomxsd
         8086, 8, // INS_vucomxss
-#if TARGET_AMD64
+        8453, 5, // INS_crc32
+        8585, 5, // INS_tzcnt
+        8591, 5, // INS_lzcnt
+        8459, 5, // INS_movbe
+        8597, 6, // INS_popcnt
+        8604, 6, // INS_tpause
+        8611, 8, // INS_umonitor
+        8620, 6, // INS_umwait
+        8627, 3, // INS_neg
+        8631, 3, // INS_not
+        8635, 3, // INS_rol
+        8635, 3, // INS_rol_1
+        8635, 3, // INS_rol_N
+        8639, 3, // INS_ror
+        8639, 3, // INS_ror_1
+        8639, 3, // INS_ror_N
+        8643, 3, // INS_rcl
+        8643, 3, // INS_rcl_1
+        8643, 3, // INS_rcl_N
+        8647, 3, // INS_rcr
+        8647, 3, // INS_rcr_1
+        8647, 3, // INS_rcr_N
+        8651, 3, // INS_shl
+        8651, 3, // INS_shl_1
+        8651, 3, // INS_shl_N
+        8655, 3, // INS_shr
+        8655, 3, // INS_shr_1
+        8655, 3, // INS_shr_N
+        8659, 3, // INS_sar
+        8659, 3, // INS_sar_1
+        8659, 3, // INS_sar_N
+        8663, 3, // INS_ret
+        8667, 4, // INS_loop
+        8672, 4, // INS_call
+        8677, 9, // INS_r_movsb
+        8687, 9, // INS_r_movsd
+        8707, 5, // INS_movsb
+        8713, 5, // INS_movsd
+        8725, 9, // INS_r_stosb
+        8735, 9, // INS_r_stosd
+        8755, 5, // INS_stosb
+        8761, 5, // INS_stosd
+        8773, 4, // INS_int3
+        8778, 3, // INS_nop
+        8782, 5, // INS_pause
+        8788, 4, // INS_lock
+        8793, 5, // INS_leave
+        8799, 9, // INS_serialize
+        8809, 4, // INS_cwde
+        8814, 3, // INS_cdq
+        8818, 4, // INS_idiv
+        237, 4, // INS_imulEAX
+        8823, 3, // INS_div
+        8827, 3, // INS_mulEAX
+        8831, 4, // INS_sahf
+        8836, 4, // INS_xadd
+        8841, 7, // INS_cmpxchg
+        8849, 4, // INS_shld
+        8854, 4, // INS_shrd
+        8859, 3, // INS_fld
+        8863, 4, // INS_fstp
+        8868, 4, // INS_seto
+        8873, 5, // INS_setno
+        8879, 4, // INS_setb
+        8884, 5, // INS_setae
+        8890, 4, // INS_sete
+        8895, 5, // INS_setne
+        8901, 5, // INS_setbe
+        8907, 4, // INS_seta
+        8912, 4, // INS_sets
+        8917, 5, // INS_setns
+        8923, 4, // INS_setp
+        8928, 5, // INS_setnp
+        8934, 4, // INS_setl
+        8939, 5, // INS_setge
+        8945, 5, // INS_setle
+        8951, 4, // INS_setg
+        8956, 8, // INS_tail_i_jmp
+        8965, 3, // INS_i_jmp
+        8965, 3, // INS_jmp
+        8969, 2, // INS_jo
+        8972, 3, // INS_jno
+        8976, 2, // INS_jb
+        8979, 3, // INS_jae
+        8983, 2, // INS_je
+        8986, 3, // INS_jne
+        8990, 3, // INS_jbe
+        8994, 2, // INS_ja
+        8997, 2, // INS_js
+        9000, 3, // INS_jns
+        9004, 2, // INS_jp
+        9007, 3, // INS_jnp
+        9011, 2, // INS_jl
+        9014, 3, // INS_jge
+        9018, 3, // INS_jle
+        9022, 2, // INS_jg
+        8965, 3, // INS_l_jmp
+        8969, 2, // INS_l_jo
+        8972, 3, // INS_l_jno
+        8976, 2, // INS_l_jb
+        8979, 3, // INS_l_jae
+        8983, 2, // INS_l_je
+        8986, 3, // INS_l_jne
+        8990, 3, // INS_l_jbe
+        8994, 2, // INS_l_ja
+        8997, 2, // INS_l_js
+        9000, 3, // INS_l_jns
+        9004, 2, // INS_l_jp
+        9007, 3, // INS_l_jnp
+        9011, 2, // INS_l_jl
+        9014, 3, // INS_l_jge
+        9018, 3, // INS_l_jle
+        9022, 2, // INS_l_jg
+        9025, 5, // INS_align
+        9031, 6, // INS_data16
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesAmd64 => [
+        0, 7, // INS_invalid
+        8, 4, // INS_push
+        13, 3, // INS_pop
+        8, 4, // INS_push_hide
+        13, 3, // INS_pop_hide
+        17, 5, // INS_push2
+        23, 4, // INS_pop2
+        28, 3, // INS_inc
+        28, 3, // INS_inc_l
+        32, 3, // INS_dec
+        32, 3, // INS_dec_l
+        36, 5, // INS_bswap
+        42, 3, // INS_add
+        46, 2, // INS_or
+        49, 3, // INS_adc
+        53, 3, // INS_sbb
+        57, 3, // INS_and
+        61, 3, // INS_sub
+        61, 3, // INS_sub_hide
+        65, 3, // INS_xor
+        69, 3, // INS_cmp
+        73, 4, // INS_test
+        78, 3, // INS_mov
+        82, 3, // INS_lea
+        86, 2, // INS_bt
+        89, 3, // INS_bts
+        93, 3, // INS_btr
+        97, 3, // INS_btc
+        101, 3, // INS_bsr
+        105, 3, // INS_bsf
+        109, 5, // INS_movsx
+        115, 6, // INS_movsxd
+        122, 5, // INS_movzx
+        128, 5, // INS_cmovo
+        134, 6, // INS_cmovno
+        141, 5, // INS_cmovb
+        147, 6, // INS_cmovae
+        154, 5, // INS_cmove
+        160, 6, // INS_cmovne
+        167, 6, // INS_cmovbe
+        174, 5, // INS_cmova
+        180, 5, // INS_cmovs
+        186, 6, // INS_cmovns
+        193, 5, // INS_cmovp
+        199, 6, // INS_cmovnp
+        206, 5, // INS_cmovl
+        212, 6, // INS_cmovge
+        219, 6, // INS_cmovle
+        226, 5, // INS_cmovg
+        232, 4, // INS_xchg
+        237, 4, // INS_imul
+        237, 4, // INS_imul_AX
+        237, 4, // INS_imul_CX
+        237, 4, // INS_imul_DX
+        237, 4, // INS_imul_BX
+        237, 4, // INS_imul_SP
+        237, 4, // INS_imul_BP
+        237, 4, // INS_imul_SI
+        237, 4, // INS_imul_DI
+        237, 4, // INS_imul_08
+        237, 4, // INS_imul_09
+        237, 4, // INS_imul_10
+        237, 4, // INS_imul_11
+        237, 4, // INS_imul_12
+        237, 4, // INS_imul_13
+        237, 4, // INS_imul_14
+        237, 4, // INS_imul_15
+        237, 4, // INS_imul_16
+        237, 4, // INS_imul_17
+        237, 4, // INS_imul_18
+        237, 4, // INS_imul_19
+        237, 4, // INS_imul_20
+        237, 4, // INS_imul_21
+        237, 4, // INS_imul_22
+        237, 4, // INS_imul_23
+        237, 4, // INS_imul_24
+        237, 4, // INS_imul_25
+        237, 4, // INS_imul_26
+        237, 4, // INS_imul_27
+        237, 4, // INS_imul_28
+        237, 4, // INS_imul_29
+        237, 4, // INS_imul_30
+        237, 4, // INS_imul_31
+        242, 6, // INS_addpd
+        249, 6, // INS_addps
+        256, 6, // INS_addsd
+        263, 6, // INS_addss
+        270, 9, // INS_addsubpd
+        280, 9, // INS_addsubps
+        290, 7, // INS_andnpd
+        298, 7, // INS_andnps
+        306, 6, // INS_andpd
+        313, 6, // INS_andps
+        320, 8, // INS_blendpd
+        329, 8, // INS_blendps
+        338, 8, // INS_blendvpd
+        347, 8, // INS_blendvps
+        356, 6, // INS_cmppd
+        363, 6, // INS_cmpps
+        370, 6, // INS_cmpsd
+        377, 6, // INS_cmpss
+        384, 7, // INS_comisd
+        392, 7, // INS_comiss
+        400, 9, // INS_cvtdq2pd
+        410, 9, // INS_cvtdq2ps
+        420, 9, // INS_cvtpd2dq
+        430, 9, // INS_cvtpd2ps
+        440, 9, // INS_cvtps2dq
+        450, 9, // INS_cvtps2pd
+        460, 9, // INS_cvtsd2si32
+        460, 9, // INS_cvtsd2si64
+        470, 9, // INS_cvtsd2ss
+        480, 9, // INS_cvtsi2sd32
+        480, 9, // INS_cvtsi2sd64
+        490, 9, // INS_cvtsi2ss32
+        490, 9, // INS_cvtsi2ss64
+        500, 9, // INS_cvtss2sd
+        510, 9, // INS_cvtss2si32
+        510, 9, // INS_cvtss2si64
+        520, 10, // INS_cvttpd2dq
+        531, 10, // INS_cvttps2dq
+        542, 10, // INS_cvttsd2si32
+        542, 10, // INS_cvttsd2si64
+        553, 10, // INS_cvttss2si32
+        553, 10, // INS_cvttss2si64
+        564, 6, // INS_divpd
+        571, 6, // INS_divps
+        578, 6, // INS_divsd
+        585, 6, // INS_divss
+        592, 5, // INS_dppd
+        598, 5, // INS_dpps
+        604, 10, // INS_extractps
+        615, 7, // INS_haddpd
+        623, 7, // INS_haddps
+        631, 7, // INS_hsubpd
+        639, 7, // INS_hsubps
+        647, 9, // INS_insertps
+        657, 6, // INS_lddqu
+        664, 6, // INS_lfence
+        671, 11, // INS_maskmovdqu
+        683, 6, // INS_maxpd
+        690, 6, // INS_maxps
+        697, 6, // INS_maxsd
+        704, 6, // INS_maxss
+        711, 6, // INS_mfence
+        718, 6, // INS_minpd
+        725, 6, // INS_minps
+        732, 6, // INS_minsd
+        739, 6, // INS_minss
+        746, 7, // INS_movapd
+        754, 7, // INS_movaps
+        762, 5, // INS_movd32
+        768, 5, // INS_movd64
+        774, 8, // INS_movddup
+        783, 7, // INS_movdqa32
+        791, 7, // INS_movdqu32
+        799, 8, // INS_movhlps
+        808, 7, // INS_movhpd
+        816, 7, // INS_movhps
+        824, 8, // INS_movlhps
+        833, 7, // INS_movlpd
+        841, 7, // INS_movlps
+        849, 9, // INS_movmskpd
+        859, 9, // INS_movmskps
+        869, 8, // INS_movntdq
+        878, 9, // INS_movntdqa
+        888, 6, // INS_movnti32
+        888, 6, // INS_movnti64
+        895, 8, // INS_movntpd
+        904, 8, // INS_movntps
+        768, 5, // INS_movq
+        913, 6, // INS_movsd_simd
+        920, 9, // INS_movshdup
+        930, 9, // INS_movsldup
+        940, 6, // INS_movss
+        947, 7, // INS_movupd
+        955, 7, // INS_movups
+        963, 8, // INS_mpsadbw
+        972, 6, // INS_mulpd
+        979, 6, // INS_mulps
+        986, 6, // INS_mulsd
+        993, 6, // INS_mulss
+        1000, 5, // INS_orpd
+        1006, 5, // INS_orps
+        1012, 6, // INS_pabsb
+        1019, 6, // INS_pabsd
+        1026, 6, // INS_pabsw
+        1033, 9, // INS_packssdw
+        1043, 9, // INS_packsswb
+        1053, 9, // INS_packusdw
+        1063, 9, // INS_packuswb
+        1073, 6, // INS_paddb
+        1080, 6, // INS_paddd
+        1087, 6, // INS_paddq
+        1094, 7, // INS_paddsb
+        1102, 7, // INS_paddsw
+        1110, 8, // INS_paddusb
+        1119, 8, // INS_paddusw
+        1128, 6, // INS_paddw
+        1135, 8, // INS_palignr
+        1144, 5, // INS_pandd
+        1150, 6, // INS_pandnd
+        1157, 6, // INS_pavgb
+        1164, 6, // INS_pavgw
+        1171, 8, // INS_pblendvb
+        1180, 8, // INS_pblendw
+        1189, 8, // INS_pcmpeqb
+        1198, 8, // INS_pcmpeqd
+        1207, 8, // INS_pcmpeqq
+        1216, 8, // INS_pcmpeqw
+        1225, 8, // INS_pcmpgtb
+        1234, 8, // INS_pcmpgtd
+        1243, 8, // INS_pcmpgtq
+        1252, 8, // INS_pcmpgtw
+        1261, 7, // INS_pextrb
+        1269, 7, // INS_pextrd
+        1277, 7, // INS_pextrq
+        1285, 7, // INS_phaddd
+        1293, 7, // INS_pextrw
+        1301, 8, // INS_phaddsw
+        1310, 7, // INS_phaddw
+        1318, 11, // INS_phminposuw
+        1330, 7, // INS_phsubd
+        1338, 8, // INS_phsubsw
+        1347, 7, // INS_phsubw
+        1355, 7, // INS_pinsrb
+        1363, 7, // INS_pinsrd
+        1371, 7, // INS_pinsrq
+        1379, 7, // INS_pinsrw
+        1387, 10, // INS_pmaddubsw
+        1398, 8, // INS_pmaddwd
+        1407, 7, // INS_pmaxsb
+        1415, 7, // INS_pmaxsd
+        1423, 7, // INS_pmaxsw
+        1431, 7, // INS_pmaxub
+        1439, 7, // INS_pmaxud
+        1447, 7, // INS_pmaxuw
+        1455, 7, // INS_pminsb
+        1463, 7, // INS_pminsd
+        1471, 7, // INS_pminsw
+        1479, 7, // INS_pminub
+        1487, 7, // INS_pminud
+        1495, 7, // INS_pminuw
+        1503, 9, // INS_pmovmskb
+        1513, 9, // INS_pmovsxbd
+        1523, 9, // INS_pmovsxbq
+        1533, 9, // INS_pmovsxbw
+        1543, 9, // INS_pmovsxdq
+        1553, 9, // INS_pmovsxwd
+        1563, 9, // INS_pmovsxwq
+        1573, 9, // INS_pmovzxbd
+        1583, 9, // INS_pmovzxbq
+        1593, 9, // INS_pmovzxbw
+        1603, 9, // INS_pmovzxdq
+        1613, 9, // INS_pmovzxwd
+        1623, 9, // INS_pmovzxwq
+        1633, 7, // INS_pmuldq
+        1641, 9, // INS_pmulhrsw
+        1651, 8, // INS_pmulhuw
+        1660, 7, // INS_pmulhw
+        1668, 7, // INS_pmulld
+        1676, 8, // INS_pmuludq
+        1685, 7, // INS_pmullw
+        1693, 4, // INS_pord
+        1698, 11, // INS_prefetchnta
+        1710, 10, // INS_prefetcht0
+        1721, 10, // INS_prefetcht1
+        1732, 10, // INS_prefetcht2
+        1743, 7, // INS_psadbw
+        1751, 7, // INS_pshufb
+        1759, 7, // INS_pshufd
+        1767, 8, // INS_pshufhw
+        1776, 8, // INS_pshuflw
+        1785, 7, // INS_psignb
+        1793, 7, // INS_psignd
+        1801, 7, // INS_psignw
+        1809, 6, // INS_pslld
+        1816, 7, // INS_pslldq
+        1824, 6, // INS_psllq
+        1831, 6, // INS_psllw
+        1838, 6, // INS_psrad
+        1845, 6, // INS_psraw
+        1852, 6, // INS_psrld
+        1859, 7, // INS_psrldq
+        1867, 6, // INS_psrlq
+        1874, 6, // INS_psrlw
+        1881, 6, // INS_psubb
+        1888, 6, // INS_psubd
+        1895, 6, // INS_psubq
+        1902, 7, // INS_psubsb
+        1910, 7, // INS_psubsw
+        1918, 8, // INS_psubusb
+        1927, 8, // INS_psubusw
+        1936, 6, // INS_psubw
+        1943, 6, // INS_ptest
+        1950, 10, // INS_punpckhbw
+        1961, 10, // INS_punpckhdq
+        1972, 11, // INS_punpckhqdq
+        1984, 10, // INS_punpckhwd
+        1995, 10, // INS_punpcklbw
+        2006, 10, // INS_punpckldq
+        2017, 11, // INS_punpcklqdq
+        2029, 10, // INS_punpcklwd
+        2040, 5, // INS_pxord
+        2046, 6, // INS_rcpps
+        2053, 6, // INS_rcpss
+        2060, 8, // INS_roundpd
+        2069, 8, // INS_roundps
+        2078, 8, // INS_roundsd
+        2087, 8, // INS_roundss
+        2096, 8, // INS_rsqrtps
+        2105, 8, // INS_rsqrtss
+        2114, 6, // INS_sfence
+        2121, 7, // INS_shufpd
+        2129, 7, // INS_shufps
+        2137, 7, // INS_sqrtpd
+        2145, 7, // INS_sqrtps
+        2153, 7, // INS_sqrtsd
+        2161, 7, // INS_sqrtss
+        2169, 6, // INS_subpd
+        2176, 6, // INS_subps
+        2183, 6, // INS_subsd
+        2190, 6, // INS_subss
+        2197, 8, // INS_ucomisd
+        2206, 8, // INS_ucomiss
+        2215, 9, // INS_unpckhpd
+        2225, 9, // INS_unpckhps
+        2235, 9, // INS_unpcklpd
+        2245, 9, // INS_unpcklps
+        2255, 6, // INS_xorpd
+        2262, 6, // INS_xorps
+        2269, 7, // INS_aesdec
+        2277, 11, // INS_aesdeclast
+        2289, 7, // INS_aesenc
+        2297, 11, // INS_aesenclast
+        2309, 7, // INS_aesimc
+        2317, 16, // INS_aeskeygenassist
+        2334, 10, // INS_pclmulqdq
+        2345, 8, // INS_sha1msg1
+        2354, 8, // INS_sha1msg2
+        2363, 9, // INS_sha1nexte
+        2373, 9, // INS_sha1rnds4
+        2383, 10, // INS_sha256msg1
+        2394, 10, // INS_sha256msg2
+        2405, 11, // INS_sha256rnds2
+        2417, 17, // INS_gf2p8affineinvqb
+        2435, 14, // INS_gf2p8affineqb
+        2450, 10, // INS_gf2p8mulb
+        2461, 9, // INS_vblendvpd
+        2471, 9, // INS_vblendvps
+        2481, 14, // INS_vbroadcastf32x4
+        2496, 12, // INS_vbroadcastsd
+        2509, 12, // INS_vbroadcastss
+        2522, 12, // INS_vextractf32x4
+        2535, 11, // INS_vinsertf32x4
+        2547, 10, // INS_vmaskmovpd
+        2558, 10, // INS_vmaskmovps
+        2569, 9, // INS_vpblendvb
+        2579, 10, // INS_vperm2f128
+        2590, 9, // INS_vpermilpd
+        2590, 9, // INS_vpermilpdvar
+        2600, 9, // INS_vpermilps
+        2600, 9, // INS_vpermilpsvar
+        2610, 7, // INS_vtestpd
+        2618, 7, // INS_vtestps
+        2626, 10, // INS_vzeroupper
+        2637, 14, // INS_vbroadcasti32x4
+        2652, 9, // INS_vcvtph2ps
+        2662, 9, // INS_vcvtps2ph
+        2672, 12, // INS_vextracti32x4
+        2685, 10, // INS_vgatherdpd
+        2696, 10, // INS_vgatherdps
+        2707, 10, // INS_vgatherqpd
+        2718, 10, // INS_vgatherqps
+        2729, 11, // INS_vinserti32x4
+        2741, 8, // INS_vpblendd
+        2750, 12, // INS_vpbroadcastb
+        2763, 12, // INS_vpbroadcastd
+        2776, 12, // INS_vpbroadcastq
+        2789, 12, // INS_vpbroadcastw
+        2802, 10, // INS_vperm2i128
+        2813, 6, // INS_vpermd
+        2820, 7, // INS_vpermpd
+        2828, 7, // INS_vpermps
+        2836, 6, // INS_vpermq
+        2843, 10, // INS_vpgatherdd
+        2854, 10, // INS_vpgatherdq
+        2865, 10, // INS_vpgatherqd
+        2876, 10, // INS_vpgatherqq
+        2887, 10, // INS_vpmaskmovd
+        2898, 10, // INS_vpmaskmovq
+        2909, 7, // INS_vpsllvd
+        2917, 7, // INS_vpsllvq
+        2925, 7, // INS_vpsravd
+        2933, 7, // INS_vpsrlvd
+        2941, 7, // INS_vpsrlvq
+        2949, 11, // INS_vfmadd132pd
+        2961, 11, // INS_vfmadd213pd
+        2973, 11, // INS_vfmadd231pd
+        2985, 11, // INS_vfmadd132ps
+        2997, 11, // INS_vfmadd213ps
+        3009, 11, // INS_vfmadd231ps
+        3021, 11, // INS_vfmadd132sd
+        3033, 11, // INS_vfmadd213sd
+        3045, 11, // INS_vfmadd231sd
+        3057, 11, // INS_vfmadd132ss
+        3069, 11, // INS_vfmadd213ss
+        3081, 11, // INS_vfmadd231ss
+        3093, 14, // INS_vfmaddsub132pd
+        3108, 14, // INS_vfmaddsub213pd
+        3123, 14, // INS_vfmaddsub231pd
+        3138, 14, // INS_vfmaddsub132ps
+        3153, 14, // INS_vfmaddsub213ps
+        3168, 14, // INS_vfmaddsub231ps
+        3183, 14, // INS_vfmsubadd132pd
+        3198, 14, // INS_vfmsubadd213pd
+        3213, 14, // INS_vfmsubadd231pd
+        3228, 14, // INS_vfmsubadd132ps
+        3243, 14, // INS_vfmsubadd213ps
+        3258, 14, // INS_vfmsubadd231ps
+        3273, 11, // INS_vfmsub132pd
+        3285, 11, // INS_vfmsub213pd
+        3297, 11, // INS_vfmsub231pd
+        3309, 11, // INS_vfmsub132ps
+        3321, 11, // INS_vfmsub213ps
+        3333, 11, // INS_vfmsub231ps
+        3345, 11, // INS_vfmsub132sd
+        3357, 11, // INS_vfmsub213sd
+        3369, 11, // INS_vfmsub231sd
+        3381, 11, // INS_vfmsub132ss
+        3393, 11, // INS_vfmsub213ss
+        3405, 11, // INS_vfmsub231ss
+        3417, 12, // INS_vfnmadd132pd
+        3430, 12, // INS_vfnmadd213pd
+        3443, 12, // INS_vfnmadd231pd
+        3456, 12, // INS_vfnmadd132ps
+        3469, 12, // INS_vfnmadd213ps
+        3482, 12, // INS_vfnmadd231ps
+        3495, 12, // INS_vfnmadd132sd
+        3508, 12, // INS_vfnmadd213sd
+        3521, 12, // INS_vfnmadd231sd
+        3534, 12, // INS_vfnmadd132ss
+        3547, 12, // INS_vfnmadd213ss
+        3560, 12, // INS_vfnmadd231ss
+        3573, 12, // INS_vfnmsub132pd
+        3586, 12, // INS_vfnmsub213pd
+        3599, 12, // INS_vfnmsub231pd
+        3612, 12, // INS_vfnmsub132ps
+        3625, 12, // INS_vfnmsub213ps
+        3638, 12, // INS_vfnmsub231ps
+        3651, 12, // INS_vfnmsub132sd
+        3664, 12, // INS_vfnmsub213sd
+        3677, 12, // INS_vfnmsub231sd
+        3690, 12, // INS_vfnmsub132ss
+        3703, 12, // INS_vfnmsub213ss
+        3716, 12, // INS_vfnmsub231ss
+        3729, 4, // INS_andn
+        3734, 5, // INS_bextr
+        3740, 4, // INS_blsi
+        3745, 6, // INS_blsmsk
+        3752, 4, // INS_blsr
+        3757, 4, // INS_bzhi
+        3762, 4, // INS_mulx
+        3767, 4, // INS_pdep
+        3772, 4, // INS_pext
+        3777, 4, // INS_rorx
+        3782, 4, // INS_sarx
+        3787, 4, // INS_shlx
+        3792, 4, // INS_shrx
+        3797, 8, // INS_vpdpbusd
+        3806, 9, // INS_vpdpbusds
+        3816, 8, // INS_vpdpwssd
+        3825, 9, // INS_vpdpwssds
+        3835, 8, // INS_vpdpwsud
+        3844, 9, // INS_vpdpwsuds
+        3854, 8, // INS_vpdpwusd
+        3863, 9, // INS_vpdpwusds
+        3873, 8, // INS_vpdpwuud
+        3882, 9, // INS_vpdpwuuds
+        3892, 8, // INS_vpdpbssd
+        3901, 9, // INS_vpdpbssds
+        3911, 8, // INS_vpdpbsud
+        3920, 9, // INS_vpdpbsuds
+        3930, 8, // INS_vpdpbuud
+        3939, 9, // INS_vpdpbuuds
+        3949, 15, // INS_vbmacor16x16x16
+        3965, 16, // INS_vbmacxor16x16x16
+        3982, 7, // INS_vbitrev
+        3990, 11, // INS_vpmadd52huq
+        4002, 11, // INS_vpmadd52luq
+        4014, 5, // INS_kaddb
+        4020, 5, // INS_kaddd
+        4026, 5, // INS_kaddq
+        4032, 5, // INS_kaddw
+        4038, 5, // INS_kandb
+        4044, 5, // INS_kandd
+        4050, 6, // INS_kandnb
+        4057, 6, // INS_kandnd
+        4064, 6, // INS_kandnq
+        4071, 6, // INS_kandnw
+        4078, 5, // INS_kandq
+        4084, 5, // INS_kandw
+        4090, 5, // INS_kmovb_gpr
+        4090, 5, // INS_kmovb_msk
+        4096, 5, // INS_kmovd_gpr
+        4096, 5, // INS_kmovd_msk
+        4102, 5, // INS_kmovq_gpr
+        4102, 5, // INS_kmovq_msk
+        4108, 5, // INS_kmovw_gpr
+        4108, 5, // INS_kmovw_msk
+        4114, 5, // INS_knotb
+        4120, 5, // INS_knotd
+        4126, 5, // INS_knotq
+        4132, 5, // INS_knotw
+        4138, 4, // INS_korb
+        4143, 4, // INS_kord
+        4148, 4, // INS_korq
+        4153, 8, // INS_kortestb
+        4162, 8, // INS_kortestd
+        4171, 8, // INS_kortestq
+        4180, 8, // INS_kortestw
+        4189, 4, // INS_korw
+        4194, 8, // INS_kshiftlb
+        4203, 8, // INS_kshiftld
+        4212, 8, // INS_kshiftlq
+        4221, 8, // INS_kshiftlw
+        4230, 8, // INS_kshiftrb
+        4239, 8, // INS_kshiftrd
+        4248, 8, // INS_kshiftrq
+        4257, 8, // INS_kshiftrw
+        4266, 6, // INS_ktestb
+        4273, 6, // INS_ktestd
+        4280, 6, // INS_ktestq
+        4287, 6, // INS_ktestw
+        4294, 8, // INS_kunpckbw
+        4303, 8, // INS_kunpckdq
+        4312, 8, // INS_kunpckwd
+        4321, 6, // INS_kxnorb
+        4328, 6, // INS_kxnord
+        4335, 6, // INS_kxnorq
+        4342, 6, // INS_kxnorw
+        4349, 5, // INS_kxorb
+        4355, 5, // INS_kxord
+        4361, 5, // INS_kxorq
+        4367, 5, // INS_kxorw
+        4373, 7, // INS_valignd
+        4381, 7, // INS_valignq
+        4389, 9, // INS_vblendmpd
+        4399, 9, // INS_vblendmps
+        4409, 15, // INS_vbroadcastf32x2
+        4425, 15, // INS_vbroadcastf32x8
+        4441, 15, // INS_vbroadcastf64x2
+        4457, 15, // INS_vbroadcastf64x4
+        4473, 15, // INS_vbroadcasti32x2
+        4489, 15, // INS_vbroadcasti32x8
+        4505, 15, // INS_vbroadcasti64x2
+        4521, 15, // INS_vbroadcasti64x4
+        356, 6, // INS_vcmppd
+        363, 6, // INS_vcmpps
+        370, 6, // INS_vcmpsd
+        377, 6, // INS_vcmpss
+        4537, 11, // INS_vcompresspd
+        4549, 11, // INS_vcompressps
+        4561, 9, // INS_vcvtpd2qq
+        4571, 10, // INS_vcvtpd2udq
+        4582, 10, // INS_vcvtpd2uqq
+        4593, 9, // INS_vcvtps2qq
+        4603, 10, // INS_vcvtps2udq
+        4614, 10, // INS_vcvtps2uqq
+        4625, 9, // INS_vcvtqq2pd
+        4635, 9, // INS_vcvtqq2ps
+        4645, 10, // INS_vcvtsd2usi32
+        4645, 10, // INS_vcvtsd2usi64
+        4656, 10, // INS_vcvtss2usi32
+        4656, 10, // INS_vcvtss2usi64
+        4667, 10, // INS_vcvttpd2qq
+        4678, 11, // INS_vcvttpd2udq
+        4690, 11, // INS_vcvttpd2uqq
+        4702, 10, // INS_vcvttps2qq
+        4713, 11, // INS_vcvttps2udq
+        4725, 11, // INS_vcvttps2uqq
+        4737, 11, // INS_vcvttsd2usi32
+        4737, 11, // INS_vcvttsd2usi64
+        4749, 11, // INS_vcvttss2usi32
+        4749, 11, // INS_vcvttss2usi64
+        4761, 10, // INS_vcvtudq2pd
+        4772, 10, // INS_vcvtudq2ps
+        4783, 10, // INS_vcvtuqq2pd
+        4794, 10, // INS_vcvtuqq2ps
+        4805, 10, // INS_vcvtusi2sd32
+        4805, 10, // INS_vcvtusi2sd64
+        4816, 10, // INS_vcvtusi2ss32
+        4816, 10, // INS_vcvtusi2ss64
+        4827, 9, // INS_vdbpsadbw
+        4837, 9, // INS_vexpandpd
+        4847, 9, // INS_vexpandps
+        4857, 13, // INS_vextractf32x8
+        4871, 13, // INS_vextractf64x2
+        4885, 13, // INS_vextractf64x4
+        4899, 13, // INS_vextracti32x8
+        4913, 13, // INS_vextracti64x2
+        4927, 13, // INS_vextracti64x4
+        4941, 11, // INS_vfixupimmpd
+        4953, 11, // INS_vfixupimmps
+        4965, 11, // INS_vfixupimmsd
+        4977, 11, // INS_vfixupimmss
+        4989, 10, // INS_vfpclasspd
+        5000, 10, // INS_vfpclassps
+        5011, 10, // INS_vfpclasssd
+        5022, 10, // INS_vfpclassss
+        2685, 10, // INS_vgatherdpd_msk
+        2696, 10, // INS_vgatherdps_msk
+        2707, 10, // INS_vgatherqpd_msk
+        2718, 10, // INS_vgatherqps_msk
+        5033, 9, // INS_vgetexppd
+        5043, 9, // INS_vgetexpps
+        5053, 9, // INS_vgetexpsd
+        5063, 9, // INS_vgetexpss
+        5073, 10, // INS_vgetmantpd
+        5084, 10, // INS_vgetmantps
+        5095, 10, // INS_vgetmantsd
+        5106, 10, // INS_vgetmantss
+        5117, 12, // INS_vinsertf32x8
+        5130, 12, // INS_vinsertf64x2
+        5143, 12, // INS_vinsertf64x4
+        5156, 12, // INS_vinserti32x8
+        5169, 12, // INS_vinserti64x2
+        5182, 12, // INS_vinserti64x4
+        5195, 9, // INS_vmovdqa64
+        5205, 9, // INS_vmovdqu16
+        5215, 9, // INS_vmovdqu64
+        5225, 8, // INS_vmovdqu8
+        5234, 6, // INS_vpabsq
+        5241, 7, // INS_vpandnq
+        5249, 6, // INS_vpandq
+        5256, 9, // INS_vpblendmb
+        5266, 9, // INS_vpblendmd
+        5276, 9, // INS_vpblendmq
+        5286, 9, // INS_vpblendmw
+        2750, 12, // INS_vpbroadcastb_gpr
+        2763, 12, // INS_vpbroadcastd_gpr
+        2776, 12, // INS_vpbroadcastq_gpr
+        2789, 12, // INS_vpbroadcastw_gpr
+        5296, 6, // INS_vpcmpb
+        5303, 6, // INS_vpcmpd
+        1189, 8, // INS_vpcmpeqb
+        1198, 8, // INS_vpcmpeqd
+        1207, 8, // INS_vpcmpeqq
+        1216, 8, // INS_vpcmpeqw
+        1225, 8, // INS_vpcmpgtb
+        1234, 8, // INS_vpcmpgtd
+        1243, 8, // INS_vpcmpgtq
+        1252, 8, // INS_vpcmpgtw
+        5310, 6, // INS_vpcmpq
+        5317, 7, // INS_vpcmpub
+        5325, 7, // INS_vpcmpud
+        5333, 7, // INS_vpcmpuq
+        5341, 7, // INS_vpcmpuw
+        5349, 6, // INS_vpcmpw
+        5356, 11, // INS_vpcompressd
+        5368, 11, // INS_vpcompressq
+        5380, 11, // INS_vpconflictd
+        5392, 11, // INS_vpconflictq
+        5404, 8, // INS_vpermi2d
+        5413, 9, // INS_vpermi2pd
+        5423, 9, // INS_vpermi2ps
+        5433, 8, // INS_vpermi2q
+        5442, 8, // INS_vpermi2w
+        2820, 7, // INS_vpermpd_reg
+        2836, 6, // INS_vpermq_reg
+        5451, 8, // INS_vpermt2d
+        5460, 9, // INS_vpermt2pd
+        5470, 9, // INS_vpermt2ps
+        5480, 8, // INS_vpermt2q
+        5489, 8, // INS_vpermt2w
+        5498, 6, // INS_vpermw
+        5505, 9, // INS_vpexpandd
+        5515, 9, // INS_vpexpandq
+        2843, 10, // INS_vpgatherdd_msk
+        2854, 10, // INS_vpgatherdq_msk
+        2865, 10, // INS_vpgatherqd_msk
+        2876, 10, // INS_vpgatherqq_msk
+        5525, 8, // INS_vplzcntd
+        5534, 8, // INS_vplzcntq
+        5543, 7, // INS_vpmaxsq
+        5551, 7, // INS_vpmaxuq
+        5559, 7, // INS_vpminsq
+        5567, 7, // INS_vpminuq
+        5575, 8, // INS_vpmovb2m
+        5584, 8, // INS_vpmovd2m
+        5593, 7, // INS_vpmovdb
+        5601, 7, // INS_vpmovdw
+        5609, 8, // INS_vpmovm2b
+        5618, 8, // INS_vpmovm2d
+        5627, 8, // INS_vpmovm2q
+        5636, 8, // INS_vpmovm2w
+        5645, 8, // INS_vpmovq2m
+        5654, 7, // INS_vpmovqb
+        5662, 7, // INS_vpmovqd
+        5670, 7, // INS_vpmovqw
+        5678, 8, // INS_vpmovsdb
+        5687, 8, // INS_vpmovsdw
+        5696, 8, // INS_vpmovsqb
+        5705, 8, // INS_vpmovsqd
+        5714, 8, // INS_vpmovsqw
+        5723, 8, // INS_vpmovswb
+        5732, 9, // INS_vpmovusdb
+        5742, 9, // INS_vpmovusdw
+        5752, 9, // INS_vpmovusqb
+        5762, 9, // INS_vpmovusqd
+        5772, 9, // INS_vpmovusqw
+        5782, 9, // INS_vpmovuswb
+        5792, 8, // INS_vpmovw2m
+        5801, 7, // INS_vpmovwb
+        5809, 7, // INS_vpmullq
+        5817, 5, // INS_vporq
+        5823, 6, // INS_vprold
+        5830, 6, // INS_vprolq
+        5837, 7, // INS_vprolvd
+        5845, 7, // INS_vprolvq
+        5853, 6, // INS_vprord
+        5860, 6, // INS_vprorq
+        5867, 7, // INS_vprorvd
+        5875, 7, // INS_vprorvq
+        5883, 11, // INS_vpscatterdd_msk
+        5895, 11, // INS_vpscatterdq_msk
+        5907, 11, // INS_vpscatterqd_msk
+        5919, 11, // INS_vpscatterqq_msk
+        5931, 7, // INS_vpsllvw
+        5939, 6, // INS_vpsraq
+        5946, 7, // INS_vpsravq
+        5954, 7, // INS_vpsravw
+        5962, 7, // INS_vpsrlvw
+        5970, 10, // INS_vpternlogd
+        5981, 10, // INS_vpternlogq
+        5992, 8, // INS_vptestmb
+        6001, 8, // INS_vptestmd
+        6010, 8, // INS_vptestmq
+        6019, 8, // INS_vptestmw
+        6028, 9, // INS_vptestnmb
+        6038, 9, // INS_vptestnmd
+        6048, 9, // INS_vptestnmq
+        6058, 9, // INS_vptestnmw
+        6068, 6, // INS_vpxorq
+        6075, 8, // INS_vrangepd
+        6084, 8, // INS_vrangeps
+        6093, 8, // INS_vrangesd
+        6102, 8, // INS_vrangess
+        6111, 8, // INS_vrcp14pd
+        6120, 8, // INS_vrcp14ps
+        6129, 8, // INS_vrcp14sd
+        6138, 8, // INS_vrcp14ss
+        6147, 9, // INS_vreducepd
+        6157, 9, // INS_vreduceps
+        6167, 9, // INS_vreducesd
+        6177, 9, // INS_vreducess
+        6187, 11, // INS_vrndscalepd
+        6199, 11, // INS_vrndscaleps
+        6211, 11, // INS_vrndscalesd
+        6223, 11, // INS_vrndscaless
+        6235, 10, // INS_vrsqrt14pd
+        6246, 10, // INS_vrsqrt14ps
+        6257, 10, // INS_vrsqrt14sd
+        6268, 10, // INS_vrsqrt14ss
+        6279, 9, // INS_vscalefpd
+        6289, 9, // INS_vscalefps
+        6299, 9, // INS_vscalefsd
+        6309, 9, // INS_vscalefss
+        6319, 11, // INS_vscatterdpd_msk
+        6331, 11, // INS_vscatterdps_msk
+        6343, 11, // INS_vscatterqpd_msk
+        6355, 11, // INS_vscatterqps_msk
+        6367, 10, // INS_vshuff32x4
+        6378, 10, // INS_vshuff64x2
+        6389, 10, // INS_vshufi32x4
+        6400, 10, // INS_vshufi64x2
+        6411, 6, // INS_vpermb
+        6418, 8, // INS_vpermi2b
+        6427, 8, // INS_vpermt2b
+        6436, 14, // INS_vpmultishiftqb
+        6451, 11, // INS_vpcompressb
+        6463, 11, // INS_vpcompressw
+        6475, 9, // INS_vpexpandb
+        6485, 9, // INS_vpexpandw
+        6495, 8, // INS_vpopcntb
+        6504, 8, // INS_vpopcntd
+        6513, 8, // INS_vpopcntq
+        6522, 8, // INS_vpopcntw
+        6531, 7, // INS_vpshldd
+        6539, 7, // INS_vpshldq
+        6547, 8, // INS_vpshldvd
+        6556, 8, // INS_vpshldvq
+        6565, 8, // INS_vpshldvw
+        6574, 7, // INS_vpshldw
+        6582, 7, // INS_vpshrdd
+        6590, 7, // INS_vpshrdq
+        6598, 8, // INS_vpshrdvd
+        6607, 8, // INS_vpshrdvq
+        6616, 8, // INS_vpshrdvw
+        6625, 7, // INS_vpshrdw
+        6633, 12, // INS_vpshufbitqmb
+        6646, 6, // INS_vaddph
+        6653, 6, // INS_vaddsh
+        6660, 6, // INS_vcmpph
+        6667, 6, // INS_vcmpsh
+        6674, 7, // INS_vcomish
+        6682, 9, // INS_vcvtdq2ph
+        6692, 14, // INS_vcvtne2ps2bf16
+        6707, 13, // INS_vcvtneps2bf16
+        6721, 9, // INS_vcvtpd2ph
+        6731, 9, // INS_vcvtph2dq
+        6741, 9, // INS_vcvtph2pd
+        6751, 10, // INS_vcvtph2psx
+        6762, 9, // INS_vcvtph2qq
+        6772, 10, // INS_vcvtph2udq
+        6783, 10, // INS_vcvtph2uqq
+        6794, 9, // INS_vcvtph2uw
+        6804, 8, // INS_vcvtph2w
+        6813, 10, // INS_vcvtps2phx
+        6824, 9, // INS_vcvtqq2ph
+        6834, 9, // INS_vcvtsd2sh
+        6844, 9, // INS_vcvtsh2sd
+        6854, 9, // INS_vcvtsh2si32
+        6854, 9, // INS_vcvtsh2si64
+        6864, 9, // INS_vcvtsh2ss
+        6874, 10, // INS_vcvtsh2usi32
+        6874, 10, // INS_vcvtsh2usi64
+        6885, 9, // INS_vcvtsi2sh32
+        6885, 9, // INS_vcvtsi2sh64
+        6895, 9, // INS_vcvtss2sh
+        6905, 10, // INS_vcvttph2dq
+        6916, 10, // INS_vcvttph2qq
+        6927, 11, // INS_vcvttph2udq
+        6939, 11, // INS_vcvttph2uqq
+        6951, 10, // INS_vcvttph2uw
+        6962, 9, // INS_vcvttph2w
+        6972, 10, // INS_vcvttsh2si32
+        6972, 10, // INS_vcvttsh2si64
+        6983, 11, // INS_vcvttsh2usi32
+        6983, 11, // INS_vcvttsh2usi64
+        6995, 10, // INS_vcvtudq2ph
+        7006, 10, // INS_vcvtuqq2ph
+        7017, 10, // INS_vcvtusi2sh32
+        7017, 10, // INS_vcvtusi2sh64
+        7028, 9, // INS_vcvtuw2ph
+        7038, 8, // INS_vcvtw2ph
+        7047, 6, // INS_vdivph
+        7054, 6, // INS_vdivsh
+        7061, 9, // INS_vdpbf16ps
+        7071, 10, // INS_vfcmaddcph
+        7082, 10, // INS_vfcmaddcsh
+        7093, 9, // INS_vfcmulcph
+        7103, 9, // INS_vfcmulcsh
+        7113, 8, // INS_vfmulcph
+        7122, 8, // INS_vfmulcsh
+        7131, 11, // INS_vfmadd132ph
+        7143, 11, // INS_vfmadd213ph
+        7155, 11, // INS_vfmadd231ph
+        7167, 11, // INS_vfmadd132sh
+        7179, 11, // INS_vfmadd213sh
+        7191, 11, // INS_vfmadd231sh
+        7203, 9, // INS_vfmaddcph
+        7213, 9, // INS_vfmaddcsh
+        7223, 14, // INS_vfmaddsub132ph
+        7238, 14, // INS_vfmaddsub213ph
+        7253, 14, // INS_vfmaddsub231ph
+        7268, 11, // INS_vfmsub132ph
+        7280, 11, // INS_vfmsub213ph
+        7292, 11, // INS_vfmsub231ph
+        7304, 11, // INS_vfmsub132sh
+        7316, 11, // INS_vfmsub213sh
+        7328, 11, // INS_vfmsub231sh
+        7340, 14, // INS_vfmsubadd132ph
+        7355, 14, // INS_vfmsubadd213ph
+        7370, 14, // INS_vfmsubadd231ph
+        7385, 12, // INS_vfnmadd132ph
+        7398, 12, // INS_vfnmadd213ph
+        7411, 12, // INS_vfnmadd231ph
+        7424, 12, // INS_vfnmadd132sh
+        7437, 12, // INS_vfnmadd213sh
+        7450, 12, // INS_vfnmadd231sh
+        7463, 12, // INS_vfnmsub132ph
+        7476, 12, // INS_vfnmsub213ph
+        7489, 12, // INS_vfnmsub231ph
+        7502, 12, // INS_vfnmsub132sh
+        7515, 12, // INS_vfnmsub213sh
+        7528, 12, // INS_vfnmsub231sh
+        7541, 10, // INS_vfpclassph
+        7552, 10, // INS_vfpclasssh
+        7563, 9, // INS_vgetexpph
+        7573, 9, // INS_vgetexpsh
+        7583, 10, // INS_vgetmantph
+        7594, 10, // INS_vgetmantsh
+        7605, 6, // INS_vmaxph
+        7612, 6, // INS_vmaxsh
+        7619, 6, // INS_vminsh
+        7626, 6, // INS_vminph
+        7633, 6, // INS_vmovsh
+        7640, 5, // INS_vmovw
+        7646, 6, // INS_vmulph
+        7653, 6, // INS_vmulsh
+        7660, 6, // INS_vrcpph
+        7667, 6, // INS_vrcpsh
+        7674, 9, // INS_vreduceph
+        7684, 9, // INS_vreducesh
+        7694, 11, // INS_vrndscaleph
+        7706, 11, // INS_vrndscalesh
+        7718, 8, // INS_vrsqrtph
+        7727, 8, // INS_vrsqrtsh
+        7736, 9, // INS_vscalefph
+        7746, 9, // INS_vscalefsh
+        7756, 7, // INS_vsqrtph
+        7764, 7, // INS_vsqrtsh
+        7772, 6, // INS_vsubph
+        7779, 6, // INS_vsubsh
+        7786, 8, // INS_vucomish
+        7795, 13, // INS_vp2intersectd
+        7809, 13, // INS_vp2intersectq
+        7823, 7, // INS_vcomxsd
+        7831, 7, // INS_vcomxss
+        7839, 10, // INS_vcvtps2ibs
+        7850, 11, // INS_vcvtps2iubs
+        7862, 11, // INS_vcvttpd2dqs
+        7874, 11, // INS_vcvttpd2qqs
+        7886, 12, // INS_vcvttpd2udqs
+        7899, 12, // INS_vcvttpd2uqqs
+        7912, 11, // INS_vcvttps2dqs
+        7924, 11, // INS_vcvttps2ibs
+        7936, 12, // INS_vcvttps2iubs
+        7949, 11, // INS_vcvttps2qqs
+        7961, 12, // INS_vcvttps2udqs
+        7974, 12, // INS_vcvttps2uqqs
+        7987, 11, // INS_vcvttsd2sis32
+        7987, 11, // INS_vcvttsd2sis64
+        7999, 12, // INS_vcvttsd2usis32
+        7999, 12, // INS_vcvttsd2usis64
+        8012, 11, // INS_vcvttss2sis32
+        8012, 11, // INS_vcvttss2sis64
+        8024, 12, // INS_vcvttss2usis32
+        8024, 12, // INS_vcvttss2usis64
+        8037, 9, // INS_vminmaxpd
+        8047, 9, // INS_vminmaxps
+        8057, 9, // INS_vminmaxsd
+        8067, 9, // INS_vminmaxss
+        762, 5, // INS_vmovd_simd
+        7640, 5, // INS_vmovw_simd
+        963, 8, // INS_vmpsadbw
+        8077, 8, // INS_vucomxsd
+        8086, 8, // INS_vucomxss
         8095, 5, // INS_ccmpo
         8101, 6, // INS_ccmpno
         8108, 5, // INS_ccmpb
@@ -5492,21 +6581,14 @@ public sealed partial class CodeGen
         8562, 7, // INS_setge_apx
         8570, 7, // INS_setle_apx
         8578, 6, // INS_setg_apx
-#endif
         8453, 5, // INS_crc32
         8585, 5, // INS_tzcnt
-#if TARGET_AMD64
         8585, 5, // INS_tzcnt_apx
-#endif
         8591, 5, // INS_lzcnt
-#if TARGET_AMD64
         8591, 5, // INS_lzcnt_apx
-#endif
         8459, 5, // INS_movbe
         8597, 6, // INS_popcnt
-#if TARGET_AMD64
         8597, 6, // INS_popcnt_apx
-#endif
         8604, 6, // INS_tpause
         8611, 8, // INS_umonitor
         8620, 6, // INS_umwait
@@ -5538,24 +6620,16 @@ public sealed partial class CodeGen
         8672, 4, // INS_call
         8677, 9, // INS_r_movsb
         8687, 9, // INS_r_movsd
-#if TARGET_AMD64
         8697, 9, // INS_r_movsq
-#endif
         8707, 5, // INS_movsb
         8713, 5, // INS_movsd
-#if TARGET_AMD64
         8719, 5, // INS_movsq
-#endif
         8725, 9, // INS_r_stosb
         8735, 9, // INS_r_stosd
-#if TARGET_AMD64
         8745, 9, // INS_r_stosq
-#endif
         8755, 5, // INS_stosb
         8761, 5, // INS_stosd
-#if TARGET_AMD64
         8767, 5, // INS_stosq
-#endif
         8773, 4, // INS_int3
         8778, 3, // INS_nop
         8782, 5, // INS_pause
@@ -5573,10 +6647,6 @@ public sealed partial class CodeGen
         8841, 7, // INS_cmpxchg
         8849, 4, // INS_shld
         8854, 4, // INS_shrd
-#if TARGET_X86
-        8859, 3, // INS_fld
-        8863, 4, // INS_fstp
-#endif
         8868, 4, // INS_seto
         8873, 5, // INS_setno
         8879, 4, // INS_setb
@@ -5631,10 +6701,9 @@ public sealed partial class CodeGen
         9022, 2, // INS_l_jg
         9025, 5, // INS_align
         9031, 6, // INS_data16
-#elif TARGET_ARM
-#if !TARGET_ARM
-#error Unexpected target type
-#endif
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArm => [
         0, 7, // INS_invalid
         8, 3, // INS_add
         12, 3, // INS_sub
@@ -5654,9 +6723,6 @@ public sealed partial class CodeGen
         76, 3, // INS_ror
         80, 3, // INS_pld
         84, 4, // INS_pldw
-#if FEATURE_PLI_INSTRUCTION
-        89, 3, // INS_pli
-#endif
         93, 4, // INS_movt
         98, 4, // INS_movw
         103, 3, // INS_and
@@ -5737,23 +6803,6 @@ public sealed partial class CodeGen
         447, 5, // INS_umlal
         453, 5, // INS_umull
         459, 4, // INS_usat
-#if FEATURE_ITINSTRUCTION
-        464, 2, // INS_it
-        467, 3, // INS_itt
-        471, 3, // INS_ite
-        475, 4, // INS_ittt
-        480, 4, // INS_itte
-        485, 4, // INS_itet
-        490, 4, // INS_itee
-        495, 5, // INS_itttt
-        501, 5, // INS_ittte
-        507, 5, // INS_ittet
-        513, 5, // INS_ittee
-        519, 5, // INS_itett
-        525, 5, // INS_itete
-        531, 5, // INS_iteet
-        537, 5, // INS_iteee
-#endif
         543, 4, // INS_vstr
         548, 4, // INS_vldr
         553, 4, // INS_vstm
@@ -5785,10 +6834,440 @@ public sealed partial class CodeGen
         731, 8, // INS_vmov_d2i
         740, 8, // INS_vmov_i2f
         749, 8, // INS_vmov_f2i
-#elif TARGET_ARM64
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArmPli => [
+        0, 7, // INS_invalid
+        8, 3, // INS_add
+        12, 3, // INS_sub
+        16, 3, // INS_ldr
+        20, 3, // INS_str
+        24, 4, // INS_ldrb
+        29, 4, // INS_strb
+        34, 4, // INS_ldrh
+        39, 4, // INS_strh
+        44, 5, // INS_ldrsb
+        50, 5, // INS_ldrsh
+        56, 3, // INS_mov
+        60, 3, // INS_cmp
+        64, 3, // INS_lsl
+        68, 3, // INS_lsr
+        72, 3, // INS_asr
+        76, 3, // INS_ror
+        80, 3, // INS_pld
+        84, 4, // INS_pldw
+        89, 3, // INS_pli
+        93, 4, // INS_movt
+        98, 4, // INS_movw
+        103, 3, // INS_and
+        107, 3, // INS_eor
+        111, 3, // INS_orr
+        115, 3, // INS_orn
+        119, 3, // INS_bic
+        123, 3, // INS_adc
+        127, 3, // INS_sbc
+        131, 3, // INS_rsb
+        135, 3, // INS_tst
+        139, 3, // INS_teq
+        143, 3, // INS_cmn
+        147, 3, // INS_mvn
+        151, 4, // INS_push
+        156, 3, // INS_pop
+        160, 1, // INS_b
+        162, 3, // INS_beq
+        166, 3, // INS_bne
+        170, 3, // INS_bhs
+        174, 3, // INS_blo
+        178, 3, // INS_bmi
+        182, 3, // INS_bpl
+        186, 3, // INS_bvs
+        190, 3, // INS_bvc
+        194, 3, // INS_bhi
+        198, 3, // INS_bls
+        202, 3, // INS_bge
+        206, 3, // INS_blt
+        210, 3, // INS_bgt
+        214, 3, // INS_ble
+        218, 2, // INS_bx
+        221, 3, // INS_blx
+        225, 3, // INS_ldm
+        229, 3, // INS_stm
+        233, 4, // INS_sxtb
+        238, 4, // INS_sxth
+        243, 4, // INS_uxtb
+        248, 4, // INS_uxth
+        253, 3, // INS_mul
+        257, 3, // INS_adr
+        261, 4, // INS_addw
+        266, 3, // INS_bfc
+        270, 3, // INS_bfi
+        274, 2, // INS_bl
+        277, 4, // INS_bkpt
+        282, 4, // INS_cbnz
+        287, 3, // INS_cbz
+        291, 3, // INS_clz
+        295, 3, // INS_dmb
+        299, 3, // INS_ism
+        303, 5, // INS_ldmdb
+        309, 4, // INS_ldrd
+        314, 5, // INS_ldrex
+        320, 6, // INS_ldrexb
+        327, 6, // INS_ldrexd
+        334, 6, // INS_ldrexh
+        341, 3, // INS_mla
+        345, 3, // INS_mls
+        349, 3, // INS_nop
+        353, 5, // INS_nopw
+        359, 4, // INS_sbfx
+        364, 4, // INS_sdiv
+        369, 4, // INS_ssat
+        374, 5, // INS_smlal
+        380, 5, // INS_smull
+        386, 5, // INS_stmdb
+        392, 4, // INS_strd
+        397, 5, // INS_strex
+        403, 6, // INS_strexb
+        410, 6, // INS_strexd
+        417, 6, // INS_strexh
+        424, 4, // INS_subw
+        429, 3, // INS_tbb
+        433, 3, // INS_tbh
+        437, 4, // INS_ubfx
+        442, 4, // INS_udiv
+        447, 5, // INS_umlal
+        453, 5, // INS_umull
+        459, 4, // INS_usat
+        543, 4, // INS_vstr
+        548, 4, // INS_vldr
+        553, 4, // INS_vstm
+        558, 4, // INS_vldm
+        563, 5, // INS_vpush
+        569, 4, // INS_vpop
+        574, 4, // INS_vmrs
+        579, 4, // INS_vadd
+        584, 4, // INS_vsub
+        589, 4, // INS_vmul
+        594, 4, // INS_vdiv
+        599, 4, // INS_vmov
+        604, 4, // INS_vabs
+        609, 5, // INS_vsqrt
+        615, 4, // INS_vneg
+        620, 4, // INS_vcmp
+        625, 6, // INS_vcmp0
+        632, 8, // INS_vcvt_d2i
+        641, 8, // INS_vcvt_f2i
+        650, 8, // INS_vcvt_d2u
+        659, 8, // INS_vcvt_f2u
+        668, 8, // INS_vcvt_i2f
+        677, 8, // INS_vcvt_i2d
+        686, 8, // INS_vcvt_u2f
+        695, 8, // INS_vcvt_u2d
+        704, 8, // INS_vcvt_d2f
+        713, 8, // INS_vcvt_f2d
+        722, 8, // INS_vmov_i2d
+        731, 8, // INS_vmov_d2i
+        740, 8, // INS_vmov_i2f
+        749, 8, // INS_vmov_f2i
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArmIt => [
+        0, 7, // INS_invalid
+        8, 3, // INS_add
+        12, 3, // INS_sub
+        16, 3, // INS_ldr
+        20, 3, // INS_str
+        24, 4, // INS_ldrb
+        29, 4, // INS_strb
+        34, 4, // INS_ldrh
+        39, 4, // INS_strh
+        44, 5, // INS_ldrsb
+        50, 5, // INS_ldrsh
+        56, 3, // INS_mov
+        60, 3, // INS_cmp
+        64, 3, // INS_lsl
+        68, 3, // INS_lsr
+        72, 3, // INS_asr
+        76, 3, // INS_ror
+        80, 3, // INS_pld
+        84, 4, // INS_pldw
+        93, 4, // INS_movt
+        98, 4, // INS_movw
+        103, 3, // INS_and
+        107, 3, // INS_eor
+        111, 3, // INS_orr
+        115, 3, // INS_orn
+        119, 3, // INS_bic
+        123, 3, // INS_adc
+        127, 3, // INS_sbc
+        131, 3, // INS_rsb
+        135, 3, // INS_tst
+        139, 3, // INS_teq
+        143, 3, // INS_cmn
+        147, 3, // INS_mvn
+        151, 4, // INS_push
+        156, 3, // INS_pop
+        160, 1, // INS_b
+        162, 3, // INS_beq
+        166, 3, // INS_bne
+        170, 3, // INS_bhs
+        174, 3, // INS_blo
+        178, 3, // INS_bmi
+        182, 3, // INS_bpl
+        186, 3, // INS_bvs
+        190, 3, // INS_bvc
+        194, 3, // INS_bhi
+        198, 3, // INS_bls
+        202, 3, // INS_bge
+        206, 3, // INS_blt
+        210, 3, // INS_bgt
+        214, 3, // INS_ble
+        218, 2, // INS_bx
+        221, 3, // INS_blx
+        225, 3, // INS_ldm
+        229, 3, // INS_stm
+        233, 4, // INS_sxtb
+        238, 4, // INS_sxth
+        243, 4, // INS_uxtb
+        248, 4, // INS_uxth
+        253, 3, // INS_mul
+        257, 3, // INS_adr
+        261, 4, // INS_addw
+        266, 3, // INS_bfc
+        270, 3, // INS_bfi
+        274, 2, // INS_bl
+        277, 4, // INS_bkpt
+        282, 4, // INS_cbnz
+        287, 3, // INS_cbz
+        291, 3, // INS_clz
+        295, 3, // INS_dmb
+        299, 3, // INS_ism
+        303, 5, // INS_ldmdb
+        309, 4, // INS_ldrd
+        314, 5, // INS_ldrex
+        320, 6, // INS_ldrexb
+        327, 6, // INS_ldrexd
+        334, 6, // INS_ldrexh
+        341, 3, // INS_mla
+        345, 3, // INS_mls
+        349, 3, // INS_nop
+        353, 5, // INS_nopw
+        359, 4, // INS_sbfx
+        364, 4, // INS_sdiv
+        369, 4, // INS_ssat
+        374, 5, // INS_smlal
+        380, 5, // INS_smull
+        386, 5, // INS_stmdb
+        392, 4, // INS_strd
+        397, 5, // INS_strex
+        403, 6, // INS_strexb
+        410, 6, // INS_strexd
+        417, 6, // INS_strexh
+        424, 4, // INS_subw
+        429, 3, // INS_tbb
+        433, 3, // INS_tbh
+        437, 4, // INS_ubfx
+        442, 4, // INS_udiv
+        447, 5, // INS_umlal
+        453, 5, // INS_umull
+        459, 4, // INS_usat
+        464, 2, // INS_it
+        467, 3, // INS_itt
+        471, 3, // INS_ite
+        475, 4, // INS_ittt
+        480, 4, // INS_itte
+        485, 4, // INS_itet
+        490, 4, // INS_itee
+        495, 5, // INS_itttt
+        501, 5, // INS_ittte
+        507, 5, // INS_ittet
+        513, 5, // INS_ittee
+        519, 5, // INS_itett
+        525, 5, // INS_itete
+        531, 5, // INS_iteet
+        537, 5, // INS_iteee
+        543, 4, // INS_vstr
+        548, 4, // INS_vldr
+        553, 4, // INS_vstm
+        558, 4, // INS_vldm
+        563, 5, // INS_vpush
+        569, 4, // INS_vpop
+        574, 4, // INS_vmrs
+        579, 4, // INS_vadd
+        584, 4, // INS_vsub
+        589, 4, // INS_vmul
+        594, 4, // INS_vdiv
+        599, 4, // INS_vmov
+        604, 4, // INS_vabs
+        609, 5, // INS_vsqrt
+        615, 4, // INS_vneg
+        620, 4, // INS_vcmp
+        625, 6, // INS_vcmp0
+        632, 8, // INS_vcvt_d2i
+        641, 8, // INS_vcvt_f2i
+        650, 8, // INS_vcvt_d2u
+        659, 8, // INS_vcvt_f2u
+        668, 8, // INS_vcvt_i2f
+        677, 8, // INS_vcvt_i2d
+        686, 8, // INS_vcvt_u2f
+        695, 8, // INS_vcvt_u2d
+        704, 8, // INS_vcvt_d2f
+        713, 8, // INS_vcvt_f2d
+        722, 8, // INS_vmov_i2d
+        731, 8, // INS_vmov_d2i
+        740, 8, // INS_vmov_i2f
+        749, 8, // INS_vmov_f2i
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArmPliIt => [
+        0, 7, // INS_invalid
+        8, 3, // INS_add
+        12, 3, // INS_sub
+        16, 3, // INS_ldr
+        20, 3, // INS_str
+        24, 4, // INS_ldrb
+        29, 4, // INS_strb
+        34, 4, // INS_ldrh
+        39, 4, // INS_strh
+        44, 5, // INS_ldrsb
+        50, 5, // INS_ldrsh
+        56, 3, // INS_mov
+        60, 3, // INS_cmp
+        64, 3, // INS_lsl
+        68, 3, // INS_lsr
+        72, 3, // INS_asr
+        76, 3, // INS_ror
+        80, 3, // INS_pld
+        84, 4, // INS_pldw
+        89, 3, // INS_pli
+        93, 4, // INS_movt
+        98, 4, // INS_movw
+        103, 3, // INS_and
+        107, 3, // INS_eor
+        111, 3, // INS_orr
+        115, 3, // INS_orn
+        119, 3, // INS_bic
+        123, 3, // INS_adc
+        127, 3, // INS_sbc
+        131, 3, // INS_rsb
+        135, 3, // INS_tst
+        139, 3, // INS_teq
+        143, 3, // INS_cmn
+        147, 3, // INS_mvn
+        151, 4, // INS_push
+        156, 3, // INS_pop
+        160, 1, // INS_b
+        162, 3, // INS_beq
+        166, 3, // INS_bne
+        170, 3, // INS_bhs
+        174, 3, // INS_blo
+        178, 3, // INS_bmi
+        182, 3, // INS_bpl
+        186, 3, // INS_bvs
+        190, 3, // INS_bvc
+        194, 3, // INS_bhi
+        198, 3, // INS_bls
+        202, 3, // INS_bge
+        206, 3, // INS_blt
+        210, 3, // INS_bgt
+        214, 3, // INS_ble
+        218, 2, // INS_bx
+        221, 3, // INS_blx
+        225, 3, // INS_ldm
+        229, 3, // INS_stm
+        233, 4, // INS_sxtb
+        238, 4, // INS_sxth
+        243, 4, // INS_uxtb
+        248, 4, // INS_uxth
+        253, 3, // INS_mul
+        257, 3, // INS_adr
+        261, 4, // INS_addw
+        266, 3, // INS_bfc
+        270, 3, // INS_bfi
+        274, 2, // INS_bl
+        277, 4, // INS_bkpt
+        282, 4, // INS_cbnz
+        287, 3, // INS_cbz
+        291, 3, // INS_clz
+        295, 3, // INS_dmb
+        299, 3, // INS_ism
+        303, 5, // INS_ldmdb
+        309, 4, // INS_ldrd
+        314, 5, // INS_ldrex
+        320, 6, // INS_ldrexb
+        327, 6, // INS_ldrexd
+        334, 6, // INS_ldrexh
+        341, 3, // INS_mla
+        345, 3, // INS_mls
+        349, 3, // INS_nop
+        353, 5, // INS_nopw
+        359, 4, // INS_sbfx
+        364, 4, // INS_sdiv
+        369, 4, // INS_ssat
+        374, 5, // INS_smlal
+        380, 5, // INS_smull
+        386, 5, // INS_stmdb
+        392, 4, // INS_strd
+        397, 5, // INS_strex
+        403, 6, // INS_strexb
+        410, 6, // INS_strexd
+        417, 6, // INS_strexh
+        424, 4, // INS_subw
+        429, 3, // INS_tbb
+        433, 3, // INS_tbh
+        437, 4, // INS_ubfx
+        442, 4, // INS_udiv
+        447, 5, // INS_umlal
+        453, 5, // INS_umull
+        459, 4, // INS_usat
+        464, 2, // INS_it
+        467, 3, // INS_itt
+        471, 3, // INS_ite
+        475, 4, // INS_ittt
+        480, 4, // INS_itte
+        485, 4, // INS_itet
+        490, 4, // INS_itee
+        495, 5, // INS_itttt
+        501, 5, // INS_ittte
+        507, 5, // INS_ittet
+        513, 5, // INS_ittee
+        519, 5, // INS_itett
+        525, 5, // INS_itete
+        531, 5, // INS_iteet
+        537, 5, // INS_iteee
+        543, 4, // INS_vstr
+        548, 4, // INS_vldr
+        553, 4, // INS_vstm
+        558, 4, // INS_vldm
+        563, 5, // INS_vpush
+        569, 4, // INS_vpop
+        574, 4, // INS_vmrs
+        579, 4, // INS_vadd
+        584, 4, // INS_vsub
+        589, 4, // INS_vmul
+        594, 4, // INS_vdiv
+        599, 4, // INS_vmov
+        604, 4, // INS_vabs
+        609, 5, // INS_vsqrt
+        615, 4, // INS_vneg
+        620, 4, // INS_vcmp
+        625, 6, // INS_vcmp0
+        632, 8, // INS_vcvt_d2i
+        641, 8, // INS_vcvt_f2i
+        650, 8, // INS_vcvt_d2u
+        659, 8, // INS_vcvt_f2u
+        668, 8, // INS_vcvt_i2f
+        677, 8, // INS_vcvt_i2d
+        686, 8, // INS_vcvt_u2f
+        695, 8, // INS_vcvt_u2d
+        704, 8, // INS_vcvt_d2f
+        713, 8, // INS_vcvt_f2d
+        722, 8, // INS_vmov_i2d
+        731, 8, // INS_vmov_d2i
+        740, 8, // INS_vmov_i2f
+        749, 8, // INS_vmov_f2i
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesArm64 => [
         0, 7, // INS_invalid
         56, 3, // INS_mov
         8, 3, // INS_add
@@ -6341,9 +7820,6 @@ public sealed partial class CodeGen
         3665, 3, // INS_xar
         3669, 9, // INS_sha512su0
         3679, 4, // INS_sm4e
-#if !TARGET_ARM64
-#error Unexpected target type
-#endif
         0, 7, // INS_sve_invalid
         56, 3, // INS_sve_mov
         3684, 4, // INS_sve_st1w
@@ -6950,10 +8426,9 @@ public sealed partial class CodeGen
         6513, 4, // INS_sve_ld1q
         6518, 7, // INS_sve_ldnt1sw
         6526, 4, // INS_sve_st1q
-#elif TARGET_LOONGARCH64
-#if !TARGET_LOONGARCH64
-#error Unexpected target type
-#endif
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesLoongArch64 => [
         0, 7, // INS_invalid
         349, 3, // INS_nop
         6531, 5, // INS_bceqz
@@ -7328,7 +8803,6 @@ public sealed partial class CodeGen
         9588, 5, // INS_fld_d
         9594, 5, // INS_fst_s
         9600, 5, // INS_fst_d
-#if FEATURE_SIMD
         9606, 8, // INS_vfmadd_s
         9615, 8, // INS_vfmadd_d
         9624, 8, // INS_vfmsub_s
@@ -8779,11 +10253,386 @@ public sealed partial class CodeGen
         25261, 13, // INS_xvsetallnez_h
         25275, 13, // INS_xvsetallnez_w
         25289, 13, // INS_xvsetallnez_d
-#endif
-#elif TARGET_RISCV64
-#if !TARGET_RISCV64
-#error Unexpected target type
-#endif
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesLoongArch64NoSimd => [
+        0, 7, // INS_invalid
+        349, 3, // INS_nop
+        6531, 5, // INS_bceqz
+        6537, 5, // INS_bcnez
+        162, 3, // INS_beq
+        166, 3, // INS_bne
+        206, 3, // INS_blt
+        202, 3, // INS_bge
+        6543, 4, // INS_bltu
+        6548, 4, // INS_bgeu
+        6553, 4, // INS_beqz
+        6558, 4, // INS_bnez
+        160, 1, // INS_b
+        274, 2, // INS_bl
+        56, 3, // INS_mov
+        6563, 4, // INS_dneg
+        822, 3, // INS_neg
+        2869, 3, // INS_not
+        6568, 5, // INS_add_w
+        6574, 5, // INS_add_d
+        6580, 5, // INS_sub_w
+        6586, 5, // INS_sub_d
+        103, 3, // INS_and
+        6592, 2, // INS_or
+        4850, 3, // INS_nor
+        6595, 3, // INS_xor
+        6599, 4, // INS_andn
+        115, 3, // INS_orn
+        6604, 5, // INS_mul_w
+        6610, 5, // INS_mul_d
+        6616, 6, // INS_mulh_w
+        6623, 7, // INS_mulh_wu
+        6631, 6, // INS_mulh_d
+        6638, 7, // INS_mulh_du
+        6646, 8, // INS_mulw_d_w
+        6655, 9, // INS_mulw_d_wu
+        6665, 5, // INS_div_w
+        6671, 5, // INS_mod_w
+        6677, 6, // INS_div_wu
+        6684, 6, // INS_mod_wu
+        6691, 5, // INS_div_d
+        6697, 5, // INS_mod_d
+        6703, 6, // INS_div_du
+        6710, 6, // INS_mod_du
+        6717, 5, // INS_sll_w
+        6723, 5, // INS_srl_w
+        6729, 5, // INS_sra_w
+        6735, 6, // INS_rotr_w
+        6742, 5, // INS_sll_d
+        6748, 5, // INS_srl_d
+        6754, 5, // INS_sra_d
+        6760, 6, // INS_rotr_d
+        6767, 7, // INS_maskeqz
+        6775, 7, // INS_masknez
+        6783, 3, // INS_slt
+        6787, 4, // INS_sltu
+        6792, 9, // INS_crc_w_b_w
+        6802, 9, // INS_crc_w_h_w
+        6812, 9, // INS_crc_w_w_w
+        6822, 9, // INS_crc_w_d_w
+        6832, 10, // INS_crcc_w_b_w
+        6843, 10, // INS_crcc_w_h_w
+        6854, 10, // INS_crcc_w_w_w
+        6865, 10, // INS_crcc_w_d_w
+        6876, 7, // INS_amcas_b
+        6884, 7, // INS_amcas_h
+        6892, 7, // INS_amcas_w
+        6900, 7, // INS_amcas_d
+        6908, 8, // INS_amswap_b
+        6917, 8, // INS_amswap_h
+        6926, 8, // INS_amswap_w
+        6935, 8, // INS_amswap_d
+        6944, 7, // INS_amadd_b
+        6952, 7, // INS_amadd_h
+        6960, 7, // INS_amadd_w
+        6968, 7, // INS_amadd_d
+        6976, 7, // INS_amand_w
+        6984, 7, // INS_amand_d
+        6992, 6, // INS_amor_w
+        6999, 6, // INS_amor_d
+        7006, 7, // INS_amxor_w
+        7014, 7, // INS_amxor_d
+        7022, 7, // INS_ammax_w
+        7030, 7, // INS_ammax_d
+        7038, 7, // INS_ammin_w
+        7046, 7, // INS_ammin_d
+        7054, 8, // INS_ammax_wu
+        7063, 8, // INS_ammax_du
+        7072, 8, // INS_ammin_wu
+        7081, 8, // INS_ammin_du
+        7090, 10, // INS_amcas_db_b
+        7101, 10, // INS_amcas_db_h
+        7112, 10, // INS_amcas_db_w
+        7123, 10, // INS_amcas_db_d
+        7134, 11, // INS_amswap_db_b
+        7146, 11, // INS_amswap_db_h
+        7158, 11, // INS_amswap_db_w
+        7170, 11, // INS_amswap_db_d
+        7182, 10, // INS_amadd_db_b
+        7193, 10, // INS_amadd_db_h
+        7204, 10, // INS_amadd_db_w
+        7215, 10, // INS_amadd_db_d
+        7226, 10, // INS_amand_db_w
+        7237, 10, // INS_amand_db_d
+        7248, 9, // INS_amor_db_w
+        7258, 9, // INS_amor_db_d
+        7268, 10, // INS_amxor_db_w
+        7279, 10, // INS_amxor_db_d
+        7290, 10, // INS_ammax_db_w
+        7301, 10, // INS_ammax_db_d
+        7312, 10, // INS_ammin_db_w
+        7323, 10, // INS_ammin_db_d
+        7334, 11, // INS_ammax_db_wu
+        7346, 11, // INS_ammax_db_du
+        7358, 11, // INS_ammin_db_wu
+        7370, 11, // INS_ammin_db_du
+        7382, 6, // INS_alsl_w
+        7389, 7, // INS_alsl_wu
+        7397, 6, // INS_alsl_d
+        7404, 10, // INS_bytepick_w
+        7415, 10, // INS_bytepick_d
+        7426, 4, // INS_fsel
+        7431, 7, // INS_lu12i_w
+        7439, 7, // INS_lu32i_d
+        7447, 6, // INS_pcaddi
+        7454, 9, // INS_pcaddu12i
+        7464, 9, // INS_pcalau12i
+        7474, 9, // INS_pcaddu18i
+        7484, 7, // INS_ext_w_b
+        7492, 7, // INS_ext_w_h
+        7500, 5, // INS_clo_w
+        7506, 5, // INS_clz_w
+        7512, 5, // INS_cto_w
+        7518, 5, // INS_ctz_w
+        7524, 5, // INS_clo_d
+        7530, 5, // INS_clz_d
+        7536, 5, // INS_cto_d
+        7542, 5, // INS_ctz_d
+        7548, 7, // INS_revb_2h
+        7556, 7, // INS_revb_4h
+        7564, 7, // INS_revb_2w
+        7572, 6, // INS_revb_d
+        7579, 7, // INS_revh_2w
+        7587, 6, // INS_revh_d
+        7594, 9, // INS_bitrev_4b
+        7604, 9, // INS_bitrev_8b
+        7614, 8, // INS_bitrev_w
+        7623, 8, // INS_bitrev_d
+        7632, 9, // INS_rdtimel_w
+        7642, 9, // INS_rdtimeh_w
+        7652, 8, // INS_rdtime_d
+        7661, 6, // INS_cpucfg
+        7668, 10, // INS_movfr2gr_s
+        7679, 10, // INS_movfr2gr_d
+        7690, 11, // INS_movfrh2gr_s
+        7702, 9, // INS_bstrins_w
+        7712, 9, // INS_bstrins_d
+        7722, 10, // INS_bstrpick_w
+        7733, 10, // INS_bstrpick_d
+        7744, 4, // INS_ld_b
+        7749, 4, // INS_ld_h
+        7754, 4, // INS_ld_w
+        7759, 4, // INS_ld_d
+        7764, 5, // INS_ld_bu
+        7770, 5, // INS_ld_hu
+        7776, 5, // INS_ld_wu
+        7782, 7, // INS_ldptr_w
+        7790, 7, // INS_ldptr_d
+        7798, 4, // INS_ll_w
+        7803, 4, // INS_ll_d
+        7808, 5, // INS_ldx_b
+        7814, 5, // INS_ldx_h
+        7820, 5, // INS_ldx_w
+        7826, 5, // INS_ldx_d
+        7832, 6, // INS_ldx_bu
+        7839, 6, // INS_ldx_hu
+        7846, 6, // INS_ldx_wu
+        7853, 6, // INS_ldgt_b
+        7860, 6, // INS_ldgt_h
+        7867, 6, // INS_ldgt_w
+        7874, 6, // INS_ldgt_d
+        7881, 6, // INS_ldle_b
+        7888, 6, // INS_ldle_h
+        7895, 6, // INS_ldle_w
+        7902, 6, // INS_ldle_d
+        7909, 6, // INS_addi_w
+        7916, 6, // INS_addi_d
+        7923, 7, // INS_lu52i_d
+        7931, 4, // INS_slti
+        7936, 5, // INS_sltui
+        7942, 4, // INS_andi
+        7947, 3, // INS_ori
+        7951, 4, // INS_xori
+        7956, 6, // INS_slli_w
+        7963, 6, // INS_srli_w
+        7970, 6, // INS_srai_w
+        7977, 7, // INS_rotri_w
+        7985, 6, // INS_slli_d
+        7992, 6, // INS_srli_d
+        7999, 6, // INS_srai_d
+        8006, 7, // INS_rotri_d
+        8014, 9, // INS_addu16i_d
+        8024, 4, // INS_jirl
+        8029, 4, // INS_st_b
+        8034, 4, // INS_st_h
+        8039, 4, // INS_st_w
+        8044, 4, // INS_st_d
+        8049, 7, // INS_stptr_w
+        8057, 7, // INS_stptr_d
+        8065, 4, // INS_sc_w
+        8070, 4, // INS_sc_d
+        8075, 5, // INS_stx_b
+        8081, 5, // INS_stx_h
+        8087, 5, // INS_stx_w
+        8093, 5, // INS_stx_d
+        8099, 6, // INS_stgt_b
+        8106, 6, // INS_stgt_h
+        8113, 6, // INS_stgt_w
+        8120, 6, // INS_stgt_d
+        8127, 6, // INS_stle_b
+        8134, 6, // INS_stle_h
+        8141, 6, // INS_stle_w
+        8148, 6, // INS_stle_d
+        8155, 4, // INS_dbar
+        8160, 4, // INS_ibar
+        8165, 7, // INS_syscall
+        8173, 5, // INS_break
+        8179, 5, // INS_preld
+        8185, 6, // INS_preldx
+        8192, 6, // INS_fadd_s
+        8199, 6, // INS_fadd_d
+        8206, 6, // INS_fsub_s
+        8213, 6, // INS_fsub_d
+        8220, 6, // INS_fmul_s
+        8227, 6, // INS_fmul_d
+        8234, 6, // INS_fdiv_s
+        8241, 6, // INS_fdiv_d
+        8248, 6, // INS_fmax_s
+        8255, 6, // INS_fmax_d
+        8262, 6, // INS_fmin_s
+        8269, 6, // INS_fmin_d
+        8276, 7, // INS_fmaxa_s
+        8284, 7, // INS_fmaxa_d
+        8292, 7, // INS_fmina_s
+        8300, 7, // INS_fmina_d
+        8308, 9, // INS_fscaleb_s
+        8318, 9, // INS_fscaleb_d
+        8328, 11, // INS_fcopysign_s
+        8340, 11, // INS_fcopysign_d
+        8352, 6, // INS_fldx_s
+        8359, 6, // INS_fldx_d
+        8366, 6, // INS_fstx_s
+        8373, 6, // INS_fstx_d
+        8380, 7, // INS_fldgt_s
+        8388, 7, // INS_fldgt_d
+        8396, 7, // INS_fldle_s
+        8404, 7, // INS_fldle_d
+        8412, 7, // INS_fstgt_s
+        8420, 7, // INS_fstgt_d
+        8428, 7, // INS_fstle_s
+        8436, 7, // INS_fstle_d
+        8444, 7, // INS_fmadd_s
+        8452, 7, // INS_fmadd_d
+        8460, 7, // INS_fmsub_s
+        8468, 7, // INS_fmsub_d
+        8476, 8, // INS_fnmadd_s
+        8485, 8, // INS_fnmadd_d
+        8494, 8, // INS_fnmsub_s
+        8503, 8, // INS_fnmsub_d
+        8512, 6, // INS_fabs_s
+        8519, 6, // INS_fabs_d
+        8526, 6, // INS_fneg_s
+        8533, 6, // INS_fneg_d
+        8540, 7, // INS_fsqrt_s
+        8548, 7, // INS_fsqrt_d
+        8556, 8, // INS_frsqrt_s
+        8565, 8, // INS_frsqrt_d
+        8574, 9, // INS_frsqrte_s
+        8584, 9, // INS_frsqrte_d
+        8594, 8, // INS_frecip_s
+        8603, 8, // INS_frecip_d
+        8612, 9, // INS_frecipe_s
+        8622, 9, // INS_frecipe_d
+        8632, 7, // INS_flogb_s
+        8640, 7, // INS_flogb_d
+        8648, 8, // INS_fclass_s
+        8657, 8, // INS_fclass_d
+        8666, 8, // INS_fcvt_s_d
+        8675, 8, // INS_fcvt_d_s
+        8684, 9, // INS_ffint_s_w
+        8694, 9, // INS_ffint_s_l
+        8704, 9, // INS_ffint_d_w
+        8714, 9, // INS_ffint_d_l
+        8724, 9, // INS_ftint_w_s
+        8734, 9, // INS_ftint_w_d
+        8744, 9, // INS_ftint_l_s
+        8754, 9, // INS_ftint_l_d
+        8764, 11, // INS_ftintrm_w_s
+        8776, 11, // INS_ftintrm_w_d
+        8788, 11, // INS_ftintrm_l_s
+        8800, 11, // INS_ftintrm_l_d
+        8812, 11, // INS_ftintrp_w_s
+        8824, 11, // INS_ftintrp_w_d
+        8836, 11, // INS_ftintrp_l_s
+        8848, 11, // INS_ftintrp_l_d
+        8860, 11, // INS_ftintrz_w_s
+        8872, 11, // INS_ftintrz_w_d
+        8884, 11, // INS_ftintrz_l_s
+        8896, 11, // INS_ftintrz_l_d
+        8908, 12, // INS_ftintrne_w_s
+        8921, 12, // INS_ftintrne_w_d
+        8934, 12, // INS_ftintrne_l_s
+        8947, 12, // INS_ftintrne_l_d
+        8960, 7, // INS_frint_s
+        8968, 7, // INS_frint_d
+        8976, 6, // INS_fmov_s
+        8983, 6, // INS_fmov_d
+        8990, 10, // INS_movgr2fr_w
+        9001, 10, // INS_movgr2fr_d
+        9012, 11, // INS_movgr2frh_w
+        9024, 10, // INS_movgr2fcsr
+        9035, 10, // INS_movfcsr2gr
+        9046, 8, // INS_movfr2cf
+        9055, 8, // INS_movcf2fr
+        9064, 8, // INS_movgr2cf
+        9073, 8, // INS_movcf2gr
+        9082, 10, // INS_fcmp_caf_s
+        9093, 10, // INS_fcmp_cun_s
+        9104, 10, // INS_fcmp_ceq_s
+        9115, 11, // INS_fcmp_cueq_s
+        9127, 10, // INS_fcmp_clt_s
+        9138, 11, // INS_fcmp_cult_s
+        9150, 10, // INS_fcmp_cle_s
+        9161, 11, // INS_fcmp_cule_s
+        9173, 10, // INS_fcmp_cne_s
+        9184, 10, // INS_fcmp_cor_s
+        9195, 11, // INS_fcmp_cune_s
+        9207, 10, // INS_fcmp_saf_d
+        9218, 10, // INS_fcmp_sun_d
+        9229, 10, // INS_fcmp_seq_d
+        9240, 11, // INS_fcmp_sueq_d
+        9252, 10, // INS_fcmp_slt_d
+        9263, 11, // INS_fcmp_sult_d
+        9275, 10, // INS_fcmp_sle_d
+        9286, 11, // INS_fcmp_sule_d
+        9298, 10, // INS_fcmp_sne_d
+        9309, 10, // INS_fcmp_sor_d
+        9320, 11, // INS_fcmp_sune_d
+        9332, 10, // INS_fcmp_caf_d
+        9343, 10, // INS_fcmp_cun_d
+        9354, 10, // INS_fcmp_ceq_d
+        9365, 11, // INS_fcmp_cueq_d
+        9377, 10, // INS_fcmp_clt_d
+        9388, 11, // INS_fcmp_cult_d
+        9400, 10, // INS_fcmp_cle_d
+        9411, 11, // INS_fcmp_cule_d
+        9423, 10, // INS_fcmp_cne_d
+        9434, 10, // INS_fcmp_cor_d
+        9445, 11, // INS_fcmp_cune_d
+        9457, 10, // INS_fcmp_saf_s
+        9468, 10, // INS_fcmp_sun_s
+        9479, 10, // INS_fcmp_seq_s
+        9490, 11, // INS_fcmp_sueq_s
+        9502, 10, // INS_fcmp_slt_s
+        9513, 11, // INS_fcmp_sult_s
+        9525, 10, // INS_fcmp_sle_s
+        9536, 11, // INS_fcmp_sule_s
+        9548, 10, // INS_fcmp_sne_s
+        9559, 10, // INS_fcmp_sor_s
+        9570, 11, // INS_fcmp_sune_s
+        9582, 5, // INS_fld_s
+        9588, 5, // INS_fld_d
+        9594, 5, // INS_fst_s
+        9600, 5, // INS_fst_d
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesRiscv64 => [
         0, 7, // INS_invalid
         349, 3, // INS_nop
         25303, 2, // INS_mov
@@ -8997,10 +10846,9 @@ public sealed partial class CodeGen
         26288, 5, // INS_c_sub
         26294, 6, // INS_c_addw
         26301, 6, // INS_c_subw
-#elif TARGET_WASM
-#if !TARGET_WASM
-#error Unexpected target type
-#endif
+    ];
+
+    private static ReadOnlySpan<int> s_instructionNameRangesWasm => [
         0, 7, // INS_invalid
         26308, 11, // INS_unreachable
         26320, 5, // INS_label
@@ -9433,8 +11281,5 @@ public sealed partial class CodeGen
         31830, 28, // INS_i32x4_trunc_sat_u_f64x2_zero
         31859, 25, // INS_f64x2_convert_low_s_i32x4
         31885, 25, // INS_f64x2_convert_low_u_i32x4
-#else
-#error Unsupported or unset target architecture
-#endif
     ];
 }

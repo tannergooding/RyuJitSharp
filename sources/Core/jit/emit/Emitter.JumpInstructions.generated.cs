@@ -9,113 +9,134 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
-    private static ReadOnlySpan<instruction> emitJumpKindInstructions => [
+    private static ReadOnlySpan<instruction> s_emitJumpKindInstructionsXARCH => [
         INS_nop, // EJ_NONE
-#if TARGET_XARCH
         INS_jmp, // EJ_jmp
-        INS_jo, // EJ_jo
-        INS_jno, // EJ_jno
-        INS_jb, // EJ_jb
-        INS_jae, // EJ_jae
-        INS_je, // EJ_je
-        INS_jne, // EJ_jne
-        INS_jbe, // EJ_jbe
-        INS_ja, // EJ_ja
-        INS_js, // EJ_js
-        INS_jns, // EJ_jns
-        INS_jp, // EJ_jp
-        INS_jnp, // EJ_jnp
-        INS_jl, // EJ_jl
-        INS_jge, // EJ_jge
-        INS_jle, // EJ_jle
-        INS_jg, // EJ_jg
-#elif TARGET_ARMARCH
+        INS_jo, // EJ_XARCH_jo
+        INS_jno, // EJ_XARCH_jno
+        INS_jb, // EJ_XARCH_jb
+        INS_jae, // EJ_XARCH_jae
+        INS_je, // EJ_XARCH_je
+        INS_jne, // EJ_XARCH_jne
+        INS_jbe, // EJ_XARCH_jbe
+        INS_ja, // EJ_XARCH_ja
+        INS_js, // EJ_XARCH_js
+        INS_jns, // EJ_XARCH_jns
+        INS_jp, // EJ_XARCH_jp
+        INS_jnp, // EJ_XARCH_jnp
+        INS_jl, // EJ_XARCH_jl
+        INS_jge, // EJ_XARCH_jge
+        INS_jle, // EJ_XARCH_jle
+        INS_jg, // EJ_XARCH_jg
+        INS_call, // EJ_XARCH_COUNT
+    ];
+    private static ReadOnlySpan<instruction> s_emitJumpKindInstructionsARMARCH => [
+        INS_nop, // EJ_NONE
         INS_b, // EJ_jmp
-        INS_beq, // EJ_eq
-        INS_bne, // EJ_ne
-        INS_bhs, // EJ_hs
-        INS_blo, // EJ_lo
-        INS_bmi, // EJ_mi
-        INS_bpl, // EJ_pl
-        INS_bvs, // EJ_vs
-        INS_bvc, // EJ_vc
-        INS_bhi, // EJ_hi
-        INS_bls, // EJ_ls
-        INS_bge, // EJ_ge
-        INS_blt, // EJ_lt
-        INS_bgt, // EJ_gt
-        INS_ble, // EJ_le
-#elif TARGET_LOONGARCH64
+        INS_beq, // EJ_ARMARCH_eq
+        INS_bne, // EJ_ARMARCH_ne
+        INS_bhs, // EJ_ARMARCH_hs
+        INS_blo, // EJ_ARMARCH_lo
+        INS_bmi, // EJ_ARMARCH_mi
+        INS_bpl, // EJ_ARMARCH_pl
+        INS_bvs, // EJ_ARMARCH_vs
+        INS_bvc, // EJ_ARMARCH_vc
+        INS_bhi, // EJ_ARMARCH_hi
+        INS_bls, // EJ_ARMARCH_ls
+        INS_bge, // EJ_ARMARCH_ge
+        INS_blt, // EJ_ARMARCH_lt
+        INS_bgt, // EJ_ARMARCH_gt
+        INS_ble, // EJ_ARMARCH_le
+    ];
+    private static ReadOnlySpan<instruction> s_emitJumpKindInstructionsLOONGARCH64 => [
+        INS_nop, // EJ_NONE
         INS_b, // EJ_jmp
-        INS_beq, // EJ_eq
-        INS_bne, // EJ_ne
-#elif TARGET_RISCV64
+        INS_beq, // EJ_LOONGARCH64_eq
+        INS_bne, // EJ_LOONGARCH64_ne
+    ];
+    private static ReadOnlySpan<instruction> s_emitJumpKindInstructionsRISCV64 => [
+        INS_nop, // EJ_NONE
         INS_j, // EJ_jmp
-        INS_beq, // EJ_eq
-        INS_bne, // EJ_ne
-#elif TARGET_WASM
+        INS_beq, // EJ_RISCV64_eq
+        INS_bne, // EJ_RISCV64_ne
+    ];
+    private static ReadOnlySpan<instruction> s_emitJumpKindInstructionsWASM => [
+        INS_nop, // EJ_NONE
         INS_br, // EJ_jmp
-        INS_br_if, // EJ_jmpif
-#else
-#error Unsupported or unset target architecture
-#endif
-
-#if TARGET_XARCH
-        INS_call, // EJ_COUNT
-#endif
+        INS_br_if, // EJ_WASM_jmpif
     ];
 
-    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds => [
-        EJ_NONE,
-#if TARGET_XARCH
+
+    private static ReadOnlySpan<emitJumpKind> s_emitReverseJumpKindsXARCH => [
+        EJ_NONE, // EJ_NONE
         EJ_jmp, // EJ_jmp
-        EJ_jno, // EJ_jo
-        EJ_jo, // EJ_jno
-        EJ_jae, // EJ_jb
-        EJ_jb, // EJ_jae
-        EJ_jne, // EJ_je
-        EJ_je, // EJ_jne
-        EJ_ja, // EJ_jbe
-        EJ_jbe, // EJ_ja
-        EJ_jns, // EJ_js
-        EJ_js, // EJ_jns
-        EJ_jnp, // EJ_jp
-        EJ_jp, // EJ_jnp
-        EJ_jge, // EJ_jl
-        EJ_jl, // EJ_jge
-        EJ_jg, // EJ_jle
-        EJ_jle, // EJ_jg
-#elif TARGET_ARMARCH
-        EJ_jmp, // EJ_jmp
-        EJ_ne, // EJ_eq
-        EJ_eq, // EJ_ne
-        EJ_lo, // EJ_hs
-        EJ_hs, // EJ_lo
-        EJ_pl, // EJ_mi
-        EJ_mi, // EJ_pl
-        EJ_vc, // EJ_vs
-        EJ_vs, // EJ_vc
-        EJ_ls, // EJ_hi
-        EJ_hi, // EJ_ls
-        EJ_lt, // EJ_ge
-        EJ_ge, // EJ_lt
-        EJ_le, // EJ_gt
-        EJ_gt, // EJ_le
-#elif TARGET_LOONGARCH64
-        EJ_jmp, // EJ_jmp
-        EJ_ne, // EJ_eq
-        EJ_eq, // EJ_ne
-#elif TARGET_RISCV64
-        EJ_jmp, // EJ_jmp
-        EJ_ne, // EJ_eq
-        EJ_eq, // EJ_ne
-#elif TARGET_WASM
-        EJ_br, // EJ_jmp
-        EJ_br_if, // EJ_jmpif
-#else
-#error Unsupported or unset target architecture
-#endif
+        EJ_XARCH_jno, // EJ_XARCH_jo
+        EJ_XARCH_jo, // EJ_XARCH_jno
+        EJ_XARCH_jae, // EJ_XARCH_jb
+        EJ_XARCH_jb, // EJ_XARCH_jae
+        EJ_XARCH_jne, // EJ_XARCH_je
+        EJ_XARCH_je, // EJ_XARCH_jne
+        EJ_XARCH_ja, // EJ_XARCH_jbe
+        EJ_XARCH_jbe, // EJ_XARCH_ja
+        EJ_XARCH_jns, // EJ_XARCH_js
+        EJ_XARCH_js, // EJ_XARCH_jns
+        EJ_XARCH_jnp, // EJ_XARCH_jp
+        EJ_XARCH_jp, // EJ_XARCH_jnp
+        EJ_XARCH_jge, // EJ_XARCH_jl
+        EJ_XARCH_jl, // EJ_XARCH_jge
+        EJ_XARCH_jg, // EJ_XARCH_jle
+        EJ_XARCH_jle, // EJ_XARCH_jg
     ];
-#endif
+    private static ReadOnlySpan<emitJumpKind> s_emitReverseJumpKindsARMARCH => [
+        EJ_NONE, // EJ_NONE
+        EJ_jmp, // EJ_jmp
+        EJ_ARMARCH_ne, // EJ_ARMARCH_eq
+        EJ_ARMARCH_eq, // EJ_ARMARCH_ne
+        EJ_ARMARCH_lo, // EJ_ARMARCH_hs
+        EJ_ARMARCH_hs, // EJ_ARMARCH_lo
+        EJ_ARMARCH_pl, // EJ_ARMARCH_mi
+        EJ_ARMARCH_mi, // EJ_ARMARCH_pl
+        EJ_ARMARCH_vc, // EJ_ARMARCH_vs
+        EJ_ARMARCH_vs, // EJ_ARMARCH_vc
+        EJ_ARMARCH_ls, // EJ_ARMARCH_hi
+        EJ_ARMARCH_hi, // EJ_ARMARCH_ls
+        EJ_ARMARCH_lt, // EJ_ARMARCH_ge
+        EJ_ARMARCH_ge, // EJ_ARMARCH_lt
+        EJ_ARMARCH_le, // EJ_ARMARCH_gt
+        EJ_ARMARCH_gt, // EJ_ARMARCH_le
+    ];
+    private static ReadOnlySpan<emitJumpKind> s_emitReverseJumpKindsLOONGARCH64 => [
+        EJ_NONE, // EJ_NONE
+        EJ_jmp, // EJ_jmp
+        EJ_LOONGARCH64_ne, // EJ_LOONGARCH64_eq
+        EJ_LOONGARCH64_eq, // EJ_LOONGARCH64_ne
+    ];
+    private static ReadOnlySpan<emitJumpKind> s_emitReverseJumpKindsRISCV64 => [
+        EJ_NONE, // EJ_NONE
+        EJ_jmp, // EJ_jmp
+        EJ_RISCV64_ne, // EJ_RISCV64_eq
+        EJ_RISCV64_eq, // EJ_RISCV64_ne
+    ];
+    private static ReadOnlySpan<emitJumpKind> s_emitReverseJumpKindsWASM => [
+        EJ_NONE, // EJ_NONE
+        EJ_NONE, // EJ_jmp
+        EJ_NONE, // EJ_WASM_jmpif
+    ];
+
+
+    private static ReadOnlySpan<instruction> emitJumpKindInstructions =>
+        Configuration.TARGET_XARCH ? s_emitJumpKindInstructionsXARCH :
+        Configuration.TARGET_ARMARCH ? s_emitJumpKindInstructionsARMARCH :
+        Configuration.TARGET_LOONGARCH64 ? s_emitJumpKindInstructionsLOONGARCH64 :
+        Configuration.TARGET_RISCV64 ? s_emitJumpKindInstructionsRISCV64 :
+        Configuration.TARGET_WASM ? s_emitJumpKindInstructionsWASM :
+        throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping is not supported for this target.");
+
+    private static ReadOnlySpan<emitJumpKind> emitReverseJumpKinds =>
+        Configuration.TARGET_XARCH ? s_emitReverseJumpKindsXARCH :
+        Configuration.TARGET_ARMARCH ? s_emitReverseJumpKindsARMARCH :
+        Configuration.TARGET_LOONGARCH64 ? s_emitReverseJumpKindsLOONGARCH64 :
+        Configuration.TARGET_RISCV64 ? s_emitReverseJumpKindsRISCV64 :
+        Configuration.TARGET_WASM ? s_emitReverseJumpKindsWASM :
+        throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping is not supported for this target.");
 }

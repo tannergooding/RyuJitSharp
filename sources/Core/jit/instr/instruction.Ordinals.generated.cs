@@ -7391,6 +7391,24 @@ internal static class InstructionOrdinalMaps
         var ordinals = GetCurrentTargetOrdinals();
         var instructionIndex = (int)ins;
 
+        // LoongArch LSX/LASX instructions are a contiguous suffix after INS_fst_d.
+        if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
+        {
+            if (ins == INS_none)
+            {
+                ordinal = Globals.GetRvaSpanEntry(s_loongarch64Ordinals, (int)INS_none) +
+                    (int)INS_xvsetallnez_d - (int)INS_vfmadd_s + 1;
+                return true;
+            }
+
+            if (instructionIndex >= (int)INS_vfmadd_s && instructionIndex <= (int)INS_xvsetallnez_d)
+            {
+                var firstSimdOrdinal = Globals.GetRvaSpanEntry(s_loongarch64Ordinals, (int)INS_fst_d) + 1;
+                ordinal = firstSimdOrdinal + instructionIndex - (int)INS_vfmadd_s;
+                return true;
+            }
+        }
+
         if (instructionIndex < 0 || instructionIndex >= ordinals.Length)
         {
             ordinal = 0;
@@ -7442,6 +7460,17 @@ internal static class InstructionOrdinalMaps
 
     internal static instruction GetInstructionFromNativeOrdinal(int ordinal)
     {
+        if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
+        {
+            var firstSimdOrdinal = Globals.GetRvaSpanEntry(s_loongarch64Ordinals, (int)INS_fst_d) + 1;
+            var simdInstructionCount = (int)INS_xvsetallnez_d - (int)INS_vfmadd_s + 1;
+
+            if (ordinal >= firstSimdOrdinal && ordinal < firstSimdOrdinal + simdInstructionCount)
+            {
+                return (instruction)((int)INS_vfmadd_s + ordinal - firstSimdOrdinal);
+            }
+        }
+
         var instructions = GetCurrentTargetInstructionsByNativeOrdinal();
 
         if (ordinal < 0 || ordinal >= instructions.Length)

@@ -485,52 +485,15 @@ The environmental-tools setting uses the initialized linker rather than SDK
 rediscovery; keep the Visual Studio Installer directory containing `vswhere.exe`
 on that process's `PATH`.
 
-`sources\GenerateTables\Program.cs` reads `Inputs` and writes `Outputs` relative
-to its working directory. It verifies that the working directory contains
-`GenerateTables.csproj` and `Inputs` before deleting an existing `Outputs`
-subtree, preventing an invocation from an unrelated directory from deleting its
-`Outputs`. The CLR API proxy generator also reads the managed `ICorJitInfo`,
-`ICorDynamicInfo` and `ICorStaticInfo` declarations from sibling `Core\inc`
-directories. Build the generator normally, then execute it from a fresh staging
-tree under `artifacts` that preserves this input layout. This keeps generated
-intermediates outside the source tree:
-
-```powershell
-$repoRoot = (Get-Location).Path
-$stagingRoot = Join-Path $repoRoot "artifacts\table-generation\baseline"
-if (Test-Path -LiteralPath $stagingRoot) {
-    throw "Choose a fresh table-generation staging directory."
-}
-dotnet build .\sources\GenerateTables\GenerateTables.csproj -c Debug
-if ($LASTEXITCODE -ne 0) {
-    throw "GenerateTables build failed."
-}
-$generator = Join-Path $repoRoot "artifacts\bin\sources\GenerateTables\Debug\net11.0\GenerateTables.dll"
-$staging = Join-Path $stagingRoot "GenerateTables"
-$corjit = Join-Path $stagingRoot "Core\inc\corjit"
-$corinfo = Join-Path $stagingRoot "Core\inc\corinfo"
-New-Item -ItemType Directory -Path $staging, $corjit, $corinfo | Out-Null
-Copy-Item -LiteralPath .\sources\GenerateTables\GenerateTables.csproj -Destination $staging
-Copy-Item -LiteralPath .\sources\GenerateTables\Inputs -Destination $staging -Recurse
-Copy-Item -LiteralPath .\sources\Core\inc\corjit\ICorJitInfo.cs -Destination $corjit
-Copy-Item -LiteralPath .\sources\Core\inc\corinfo\ICorDynamicInfo.cs -Destination $corinfo
-Copy-Item -LiteralPath .\sources\Core\inc\corinfo\ICorStaticInfo.cs -Destination $corinfo
-Push-Location $staging
-try {
-    dotnet $generator
-    if ($LASTEXITCODE -ne 0) {
-        throw "Table generation failed."
-    }
-}
-finally {
-    Pop-Location
-}
-```
-
-Check input provenance, review staged `Outputs`, and update only the intended
-files under `sources\Core`; generation does not integrate them automatically.
-The CLR API timing generator produces both the managed forwarding methods and
-their `UnmanagedCallersOnly` `ICorJitInfo` vtable proxy.
+`sources\GenerateTables\Program.cs` reads `Inputs` and the managed ABI
+declarations copied beside the executable, and writes `Outputs` beside the
+executable. It anchors its working directory at `AppContext.BaseDirectory`, so
+it can be invoked from any directory and only deletes that executable
+directory's `Outputs` subtree. Build it before invocation; check input
+provenance, review generated output, and update the corresponding files under
+`sources\Core`. Generating output does not integrate it automatically. The CLR
+API timing generator produces both the managed forwarding methods and their
+`UnmanagedCallersOnly` `ICorJitInfo` vtable proxy.
 Establish clean-baseline reproducibility before regenerating against new inputs.
 `NamedIntrinsic` uses the pinned `namedintrinsiclist.h` enum body as well as the
 hardware tables; validate the complete ordered enum, not just HWI row counts.
