@@ -3,37 +3,33 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genCodeForIndir(GenTreeIndir tree)
+    public unsafe void genCodeForIndirXarch(GenTreeIndir tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper is GT_IND);
 
-#if FEATURE_SIMD
-        if (tree.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (tree.Type is TYP_SIMD12))
         {
-            genLoadIndTypeSimd12(tree);
+            genLoadIndTypeSimd12Xarch(tree);
             return;
         }
-#endif
+
         var targetType = tree.Type;
         var addr = tree.Addr;
         if (addr.Oper.IsCnsIntOrI && addr.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL))
         {
             noway_assert((emitAttr)targetType.Size == EA_PTRSIZE);
-#if TARGET_64BIT
-            Emitter.emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree.RegNum, FLD_GLOBAL_GS,
+            var segment = Configuration.TARGET_64BIT ? FLD_GLOBAL_GS : FLD_GLOBAL_FS;
+            Emitter.emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree.RegNum, segment,
                 unchecked((int)addr.AsIntCon().IconValue));
-#else
-            Emitter.emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree.RegNum, FLD_GLOBAL_FS,
-                unchecked((int)addr.AsIntCon().IconValue));
-#endif
         }
         else
         {
@@ -45,9 +41,13 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-#if FEATURE_SIMD
-    public void genLoadIndTypeSimd12(GenTreeIndir tree)
+    public void genLoadIndTypeSimd12Xarch(GenTreeIndir tree)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 indirect loads require SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_IND);
         var addr = tree.Addr;
@@ -86,9 +86,8 @@ public sealed partial class CodeGen
             INS_OPTS_NONE);
         genProduceReg(tree);
     }
-#endif
 
-    public void genCodeForIndexAddr(GenTreeIndexAddr tree)
+    public void genCodeForIndexAddrXarch(GenTreeIndexAddr tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         var @base = tree.Arr;
@@ -102,21 +101,20 @@ public sealed partial class CodeGen
         _gcInfo.gcMarkRegPtrVal(baseReg, @base.Type);
         assert(varTypeIsIntegral(index.Type));
 
-        var tmpReg = REG_NA;
-#if TARGET_64BIT
-        tmpReg = _internalRegisters.GetSingle(tree);
-#endif
+        var tmpReg = regNumberExtensions.NotAvailable;
+        if (Configuration.TARGET_64BIT)
+        {
+            tmpReg = _internalRegisters.GetSingle(tree);
+        }
 
         if (tree.IsBoundsChecked)
         {
-#if TARGET_64BIT
-            if (index.Type is TYP_I_IMPL)
+            if (Configuration.TARGET_64BIT && ((index.Type == TYP_I_IMPL)))
             {
                 Emitter.emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, baseReg, tree.LenOffset);
                 Emitter.emitIns_R_R(INS_cmp, EA_8BYTE, indexReg, tmpReg);
             }
             else
-#endif
             {
                 Emitter.emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, tree.LenOffset);
             }
@@ -124,14 +122,12 @@ public sealed partial class CodeGen
             genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
         }
 
-#if TARGET_64BIT
-        if (index.Type is not TYP_I_IMPL)
+        if (Configuration.TARGET_64BIT && ((index.Type != TYP_I_IMPL)))
         {
             // A 32-bit write zero-extends the index for pointer-width addressing.
             _ = Emitter.emitIns_Mov(INS_mov, EA_4BYTE, tmpReg, indexReg, canSkip: false);
             indexReg = tmpReg;
         }
-#endif
 
         var scale = unchecked((uint)tree.ElemSize);
         switch (scale)
@@ -147,18 +143,18 @@ public sealed partial class CodeGen
 
             default:
             {
-#if TARGET_64BIT
-                // IMUL sign-extends its immediate; the EE excludes larger elements.
-                noway_assert(scale <= int.MaxValue);
-#else
-                tmpReg = _internalRegisters.GetSingle(tree);
-#endif
+                if (Configuration.TARGET_64BIT)
+                {
+                    // IMUL sign-extends its immediate; the EE excludes larger elements.
+                    noway_assert(scale <= int.MaxValue);
+                }
+                else
+                {
+                    tmpReg = _internalRegisters.GetSingle(tree);
+                }
+
                 Emitter.emitIns_R_I(RyuJitSharp.Emitter.inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
-#if TARGET_64BIT
-                    unchecked((nint)scale));
-#else
-                    unchecked((nint)(int)scale));
-#endif
+                    Configuration.TARGET_64BIT ? unchecked((nint)scale) : unchecked((nint)(int)scale));
                 scale = 1;
                 break;
             }
@@ -169,4 +165,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

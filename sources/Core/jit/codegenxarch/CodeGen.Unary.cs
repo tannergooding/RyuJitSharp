@@ -3,16 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
-#if !FEATURE_SIMD
 using System.Runtime.InteropServices;
-#endif
 
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForNegNot(GenTreeUnOp tree)
+    public void genCodeForNegNotXarch(GenTreeUnOp tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_NEG or GT_NOT);
@@ -67,13 +64,10 @@ public sealed partial class CodeGen
         simd16_t value = default;
         value.u64[0] = mask;
         value.u64[1] = mask;
-#if FEATURE_SIMD
-        var handle = Emitter.emitSimd16Const(value);
-#else
-        var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in value, 1));
-        var handle = Emitter.emitBlkConst(bytes, 16, tree.Type);
-#endif
+        var handle = Configuration.FEATURE_SIMD
+            ? Emitter.emitSimd16Const(value)
+            : Emitter.emitBlkConst(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in value, 1)),
+                16, tree.Type);
         Emitter.emitIns_SIMD_R_R_C(ins, EA_16BYTE, targetReg, operandReg, handle, 0, INS_OPTS_NONE);
     }
 }
-#endif

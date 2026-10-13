@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public void genX86BaseIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "X86 base intrinsics require xarch support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
         var targetReg = node.RegNum;
@@ -32,15 +36,15 @@ public sealed partial class CodeGen
                 var attr = baseType.EmitSize;
 
                 // Reuse EAX as the implicit multiplicand when it already holds op2.
-                if (rmOp.IsUsedFromReg && (rmOp.RegNum == REG_EAX))
+                if (rmOp.IsUsedFromReg && (rmOp.RegNum == REG_X64_RAX))
                 {
                     (rmOp, regOp) = (regOp, rmOp);
                 }
-                _ = emit.emitIns_Mov(INS_mov, attr, REG_EAX, regOp.RegNum, canSkip: true);
+                _ = emit.emitIns_Mov(INS_mov, attr, REG_X64_RAX, regOp.RegNum, canSkip: true);
                 _ = emit.emitInsBinary(ins, attr, node, rmOp);
 
-                assert(node.GetRegByIndex(0) == REG_EAX);
-                assert(node.GetRegByIndex(1) == REG_EDX);
+                assert(node.GetRegByIndex(0) == REG_X64_RAX);
+                assert(node.GetRegByIndex(1) == REG_X64_RDX);
                 break;
             }
 
@@ -76,21 +80,23 @@ public sealed partial class CodeGen
                 var op2Reg = op2.RegNum;
                 var op3Reg = op3.RegNum;
                 var attr = targetType.EmitSize;
+                var returnRegister = TargetRuntimeMetadata.SelectXarch(REG_X86_EAX, REG_X64_RAX);
+                var returnRegister1 = TargetRuntimeMetadata.SelectXarch(REG_X86_EDX, REG_X64_RDX);
 
-                assert(op1Reg != REG_EDX);
-                assert(op2Reg != REG_EAX);
+                assert(op1Reg != returnRegister1);
+                assert(op2Reg != returnRegister);
                 if (op3.IsUsedFromReg)
                 {
-                    assert(op3Reg != REG_EDX);
-                    assert(op3Reg != REG_EAX);
+                    assert(op3Reg != returnRegister1);
+                    assert(op3Reg != returnRegister);
                 }
 
-                _ = emit.emitIns_Mov(INS_mov, attr, REG_EAX, op1Reg, canSkip: true);
-                _ = emit.emitIns_Mov(INS_mov, attr, REG_EDX, op2Reg, canSkip: true);
+                _ = emit.emitIns_Mov(INS_mov, attr, returnRegister, op1Reg, canSkip: true);
+                _ = emit.emitIns_Mov(INS_mov, attr, returnRegister1, op2Reg, canSkip: true);
                 _ = emit.emitInsBinary(ins, attr, node, op3);
 
-                assert(node.GetRegNumByIdx(0) == REG_EAX);
-                assert(node.GetRegNumByIdx(1) == REG_EDX);
+                assert(node.GetRegNumByIdx(0) == returnRegister);
+                assert(node.GetRegNumByIdx(1) == returnRegister1);
                 break;
             }
 
@@ -204,33 +210,34 @@ public sealed partial class CodeGen
                     genIsSameLocalVar(op1, op2));
                 _ = emit.emitIns_Mov(INS_mov, targetType.EmitSize, targetReg, op1Reg, canSkip: true);
 
-#if TARGET_AMD64
-                var needsEvex = false;
-                if (emit.IsExtendedGPReg(targetReg))
+                if (Configuration.TARGET_AMD64)
                 {
-                    needsEvex = true;
-                }
-                else if (op2.IsUsedFromReg && emit.IsExtendedGPReg(op2.RegNum))
-                {
-                    needsEvex = true;
-                }
-                else if (op2.Oper.IsIndir)
-                {
-                    var indir = op2.AsIndir();
-                    if (indir.HasBase && emit.IsExtendedGPReg(indir.Base.RegNum))
+                    var needsEvex = false;
+                    if (emit.IsExtendedGPReg(targetReg))
                     {
                         needsEvex = true;
                     }
-                    if (indir.HasIndex && emit.IsExtendedGPReg(indir.Index.RegNum))
+                    else if (op2.IsUsedFromReg && emit.IsExtendedGPReg(op2.RegNum))
                     {
                         needsEvex = true;
                     }
+                    else if (op2.Oper.IsIndir)
+                    {
+                        var indir = op2.AsIndir();
+                        if (indir.HasBase && emit.IsExtendedGPReg(indir.Base.RegNum))
+                        {
+                            needsEvex = true;
+                        }
+                        if (indir.HasIndex && emit.IsExtendedGPReg(indir.Index.RegNum))
+                        {
+                            needsEvex = true;
+                        }
+                    }
+                    if (needsEvex)
+                    {
+                        ins = INS_crc32_apx;
+                    }
                 }
-                if (needsEvex)
-                {
-                    ins = INS_crc32_apx;
-                }
-#endif
 
                 if (baseType is TYP_UBYTE or TYP_USHORT)
                 {
@@ -293,4 +300,3 @@ public sealed partial class CodeGen
         genProduceReg(node);
     }
 }
-#endif

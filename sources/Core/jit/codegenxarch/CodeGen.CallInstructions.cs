@@ -11,15 +11,19 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genCallInstruction(GenTreeCall call, int stackArgBytes = 0)
+    public unsafe void genCallInstructionXarch(GenTreeCall call, int stackArgBytes = 0)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var parameters = new EmitCallParams();
-#if TARGET_X86
-        parameters.argSize = call.CallerPop ? -stackArgBytes : stackArgBytes;
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            parameters.argSize = call.CallerPop ? -stackArgBytes : stackArgBytes;
+        }
+
         ref readonly var retTypeDesc = ref call.ReturnTypeDesc;
 
         // Unused values are of no interest to GC.
@@ -30,7 +34,7 @@ public sealed partial class CodeGen
                 parameters.retSize = retTypeDesc.GetReturnRegType(0).EmitSize;
                 parameters.secondRetSize = retTypeDesc.GetReturnRegType(1).EmitSize;
 
-                if (retTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv) == REG_INTRET)
+                if (retTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv) == REG_X86_EAX)
                 {
                     // The emitter associates retSize with REG_INTRET even when the
                     // ABI places an earlier result in a SIMD register.
@@ -66,26 +70,23 @@ public sealed partial class CodeGen
         var target = getCallTarget(call, out parameters.methHnd);
         if (target is not null)
         {
-#if TARGET_X86
-            if (call.IsVirtualStub && (call._callType == CT_INDIRECT) &&
+            if (Configuration.TARGET_X86 && call.IsVirtualStub && (call._callType == CT_INDIRECT) &&
                 !_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
                 assert(_compiler.virtualStubParamInfo is not null);
-                assert(_compiler.virtualStubParamInfo.Reg == REG_VIRTUAL_STUB_TARGET);
+                assert(_compiler.virtualStubParamInfo.Reg == REG_X86_EAX);
                 assert(target.IsContainedIndir);
                 var address = target.AsIndir().Addr;
                 assert(address.IsUsedFromReg);
                 _ = genConsumeReg(address);
-                genCopyRegIfNeeded(address, REG_VIRTUAL_STUB_TARGET);
+                genCopyRegIfNeeded(address, REG_X86_EAX);
 
                 Emitter.emitIns_Nop(3);
                 parameters.callType = EC_INDIR_ARD;
-                parameters.ireg = REG_VIRTUAL_STUB_TARGET;
+                parameters.ireg = REG_X86_EAX;
                 genEmitCallWithCurrentGC(ref parameters);
             }
-            else
-#endif
-            if (target.IsContainedIndir)
+            else if (target.IsContainedIndir)
             {
                 assert(!_compiler.opts.IsCFGEnabled ||
                     call.IsHelperCall(CORINFO_HELP_VALIDATE_INDIRECT_CALL) ||
@@ -110,14 +111,14 @@ public sealed partial class CodeGen
                         genConsumeAddress(indir.Addr);
                     }
 
-                    var iReg = indir.HasBase ? indir.Base.RegNum : REG_NA;
-                    var xReg = indir.HasIndex ? indir.Index.RegNum : REG_NA;
+                    var iReg = indir.HasBase ? indir.Base.RegNum : regNumberExtensions.NotAvailable;
+                    var xReg = indir.HasIndex ? indir.Index.RegNum : regNumberExtensions.NotAvailable;
                     var calleeTrash = new regMaskTP(
                         _compiler.SRBM_INT_CALLEE_TRASH | _compiler.SRBM_FLT_CALLEE_TRASH,
                         _compiler.SRBM_MSK_CALLEE_TRASH);
-                    assert(!parameters.isJump || (iReg == REG_NA) ||
+                    assert(!parameters.isJump || (iReg == regNumberExtensions.NotAvailable) ||
                         (calleeTrash & new regMaskTP(iReg.SingleTypeMask)).IsNonEmpty);
-                    assert(!parameters.isJump || (xReg == REG_NA) ||
+                    assert(!parameters.isJump || (xReg == regNumberExtensions.NotAvailable) ||
                         (calleeTrash & new regMaskTP(xReg.SingleTypeMask)).IsNonEmpty);
 
                     parameters.callType = EC_INDIR_ARD;
@@ -155,7 +156,7 @@ public sealed partial class CodeGen
         {
             // Reuse the cell's argument register instead of addressing the cell again.
             var indirCellReg = getCallIndirectionCellReg(call);
-            if (indirCellReg != REG_NA)
+            if (indirCellReg != regNumberExtensions.NotAvailable)
             {
                 parameters.callType = EC_INDIR_ARD;
                 parameters.ireg = indirCellReg;

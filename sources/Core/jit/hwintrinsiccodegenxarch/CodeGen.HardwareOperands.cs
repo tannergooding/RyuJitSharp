@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -112,11 +111,9 @@ public sealed partial class CodeGen
                             // Lowering removed CreateScalarUnsafe around this operand.
                             // A register allocation instead of memory needs that move restored.
                             var moveSize = node.SimdBaseType.EmitActualSize;
-#if TARGET_AMD64
-                            var move = moveSize == EA_4BYTE ? INS_movd32 : INS_movd64;
-#else
-                            var move = INS_movd32;
-#endif
+                            var move = Configuration.TARGET_AMD64 && (moveSize != EA_4BYTE)
+                                ? INS_movd64
+                                : INS_movd32;
                             Emitter.emitIns_Mov(move, moveSize, reg, rmReg, canSkip: false);
                             rmReg = reg;
                         }
@@ -216,7 +213,7 @@ public sealed partial class CodeGen
         if (op1.IsContained)
         {
             assert(op1.IsVectorZero);
-            options = AddEmbMaskingMode(options, REG_K0, true);
+            options = AddEmbMaskingMode(options, TargetRuntimeMetadata.MaskRegisterFirst, true);
             op1Reg = node.RegNum;
         }
         assert(node.RegNum != REG_NA);
@@ -480,4 +477,3 @@ public sealed partial class CodeGen
         genProduceReg(node);
     }
 }
-#endif

@@ -3,8 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
 
@@ -14,9 +14,10 @@ public partial class Emitter
 
     public void emitIns_Nop(uint size)
     {
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
         assert(size <= MAX_ENCODED_SIZE);
         var id = emitNewInstr(EA_4BYTE);
         id.idIns(INS_nop);
@@ -27,20 +28,26 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
     }
 
-    public void emitIns(instruction ins)
+    public void emitInsXarch(instruction ins)
     {
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Xarch instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         var id = emitNewInstr(EA_4BYTE);
         var code = insCodeMR(ins);
-        assert(ins is INS_cdq or INS_int3 or INS_lock or INS_leave or INS_movsb or INS_movsd
+        assert((ins is INS_cdq or INS_int3 or INS_lock or INS_leave or INS_movsb or INS_movsd
             or INS_nop or INS_r_movsb or INS_r_movsd or INS_r_stosb or INS_r_stosd or INS_ret
-            or INS_sahf or INS_stosb or INS_stosd
-#if TARGET_AMD64
-            or INS_movsq or INS_r_movsq or INS_r_stosq or INS_stosq
-#endif
-            or INS_vzeroupper or INS_lfence or INS_mfence or INS_sfence or INS_pause or INS_serialize);
+            or INS_sahf or INS_stosb or INS_stosd)
+            || (Configuration.TARGET_AMD64 && (ins is INS_movsq or INS_r_movsq or INS_r_stosq or INS_stosq))
+            || (ins is INS_vzeroupper or INS_lfence or INS_mfence or INS_sfence or INS_pause or INS_serialize));
         assert(!hasRexPrefix(code));
 
         uint size;
@@ -73,9 +80,10 @@ public partial class Emitter
 
     public void emitIns(instruction ins, emitAttr attr)
     {
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
         var id = emitNewInstr(attr);
         var code = insCodeMR(ins);
         assert(ins is INS_cdq or INS_cwde);
@@ -95,4 +103,3 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
     }
 }
-#endif

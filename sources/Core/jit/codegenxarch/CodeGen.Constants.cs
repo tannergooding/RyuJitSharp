@@ -3,14 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if FEATURE_SIMD
     public void genSetRegToConst(regNumber targetReg, var_types targetType, in simd_t value)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD constants require SIMD support.");
+        }
+
         var emit = Emitter;
         emit.RequireSupportedInstructionRecording();
         var attr = targetType.EmitSize;
@@ -154,9 +157,13 @@ public sealed partial class CodeGen
         }
     }
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public unsafe void genSetRegToConst(regNumber targetReg, var_types targetType, in simdmask_t value)
     {
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Mask constants require masked hardware-intrinsic support.");
+        }
+
         var emit = Emitter;
         emit.RequireSupportedInstructionRecording();
         assert(varTypeIsMask(targetType));
@@ -176,10 +183,8 @@ public sealed partial class CodeGen
             emit.emitIns_R_C(ins_Load(targetType), attr, targetReg, handle, 0);
         }
     }
-#endif
-#endif
 
-    public unsafe void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree tree)
+    public unsafe void genSetRegToConstXarch(regNumber targetReg, var_types targetType, GenTree tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         switch (tree.Oper)
@@ -214,7 +219,7 @@ public sealed partial class CodeGen
                     }
                 }
 
-                instGen_Set_Reg_To_Imm(attr, targetReg, value, INS_FLAGS_DONT_CARE
+                instGen_Set_Reg_To_ImmXarch(attr, targetReg, value, INS_FLAGS_DONT_CARE
 #if DEBUG
                     , unchecked((nuint)constant.TargetHandle), constant.Flags
 #endif
@@ -254,24 +259,18 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if FEATURE_SIMD
-            case GT_CNS_VEC:
+            case GT_CNS_VEC when Configuration.FEATURE_SIMD:
             {
                 var vector = tree.AsVecCon();
                 genSetRegToConst(vector.RegNum, targetType, in vector.SimdVal);
                 break;
             }
-#endif
-
-#if FEATURE_MASKED_HW_INTRINSICS
-            case GT_CNS_MSK:
+            case GT_CNS_MSK when Configuration.FEATURE_MASKED_HW_INTRINSICS:
             {
                 var mask = tree.AsMskCon();
                 genSetRegToConst(mask.RegNum, targetType, in mask.SimdMaskVal);
                 break;
             }
-#endif
-
             default:
             {
                 unreached();
@@ -280,4 +279,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -142,7 +141,11 @@ public partial class Emitter
 
     private bool TakesRex2Prefix(instrDesc id)
     {
-#if TARGET_AMD64
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         var ins = id.idIns();
         if (!IsRex2EncodableInstruction(ins) || TakesEvexPrefix(id))
         {
@@ -163,19 +166,15 @@ public partial class Emitter
         }
 #endif
         return false;
-#else
-        return false;
-#endif
     }
 
     private bool TakesRexWPrefix(instrDesc id)
     {
-#if TARGET_X86
-        if (!UseVexEncodings)
+        if (Configuration.TARGET_X86 && !UseVexEncodings)
         {
             return false;
         }
-#endif
+
         var ins = id.idIns();
         var attr = id.idOpSize();
 
@@ -220,21 +219,22 @@ public partial class Emitter
         }
 
         assert(!IsSimdInstruction(ins));
-#if TARGET_AMD64
-        if (ins == INS_movsx)
+        if (Configuration.TARGET_AMD64)
         {
-            return true;
+            if (ins == INS_movsx)
+            {
+                return true;
+            }
+            if (EA_SIZE(attr) != EA_8BYTE)
+            {
+                return false;
+            }
+            return ins is not (INS_push or INS_pop or INS_movq or INS_movzx or INS_push_hide or
+                INS_pop_hide or INS_ret or INS_call or INS_tail_i_jmp) &&
+                !(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_i_jmp, INS_l_jg));
         }
-        if (EA_SIZE(attr) != EA_8BYTE)
-        {
-            return false;
-        }
-        return ins is not (INS_push or INS_pop or INS_movq or INS_movzx or INS_push_hide or
-            INS_pop_hide or INS_ret or INS_call or INS_tail_i_jmp) &&
-            !(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_i_jmp, INS_l_jg));
-#else
+
         return false;
-#endif
     }
 
     private static bool HasEmbeddedMask(instrDesc id) =>
@@ -253,4 +253,3 @@ public partial class Emitter
         id.idSetEvexCompressedDisplacementBit();
     }
 }
-#endif

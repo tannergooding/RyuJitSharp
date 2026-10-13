@@ -7,45 +7,49 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genCall(GenTreeCall call)
+    public unsafe void genCallXarch(GenTreeCall call)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         genAlignStackBeforeCall(call);
         genCallPlaceRegArgs(call);
 
-#if TARGET_X86
         var stackArgBytes = 0;
-        foreach (var arg in call.Args.EarlyArgs)
+        if (Configuration.TARGET_X86)
         {
-            var argNode = arg.EarlyNode;
-            if ((argNode is not null) && (argNode.Oper == GT_PUTARG_STK) && (arg.LateNode is null))
+            foreach (var arg in call.Args.EarlyArgs)
             {
-                var putArgStk = argNode.AsPutArgStk();
-                var source = putArgStk.Op1;
-                var argSize = putArgStk.StackByteSize;
-                stackArgBytes = unchecked(stackArgBytes + argSize);
+                var argNode = arg.EarlyNode;
+                if ((argNode is not null) && (argNode.Oper == GT_PUTARG_STK) && (arg.LateNode is null))
+                {
+                    var putArgStk = argNode.AsPutArgStk();
+                    var source = putArgStk.Op1;
+                    var argSize = putArgStk.StackByteSize;
+                    stackArgBytes = unchecked(stackArgBytes + argSize);
 
 #if DEBUG
-                var stackBytesConsumed = 0;
-                foreach (ref readonly var segment in arg.AbiInfo.Segments)
-                {
-                    if (!segment.IsPassedInRegister)
+                    var stackBytesConsumed = 0;
+                    foreach (ref readonly var segment in arg.AbiInfo.Segments)
                     {
-                        stackBytesConsumed = unchecked(stackBytesConsumed + segment.StackSize);
+                        if (!segment.IsPassedInRegister)
+                        {
+                            stackBytesConsumed = unchecked(stackBytesConsumed + segment.StackSize);
+                        }
                     }
-                }
-                assert(argSize == stackBytesConsumed);
-                if ((source.Type == TYP_STRUCT) && (source.Oper != GT_FIELD_LIST))
-                {
-                    var loadSize = source.GetLayout(_compiler).Size;
-                    assert(argSize == roundUp(unchecked((int)loadSize), TARGET_POINTER_SIZE));
-                }
+                    assert(argSize == stackBytesConsumed);
+                    if ((source.Type == TYP_STRUCT) && (source.Oper != GT_FIELD_LIST))
+                    {
+                        var loadSize = source.GetLayout(_compiler).Size;
+                        assert(argSize == roundUp(unchecked((int)loadSize), Configuration.TARGET_POINTER_SIZE));
+                    }
 #endif
+                }
             }
         }
-#endif
+
         if (call.NeedsNullCheck)
         {
             var regThis = genGetThisArgReg(call);
@@ -89,17 +93,18 @@ public sealed partial class CodeGen
 
             // The runtime can't find callee-saved registers through an InlinedCallFrame.
             assert(((GCInfo.gcRegGCrefSetCur | GCInfo.gcRegByrefSetCur)
-                & new regMaskTP(SRBM_INT_CALLEE_SAVED)).IsEmpty);
+                & new regMaskTP(Configuration.TARGET_AMD64
+                    ? SRBM_INT_CALLEE_SAVED_AMD64 : SRBM_INT_CALLEE_SAVED_X86)).IsEmpty);
         }
 
-#if TARGET_X86 && DEBUG
-        if (_compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC))
+#if DEBUG
+        if (Configuration.TARGET_X86 && _compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC))
         {
             assert(_compiler.lvaCallSpCheck != BAD_VAR_NUM);
             ref var local = ref _compiler.lvaGetDesc(_compiler.lvaCallSpCheck);
             assert(local.lvDoNotEnregister);
             assert(local.lvOnFrame);
-            Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, _compiler.lvaCallSpCheck, 0);
+            Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_X86_ESP, _compiler.lvaCallSpCheck, 0);
         }
 #endif
         if (Emitter.Contains256BitOrMoreAvxInstruction && call.NeedsVzeroupper(_compiler))
@@ -108,18 +113,24 @@ public sealed partial class CodeGen
             instGen(INS_vzeroupper);
         }
 
-#if TARGET_X86
-        genCallInstruction(call, stackArgBytes);
-#else
-        genCallInstruction(call);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            genCallInstructionXarch(call, stackArgBytes);
+        }
+        else
+        {
+            genCallInstructionXarch(call);
+        }
         genDefinePendingCallLabel(call);
 
 #if DEBUG
         var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
-#if FEATURE_MASKED_HW_INTRINSICS
-        killMask |= regMaskTP.CreateFromRegNum(REG_MASK_FIRST, SRBM_MSK_CALLEE_TRASH);
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            var firstMaskReg = Configuration.TARGET_AMD64 ? REG_MASK_FIRST_AMD64 : REG_MASK_FIRST_X86;
+            killMask |= regMaskTP.CreateFromRegNum(firstMaskReg, SRBM_MSK_CALLEE_TRASH);
+        }
+
         if (call.IsHelperCall())
         {
             killMask = _compiler.compHelperCallKillSet(call.HelperNum);
@@ -130,8 +141,7 @@ public sealed partial class CodeGen
         var returnType = call.Type;
         if (returnType != TYP_VOID)
         {
-#if TARGET_X86
-            if (varTypeIsFloating(returnType))
+            if (Configuration.TARGET_X86 && varTypeIsFloating(returnType))
             {
                 call.Flags |= GTF_SPILL;
                 RegSet.rsSpillFPStack(call);
@@ -139,7 +149,6 @@ public sealed partial class CodeGen
                 call.Flags &= ~GTF_SPILL;
             }
             else
-#endif
             {
                 regNumber returnReg;
                 if (call.HasMultiRegRetVal)
@@ -154,25 +163,21 @@ public sealed partial class CodeGen
                         inst_Mov(regType, allocatedReg, returnReg, canSkip: true);
                     }
 
-#if FEATURE_SIMD
-                    if (call.IsUnmanaged && (returnType == TYP_SIMD12))
+                    if (Configuration.FEATURE_SIMD && call.IsUnmanaged && (returnType == TYP_SIMD12))
                     {
                         returnReg = retTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv);
                         genSimd12UpperClear(returnReg);
                     }
-#endif
                 }
                 else
                 {
-#if TARGET_X86
-                    if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
+                    if (Configuration.TARGET_X86 && call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
                     {
-                        returnReg = REG_PINVOKE_TCB;
+                        returnReg = REG_PINVOKE_TCB_X86;
                     }
                     else
-#endif
                     {
-                        returnReg = varTypeIsFloating(returnType) ? REG_FLOATRET : REG_INTRET;
+                        returnReg = varTypeIsFloating(returnType) ? REG_FLOATRET : REG_X86_EAX;
                     }
                     inst_Mov(returnType, call.RegNum, returnReg, canSkip: true);
                 }
@@ -184,85 +189,97 @@ public sealed partial class CodeGen
         // Keep unused return values visible to the debugger in minopts/debuggable methods.
         if ((call.Next is null) && _compiler.opts.OptimizationEnabled)
         {
-            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INTRET));
+            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_X86_EAX));
         }
 
-#if TARGET_X86 && DEBUG
-        genStackPointerCheck(_compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC),
-            _compiler.lvaCallSpCheck, call.CallerPop ? 0 : stackArgBytes, REG_ARG_0);
+#if DEBUG
+        if (Configuration.TARGET_X86)
+        {
+            genStackPointerCheck(_compiler.opts.compStackCheckOnCall && (call._callType == CT_USER_FUNC),
+                _compiler.lvaCallSpCheck, call.CallerPop ? 0 : stackArgBytes, REG_ARG_0_X86);
+        }
 #endif
         var stackAdjustBias = 0u;
-#if TARGET_X86
-        if (call.CallerPop && (stackArgBytes != 0))
+        if (Configuration.TARGET_X86)
         {
-            stackAdjustBias = unchecked((uint)stackArgBytes);
+            if (call.CallerPop && (stackArgBytes != 0))
+            {
+                stackAdjustBias = unchecked((uint)stackArgBytes);
+            }
+
+            SubtractStackLevel(unchecked((uint)stackArgBytes));
         }
-        SubtractStackLevel(unchecked((uint)stackArgBytes));
-#endif
+
         genRemoveAlignmentAfterCall(call, stackAdjustBias);
     }
 
     private void genAlignStackBeforeCall(GenTreePutArgStk putArgStk)
     {
-#if UNIX_X86_ABI
-        var call = putArgStk.Call;
-        assert(call is not null);
-        genAlignStackBeforeCall(call);
-#endif
+        if (Configuration.UNIX_X86_ABI)
+        {
+            var call = putArgStk.Call;
+            assert(call is not null);
+            genAlignStackBeforeCall(call);
+        }
     }
 
     private void genAlignStackBeforeCall(GenTreeCall call)
     {
-#if UNIX_X86_ABI
-        if (!call.Args.IsStkAlignmentDone)
+        if (Configuration.UNIX_X86_ABI && !call.Args.IsStkAlignmentDone)
         {
             var stackLevel = unchecked(genStackLevel + call.Args.GetStkSizeBytes());
             call.Args.ComputeStackAlignment(stackLevel);
             var padding = call.Args.GetStkAlign();
             if (padding != 0)
             {
-                inst_RV_IV(INS_sub, REG_SPBASE, unchecked((nint)padding), EA_PTRSIZE);
+                inst_RV_IV(INS_sub, REG_X86_ESP, unchecked((nint)padding), EA_PTRSIZE);
                 AddStackLevel(padding);
                 AddNestedAlignment(padding);
             }
             call.Args.IsStkAlignmentDone = true;
         }
-#endif
     }
 
     private void genRemoveAlignmentAfterCall(GenTreeCall call, uint bias = 0)
     {
-#if TARGET_X86
-#if UNIX_X86_ABI
-        var padding = call.Args.GetStkAlign();
-        var adjustment = unchecked(padding + bias);
-        if (adjustment != 0)
+        if (Configuration.TARGET_X86)
         {
-            inst_RV_IV(INS_add, REG_SPBASE, unchecked((nint)adjustment), EA_PTRSIZE);
-            SubtractStackLevel(padding);
-            SubtractNestedAlignment(padding);
+            if (Configuration.UNIX_X86_ABI)
+            {
+                var padding = call.Args.GetStkAlign();
+                var adjustment = unchecked(padding + bias);
+                if (adjustment != 0)
+                {
+                    inst_RV_IV(INS_add, REG_X86_ESP, unchecked((nint)adjustment), EA_PTRSIZE);
+                    SubtractStackLevel(padding);
+                    SubtractNestedAlignment(padding);
+                }
+            }
+            else if (bias != 0)
+            {
+                if (bias == sizeof(int))
+                {
+                    inst_RV(INS_pop, REG_X86_ECX, TYP_INT);
+                }
+                else
+                {
+                    inst_RV_IV(INS_add, REG_X86_ESP, unchecked((nint)bias), EA_PTRSIZE);
+                }
+            }
         }
-#else
-        if (bias != 0)
+        else
         {
-            if (bias == sizeof(int))
-            {
-                inst_RV(INS_pop, REG_ECX, TYP_INT);
-            }
-            else
-            {
-                inst_RV_IV(INS_add, REG_SPBASE, unchecked((nint)bias), EA_PTRSIZE);
-            }
+            assert(bias == 0);
         }
-#endif
-#else
-        assert(bias == 0);
-#endif
     }
 
-#if FEATURE_SIMD && TARGET_XARCH
     public void genSimd12UpperClear(regNumber targetReg)
     {
+        if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 register clearing requires xarch SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(genIsValidFloatReg(targetReg));
 
@@ -270,5 +287,4 @@ public sealed partial class CodeGen
         Emitter.emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, targetReg, targetReg, targetReg,
             unchecked((sbyte)0xF8), INS_OPTS_NONE);
     }
-#endif
 }

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_AMD64
 using System;
 using System.Numerics;
 
@@ -13,19 +12,26 @@ public sealed partial class CodeGen
 {
     public uint genPopCalleeSavedRegistersFromMaskAPX(regMaskTP popRegs)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "APX callee-saved register pops are only supported on AMD64.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert((_compiler.funCurrentFunc().funKind == FuncKind.FUNC_ROOT) && !_compiler.opts.IsOSR);
-        assert((popRegs & RBM_RSP).IsEmpty);
+        assert((popRegs & new regMaskTP(SRBM_X64_RSP)).IsEmpty);
 
-        var alignReg = REG_NA;
+        var alignReg = REG_X64_NA;
         if (!IsFramePointerUsed && popRegs.IsNonEmpty)
         {
-            alignReg = (popRegs & RBM_RBP).IsNonEmpty
-                ? REG_RBP : (regNumber)BitOperations.TrailingZeroCount((ulong)popRegs.IntRegSet);
+            alignReg = (popRegs & new regMaskTP(SRBM_X64_RBP)).IsNonEmpty
+                ? REG_X64_RBP : (regNumber)BitOperations.TrailingZeroCount((ulong)popRegs.IntRegSet);
             popRegs &= ~regMaskTP.CreateFromRegNum(alignReg, alignReg.SingleTypeMask);
         }
 
-        Span<regNumber> registers = stackalloc regNumber[unchecked((int)(REG_INT_LAST - REG_INT_FIRST + 1))];
+        var intRegisterCount = unchecked((int)REG_X64_R31 - (int)REG_X64_RAX + 1);
+        Span<regNumber> registers = stackalloc regNumber[intRegisterCount];
         var count = 0;
         while (popRegs.IsNonEmpty)
         {
@@ -50,7 +56,7 @@ public sealed partial class CodeGen
         }
         assert(index == count);
 
-        if (alignReg != REG_NA)
+        if (alignReg != REG_X64_NA)
         {
             Emitter.emitIns_R(INS_pop, EA_PTRSIZE, alignReg, INS_OPTS_APX_ppx);
             popped++;
@@ -59,4 +65,3 @@ public sealed partial class CodeGen
         return popped;
     }
 }
-#endif

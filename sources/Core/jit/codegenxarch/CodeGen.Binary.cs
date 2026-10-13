@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForBinary(GenTreeOp tree)
+    public void genCodeForBinaryXarch(GenTreeOp tree)
     {
         Emitter.RequireSupportedInstructionRecording();
 #if DEBUG
@@ -16,12 +15,10 @@ public sealed partial class CodeGen
         valid |= varTypeIsFloating(tree.Type)
             ? tree.Oper is GT_MUL or GT_DIV
             : tree.Oper is GT_AND or GT_OR or GT_XOR;
-#if !TARGET_64BIT
-        if (!varTypeIsFloating(tree.Type))
+        if (!Configuration.TARGET_64BIT && !varTypeIsFloating(tree.Type))
         {
             valid |= tree.Oper is GT_ADD_LO or GT_ADD_HI or GT_SUB_LO or GT_SUB_HI;
         }
-#endif
         assert(valid);
 #endif
         genConsumeOperands(tree);
@@ -43,9 +40,9 @@ public sealed partial class CodeGen
         }
 
         var ins = genGetInsForOper(oper, targetType);
-        noway_assert(targetReg != REG_NA);
-        var op1Reg = op1.IsUsedFromReg ? op1.RegNum : REG_NA;
-        var op2Reg = op2.IsUsedFromReg ? op2.RegNum : REG_NA;
+        noway_assert(targetReg != regNumberExtensions.NotAvailable);
+        var op1Reg = op1.IsUsedFromReg ? op1.RegNum : regNumberExtensions.NotAvailable;
+        var op2Reg = op2.IsUsedFromReg ? op2.RegNum : regNumberExtensions.NotAvailable;
 
         if (varTypeIsFloating(targetType))
         {
@@ -91,7 +88,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                assert(op2Reg != REG_NA);
+                assert(op2Reg != regNumberExtensions.NotAvailable);
                 Emitter.emitIns_R_ARX(INS_lea, tree.Type.EmitSize, targetReg, op1Reg, op2Reg, 1, 0);
             }
 
@@ -150,29 +147,38 @@ public sealed partial class CodeGen
 
         if (tree.HasOverflowCheckEx)
         {
-#if TARGET_64BIT
-            assert(oper is GT_ADD or GT_SUB);
-#else
-            assert(oper is GT_ADD or GT_SUB or GT_ADD_HI or GT_SUB_HI);
-#endif
+            if (Configuration.TARGET_64BIT)
+            {
+                assert(oper is GT_ADD or GT_SUB);
+            }
+            else
+            {
+                assert(oper is GT_ADD or GT_SUB or GT_ADD_HI or GT_SUB_HI);
+            }
+
             genCheckOverflow(tree);
         }
 
         genProduceReg(tree);
     }
 
-    public void inst_JMP(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)
+    public void inst_JMPXarch(emitJumpKind jump, BasicBlock target, bool isRemovableJmpCandidate = false)
     {
-#if DEBUG && !FEATURE_FIXED_OUT_ARGS
-#if UNIX_X86_ABI
-        assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel - curNestedAlignment) ||
-            IsFramePointerUsed);
-#else
-        assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel) ||
-            IsFramePointerUsed);
-#endif
+#if DEBUG
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            if (Configuration.UNIX_X86_ABI)
+            {
+                assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel - curNestedAlignment) ||
+                    IsFramePointerUsed);
+            }
+            else
+            {
+                assert((unchecked((uint)target.bbTgtStkDepth * sizeof(int)) == genStackLevel) ||
+                    IsFramePointerUsed);
+            }
+        }
 #endif
         Emitter.emitIns_J(RyuJitSharp.Emitter.emitJumpKindToIns(jump), target, false, isRemovableJmpCandidate);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 using System.Globalization;
 
@@ -20,11 +19,14 @@ public partial class Emitter
         }
         else
         {
-#if TARGET_X86
-            jitprintf($"(reloc 0x{unchecked((uint)compiler.dspOffset(value)):x})");
-#else
-            jitprintf($"(reloc 0x{unchecked((nuint)compiler.dspOffset(value)):x})");
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                jitprintf($"(reloc 0x{unchecked((uint)compiler.dspOffset(value)):x})");
+            }
+            else
+            {
+                jitprintf($"(reloc 0x{unchecked((nuint)compiler.dspOffset(value)):x})");
+            }
         }
     }
 
@@ -33,9 +35,10 @@ public partial class Emitter
         var compiler = _compiler ?? throw new FatalJitException("Address-mode display requires an active compiler.");
         var ins = id.idIns();
         var disp = ins is INS_call or INS_tail_i_jmp ? emitGetInsCIdisp(id) : emitGetInsAmdAny(id);
-#if TARGET_X86
-        disp = unchecked((int)disp);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            disp = unchecked((int)disp);
+        }
         var address = id.idAddr().iiaAddrMode;
         var separated = false;
         var frameRef = false;
@@ -45,8 +48,8 @@ public partial class Emitter
         {
             jitprintf(emitRegName(address.amBaseReg));
             separated = true;
-            frameRef = address.amBaseReg == REG_ESP
-                || (codeGen.IsFramePointerUsed && address.amBaseReg == REG_EBP);
+            frameRef = address.amBaseReg == REG_SPBASE
+                || (codeGen.IsFramePointerUsed && address.amBaseReg == REG_FPBASE);
         }
 
         if (address.amIndxReg != REG_NA)
@@ -102,11 +105,9 @@ public partial class Emitter
             }
             else
             {
-#if TARGET_X86
-                var magnitude = unchecked((uint)-disp);
-#else
-                var magnitude = unchecked((nuint)(-disp));
-#endif
+                var magnitude = Configuration.TARGET_X86
+                    ? unchecked((nuint)(uint)-disp)
+                    : unchecked((nuint)(-disp));
                 jitprintf($"-0x{magnitude.ToString($"X{width}", CultureInfo.InvariantCulture)}");
             }
         }
@@ -160,7 +161,7 @@ public partial class Emitter
         }
     }
 
-    public unsafe void emitDispInsHex(instrDesc id, byte* code, nuint size)
+    public unsafe void emitDispInsHexXarch(instrDesc id, byte* code, nuint size)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
         if (!compiler.opts.disCodeBytes || compiler.opts.disDiffable)
@@ -173,11 +174,7 @@ public partial class Emitter
         {
             jitprintf($"{code[i]:X2}");
         }
-#if TARGET_X86
-        const int digits = 6;
-#else
-        const int digits = 10;
-#endif
+        var digits = Configuration.TARGET_X86 ? 6 : 10;
         if (size < (nuint)digits)
         {
             jitprintf(new string(' ', checked((int)(2 * ((nuint)digits - size)))));
@@ -222,8 +219,8 @@ public partial class Emitter
         {
             return;
         }
-        var mask = (regNumber)(id.idGetEvexAaaContext() + (uint)REG_K0);
-        if (mask != REG_K0)
+        var mask = (regNumber)(id.idGetEvexAaaContext() + (uint)REG_MASK_FIRST);
+        if (mask != REG_MASK_FIRST)
         {
             emitDispMask(id, mask);
         }
@@ -252,8 +249,8 @@ public partial class Emitter
             emitGetInsCns(id, ref constant);
         }
 
-        if (id.idInsFmt() is insFormat.IF_RRW_SHF or insFormat.IF_RWR_RRD_SHF or
-            insFormat.IF_MRW_SHF or insFormat.IF_SRW_SHF or insFormat.IF_ARW_SHF)
+        if (id.idInsFmt() is insFormat.IF_XARCH_RRW_SHF or insFormat.IF_XARCH_RWR_RRD_SHF or
+            insFormat.IF_XARCH_MRW_SHF or insFormat.IF_XARCH_SRW_SHF or insFormat.IF_XARCH_ARW_SHF)
         {
             emitDispShift(ins, unchecked((byte)constant.cnsVal));
             return;
@@ -270,9 +267,10 @@ public partial class Emitter
 
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
         var val = constant.cnsVal;
-#if TARGET_X86
-        val = unchecked((int)val);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            val = unchecked((int)val);
+        }
         if (compiler.opts.disDiffable && ((val >> 18) is not 0 and not -1))
         {
             val = unchecked((nint)0xD1FFAB1E);
@@ -283,19 +281,25 @@ public partial class Emitter
         }
         else if (val > 0 || val < -0xFFFFFF)
         {
-#if TARGET_X86
-            jitprintf($"0x{unchecked((uint)val):X}");
-#else
-            jitprintf($"0x{unchecked((nuint)val):X}");
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                jitprintf($"0x{unchecked((uint)val):X}");
+            }
+            else
+            {
+                jitprintf($"0x{unchecked((nuint)val):X}");
+            }
         }
         else
         {
-#if TARGET_X86
-            jitprintf($"-0x{unchecked((uint)-val):X}");
-#else
-            jitprintf($"-0x{unchecked((nuint)(-val)):X}");
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                jitprintf($"-0x{unchecked((uint)-val):X}");
+            }
+            else
+            {
+                jitprintf($"-0x{unchecked((nuint)(-val)):X}");
+            }
         }
 
         var debug = id.idDebugOnlyInfo();
@@ -317,4 +321,3 @@ public partial class Emitter
     private static bool emitInstHasPseudoName(instruction ins) =>
         (prefixFlags(ins) & insInfoFlags.INS_FLAGS_HasPseudoName) != 0;
 }
-#endif

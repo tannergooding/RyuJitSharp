@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, nint imm, insFlags flags = INS_FLAGS_DONT_CARE
+    public void instGen_Set_Reg_To_ImmXarch(emitAttr size, regNumber reg, nint imm, insFlags flags = INS_FLAGS_DONT_CARE
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
 #endif
@@ -66,20 +65,23 @@ public sealed partial class CodeGen
         _regSet.verifyRegUsed(reg);
     }
 
-#if TARGET_AMD64
     public unsafe CorInfoReloc genAddrRelocTypeHint(nuint addr)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Address relocation hints require AMD64.");
+        }
+
         return _compiler.eeGetRelocTypeHint((void*)addr);
     }
-#endif
 
     public bool genDataIndirAddrCanBeEncodedAsPCRelOffset(nuint addr)
     {
-#if TARGET_AMD64
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         return genAddrRelocTypeHint(addr) == CorInfoReloc.RELATIVE32;
-#else
-        return false;
-#endif
     }
 }
-#endif

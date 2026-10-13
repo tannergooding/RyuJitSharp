@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH && FEATURE_SIMD
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public void genStoreIndTypeSimd12(GenTreeStoreInd tree)
     {
+        if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 indirect stores require xarch SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STOREIND);
         assert(GCInfo.gcIsWriteBarrierCandidate(tree) == GCInfo.WriteBarrierForm.WBF_NoBarrier);
@@ -54,4 +58,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

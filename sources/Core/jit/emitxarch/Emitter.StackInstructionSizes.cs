@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -29,13 +28,14 @@ public partial class Emitter
             // SP addressing requires a SIB byte.
             size++;
 
-#if !FEATURE_FIXED_OUT_ARGS
-            dsp = unchecked((int)(unchecked((uint)dsp) + unchecked((uint)emitCurStackLvl)));
+            if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+            {
+                dsp = unchecked((int)(unchecked((uint)dsp) + unchecked((uint)emitCurStackLvl)));
 
-            // The pushed-stack estimate cannot reliably establish zero or compressible displacement.
-            tryCompress = false;
-            dspIsZero = false;
-#endif
+                // The pushed-stack estimate cannot reliably establish zero or compressible displacement.
+                tryCompress = false;
+                dspIsZero = false;
+            }
         }
 
         bool dspInByte;
@@ -100,10 +100,11 @@ public partial class Emitter
         var valSize = EA_SIZE_IN_BYTES(id.idOpSize());
         var valInByte = ImmCanUseSByteEncoding(ins, val);
 
-#if TARGET_AMD64
-        // Only mov reg, imm64 accepts an eight-byte immediate; memory operands do not.
-        noway_assert((valSize <= sizeof(int)) || !id.idIsCnsReloc());
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            // Only mov reg, imm64 accepts an eight-byte immediate; memory operands do not.
+            noway_assert((valSize <= sizeof(int)) || !id.idIsCnsReloc());
+        }
 
         if (valSize > sizeof(int))
         {
@@ -128,4 +129,3 @@ public partial class Emitter
         return valSize + emitInsSizeSV(id, code, var, dsp);
     }
 }
-#endif

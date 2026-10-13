@@ -3,22 +3,25 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void inst_SETCC(GenCondition condition, var_types type, regNumber dstReg)
+    public void inst_SETCCXarch(GenCondition condition, var_types type, regNumber dstReg)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Boolean condition generation requires AMD64.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Boolean condition generation requires AMD64.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(varTypeIsIntegral(type));
         assert(genIsValidIntReg(dstReg));
-#if TARGET_X86
-        assert(dstReg is REG_EAX or REG_ECX or REG_EDX or REG_EBX);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            assert(dstReg is REG_X86_EAX or REG_X86_ECX or REG_X86_EDX or REG_X86_EBX);
+        }
+
         var desc = GenConditionDesc.Get(condition);
         var instOptions = INS_OPTS_NONE;
         var needsMovzx = !varTypeIsByte(type);
@@ -32,7 +35,7 @@ public sealed partial class CodeGen
         if (desc.Oper is not GT_NONE)
         {
             var next = genCreateTempLabel();
-            inst_JMP(desc.Oper is GT_OR ? desc.JumpKind1 : RyuJitSharp.Emitter.emitReverseJumpKind(desc.JumpKind1), next);
+            inst_JMPXarch(desc.Oper is GT_OR ? desc.JumpKind1 : RyuJitSharp.Emitter.emitReverseJumpKind(desc.JumpKind1), next);
             inst_SET(desc.JumpKind2, dstReg, instOptions);
             genDefineTempLabel(next);
         }
@@ -41,7 +44,5 @@ public sealed partial class CodeGen
         {
             _ = Emitter.emitIns_Mov(INS_movzx, EA_1BYTE, dstReg, dstReg, canSkip: false);
         }
-#endif
     }
 }
-#endif

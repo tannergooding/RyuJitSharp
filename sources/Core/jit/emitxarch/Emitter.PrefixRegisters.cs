@@ -3,43 +3,33 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     internal static bool isHighSimdReg(regNumber reg)
     {
-#if TARGET_AMD64
-        return reg >= REG_XMM16 && reg <= REG_XMM31;
-#else
-        return false;
-#endif
+        return Configuration.TARGET_AMD64 && (reg >= REG_X64_XMM16) && (reg <= REG_X64_XMM31);
     }
 
     private static bool isHighGPReg(regNumber reg)
     {
-#if TARGET_AMD64
-        return reg >= REG_R16 && reg <= REG_R31;
-#else
-        return false;
-#endif
+        return Configuration.TARGET_AMD64 && (reg >= REG_X64_R16) && (reg <= REG_X64_R31);
     }
-
-    private static bool isMaskReg(regNumber reg) => reg >= REG_K0 && reg <= REG_K7;
 
     internal static bool IsExtendedReg(regNumber reg)
     {
-#if TARGET_AMD64
-        return (reg >= REG_R8 && reg <= REG_R31) || (reg >= REG_XMM8 && reg <= REG_XMM31);
-#else
-        return false;
-#endif
+        return Configuration.TARGET_AMD64 &&
+            ((reg >= REG_X64_R8 && reg <= REG_X64_R31) || (reg >= REG_X64_XMM8 && reg <= REG_X64_XMM31));
     }
 
     internal bool IsExtendedGPReg(regNumber reg)
     {
-#if TARGET_AMD64
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         if (reg > REG_STK)
         {
             return false;
@@ -51,14 +41,15 @@ public partial class Emitter
             return true;
         }
         return false;
-#else
-        return false;
-#endif
     }
 
     private bool HasHighSIMDReg(instrDesc id)
     {
-#if TARGET_AMD64
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         if (isHighSimdReg(id.idReg1()) || isHighSimdReg(id.idReg2()))
         {
             return true;
@@ -73,14 +64,15 @@ public partial class Emitter
             return true;
         }
         return false;
-#else
-        return false;
-#endif
     }
 
     private bool HasExtendedGPReg(instrDesc id)
     {
-#if TARGET_AMD64
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         if (id.idHasMemAdr() &&
             (IsExtendedGPReg(id.idAddr().iiaAddrMode.amBaseReg)
              || IsExtendedGPReg(id.idAddr().iiaAddrMode.amIndxReg)))
@@ -96,9 +88,6 @@ public partial class Emitter
             return true;
         }
         return false;
-#else
-        return false;
-#endif
     }
 
     private bool HasMaskReg(instrDesc id)
@@ -109,13 +98,15 @@ public partial class Emitter
             return true;
         }
 
-#if DEBUG
         if (isMaskReg(id.idReg2()))
         {
+#if DEBUG
             assert((prefixFlags(id.idIns()) & KInstruction) != 0);
+#endif
             return UsePromotedEvexEncodings;
         }
 
+#if DEBUG
         if (!id.idIsSmallDsc())
         {
             if (id.idHasReg3())
@@ -143,4 +134,3 @@ public partial class Emitter
             INS_kmovb_msk or INS_kmovw_msk or INS_kmovd_msk or INS_kmovq_msk;
     }
 }
-#endif

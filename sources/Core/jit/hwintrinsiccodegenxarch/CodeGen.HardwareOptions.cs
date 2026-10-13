@@ -5,7 +5,6 @@
 
 using System.Numerics;
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -59,7 +58,7 @@ public sealed partial class CodeGen
     {
         assert((options & INS_OPTS_EVEX_aaa_MASK) == 0);
         assert((options & INS_OPTS_EVEX_z_MASK) == 0);
-        var mask = (uint)(maskReg - KBASE) << 2;
+        var mask = (uint)(maskReg - TargetRuntimeMetadata.MaskRegisterFirst) << 2;
         assert(genIsValidMaskReg(maskReg));
         assert((mask & (uint)INS_OPTS_EVEX_aaa_MASK) == mask);
         options |= (insOpts)mask;
@@ -220,4 +219,3 @@ public sealed partial class CodeGen
         return max;
     }
 }
-#endif

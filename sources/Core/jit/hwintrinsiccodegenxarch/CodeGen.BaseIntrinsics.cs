@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public unsafe void genBaseIntrinsic(GenTreeHWIntrinsic node, insOpts instOptions)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Base hardware intrinsics require xarch support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         var intrinsicId = node.HWIntrinsicId;
         var targetReg = node.RegNum;
@@ -36,8 +40,7 @@ public sealed partial class CodeGen
                 if (varTypeIsIntegral(baseType))
                 {
                     var baseAttr = baseType.ActualType.EmitSize;
-#if TARGET_X86
-                    if (varTypeIsLong(baseType))
+                    if (Configuration.TARGET_X86 && varTypeIsLong(baseType))
                     {
                         assert(op1.IsContained);
 
@@ -71,7 +74,7 @@ public sealed partial class CodeGen
 
                         baseAttr = EA_8BYTE;
                     }
-#endif
+
                     if (op1.IsUsedFromMemory && (baseAttr == EA_8BYTE))
                     {
                         ins = INS_movq;
@@ -126,14 +129,17 @@ public sealed partial class CodeGen
                 var simdInitTempVarNum = _compiler.lvaSimdInitTempVarNum;
                 noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
                 var offs = _compiler.lvaFrameAddress(simdInitTempVarNum, out var isEBPbased);
-#if !FEATURE_FIXED_OUT_ARGS
-                if (!isEBPbased)
+                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
                 {
-                    offs = unchecked(offs + (int)genStackLevel);
+                    if (!isEBPbased)
+                    {
+                        offs = unchecked(offs + (int)genStackLevel);
+                    }
                 }
-#else
-                assert(genStackLevel == 0);
-#endif
+                else
+                {
+                    assert(genStackLevel == 0);
+                }
                 assert(op2.Type == TYP_I_IMPL);
                 var indexReg = op2.RegNum;
                 var valueReg = op3.RegNum;
@@ -141,7 +147,8 @@ public sealed partial class CodeGen
                 emit.emitIns_S_R(ins_Store(simdType, _compiler.isSIMDTypeLocalAligned(simdInitTempVarNum)),
                     simdType.EmitSize, op1Reg, simdInitTempVarNum, 0);
                 emit.emitIns_ARX_R(ins_Store(op3.Type), baseType.EmitSize, valueReg,
-                    isEBPbased ? REG_EBP : REG_ESP, indexReg, baseType.Size, offs);
+                    isEBPbased ? TargetRuntimeMetadata.FramePointerBaseRegister
+                        : TargetRuntimeMetadata.StackPointerBaseRegister, indexReg, baseType.Size, offs);
                 emit.emitIns_R_S(ins_Load(simdType, _compiler.isSIMDTypeLocalAligned(simdInitTempVarNum)),
                     simdType.EmitSize, targetReg, simdInitTempVarNum, 0);
                 break;
@@ -169,19 +176,23 @@ public sealed partial class CodeGen
                     {
                         var varNum = op1.AsLclVarCommon().LclNum;
                         offset = unchecked(offset + _compiler.lvaFrameAddress(varNum, out var isEBPbased));
-#if !FEATURE_FIXED_OUT_ARGS
-                        if (!isEBPbased)
+                        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
                         {
-                            offset = unchecked(offset + (int)genStackLevel);
+                            if (!isEBPbased)
+                            {
+                                offset = unchecked(offset + (int)genStackLevel);
+                            }
                         }
-#else
-                        assert(genStackLevel == 0);
-#endif
+                        else
+                        {
+                            assert(genStackLevel == 0);
+                        }
                         if (op1.Oper == GT_LCL_FLD)
                         {
                             offset = unchecked(offset + op1.AsLclFld().LclOffs);
                         }
-                        baseReg = isEBPbased ? REG_EBP : REG_ESP;
+                        baseReg = isEBPbased ? TargetRuntimeMetadata.FramePointerBaseRegister
+                            : TargetRuntimeMetadata.StackPointerBaseRegister;
                     }
                     else if (op1.Oper.IsCnsVec)
                     {
@@ -249,19 +260,23 @@ public sealed partial class CodeGen
                     var simdInitTempVarNum = _compiler.lvaSimdInitTempVarNum;
                     noway_assert(simdInitTempVarNum != BAD_VAR_NUM);
                     var offs = _compiler.lvaFrameAddress(simdInitTempVarNum, out var isEBPbased);
-#if !FEATURE_FIXED_OUT_ARGS
-                    if (!isEBPbased)
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS)
                     {
-                        offs = unchecked(offs + (int)genStackLevel);
+                        if (!isEBPbased)
+                        {
+                            offs = unchecked(offs + (int)genStackLevel);
+                        }
                     }
-#else
-                    assert(genStackLevel == 0);
-#endif
+                    else
+                    {
+                        assert(genStackLevel == 0);
+                    }
                     var indexReg = op2.RegNum;
                     emit.emitIns_S_R(ins_Store(simdType, _compiler.isSIMDTypeLocalAligned(simdInitTempVarNum)),
                         simdType.EmitSize, op1Reg, simdInitTempVarNum, 0);
                     emit.emitIns_R_ARX(ins_Move_Extend(baseType, false), baseType.EmitSize, targetReg,
-                        isEBPbased ? REG_EBP : REG_ESP, indexReg, baseType.Size, offs);
+                        isEBPbased ? TargetRuntimeMetadata.FramePointerBaseRegister
+                            : TargetRuntimeMetadata.StackPointerBaseRegister, indexReg, baseType.Size, offs);
                 }
                 break;
             }
@@ -369,7 +384,8 @@ public sealed partial class CodeGen
                 {
                     tmpReg1 = _internalRegisters.Extract(node,
                         _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX)
-                            ? new regMaskTP(SRBM_ALLFLOAT) : new regMaskTP(SRBM_XMM0));
+                            ? new regMaskTP(SRBM_ALLFLOAT)
+                            : new regMaskTP(TargetRuntimeMetadata.SelectXarch(SRBM_X86_XMM0, SRBM_X64_XMM0)));
                 }
                 var tmpReg2 = _internalRegisters.Extract(node, new regMaskTP(SRBM_ALLFLOAT));
                 var tmpReg3 = _internalRegisters.Extract(node, new regMaskTP(SRBM_ALLFLOAT));
@@ -518,4 +534,3 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R_I(INS_kshiftrb, EA_8BYTE, maskReg, maskReg, unchecked((sbyte)(8 - count)));
     }
 }
-#endif

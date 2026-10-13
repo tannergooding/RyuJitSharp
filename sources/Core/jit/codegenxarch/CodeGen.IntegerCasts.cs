@@ -6,16 +6,17 @@
 using static RyuJitSharp.CodeGen.GenIntCastDesc.CheckKind;
 using static RyuJitSharp.CodeGen.GenIntCastDesc.ExtendKind;
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genIntCastOverflowCheck(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
+    public void genIntCastOverflowCheckXarch(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         switch (desc.Check)
         {
             case CHECK_POSITIVE:
@@ -25,8 +26,7 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if TARGET_64BIT
-            case CHECK_UINT_RANGE:
+            case CHECK_UINT_RANGE when Configuration.TARGET_64BIT:
             {
                 // 0xFFFFFFFF is not an encodable compare immediate; check the upper half instead.
                 var tempReg = _internalRegisters.GetSingle(cast);
@@ -37,14 +37,14 @@ public sealed partial class CodeGen
                 break;
             }
 
-            case CHECK_POSITIVE_INT_RANGE:
+            case CHECK_POSITIVE_INT_RANGE when Configuration.TARGET_64BIT:
             {
                 Emitter.emitIns_R_I(INS_cmp, EA_8BYTE, reg, int.MaxValue);
                 genJumpToThrowHlpBlk(EJ_ja, SCK_OVERFLOW);
                 break;
             }
 
-            case CHECK_INT_RANGE:
+            case CHECK_INT_RANGE when Configuration.TARGET_64BIT:
             {
                 var tempReg = _internalRegisters.GetSingle(cast);
                 _ = Emitter.emitIns_Mov(INS_movsxd, EA_8BYTE, tempReg, reg, canSkip: true);
@@ -52,8 +52,6 @@ public sealed partial class CodeGen
                 genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
                 break;
             }
-#endif
-
             default:
             {
                 assert(desc.Check == CHECK_SMALL_INT_RANGE);
@@ -71,21 +69,23 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genIntToIntCast(GenTreeCast cast)
+    public void genIntToIntCastXarch(GenTreeCast cast)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         genConsumeRegs(cast.CastOp);
         var src = cast.CastOp;
-        var srcReg = src.IsUsedFromReg ? src.RegNum : REG_NA;
+        var srcReg = src.IsUsedFromReg ? src.RegNum : regNumberExtensions.NotAvailable;
         var dstReg = cast.RegNum;
         assert(genIsValidIntReg(dstReg));
         var desc = new GenIntCastDesc(cast);
         if (desc.Check != CHECK_NONE)
         {
             assert(genIsValidIntReg(srcReg));
-            genIntCastOverflowCheck(cast, in desc, srcReg);
+            genIntCastOverflowCheckXarch(cast, in desc, srcReg);
         }
 
         instruction ins;
@@ -109,8 +109,7 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if TARGET_64BIT
-            case ZERO_EXTEND_INT:
+            case ZERO_EXTEND_INT when Configuration.TARGET_64BIT:
             case LOAD_ZERO_EXTEND_INT:
             {
                 ins = INS_mov;
@@ -118,15 +117,13 @@ public sealed partial class CodeGen
                 break;
             }
 
-            case SIGN_EXTEND_INT:
+            case SIGN_EXTEND_INT when Configuration.TARGET_64BIT:
             case LOAD_SIGN_EXTEND_INT:
             {
                 ins = INS_movsxd;
                 size = 4;
                 break;
             }
-#endif
-
             case COPY:
             {
                 ins = INS_mov;
@@ -149,7 +146,7 @@ public sealed partial class CodeGen
             }
         }
 
-        if (srcReg != REG_NA)
+        if (srcReg != regNumberExtensions.NotAvailable)
         {
             _ = Emitter.emitIns_Mov(ins, (emitAttr)size, dstReg, srcReg, canSkip);
         }
@@ -162,4 +159,3 @@ public sealed partial class CodeGen
         genProduceReg(cast);
     }
 }
-#endif

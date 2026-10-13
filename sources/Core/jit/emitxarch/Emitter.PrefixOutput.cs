@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -97,8 +96,7 @@ public partial class Emitter
             return emittedSize;
         }
 
-#if TARGET_AMD64
-        if (code > 0xFFFFFFFF)
+        if (Configuration.TARGET_AMD64 && code > 0xFFFFFFFF)
         {
             var prefix = (byte)((code >> 32) & 0xFF);
             noway_assert((prefix >= 0x40) && (prefix <= 0x4F));
@@ -138,9 +136,7 @@ public partial class Emitter
 
             return emitOutputByte(dst, prefix);
         }
-#endif
 
         return 0;
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 using static RyuJitSharp.Emitter.insFormat;
 
@@ -23,7 +22,7 @@ public partial class Emitter
     private void emitDispRegisterPair(instrDesc id, ref emitAttr attr)
     {
         var ins = id.idIns();
-        if ((id.idInsFmt() is IF_RRD_RRD or IF_RWR_RRD) && ins is
+        if ((id.idInsFmt() is IF_XARCH_RRD_RRD or IF_XARCH_RWR_RRD) && ins is
             (INS_rol or INS_ror or INS_rcl or INS_rcr or INS_shl or INS_shr or INS_sar))
         {
             jitprintf($"{emitRegName(id.idReg1(), attr)}, {emitRegName(id.idReg2(), attr)}");
@@ -45,14 +44,12 @@ public partial class Emitter
                     break;
                 }
 
-#if TARGET_AMD64
-                case INS_movsxd:
+                case INS_movsxd when Configuration.TARGET_AMD64:
                 {
                     targetAttr = EA_8BYTE;
                     sourceAttr = EA_4BYTE;
                     break;
                 }
-#endif
 
                 case INS_movsx:
                 case INS_movzx:
@@ -63,7 +60,7 @@ public partial class Emitter
 
                 case INS_crc32:
                 {
-                    targetAttr = (emitAttr)Math.Max((int)EA_4BYTE, (int)(attr & EA_SIZE_MASK));
+                    targetAttr = (emitAttr)Math.Max((int)EA_4BYTE, (int)Globals.EA_SIZE(attr));
                     break;
                 }
             }
@@ -81,7 +78,7 @@ public partial class Emitter
             {
                 var divisor = tupleType is INS_TT_HALF or INS_TT_HALF_MEM ? 2 :
                     tupleType == INS_TT_QUARTER_MEM ? 4 : 8;
-                var maskElemSize = XMM_REGSIZE_BYTES / CodeGen.instKMaskBaseSize(ins);
+                var maskElemSize = Configuration.XMM_REGSIZE_BYTES / CodeGen.instKMaskBaseSize(ins);
                 var width = (emitAttr)Math.Max(16, EA_SIZE_IN_BYTES(attr) / divisor);
                 if (inputSize < maskElemSize)
                 {
@@ -145,7 +142,7 @@ public partial class Emitter
     {
         var ins = id.idIns();
         var targetAttr = attr;
-        if (format == IF_RWR_RRD_RRD_CNS)
+        if (format == IF_XARCH_RWR_RRD_RRD_CNS)
         {
             jitprintf(emitRegName(id.idReg1(), attr));
             emitDispEmbMasking(id);
@@ -224,4 +221,3 @@ public partial class Emitter
         emitDispConstant(id);
     }
 }
-#endif

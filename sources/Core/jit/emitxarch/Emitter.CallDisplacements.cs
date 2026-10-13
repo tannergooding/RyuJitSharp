@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private nint emitGetInsCIdisp(instrDesc id)
     {
         if (id.idIsLargeCall())
@@ -21,5 +20,4 @@ public partial class Emitter
             return id.idAddr().iiaAddrMode.amDisp;
         }
     }
-#endif
 }

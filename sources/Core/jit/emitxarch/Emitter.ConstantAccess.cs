@@ -3,21 +3,16 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_X86
-    // targetx86.h uses six bits for a register number; the packed displacement grows accordingly.
-    private const int AM_REGNUM_BITS = 6;
-#else
-    private const int AM_REGNUM_BITS = REGNUM_BITS;
-#endif
-    private const int AM_DISP_BITS = 32 - (2 * (AM_REGNUM_BITS + 1)) - 2;
-    private const int AM_DISP_BIG_VAL = -(1 << (AM_DISP_BITS - 1));
-    private const int AM_DISP_MIN = -((1 << (AM_DISP_BITS - 1)) - 1);
-    private const int AM_DISP_MAX = (1 << (AM_DISP_BITS - 1)) - 1;
+    // The native register-number width determines how many address bits remain for the displacement.
+    private static readonly int AM_REGNUM_BITS = Configuration.REGNUM_BITS;
+    private static readonly int AM_DISP_BITS = 32 - (2 * (AM_REGNUM_BITS + 1)) - 2;
+    private static readonly int AM_DISP_BIG_VAL = -(1 << (AM_DISP_BITS - 1));
+    private static readonly int AM_DISP_MIN = -((1 << (AM_DISP_BITS - 1)) - 1);
+    private static readonly int AM_DISP_MAX = (1 << (AM_DISP_BITS - 1)) - 1;
 
     private instrDesc emitNewInstrAmd(emitAttr size, nint dsp)
     {
@@ -209,4 +204,3 @@ public partial class Emitter
         return id.idAddr().iiaAddrMode.amDisp;
     }
 }
-#endif

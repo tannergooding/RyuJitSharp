@@ -3,30 +3,36 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     public bool UseSimdEncoding()
     {
-        return UseVexEncodings || UseEvexEncodings;
+        return Configuration.TARGET_XARCH && (UseVexEncodings || UseEvexEncodings);
     }
 
     public static bool IsAVXVNNIFamilyInstruction(instruction ins)
     {
-        return ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNI_INSTRUCTION, LAST_AVXVNNI_INSTRUCTION)))
-            || IsAVXVNNIINTInstruction(ins);
+        return Configuration.TARGET_XARCH &&
+            (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNI_INSTRUCTION, LAST_AVXVNNI_INSTRUCTION)
+            || IsAVXVNNIINTInstruction(ins));
     }
 
     public static bool IsAVXVNNIINTInstruction(instruction ins)
     {
-        return ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNIINT8_INSTRUCTION, LAST_AVXVNNIINT8_INSTRUCTION)))
-            || ((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNIINT16_INSTRUCTION, LAST_AVXVNNIINT16_INSTRUCTION)));
+        return Configuration.TARGET_XARCH &&
+            (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNIINT8_INSTRUCTION, LAST_AVXVNNIINT8_INSTRUCTION)
+            || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_AVXVNNIINT16_INSTRUCTION, LAST_AVXVNNIINT16_INSTRUCTION));
     }
 
     public static bool Is3OpRmwInstruction(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         switch (ins)
         {
             case INS_vpermi2d:
@@ -56,21 +62,45 @@ public partial class Emitter
         }
     }
 
-#if FEATURE_HW_INTRINSICS
     private static bool isAvx512Blendv(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "AVX-512 blend classification is not implemented for this target.");
+        }
+        if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "x86 AVX-512 blend classification without hardware intrinsics is not ported.");
+        }
+
         return ins is INS_vblendmps or INS_vblendmpd or INS_vpblendmb or INS_vpblendmd or INS_vpblendmq or INS_vpblendmw;
     }
 
     private static bool isAvxBlendv(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "AVX blend classification is not implemented for this target.");
+        }
+        if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "x86 AVX blend classification without hardware intrinsics is not ported.");
+        }
+
         return ins is INS_vblendvps or INS_vblendvpd or INS_vpblendvb;
     }
 
     private static bool isSse41Blendv(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification is not implemented for this target.");
+        }
+        if (Configuration.TARGET_X86 && !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SSE4.1 blend classification without hardware intrinsics is not ported.");
+        }
+
         return ins is INS_blendvps or INS_blendvpd or INS_pblendvb;
     }
-#endif
 }
-#endif

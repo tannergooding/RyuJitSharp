@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genTableBasedSwitch(GenTree tree)
+    public void genTableBasedSwitchXarch(GenTree tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         genConsumeOperands(tree.AsOp());
@@ -26,7 +25,7 @@ public sealed partial class CodeGen
         Emitter.emitIns_R(INS_i_jmp, TYP_I_IMPL.EmitSize, baseReg);
     }
 
-    public unsafe void genJumpTable(GenTree tree)
+    public unsafe void genJumpTableXarch(GenTree tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         var tableBase = genEmitJumpTable(tree, relativeAddr: true);
@@ -35,4 +34,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

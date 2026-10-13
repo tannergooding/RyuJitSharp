@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCkfinite(GenTree tree)
+    public void genCkfiniteXarch(GenTree tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper == GT_CKFINITE);
@@ -21,49 +20,56 @@ public sealed partial class CodeGen
         _ = genConsumeReg(operand);
 
         var sourceReg = operand.RegNum;
-#if TARGET_AMD64
-        var targetIntType = targetType == TYP_FLOAT ? TYP_INT : TYP_LONG;
-        inst_Mov(targetIntType, tempReg, sourceReg, canSkip: false, targetType.EmitActualSize);
-        if (targetType == TYP_DOUBLE)
+        if (Configuration.TARGET_AMD64)
         {
-            inst_RV_SH(INS_shr, EA_8BYTE, tempReg, 32);
-        }
+            var targetIntType = targetType == TYP_FLOAT ? TYP_INT : TYP_LONG;
+            inst_Mov(targetIntType, tempReg, sourceReg, canSkip: false, targetType.EmitActualSize);
+            if (targetType == TYP_DOUBLE)
+            {
+                inst_RV_SH(INS_shr, EA_8BYTE, tempReg, 32);
+            }
 
-        inst_RV_IV(INS_and, tempReg, expMask, EA_4BYTE);
-        inst_RV_IV(INS_cmp, tempReg, expMask, EA_4BYTE);
-        genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
-        inst_Mov(targetType, targetReg, operand.RegNum, canSkip: true);
-#else
-        // On x86, shuffle the high half of a double into the low half to extract
-        // its exponent without reserving another SIMD register.
-        regNumber copySourceReg;
-        if (targetType == TYP_DOUBLE)
+            inst_RV_IV(INS_and, tempReg, expMask, EA_4BYTE);
+            inst_RV_IV(INS_cmp, tempReg, expMask, EA_4BYTE);
+            genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
+            inst_Mov(targetType, targetReg, operand.RegNum, canSkip: true);
+        }
+        else if (Configuration.TARGET_X86)
         {
-            inst_Mov(targetType, targetReg, sourceReg, canSkip: true);
-            Emitter.emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg,
-                unchecked((sbyte)0xB1), INS_OPTS_NONE);
-            copySourceReg = targetReg;
+            // On x86, shuffle the high half of a double into the low half to extract
+            // its exponent without reserving another SIMD register.
+            regNumber copySourceReg;
+            if (targetType == TYP_DOUBLE)
+            {
+                inst_Mov(targetType, targetReg, sourceReg, canSkip: true);
+                Emitter.emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg,
+                    unchecked((sbyte)0xB1), INS_OPTS_NONE);
+                copySourceReg = targetReg;
+            }
+            else
+            {
+                copySourceReg = sourceReg;
+            }
+
+            inst_Mov(TYP_INT, tempReg, copySourceReg, canSkip: false, TYP_FLOAT.EmitActualSize);
+            inst_RV_IV(INS_and, tempReg, expMask, EA_4BYTE);
+            inst_RV_IV(INS_cmp, tempReg, expMask, EA_4BYTE);
+            genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
+
+            if ((targetType == TYP_DOUBLE) && (targetReg == sourceReg))
+            {
+                Emitter.emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg,
+                    unchecked((sbyte)0xB1), INS_OPTS_NONE);
+            }
+            else
+            {
+                inst_Mov(targetType, targetReg, sourceReg, canSkip: true);
+            }
         }
         else
         {
-            copySourceReg = sourceReg;
+            throw new FatalJitException(CORJIT_SKIPPED, "Finite-check code generation requires xarch.");
         }
-
-        inst_Mov(TYP_INT, tempReg, copySourceReg, canSkip: false, TYP_FLOAT.EmitActualSize);
-        inst_RV_IV(INS_and, tempReg, expMask, EA_4BYTE);
-        inst_RV_IV(INS_cmp, tempReg, expMask, EA_4BYTE);
-        genJumpToThrowHlpBlk(EJ_je, SCK_ARITH_EXCPN);
-
-        if ((targetType == TYP_DOUBLE) && (targetReg == sourceReg))
-        {
-            Emitter.emitIns_SIMD_R_R_R_I(INS_shufps, EA_16BYTE, targetReg, targetReg, targetReg,
-                unchecked((sbyte)0xB1), INS_OPTS_NONE);
-        }
-        else
-        {
-            inst_Mov(targetType, targetReg, sourceReg, canSkip: true);
-        }
-#endif
 
         genProduceReg(tree);
     }
@@ -120,7 +126,7 @@ public sealed partial class CodeGen
         inst_RV_RV_TT_IV(ins, size, targetReg, targetReg, source, immediate, isRMW, INS_OPTS_NONE);
     }
 
-    public void genIntrinsic(GenTreeIntrinsic tree)
+    public void genIntrinsicXarch(GenTreeIntrinsic tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         switch (tree.IntrinsicName)
@@ -154,19 +160,17 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if FEATURE_SIMD
-            case NI_SIMD_UpperRestore:
+            case NI_SIMD_UpperRestore when Configuration.FEATURE_SIMD:
             {
                 genSimdUpperRestore(tree);
                 return;
             }
 
-            case NI_SIMD_UpperSave:
+            case NI_SIMD_UpperSave when Configuration.FEATURE_SIMD:
             {
                 genSimdUpperSave(tree);
                 return;
             }
-#endif
             default:
             {
                 assert(false, "genIntrinsic: Unsupported intrinsic");
@@ -178,4 +182,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

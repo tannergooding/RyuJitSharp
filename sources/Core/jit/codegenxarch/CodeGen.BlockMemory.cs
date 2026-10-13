@@ -10,7 +10,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreBlk(GenTreeBlk node)
+    public void genCodeForStoreBlkXarch(GenTreeBlk node)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(node.Oper == GT_STORE_BLK);
@@ -21,7 +21,7 @@ public sealed partial class CodeGen
             case GenTreeBlk.BlkOpKindLoop:
             {
                 assert(!isCopy);
-                genCodeForInitBlkLoop(node);
+                genCodeForInitBlkLoopXarch(node);
                 break;
             }
 
@@ -37,12 +37,12 @@ public sealed partial class CodeGen
 
                     if (node._kind == GenTreeBlk.BlkOpKindUnroll)
                     {
-                        genCodeForCpBlkUnroll(node);
+                        genCodeForCpBlkUnrollXarch(node);
                     }
                     else
                     {
                         assert(node._kind == GenTreeBlk.BlkOpKindUnrollMemmove);
-                        genCodeForMemmove(node);
+                        genCodeForMemmoveXarch(node);
                     }
 
                     if (node._gcUnsafe)
@@ -53,7 +53,7 @@ public sealed partial class CodeGen
                 else
                 {
                     assert(!node._gcUnsafe);
-                    genCodeForInitBlkUnroll(node);
+                    genCodeForInitBlkUnrollXarch(node);
                 }
                 break;
             }
@@ -66,10 +66,10 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForMemmove(GenTreeBlk node)
+    public void genCodeForMemmoveXarch(GenTreeBlk node)
     {
         Emitter.RequireSupportedInstructionRecording();
-        assert(TARGET_POINTER_SIZE == 8);
+        assert(Configuration.TARGET_POINTER_SIZE == 8);
         var srcIndir = node.Data.AsIndir();
         assert(srcIndir.IsContained && !srcIndir.Addr.IsContained);
         var dst = genConsumeReg(node.Addr);
@@ -98,7 +98,7 @@ public sealed partial class CodeGen
 
                 do
                 {
-                    assert(currentSize >= XMM_REGSIZE_BYTES);
+                    assert(currentSize >= XMM_REGSIZE_BYTES_X86);
                     if (load)
                     {
                         Emitter.emitIns_R_AR(ins, (emitAttr)currentSize, tempRegs[regIndex++], src, unchecked((int)offset));
@@ -130,7 +130,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            assert((size > 0) && (size < XMM_REGSIZE_BYTES));
+            assert((size > 0) && (size < XMM_REGSIZE_BYTES_X86));
 
             void EmitScalarLoadStore(bool load, uint accessSize, regNumber reg, uint offset)
             {
@@ -173,7 +173,7 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForInitBlkLoop(GenTreeBlk node)
+    public void genCodeForInitBlkLoopXarch(GenTreeBlk node)
     {
         Emitter.RequireSupportedInstructionRecording();
         var dstNode = node.Addr;
@@ -183,32 +183,32 @@ public sealed partial class CodeGen
         var dstReg = dstNode.RegNum;
         var zeroReg = zeroNode.RegNum;
         var size = node.Layout.Size;
-        assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+        assert((size >= Configuration.TARGET_POINTER_SIZE) && ((size % Configuration.TARGET_POINTER_SIZE) == 0));
 
         // Touch the first pointer before the reverse loop to preserve nullcheck
         // behavior even when the final offset lies outside the null page.
         Emitter.emitIns_AR_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, 0);
-        if (size > TARGET_POINTER_SIZE)
+        if (size > Configuration.TARGET_POINTER_SIZE)
         {
             GCInfo.gcMarkRegPtrVal(dstReg, dstNode.Type);
             var offsetReg = InternalRegisters.GetSingle(node);
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, (nint)(size - TARGET_POINTER_SIZE));
+            instGen_Set_Reg_To_ImmXarch(EA_PTRSIZE, offsetReg, (nint)(size - Configuration.TARGET_POINTER_SIZE));
             var loop = genCreateTempLabel();
             genDefineTempLabel(loop);
 
             Emitter.emitIns_ARX_R(INS_mov, EA_PTRSIZE, zeroReg, dstReg, offsetReg, 1, 0);
-            Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, TARGET_POINTER_SIZE);
-            inst_JMP(EJ_jne, loop);
+            Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, offsetReg, Configuration.TARGET_POINTER_SIZE);
+            inst_JMPXarch(EJ_jne, loop);
             GCInfo.gcMarkRegSetNpt(regMaskTP.CreateFromRegNum(dstReg, dstReg.SingleTypeMask));
         }
     }
 
-    public void genCodeForInitBlkUnroll(GenTreeBlk node)
+    public void genCodeForInitBlkUnrollXarch(GenTreeBlk node)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(node.Oper == GT_STORE_BLK);
         var dst = genConsumeBlockAddress(node.Addr);
-        var srcIntReg = REG_NA;
+        var srcIntReg = regNumberExtensions.NotAvailable;
         var src = node.Data;
         if (src.Oper == GT_INIT_VAL)
         {
@@ -217,7 +217,8 @@ public sealed partial class CodeGen
         }
 
         var size = node.Layout.Size;
-        var willUseSimdMov = !node.IsOnHeapAndContainsReferences && (size >= XMM_REGSIZE_BYTES);
+        var willUseSimdMov = Configuration.FEATURE_SIMD && !node.IsOnHeapAndContainsReferences &&
+            (size >= XMM_REGSIZE_BYTES_X86);
         if (!src.IsContained)
         {
             srcIntReg = genConsumeReg(src);
@@ -225,7 +226,7 @@ public sealed partial class CodeGen
         else
         {
             assert(willUseSimdMov);
-            assert(size >= XMM_REGSIZE_BYTES);
+            assert(size >= XMM_REGSIZE_BYTES_X86);
         }
         assert(size <= int.MaxValue);
         assert(dst.Offset < int.MaxValue - (int)size);
@@ -242,127 +243,133 @@ public sealed partial class CodeGen
             }
         }
 
-#if FEATURE_SIMD
-        var floatMask = new regMaskTP(SRBM_ALLFLOAT);
-        if (willUseSimdMov)
+        if (Configuration.FEATURE_SIMD)
         {
-            var srcXmmReg = InternalRegisters.GetSingle(node, floatMask);
-            var regSize = (uint)_compiler.roundDownSimdSize(size);
-            var loadType = Compiler.GetSimdTypeForSize((int)regSize);
-            simd_t value = default;
-            ((Span<byte>)value.u8).Fill(unchecked((byte)src.AsIntCon().IconValue));
-            genSetRegToConst(srcXmmReg, loadType, in value);
-            var ins = simdUnalignedMovIns();
-            var bytesWritten = 0u;
+            var floatMask = new regMaskTP(SRBM_ALLFLOAT);
+            if (willUseSimdMov)
+            {
+                var srcXmmReg = InternalRegisters.GetSingle(node, floatMask);
+                var regSize = (uint)_compiler.roundDownSimdSize(size);
+                var loadType = Compiler.GetSimdTypeForSize((int)regSize);
+                simd_t value = default;
+                ((Span<byte>)value.u8).Fill(unchecked((byte)src.AsIntCon().IconValue));
+                genSetRegToConst(srcXmmReg, loadType, in value);
+                var ins = simdUnalignedMovIns();
+                var bytesWritten = 0u;
 
-            while (bytesWritten < size)
-            {
-                if (unchecked(bytesWritten + regSize) > size)
+                while (bytesWritten < size)
                 {
-                    break;
+                    if (unchecked(bytesWritten + regSize) > size)
+                    {
+                        break;
+                    }
+                    EmitStore(ins, regSize, srcXmmReg);
+                    dst.Offset = unchecked(dst.Offset + (int)regSize);
+                    bytesWritten = unchecked(bytesWritten + regSize);
                 }
-                EmitStore(ins, regSize, srcXmmReg);
-                dst.Offset = unchecked(dst.Offset + (int)regSize);
-                bytesWritten = unchecked(bytesWritten + regSize);
+                size -= bytesWritten;
+                if ((size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES_X86))
+                {
+                    regSize = (uint)_compiler.roundUpSimdSize((int)size);
+                    dst.Offset = unchecked(dst.Offset - (int)(regSize - size));
+                    EmitStore(ins, regSize, srcXmmReg);
+                    size = 0;
+                }
             }
-            size -= bytesWritten;
-            if ((size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
+            else if (node.IsOnHeapAndContainsReferences && (InternalRegisters.GetAll(node) & floatMask).IsNonEmpty)
             {
-                regSize = (uint)_compiler.roundUpSimdSize((int)size);
-                dst.Offset = unchecked(dst.Offset - (int)(regSize - size));
-                EmitStore(ins, regSize, srcXmmReg);
+                assert(!willUseSimdMov);
+                var layout = node.Layout;
+                var simdZeroReg = regNumberExtensions.NotAvailable;
+                var slots = layout.SlotCount;
+                var slot = 0;
+
+                while (slot < slots)
+                {
+                    if (!layout.IsGCPtr(slot))
+                    {
+                        var nonGcSlotCount = 0;
+                        do
+                        {
+                            nonGcSlotCount++;
+                            slot++;
+                        }
+                        while ((slot < slots) && !layout.IsGCPtr(slot));
+
+                        for (var nonGcSlot = 0; nonGcSlot < nonGcSlotCount; nonGcSlot++)
+                        {
+                            var simdSize = (uint)_compiler.roundDownSimdSize(
+                                (uint)((nonGcSlotCount - nonGcSlot) * Configuration.REGSIZE_BYTES));
+                            if (simdSize > 0)
+                            {
+                                if (simdZeroReg == regNumberExtensions.NotAvailable)
+                                {
+                                    simdZeroReg = InternalRegisters.GetSingle(node, floatMask);
+                                    simd_t zero = default;
+                                    genSetRegToConst(simdZeroReg, TYP_SIMD16, in zero);
+                                }
+                                EmitStore(simdUnalignedMovIns(), simdSize, simdZeroReg);
+                                dst.Offset = unchecked(dst.Offset + (int)simdSize);
+                                nonGcSlot += ((int)simdSize / Configuration.REGSIZE_BYTES) - 1;
+                            }
+                            else
+                            {
+                                EmitStore(INS_mov, (uint)Configuration.REGSIZE_BYTES, srcIntReg);
+                                dst.Offset = unchecked(dst.Offset + Configuration.REGSIZE_BYTES);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // GC slots must remain pointer-sized atomic stores.
+                        EmitStore(INS_mov, (uint)Configuration.REGSIZE_BYTES, srcIntReg);
+                        dst.Offset = unchecked(dst.Offset + Configuration.REGSIZE_BYTES);
+                        slot++;
+                    }
+                }
+                assert((layout.Size % Configuration.TARGET_POINTER_SIZE) == 0);
                 size = 0;
             }
         }
-        else if (node.IsOnHeapAndContainsReferences && (InternalRegisters.GetAll(node) & floatMask).IsNonEmpty)
-        {
-            assert(!willUseSimdMov);
-            var layout = node.Layout;
-            var simdZeroReg = REG_NA;
-            var slots = layout.SlotCount;
-            var slot = 0;
 
-            while (slot < slots)
-            {
-                if (!layout.IsGCPtr(slot))
-                {
-                    var nonGcSlotCount = 0;
-                    do
-                    {
-                        nonGcSlotCount++;
-                        slot++;
-                    }
-                    while ((slot < slots) && !layout.IsGCPtr(slot));
-
-                    for (var nonGcSlot = 0; nonGcSlot < nonGcSlotCount; nonGcSlot++)
-                    {
-                        var simdSize = (uint)_compiler.roundDownSimdSize((uint)((nonGcSlotCount - nonGcSlot) * REGSIZE_BYTES));
-                        if (simdSize > 0)
-                        {
-                            if (simdZeroReg == REG_NA)
-                            {
-                                simdZeroReg = InternalRegisters.GetSingle(node, floatMask);
-                                simd_t zero = default;
-                                genSetRegToConst(simdZeroReg, TYP_SIMD16, in zero);
-                            }
-                            EmitStore(simdUnalignedMovIns(), simdSize, simdZeroReg);
-                            dst.Offset = unchecked(dst.Offset + (int)simdSize);
-                            nonGcSlot += ((int)simdSize / REGSIZE_BYTES) - 1;
-                        }
-                        else
-                        {
-                            EmitStore(INS_mov, REGSIZE_BYTES, srcIntReg);
-                            dst.Offset = unchecked(dst.Offset + REGSIZE_BYTES);
-                        }
-                    }
-                }
-                else
-                {
-                    // GC slots must remain pointer-sized atomic stores.
-                    EmitStore(INS_mov, REGSIZE_BYTES, srcIntReg);
-                    dst.Offset = unchecked(dst.Offset + REGSIZE_BYTES);
-                    slot++;
-                }
-            }
-            assert((layout.Size % TARGET_POINTER_SIZE) == 0);
-            size = 0;
-        }
-#endif
-        assert((srcIntReg != REG_NA) || (size == 0));
-#if TARGET_AMD64
-        var scalarSize = (uint)REGSIZE_BYTES;
-        while (scalarSize > size)
+        assert((srcIntReg != regNumberExtensions.NotAvailable) || (size == 0));
+        if (Configuration.TARGET_AMD64)
         {
-            scalarSize /= 2;
-        }
-        for (; size > scalarSize; size -= scalarSize, dst.Offset = unchecked(dst.Offset + (int)scalarSize))
-        {
-            EmitStore(INS_mov, scalarSize, srcIntReg);
-        }
-        if (size > 0)
-        {
-            assert(size <= REGSIZE_BYTES);
-            scalarSize = uint.Min(scalarSize, (uint)Compiler.roundUpGprSize((int)size));
-            var shiftBack = scalarSize - size;
-            assert(shiftBack <= scalarSize);
-            dst.Offset = unchecked(dst.Offset - (int)shiftBack);
-            EmitStore(INS_mov, scalarSize, srcIntReg);
-        }
-#else
-        for (var scalarSize = (uint)REGSIZE_BYTES; size > 0;
-             size -= scalarSize, dst.Offset = unchecked(dst.Offset + (int)scalarSize))
-        {
+            var scalarSize = (uint)Configuration.REGSIZE_BYTES;
             while (scalarSize > size)
             {
                 scalarSize /= 2;
             }
-
-            EmitStore(INS_mov, scalarSize, srcIntReg);
+            for (; size > scalarSize; size -= scalarSize, dst.Offset = unchecked(dst.Offset + (int)scalarSize))
+            {
+                EmitStore(INS_mov, scalarSize, srcIntReg);
+            }
+            if (size > 0)
+            {
+                assert(size <= Configuration.REGSIZE_BYTES);
+                scalarSize = uint.Min(scalarSize, (uint)Compiler.roundUpGprSize((int)size));
+                var shiftBack = scalarSize - size;
+                assert(shiftBack <= scalarSize);
+                dst.Offset = unchecked(dst.Offset - (int)shiftBack);
+                EmitStore(INS_mov, scalarSize, srcIntReg);
+            }
         }
-#endif
+        else
+        {
+            for (var scalarSize = (uint)Configuration.REGSIZE_BYTES; size > 0;
+                 size -= scalarSize, dst.Offset = unchecked(dst.Offset + (int)scalarSize))
+            {
+                while (scalarSize > size)
+                {
+                    scalarSize /= 2;
+                }
+
+                EmitStore(INS_mov, scalarSize, srcIntReg);
+            }
+        }
     }
 
-    public void genCodeForCpBlkUnroll(GenTreeBlk node)
+    public void genCodeForCpBlkUnrollXarch(GenTreeBlk node)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(node.Oper == GT_STORE_BLK);
@@ -374,7 +381,7 @@ public sealed partial class CodeGen
             assert(data.Oper == GT_IND);
         }
         var src = data.Oper is GT_LCL_VAR or GT_LCL_FLD
-            ? (Local: data.AsLclVarCommon().LclNum, Base: REG_NA, Index: REG_NA, Scale: 1u,
+            ? (Local: data.AsLclVarCommon().LclNum, Base: regNumberExtensions.NotAvailable, Index: regNumberExtensions.NotAvailable, Scale: 1u,
                 Offset: (int)data.AsLclVarCommon().LclOffs)
             : genConsumeBlockAddress(data.AsIndir().Addr);
         var size = node.Layout.Size;
@@ -417,8 +424,8 @@ public sealed partial class CodeGen
             assert(size < regSize);
             if ((size > 0) && (size < regSize))
             {
-                assert(regSize >= XMM_REGSIZE_BYTES);
-                if (!BitOperations.IsPow2(size) || (size > REGSIZE_BYTES))
+                assert(regSize >= XMM_REGSIZE_BYTES_X86);
+                if (!BitOperations.IsPow2(size) || (size > Configuration.REGSIZE_BYTES))
                 {
                     regSize = (uint)_compiler.roundUpSimdSize((int)size);
                     src.Offset = unchecked(src.Offset - (int)(regSize - size));
@@ -432,57 +439,59 @@ public sealed partial class CodeGen
         if (size > 0)
         {
             var tempReg = InternalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLINT));
-#if TARGET_AMD64
-            var scalarSize = (uint)REGSIZE_BYTES;
-            while (scalarSize > size)
+            if (Configuration.TARGET_AMD64)
             {
-                scalarSize /= 2;
-            }
-            for (; size > scalarSize; size -= scalarSize,
-                src.Offset = unchecked(src.Offset + (int)scalarSize),
-                dst.Offset = unchecked(dst.Offset + (int)scalarSize))
-            {
-                EmitMoves(INS_mov, scalarSize, tempReg);
-            }
-            if (size > 0)
-            {
-                assert(size <= REGSIZE_BYTES);
-                scalarSize = uint.Min(scalarSize, (uint)Compiler.roundUpGprSize((int)size));
-                var shiftBack = scalarSize - size;
-                assert(shiftBack <= scalarSize);
-                src.Offset = unchecked(src.Offset - (int)shiftBack);
-                dst.Offset = unchecked(dst.Offset - (int)shiftBack);
-                EmitMoves(INS_mov, scalarSize, tempReg);
-            }
-#else
-            for (var scalarSize = (uint)REGSIZE_BYTES; size > 0;
-                 size -= scalarSize,
-                 src.Offset = unchecked(src.Offset + (int)scalarSize),
-                 dst.Offset = unchecked(dst.Offset + (int)scalarSize))
-            {
+                var scalarSize = (uint)Configuration.REGSIZE_BYTES;
                 while (scalarSize > size)
                 {
                     scalarSize /= 2;
                 }
-
-                EmitMoves(INS_mov, scalarSize, tempReg);
+                for (; size > scalarSize; size -= scalarSize,
+                    src.Offset = unchecked(src.Offset + (int)scalarSize),
+                    dst.Offset = unchecked(dst.Offset + (int)scalarSize))
+                {
+                    EmitMoves(INS_mov, scalarSize, tempReg);
+                }
+                if (size > 0)
+                {
+                    assert(size <= Configuration.REGSIZE_BYTES);
+                    scalarSize = uint.Min(scalarSize, (uint)Compiler.roundUpGprSize((int)size));
+                    var shiftBack = scalarSize - size;
+                    assert(shiftBack <= scalarSize);
+                    src.Offset = unchecked(src.Offset - (int)shiftBack);
+                    dst.Offset = unchecked(dst.Offset - (int)shiftBack);
+                    EmitMoves(INS_mov, scalarSize, tempReg);
+                }
             }
-#endif
+            else
+            {
+                for (var scalarSize = (uint)Configuration.REGSIZE_BYTES; size > 0;
+                     size -= scalarSize,
+                     src.Offset = unchecked(src.Offset + (int)scalarSize),
+                     dst.Offset = unchecked(dst.Offset + (int)scalarSize))
+                {
+                    while (scalarSize > size)
+                    {
+                        scalarSize /= 2;
+                    }
+
+                    EmitMoves(INS_mov, scalarSize, tempReg);
+                }
+            }
         }
     }
 
-#if TARGET_XARCH
     private (int Local, regNumber Base, regNumber Index, uint Scale, int Offset) genConsumeBlockAddress(GenTree addr)
     {
         if (!addr.IsContained)
         {
-            return (BAD_VAR_NUM, genConsumeReg(addr), REG_NA, 1, 0);
+            return (BAD_VAR_NUM, genConsumeReg(addr), regNumberExtensions.NotAvailable, 1, 0);
         }
         if (addr.Oper == GT_LEA)
         {
             var mode = addr.AsAddrMode();
-            var baseReg = mode.BaseAddress is not null ? genConsumeReg(mode.BaseAddress) : REG_NA;
-            var indexReg = REG_NA;
+            var baseReg = mode.BaseAddress is not null ? genConsumeReg(mode.BaseAddress) : regNumberExtensions.NotAvailable;
+            var indexReg = regNumberExtensions.NotAvailable;
             var scale = 1u;
             if (mode.Index is not null)
             {
@@ -496,16 +505,13 @@ public sealed partial class CodeGen
         assert(addr.Oper == GT_LCL_ADDR);
         var local = addr.AsLclVarCommon();
 
-        return (local.LclNum, REG_NA, REG_NA, 1, local.LclOffs);
+        return (local.LclNum, regNumberExtensions.NotAvailable, regNumberExtensions.NotAvailable, 1, local.LclOffs);
     }
-#endif
 
-#if TARGET_XARCH
     private instruction simdUnalignedMovIns()
     {
         // Legacy MOVUPS is shorter; VEX MOVDQU has broader port availability
         // than VEX MOVUPS on older processors, with the same encoding size.
         return _compiler.canUseVexEncoding() ? INS_movdqu32 : INS_movups;
     }
-#endif
 }

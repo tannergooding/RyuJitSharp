@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GCInfo.GCtype;
 
@@ -42,33 +41,32 @@ public partial class Emitter
             var cval = addc->cnsVal;
             if (ImmCanUseSByteEncoding(ins, cval) && !addc->cnsReloc)
             {
-                if (id.idInsFmt() != IF_MRW_SHF && !IsSimdInstruction(ins))
+                if (id.idInsFmt() != IF_XARCH_MRW_SHF && !IsSimdInstruction(ins))
                 {
                     code |= 2;
                 }
                 opsz = 1;
             }
         }
-#if TARGET_X86
-        else if (ins == INS_mov && id.idReg1() == REG_EAX)
+        else if (Configuration.TARGET_X86 && (ins == INS_mov) &&
+            (id.idReg1() == TargetRuntimeMetadata.IntegerReturnRegister))
         {
             var fmt = id.idInsFmt();
-            if (fmt == IF_RWR_MRD)
+            if (fmt == IF_XARCH_RWR_MRD)
             {
                 assert(code == ((ulong)insCodeRM(ins) |
-                    ((ulong)insEncodeReg345(id, REG_EAX, EA_PTRSIZE, null) << 8) | 0x0500));
+                    ((ulong)insEncodeReg345(id, TargetRuntimeMetadata.IntegerReturnRegister, EA_PTRSIZE, null) << 8) | 0x0500));
                 code = (code & ~0xFFFFFFFFUL) | 0xA0;
                 isMoffset = true;
             }
-            else if (fmt == IF_MWR_RRD)
+            else if (fmt == IF_XARCH_MWR_RRD)
             {
                 assert(code == ((ulong)insCodeMR(ins) |
-                    ((ulong)insEncodeReg345(id, REG_EAX, EA_PTRSIZE, null) << 8) | 0x0500));
+                    ((ulong)insEncodeReg345(id, TargetRuntimeMetadata.IntegerReturnRegister, EA_PTRSIZE, null) << 8) | 0x0500));
                 code = (code & ~0xFFFFFFFFUL) | 0xA2;
                 isMoffset = true;
             }
         }
-#endif
 
         if (EncodedBySSE38orSSE3A(ins) || ins == INS_crc32)
         {
@@ -166,21 +164,28 @@ public partial class Emitter
                 }
 
                 case EA_4BYTE:
-#if TARGET_AMD64
-                case EA_8BYTE:
-#endif
                 {
                     code |= 1;
                     break;
                 }
 
-#if TARGET_X86
                 case EA_8BYTE:
                 {
-                    code |= 4;
+                    if (Configuration.TARGET_X86)
+                    {
+                        code |= 4;
+                    }
+                    else if (Configuration.TARGET_AMD64)
+                    {
+                        code |= 1;
+                    }
+                    else
+                    {
+                        throw new FatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
+                    }
                     break;
                 }
-#endif
+
                 default:
                 {
                     throw new FatalJitException("Unexpected static operand size.");
@@ -191,7 +196,7 @@ public partial class Emitter
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
         if (code != 0)
         {
-            if (id.idInsFmt() is IF_MRD_OFF or IF_RWR_MRD_OFF || isMoffset)
+            if (id.idInsFmt() is IF_XARCH_MRD_OFF or IF_XARCH_RWR_MRD_OFF || isMoffset)
             {
                 dst += emitOutputByte(dst, unchecked((long)code));
             }
@@ -232,8 +237,7 @@ public partial class Emitter
         if (!isMoffset)
         {
             var addlDelta = 0;
-#if TARGET_AMD64
-            if (addc is not null)
+            if (Configuration.TARGET_AMD64 && addc is not null)
             {
                 var cval = addc->cnsVal;
                 noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
@@ -265,44 +269,54 @@ public partial class Emitter
                     }
                 }
             }
-#endif
 
-#if TARGET_AMD64
-            if (id.idIsDspReloc())
+            if (Configuration.TARGET_AMD64)
             {
-                dst += emitOutputLong(dst, 0);
+                if (id.idIsDspReloc())
+                {
+                    dst += emitOutputLong(dst, 0);
+                }
+                else
+                {
+                    dst += emitOutputLong(dst, (long)(nint)target);
+                }
+            }
+            else if (Configuration.TARGET_X86)
+            {
+                dst += emitOutputLong(dst, unchecked((int)(nint)target));
             }
             else
             {
-                dst += emitOutputLong(dst, (long)(nint)target);
+                throw new FatalJitException(CORJIT_SKIPPED, "Static output is not implemented for this target.");
             }
-#else
-            dst += emitOutputLong(dst, unchecked((int)(nint)target));
-#endif
 
             if (id.idIsDspReloc())
             {
                 emitRecordRelocation(dst - sizeof(int), target, RELOC_DISP32, addlDelta);
             }
         }
-#if TARGET_X86
-        else
+        else if (Configuration.TARGET_X86)
         {
             dst += emitOutputSizeT(dst, (long)(nint)target);
 
             if (id.idIsDspReloc())
             {
-                emitRecordRelocation(dst - TARGET_POINTER_SIZE, target, CorInfoReloc.DIRECT);
+                emitRecordRelocation(dst - Configuration.TARGET_POINTER_SIZE, target, CorInfoReloc.DIRECT);
             }
         }
-#endif
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Absolute accumulator address output is unavailable on AMD64.");
+        }
 
         if (addc is not null)
         {
             var cval = addc->cnsVal;
-#if TARGET_AMD64
-            noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
+            }
+
             switch (opsz)
             {
                 case 0:
@@ -342,29 +356,29 @@ public partial class Emitter
         {
             switch (id.idInsFmt())
             {
-                case IF_MRD:
-                case IF_MRW:
-                case IF_MWR:
-                case IF_RRD_MRD:
-                case IF_MRD_RRD:
-                case IF_MWR_RRD:
-                case IF_MRW_RRD:
-                case IF_MRW_RRW:
-                case IF_MRD_CNS:
-                case IF_MWR_CNS:
-                case IF_MRW_CNS:
-                case IF_MRW_SHF:
+                case IF_XARCH_MRD:
+                case IF_XARCH_MRW:
+                case IF_XARCH_MWR:
+                case IF_XARCH_RRD_MRD:
+                case IF_XARCH_MRD_RRD:
+                case IF_XARCH_MWR_RRD:
+                case IF_XARCH_MRW_RRD:
+                case IF_XARCH_MRW_RRW:
+                case IF_XARCH_MRD_CNS:
+                case IF_XARCH_MWR_CNS:
+                case IF_XARCH_MRW_CNS:
+                case IF_XARCH_MRW_SHF:
                 {
                     break;
                 }
 
-                case IF_RWR_MRD:
+                case IF_XARCH_RWR_MRD:
                 {
                     emitGCregLiveUpd(id.idGCref(), id.idReg1(), dst);
                     break;
                 }
 
-                case IF_RRW_MRD:
+                case IF_XARCH_RRW_MRD:
                 {
                     assert(id.idGCref() == GCT_BYREF);
                     assert(ins is INS_add or INS_sub or INS_sub_hide);
@@ -386,23 +400,23 @@ public partial class Emitter
         {
             switch (id.idInsFmt())
             {
-                case IF_RWR_MRD:
-                case IF_RRW_MRD:
-                case IF_RWR_MRD_CNS:
-                case IF_RRW_MRD_CNS:
-                case IF_RWR_MRD_RRD:
-                case IF_RRW_MRD_RRD:
-                case IF_RWR_RRD_MRD:
-                case IF_RRW_RRD_MRD:
-                case IF_RWR_RRD_MRD_CNS:
-                case IF_RWR_RRD_MRD_RRD:
-                case IF_RWR_MRD_OFF:
+                case IF_XARCH_RWR_MRD:
+                case IF_XARCH_RRW_MRD:
+                case IF_XARCH_RWR_MRD_CNS:
+                case IF_XARCH_RRW_MRD_CNS:
+                case IF_XARCH_RWR_MRD_RRD:
+                case IF_XARCH_RRW_MRD_RRD:
+                case IF_XARCH_RWR_RRD_MRD:
+                case IF_XARCH_RRW_RRD_MRD:
+                case IF_XARCH_RWR_RRD_MRD_CNS:
+                case IF_XARCH_RWR_RRD_MRD_RRD:
+                case IF_XARCH_RWR_MRD_OFF:
                 {
                     emitGCregDeadUpd(id.idReg1(), dst);
                     break;
                 }
 
-                case IF_RWR_RWR_MRD:
+                case IF_XARCH_RWR_RWR_MRD:
                 {
                     emitGCregDeadUpd(id.idReg1(), dst);
                     emitGCregDeadUpd(id.idReg2(), dst);
@@ -412,11 +426,11 @@ public partial class Emitter
 
             if (ins is INS_mulEAX or INS_imulEAX)
             {
-                emitGCregDeadUpd(REG_EAX, dst);
-                emitGCregDeadUpd(REG_EDX, dst);
+                emitGCregDeadUpd(TargetRuntimeMetadata.IntegerReturnRegister, dst);
+                emitGCregDeadUpd(TargetRuntimeMetadata.IntegerReturnRegister1, dst);
             }
 
-            if (instrIs3opImul(ins))
+            if (IsThreeOperandImulInstruction(ins))
             {
                 emitGCregDeadUpd(inst3opImulReg(ins), dst);
             }
@@ -424,23 +438,4 @@ public partial class Emitter
 
         return dst;
     }
-
-#if TARGET_X86
-    private static ulong AddRexWPrefix(instrDesc id, ulong code)
-    {
-        if (hasEvexPrefix(code))
-        {
-            return code | 0x0000800000000000UL;
-        }
-
-        if (hasVexPrefix(code))
-        {
-            return code | 0x00008000000000UL;
-        }
-
-        assert(false, "UNREACHED");
-        return code;
-    }
-#endif
 }
-#endif

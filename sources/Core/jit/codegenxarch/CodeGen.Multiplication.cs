@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -59,7 +58,7 @@ public sealed partial class CodeGen
             if (isUnsigned && requiresOverflowCheck)
             {
                 ins = INS_mulEAX;
-                mulTargetReg = REG_RAX;
+                mulTargetReg = REG_X64_RAX;
             }
 
             if (op1.IsUsedFromMemory || (op2.IsUsedFromReg && (op2.RegNum == mulTargetReg)))
@@ -72,7 +71,7 @@ public sealed partial class CodeGen
 
             if (ins == INS_mulEAX)
             {
-                inst_Mov(targetType, targetReg, REG_RAX, canSkip: true);
+                inst_Mov(targetType, targetReg, REG_X64_RAX, canSkip: true);
             }
         }
 
@@ -85,7 +84,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForMulHi(GenTreeOp tree)
+    public void genCodeForMulHiXarch(GenTreeOp tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(!tree.HasOverflowCheckEx);
@@ -110,11 +109,11 @@ public sealed partial class CodeGen
 
         if (((tree.Flags & GTF_UNSIGNED) != 0) && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX2))
         {
-            if (rmOp.IsUsedFromReg && (rmOp.RegNum == REG_RDX))
+            if (rmOp.IsUsedFromReg && (rmOp.RegNum == REG_X64_RDX))
             {
                 (regOp, rmOp) = (rmOp, regOp);
             }
-            inst_Mov(targetType, REG_RDX, regOp.RegNum, canSkip: true);
+            inst_Mov(targetType, REG_X64_RDX, regOp.RegNum, canSkip: true);
 
             if (tree.Oper is GT_MULHI)
             {
@@ -123,32 +122,34 @@ public sealed partial class CodeGen
             }
             else
             {
-#if TARGET_64BIT
-                assert(false);
-#else
-                assert(tree.Oper is GT_MUL_LONG);
-                var highReg = tree.GetRegByIndex(1);
-                inst_RV_RV_TT(INS_mulx, size, highReg, targetReg, rmOp, isRMW: false, INS_OPTS_NONE);
-#endif
+                if (Configuration.TARGET_64BIT)
+                {
+                    assert(false);
+                }
+                else
+                {
+                    assert(tree.Oper is GT_MUL_LONG);
+                    var highReg = tree.GetRegByIndex(1);
+                    inst_RV_RV_TT(INS_mulx, size, highReg, targetReg, rmOp, isRMW: false, INS_OPTS_NONE);
+                }
             }
         }
         else
         {
-            if (rmOp.IsUsedFromReg && (rmOp.RegNum == REG_RAX))
+            if (rmOp.IsUsedFromReg && (rmOp.RegNum == REG_X64_RAX))
             {
                 (regOp, rmOp) = (rmOp, regOp);
             }
-            inst_Mov(targetType, REG_RAX, regOp.RegNum, canSkip: true);
+            inst_Mov(targetType, REG_X64_RAX, regOp.RegNum, canSkip: true);
 
             var ins = (tree.Flags & GTF_UNSIGNED) != 0 ? INS_mulEAX : INS_imulEAX;
             _ = Emitter.emitInsBinary(ins, size, tree, rmOp);
             if (tree.Oper is GT_MULHI)
             {
-                inst_Mov(targetType, targetReg, REG_RDX, canSkip: true);
+                inst_Mov(targetType, targetReg, REG_X64_RDX, canSkip: true);
             }
         }
 
         genProduceReg(tree);
     }
 }
-#endif

@@ -3,29 +3,20 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     private static bool hasRexPrefix(ulong code)
     {
-#if TARGET_AMD64
-        return (code & 0xFF00000000UL) != 0;
-#else
-        return false;
-#endif
+        return Configuration.TARGET_AMD64 && (code & 0xFF00000000UL) != 0;
     }
 
     private static bool hasVexPrefix(ulong code) => (code & 0xFF000000000000UL) == 0xC4000000000000UL;
 
     private static bool hasRex2Prefix(ulong code)
     {
-#if TARGET_AMD64
-        return (code & 0xFF0000000000UL) == 0xD50000000000UL;
-#else
-        return false;
-#endif
+        return Configuration.TARGET_AMD64 && (code & 0xFF0000000000UL) == 0xD50000000000UL;
     }
 
     private static bool hasEvexPrefix(ulong code) => (code & 0xFF00000000000000UL) == 0x6200000000000000UL;
@@ -156,4 +147,3 @@ public partial class Emitter
         return 0;
     }
 }
-#endif

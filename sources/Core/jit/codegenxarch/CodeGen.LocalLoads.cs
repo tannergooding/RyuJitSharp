@@ -3,40 +3,23 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForLclAddr(GenTreeLclFld tree)
-    {
-        Emitter.RequireSupportedInstructionRecording();
-        assert(tree.Oper is GT_LCL_ADDR);
-        var targetType = tree.Type;
-        var size = targetType.EmitSize;
-        var targetReg = tree.RegNum;
-        noway_assert(targetType is TYP_BYREF or TYP_I_IMPL);
-
-        Emitter.emitIns_R_S(INS_lea, size, targetReg, tree.LclNum, tree.LclOffs);
-        genProduceReg(tree);
-    }
-
-    public void genCodeForLclFld(GenTreeLclFld tree)
+    public void genCodeForLclFldXarch(GenTreeLclFld tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_LCL_FLD);
         var targetType = tree.Type;
 
-#if FEATURE_SIMD
-        if (targetType is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (targetType is TYP_SIMD12))
         {
-            genLoadLclTypeSimd12(tree);
+            genLoadLclTypeSimd12Xarch(tree);
             return;
         }
-#endif
-
         var targetReg = tree.RegNum;
-        noway_assert(targetReg != REG_NA);
+        noway_assert(targetReg != regNumberExtensions.NotAvailable);
         noway_assert(targetType is not TYP_STRUCT);
         var size = targetType.EmitSize;
         var offset = tree.LclOffs;
@@ -48,7 +31,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForLclVar(GenTreeLclVar tree)
+    public void genCodeForLclVarXarch(GenTreeLclVar tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_LCL_VAR);
@@ -59,14 +42,11 @@ public sealed partial class CodeGen
         // Non-candidates are loaded here unless consumption owns the reload.
         if (!varDsc.lvIsRegCandidate && !tree.IsMultiReg && ((tree.Flags & GTF_SPILLED) == 0))
         {
-#if FEATURE_SIMD && TARGET_X86
-            if (tree.Type is TYP_SIMD12)
+            if (Configuration.FEATURE_SIMD && Configuration.TARGET_X86 && (tree.Type is TYP_SIMD12))
             {
-                genLoadLclTypeSimd12(tree);
+                genLoadLclTypeSimd12Xarch(tree);
                 return;
             }
-#endif
-
             var type = varDsc.GetRegisterType(tree);
             Emitter.emitIns_R_S(ins_Load(type, _compiler.isSIMDTypeLocalAligned(tree.LclNum)),
                 type.EmitSize, tree.RegNum, tree.LclNum, 0);
@@ -74,9 +54,13 @@ public sealed partial class CodeGen
         }
     }
 
-#if FEATURE_SIMD
-    public void genLoadLclTypeSimd12(GenTreeLclVarCommon tree)
+    public void genLoadLclTypeSimd12Xarch(GenTreeLclVarCommon tree)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local loads require SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_LCL_FLD or GT_LCL_VAR);
         genEmitLoadLclTypeSimd12(tree.RegNum, tree.LclNum, tree.LclOffs);
@@ -85,6 +69,11 @@ public sealed partial class CodeGen
 
     public void genEmitLoadLclTypeSimd12(regNumber targetReg, int lclNum, uint offset)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local loads require SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         Emitter.emitIns_R_S(INS_movsd_simd, EA_8BYTE, targetReg, lclNum, unchecked((int)offset));
 
@@ -92,6 +81,4 @@ public sealed partial class CodeGen
         Emitter.emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, targetReg, targetReg, lclNum,
             unchecked((int)(offset + 8)), 0x28, INS_OPTS_NONE);
     }
-#endif
 }
-#endif

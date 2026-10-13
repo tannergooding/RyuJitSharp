@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
-        regNumber callTargetReg = REG_NA)
+    public void genEmitHelperCallXarch(CorInfoHelpFunc helper, int argSize, emitAttr retSize)
+    {
+        genEmitHelperCallXarch(helper, argSize, retSize, regNumberExtensions.NotAvailable);
+    }
+
+    public unsafe void genEmitHelperCallXarch(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
+        regNumber callTargetReg)
     {
         Emitter.RequireSupportedInstructionRecording();
         var parameters = new EmitCallParams { callType = EC_FUNC_TOKEN };
@@ -36,21 +40,27 @@ public sealed partial class CodeGen
             }
             else
             {
-#if TARGET_AMD64
-                if (callTargetReg == REG_NA)
+                if (callTargetReg == regNumberExtensions.NotAvailable)
                 {
-                    callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
-                    var targetMask = regMaskTP.CreateFromRegNum(callTargetReg, callTargetReg.SingleTypeMask);
-                    noway_assert((targetMask & killMask) == targetMask);
+                    if (Configuration.TARGET_AMD64)
+                    {
+                        callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET_AMD64;
+                        var targetMask = regMaskTP.CreateFromRegNum(callTargetReg, callTargetReg.SingleTypeMask);
+                        noway_assert((targetMask & killMask) == targetMask);
+                    }
+                    else
+                    {
+                        throw new FatalJitException(CORJIT_SKIPPED,
+                            "An indirect helper call requires an explicit target register on this architecture.");
+                    }
                 }
                 else
                 {
                     var targetMask = regMaskTP.CreateFromRegNum(callTargetReg, callTargetReg.SingleTypeMask);
                     noway_assert((targetMask & _regSet.GetMaskVars()) == RBM_NONE);
                 }
-#endif
 
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE | EA_CNS_RELOC_FLG, callTargetReg, unchecked((nint)address));
+                instGen_Set_Reg_To_ImmXarch(EA_PTRSIZE | EA_CNS_RELOC_FLG, callTargetReg, unchecked((nint)address));
                 parameters.ireg = callTargetReg;
                 parameters.callType = EC_INDIR_ARD;
             }
@@ -65,20 +75,13 @@ public sealed partial class CodeGen
 
     public bool genCodeIndirAddrCanBeEncodedAsPCRelOffset(nuint address)
     {
-#if TARGET_AMD64
-        return genAddrRelocTypeHint(address) == CorInfoReloc.RELATIVE32;
-#else
-        return true;
-#endif
+        return !Configuration.TARGET_AMD64 ||
+            (genAddrRelocTypeHint(address) == CorInfoReloc.RELATIVE32);
     }
 
     public static bool genCodeIndirAddrCanBeEncodedAsZeroRelOffset(nuint address)
     {
-#if TARGET_X86
-        return true;
-#else
-        return FitsInI32(unchecked((nint)address));
-#endif
+        return Configuration.TARGET_X86 || FitsInI32(unchecked((nint)address));
     }
 
     public bool genCodeIndirAddrNeedsReloc(nuint address)
@@ -87,16 +90,12 @@ public sealed partial class CodeGen
         {
             return true;
         }
-#if TARGET_AMD64
-        if (genCodeIndirAddrCanBeEncodedAsZeroRelOffset(address))
+        if (Configuration.TARGET_AMD64 && !genCodeIndirAddrCanBeEncodedAsZeroRelOffset(address))
         {
-            return false;
+            return true;
         }
 
-        return true;
-#else
         return false;
-#endif
     }
 
     public bool genCodeAddrNeedsReloc(nuint address)
@@ -105,12 +104,12 @@ public sealed partial class CodeGen
         {
             return true;
         }
-#if TARGET_AMD64
-        // The VM supplies a jump stub when a direct target is outside the relative-call range.
-        return true;
-#else
+        if (Configuration.TARGET_AMD64)
+        {
+            // The VM supplies a jump stub when a direct target is outside the relative-call range.
+            return true;
+        }
+
         return false;
-#endif
     }
 }
-#endif

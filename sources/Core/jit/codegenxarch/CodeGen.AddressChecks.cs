@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genLeaInstruction(GenTreeAddrMode lea)
+    public void genLeaInstructionXarch(GenTreeAddrMode lea)
     {
         Emitter.RequireSupportedInstructionRecording();
         var size = lea.Type.EmitSize;
@@ -25,24 +24,26 @@ public sealed partial class CodeGen
         }
         else if (lea.HasIndex)
         {
-            Emitter.emitIns_R_ARX(INS_lea, size, lea.RegNum, REG_NA, lea.Index.RegNum, lea.Scale, lea.Offset);
+            Emitter.emitIns_R_ARX(INS_lea, size, lea.RegNum, regNumberExtensions.NotAvailable, lea.Index.RegNum, lea.Scale, lea.Offset);
         }
 
         genProduceReg(lea);
     }
 
-    public void genCodeForNullCheck(GenTreeIndir tree)
+    public void genCodeForNullCheckXarch(GenTreeIndir tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper is GT_NULLCHECK);
         assert(tree.Op1.IsUsedFromReg);
         var reg = genConsumeReg(tree.Op1);
         Emitter.emitIns_AR_R(INS_cmp, tree.Type.EmitSize, reg, reg, 0);
     }
 
-    public void genRangeCheck(GenTree oper)
+    public void genRangeCheckXarch(GenTree oper)
     {
         Emitter.RequireSupportedInstructionRecording();
         noway_assert(oper.Oper is GT_BOUNDS_CHECK);
@@ -89,4 +90,3 @@ public sealed partial class CodeGen
         genJumpToThrowHlpBlk(jumpKind, bounds.ThrowKind);
     }
 }
-#endif

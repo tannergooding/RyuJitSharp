@@ -5,7 +5,6 @@
 
 using System;
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -29,8 +28,8 @@ public sealed partial class CodeGen
             {
                 Emitter.emitIns_R_I(INS_cmp, EA_4BYTE, nonConstImmReg, (nint)maxByte);
                 var skipLabel = genCreateTempLabel();
-                inst_JMP(EJ_jbe, skipLabel);
-                instGen_Set_Reg_To_Imm(EA_4BYTE, nonConstImmReg, (nint)maxByte);
+                inst_JMPXarch(EJ_jbe, skipLabel);
+                instGen_Set_Reg_To_ImmXarch(EA_4BYTE, nonConstImmReg, (nint)maxByte);
                 genDefineTempLabel(skipLabel);
             }
         }
@@ -99,10 +98,8 @@ public sealed partial class CodeGen
 
             case NI_AVX512_ConvertToInt32:
             case NI_AVX512_ConvertToUInt32:
-#if TARGET_AMD64
-            case NI_AVX512_X64_ConvertToInt64:
-            case NI_AVX512_X64_ConvertToUInt64:
-#endif
+            case NI_AVX512_X64_ConvertToInt64 when Configuration.TARGET_AMD64:
+            case NI_AVX512_X64_ConvertToUInt64 when Configuration.TARGET_AMD64:
             {
                 assert(varTypeIsFloating(baseType));
                 attr = node.Type.EmitSize;
@@ -159,4 +156,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

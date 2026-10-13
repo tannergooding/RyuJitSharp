@@ -3,26 +3,22 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreLclFld(GenTreeLclFld tree)
+    public void genCodeForStoreLclFldXarch(GenTreeLclFld tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STORE_LCL_FLD);
         var targetType = tree.Type;
         noway_assert(targetType is not TYP_STRUCT);
 
-#if FEATURE_SIMD
-        if (targetType is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (targetType is TYP_SIMD12))
         {
-            genStoreLclTypeSimd12(tree);
+            genStoreLclTypeSimd12Xarch(tree);
             return;
         }
-#endif
-
         var op1 = tree.Op1;
         var targetReg = tree.RegNum;
         var lclNum = tree.LclNum;
@@ -37,7 +33,7 @@ public sealed partial class CodeGen
             var srcType = bitCastSrc.Type;
             noway_assert(!bitCastSrc.IsContained);
 
-            if (targetReg == REG_NA)
+            if (targetReg == regNumberExtensions.NotAvailable)
             {
                 Emitter.emitIns_S_R(ins_Store(srcType, _compiler.isSIMDTypeLocalAligned(lclNum)),
                     targetType.EmitSize, bitCastSrc.RegNum, lclNum, tree.LclOffs);
@@ -55,7 +51,7 @@ public sealed partial class CodeGen
         genUpdateLifeStore(tree, targetReg, ref varDsc);
     }
 
-    public void genCodeForStoreLclVar(GenTreeLclVar tree)
+    public void genCodeForStoreLclVarXarch(GenTreeLclVar tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STORE_LCL_VAR);
@@ -85,22 +81,17 @@ public sealed partial class CodeGen
             assert(varTypeUsesIntReg(targetType) || (targetType.EmitSize == op1Type.EmitSize));
 #endif
 
-#if !TARGET_64BIT
-            if (targetType is TYP_LONG)
+            if (!Configuration.TARGET_64BIT && (targetType is TYP_LONG))
             {
                 genStoreLongLclVar(tree);
                 return;
             }
-#endif
 
-#if FEATURE_SIMD
-            if (targetType is TYP_SIMD12)
+            if (Configuration.FEATURE_SIMD && (targetType is TYP_SIMD12))
             {
-                genStoreLclTypeSimd12(tree);
+                genStoreLclTypeSimd12Xarch(tree);
                 return;
             }
-#endif
-
             genConsumeRegs(op1);
 
             if ((op1.Oper is GT_BITCAST) && op1.IsContained)
@@ -109,7 +100,7 @@ public sealed partial class CodeGen
                 var srcType = bitCastSrc.Type;
                 noway_assert(!bitCastSrc.IsContained);
 
-                if (targetReg == REG_NA)
+                if (targetReg == regNumberExtensions.NotAvailable)
                 {
                     Emitter.emitIns_S_R(ins_Store(srcType, _compiler.isSIMDTypeLocalAligned(lclNum)),
                         targetType.EmitSize, bitCastSrc.RegNum, lclNum, 0);
@@ -119,7 +110,7 @@ public sealed partial class CodeGen
                     genBitCast(targetType, targetReg, srcType, bitCastSrc.RegNum);
                 }
             }
-            else if (targetReg == REG_NA)
+            else if (targetReg == regNumberExtensions.NotAvailable)
             {
                 Emitter.emitInsStoreLcl(ins_Store(targetType, _compiler.isSIMDTypeLocalAligned(lclNum)),
                     targetType.EmitSize, tree);
@@ -130,7 +121,7 @@ public sealed partial class CodeGen
                 if (op1.IsUsedFromReg && (op1.RegNum != targetReg) &&
                     (op1.IsIntegralConst(0) || op1.IsFloatPositiveZero))
                 {
-                    op1.RegNum = REG_NA;
+                    op1.RegNum = regNumberExtensions.NotAvailable;
                     op1.IsReuseRegVal = false;
                     op1.IsContained = true;
                 }
@@ -138,13 +129,13 @@ public sealed partial class CodeGen
                 if (!op1.IsUsedFromReg)
                 {
                     // Containment is only supported here for constants, not memory sources.
-                    assert((op1.RegNum == REG_NA) && op1.Oper.IsConst);
-                    genSetRegToConst(targetReg, targetType, op1);
+                    assert((op1.RegNum == regNumberExtensions.NotAvailable) && op1.Oper.IsConst);
+                    genSetRegToConstXarch(targetReg, targetType, op1);
                 }
                 else
                 {
                     assert(targetReg == tree.RegNum);
-                    assert(op1.RegNum != REG_NA);
+                    assert(op1.RegNum != regNumberExtensions.NotAvailable);
                     inst_Mov_Extend(targetType, srcInReg: true, targetReg, op1.RegNum, canSkip: true,
                         targetType.EmitSize);
                 }
@@ -156,20 +147,33 @@ public sealed partial class CodeGen
 
     public void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
     {
-        if (targetReg != REG_NA)
+        var noRegister = Configuration.TARGET_X86 ? REG_X86_NA
+            : Configuration.TARGET_AMD64 ? REG_X64_NA
+            : Configuration.TARGET_ARM ? REG_ARM32_NA
+            : Configuration.TARGET_ARM64 ? REG_ARM64_NA
+            : throw new FatalJitException(CORJIT_SKIPPED, "Local-store lifetime updates use a separate target implementation.");
+
+        if (targetReg != noRegister)
         {
             genProduceReg(tree);
         }
         else
         {
             genUpdateLife(tree);
-            varDsc.RegNum = REG_STK;
+            varDsc.RegNum = Configuration.TARGET_X86 ? REG_X86_STK
+                : Configuration.TARGET_AMD64 ? REG_X64_STK
+                : Configuration.TARGET_ARM ? REG_ARM32_STK
+                : REG_ARM64_STK;
         }
     }
 
-#if FEATURE_SIMD
-    public void genStoreLclTypeSimd12(GenTreeLclVarCommon tree)
+    public void genStoreLclTypeSimd12Xarch(GenTreeLclVarCommon tree)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_STORE_LCL_FLD or GT_STORE_LCL_VAR);
         var offset = tree.LclOffs;
@@ -181,7 +185,7 @@ public sealed partial class CodeGen
         var dataReg = genConsumeReg(data);
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
 
-        if (targetReg != REG_NA)
+        if (targetReg != regNumberExtensions.NotAvailable)
         {
             assert(genIsValidFloatReg(targetReg));
             inst_Mov(tree.Type, targetReg, dataReg, canSkip: true);
@@ -196,6 +200,11 @@ public sealed partial class CodeGen
 
     public void genEmitStoreLclTypeSimd12(GenTree store, int lclNum, uint offset)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 local stores require SIMD support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         assert(store.Oper.IsLocalStore || (store.Oper is GT_STOREIND));
         var data = store.Data;
@@ -211,6 +220,4 @@ public sealed partial class CodeGen
             Emitter.emitIns_S_R_I(INS_extractps, EA_16BYTE, lclNum, unchecked((int)(offset + 8)), dataReg, 2);
         }
     }
-#endif
 }
-#endif

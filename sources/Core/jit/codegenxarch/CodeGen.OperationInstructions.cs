@@ -3,17 +3,63 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public static instruction genGetInsForOper(genTreeOps oper, var_types type)
     {
-        assert(!varTypeIsSimd(type));
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARMARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Scalar operation instruction selection requires xarch or ARM.");
+        }
+
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(!varTypeIsSimd(type));
+        }
+
         if (varTypeIsFloating(type))
         {
-            return ins_MathOp(oper, type);
+            if (!Configuration.TARGET_ARM64)
+            {
+                return ins_MathOp(oper, type);
+            }
+
+            switch (oper)
+            {
+                case GT_ADD:
+                {
+                    return INS_fadd;
+                }
+
+                case GT_SUB:
+                {
+                    return INS_fsub;
+                }
+
+                case GT_MUL:
+                {
+                    return INS_fmul;
+                }
+
+                case GT_DIV:
+                {
+                    return INS_fdiv;
+                }
+
+                case GT_NEG:
+                {
+                    return INS_fneg;
+                }
+
+                default:
+                {
+                    NYI("Unhandled oper in genGetInsForOper() - float");
+                    unreached();
+                    return INS_invalid;
+                }
+            }
         }
 
         switch (oper)
@@ -28,32 +74,54 @@ public sealed partial class CodeGen
                 return INS_and;
             }
 
+            case GT_AND_NOT when Configuration.TARGET_ARMARCH:
+            {
+                return INS_bic;
+            }
+
+            case GT_DIV when Configuration.TARGET_ARMARCH:
+            case GT_UDIV when Configuration.TARGET_ARMARCH:
+            {
+                if (Configuration.USE_HELPERS_FOR_INT_DIV)
+                {
+                    unreached();
+                    return INS_invalid;
+                }
+
+                return oper is GT_DIV ? INS_sdiv : INS_udiv;
+            }
+
             case GT_LSH:
             {
-                return INS_shl;
+                return Configuration.TARGET_XARCH ? INS_shl : INS_lsl;
             }
 
             case GT_MUL:
             {
-                return INS_imul;
+                return Configuration.TARGET_XARCH ? INS_imul : INS_mul;
             }
 
             case GT_NEG:
             {
-                return INS_neg;
+                return Configuration.TARGET_ARM ? INS_rsb : INS_neg;
             }
 
             case GT_NOT:
             {
-                return INS_not;
+                return Configuration.TARGET_XARCH ? INS_not : INS_mvn;
             }
 
             case GT_OR:
             {
-                return INS_or;
+                return Configuration.TARGET_XARCH ? INS_or : INS_orr;
             }
 
-            case GT_ROL:
+            case GT_OR_NOT when Configuration.TARGET_ARM64:
+            {
+                return INS_orn;
+            }
+
+            case GT_ROL when Configuration.TARGET_XARCH:
             {
                 return INS_rol;
             }
@@ -65,12 +133,12 @@ public sealed partial class CodeGen
 
             case GT_RSH:
             {
-                return INS_sar;
+                return Configuration.TARGET_XARCH ? INS_sar : INS_asr;
             }
 
             case GT_RSZ:
             {
-                return INS_shr;
+                return Configuration.TARGET_XARCH ? INS_shr : INS_lsr;
             }
 
             case GT_SUB:
@@ -80,47 +148,54 @@ public sealed partial class CodeGen
 
             case GT_XOR:
             {
-                return INS_xor;
+                return Configuration.TARGET_XARCH ? INS_xor : INS_eor;
             }
 
-#if !TARGET_64BIT
-            case GT_ADD_LO:
+            case GT_XOR_NOT when Configuration.TARGET_ARM64:
+            {
+                return INS_eon;
+            }
+
+            case GT_ADD_LO when !Configuration.TARGET_64BIT:
             {
                 return INS_add;
             }
 
-            case GT_ADD_HI:
+            case GT_ADD_HI when !Configuration.TARGET_64BIT:
             {
                 return INS_adc;
             }
 
-            case GT_SUB_LO:
+            case GT_SUB_LO when !Configuration.TARGET_64BIT:
             {
                 return INS_sub;
             }
 
-            case GT_SUB_HI:
+            case GT_SUB_HI when !Configuration.TARGET_64BIT:
             {
-                return INS_sbb;
+                return Configuration.TARGET_XARCH ? INS_sbb : INS_sbc;
             }
 
-            case GT_LSH_HI:
+            case GT_LSH_HI when !Configuration.TARGET_64BIT:
             {
-                return INS_shld;
+                return Configuration.TARGET_XARCH ? INS_shld : INS_lsl;
             }
 
-            case GT_RSH_LO:
+            case GT_RSH_LO when !Configuration.TARGET_64BIT:
             {
-                return INS_shrd;
+                return Configuration.TARGET_XARCH ? INS_shrd : INS_lsr;
             }
-#endif
 
             default:
             {
+                if (Configuration.TARGET_ARM64)
+                {
+                    NYI("Unhandled oper in genGetInsForOper() - integer");
+                }
+
                 unreached();
                 return INS_invalid;
             }
         }
     }
 }
-#endif

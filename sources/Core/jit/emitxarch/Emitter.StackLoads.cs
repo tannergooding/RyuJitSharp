@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -13,11 +12,12 @@ public partial class Emitter
     public void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), ireg));
-        var fmt = emitInsModeFormat(ins, IF_RRD_SRD);
+        var fmt = emitInsModeFormat(ins, IF_XARCH_RRD_SRD);
 
         if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
         {
@@ -28,7 +28,7 @@ public partial class Emitter
         id.idIns(ins);
         id.idInsFmt(fmt);
         id.idReg1(ireg);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
@@ -46,4 +46,3 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
     }
 }
-#endif

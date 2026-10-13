@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 using System;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -13,7 +12,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
+    public unsafe void emitDispInsXarch(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
@@ -37,15 +36,13 @@ public partial class Emitter
         {
             assert((code >= emitCodeBlock && code < emitCodeBlock + emitTotalHotCodeSize)
                 || (code >= emitColdCodeBlock && code < emitColdCodeBlock + emitTotalColdCodeSize));
-            emitDispInsHex(id, unchecked(code + writeableOffset), size);
+            emitDispInsHexXarch(id, unchecked(code + writeableOffset), size);
         }
 
-#if TARGET_AMD64
-        if (IsApxNfEncodableInstruction(ins) && id.idIsEvexNfContextSet())
+        if (Configuration.TARGET_AMD64 && IsApxNfEncodableInstruction(ins) && id.idIsEvexNfContextSet())
         {
             jitprintf("{nf}    ");
         }
-#endif
         var mnemonic = emitDisplayName(id);
         jitprintf(" ");
         jitprintf(mnemonic);
@@ -53,8 +50,7 @@ public partial class Emitter
         {
             jitprintf("         ".AsSpan(0, 9 - mnemonic.Length));
         }
-#if TARGET_AMD64
-        if (IsCCMP(ins) || IsCTEST(ins))
+        if (Configuration.TARGET_AMD64 && (IsCCMP(ins) || IsCTEST(ins)))
         {
             var dfv = id.idGetEvexDFV();
             var flags = "";
@@ -76,7 +72,6 @@ public partial class Emitter
             }
             jitprintf($"{{dfv={flags.TrimEnd(',')}}}    ");
         }
-#endif
         if (mnemonic.Length >= 9)
         {
             jitprintf(" ");
@@ -97,19 +92,19 @@ public partial class Emitter
         };
         if ((ins == INS_lea) && (id.idGCref() is not (GCT_GCREF or GCT_BYREF)))
         {
-#if TARGET_AMD64
-            assert(attr is EA_4BYTE or EA_8BYTE);
-#else
-            assert(attr == EA_4BYTE);
-#endif
+            assert(Configuration.TARGET_AMD64
+                ? attr is EA_4BYTE or EA_8BYTE
+                : attr == EA_4BYTE);
             sizeName = "";
         }
 
-        if (instrHasImplicitRegPairDest(ins))
+        if (Configuration.TARGET_XARCH && instrHasImplicitRegPairDest(ins))
         {
-            jitprintf($"{emitRegName(REG_EDX, id.idOpSize())}:{emitRegName(REG_EAX, id.idOpSize())}, ");
+            var highReg = Configuration.TARGET_X86 ? REG_X86_EDX : REG_X64_RDX;
+            var lowReg = Configuration.TARGET_X86 ? REG_X86_EAX : REG_X64_RAX;
+            jitprintf($"{emitRegName(highReg, id.idOpSize())}:{emitRegName(lowReg, id.idOpSize())}, ");
         }
-        else if (instrIs3opImul(ins))
+        else if (IsThreeOperandImulInstruction(ins))
         {
             jitprintf($"{emitRegName(inst3opImulReg(ins), id.idOpSize())}, ");
         }
@@ -213,16 +208,16 @@ public partial class Emitter
 
         switch (format)
         {
-            case IF_CNS:
+            case IF_XARCH_CNS:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
                 emitDispConstant(id, skipComma: true);
                 break;
             }
 
-            case IF_ARD:
-            case IF_AWR:
-            case IF_ARW:
+            case IF_XARCH_ARD:
+            case IF_XARCH_AWR:
+            case IF_XARCH_ARW:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
 
@@ -241,7 +236,7 @@ public partial class Emitter
                 }
                 if (ins is INS_call or INS_tail_i_jmp)
                 {
-                    assert(format == IF_ARD);
+                    assert(format == IF_XARCH_ARD);
 
                     if (debug is not null && debug.idMemCookie != 0)
                     {
@@ -257,24 +252,21 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_ARD:
-            case IF_RWR_ARD:
-            case IF_RRW_ARD:
-            case IF_RRD_SRD:
-            case IF_RWR_SRD:
-            case IF_RRW_SRD:
-            case IF_RRD_MRD:
-            case IF_RWR_MRD:
-            case IF_RRW_MRD:
+            case IF_XARCH_RRD_ARD:
+            case IF_XARCH_RWR_ARD:
+            case IF_XARCH_RRW_ARD:
+            case IF_XARCH_RRD_SRD:
+            case IF_XARCH_RWR_SRD:
+            case IF_XARCH_RRW_SRD:
+            case IF_XARCH_RRD_MRD:
+            case IF_XARCH_RWR_MRD:
+            case IF_XARCH_RRW_MRD:
             {
-#if TARGET_AMD64
-                if (ins == INS_movsxd)
+                if (Configuration.TARGET_AMD64 && (ins == INS_movsxd))
                 {
                     attr = EA_8BYTE;
                 }
-                else
-#endif
-                if (ins is INS_movsx or INS_movzx)
+                else if (ins is INS_movsx or INS_movzx)
                 {
                     attr = EA_PTRSIZE;
                 }
@@ -283,33 +275,33 @@ public partial class Emitter
                     attr = EA_4BYTE;
                 }
                 RegMem(1);
-                if (format is IF_RRD_ARD or IF_RWR_ARD or IF_RRW_ARD && debug is not null)
+                if (format is IF_XARCH_RRD_ARD or IF_XARCH_RWR_ARD or IF_XARCH_RRW_ARD && debug is not null)
                 {
                     emitDispCommentForHandle(debug.idMemCookie, 0, debug.idFlags);
                 }
                 break;
             }
 
-            case IF_RRD_ARD_CNS:
-            case IF_RRW_ARD_CNS:
-            case IF_RWR_ARD_CNS:
-            case IF_RRD_SRD_CNS:
-            case IF_RWR_SRD_CNS:
-            case IF_RRW_SRD_CNS:
-            case IF_RRD_MRD_CNS:
-            case IF_RWR_MRD_CNS:
-            case IF_RRW_MRD_CNS:
+            case IF_XARCH_RRD_ARD_CNS:
+            case IF_XARCH_RRW_ARD_CNS:
+            case IF_XARCH_RWR_ARD_CNS:
+            case IF_XARCH_RRD_SRD_CNS:
+            case IF_XARCH_RWR_SRD_CNS:
+            case IF_XARCH_RRW_SRD_CNS:
+            case IF_XARCH_RRD_MRD_CNS:
+            case IF_XARCH_RWR_MRD_CNS:
+            case IF_XARCH_RRW_MRD_CNS:
             {
                 RegMem(1, constant: true);
                 break;
             }
 
-            case IF_ARD_RRD_CNS:
-            case IF_AWR_RRD_CNS:
-            case IF_ARW_RRD_CNS:
-            case IF_MRD_RRD_CNS:
-            case IF_MWR_RRD_CNS:
-            case IF_MRW_RRD_CNS:
+            case IF_XARCH_ARD_RRD_CNS:
+            case IF_XARCH_AWR_RRD_CNS:
+            case IF_XARCH_ARW_RRD_CNS:
+            case IF_XARCH_MRD_RRD_CNS:
+            case IF_XARCH_MWR_RRD_CNS:
+            case IF_XARCH_MRW_RRD_CNS:
             {
                 var memoryName = sizeName;
                 if (ins is INS_vextractf32x4 or INS_vextractf64x2 or INS_vextracti32x4 or INS_vextracti64x2)
@@ -325,34 +317,34 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_RRD_ARD:
-            case IF_RWR_RRD_ARD:
-            case IF_RRW_RRD_ARD:
-            case IF_RWR_RWR_ARD:
-            case IF_RRD_RRD_SRD:
-            case IF_RWR_RRD_SRD:
-            case IF_RRW_RRD_SRD:
-            case IF_RWR_RWR_SRD:
-            case IF_RRD_RRD_MRD:
-            case IF_RWR_RRD_MRD:
-            case IF_RRW_RRD_MRD:
-            case IF_RWR_RWR_MRD:
+            case IF_XARCH_RRD_RRD_ARD:
+            case IF_XARCH_RWR_RRD_ARD:
+            case IF_XARCH_RRW_RRD_ARD:
+            case IF_XARCH_RWR_RWR_ARD:
+            case IF_XARCH_RRD_RRD_SRD:
+            case IF_XARCH_RWR_RRD_SRD:
+            case IF_XARCH_RRW_RRD_SRD:
+            case IF_XARCH_RWR_RWR_SRD:
+            case IF_XARCH_RRD_RRD_MRD:
+            case IF_XARCH_RWR_RRD_MRD:
+            case IF_XARCH_RRW_RRD_MRD:
+            case IF_XARCH_RWR_RWR_MRD:
             {
                 RegRegMem();
                 break;
             }
 
-            case IF_RRD_ARD_RRD:
-            case IF_RWR_ARD_RRD:
-            case IF_RRW_ARD_RRD:
-            case IF_RRD_SRD_RRD:
-            case IF_RWR_SRD_RRD:
-            case IF_RRW_SRD_RRD:
-            case IF_RRD_MRD_RRD:
-            case IF_RWR_MRD_RRD:
-            case IF_RRW_MRD_RRD:
+            case IF_XARCH_RRD_ARD_RRD:
+            case IF_XARCH_RWR_ARD_RRD:
+            case IF_XARCH_RRW_ARD_RRD:
+            case IF_XARCH_RRD_SRD_RRD:
+            case IF_XARCH_RWR_SRD_RRD:
+            case IF_XARCH_RRW_SRD_RRD:
+            case IF_XARCH_RRD_MRD_RRD:
+            case IF_XARCH_RWR_MRD_RRD:
+            case IF_XARCH_RRW_MRD_RRD:
             {
-                if (format is IF_RRD_ARD_RRD or IF_RWR_ARD_RRD or IF_RRW_ARD_RRD)
+                if (format is IF_XARCH_RRD_ARD_RRD or IF_XARCH_RWR_ARD_RRD or IF_XARCH_RRW_ARD_RRD)
                 {
                     sizeName = emitSizeString(EA_4BYTE);
                     if (ins is INS_vpgatherqd or INS_vgatherqps)
@@ -363,8 +355,8 @@ public partial class Emitter
                 Reg(1);
                 Mask();
                 jitprintf(", ");
-                if (format is IF_RRD_ARD_RRD or IF_RWR_ARD_RRD or IF_RRW_ARD_RRD
-                    or IF_RRD_SRD_RRD or IF_RWR_SRD_RRD or IF_RRW_SRD_RRD)
+                if (format is IF_XARCH_RRD_ARD_RRD or IF_XARCH_RWR_ARD_RRD or IF_XARCH_RRW_ARD_RRD
+                    or IF_XARCH_RRD_SRD_RRD or IF_XARCH_RWR_SRD_RRD or IF_XARCH_RRW_SRD_RRD)
                 {
                     Mem();
                     Broadcast();
@@ -383,17 +375,17 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_ARD_CNS:
-            case IF_RWR_RRD_SRD_CNS:
-            case IF_RWR_RRD_MRD_CNS:
+            case IF_XARCH_RWR_RRD_ARD_CNS:
+            case IF_XARCH_RWR_RRD_SRD_CNS:
+            case IF_XARCH_RWR_RRD_MRD_CNS:
             {
                 RegRegMem(constant: true);
                 break;
             }
 
-            case IF_RWR_RRD_ARD_RRD:
-            case IF_RWR_RRD_SRD_RRD:
-            case IF_RWR_RRD_MRD_RRD:
+            case IF_XARCH_RWR_RRD_ARD_RRD:
+            case IF_XARCH_RWR_RRD_SRD_RRD:
+            case IF_XARCH_RWR_RRD_MRD_RRD:
             {
                 Reg(1);
 
@@ -427,25 +419,25 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARD_RRD:
-            case IF_AWR_RRD:
-            case IF_ARW_RRD:
-            case IF_ARW_RRW:
-            case IF_SRD_RRD:
-            case IF_SWR_RRD:
-            case IF_SRW_RRD:
-            case IF_SRW_RRW:
-            case IF_MRD_RRD:
-            case IF_MWR_RRD:
-            case IF_MRW_RRD:
-            case IF_MRW_RRW:
+            case IF_XARCH_ARD_RRD:
+            case IF_XARCH_AWR_RRD:
+            case IF_XARCH_ARW_RRD:
+            case IF_XARCH_ARW_RRW:
+            case IF_XARCH_SRD_RRD:
+            case IF_XARCH_SWR_RRD:
+            case IF_XARCH_SRW_RRD:
+            case IF_XARCH_SRW_RRW:
+            case IF_XARCH_MRD_RRD:
+            case IF_XARCH_MWR_RRD:
+            case IF_XARCH_MRW_RRD:
+            case IF_XARCH_MRW_RRW:
             {
                 MemReg(1);
                 break;
             }
 
-            case IF_AWR_RRD_RRD:
-            case IF_SWR_RRD_RRD:
+            case IF_XARCH_AWR_RRD_RRD:
+            case IF_XARCH_SWR_RRD_RRD:
             {
                 MemReg(1);
                 jitprintf(", ");
@@ -453,7 +445,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MWR_RRD_RRD:
+            case IF_XARCH_MWR_RRD_RRD:
             {
                 jitprintf(sizeName);
                 Mask();
@@ -465,18 +457,18 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARD_CNS:
-            case IF_AWR_CNS:
-            case IF_ARW_CNS:
-            case IF_ARW_SHF:
-            case IF_SRD_CNS:
-            case IF_SWR_CNS:
-            case IF_SRW_CNS:
-            case IF_SRW_SHF:
-            case IF_MRD_CNS:
-            case IF_MWR_CNS:
-            case IF_MRW_CNS:
-            case IF_MRW_SHF:
+            case IF_XARCH_ARD_CNS:
+            case IF_XARCH_AWR_CNS:
+            case IF_XARCH_ARW_CNS:
+            case IF_XARCH_ARW_SHF:
+            case IF_XARCH_SRD_CNS:
+            case IF_XARCH_SWR_CNS:
+            case IF_XARCH_SRW_CNS:
+            case IF_XARCH_SRW_SHF:
+            case IF_XARCH_MRD_CNS:
+            case IF_XARCH_MWR_CNS:
+            case IF_XARCH_MRW_CNS:
+            case IF_XARCH_MRW_SHF:
             {
                 Mem();
                 Mask();
@@ -484,53 +476,49 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SRD:
-            case IF_SWR:
-            case IF_SRW:
-            case IF_MRD:
-            case IF_MWR:
-            case IF_MRW:
+            case IF_XARCH_SRD:
+            case IF_XARCH_SWR:
+            case IF_XARCH_SRW:
+            case IF_XARCH_MRD:
+            case IF_XARCH_MWR:
+            case IF_XARCH_MRW:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
-#if !FEATURE_FIXED_OUT_ARGS
-                if (ins == INS_pop)
+                if (!Configuration.FEATURE_FIXED_OUT_ARGS && (ins == INS_pop))
                 {
                     emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) - sizeof(int)));
                 }
-#endif
                 Mem();
-#if !FEATURE_FIXED_OUT_ARGS
-                if (ins == INS_pop)
+                if (!Configuration.FEATURE_FIXED_OUT_ARGS && (ins == INS_pop))
                 {
                     emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) + sizeof(int)));
                 }
-#endif
                 emitDispShift(ins);
                 break;
             }
 
-            case IF_SRD_RRD_CNS:
-            case IF_SWR_RRD_CNS:
-            case IF_SRW_RRD_CNS:
+            case IF_XARCH_SRD_RRD_CNS:
+            case IF_XARCH_SWR_RRD_CNS:
+            case IF_XARCH_SRW_RRD_CNS:
             {
                 assert(IsSSEOrAVXInstruction(ins));
                 MemReg(1, constant: true);
                 break;
             }
 
-            case IF_RRD_RRD:
-            case IF_RWR_RRD:
-            case IF_RRW_RRD:
-            case IF_RRW_RRW:
+            case IF_XARCH_RRD_RRD:
+            case IF_XARCH_RWR_RRD:
+            case IF_XARCH_RRW_RRD:
+            case IF_XARCH_RRW_RRW:
             {
                 emitDispRegisterPair(id, ref attr);
                 break;
             }
 
-            case IF_RRD_RRD_RRD:
-            case IF_RWR_RRD_RRD:
-            case IF_RRW_RRD_RRD:
-            case IF_RWR_RWR_RRD:
+            case IF_XARCH_RRD_RRD_RRD:
+            case IF_XARCH_RWR_RRD_RRD:
+            case IF_XARCH_RRW_RRD_RRD:
+            case IF_XARCH_RWR_RWR_RRD:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
                 assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
@@ -549,7 +537,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_RRD_CNS:
+            case IF_XARCH_RWR_RRD_RRD_CNS:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins));
                 assert(IsThreeOperandAVXInstruction(ins));
@@ -557,15 +545,15 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_RRD_CNS:
-            case IF_RWR_RRD_CNS:
-            case IF_RRW_RRD_CNS:
+            case IF_XARCH_RRD_RRD_CNS:
+            case IF_XARCH_RWR_RRD_CNS:
+            case IF_XARCH_RRW_RRD_CNS:
             {
                 emitDispRegisterConstant(id, format, ref attr);
                 break;
             }
 
-            case IF_RWR_RRD_RRD_RRD:
+            case IF_XARCH_RWR_RRD_RRD_RRD:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins));
                 assert(UseVexEncodings);
@@ -586,9 +574,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD:
-            case IF_RWR:
-            case IF_RRW:
+            case IF_XARCH_RRD:
+            case IF_XARCH_RWR:
+            case IF_XARCH_RRW:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
                 Reg(1);
@@ -596,10 +584,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_CNS:
-            case IF_RWR_CNS:
-            case IF_RRW_CNS:
-            case IF_RRW_SHF:
+            case IF_XARCH_RRD_CNS:
+            case IF_XARCH_RWR_CNS:
+            case IF_XARCH_RRW_CNS:
+            case IF_XARCH_RRW_SHF:
             {
                 Reg(1);
                 Mask();
@@ -607,7 +595,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_SHF:
+            case IF_XARCH_RWR_RRD_SHF:
             {
                 assert(IsApxExtendedEvexInstruction(ins));
                 Reg(1);
@@ -617,7 +605,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_MRD_OFF:
+            case IF_XARCH_RWR_MRD_OFF:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
                 Reg(1);
@@ -626,7 +614,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MRD_OFF:
+            case IF_XARCH_MRD_OFF:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
                 jitprintf("offset ");
@@ -634,9 +622,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LABEL:
-            case IF_RWR_LABEL:
-            case IF_SWR_LABEL:
+            case IF_XARCH_LABEL:
+            case IF_XARCH_RWR_LABEL:
+            case IF_XARCH_SWR_LABEL:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
 
@@ -647,7 +635,7 @@ public partial class Emitter
                 }
                 else if (ins == INS_mov)
                 {
-                    assert(format == IF_SWR_LABEL);
+                    assert(format == IF_XARCH_SWR_LABEL);
                     var label = id as instrDescLbl
                         ?? throw new FatalJitException("Move label requires a label descriptor.");
                     emitDispFrameRef(label.idAddr().iiaLclVar.lvaVarNum(),
@@ -673,18 +661,18 @@ public partial class Emitter
                 break;
             }
 
-            case IF_METHOD:
-            case IF_METHPTR:
+            case IF_XARCH_METHOD:
+            case IF_XARCH_METHPTR:
             {
                 assert(!IsSimdEvexEncodableInstruction(ins));
                 var methodName = compiler.eeGetMethodFullName((CORINFO_METHOD_HANDLE)(debug?.idMemCookie ?? 0));
 
-                if (format == IF_METHPTR)
+                if (format == IF_XARCH_METHPTR)
                 {
                     jitprintf("[");
                 }
                 jitprintf(methodName);
-                if (format == IF_METHPTR)
+                if (format == IF_XARCH_METHPTR)
                 {
                     jitprintf("]");
                 }
@@ -724,4 +712,3 @@ public partial class Emitter
         jitprintf("\n");
     }
 }
-#endif

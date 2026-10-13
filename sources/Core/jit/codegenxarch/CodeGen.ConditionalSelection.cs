@@ -5,12 +5,11 @@
 
 using System;
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForJTrue(GenTreeUnOp jtrue)
+    public void genCodeForJTrueXarch(GenTreeUnOp jtrue)
     {
         Emitter.RequireSupportedInstructionRecording();
         var block = _compiler.compCurBB;
@@ -19,12 +18,12 @@ public sealed partial class CodeGen
         var op = jtrue.Op1;
         var reg = genConsumeReg(op);
         inst_RV_RV(INS_test, reg, reg, op.Type.ActualType);
-        inst_JMP(EJ_jne, block.TrueTarget);
+        inst_JMPXarch(EJ_jne, block.TrueTarget);
 
         var falseTarget = block.FalseTarget;
         if (!block.CanRemoveJumpToTarget(falseTarget, _compiler))
         {
-            inst_JMP(EJ_jmp, falseTarget);
+            inst_JMPXarch(EJ_jmp, falseTarget);
         }
     }
 
@@ -40,7 +39,7 @@ public sealed partial class CodeGen
         return table[(int)condition];
     }
 
-    public void genCodeForSelect(GenTreeOp select)
+    public void genCodeForSelectXarch(GenTreeOp select)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(select.Oper is GT_SELECT or GT_SELECTCC);
@@ -106,4 +105,3 @@ public sealed partial class CodeGen
         genProduceReg(select);
     }
 }
-#endif

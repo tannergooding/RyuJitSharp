@@ -3,12 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_X86 && NOGC_WRITE_BARRIERS
     private static readonly CorInfoHelpFunc[][] s_optimizedWriteBarrierHelpers =
     [
         [
@@ -22,22 +20,20 @@ public sealed partial class CodeGen
             CORINFO_HELP_CHECKED_ASSIGN_REF_ESI, CORINFO_HELP_CHECKED_ASSIGN_REF_EDI,
         ],
     ];
-#endif
-
-    public void genCodeForStoreInd(GenTreeStoreInd tree)
+    public void genCodeForStoreIndXarch(GenTreeStoreInd tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper is GT_STOREIND);
 
-#if FEATURE_SIMD
-        if (tree.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (tree.Type is TYP_SIMD12))
         {
             genStoreIndTypeSimd12(tree);
             return;
         }
-#endif
         var data = tree.Data;
         var addr = tree.Addr;
         var targetType = tree.Type;
@@ -54,9 +50,12 @@ public sealed partial class CodeGen
                 return;
             }
 
-            noway_assert(data.RegNum != REG_WRITE_BARRIER_DST);
-            genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
-            genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
+            var writeBarrierDst = Configuration.TARGET_AMD64 ? REG_WRITE_BARRIER_DST_AMD64 : REG_WRITE_BARRIER_DST_X86;
+            var writeBarrierSrc = Configuration.TARGET_AMD64 ? REG_WRITE_BARRIER_SRC_AMD64 : REG_WRITE_BARRIER_SRC_X86;
+
+            noway_assert(data.RegNum != writeBarrierDst);
+            genCopyRegIfNeeded(addr, writeBarrierDst);
+            genCopyRegIfNeeded(data, writeBarrierSrc);
             genGCWriteBarrier(writeBarrierForm);
         }
         else
@@ -144,15 +143,15 @@ public sealed partial class CodeGen
                     if (data.Oper is GT_BSWAP or GT_BSWAP16)
                     {
                         ins = INS_movbe;
-#if TARGET_AMD64
-                        var needsEvex = Emitter.IsExtendedGPReg(data.AsUnOp().Op1.RegNum) ||
-                            (tree.HasBase && Emitter.IsExtendedGPReg(tree.Base.RegNum)) ||
-                            (tree.HasIndex && Emitter.IsExtendedGPReg(tree.Index.RegNum));
-                        ins = needsEvex ? INS_movbe_apx : INS_movbe;
-#endif
+                        if (Configuration.TARGET_AMD64)
+                        {
+                            var needsEvex = Emitter.IsExtendedGPReg(data.AsUnOp().Op1.RegNum) ||
+                                (tree.HasBase && Emitter.IsExtendedGPReg(tree.Base.RegNum)) ||
+                                (tree.HasIndex && Emitter.IsExtendedGPReg(tree.Index.RegNum));
+                            ins = needsEvex ? INS_movbe_apx : INS_movbe;
+                        }
                     }
-#if FEATURE_HW_INTRINSICS
-                    else if (data.Oper is GT_HWINTRINSIC)
+                    else if ((data.Oper is GT_HWINTRINSIC) && Configuration.FEATURE_HW_INTRINSICS)
                     {
                         var intrinsic = data.AsHWIntrinsic();
                         var intrinsicId = intrinsic.HWIntrinsicId;
@@ -171,13 +170,11 @@ public sealed partial class CodeGen
                             {
                                 ins = HWIntrinsicInfo.lookupIns(intrinsicId, baseType, _compiler);
                                 attr = baseType.ActualType.EmitSize;
-#if TARGET_X86
-                                if (varTypeIsLong(baseType))
+                                if (Configuration.TARGET_X86 && varTypeIsLong(baseType))
                                 {
                                     ins = INS_movq;
                                     attr = EA_8BYTE;
                                 }
-#endif
                                 break;
                             }
 
@@ -257,7 +254,6 @@ public sealed partial class CodeGen
                             }
                         }
                     }
-#endif
                 }
 
                 if (ins == INS_invalid)
@@ -272,40 +268,40 @@ public sealed partial class CodeGen
     public bool genEmitOptimizedGCWriteBarrier(GCInfo.WriteBarrierForm writeBarrierForm, GenTree addr, GenTree data)
     {
         assert(writeBarrierForm != GCInfo.WriteBarrierForm.WBF_NoBarrier);
-#if TARGET_X86 && NOGC_WRITE_BARRIERS
+        if (!Configuration.TARGET_X86 || !Configuration.NOGC_WRITE_BARRIERS)
+        {
+            return false;
+        }
+
         if (!genUseOptimizedWriteBarriers(writeBarrierForm))
         {
             return false;
         }
 
-        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EAX] == CORINFO_HELP_ASSIGN_REF_EAX);
-        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_ECX] == CORINFO_HELP_ASSIGN_REF_ECX);
-        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EBX] == CORINFO_HELP_ASSIGN_REF_EBX);
-        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_ESP] == (CorInfoHelpFunc)(-1));
-        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EBP] == CORINFO_HELP_ASSIGN_REF_EBP);
-        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_ESI] == CORINFO_HELP_ASSIGN_REF_ESI);
-        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_EDI] == CORINFO_HELP_ASSIGN_REF_EDI);
-        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EAX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EAX);
-        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_ECX] == CORINFO_HELP_CHECKED_ASSIGN_REF_ECX);
-        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EBX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBX);
-        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_ESP] == (CorInfoHelpFunc)(-1));
-        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EBP] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBP);
-        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_ESI] == CORINFO_HELP_CHECKED_ASSIGN_REF_ESI);
-        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_EDI] == CORINFO_HELP_CHECKED_ASSIGN_REF_EDI);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_X86_EAX] == CORINFO_HELP_ASSIGN_REF_EAX);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_X86_ECX] == CORINFO_HELP_ASSIGN_REF_ECX);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_X86_EBX] == CORINFO_HELP_ASSIGN_REF_EBX);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_X86_ESP] == (CorInfoHelpFunc)(-1));
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_X86_EBP] == CORINFO_HELP_ASSIGN_REF_EBP);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_X86_ESI] == CORINFO_HELP_ASSIGN_REF_ESI);
+        noway_assert(s_optimizedWriteBarrierHelpers[0][(int)REG_X86_EDI] == CORINFO_HELP_ASSIGN_REF_EDI);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_X86_EAX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EAX);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_X86_ECX] == CORINFO_HELP_CHECKED_ASSIGN_REF_ECX);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_X86_EBX] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBX);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_X86_ESP] == (CorInfoHelpFunc)(-1));
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_X86_EBP] == CORINFO_HELP_CHECKED_ASSIGN_REF_EBP);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_X86_ESI] == CORINFO_HELP_CHECKED_ASSIGN_REF_ESI);
+        noway_assert(s_optimizedWriteBarrierHelpers[1][(int)REG_X86_EDI] == CORINFO_HELP_CHECKED_ASSIGN_REF_EDI);
 
         var reg = data.RegNum;
-        noway_assert(reg is not (REG_ESP or REG_EDX));
+        noway_assert(reg is not (REG_X86_ESP or REG_X86_EDX));
 
         // The x86 no-GC helpers take the target address in EDX and the value in its original register.
-        genCopyRegIfNeeded(addr, REG_EDX);
+        genCopyRegIfNeeded(addr, REG_X86_EDX);
 
         var targetAnywhere = writeBarrierForm != GCInfo.WriteBarrierForm.WBF_BarrierUnchecked ? 1 : 0;
-        genEmitHelperCall(s_optimizedWriteBarrierHelpers[targetAnywhere][(int)reg], 0, EA_PTRSIZE);
+        genEmitHelperCallXarch(s_optimizedWriteBarrierHelpers[targetAnywhere][(int)reg], 0, EA_PTRSIZE);
 
         return true;
-#else
-        return false;
-#endif
     }
 }
-#endif

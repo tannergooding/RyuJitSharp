@@ -3,15 +3,44 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH || TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#if DEBUG
 using System.Globalization;
+#endif
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            emitDispFrameRefXarch(variable, displacement, ilOffset, assembly);
+            return;
+        }
+
+        if (Configuration.TARGET_ARMARCH)
+        {
+#if DEBUG
+            emitDispFrameRefArm(variable, displacement, ilOffset);
+#endif
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException("emitDispFrameRef-----unused on LoongArch64.");
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
+        }
+
+        throw new FatalJitException("Frame-reference display is not implemented for this target.");
+    }
+
+    private void emitDispFrameRefXarch(int variable, int displacement, uint ilOffset, bool assembly)
     {
         var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
         jitprintf("[");
@@ -35,11 +64,16 @@ public partial class Emitter
                 jitprintf(" ");
             }
             var address = compiler.lvaFrameAddress(variable, out var fpBased) + displacement;
-#if TARGET_X86
-            jitprintf(fpBased ? "ebp" : "esp");
-#else
-            jitprintf(fpBased ? STR_FPBASE : STR_SPBASE);
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                jitprintf(fpBased ? "ebp" : "esp");
+            }
+            else
+            {
+                jitprintf(fpBased
+                    ? TargetRuntimeMetadata.FramePointerBaseName
+                    : TargetRuntimeMetadata.StackPointerBaseName);
+            }
             if (address < 0)
             {
                 jitprintf($"-0x{-address:X2}");
@@ -48,12 +82,10 @@ public partial class Emitter
             {
                 jitprintf($"+0x{address:X2}");
             }
-#if !FEATURE_FIXED_OUT_ARGS
-            if (!fpBased && emitCurStackLvl != 0)
+            if (!Configuration.FEATURE_FIXED_OUT_ARGS && !fpBased && emitCurStackLvl != 0)
             {
                 jitprintf($"+0x{unchecked((uint)emitCurStackLvl):X2}");
             }
-#endif
         }
         jitprintf("]");
 
@@ -81,10 +113,10 @@ public partial class Emitter
         }
 #endif
     }
-#elif TARGET_ARM || TARGET_ARM64
-    private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
-    {
+
 #if DEBUG
+    private void emitDispFrameRefArm(int variable, int displacement, uint ilOffset)
+    {
         var compiler = _compiler ?? throw new FatalJitException("Frame reference display requires an active compiler.");
         jitprintf("[");
         if (variable < 0)
@@ -126,31 +158,22 @@ public partial class Emitter
                 jitprintf("'");
             }
         }
-#endif
     }
-#elif TARGET_LOONGARCH64
-#if DEBUG
-    private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
-    {
-        throw new FatalJitException("emitDispFrameRef-----unused on LoongArch64.");
-    }
-#endif
-#elif TARGET_RISCV64
-#if DEBUG
-    private void emitDispFrameRef(int variable, int displacement, uint ilOffset, bool assembly)
-    {
-        throw new FatalJitException("emitDispFrameRef-----unimplemented/unused on RISCV64 yet----");
-    }
-#endif
 #endif
 
-#if TARGET_XARCH
     private unsafe void emitDispClsVar(CORINFO_FIELD_HANDLE field, nint offset, bool reloc)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Static xarch reference display requires xarch.");
+        }
+
         var compiler = _compiler ?? throw new FatalJitException("Static reference display requires an active compiler.");
-#if TARGET_X86
-        offset = unchecked((int)offset);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            offset = unchecked((int)offset);
+        }
+
         if (compiler.opts.disDiffable && ((offset >> 20) is not 0 and not -1))
         {
             offset = unchecked((nint)0xD1FFAB1E);
@@ -197,6 +220,4 @@ public partial class Emitter
         }
 #endif
     }
-#endif
 }
-#endif

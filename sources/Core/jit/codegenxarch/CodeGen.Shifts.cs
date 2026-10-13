@@ -3,18 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForShift(GenTree tree)
+    public void genCodeForShiftXarch(GenTree tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper.IsShiftOrRotate);
-        assert(tree.RegNum != REG_NA);
+        assert(tree.RegNum != regNumberExtensions.NotAvailable);
         assert(tree.AsOp().Op1.IsUsedFromReg || _compiler.compIsaSupportedDebugOnly(InstructionSet_AVX2));
         genConsumeOperands(tree.AsOp());
 
@@ -28,7 +29,7 @@ public sealed partial class CodeGen
 
         if (shiftBy.IsContainedIntOrIImmed)
         {
-            assert(tree.Oper.IsRotate || (operandReg != REG_NA));
+            assert(tree.Oper.IsRotate || (operandReg != regNumberExtensions.NotAvailable));
             var mightOptimizeLsh = (tree.Oper is GT_LSH) && !setFlags;
             if (mightOptimizeLsh && shiftBy.IsIntegralConst(1))
             {
@@ -43,11 +44,11 @@ public sealed partial class CodeGen
             }
             else if (mightOptimizeLsh && shiftBy.IsIntegralConst(2) && (tree.RegNum != operandReg))
             {
-                Emitter.emitIns_R_ARX(INS_lea, size, tree.RegNum, REG_NA, operandReg, 4, 0);
+                Emitter.emitIns_R_ARX(INS_lea, size, tree.RegNum, regNumberExtensions.NotAvailable, operandReg, 4, 0);
             }
             else if (mightOptimizeLsh && shiftBy.IsIntegralConst(3) && (tree.RegNum != operandReg))
             {
-                Emitter.emitIns_R_ARX(INS_lea, size, tree.RegNum, REG_NA, operandReg, 8, 0);
+                Emitter.emitIns_R_ARX(INS_lea, size, tree.RegNum, regNumberExtensions.NotAvailable, operandReg, 8, 0);
             }
             else
             {
@@ -56,7 +57,7 @@ public sealed partial class CodeGen
                 {
                     // RORX handles contained sources and avoids MOV+REX overhead
                     // for distinct-register 64-bit rotates.
-                    if ((operandReg == REG_NA) || (varTypeIsLong(targetType) && (tree.RegNum != operandReg)))
+                    if ((operandReg == regNumberExtensions.NotAvailable) || (varTypeIsLong(targetType) && (tree.RegNum != operandReg)))
                     {
                         if (tree.Oper is GT_ROL)
                         {
@@ -91,17 +92,21 @@ public sealed partial class CodeGen
         }
         else
         {
-            genCopyRegIfNeeded(shiftBy, REG_RCX);
-            noway_assert(operandReg != REG_RCX);
+            genCopyRegIfNeeded(shiftBy, REG_X64_RCX);
+            noway_assert(operandReg != REG_X64_RCX);
             Emitter.emitIns_BASE_R_R(ins, size, tree.RegNum, operandReg);
         }
 
         genProduceReg(tree);
     }
 
-#if TARGET_X86
-    public void genCodeForShiftLong(GenTree tree)
+    public void genCodeForShiftLongXarch(GenTree tree)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Long shift generation requires x86.");
+        }
+
         var oper = tree.Oper;
         assert(oper is GT_LSH_HI or GT_RSH_LO);
 
@@ -139,7 +144,6 @@ public sealed partial class CodeGen
 
         genProduceReg(tree);
     }
-#endif
 
     public static instruction genMapShiftInsToShiftByConstantIns(instruction ins, int value)
     {
@@ -189,15 +193,17 @@ public sealed partial class CodeGen
 
     public void genCodeForShiftRMW(GenTreeStoreInd storeInd)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var data = storeInd.Data;
         assert(data.Oper.IsShiftOrRotate);
         assert(data.AsOp().Op1.IsUsedFromMemory);
         assert(data.AsOp().Op1.Oper.IsIndir);
         assert(Lowering.IndirsAreEquivalent(data.AsOp().Op1, storeInd));
-        assert(data.RegNum == REG_NA);
+        assert(data.RegNum == regNumberExtensions.NotAvailable);
 
         var ins = genGetInsForOper(data.Oper, data.Type);
         var attr = (emitAttr)data.Type.Size;
@@ -217,9 +223,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            genCopyRegIfNeeded(shiftBy, REG_RCX);
+            genCopyRegIfNeeded(shiftBy, REG_X64_RCX);
             Emitter.emitInsRMW(ins, attr, storeInd);
         }
     }
 }
-#endif

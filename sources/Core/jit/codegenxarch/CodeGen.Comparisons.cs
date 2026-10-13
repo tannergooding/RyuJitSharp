@@ -5,32 +5,35 @@
 
 using System;
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForCompare(GenTreeOp tree)
+    public void genCodeForCompareXarch(GenTreeOp tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper.IsCompare || (tree.Oper is GT_CMP or GT_TEST or GT_BT));
         if (varTypeIsFloating(tree.Op1.Type))
         {
-            genCompareFloat(tree);
+            genCompareFloatXarch(tree);
         }
         else
         {
-            genCompareInt(tree);
+            genCompareIntXarch(tree);
         }
     }
 
-    public void genCompareFloat(GenTreeOp tree)
+    public void genCompareFloatXarch(GenTreeOp tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper.IsCompare || (tree.Oper is GT_CMP));
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -51,13 +54,13 @@ public sealed partial class CodeGen
         }
         else
         {
-            assert(targetReg == REG_NA);
+            assert(targetReg == regNumberExtensions.NotAvailable);
         }
 
         var ins = type == TYP_FLOAT ? INS_ucomiss : INS_ucomisd;
         _ = Emitter.emitInsBinary(ins, type.EmitSize, op1, op2);
 
-        if (targetReg != REG_NA)
+        if (targetReg != regNumberExtensions.NotAvailable)
         {
             if ((condition.Code == GenCondition.CodeKind.FNEU) && op1.IsUsedFromReg && op2.IsUsedFromReg &&
                 (op1.RegNum == op2.RegNum))
@@ -66,16 +69,18 @@ public sealed partial class CodeGen
                 condition = new GenCondition(GenCondition.CodeKind.P);
             }
 
-            inst_SETCC(condition, tree.Type, targetReg);
+            inst_SETCCXarch(condition, tree.Type, targetReg);
             genProduceReg(tree);
         }
     }
 
-    public void genCompareInt(GenTreeOp tree)
+    public void genCompareIntXarch(GenTreeOp tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper.IsCompare || (tree.Oper is GT_CMP or GT_TEST or GT_BT));
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -94,10 +99,8 @@ public sealed partial class CodeGen
 
             // TEST has no full-width form with a sign-extended byte immediate.
             // A byte-sized mask can instead use a byte-sized TEST when the register is byte-addressable.
-            if (
-#if TARGET_X86
-                (!op1.IsUsedFromReg || op1.RegNum is REG_EAX or REG_ECX or REG_EDX or REG_EBX) &&
-#endif
+            if ((!Configuration.TARGET_X86 ||
+                    (!op1.IsUsedFromReg || op1.RegNum is REG_X86_EAX or REG_X86_ECX or REG_X86_EDX or REG_X86_EBX)) &&
                 op2.Oper.IsCnsIntOrI && FitsIn(TYP_UBYTE, op2.AsIntCon().IconValue))
             {
                 size = EA_1BYTE;
@@ -113,7 +116,7 @@ public sealed partial class CodeGen
             {
                 var op1Size = op1Type.EmitActualSize;
                 assert((int)op1Size >= 4);
-                if ((targetReg != REG_NA) && (tree.Oper is GT_LT or GT_GE) && !tree.IsUnsigned)
+                if ((targetReg != regNumberExtensions.NotAvailable) && (tree.Oper is GT_LT or GT_GE) && !tree.IsUnsigned)
                 {
                     inst_Mov(op1Type, targetReg, op1.RegNum, canSkip: true);
                     if (tree.Oper is GT_GE)
@@ -154,21 +157,24 @@ public sealed partial class CodeGen
             }
         }
 
-        if (targetReg != REG_NA)
+        if (targetReg != regNumberExtensions.NotAvailable)
         {
-            inst_SETCC(GenCondition.FromIntegralRelop(tree), tree.Type, targetReg);
+            inst_SETCCXarch(GenCondition.FromIntegralRelop(tree), tree.Type, targetReg);
             genProduceReg(tree);
         }
     }
 
     public bool genCanAvoidEmittingCompareAgainstZero(GenTree tree, emitAttr opSize)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Comparison flag reuse requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Comparison flag reuse requires xarch.");
+        }
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var op = tree.AsOp();
         var op1 = op.Op1;
         assert(op.Op2.IsIntegralConst(0));
@@ -227,7 +233,6 @@ public sealed partial class CodeGen
         }
 
         return false;
-#endif
     }
 
     public static GenTree? genTryFindFlagsConsumer(GenTree producer, out GenCondition condition)
@@ -257,4 +262,3 @@ public sealed partial class CodeGen
         return null;
     }
 }
-#endif

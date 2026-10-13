@@ -3,13 +3,18 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genHWIntrinsic(GenTreeHWIntrinsic node)
+    public void genHWIntrinsicXarch(GenTreeHWIntrinsic node)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Hardware-intrinsic code generation requires xarch support.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         var intrinsic = node.HWIntrinsicId;
         var isa = HWIntrinsicInfo.lookupIsa(intrinsic);
@@ -382,7 +387,8 @@ public sealed partial class CodeGen
                             assert(intrinsic == NI_X86Base_MaskMove);
                             assert(targetReg == REG_NA);
                             // SSE2 MASKMOV uses DI/EDI/RDI implicitly for its destination.
-                            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_EDI, op3Reg, canSkip: true);
+                            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE,
+                                TargetRuntimeMetadata.SelectXarch(REG_X86_EDI, REG_X64_RDI), op3Reg, canSkip: true);
                             Emitter.emitIns_R_R(ins, simdSize, op1Reg, op2Reg, options);
                         }
                     }
@@ -535,4 +541,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

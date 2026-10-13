@@ -3,23 +3,20 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForDivMod(GenTreeOp tree)
+    public void genCodeForDivModXarch(GenTreeOp tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD);
         var dividend = tree.Op1;
-#if TARGET_X86
-        if (varTypeIsLong(dividend.Type))
+        if (Configuration.TARGET_X86 && varTypeIsLong(dividend.Type))
         {
             genCodeForLongUMod(tree);
             return;
         }
-#endif
         var divisor = tree.Op2;
         var oper = tree.Oper;
         var size = tree.Type.EmitSize;
@@ -29,13 +26,13 @@ public sealed partial class CodeGen
         assert(dividend.IsUsedFromReg);
 
         genConsumeOperands(tree);
-        genCopyRegIfNeeded(dividend, REG_RAX);
+        genCopyRegIfNeeded(dividend, REG_X64_RAX);
 
         // DIV/IDIV read RDX:RAX, so prepare the high half of the dividend.
         if ((oper is GT_UMOD or GT_UDIV) ||
             (dividend.Oper.IsIntegralConst && (dividend.AsIntConCommon().IconValue > 0)))
         {
-            instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_RDX);
+            instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_X64_RDX);
         }
         else
         {
@@ -49,15 +46,14 @@ public sealed partial class CodeGen
         // The quotient is in RAX and the remainder is in RDX.
         if (oper is GT_DIV or GT_UDIV)
         {
-            inst_Mov(targetType, targetReg, REG_RAX, canSkip: true);
+            inst_Mov(targetType, targetReg, REG_X64_RAX, canSkip: true);
         }
         else
         {
             assert(oper is GT_MOD or GT_UMOD);
-            inst_Mov(targetType, targetReg, REG_RDX, canSkip: true);
+            inst_Mov(targetType, targetReg, REG_X64_RDX, canSkip: true);
         }
 
         genProduceReg(tree);
     }
 }
-#endif

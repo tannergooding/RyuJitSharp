@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForBswap(GenTree tree)
+    public void genCodeForBswapXarch(GenTree tree)
     {
         Emitter.RequireSupportedInstructionRecording();
         assert(tree.Oper is GT_BSWAP or GT_BSWAP16);
@@ -32,27 +31,28 @@ public sealed partial class CodeGen
         else
         {
             var ins = INS_movbe;
-#if TARGET_AMD64
-            var needsEvex = false;
-            if (Emitter.IsExtendedGPReg(targetReg))
+            if (Configuration.TARGET_AMD64)
             {
-                needsEvex = true;
-            }
-            else if (operand.Oper.IsIndir)
-            {
-                var indir = operand.AsIndir();
-                if (indir.HasBase && Emitter.IsExtendedGPReg(indir.Base.RegNum))
+                var needsEvex = false;
+                if (Emitter.IsExtendedGPReg(targetReg))
                 {
                     needsEvex = true;
                 }
-                else if (indir.HasIndex && Emitter.IsExtendedGPReg(indir.Index.RegNum))
+                else if (operand.Oper.IsIndir)
                 {
-                    needsEvex = true;
+                    var indir = operand.AsIndir();
+                    if (indir.HasBase && Emitter.IsExtendedGPReg(indir.Base.RegNum))
+                    {
+                        needsEvex = true;
+                    }
+                    else if (indir.HasIndex && Emitter.IsExtendedGPReg(indir.Index.RegNum))
+                    {
+                        needsEvex = true;
+                    }
                 }
-            }
 
-            ins = needsEvex ? INS_movbe_apx : INS_movbe;
-#endif
+                ins = needsEvex ? INS_movbe_apx : INS_movbe;
+            }
             _ = Emitter.emitInsBinary(ins, operand.Type.EmitSize, tree, operand);
         }
 
@@ -64,4 +64,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif
