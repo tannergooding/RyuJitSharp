@@ -177,10 +177,12 @@ public sealed partial class ValueNumStore
 
     public void PeelOffsets(ref ValueNum vn, out target_ssize_t offset)
     {
-#if DEBUG
-        var type = TypeOfVN(vn);
-        assert((type is var __targetAliasValue1 && ((__targetAliasValue1 == TYP_I_IMPL || __targetAliasValue1 is TYP_REF) || __targetAliasValue1 is TYP_BYREF)));
-#endif
+        if (Configuration.DEBUG)
+        {
+            var type = TypeOfVN(vn);
+            assert((type is var __targetAliasValue1 && ((__targetAliasValue1 == TYP_I_IMPL || __targetAliasValue1 is TYP_REF) || __targetAliasValue1 is TYP_BYREF)));
+        }
+
         offset = 0;
         var app = new VNFuncApp();
         while (GetVNFunc(vn, ref app) && app.FuncIs(VNF_ADD, VNF_Cast))

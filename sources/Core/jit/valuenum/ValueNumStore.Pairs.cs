@@ -323,22 +323,26 @@ public sealed partial class ValueNumStore
             return unique;
         }
 
-#if DEBUG
-        var app = new VNFuncApp();
-        assert(GetVNFunc(exceptions, ref app) && app.FuncIs(VNF_ExcSetCons));
-#endif
+        if (Configuration.DEBUG)
+        {
+            var app = new VNFuncApp();
+            assert(GetVNFunc(exceptions, ref app) && app.FuncIs(VNF_ExcSetCons));
+        }
+
         return VNWithExc(unique, exceptions);
     }
 
     public ValueNumPair VNPUniqueWithExc(var_types type, ValueNumPair exceptions)
     {
-#if DEBUG
-        var app = new VNFuncApp();
-        assert((GetVNFunc(exceptions.Liberal, ref app) && app.FuncIs(VNF_ExcSetCons)) ||
-            (exceptions.Liberal == VNForEmptyExcSet()));
-        assert((GetVNFunc(exceptions.Conservative, ref app) && app.FuncIs(VNF_ExcSetCons)) ||
-            (exceptions.Conservative == VNForEmptyExcSet()));
-#endif
+        if (Configuration.DEBUG)
+        {
+            var app = new VNFuncApp();
+            assert((GetVNFunc(exceptions.Liberal, ref app) && app.FuncIs(VNF_ExcSetCons)) ||
+                (exceptions.Liberal == VNForEmptyExcSet()));
+            assert((GetVNFunc(exceptions.Conservative, ref app) && app.FuncIs(VNF_ExcSetCons)) ||
+                (exceptions.Conservative == VNForEmptyExcSet()));
+        }
+
         var unique = VNForExpr(_compiler.compCurBB, type);
         return VNPWithExc(new(unique, unique), exceptions);
     }
