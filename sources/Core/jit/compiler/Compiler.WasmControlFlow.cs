@@ -88,15 +88,16 @@ public partial class Compiler
                 {
                     endCursor = cursor + loop.NumLoopBlocks();
 
-#if DEBUG
-                    var endCursorCheck = cursor;
-                    while ((endCursorCheck < numBlocks) && loop.ContainsBlock(initialLayout[endCursorCheck]))
+                    if (Configuration.DEBUG)
                     {
-                        endCursorCheck++;
-                    }
+                        var endCursorCheck = cursor;
+                        while ((endCursorCheck < numBlocks) && loop.ContainsBlock(initialLayout[endCursorCheck]))
+                        {
+                            endCursorCheck++;
+                        }
 
-                    assert(endCursor == endCursorCheck);
-#endif
+                        assert(endCursor == endCursorCheck);
+                    }
                 }
                 else
                 {
