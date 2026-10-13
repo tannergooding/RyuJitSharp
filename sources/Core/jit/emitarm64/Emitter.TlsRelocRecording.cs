@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -24,7 +23,7 @@ public partial class Emitter
         assert(isValidGeneralDatasize(size));
         assert(EA_IS_CNS_SEC_RELOC(attr));
 
-        var fmt = IF_DI_2A;
+        var fmt = IF_ARM64_DI_2A;
         var id = emitNewInstrCns(attr, 0);
 
         id.idIns(INS_add);
@@ -64,4 +63,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

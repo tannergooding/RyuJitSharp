@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,7 +14,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForJTrue(GenTreeUnOp jtrue)
+    public void genCodeForJTrueArm64(GenTreeUnOp jtrue)
     {
         var block = _compiler.compCurBB;
         assert(block is not null);
@@ -32,7 +31,7 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForSelect(GenTreeOp tree)
+    public void genCodeForSelectArm64(GenTreeOp tree)
     {
         assert(tree.Oper is GT_SELECT or GT_SELECTCC or GT_SELECT_INC or GT_SELECT_INCCC or
             GT_SELECT_INV or GT_SELECT_INVCC or GT_SELECT_NEG or GT_SELECT_NEGCC);
@@ -87,7 +86,7 @@ public sealed partial class CodeGen
         assert(op2 is null || !op2.IsContained || op2.IsIntegralConst(0));
 
         var targetReg = tree.RegNum;
-        var srcReg1 = op1.IsIntegralConst(0) ? REG_ZR : genConsumeReg(op1);
+        var srcReg1 = op1.IsIntegralConst(0) ? REG_ARM64_ZR : genConsumeReg(op1);
         var prevDesc = GenConditionDesc.Get(cond);
         var attr = emitActualTypeSize(tree);
         regNumber srcReg2;
@@ -99,7 +98,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            srcReg2 = op2.IsIntegralConst(0) ? REG_ZR : genConsumeReg(op2);
+            srcReg2 = op2.IsIntegralConst(0) ? REG_ARM64_ZR : genConsumeReg(op2);
             emit.emitIns_R_R_R_COND(ins, attr, targetReg, srcReg1, srcReg2, JumpKindToInsCond(prevDesc.JumpKind1));
         }
 
@@ -121,4 +120,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

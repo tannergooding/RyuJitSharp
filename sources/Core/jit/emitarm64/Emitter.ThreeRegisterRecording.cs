@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GCInfo.GCtype;
 
@@ -11,14 +10,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
-    {
-        emitIns_R_R(ins, attr, reg1, reg2);
-    }
-
-    public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3,
+    public void emitIns_R_R_RArm64(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3,
         insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
     {
+        RequireArm64Target();
+
         var size = EA_SIZE(attr);
         var dstsize = size;
         emitAttr elemsize;
@@ -46,8 +42,8 @@ public partial class Emitter
             case INS_uadalp:
             case INS_usqadd:
             {
-                emitIns_Mov(INS_mov, dstsize, reg1, reg2, canSkip: true);
-                emitIns_R_R(ins, attr, reg1, reg3, opt, sopt);
+                emitInsMovArm64(INS_mov, dstsize, reg1, reg2, canSkip: true);
+                emitIns_R_RArm64(ins, attr, reg1, reg3, opt, sopt);
                 return;
             }
 
@@ -62,7 +58,7 @@ public partial class Emitter
                     assert(isVectorRegister(reg3));
                     assert(isValidArrangement(size, opt));
                     assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D));
-                    fmt = IF_DV_3A;
+                    fmt = IF_ARM64_DV_3A;
                     break;
                 }
                 goto case INS_lsl;
@@ -105,7 +101,7 @@ public partial class Emitter
                 {
                     assert(size == EA_8BYTE);
                 }
-                fmt = IF_DR_3A;
+                fmt = IF_ARM64_DR_3A;
                 break;
             }
 
@@ -119,15 +115,15 @@ public partial class Emitter
                     if (insOptsAnyArrangement(opt))
                     {
                         assert(opt != INS_OPTS_1D);
-                        assert(isValidVectorDatasize(size));
+                        assert(isValidVectorDatasizeArm64(size));
                         assert(isValidArrangement(size, opt));
-                        fmt = IF_DV_3A;
+                        fmt = IF_ARM64_DV_3A;
                     }
                     else
                     {
                         assert(insOptsNone(opt));
                         assert(size == EA_8BYTE);
-                        fmt = IF_DV_3E;
+                        fmt = IF_ARM64_DV_3E;
                     }
                     break;
                 }
@@ -137,7 +133,7 @@ public partial class Emitter
             case INS_adds:
             case INS_subs:
             {
-                emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, opt);
+                emitIns_R_R_R_IArm64(ins, attr, reg1, reg2, reg3, 0, opt);
                 return;
             }
 
@@ -159,13 +155,13 @@ public partial class Emitter
                 {
                     assert(isValidArrangement(size, opt));
                     assert(opt != INS_OPTS_1D);
-                    fmt = IF_DV_3A;
+                    fmt = IF_ARM64_DV_3A;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert(size == EA_8BYTE);
-                    fmt = IF_DV_3E;
+                    fmt = IF_ARM64_DV_3E;
                 }
                 break;
             }
@@ -186,13 +182,13 @@ public partial class Emitter
                 {
                     assert(isValidArrangement(size, opt));
                     assert(opt != INS_OPTS_1D);
-                    fmt = IF_DV_3A;
+                    fmt = IF_ARM64_DV_3A;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
-                    assert(isValidVectorElemsize(size));
-                    fmt = IF_DV_3E;
+                    assert(isValidVectorElemsizeArm64(size));
+                    fmt = IF_ARM64_DV_3E;
                 }
                 break;
             }
@@ -208,18 +204,18 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (insOptsAnyArrangement(opt))
                 {
-                    assert(isValidVectorDatasize(size));
+                    assert(isValidVectorDatasizeArm64(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
                     assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE));
                     assert(opt != INS_OPTS_1D);
-                    fmt = IF_DV_3B;
+                    fmt = IF_ARM64_DV_3B;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert((size == EA_8BYTE) || (size == EA_4BYTE));
-                    fmt = IF_DV_3D;
+                    fmt = IF_ARM64_DV_3D;
                 }
                 break;
             }
@@ -250,7 +246,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(isValidArrangement(size, opt));
                 assert((opt != INS_OPTS_1D) && (opt != INS_OPTS_2D));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -267,7 +263,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(isValidArrangement(size, opt));
                 assert(opt != INS_OPTS_1D);
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -276,7 +272,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(reg2 == reg3);
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 // Vector MOV is an ORR alias.
                 if (opt == INS_OPTS_NONE)
                 {
@@ -284,7 +280,7 @@ public partial class Emitter
                     opt = optMakeArrangement(size, elemsize);
                 }
                 assert(isValidArrangement(size, opt));
-                fmt = IF_DV_3C;
+                fmt = IF_ARM64_DV_3C;
                 break;
             }
 
@@ -304,7 +300,7 @@ public partial class Emitter
             {
                 if (isVectorRegister(reg1))
                 {
-                    assert(isValidVectorDatasize(size));
+                    assert(isValidVectorDatasizeArm64(size));
                     assert(isVectorRegister(reg2));
                     assert(isVectorRegister(reg3));
                     if (opt == INS_OPTS_NONE)
@@ -313,7 +309,7 @@ public partial class Emitter
                         opt = optMakeArrangement(size, elemsize);
                     }
                     assert(isValidArrangement(size, opt));
-                    fmt = IF_DV_3C;
+                    fmt = IF_ARM64_DV_3C;
                     break;
                 }
                 goto case INS_ands;
@@ -323,7 +319,7 @@ public partial class Emitter
             case INS_bics:
             case INS_eon:
             {
-                emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, INS_OPTS_NONE);
+                emitIns_R_R_R_IArm64(ins, attr, reg1, reg2, reg3, 0, INS_OPTS_NONE);
                 return;
             }
 
@@ -331,7 +327,7 @@ public partial class Emitter
             case INS_bit:
             case INS_bif:
             {
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
@@ -341,7 +337,7 @@ public partial class Emitter
                     opt = optMakeArrangement(size, elemsize);
                 }
                 assert(isValidArrangement(size, opt));
-                fmt = IF_DV_3C;
+                fmt = IF_ARM64_DV_3C;
                 break;
             }
 
@@ -363,18 +359,18 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (insOptsAnyArrangement(opt))
                 {
-                    assert(isValidVectorDatasize(size));
+                    assert(isValidVectorDatasizeArm64(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
                     assert(isValidVectorElemsizeFloat(elemsize));
                     assert(opt != INS_OPTS_1D);
-                    fmt = IF_DV_3B;
+                    fmt = IF_ARM64_DV_3B;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert(isValidScalarDatasize(size));
-                    fmt = IF_DV_3D;
+                    fmt = IF_ARM64_DV_3D;
                 }
                 break;
             }
@@ -386,7 +382,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidScalarDatasize(size));
-                fmt = IF_DV_3D;
+                fmt = IF_ARM64_DV_3D;
                 break;
             }
 
@@ -402,12 +398,12 @@ public partial class Emitter
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(insOptsAnyArrangement(opt));
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert(isValidVectorElemsizeFloat(elemsize));
                 assert(opt != INS_OPTS_1D);
-                fmt = IF_DV_3B;
+                fmt = IF_ARM64_DV_3B;
                 break;
             }
 
@@ -431,7 +427,7 @@ public partial class Emitter
             case INS_stp:
             case INS_stnp:
             {
-                emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0);
+                emitIns_R_R_R_IArm64(ins, attr, reg1, reg2, reg3, 0);
                 return;
             }
 
@@ -445,7 +441,7 @@ public partial class Emitter
                 assert(isGeneralRegisterOrZR(reg1));
                 assert(isGeneralRegisterOrZR(reg2));
                 assert(isGeneralRegisterOrSP(reg3));
-                fmt = IF_LS_3D;
+                fmt = IF_ARM64_LS_3D;
                 break;
             }
 
@@ -491,7 +487,7 @@ public partial class Emitter
                 assert(isGeneralRegisterOrZR(reg1));
                 assert(isGeneralRegisterOrZR(reg2));
                 assert(isGeneralRegisterOrSP(reg3));
-                fmt = IF_LS_3E;
+                fmt = IF_ARM64_LS_3E;
                 break;
             }
 
@@ -503,7 +499,7 @@ public partial class Emitter
             case INS_sha1p:
             case INS_sha1m:
             {
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
@@ -513,7 +509,7 @@ public partial class Emitter
                     opt = optMakeArrangement(size, elemsize);
                 }
                 assert(isValidArrangement(size, opt));
-                fmt = IF_DV_3F;
+                fmt = IF_ARM64_DV_3F;
                 break;
             }
 
@@ -546,7 +542,7 @@ public partial class Emitter
                 assert(isGeneralRegister(reg3));
                 assert(isValidArrangement(size, opt));
                 reg2 = encodingSPtoZR(reg2);
-                fmt = IF_LS_3F;
+                fmt = IF_ARM64_LS_3F;
                 break;
             }
 
@@ -561,7 +557,7 @@ public partial class Emitter
                 assert(size == EA_8BYTE);
                 assert(isValidArrangement(size, opt));
                 assert(opt != INS_OPTS_1D);
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -576,7 +572,7 @@ public partial class Emitter
                 assert(size == EA_16BYTE);
                 assert(isValidArrangement(size, opt));
                 assert(opt != INS_OPTS_2D);
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -602,7 +598,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(size == EA_8BYTE);
                 assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -630,7 +626,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(size == EA_16BYTE);
                 assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -645,13 +641,13 @@ public partial class Emitter
                 {
                     assert(size == EA_8BYTE);
                     assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
-                    fmt = IF_DV_3A;
+                    fmt = IF_ARM64_DV_3A;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert((size == EA_2BYTE) || (size == EA_4BYTE));
-                    fmt = IF_DV_3E;
+                    fmt = IF_ARM64_DV_3E;
                 }
                 break;
             }
@@ -666,16 +662,16 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (insOptsAnyArrangement(opt))
                 {
-                    assert(isValidVectorDatasize(size));
+                    assert(isValidVectorDatasizeArm64(size));
                     elemsize = optGetElemsize(opt);
                     assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
-                    fmt = IF_DV_3A;
+                    fmt = IF_ARM64_DV_3A;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert((size == EA_2BYTE) || (size == EA_4BYTE));
-                    fmt = IF_DV_3E;
+                    fmt = IF_ARM64_DV_3E;
                 }
                 break;
             }
@@ -689,7 +685,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(size == EA_16BYTE);
                 assert((opt == INS_OPTS_8H) || (opt == INS_OPTS_4S));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -700,7 +696,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(isValidArrangement(size, opt));
                 assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -711,7 +707,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(size == EA_8BYTE);
                 assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_1D));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -722,7 +718,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(size == EA_16BYTE);
                 assert((opt == INS_OPTS_16B) || (opt == INS_OPTS_2D));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -734,7 +730,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) ||
                     ((size == EA_16BYTE) && (opt == INS_OPTS_4S)));
-                fmt = IF_DV_3A;
+                fmt = IF_ARM64_DV_3A;
                 break;
             }
 
@@ -748,7 +744,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_DV_3H;
+                fmt = IF_ARM64_DV_3H;
                 break;
             }
 
@@ -761,7 +757,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_DV_3H;
+                fmt = IF_ARM64_DV_3H;
                 break;
             }
 
@@ -785,7 +781,7 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-    public void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
+    public void emitIns_R_R_R_IArm64(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber reg3, nint imm, insOpts opt = INS_OPTS_NONE, emitAttr attrReg2 = EA_UNKNOWN,
         insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
     {
@@ -817,8 +813,8 @@ public partial class Emitter
             case INS_usra:
             {
                 // RMW instructions copy the destination before applying the operation.
-                emitIns_Mov(INS_mov, attr, reg1, reg2, canSkip: true);
-                emitIns_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
+                emitInsMovArm64(INS_mov, attr, reg1, reg2, canSkip: true);
+                emitIns_R_R_IArm64(ins, attr, reg1, reg3, imm, opt, sopt);
                 return;
             }
 
@@ -830,7 +826,7 @@ public partial class Emitter
                 assert(isGeneralRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidImmShift(imm, size));
-                fmt = IF_DR_3E;
+                fmt = IF_ARM64_DR_3E;
                 break;
             }
 
@@ -851,12 +847,12 @@ public partial class Emitter
                 if (imm == 0)
                 {
                     assert(insOptsNone(opt)); // Zero immediate means no shift kind.
-                    fmt = IF_DR_3A;
+                    fmt = IF_ARM64_DR_3A;
                 }
                 else
                 {
                     assert(insOptsAnyShift(opt));
-                    fmt = IF_DR_3B;
+                    fmt = IF_ARM64_DR_3B;
                 }
                 break;
             }
@@ -871,13 +867,13 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (insOptsAnyArrangement(opt))
                 {
-                    assert(isValidVectorDatasize(size));
+                    assert(isValidVectorDatasizeArm64(size));
                     assert(isValidArrangement(size, opt));
                     elemsize = optGetElemsize(opt);
                     assert(isValidVectorElemsizeFloat(elemsize));
                     assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
                     assert(opt != INS_OPTS_1D); // Reserved encoding.
-                    fmt = IF_DV_3BI;
+                    fmt = IF_ARM64_DV_3BI;
                 }
                 else
                 {
@@ -885,7 +881,7 @@ public partial class Emitter
                     assert(isValidScalarDatasize(size));
                     elemsize = size;
                     assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
-                    fmt = IF_DV_3DI;
+                    fmt = IF_ARM64_DV_3DI;
                 }
                 break;
             }
@@ -898,7 +894,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(insOptsAnyArrangement(opt));
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
@@ -908,7 +904,7 @@ public partial class Emitter
                 {
                     noway_assert(false, "Invalid reg3");
                 }
-                fmt = IF_DV_3AI;
+                fmt = IF_ARM64_DV_3AI;
                 break;
             }
 
@@ -955,7 +951,7 @@ public partial class Emitter
                     scale = (size == EA_8BYTE) ? 3 : 2;
                 }
                 isLdSt = true;
-                fmt = IF_LS_3C;
+                fmt = IF_ARM64_LS_3C;
                 break;
             }
 
@@ -973,12 +969,12 @@ public partial class Emitter
                 assert(isGeneralRegister(reg3));
                 assert(insOptsPostIndex(opt));
                 elemsize = size;
-                assert(isValidVectorElemsize(elemsize));
+                assert(isValidVectorElemsizeArm64(elemsize));
                 assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
 
                 // Single-structure access post-indexed by a register.
                 reg2 = encodingSPtoZR(reg2);
-                fmt = IF_LS_3G;
+                fmt = IF_ARM64_LS_3G;
                 break;
             }
 
@@ -987,11 +983,11 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 assert(isValidArrangement(size, opt));
                 assert((opt == INS_OPTS_8B) || (opt == INS_OPTS_16B));
                 assert(isValidVectorIndex(size, EA_1BYTE, imm));
-                fmt = IF_DV_3G;
+                fmt = IF_ARM64_DV_3G;
                 break;
             }
 
@@ -1013,7 +1009,7 @@ public partial class Emitter
                     assert(false, "Invalid reg3");
                 }
                 assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
-                fmt = IF_DV_3AI;
+                fmt = IF_ARM64_DV_3AI;
                 break;
             }
 
@@ -1029,14 +1025,14 @@ public partial class Emitter
                     assert(size == EA_8BYTE);
                     assert((opt == INS_OPTS_4H) || (opt == INS_OPTS_2S));
                     elemsize = optGetElemsize(opt);
-                    fmt = IF_DV_3AI;
+                    fmt = IF_ARM64_DV_3AI;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert((size == EA_2BYTE) || (size == EA_4BYTE));
                     elemsize = size;
-                    fmt = IF_DV_3EI;
+                    fmt = IF_ARM64_DV_3EI;
                 }
                 if ((elemsize == EA_2BYTE) && ((reg3.SingleTypeMask & SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
                 {
@@ -1056,17 +1052,17 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (insOptsAnyArrangement(opt))
                 {
-                    assert(isValidVectorDatasize(size));
+                    assert(isValidVectorDatasizeArm64(size));
                     elemsize = optGetElemsize(opt);
                     assert((elemsize == EA_2BYTE) || (elemsize == EA_4BYTE));
-                    fmt = IF_DV_3AI;
+                    fmt = IF_ARM64_DV_3AI;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert((size == EA_2BYTE) || (size == EA_4BYTE));
                     elemsize = size;
-                    fmt = IF_DV_3EI;
+                    fmt = IF_ARM64_DV_3EI;
                 }
                 if ((elemsize == EA_2BYTE) && ((reg3.SingleTypeMask & SRBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS) == 0))
                 {
@@ -1097,7 +1093,7 @@ public partial class Emitter
                 {
                     assert(false, "Invalid reg3");
                 }
-                fmt = IF_DV_3AI;
+                fmt = IF_ARM64_DV_3AI;
                 break;
             }
 
@@ -1109,7 +1105,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(((size == EA_8BYTE) && (opt == INS_OPTS_2S)) || ((size == EA_16BYTE) && (opt == INS_OPTS_4S)));
                 assert(isValidVectorIndex(EA_16BYTE, EA_4BYTE, imm));
-                fmt = IF_DV_3AI;
+                fmt = IF_ARM64_DV_3AI;
                 break;
             }
 
@@ -1121,7 +1117,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidUimm(imm, 6));
-                fmt = IF_DV_3I;
+                fmt = IF_ARM64_DV_3I;
                 break;
             }
 
@@ -1154,7 +1150,7 @@ public partial class Emitter
             }
 
             // Load destinations must differ; indexed pairs cannot overwrite their base.
-            if (emitInsIsLoad(ins))
+            if (emitInsIsLoadArm64(ins))
             {
                 assert(reg1 != reg2);
             }
@@ -1169,7 +1165,7 @@ public partial class Emitter
             if (imm == 0)
             {
                 assert(insOptsNone(opt));
-                fmt = IF_LS_3B;
+                fmt = IF_ARM64_LS_3B;
             }
             else
             {
@@ -1178,11 +1174,11 @@ public partial class Emitter
                     imm >>= scale;
                     if ((imm >= -64) && (imm <= 63))
                     {
-                        fmt = IF_LS_3C;
+                        fmt = IF_ARM64_LS_3C;
                     }
                 }
 #if DEBUG
-                if (fmt != IF_LS_3C)
+                if (fmt != IF_ARM64_LS_3C)
                 {
                     assert(false, "Instruction cannot be encoded: IF_LS_3C");
                 }
@@ -1191,7 +1187,7 @@ public partial class Emitter
         }
         else if (isAddSub)
         {
-            var reg2IsSP = reg2 == REG_SP;
+            var reg2IsSP = reg2 == REG_ARM64_SP;
             assert(!isLdSt);
             assert(isValidGeneralDatasize(size));
             assert(isGeneralRegister(reg3));
@@ -1219,12 +1215,12 @@ public partial class Emitter
             if (insOptsAnyExtend(opt))
             {
                 assert((imm >= 0) && (imm <= 4));
-                fmt = IF_DR_3C;
+                fmt = IF_ARM64_DR_3C;
             }
             else if (insOptsAluShift(opt))
             {
                 assert(isValidImmShift(imm, size) && (imm != 0));
-                fmt = IF_DR_3B;
+                fmt = IF_ARM64_DR_3B;
             }
             else if (imm == 0)
             {
@@ -1233,11 +1229,11 @@ public partial class Emitter
                 {
                     // SP as the first source requires the extended form with LSL zero.
                     opt = INS_OPTS_LSL;
-                    fmt = IF_DR_3C;
+                    fmt = IF_ARM64_DR_3C;
                 }
                 else
                 {
-                    fmt = IF_DR_3A;
+                    fmt = IF_ARM64_DR_3A;
                 }
             }
             else
@@ -1258,7 +1254,7 @@ public partial class Emitter
         id.idGCrefReg2(GCT_NONE);
         if (attrReg2 != EA_UNKNOWN)
         {
-            assert((fmt == IF_LS_3B) || (fmt == IF_LS_3C));
+            assert((fmt == IF_ARM64_LS_3B) || (fmt == IF_ARM64_LS_3C));
             if (EA_IS_GCREF(attrReg2))
             {
                 id.idGCrefReg2(GCT_GCREF);
@@ -1359,7 +1355,7 @@ public partial class Emitter
 
         var id = emitNewInstr(attr);
         id.idIns(ins);
-        id.idInsFmt(IF_LS_3A);
+        id.idInsFmt(IF_ARM64_LS_3A);
         id.idInsOpt(opt);
         id.idReg1(reg1);
         id.idReg2(reg2);
@@ -1370,4 +1366,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

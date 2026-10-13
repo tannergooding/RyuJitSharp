@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -26,7 +25,7 @@ public partial class Emitter
         var id = emitNewInstrJmp();
 
         id.idIns(INS_adrp);
-        id.idInsFmt(IF_DI_1E);
+        id.idInsFmt(IF_ARM64_DI_1E);
         id.idInsOpt(INS_OPTS_NONE);
         id.idOpSize(size);
         id.idAddr().iiaAddr = (byte*)addr;
@@ -43,12 +42,12 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
 
-        emitIns_R_R_I(INS_ldr, attr, reg2, reg1, addr);
+        emitIns_R_R_IArm64(INS_ldr, attr, reg2, reg1, addr);
 
         var addId = emitNewInstr(attr);
         assert(id.idIsReloc());
         addId.idIns(INS_add);
-        addId.idInsFmt(IF_DI_2A);
+        addId.idInsFmt(IF_ARM64_DI_2A);
         addId.idInsOpt(INS_OPTS_NONE);
         addId.idOpSize(size);
         addId.idAddr().iiaAddr = (byte*)addr;
@@ -60,4 +59,3 @@ public partial class Emitter
         appendToCurIG(addId);
     }
 }
-#endif

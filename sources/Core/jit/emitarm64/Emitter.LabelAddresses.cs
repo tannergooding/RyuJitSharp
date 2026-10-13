@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
@@ -12,7 +11,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_D(instruction ins, emitAttr attr, uint offs, regNumber reg)
+    private void emitIns_R_DArm64(instruction ins, emitAttr attr, uint offs, regNumber reg)
     {
         NYI("emitIns_R_D");
     }
@@ -23,7 +22,7 @@ public partial class Emitter
 
         var format = ins switch
         {
-            INS_adr => IF_LARGEADR,
+            INS_adr => IF_ARM64_LARGEADR,
             _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Unexpected ARM64 label-address instruction {ins}."),
         };
 
@@ -70,7 +69,7 @@ public partial class Emitter
 
         var format = ins switch
         {
-            INS_adr => IF_LARGEADR,
+            INS_adr => IF_ARM64_LARGEADR,
             _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Unexpected ARM64 label-address instruction {ins}."),
         };
 
@@ -101,4 +100,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

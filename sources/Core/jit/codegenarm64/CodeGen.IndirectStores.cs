@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,17 +14,15 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreInd(GenTreeStoreInd tree)
+    public void genCodeForStoreIndArm64(GenTreeStoreInd tree)
     {
         assert(tree.Oper is GT_STOREIND);
 
-#if FEATURE_SIMD
-        if (tree.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && tree.Type is TYP_SIMD12)
         {
-            genStoreIndTypeSimd12(tree);
+            genStoreIndTypeSimd12Arm64(tree);
             return;
         }
-#endif
 
         var data = tree.Data;
         var addr = tree.Addr;
@@ -34,9 +31,9 @@ public sealed partial class CodeGen
         {
             genConsumeOperands(tree);
 
-            noway_assert(data.RegNum != REG_WRITE_BARRIER_DST);
-            genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
-            genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
+            noway_assert(data.RegNum != REG_WRITE_BARRIER_DST_ARM64);
+            genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST_ARM64);
+            genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC_ARM64);
             genGCWriteBarrier(writeBarrierForm);
         }
         else
@@ -51,7 +48,7 @@ public sealed partial class CodeGen
             if (data.IsContainedIntOrIImmed)
             {
                 assert(data.IsIntegralConst(0));
-                dataReg = REG_ZR;
+                dataReg = REG_ARM64_ZR;
             }
             else
             {
@@ -65,13 +62,13 @@ public sealed partial class CodeGen
 
             if (varTypeUsesMaskReg(type))
             {
-                attr = EA_SCALABLE;
+                attr = EA_SCALABLE_ARM64;
             }
 
             if (tree.IsVolatile)
             {
                 var needsBarrier = true;
-                ins = genGetVolatileLdStInsNotPorted(ins, dataReg, tree, ref needsBarrier);
+                ins = genGetVolatileLdStIns(ins, dataReg, tree, ref needsBarrier);
 
                 if (needsBarrier)
                 {
@@ -79,14 +76,19 @@ public sealed partial class CodeGen
                 }
             }
 
-            emitInsLoadStoreOpNotPorted(ins, attr, dataReg, tree);
+            Emitter.emitInsLoadStoreOpArm64(ins, attr, dataReg, tree);
             genUpdateLife(tree);
         }
     }
 
-#if FEATURE_SIMD
-    public void genStoreIndTypeSimd12(GenTreeStoreInd treeNode)
+    public void genStoreIndTypeSimd12Arm64(GenTreeStoreInd treeNode)
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 SIMD12 indirect stores are unavailable for this target.");
+        }
+
         assert(treeNode.Oper is GT_STOREIND);
         assert(GCInfo.gcIsWriteBarrierCandidate(treeNode) == GCInfo.WriteBarrierForm.WBF_NoBarrier);
 
@@ -102,20 +104,8 @@ public sealed partial class CodeGen
 
         Emitter.emitIns_R_R(INS_str, EA_8BYTE, dataReg, addrReg);
         // The remaining upper 32 bits occupy SIMD lane 2 and must be extracted to a GPR.
-        Emitter.emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
-        Emitter.emitIns_R_R_I(INS_str, EA_4BYTE, tmpReg, addrReg, 8);
-    }
-#endif
-
-    private instruction genGetVolatileLdStInsNotPorted(
-        instruction currentIns, regNumber targetReg, GenTreeIndir indir, ref bool needsBarrier)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 volatile indirect-store instruction selection is not yet ported.");
+        Emitter.emitIns_R_R_IArm64(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+        Emitter.emitIns_R_R_IArm64(INS_str, EA_4BYTE, tmpReg, addrReg, 8);
     }
 
-    private void emitInsLoadStoreOpNotPorted(instruction ins, emitAttr attr, regNumber dataReg, GenTreeStoreInd tree)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 indirect-store emitter recording is not yet ported.");
-    }
 }
-#endif

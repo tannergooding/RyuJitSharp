@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -214,16 +213,6 @@ public partial class Emitter
         return (value >= 0) && (value < 0x800);
     }
 
-    private static bool isGeneralRegisterOrSP(regNumber reg)
-    {
-        return isGeneralRegister(reg) || (reg == REG_SP);
-    }
-
-    private static regNumber encodingSPtoZR(regNumber reg)
-    {
-        return (reg == REG_SP) ? REG_ZR : reg;
-    }
-
     private static instruction insReverse(instruction ins)
     {
         return ins switch
@@ -240,4 +229,3 @@ public partial class Emitter
         };
     }
 }
-#endif

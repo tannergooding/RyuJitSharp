@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public unsafe void emitDispInsHex(instrDesc id, byte* code, nuint sz)
+    public unsafe void emitDispInsHexArm64(instrDesc id, byte* code, nuint sz)
     {
         assert(_compiler is not null);
         if (!_compiler.opts.disCodeBytes)
@@ -32,7 +31,7 @@ public partial class Emitter
         }
     }
 
-    private unsafe void emitDispLargeJmp(instrDesc id, bool isNew, bool doffs, bool asmfm,
+    private unsafe void emitDispLargeJmpArm64(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset, byte* pCode, nuint sz, insGroup? ig)
     {
         // Do not modify the recorded descriptor: these two branches exist only for display.
@@ -45,31 +44,31 @@ public partial class Emitter
             case INS_cbz:
             {
                 reverseIns = INS_cbnz;
-                reverseFmt = IF_BI_1A;
+                reverseFmt = IF_ARM64_BI_1A;
                 break;
             }
             case INS_cbnz:
             {
                 reverseIns = INS_cbz;
-                reverseFmt = IF_BI_1A;
+                reverseFmt = IF_ARM64_BI_1A;
                 break;
             }
             case INS_tbz:
             {
                 reverseIns = INS_tbnz;
-                reverseFmt = IF_BI_1B;
+                reverseFmt = IF_ARM64_BI_1B;
                 break;
             }
             case INS_tbnz:
             {
                 reverseIns = INS_tbz;
-                reverseFmt = IF_BI_1B;
+                reverseFmt = IF_ARM64_BI_1B;
                 break;
             }
             default:
             {
                 reverseIns = emitJumpKindToIns(emitReverseJumpKindArm64(emitInsToJumpKindArm64(ins)));
-                reverseFmt = IF_BI_0B;
+                reverseFmt = IF_ARM64_BI_0B;
                 break;
             }
         }
@@ -81,14 +80,14 @@ public partial class Emitter
         pidJmp.idDebugOnlyInfo(id.idDebugOnlyInfo());
 
         nuint bcondSizeOrZero = pCode == null ? 0u : 4u;
-        emitDispInsHelp(pidJmp, false, doffs, asmfm, offset, pCode, bcondSizeOrZero, null);
+        emitDispInsHelpArm64(pidJmp, false, doffs, asmfm, offset, pCode, bcondSizeOrZero, null);
         pCode = unchecked(pCode + bcondSizeOrZero);
         offset = unchecked(offset + 4);
 
         // A fresh descriptor corresponds to clearing the native inline descriptor with memset.
         pidJmp = new instrDescJmp();
         pidJmp.idIns(INS_b);
-        pidJmp.idInsFmt(IF_LARGEJMP);
+        pidJmp.idInsFmt(IF_ARM64_LARGEJMP);
         var recordedJump = (instrDescJmp)id;
         if (id.idIsBound())
         {
@@ -102,21 +101,20 @@ public partial class Emitter
         pidJmp.idDebugOnlyInfo(id.idDebugOnlyInfo());
 
         nuint brSizeOrZero = pCode == null ? 0u : 4u;
-        emitDispInsHelp(pidJmp, isNew, doffs, asmfm, offset, pCode, brSizeOrZero, ig);
+        emitDispInsHelpArm64(pidJmp, isNew, doffs, asmfm, offset, pCode, brSizeOrZero, ig);
     }
 
-    public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
+    public unsafe void emitDispInsArm64(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
-        if ((id.idInsFmt() == IF_LARGEJMP) && id.idIsBound())
+        if ((id.idInsFmt() == IF_ARM64_LARGEJMP) && id.idIsBound())
         {
             // The large conditional branch expands to an inverted condition followed by b.
-            emitDispLargeJmp(id, isNew, doffs, asmfm, offset, code, size, ig);
+            emitDispLargeJmpArm64(id, isNew, doffs, asmfm, offset, code, size, ig);
         }
         else
         {
-            emitDispInsHelp(id, isNew, doffs, asmfm, offset, code, size, ig);
+            emitDispInsHelpArm64(id, isNew, doffs, asmfm, offset, code, size, ig);
         }
     }
 }
-#endif

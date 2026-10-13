@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.insBarrier;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    internal bool emitTryCoalesceLastMemBarrier(insBarrier barrier)
+    private bool emitTryCoalesceLastMemBarrierArm64(insBarrier barrier)
     {
         // The emitter clears this reference on memory accesses and instruction-group changes.
         var lastMemBarrier = emitLastMemBarrier;
@@ -35,4 +34,3 @@ public partial class Emitter
         return true;
     }
 }
-#endif

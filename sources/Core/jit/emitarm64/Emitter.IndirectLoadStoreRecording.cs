@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -15,8 +14,9 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
+    public void emitInsLoadStoreOpArm64(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
     {
+        RequireArm64Target();
         var addr = indir.Addr;
 
         if (addr.IsContained)
@@ -53,25 +53,25 @@ public partial class Emitter
                     {
                         if (lsl > 0)
                         {
-                            emitIns_R_R_R_I(
+                            emitIns_R_R_R_IArm64(
                                 INS_add, addType, tmpReg, memBase.RegNum, index.RegNum, lsl, INS_OPTS_LSL);
                         }
                         else
                         {
-                            emitIns_R_R_R(INS_add, addType, tmpReg, memBase.RegNum, index.RegNum);
+                            emitIns_R_R_RArm64(INS_add, addType, tmpReg, memBase.RegNum, index.RegNum);
                         }
 
-                        noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
-                        emitIns_R_R_I(ins, attr, dataReg, tmpReg, offset);
+                        noway_assert(emitInsIsLoadArm64(ins) || (tmpReg != dataReg));
+                        emitIns_R_R_IArm64(ins, attr, dataReg, tmpReg, offset);
                     }
                     else
                     {
                         codeGen.instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
-                        emitIns_R_R_R(INS_add, addType, tmpReg, memBase.RegNum, tmpReg);
+                        emitIns_R_R_RArm64(INS_add, addType, tmpReg, memBase.RegNum, tmpReg);
 
-                        noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
+                        noway_assert(emitInsIsLoadArm64(ins) || (tmpReg != dataReg));
                         noway_assert(tmpReg != index.RegNum);
-                        emitIns_R_R_R_I(
+                        emitIns_R_R_R_IArm64(
                             ins, attr, dataReg, tmpReg, index.RegNum, lsl, INS_OPTS_LSL);
                     }
                 }
@@ -99,7 +99,7 @@ public partial class Emitter
                 }
                 else
                 {
-                    emitIns_R_R_R(ins, attr, dataReg, memBase.RegNum, index.RegNum);
+                    emitIns_R_R_RArm64(ins, attr, dataReg, memBase.RegNum, index.RegNum);
                 }
             }
             else if (addr.Oper is GT_LCL_ADDR)
@@ -116,19 +116,19 @@ public partial class Emitter
             }
             else if (addr.Oper.IsCnsIntOrI && addr.AsIntCon().IsIconHandle(GTF_ICON_TLS_HDL))
             {
-                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr.AsIntCon().IconValue);
+                emitIns_R_R_IArm64(ins, attr, dataReg, REG_ARM64_R18, addr.AsIntCon().IconValue);
             }
             else if (emitIns_valid_imm_for_ldst_offset(indir.Offset, indir.Type.EmitSize))
             {
                 assert(memBase is not null);
-                emitIns_R_R_I(ins, attr, dataReg, memBase.RegNum, indir.Offset);
+                emitIns_R_R_IArm64(ins, attr, dataReg, memBase.RegNum, indir.Offset);
             }
             else
             {
                 assert(memBase is not null);
                 var tmpReg = codeGen.InternalRegisters.GetSingle(indir);
                 codeGen.instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, indir.Offset);
-                emitIns_R_R_R(ins, attr, dataReg, memBase.RegNum, tmpReg);
+                emitIns_R_R_RArm64(ins, attr, dataReg, memBase.RegNum, tmpReg);
             }
         }
         else
@@ -141,8 +141,7 @@ public partial class Emitter
                 assert(!varDsc.lvTracked);
             }
 #endif
-            emitIns_R_R(ins, attr, dataReg, addr.RegNum);
+            emitIns_R_RArm64(ins, attr, dataReg, addr.RegNum);
         }
     }
 }
-#endif

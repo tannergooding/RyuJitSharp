@@ -3,21 +3,20 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public unsafe partial class Emitter
 {
-    public void emitIns_I(instruction ins, emitAttr attr, nint imm)
+    public void emitIns_IArm64(instruction ins, emitAttr attr, nint imm)
     {
         var fmt = IF_NONE;
         if (ins == INS_BREAKPOINT)
         {
             if ((imm & 0x0000ffff) == imm)
             {
-                fmt = IF_SI_0A;
+                fmt = IF_ARM64_SI_0A;
             }
             else
             {
@@ -39,7 +38,7 @@ public unsafe partial class Emitter
         appendToCurIG(id);
     }
 
-    public void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE)
+    public void emitIns_RArm64(instruction ins, emitAttr attr, regNumber reg, insOpts opt = INS_OPTS_NONE)
     {
         insFormat fmt;
         switch (ins)
@@ -48,7 +47,7 @@ public unsafe partial class Emitter
             case INS_ret:
             {
                 assert(isGeneralRegister(reg));
-                fmt = IF_BR_1A;
+                fmt = IF_ARM64_BR_1A;
                 break;
             }
 
@@ -62,13 +61,13 @@ public unsafe partial class Emitter
             {
                 assert(isGeneralRegister(reg));
                 assert(attr == EA_8BYTE);
-                fmt = (ins == INS_dczva) ? IF_SR_1A : IF_PC_1A;
+                fmt = (ins == INS_dczva) ? IF_ARM64_SR_1A : IF_ARM64_PC_1A;
                 break;
             }
 
             case INS_mrs_tpid0:
             {
-                fmt = IF_SR_1A;
+                fmt = IF_ARM64_SR_1A;
                 break;
             }
 
@@ -87,13 +86,19 @@ public unsafe partial class Emitter
         appendToCurIG(id);
     }
 
-    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm,
+    public void emitIns_R_IArm64(instruction ins, emitAttr attr, regNumber reg, nint imm,
         insOpts opt = INS_OPTS_NONE, insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
 #endif
         )
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 register-immediate instruction recording requires ARM64.");
+        }
+
         var size = EA_SIZE(attr);
         var elemsize = EA_UNKNOWN;
         var fmt = IF_NONE;
@@ -115,7 +120,7 @@ public unsafe partial class Emitter
                 {
                     imm = (nint)bmi.immNRS;
                     assert(isValidImmNRS(unchecked((nuint)imm), size));
-                    fmt = IF_DI_1C;
+                    fmt = IF_ARM64_DI_1C;
                 }
                 break;
             }
@@ -135,7 +140,7 @@ public unsafe partial class Emitter
                 assert(imm == emitDecodeHalfwordImm(hwi, size));
                 imm = (nint)hwi.immHWVal;
                 canEncode = true;
-                fmt = IF_DI_1B;
+                fmt = IF_ARM64_DI_1B;
                 break;
             }
 
@@ -152,7 +157,7 @@ public unsafe partial class Emitter
                     assert(isGeneralRegister(reg));
                     imm = (nint)hwi.immHWVal;
                     assert(isValidImmHWVal(unchecked((nuint)imm), size));
-                    fmt = IF_DI_1B;
+                    fmt = IF_ARM64_DI_1B;
                     break;
                 }
 
@@ -164,7 +169,7 @@ public unsafe partial class Emitter
                     imm = (nint)hwi.immHWVal;
                     ins = INS_movn;
                     assert(isValidImmHWVal(unchecked((nuint)imm), size));
-                    fmt = IF_DI_1B;
+                    fmt = IF_ARM64_DI_1B;
                     break;
                 }
 
@@ -176,7 +181,7 @@ public unsafe partial class Emitter
                     reg = encodingSPtoZR(reg);
                     imm = (nint)bmi.immNRS;
                     assert(isValidImmNRS(unchecked((nuint)imm), size));
-                    fmt = IF_DI_1D;
+                    fmt = IF_ARM64_DI_1D;
                     break;
                 }
                 else
@@ -188,7 +193,7 @@ public unsafe partial class Emitter
 
             case INS_movi:
             {
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 assert(isVectorRegister(reg));
                 if (insOptsNone(opt) && (size == EA_8BYTE))
                 {
@@ -223,7 +228,7 @@ public unsafe partial class Emitter
                     }
                     imm = imm8;
                     assert(isValidUimm(imm, 8));
-                    fmt = IF_DV_1B;
+                    fmt = IF_ARM64_DV_1B;
                     break;
                 }
                 else
@@ -236,7 +241,7 @@ public unsafe partial class Emitter
                     {
                         imm = (nint)bsi.immBSVal;
                         assert(isValidImmBSVal(unchecked((nuint)imm), size));
-                        fmt = IF_DV_1B;
+                        fmt = IF_ARM64_DV_1B;
                         break;
                     }
 
@@ -249,7 +254,7 @@ public unsafe partial class Emitter
                             imm = (nint)bsi.immBSVal;
                             ins = INS_mvni;
                             assert(isValidImmBSVal(unchecked((nuint)imm), size));
-                            fmt = IF_DV_1B;
+                            fmt = IF_ARM64_DV_1B;
                             break;
                         }
                     }
@@ -261,7 +266,7 @@ public unsafe partial class Emitter
             case INS_bic:
             case INS_mvni:
             {
-                assert(isValidVectorDatasize(size));
+                assert(isValidVectorDatasizeArm64(size));
                 assert(isVectorRegister(reg));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
@@ -273,7 +278,7 @@ public unsafe partial class Emitter
                 {
                     imm = (nint)bsi.immBSVal;
                     assert(isValidImmBSVal(unchecked((nuint)imm), size));
-                    fmt = IF_DV_1B;
+                    fmt = IF_ARM64_DV_1B;
                     break;
                 }
                 break;
@@ -293,7 +298,7 @@ public unsafe partial class Emitter
                     }
                     assert(isValidUimm(imm, 12));
                     canEncode = true;
-                    fmt = IF_DI_1A;
+                    fmt = IF_ARM64_DI_1A;
                 }
                 else if (canEncodeWithShiftImmBy12(imm))
                 {
@@ -307,7 +312,7 @@ public unsafe partial class Emitter
                     imm >>= 12;
                     assert(isValidUimm(imm, 12));
                     canEncode = true;
-                    fmt = IF_DI_1A;
+                    fmt = IF_ARM64_DI_1A;
                 }
                 else
                 {
@@ -341,4 +346,3 @@ public unsafe partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

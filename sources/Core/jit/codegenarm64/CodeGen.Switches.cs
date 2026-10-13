@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genTableBasedSwitch(GenTree tree)
+    public void genTableBasedSwitchArm64(GenTree tree)
     {
         var operands = tree.AsOp();
         genConsumeOperands(operands);
@@ -38,11 +37,11 @@ public sealed partial class CodeGen
         Emitter.emitIns_R(INS_br, emitActualTypeSize(TYP_I_IMPL), baseReg);
     }
 
-    public unsafe void genJumpTable(GenTree tree)
+    public unsafe void genJumpTableArm64(GenTree tree)
     {
         var tableBase = genEmitJumpTable(tree, relativeAddr: true);
         // The handle identifies inline data, not an EE static field.
-        Emitter.emitIns_R_C(INS_adr, EA_PTRSIZE, tree.RegNum, REG_NA,
+        Emitter.emitIns_R_C(INS_adr, EA_PTRSIZE, tree.RegNum, REG_ARM64_NA,
             Compiler.eeFindJitDataOffs(tableBase), 0);
         genProduceReg(tree);
     }
@@ -53,4 +52,3 @@ public sealed partial class CodeGen
             "ARM64 block-relative address recording is not ported.");
     }
 }
-#endif

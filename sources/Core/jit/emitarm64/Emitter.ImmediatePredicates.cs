@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public unsafe partial class Emitter
@@ -98,12 +97,6 @@ public unsafe partial class Emitter
     private static bool canEncodeWithShiftImmBy12(long imm)
     {
         return TargetCostEstimation.CanEncodeArm64ShiftedAddImmediate(imm);
-    }
-
-    private static uint getBitWidth(emitAttr size)
-    {
-        assert(size <= EA_8BYTE);
-        return (uint)size * BITS_PER_BYTE;
     }
 
     private static ulong normalizeImm64(long imm, emitAttr size)
@@ -267,4 +260,3 @@ public unsafe partial class Emitter
         return canEncode;
     }
 }
-#endif

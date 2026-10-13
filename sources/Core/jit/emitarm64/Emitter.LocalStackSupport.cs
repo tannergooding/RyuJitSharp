@@ -3,16 +3,10 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static regNumber encodingZRtoSP(regNumber reg)
-    {
-        return (reg == REG_ZR) ? REG_SP : reg;
-    }
-
     public static bool isPredicateRegister(regNumber reg)
     {
         return (reg >= REG_PREDICATE_FIRST) && (reg <= REG_PREDICATE_LAST);
@@ -54,13 +48,12 @@ public partial class Emitter
 
         if (immFits)
         {
-            emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+            emitIns_R_R_IArm64(ins, attr, reg1, reg2, imm);
         }
         else
         {
             codeGen.instGen_Set_Reg_To_Imm(attr, reg1, imm);
-            emitIns_R_R_R(ins, attr, reg1, reg2, reg1);
+            emitIns_R_R_RArm64(ins, attr, reg1, reg2, reg1);
         }
     }
 }
-#endif

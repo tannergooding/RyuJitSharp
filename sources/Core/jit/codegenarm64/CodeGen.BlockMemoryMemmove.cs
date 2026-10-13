@@ -18,7 +18,7 @@ public sealed partial class CodeGen
     // Native LinearScan::MaxInternalCount is five, which bounds the SIMD temporary array here.
     private const int MemmoveMaxInternalRegisterCount = 5;
 
-    public void genCodeForMemmove(GenTreeBlk node)
+    public void genCodeForMemmoveArm64(GenTreeBlk node)
     {
         var srcIndir = node.Data.AsIndir();
         assert(srcIndir.IsContained && !srcIndir.Addr.IsContained);
@@ -26,13 +26,13 @@ public sealed partial class CodeGen
         var dst = genConsumeReg(node.Addr);
         var src = genConsumeReg(srcIndir.Addr);
         var size = node.Layout.Size;
-        var simdSize = (uint)FP_REGSIZE_BYTES;
+        var simdSize = (uint)FP_REGSIZE_BYTES_ARM64;
 
         // Eventually, emit CPYP+CPYM+CPYE on armv9 for large sizes here.
         // Keep individual ldr/str instructions and let peephole optimization form pairs (dotnet/runtime#64815).
         if (size >= simdSize)
         {
-            var allFloatRegisters = new regMaskTP(SRBM_ALLFLOAT);
+            var allFloatRegisters = new regMaskTP(SRBM_ALLFLOAT_ARM64);
             var numberOfSimdRegs = InternalRegisters.Count(node, allFloatRegisters);
             assert(numberOfSimdRegs <= MemmoveMaxInternalRegisterCount);
             Span<regNumber> tempRegs = stackalloc regNumber[MemmoveMaxInternalRegisterCount];
@@ -53,7 +53,7 @@ public sealed partial class CodeGen
             var loadStoreSize = 1u << BitOperations.Log2(size);
             if (loadStoreSize == size)
             {
-                var allIntRegisters = new regMaskTP(SRBM_ALLINT);
+                var allIntRegisters = new regMaskTP(SRBM_ALLINT_ARM64);
                 var tempReg = InternalRegisters.GetSingle(node, allIntRegisters);
                 EmitMemmoveLoadStore(true, loadStoreSize, tempReg, src, 0);
                 EmitMemmoveLoadStore(false, loadStoreSize, tempReg, dst, 0);
@@ -62,7 +62,7 @@ public sealed partial class CodeGen
             {
                 assert(InternalRegisters.Count(node) == 2);
 
-                var allIntRegisters = new regMaskTP(SRBM_ALLINT);
+                var allIntRegisters = new regMaskTP(SRBM_ALLINT_ARM64);
                 var tempReg1 = InternalRegisters.Extract(node, allIntRegisters);
                 var tempReg2 = InternalRegisters.Extract(node, allIntRegisters);
                 var tailOffset = size - loadStoreSize;
@@ -132,11 +132,11 @@ public sealed partial class CodeGen
 
         if (load)
         {
-            emitter.emitIns_R_R_I(ins_Load(memType), emitTypeSize(memType), tempReg, addressReg, displacement);
+            emitter.emitIns_R_R_IArm64(ins_Load(memType), emitTypeSize(memType), tempReg, addressReg, displacement);
         }
         else
         {
-            emitter.emitIns_R_R_I(ins_Store(memType), emitTypeSize(memType), tempReg, addressReg, displacement);
+            emitter.emitIns_R_R_IArm64(ins_Store(memType), emitTypeSize(memType), tempReg, addressReg, displacement);
         }
     }
 }

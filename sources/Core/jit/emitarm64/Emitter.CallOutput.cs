@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.regMask;
 
@@ -52,11 +51,11 @@ public partial class Emitter
 
         if (id.idGCref() == GCT_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
         else if (id.idGCref() == GCT_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
 
         if (id.idIsLargeCall())
@@ -64,16 +63,16 @@ public partial class Emitter
             var call = (instrDescCGCA)id;
             if (call.idSecondGCref() == GCT_GCREF)
             {
-                gcrefRegs |= new regMaskTP(SRBM_INTRET_1);
+                gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
             else if (call.idSecondGCref() == GCT_BYREF)
             {
-                byrefRegs |= new regMaskTP(SRBM_INTRET_1);
+                byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
 
             if (call.hasAsyncContinuationRet())
             {
-                gcrefRegs |= new regMaskTP(REG_ASYNC_CONTINUATION_RET.SingleTypeMask);
+                gcrefRegs |= TargetRuntimeMetadata.AsyncContinuationReturnRegisterMask;
             }
         }
 
@@ -98,4 +97,3 @@ public partial class Emitter
         return CallInstructionSize;
     }
 }
-#endif

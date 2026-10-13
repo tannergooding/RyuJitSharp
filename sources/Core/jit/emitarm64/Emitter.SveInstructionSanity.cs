@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64 && DEBUG
+#if DEBUG
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -15,7 +15,7 @@ public partial class Emitter
         nint imm;
         switch (id.idInsFmt())
         {
-            case IF_SVE_CK_2A:
+            case IF_ARM64_SVE_CK_2A:
             {
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
@@ -23,8 +23,8 @@ public partial class Emitter
             }
 
             // Scalable.
-            case IF_SVE_AA_3A:
-            case IF_SVE_CM_3A:
+            case IF_ARM64_SVE_AA_3A:
+            case IF_ARM64_SVE_CM_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -35,8 +35,8 @@ public partial class Emitter
             }
 
             // Scalable, .S or .D.
-            case IF_SVE_AC_3A:
-            case IF_SVE_CL_3A:
+            case IF_ARM64_SVE_AC_3A:
+            case IF_ARM64_SVE_CL_3A:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -47,7 +47,7 @@ public partial class Emitter
             }
 
             // Scalable, merge or zero predicate.
-            case IF_SVE_AH_3A:
+            case IF_ARM64_SVE_AH_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -58,7 +58,7 @@ public partial class Emitter
             }
 
             // Scalable, with shift immediate.
-            case IF_SVE_AM_2A:
+            case IF_ARM64_SVE_AM_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -69,7 +69,7 @@ public partial class Emitter
             }
 
             // Scalable wide.
-            case IF_SVE_AO_3A:
+            case IF_ARM64_SVE_AO_3A:
             {
                 assert(insOptsScalableWide(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -80,11 +80,11 @@ public partial class Emitter
             }
 
             // Scalable to/from SIMD scalar.
-            case IF_SVE_AF_3A:
-            case IF_SVE_AK_3A:
-            case IF_SVE_CN_3A:
-            case IF_SVE_CP_3A:
-            case IF_SVE_CR_3A:
+            case IF_ARM64_SVE_AF_3A:
+            case IF_ARM64_SVE_AK_3A:
+            case IF_ARM64_SVE_CN_3A:
+            case IF_ARM64_SVE_CP_3A:
+            case IF_ARM64_SVE_CR_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -95,8 +95,8 @@ public partial class Emitter
             }
 
             // Scalable to FP SIMD scalar.
-            case IF_SVE_HE_3A:
-            case IF_SVE_HJ_3A:
+            case IF_ARM64_SVE_HE_3A:
+            case IF_ARM64_SVE_HJ_3A:
             {
                 assert(insOptsScalableFloat(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -107,8 +107,8 @@ public partial class Emitter
             }
 
             // Scalable to general register.
-            case IF_SVE_CO_3A:
-            case IF_SVE_CS_3A:
+            case IF_ARM64_SVE_CO_3A:
+            case IF_ARM64_SVE_CS_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isGeneralRegister(id.idReg1()));
@@ -119,10 +119,10 @@ public partial class Emitter
             }
 
             // Four scalable registers; the locations of reg3 and reg4 can switch.
-            case IF_SVE_AR_4A:
-            case IF_SVE_AS_4A:
-            case IF_SVE_GI_4A:
-            case IF_SVE_HU_4A:
+            case IF_ARM64_SVE_AR_4A:
+            case IF_ARM64_SVE_AS_4A:
+            case IF_ARM64_SVE_GI_4A:
+            case IF_ARM64_SVE_HU_4A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -134,18 +134,18 @@ public partial class Emitter
             }
 
             // Scalable, unpredicated.
-            case IF_SVE_AT_3A:
-            case IF_SVE_BG_3A:
-            case IF_SVE_BZ_3A:
-            case IF_SVE_BZ_3A_A:
-            case IF_SVE_EH_3A:
-            case IF_SVE_EL_3A:
-            case IF_SVE_EM_3A:
-            case IF_SVE_EX_3A:
-            case IF_SVE_FL_3A:
-            case IF_SVE_FM_3A:
-            case IF_SVE_FW_3A:
-            case IF_SVE_GF_3A:
+            case IF_ARM64_SVE_AT_3A:
+            case IF_ARM64_SVE_BG_3A:
+            case IF_ARM64_SVE_BZ_3A:
+            case IF_ARM64_SVE_BZ_3A_A:
+            case IF_ARM64_SVE_EH_3A:
+            case IF_ARM64_SVE_EL_3A:
+            case IF_ARM64_SVE_EM_3A:
+            case IF_ARM64_SVE_EX_3A:
+            case IF_ARM64_SVE_FL_3A:
+            case IF_ARM64_SVE_FM_3A:
+            case IF_ARM64_SVE_FW_3A:
+            case IF_ARM64_SVE_GF_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -156,7 +156,7 @@ public partial class Emitter
             }
 
             // Scalable, unpredicated, narrowing.
-            case IF_SVE_GC_3A:
+            case IF_ARM64_SVE_GC_3A:
             {
                 assert(insOptsScalableWide(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -167,7 +167,7 @@ public partial class Emitter
             }
 
             // Scalable without predicates, with general-purpose source registers.
-            case IF_SVE_BA_3A:
+            case IF_ARM64_SVE_BA_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -177,7 +177,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BH_3A:
+            case IF_ARM64_SVE_BH_3A:
             {
                 assert((id.idInsOpt() == INS_OPTS_SCALABLE_S) || (id.idInsOpt() == INS_OPTS_SCALABLE_D));
                 assert(isVectorRegister(id.idReg1()));
@@ -187,8 +187,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BH_3B:
-            case IF_SVE_BH_3B_A:
+            case IF_ARM64_SVE_BH_3B:
+            case IF_ARM64_SVE_BH_3B_A:
             {
                 assert((id.idInsOpt() == INS_OPTS_SCALABLE_D_SXTW) || (id.idInsOpt() == INS_OPTS_SCALABLE_D_UXTW));
                 assert(isVectorRegister(id.idReg1()));
@@ -198,8 +198,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BL_1A:
-            case IF_SVE_BM_1A:
+            case IF_ARM64_SVE_BL_1A:
+            case IF_ARM64_SVE_BM_1A:
             {
                 assert(id.idInsOpt() == INS_OPTS_NONE);
                 assert(isGeneralRegister(id.idReg1()));
@@ -208,8 +208,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BN_1A:
-            case IF_SVE_BP_1A:
+            case IF_ARM64_SVE_BN_1A:
+            case IF_ARM64_SVE_BP_1A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -218,8 +218,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BS_1A:
-            case IF_SVE_BT_1A:
+            case IF_ARM64_SVE_BS_1A:
+            case IF_ARM64_SVE_BT_1A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -228,7 +228,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BO_1A:
+            case IF_ARM64_SVE_BO_1A:
             {
                 assert(id.idInsOpt() == INS_OPTS_NONE);
                 assert(isGeneralRegister(id.idReg1()));
@@ -237,8 +237,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BQ_2A:
-            case IF_SVE_BQ_2B:
+            case IF_ARM64_SVE_BQ_2A:
+            case IF_ARM64_SVE_BQ_2B:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
                 assert(isVectorRegister(id.idReg1()));
@@ -247,7 +247,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BU_2A:
+            case IF_ARM64_SVE_BU_2A:
             {
                 imm = emitGetInsSC(id);
                 floatImm8 fpImm;
@@ -256,23 +256,23 @@ public partial class Emitter
                 assert(isVectorRegister(id.idReg1()));
                 assert(isValidSimm(unchecked((nint)emitDecodeFloatImm8(fpImm)), 8));
                 assert(isPredicateRegister(id.idReg2()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_BV_2A:
-            case IF_SVE_BV_2A_J:
+            case IF_ARM64_SVE_BV_2A:
+            case IF_ARM64_SVE_BV_2A_J:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 assert(isValidSimm(imm, 8));
                 break;
             }
 
-            case IF_SVE_BV_2B:
+            case IF_ARM64_SVE_BV_2B:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -280,14 +280,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CE_2A:
+            case IF_ARM64_SVE_CE_2A:
             {
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 break;
             }
 
-            case IF_SVE_CE_2B:
+            case IF_ARM64_SVE_CE_2B:
             {
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
@@ -295,7 +295,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CE_2C:
+            case IF_ARM64_SVE_CE_2C:
             {
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
@@ -303,7 +303,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CE_2D:
+            case IF_ARM64_SVE_CE_2D:
             {
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
@@ -311,14 +311,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CF_2A:
+            case IF_ARM64_SVE_CF_2A:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
                 break;
             }
 
-            case IF_SVE_CF_2B:
+            case IF_ARM64_SVE_CF_2B:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
@@ -326,7 +326,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CF_2C:
+            case IF_ARM64_SVE_CF_2C:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
@@ -334,7 +334,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CF_2D:
+            case IF_ARM64_SVE_CF_2D:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
@@ -342,7 +342,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CC_2A:
+            case IF_ARM64_SVE_CC_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -350,7 +350,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CD_2A:
+            case IF_ARM64_SVE_CD_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -358,7 +358,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CI_3A:
+            case IF_ARM64_SVE_CI_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isPredicateRegister(id.idReg1()));
@@ -367,7 +367,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CJ_2A:
+            case IF_ARM64_SVE_CJ_2A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -376,7 +376,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CT_3A:
+            case IF_ARM64_SVE_CT_3A:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isLowPredicateRegister(id.idReg2()));
@@ -385,7 +385,7 @@ public partial class Emitter
             }
 
             // Four scalable registers, with predicate destination.
-            case IF_SVE_CX_4A:
+            case IF_ARM64_SVE_CX_4A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -396,7 +396,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CX_4A_A:
+            case IF_ARM64_SVE_CX_4A_A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableWide(id.idInsOpt()));
@@ -407,7 +407,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CY_3A:
+            case IF_ARM64_SVE_CY_3A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -418,7 +418,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CY_3B:
+            case IF_ARM64_SVE_CY_3B:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -429,24 +429,24 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BR_3B:
-            case IF_SVE_FN_3B:
-            case IF_SVE_FO_3A:
-            case IF_SVE_AT_3B:
-            case IF_SVE_BD_3B:
-            case IF_SVE_EF_3A:
-            case IF_SVE_EI_3A:
-            case IF_SVE_GJ_3A:
-            case IF_SVE_GN_3A:
-            case IF_SVE_GO_3A:
-            case IF_SVE_GW_3B:
-            case IF_SVE_HA_3A:
-            case IF_SVE_HA_3A_E:
-            case IF_SVE_HB_3A:
-            case IF_SVE_HD_3A:
-            case IF_SVE_HD_3A_A:
-            case IF_SVE_HK_3B:
-            case IF_SVE_AV_3A:
+            case IF_ARM64_SVE_BR_3B:
+            case IF_ARM64_SVE_FN_3B:
+            case IF_ARM64_SVE_FO_3A:
+            case IF_ARM64_SVE_AT_3B:
+            case IF_ARM64_SVE_BD_3B:
+            case IF_ARM64_SVE_EF_3A:
+            case IF_ARM64_SVE_EI_3A:
+            case IF_ARM64_SVE_GJ_3A:
+            case IF_ARM64_SVE_GN_3A:
+            case IF_ARM64_SVE_GO_3A:
+            case IF_ARM64_SVE_GW_3B:
+            case IF_ARM64_SVE_HA_3A:
+            case IF_ARM64_SVE_HA_3A_E:
+            case IF_ARM64_SVE_HB_3A:
+            case IF_ARM64_SVE_HD_3A:
+            case IF_ARM64_SVE_HD_3A_A:
+            case IF_ARM64_SVE_HK_3B:
+            case IF_ARM64_SVE_AV_3A:
             {
                 assert(insOptsScalable(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -455,7 +455,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_AU_3A:
+            case IF_ARM64_SVE_AU_3A:
             {
                 assert(insOptsScalable(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -464,9 +464,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HA_3A_F:
-            case IF_SVE_EW_3A:
-            case IF_SVE_EW_3B:
+            case IF_ARM64_SVE_HA_3A_F:
+            case IF_ARM64_SVE_EW_3A:
+            case IF_ARM64_SVE_EW_3B:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -475,53 +475,53 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_EG_3A:
-            case IF_SVE_EY_3A:
-            case IF_SVE_EZ_3A:
-            case IF_SVE_FD_3B:
-            case IF_SVE_FF_3B:
-            case IF_SVE_FI_3B:
-            case IF_SVE_GU_3A:
-            case IF_SVE_GX_3A:
-            case IF_SVE_GY_3B:
-            case IF_SVE_GY_3B_D:
-            case IF_SVE_FK_3B:
+            case IF_ARM64_SVE_EG_3A:
+            case IF_ARM64_SVE_EY_3A:
+            case IF_ARM64_SVE_EZ_3A:
+            case IF_ARM64_SVE_FD_3B:
+            case IF_ARM64_SVE_FF_3B:
+            case IF_ARM64_SVE_FI_3B:
+            case IF_ARM64_SVE_GU_3A:
+            case IF_ARM64_SVE_GX_3A:
+            case IF_ARM64_SVE_GY_3B:
+            case IF_ARM64_SVE_GY_3B_D:
+            case IF_ARM64_SVE_FK_3B:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 assert(isVectorRegister(id.idReg3()));
-                assert((REG_V0 <= id.idReg3()) && (id.idReg3() <= REG_V7));
+                assert((REG_ARM64_V0 <= id.idReg3()) && (id.idReg3() <= REG_ARM64_V7));
                 assert(isValidUimm(emitGetInsSC(id), 2));
                 break;
             }
 
-            case IF_SVE_FD_3A:
-            case IF_SVE_FE_3A:
-            case IF_SVE_FF_3A:
-            case IF_SVE_FG_3A:
-            case IF_SVE_FH_3A:
-            case IF_SVE_FI_3A:
-            case IF_SVE_FJ_3A:
-            case IF_SVE_FK_3A:
-            case IF_SVE_GU_3C:
-            case IF_SVE_GX_3C:
-            case IF_SVE_GY_3A:
-            case IF_SVE_GZ_3A:
+            case IF_ARM64_SVE_FD_3A:
+            case IF_ARM64_SVE_FE_3A:
+            case IF_ARM64_SVE_FF_3A:
+            case IF_ARM64_SVE_FG_3A:
+            case IF_ARM64_SVE_FH_3A:
+            case IF_ARM64_SVE_FI_3A:
+            case IF_ARM64_SVE_FJ_3A:
+            case IF_ARM64_SVE_FK_3A:
+            case IF_ARM64_SVE_GU_3C:
+            case IF_ARM64_SVE_GX_3C:
+            case IF_ARM64_SVE_GY_3A:
+            case IF_ARM64_SVE_GZ_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 assert(isVectorRegister(id.idReg3()));
-                assert((REG_V0 <= id.idReg3()) && (id.idReg3() <= REG_V7));
+                assert((REG_ARM64_V0 <= id.idReg3()) && (id.idReg3() <= REG_ARM64_V7));
                 assert(isValidUimm(emitGetInsSC(id), 3));
                 break;
             }
 
-            case IF_SVE_FE_3B:
-            case IF_SVE_FG_3B:
-            case IF_SVE_FH_3B:
-            case IF_SVE_FJ_3B:
+            case IF_ARM64_SVE_FE_3B:
+            case IF_ARM64_SVE_FG_3B:
+            case IF_ARM64_SVE_FH_3B:
+            case IF_ARM64_SVE_FJ_3B:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isVectorRegister(id.idReg1()));
@@ -531,13 +531,13 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_EY_3B:
-            case IF_SVE_FD_3C:
-            case IF_SVE_FF_3C:
-            case IF_SVE_FI_3C:
-            case IF_SVE_GU_3B:
-            case IF_SVE_GX_3B:
-            case IF_SVE_FK_3C:
+            case IF_ARM64_SVE_EY_3B:
+            case IF_ARM64_SVE_FD_3C:
+            case IF_ARM64_SVE_FF_3C:
+            case IF_ARM64_SVE_FI_3C:
+            case IF_ARM64_SVE_GU_3B:
+            case IF_ARM64_SVE_GX_3B:
+            case IF_ARM64_SVE_FK_3C:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -547,7 +547,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CZ_4A:
+            case IF_ARM64_SVE_CZ_4A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(id.idReg1()));
@@ -594,8 +594,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CZ_4A_A:
-            case IF_SVE_CZ_4A_L:
+            case IF_ARM64_SVE_CZ_4A_A:
+            case IF_ARM64_SVE_CZ_4A_L:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(id.idReg1()));
@@ -603,10 +603,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CZ_4A_K:
-            case IF_SVE_DB_3A:
-            case IF_SVE_DB_3B:
-            case IF_SVE_DC_3A:
+            case IF_ARM64_SVE_CZ_4A_K:
+            case IF_ARM64_SVE_DB_3A:
+            case IF_ARM64_SVE_DB_3B:
+            case IF_ARM64_SVE_DC_3A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
@@ -616,7 +616,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DA_4A:
+            case IF_ARM64_SVE_DA_4A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
@@ -627,8 +627,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DD_2A:
-            case IF_SVE_DG_2A:
+            case IF_ARM64_SVE_DD_2A:
+            case IF_ARM64_SVE_DG_2A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(id.idReg1()));
@@ -636,7 +636,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DE_1A:
+            case IF_ARM64_SVE_DE_1A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(isPredicateRegister(id.idReg1()));
@@ -644,8 +644,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DF_2A:
-            case IF_SVE_DI_2A:
+            case IF_ARM64_SVE_DF_2A:
+            case IF_ARM64_SVE_DI_2A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -654,8 +654,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DH_1A:
-            case IF_SVE_DJ_1A:
+            case IF_ARM64_SVE_DH_1A:
+            case IF_ARM64_SVE_DJ_1A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
@@ -663,7 +663,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DK_3A:
+            case IF_ARM64_SVE_DK_3A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -673,7 +673,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GE_4A:
+            case IF_ARM64_SVE_GE_4A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableAtMaxHalf(id.idInsOpt()));
@@ -684,7 +684,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GQ_3A:
+            case IF_ARM64_SVE_GQ_3A:
             {
                 switch (id.idIns())
                 {
@@ -713,7 +713,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HO_3A:
+            case IF_ARM64_SVE_HO_3A:
             {
                 assert(id.idInsOpt() == INS_OPTS_S_TO_H);
                 assert(isVectorRegister(id.idReg1()));
@@ -722,7 +722,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HO_3B:
+            case IF_ARM64_SVE_HO_3B:
             {
                 assert(insOptsConvertFloatToFloat(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -731,7 +731,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HO_3C:
+            case IF_ARM64_SVE_HO_3C:
             {
                 assert(id.idInsOpt() == INS_OPTS_D_TO_S);
                 assert(isVectorRegister(id.idReg1()));
@@ -740,7 +740,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HP_3B:
+            case IF_ARM64_SVE_HP_3B:
             {
                 assert(insOptsScalableFloat(id.idInsOpt()) || (id.idInsOpt() == INS_OPTS_H_TO_S)
                     || (id.idInsOpt() == INS_OPTS_H_TO_D) || (id.idInsOpt() == INS_OPTS_S_TO_D)
@@ -751,7 +751,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HS_3A:
+            case IF_ARM64_SVE_HS_3A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()) || (id.idInsOpt() == INS_OPTS_S_TO_H)
                     || (id.idInsOpt() == INS_OPTS_S_TO_D) || (id.idInsOpt() == INS_OPTS_D_TO_H)
@@ -762,7 +762,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HT_4A:
+            case IF_ARM64_SVE_HT_4A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableFloat(id.idInsOpt()));
@@ -774,9 +774,9 @@ public partial class Emitter
             }
 
             // Scalable FP.
-            case IF_SVE_GR_3A:
-            case IF_SVE_HL_3A:
-            case IF_SVE_HR_3A:
+            case IF_ARM64_SVE_GR_3A:
+            case IF_ARM64_SVE_HL_3A:
+            case IF_ARM64_SVE_HR_3A:
             {
                 assert(insOptsScalableFloat(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -786,8 +786,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_AB_3B:
-            case IF_SVE_HL_3B:
+            case IF_ARM64_SVE_AB_3B:
+            case IF_ARM64_SVE_HL_3B:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -798,9 +798,9 @@ public partial class Emitter
             }
 
             // Scalable to SIMD vector.
-            case IF_SVE_AG_3A:
-            case IF_SVE_AJ_3A:
-            case IF_SVE_AL_3A:
+            case IF_ARM64_SVE_AG_3A:
+            case IF_ARM64_SVE_AJ_3A:
+            case IF_ARM64_SVE_AL_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -810,7 +810,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GS_3A:
+            case IF_ARM64_SVE_GS_3A:
             {
                 assert(insOptsScalableFloat(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -821,7 +821,7 @@ public partial class Emitter
             }
 
             // Scalable, widening to scalar SIMD.
-            case IF_SVE_AI_3A:
+            case IF_ARM64_SVE_AI_3A:
             {
                 switch (id.idIns())
                 {
@@ -845,7 +845,7 @@ public partial class Emitter
             }
 
             // Scalable, possibly FP.
-            case IF_SVE_AP_3A:
+            case IF_ARM64_SVE_AP_3A:
             {
                 switch (id.idIns())
                 {
@@ -870,8 +870,8 @@ public partial class Emitter
             }
 
             // Scalable, with instruction-specific element sizes.
-            case IF_SVE_AQ_3A:
-            case IF_SVE_CU_3A:
+            case IF_ARM64_SVE_AQ_3A:
+            case IF_ARM64_SVE_CU_3A:
             {
                 switch (id.idIns())
                 {
@@ -912,8 +912,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CV_3A:
-            case IF_SVE_CV_3B:
+            case IF_ARM64_SVE_CV_3A:
+            case IF_ARM64_SVE_CV_3B:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -923,7 +923,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CW_4A:
+            case IF_ARM64_SVE_CW_4A:
             {
                 assert(isScalableVectorSize(id.idOpSize()));
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -938,7 +938,7 @@ public partial class Emitter
             }
 
             // Scalable from general scalar, possibly SP.
-            case IF_SVE_CQ_3A:
+            case IF_ARM64_SVE_CQ_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -948,8 +948,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_EQ_3A:
-            case IF_SVE_HQ_3A:
+            case IF_ARM64_SVE_EQ_3A:
+            case IF_ARM64_SVE_HQ_3A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -960,7 +960,7 @@ public partial class Emitter
             }
 
             // Scalable, possibly fixed to .S.
-            case IF_SVE_ES_3A:
+            case IF_ARM64_SVE_ES_3A:
             {
                 switch (id.idIns())
                 {
@@ -984,7 +984,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GA_2A:
+            case IF_ARM64_SVE_GA_2A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_H);
                 assert(isVectorRegister(id.idReg1()));
@@ -994,29 +994,29 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DL_2A:
+            case IF_ARM64_SVE_DL_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 assert(isGeneralRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
                 assert(isScalableVectorSize(id.idOpSize()));
                 break;
             }
 
-            case IF_SVE_DO_2A:
-            case IF_SVE_DM_2A:
+            case IF_ARM64_SVE_DO_2A:
+            case IF_ARM64_SVE_DM_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 assert(isGeneralRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
                 assert(isValidGeneralDatasize(id.idOpSize()));
                 break;
             }
 
-            case IF_SVE_DP_2A:
-            case IF_SVE_DN_2A:
+            case IF_ARM64_SVE_DP_2A:
+            case IF_ARM64_SVE_DN_2A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1025,19 +1025,19 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DQ_0A:
+            case IF_ARM64_SVE_DQ_0A:
             {
                 break;
             }
 
-            case IF_SVE_DR_1A:
+            case IF_ARM64_SVE_DR_1A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);
                 assert(isPredicateRegister(id.idReg1()));
                 break;
             }
 
-            case IF_SVE_DS_2A:
+            case IF_ARM64_SVE_DS_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isGeneralRegister(id.idReg1()));
@@ -1046,7 +1046,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_FZ_2A:
+            case IF_ARM64_SVE_FZ_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1055,7 +1055,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HG_2A:
+            case IF_ARM64_SVE_HG_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1064,17 +1064,17 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GD_2A:
+            case IF_ARM64_SVE_GD_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 assert(optGetSveElemsize(id.idInsOpt()) != EA_8BYTE);
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_BB_2A:
+            case IF_ARM64_SVE_BB_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(id.idOpSize() == EA_8BYTE);
@@ -1084,7 +1084,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BC_1A:
+            case IF_ARM64_SVE_BC_1A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(id.idOpSize() == EA_8BYTE);
@@ -1093,12 +1093,12 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_AW_2A:
+            case IF_ARM64_SVE_AW_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 imm = emitGetInsSC(id);
 
                 switch (id.idInsOpt())
@@ -1136,7 +1136,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_AX_1A:
+            case IF_ARM64_SVE_AX_1A:
             {
                 nint imm1;
                 nint imm2;
@@ -1145,27 +1145,27 @@ public partial class Emitter
                 assert(isVectorRegister(id.idReg1()));
                 assert(isValidSimm(imm1, 5));
                 assert(isValidSimm(imm2, 5));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_AY_2A:
-            case IF_SVE_AZ_2A:
+            case IF_ARM64_SVE_AY_2A:
+            case IF_ARM64_SVE_AZ_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isValidSimm(emitGetInsSC(id), 5));
                 assert(isIntegerRegister(id.idReg2()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_FR_2A:
+            case IF_ARM64_SVE_FR_2A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 imm = emitGetInsSC(id);
 
                 switch (id.idInsOpt())
@@ -1197,12 +1197,12 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GB_2A:
+            case IF_ARM64_SVE_GB_2A:
             {
                 assert(insOptsScalableWide(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 imm = emitGetInsSC(id);
 
                 switch (id.idInsOpt())
@@ -1234,27 +1234,27 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_FV_2A:
+            case IF_ARM64_SVE_FV_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 assert(emitIsValidEncodedRotationImm90_or_270(emitGetInsSC(id)));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_FY_3A:
+            case IF_ARM64_SVE_FY_3A:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 assert(isVectorRegister(id.idReg3()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_GK_2A:
+            case IF_ARM64_SVE_GK_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1271,7 +1271,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GL_1A:
+            case IF_ARM64_SVE_GL_1A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1279,31 +1279,31 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DU_3A:
+            case IF_ARM64_SVE_DU_3A:
             {
                 assert(id.idOpSize() == EA_8BYTE);
-                goto case IF_SVE_DT_3A;
+                goto case IF_ARM64_SVE_DT_3A;
             }
 
-            case IF_SVE_DT_3A:
+            case IF_ARM64_SVE_DT_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isGeneralRegister(id.idReg2()));
                 assert(isValidGeneralDatasize(id.idOpSize()));
                 assert(isGeneralRegister(id.idReg3()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_DV_4A:
+            case IF_ARM64_SVE_DV_4A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
                 assert(isPredicateRegister(id.idReg3()));
                 assert(isGeneralRegister(id.idReg4()));
-                assert((REG_R12 <= id.idReg4()) && (id.idReg4() <= REG_R15));
+                assert((REG_ARM64_R12 <= id.idReg4()) && (id.idReg4() <= REG_ARM64_R15));
                 imm = emitGetInsSC(id);
 
                 switch (id.idInsOpt())
@@ -1341,139 +1341,139 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_DW_2B:
+            case IF_ARM64_SVE_DW_2B:
             {
                 assert(isValidUimm(emitGetInsSC(id), 1));
-                goto case IF_SVE_DW_2A;
+                goto case IF_ARM64_SVE_DW_2A;
             }
 
-            case IF_SVE_DW_2A:
+            case IF_ARM64_SVE_DW_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isPredicateRegister(id.idReg1()));
                 assert(isHighPredicateRegister(id.idReg2()));
                 assert(isValidUimm(emitGetInsSC(id), 2));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_DX_3A:
+            case IF_ARM64_SVE_DX_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isLowPredicateRegister(id.idReg1()));
                 assert(isGeneralRegister(id.idReg2()));
                 assert(isGeneralRegister(id.idReg3()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_DY_3A:
+            case IF_ARM64_SVE_DY_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isHighPredicateRegister(id.idReg1()));
                 assert(isGeneralRegister(id.idReg2()));
                 assert(isGeneralRegister(id.idReg3()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_DZ_1A:
+            case IF_ARM64_SVE_DZ_1A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isHighPredicateRegister(id.idReg1()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_EA_1A:
+            case IF_ARM64_SVE_EA_1A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isValidUimm(emitGetInsSC(id), 8));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_EB_1A:
+            case IF_ARM64_SVE_EB_1A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 assert(isValidSimm(imm, 8));
                 break;
             }
 
-            case IF_SVE_EC_1A:
+            case IF_ARM64_SVE_EC_1A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 assert(isValidUimm(imm, 8));
                 break;
             }
 
-            case IF_SVE_EB_1B:
+            case IF_ARM64_SVE_EB_1B:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_ED_1A:
+            case IF_ARM64_SVE_ED_1A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isValidSimm(emitGetInsSC(id), 8) || isValidUimm(emitGetInsSC(id), 8));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_EE_1A:
+            case IF_ARM64_SVE_EE_1A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isValidSimm(emitGetInsSC(id), 8));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_EJ_3A:
+            case IF_ARM64_SVE_EJ_3A:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
-                goto case IF_SVE_EK_3A;
+                goto case IF_ARM64_SVE_EK_3A;
             }
 
-            case IF_SVE_EK_3A:
+            case IF_ARM64_SVE_EK_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 assert(emitIsValidEncodedRotationImm0_to_270(emitGetInsSC(id)));
                 assert(isVectorRegister(id.idReg3()));
-                assert(isValidVectorElemsize(optGetSveElemsize(id.idInsOpt())));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(id.idInsOpt())));
                 break;
             }
 
-            case IF_SVE_FA_3A:
-            case IF_SVE_FB_3A:
-            case IF_SVE_FC_3A:
+            case IF_ARM64_SVE_FA_3A:
+            case IF_ARM64_SVE_FB_3A:
+            case IF_ARM64_SVE_FC_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
                 assert(isVectorRegister(id.idReg3()));
-                assert((REG_V0 <= id.idReg3()) && (id.idReg3() <= REG_V7));
+                assert((REG_ARM64_V0 <= id.idReg3()) && (id.idReg3() <= REG_ARM64_V7));
                 assert(isValidUimm(emitGetInsSC(id), 4));
                 break;
             }
 
-            case IF_SVE_FA_3B:
-            case IF_SVE_FB_3B:
-            case IF_SVE_FC_3B:
-            case IF_SVE_GV_3A:
+            case IF_ARM64_SVE_FA_3B:
+            case IF_ARM64_SVE_FB_3B:
+            case IF_ARM64_SVE_FC_3B:
+            case IF_ARM64_SVE_GV_3A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1483,27 +1483,27 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IH_3A:
-            case IF_SVE_IH_3A_A:
-            case IF_SVE_IH_3A_F:
-            case IF_SVE_IJ_3A:
-            case IF_SVE_IJ_3A_D:
-            case IF_SVE_IJ_3A_E:
-            case IF_SVE_IJ_3A_F:
-            case IF_SVE_IJ_3A_G:
-            case IF_SVE_IL_3A:
-            case IF_SVE_IL_3A_A:
-            case IF_SVE_IL_3A_B:
-            case IF_SVE_IL_3A_C:
-            case IF_SVE_IM_3A:
-            case IF_SVE_IO_3A:
-            case IF_SVE_IQ_3A:
-            case IF_SVE_IS_3A:
-            case IF_SVE_JE_3A:
-            case IF_SVE_JM_3A:
-            case IF_SVE_JN_3C:
-            case IF_SVE_JN_3C_D:
-            case IF_SVE_JO_3A:
+            case IF_ARM64_SVE_IH_3A:
+            case IF_ARM64_SVE_IH_3A_A:
+            case IF_ARM64_SVE_IH_3A_F:
+            case IF_ARM64_SVE_IJ_3A:
+            case IF_ARM64_SVE_IJ_3A_D:
+            case IF_ARM64_SVE_IJ_3A_E:
+            case IF_ARM64_SVE_IJ_3A_F:
+            case IF_ARM64_SVE_IJ_3A_G:
+            case IF_ARM64_SVE_IL_3A:
+            case IF_ARM64_SVE_IL_3A_A:
+            case IF_ARM64_SVE_IL_3A_B:
+            case IF_ARM64_SVE_IL_3A_C:
+            case IF_ARM64_SVE_IM_3A:
+            case IF_ARM64_SVE_IO_3A:
+            case IF_ARM64_SVE_IQ_3A:
+            case IF_ARM64_SVE_IS_3A:
+            case IF_ARM64_SVE_JE_3A:
+            case IF_ARM64_SVE_JM_3A:
+            case IF_ARM64_SVE_JN_3C:
+            case IF_ARM64_SVE_JN_3C_D:
+            case IF_ARM64_SVE_JO_3A:
             {
                 assert(insOptsScalable(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1585,7 +1585,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JD_4A:
+            case IF_ARM64_SVE_JD_4A:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isPredicateRegister(id.idReg2()));
@@ -1599,7 +1599,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JD_4B:
+            case IF_ARM64_SVE_JD_4B:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1610,12 +1610,12 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JJ_4A:
-            case IF_SVE_JJ_4A_B:
-            case IF_SVE_JJ_4A_C:
-            case IF_SVE_JJ_4A_D:
-            case IF_SVE_JK_4A:
-            case IF_SVE_JK_4A_B:
+            case IF_ARM64_SVE_JJ_4A:
+            case IF_ARM64_SVE_JJ_4A_B:
+            case IF_ARM64_SVE_JJ_4A_C:
+            case IF_ARM64_SVE_JJ_4A_D:
+            case IF_ARM64_SVE_JK_4A:
+            case IF_ARM64_SVE_JK_4A_B:
             {
                 assert(insOptsScalable32bitExtends(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1625,7 +1625,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JN_3A:
+            case IF_ARM64_SVE_JN_3A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -1637,7 +1637,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JN_3B:
+            case IF_ARM64_SVE_JN_3B:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableWords(id.idInsOpt()));
@@ -1649,13 +1649,13 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HW_4A:
-            case IF_SVE_HW_4A_A:
-            case IF_SVE_HW_4A_B:
-            case IF_SVE_HW_4A_C:
-            case IF_SVE_IU_4A:
-            case IF_SVE_IU_4A_A:
-            case IF_SVE_IU_4A_C:
+            case IF_ARM64_SVE_HW_4A:
+            case IF_ARM64_SVE_HW_4A_A:
+            case IF_ARM64_SVE_HW_4A_B:
+            case IF_ARM64_SVE_HW_4A_C:
+            case IF_ARM64_SVE_IU_4A:
+            case IF_ARM64_SVE_IU_4A_A:
+            case IF_ARM64_SVE_IU_4A_C:
             {
                 assert(insOptsScalable32bitExtends(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1666,8 +1666,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HW_4B:
-            case IF_SVE_HW_4B_D:
+            case IF_ARM64_SVE_HW_4B:
+            case IF_ARM64_SVE_HW_4B_D:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isVectorRegister(id.idReg1()));
@@ -1678,8 +1678,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IF_4A:
-            case IF_SVE_IF_4A_A:
+            case IF_ARM64_SVE_IF_4A:
+            case IF_ARM64_SVE_IF_4A_A:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1690,11 +1690,11 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IG_4A:
-            case IF_SVE_IG_4A_D:
-            case IF_SVE_IG_4A_E:
-            case IF_SVE_IG_4A_F:
-            case IF_SVE_IG_4A_G:
+            case IF_ARM64_SVE_IG_4A:
+            case IF_ARM64_SVE_IG_4A_D:
+            case IF_ARM64_SVE_IG_4A_E:
+            case IF_ARM64_SVE_IG_4A_F:
+            case IF_ARM64_SVE_IG_4A_G:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1705,7 +1705,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_II_4A:
+            case IF_ARM64_SVE_II_4A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isVectorRegister(id.idReg1()));
@@ -1716,7 +1716,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_II_4A_B:
+            case IF_ARM64_SVE_II_4A_B:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_Q);
                 assert(isVectorRegister(id.idReg1()));
@@ -1727,7 +1727,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_II_4A_H:
+            case IF_ARM64_SVE_II_4A_H:
             {
                 assert(insOptsScalableWordsOrQuadwords(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1738,11 +1738,11 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IK_4A:
-            case IF_SVE_IK_4A_F:
-            case IF_SVE_IK_4A_G:
-            case IF_SVE_IK_4A_H:
-            case IF_SVE_IK_4A_I:
+            case IF_ARM64_SVE_IK_4A:
+            case IF_ARM64_SVE_IK_4A_F:
+            case IF_ARM64_SVE_IK_4A_G:
+            case IF_ARM64_SVE_IK_4A_H:
+            case IF_ARM64_SVE_IK_4A_I:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1753,7 +1753,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IR_4A:
+            case IF_ARM64_SVE_IR_4A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_Q);
                 assert(isVectorRegister(id.idReg1()));
@@ -1764,9 +1764,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IU_4B:
-            case IF_SVE_IU_4B_B:
-            case IF_SVE_IU_4B_D:
+            case IF_ARM64_SVE_IU_4B:
+            case IF_ARM64_SVE_IU_4B_B:
+            case IF_ARM64_SVE_IU_4B_D:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isVectorRegister(id.idReg1()));
@@ -1777,8 +1777,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IW_4A:
-            case IF_SVE_IY_4A:
+            case IF_ARM64_SVE_IW_4A:
+            case IF_ARM64_SVE_IY_4A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_Q);
                 assert(isVectorRegister(id.idReg1()));
@@ -1789,7 +1789,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IX_4A:
+            case IF_ARM64_SVE_IX_4A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isVectorRegister(id.idReg1()));
@@ -1800,9 +1800,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IZ_4A:
-            case IF_SVE_IZ_4A_A:
-            case IF_SVE_JA_4A:
+            case IF_ARM64_SVE_IZ_4A:
+            case IF_ARM64_SVE_IZ_4A_A:
+            case IF_ARM64_SVE_JA_4A:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1813,8 +1813,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JD_4C:
-            case IF_SVE_JD_4C_A:
+            case IF_ARM64_SVE_JD_4C:
+            case IF_ARM64_SVE_JD_4C_A:
             {
                 assert(insOptsScalableDoubleWordsOrQuadword(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1825,7 +1825,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JF_4A:
+            case IF_ARM64_SVE_JF_4A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_Q);
                 assert(isVectorRegister(id.idReg1()));
@@ -1836,11 +1836,11 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IN_4A:
-            case IF_SVE_IP_4A:
-            case IF_SVE_IT_4A:
-            case IF_SVE_JB_4A:
-            case IF_SVE_JC_4A:
+            case IF_ARM64_SVE_IN_4A:
+            case IF_ARM64_SVE_IP_4A:
+            case IF_ARM64_SVE_IT_4A:
+            case IF_ARM64_SVE_JB_4A:
+            case IF_ARM64_SVE_JC_4A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1851,10 +1851,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JJ_4B:
-            case IF_SVE_JJ_4B_C:
-            case IF_SVE_JJ_4B_E:
-            case IF_SVE_JK_4B:
+            case IF_ARM64_SVE_JJ_4B:
+            case IF_ARM64_SVE_JJ_4B_C:
+            case IF_ARM64_SVE_JJ_4B_E:
+            case IF_ARM64_SVE_JK_4B:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isVectorRegister(id.idReg1()));
@@ -1865,7 +1865,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GP_3A:
+            case IF_ARM64_SVE_GP_3A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
@@ -1877,7 +1877,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GT_4A:
+            case IF_ARM64_SVE_GT_4A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
@@ -1890,7 +1890,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HI_3A:
+            case IF_ARM64_SVE_HI_3A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isPredicateRegister(id.idReg1()));
@@ -1900,7 +1900,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HM_2A:
+            case IF_ARM64_SVE_HM_2A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
@@ -1911,7 +1911,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HN_2A:
+            case IF_ARM64_SVE_HN_2A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
@@ -1922,7 +1922,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HP_3A:
+            case IF_ARM64_SVE_HP_3A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1932,7 +1932,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HU_4B:
+            case IF_ARM64_SVE_HU_4B:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_H);
                 assert(isVectorRegister(id.idReg1()));
@@ -1943,7 +1943,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HV_4A:
+            case IF_ARM64_SVE_HV_4A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -1954,8 +1954,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_ID_2A:
-            case IF_SVE_JG_2A:
+            case IF_ARM64_SVE_ID_2A:
+            case IF_ARM64_SVE_JG_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -1965,8 +1965,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IE_2A:
-            case IF_SVE_JH_2A:
+            case IF_ARM64_SVE_IE_2A:
+            case IF_ARM64_SVE_JH_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -1976,7 +1976,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GG_3A:
+            case IF_ARM64_SVE_GG_3A:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
@@ -1986,8 +1986,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GH_3B:
-            case IF_SVE_GH_3B_B:
+            case IF_ARM64_SVE_GH_3B:
+            case IF_ARM64_SVE_GH_3B_B:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
@@ -1997,7 +1997,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GG_3B:
+            case IF_ARM64_SVE_GG_3B:
             {
                 assert(isVectorRegister(id.idReg1()));
                 assert(isVectorRegister(id.idReg2()));
@@ -2007,7 +2007,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_GH_3A:
+            case IF_ARM64_SVE_GH_3A:
             {
                 assert(insOptsScalable(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -2018,8 +2018,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HY_3A:
-            case IF_SVE_HY_3A_A:
+            case IF_ARM64_SVE_HY_3A:
+            case IF_ARM64_SVE_HY_3A_A:
             {
                 assert(insOptsScalable32bitExtends(id.idInsOpt()));
                 assert(isLowPredicateRegister(id.idReg1()));
@@ -2029,7 +2029,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HY_3B:
+            case IF_ARM64_SVE_HY_3B:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isLowPredicateRegister(id.idReg1()));
@@ -2039,7 +2039,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IB_3A:
+            case IF_ARM64_SVE_IB_3A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isLowPredicateRegister(id.idReg1()));
@@ -2049,7 +2049,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HZ_2A_B:
+            case IF_ARM64_SVE_HZ_2A_B:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isLowPredicateRegister(id.idReg1()));
@@ -2058,7 +2058,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IA_2A:
+            case IF_ARM64_SVE_IA_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isLowPredicateRegister(id.idReg1()));
@@ -2067,7 +2067,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HX_3A_B:
+            case IF_ARM64_SVE_HX_3A_B:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2078,7 +2078,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HX_3A_E:
+            case IF_ARM64_SVE_HX_3A_E:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2088,7 +2088,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IV_3A:
+            case IF_ARM64_SVE_IV_3A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2098,7 +2098,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JI_3A_A:
+            case IF_ARM64_SVE_JI_3A_A:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2108,7 +2108,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_JL_3A:
+            case IF_ARM64_SVE_JL_3A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2119,7 +2119,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IC_3A:
+            case IF_ARM64_SVE_IC_3A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_D);
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2129,7 +2129,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IC_3A_A:
+            case IF_ARM64_SVE_IC_3A_A:
             {
                 assert(insOptsScalableWords(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2139,7 +2139,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IC_3A_B:
+            case IF_ARM64_SVE_IC_3A_B:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2149,7 +2149,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IC_3A_C:
+            case IF_ARM64_SVE_IC_3A_C:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isScalableVectorSize(id.idOpSize()));
@@ -2159,7 +2159,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BI_2A:
+            case IF_ARM64_SVE_BI_2A:
             {
                 assert(insOptsNone(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -2167,7 +2167,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_HH_2A:
+            case IF_ARM64_SVE_HH_2A:
             {
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_H);
                 assert(isVectorRegister(id.idReg1()));
@@ -2175,7 +2175,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CB_2A:
+            case IF_ARM64_SVE_CB_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -2183,7 +2183,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CG_2A:
+            case IF_ARM64_SVE_CG_2A:
             {
                 assert(insOptsScalableStandard(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -2191,8 +2191,8 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BJ_2A:
-            case IF_SVE_HF_2A:
+            case IF_ARM64_SVE_BJ_2A:
+            case IF_ARM64_SVE_HF_2A:
             {
                 assert(insOptsScalableAtLeastHalf(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -2200,7 +2200,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_CH_2A:
+            case IF_ARM64_SVE_CH_2A:
             {
                 assert(insOptsScalableWide(id.idInsOpt()));
                 assert(isVectorRegister(id.idReg1()));
@@ -2208,9 +2208,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BF_2A:
-            case IF_SVE_FT_2A:
-            case IF_SVE_FU_2A:
+            case IF_ARM64_SVE_BF_2A:
+            case IF_ARM64_SVE_FT_2A:
+            case IF_ARM64_SVE_FU_2A:
             {
                 imm = emitGetInsSC(id);
                 assert(isValidVectorShiftAmount(imm, optGetSveElemsize(id.idInsOpt()),
@@ -2222,7 +2222,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BW_2A:
+            case IF_ARM64_SVE_BW_2A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalable(id.idInsOpt()));
@@ -2232,7 +2232,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BX_2A:
+            case IF_ARM64_SVE_BX_2A:
             {
                 imm = emitGetInsSC(id);
                 assert(insOptsScalableStandard(id.idInsOpt()));
@@ -2274,7 +2274,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_BY_2A:
+            case IF_ARM64_SVE_BY_2A:
             {
                 imm = emitGetInsSC(id);
                 assert(id.idInsOpt() == INS_OPTS_SCALABLE_B);

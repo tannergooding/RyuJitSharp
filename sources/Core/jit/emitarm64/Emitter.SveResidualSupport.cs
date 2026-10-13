@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.insSvePrfop;
 
 namespace RyuJitSharp;
@@ -51,14 +50,14 @@ public partial class Emitter
 
     private static string emitSveRegName(regNumber reg)
     {
-        assert((reg >= REG_V0) && (reg <= REG_V31));
-        return s_sveVectorRegisterNames[(int)reg - (int)REG_V0];
+        assert((reg >= REG_ARM64_V0) && (reg <= REG_ARM64_V31));
+        return s_sveVectorRegisterNames[(int)reg - (int)REG_ARM64_V0];
     }
 
     private static string emitPredicateRegName(regNumber reg, PredicateType ptype)
     {
-        assert((reg >= REG_P0) && (reg <= REG_P15));
-        var index = (int)reg - (int)REG_P0;
+        assert((reg >= REG_ARM64_P0) && (reg <= REG_ARM64_P15));
+        var index = (int)reg - (int)REG_ARM64_P0;
         var usePredicateCounter = ptype is PredicateType.PREDICATE_N or PredicateType.PREDICATE_N_SIZED;
         return usePredicateCounter ? s_svePredicateCounterRegisterNames[index] : s_svePredicateRegisterNames[index];
     }
@@ -102,13 +101,13 @@ public partial class Emitter
         var currReg = firstReg;
 
         jitprintf("{ ");
-        if ((listSize <= 2) || (((uint)currReg + listSize - 1) > (uint)REG_V31))
+        if ((listSize <= 2) || (((uint)currReg + listSize - 1) > (uint)REG_ARM64_V31))
         {
             for (uint i = 0; i < listSize; i++)
             {
                 var notLastRegister = i != listSize - 1;
                 emitDispSveReg(currReg, opt, notLastRegister);
-                currReg = currReg == REG_V31 ? REG_V0 : REG_NEXT(currReg);
+                currReg = currReg == REG_ARM64_V31 ? REG_ARM64_V0 : REG_NEXT(currReg);
             }
         }
         else
@@ -269,17 +268,17 @@ public partial class Emitter
         if (isVectorRegister(reg1))
         {
             var regOpt = opt == INS_OPTS_SCALABLE_Q ? INS_OPTS_SCALABLE_D : opt;
-            emitDispSveReg(reg1, regOpt, reg2 != REG_ZR);
+            emitDispSveReg(reg1, regOpt, reg2 != REG_ARM64_ZR);
         }
         else
         {
-            emitDispReg(reg1, EA_8BYTE, reg2 != REG_ZR);
+            emitDispReg(reg1, EA_8BYTE, reg2 != REG_ARM64_ZR);
         }
         if (isVectorRegister(reg2))
         {
             emitDispSveReg(reg2, opt, false);
         }
-        else if (reg2 != REG_ZR)
+        else if (reg2 != REG_ARM64_ZR)
         {
             emitDispReg(reg2, EA_8BYTE, false);
         }
@@ -288,7 +287,7 @@ public partial class Emitter
             emitDispComma();
             emitDispSveExtendOptsModN(opt, insSveGetLslOrModN(ins, fmt));
         }
-        else if ((reg2 != REG_ZR) && insSveIsLslN(ins, fmt))
+        else if ((reg2 != REG_ARM64_ZR) && insSveIsLslN(ins, fmt))
         {
             emitDispComma();
             switch (insSveGetLslOrModN(ins, fmt))
@@ -455,4 +454,3 @@ public partial class Emitter
         return (INS_OPTS_NONE, INS_OPTS_NONE);
     }
 }
-#endif

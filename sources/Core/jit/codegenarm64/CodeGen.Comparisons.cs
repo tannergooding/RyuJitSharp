@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.CodeGen.GenIntCastDesc.CheckKind;
 using static RyuJitSharp.CodeGen.GenIntCastDesc.ExtendKind;
 using static RyuJitSharp.Globals;
@@ -17,7 +16,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForCompare(GenTreeOp tree)
+    public void genCodeForCompareArm64(GenTreeOp tree)
     {
         var targetReg = tree.RegNum;
         var op1 = tree.Op1;
@@ -59,11 +58,11 @@ public sealed partial class CodeGen
                 var intConst = op2.AsIntConCommon();
                 var op1Reg = op1.RegNum;
 
-                if (_compiler.opts.OptimizationEnabled && (ins == INS_cmp) && (targetReg != REG_NA) &&
+                if (_compiler.opts.OptimizationEnabled && (ins == INS_cmp) && (targetReg != REG_ARM64_NA) &&
                     (tree.Oper is GT_LT) && !tree.IsUnsigned && intConst.IsIntegralConst(0) &&
                     ((cmpSize == EA_4BYTE) || (cmpSize == EA_8BYTE)))
                 {
-                    emit.emitIns_R_R_I(INS_lsr, cmpSize, targetReg, op1Reg, (nint)((int)cmpSize * 8 - 1));
+                    emit.emitIns_R_R_IArm64(INS_lsr, cmpSize, targetReg, op1Reg, (nint)((int)cmpSize * 8 - 1));
                     genProduceReg(tree);
                     return;
                 }
@@ -95,7 +94,7 @@ public sealed partial class CodeGen
                                     assert(shiftAmount.Oper.IsCnsIntOrI);
                                     assert(shiftAmount.IsContained);
 
-                                    emit.emitIns_R_R_I(
+                                    emit.emitIns_R_R_IArm64(
                                         ins,
                                         cmpSize,
                                         op1.RegNum,
@@ -179,7 +178,7 @@ public sealed partial class CodeGen
                         assert(shiftAmount.Oper.IsCnsIntOrI);
                         assert(shiftAmount.IsContained);
 
-                        emit.emitIns_R_R_I(
+                        emit.emitIns_R_R_IArm64(
                             ins,
                             cmpSize,
                             op1.RegNum,
@@ -252,11 +251,10 @@ public sealed partial class CodeGen
             }
         }
 
-        if (targetReg != REG_NA)
+        if (targetReg != REG_ARM64_NA)
         {
-            inst_SETCC(GenCondition.FromRelop(tree), tree.Type, targetReg);
+            inst_SETCCArmArch(GenCondition.FromRelop(tree), tree.Type, targetReg);
             genProduceReg(tree);
         }
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using static RyuJitSharp.insScalableOpts;
 using static RyuJitSharp.insSveMovOpts;
 using Arm64Emitter = RyuJitSharp.Emitter;
@@ -66,9 +65,9 @@ public sealed partial class CodeGen
         if (intrinEmbMask.Id == NI_Sve_MultiplyAddRotateComplex)
         {
             assert(intrinEmbMask.NumOperands == 4);
-            tempReg = _internalRegisters.GetSingle(cndSelNode, new regMaskTP(SRBM_ALLFLOAT));
+            tempReg = _internalRegisters.GetSingle(cndSelNode, new regMaskTP(SRBM_ALLFLOAT_ARM64));
         }
-        var emitSize = EA_SCALABLE;
+        var emitSize = EA_SCALABLE_ARM64;
         var opt = Arm64Emitter.optGetSveInsOpt(emitTypeSize(intrinCndSel.BaseType));
         var embOpt = opt;
         var sopt = INS_SCALABLE_OPTS_NONE;
@@ -182,7 +181,7 @@ public sealed partial class CodeGen
                     if (falseOp.IsVectorZero && !maskOp.IsTrueMask(intrinCndSel.BaseType) &&
                         targetReg == falseReg)
                     {
-                        Emitter.emitIns_R_R_R(INS_sve_mov, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                        Emitter.emitInsSve_R_R_R(INS_sve_mov, emitSize, targetReg, maskReg, embMaskOp1Reg,
                             opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
                         Emitter.emitInsSve_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
                             embOpt, sopt);
@@ -277,7 +276,7 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        Emitter.emitIns_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
+                        Emitter.emitInsSve_R_R_R(insEmbMask, emitSize, targetReg, embMaskOp1Reg,
                             embMaskOp2Reg, embOpt, sopt);
                     }
                     if (!maskOp.IsTrueMask(intrinCndSel.BaseType))
@@ -380,7 +379,7 @@ public sealed partial class CodeGen
             {
                 if (targetReg == embMaskOp2Reg)
                 {
-                    Emitter.emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, tempReg, embMaskOp2Reg, true, opt,
+                    Emitter.emitInsSve_Mov(INS_sve_mov, EA_SCALABLE_ARM64, tempReg, embMaskOp2Reg, true, opt,
                         INS_SVE_MOV_OPTS_UNPRED);
                     embMaskOp2Reg = tempReg;
                     if (embMaskOp3Reg == targetReg)
@@ -390,7 +389,7 @@ public sealed partial class CodeGen
                 }
                 else if (targetReg == embMaskOp3Reg)
                 {
-                    Emitter.emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, tempReg, embMaskOp3Reg, true, opt,
+                    Emitter.emitInsSve_Mov(INS_sve_mov, EA_SCALABLE_ARM64, tempReg, embMaskOp3Reg, true, opt,
                         INS_SVE_MOV_OPTS_UNPRED);
                     embMaskOp3Reg = tempReg;
                 }
@@ -453,4 +452,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

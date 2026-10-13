@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
+    private void emitIns_J_RArm64(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
         assert(ins is INS_cbz or INS_cbnz);
         assert(dst is not null);
@@ -18,7 +17,7 @@ public partial class Emitter
 
         var id = emitNewInstrJmp();
         id.idIns(ins);
-        id.idInsFmt(IF_LARGEJMP);
+        id.idInsFmt(IF_ARM64_LARGEJMP);
         id.idReg1(reg);
         id.idjShort = false;
         id.idOpSize(EA_SIZE(attr));
@@ -51,7 +50,7 @@ public partial class Emitter
 
         var id = emitNewInstrJmp();
         id.idIns(ins);
-        id.idInsFmt(IF_LARGEJMP);
+        id.idInsFmt(IF_ARM64_LARGEJMP);
         id.idReg1(reg);
         id.idjShort = false;
         id.idSmallCns(imm);
@@ -73,4 +72,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

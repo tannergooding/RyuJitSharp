@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GCInfo.GCtype;
 
@@ -39,11 +38,11 @@ public partial class Emitter
 
         reg3 = encodingSPtoZR(reg3);
 
-        var fmt = IF_LS_3C;
+        var fmt = IF_ARM64_LS_3C;
         nint mask = (1 << scale) - 1; // Low bits must be zero to encode the scaled immediate.
         if (imm == 0)
         {
-            fmt = IF_LS_3B;
+            fmt = IF_ARM64_LS_3B;
         }
         else
         {
@@ -64,7 +63,7 @@ public partial class Emitter
         if (validVar1 && validVar2)
         {
             id = emitNewInstrLclVarPair(attr, imm);
-            id.idAddr().iiaLclVar.initLclVarAddr(varx1, unchecked((uint)offs1));
+            id.idAddr().iiaInitLclVarAddr(varx1, unchecked((uint)offs1));
             id.idSetIsLclVar();
             emitGetLclVarPairLclVar2(id).initLclVarAddr(varx2, unchecked((uint)offs2));
         }
@@ -73,12 +72,12 @@ public partial class Emitter
             id = emitNewInstrCns(attr, imm);
             if (validVar1)
             {
-                id.idAddr().iiaLclVar.initLclVarAddr(varx1, unchecked((uint)offs1));
+                id.idAddr().iiaInitLclVarAddr(varx1, unchecked((uint)offs1));
                 id.idSetIsLclVar();
             }
             if (validVar2)
             {
-                id.idAddr().iiaLclVar.initLclVarAddr(varx2, unchecked((uint)offs2));
+                id.idAddr().iiaInitLclVarAddr(varx2, unchecked((uint)offs2));
                 id.idSetIsLclVar();
             }
         }
@@ -114,4 +113,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -18,7 +17,7 @@ public partial class Emitter
 #if EMITTER_STATS
         emitTotalIDescLclVarPairCnt = unchecked(emitTotalIDescLclVarPairCnt + 1);
 #endif
-        var result = emitAllocAnyInstr<instrDescLclVarPair>(DescriptorSizes.LocalVarPair, attr);
+        var result = emitAllocAnyInstr<instrDescLclVarPair>((nuint)DescriptorSizes.LocalVarPair, attr);
         result.idSetIsLclVarPair();
 
         return result;
@@ -29,7 +28,7 @@ public partial class Emitter
 #if EMITTER_STATS
         emitTotalIDescLclVarPairCnsCnt = unchecked(emitTotalIDescLclVarPairCnsCnt + 1);
 #endif
-        var result = emitAllocAnyInstr<instrDescLclVarPairCns>(DescriptorSizes.LocalVarPairConstant, attr);
+        var result = emitAllocAnyInstr<instrDescLclVarPairCns>((nuint)DescriptorSizes.LocalVarPairConstant, attr);
         result.idSetIsLargeCns();
         result.idSetIsLclVarPair();
         result.idcCnsVal = cns;
@@ -100,4 +99,3 @@ public partial class Emitter
         public override int NativeLogicalSize => DescriptorSizes.LocalVarPairConstant;
     }
 }
-#endif

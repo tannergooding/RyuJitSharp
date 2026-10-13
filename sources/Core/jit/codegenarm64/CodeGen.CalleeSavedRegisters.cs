@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Collections.Generic;
 using static RyuJitSharp.regMask;
 
@@ -20,23 +19,22 @@ public sealed partial class CodeGen
             // Probe before saving registers, using scratch rather than a possibly
             // callee-saved initReg whose incoming value has not yet been saved.
             var ignoreInitRegZeroed = false;
-            genAllocLclFrame((uint)_compiler.compLclFrameSize, REG_SCRATCH, ref ignoreInitRegZeroed,
+            genAllocLclFrame((uint)_compiler.compLclFrameSize, REG_SCRATCH_ARM64, ref ignoreInitRegZeroed,
                 _calleeRegArgMaskLiveIn);
             var pushRegs = _regSet.rsGetModifiedCalleeSavedRegsMask();
-#if ETW_EBP_FRAMED
-            if (!IsFramePointerUsed && _regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE)))
+            if (Configuration.ETW_EBP_FRAMED && !IsFramePointerUsed &&
+                _regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE_ARM64)))
             {
                 noway_assert(false, "Used register RBM_FPBASE as a scratch register!");
             }
-#endif
             if (IsFramePointerUsed)
             {
-                pushRegs |= new regMaskTP(SRBM_FPBASE);
+                pushRegs |= new regMaskTP(SRBM_FPBASE_ARM64);
             }
 
             // LR must be saved even in leaf methods: partially interruptible GC
             // suspension uses stack return-address hijacking.
-            pushRegs |= new regMaskTP(SRBM_LR);
+            pushRegs |= new regMaskTP(SRBM_ARM64_LR);
             _regSet.rsSetCalleeSavedRegsMask(pushRegs);
 #if DEBUG
             if (_compiler.compCalleeRegsPushed != genCalleeSaveCountArm64(pushRegs))
@@ -50,7 +48,7 @@ public sealed partial class CodeGen
 #endif
             var totalFrameSize = genTotalFrameSize;
             int offset;
-            var saveFloat = pushRegs & new regMaskTP(SRBM_ALLFLOAT);
+            var saveFloat = pushRegs & new regMaskTP(SRBM_ALLFLOAT_ARM64);
             var saveInt = pushRegs & ~saveFloat;
 #if DEBUG
             if (_verbose)
@@ -72,8 +70,8 @@ public sealed partial class CodeGen
             var calleeSaveSpDelta = 0;
             if (IsFramePointerUsed)
             {
-                assert((saveInt & new regMaskTP(SRBM_FP)).IsNonEmpty);
-                assert((saveInt & new regMaskTP(SRBM_LR)).IsNonEmpty);
+                assert((saveInt & new regMaskTP(SRBM_ARM64_FP)).IsNonEmpty);
+                assert((saveInt & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
                 if (_compiler.lvaOutgoingArgSpaceSize.Value == 0 && totalFrameSize <= 504 &&
                     !genSaveFpLrWithAllCalleeSavedRegisters)
                 {
@@ -82,11 +80,11 @@ public sealed partial class CodeGen
                     JITDUMP($"Frame type 1. #outsz=0; #framesz={totalFrameSize}; LclFrameSize={_compiler.compLclFrameSize}\n");
                     frameType = 1;
                     assert(totalFrameSize <= Arm64StackProbeBoundaryThresholdBytes);
-                    Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                    Emitter.emitIns_R_R_R_IArm64(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, REG_SPBASE_ARM64,
                         -totalFrameSize, INS_OPTS_PRE_INDEX);
-                    genUnwindSaveRegPairPreindexedArm64Dependency(REG_FP, REG_LR, -totalFrameSize);
-                    saveInt &= ~new regMaskTP(SRBM_FP | SRBM_LR);
-                    offset = _compiler.compLclFrameSize + 2 * REGSIZE_BYTES;
+                    genUnwindSaveRegPairPreindexedArm64Dependency(REG_ARM64_FP, REG_ARM64_LR, -totalFrameSize);
+                    saveInt &= ~new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
+                    offset = _compiler.compLclFrameSize + 2 * Configuration.REGSIZE_BYTES;
                 }
                 else if (totalFrameSize <= 512 && !_compiler.opts.compDbgEnC)
                 {
@@ -105,14 +103,14 @@ public sealed partial class CodeGen
                         frameType = 2;
                         assert((uint)totalFrameSize - (uint)_compiler.lvaOutgoingArgSpaceSize.Value <=
                             Arm64StackProbeBoundaryThresholdBytes);
-                        Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+                        Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64, totalFrameSize);
                         _compiler.unwindAllocStack((uint)totalFrameSize);
-                        assert((uint)_compiler.lvaOutgoingArgSpaceSize.Value + 2 * REGSIZE_BYTES <= (uint)totalFrameSize);
-                        Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                        assert((uint)_compiler.lvaOutgoingArgSpaceSize.Value + 2 * Configuration.REGSIZE_BYTES <= (uint)totalFrameSize);
+                        Emitter.emitIns_R_R_R_IArm64(INS_stp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, REG_SPBASE_ARM64,
                             _compiler.lvaOutgoingArgSpaceSize.Value);
-                        genUnwindSaveRegPairArm64Dependency(REG_FP, REG_LR, _compiler.lvaOutgoingArgSpaceSize.Value);
-                        saveInt &= ~new regMaskTP(SRBM_FP | SRBM_LR);
-                        offset = _compiler.compLclFrameSize + 2 * REGSIZE_BYTES;
+                        genUnwindSaveRegPairArm64Dependency(REG_ARM64_FP, REG_ARM64_LR, _compiler.lvaOutgoingArgSpaceSize.Value);
+                        saveInt &= ~new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
+                        offset = _compiler.compLclFrameSize + 2 * Configuration.REGSIZE_BYTES;
                     }
                 }
                 else
@@ -130,22 +128,22 @@ public sealed partial class CodeGen
                         JITDUMP($"Frame type 3 (save FP/LR at bottom). #outsz={(uint)_compiler.lvaOutgoingArgSpaceSize.Value}; " +
                             $"#framesz={totalFrameSize}; LclFrameSize={_compiler.compLclFrameSize}\n");
                         frameType = 3;
-                        unalignedDelta -= 2 * REGSIZE_BYTES;
-                        saveInt &= ~new regMaskTP(SRBM_FP | SRBM_LR);
+                        unalignedDelta -= 2 * Configuration.REGSIZE_BYTES;
+                        saveInt &= ~new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
                     }
 
                     assert(unalignedDelta >= 0);
                     assert(unalignedDelta % 8 == 0);
-                    calleeSaveSpDelta = (int)roundUp((uint)unalignedDelta, STACK_ALIGN);
+                    calleeSaveSpDelta = (int)roundUp((uint)unalignedDelta, (uint)Configuration.STACK_ALIGN);
                     offset = calleeSaveSpDelta - unalignedDelta;
                     JITDUMP($"    calleeSaveSpDelta={calleeSaveSpDelta}, offset={offset}\n");
-                    assert(offset == 0 || offset == REGSIZE_BYTES);
+                    assert(offset == 0 || offset == Configuration.REGSIZE_BYTES);
                 }
             }
             else
             {
-                assert((saveInt & new regMaskTP(SRBM_FP)).IsEmpty);
-                assert((saveInt & new regMaskTP(SRBM_LR)).IsNonEmpty);
+                assert((saveInt & new regMaskTP(SRBM_ARM64_FP)).IsEmpty);
+                assert((saveInt & new regMaskTP(SRBM_ARM64_LR)).IsNonEmpty);
                 NYI("Frame without frame pointer");
                 offset = 0;
             }
@@ -154,18 +152,18 @@ public sealed partial class CodeGen
             var calleeSaveSpOffset = offset;
             JITDUMP($"    offset={offset}, calleeSaveSpDelta={calleeSaveSpDelta}\n");
             genSaveCalleeSavedRegistersHelpArm64(saveInt | saveFloat, offset, -calleeSaveSpDelta);
-            offset += genCalleeSaveCountArm64(saveInt | saveFloat) * REGSIZE_BYTES;
+            offset += genCalleeSaveCountArm64(saveInt | saveFloat) * Configuration.REGSIZE_BYTES;
 
             if (_compiler.info.compIsVarArgs)
             {
                 JITDUMP("    compIsVarArgs=true\n");
                 assert(offset % 16 == 0);
-                for (var reg1 = REG_ARG_FIRST; reg1 < REG_ARG_LAST; reg1 += 2)
+                for (var reg1 = REG_ARG_FIRST_ARM64; reg1 < REG_ARG_LAST_ARM64; reg1 += 2)
                 {
                     var reg2 = reg1 + 1;
-                    Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, offset);
+                    Emitter.emitIns_R_R_R_IArm64(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE_ARM64, offset);
                     _compiler.unwindNop();
-                    offset += 2 * REGSIZE_BYTES;
+                    offset += 2 * Configuration.REGSIZE_BYTES;
                 }
             }
 
@@ -197,13 +195,13 @@ public sealed partial class CodeGen
                     {
                         assert(remainingFrameSize > _compiler.lvaOutgoingArgSpaceSize.Value);
                         var unalignedAdjustment = remainingFrameSize - _compiler.lvaOutgoingArgSpaceSize.Value;
-                        var adjustment2 = (int)roundUp((uint)unalignedAdjustment, STACK_ALIGN);
+                        var adjustment2 = (int)roundUp((uint)unalignedAdjustment, (uint)Configuration.STACK_ALIGN);
                         var alignmentAdjustment = adjustment2 - unalignedAdjustment;
                         assert(alignmentAdjustment == 0 || alignmentAdjustment == 8);
                         JITDUMP($"    spAdjustment2={adjustment2}\n");
                         fixed (bool* zeroed = &initRegZeroed)
                         {
-                            genPrologSaveRegPairArm64(REG_FP, REG_LR, alignmentAdjustment, -adjustment2,
+                            genPrologSaveRegPairArm64(REG_ARM64_FP, REG_ARM64_LR, alignmentAdjustment, -adjustment2,
                                 false, initReg, zeroed);
                         }
                         offset += adjustment2;
@@ -224,7 +222,7 @@ public sealed partial class CodeGen
                     {
                         fixed (bool* zeroed = &initRegZeroed)
                         {
-                            genPrologSaveRegPairArm64(REG_FP, REG_LR, _compiler.lvaOutgoingArgSpaceSize.Value,
+                            genPrologSaveRegPairArm64(REG_ARM64_FP, REG_ARM64_LR, _compiler.lvaOutgoingArgSpaceSize.Value,
                                 -remainingFrameSize, false, initReg, zeroed);
                         }
                         offset += remainingFrameSize;
@@ -237,7 +235,8 @@ public sealed partial class CodeGen
                 {
                     assert(genSaveFpLrWithAllCalleeSavedRegisters);
                     offsetSpToSavedFp = (uint)(calleeSaveSpDelta -
-                        (_compiler.info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) - 2 * REGSIZE_BYTES);
+                        (_compiler.info.compIsVarArgs ? MAX_REG_ARG_ARM64 * Configuration.REGSIZE_BYTES : 0) -
+                        2 * Configuration.REGSIZE_BYTES);
                     break;
                 }
 
@@ -245,7 +244,8 @@ public sealed partial class CodeGen
                 {
                     assert(genSaveFpLrWithAllCalleeSavedRegisters);
                     offsetSpToSavedFp = (uint)(calleeSaveSpDelta -
-                        (_compiler.info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) - 2 * REGSIZE_BYTES);
+                        (_compiler.info.compIsVarArgs ? MAX_REG_ARG_ARM64 * Configuration.REGSIZE_BYTES : 0) -
+                        2 * Configuration.REGSIZE_BYTES);
                     JITDUMP($"    offsetSpToSavedFp={offsetSpToSavedFp}\n");
                     genEstablishFramePointer((int)offsetSpToSavedFp, reportUnwindData: true);
                     establishFramePointer = false;
@@ -287,7 +287,7 @@ public sealed partial class CodeGen
         }
     }
 
-    public unsafe void genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
+    public unsafe void genPopCalleeSavedRegistersAndFreeLclFrameArm64(bool jmpEpilog)
     {
         genPopCalleeSavedRegistersArm64Core(jmpEpilog);
     }
@@ -300,9 +300,9 @@ public sealed partial class CodeGen
             var restoreRegs = _regSet.rsGetModifiedCalleeSavedRegsMask();
             if (IsFramePointerUsed)
             {
-                restoreRegs |= new regMaskTP(SRBM_FPBASE);
+                restoreRegs |= new regMaskTP(SRBM_FPBASE_ARM64);
             }
-            restoreRegs |= new regMaskTP(SRBM_LR);
+            restoreRegs |= new regMaskTP(SRBM_ARM64_LR);
             var regsToRestore = restoreRegs;
             var totalFrameSize = genTotalFrameSize;
             var frameType = _compiler.compFrameInfo.frameType;
@@ -317,10 +317,10 @@ public sealed partial class CodeGen
                     JITDUMP($"Frame type 1. #outsz=0; #framesz={totalFrameSize}; localloc? {dspBool(_compiler.compLocallocUsed)}\n");
                     if (_compiler.compLocallocUsed)
                     {
-                        inst_Mov(TYP_I_IMPL, REG_SPBASE, REG_FPBASE, canSkip: false);
-                        _compiler.unwindSetFrameReg(REG_FPBASE, 0);
+                        inst_Mov(TYP_I_IMPL, REG_SPBASE_ARM64, REG_FPBASE_ARM64, canSkip: false);
+                        _compiler.unwindSetFrameReg(REG_FPBASE_ARM64, 0);
                     }
-                    regsToRestore &= ~new regMaskTP(SRBM_FP | SRBM_LR);
+                    regsToRestore &= ~new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
                     break;
                 }
 
@@ -332,10 +332,10 @@ public sealed partial class CodeGen
                     if (_compiler.compLocallocUsed)
                     {
                         var delta = genSPtoFPdelta;
-                        Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, delta);
-                        _compiler.unwindSetFrameReg(REG_FPBASE, (uint)delta);
+                        Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_FPBASE_ARM64, delta);
+                        _compiler.unwindSetFrameReg(REG_FPBASE_ARM64, (uint)delta);
                     }
-                    regsToRestore &= ~new regMaskTP(SRBM_FP | SRBM_LR);
+                    regsToRestore &= ~new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
                     break;
                 }
 
@@ -345,21 +345,21 @@ public sealed partial class CodeGen
                         $"#framesz={totalFrameSize}; localloc? {dspBool(_compiler.compLocallocUsed)}\n");
                     assert(!genSaveFpLrWithAllCalleeSavedRegisters);
                     JITDUMP($"    calleeSaveSpDelta={calleeSaveSpDelta}\n");
-                    regsToRestore &= ~new regMaskTP(SRBM_FP | SRBM_LR);
+                    regsToRestore &= ~new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
                     var remainingFrameSize = totalFrameSize - calleeSaveSpDelta;
                     assert(remainingFrameSize > 0);
                     if ((uint)_compiler.lvaOutgoingArgSpaceSize.Value > 504)
                     {
                         assert(remainingFrameSize > _compiler.lvaOutgoingArgSpaceSize.Value);
                         var unalignedAdjustment = remainingFrameSize - _compiler.lvaOutgoingArgSpaceSize.Value;
-                        var adjustment2 = (int)roundUp((uint)unalignedAdjustment, STACK_ALIGN);
+                        var adjustment2 = (int)roundUp((uint)unalignedAdjustment, (uint)Configuration.STACK_ALIGN);
                         var alignmentAdjustment = adjustment2 - unalignedAdjustment;
-                        assert(alignmentAdjustment == 0 || alignmentAdjustment == REGSIZE_BYTES);
-                        Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, alignmentAdjustment);
-                        _compiler.unwindSetFrameReg(REG_FPBASE, (uint)alignmentAdjustment);
+                        assert(alignmentAdjustment == 0 || alignmentAdjustment == Configuration.REGSIZE_BYTES);
+                        Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_FPBASE_ARM64, alignmentAdjustment);
+                        _compiler.unwindSetFrameReg(REG_FPBASE_ARM64, (uint)alignmentAdjustment);
                         JITDUMP($"    alignmentAdjustment2={alignmentAdjustment}\n");
-                        genRestoreRegPairArm64(REG_FP, REG_LR, REG_SPBASE, alignmentAdjustment,
-                            adjustment2, false, REG_IP1, null, reportUnwindData: true);
+                        genRestoreRegPairArm64(REG_ARM64_FP, REG_ARM64_LR, REG_SPBASE_ARM64, alignmentAdjustment,
+                            adjustment2, false, REG_ARM64_IP1, null, reportUnwindData: true);
                     }
                     else
                     {
@@ -367,14 +367,14 @@ public sealed partial class CodeGen
                         {
                             var delta = genSPtoFPdelta;
                             assert(delta == _compiler.lvaOutgoingArgSpaceSize.Value);
-                            Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, delta);
-                            _compiler.unwindSetFrameReg(REG_FPBASE, (uint)delta);
+                            Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_FPBASE_ARM64, delta);
+                            _compiler.unwindSetFrameReg(REG_FPBASE_ARM64, (uint)delta);
                         }
                         JITDUMP($"    remainingFrameSz={remainingFrameSize}\n");
-                        genRestoreRegPairArm64(REG_FP, REG_LR, REG_SPBASE, _compiler.lvaOutgoingArgSpaceSize.Value,
-                            remainingFrameSize, false, REG_IP1, null, reportUnwindData: true);
+                        genRestoreRegPairArm64(REG_ARM64_FP, REG_ARM64_LR, REG_SPBASE_ARM64, _compiler.lvaOutgoingArgSpaceSize.Value,
+                            remainingFrameSize, false, REG_ARM64_IP1, null, reportUnwindData: true);
                     }
-                    assert(calleeSaveSpOffset == 0 || calleeSaveSpOffset == REGSIZE_BYTES);
+                    assert(calleeSaveSpOffset == 0 || calleeSaveSpOffset == Configuration.REGSIZE_BYTES);
                     break;
                 }
 
@@ -386,8 +386,8 @@ public sealed partial class CodeGen
                     if (_compiler.compLocallocUsed)
                     {
                         var delta = genSPtoFPdelta;
-                        Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, delta);
-                        _compiler.unwindSetFrameReg(REG_FPBASE, (uint)delta);
+                        Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_FPBASE_ARM64, delta);
+                        _compiler.unwindSetFrameReg(REG_FPBASE_ARM64, (uint)delta);
                     }
                     break;
                 }
@@ -397,9 +397,9 @@ public sealed partial class CodeGen
                     JITDUMP($"Frame type 5 (save FP/LR at top). #outsz={(uint)_compiler.lvaOutgoingArgSpaceSize.Value}; " +
                         $"#framesz={totalFrameSize}; localloc? {dspBool(_compiler.compLocallocUsed)}\n");
                     assert(genSaveFpLrWithAllCalleeSavedRegisters);
-                    assert(calleeSaveSpOffset == 0 || calleeSaveSpOffset == REGSIZE_BYTES);
-                    Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, offsetSpToSavedFp);
-                    _compiler.unwindSetFrameReg(REG_FPBASE, (uint)offsetSpToSavedFp);
+                    assert(calleeSaveSpOffset == 0 || calleeSaveSpOffset == Configuration.REGSIZE_BYTES);
+                    Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_FPBASE_ARM64, offsetSpToSavedFp);
+                    _compiler.unwindSetFrameReg(REG_FPBASE_ARM64, (uint)offsetSpToSavedFp);
                     break;
                 }
 
@@ -416,18 +416,18 @@ public sealed partial class CodeGen
             {
                 case 1:
                 {
-                    Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                    Emitter.emitIns_R_R_R_IArm64(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, REG_SPBASE_ARM64,
                         totalFrameSize, INS_OPTS_POST_INDEX);
-                    genUnwindSaveRegPairPreindexedArm64Dependency(REG_FP, REG_LR, -totalFrameSize);
+                    genUnwindSaveRegPairPreindexedArm64Dependency(REG_ARM64_FP, REG_ARM64_LR, -totalFrameSize);
                     break;
                 }
 
                 case 2:
                 {
-                    Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                    Emitter.emitIns_R_R_R_IArm64(INS_ldp, EA_PTRSIZE, REG_ARM64_FP, REG_ARM64_LR, REG_SPBASE_ARM64,
                         _compiler.lvaOutgoingArgSpaceSize.Value);
-                    genUnwindSaveRegPairArm64Dependency(REG_FP, REG_LR, _compiler.lvaOutgoingArgSpaceSize.Value);
-                    Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+                    genUnwindSaveRegPairArm64Dependency(REG_ARM64_FP, REG_ARM64_LR, _compiler.lvaOutgoingArgSpaceSize.Value);
+                    Emitter.emitIns_R_R_IArm64(INS_add, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64, totalFrameSize);
                     _compiler.unwindAllocStack((uint)totalFrameSize);
                     break;
                 }
@@ -460,12 +460,12 @@ public sealed partial class CodeGen
                     var lowPart = adjustment & 0xFFF;
                     var highPart = adjustment - lowPart;
                     assert(Emitter.emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
-                    Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+                    Emitter.emitIns_R_R_IArm64(INS_add, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64, highPart);
                     _compiler.unwindAllocStack((uint)highPart);
                     adjustment = lowPart;
                 }
                 assert(Emitter.emitIns_valid_imm_for_add(adjustment, EA_PTRSIZE));
-                Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, adjustment);
+                Emitter.emitIns_R_R_IArm64(INS_add, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64, adjustment);
                 _compiler.unwindAllocStack((uint)adjustment);
             }
         }
@@ -474,7 +474,8 @@ public sealed partial class CodeGen
     private unsafe void genStackPointerAdjustmentArm64(nint delta, regNumber tmpReg, bool* tmpRegIsZero,
         bool reportUnwindData)
     {
-        var usedTemp = !genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, delta, tmpReg, true);
+        var usedTemp = !genInstrWithConstantArm64(
+            INS_add, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64, delta, tmpReg, true);
         if (usedTemp && tmpRegIsZero != null)
         {
             *tmpRegIsZero = false;
@@ -501,8 +502,8 @@ public sealed partial class CodeGen
             assert(!useSaveNextPair);
             if (offset == 0 && delta >= -512)
             {
-                assert(reg1 != REG_LR);
-                Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, delta, INS_OPTS_PRE_INDEX);
+                assert(reg1 != REG_ARM64_LR);
+                Emitter.emitIns_R_R_R_IArm64(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE_ARM64, delta, INS_OPTS_PRE_INDEX);
                 genUnwindSaveRegPairPreindexedArm64Dependency(reg1, reg2, delta);
                 saveRegs = false;
             }
@@ -515,8 +516,8 @@ public sealed partial class CodeGen
         {
             assert(offset <= 504);
             assert(offset % 8 == 0);
-            assert(reg1 != REG_LR);
-            Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, offset);
+            assert(reg1 != REG_ARM64_LR);
+            Emitter.emitIns_R_R_R_IArm64(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE_ARM64, offset);
             if (TargetOS.IsUnix && _compiler.generateCFIUnwindCodes())
             {
                 useSaveNextPair = false;
@@ -543,7 +544,7 @@ public sealed partial class CodeGen
         {
             if (offset == 0 && delta >= -256)
             {
-                Emitter.emitIns_R_R_I(INS_str, EA_PTRSIZE, reg, REG_SPBASE, delta, INS_OPTS_PRE_INDEX);
+                Emitter.emitIns_R_R_IArm64(INS_str, EA_PTRSIZE, reg, REG_SPBASE_ARM64, delta, INS_OPTS_PRE_INDEX);
                 genUnwindSaveRegPreindexedArm64Dependency(reg, delta);
                 saveRegs = false;
             }
@@ -554,7 +555,7 @@ public sealed partial class CodeGen
         }
         if (saveRegs)
         {
-            Emitter.emitIns_R_R_I(INS_str, EA_PTRSIZE, reg, REG_SPBASE, offset);
+            Emitter.emitIns_R_R_IArm64(INS_str, EA_PTRSIZE, reg, REG_SPBASE_ARM64, offset);
             _compiler.unwindSaveReg(reg, offset);
         }
     }
@@ -566,13 +567,13 @@ public sealed partial class CodeGen
         assert(delta >= 0);
         assert(delta % 16 == 0);
         assert(genIsValidFloatReg(reg1) == genIsValidFloatReg(reg2));
-        assert(reg1 != REG_LR);
+        assert(reg1 != REG_ARM64_LR);
         if (delta != 0)
         {
             assert(!useSaveNextPair);
             if (offset == 0 && delta <= 504)
             {
-                Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, delta, INS_OPTS_POST_INDEX);
+                Emitter.emitIns_R_R_R_IArm64(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, delta, INS_OPTS_POST_INDEX);
                 if (reportUnwindData)
                 {
                     genUnwindSaveRegPairPreindexedArm64Dependency(reg1, reg2, unchecked(-delta));
@@ -580,7 +581,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, offset);
+                Emitter.emitIns_R_R_R_IArm64(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, offset);
                 if (reportUnwindData)
                 {
                     genUnwindSaveRegPairArm64Dependency(reg1, reg2, offset);
@@ -590,7 +591,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            Emitter.emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, offset);
+            Emitter.emitIns_R_R_R_IArm64(INS_ldp, EA_PTRSIZE, reg1, reg2, baseReg, offset);
             if (reportUnwindData)
             {
                 if (TargetOS.IsUnix && _compiler.generateCFIUnwindCodes())
@@ -618,7 +619,7 @@ public sealed partial class CodeGen
         {
             if (offset == 0 && delta <= 255)
             {
-                Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg, baseReg, delta, INS_OPTS_POST_INDEX);
+                Emitter.emitIns_R_R_IArm64(INS_ldr, EA_PTRSIZE, reg, baseReg, delta, INS_OPTS_POST_INDEX);
                 if (reportUnwindData)
                 {
                     genUnwindSaveRegPreindexedArm64Dependency(reg, unchecked(-delta));
@@ -626,7 +627,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg, baseReg, offset);
+                Emitter.emitIns_R_R_IArm64(INS_ldr, EA_PTRSIZE, reg, baseReg, offset);
                 if (reportUnwindData)
                 {
                     _compiler.unwindSaveReg(reg, offset);
@@ -636,7 +637,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg, baseReg, offset);
+            Emitter.emitIns_R_R_IArm64(INS_ldr, EA_PTRSIZE, reg, baseReg, offset);
             if (reportUnwindData)
             {
                 _compiler.unwindSaveReg(reg, offset);
@@ -666,7 +667,7 @@ public sealed partial class CodeGen
                 var second = genRegNumFromMaskArm64(genFindLowestBitArm64(mask));
 
                 // FP/LR use their dedicated unwind pair, so R28 cannot pair with FP.
-                if (second == first + 1 && first != REG_R28 &&
+                if (second == first + 1 && first != REG_ARM64_R28 &&
                     genIsValidFloatReg(first) == genIsValidFloatReg(second))
                 {
                     pair = true;
@@ -677,7 +678,7 @@ public sealed partial class CodeGen
             }
             if (!pair)
             {
-                stack.Add((first, REG_NA, false));
+                stack.Add((first, REG_ARM64_NA, false));
             }
         }
         assert(count == 0 && mask.IsEmpty);
@@ -690,7 +691,7 @@ public sealed partial class CodeGen
         {
             var (currentFirst, currentSecond, _) = stack[index];
             var (_, previousSecond, _) = stack[index - 1];
-            if (previousSecond == REG_NA || currentSecond == REG_NA)
+            if (previousSecond == REG_ARM64_NA || currentSecond == REG_ARM64_NA)
             {
                 continue;
             }
@@ -708,10 +709,10 @@ public sealed partial class CodeGen
 
     private static int genGetSlotSizeForRegsInMaskArm64(regMaskTP mask)
     {
-        assert((mask & new regMaskTP(SRBM_CALLEE_SAVED | SRBM_FP | SRBM_LR)) == mask);
-        assert(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
+        assert((mask & new regMaskTP(SRBM_CALLEE_SAVED_ARM64 | SRBM_ARM64_FP | SRBM_ARM64_LR)) == mask);
+        assert(Configuration.REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES_ARM64);
 
-        return REGSIZE_BYTES;
+        return Configuration.REGSIZE_BYTES;
     }
 
     private unsafe void genSaveCalleeSavedRegisterGroupArm64(regMaskTP mask, int delta, int offset)
@@ -725,21 +726,21 @@ public sealed partial class CodeGen
             {
                 var (first, second, useSaveNextPair) =
                     genReverseAndPairCalleeSavedRegisters ? stack[stack.Count - 1 - index] : stack[index];
-                if (second != REG_NA)
+                if (second != REG_ARM64_NA)
                 {
                     if (genReverseAndPairCalleeSavedRegisters)
                     {
-                        genPrologSaveRegPairArm64(second, first, offset, delta, false, REG_IP0, null);
+                        genPrologSaveRegPairArm64(second, first, offset, delta, false, REG_ARM64_IP0, null);
                     }
                     else
                     {
-                        genPrologSaveRegPairArm64(first, second, offset, delta, useSaveNextPair, REG_IP0, null);
+                        genPrologSaveRegPairArm64(first, second, offset, delta, useSaveNextPair, REG_ARM64_IP0, null);
                     }
                     offset += 2 * slotSize;
                 }
                 else
                 {
-                    genPrologSaveRegArm64(first, offset, delta, REG_IP0, null);
+                    genPrologSaveRegArm64(first, offset, delta, REG_ARM64_IP0, null);
                     offset += slotSize;
                 }
                 delta = 0;
@@ -758,31 +759,31 @@ public sealed partial class CodeGen
             {
                 if (delta != 0)
                 {
-                    genStackPointerAdjustmentArm64(delta, REG_NA, null, reportUnwindData: true);
+                    genStackPointerAdjustmentArm64(delta, REG_ARM64_NA, null, reportUnwindData: true);
                 }
 
                 return;
             }
             assert(delta % 16 == 0);
-            assert(count <= genCalleeSaveCountArm64(new regMaskTP(SRBM_CALLEE_SAVED | SRBM_FP | SRBM_LR)));
-            var frame = mask & new regMaskTP(SRBM_FP | SRBM_LR);
-            var floats = mask & new regMaskTP(SRBM_ALLFLOAT);
+            assert(count <= genCalleeSaveCountArm64(new regMaskTP(SRBM_CALLEE_SAVED_ARM64 | SRBM_ARM64_FP | SRBM_ARM64_LR)));
+            var frame = mask & new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
+            var floats = mask & new regMaskTP(SRBM_ALLFLOAT_ARM64);
             var integers = mask & ~floats & ~frame;
             if (floats.IsNonEmpty)
             {
                 genSaveCalleeSavedRegisterGroupArm64(floats, delta, offset);
                 delta = 0;
-                offset += genCalleeSaveCountArm64(floats) * FPSAVE_REGSIZE_BYTES;
+                offset += genCalleeSaveCountArm64(floats) * FPSAVE_REGSIZE_BYTES_ARM64;
             }
             if (integers.IsNonEmpty)
             {
                 genSaveCalleeSavedRegisterGroupArm64(integers, delta, offset);
                 delta = 0;
-                offset += genCalleeSaveCountArm64(integers) * FPSAVE_REGSIZE_BYTES;
+                offset += genCalleeSaveCountArm64(integers) * FPSAVE_REGSIZE_BYTES_ARM64;
             }
             if (frame.IsNonEmpty)
             {
-                genPrologSaveRegPairArm64(REG_FP, REG_LR, offset, delta, false, REG_IP0, null);
+                genPrologSaveRegPairArm64(REG_ARM64_FP, REG_ARM64_LR, offset, delta, false, REG_ARM64_IP0, null);
             }
         }
     }
@@ -805,24 +806,24 @@ public sealed partial class CodeGen
                 }
                 var (first, second, useSaveNextPair) =
                     genReverseAndPairCalleeSavedRegisters ? stack[index] : stack[stack.Count - 1 - index];
-                if (second != REG_NA)
+                if (second != REG_ARM64_NA)
                 {
                     offset -= 2 * slotSize;
                     if (genReverseAndPairCalleeSavedRegisters)
                     {
                         genRestoreRegPairArm64(second, first, baseReg, offset, stackDelta,
-                            false, REG_IP1, null, reportUnwindData);
+                            false, REG_ARM64_IP1, null, reportUnwindData);
                     }
                     else
                     {
                         genRestoreRegPairArm64(first, second, baseReg, offset, stackDelta,
-                            useSaveNextPair, REG_IP1, null, reportUnwindData);
+                            useSaveNextPair, REG_ARM64_IP1, null, reportUnwindData);
                     }
                 }
                 else
                 {
                     offset -= slotSize;
-                    genRestoreRegArm64(first, baseReg, offset, stackDelta, REG_IP1, null, reportUnwindData);
+                    genRestoreRegArm64(first, baseReg, offset, stackDelta, REG_ARM64_IP1, null, reportUnwindData);
                 }
             }
         }
@@ -838,34 +839,34 @@ public sealed partial class CodeGen
             {
                 if (delta != 0)
                 {
-                    genStackPointerAdjustmentArm64(delta, REG_NA, null, reportUnwindData: true);
+                    genStackPointerAdjustmentArm64(delta, REG_ARM64_NA, null, reportUnwindData: true);
                 }
 
                 return;
             }
             assert(delta % 16 == 0);
-            assert(count <= genCalleeSaveCountArm64(new regMaskTP(SRBM_CALLEE_SAVED | SRBM_FP | SRBM_LR)));
-            assert(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
-            var topOffset = offset + count * REGSIZE_BYTES;
-            var frame = mask & new regMaskTP(SRBM_FP | SRBM_LR);
-            var floats = mask & new regMaskTP(SRBM_ALLFLOAT);
+            assert(count <= genCalleeSaveCountArm64(new regMaskTP(SRBM_CALLEE_SAVED_ARM64 | SRBM_ARM64_FP | SRBM_ARM64_LR)));
+            assert(Configuration.REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES_ARM64);
+            var topOffset = offset + count * Configuration.REGSIZE_BYTES;
+            var frame = mask & new regMaskTP(SRBM_ARM64_FP | SRBM_ARM64_LR);
+            var floats = mask & new regMaskTP(SRBM_ALLFLOAT_ARM64);
             var integers = mask & ~floats & ~frame;
             if (frame.IsNonEmpty)
             {
                 var frameDelta = floats.IsNonEmpty || integers.IsNonEmpty ? 0 : delta;
-                topOffset -= 2 * REGSIZE_BYTES;
-                genRestoreRegPairArm64(REG_FP, REG_LR, REG_SPBASE, topOffset, frameDelta,
-                    false, REG_IP1, null, reportUnwindData: true);
+                topOffset -= 2 * Configuration.REGSIZE_BYTES;
+                genRestoreRegPairArm64(REG_ARM64_FP, REG_ARM64_LR, REG_SPBASE_ARM64, topOffset, frameDelta,
+                    false, REG_ARM64_IP1, null, reportUnwindData: true);
             }
             if (integers.IsNonEmpty)
             {
                 var intDelta = floats.IsNonEmpty ? 0 : delta;
-                genRestoreCalleeSavedRegisterGroupArm64(integers, REG_SPBASE, intDelta, topOffset, reportUnwindData: true);
-                topOffset -= genCalleeSaveCountArm64(integers) * REGSIZE_BYTES;
+                genRestoreCalleeSavedRegisterGroupArm64(integers, REG_SPBASE_ARM64, intDelta, topOffset, reportUnwindData: true);
+                topOffset -= genCalleeSaveCountArm64(integers) * Configuration.REGSIZE_BYTES;
             }
             if (floats.IsNonEmpty)
             {
-                genRestoreCalleeSavedRegisterGroupArm64(floats, REG_SPBASE, delta, topOffset, reportUnwindData: true);
+                genRestoreCalleeSavedRegisterGroupArm64(floats, REG_SPBASE_ARM64, delta, topOffset, reportUnwindData: true);
             }
         }
     }
@@ -900,4 +901,3 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, "ARM64 epilog pointer authentication is not ported.");
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -63,7 +62,7 @@ public partial class Emitter
             {
                 assert(isGeneralRegister(reg));
                 cfi.cond = cond;
-                fmt = IF_DR_1D;
+                fmt = IF_ARM64_DR_1D;
                 break;
             }
 
@@ -101,7 +100,7 @@ public partial class Emitter
                 assert(isGeneralRegister(reg1));
                 assert(isGeneralRegisterOrZR(reg2));
                 cfi.cond = cond;
-                fmt = IF_DR_2D;
+                fmt = IF_ARM64_DR_2D;
                 break;
             }
 
@@ -143,7 +142,7 @@ public partial class Emitter
                 assert(isGeneralRegisterOrZR(reg2));
                 assert(isGeneralRegisterOrZR(reg3));
                 cfi.cond = cond;
-                fmt = IF_DR_3D;
+                fmt = IF_ARM64_DR_3D;
                 break;
             }
 
@@ -185,7 +184,7 @@ public partial class Emitter
                 assert(isGeneralRegister(reg2));
                 cfi.flags = flags;
                 cfi.cond = cond;
-                fmt = IF_DR_2I;
+                fmt = IF_ARM64_DR_2I;
                 break;
             }
 
@@ -232,7 +231,7 @@ public partial class Emitter
                     cfi.imm5 = unchecked((uint)imm);
                     cfi.flags = flags;
                     cfi.cond = cond;
-                    fmt = IF_DI_1F;
+                    fmt = IF_ARM64_DI_1F;
                 }
                 else
                 {
@@ -270,7 +269,7 @@ public partial class Emitter
             case INS_dmb:
             case INS_isb:
             {
-                fmt = IF_SI_0B;
+                fmt = IF_ARM64_SI_0B;
                 imm = (nint)barrier;
                 break;
             }
@@ -294,4 +293,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

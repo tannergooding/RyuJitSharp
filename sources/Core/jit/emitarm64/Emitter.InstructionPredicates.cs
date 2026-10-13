@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.insOpts;
 
 namespace RyuJitSharp;
@@ -12,7 +11,7 @@ public partial class Emitter
 {
     public static bool isValidScalableDatasize(emitAttr size)
     {
-        return (size & EA_SCALABLE) == EA_SCALABLE;
+        return (size & EA_SCALABLE_ARM64) == EA_SCALABLE_ARM64;
     }
 
     public static bool isValidVectorElemsizeSveFloat(emitAttr size)
@@ -23,11 +22,6 @@ public partial class Emitter
     public static bool isValidVectorElemsizeWidening(emitAttr size)
     {
         return (size == EA_4BYTE) || (size == EA_2BYTE) || (size == EA_1BYTE);
-    }
-
-    public static bool isMaskReg(regNumber reg)
-    {
-        return isPredicateRegister(reg);
     }
 
     public static bool insOptsVectorImmShift(insOpts opt)
@@ -55,4 +49,3 @@ public partial class Emitter
         return (opt == INS_OPTS_UXTX) || (opt == INS_OPTS_SXTX);
     }
 }
-#endif

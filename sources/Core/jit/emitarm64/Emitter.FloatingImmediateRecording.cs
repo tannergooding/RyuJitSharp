@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -27,7 +26,7 @@ public unsafe partial class Emitter
                 if (immDbl == 0.0)
                 {
                     canEncode = true;
-                    fmt = IF_DV_1C;
+                    fmt = IF_ARM64_DV_1C;
                 }
                 break;
             }
@@ -41,7 +40,7 @@ public unsafe partial class Emitter
 
                 if (insOptsAnyArrangement(opt))
                 {
-                    assert(isValidVectorDatasize(size));
+                    assert(isValidVectorDatasizeArm64(size));
                     assert(isValidArrangement(size, opt));
                     var elemsize = optGetElemsize(opt);
                     assert(isValidVectorElemsizeFloat(elemsize));
@@ -50,7 +49,7 @@ public unsafe partial class Emitter
                     {
                         imm = (nint)fpi.immFPIVal;
                         assert((imm >= 0) && (imm <= 0xff));
-                        fmt = IF_DV_1B;
+                        fmt = IF_ARM64_DV_1B;
                     }
                 }
                 else
@@ -61,7 +60,7 @@ public unsafe partial class Emitter
                     {
                         imm = (nint)fpi.immFPIVal;
                         assert((imm >= 0) && (imm <= 0xff));
-                        fmt = IF_DV_1A;
+                        fmt = IF_ARM64_DV_1A;
                     }
                 }
                 break;
@@ -154,4 +153,3 @@ public unsafe partial class Emitter
         return result;
     }
 }
-#endif

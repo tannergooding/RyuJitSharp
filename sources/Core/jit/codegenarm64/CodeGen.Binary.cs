@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForBinary(GenTreeOp treeNode)
+    public void genCodeForBinaryArm64(GenTreeOp treeNode)
     {
         var oper = treeNode.Oper;
         var targetReg = treeNode.RegNum;
@@ -22,7 +21,7 @@ public sealed partial class CodeGen
         var op2 = treeNode.Op2;
 
         // The arithmetic node must be sitting in a register (since it's not contained).
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_ARM64_NA);
 
         if ((op2.Oper is GT_MUL) && op2.IsContained)
         {
@@ -110,7 +109,7 @@ public sealed partial class CodeGen
             }
 
             var opt = ShiftOpToInsOpts(op2.Oper);
-            emit.emitIns_R_R_R_I(ins, emitActualTypeSize(treeNode), targetReg, a.RegNum, b.RegNum,
+            emit.emitIns_R_R_R_IArm64(ins, emitActualTypeSize(treeNode), targetReg, a.RegNum, b.RegNum,
                 c.AsIntConCommon().IconValue, opt);
 
             genProduceReg(treeNode);
@@ -149,7 +148,7 @@ public sealed partial class CodeGen
 
             assert(op2.Oper is GT_ROR);
             var opt = INS_OPTS_ROR;
-            emit.emitIns_R_R_R_I(ins, emitActualTypeSize(treeNode), targetReg, a.RegNum, b.RegNum,
+            emit.emitIns_R_R_R_IArm64(ins, emitActualTypeSize(treeNode), targetReg, a.RegNum, b.RegNum,
                 c.AsIntConCommon().IconValue, opt);
 
             genProduceReg(treeNode);
@@ -262,4 +261,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

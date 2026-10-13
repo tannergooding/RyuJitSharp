@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -21,7 +20,7 @@ public partial class Emitter
             case INS_b:
             {
                 // Unconditional jumps have one form; assume long when crossing hot/cold sections.
-                fmt = IF_BI_0A;
+                fmt = IF_ARM64_BI_0A;
                 break;
             }
 
@@ -41,7 +40,7 @@ public partial class Emitter
             case INS_ble:
             {
                 // Assume conditional jumps are long.
-                fmt = IF_LARGEJMP;
+                fmt = IF_ARM64_LARGEJMP;
                 break;
             }
 
@@ -99,4 +98,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

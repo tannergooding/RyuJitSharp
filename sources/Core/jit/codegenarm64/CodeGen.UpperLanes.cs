@@ -3,14 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     // SIMD upper halves are volatile across calls, so this intrinsic preserves the live upper lane.
-    public void genSimdUpperSave(GenTreeIntrinsic node)
+    public void genSimdUpperSaveArm64(GenTreeIntrinsic node)
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 SIMD upper-lane saves are unavailable for this target.");
+        }
+
         assert(node.IntrinsicName == NI_SIMD_UpperSave);
 
         var op1 = node.Op1;
@@ -21,10 +26,10 @@ public sealed partial class CodeGen
         assert(emitTypeSize(varDsc.GetRegisterType(lclNode)) == EA_16BYTE);
 
         var targetReg = node.RegNum;
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_ARM64_NA);
 
         var op1Reg = genConsumeReg(op1);
-        assert(op1Reg != REG_NA);
+        assert(op1Reg != REG_ARM64_NA);
 
         Emitter.emitIns_R_R_I_I(INS_mov, EA_8BYTE, targetReg, op1Reg, 0, 1);
 
@@ -45,8 +50,14 @@ public sealed partial class CodeGen
     }
 
     // The local child owns the destination; the intrinsic register contains the saved upper lane.
-    public void genSimdUpperRestore(GenTreeIntrinsic node)
+    public void genSimdUpperRestoreArm64(GenTreeIntrinsic node)
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 SIMD upper-lane restores are unavailable for this target.");
+        }
+
         assert(node.IntrinsicName == NI_SIMD_UpperRestore);
 
         var op1 = node.Op1;
@@ -57,10 +68,10 @@ public sealed partial class CodeGen
         assert(emitTypeSize(varDsc.GetRegisterType(lclNode)) == EA_16BYTE);
 
         var srcReg = node.RegNum;
-        assert(srcReg != REG_NA);
+        assert(srcReg != REG_ARM64_NA);
 
         var lclVarReg = genConsumeReg(lclNode);
-        assert(lclVarReg != REG_NA);
+        assert(lclVarReg != REG_ARM64_NA);
 
         var varNum = lclNode.LclNum;
 
@@ -77,4 +88,3 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R_I_I(INS_mov, EA_8BYTE, lclVarReg, srcReg, 1, 0);
     }
 }
-#endif

@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_I_I(instruction ins, emitAttr attr, regNumber reg, nint imm1, nint imm2,
+    private void emitIns_R_I_I_Arm64(instruction ins, emitAttr attr, regNumber reg, nint imm1, nint imm2,
         insOpts opt = INS_OPTS_NONE
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
@@ -90,7 +89,7 @@ public partial class Emitter
                     hwi.immVal = unchecked((uint)imm1);
                     immOut = hwi.immHWVal;
                     assert(isValidImmHWVal(immOut, size));
-                    fmt = IF_DI_1B;
+                    fmt = IF_ARM64_DI_1B;
                 }
                 break;
             }
@@ -133,9 +132,9 @@ public partial class Emitter
                 assert(isVectorRegister(reg));
                 assert(isValidSimm(imm1, 5));
                 assert(isValidSimm(imm2, 5));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 immOut = insSveEncodeTwoSimm5(imm1, imm2);
-                fmt = IF_SVE_AX_1A;
+                fmt = IF_ARM64_SVE_AX_1A;
                 break;
             }
 
@@ -180,4 +179,3 @@ public partial class Emitter
         return immOut;
     }
 }
-#endif

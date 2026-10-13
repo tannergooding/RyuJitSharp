@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Numerics;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -12,14 +11,14 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+    public void emitIns_R_SArm64(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
     {
         assert(_compiler is not null);
         var size = EA_SIZE(attr);
         var fmt = IF_NONE;
         var opt = INS_OPTS_NONE;
-        var reg2 = REG_NA;
-        var reg3 = REG_NA;
+        var reg2 = REG_ARM64_NA;
+        var reg3 = REG_ARM64_NA;
         var scale = 0;
         var isLdrStr = false;
         var isSimple = true;
@@ -58,14 +57,14 @@ public partial class Emitter
                     assert(localType != TYP_MASK);
                     if (isValidSimm(imm, 6))
                     {
-                        emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                        emitIns_R_R_IArm64(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
                     }
                     else
                     {
                         // Form the address as the unknown-size frame base plus imm * VL.
                         var rsvd = codeGen.rsGetRsvdReg();
                         codeGen.instGen_Set_Reg_To_Imm(EA_8BYTE, reg1, imm);
-                        emitIns_R_I(INS_sve_rdvl, EA_8BYTE, rsvd, 1);
+                        emitIns_R_IArm64(INS_sve_rdvl, EA_8BYTE, rsvd, 1);
                         emitIns_R_R_R_R(INS_madd, EA_8BYTE, reg1, reg1, rsvd, REG_UNKBASE);
                     }
                     return;
@@ -75,7 +74,7 @@ public partial class Emitter
                 {
                     // TODO-SVE: Upstream does not materialize large VL/PL-scaled offsets.
                     assert(isValidSimm(imm, 9));
-                    fmt = isPredicateRegister(reg1) ? IF_SVE_ID_2A : IF_SVE_IE_2A;
+                    fmt = isPredicateRegister(reg1) ? IF_ARM64_SVE_ID_2A : IF_ARM64_SVE_IE_2A;
                     break;
                 }
 
@@ -91,7 +90,7 @@ public partial class Emitter
             var frameBase = _compiler.lvaFrameAddress(varx, out var FPbased);
             var disp = unchecked(frameBase + offs);
             imm = disp;
-            reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
+            reg2 = FPbased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
 
             switch (ins)
             {
@@ -120,7 +119,7 @@ public partial class Emitter
                 case INS_str:
                 case INS_ldr:
                 {
-                    assert(isValidGeneralDatasize(size) || isValidVectorDatasize(size));
+                    assert(isValidGeneralDatasize(size) || isValidVectorDatasizeArm64(size));
                     scale = BitOperations.Log2((uint)EA_SIZE_IN_BYTES(size));
                     isLdrStr = true;
                     break;
@@ -144,22 +143,22 @@ public partial class Emitter
 
                     if (imm <= 0x0fff)
                     {
-                        fmt = IF_DI_2A;
+                        fmt = IF_ARM64_DI_2A;
                     }
                     else
                     {
                         var rsvdReg = codeGen.rsGetRsvdReg();
                         codeGen.instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
                         imm = 0;
-                        if (encodingZRtoSP(reg2) == REG_SP)
+                        if (encodingZRtoSP(reg2) == REG_ARM64_SP)
                         {
-                            fmt = IF_DR_3C;
+                            fmt = IF_ARM64_DR_3C;
                             opt = INS_OPTS_LSL;
                             reg3 = rsvdReg;
                         }
                         else
                         {
-                            fmt = IF_DR_3A;
+                            fmt = IF_ARM64_DR_3A;
                         }
                     }
                     break;
@@ -169,9 +168,9 @@ public partial class Emitter
                 {
                     assert(isPredicateRegister(reg1) || isVectorRegister(reg1));
                     isSimple = false;
-                    size = EA_SCALABLE;
+                    size = EA_SCALABLE_ARM64;
                     attr = size;
-                    fmt = isPredicateRegister(reg1) ? IF_SVE_ID_2A : IF_SVE_IE_2A;
+                    fmt = isPredicateRegister(reg1) ? IF_ARM64_SVE_ID_2A : IF_ARM64_SVE_IE_2A;
 
                     useRegForImm = true;
                     var rsvdReg = codeGen.rsGetRsvdReg();
@@ -197,13 +196,13 @@ public partial class Emitter
 
             if (imm == 0)
             {
-                fmt = IF_LS_2A;
+                fmt = IF_ARM64_LS_2A;
             }
             else if ((imm < 0) || ((imm & mask) != 0))
             {
                 if (isValidSimm(imm, 9))
                 {
-                    fmt = IF_LS_2C;
+                    fmt = IF_ARM64_LS_2C;
                 }
                 else
                 {
@@ -215,7 +214,7 @@ public partial class Emitter
                 if (((imm & mask) == 0) && ((imm >> scale) < 0x1000))
                 {
                     imm >>= scale;
-                    fmt = IF_LS_2B;
+                    fmt = IF_ARM64_LS_2B;
                 }
                 else
                 {
@@ -227,7 +226,7 @@ public partial class Emitter
             {
                 var rsvdReg = codeGen.rsGetRsvdReg();
                 codeGen.instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                fmt = IF_LS_3A;
+                fmt = IF_ARM64_LS_3A;
             }
         }
 
@@ -250,7 +249,7 @@ public partial class Emitter
         id.idReg1(reg1);
         id.idReg2(encodingSPtoZR(reg2));
         id.idReg3(reg3);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
 #if DEBUG
@@ -274,11 +273,11 @@ public partial class Emitter
         assert(isGeneralRegisterOrZR(reg2));
         assert(offs >= 0);
 
-        var fmt = IF_LS_3B;
+        var fmt = IF_ARM64_LS_3B;
         const int scale = 3;
         var frameBase = _compiler.lvaFrameAddress(varx, out var FPbased);
         var disp = unchecked(frameBase + offs);
-        var reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
+        var reg3 = FPbased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
 
         var useRegForAdr = true;
         nint imm = disp;
@@ -294,7 +293,7 @@ public partial class Emitter
                 var immShift = imm >> scale;
                 if ((immShift >= -64) && (immShift <= 63))
                 {
-                    fmt = IF_LS_3C;
+                    fmt = IF_ARM64_LS_3C;
                     useRegForAdr = false;
                     imm = immShift;
                 }
@@ -336,7 +335,7 @@ public partial class Emitter
         id.idReg1(reg1);
         id.idReg2(reg2);
         id.idReg3(reg3);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
 #if DEBUG
@@ -349,7 +348,7 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-    public void emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
+    public void emitIns_S_RArm64(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
     {
         assert(_compiler is not null);
         assert(offs >= 0);
@@ -360,7 +359,7 @@ public partial class Emitter
         var isStr = false;
         var isSimple = true;
         var useRegForImm = false;
-        var reg2 = REG_NA;
+        var reg2 = REG_ARM64_NA;
         nint imm = 0;
 
         if (((varx >= 0) && _compiler.lvaLocalIsOnUnknownSizeFrame(varx)) ||
@@ -368,10 +367,10 @@ public partial class Emitter
         {
             assert(ins == INS_sve_str);
             assert(offs == 0);
-            assert(attr == EA_SCALABLE);
+            assert(attr == EA_SCALABLE_ARM64);
 
             reg2 = REG_UNKBASE;
-            fmt = isPredicateRegister(reg1) ? IF_SVE_JG_2A : IF_SVE_JH_2A;
+            fmt = isPredicateRegister(reg1) ? IF_ARM64_SVE_JG_2A : IF_ARM64_SVE_JH_2A;
             isSimple = false;
 
             if (varx >= 0)
@@ -391,7 +390,7 @@ public partial class Emitter
             var frameBase = _compiler.lvaFrameAddress(varx, out var FPbased);
             var disp = unchecked(frameBase + offs);
             imm = disp;
-            reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
+            reg2 = FPbased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
 
             switch (ins)
             {
@@ -431,9 +430,9 @@ public partial class Emitter
                 {
                     assert(isVectorRegister(reg1) || isPredicateRegister(reg1));
                     isSimple = false;
-                    size = EA_SCALABLE;
+                    size = EA_SCALABLE_ARM64;
                     attr = size;
-                    fmt = isPredicateRegister(reg1) ? IF_SVE_JG_2A : IF_SVE_JH_2A;
+                    fmt = isPredicateRegister(reg1) ? IF_ARM64_SVE_JG_2A : IF_ARM64_SVE_JH_2A;
 
                     useRegForImm = true;
                     var rsvdReg = codeGen.rsGetRsvdReg();
@@ -466,13 +465,13 @@ public partial class Emitter
 
             if (imm == 0)
             {
-                fmt = IF_LS_2A;
+                fmt = IF_ARM64_LS_2A;
             }
             else if ((imm < 0) || ((imm & mask) != 0))
             {
                 if (isValidSimm(imm, 9))
                 {
-                    fmt = IF_LS_2C;
+                    fmt = IF_ARM64_LS_2C;
                 }
                 else
                 {
@@ -484,7 +483,7 @@ public partial class Emitter
                 if (((imm & mask) == 0) && ((imm >> scale) < 0x1000))
                 {
                     imm >>= scale;
-                    fmt = IF_LS_2B;
+                    fmt = IF_ARM64_LS_2B;
                 }
                 else
                 {
@@ -497,7 +496,7 @@ public partial class Emitter
                 // The native idReg3 field overlaps the local address; this format implies the reserved register.
                 var rsvdReg = codeGen.rsGetRsvdReg();
                 codeGen.instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
-                fmt = IF_LS_3A;
+                fmt = IF_ARM64_LS_3A;
             }
         }
 
@@ -519,7 +518,7 @@ public partial class Emitter
         id.idInsOpt(INS_OPTS_NONE);
         id.idReg1(reg1);
         id.idReg2(encodingSPtoZR(reg2));
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
 #if DEBUG
@@ -543,11 +542,11 @@ public partial class Emitter
         assert(isGeneralRegisterOrZR(reg2));
         assert(offs >= 0);
 
-        var fmt = IF_LS_3B;
+        var fmt = IF_ARM64_LS_3B;
         const int scale = 3;
         var frameBase = _compiler.lvaFrameAddress(varx, out var FPbased);
         var disp = unchecked(frameBase + offs);
-        var reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
+        var reg3 = FPbased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
 
         var useRegForAdr = true;
         nint imm = disp;
@@ -563,7 +562,7 @@ public partial class Emitter
                 var immShift = imm >> scale;
                 if ((immShift >= -64) && (immShift <= 63))
                 {
-                    fmt = IF_LS_3C;
+                    fmt = IF_ARM64_LS_3C;
                     useRegForAdr = false;
                     imm = immShift;
                 }
@@ -605,7 +604,7 @@ public partial class Emitter
         id.idReg1(reg1);
         id.idReg2(reg2);
         id.idReg3(reg3);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
 
 #if DEBUG
@@ -618,4 +617,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

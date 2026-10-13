@@ -9,6 +9,6 @@ public partial class Emitter
 {
     private static bool emitIsDirectCall(instrDesc call)
     {
-        return call.idInsFmt() == insFormat.IF_BI_0C;
+        return call.idInsFmt() == insFormat.IF_ARM64_BI_0C;
     }
 }

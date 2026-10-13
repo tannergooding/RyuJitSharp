@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
@@ -15,13 +14,18 @@ public partial class Emitter
 {
     private unsafe void emitIns_CallArm64(in EmitCallParams parameters)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 call recording is only supported on ARM64.");
+        }
+
         assert(_compiler is not null);
-        assert(parameters.callType < EC_COUNT);
+        assert(parameters.callType is EC_FUNC_TOKEN or EC_INDIR_R);
         assert((parameters.callType != EC_FUNC_TOKEN) ||
-            ((parameters.addr != null) && (parameters.ireg == REG_NA)));
+            ((parameters.addr != null) && (parameters.ireg == REG_ARM64_NA)));
         assert((parameters.callType != EC_INDIR_R) ||
-            ((parameters.addr == null) && (parameters.ireg < REG_COUNT)));
-        assert((parameters.xreg == REG_NA) && (parameters.xmul == 0) && (parameters.disp == 0));
+            ((parameters.addr == null) && (parameters.ireg < REG_ARM64_COUNT)));
+        assert((parameters.xreg == REG_ARM64_NA) && (parameters.xmul == 0) && (parameters.disp == 0));
 
 #if DEBUG
         var argSize = unchecked((int)parameters.argSize);
@@ -48,40 +52,34 @@ public partial class Emitter
         }
 #endif
 
-        assert((parameters.argSize % REGSIZE_BYTES) == 0);
-        var argCount = unchecked((int)(parameters.argSize / REGSIZE_BYTES));
+        assert((parameters.argSize % Configuration.REGSIZE_BYTES) == 0);
+        var argCount = unchecked((int)(parameters.argSize / Configuration.REGSIZE_BYTES));
         var isIndirect = parameters.callType == EC_INDIR_R;
         var id = isIndirect
             ? emitNewInstrCallInd(argCount, 0, parameters.ptrVars, gcrefRegs, byrefRegs, parameters.retSize,
-#if MULTIREG_HAS_SECOND_GC_RET
                 parameters.secondRetSize,
-#endif
                 parameters.hasAsyncRet)
             : emitNewInstrCallDir(argCount, parameters.ptrVars, gcrefRegs, byrefRegs, parameters.retSize,
-#if MULTIREG_HAS_SECOND_GC_RET
                 parameters.secondRetSize,
-#endif
                 parameters.hasAsyncRet);
 
         if (parameters.retSize == EA_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET);
+            gcrefRegs |= new regMaskTP(SRBM_INTRET_ARM64);
         }
         else if (parameters.retSize == EA_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET);
+            byrefRegs |= new regMaskTP(SRBM_INTRET_ARM64);
         }
 
-#if MULTIREG_HAS_SECOND_GC_RET
-        if (parameters.secondRetSize == EA_GCREF)
+        if (Configuration.MULTIREG_HAS_SECOND_GC_RET && parameters.secondRetSize == EA_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET_1);
+            gcrefRegs |= new regMaskTP(SRBM_INTRET_1_ARM64);
         }
-        else if (parameters.secondRetSize == EA_BYREF)
+        else if (Configuration.MULTIREG_HAS_SECOND_GC_RET && parameters.secondRetSize == EA_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET_1);
+            byrefRegs |= new regMaskTP(SRBM_INTRET_1_ARM64);
         }
-#endif
 
         VarSetOps.Assign(_compiler, ref emitThisGCrefVars, parameters.ptrVars);
         emitThisGCrefRegs = (regMask)gcrefRegs;
@@ -91,10 +89,10 @@ public partial class Emitter
         if (isIndirect)
         {
             id.idIns(parameters.isJump ? INS_br_tail : INS_blr);
-            id.idInsFmt(IF_BR_1B);
+            id.idInsFmt(IF_ARM64_BR_1B);
             if (_compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_TLSGD_RELOC(parameters.retSize))
             {
-                assert(parameters.ireg == REG_R2);
+                assert(parameters.ireg == REG_ARM64_R2);
                 id.idSetTlsGD();
                 id.idAddr().iiaAddr = (byte*)parameters.methHnd;
             }
@@ -109,7 +107,7 @@ public partial class Emitter
             assert(parameters.addr != null);
 
             id.idIns(parameters.isJump ? INS_b_tail : INS_bl);
-            id.idInsFmt(IF_BI_0C);
+            id.idInsFmt(IF_ARM64_BI_0C);
             id.idAddr().iiaAddr = (byte*)parameters.addr;
             if (_compiler.opts.compReloc)
             {
@@ -147,4 +145,3 @@ public partial class Emitter
         emitLastMemBarrier = null;
     }
 }
-#endif

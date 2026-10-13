@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -14,9 +13,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if FEATURE_SIMD
-    public void genLoadIndTypeSimd12(GenTreeIndir treeNode)
+    public void genLoadIndTypeSimd12Arm64(GenTreeIndir treeNode)
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 SIMD12 indirect-load code generation requires SIMD-enabled ARM64.");
+        }
+
         assert(treeNode.Oper is GT_IND);
 
         var addr = treeNode.Addr;
@@ -27,13 +30,11 @@ public sealed partial class CodeGen
         var tmpReg = InternalRegisters.GetSingle(treeNode);
 
         Emitter.emitIns_R_R(INS_ldr, EA_8BYTE, targetReg, addrReg);
-        Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, addrReg, 8);
+        Emitter.emitIns_R_R_IArm64(INS_ldr, EA_4BYTE, tmpReg, addrReg, 8);
 
         // Keep the load within 12 bytes; the final word is inserted into SIMD lane 2.
-        Emitter.emitIns_R_R_I(INS_mov, EA_4BYTE, targetReg, tmpReg, 2);
+        Emitter.emitIns_R_R_IArm64(INS_mov, EA_4BYTE, targetReg, tmpReg, 2);
 
         genProduceReg(treeNode);
     }
-#endif
 }
-#endif

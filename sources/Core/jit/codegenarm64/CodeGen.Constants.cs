@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Runtime.InteropServices;
 using static RyuJitSharp.SimdScalableKind;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public partial class CodeGen
 {
-    public unsafe void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree tree)
+    public unsafe void genSetRegToConstArm64(regNumber targetReg, var_types targetType, GenTree tree)
     {
         switch (tree.Oper)
         {
@@ -46,7 +45,7 @@ public partial class CodeGen
                     }
                 }
 
-                instGen_Set_Reg_To_Imm(attr, targetReg, value, INS_FLAGS_DONT_CARE
+                instGen_Set_Reg_To_ImmArm64(attr, targetReg, value, INS_FLAGS_DONT_CARE
 #if DEBUG
                     , unchecked((nuint)constant.TargetHandle), constant.Flags
 #endif
@@ -79,9 +78,14 @@ public partial class CodeGen
                 break;
             }
 
-#if FEATURE_SIMD
             case GT_CNS_VEC:
             {
+                if (!Configuration.FEATURE_SIMD)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "SIMD constants are not supported by this ARM64 configuration.");
+                }
+
                 var vector = tree.AsVecCon();
                 var emit = Emitter;
 
@@ -160,11 +164,11 @@ public partial class CodeGen
 
                         if (vector.IsZero)
                         {
-                            emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
+                            emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE_ARM64, targetReg, 0, opt);
                         }
                         else if (vector.IsAllBitsSet)
                         {
-                            emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, -1, opt);
+                            emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE_ARM64, targetReg, -1, opt);
                         }
                         else
                         {
@@ -176,24 +180,24 @@ public partial class CodeGen
                                     {
                                         if (varTypeIsIntegral(baseType))
                                         {
-                                            emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg,
+                                            emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE_ARM64, targetReg,
                                                 unchecked((nint)info.indexImm), opt);
                                         }
                                         else if (baseType == TYP_FLOAT)
                                         {
-                                            emit.emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                            emit.emitIns_R_F(INS_sve_fdup, EA_SCALABLE_ARM64, targetReg,
                                                 value.Index.f32[0], INS_OPTS_SCALABLE_S);
                                         }
                                         else
                                         {
                                             assert(baseType == TYP_DOUBLE);
-                                            emit.emitIns_R_F(INS_sve_fdup, EA_SCALABLE, targetReg,
+                                            emit.emitIns_R_F(INS_sve_fdup, EA_SCALABLE_ARM64, targetReg,
                                                 value.Index.f64[0], INS_OPTS_SCALABLE_D);
                                         }
                                     }
                                     else
                                     {
-                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT));
+                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT_ARM64));
                                         LoadConstant(indexReg, info.indexVal);
                                         emit.emitInsSve_R_R(INS_sve_dup, emitSize, targetReg, indexReg, opt);
                                     }
@@ -205,27 +209,27 @@ public partial class CodeGen
                                     assert(varTypeIsIntegral(baseType));
                                     if (info.CanEncodeSequence())
                                     {
-                                        emit.emitInsSve_R_I_I(INS_sve_index, EA_SCALABLE, targetReg,
+                                        emit.emitInsSve_R_I_I(INS_sve_index, EA_SCALABLE_ARM64, targetReg,
                                             unchecked((nint)info.indexImm), unchecked((nint)info.stepImm), opt);
                                     }
                                     else if (info.CanEncodeSequenceIndex())
                                     {
-                                        var stepReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT));
+                                        var stepReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT_ARM64));
                                         LoadConstant(stepReg, info.stepVal);
                                         emit.emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, stepReg,
                                             unchecked((nint)info.indexImm), opt, insScalableOpts.INS_SCALABLE_OPTS_IMM_FIRST);
                                     }
                                     else if (info.CanEncodeSequenceStep())
                                     {
-                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT));
+                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT_ARM64));
                                         LoadConstant(indexReg, info.indexVal);
                                         emit.emitInsSve_R_R_I(INS_sve_index, emitSize, targetReg, indexReg,
                                             unchecked((nint)info.stepImm), opt);
                                     }
                                     else
                                     {
-                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT));
-                                        var stepReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT));
+                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT_ARM64));
+                                        var stepReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT_ARM64));
                                         LoadConstant(indexReg, info.indexVal);
                                         LoadConstant(stepReg, info.stepVal);
                                         emit.emitInsSve_R_R_R(INS_sve_index, emitSize, targetReg, indexReg,
@@ -237,7 +241,7 @@ public partial class CodeGen
                                 case SimdScalableScalar:
                                 {
                                     // Clear scalable lanes before using a NEON scalar instruction.
-                                    emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE, targetReg, 0, opt);
+                                    emit.emitInsSve_R_I(INS_sve_dup, EA_SCALABLE_ARM64, targetReg, 0, opt);
                                     if (info.CanEncodeScalar(value, emitSize))
                                     {
                                         if (baseType == TYP_FLOAT)
@@ -252,9 +256,9 @@ public partial class CodeGen
                                     }
                                     else
                                     {
-                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT));
+                                        var indexReg = _internalRegisters.Extract(tree, new regMaskTP(SRBM_ALLINT_ARM64));
                                         LoadConstant(indexReg, info.indexVal);
-                                        emit.emitIns_R_R_I(INS_ins, emitSize, targetReg, indexReg, 0);
+                                        emit.emitIns_R_R_IArm64(INS_ins, emitSize, targetReg, indexReg, 0);
                                     }
                                     break;
                                 }
@@ -280,11 +284,17 @@ public partial class CodeGen
 
             case GT_CNS_MSK:
             {
+                if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Masked SIMD constants are not supported by this ARM64 configuration.");
+                }
+
                 var mask = tree.AsMskCon();
                 var emit = Emitter;
                 if (mask.IsZero)
                 {
-                    emit.emitInsSve_R(INS_sve_pfalse, EA_SCALABLE, targetReg, INS_OPTS_SCALABLE_B);
+                    emit.emitInsSve_R(INS_sve_pfalse, EA_SCALABLE_ARM64, targetReg, INS_OPTS_SCALABLE_B);
                     break;
                 }
 
@@ -293,7 +303,7 @@ public partial class CodeGen
                 {
                     assert(mask.SimdScalableMaskVal.Index == 1);
                     var scalableOpt = Emitter.optGetSveInsOpt(mask.SimdScalableMaskVal.BaseType.EmitSize);
-                    emit.emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, scalableOpt, SVE_PATTERN_ALL);
+                    emit.emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE_ARM64, targetReg, scalableOpt, SVE_PATTERN_ALL);
                     break;
                 }
 #endif
@@ -323,11 +333,9 @@ public partial class CodeGen
                     unreached();
                 }
 
-                emit.emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, opt, (insSvePattern)pattern);
+                emit.emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE_ARM64, targetReg, opt, (insSvePattern)pattern);
                 break;
             }
-#endif
-
             default:
             {
                 unreached();
@@ -336,4 +344,3 @@ public partial class CodeGen
         }
     }
 }
-#endif

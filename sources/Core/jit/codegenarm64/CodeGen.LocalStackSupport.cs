@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, nint imm,
+    public void instGen_Set_Reg_To_ImmArm64(emitAttr size, regNumber reg, nint imm,
         insFlags flags = insFlags.INS_FLAGS_DONT_CARE
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
@@ -39,8 +38,7 @@ public sealed partial class CodeGen
             var immSize = EA_SIZE(size);
             if (Emitter.emitIns_valid_imm_for_mov(imm, immSize))
             {
-                Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
-                    insScalableOpts.INS_SCALABLE_OPTS_NONE
+                Emitter.emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE
 #if DEBUG
                     , targetHandle, gtFlags
 #endif
@@ -107,14 +105,13 @@ public sealed partial class CodeGen
     {
         if (Emitter.emitIns_valid_imm_for_add(imm, size))
         {
-            Emitter.emitIns_R_R_I(INS_add, size, dstReg, baseReg, imm);
+            Emitter.emitIns_R_R_IArm64(INS_add, size, dstReg, baseReg, imm);
         }
         else
         {
-            instGen_Set_Reg_To_Imm(size, dstReg, imm);
+            instGen_Set_Reg_To_ImmArm64(size, dstReg, imm);
             // Keep the base in the second operand: it may be SP.
             Emitter.emitIns_R_R_R(INS_add, size, dstReg, baseReg, dstReg);
         }
     }
 }
-#endif

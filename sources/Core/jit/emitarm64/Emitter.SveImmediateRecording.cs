@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -15,7 +14,7 @@ public unsafe partial class Emitter
         var fmt = IF_NONE;
         if (ins == INS_sve_setffr)
         {
-            fmt = IF_SVE_DQ_0A;
+            fmt = IF_ARM64_SVE_DQ_0A;
             attr = EA_PTRSIZE;
             imm = 0;
         }
@@ -43,7 +42,7 @@ public unsafe partial class Emitter
                 opt = INS_OPTS_SCALABLE_B;
                 assert(isVectorRegister(reg));
                 assert(isScalableVectorSize(attr));
-                fmt = IF_SVE_GL_1A;
+                fmt = IF_ARM64_SVE_GL_1A;
                 break;
             }
 
@@ -51,7 +50,7 @@ public unsafe partial class Emitter
             {
                 opt = INS_OPTS_SCALABLE_B;
                 assert(isPredicateRegister(reg));
-                fmt = IF_SVE_DH_1A;
+                fmt = IF_ARM64_SVE_DH_1A;
                 break;
             }
 
@@ -59,7 +58,7 @@ public unsafe partial class Emitter
             {
                 opt = INS_OPTS_SCALABLE_B;
                 assert(isPredicateRegister(reg));
-                fmt = IF_SVE_DJ_1A;
+                fmt = IF_ARM64_SVE_DJ_1A;
                 break;
             }
 
@@ -67,7 +66,7 @@ public unsafe partial class Emitter
             {
                 opt = INS_OPTS_SCALABLE_B;
                 assert(isPredicateRegister(reg));
-                fmt = IF_SVE_DR_1A;
+                fmt = IF_ARM64_SVE_DR_1A;
                 break;
             }
 
@@ -75,8 +74,8 @@ public unsafe partial class Emitter
             {
                 assert(insOptsScalableStandard(opt));
                 assert(isHighPredicateRegister(reg));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_DZ_1A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_DZ_1A;
                 break;
             }
 
@@ -84,8 +83,8 @@ public unsafe partial class Emitter
             {
                 assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EB_1B;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EB_1B;
 
                 // FMOV represents DUP here; MOV is its preferred alias.
                 ins = INS_sve_mov;
@@ -127,7 +126,7 @@ public unsafe partial class Emitter
                 assert(size == EA_8BYTE);
                 assert(isGeneralRegister(reg));
                 assert(isValidSimm(imm, 6));
-                fmt = IF_SVE_BC_1A;
+                fmt = IF_ARM64_SVE_BC_1A;
                 canEncode = true;
                 break;
             }
@@ -144,7 +143,7 @@ public unsafe partial class Emitter
             {
                 assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 if (signedImm)
                 {
                     assert(isValidSimm(imm, 8));
@@ -154,7 +153,7 @@ public unsafe partial class Emitter
                     assert(isValidUimm(imm, 8));
                 }
 
-                fmt = IF_SVE_ED_1A;
+                fmt = IF_ARM64_SVE_ED_1A;
                 canEncode = true;
                 break;
             }
@@ -164,8 +163,8 @@ public unsafe partial class Emitter
                 assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg));
                 assert(isValidSimm(imm, 8));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EE_1A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EE_1A;
                 canEncode = true;
                 break;
             }
@@ -185,12 +184,12 @@ public unsafe partial class Emitter
 
                     imm = (nint)bmi.immNRS;
                     assert(isValidImmNRS(unchecked((nuint)imm), optGetSveElemsize(opt)));
-                    fmt = IF_SVE_BT_1A;
+                    fmt = IF_ARM64_SVE_BT_1A;
                 }
                 else
                 {
                     assert(insScalableOptsNone(sopt));
-                    assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                    assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                     if (!isValidSimm(imm, 8))
                     {
                         assert(isValidSimm(imm / 256, 8) && ((imm % 256) == 0));
@@ -199,7 +198,7 @@ public unsafe partial class Emitter
                         imm >>= 8;
                     }
 
-                    fmt = IF_SVE_EB_1A;
+                    fmt = IF_ARM64_SVE_EB_1A;
                     canEncode = true;
                 }
                 break;
@@ -209,7 +208,7 @@ public unsafe partial class Emitter
             {
                 assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 if (!isValidSimm(imm, 8))
                 {
                     assert(isValidSimm(imm / 256, 8) && ((imm % 256) == 0));
@@ -218,7 +217,7 @@ public unsafe partial class Emitter
                     imm >>= 8;
                 }
 
-                fmt = IF_SVE_EB_1A;
+                fmt = IF_ARM64_SVE_EB_1A;
                 canEncode = true;
 
                 // MOV is always the preferred alias of DUP.
@@ -236,7 +235,7 @@ public unsafe partial class Emitter
             {
                 assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 if (!isValidUimm(imm, 8))
                 {
                     assert(isValidUimm(imm / 256, 8) && ((imm % 256) == 0));
@@ -245,7 +244,7 @@ public unsafe partial class Emitter
                     imm >>= 8;
                 }
 
-                fmt = IF_SVE_EC_1A;
+                fmt = IF_ARM64_SVE_EC_1A;
                 canEncode = true;
                 break;
             }
@@ -260,7 +259,7 @@ public unsafe partial class Emitter
                 canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
                 imm = (nint)bmi.immNRS;
                 assert(isValidImmNRS(unchecked((nuint)imm), optGetSveElemsize(opt)));
-                fmt = IF_SVE_BS_1A;
+                fmt = IF_ARM64_SVE_BS_1A;
                 break;
             }
 
@@ -274,7 +273,7 @@ public unsafe partial class Emitter
                 canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
                 imm = (nint)bmi.immNRS;
                 assert(isValidImmNRS(unchecked((nuint)imm), optGetSveElemsize(opt)));
-                fmt = IF_SVE_BS_1A;
+                fmt = IF_ARM64_SVE_BS_1A;
                 break;
             }
 
@@ -288,7 +287,7 @@ public unsafe partial class Emitter
                 canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
                 imm = (nint)bmi.immNRS;
                 assert(isValidImmNRS(unchecked((nuint)imm), optGetSveElemsize(opt)));
-                fmt = IF_SVE_BS_1A;
+                fmt = IF_ARM64_SVE_BS_1A;
                 break;
             }
 
@@ -302,7 +301,7 @@ public unsafe partial class Emitter
                 canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
                 imm = (nint)bmi.immNRS;
                 assert(isValidImmNRS(unchecked((nuint)imm), optGetSveElemsize(opt)));
-                fmt = IF_SVE_BS_1A;
+                fmt = IF_ARM64_SVE_BS_1A;
                 break;
             }
 
@@ -312,7 +311,7 @@ public unsafe partial class Emitter
                 assert(isVectorRegister(reg));
                 bmi.immNRS = 0;
                 canEncode = canEncodeBitMaskImm(imm, optGetSveElemsize(opt), &bmi);
-                fmt = IF_SVE_BT_1A;
+                fmt = IF_ARM64_SVE_BT_1A;
                 if (useMovDisasmForBitMask(imm))
                 {
                     ins = INS_sve_mov;
@@ -357,12 +356,12 @@ public unsafe partial class Emitter
             {
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(isVectorRegister(reg));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 floatImm8 fpi;
                 fpi.immFPIVal = 0;
                 canEncode = canEncodeFloatImm8(immDbl, &fpi);
                 imm = (nint)fpi.immFPIVal;
-                fmt = IF_SVE_EA_1A;
+                fmt = IF_ARM64_SVE_EA_1A;
 
                 // FMOV is always the preferred alias of FDUP.
                 ins = INS_sve_fmov;
@@ -411,7 +410,7 @@ public unsafe partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isScalableVectorSize(size));
                 imm = emitEncodeSmallFloatImm(immDbl, ins);
-                fmt = IF_SVE_HM_2A;
+                fmt = IF_ARM64_SVE_HM_2A;
                 break;
             }
 
@@ -421,12 +420,12 @@ public unsafe partial class Emitter
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(isVectorRegister(reg1));
                 assert(isPredicateRegister(reg2));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 floatImm8 fpi;
                 fpi.immFPIVal = 0;
                 _ = canEncodeFloatImm8(immDbl, &fpi);
                 imm = (nint)fpi.immFPIVal;
-                fmt = IF_SVE_BU_2A;
+                fmt = IF_ARM64_SVE_BU_2A;
 
                 // FMOV is an alias for FCPY, and is always the preferred disassembly.
                 ins = INS_sve_fmov;
@@ -496,4 +495,3 @@ public unsafe partial class Emitter
         return 1;
     }
 }
-#endif

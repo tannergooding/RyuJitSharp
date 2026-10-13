@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -61,7 +60,7 @@ public partial class Emitter
 
     private static bool isLowVectorRegister(regNumber reg)
     {
-        return (reg >= FIRST_FP_ARGREG) && (reg <= LAST_FP_ARGREG);
+        return (reg >= FIRST_FP_ARGREG_ARM64) && (reg <= LAST_FP_ARGREG_ARM64);
     }
 
     private static bool isLowPredicateRegister(regNumber reg)
@@ -73,11 +72,11 @@ public partial class Emitter
     {
         if (isGeneralRegister(reg))
         {
-            return ((reg - REG_INT_FIRST) % 2) == 0;
+            return ((reg - TargetRuntimeMetadata.IntegerRegisterFirst) % 2) == 0;
         }
         else if (isVectorRegister(reg))
         {
-            return ((reg - REG_FP_FIRST) % 2) == 0;
+            return ((reg - REG_FP_FIRST_ARM64) % 2) == 0;
         }
         else
         {
@@ -180,4 +179,3 @@ public partial class Emitter
         return isValidUimm(imm, 2);
     }
 }
-#endif

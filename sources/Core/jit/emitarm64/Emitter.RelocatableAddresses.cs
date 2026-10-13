@@ -3,22 +3,27 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public unsafe void emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, nint addr
+    private unsafe void emitIns_R_AI_Arm64(instruction ins, emitAttr attr, regNumber ireg, nint addr
 #if DEBUG
         , nuint targetHandle = 0, GenTreeFlags gtFlags = GTF_EMPTY
 #endif
         )
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 relocatable-address recording is only supported on ARM64.");
+        }
+
         assert(EA_IS_RELOC(attr));
         var size = EA_SIZE(attr);
-        var fmt = IF_DI_1E;
+        var fmt = IF_ARM64_DI_1E;
         var needAdd = false;
         var id = emitNewInstrJmp();
 
@@ -62,7 +67,7 @@ public partial class Emitter
         if (needAdd)
         {
             ins = INS_add;
-            fmt = IF_DI_2A;
+            fmt = IF_ARM64_DI_2A;
             var addId = emitNewInstr(attr);
             assert(addId.idIsReloc());
 
@@ -79,4 +84,3 @@ public partial class Emitter
         }
     }
 }
-#endif

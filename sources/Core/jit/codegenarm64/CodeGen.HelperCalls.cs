@@ -3,13 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
-        regNumber callTargetReg = REG_NA)
+    public unsafe void genEmitHelperCallArm64(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
+        regNumber callTargetReg = REG_ARM64_NA)
     {
         var parameters = new EmitCallParams { callType = EC_FUNC_TOKEN };
         var helperFunction = _compiler.compGetHelperFtn(helper);
@@ -25,9 +24,9 @@ public sealed partial class CodeGen
             assert(helperFunction.accessType is IAT_PVALUE);
             var address = helperFunction.addr;
 
-            if (callTargetReg is REG_NA)
+            if (callTargetReg is REG_ARM64_NA)
             {
-                callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+                callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET_ARM64;
             }
 
             var callTargetMask = genRegMask(callTargetReg);
@@ -45,7 +44,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE, callTargetReg, unchecked((nint)address));
+                instGen_Set_Reg_To_ImmArm64(EA_PTRSIZE, callTargetReg, unchecked((nint)address));
             }
 
             Emitter.emitIns_R_R(INS_ldr, EA_PTRSIZE, callTargetReg, callTargetReg);
@@ -63,4 +62,3 @@ public sealed partial class CodeGen
         _regSet.verifyRegistersUsed(killMask);
     }
 }
-#endif

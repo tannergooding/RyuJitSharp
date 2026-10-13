@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     private static bool isIntegerRegister(regNumber reg)
     {
-        return (reg >= REG_INT_FIRST) && (reg <= REG_INT_LAST);
+        return (reg >= REG_INT_FIRST_ARM64) && (reg <= REG_INT_LAST_ARM64);
     }
 
     private static bool isValidUimm(nint value, int bits)
@@ -19,4 +18,3 @@ public partial class Emitter
         return (0 <= value) && (unchecked((nuint)value) < max);
     }
 }
-#endif

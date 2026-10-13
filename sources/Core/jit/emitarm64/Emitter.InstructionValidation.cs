@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -29,7 +28,7 @@ public partial class Emitter
         return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
     }
 
-    private static bool isValidVectorDatasize(emitAttr size)
+    private static bool isValidVectorDatasizeArm64(emitAttr size)
     {
         return (size == EA_16BYTE) || (size == EA_8BYTE);
     }
@@ -39,7 +38,7 @@ public partial class Emitter
         return (size == EA_16BYTE) || (size == EA_8BYTE) || (size == EA_4BYTE);
     }
 
-    private static bool isValidVectorElemsize(emitAttr size)
+    private static bool isValidVectorElemsizeArm64(emitAttr size)
     {
         return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE) || (size == EA_1BYTE);
     }
@@ -54,24 +53,9 @@ public partial class Emitter
         return (size == EA_8BYTE) || (size == EA_4BYTE);
     }
 
-    private static bool isGeneralRegister(regNumber reg)
-    {
-        return (reg >= REG_INT_FIRST) && (reg <= REG_LR);
-    }
-
     internal static bool isGeneralRegisterOrZR(regNumber reg)
     {
-        return (reg >= REG_INT_FIRST) && (reg <= REG_ZR);
-    }
-
-    internal static bool isVectorRegister(regNumber reg)
-    {
-        return (reg >= REG_FP_FIRST && reg <= REG_FP_LAST);
-    }
-
-    private static bool insOptsNone(insOpts opt)
-    {
-        return (opt == INS_OPTS_NONE);
+        return (reg >= REG_INT_FIRST_ARM64) && (reg <= REG_INT_LAST_ARM64);
     }
 
     private static bool insOptsIndexed(insOpts opt)
@@ -135,4 +119,3 @@ public partial class Emitter
         return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_H));
     }
 }
-#endif

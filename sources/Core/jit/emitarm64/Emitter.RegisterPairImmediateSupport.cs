@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Numerics;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.Emitter.insFormat;
@@ -14,6 +13,7 @@ public partial class Emitter
 {
     private static bool isValidSimm(nint value, int bits)
     {
+        RequireArm64Target();
         var sizeBits = nint.Size * 8;
         assert(bits > 0);
         assert(bits <= sizeBits);
@@ -31,6 +31,7 @@ public partial class Emitter
 
     private static uint NaturalScale_helper(emitAttr size)
     {
+        RequireArm64Target();
         assert((size == EA_1BYTE) || (size == EA_2BYTE) || (size == EA_4BYTE) ||
                (size == EA_8BYTE) || (size == EA_16BYTE));
         return (uint)BitOperations.Log2((uint)size);
@@ -38,6 +39,7 @@ public partial class Emitter
 
     private static uint insGetRegisterListSize(instruction ins)
     {
+        RequireArm64Target();
         uint registerListSize = 0;
         switch (ins)
         {
@@ -99,17 +101,20 @@ public partial class Emitter
 
     private static bool isValidGeneralLSDatasize(emitAttr size)
     {
+        RequireArm64Target();
         return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE) || (size == EA_1BYTE);
     }
 
     private static bool isValidVectorLSDatasize(emitAttr size)
     {
+        RequireArm64Target();
         return (size == EA_16BYTE) || (size == EA_8BYTE) || (size == EA_4BYTE) ||
                (size == EA_2BYTE) || (size == EA_1BYTE);
     }
 
     private unsafe bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
     {
+        RequireArm64Target();
         assert(_compiler is not null);
 
         if (ins != INS_ldr)
@@ -143,7 +148,7 @@ public partial class Emitter
         assert(emitLastIns is not null);
         var prevId = emitLastIns;
         // The previous instruction must be the relocatable low-page add from the same adrp/add pair.
-        if ((prevId.idIns() != INS_add) || (prevId.idInsFmt() != IF_DI_2A) || !prevId.idIsReloc() ||
+        if ((prevId.idIns() != INS_add) || (prevId.idInsFmt() != IF_ARM64_DI_2A) || !prevId.idIsReloc() ||
             prevId.idIsTlsGD() || (prevId.idReg1() != reg1) || (prevId.idReg2() != reg1))
         {
             return false;
@@ -161,7 +166,7 @@ public partial class Emitter
 
         var id = emitNewInstrSC(attr, (nint)sym);
         id.idIns(INS_ldr);
-        id.idInsFmt(IF_LS_2A);
+        id.idInsFmt(IF_ARM64_LS_2A);
         id.idInsOpt(INS_OPTS_NONE);
         id.idReg1(reg1);
         id.idReg2(reg1);
@@ -181,6 +186,7 @@ public partial class Emitter
 
     private bool OptimizePostIndexed(instruction ins, regNumber reg, nint imm, emitAttr regAttr)
     {
+        RequireArm64Target();
         assert(ins is INS_add or INS_sub);
 
         if (!emitCanPeepholeLastIns())
@@ -189,12 +195,12 @@ public partial class Emitter
         }
 
         assert(emitLastIns is not null);
-        if (!emitInsIsLoadOrStore(emitLastIns.idIns()))
+        if (!emitInsIsArmLoadOrStore(emitLastIns.idIns()))
         {
             return false;
         }
 
-        if ((emitLastIns.idInsFmt() != IF_LS_2A) || emitLastIns.idIsTlsGD() || emitLastIns.idIsReloc())
+        if ((emitLastIns.idInsFmt() != IF_ARM64_LS_2A) || emitLastIns.idIsTlsGD() || emitLastIns.idIsReloc())
         {
             return false;
         }
@@ -287,7 +293,7 @@ public partial class Emitter
 
         var id = emitNewInstrCns(newAttr, imm);
         id.idIns(newIns);
-        id.idInsFmt(IF_LS_2C);
+        id.idInsFmt(IF_ARM64_LS_2C);
         id.idInsOpt(INS_OPTS_POST_INDEX);
         id.idReg1(loadStoreDataReg);
         id.idReg2(encodingSPtoZR(loadStoreAddrReg));
@@ -313,6 +319,7 @@ public partial class Emitter
 #endif
         )
     {
+        RequireArm64Target();
         assert(ins is INS_ldr or INS_str);
 
         if (!emitCanPeepholeLastIns())
@@ -343,7 +350,7 @@ public partial class Emitter
 
         if (IsOptimizableLdrToMov(ins, reg1, reg2, imm, size, fmt))
         {
-            emitIns_Mov(INS_mov, reg1Attr, reg1, emitLastIns.idReg1(), canSkip: true);
+            emitInsMovArm64(INS_mov, reg1Attr, reg1, emitLastIns.idReg1(), canSkip: true);
             return true;
         }
 
@@ -353,6 +360,7 @@ public partial class Emitter
     private bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, nint imm,
         emitAttr size, insFormat fmt)
     {
+        RequireArm64Target();
         if ((ins != INS_ldr) && (ins != INS_str))
         {
             return false;
@@ -365,7 +373,7 @@ public partial class Emitter
         var prevSize = emitLastIns.idOpSize();
         var prevImm = emitGetInsSC(emitLastIns);
 
-        if (((fmt != IF_LS_2A) && (fmt != IF_LS_2B)) || (fmt != lastInsFmt) || (prevSize != size))
+        if (((fmt != IF_ARM64_LS_2A) && (fmt != IF_ARM64_LS_2B)) || (fmt != lastInsFmt) || (prevSize != size))
         {
             return false;
         }
@@ -387,7 +395,7 @@ public partial class Emitter
         else if ((ins == INS_str) && (emitLastIns.idIns() == INS_ldr))
         {
             if ((reg1 != reg2) && (prevReg1 == reg1) && (prevReg2 == reg2) && (imm == prevImm) &&
-                (reg1 != REG_ZR))
+                (reg1 != REG_ARM64_ZR))
             {
                 JITDUMP($"\n -- suppressing 'str reg{reg1} [reg{reg2}, #{imm}]' as previous " +
                     $"'ldr reg{prevReg1} [reg{prevReg2}, #{prevImm}] was from same location.\n");
@@ -401,6 +409,7 @@ public partial class Emitter
     private bool ReplaceLdrStrWithPairInstr(instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2,
         nint imm, emitAttr size, insFormat fmt, bool localVar = false, int varx = -1, int offs = -1)
     {
+        RequireArm64Target();
         var optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
         if (optimizationOrder == RegisterOrder.eRO_none)
         {
@@ -418,8 +427,8 @@ public partial class Emitter
 
         var prevImm = emitGetInsSC(emitLastIns);
         var optIns = (ins == INS_ldr) ? INS_ldp : INS_stp;
-        var prevImmSize = (emitLastIns.idInsFmt() == IF_LS_2C) ? prevImm : (prevImm * (nint)size);
-        var newImmSize = (fmt == IF_LS_2C) ? imm : (imm * (nint)size);
+        var prevImmSize = (emitLastIns.idInsFmt() == IF_ARM64_LS_2C) ? prevImm : (prevImm * (nint)size);
+        var newImmSize = (fmt == IF_ARM64_LS_2C) ? imm : (imm * (nint)size);
 
         var prevOffset = -1;
         var prevLclVarNum = -1;
@@ -459,10 +468,10 @@ public partial class Emitter
         emitRemoveLastInstruction();
 
         // A pair of zero stores has the same memory effect as one 64-bit zero store.
-        if ((ins == INS_str) && (reg1 == REG_ZR) && (prevReg1 == REG_ZR) && (size == EA_4BYTE))
+        if ((ins == INS_str) && (reg1 == REG_ARM64_ZR) && (prevReg1 == REG_ARM64_ZR) && (size == EA_4BYTE))
         {
             var offset = (optimizationOrder == RegisterOrder.eRO_ascending) ? prevImmSize : newImmSize;
-            emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
+            emitIns_R_R_IArm64(INS_str, EA_8BYTE, REG_ARM64_ZR, reg2, offset, INS_OPTS_NONE);
             return true;
         }
 
@@ -491,6 +500,7 @@ public partial class Emitter
     private RegisterOrder IsOptimizableLdrStrWithPair(instruction ins, regNumber reg1, regNumber reg2, nint imm,
         emitAttr size, insFormat fmt)
     {
+        RequireArm64Target();
         if ((ins != INS_ldr) && (ins != INS_str))
         {
             return RegisterOrder.eRO_none;
@@ -511,7 +521,7 @@ public partial class Emitter
         // Normalize raw byte offsets before comparing adjacency and pair-instruction range.
         var scale = NaturalScale_helper(size);
         var scaleMask = ((nint)1 << (int)scale) - 1;
-        if (fmt == IF_LS_2C)
+        if (fmt == IF_ARM64_LS_2C)
         {
             if ((imm & scaleMask) != 0)
             {
@@ -521,7 +531,7 @@ public partial class Emitter
             imm >>= (int)scale;
         }
 
-        if (lastInsFmt == IF_LS_2C)
+        if (lastInsFmt == IF_ARM64_LS_2C)
         {
             if ((prevImm & scaleMask) != 0)
             {
@@ -536,25 +546,25 @@ public partial class Emitter
             return RegisterOrder.eRO_none;
         }
 
-        if ((reg1 == REG_SP) || (prevReg1 == REG_SP) ||
+        if ((reg1 == REG_ARM64_SP) || (prevReg1 == REG_ARM64_SP) ||
             (isGeneralRegisterOrZR(reg1) != isGeneralRegisterOrZR(prevReg1)))
         {
             return RegisterOrder.eRO_none;
         }
 
-        var compatibleFmt = (lastInsFmt == fmt) || (lastInsFmt == IF_LS_2B && fmt == IF_LS_2A) ||
-            (lastInsFmt == IF_LS_2A && fmt == IF_LS_2B);
+        var compatibleFmt = (lastInsFmt == fmt) || (lastInsFmt == IF_ARM64_LS_2B && fmt == IF_ARM64_LS_2A) ||
+            (lastInsFmt == IF_ARM64_LS_2A && fmt == IF_ARM64_LS_2B);
         if (!compatibleFmt)
         {
             return RegisterOrder.eRO_none;
         }
 
-        if (emitInsIsLoad(ins) && (prevReg1 == prevReg2))
+        if (emitInsIsLoadArm64(ins) && (prevReg1 == prevReg2))
         {
             return RegisterOrder.eRO_none;
         }
 
-        if (emitInsIsLoad(ins) && (reg1 == prevReg1))
+        if (emitInsIsLoadArm64(ins) && (reg1 == prevReg1))
         {
             return RegisterOrder.eRO_none;
         }
@@ -596,6 +606,7 @@ public partial class Emitter
     private bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, nint imm,
         emitAttr size, insFormat fmt)
     {
+        RequireArm64Target();
         if (ins != INS_ldr)
         {
             return false;
@@ -646,4 +657,3 @@ public partial class Emitter
         return true;
     }
 }
-#endif

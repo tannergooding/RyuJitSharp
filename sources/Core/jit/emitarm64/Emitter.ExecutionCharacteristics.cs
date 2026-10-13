@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using System.Diagnostics;
 using static RyuJitSharp.Emitter.insFormat;
@@ -12,10 +11,8 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private const float PERFSCORE_LATENCY_22C = 22.0f;
     private const float PERFSCORE_THROUGHPUT_5X = 0.2f;
     private const float PERFSCORE_THROUGHPUT_6X = 1.0f / 6.0f;
-    private const float PERFSCORE_THROUGHPUT_7C = 7.0f;
 
     private static bool emitAlignIsPlacedAfterJmpArm64(instrDesc id)
     {
@@ -24,7 +21,7 @@ public partial class Emitter
 
     // Latencies and throughput follow the Arm Cortex-A55 Software Optimization Guide:
     // https://static.docs.arm.com/epm128372/20/arm_cortex_a55_software_optimization_guide_v2.pdf
-    internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
+    internal insExecutionCharacteristics getInsExecutionCharacteristicsArm64(instrDesc id)
     {
         // Native leaves the result's memory-access kind at None; classification only seeds latency.
         var result = new insExecutionCharacteristics();
@@ -57,31 +54,31 @@ public partial class Emitter
                 //  Branch Instructions
                 //
 
-            case IF_BI_0A:                                      // b, bl_local
-            case IF_BI_0C:                                      // bl, b_tail
+            case IF_ARM64_BI_0A:                                      // b, bl_local
+            case IF_ARM64_BI_0C:                                      // bl, b_tail
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C; // but is Dual Issue
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_BI_0B: // beq, bne, bge, blt, bgt, ble, ...
-            case IF_BI_1A: // cbz, cbnz
-            case IF_BI_1B: // tbz, tbnz
+            case IF_ARM64_BI_0B: // beq, bne, bge, blt, bgt, ble, ...
+            case IF_ARM64_BI_1A: // cbz, cbnz
+            case IF_ARM64_BI_1B: // tbz, tbnz
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_LARGEJMP: // bcc + b
+            case IF_ARM64_LARGEJMP: // bcc + b
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2C;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_BR_1B: // blr, br_tail
+            case IF_ARM64_BR_1B: // blr, br_tail
             {
                 if (ins == INS_blr)
                 {
@@ -91,10 +88,10 @@ public partial class Emitter
                 }
                 // otherwise we should have a br_tail instruction
                 assert(ins == INS_br_tail);
-                goto case IF_BR_0A;
+                goto case IF_ARM64_BR_0A;
             }
-            case IF_BR_0A: // retaa, retab
-            case IF_BR_1A: // ret, br
+            case IF_ARM64_BR_0A: // retaa, retab
+            case IF_ARM64_BR_1A: // ret, br
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_1C;
@@ -106,11 +103,11 @@ public partial class Emitter
             //
 
             // ALU, basic
-            case IF_DR_3A: // add, adds, adc, adcs, and, ands, bic, bics,
+            case IF_ARM64_DR_3A: // add, adds, adc, adcs, and, ands, bic, bics,
                            // eon, eor, orn, orr, sub, subs, sbc, sbcs
                            // asr, asrv, lsl, lslv, lsr, lsrv, ror, rorv
                            // sdiv, udiv, mul, smull, smulh, umull, umulh, mneg
-            case IF_DR_2A: // cmp, cmn, tst
+            case IF_ARM64_DR_2A: // cmp, cmn, tst
             {
                 switch (ins)
                 {
@@ -233,30 +230,30 @@ public partial class Emitter
             }
 
             // ALU, basic immediate
-            case IF_DI_1A: // cmp, cmn
-            case IF_DI_1C: // tst
-            case IF_DI_1D: // mov reg, imm(N,r,s)
-            case IF_DI_1E: // adr, adrp
-            case IF_DI_1F: // ccmp, ccmn
-            case IF_DI_2A: // add, adds, suv, subs
-            case IF_DI_2C: // and, ands, eor, orr
+            case IF_ARM64_DI_1A: // cmp, cmn
+            case IF_ARM64_DI_1C: // tst
+            case IF_ARM64_DI_1D: // mov reg, imm(N,r,s)
+            case IF_ARM64_DI_1E: // adr, adrp
+            case IF_ARM64_DI_1F: // ccmp, ccmn
+            case IF_ARM64_DI_2A: // add, adds, suv, subs
+            case IF_ARM64_DI_2C: // and, ands, eor, orr
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_DR_2D: // cinc, cinv, cneg
-            case IF_DR_2E: // mov, neg, mvn, negs
-            case IF_DI_1B: // mov, movk, movn, movz
+            case IF_ARM64_DR_2D: // cinc, cinv, cneg
+            case IF_ARM64_DR_2E: // mov, neg, mvn, negs
+            case IF_ARM64_DI_1B: // mov, movk, movn, movz
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_LARGEADR: // adrp + add
-            case IF_LARGELDC: // adrp + ldr
+            case IF_ARM64_LARGEADR: // adrp + add
+            case IF_ARM64_LARGELDC: // adrp + ldr
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_2C;
@@ -264,11 +261,11 @@ public partial class Emitter
             }
 
             // ALU, shift by immediate
-            case IF_DR_3B: // add, adds, and, ands, bic, bics,
+            case IF_ARM64_DR_3B: // add, adds, and, ands, bic, bics,
                            // eon, eor, orn, orr, sub, subs
-            case IF_DR_2B: // cmp, cmn, tst
-            case IF_DR_2F: // neg, negs, mvn
-            case IF_DI_2B: // ror
+            case IF_ARM64_DR_2B: // cmp, cmn, tst
+            case IF_ARM64_DR_2F: // neg, negs, mvn
+            case IF_ARM64_DI_2B: // ror
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
@@ -276,15 +273,15 @@ public partial class Emitter
             }
 
             // ALU, extend, scale
-            case IF_DR_3C: // add, adc, and, bic, eon, eor, orn, orr, sub, sbc
-            case IF_DR_2C: // cmp
+            case IF_ARM64_DR_3C: // add, adc, and, bic, eon, eor, orn, orr, sub, sbc
+            case IF_ARM64_DR_2C: // cmp
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_2U: // sha
+            case IF_ARM64_DV_2U: // sha
             {
                 if (ins == INS_sha1h)
                 {
@@ -299,7 +296,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2V:
+            case IF_ARM64_DV_2V:
             {
                 if (ins == INS_sm4e)
                 {
@@ -314,8 +311,8 @@ public partial class Emitter
                 break;
             }
             // ALU, Conditional select
-            case IF_DR_1D: // cset, csetm
-            case IF_DR_3D: // csel, csinc, csinv, csneg
+            case IF_ARM64_DR_1D: // cset, csetm
+            case IF_ARM64_DR_3D: // csel, csinc, csinv, csneg
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_1C;
@@ -323,7 +320,7 @@ public partial class Emitter
             }
 
             // ALU, Conditional compare
-            case IF_DR_2I: // ccmp , ccmn
+            case IF_ARM64_DR_2I: // ccmp , ccmn
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_1C;
@@ -331,7 +328,7 @@ public partial class Emitter
             }
 
             // Multiply accumulate
-            case IF_DR_4A: // madd, msub, smaddl, smsubl, umaddl, umsubl
+            case IF_ARM64_DR_4A: // madd, msub, smaddl, smsubl, umaddl, umsubl
             {
                 if (id.idOpSize() == EA_4BYTE)
                 {
@@ -349,28 +346,28 @@ public partial class Emitter
             }
 
             // Miscellaneous Data Preocessing instructions
-            case IF_DR_3E: // extr
+            case IF_ARM64_DR_3E: // extr
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DR_2H: // sxtb, sxth, sxtw, uxtb, uxth, sha1h
+            case IF_ARM64_DR_2H: // sxtb, sxth, sxtw, uxtb, uxth, sha1h
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_DI_2D: // lsl, lsr, asr, sbfm, bfm, ubfm, sbfiz, bfi, ubfiz, sbfx, bfxil, ubfx
+            case IF_ARM64_DI_2D: // lsl, lsr, asr, sbfm, bfm, ubfm, sbfiz, bfi, ubfiz, sbfx, bfxil, ubfx
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DR_2G: // mov sp, cls, clz, rbit, rev16, rev32, rev
+            case IF_ARM64_DR_2G: // mov sp, cls, clz, rbit, rev16, rev32, rev
             {
                 if (ins == INS_rbit)
                 {
@@ -390,13 +387,13 @@ public partial class Emitter
                 //  Load/Store Instructions
                 //
 
-            case IF_LS_1A: // ldr, ldrsw (literal, pc relative immediate)
+            case IF_ARM64_LS_1A: // ldr, ldrsw (literal, pc relative immediate)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 break;
             }
 
-            case IF_LS_2A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (no immediate)
+            case IF_ARM64_LS_2A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (no immediate)
                            // ldar, ldarb, ldarh, ldapr, ldaprb, ldaprh, ldxr, ldxrb, ldxrh,
                            // ldaxr, ldaxrb, ldaxrh, stlr, stlrb, stlrh
 
@@ -406,27 +403,27 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LS_2B: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (scaled immediate)
+            case IF_ARM64_LS_2B: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (scaled immediate)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 break;
             }
 
-            case IF_LS_2C: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh
+            case IF_ARM64_LS_2C: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh
                            // ldur, ldurb, ldurh, ldursb, ldursh, ldursw, stur, sturb, sturh
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 break;
             }
 
-            case IF_LS_3A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb strh (register extend, scale 2,4,8)
+            case IF_ARM64_LS_3A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb strh (register extend, scale 2,4,8)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 break;
             }
 
-            case IF_LS_3B: // ldp, ldpsw, ldnp, stp, stnp  (load/store pair zero offset)
-            case IF_LS_3C: // load/store pair with offset pre/post inc
+            case IF_ARM64_LS_3B: // ldp, ldpsw, ldnp, stp, stnp  (load/store pair zero offset)
+            case IF_ARM64_LS_3C: // load/store pair with offset pre/post inc
             {
                 if (memAccessKind == PerfScoreMemoryAccessKind.Read)
                 {
@@ -455,7 +452,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LS_3D: // stxr, stxrb, stxrh, stlxr, stlxrb, srlxrh
+            case IF_ARM64_LS_3D: // stxr, stxrb, stxrh, stlxr, stlxrb, srlxrh
                 // Store exclusive register, returning status
             {
                 assert(emitInsIsStore(ins));
@@ -465,7 +462,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LS_3E: //  ARMv8.1 LSE Atomics
+            case IF_ARM64_LS_3E: //  ARMv8.1 LSE Atomics
             {
                 if (memAccessKind == PerfScoreMemoryAccessKind.Write)
                 {
@@ -482,9 +479,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LS_2D:
-            case IF_LS_2E:
-            case IF_LS_3F:
+            case IF_ARM64_LS_2D:
+            case IF_ARM64_LS_2E:
+            case IF_ARM64_LS_3F:
                 // Load/Store multiple structures
                 // Load single structure and replicate
             {
@@ -803,9 +800,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LS_2F:
-            case IF_LS_2G:
-            case IF_LS_3G:
+            case IF_ARM64_LS_2F:
+            case IF_ARM64_LS_2G:
+            case IF_ARM64_LS_3G:
                 // Load/Store single structure
             {
                 switch (ins)
@@ -908,10 +905,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_PC_0A: // autia1716, autiasp, autib1716, autibsp, autibz, autiaz, pacia1716, paciasp, pacib1716,
+            case IF_ARM64_PC_0A: // autia1716, autiasp, autib1716, autibsp, autibz, autiaz, pacia1716, paciasp, pacib1716,
                            // pacibsp, pacibz, paciaz, xpaclri
-            case IF_PC_1A: // autiza, autizb, paciza, pacizb, xpacd, xpaci
-            case IF_PC_2A: // autia, autib, pacia, pacib
+            case IF_ARM64_PC_1A: // autiza, autizb, paciza, pacizb, xpacd, xpaci
+            case IF_ARM64_PC_2A: // autia, autib, pacia, pacib
             {
                 switch (ins)
                 {
@@ -934,7 +931,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SN_0A: // nop, yield, align
+            case IF_ARM64_SN_0A: // nop, yield, align
             {
                 if (Configuration.FEATURE_LOOP_ALIGN && (id.idIns() == INS_align))
                 {
@@ -960,7 +957,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SI_0B: // dmb, dsb, isb
+            case IF_ARM64_SI_0B: // dmb, dsb, isb
                 // @ToDo - find out the actual latency
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_10C;
@@ -968,42 +965,42 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2J: // fcvt  Vd Vn
+            case IF_ARM64_DV_2J: // fcvt  Vd Vn
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_4C;
                 break;
             }
 
-            case IF_DV_2K: // fcmp  Vd Vn
+            case IF_ARM64_DV_2K: // fcmp  Vd Vn
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_DV_1A: // fmov - immediate (scalar)
+            case IF_ARM64_DV_1A: // fmov - immediate (scalar)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_DV_1B: // fmov, orr, bic, movi, mvni  (immediate vector)
+            case IF_ARM64_DV_1B: // fmov, orr, bic, movi, mvni  (immediate vector)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_DV_1C: // fcmp vn, #0.0
+            case IF_ARM64_DV_1C: // fcmp vn, #0.0
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_3C;
                 break;
             }
 
-            case IF_DV_2A: // fabs, fneg, fsqrt, fcvtXX, frintX, scvtf, ucvtf, fcmXX (vector)
+            case IF_ARM64_DV_2A: // fabs, fneg, fsqrt, fcvtXX, frintX, scvtf, ucvtf, fcmXX (vector)
             {
                 switch (ins)
                 {
@@ -1095,7 +1092,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2G: // fmov, fabs, fneg, fsqrt, fcmXX, fcvtXX, frintX, scvtf, ucvtf (scalar)
+            case IF_ARM64_DV_2G: // fmov, fabs, fneg, fsqrt, fcmXX, fcvtXX, frintX, scvtf, ucvtf (scalar)
             {
                 switch (ins)
                 {
@@ -1191,22 +1188,22 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2Q: // faddp, fmaxnmp, fmaxp, fminnmp, fminp (scalar)
-            case IF_DV_2R: // fmaxnmv, fmaxv, fminnmv, fminv
+            case IF_ARM64_DV_2Q: // faddp, fmaxnmp, fmaxp, fminnmp, fminp (scalar)
+            case IF_ARM64_DV_2R: // fmaxnmv, fmaxv, fminnmv, fminv
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_4C;
                 break;
             }
 
-            case IF_DV_2S: // addp (scalar)
+            case IF_ARM64_DV_2S: // addp (scalar)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_3C;
                 break;
             }
 
-            case IF_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX
+            case IF_ARM64_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX
                            // faddp, fmaxnmp, fmaxp, fminnmp, fminp, addp (vector)
             {
                 switch (ins)
@@ -1300,30 +1297,30 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_3AI: // mul, mla, mls (vector by element)
-            case IF_DV_3BI: // fmul, fmulx, fmla, fmls (vector by element)
-            case IF_DV_3EI: // sqdmlal, sqdmlsl, sqdmulh, sqdmull (scalar by element)
+            case IF_ARM64_DV_3AI: // mul, mla, mls (vector by element)
+            case IF_ARM64_DV_3BI: // fmul, fmulx, fmla, fmls (vector by element)
+            case IF_ARM64_DV_3EI: // sqdmlal, sqdmlsl, sqdmulh, sqdmull (scalar by element)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_4C;
                 break;
             }
 
-            case IF_DV_4A: // fmadd, fmsub, fnmadd, fnsub (scalar)
+            case IF_ARM64_DV_4A: // fmadd, fmsub, fnmadd, fnsub (scalar)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_4C;
                 break;
             }
 
-            case IF_DV_4B: // eor3, bcax, sm3ss1
+            case IF_ARM64_DV_4B: // eor3, bcax, sm3ss1
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX (scalar)
+            case IF_ARM64_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX (scalar)
             {
                 switch (ins)
                 {
@@ -1384,7 +1381,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2H: // fmov, fcvtXX - to general
+            case IF_ARM64_DV_2H: // fmov, fcvtXX - to general
                 // fmov : FP transfer to general register
                 // fcvtaXX : FP convert from vector to general
             {
@@ -1393,7 +1390,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2I: // fmov, Xcvtf - from general
+            case IF_ARM64_DV_2I: // fmov, Xcvtf - from general
             {
                 switch (ins)
                 {
@@ -1423,7 +1420,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_3C: // mov,and, bic, eor, mov,mvn, orn, bsl, bit, bif,
+            case IF_ARM64_DV_3C: // mov,and, bic, eor, mov,mvn, orn, bsl, bit, bif,
                            // tbl, tbx (vector)
             {
                 switch (ins)
@@ -1487,28 +1484,28 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2E: // mov, dup (scalar)
+            case IF_ARM64_DV_2E: // mov, dup (scalar)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_2F: // mov, ins (element)
+            case IF_ARM64_DV_2F: // mov, ins (element)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_2B: // smov, umov - to general)
+            case IF_ARM64_DV_2B: // smov, umov - to general)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_2C: // mov, dup, ins - from general)
+            case IF_ARM64_DV_2C: // mov, dup, ins - from general)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 if (ins == INS_dup)
@@ -1523,14 +1520,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2D: // dup (dvector)
+            case IF_ARM64_DV_2D: // dup (dvector)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_3A: // (vector)
+            case IF_ARM64_DV_3A: // (vector)
                 // add, sub, mul, mla, mls, cmeq, cmge, cmgt, cmhi, cmhs, ctst,
                 // pmul, saba, uaba, sabd, uabd, umin, uminp, umax, umaxp, smin, sminp, smax, smaxp
             {
@@ -1738,28 +1735,28 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_3DI: // fmul, fmulx, fmla, fmls (scalar by element)
+            case IF_ARM64_DV_3DI: // fmul, fmulx, fmla, fmls (scalar by element)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_4C;
                 break;
             }
 
-            case IF_DV_3E: // add, sub, cmeq, cmge, cmgt, cmhi, cmhs, ctst, (scalar)
+            case IF_ARM64_DV_3E: // add, sub, cmeq, cmge, cmgt, cmhi, cmhs, ctst, (scalar)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_3G: // ext
+            case IF_ARM64_DV_3G: // ext
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_3H: // sha512h, sha512h2, sha512su1, rax1, sm3partw1, sm3partw2, sm4ekey
+            case IF_ARM64_DV_3H: // sha512h, sha512h2, sha512su1, rax1, sm3partw1, sm3partw2, sm4ekey
             {
                 switch (ins)
                 {
@@ -1781,15 +1778,15 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_3I: // xar
+            case IF_ARM64_DV_3I: // xar
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_2L: // abs, neg, cmeq, cmge, cmgt, cmle, cmlt (scalar)
-            case IF_DV_2M: // (vector)
+            case IF_ARM64_DV_2L: // abs, neg, cmeq, cmge, cmgt, cmle, cmlt (scalar)
+            case IF_ARM64_DV_2M: // (vector)
                 // abs, neg, mvn, not, cmeq, cmge, cmgt, cmle, cmlt,
                 // addv, saddlv,  uaddlv, smaxv, sminv, umaxv, uminv
                 // cls, clz, cnt, rbit, rev16, rev32, rev64,
@@ -1889,9 +1886,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2N: // sshr, ssra, srshr, srsra, shl, ushr, usra, urshr, ursra, sri, sli (shift by immediate -
+            case IF_ARM64_DV_2N: // sshr, ssra, srshr, srsra, shl, ushr, usra, urshr, ursra, sri, sli (shift by immediate -
                            // scalar)
-            case IF_DV_2O: // sshr, ssra, srshr, srsra, shl, ushr, usra, urshr, ursra, sri, sli (shift by immediate -
+            case IF_ARM64_DV_2O: // sshr, ssra, srshr, srsra, shl, ushr, usra, urshr, ursra, sri, sli (shift by immediate -
                            // vector)
                            // sshll, sshll2, ushll, ushll2, shrn, shrn2, rshrn, rshrn2, sxrl, sxl2, uxtl, uxtl2
             {
@@ -1993,14 +1990,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_DV_2P: // aese, aesd, aesmc, aesimc
+            case IF_ARM64_DV_2P: // aese, aesd, aesmc, aesimc
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_2C;
                 break;
             }
 
-            case IF_DV_3F: // sha1c, sha1m, sha1p, sha1su0, sha256h, sha256h2, sha256su1 (vector)
+            case IF_ARM64_DV_3F: // sha1c, sha1m, sha1p, sha1su0, sha256h, sha256h2, sha256su1 (vector)
             {
                 switch (ins)
                 {
@@ -2040,21 +2037,21 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SI_0A: // brk   imm16
+            case IF_ARM64_SI_0A: // brk   imm16
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_SR_1A:
+            case IF_ARM64_SR_1A:
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
 
-            case IF_DV_2T: // addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv
+            case IF_ARM64_DV_2T: // addv, saddlv, smaxv, sminv, uaddlv, umaxv, uminv
             {
                 switch (ins)
                 {
@@ -2116,4 +2113,3 @@ public partial class Emitter
         return result;
     }
 }
-#endif

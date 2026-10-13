@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCkfinite(GenTree treeNode)
+    public void genCkfiniteArm64(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CKFINITE);
 
@@ -29,8 +28,8 @@ public sealed partial class CodeGen
         var fpReg = genConsumeReg(op1);
 
         inst_Mov(targetType, intReg, fpReg, canSkip: false, size: attr);
-        emit.emitIns_R_R_I(INS_lsr, attr, intReg, intReg, shiftAmount);
-        emit.emitIns_R_R_I(INS_and, EA_4BYTE, intReg, intReg, expMask);
+        emit.emitIns_R_R_IArm64(INS_lsr, attr, intReg, intReg, shiftAmount);
+        emit.emitIns_R_R_IArm64(INS_and, EA_4BYTE, intReg, intReg, expMask);
         emit.emitIns_R_I(INS_cmp, EA_4BYTE, intReg, expMask);
 
         genJumpToThrowHlpBlk(EJ_eq, SCK_ARITH_EXCPN);
@@ -39,4 +38,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

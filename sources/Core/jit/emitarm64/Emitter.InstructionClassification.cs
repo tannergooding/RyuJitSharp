@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -16,10 +15,11 @@ public partial class Emitter
 
     private static bool emitInsIsCompareArm64(instruction ins)
     {
+        RequireArm64Target();
         if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoCompare) != 0;
+            return (((byte)CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoCompare) != 0);
         }
 
         return false;
@@ -27,10 +27,11 @@ public partial class Emitter
 
     private static bool emitInsIsVectorLongArm64(instruction ins)
     {
+        RequireArm64Target();
         if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoLong) != 0;
+            return (((byte)CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoLong) != 0);
         }
 
         return false;
@@ -38,10 +39,11 @@ public partial class Emitter
 
     private static bool emitInsIsVectorNarrowArm64(instruction ins)
     {
+        RequireArm64Target();
         if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoNarrow) != 0;
+            return (((byte)CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoNarrow) != 0);
         }
 
         return false;
@@ -49,13 +51,13 @@ public partial class Emitter
 
     private static bool emitInsIsVectorWideArm64(instruction ins)
     {
+        RequireArm64Target();
         if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoWide) != 0;
+            return (((byte)CodeGen.instInfo[nativeOrdinal] & Arm64InstInfoWide) != 0);
         }
 
         return false;
     }
 }
-#endif

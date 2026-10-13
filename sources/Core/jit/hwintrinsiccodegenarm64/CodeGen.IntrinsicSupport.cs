@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using static RyuJitSharp.insScalableOpts;
 using static RyuJitSharp.insSveMovOpts;
 
@@ -182,11 +181,15 @@ public sealed partial class CodeGen
     {
         var nextReg = unchecked((regNumber)((int)reg + 1));
 
-        return nextReg > REG_V31 ? REG_V0 : nextReg;
+        return nextReg > REG_ARM64_V31 ? REG_ARM64_V0 : nextReg;
     }
 
-    private static uint GetArm64IntrinsicRegisterList(GenTree operand, out regNumber firstReg,
-        regNumber excludedReg = REG_NA)
+    private static uint GetArm64IntrinsicRegisterList(GenTree operand, out regNumber firstReg)
+    {
+        return GetArm64IntrinsicRegisterList(operand, out firstReg, REG_NA);
+    }
+
+    private static uint GetArm64IntrinsicRegisterList(GenTree operand, out regNumber firstReg, regNumber excludedReg)
     {
         var fieldList = operand.AsFieldList();
         var firstField = fieldList.Uses.Head;
@@ -354,4 +357,3 @@ public sealed partial class CodeGen
     }
 #endif
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -31,7 +30,7 @@ public partial class Emitter
             var dspOffs = !compiler.opts.disDiffable;
 #endif
 #endif
-            assert((int)REG_NA == (int)REG_NA);
+            assert((int)REG_ARM64_NA == (int)REG_ARM64_NA);
             nint imm;
             nint index;
             nint index2;
@@ -42,88 +41,88 @@ public partial class Emitter
 
             switch (fmt)
             {
-                case IF_BI_0A:
-                case IF_BI_0B:
-                case IF_LARGEJMP:
+                case IF_ARM64_BI_0A:
+                case IF_ARM64_BI_0B:
+                case IF_ARM64_LARGEJMP:
                 {
                     assert(id.idGCref() == GCT_NONE);
                     assert(id.idIsBound());
                     dst = emitOutputLJ(ig, dst, id);
-                    sz = DescriptorSizes.Jump;
+                    sz = (nuint)DescriptorSizes.Jump;
                     break;
                 }
 
-                case IF_BI_0C:
+                case IF_ARM64_BI_0C:
                 {
-                    code = emitInsCode(ins, fmt);
-                    sz = id.idIsLargeCall() ? (nuint)Arm64CallDescriptorSize() : DescriptorSizes.Full;
+                    code = emitInsCodeArm64(ins, fmt);
+                    sz = id.idIsLargeCall() ? (nuint)Arm64CallDescriptorSize() : (nuint)DescriptorSizes.Full;
                     dst += emitOutputCallArm64(ig, dst, id, code);
                     emitRecordRelocation(odst, id.idAddr().iiaAddr, CorInfoReloc.ARM64_BRANCH26);
                     break;
                 }
 
-                case IF_BI_1A:
-                case IF_BI_1B:
+                case IF_ARM64_BI_1A:
+                case IF_ARM64_BI_1B:
                 {
                     assert(insOptsNone(id.idInsOpt()));
                     assert(id.idIsBound());
                     dst = emitOutputLJ(ig, dst, id);
-                    sz = DescriptorSizes.Jump;
+                    sz = (nuint)DescriptorSizes.Jump;
                     break;
                 }
 
-                case IF_BR_0A:
+                case IF_ARM64_BR_0A:
                 {
                     assert(insOptsNone(id.idInsOpt()));
                     assert(ins is INS_retaa or INS_retab);
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_BR_1A:
+                case IF_ARM64_BR_1A:
                 {
                     assert(insOptsNone(id.idInsOpt()));
                     assert(ins is INS_ret or INS_br);
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 9, 5);
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_BR_1B:
+                case IF_ARM64_BR_1B:
                 {
                     assert(insOptsNone(id.idInsOpt()));
                     assert(ins is INS_br_tail or INS_blr);
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id.idIsTlsGD())
                     {
                         emitRecordRelocation(odst, id.idAddr().iiaAddr, CorInfoReloc.ARM64_LIN_TLSDESC_CALL);
-                        code |= insEncodeReg_R(REG_R2, 9, 5);
+                        code |= insEncodeReg_R(REG_ARM64_R2, 9, 5);
                     }
                     else
                     {
                         code |= insEncodeReg_R(id.idReg3(), 9, 5);
                     }
                     dst += emitOutputCallArm64(ig, dst, id, code);
-                    sz = id.idIsLargeCall() ? (nuint)Arm64CallDescriptorSize() : DescriptorSizes.Full;
+                    sz = id.idIsLargeCall() ? (nuint)Arm64CallDescriptorSize() : (nuint)DescriptorSizes.Full;
                     break;
                 }
 
-                case IF_LS_1A:
-                case IF_LARGELDC:
+                case IF_ARM64_LS_1A:
+                case IF_ARM64_LARGELDC:
                 {
                     assert(insOptsNone(id.idInsOpt()));
                     assert(id.idIsBound());
                     dst = emitOutputLJ(ig, dst, id);
-                    sz = DescriptorSizes.Jump;
+                    sz = (nuint)DescriptorSizes.Jump;
                     break;
                 }
 
-                case IF_LS_2A:
+                case IF_ARM64_LS_2A:
                 {
                     assert(insOptsNone(id.idInsOpt()));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (isVectorRegister(id.idReg1()))
                     {
                         code &= 0x3FFFFFFF;
@@ -148,12 +147,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_2B:
+                case IF_ARM64_LS_2B:
                 {
                     assert(insOptsNone(id.idInsOpt()));
                     imm = emitGetInsSC(id);
                     assert(isValidUimm(imm, 12));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (isVectorRegister(id.idReg1()))
                     {
                         code &= 0x3FFFFFFF;
@@ -171,13 +170,13 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_2C:
+                case IF_ARM64_LS_2C:
                 {
                     assert(insOptsNone(id.idInsOpt()) || insOptsIndexed(id.idInsOpt()));
                     imm = emitGetInsSC(id);
                     assert((imm >= -256) && (imm <= 255));
                     imm &= 0x1FF;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (isVectorRegister(id.idReg1()))
                     {
                         code &= 0x3FFFFFFF;
@@ -201,7 +200,7 @@ public partial class Emitter
 
                     if (insOptsIndexed(id.idInsOpt()) && !id.idIsSmallDsc())
                     {
-                        if (emitInsIsLoad(ins))
+                        if (emitInsIsLoadArm64(ins))
                         {
                             if (id.idGCref() != GCT_NONE)
                             {
@@ -225,11 +224,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_2D:
-                case IF_LS_2E:
+                case IF_ARM64_LS_2D:
+                case IF_ARM64_LS_2E:
                 {
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeVLSElemsize(elemsize);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -238,12 +237,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_2F:
-                case IF_LS_2G:
+                case IF_ARM64_LS_2F:
+                case IF_ARM64_LS_2G:
                 {
                     elemsize = size;
                     index = id.idSmallCns();
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVLSIndex(elemsize, index);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -251,10 +250,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_3A:
+                case IF_ARM64_LS_3A:
                 {
                     assert(insOptsLSExtend(id.idInsOpt()));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (isVectorRegister(id.idReg1()))
                     {
                         code &= 0x3FFFFFFF;
@@ -281,10 +280,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_3B:
+                case IF_ARM64_LS_3B:
                 {
                     assert(insOptsNone(id.idInsOpt()));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (isVectorRegister(id.idReg1()))
                     {
                         code &= 0x3FFFFFFF;
@@ -303,13 +302,13 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_3C:
+                case IF_ARM64_LS_3C:
                 {
                     assert(insOptsNone(id.idInsOpt()) || insOptsIndexed(id.idInsOpt()));
                     imm = emitGetInsSC(id);
                     assert((imm >= -64) && (imm <= 63));
                     imm &= 0x7F;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (isVectorRegister(id.idReg1()))
                     {
                         code &= 0x3FFFFFFF;
@@ -330,9 +329,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_3D:
+                case IF_ARM64_LS_3D:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     assert(id.idReg1() != id.idReg2());
                     assert(id.idReg1() != id.idReg3());
                     code |= insEncodeDatasizeLS(code, size);
@@ -343,9 +342,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_3E:
+                case IF_ARM64_LS_3E:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasizeLS(code, size);
                     code |= insEncodeReg_R(id.idReg1(), 20, 16);
                     code |= insEncodeReg_R(id.idReg2(), 4, 0);
@@ -366,10 +365,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_3F:
+                case IF_ARM64_LS_3F:
                 {
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeReg_R(id.idReg3(), 20, 16);
                     code |= insEncodeVLSElemsize(elemsize);
@@ -379,11 +378,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_LS_3G:
+                case IF_ARM64_LS_3G:
                 {
                     elemsize = size;
                     index = id.idSmallCns();
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVLSIndex(elemsize, index);
                     code |= insEncodeReg_R(id.idReg3(), 20, 16);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -392,12 +391,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_1A:
+                case IF_ARM64_DI_1A:
                 {
                     assert(insOptsNone(id.idInsOpt()) || insOptsLSL12(id.idInsOpt()));
                     imm = emitGetInsSC(id);
                     assert(isValidUimm(imm, 12));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeShiftImm12(id.idInsOpt());
                     code |= (uint)imm << 10;
@@ -406,11 +405,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_1B:
+                case IF_ARM64_DI_1B:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmHWVal((nuint)imm, size));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= (uint)imm << 5;
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -418,11 +417,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_1C:
+                case IF_ARM64_DI_1C:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmNRS((nuint)imm, size));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= (uint)imm << 10;
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 9, 5);
@@ -430,11 +429,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_1D:
+                case IF_ARM64_DI_1D:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmNRS((nuint)imm, size));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= (uint)imm << 10;
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -442,20 +441,20 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_1E:
-                case IF_LARGEADR:
+                case IF_ARM64_DI_1E:
+                case IF_ARM64_LARGEADR:
                 {
                     assert(insOptsNone(id.idInsOpt()));
-                    if (id.idIsReloc() && fmt == IF_DI_1E)
+                    if (id.idIsReloc() && fmt == IF_ARM64_DI_1E)
                     {
-                        code = emitInsCode(ins, fmt);
+                        code = emitInsCodeArm64(ins, fmt);
                         code |= insEncodeReg_R(id.idReg1(), 4, 0);
                         dst += emitOutputLong(dst, code);
                         emitRecordRelocation(odst, id.idAddr().iiaAddr, id.idIsTlsGD()
                             ? CorInfoReloc.ARM64_LIN_TLSDESC_ADR_PAGE21 : CorInfoReloc.ARM64_PAGEBASE_REL21);
                         if (id.idIsTlsGD())
                         {
-                            emitGCregDeadUpd(REG_R0, dst);
+                            emitGCregDeadUpd(REG_ARM64_R0, dst);
                         }
                     }
                     else
@@ -463,16 +462,16 @@ public partial class Emitter
                         assert(id.idIsBound());
                         dst = emitOutputLJ(ig, dst, id);
                     }
-                    sz = DescriptorSizes.Jump;
+                    sz = (nuint)DescriptorSizes.Jump;
                     break;
                 }
 
-                case IF_DI_1F:
+                case IF_ARM64_DI_1F:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmCondFlagsImm5(imm));
                     condFlagsImm cfi = new() { immCFVal = (uint)imm };
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 9, 5);
                     code |= cfi.imm5 << 16;
@@ -482,12 +481,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_2A:
+                case IF_ARM64_DI_2A:
                 {
                     assert(insOptsNone(id.idInsOpt()) || insOptsLSL12(id.idInsOpt()));
                     imm = emitGetInsSC(id);
                     assert(isValidUimm(imm, 12));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeShiftImm12(id.idInsOpt());
                     code |= (uint)imm << 10;
@@ -496,7 +495,7 @@ public partial class Emitter
                     dst += emitOutputLong(dst, code);
                     if (id.idIsReloc() && !compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                     {
-                        assert(sz == DescriptorSizes.Full);
+                        assert(sz == (nuint)DescriptorSizes.Full);
                         assert(id.idAddr().iiaAddr != null);
                         emitRecordRelocation(odst, id.idAddr().iiaAddr, CorInfoReloc.ARM64_PAGEOFFSET_12A);
                     }
@@ -514,16 +513,16 @@ public partial class Emitter
                     }
                     else if (id.idIsReloc())
                     {
-                        assert(sz == DescriptorSizes.Full);
+                        assert(sz == (nuint)DescriptorSizes.Full);
                         assert(id.idAddr().iiaAddr != null);
                         emitRecordRelocation(odst, id.idAddr().iiaAddr, CorInfoReloc.ARM64_PAGEOFFSET_12A);
                     }
                     break;
                 }
 
-                case IF_DI_2B:
+                case IF_ARM64_DI_2B:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     assert(isValidImmShift(imm, size));
                     code |= insEncodeDatasizeBF(code, size);
@@ -535,11 +534,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_2C:
+                case IF_ARM64_DI_2C:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmNRS((nuint)imm, size));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= (uint)imm << 10;
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -548,7 +547,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DI_2D:
+                case IF_ARM64_DI_2D:
                 {
                     if (ins is INS_asr or INS_lsl or INS_lsr)
                     {
@@ -570,7 +569,7 @@ public partial class Emitter
                         imm = emitGetInsSC(id);
                     }
                     assert(isValidImmNRS((nuint)imm, size));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= (uint)imm << 10;
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -579,12 +578,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_1D:
+                case IF_ARM64_DR_1D:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmCond(imm));
                     condFlagsImm cfi = new() { immCFVal = (uint)imm };
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeInvertedCond(cfi.cond);
@@ -592,10 +591,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2A:
+                case IF_ARM64_DR_2A:
                 {
                     assert(insOptsNone(id.idInsOpt()));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 9, 5);
                     code |= insEncodeReg_R(id.idReg2(), 20, 16);
@@ -603,9 +602,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2B:
+                case IF_ARM64_DR_2B:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     assert(isValidImmShift(imm, size));
                     code |= insEncodeDatasize(size);
@@ -617,9 +616,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2C:
+                case IF_ARM64_DR_2C:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     assert((imm >= 0) && (imm <= 4));
                     code |= insEncodeDatasize(size);
@@ -631,12 +630,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2D:
+                case IF_ARM64_DR_2D:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmCond(imm));
                     condFlagsImm cfi = new() { immCFVal = (uint)imm };
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -646,9 +645,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2E:
+                case IF_ARM64_DR_2E:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeReg_R(id.idReg2(), 20, 16);
@@ -656,9 +655,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2F:
+                case IF_ARM64_DR_2F:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     assert(isValidImmShift(imm, size));
                     code |= insEncodeDatasize(size);
@@ -670,9 +669,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2G:
+                case IF_ARM64_DR_2G:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     if (ins == INS_rev && size == EA_8BYTE)
                     {
@@ -684,10 +683,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2H:
-                case IF_PC_2A:
+                case IF_ARM64_DR_2H:
+                case IF_ARM64_PC_2A:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasizeBF(code, size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -695,12 +694,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_2I:
+                case IF_ARM64_DR_2I:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmCondFlags(imm));
                     condFlagsImm cfi = new() { immCFVal = (uint)imm };
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 9, 5);
                     code |= insEncodeReg_R(id.idReg2(), 20, 16);
@@ -710,9 +709,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_3A:
+                case IF_ARM64_DR_3A:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -721,9 +720,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_3B:
+                case IF_ARM64_DR_3B:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     assert(isValidImmShift(imm, size));
                     code |= insEncodeDatasize(size);
@@ -736,9 +735,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_3C:
+                case IF_ARM64_DR_3C:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     assert((imm >= 0) && (imm <= 4));
                     code |= insEncodeDatasize(size);
@@ -751,12 +750,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_3D:
+                case IF_ARM64_DR_3D:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidImmCond(imm));
                     condFlagsImm cfi = new() { immCFVal = (uint)imm };
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -766,9 +765,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_3E:
+                case IF_ARM64_DR_3E:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     assert(isValidImmShift(imm, size));
                     code |= insEncodeDatasizeBF(code, size);
@@ -780,9 +779,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DR_4A:
+                case IF_ARM64_DR_4A:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeDatasize(size);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -792,11 +791,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_1A:
+                case IF_ARM64_DV_1A:
                 {
                     imm = emitGetInsSC(id);
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeFloatElemsize(elemsize);
                     code |= (uint)imm << 13;
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -804,7 +803,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_1B:
+                case IF_ARM64_DV_1B:
                 {
                     imm = emitGetInsSC(id) & 0xFF;
                     immShift = (uint)((emitGetInsSC(id) & 0x700) >> 8);
@@ -855,7 +854,7 @@ public partial class Emitter
                             break;
                         }
                     }
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     if ((ins is INS_fmov or INS_movi) && elemsize == EA_8BYTE)
                     {
@@ -873,21 +872,21 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_1C:
+                case IF_ARM64_DV_1C:
                 {
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeFloatElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 9, 5);
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_DV_2A:
-                case IF_DV_2R:
+                case IF_ARM64_DV_2A:
+                case IF_ARM64_DV_2R:
                 {
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     if (ins is INS_fcvtl or INS_fcvtl2 or INS_fcvtn or INS_fcvtn2)
                     {
@@ -910,7 +909,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2B:
+                case IF_ARM64_DV_2B:
                 {
                     elemsize = size;
                     index = emitGetInsSC(id);
@@ -919,7 +918,7 @@ public partial class Emitter
                     {
                         datasize = EA_16BYTE;
                     }
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(datasize);
                     code |= insEncodeVectorIndex(elemsize, index);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -928,7 +927,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2C:
+                case IF_ARM64_DV_2C:
                 {
                     if (ins == INS_dup)
                     {
@@ -942,7 +941,7 @@ public partial class Emitter
                         elemsize = size;
                         index = emitGetInsSC(id);
                     }
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(datasize);
                     code |= insEncodeVectorIndex(elemsize, index);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -951,11 +950,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2D:
+                case IF_ARM64_DV_2D:
                 {
                     index = emitGetInsSC(id);
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeVectorIndex(elemsize, index);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -964,11 +963,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2E:
+                case IF_ARM64_DV_2E:
                 {
                     index = emitGetInsSC(id);
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorIndex(elemsize, index);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -976,13 +975,13 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2F:
+                case IF_ARM64_DV_2F:
                 {
                     elemsize = size;
                     imm = emitGetInsSC(id);
                     index = (imm >> 4) & 0xF;
                     index2 = imm & 0xF;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorIndex(elemsize, index);
                     code |= insEncodeVectorIndex2(elemsize, index2);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -991,10 +990,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2G:
+                case IF_ARM64_DV_2G:
                 {
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     if (elemsize == EA_2BYTE && ins is INS_frecpe or INS_frsqrte)
                     {
                         // These scalar FP16 operations use sz/opcode, not the ftype=11 encoding.
@@ -1010,10 +1009,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2H:
+                case IF_ARM64_DV_2H:
                 {
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeConvertOpt(fmt, id.idInsOpt());
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1021,10 +1020,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2I:
+                case IF_ARM64_DV_2I:
                 {
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeConvertOpt(fmt, id.idInsOpt());
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_R(id.idReg2(), 9, 5);
@@ -1032,9 +1031,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2J:
+                case IF_ARM64_DV_2J:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeConvertOpt(fmt, id.idInsOpt());
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1042,10 +1041,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2K:
+                case IF_ARM64_DV_2K:
                 {
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeFloatElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 9, 5);
                     code |= insEncodeReg_V(id.idReg2(), 20, 16);
@@ -1053,10 +1052,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2L:
+                case IF_ARM64_DV_2L:
                 {
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1064,11 +1063,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2M:
-                case IF_DV_2T:
+                case IF_ARM64_DV_2M:
+                case IF_ARM64_DV_2T:
                 {
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1077,11 +1076,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2N:
+                case IF_ARM64_DV_2N:
                 {
                     imm = emitGetInsSC(id);
                     elemsize = size;
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorShift(elemsize, emitInsIsVectorRightShift(ins), imm);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1089,11 +1088,11 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2O:
+                case IF_ARM64_DV_2O:
                 {
                     imm = emitGetInsSC(id);
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeVectorShift(elemsize, emitInsIsVectorRightShift(ins), imm);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1102,20 +1101,20 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2P:
+                case IF_ARM64_DV_2P:
                 {
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_DV_2Q:
+                case IF_ARM64_DV_2Q:
                 {
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeFloatElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1123,10 +1122,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2S:
+                case IF_ARM64_DV_2S:
                 {
                     elemsize = optGetElemsize(id.idInsOpt());
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1134,19 +1133,19 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_2U:
-                case IF_DV_2V:
+                case IF_ARM64_DV_2U:
+                case IF_ARM64_DV_2V:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_DV_3A:
+                case IF_ARM64_DV_3A:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     elemsize = optGetElemsize(id.idInsOpt());
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeElemsize(elemsize);
@@ -1157,9 +1156,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3AI:
+                case IF_ARM64_DV_3AI:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     elemsize = optGetElemsize(id.idInsOpt());
                     assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
@@ -1173,9 +1172,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3B:
+                case IF_ARM64_DV_3B:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     elemsize = optGetElemsize(id.idInsOpt());
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeFloatElemsize(elemsize);
@@ -1186,9 +1185,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3BI:
+                case IF_ARM64_DV_3BI:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     elemsize = optGetElemsize(id.idInsOpt());
                     assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
@@ -1202,9 +1201,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3C:
+                case IF_ARM64_DV_3C:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1213,9 +1212,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3D:
+                case IF_ARM64_DV_3D:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeFloatElemsize(size);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
@@ -1224,9 +1223,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3DI:
+                case IF_ARM64_DV_3DI:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     elemsize = size;
                     assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
@@ -1239,9 +1238,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3E:
+                case IF_ARM64_DV_3E:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     elemsize = size;
                     code |= insEncodeElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1251,9 +1250,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3EI:
+                case IF_ARM64_DV_3EI:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     imm = emitGetInsSC(id);
                     elemsize = size;
                     assert(isValidVectorIndex(EA_16BYTE, elemsize, imm));
@@ -1266,9 +1265,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3F:
+                case IF_ARM64_DV_3F:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
                     code |= insEncodeReg_V(id.idReg3(), 20, 16);
@@ -1276,10 +1275,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3G:
+                case IF_ARM64_DV_3G:
                 {
                     imm = emitGetInsSC(id);
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeVectorsize(size);
                     code |= insEncodeReg_V(id.idReg3(), 20, 16);
                     code |= (uint)imm << 11;
@@ -1289,9 +1288,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3H:
+                case IF_ARM64_DV_3H:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
                     code |= insEncodeReg_V(id.idReg3(), 20, 16);
@@ -1299,10 +1298,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_3I:
+                case IF_ARM64_DV_3I:
                 {
                     imm = emitGetInsSC(id);
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
                     code |= insEncodeReg_V(id.idReg3(), 20, 16);
@@ -1311,9 +1310,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_4A:
+                case IF_ARM64_DV_4A:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     elemsize = size;
                     code |= insEncodeFloatElemsize(elemsize);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1324,9 +1323,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_DV_4B:
+                case IF_ARM64_DV_4B:
                 {
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
                     code |= insEncodeReg_V(id.idReg2(), 9, 5);
                     code |= insEncodeReg_V(id.idReg3(), 20, 16);
@@ -1335,17 +1334,17 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_PC_1A:
+                case IF_ARM64_PC_1A:
                 {
                     assert(insOptsNone(id.idInsOpt()));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_PC_0A:
-                case IF_SN_0A:
+                case IF_ARM64_PC_0A:
+                case IF_ARM64_SN_0A:
                 {
                     var skipIns = false;
                     if (Configuration.FEATURE_LOOP_ALIGN && (id.idIns() == INS_align))
@@ -1368,42 +1367,42 @@ public partial class Emitter
                             && alignInstr.isPlacedAfterJmp && !skipIns)
                         {
                             ins = INS_BREAKPOINT;
-                            fmt = IF_SI_0A;
+                            fmt = IF_ARM64_SI_0A;
                         }
 #endif
                     }
                     if (!skipIns)
                     {
-                        code = emitInsCode(ins, fmt);
+                        code = emitInsCodeArm64(ins, fmt);
                         dst += emitOutputLong(dst, code);
                     }
                     break;
                 }
 
-                case IF_SI_0A:
+                case IF_ARM64_SI_0A:
                 {
                     imm = emitGetInsSC(id);
                     assert(isValidUimm(imm, 16));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= (uint)imm << 5;
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_SI_0B:
+                case IF_ARM64_SI_0B:
                 {
                     imm = emitGetInsSC(id);
                     assert((imm >= 0) && (imm <= 15));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= (uint)imm << 8;
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_SR_1A:
+                case IF_ARM64_SR_1A:
                 {
                     assert(insOptsNone(id.idInsOpt()));
-                    code = emitInsCode(ins, fmt);
+                    code = emitInsCodeArm64(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
                     dst += emitOutputLong(dst, code);
                     break;
@@ -1444,7 +1443,7 @@ public partial class Emitter
             if (emitInsWritesToLclVarStackLocArm64(id) || emitInsWritesToLclVarStackLocPairArm64(id))
             {
                 var varNum = id.idAddr().iiaLclVar.lvaVarNum();
-                var ofs = id.idAddr().iiaLclVar.lvaOffset() & ~((uint)TARGET_POINTER_SIZE - 1);
+                var ofs = id.idAddr().iiaLclVar.lvaOffset() & ~((uint)Configuration.TARGET_POINTER_SIZE - 1);
                 var adr = compiler.lvaFrameAddress(varNum, out var FPbased, true);
                 if (id.idGCref() != GCT_NONE)
                 {
@@ -1486,14 +1485,14 @@ public partial class Emitter
                         assert(FPbased == FPbased2);
                         if (!FPbased)
                         {
-                            assert(encodingZRtoSP(id.idReg3()) == REG_SP);
+                            assert(encodingZRtoSP(id.idReg3()) == REG_ARM64_SP);
                         }
                         assert(varNum2 != -1);
 #endif
                     }
                     else
                     {
-                        ofs2Dist = TARGET_POINTER_SIZE;
+                        ofs2Dist = unchecked((uint)Configuration.TARGET_POINTER_SIZE);
                         ofs2 += ofs2Dist;
                     }
                     ofs2 &= ~(ofs2Dist - 1);
@@ -1534,7 +1533,7 @@ public partial class Emitter
             assert(sz == expected);
             if (compiler.opts.disAsm || compiler.verbose)
             {
-                emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (nuint)(dst - *dp), ig);
+                emitDispInsArm64(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (nuint)(dst - *dp), ig);
             }
             if (compiler.compDebugBreak
                 && (uint)JitConfig.JitBreakEmitOutputInstr == (id.idDebugOnlyInfo()
@@ -1551,7 +1550,7 @@ public partial class Emitter
             {
                 var expected = (nuint)emitSizeOfInsDsc(id);
                 assert(sz == expected);
-                emitDispIns(id, false, false, true, emitCurCodeOffs(odst), *dp, (nuint)(dst - *dp), ig);
+                emitDispInsArm64(id, false, false, true, emitCurCodeOffs(odst), *dp, (nuint)(dst - *dp), ig);
             }
 #endif
             assert(*dp != dst || id.idIsEmptyAlign());
@@ -1917,126 +1916,126 @@ public partial class Emitter
         {
             case INS_OPTS_S_TO_D:
             {
-                assert(fmt == IF_DV_2J);
+                assert(fmt == IF_ARM64_DV_2J);
                 result = 0x00008000;
                 break;
             }
 
             case INS_OPTS_D_TO_S:
             {
-                assert(fmt == IF_DV_2J);
+                assert(fmt == IF_ARM64_DV_2J);
                 result = 0x00400000;
                 break;
             }
 
             case INS_OPTS_H_TO_S:
             {
-                assert(fmt == IF_DV_2J);
+                assert(fmt == IF_ARM64_DV_2J);
                 result = 0x00C00000;
                 break;
             }
 
             case INS_OPTS_H_TO_D:
             {
-                assert(fmt == IF_DV_2J);
+                assert(fmt == IF_ARM64_DV_2J);
                 result = 0x00C08000;
                 break;
             }
 
             case INS_OPTS_S_TO_H:
             {
-                assert(fmt == IF_DV_2J);
+                assert(fmt == IF_ARM64_DV_2J);
                 result = 0x00018000;
                 break;
             }
 
             case INS_OPTS_D_TO_H:
             {
-                assert(fmt == IF_DV_2J);
+                assert(fmt == IF_ARM64_DV_2J);
                 result = 0x00418000;
                 break;
             }
 
             case INS_OPTS_S_TO_4BYTE:
             {
-                assert(fmt == IF_DV_2H);
+                assert(fmt == IF_ARM64_DV_2H);
                 result = 0;
                 break;
             }
 
             case INS_OPTS_D_TO_4BYTE:
             {
-                assert(fmt == IF_DV_2H);
+                assert(fmt == IF_ARM64_DV_2H);
                 result = 0x00400000;
                 break;
             }
 
             case INS_OPTS_S_TO_8BYTE:
             {
-                assert(fmt == IF_DV_2H);
+                assert(fmt == IF_ARM64_DV_2H);
                 result = 0x80000000;
                 break;
             }
 
             case INS_OPTS_D_TO_8BYTE:
             {
-                assert(fmt == IF_DV_2H);
+                assert(fmt == IF_ARM64_DV_2H);
                 result = 0x80400000;
                 break;
             }
 
             case INS_OPTS_H_TO_4BYTE:
             {
-                assert(fmt == IF_DV_2H);
+                assert(fmt == IF_ARM64_DV_2H);
                 result = 0x00C00000;
                 break;
             }
 
             case INS_OPTS_H_TO_8BYTE:
             {
-                assert(fmt == IF_DV_2H);
+                assert(fmt == IF_ARM64_DV_2H);
                 result = 0x80C00000;
                 break;
             }
 
             case INS_OPTS_4BYTE_TO_S:
             {
-                assert(fmt == IF_DV_2I);
+                assert(fmt == IF_ARM64_DV_2I);
                 result = 0;
                 break;
             }
 
             case INS_OPTS_4BYTE_TO_D:
             {
-                assert(fmt == IF_DV_2I);
+                assert(fmt == IF_ARM64_DV_2I);
                 result = 0x00400000;
                 break;
             }
 
             case INS_OPTS_8BYTE_TO_S:
             {
-                assert(fmt == IF_DV_2I);
+                assert(fmt == IF_ARM64_DV_2I);
                 result = 0x80000000;
                 break;
             }
 
             case INS_OPTS_8BYTE_TO_D:
             {
-                assert(fmt == IF_DV_2I);
+                assert(fmt == IF_ARM64_DV_2I);
                 result = 0x80400000;
                 break;
             }
 
             case INS_OPTS_4BYTE_TO_H:
             {
-                assert(fmt == IF_DV_2I);
+                assert(fmt == IF_ARM64_DV_2I);
                 result = 0x00C00000;
                 break;
             }
 
             case INS_OPTS_8BYTE_TO_H:
             {
-                assert(fmt == IF_DV_2I);
+                assert(fmt == IF_ARM64_DV_2I);
                 result = 0x80C00000;
                 break;
             }
@@ -2151,14 +2150,14 @@ public partial class Emitter
         // WR2 is the native instruction-info bit at emitarm64.cpp:1578.
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
-            (CodeGen.instInfo[nativeOrdinal] & 128) != 0;
+            ((byte)CodeGen.instInfo[nativeOrdinal] & 128) != 0;
     }
 
     private static bool emitInsIsStoreArm64(instruction ins)
     {
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
-            (CodeGen.instInfo[nativeOrdinal] & CodeGen.ST) != 0;
+            ((byte)CodeGen.instInfo[nativeOrdinal] & CodeGen.ST) != 0;
     }
 
     private static bool emitInsWritesToLclVarStackLocArm64(instrDesc id)
@@ -2191,123 +2190,123 @@ public partial class Emitter
         var ins = id.idIns();
         switch (id.idInsFmt())
         {
-            case IF_DI_1B:
-            case IF_DI_1D:
-            case IF_DI_1E:
-            case IF_DI_2A:
-            case IF_DI_2B:
-            case IF_DI_2C:
-            case IF_DI_2D:
-            case IF_DR_1D:
-            case IF_DR_2D:
-            case IF_DR_2E:
-            case IF_DR_2F:
-            case IF_DR_2G:
-            case IF_DR_2H:
-            case IF_DR_3A:
-            case IF_DR_3B:
-            case IF_DR_3C:
-            case IF_DR_3D:
-            case IF_DR_3E:
-            case IF_DR_4A:
-            case IF_DV_2B:
-            case IF_DV_2H:
+            case IF_ARM64_DI_1B:
+            case IF_ARM64_DI_1D:
+            case IF_ARM64_DI_1E:
+            case IF_ARM64_DI_2A:
+            case IF_ARM64_DI_2B:
+            case IF_ARM64_DI_2C:
+            case IF_ARM64_DI_2D:
+            case IF_ARM64_DR_1D:
+            case IF_ARM64_DR_2D:
+            case IF_ARM64_DR_2E:
+            case IF_ARM64_DR_2F:
+            case IF_ARM64_DR_2G:
+            case IF_ARM64_DR_2H:
+            case IF_ARM64_DR_3A:
+            case IF_ARM64_DR_3B:
+            case IF_ARM64_DR_3C:
+            case IF_ARM64_DR_3D:
+            case IF_ARM64_DR_3E:
+            case IF_ARM64_DR_4A:
+            case IF_ARM64_DV_2B:
+            case IF_ARM64_DV_2H:
             {
                 return true;
             }
 
-            case IF_DV_2C:
-            case IF_DV_2D:
-            case IF_DV_2E:
-            case IF_DV_2F:
-            case IF_DV_2G:
-            case IF_DV_2I:
-            case IF_DV_2J:
-            case IF_DV_2K:
-            case IF_DV_2L:
-            case IF_DV_2M:
-            case IF_DV_2P:
-            case IF_DV_2Q:
-            case IF_DV_2R:
-            case IF_DV_2S:
-            case IF_DV_3A:
-            case IF_DV_3AI:
-            case IF_DV_3B:
-            case IF_DV_3BI:
-            case IF_DV_3C:
-            case IF_DV_3D:
-            case IF_DV_3DI:
-            case IF_DV_3E:
-            case IF_DV_3EI:
-            case IF_DV_3F:
-            case IF_DV_3G:
-            case IF_DV_3H:
-            case IF_DV_3I:
-            case IF_DV_4A:
-            case IF_DV_4B:
+            case IF_ARM64_DV_2C:
+            case IF_ARM64_DV_2D:
+            case IF_ARM64_DV_2E:
+            case IF_ARM64_DV_2F:
+            case IF_ARM64_DV_2G:
+            case IF_ARM64_DV_2I:
+            case IF_ARM64_DV_2J:
+            case IF_ARM64_DV_2K:
+            case IF_ARM64_DV_2L:
+            case IF_ARM64_DV_2M:
+            case IF_ARM64_DV_2P:
+            case IF_ARM64_DV_2Q:
+            case IF_ARM64_DV_2R:
+            case IF_ARM64_DV_2S:
+            case IF_ARM64_DV_3A:
+            case IF_ARM64_DV_3AI:
+            case IF_ARM64_DV_3B:
+            case IF_ARM64_DV_3BI:
+            case IF_ARM64_DV_3C:
+            case IF_ARM64_DV_3D:
+            case IF_ARM64_DV_3DI:
+            case IF_ARM64_DV_3E:
+            case IF_ARM64_DV_3EI:
+            case IF_ARM64_DV_3F:
+            case IF_ARM64_DV_3G:
+            case IF_ARM64_DV_3H:
+            case IF_ARM64_DV_3I:
+            case IF_ARM64_DV_4A:
+            case IF_ARM64_DV_4B:
             {
                 return false;
             }
 
-            case IF_LS_1A:
-            case IF_LS_2A:
-            case IF_LS_2B:
-            case IF_LS_2C:
-            case IF_LS_2D:
-            case IF_LS_2E:
-            case IF_LS_2F:
-            case IF_LS_2G:
-            case IF_LS_3A:
-            case IF_LS_3B:
-            case IF_LS_3C:
-            case IF_LS_3D:
-            case IF_LS_3F:
-            case IF_LS_3G:
+            case IF_ARM64_LS_1A:
+            case IF_ARM64_LS_2A:
+            case IF_ARM64_LS_2B:
+            case IF_ARM64_LS_2C:
+            case IF_ARM64_LS_2D:
+            case IF_ARM64_LS_2E:
+            case IF_ARM64_LS_2F:
+            case IF_ARM64_LS_2G:
+            case IF_ARM64_LS_3A:
+            case IF_ARM64_LS_3B:
+            case IF_ARM64_LS_3C:
+            case IF_ARM64_LS_3D:
+            case IF_ARM64_LS_3F:
+            case IF_ARM64_LS_3G:
             {
                 if (emitInsIsStoreArm64(ins))
                 {
                     return false;
                 }
-                assert(emitInsIsLoad(ins));
+                assert(emitInsIsLoadArm64(ins));
 
                 return true;
             }
 
-            case IF_LS_3E:
+            case IF_ARM64_LS_3E:
             {
                 assert(emitInsIsStoreArm64(ins));
-                assert(emitInsIsLoad(ins));
+                assert(emitInsIsLoadArm64(ins));
 
                 return true;
             }
 
-            case IF_PC_1A:
+            case IF_ARM64_PC_1A:
             {
                 return ins is INS_autiza or INS_autizb or INS_paciza or INS_pacizb or INS_xpacd or INS_xpaci;
             }
 
-            case IF_PC_2A:
+            case IF_ARM64_PC_2A:
             {
                 return ins is INS_autia or INS_autib or INS_pacia or INS_pacib;
             }
 
-            case IF_SR_1A:
+            case IF_ARM64_SR_1A:
             {
                 return ins == INS_mrs_tpid0;
             }
 
-            case IF_SVE_CO_3A:
-            case IF_SVE_BM_1A:
-            case IF_SVE_BO_1A:
-            case IF_SVE_CS_3A:
-            case IF_SVE_DK_3A:
-            case IF_SVE_DL_2A:
-            case IF_SVE_DM_2A:
-            case IF_SVE_DO_2A:
-            case IF_SVE_BB_2A:
-            case IF_SVE_BC_1A:
-            case IF_SVE_BL_1A:
-            case IF_SVE_DS_2A:
+            case IF_ARM64_SVE_CO_3A:
+            case IF_ARM64_SVE_BM_1A:
+            case IF_ARM64_SVE_BO_1A:
+            case IF_ARM64_SVE_CS_3A:
+            case IF_ARM64_SVE_DK_3A:
+            case IF_ARM64_SVE_DL_2A:
+            case IF_ARM64_SVE_DM_2A:
+            case IF_ARM64_SVE_DO_2A:
+            case IF_ARM64_SVE_BB_2A:
+            case IF_ARM64_SVE_BC_1A:
+            case IF_ARM64_SVE_BL_1A:
+            case IF_ARM64_SVE_DS_2A:
             {
                 return true;
             }
@@ -2319,4 +2318,3 @@ public partial class Emitter
         }
     }
 }
-#endif

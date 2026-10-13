@@ -3,46 +3,37 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private insFormat emitInsFormat(instruction ins)
+    private insFormat emitInsFormatArm64(instruction ins)
     {
-        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_instructionFormats.Length);
-        assert(s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE);
-        return s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+        RequireArm64Target();
+        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_instructionFormats_ARM64.Length);
+        assert(s_instructionFormats_ARM64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE);
+        return s_instructionFormats_ARM64[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
     }
 
-    private bool emitInsIsLoad(instruction ins)
+    private bool emitInsIsLoadArm64(instruction ins)
     {
+        RequireArm64Target();
         if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[nativeOrdinal] & CodeGen.LD) != 0;
+            return (((byte)CodeGen.instInfo[nativeOrdinal] & CodeGen.LD) != 0);
         }
 
         return false;
     }
 
-    private bool emitInsIsLoadOrStore(instruction ins)
+    public void emitInsArm64(instruction ins)
     {
-        if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
-            (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
-        {
-            return (CodeGen.instInfo[nativeOrdinal] & (CodeGen.LD | CodeGen.ST)) != 0;
-        }
-
-        return false;
-    }
-
-    public void emitIns(instruction ins)
-    {
+        RequireArm64Target();
         var id = emitNewInstrSmall(EA_8BYTE);
-        var format = emitInsFormat(ins);
+        var format = emitInsFormatArm64(ins);
 
         if (ins != INS_BREAKPOINT)
         {
@@ -62,20 +53,20 @@ public partial class Emitter
                 case INS_pacibz:
                 case INS_xpaclri:
                 {
-                    assert(format == IF_PC_0A);
+                    assert(format == IF_ARM64_PC_0A);
                     break;
                 }
 
                 case INS_retaa:
                 case INS_retab:
                 {
-                    assert(format == IF_BR_0A);
+                    assert(format == IF_ARM64_BR_0A);
                     break;
                 }
 
                 default:
                 {
-                    assert(format == IF_SN_0A);
+                    assert(format == IF_ARM64_SN_0A);
                     break;
                 }
             }
@@ -87,4 +78,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

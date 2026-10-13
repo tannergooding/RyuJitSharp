@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -12,22 +11,22 @@ public sealed partial class CodeGen
     // Match targetarm64.h's conservative, aligned probe boundary.
     private const uint Arm64StackProbeBoundaryThresholdBytes = 512;
 
-    private void genStackPointerConstantAdjustment(nint spDelta, regNumber regTmp)
+    private void genStackPointerConstantAdjustmentArm64(nint spDelta, regNumber regTmp)
     {
         assert(spDelta < 0);
         assert(unchecked((nuint)(-spDelta)) <= _compiler.eeGetPageSize());
 
-        _ = genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE,
+        _ = genInstrWithConstantArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64,
             unchecked(-spDelta), regTmp);
     }
 
-    private void genStackPointerConstantAdjustmentWithProbe(nint spDelta, regNumber regTmp)
+    private void genStackPointerConstantAdjustmentWithProbeArm64(nint spDelta, regNumber regTmp)
     {
-        Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, regTmp, REG_SP, 0);
-        genStackPointerConstantAdjustment(spDelta, regTmp);
+        Emitter.emitIns_R_R_IArm64(INS_ldr, EA_4BYTE, regTmp, REG_ARM64_SP, 0);
+        genStackPointerConstantAdjustmentArm64(spDelta, regTmp);
     }
 
-    private nint genStackPointerConstantAdjustmentLoopWithProbe(nint spDelta, regNumber regTmp)
+    private nint genStackPointerConstantAdjustmentLoopWithProbeArm64(nint spDelta, regNumber regTmp)
     {
         unchecked
         {
@@ -38,7 +37,7 @@ public sealed partial class CodeGen
             do
             {
                 var oneDelta = -(nint)nuint.Min((nuint)(-remaining), pageSize);
-                genStackPointerConstantAdjustmentWithProbe(oneDelta, regTmp);
+                genStackPointerConstantAdjustmentWithProbeArm64(oneDelta, regTmp);
                 remaining -= oneDelta;
             }
             while (remaining < 0);
@@ -49,7 +48,7 @@ public sealed partial class CodeGen
             if ((lastTouchDelta == 0) ||
                 (lastTouchDelta + Arm64StackProbeBoundaryThresholdBytes > pageSize))
             {
-                Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, regTmp, REG_SP, 0);
+                Emitter.emitIns_R_R_IArm64(INS_ldr, EA_4BYTE, regTmp, REG_ARM64_SP, 0);
                 lastTouchDelta = 0;
             }
 
@@ -65,9 +64,9 @@ public sealed partial class CodeGen
             assert(_compiler.compLocallocUsed);
 
             var size = tree.AsUnOp().Op1;
-            noway_assert(size.Type.ActualType is TYP_INT or TYP_I_IMPL);
+            noway_assert((size.Type.ActualType is var __targetAliasValue0 && (__targetAliasValue0 is TYP_INT || __targetAliasValue0 == TYP_I_IMPL)));
             var targetReg = tree.RegNum;
-            var regCnt = REG_NA;
+            var regCnt = REG_ARM64_NA;
             var type = size.Type.ActualType;
             var attr = type.EmitSize;
             BasicBlock? endLabel = null;
@@ -90,7 +89,8 @@ public sealed partial class CodeGen
                     goto BAILOUT;
                 }
 
-                amount = (amount + STACK_ALIGN - 1) & ~(nuint)(STACK_ALIGN - 1);
+                var stackAlign = unchecked((nuint)Configuration.STACK_ALIGN);
+                amount = (amount + stackAlign - 1) & ~(stackAlign - 1);
             }
             else
             {
@@ -110,14 +110,14 @@ public sealed partial class CodeGen
                     inst_Mov(size.Type, regCnt, targetReg, canSkip: true);
                 }
 
-                inst_RV_IV(INS_add, regCnt, STACK_ALIGN - 1, type.EmitActualSize);
-                inst_RV_IV(INS_and, regCnt, ~(STACK_ALIGN - 1), type.EmitActualSize);
+                inst_RV_IV(INS_add, regCnt, Configuration.STACK_ALIGN - 1, type.EmitActualSize);
+                inst_RV_IV(INS_and, regCnt, ~(Configuration.STACK_ALIGN - 1), type.EmitActualSize);
             }
 
             if (_compiler.lvaOutgoingArgSpaceSize.Value > 0)
             {
-                assert((_compiler.lvaOutgoingArgSpaceSize.Value % STACK_ALIGN) == 0);
-                _ = genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE,
+                assert((_compiler.lvaOutgoingArgSpaceSize.Value % Configuration.STACK_ALIGN) == 0);
+                _ = genInstrWithConstantArm64(INS_add, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64,
                     (nint)_compiler.lvaOutgoingArgSpaceSize.Value, rsGetRsvdReg());
                 stackAdjustment += (uint)_compiler.lvaOutgoingArgSpaceSize.Value;
             }
@@ -125,26 +125,26 @@ public sealed partial class CodeGen
             if (size.Oper.IsCnsIntOrI && size.IsContained)
             {
                 assert(amount > 0);
-                const int StorePairBytes = 2 * REGSIZE_BYTES;
-                assert(amount % StorePairBytes == 0);
+                var storePairBytes = unchecked((nuint)(2 * Configuration.REGSIZE_BYTES));
+                assert(amount % storePairBytes == 0);
 
                 if (amount < _compiler.eeGetPageSize())
                 {
                     if (amount <= 256)
                     {
-                        Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE,
+                        Emitter.emitIns_R_R_IArm64(INS_ldr, EA_4BYTE, REG_ARM64_ZR, REG_SPBASE_ARM64,
                             -(nint)amount, INS_OPTS_POST_INDEX);
                     }
                     else if (canEncodeLoadOrStorePairOffsetArm64(-(long)amount, EA_8BYTE))
                     {
                         // LDP with two identical destination registers is unpredictable.
-                        Emitter.emitIns_R_R_R_I(INS_ldp, EA_8BYTE, targetReg, REG_ZR, REG_SPBASE,
+                        Emitter.emitIns_R_R_R_IArm64(INS_ldp, EA_8BYTE, targetReg, REG_ARM64_ZR, REG_SPBASE_ARM64,
                             -(nint)amount, INS_OPTS_POST_INDEX);
                     }
                     else
                     {
-                        Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, 0);
-                        _ = genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE,
+                        Emitter.emitIns_R_R_IArm64(INS_ldr, EA_4BYTE, REG_ARM64_ZR, REG_SPBASE_ARM64, 0);
+                        _ = genInstrWithConstantArm64(INS_sub, EA_PTRSIZE, REG_SPBASE_ARM64, REG_SPBASE_ARM64,
                             (nint)amount, rsGetRsvdReg());
                     }
 
@@ -152,7 +152,7 @@ public sealed partial class CodeGen
                     goto ALLOC_DONE;
                 }
 
-                assert(regCnt == REG_NA);
+                assert(regCnt == REG_ARM64_NA);
                 if (needsZeroing)
                 {
                     assert(InternalRegisters.Count(tree) == 0);
@@ -163,14 +163,14 @@ public sealed partial class CodeGen
                     regCnt = InternalRegisters.Extract(tree);
                 }
 
-                instGen_Set_Reg_To_Imm((uint)amount == amount ? EA_4BYTE : EA_8BYTE, regCnt, (nint)amount);
+                instGen_Set_Reg_To_ImmArm64((uint)amount == amount ? EA_4BYTE : EA_8BYTE, regCnt, (nint)amount);
             }
 
             if (needsZeroing)
             {
                 var loop = genCreateTempLabel();
                 genDefineTempLabel(loop);
-                Emitter.emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_ZR, REG_ZR, REG_SPBASE,
+                Emitter.emitIns_R_R_R_IArm64(INS_stp, EA_PTRSIZE, REG_ARM64_ZR, REG_ARM64_ZR, REG_SPBASE_ARM64,
                     -16, INS_OPTS_PRE_INDEX);
                 assert(genIsValidIntReg(regCnt));
                 inst_RV_IV(INS_subs, regCnt, 16, type.EmitActualSize);
@@ -183,28 +183,28 @@ public sealed partial class CodeGen
                 var loop = genCreateTempLabel();
                 var done = genCreateTempLabel();
 
-                Emitter.emitIns_R_R_R(INS_subs, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
+                Emitter.emitIns_R_R_R(INS_subs, EA_PTRSIZE, regCnt, REG_SPBASE_ARM64, regCnt);
                 inst_JMP(EJ_vc, loop);
                 instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
                 genDefineTempLabel(loop);
 
                 // SP remains at a probed address until the next full page is reachable.
-                Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, 0);
-                Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE,
+                Emitter.emitIns_R_R_IArm64(INS_ldr, EA_4BYTE, REG_ARM64_ZR, REG_SPBASE_ARM64, 0);
+                Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE_ARM64,
                     (nint)_compiler.eeGetPageSize());
                 Emitter.emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);
                 inst_JMP(EJ_lo, done);
-                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, regTmp, canSkip: false);
+                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM64, regTmp, canSkip: false);
                 inst_JMP(EJ_jmp, loop);
 
                 genDefineTempLabel(done);
-                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt, canSkip: false);
+                Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM64, regCnt, canSkip: false);
             }
 
         ALLOC_DONE:
             if (stackAdjustment != 0)
             {
-                assert((stackAdjustment % STACK_ALIGN) == 0);
+                assert((stackAdjustment % Configuration.STACK_ALIGN) == 0);
                 assert((lastTouchDelta == IllegalLastTouchDelta) || (lastTouchDelta >= 0));
                 var tmpReg = rsGetRsvdReg();
 
@@ -212,19 +212,19 @@ public sealed partial class CodeGen
                     (stackAdjustment + (uint)lastTouchDelta + Arm64StackProbeBoundaryThresholdBytes >
                         _compiler.eeGetPageSize()))
                 {
-                    _ = genStackPointerConstantAdjustmentLoopWithProbe(-(nint)stackAdjustment, tmpReg);
+                    _ = genStackPointerConstantAdjustmentLoopWithProbeArm64(-(nint)stackAdjustment, tmpReg);
                 }
                 else
                 {
-                    genStackPointerConstantAdjustment(-(nint)stackAdjustment, tmpReg);
+                    genStackPointerConstantAdjustmentArm64(-(nint)stackAdjustment, tmpReg);
                 }
 
-                _ = genInstrWithConstant(INS_add, EA_PTRSIZE, targetReg, REG_SPBASE,
+                _ = genInstrWithConstantArm64(INS_add, EA_PTRSIZE, targetReg, REG_SPBASE_ARM64,
                     (nint)stackAdjustment, tmpReg);
             }
             else
             {
-                inst_Mov(TYP_I_IMPL, targetReg, REG_SPBASE, canSkip: false);
+                inst_Mov(TYP_I_IMPL, targetReg, REG_SPBASE_ARM64, canSkip: false);
             }
 
         BAILOUT:
@@ -246,4 +246,3 @@ public sealed partial class CodeGen
         return (imm % size == 0) && (imm >= -64 * size) && (imm < 64 * size);
     }
 }
-#endif

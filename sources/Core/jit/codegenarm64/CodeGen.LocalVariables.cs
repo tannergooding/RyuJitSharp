@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.genTreeOps;
 
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForLclVar(GenTreeLclVar tree)
+    public void genCodeForLclVarArm64(GenTreeLclVar tree)
     {
         var varNum = tree.LclNum;
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
@@ -31,23 +30,21 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForStoreLclFld(GenTreeLclFld tree)
+    public void genCodeForStoreLclFldArm64(GenTreeLclFld tree)
     {
         var targetType = tree.Type;
 
-#if FEATURE_SIMD
-        if (targetType is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && targetType is TYP_SIMD12)
         {
-            genStoreLclTypeSimd12(tree);
+            genStoreLclTypeSimd12Arm64(tree);
             return;
         }
-#endif
 
         var targetReg = tree.RegNum;
         var offset = tree.LclOffs;
 
         noway_assert(targetType is not TYP_STRUCT);
-        assert(targetReg == REG_NA);
+        assert(targetReg == REG_ARM64_NA);
 
         var varNum = tree.LclNum;
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
@@ -55,18 +52,18 @@ public sealed partial class CodeGen
         var data = tree.Op1;
         genConsumeRegs(data);
 
-        var dataReg = REG_NA;
+        var dataReg = REG_ARM64_NA;
         if (data.IsContainedIntOrIImmed)
         {
             assert(data.IsIntegralConst(0));
-            dataReg = REG_ZR;
+            dataReg = REG_ARM64_ZR;
         }
         else if (data.IsContained)
         {
             if (data.Oper.IsCnsVec)
             {
                 assert(data.IsVectorZero);
-                dataReg = REG_ZR;
+                dataReg = REG_ARM64_ZR;
             }
             else
             {
@@ -82,16 +79,16 @@ public sealed partial class CodeGen
             dataReg = data.RegNum;
         }
 
-        assert(dataReg != REG_NA);
+        assert(dataReg != REG_ARM64_NA);
 
         var ins = ins_StoreFromSrc(dataReg, targetType);
         Emitter.emitIns_S_R(ins, emitActualTypeSize(targetType), dataReg, varNum, offset);
 
         genUpdateLife(tree);
-        varDsc.RegNum = REG_STK;
+        varDsc.RegNum = REG_ARM64_STK;
     }
 
-    public void genCodeForStoreLclVar(GenTreeLclVar lclNode)
+    public void genCodeForStoreLclVarArm64(GenTreeLclVar lclNode)
     {
         assert(lclNode.Oper is GT_STORE_LCL_VAR);
 
@@ -112,13 +109,13 @@ public sealed partial class CodeGen
             for (byte i = 0; i < regCount; i++)
             {
                 var varReg = lclNode.GetRegByIndex(i);
-                assert(varReg != REG_NA);
+                assert(varReg != REG_ARM64_NA);
 
                 var fieldLclNum = varDsc.lvFieldLclStart + i;
                 ref var fieldVarDsc = ref _compiler.lvaGetDesc(fieldLclNum);
                 assert(fieldVarDsc.Type == TYP_FLOAT);
 
-                Emitter.emitIns_R_R_I(INS_dup, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
+                Emitter.emitIns_R_R_IArm64(INS_dup, emitTypeSize(TYP_FLOAT), varReg, operandReg, i);
             }
 
             genProduceReg(lclNode);
@@ -129,17 +126,15 @@ public sealed partial class CodeGen
         var varNum = lclNode.LclNum;
         var targetType = varDsc.GetRegisterType(lclNode);
 
-#if FEATURE_SIMD
-        if (targetType is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && targetType is TYP_SIMD12)
         {
-            genStoreLclTypeSimd12(lclNode);
+            genStoreLclTypeSimd12Arm64(lclNode);
             return;
         }
-#endif
 
         genConsumeRegs(data);
 
-        var dataReg = REG_NA;
+        var dataReg = REG_ARM64_NA;
         if (data.IsContained)
         {
             var zeroInit = data.IsIntegralConst(0) || data.IsVectorZero;
@@ -147,18 +142,18 @@ public sealed partial class CodeGen
 
             if (zeroInit && varTypeIsSimd(targetType))
             {
-                if (targetReg != REG_NA)
+                if (targetReg != REG_ARM64_NA)
                 {
                     Emitter.emitIns_R_I(INS_movi, emitActualTypeSize(targetType), targetReg, 0x00, INS_OPTS_16B);
                 }
                 else if (targetType is TYP_SIMD16)
                 {
-                    Emitter.emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, REG_ZR, REG_ZR, varNum, 0);
+                    Emitter.emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, REG_ARM64_ZR, REG_ARM64_ZR, varNum, 0);
                 }
                 else
                 {
                     assert(targetType is TYP_SIMD8);
-                    Emitter.emitIns_S_R(INS_str, EA_8BYTE, REG_ZR, varNum, 0);
+                    Emitter.emitIns_S_R(INS_str, EA_8BYTE, REG_ARM64_ZR, varNum, 0);
                 }
 
                 genUpdateLifeStore(lclNode, targetReg, ref varDsc);
@@ -167,7 +162,7 @@ public sealed partial class CodeGen
 
             if (zeroInit)
             {
-                dataReg = REG_ZR;
+                dataReg = REG_ARM64_ZR;
             }
             else
             {
@@ -182,9 +177,9 @@ public sealed partial class CodeGen
             dataReg = data.RegNum;
         }
 
-        assert(dataReg != REG_NA);
+        assert(dataReg != REG_ARM64_NA);
 
-        if (targetReg == REG_NA)
+        if (targetReg == REG_ARM64_NA)
         {
             inst_set_SV_var(lclNode);
 
@@ -209,8 +204,7 @@ public sealed partial class CodeGen
         genUpdateLifeStore(lclNode, targetReg, ref varDsc);
     }
 
-#if FEATURE_SIMD
-    private void genStoreLclTypeSimd12(GenTreeLclVarCommon treeNode)
+    private void genStoreLclTypeSimd12Arm64(GenTreeLclVarCommon treeNode)
     {
         assert(treeNode.Oper is GT_STORE_LCL_FLD or GT_STORE_LCL_VAR);
 
@@ -224,11 +218,11 @@ public sealed partial class CodeGen
         {
             assert(data.IsIntegralConst(0) || data.IsVectorZero);
 
-            Emitter.emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, REG_ZR, varNum, offset);
-            Emitter.emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, REG_ZR, varNum, offset + 8);
+            Emitter.emitIns_S_R(ins_Store(TYP_DOUBLE), EA_8BYTE, REG_ARM64_ZR, varNum, offset);
+            Emitter.emitIns_S_R(ins_Store(TYP_FLOAT), EA_4BYTE, REG_ARM64_ZR, varNum, offset + 8);
 
             genUpdateLife(treeNode);
-            varDsc.RegNum = REG_STK;
+            varDsc.RegNum = REG_ARM64_STK;
 
             return;
         }
@@ -236,7 +230,7 @@ public sealed partial class CodeGen
         var targetReg = treeNode.RegNum;
         var dataReg = genConsumeReg(data);
 
-        if (targetReg != REG_NA)
+        if (targetReg != REG_ARM64_NA)
         {
             assert(genIsValidFloatReg(targetReg));
             inst_Mov(treeNode.Type, targetReg, dataReg, canSkip: true);
@@ -248,19 +242,5 @@ public sealed partial class CodeGen
 
         genUpdateLifeStore(treeNode, targetReg, ref varDsc);
     }
-#endif
 
-    private void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
-    {
-        if (targetReg != REG_NA)
-        {
-            genProduceReg(tree);
-        }
-        else
-        {
-            genUpdateLife(tree);
-            varDsc.RegNum = REG_STK;
-        }
-    }
 }
-#endif

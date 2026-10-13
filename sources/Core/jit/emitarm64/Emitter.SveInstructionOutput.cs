@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Numerics;
 using static RyuJitSharp.Emitter.insFormat;
 
@@ -23,32 +22,32 @@ public partial class Emitter
             switch (fmt)
             {
                 // Scalable: element size, predicate, and two vector registers.
-                case IF_SVE_AA_3A:
-                case IF_SVE_AC_3A:
-                case IF_SVE_AF_3A:
-                case IF_SVE_AG_3A:
-                case IF_SVE_AI_3A:
-                case IF_SVE_AJ_3A:
-                case IF_SVE_AK_3A:
-                case IF_SVE_AL_3A:
-                case IF_SVE_AO_3A:
-                case IF_SVE_AP_3A:
-                case IF_SVE_AQ_3A:
-                case IF_SVE_CL_3A:
-                case IF_SVE_CM_3A:
-                case IF_SVE_CN_3A:
-                case IF_SVE_CP_3A:
-                case IF_SVE_CR_3A:
-                case IF_SVE_CU_3A:
-                case IF_SVE_EQ_3A:
-                case IF_SVE_ES_3A:
-                case IF_SVE_GR_3A:
-                case IF_SVE_GS_3A:
-                case IF_SVE_HE_3A:
-                case IF_SVE_HJ_3A:
-                case IF_SVE_HL_3A:
-                case IF_SVE_HQ_3A:
-                case IF_SVE_HR_3A:
+                case IF_ARM64_SVE_AA_3A:
+                case IF_ARM64_SVE_AC_3A:
+                case IF_ARM64_SVE_AF_3A:
+                case IF_ARM64_SVE_AG_3A:
+                case IF_ARM64_SVE_AI_3A:
+                case IF_ARM64_SVE_AJ_3A:
+                case IF_ARM64_SVE_AK_3A:
+                case IF_ARM64_SVE_AL_3A:
+                case IF_ARM64_SVE_AO_3A:
+                case IF_ARM64_SVE_AP_3A:
+                case IF_ARM64_SVE_AQ_3A:
+                case IF_ARM64_SVE_CL_3A:
+                case IF_ARM64_SVE_CM_3A:
+                case IF_ARM64_SVE_CN_3A:
+                case IF_ARM64_SVE_CP_3A:
+                case IF_ARM64_SVE_CR_3A:
+                case IF_ARM64_SVE_CU_3A:
+                case IF_ARM64_SVE_EQ_3A:
+                case IF_ARM64_SVE_ES_3A:
+                case IF_ARM64_SVE_GR_3A:
+                case IF_ARM64_SVE_GS_3A:
+                case IF_ARM64_SVE_HE_3A:
+                case IF_ARM64_SVE_HJ_3A:
+                case IF_ARM64_SVE_HL_3A:
+                case IF_ARM64_SVE_HQ_3A:
+                case IF_ARM64_SVE_HR_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -59,8 +58,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AB_3B:
-                case IF_SVE_HL_3B:
+                case IF_ARM64_SVE_AB_3B:
+                case IF_ARM64_SVE_HL_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -70,7 +69,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AH_3A:
+                case IF_ARM64_SVE_AH_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -82,7 +81,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AM_2A:
+                case IF_ARM64_SVE_AM_2A:
                 {
                     var isRightShift = emitInsIsVectorRightShift(ins);
                     imm = emitGetInsSC(id);
@@ -96,9 +95,9 @@ public partial class Emitter
                 }
 
                 // Four registers: the fourth source occupies the m field.
-                case IF_SVE_AR_4A:
-                case IF_SVE_GI_4A:
-                case IF_SVE_HU_4A:
+                case IF_ARM64_SVE_AR_4A:
+                case IF_ARM64_SVE_GI_4A:
+                case IF_ARM64_SVE_HU_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -111,7 +110,7 @@ public partial class Emitter
                 }
 
                 // The multiplicand-writing form puts the fourth source in the a field.
-                case IF_SVE_AS_4A:
+                case IF_ARM64_SVE_AS_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -123,18 +122,18 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AT_3A:
-                case IF_SVE_BG_3A:
-                case IF_SVE_BZ_3A:
-                case IF_SVE_BZ_3A_A:
-                case IF_SVE_EH_3A:
-                case IF_SVE_EL_3A:
-                case IF_SVE_EM_3A:
-                case IF_SVE_EX_3A:
-                case IF_SVE_FL_3A:
-                case IF_SVE_FM_3A:
-                case IF_SVE_FW_3A:
-                case IF_SVE_GF_3A:
+                case IF_ARM64_SVE_AT_3A:
+                case IF_ARM64_SVE_BG_3A:
+                case IF_ARM64_SVE_BZ_3A:
+                case IF_ARM64_SVE_BZ_3A_A:
+                case IF_ARM64_SVE_EH_3A:
+                case IF_ARM64_SVE_EL_3A:
+                case IF_ARM64_SVE_EM_3A:
+                case IF_ARM64_SVE_EX_3A:
+                case IF_ARM64_SVE_FL_3A:
+                case IF_ARM64_SVE_FM_3A:
+                case IF_ARM64_SVE_FW_3A:
+                case IF_ARM64_SVE_GF_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -145,7 +144,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GC_3A:
+                case IF_ARM64_SVE_GC_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -156,7 +155,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BA_3A:
+                case IF_ARM64_SVE_BA_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -167,7 +166,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BH_3A:
+                case IF_ARM64_SVE_BH_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -179,8 +178,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BH_3B:
-                case IF_SVE_BH_3B_A:
+                case IF_ARM64_SVE_BH_3B:
+                case IF_ARM64_SVE_BH_3B_A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -191,8 +190,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BL_1A:
-                case IF_SVE_BM_1A:
+                case IF_ARM64_SVE_BL_1A:
+                case IF_ARM64_SVE_BM_1A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -203,7 +202,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BO_1A:
+                case IF_ARM64_SVE_BO_1A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -215,8 +214,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BQ_2A:
-                case IF_SVE_BQ_2B:
+                case IF_ARM64_SVE_BQ_2A:
+                case IF_ARM64_SVE_BQ_2B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -228,8 +227,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BN_1A:
-                case IF_SVE_BP_1A:
+                case IF_ARM64_SVE_BN_1A:
+                case IF_ARM64_SVE_BP_1A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -240,8 +239,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BS_1A:
-                case IF_SVE_BT_1A:
+                case IF_ARM64_SVE_BS_1A:
+                case IF_ARM64_SVE_BT_1A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -251,7 +250,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BU_2A:
+                case IF_ARM64_SVE_BU_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -263,8 +262,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BV_2A:
-                case IF_SVE_BV_2A_J:
+                case IF_ARM64_SVE_BV_2A:
+                case IF_ARM64_SVE_BV_2A_J:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -277,7 +276,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BV_2B:
+                case IF_ARM64_SVE_BV_2B:
                 {
                     // MOV is the preferred disassembly, but only FMOV owns this encoding.
                     code = emitInsCodeSve(INS_sve_fmov, fmt);
@@ -288,7 +287,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BW_2A:
+                case IF_ARM64_SVE_BW_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -299,7 +298,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CE_2A:
+                case IF_ARM64_SVE_CE_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -308,7 +307,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CE_2B:
+                case IF_ARM64_SVE_CE_2B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -318,7 +317,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CE_2C:
+                case IF_ARM64_SVE_CE_2C:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -328,7 +327,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CE_2D:
+                case IF_ARM64_SVE_CE_2D:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -338,7 +337,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CF_2A:
+                case IF_ARM64_SVE_CF_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -347,7 +346,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CF_2B:
+                case IF_ARM64_SVE_CF_2B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -357,7 +356,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CF_2C:
+                case IF_ARM64_SVE_CF_2C:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -367,7 +366,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CF_2D:
+                case IF_ARM64_SVE_CF_2D:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -377,7 +376,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CC_2A:
+                case IF_ARM64_SVE_CC_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -387,7 +386,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CD_2A:
+                case IF_ARM64_SVE_CD_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -397,7 +396,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CI_3A:
+                case IF_ARM64_SVE_CI_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -408,7 +407,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CJ_2A:
+                case IF_ARM64_SVE_CJ_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -418,7 +417,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CK_2A:
+                case IF_ARM64_SVE_CK_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -427,7 +426,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GQ_3A:
+                case IF_ARM64_SVE_GQ_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     if (ins == INS_sve_fcvtnt && id.idInsOpt() == INS_OPTS_D_TO_S)
@@ -446,8 +445,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CO_3A:
-                case IF_SVE_CS_3A:
+                case IF_ARM64_SVE_CO_3A:
+                case IF_ARM64_SVE_CS_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -458,7 +457,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CQ_3A:
+                case IF_ARM64_SVE_CQ_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -469,7 +468,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CT_3A:
+                case IF_ARM64_SVE_CT_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -479,8 +478,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CV_3A:
-                case IF_SVE_CV_3B:
+                case IF_ARM64_SVE_CV_3A:
+                case IF_ARM64_SVE_CV_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -491,7 +490,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CW_4A:
+                case IF_ARM64_SVE_CW_4A:
                 {
                     var reg4 = ins == INS_sve_mov ? id.idReg1() : id.idReg4();
                     code = emitInsCodeSve(ins, fmt);
@@ -504,10 +503,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CX_4A:
-                case IF_SVE_CX_4A_A:
-                case IF_SVE_GE_4A:
-                case IF_SVE_HT_4A:
+                case IF_ARM64_SVE_CX_4A:
+                case IF_ARM64_SVE_CX_4A_A:
+                case IF_ARM64_SVE_GE_4A:
+                case IF_ARM64_SVE_HT_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -519,7 +518,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CY_3A:
+                case IF_ARM64_SVE_CY_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -532,7 +531,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CY_3B:
+                case IF_ARM64_SVE_CY_3B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -545,25 +544,25 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EW_3A:
-                case IF_SVE_BR_3B:
-                case IF_SVE_FN_3B:
-                case IF_SVE_FO_3A:
-                case IF_SVE_AT_3B:
-                case IF_SVE_BD_3B:
-                case IF_SVE_EF_3A:
-                case IF_SVE_EI_3A:
-                case IF_SVE_GJ_3A:
-                case IF_SVE_GN_3A:
-                case IF_SVE_GO_3A:
-                case IF_SVE_GW_3B:
-                case IF_SVE_HA_3A:
-                case IF_SVE_HA_3A_E:
-                case IF_SVE_HA_3A_F:
-                case IF_SVE_HB_3A:
-                case IF_SVE_HD_3A:
-                case IF_SVE_HD_3A_A:
-                case IF_SVE_HK_3B:
+                case IF_ARM64_SVE_EW_3A:
+                case IF_ARM64_SVE_BR_3B:
+                case IF_ARM64_SVE_FN_3B:
+                case IF_ARM64_SVE_FO_3A:
+                case IF_ARM64_SVE_AT_3B:
+                case IF_ARM64_SVE_BD_3B:
+                case IF_ARM64_SVE_EF_3A:
+                case IF_ARM64_SVE_EI_3A:
+                case IF_ARM64_SVE_GJ_3A:
+                case IF_ARM64_SVE_GN_3A:
+                case IF_ARM64_SVE_GO_3A:
+                case IF_ARM64_SVE_GW_3B:
+                case IF_ARM64_SVE_HA_3A:
+                case IF_ARM64_SVE_HA_3A_E:
+                case IF_ARM64_SVE_HA_3A_F:
+                case IF_ARM64_SVE_HB_3A:
+                case IF_ARM64_SVE_HD_3A:
+                case IF_ARM64_SVE_HD_3A_A:
+                case IF_ARM64_SVE_HK_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -573,7 +572,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AU_3A:
+                case IF_ARM64_SVE_AU_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -591,7 +590,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AV_3A:
+                case IF_ARM64_SVE_AV_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -601,7 +600,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AW_2A:
+                case IF_ARM64_SVE_AW_2A:
                 {
                     imm = insSveGetImmDiff(emitGetInsSC(id), id.idInsOpt());
                     code = emitInsCodeSve(ins, fmt);
@@ -614,7 +613,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AX_1A:
+                case IF_ARM64_SVE_AX_1A:
                 {
                     nint imm1;
                     nint imm2;
@@ -628,7 +627,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AY_2A:
+                case IF_ARM64_SVE_AY_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -639,7 +638,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_AZ_2A:
+                case IF_ARM64_SVE_AZ_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -650,7 +649,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BB_2A:
+                case IF_ARM64_SVE_BB_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -660,7 +659,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BC_1A:
+                case IF_ARM64_SVE_BC_1A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -669,7 +668,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EW_3B:
+                case IF_ARM64_SVE_EW_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -679,17 +678,17 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EG_3A:
-                case IF_SVE_EY_3A:
-                case IF_SVE_EZ_3A:
-                case IF_SVE_FD_3B:
-                case IF_SVE_FF_3B:
-                case IF_SVE_FI_3B:
-                case IF_SVE_GU_3A:
-                case IF_SVE_GX_3A:
-                case IF_SVE_GY_3B:
-                case IF_SVE_GY_3B_D:
-                case IF_SVE_FK_3B:
+                case IF_ARM64_SVE_EG_3A:
+                case IF_ARM64_SVE_EY_3A:
+                case IF_ARM64_SVE_EZ_3A:
+                case IF_ARM64_SVE_FD_3B:
+                case IF_ARM64_SVE_FF_3B:
+                case IF_ARM64_SVE_FI_3B:
+                case IF_ARM64_SVE_GU_3A:
+                case IF_ARM64_SVE_GX_3A:
+                case IF_ARM64_SVE_GY_3B:
+                case IF_ARM64_SVE_GY_3B_D:
+                case IF_ARM64_SVE_FK_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -700,12 +699,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FD_3A:
-                case IF_SVE_FF_3A:
-                case IF_SVE_FI_3A:
-                case IF_SVE_GU_3C:
-                case IF_SVE_GX_3C:
-                case IF_SVE_FK_3A:
+                case IF_ARM64_SVE_FD_3A:
+                case IF_ARM64_SVE_FF_3A:
+                case IF_ARM64_SVE_FI_3A:
+                case IF_ARM64_SVE_GU_3C:
+                case IF_ARM64_SVE_GX_3C:
+                case IF_ARM64_SVE_FK_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -718,12 +717,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FE_3A:
-                case IF_SVE_FG_3A:
-                case IF_SVE_FH_3A:
-                case IF_SVE_FJ_3A:
-                case IF_SVE_GY_3A:
-                case IF_SVE_GZ_3A:
+                case IF_ARM64_SVE_FE_3A:
+                case IF_ARM64_SVE_FG_3A:
+                case IF_ARM64_SVE_FH_3A:
+                case IF_ARM64_SVE_FJ_3A:
+                case IF_ARM64_SVE_GY_3A:
+                case IF_ARM64_SVE_GZ_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -736,10 +735,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FE_3B:
-                case IF_SVE_FG_3B:
-                case IF_SVE_FH_3B:
-                case IF_SVE_FJ_3B:
+                case IF_ARM64_SVE_FE_3B:
+                case IF_ARM64_SVE_FG_3B:
+                case IF_ARM64_SVE_FH_3B:
+                case IF_ARM64_SVE_FJ_3B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -752,13 +751,13 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EY_3B:
-                case IF_SVE_FD_3C:
-                case IF_SVE_FF_3C:
-                case IF_SVE_FI_3C:
-                case IF_SVE_GU_3B:
-                case IF_SVE_GX_3B:
-                case IF_SVE_FK_3C:
+                case IF_ARM64_SVE_EY_3B:
+                case IF_ARM64_SVE_FD_3C:
+                case IF_ARM64_SVE_FF_3C:
+                case IF_ARM64_SVE_FI_3C:
+                case IF_ARM64_SVE_GU_3B:
+                case IF_ARM64_SVE_GX_3B:
+                case IF_ARM64_SVE_FK_3C:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -770,8 +769,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CZ_4A:
-                case IF_SVE_DA_4A:
+                case IF_ARM64_SVE_CZ_4A:
+                case IF_ARM64_SVE_DA_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -807,8 +806,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CZ_4A_A:
-                case IF_SVE_CZ_4A_L:
+                case IF_ARM64_SVE_CZ_4A_A:
+                case IF_ARM64_SVE_CZ_4A_L:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -819,7 +818,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CZ_4A_K:
+                case IF_ARM64_SVE_CZ_4A_K:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -830,7 +829,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DB_3A:
+                case IF_ARM64_SVE_DB_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -841,8 +840,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DB_3B:
-                case IF_SVE_DC_3A:
+                case IF_ARM64_SVE_DB_3B:
+                case IF_ARM64_SVE_DC_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -852,8 +851,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DD_2A:
-                case IF_SVE_DG_2A:
+                case IF_ARM64_SVE_DD_2A:
+                case IF_ARM64_SVE_DG_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -862,7 +861,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DE_1A:
+                case IF_ARM64_SVE_DE_1A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeSvePattern(id.idSvePattern());
@@ -872,7 +871,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DF_2A:
+                case IF_ARM64_SVE_DF_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -882,8 +881,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DH_1A:
-                case IF_SVE_DJ_1A:
+                case IF_ARM64_SVE_DH_1A:
+                case IF_ARM64_SVE_DJ_1A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -891,7 +890,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DI_2A:
+                case IF_ARM64_SVE_DI_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 13, 10);
@@ -900,7 +899,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DK_3A:
+                case IF_ARM64_SVE_DK_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -911,7 +910,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GA_2A:
+                case IF_ARM64_SVE_GA_2A:
                 {
                     imm = emitGetInsSC(id);
                     assert(id.idInsOpt() == INS_OPTS_SCALABLE_H);
@@ -925,7 +924,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DL_2A:
+                case IF_ARM64_SVE_DL_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeVectorLengthSpecifier(id);
@@ -936,7 +935,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DM_2A:
+                case IF_ARM64_SVE_DM_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -946,8 +945,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DN_2A:
-                case IF_SVE_DP_2A:
+                case IF_ARM64_SVE_DN_2A:
+                case IF_ARM64_SVE_DP_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -957,7 +956,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DO_2A:
+                case IF_ARM64_SVE_DO_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 4, 0);
@@ -968,14 +967,14 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DQ_0A:
+                case IF_ARM64_SVE_DQ_0A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     dst += emitOutputLong(dst, code);
                     break;
                 }
 
-                case IF_SVE_DR_1A:
+                case IF_ARM64_SVE_DR_1A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 8, 5);
@@ -983,7 +982,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DS_2A:
+                case IF_ARM64_SVE_DS_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_R(id.idReg1(), 9, 5);
@@ -993,8 +992,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FZ_2A:
-                case IF_SVE_HG_2A:
+                case IF_ARM64_SVE_FZ_2A:
+                case IF_ARM64_SVE_HG_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1003,7 +1002,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GD_2A:
+                case IF_ARM64_SVE_GD_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1015,7 +1014,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FR_2A:
+                case IF_ARM64_SVE_FR_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1027,7 +1026,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GB_2A:
+                case IF_ARM64_SVE_GB_2A:
                 {
                     // Neither the element size nor the immediate difference may use D width.
                     assert(insOptsScalableWide(id.idInsOpt()));
@@ -1040,7 +1039,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FV_2A:
+                case IF_ARM64_SVE_FV_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1051,7 +1050,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FY_3A:
+                case IF_ARM64_SVE_FY_3A:
                 {
                     nint sizeEncoding = id.idInsOpt() == INS_OPTS_SCALABLE_D ? 1 : 0;
                     code = emitInsCodeSve(ins, fmt);
@@ -1063,7 +1062,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GK_2A:
+                case IF_ARM64_SVE_GK_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1072,7 +1071,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GL_1A:
+                case IF_ARM64_SVE_GL_1A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1080,7 +1079,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DT_3A:
+                case IF_ARM64_SVE_DT_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -1092,8 +1091,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DW_2A:
-                case IF_SVE_DW_2B:
+                case IF_ARM64_SVE_DW_2A:
+                case IF_ARM64_SVE_DW_2B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -1104,7 +1103,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DX_3A:
+                case IF_ARM64_SVE_DX_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 1);
@@ -1115,7 +1114,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DY_3A:
+                case IF_ARM64_SVE_DY_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeVectorLengthSpecifier(id);
@@ -1127,7 +1126,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DZ_1A:
+                case IF_ARM64_SVE_DZ_1A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 2, 0);
@@ -1136,9 +1135,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EA_1A:
-                case IF_SVE_ED_1A:
-                case IF_SVE_EE_1A:
+                case IF_ARM64_SVE_EA_1A:
+                case IF_ARM64_SVE_ED_1A:
+                case IF_ARM64_SVE_EE_1A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1149,9 +1148,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FA_3A:
-                case IF_SVE_FB_3A:
-                case IF_SVE_FC_3A:
+                case IF_ARM64_SVE_FA_3A:
+                case IF_ARM64_SVE_FB_3A:
+                case IF_ARM64_SVE_FC_3A:
                 {
                     var packedImm = emitGetInsSC(id);
                     var rot = packedImm & 0b11;
@@ -1166,8 +1165,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EJ_3A:
-                case IF_SVE_EK_3A:
+                case IF_ARM64_SVE_EJ_3A:
+                case IF_ARM64_SVE_EK_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1179,10 +1178,10 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_FA_3B:
-                case IF_SVE_FB_3B:
-                case IF_SVE_FC_3B:
-                case IF_SVE_GV_3A:
+                case IF_ARM64_SVE_FA_3B:
+                case IF_ARM64_SVE_FB_3B:
+                case IF_ARM64_SVE_FC_3B:
+                case IF_ARM64_SVE_GV_3A:
                 {
                     var packedImm = emitGetInsSC(id);
                     var rot = packedImm & 0b11;
@@ -1198,8 +1197,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EB_1A:
-                case IF_SVE_EC_1A:
+                case IF_ARM64_SVE_EB_1A:
+                case IF_ARM64_SVE_EC_1A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1211,7 +1210,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_EB_1B:
+                case IF_ARM64_SVE_EB_1B:
                 {
                     // MOV is the preferred disassembly, but only FMOV owns this encoding.
                     code = emitInsCodeSve(INS_sve_fmov, fmt);
@@ -1221,7 +1220,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DU_3A:
+                case IF_ARM64_SVE_DU_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -1232,7 +1231,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_DV_4A:
+                case IF_ARM64_SVE_DV_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -1244,7 +1243,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HO_3A:
+                case IF_ARM64_SVE_HO_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1254,7 +1253,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HO_3B:
+                case IF_ARM64_SVE_HO_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1308,7 +1307,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HO_3C:
+                case IF_ARM64_SVE_HO_3C:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1318,7 +1317,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HP_3B:
+                case IF_ARM64_SVE_HP_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1380,7 +1379,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HS_3A:
+                case IF_ARM64_SVE_HS_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1442,27 +1441,27 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IH_3A:
-                case IF_SVE_IH_3A_A:
-                case IF_SVE_IH_3A_F:
-                case IF_SVE_IJ_3A:
-                case IF_SVE_IJ_3A_D:
-                case IF_SVE_IJ_3A_E:
-                case IF_SVE_IJ_3A_F:
-                case IF_SVE_IJ_3A_G:
-                case IF_SVE_IL_3A:
-                case IF_SVE_IL_3A_A:
-                case IF_SVE_IL_3A_B:
-                case IF_SVE_IL_3A_C:
-                case IF_SVE_IM_3A:
-                case IF_SVE_IO_3A:
-                case IF_SVE_IQ_3A:
-                case IF_SVE_IS_3A:
-                case IF_SVE_JE_3A:
-                case IF_SVE_JM_3A:
-                case IF_SVE_JN_3C:
-                case IF_SVE_JN_3C_D:
-                case IF_SVE_JO_3A:
+                case IF_ARM64_SVE_IH_3A:
+                case IF_ARM64_SVE_IH_3A_A:
+                case IF_ARM64_SVE_IH_3A_F:
+                case IF_ARM64_SVE_IJ_3A:
+                case IF_ARM64_SVE_IJ_3A_D:
+                case IF_ARM64_SVE_IJ_3A_E:
+                case IF_ARM64_SVE_IJ_3A_F:
+                case IF_ARM64_SVE_IJ_3A_G:
+                case IF_ARM64_SVE_IL_3A:
+                case IF_ARM64_SVE_IL_3A_A:
+                case IF_ARM64_SVE_IL_3A_B:
+                case IF_ARM64_SVE_IL_3A_C:
+                case IF_ARM64_SVE_IM_3A:
+                case IF_ARM64_SVE_IO_3A:
+                case IF_ARM64_SVE_IQ_3A:
+                case IF_ARM64_SVE_IS_3A:
+                case IF_ARM64_SVE_JE_3A:
+                case IF_ARM64_SVE_JM_3A:
+                case IF_ARM64_SVE_JN_3C:
+                case IF_ARM64_SVE_JN_3C_D:
+                case IF_ARM64_SVE_JO_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1558,7 +1557,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_JD_4A:
+                case IF_ARM64_SVE_JD_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1570,7 +1569,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_JD_4B:
+                case IF_ARM64_SVE_JD_4B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1582,12 +1581,12 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_JJ_4A:
-                case IF_SVE_JJ_4A_B:
-                case IF_SVE_JJ_4A_C:
-                case IF_SVE_JJ_4A_D:
-                case IF_SVE_JK_4A:
-                case IF_SVE_JK_4A_B:
+                case IF_ARM64_SVE_JJ_4A:
+                case IF_ARM64_SVE_JJ_4A_B:
+                case IF_ARM64_SVE_JJ_4A_C:
+                case IF_ARM64_SVE_JJ_4A_D:
+                case IF_ARM64_SVE_JK_4A:
+                case IF_ARM64_SVE_JK_4A_B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1613,7 +1612,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_JN_3A:
+                case IF_ARM64_SVE_JN_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1626,7 +1625,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_JN_3B:
+                case IF_ARM64_SVE_JN_3B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1639,13 +1638,13 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HW_4A:
-                case IF_SVE_HW_4A_A:
-                case IF_SVE_HW_4A_B:
-                case IF_SVE_HW_4A_C:
-                case IF_SVE_IU_4A:
-                case IF_SVE_IU_4A_A:
-                case IF_SVE_IU_4A_C:
+                case IF_ARM64_SVE_HW_4A:
+                case IF_ARM64_SVE_HW_4A_A:
+                case IF_ARM64_SVE_HW_4A_B:
+                case IF_ARM64_SVE_HW_4A_C:
+                case IF_ARM64_SVE_IU_4A:
+                case IF_ARM64_SVE_IU_4A_A:
+                case IF_ARM64_SVE_IU_4A_C:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1671,8 +1670,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HW_4B:
-                case IF_SVE_HW_4B_D:
+                case IF_ARM64_SVE_HW_4B:
+                case IF_ARM64_SVE_HW_4B_D:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1683,14 +1682,14 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IF_4A:
-                case IF_SVE_IF_4A_A:
-                case IF_SVE_IW_4A:
-                case IF_SVE_IX_4A:
-                case IF_SVE_IY_4A:
-                case IF_SVE_IZ_4A:
-                case IF_SVE_IZ_4A_A:
-                case IF_SVE_JA_4A:
+                case IF_ARM64_SVE_IF_4A:
+                case IF_ARM64_SVE_IF_4A_A:
+                case IF_ARM64_SVE_IW_4A:
+                case IF_ARM64_SVE_IX_4A:
+                case IF_ARM64_SVE_IY_4A:
+                case IF_ARM64_SVE_IZ_4A:
+                case IF_ARM64_SVE_IZ_4A_A:
+                case IF_ARM64_SVE_JA_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1701,15 +1700,15 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IG_4A_D:
-                case IF_SVE_IG_4A_E:
-                case IF_SVE_IG_4A_F:
-                case IF_SVE_IG_4A_G:
-                case IF_SVE_II_4A_H:
-                case IF_SVE_IK_4A_F:
-                case IF_SVE_IK_4A_G:
-                case IF_SVE_IK_4A_H:
-                case IF_SVE_IK_4A_I:
+                case IF_ARM64_SVE_IG_4A_D:
+                case IF_ARM64_SVE_IG_4A_E:
+                case IF_ARM64_SVE_IG_4A_F:
+                case IF_ARM64_SVE_IG_4A_G:
+                case IF_ARM64_SVE_II_4A_H:
+                case IF_ARM64_SVE_IK_4A_F:
+                case IF_ARM64_SVE_IK_4A_G:
+                case IF_ARM64_SVE_IK_4A_H:
+                case IF_ARM64_SVE_IK_4A_I:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1732,19 +1731,19 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IG_4A:
-                case IF_SVE_II_4A:
-                case IF_SVE_II_4A_B:
-                case IF_SVE_IK_4A:
-                case IF_SVE_IN_4A:
-                case IF_SVE_IP_4A:
-                case IF_SVE_IR_4A:
-                case IF_SVE_IT_4A:
-                case IF_SVE_JB_4A:
-                case IF_SVE_JC_4A:
-                case IF_SVE_JD_4C:
-                case IF_SVE_JD_4C_A:
-                case IF_SVE_JF_4A:
+                case IF_ARM64_SVE_IG_4A:
+                case IF_ARM64_SVE_II_4A:
+                case IF_ARM64_SVE_II_4A_B:
+                case IF_ARM64_SVE_IK_4A:
+                case IF_ARM64_SVE_IN_4A:
+                case IF_ARM64_SVE_IP_4A:
+                case IF_ARM64_SVE_IR_4A:
+                case IF_ARM64_SVE_IT_4A:
+                case IF_ARM64_SVE_JB_4A:
+                case IF_ARM64_SVE_JC_4A:
+                case IF_ARM64_SVE_JD_4C:
+                case IF_ARM64_SVE_JD_4C_A:
+                case IF_ARM64_SVE_JF_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1755,13 +1754,13 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IU_4B:
-                case IF_SVE_IU_4B_B:
-                case IF_SVE_IU_4B_D:
-                case IF_SVE_JJ_4B:
-                case IF_SVE_JJ_4B_C:
-                case IF_SVE_JJ_4B_E:
-                case IF_SVE_JK_4B:
+                case IF_ARM64_SVE_IU_4B:
+                case IF_ARM64_SVE_IU_4B_B:
+                case IF_ARM64_SVE_IU_4B_D:
+                case IF_ARM64_SVE_JJ_4B:
+                case IF_ARM64_SVE_JJ_4B_C:
+                case IF_ARM64_SVE_JJ_4B_E:
+                case IF_ARM64_SVE_JK_4B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1772,7 +1771,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GP_3A:
+                case IF_ARM64_SVE_GP_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1785,7 +1784,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GT_4A:
+                case IF_ARM64_SVE_GT_4A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1799,7 +1798,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HI_3A:
+                case IF_ARM64_SVE_HI_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 3, 0);
@@ -1810,7 +1809,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HM_2A:
+                case IF_ARM64_SVE_HM_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1822,7 +1821,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HN_2A:
+                case IF_ARM64_SVE_HN_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1834,7 +1833,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HP_3A:
+                case IF_ARM64_SVE_HP_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1845,7 +1844,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HU_4B:
+                case IF_ARM64_SVE_HU_4B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1856,7 +1855,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HV_4A:
+                case IF_ARM64_SVE_HV_4A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -1868,8 +1867,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_ID_2A:
-                case IF_SVE_JG_2A:
+                case IF_ARM64_SVE_ID_2A:
+                case IF_ARM64_SVE_JG_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1880,8 +1879,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IE_2A:
-                case IF_SVE_JH_2A:
+                case IF_ARM64_SVE_IE_2A:
+                case IF_ARM64_SVE_JH_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1892,9 +1891,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GG_3A:
-                case IF_SVE_GH_3B:
-                case IF_SVE_GH_3B_B:
+                case IF_ARM64_SVE_GG_3A:
+                case IF_ARM64_SVE_GH_3B:
+                case IF_ARM64_SVE_GH_3B_B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1906,7 +1905,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GG_3B:
+                case IF_ARM64_SVE_GG_3B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1918,7 +1917,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_GH_3A:
+                case IF_ARM64_SVE_GH_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -1930,8 +1929,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HY_3A:
-                case IF_SVE_HY_3A_A:
+                case IF_ARM64_SVE_HY_3A:
+                case IF_ARM64_SVE_HY_3A_A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 12, 10);
@@ -1957,7 +1956,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HY_3B:
+                case IF_ARM64_SVE_HY_3B:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 12, 10);
@@ -1968,7 +1967,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IB_3A:
+                case IF_ARM64_SVE_IB_3A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_P(id.idReg1(), 12, 10);
@@ -1979,7 +1978,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HZ_2A_B:
+                case IF_ARM64_SVE_HZ_2A_B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2024,7 +2023,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HX_3A_B:
+                case IF_ARM64_SVE_HX_3A_B:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2037,8 +2036,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_HX_3A_E:
-                case IF_SVE_IV_3A:
+                case IF_ARM64_SVE_HX_3A_E:
+                case IF_ARM64_SVE_IV_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2076,7 +2075,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_JL_3A:
+                case IF_ARM64_SVE_JL_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2088,7 +2087,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_JI_3A_A:
+                case IF_ARM64_SVE_JI_3A_A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2122,7 +2121,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IA_2A:
+                case IF_ARM64_SVE_IA_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2134,7 +2133,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IC_3A:
+                case IF_ARM64_SVE_IC_3A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2161,9 +2160,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_IC_3A_A:
-                case IF_SVE_IC_3A_B:
-                case IF_SVE_IC_3A_C:
+                case IF_ARM64_SVE_IC_3A_A:
+                case IF_ARM64_SVE_IC_3A_B:
+                case IF_ARM64_SVE_IC_3A_C:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2197,8 +2196,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BI_2A:
-                case IF_SVE_HH_2A:
+                case IF_ARM64_SVE_BI_2A:
+                case IF_ARM64_SVE_HH_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -2207,7 +2206,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CB_2A:
+                case IF_ARM64_SVE_CB_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -2217,9 +2216,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BJ_2A:
-                case IF_SVE_CG_2A:
-                case IF_SVE_HF_2A:
+                case IF_ARM64_SVE_BJ_2A:
+                case IF_ARM64_SVE_CG_2A:
+                case IF_ARM64_SVE_HF_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -2229,7 +2228,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_CH_2A:
+                case IF_ARM64_SVE_CH_2A:
                 {
                     code = emitInsCodeSve(ins, fmt);
                     code |= insEncodeReg_V(id.idReg1(), 4, 0);
@@ -2239,9 +2238,9 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BF_2A:
-                case IF_SVE_FT_2A:
-                case IF_SVE_FU_2A:
+                case IF_ARM64_SVE_BF_2A:
+                case IF_ARM64_SVE_FT_2A:
+                case IF_ARM64_SVE_FU_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2253,7 +2252,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BX_2A:
+                case IF_ARM64_SVE_BX_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2264,7 +2263,7 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_SVE_BY_2A:
+                case IF_ARM64_SVE_BY_2A:
                 {
                     imm = emitGetInsSC(id);
                     code = emitInsCodeSve(ins, fmt);
@@ -2288,30 +2287,10 @@ public partial class Emitter
 
     // Native template bounds are constants at every callsite. Their static assertions
     // constrain field positions, not the runtime immediate/register assertions below.
-    private static uint insEncodeReg_V(regNumber reg, int hi, int lo)
-    {
-        assert(isVectorRegister(reg));
-        var ureg = unchecked((uint)reg - (uint)REG_V0);
-        var bits = hi - lo + 1;
-        var mask = (1u << bits) - 1;
-
-        return (ureg & mask) << lo;
-    }
-
     private static uint insEncodeReg_P(regNumber reg, int hi, int lo)
     {
         assert(isPredicateRegister(reg));
-        var ureg = unchecked((uint)reg - (uint)REG_P0);
-        var bits = hi - lo + 1;
-        var mask = (1u << bits) - 1;
-
-        return (ureg & mask) << lo;
-    }
-
-    private static uint insEncodeReg_R(regNumber reg, int hi, int lo)
-    {
-        assert(isIntegerRegister(reg));
-        var ureg = unchecked((uint)reg);
+        var ureg = unchecked((uint)reg - (uint)REG_ARM64_P0);
         var bits = hi - lo + 1;
         var mask = (1u << bits) - 1;
 
@@ -2382,7 +2361,7 @@ public partial class Emitter
     private static uint insEncodeReg_V_9_to_6_Times_Two(regNumber reg)
     {
         assert(isVectorRegister(reg));
-        var ureg = unchecked((uint)reg - (uint)REG_V0);
+        var ureg = unchecked((uint)reg - (uint)REG_ARM64_V0);
         assert(ureg % 2 == 0);
         ureg /= 2;
         assert((ureg >= 0) && (ureg <= 31));
@@ -2717,8 +2696,8 @@ public partial class Emitter
     {
         switch (fmt)
         {
-            case IF_SVE_HX_3A_B:
-            case IF_SVE_HX_3A_E:
+            case IF_ARM64_SVE_HX_3A_B:
+            case IF_ARM64_SVE_HX_3A_E:
             {
                 switch (size)
                 {
@@ -2742,13 +2721,13 @@ public partial class Emitter
                 return 0;
             }
 
-            case IF_SVE_IV_3A:
+            case IF_ARM64_SVE_IV_3A:
             {
                 assert(size == EA_8BYTE);
                 return 0;
             }
 
-            case IF_SVE_JI_3A_A:
+            case IF_ARM64_SVE_JI_3A_A:
             {
                 switch (size)
                 {
@@ -3074,12 +3053,12 @@ public partial class Emitter
         {
             switch (id.idInsFmt())
             {
-                case IF_SVE_DL_2A:
+                case IF_ARM64_SVE_DL_2A:
                 {
                     return 0x400;
                 }
 
-                case IF_SVE_DY_3A:
+                case IF_ARM64_SVE_DY_3A:
                 {
                     return 0x2000;
                 }
@@ -3293,13 +3272,13 @@ public partial class Emitter
             {
                 switch (fmt)
                 {
-                    case IF_SVE_IH_3A_F:
+                    case IF_ARM64_SVE_IH_3A_F:
                     {
                         // Bit 15 is outside dtype, but is required for S in the immediate form.
                         return (code | (1u << 15)) | (1u << 22);
                     }
 
-                    case IF_SVE_II_4A_H:
+                    case IF_ARM64_SVE_II_4A_H:
                     {
                         // Bit 14 is outside dtype, but is required for S in the register form.
                         return (code | (1u << 14)) | (1u << 22);
@@ -3318,12 +3297,12 @@ public partial class Emitter
             {
                 switch (fmt)
                 {
-                    case IF_SVE_IH_3A_F:
+                    case IF_ARM64_SVE_IH_3A_F:
                     {
                         return ((code | (1u << 15)) | (1u << 22)) | (1u << 21);
                     }
 
-                    case IF_SVE_II_4A_H:
+                    case IF_ARM64_SVE_II_4A_H:
                     {
                         return ((code | (1u << 14)) | (1u << 22)) | (1u << 21);
                     }
@@ -3341,12 +3320,12 @@ public partial class Emitter
             {
                 switch (fmt)
                 {
-                    case IF_SVE_IH_3A_F:
+                    case IF_ARM64_SVE_IH_3A_F:
                     {
                         return code | (1u << 20);
                     }
 
-                    case IF_SVE_II_4A_H:
+                    case IF_ARM64_SVE_II_4A_H:
                     {
                         // Bit 15 is outside dtype, but is required for Q in the register form.
                         return code | (1u << 15);
@@ -3377,7 +3356,7 @@ public partial class Emitter
     {
         switch (fmt)
         {
-            case IF_SVE_IC_3A_A:
+            case IF_ARM64_SVE_IC_3A_A:
             {
                 switch (size)
                 {
@@ -3436,7 +3415,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IC_3A_B:
+            case IF_ARM64_SVE_IC_3A_B:
             {
                 switch (size)
                 {
@@ -3518,7 +3497,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SVE_IC_3A_C:
+            case IF_ARM64_SVE_IC_3A_C:
             {
                 assert(ins == INS_sve_ld1rb);
                 switch (size)
@@ -3563,4 +3542,3 @@ public partial class Emitter
         return code;
     }
 }
-#endif

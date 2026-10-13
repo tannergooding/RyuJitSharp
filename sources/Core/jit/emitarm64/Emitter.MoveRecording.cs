@@ -3,16 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
+    public void emitInsMovArm64(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
         bool canSkip, insOpts opt = INS_OPTS_NONE)
     {
+        RequireArm64Target();
+
         assert(IsMovInstruction(ins));
         var size = EA_SIZE(attr);
         insFormat fmt;
@@ -28,38 +29,38 @@ public partial class Emitter
 
                 if (isVectorRegister(dstReg))
                 {
-                    if (isVectorRegister(srcReg) && isValidVectorDatasize(size))
+                    if (isVectorRegister(srcReg) && isValidVectorDatasizeArm64(size))
                     {
-                        emitIns_R_R_R(INS_mov, size, dstReg, srcReg, srcReg);
+                        emitIns_R_R_RArm64(INS_mov, size, dstReg, srcReg, srcReg);
                         return;
                     }
                     else
                     {
-                        emitIns_R_R_I(INS_mov, size, dstReg, srcReg, 0);
+                        emitIns_R_R_IArm64(INS_mov, size, dstReg, srcReg, 0);
                         return;
                     }
                 }
                 else if (isVectorRegister(srcReg))
                 {
                     assert(isGeneralRegister(dstReg));
-                    emitIns_R_R_I(INS_mov, size, dstReg, srcReg, 0);
+                    emitIns_R_R_IArm64(INS_mov, size, dstReg, srcReg, 0);
                     return;
                 }
 
-                if ((dstReg == REG_SP) || (srcReg == REG_SP))
+                if ((dstReg == REG_ARM64_SP) || (srcReg == REG_ARM64_SP))
                 {
                     assert(isGeneralRegisterOrSP(dstReg));
                     assert(isGeneralRegisterOrSP(srcReg));
                     dstReg = encodingSPtoZR(dstReg);
                     srcReg = encodingSPtoZR(srcReg);
-                    fmt = IF_DR_2G;
+                    fmt = IF_ARM64_DR_2G;
                 }
                 else
                 {
                     assert(insOptsNone(opt));
                     assert(isGeneralRegister(dstReg));
                     assert(isGeneralRegisterOrZR(srcReg));
-                    fmt = IF_DR_2E;
+                    fmt = IF_ARM64_DR_2E;
                 }
                 break;
             }
@@ -84,7 +85,7 @@ public partial class Emitter
                 assert(isValidGeneralDatasize(size));
                 assert(isGeneralRegister(dstReg));
                 assert(isGeneralRegister(srcReg));
-                fmt = IF_DR_2H;
+                fmt = IF_ARM64_DR_2H;
                 break;
             }
 
@@ -100,7 +101,7 @@ public partial class Emitter
                     if (isVectorRegister(srcReg))
                     {
                         assert(insOptsNone(opt));
-                        fmt = IF_DV_2G;
+                        fmt = IF_ARM64_DV_2G;
                     }
                     else
                     {
@@ -110,7 +111,7 @@ public partial class Emitter
                             opt = (size == EA_4BYTE) ? INS_OPTS_4BYTE_TO_S : INS_OPTS_8BYTE_TO_D;
                         }
                         assert(insOptsConvertIntToFloat(opt));
-                        fmt = IF_DV_2I;
+                        fmt = IF_ARM64_DV_2I;
                     }
                 }
                 else
@@ -122,7 +123,7 @@ public partial class Emitter
                         opt = (size == EA_4BYTE) ? INS_OPTS_S_TO_4BYTE : INS_OPTS_D_TO_8BYTE;
                     }
                     assert(insOptsConvertFloatToInt(opt));
-                    fmt = IF_DV_2H;
+                    fmt = IF_ARM64_DV_2H;
                 }
                 break;
             }
@@ -149,32 +150,10 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-    public static bool IsMovInstruction(instruction ins)
-    {
-        switch (ins)
-        {
-            case INS_fmov:
-            case INS_mov:
-            case INS_sxtb:
-            case INS_sxth:
-            case INS_sxtw:
-            case INS_uxtb:
-            case INS_uxth:
-            case INS_sve_mov:
-            case INS_sve_movprfx:
-            {
-                return true;
-            }
-
-            default:
-            {
-                return false;
-            }
-        }
-    }
-
     public bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
     {
+        RequireArm64Target();
+
         assert(_compiler is not null);
         assert((ins == INS_mov) || (ins == INS_sve_mov) || (ins == INS_sve_movprfx));
         if (canSkip && (dst == src))
@@ -228,7 +207,7 @@ public partial class Emitter
                 var prevSrc = emitLastIns.idReg2();
                 var lastInsfmt = emitLastIns.idInsFmt();
                 // Immediate MOV descriptors do not have a second source register.
-                var isValidLastInsFormats = (lastInsfmt == IF_DV_3C) || (lastInsfmt == IF_DR_2E);
+                var isValidLastInsFormats = (lastInsfmt == IF_ARM64_DV_3C) || (lastInsfmt == IF_ARM64_DR_2E);
                 if (isValidLastInsFormats && (prevDst == dst) && (prevSrc == src))
                 {
                     assert(emitLastIns.idOpSize() == size);
@@ -248,7 +227,7 @@ public partial class Emitter
                     else if (size == EA_16BYTE)
                     {
                         assert(isVectorRegister(src) && isVectorRegister(dst));
-                        assert(lastInsfmt == IF_DV_3C);
+                        assert(lastInsfmt == IF_ARM64_DV_3C);
                         JITDUMP("\n -- suppressing mov because previous instruction already did an opposite move from dst to src register.\n");
                         return true;
                     }
@@ -266,4 +245,3 @@ public partial class Emitter
             insSveMovOpts.INS_SVE_MOV_OPTS_UNPRED);
     }
 }
-#endif

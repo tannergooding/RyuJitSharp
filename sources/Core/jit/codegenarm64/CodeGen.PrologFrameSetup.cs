@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -15,16 +14,16 @@ public sealed partial class CodeGen
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (delta == 0)
         {
-            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, canSkip: false);
+            Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_FPBASE_ARM64, REG_SPBASE_ARM64, canSkip: false);
         }
         else
         {
-            Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, delta);
+            Emitter.emitIns_R_R_IArm64(INS_add, EA_PTRSIZE, REG_FPBASE_ARM64, REG_SPBASE_ARM64, delta);
         }
 
         if (reportUnwindData)
         {
-            _compiler.unwindSetFrameReg(REG_FPBASE, unchecked((uint)delta));
+            _compiler.unwindSetFrameReg(REG_FPBASE_ARM64, unchecked((uint)delta));
         }
     }
 
@@ -41,7 +40,7 @@ public sealed partial class CodeGen
 
             var pageSize = _compiler.eeGetPageSize();
             nuint lastTouchDelta;
-            assert(!_compiler.compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM != initReg));
+            assert(!_compiler.compHasSecretStubArgument() || (REG_SECRET_STUB_PARAM_ARM64 != initReg));
 
             if (frameSize < pageSize)
             {
@@ -52,8 +51,8 @@ public sealed partial class CodeGen
                 lastTouchDelta = frameSize;
                 for (var probeOffset = pageSize; probeOffset <= frameSize; probeOffset += pageSize)
                 {
-                    instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(nint)probeOffset);
-                    Emitter.emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, initReg);
+                    instGen_Set_Reg_To_ImmArm64(EA_PTRSIZE, initReg, -(nint)probeOffset);
+                    Emitter.emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ARM64_ZR, REG_SPBASE_ARM64, initReg);
                     _regSet.verifyRegUsed(initReg);
                     initRegZeroed = false;
                     lastTouchDelta -= pageSize;
@@ -65,8 +64,8 @@ public sealed partial class CodeGen
             else
             {
                 // Probe without changing SP so a fault can still unwind the frame.
-                var available = new regMaskTP(SRBM_ALLINT) &
-                    (_regSet.rsGetModifiedRegsMask() | ~new regMaskTP(SRBM_INT_CALLEE_SAVED));
+                var available = new regMaskTP(SRBM_ALLINT_ARM64) &
+                    (_regSet.rsGetModifiedRegsMask() | ~new regMaskTP(SRBM_INT_CALLEE_SAVED_ARM64));
                 available &= ~maskArgRegsLiveIn;
                 available &= ~regMaskTP.CreateFromRegNum(initReg, initReg.SingleTypeMask);
                 var offsetReg = initReg;
@@ -77,12 +76,12 @@ public sealed partial class CodeGen
                 noway_assert((nint)(int)frameSize == (nint)frameSize,
                     "(ssize_t)(int)frameSize == (ssize_t)frameSize");
 
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, -(nint)pageSize);
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE, limitReg, -(nint)frameSize);
+                instGen_Set_Reg_To_ImmArm64(EA_PTRSIZE, offsetReg, -(nint)pageSize);
+                instGen_Set_Reg_To_ImmArm64(EA_PTRSIZE, limitReg, -(nint)frameSize);
                 var loop = genCreateTempLabel();
                 genDefineInlineTempLabel(loop);
-                Emitter.emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, offsetReg);
-                Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, (nint)pageSize);
+                Emitter.emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ARM64_ZR, REG_SPBASE_ARM64, offsetReg);
+                Emitter.emitIns_R_R_IArm64(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, (nint)pageSize);
                 Emitter.emitIns_R_R(INS_cmp, EA_PTRSIZE, limitReg, offsetReg);
                 Emitter.emitIns_ShortJ(INS_bls, loop);
                 initRegZeroed = false;
@@ -93,8 +92,8 @@ public sealed partial class CodeGen
             if (lastTouchDelta + Arm64StackProbeBoundaryThresholdBytes > pageSize)
             {
                 assert(lastTouchDelta + Arm64StackProbeBoundaryThresholdBytes < 2 * pageSize);
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(nint)frameSize);
-                Emitter.emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, initReg);
+                instGen_Set_Reg_To_ImmArm64(EA_PTRSIZE, initReg, -(nint)frameSize);
+                Emitter.emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ARM64_ZR, REG_SPBASE_ARM64, initReg);
                 _compiler.unwindPadding();
                 _regSet.verifyRegUsed(initReg);
                 initRegZeroed = false;
@@ -106,7 +105,6 @@ public sealed partial class CodeGen
     {
         unchecked
         {
-#if HAS_MORE_THAN_64_REGISTERS
             if (value.Lower != SRBM_NONE)
             {
                 var lower = (ulong)value.Lower;
@@ -114,22 +112,23 @@ public sealed partial class CodeGen
                 return new regMaskTP((regMask)(lower & (0UL - lower)));
             }
 
-            var upper = (ulong)value.Upper;
+            if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+            {
+                var upper = (ulong)value.Upper;
+                return new regMaskTP(SRBM_NONE, (regMask)(upper & (0UL - upper)));
+            }
 
-            return new regMaskTP(SRBM_NONE, (regMask)(upper & (0UL - upper)));
-#else
-            var lower = (ulong)value.Lower;
-
-            return new regMaskTP((regMask)(lower & (0UL - lower)));
-#endif
+            var lowerOnly = (ulong)value.Lower;
+            return new regMaskTP((regMask)(lowerOnly & (0UL - lowerOnly)));
         }
     }
 
     private static regNumber genRegNumFromMaskArm64(regMaskTP mask)
     {
-#if HAS_MORE_THAN_64_REGISTERS
-        assert(mask.Upper == SRBM_NONE, "mask.getHigh() == RBM_NONE");
-#endif
+        if (Configuration.HAS_MORE_THAN_64_REGISTERS)
+        {
+            assert(mask.Upper == SRBM_NONE, "mask.getHigh() == RBM_NONE");
+        }
         assert(mask.IsNonEmpty, "mask.IsNonEmpty()");
         var value = unchecked((ulong)mask.Lower);
         assert(BitOperations.IsPow2(value), "genExactlyOneBit(value)");
@@ -141,7 +140,7 @@ public sealed partial class CodeGen
         return reg;
     }
 
-    private bool genInstrWithConstant(instruction ins, emitAttr attr, regNumber reg1,
+    private bool genInstrWithConstantArm64(instruction ins, emitAttr attr, regNumber reg1,
         regNumber reg2, nint imm, regNumber tmpReg, bool inUnwindRegion = false)
     {
         unchecked
@@ -224,12 +223,12 @@ public sealed partial class CodeGen
 
             if (immediateFits)
             {
-                Emitter.emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+                Emitter.emitIns_R_R_IArm64(ins, attr, reg1, reg2, imm);
             }
             else
             {
-                assert(tmpReg != REG_NA);
-                instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
+                assert(tmpReg != REG_ARM64_NA);
+                instGen_Set_Reg_To_ImmArm64(EA_PTRSIZE, tmpReg, imm);
                 _regSet.verifyRegUsed(tmpReg);
                 if (inUnwindRegion)
                 {
@@ -243,4 +242,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

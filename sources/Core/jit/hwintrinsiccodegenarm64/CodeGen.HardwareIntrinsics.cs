@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using static RyuJitSharp.insScalableOpts;
 using static RyuJitSharp.insCond;
 using static RyuJitSharp.insSvePattern;
@@ -13,8 +12,14 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genHWIntrinsic(GenTreeHWIntrinsic node)
+    public void genHWIntrinsicArm64(GenTreeHWIntrinsic node)
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 hardware intrinsics are unavailable for this target.");
+        }
+
         var intrin = new Arm64HWIntrinsic(node);
         var isa = HWIntrinsicInfo.lookupIsa(intrin.Id);
         if (isa == InstructionSet_Vector)
@@ -92,7 +97,7 @@ public sealed partial class CodeGen
         }
         else if (HWIntrinsicInfo.IsScalable(intrin.Id))
         {
-            emitSize = EA_SCALABLE;
+            emitSize = EA_SCALABLE_ARM64;
             opt = Arm64Emitter.optGetSveInsOpt(emitTypeSize(intrin.BaseType));
         }
         else if (intrin.Category == HW_Category_Special)
@@ -784,9 +789,9 @@ public sealed partial class CodeGen
                         emitSize = opt == INS_OPTS_SCALABLE_D ? EA_8BYTE : EA_4BYTE;
                         if (varTypeIsFloating(intrin.BaseType))
                         {
-                            var tmpReg = _internalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT));
+                            var tmpReg = _internalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_ARM64));
                             var fmovOpt = emitSize == EA_8BYTE ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
-                            Emitter.emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, false, fmovOpt);
+                            Emitter.emitInsMovArm64(INS_fmov, emitSize, tmpReg, op1Reg, false, fmovOpt);
                             op1Reg = tmpReg;
                         }
                         Emitter.emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
@@ -800,7 +805,7 @@ public sealed partial class CodeGen
                     {
                         assert(Arm64Emitter.IsMovInstruction(ins));
                         assert(intrin.BaseType == intrin.Op1.Type);
-                        Emitter.emitIns_Mov(ins, emitTypeSize(intrin.BaseType), targetReg, op1Reg, true, INS_OPTS_NONE);
+                        Emitter.emitIns_Mov(ins, emitTypeSize(intrin.BaseType), targetReg, op1Reg, true);
                     }
                     else if (intrin.Op1.IsContainedIntOrIImmed)
                     {
@@ -852,7 +857,7 @@ public sealed partial class CodeGen
                             assert(intrin.BaseType == TYP_DOUBLE);
                             assert(Arm64Emitter.IsMovInstruction(ins));
                             assert(intrin.BaseType == intrin.Op1.Type);
-                            Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, true, opt);
+                            Emitter.emitInsMovArm64(ins, emitSize, targetReg, op1Reg, true, opt);
                         }
                         else
                         {
@@ -865,7 +870,7 @@ public sealed partial class CodeGen
                     }
                     else if (Arm64Emitter.IsMovInstruction(ins))
                     {
-                        Emitter.emitIns_Mov(ins, emitSize, targetReg, op1Reg, false, opt);
+                        Emitter.emitInsMovArm64(ins, emitSize, targetReg, op1Reg, false, opt);
                     }
                     else
                     {
@@ -1005,7 +1010,8 @@ public sealed partial class CodeGen
                     {
                         break;
                     }
-                    Emitter.emitIns_R_R_I(ins, emitTypeSize(intrin.BaseType), targetReg, op1Reg, ival, INS_OPTS_NONE);
+                    Emitter.emitIns_R_R_IArm64(ins, emitTypeSize(intrin.BaseType), targetReg, op1Reg, ival,
+                        INS_OPTS_NONE);
                     break;
                 }
                 case NI_Vector_GetUpper:
@@ -1428,7 +1434,7 @@ public sealed partial class CodeGen
                     {
                         assert(intrin.NumOperands == 3);
                         nint shift = 0;
-                        var tempReg = _internalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT));
+                        var tempReg = _internalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT_ARM64));
                         if (intrin.Id is NI_Sve2_GatherVectorInt16SignExtendNonTemporal or
                             NI_Sve2_GatherVectorUInt16ZeroExtendNonTemporal)
                         {
@@ -1445,13 +1451,13 @@ public sealed partial class CodeGen
                             assert(emitActualTypeSize(intrin.BaseType) == EA_8BYTE);
                             shift = 3;
                         }
-                        Emitter.emitIns_R_R_I(INS_sve_lsl, emitSize, tempReg, op3Reg, shift, opt);
-                        Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, tempReg, op2Reg, opt);
+                        Emitter.emitInsSve_R_R_I(INS_sve_lsl, emitSize, tempReg, op3Reg, shift, opt);
+                        Emitter.emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, tempReg, op2Reg, opt);
                     }
                     else
                     {
                         assert(intrin.NumOperands == 2);
-                        Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt);
+                        Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, TargetRuntimeMetadata.ZeroRegister, opt);
                     }
                     break;
                 }
@@ -1466,7 +1472,7 @@ public sealed partial class CodeGen
                     else
                     {
                         assert(intrin.NumOperands == 2);
-                        Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt);
+                        Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, TargetRuntimeMetadata.ZeroRegister, opt);
                     }
                     break;
                 }
@@ -1539,7 +1545,7 @@ public sealed partial class CodeGen
                     {
                         assert(intrin.NumOperands == 4);
                         nint shift = 0;
-                        var tempReg = _internalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT));
+                        var tempReg = _internalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT_ARM64));
                         if (intrin.Id == NI_Sve2_Scatter16BitNarrowingNonTemporal)
                         {
                             shift = 1;
@@ -1553,13 +1559,13 @@ public sealed partial class CodeGen
                             assert(intrin.Id == NI_Sve2_ScatterNonTemporal);
                             shift = 3;
                         }
-                        Emitter.emitIns_R_R_I(INS_sve_lsl, emitSize, tempReg, op3Reg, shift, opt);
-                        Emitter.emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, tempReg, op2Reg, opt);
+                        Emitter.emitInsSve_R_R_I(INS_sve_lsl, emitSize, tempReg, op3Reg, shift, opt);
+                        Emitter.emitInsSve_R_R_R_R(ins, emitSize, op4Reg, op1Reg, tempReg, op2Reg, opt);
                     }
                     else
                     {
                         assert(intrin.NumOperands == 3);
-                        Emitter.emitIns_R_R_R_R(ins, emitSize, op3Reg, op1Reg, op2Reg, REG_ZR, opt);
+                        Emitter.emitIns_R_R_R_R(ins, emitSize, op3Reg, op1Reg, op2Reg, TargetRuntimeMetadata.ZeroRegister, opt);
                     }
                     break;
                 }
@@ -1573,7 +1579,7 @@ public sealed partial class CodeGen
                     else
                     {
                         assert(intrin.NumOperands == 3);
-                        Emitter.emitIns_R_R_R_R(ins, emitSize, op3Reg, op1Reg, op2Reg, REG_ZR, opt);
+                        Emitter.emitIns_R_R_R_R(ins, emitSize, op3Reg, op1Reg, op2Reg, TargetRuntimeMetadata.ZeroRegister, opt);
                     }
                     break;
                 }
@@ -1672,7 +1678,7 @@ public sealed partial class CodeGen
                 case NI_Sve_Compute32BitAddresses:
                 case NI_Sve_Compute64BitAddresses:
                 {
-                    Emitter.emitInsSve_R_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg,
+                    Emitter.emitInsSve_R_R_R_I(ins, EA_SCALABLE_ARM64, targetReg, op1Reg, op2Reg,
                         HWIntrinsicInfo.lookupIval(intrin.Id), opt, INS_SCALABLE_OPTS_LSL_N);
                     break;
                 }
@@ -1681,7 +1687,7 @@ public sealed partial class CodeGen
                 case NI_Sve_TestLastTrue:
                 {
                     assert(targetReg == REG_NA);
-                    Emitter.emitIns_R_R(ins, EA_SCALABLE, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
+                    Emitter.emitIns_R_R(ins, EA_SCALABLE_ARM64, op1Reg, op2Reg, INS_OPTS_SCALABLE_B);
                     break;
                 }
                 case NI_Sve_ExtractVector:
@@ -1733,7 +1739,7 @@ public sealed partial class CodeGen
                         Emitter.emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
                     }
                     var sopt = opt == INS_OPTS_SCALABLE_B ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
-                    Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt, sopt);
+                    Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, TargetRuntimeMetadata.ZeroRegister, opt, sopt);
                     break;
                 }
                 case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
@@ -1744,7 +1750,7 @@ public sealed partial class CodeGen
                         assert(op3Reg != REG_NA);
                         Emitter.emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
                     }
-                    Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt);
+                    Emitter.emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, TargetRuntimeMetadata.ZeroRegister, opt);
                     break;
                 }
                 case NI_Sve_SetFfr:
@@ -1777,7 +1783,7 @@ public sealed partial class CodeGen
                 {
                     assert(Arm64Emitter.isVectorRegister(targetReg));
                     assert(varTypeIsFloating(node.Type) || varTypeIsSimd(node.Type));
-                    Emitter.emitInsSve_R_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, op3Reg,
+                    Emitter.emitInsSve_R_R_R_R(ins, EA_SCALABLE_ARM64, targetReg, op1Reg, op2Reg, op3Reg,
                         opt, INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
                     break;
                 }
@@ -1804,7 +1810,7 @@ public sealed partial class CodeGen
                 {
                     assert(Arm64Emitter.isVectorRegister(targetReg));
                     assert(varTypeIsFloating(node.Type) || varTypeIsSimd(node.Type));
-                    Emitter.emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, opt,
+                    Emitter.emitInsSve_R_R_R(ins, EA_SCALABLE_ARM64, targetReg, op1Reg, op2Reg, opt,
                         INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
                     break;
                 }
@@ -1840,7 +1846,7 @@ public sealed partial class CodeGen
                         const uint rotMask = 0b11;
                         var indexMask = baseType is TYP_SHORT or TYP_USHORT ? 0b11u : 0b1u;
                         var numIndexBits = genCountBits(indexMask);
-                        Emitter.emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
+                        Emitter.emitIns_R_R_IArm64(INS_lsl, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
                         Emitter.emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
                         var upperBound = (rotMask << (int)numIndexBits) | indexMask;
                         var helper = new HWIntrinsicImmOpHelper(this, op4Reg, 0, (int)upperBound, node,
@@ -1853,8 +1859,8 @@ public sealed partial class CodeGen
                             Arm64IntrinsicEmitFourRegistersTwoImmediates(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg,
                                 index, rotation, opt);
                         }
-                        Emitter.emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, (nint)indexMask);
-                        Emitter.emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
+                        Emitter.emitIns_R_R_IArm64(INS_and, scalarSize, op4Reg, op4Reg, (nint)indexMask);
+                        Emitter.emitIns_R_R_IArm64(INS_lsr, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
                     }
                     break;
                 }
@@ -1921,7 +1927,7 @@ public sealed partial class CodeGen
                         const uint rotMask = 0b11;
                         var indexMask = baseType == TYP_BYTE ? 0b11u : 0b1u;
                         var numIndexBits = genCountBits(indexMask);
-                        Emitter.emitIns_R_R_I(INS_lsl, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
+                        Emitter.emitIns_R_R_IArm64(INS_lsl, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
                         Emitter.emitIns_R_R_R(INS_orr, scalarSize, op4Reg, op4Reg, op5Reg);
                         var upperBound = (rotMask << (int)numIndexBits) | indexMask;
                         var helper = new HWIntrinsicImmOpHelper(this, op4Reg, 0, (int)upperBound, node,
@@ -1934,8 +1940,8 @@ public sealed partial class CodeGen
                             Arm64IntrinsicEmitFourRegistersTwoImmediates(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg,
                                 index, rotation, opt);
                         }
-                        Emitter.emitIns_R_R_I(INS_and, scalarSize, op4Reg, op4Reg, (nint)indexMask);
-                        Emitter.emitIns_R_R_I(INS_lsr, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
+                        Emitter.emitIns_R_R_IArm64(INS_and, scalarSize, op4Reg, op4Reg, (nint)indexMask);
+                        Emitter.emitIns_R_R_IArm64(INS_lsr, scalarSize, op5Reg, op5Reg, (nint)numIndexBits);
                     }
                     break;
                 }
@@ -1968,9 +1974,9 @@ public sealed partial class CodeGen
                     emitSize = opt == INS_OPTS_SCALABLE_D ? EA_8BYTE : EA_4BYTE;
                     if (varTypeIsFloating(intrin.BaseType))
                     {
-                        var tmpReg = _internalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT));
+                        var tmpReg = _internalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_ARM64));
                         var fmovOpt = emitSize == EA_8BYTE ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
-                        Emitter.emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, false, fmovOpt);
+                        Emitter.emitInsMovArm64(INS_fmov, emitSize, tmpReg, op1Reg, false, fmovOpt);
                         op1Reg = tmpReg;
                     }
                     Emitter.emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
@@ -1993,4 +1999,3 @@ public sealed partial class CodeGen
         genProduceReg(node);
     }
 }
-#endif

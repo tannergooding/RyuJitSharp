@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
@@ -22,9 +21,10 @@ public sealed partial class CodeGen
             assert(add is not null);
             assert(add.acdUsed);
             exceptionRaisingBlock = add.acdDstBlk;
-#if !FEATURE_FIXED_OUT_ARGS
-            assert(add.acdStkLvlInit || IsFramePointerUsed);
-#endif
+            if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+            {
+                assert(add.acdStkLvlInit || IsFramePointerUsed);
+            }
 
             noway_assert(exceptionRaisingBlock is not null);
         }
@@ -32,4 +32,3 @@ public sealed partial class CodeGen
         return exceptionRaisingBlock;
     }
 }
-#endif

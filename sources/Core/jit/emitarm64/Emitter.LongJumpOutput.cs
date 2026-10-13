@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 #if DEBUG
 using System.Runtime.CompilerServices;
 #endif
@@ -15,6 +14,7 @@ public partial class Emitter
 {
     private unsafe byte* emitOutputLJArm64Core(insGroup? ig, byte* dst, instrDesc i)
     {
+        RequireArm64Target();
         assert(_compiler is not null);
         var id = (instrDescJmp)i;
         var ins = id.idIns();
@@ -73,13 +73,13 @@ public partial class Emitter
                 if (id.idjShort)
                 {
                     assert(ins == INS_ldr);
-                    assert(fmt == IF_LS_1A);
+                    assert(fmt == IF_ARM64_LS_1A);
                     distVal = unchecked((nint)(dataAddr - srcAddr));
                     dst = emitOutputShortConstantArm64Core(dst, ins, fmt, distVal, dstReg, opSize);
                 }
                 else
                 {
-                    assert(fmt == IF_LARGELDC);
+                    assert(fmt == IF_ARM64_LARGELDC);
                     var relPageAddr = computeRelPageAddrArm64((nuint)dataAddr, (nuint)srcAddr);
                     if (isVectorRegister(dstReg))
                     {
@@ -88,7 +88,7 @@ public partial class Emitter
                     }
 
                     ins = INS_adrp;
-                    fmt = IF_DI_1E;
+                    fmt = IF_ARM64_DI_1E;
                     dst = emitOutputShortAddressArm64Core(dst, ins, fmt, relPageAddr, addrReg);
 
                     var imm12 = unchecked((nint)dataAddr) & 0xFFF;
@@ -98,7 +98,7 @@ public partial class Emitter
                         const emitAttr ElementSize = EA_1BYTE;
                         var opt = optMakeArrangement(opSize, ElementSize);
                         assert(isGeneralRegisterOrSP(addrReg));
-                        assert(isValidVectorElemsize(ElementSize));
+                        assert(isValidVectorElemsizeArm64(ElementSize));
                         assert(isValidArrangement(opSize, opt));
 
                         dst = emitOutputVectorConstantArm64Core(dst, imm12, dstReg, addrReg, opSize, ElementSize);
@@ -106,14 +106,14 @@ public partial class Emitter
                     else
                     {
                         ins = INS_ldr;
-                        fmt = IF_LS_2B;
+                        fmt = IF_ARM64_LS_2B;
                         dst = emitOutputShortConstantArm64Core(dst, ins, fmt, imm12, addrReg, opSize);
                         if (addrReg != dstReg)
                         {
                             assert(isVectorRegister(dstReg) && isGeneralRegister(addrReg));
                             ins = INS_fmov;
-                            fmt = IF_DV_2I;
-                            var code = emitInsCode(ins, fmt);
+                            fmt = IF_ARM64_DV_2I;
+                            var code = emitInsCodeArm64(ins, fmt);
                             code |= insEncodeReg_V(dstReg, 4, 0);
                             code |= insEncodeReg_R(addrReg, 9, 5);
                             if (id.idOpSize() == EA_8BYTE)
@@ -203,12 +203,12 @@ public partial class Emitter
             {
                 assert(!id.idjKeepLong);
                 assert(!emitJumpCrossHotColdBoundaryArm64(srcOffs, dstOffs));
-                assert(fmt is IF_BI_0A or IF_BI_0B or IF_BI_1A or IF_BI_1B);
+                assert(fmt is IF_ARM64_BI_0A or IF_ARM64_BI_0B or IF_ARM64_BI_1A or IF_ARM64_BI_1B);
                 dst = emitOutputShortBranchArm64Core(dst, ins, fmt, distVal, id);
             }
             else
             {
-                if (fmt == IF_LARGEJMP)
+                if (fmt == IF_ARM64_LARGEJMP)
                 {
                     instruction reverseIns;
                     insFormat reverseFmt;
@@ -217,35 +217,35 @@ public partial class Emitter
                         case INS_cbz:
                         {
                             reverseIns = INS_cbnz;
-                            reverseFmt = IF_BI_1A;
+                            reverseFmt = IF_ARM64_BI_1A;
                             break;
                         }
 
                         case INS_cbnz:
                         {
                             reverseIns = INS_cbz;
-                            reverseFmt = IF_BI_1A;
+                            reverseFmt = IF_ARM64_BI_1A;
                             break;
                         }
 
                         case INS_tbz:
                         {
                             reverseIns = INS_tbnz;
-                            reverseFmt = IF_BI_1B;
+                            reverseFmt = IF_ARM64_BI_1B;
                             break;
                         }
 
                         case INS_tbnz:
                         {
                             reverseIns = INS_tbz;
-                            reverseFmt = IF_BI_1B;
+                            reverseFmt = IF_ARM64_BI_1B;
                             break;
                         }
 
                         default:
                         {
                             reverseIns = emitJumpKindToIns(emitReverseJumpKindArm64(emitInsToJumpKindArm64(ins)));
-                            reverseFmt = IF_BI_0B;
+                            reverseFmt = IF_ARM64_BI_0B;
                             break;
                         }
                     }
@@ -254,13 +254,13 @@ public partial class Emitter
                     // from the pseudo-instruction's start to its second word.
                     dst = emitOutputShortBranchArm64Core(dst, reverseIns, reverseFmt, 8, id);
                     ins = INS_b;
-                    fmt = IF_BI_0A;
+                    fmt = IF_ARM64_BI_0A;
                     distVal = unchecked(distVal - 4);
                 }
 
-                assert(fmt == IF_BI_0A);
+                assert(fmt == IF_ARM64_BI_0A);
                 assert((distVal & 1) == 0);
-                var code = emitInsCode(ins, fmt);
+                var code = emitInsCodeArm64(ins, fmt);
                 var doRecordRelocation = _compiler.opts.compReloc &&
                     emitJumpCrossHotColdBoundaryArm64(srcOffs, dstOffs);
                 if (!doRecordRelocation)
@@ -301,16 +301,16 @@ public partial class Emitter
         if (id.idjShort)
         {
             assert(ins == INS_adr);
-            assert(fmt == IF_DI_1E);
+            assert(fmt == IF_ARM64_DI_1E);
             assert(!id.idIsReloc());
             var distVal = unchecked((nint)(dstAddr - srcAddr));
             dst = emitOutputShortAddressArm64Core(dst, ins, fmt, distVal, dstReg);
         }
         else
         {
-            assert(fmt == IF_LARGEADR);
+            assert(fmt == IF_ARM64_LARGEADR);
             var relPageAddr = id.idIsReloc() ? 0 : computeRelPageAddrArm64((nuint)dstAddr, (nuint)srcAddr);
-            dst = emitOutputShortAddressArm64Core(dst, INS_adrp, IF_DI_1E, relPageAddr, dstReg);
+            dst = emitOutputShortAddressArm64Core(dst, INS_adrp, IF_ARM64_DI_1E, relPageAddr, dstReg);
             if (id.idIsReloc())
             {
                 emitRecordRelocation(dst - sizeof(uint), dstAddr, CorInfoReloc.ARM64_PAGEBASE_REL21);
@@ -318,7 +318,7 @@ public partial class Emitter
 
             var imm12 = id.idIsReloc() ? 0 : unchecked((nint)dstAddr) & 0xFFF;
             assert(isValidUimm(imm12, 12));
-            var code = emitInsCode(INS_add, IF_DI_2A);
+            var code = emitInsCodeArm64(INS_add, IF_ARM64_DI_2A);
             code |= insEncodeDatasize(EA_8BYTE);
             code |= unchecked((uint)imm12 << 10);
             code |= insEncodeReg_R(dstReg, 4, 0);
@@ -336,23 +336,23 @@ public partial class Emitter
     private unsafe byte* emitOutputShortBranchArm64Core(
         byte* dst, instruction ins, insFormat fmt, nint distVal, instrDescJmp id)
     {
-        var code = emitInsCode(ins, fmt);
+        var code = emitInsCodeArm64(ins, fmt);
         var loBits = distVal & 3;
         noway_assert(loBits == 0);
         distVal >>= 2;
-        if (fmt == IF_BI_0A)
+        if (fmt == IF_ARM64_BI_0A)
         {
             noway_assert(isValidSimm(distVal, 26));
             distVal &= 0x3FFFFFF;
             code |= unchecked((uint)distVal);
         }
-        else if (fmt == IF_BI_0B)
+        else if (fmt == IF_ARM64_BI_0B)
         {
             noway_assert(isValidSimm(distVal, 19));
             distVal &= 0x7FFFF;
             code |= unchecked((uint)(distVal << 5));
         }
-        else if (fmt == IF_BI_1A)
+        else if (fmt == IF_ARM64_BI_1A)
         {
             assert(id is not null);
             code |= insEncodeDatasize(id.idOpSize());
@@ -361,7 +361,7 @@ public partial class Emitter
             distVal &= 0x7FFFF;
             code |= unchecked((uint)(distVal << 5));
         }
-        else if (fmt == IF_BI_1B)
+        else if (fmt == IF_ARM64_BI_1B)
         {
             assert(id is not null);
             var imm = emitGetInsSC(id);
@@ -391,8 +391,8 @@ public partial class Emitter
     {
         var loBits = distVal & 3;
         distVal >>= 2;
-        var code = emitInsCode(ins, fmt);
-        if (fmt == IF_DI_1E)
+        var code = emitInsCodeArm64(ins, fmt);
+        if (fmt == IF_ARM64_DI_1E)
         {
             code |= insEncodeReg_R(reg, 4, 0);
             noway_assert(isValidSimm(distVal, 19));
@@ -413,8 +413,8 @@ public partial class Emitter
     private unsafe byte* emitOutputShortConstantArm64Core(
         byte* dst, instruction ins, insFormat fmt, nint imm, regNumber reg, emitAttr opSize)
     {
-        var code = emitInsCode(ins, fmt);
-        if (fmt == IF_LS_1A)
+        var code = emitInsCodeArm64(ins, fmt);
+        if (fmt == IF_ARM64_LS_1A)
         {
             var loBits = imm & 3;
             noway_assert(loBits == 0);
@@ -437,7 +437,7 @@ public partial class Emitter
             distVal &= 0x7FFFF;
             code |= unchecked((uint)(distVal << 5));
         }
-        else if (fmt == IF_LS_2B)
+        else if (fmt == IF_ARM64_LS_2B)
         {
             noway_assert(isValidUimm(imm, 12));
             assert(isGeneralRegister(reg));
@@ -473,14 +473,14 @@ public partial class Emitter
     private unsafe byte* emitOutputVectorConstantArm64Core(
         byte* dst, nint imm, regNumber dstReg, regNumber addrReg, emitAttr opSize, emitAttr elemSize)
     {
-        var code = emitInsCode(INS_add, IF_DI_2A);
+        var code = emitInsCodeArm64(INS_add, IF_ARM64_DI_2A);
         code |= insEncodeDatasize(EA_8BYTE);
         code |= unchecked((uint)imm << 10);
         code |= insEncodeReg_R(addrReg, 4, 0);
         code |= insEncodeReg_R(addrReg, 9, 5);
         dst = unchecked(dst + emitOutputLong(dst, code));
 
-        code = emitInsCode(INS_ld1, IF_LS_2D);
+        code = emitInsCodeArm64(INS_ld1, IF_ARM64_LS_2D);
         code |= insEncodeVectorsize(opSize);
         code |= insEncodeVLSElemsize(elemSize);
         code |= insEncodeReg_R(addrReg, 9, 5);
@@ -543,12 +543,13 @@ public partial class Emitter
 
     private static emitJumpKind emitInsToJumpKindArm64(instruction ins)
     {
-        for (var index = 0; index < emitJumpKindInstructions.Length; index++)
+        for (var index = 1; index < Configuration.EMIT_JUMPKIND_COUNT; index++)
         {
-            if (ins == emitJumpKindInstructions[index])
+            var mappedInstruction = emitJumpKindInstructions[index];
+            if ((mappedInstruction != INS_invalid) && (ins == mappedInstruction))
             {
                 var result = (emitJumpKind)index;
-                assert(EJ_NONE < result && result < EJ_COUNT);
+                assert(EJ_NONE < result && (int)result < Configuration.EMIT_JUMPKIND_COUNT);
 
                 return result;
             }
@@ -561,9 +562,7 @@ public partial class Emitter
 
     private static emitJumpKind emitReverseJumpKindArm64(emitJumpKind jumpKind)
     {
-        assert(jumpKind < EJ_COUNT);
-
-        return emitReverseJumpKinds[(int)jumpKind];
+        return emitReverseJumpKind(jumpKind);
     }
 
 #if DEBUG
@@ -585,4 +584,3 @@ public partial class Emitter
     }
 #endif
 }
-#endif

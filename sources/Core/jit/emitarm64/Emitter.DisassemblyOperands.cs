@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Globalization;
 
 namespace RyuJitSharp;
@@ -35,7 +34,7 @@ public partial class Emitter
         jitprintf(", ");
     }
 
-    private void emitDispInst(instruction ins)
+    private void emitDispInstArm64(instruction ins)
     {
         var insstr = codeGen.genInsName(ins);
         var len = insstr.Length;
@@ -313,7 +312,7 @@ public partial class Emitter
         {
             var notLastRegister = i != listSize - 1;
             emitDispVectorReg(currReg, opt, notLastRegister);
-            currReg = currReg == REG_V31 ? REG_V0 : REG_NEXT(currReg);
+            currReg = currReg == REG_ARM64_V31 ? REG_ARM64_V0 : REG_NEXT(currReg);
         }
         jitprintf("}");
 
@@ -337,7 +336,7 @@ public partial class Emitter
             {
                 emitDispComma();
             }
-            currReg = currReg == REG_V31 ? REG_V0 : REG_NEXT(currReg);
+            currReg = currReg == REG_ARM64_V31 ? REG_ARM64_V0 : REG_NEXT(currReg);
         }
         jitprintf("}");
         jitprintf($"[{unchecked((int)index).ToString(CultureInfo.InvariantCulture)}]");
@@ -619,4 +618,3 @@ public partial class Emitter
         jitprintf("]");
     }
 }
-#endif

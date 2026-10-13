@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.insScalableOpts;
 using static RyuJitSharp.insSveMovOpts;
 
@@ -11,11 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private static bool isFloatReg(regNumber reg)
-    {
-        return isVectorRegister(reg);
-    }
-
     private static bool insScalableOptsWithPredicatePair(insScalableOpts sopt)
     {
         return sopt == INS_SCALABLE_OPTS_WITH_PREDICATE_PAIR;
@@ -32,7 +26,7 @@ public partial class Emitter
     }
 
     private static bool isValidMovprfxReg(insSveMovOpts mopt, regNumber dstReg, regNumber srcReg,
-        regNumber op2Reg = REG_NA, regNumber op3Reg = REG_NA, regNumber op4Reg = REG_NA)
+        regNumber op2Reg = REG_ARM64_NA, regNumber op3Reg = REG_ARM64_NA, regNumber op4Reg = REG_ARM64_NA)
     {
         if (insSveMovOptsUnpredicated(mopt) && (dstReg == srcReg))
         {
@@ -95,7 +89,7 @@ public partial class Emitter
     }
 
     internal void emitInsSve_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
-        bool canSkip, insOpts opt, insSveMovOpts mopt, regNumber mskReg = REG_NA)
+        bool canSkip, insOpts opt, insSveMovOpts mopt, regNumber mskReg = REG_ARM64_NA)
     {
         assert(IsMovInstruction(ins));
         var size = EA_SIZE(attr);
@@ -107,7 +101,7 @@ public partial class Emitter
                 {
                     assert((opt == INS_OPTS_SCALABLE_B) || insOptsNone(opt));
                     opt = INS_OPTS_SCALABLE_B;
-                    attr = EA_SCALABLE;
+                    attr = EA_SCALABLE_ARM64;
                 }
                 break;
             }
@@ -144,4 +138,3 @@ public partial class Emitter
         }
     }
 }
-#endif

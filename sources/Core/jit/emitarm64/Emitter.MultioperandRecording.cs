@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -19,7 +18,7 @@ public partial class Emitter
         {
             case INS_ins:
             {
-                emitIns_Mov(INS_mov, dstsize, reg1, reg2, canSkip: true);
+                emitInsMovArm64(INS_mov, dstsize, reg1, reg2, canSkip: true);
                 emitIns_R_R_I_I(ins, attr, reg1, reg3, imm1, imm2, opt);
                 return;
             }
@@ -56,7 +55,7 @@ public partial class Emitter
                 bmi.immR = unchecked((uint)imm1);
                 bmi.immS = unchecked((uint)imm2);
                 immOut = bmi.immNRS;
-                fmt = IF_DI_2D;
+                fmt = IF_ARM64_DI_2D;
                 break;
             }
 
@@ -77,7 +76,7 @@ public partial class Emitter
                 bmi.immR = unchecked((uint)lsb);
                 bmi.immS = unchecked((uint)width);
                 immOut = bmi.immNRS;
-                fmt = IF_DI_2D;
+                fmt = IF_ARM64_DI_2D;
                 break;
             }
 
@@ -98,7 +97,7 @@ public partial class Emitter
                 bmi.immR = unchecked((uint)imm1);
                 bmi.immS = unchecked((uint)(imm2 + imm1 - 1));
                 immOut = bmi.immNRS;
-                fmt = IF_DI_2D;
+                fmt = IF_ARM64_DI_2D;
                 break;
             }
 
@@ -108,12 +107,12 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 elemsize = size;
-                assert(isValidVectorElemsize(elemsize));
+                assert(isValidVectorElemsizeArm64(elemsize));
                 assert(isValidVectorIndex(EA_16BYTE, elemsize, imm1));
                 assert(isValidVectorIndex(EA_16BYTE, elemsize, imm2));
                 assert(insOptsNone(opt));
                 immOut = unchecked((nuint)((imm1 << 4) + imm2));
-                fmt = IF_DV_2F;
+                fmt = IF_ARM64_DV_2F;
                 break;
             }
 
@@ -129,7 +128,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isGeneralRegisterOrSP(reg2));
                 elemsize = size;
-                assert(isValidVectorElemsize(elemsize));
+                assert(isValidVectorElemsizeArm64(elemsize));
                 assert(isValidVectorIndex(EA_16BYTE, elemsize, imm1));
                 var registerListSize = insGetRegisterListSize(ins);
                 assert(((uint)elemsize * registerListSize) == unchecked((uint)imm2));
@@ -138,7 +137,7 @@ public partial class Emitter
                 // Single-structure access post-indexed by an immediate.
                 reg2 = encodingSPtoZR(reg2);
                 immOut = unchecked((nuint)imm1);
-                fmt = IF_LS_2G;
+                fmt = IF_ARM64_LS_2G;
                 break;
             }
 
@@ -163,7 +162,7 @@ public partial class Emitter
         appendToCurIG(id);
     }
 
-    public void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1,
+    public void emitIns_R_R_R_RArm64(instruction ins, emitAttr attr, regNumber reg1,
         regNumber reg2, regNumber reg3, regNumber reg4, insOpts opt = INS_OPTS_NONE,
         insScalableOpts sopt = insScalableOpts.INS_SCALABLE_OPTS_NONE)
     {
@@ -187,8 +186,8 @@ public partial class Emitter
                     // Scalar variants return the whole Vector64, not just the scalar lane.
                     dstsize = EA_8BYTE;
                 }
-                emitIns_Mov(INS_mov, dstsize, reg1, reg2, canSkip: true);
-                emitIns_R_R_R(ins, attr, reg1, reg3, reg4, opt);
+                emitInsMovArm64(INS_mov, dstsize, reg1, reg2, canSkip: true);
+                emitIns_R_R_RArm64(ins, attr, reg1, reg3, reg4, opt);
                 return;
             }
 
@@ -235,8 +234,8 @@ public partial class Emitter
             case INS_uaba:
             case INS_udot:
             {
-                emitIns_Mov(INS_mov, dstsize, reg1, reg2, canSkip: true);
-                emitIns_R_R_R(ins, attr, reg1, reg3, reg4, opt, sopt);
+                emitInsMovArm64(INS_mov, dstsize, reg1, reg2, canSkip: true);
+                emitIns_R_R_RArm64(ins, attr, reg1, reg3, reg4, opt, sopt);
                 return;
             }
 
@@ -249,7 +248,7 @@ public partial class Emitter
                 assert(isGeneralRegister(reg3));
                 assert(isGeneralRegister(reg4));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_DR_4A;
+                fmt = IF_ARM64_DR_4A;
                 break;
             }
 
@@ -264,7 +263,7 @@ public partial class Emitter
                 assert(isGeneralRegister(reg3));
                 assert(isGeneralRegister(reg4));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_DR_4A;
+                fmt = IF_ARM64_DR_4A;
                 break;
             }
 
@@ -279,7 +278,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(isVectorRegister(reg4));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_DV_4A;
+                fmt = IF_ARM64_DV_4A;
                 break;
             }
 
@@ -293,7 +292,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(isVectorRegister(reg4));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_DV_4B;
+                fmt = IF_ARM64_DV_4B;
                 break;
             }
 
@@ -306,7 +305,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(isVectorRegister(reg4));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_DV_4B;
+                fmt = IF_ARM64_DV_4B;
                 break;
             }
 
@@ -359,8 +358,8 @@ public partial class Emitter
                     // Scalar variants return the whole Vector64, not just the scalar lane.
                     dstsize = EA_8BYTE;
                 }
-                emitIns_Mov(INS_mov, dstsize, reg1, reg2, canSkip: true);
-                emitIns_R_R_R_I(ins, attr, reg1, reg3, reg4, imm, opt);
+                emitInsMovArm64(INS_mov, dstsize, reg1, reg2, canSkip: true);
+                emitIns_R_R_R_IArm64(ins, attr, reg1, reg3, reg4, imm, opt);
                 return;
             }
 
@@ -386,8 +385,8 @@ public partial class Emitter
             case INS_sdot:
             case INS_udot:
             {
-                emitIns_Mov(INS_mov, dstsize, reg1, reg2, canSkip: true);
-                emitIns_R_R_R_I(ins, attr, reg1, reg3, reg4, imm, opt);
+                emitInsMovArm64(INS_mov, dstsize, reg1, reg2, canSkip: true);
+                emitIns_R_R_R_IArm64(ins, attr, reg1, reg3, reg4, imm, opt);
                 return;
             }
 
@@ -399,4 +398,3 @@ public partial class Emitter
         }
     }
 }
-#endif

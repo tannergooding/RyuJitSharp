@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 using static RyuJitSharp.insCond;
 
@@ -11,25 +10,25 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForIncSaturate(GenTree tree)
+    public void genCodeForIncSaturateArm64(GenTree tree)
     {
         var targetReg = tree.RegNum;
 
         // The arithmetic node must be sitting in a register (since it's not contained).
         assert(!tree.IsContained);
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_ARM64_NA);
 
         var operand = tree.AsUnOp().Op1;
         assert(!operand.IsContained);
         var operandReg = genConsumeReg(operand);
 
-        Emitter.emitIns_R_R_I(INS_adds, emitActualTypeSize(tree), targetReg, operandReg, 1);
+        Emitter.emitIns_R_R_IArm64(INS_adds, emitActualTypeSize(tree), targetReg, operandReg, 1);
         Emitter.emitIns_R_R_COND(INS_cinv, emitActualTypeSize(tree), targetReg, targetReg, INS_COND_HS);
 
         genProduceReg(tree);
     }
 
-    public void genCodeForMulHi(GenTreeOp treeNode)
+    public void genCodeForMulHiArm64(GenTreeOp treeNode)
     {
         assert(!treeNode.HasOverflowCheckEx);
 
@@ -45,7 +44,7 @@ public sealed partial class CodeGen
         var op2 = treeNode.Op2;
 
         assert(!varTypeIsFloating(targetType));
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_ARM64_NA);
 
         if (EA_SIZE(attr) == EA_8BYTE)
         {
@@ -61,14 +60,15 @@ public sealed partial class CodeGen
             var ins = isUnsigned ? INS_umull : INS_smull;
             _ = emit.emitInsTernary(ins, EA_8BYTE, treeNode, op1, op2);
 
-            emit.emitIns_R_R_I(isUnsigned ? INS_lsr : INS_asr, EA_8BYTE, targetReg, targetReg, 32);
+            emit.emitIns_R_R_IArm64(isUnsigned ? INS_lsr : INS_asr, EA_8BYTE, targetReg, targetReg, 32);
         }
 
         genProduceReg(treeNode);
     }
 
-    public void genCodeForNegNot(GenTreeOp tree)
+    public void genCodeForNegNotArm64(GenTree treeNode)
     {
+        var tree = treeNode.AsOp();
         assert(tree.Oper is GT_NEG or GT_NOT);
 
         var targetType = tree.Type;
@@ -96,7 +96,7 @@ public sealed partial class CodeGen
         }
 
         assert(!tree.IsContained);
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_ARM64_NA);
 
         var operand = tree.Op1;
         if ((tree.Oper is GT_NEG or GT_NOT) && operand.IsContained)
@@ -130,7 +130,7 @@ public sealed partial class CodeGen
                     var a = op1.AsOp().Op1;
                     var b = op1.AsOp().Op2;
                     genConsumeRegs(op1);
-                    Emitter.emitIns_R_R_I(ins, emitActualTypeSize(tree), targetReg, a.RegNum,
+                    Emitter.emitIns_R_R_IArm64(ins, emitActualTypeSize(tree), targetReg, a.RegNum,
                         unchecked((nint)b.AsIntConCommon().IntegralValue), ShiftOpToInsOpts(oper));
                     break;
                 }
@@ -152,7 +152,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForBfiz(GenTreeOp tree)
+    public void genCodeForBfizArm64(GenTreeOp tree)
     {
         assert(tree.Oper is GT_BFIZ);
 
@@ -176,7 +176,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForBfx(GenTreeBfm tree)
+    public void genCodeForBfxArm64(GenTreeBfm tree)
     {
         assert(tree.Oper is GT_BFX);
 
@@ -199,7 +199,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForDivMod(GenTreeOp tree)
+    public void genCodeForDivModArm64(GenTreeOp tree)
     {
         assert(tree.Oper is GT_DIV or GT_UDIV);
 
@@ -209,7 +209,7 @@ public sealed partial class CodeGen
         if (varTypeIsFloating(targetType))
         {
             // Floating point divide never raises an exception.
-            genCodeForBinary(tree);
+            genCodeForBinaryArm64(tree);
         }
         else
         {
@@ -237,14 +237,14 @@ public sealed partial class CodeGen
 
             if ((exceptionFlags & ExceptionSetFlags.ArithmeticException) != ExceptionSetFlags.None)
             {
-                genCodeForDivModOverflowCheck(tree);
+                genCodeForDivModOverflowCheckArm64(tree);
             }
 
-            genCodeForBinary(tree);
+            genCodeForBinaryArm64(tree);
         }
     }
 
-    private void genCodeForDivModOverflowCheck(GenTreeOp tree)
+    private void genCodeForDivModOverflowCheckArm64(GenTreeOp tree)
     {
         assert(tree.Oper is GT_DIV);
         assert(!tree.Op2.IsIntegralConst(0));
@@ -256,11 +256,11 @@ public sealed partial class CodeGen
 
         // If the divisor is not -1, skip the signed division overflow check.
         Emitter.emitIns_R_I(INS_cmp, size, divisorReg, -1);
-        inst_JMP(emitJumpKind.EJ_ne, sdivLabel);
+        inst_JMP(emitJumpKind.EJ_ARMARCH_ne, sdivLabel);
 
         // Comparing dividendReg with 1 sets V exactly when dividendReg is MinInt.
         Emitter.emitIns_R_I(INS_cmp, size, dividendReg, 1);
-        genJumpToThrowHlpBlk(emitJumpKind.EJ_vs, SCK_ARITH_EXCPN);
+        genJumpToThrowHlpBlk(emitJumpKind.EJ_ARMARCH_vs, SCK_ARITH_EXCPN);
 
         genDefineTempLabel(sdivLabel);
     }
@@ -278,13 +278,15 @@ public sealed partial class CodeGen
         }
         else
         {
-            var jumpKind = condition is GenCondition.EQ ? emitJumpKind.EJ_eq : emitJumpKind.EJ_ne;
+            var jumpKind = condition is GenCondition.EQ
+                ? emitJumpKind.EJ_ARMARCH_eq
+                : emitJumpKind.EJ_ARMARCH_ne;
             Emitter.emitIns_R_I(INS_cmp, size, reg, compareImm);
             inst_JMP(jumpKind, target);
         }
     }
 
-    public void genCodeForJumpCompare(GenTreeOpCC tree)
+    public void genCodeForJumpCompareArm64(GenTreeOpCC tree)
     {
         assert(_compiler.compCurBB is not null);
         var block = _compiler.compCurBB!;
@@ -345,9 +347,10 @@ public sealed partial class CodeGen
                 var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
                 assert(add.acdUsed);
                 throwBlock = add.acdDstBlk;
-#if !FEATURE_FIXED_OUT_ARGS
-                assert(add.acdStkLvlInit || IsFramePointerUsed);
-#endif
+                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                {
+                    assert(add.acdStkLvlInit || IsFramePointerUsed);
+                }
                 noway_assert(throwBlock is not null);
             }
         }
@@ -378,4 +381,3 @@ public sealed partial class CodeGen
         Emitter.emitIns_J_R_I(ins, attr, target, reg, immediate);
     }
 }
-#endif

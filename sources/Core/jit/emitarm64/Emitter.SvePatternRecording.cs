@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -22,7 +21,7 @@ public partial class Emitter
                 assert(isPredicateRegister(reg1));
                 assert(isScalableVectorSize(attr));
                 assert(insOptsScalableStandard(opt));
-                fmt = IF_SVE_DE_1A;
+                fmt = IF_ARM64_SVE_DE_1A;
                 break;
             }
 
@@ -46,4 +45,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

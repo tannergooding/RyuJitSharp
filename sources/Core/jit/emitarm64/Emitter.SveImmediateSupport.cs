@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -125,7 +124,7 @@ public partial class Emitter
 
     private static bool isScalableVectorSize(emitAttr size)
     {
-        return size == EA_SCALABLE;
+        return size == EA_SCALABLE_ARM64;
     }
 
     private static bool isHighPredicateRegister(regNumber reg)
@@ -144,4 +143,3 @@ public partial class Emitter
         return (opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_S) || (opt == INS_OPTS_SCALABLE_D);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.insScalableOpts;
 using static RyuJitSharp.insSveMovOpts;
@@ -28,7 +27,7 @@ public partial class Emitter
             {
                 // Explicit masked RMW predicate instructions.
                 assert(insSveMovOptsUnpredicated(mopt));
-                emitInsSve_Mov(INS_sve_mov, EA_SCALABLE, reg1, reg3, true, INS_OPTS_NONE, INS_SVE_MOV_OPTS_UNPRED);
+                emitInsSve_Mov(INS_sve_mov, EA_SCALABLE_ARM64, reg1, reg3, true, INS_OPTS_NONE, INS_SVE_MOV_OPTS_UNPRED);
                 emitInsSve_R_R(ins, attr, reg1, reg2, opt, sopt);
                 return;
             }
@@ -42,7 +41,7 @@ public partial class Emitter
                 {
                     // Scalar variant, with 64-bit destination register.
                     assert(isGeneralRegister(reg2));
-                    emitIns_Mov(INS_mov, EA_8BYTE, reg1, reg2, true);
+                    emitInsMovArm64(INS_mov, EA_8BYTE, reg1, reg2, true);
                     emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
                     return;
                 }
@@ -55,7 +54,7 @@ public partial class Emitter
             {
                 assert(insSveMovOptsUnpredicated(mopt));
                 assert(isValidMovprfxReg(mopt, reg1, reg2, reg3));
-                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, true, INS_OPTS_NONE, mopt);
+                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE_ARM64, reg1, reg2, true, INS_OPTS_NONE, mopt);
                 emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
                 return;
             }
@@ -67,7 +66,7 @@ public partial class Emitter
             {
                 // These RMW instructions do not support movprfx.
                 assert(insSveMovOptsUnpredicated(mopt));
-                emitIns_Mov(INS_sve_mov, attr, reg1, reg2, true, opt);
+                emitInsMovArm64(INS_sve_mov, attr, reg1, reg2, true, opt);
                 emitInsSve_R_R(ins, attr, reg1, reg3, opt, sopt);
                 return;
             }
@@ -85,12 +84,12 @@ public partial class Emitter
                 {
                     // The .D-only encoding operates on bits, not lanes, so all standard sizes are supported.
                     assert(insOptsScalableStandard(opt));
-                    fmt = IF_SVE_AU_3A;
+                    fmt = IF_ARM64_SVE_AU_3A;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
-                    fmt = IF_SVE_AA_3A;
+                    fmt = IF_ARM64_SVE_AA_3A;
                 }
                 break;
             }
@@ -106,12 +105,12 @@ public partial class Emitter
                 if (isVectorRegister(reg2))
                 {
                     assert(ins != INS_sve_subr);
-                    fmt = IF_SVE_AT_3A;
+                    fmt = IF_ARM64_SVE_AT_3A;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
-                    fmt = IF_SVE_AA_3A;
+                    fmt = IF_ARM64_SVE_AA_3A;
                 }
                 break;
             }
@@ -126,12 +125,12 @@ public partial class Emitter
                 assert(insScalableOptsNone(sopt));
                 if (isVectorRegister(reg2))
                 {
-                    fmt = IF_SVE_AT_3B;
+                    fmt = IF_ARM64_SVE_AT_3B;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
-                    fmt = IF_SVE_AB_3B;
+                    fmt = IF_ARM64_SVE_AB_3B;
                 }
                 break;
             }
@@ -146,7 +145,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableWords(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AC_3A;
+                fmt = IF_ARM64_SVE_AC_3A;
                 break;
             }
 
@@ -162,7 +161,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AA_3A;
+                fmt = IF_ARM64_SVE_AA_3A;
                 break;
             }
 
@@ -176,12 +175,12 @@ public partial class Emitter
                 assert(insScalableOptsNone(sopt));
                 if (isVectorRegister(reg2))
                 {
-                    fmt = IF_SVE_AT_3A;
+                    fmt = IF_ARM64_SVE_AT_3A;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
-                    fmt = IF_SVE_AA_3A;
+                    fmt = IF_ARM64_SVE_AA_3A;
                 }
                 break;
             }
@@ -192,7 +191,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_BD_3B;
+                fmt = IF_ARM64_SVE_BD_3B;
                 break;
             }
 
@@ -205,7 +204,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AF_3A;
+                fmt = IF_ARM64_SVE_AF_3A;
                 break;
             }
 
@@ -219,7 +218,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AG_3A;
+                fmt = IF_ARM64_SVE_AG_3A;
                 break;
             }
 
@@ -233,7 +232,7 @@ public partial class Emitter
                 {
                     pmerge = true;
                 }
-                fmt = IF_SVE_AH_3A;
+                fmt = IF_ARM64_SVE_AH_3A;
                 break;
             }
 
@@ -244,7 +243,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableWide(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AI_3A;
+                fmt = IF_ARM64_SVE_AI_3A;
                 break;
             }
 
@@ -255,7 +254,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AI_3A;
+                fmt = IF_ARM64_SVE_AI_3A;
                 break;
             }
 
@@ -267,7 +266,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AJ_3A;
+                fmt = IF_ARM64_SVE_AJ_3A;
                 break;
             }
 
@@ -281,7 +280,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AK_3A;
+                fmt = IF_ARM64_SVE_AK_3A;
                 break;
             }
 
@@ -296,7 +295,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AL_3A;
+                fmt = IF_ARM64_SVE_AL_3A;
                 break;
             }
 
@@ -309,7 +308,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AA_3A;
+                fmt = IF_ARM64_SVE_AA_3A;
                 break;
             }
 
@@ -323,20 +322,20 @@ public partial class Emitter
                 {
                     assert(isLowPredicateRegister(reg2));
                     assert(insOptsScalableWide(opt));
-                    fmt = IF_SVE_AO_3A;
+                    fmt = IF_ARM64_SVE_AO_3A;
                 }
                 else if (isVectorRegister(reg2))
                 {
                     assert(insScalableOptsNone(sopt));
                     assert(insOptsScalableWide(opt));
-                    fmt = IF_SVE_BG_3A;
+                    fmt = IF_ARM64_SVE_BG_3A;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
                     assert(insScalableOptsNone(sopt));
                     assert(insOptsScalableStandard(opt));
-                    fmt = IF_SVE_AA_3A;
+                    fmt = IF_ARM64_SVE_AA_3A;
                 }
                 break;
             }
@@ -356,12 +355,12 @@ public partial class Emitter
                     assert(isVectorRegister(reg3));
                     if (opt == INS_OPTS_SCALABLE_Q)
                     {
-                        fmt = IF_SVE_BR_3B;
+                        fmt = IF_ARM64_SVE_BR_3B;
                     }
                     else
                     {
-                        assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                        fmt = IF_SVE_AT_3A;
+                        assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                        fmt = IF_ARM64_SVE_AT_3A;
                     }
                 }
                 else
@@ -369,7 +368,7 @@ public partial class Emitter
                     assert(isPredicateRegister(reg1));
                     assert(isPredicateRegister(reg2));
                     assert(isPredicateRegister(reg3));
-                    fmt = IF_SVE_CI_3A;
+                    fmt = IF_ARM64_SVE_CI_3A;
                 }
                 break;
             }
@@ -380,15 +379,15 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
                 {
-                    fmt = IF_SVE_BZ_3A_A;
+                    fmt = IF_ARM64_SVE_BZ_3A_A;
                 }
                 else
                 {
                     assert(insScalableOptsNone(sopt));
-                    fmt = IF_SVE_BZ_3A;
+                    fmt = IF_ARM64_SVE_BZ_3A;
                 }
                 break;
             }
@@ -399,8 +398,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_BZ_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_BZ_3A;
                 break;
             }
 
@@ -410,8 +409,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_AT_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -423,13 +422,13 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_H)
                 {
-                    fmt = IF_SVE_EF_3A;
+                    fmt = IF_ARM64_SVE_EF_3A;
                 }
                 else
                 {
-                    fmt = IF_SVE_EH_3A;
+                    fmt = IF_ARM64_SVE_EH_3A;
                     assert(insOptsScalableWords(opt));
-                    assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                    assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 }
                 break;
             }
@@ -440,7 +439,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_EI_3A;
+                fmt = IF_ARM64_SVE_EI_3A;
                 break;
             }
 
@@ -457,8 +456,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EL_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EL_3A;
                 break;
             }
 
@@ -469,8 +468,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EM_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EM_3A;
                 break;
             }
 
@@ -481,8 +480,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EL_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EL_3A;
                 break;
             }
 
@@ -495,8 +494,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EL_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EL_3A;
                 break;
             }
 
@@ -507,8 +506,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_AT_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -522,8 +521,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EX_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EX_3A;
                 break;
             }
 
@@ -544,8 +543,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_FL_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_FL_3A;
                 break;
             }
 
@@ -562,8 +561,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_FM_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_FM_3A;
                 break;
             }
 
@@ -578,8 +577,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_FL_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_FL_3A;
                 break;
             }
 
@@ -591,13 +590,13 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_Q)
                 {
-                    fmt = IF_SVE_FN_3B;
+                    fmt = IF_ARM64_SVE_FN_3B;
                 }
                 else
                 {
                     assert((opt == INS_OPTS_SCALABLE_H) || (opt == INS_OPTS_SCALABLE_D));
-                    assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                    fmt = IF_SVE_FL_3A;
+                    assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                    fmt = IF_ARM64_SVE_FL_3A;
                 }
                 break;
             }
@@ -610,7 +609,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_FO_3A;
+                fmt = IF_ARM64_SVE_FO_3A;
                 break;
             }
 
@@ -628,7 +627,7 @@ public partial class Emitter
                 {
                     assert(opt == INS_OPTS_SCALABLE_S);
                 }
-                fmt = IF_SVE_GJ_3A;
+                fmt = IF_ARM64_SVE_GJ_3A;
                 break;
             }
 
@@ -641,12 +640,12 @@ public partial class Emitter
                 if (opt == INS_OPTS_SCALABLE_B)
                 {
                     unreached(); // TODO-SVE: Not yet supported.
-                    fmt = IF_SVE_GN_3A;
+                    fmt = IF_ARM64_SVE_GN_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_H);
-                    fmt = IF_SVE_HB_3A;
+                    fmt = IF_ARM64_SVE_HB_3A;
                 }
                 break;
             }
@@ -662,7 +661,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HB_3A;
+                fmt = IF_ARM64_SVE_HB_3A;
                 break;
             }
 
@@ -672,7 +671,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HD_3A;
+                fmt = IF_ARM64_SVE_HD_3A;
                 break;
             }
 
@@ -683,7 +682,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HD_3A_A;
+                fmt = IF_ARM64_SVE_HD_3A_A;
                 break;
             }
 
@@ -697,7 +696,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_GO_3A;
+                fmt = IF_ARM64_SVE_GO_3A;
                 break;
             }
 
@@ -707,7 +706,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_GW_3B;
+                fmt = IF_ARM64_SVE_GW_3B;
                 break;
             }
 
@@ -717,7 +716,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HA_3A;
+                fmt = IF_ARM64_SVE_HA_3A;
                 break;
             }
 
@@ -728,18 +727,18 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_H)
                 {
-                    fmt = IF_SVE_HA_3A;
+                    fmt = IF_ARM64_SVE_HA_3A;
                 }
                 else if (opt == INS_OPTS_SCALABLE_B)
                 {
                     unreached(); // TODO-SVE: Not yet supported.
-                    fmt = IF_SVE_HA_3A_E;
+                    fmt = IF_ARM64_SVE_HA_3A_E;
                 }
                 else
                 {
                     unreached(); // TODO-SVE: Not yet supported.
                     assert(insOptsNone(opt));
-                    fmt = IF_SVE_HA_3A_F;
+                    fmt = IF_ARM64_SVE_HA_3A_F;
                 }
                 break;
             }
@@ -751,8 +750,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_AT_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -764,8 +763,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_AT_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -777,8 +776,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_FL_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_FL_3A;
                 break;
             }
 
@@ -789,8 +788,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_FW_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_FW_3A;
                 break;
             }
 
@@ -803,8 +802,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EL_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EL_3A;
                 break;
             }
 
@@ -821,8 +820,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_GC_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_GC_3A;
                 break;
             }
 
@@ -832,8 +831,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_GF_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_GF_3A;
                 break;
             }
 
@@ -843,8 +842,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_AT_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -856,7 +855,7 @@ public partial class Emitter
                     assert(opt == INS_OPTS_SCALABLE_B);
                     assert(isPredicateRegister(reg2));
                     assert(isPredicateRegister(reg3));
-                    fmt = IF_SVE_CZ_4A;
+                    fmt = IF_ARM64_SVE_CZ_4A;
                 }
                 else
                 {
@@ -864,7 +863,7 @@ public partial class Emitter
                     assert(isLowPredicateRegister(reg2));
                     assert(isVectorRegister(reg3));
                     assert(insOptsScalableStandard(opt));
-                    fmt = IF_SVE_AP_3A;
+                    fmt = IF_ARM64_SVE_AP_3A;
                 }
                 break;
             }
@@ -875,7 +874,7 @@ public partial class Emitter
                 assert(isPredicateRegister(reg1));
                 assert(isPredicateRegister(reg2));
                 assert(isPredicateRegister(reg3));
-                fmt = IF_SVE_CZ_4A;
+                fmt = IF_ARM64_SVE_CZ_4A;
                 break;
             }
 
@@ -889,7 +888,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AP_3A;
+                fmt = IF_ARM64_SVE_AP_3A;
                 break;
             }
 
@@ -901,7 +900,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableFloat(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AP_3A;
+                fmt = IF_ARM64_SVE_AP_3A;
                 break;
             }
 
@@ -913,7 +912,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AQ_3A;
+                fmt = IF_ARM64_SVE_AQ_3A;
                 break;
             }
 
@@ -925,7 +924,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AQ_3A;
+                fmt = IF_ARM64_SVE_AQ_3A;
                 break;
             }
 
@@ -937,7 +936,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableWords(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AQ_3A;
+                fmt = IF_ARM64_SVE_AQ_3A;
                 break;
             }
 
@@ -949,7 +948,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(opt == INS_OPTS_SCALABLE_D);
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AQ_3A;
+                fmt = IF_ARM64_SVE_AQ_3A;
                 break;
             }
 
@@ -961,7 +960,7 @@ public partial class Emitter
                 assert(isGeneralRegisterOrZR(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_BA_3A;
+                fmt = IF_ARM64_SVE_BA_3A;
                 break;
             }
 
@@ -974,7 +973,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AT_3A;
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -986,7 +985,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableFloat(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AT_3A;
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -997,7 +996,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableWords(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_CL_3A;
+                fmt = IF_ARM64_SVE_CL_3A;
                 break;
             }
 
@@ -1011,19 +1010,19 @@ public partial class Emitter
                 {
                     assert(insScalableOptsNone(sopt));
                     assert(isValidScalarDatasize(size));
-                    fmt = IF_SVE_CO_3A;
+                    fmt = IF_ARM64_SVE_CO_3A;
                 }
                 else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
                 {
                     assert(isFloatReg(reg1));
                     assert(isScalableVectorSize(size));
-                    fmt = IF_SVE_CN_3A;
+                    fmt = IF_ARM64_SVE_CN_3A;
                 }
                 else
                 {
                     assert(insScalableOptsNone(sopt));
                     assert(isVectorRegister(reg1));
-                    fmt = IF_SVE_CM_3A;
+                    fmt = IF_ARM64_SVE_CM_3A;
                 }
                 break;
             }
@@ -1038,13 +1037,13 @@ public partial class Emitter
                     {
                         assert(isPredicateRegister(reg2));
                         assert(isVectorRegister(reg3));
-                        fmt = IF_SVE_CW_4A;
+                        fmt = IF_ARM64_SVE_CW_4A;
                     }
                     else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
                     {
                         assert(isLowPredicateRegister(reg2));
                         assert(isVectorRegister(reg3));
-                        fmt = IF_SVE_CP_3A;
+                        fmt = IF_ARM64_SVE_CP_3A;
                         // MOV is an alias for CPY, and is always the preferred disassembly.
                         ins = INS_sve_mov;
                     }
@@ -1052,7 +1051,7 @@ public partial class Emitter
                     {
                         assert(isGeneralRegisterOrSP(reg3));
                         assert(insScalableOptsNone(sopt));
-                        fmt = IF_SVE_CQ_3A;
+                        fmt = IF_ARM64_SVE_CQ_3A;
                         reg3 = encodingSPtoZR(reg3);
                         // MOV is an alias for CPY, and is always the preferred disassembly.
                         ins = INS_sve_mov;
@@ -1063,7 +1062,7 @@ public partial class Emitter
                         assert(ins == INS_sve_mov);
                         assert(isVectorRegister(reg2));
                         assert(isVectorRegister(reg3));
-                        fmt = IF_SVE_AU_3A;
+                        fmt = IF_ARM64_SVE_AU_3A;
                         // ORR is an alias for MOV, and is always the preferred disassembly.
                         ins = INS_sve_orr;
                     }
@@ -1073,7 +1072,7 @@ public partial class Emitter
                     assert(opt == INS_OPTS_SCALABLE_B);
                     assert(isPredicateRegister(reg1));
                     assert(isPredicateRegister(reg2));
-                    fmt = sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE ? IF_SVE_CZ_4A_K : IF_SVE_CZ_4A;
+                    fmt = sopt == INS_SCALABLE_OPTS_PREDICATE_MERGE ? IF_ARM64_SVE_CZ_4A_K : IF_ARM64_SVE_CZ_4A;
                     // MOV is an alias for CPY, and is always the preferred disassembly.
                     ins = INS_sve_mov;
                 }
@@ -1094,12 +1093,12 @@ public partial class Emitter
                 {
                     assert(insScalableOptsNone(sopt));
                     assert(isGeneralRegister(reg1));
-                    fmt = IF_SVE_CS_3A;
+                    fmt = IF_ARM64_SVE_CS_3A;
                 }
                 else if (sopt == INS_SCALABLE_OPTS_WITH_SIMD_SCALAR)
                 {
                     assert(isVectorRegister(reg1));
-                    fmt = IF_SVE_CR_3A;
+                    fmt = IF_ARM64_SVE_CR_3A;
                 }
                 break;
             }
@@ -1109,7 +1108,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_CT_3A;
+                fmt = IF_ARM64_SVE_CT_3A;
                 break;
             }
 
@@ -1120,7 +1119,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_CU_3A;
+                fmt = IF_ARM64_SVE_CU_3A;
                 break;
             }
 
@@ -1131,7 +1130,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_CU_3A;
+                fmt = IF_ARM64_SVE_CU_3A;
                 break;
             }
 
@@ -1142,7 +1141,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableWords(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_CU_3A;
+                fmt = IF_ARM64_SVE_CU_3A;
                 break;
             }
 
@@ -1153,7 +1152,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(opt == INS_OPTS_SCALABLE_D);
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_CU_3A;
+                fmt = IF_ARM64_SVE_CU_3A;
                 break;
             }
 
@@ -1166,7 +1165,7 @@ public partial class Emitter
                 // Only the destructive version is supported; remove when the constructive version is added.
                 // https://github.com/dotnet/runtime/issues/103850
                 assert(sopt != INS_SCALABLE_OPTS_WITH_VECTOR_PAIR);
-                fmt = sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR ? IF_SVE_CV_3A : IF_SVE_CV_3B;
+                fmt = sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR ? IF_ARM64_SVE_CV_3A : IF_ARM64_SVE_CV_3B;
                 break;
             }
 
@@ -1181,7 +1180,7 @@ public partial class Emitter
                 {
                     pmerge = true;
                 }
-                fmt = IF_SVE_DB_3A;
+                fmt = IF_ARM64_SVE_DB_3A;
                 break;
             }
 
@@ -1192,7 +1191,7 @@ public partial class Emitter
                 assert(isPredicateRegister(reg1));
                 assert(isPredicateRegister(reg2));
                 assert(isPredicateRegister(reg3));
-                fmt = IF_SVE_DB_3B;
+                fmt = IF_ARM64_SVE_DB_3B;
                 break;
             }
 
@@ -1204,7 +1203,7 @@ public partial class Emitter
                 assert(isPredicateRegister(reg2));
                 assert(isPredicateRegister(reg3));
                 opt = INS_OPTS_SCALABLE_B;
-                fmt = IF_SVE_DC_3A;
+                fmt = IF_ARM64_SVE_DC_3A;
                 break;
             }
 
@@ -1214,8 +1213,8 @@ public partial class Emitter
                 assert(isGeneralRegister(reg1));
                 assert(isPredicateRegister(reg2));
                 assert(isPredicateRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_DK_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_DK_3A;
                 break;
             }
 
@@ -1233,7 +1232,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AA_3A;
+                fmt = IF_ARM64_SVE_AA_3A;
                 break;
             }
 
@@ -1245,7 +1244,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_EQ_3A;
+                fmt = IF_ARM64_SVE_EQ_3A;
                 break;
             }
 
@@ -1260,7 +1259,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AA_3A;
+                fmt = IF_ARM64_SVE_AA_3A;
                 break;
             }
 
@@ -1272,7 +1271,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_ES_3A;
+                fmt = IF_ARM64_SVE_ES_3A;
                 break;
             }
 
@@ -1284,7 +1283,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(opt == INS_OPTS_SCALABLE_S);
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_ES_3A;
+                fmt = IF_ARM64_SVE_ES_3A;
                 break;
             }
 
@@ -1300,12 +1299,12 @@ public partial class Emitter
                 assert(insScalableOptsNone(sopt));
                 if (isVectorRegister(reg2))
                 {
-                    fmt = IF_SVE_AT_3A;
+                    fmt = IF_ARM64_SVE_AT_3A;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
-                    fmt = IF_SVE_AA_3A;
+                    fmt = IF_ARM64_SVE_AA_3A;
                 }
                 break;
             }
@@ -1321,7 +1320,7 @@ public partial class Emitter
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
                 assert(isScalableVectorSize(size));
-                fmt = IF_SVE_AA_3A;
+                fmt = IF_ARM64_SVE_AA_3A;
                 break;
             }
 
@@ -1343,7 +1342,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableStandard(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_AA_3A;
+                fmt = IF_ARM64_SVE_AA_3A;
                 break;
             }
 
@@ -1360,7 +1359,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_GQ_3A;
+                fmt = IF_ARM64_SVE_GQ_3A;
                 break;
             }
 
@@ -1375,7 +1374,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableFloat(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_GR_3A;
+                fmt = IF_ARM64_SVE_GR_3A;
                 break;
             }
 
@@ -1391,7 +1390,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableFloat(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_GS_3A;
+                fmt = IF_ARM64_SVE_GS_3A;
                 break;
             }
 
@@ -1407,7 +1406,7 @@ public partial class Emitter
                 assert(insOptsScalableFloat(opt));
                 assert(isScalableVectorSize(size));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_HE_3A;
+                fmt = IF_ARM64_SVE_HE_3A;
                 break;
             }
 
@@ -1419,7 +1418,7 @@ public partial class Emitter
                 assert(insOptsScalableFloat(opt));
                 assert(isScalableVectorSize(size));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_HJ_3A;
+                fmt = IF_ARM64_SVE_HJ_3A;
                 break;
             }
 
@@ -1431,8 +1430,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_AT_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_AT_3A;
                 break;
             }
 
@@ -1443,16 +1442,16 @@ public partial class Emitter
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 assert(insScalableOptsNone(sopt));
                 if (isVectorRegister(reg2))
                 {
-                    fmt = IF_SVE_AT_3A;
+                    fmt = IF_ARM64_SVE_AT_3A;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
-                    fmt = IF_SVE_HL_3A;
+                    fmt = IF_ARM64_SVE_HL_3A;
                 }
                 break;
             }
@@ -1473,7 +1472,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableAtLeastHalf(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_HL_3A;
+                fmt = IF_ARM64_SVE_HL_3A;
                 break;
             }
 
@@ -1486,7 +1485,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableFloat(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_HL_3A;
+                fmt = IF_ARM64_SVE_HL_3A;
                 break;
             }
 
@@ -1504,12 +1503,12 @@ public partial class Emitter
                 assert(insScalableOptsNone(sopt));
                 if (isVectorRegister(reg2))
                 {
-                    fmt = IF_SVE_HK_3B;
+                    fmt = IF_ARM64_SVE_HK_3B;
                 }
                 else
                 {
                     assert(isLowPredicateRegister(reg2));
-                    fmt = IF_SVE_HL_3B;
+                    fmt = IF_ARM64_SVE_HL_3B;
                 }
                 break;
             }
@@ -1525,7 +1524,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_AV_3A;
+                fmt = IF_ARM64_SVE_AV_3A;
                 break;
             }
 
@@ -1542,7 +1541,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableFloat(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_HQ_3A;
+                fmt = IF_ARM64_SVE_HQ_3A;
                 break;
             }
 
@@ -1551,7 +1550,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HO_3A;
+                fmt = IF_ARM64_SVE_HO_3A;
                 break;
             }
 
@@ -1560,7 +1559,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HO_3B;
+                fmt = IF_ARM64_SVE_HO_3B;
                 break;
             }
 
@@ -1569,7 +1568,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HO_3C;
+                fmt = IF_ARM64_SVE_HO_3C;
                 break;
             }
 
@@ -1581,7 +1580,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HP_3B;
+                fmt = IF_ARM64_SVE_HP_3B;
                 break;
             }
 
@@ -1593,7 +1592,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_HS_3A;
+                fmt = IF_ARM64_SVE_HS_3A;
                 break;
             }
 
@@ -1605,7 +1604,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(insOptsScalableFloat(opt));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_HR_3A;
+                fmt = IF_ARM64_SVE_HR_3A;
                 break;
             }
 
@@ -1620,19 +1619,19 @@ public partial class Emitter
             {
                 assert(isGeneralRegister(reg2));
                 assert(isGeneralRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 assert(insOptsScalableStandard(opt));
                 if (insScalableOptsNone(sopt))
                 {
                     assert(isPredicateRegister(reg1));
                     assert(isValidGeneralDatasize(size));
-                    fmt = IF_SVE_DT_3A;
+                    fmt = IF_ARM64_SVE_DT_3A;
                 }
                 else if (insScalableOptsWithPredicatePair(sopt))
                 {
                     assert(isLowPredicateRegister(reg1));
                     assert(size == EA_8BYTE);
-                    fmt = IF_SVE_DX_3A;
+                    fmt = IF_ARM64_SVE_DX_3A;
                 }
                 else
                 {
@@ -1640,7 +1639,7 @@ public partial class Emitter
                     assert(isHighPredicateRegister(reg1));
                     assert(size == EA_8BYTE);
                     vectorLength4x = sopt == INS_SCALABLE_OPTS_VL_4X;
-                    fmt = IF_SVE_DY_3A;
+                    fmt = IF_ARM64_SVE_DY_3A;
                 }
                 break;
             }
@@ -1653,9 +1652,9 @@ public partial class Emitter
                 assert(isGeneralRegister(reg2));
                 assert(size == EA_8BYTE);
                 assert(isGeneralRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
                 assert(insScalableOptsNone(sopt));
-                fmt = IF_SVE_DU_3A;
+                fmt = IF_ARM64_SVE_DU_3A;
                 break;
             }
 
@@ -1665,7 +1664,7 @@ public partial class Emitter
                 assert(isPredicateRegister(reg1));
                 assert(isPredicateRegister(reg2));
                 assert(isPredicateRegister(reg3));
-                fmt = IF_SVE_CZ_4A;
+                fmt = IF_ARM64_SVE_CZ_4A;
                 break;
             }
 
@@ -1678,8 +1677,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_FY_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_FY_3A;
                 break;
             }
 
@@ -1690,7 +1689,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_EW_3A;
+                fmt = IF_ARM64_SVE_EW_3A;
                 break;
             }
 
@@ -1701,7 +1700,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                fmt = IF_SVE_EW_3B;
+                fmt = IF_ARM64_SVE_EW_3B;
                 break;
             }
 
@@ -1718,7 +1717,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isScalableVectorSize(size));
-                fmt = IF_SVE_HI_3A;
+                fmt = IF_ARM64_SVE_HI_3A;
                 break;
             }
 
@@ -1730,7 +1729,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isScalableVectorSize(size));
-                fmt = IF_SVE_HP_3A;
+                fmt = IF_ARM64_SVE_HP_3A;
                 break;
             }
 
@@ -1757,7 +1756,7 @@ public partial class Emitter
             case INS_sve_ld1rqw:
             case INS_sve_ld1rqd:
             {
-                emitIns_R_R_R_I(ins, size, reg1, reg2, reg3, 0, opt);
+                emitIns_R_R_R_IArm64(ins, size, reg1, reg2, reg3, 0, opt);
                 return;
             }
 
@@ -1809,7 +1808,7 @@ public partial class Emitter
             case INS_sve_urshr:
             {
                 // Embedded masked RMW instructions.
-                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg3, true, opt, mopt, reg2);
+                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE_ARM64, reg1, reg3, true, opt, mopt, reg2);
                 emitInsSve_R_R_I(ins, attr, reg1, reg2, imm, opt, sopt);
                 return;
             }
@@ -1844,7 +1843,7 @@ public partial class Emitter
             {
                 assert(insSveMovOptsUnpredicated(mopt));
                 assert(isValidMovprfxReg(mopt, reg1, reg2, reg3));
-                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE, reg1, reg2, true, INS_OPTS_NONE, mopt);
+                emitInsSve_Mov(INS_sve_movprfx, EA_SCALABLE_ARM64, reg1, reg2, true, INS_OPTS_NONE, mopt);
                 emitInsSve_R_R_I(ins, attr, reg1, reg3, imm, opt, sopt);
                 return;
             }
@@ -1861,19 +1860,19 @@ public partial class Emitter
                     case INS_OPTS_SCALABLE_D:
                     {
                         assert(sopt == INS_SCALABLE_OPTS_LSL_N);
-                        fmt = IF_SVE_BH_3A;
+                        fmt = IF_ARM64_SVE_BH_3A;
                         break;
                     }
 
                     case INS_OPTS_SCALABLE_D_SXTW:
                     {
-                        fmt = IF_SVE_BH_3B;
+                        fmt = IF_ARM64_SVE_BH_3B;
                         break;
                     }
 
                     case INS_OPTS_SCALABLE_D_UXTW:
                     {
-                        fmt = IF_SVE_BH_3B_A;
+                        fmt = IF_ARM64_SVE_BH_3B_A;
                         break;
                     }
 
@@ -1899,7 +1898,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidSimm(imm, 5));
-                fmt = IF_SVE_CY_3A;
+                fmt = IF_ARM64_SVE_CY_3A;
                 break;
             }
 
@@ -1914,7 +1913,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidUimm(imm, 7));
-                fmt = IF_SVE_CY_3B;
+                fmt = IF_ARM64_SVE_CY_3B;
                 break;
             }
 
@@ -1928,20 +1927,20 @@ public partial class Emitter
                 if (opt == INS_OPTS_SCALABLE_H)
                 {
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_EG_3A;
+                    fmt = IF_ARM64_SVE_EG_3A;
                 }
                 else if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_EY_3A;
+                    fmt = IF_ARM64_SVE_EY_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 1));
                     opt = INS_OPTS_SCALABLE_H;
-                    fmt = IF_SVE_EY_3B;
+                    fmt = IF_ARM64_SVE_EY_3B;
                 }
                 break;
             }
@@ -1954,9 +1953,9 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                 assert(isValidUimm(imm, 2));
-                fmt = IF_SVE_EZ_3A;
+                fmt = IF_ARM64_SVE_EZ_3A;
                 break;
             }
 
@@ -1972,23 +1971,23 @@ public partial class Emitter
                     case INS_OPTS_SCALABLE_H:
                     {
                         assert(isValidUimm(imm, 3));
-                        assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-                        fmt = IF_SVE_FD_3A;
+                        assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
+                        fmt = IF_ARM64_SVE_FD_3A;
                         break;
                     }
 
                     case INS_OPTS_SCALABLE_S:
                     {
                         assert(isValidUimm(imm, 2));
-                        assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
-                        fmt = IF_SVE_FD_3B;
+                        assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
+                        fmt = IF_ARM64_SVE_FD_3B;
                         break;
                     }
 
                     case INS_OPTS_SCALABLE_D:
                     {
                         assert(isValidUimm(imm, 1));
-                        fmt = IF_SVE_FD_3C;
+                        fmt = IF_ARM64_SVE_FD_3C;
                         break;
                     }
 
@@ -2009,8 +2008,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidRot(emitDecodeRotationImm0_to_270(imm)));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EJ_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EJ_3A;
                 break;
             }
 
@@ -2023,8 +2022,8 @@ public partial class Emitter
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidRot(emitDecodeRotationImm0_to_270(imm)));
-                assert(isValidVectorElemsize(optGetSveElemsize(opt)));
-                fmt = IF_SVE_EK_3A;
+                assert(isValidVectorElemsizeArm64(optGetSveElemsize(opt)));
+                fmt = IF_ARM64_SVE_EK_3A;
                 break;
             }
 
@@ -2039,12 +2038,12 @@ public partial class Emitter
                     assert(isValidSimm(imm, 4));
                     if (opt == INS_OPTS_SCALABLE_Q)
                     {
-                        fmt = IF_SVE_IH_3A_A;
+                        fmt = IF_ARM64_SVE_IH_3A_A;
                     }
                     else
                     {
                         assert(opt == INS_OPTS_SCALABLE_D);
-                        fmt = IF_SVE_IH_3A;
+                        fmt = IF_ARM64_SVE_IH_3A;
                     }
                 }
                 else
@@ -2052,7 +2051,7 @@ public partial class Emitter
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isVectorRegister(reg3));
                     assert(isValidUimm_MultipleOf(imm, 5, 8));
-                    fmt = IF_SVE_IV_3A;
+                    fmt = IF_ARM64_SVE_IV_3A;
                 }
                 break;
             }
@@ -2065,7 +2064,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 5, 8));
-                fmt = IF_SVE_IV_3A;
+                fmt = IF_ARM64_SVE_IV_3A;
                 break;
             }
 
@@ -2078,14 +2077,14 @@ public partial class Emitter
                 if (isGeneralRegister(reg3))
                 {
                     assert(isValidSimm(imm, 4));
-                    fmt = IF_SVE_IH_3A_F;
+                    fmt = IF_ARM64_SVE_IH_3A_F;
                 }
                 else
                 {
                     assert(insOptsScalableWords(opt));
                     assert(isVectorRegister(reg3));
                     assert(isValidUimm_MultipleOf(imm, 5, 4));
-                    fmt = IF_SVE_HX_3A_E;
+                    fmt = IF_ARM64_SVE_HX_3A_E;
                 }
                 break;
             }
@@ -2099,13 +2098,13 @@ public partial class Emitter
                 if (isGeneralRegister(reg3))
                 {
                     assert(isValidSimm(imm, 4));
-                    fmt = IF_SVE_IJ_3A;
+                    fmt = IF_ARM64_SVE_IJ_3A;
                 }
                 else
                 {
                     assert(isVectorRegister(reg3));
                     assert(isValidUimm_MultipleOf(imm, 5, 4));
-                    fmt = IF_SVE_IV_3A;
+                    fmt = IF_ARM64_SVE_IV_3A;
                 }
                 break;
             }
@@ -2118,7 +2117,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 5, 4));
-                fmt = IF_SVE_IV_3A;
+                fmt = IF_ARM64_SVE_IV_3A;
                 break;
             }
 
@@ -2132,14 +2131,14 @@ public partial class Emitter
                 {
                     assert(isGeneralRegister(reg3));
                     assert(isValidSimm(imm, 4));
-                    fmt = IF_SVE_IJ_3A_D;
+                    fmt = IF_ARM64_SVE_IJ_3A_D;
                 }
                 else
                 {
                     assert(insOptsScalableWords(opt));
                     assert(isVectorRegister(reg3));
                     assert(isValidUimm(imm, 5));
-                    fmt = IF_SVE_HX_3A_B;
+                    fmt = IF_ARM64_SVE_HX_3A_B;
                 }
                 break;
             }
@@ -2153,14 +2152,14 @@ public partial class Emitter
                 if (isGeneralRegister(reg3))
                 {
                     assert(isValidSimm(imm, 4));
-                    fmt = IF_SVE_IJ_3A_E;
+                    fmt = IF_ARM64_SVE_IJ_3A_E;
                 }
                 else
                 {
                     assert(insOptsScalableWords(opt));
                     assert(isVectorRegister(reg3));
                     assert(isValidUimm(imm, 5));
-                    fmt = IF_SVE_HX_3A_B;
+                    fmt = IF_ARM64_SVE_HX_3A_B;
                 }
                 break;
             }
@@ -2174,7 +2173,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidUimm(imm, 5));
-                fmt = IF_SVE_HX_3A_B;
+                fmt = IF_ARM64_SVE_HX_3A_B;
                 break;
             }
 
@@ -2187,13 +2186,13 @@ public partial class Emitter
                 if (isGeneralRegister(reg3))
                 {
                     assert(isValidSimm(imm, 4));
-                    fmt = IF_SVE_IJ_3A_F;
+                    fmt = IF_ARM64_SVE_IJ_3A_F;
                 }
                 else
                 {
                     assert(isVectorRegister(reg3));
                     assert(isValidUimm_MultipleOf(imm, 5, 2));
-                    fmt = IF_SVE_HX_3A_E;
+                    fmt = IF_ARM64_SVE_HX_3A_E;
                 }
                 break;
             }
@@ -2207,13 +2206,13 @@ public partial class Emitter
                 if (isGeneralRegister(reg3))
                 {
                     assert(isValidSimm(imm, 4));
-                    fmt = IF_SVE_IJ_3A_G;
+                    fmt = IF_ARM64_SVE_IJ_3A_G;
                 }
                 else
                 {
                     assert(isVectorRegister(reg3));
                     assert(isValidUimm_MultipleOf(imm, 5, 2));
-                    fmt = IF_SVE_HX_3A_E;
+                    fmt = IF_ARM64_SVE_HX_3A_E;
                 }
                 break;
             }
@@ -2227,7 +2226,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 5, 2));
-                fmt = IF_SVE_HX_3A_E;
+                fmt = IF_ARM64_SVE_HX_3A_E;
                 break;
             }
 
@@ -2239,7 +2238,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isVectorRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 5, 4));
-                fmt = IF_SVE_HX_3A_E;
+                fmt = IF_ARM64_SVE_HX_3A_E;
                 break;
             }
 
@@ -2252,7 +2251,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidSimm(imm, 4));
-                fmt = IF_SVE_IL_3A;
+                fmt = IF_ARM64_SVE_IL_3A;
                 break;
             }
 
@@ -2265,7 +2264,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidSimm(imm, 4));
-                fmt = IF_SVE_IL_3A_A;
+                fmt = IF_ARM64_SVE_IL_3A_A;
                 break;
             }
 
@@ -2278,7 +2277,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidSimm(imm, 4));
-                fmt = IF_SVE_IL_3A_B;
+                fmt = IF_ARM64_SVE_IL_3A_B;
                 break;
             }
 
@@ -2290,7 +2289,7 @@ public partial class Emitter
                 assert(isPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidSimm(imm, 4));
-                fmt = IF_SVE_IL_3A_C;
+                fmt = IF_ARM64_SVE_IL_3A_C;
                 break;
             }
 
@@ -2339,7 +2338,7 @@ public partial class Emitter
                     }
                 }
 #endif
-                fmt = IF_SVE_IM_3A;
+                fmt = IF_ARM64_SVE_IM_3A;
                 break;
             }
 
@@ -2421,7 +2420,7 @@ public partial class Emitter
                     }
                 }
 #endif
-                fmt = IF_SVE_IO_3A;
+                fmt = IF_ARM64_SVE_IO_3A;
                 break;
             }
 
@@ -2462,7 +2461,7 @@ public partial class Emitter
                     }
                 }
 #endif
-                fmt = IF_SVE_IQ_3A;
+                fmt = IF_ARM64_SVE_IQ_3A;
                 break;
             }
 
@@ -2561,7 +2560,7 @@ public partial class Emitter
                     }
                 }
 #endif
-                fmt = IF_SVE_IS_3A;
+                fmt = IF_ARM64_SVE_IS_3A;
                 break;
             }
 
@@ -2602,7 +2601,7 @@ public partial class Emitter
                     }
                 }
 #endif
-                fmt = IF_SVE_JE_3A;
+                fmt = IF_ARM64_SVE_JE_3A;
                 break;
             }
 
@@ -2651,7 +2650,7 @@ public partial class Emitter
                     }
                 }
 #endif
-                fmt = IF_SVE_JM_3A;
+                fmt = IF_ARM64_SVE_JM_3A;
                 break;
             }
 
@@ -2666,13 +2665,13 @@ public partial class Emitter
                     assert(isValidSimm(imm, 4));
                     if ((opt == INS_OPTS_SCALABLE_Q) && (ins == INS_sve_st1d))
                     {
-                        fmt = IF_SVE_JN_3C_D;
+                        fmt = IF_ARM64_SVE_JN_3C_D;
                     }
                     else
                     {
                         if ((ins == INS_sve_st1w) && insOptsScalableWords(opt))
                         {
-                            fmt = IF_SVE_JN_3B;
+                            fmt = IF_ARM64_SVE_JN_3B;
                         }
                         else
                         {
@@ -2686,7 +2685,7 @@ public partial class Emitter
                                 assert(opt == INS_OPTS_SCALABLE_D);
                             }
 #endif
-                            fmt = IF_SVE_JN_3C;
+                            fmt = IF_ARM64_SVE_JN_3C;
                         }
                     }
                 }
@@ -2696,13 +2695,13 @@ public partial class Emitter
                     if ((ins == INS_sve_st1w) && insOptsScalableWords(opt))
                     {
                         assert(isValidUimm_MultipleOf(imm, 5, 4));
-                        fmt = IF_SVE_JI_3A_A;
+                        fmt = IF_ARM64_SVE_JI_3A_A;
                     }
                     else
                     {
                         assert(ins == INS_sve_st1d);
                         assert(isValidUimm_MultipleOf(imm, 5, 8));
-                        fmt = IF_SVE_JL_3A;
+                        fmt = IF_ARM64_SVE_JL_3A;
                     }
                 }
                 break;
@@ -2803,7 +2802,7 @@ public partial class Emitter
                     }
                 }
 #endif
-                fmt = IF_SVE_JO_3A;
+                fmt = IF_ARM64_SVE_JO_3A;
                 break;
             }
 
@@ -2818,7 +2817,7 @@ public partial class Emitter
                     assert(isValidSimm(imm, 4));
                     // st1h is reserved for scalable B.
                     assert(ins == INS_sve_st1h ? insOptsScalableAtLeastHalf(opt) : insOptsScalableStandard(opt));
-                    fmt = IF_SVE_JN_3A;
+                    fmt = IF_ARM64_SVE_JN_3A;
                 }
                 else
                 {
@@ -2846,7 +2845,7 @@ public partial class Emitter
                         }
                     }
 #endif
-                    fmt = IF_SVE_JI_3A_A;
+                    fmt = IF_ARM64_SVE_JI_3A_A;
                 }
                 break;
             }
@@ -2860,15 +2859,15 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_GU_3A;
+                    fmt = IF_ARM64_SVE_GU_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 1));
-                    fmt = IF_SVE_GU_3B;
+                    fmt = IF_ARM64_SVE_GU_3B;
                 }
                 break;
             }
@@ -2881,9 +2880,9 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                 assert(isValidUimm(imm, 3));
-                fmt = IF_SVE_GU_3C;
+                fmt = IF_ARM64_SVE_GU_3C;
                 break;
             }
 
@@ -2895,15 +2894,15 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_GX_3A;
+                    fmt = IF_ARM64_SVE_GX_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 1));
-                    fmt = IF_SVE_GX_3B;
+                    fmt = IF_ARM64_SVE_GX_3B;
                 }
                 break;
             }
@@ -2915,9 +2914,9 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                 assert(isValidUimm(imm, 3));
-                fmt = IF_SVE_GX_3C;
+                fmt = IF_ARM64_SVE_GX_3C;
                 break;
             }
 
@@ -2927,18 +2926,18 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                 assert(isValidUimm(imm, 2));
                 if (opt == INS_OPTS_SCALABLE_B)
                 {
                     unreached(); // TODO-SVE: Not yet supported.
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_GY_3B_D;
+                    fmt = IF_ARM64_SVE_GY_3B_D;
                 }
                 else if (opt == INS_OPTS_SCALABLE_H)
                 {
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_GY_3B;
+                    fmt = IF_ARM64_SVE_GY_3B;
                 }
                 else
                 {
@@ -2947,7 +2946,7 @@ public partial class Emitter
                     assert(isValidUimm(imm, 3));
                     // Simplify emitDispInsHelp logic by setting insOpt.
                     opt = INS_OPTS_SCALABLE_B;
-                    fmt = IF_SVE_GY_3A;
+                    fmt = IF_ARM64_SVE_GY_3A;
                 }
                 break;
             }
@@ -2959,9 +2958,9 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                 assert(isValidUimm(imm, 2));
-                fmt = IF_SVE_GY_3B;
+                fmt = IF_ARM64_SVE_GY_3B;
                 break;
             }
 
@@ -2974,21 +2973,21 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_H)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_FF_3A;
+                    fmt = IF_ARM64_SVE_FF_3A;
                 }
                 else if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_FF_3B;
+                    fmt = IF_ARM64_SVE_FF_3B;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 1));
-                    fmt = IF_SVE_FF_3C;
+                    fmt = IF_ARM64_SVE_FF_3C;
                 }
                 break;
             }
@@ -3004,15 +3003,15 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_FE_3A;
+                    fmt = IF_ARM64_SVE_FE_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_FE_3B;
+                    fmt = IF_ARM64_SVE_FE_3B;
                 }
                 break;
             }
@@ -3032,15 +3031,15 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_FG_3A;
+                    fmt = IF_ARM64_SVE_FG_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_FG_3B;
+                    fmt = IF_ARM64_SVE_FG_3B;
                 }
                 break;
             }
@@ -3054,15 +3053,15 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_FH_3A;
+                    fmt = IF_ARM64_SVE_FH_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_FH_3B;
+                    fmt = IF_ARM64_SVE_FH_3B;
                 }
                 break;
             }
@@ -3076,21 +3075,21 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_H)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_FI_3A;
+                    fmt = IF_ARM64_SVE_FI_3A;
                 }
                 else if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_FI_3B;
+                    fmt = IF_ARM64_SVE_FI_3B;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 1));
-                    fmt = IF_SVE_FI_3C;
+                    fmt = IF_ARM64_SVE_FI_3C;
                 }
                 break;
             }
@@ -3106,15 +3105,15 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_FJ_3A;
+                    fmt = IF_ARM64_SVE_FJ_3A;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_FJ_3B;
+                    fmt = IF_ARM64_SVE_FJ_3B;
                 }
                 break;
             }
@@ -3128,21 +3127,21 @@ public partial class Emitter
                 assert(isLowVectorRegister(reg3));
                 if (opt == INS_OPTS_SCALABLE_H)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_FK_3A;
+                    fmt = IF_ARM64_SVE_FK_3A;
                 }
                 else if (opt == INS_OPTS_SCALABLE_S)
                 {
-                    assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                    assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_FK_3B;
+                    fmt = IF_ARM64_SVE_FK_3B;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_D);
                     assert(isValidUimm(imm, 1));
-                    fmt = IF_SVE_FK_3C;
+                    fmt = IF_ARM64_SVE_FK_3C;
                 }
                 break;
             }
@@ -3156,7 +3155,7 @@ public partial class Emitter
                 assert(isVectorRegister(reg3));
                 assert(isScalableVectorSize(size));
                 assert(emitIsValidEncodedRotationImm90_or_270(imm));
-                fmt = IF_SVE_GP_3A;
+                fmt = IF_ARM64_SVE_GP_3A;
                 break;
             }
 
@@ -3168,7 +3167,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 6, 8));
-                fmt = IF_SVE_IC_3A;
+                fmt = IF_ARM64_SVE_IC_3A;
                 break;
             }
 
@@ -3180,7 +3179,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 6, 4));
-                fmt = IF_SVE_IC_3A;
+                fmt = IF_ARM64_SVE_IC_3A;
                 break;
             }
 
@@ -3192,7 +3191,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 6, 2));
-                fmt = IF_SVE_IC_3A_A;
+                fmt = IF_ARM64_SVE_IC_3A_A;
                 break;
             }
 
@@ -3204,7 +3203,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 6, 4));
-                fmt = IF_SVE_IC_3A_A;
+                fmt = IF_ARM64_SVE_IC_3A_A;
                 break;
             }
 
@@ -3216,7 +3215,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidUimm_MultipleOf(imm, 6, 2));
-                fmt = IF_SVE_IC_3A_B;
+                fmt = IF_ARM64_SVE_IC_3A_B;
                 break;
             }
 
@@ -3228,7 +3227,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidUimm(imm, 6));
-                fmt = IF_SVE_IC_3A_B;
+                fmt = IF_ARM64_SVE_IC_3A_B;
                 break;
             }
 
@@ -3240,7 +3239,7 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidUimm(imm, 6));
-                fmt = IF_SVE_IC_3A_C;
+                fmt = IF_ARM64_SVE_IC_3A_C;
                 break;
             }
 
@@ -3258,9 +3257,9 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isVectorRegister(reg3));
-                assert((REG_V0 <= reg3) && (reg3 <= REG_V7));
+                assert((REG_ARM64_V0 <= reg3) && (reg3 <= REG_ARM64_V7));
                 assert(isValidUimm(imm, 3));
-                fmt = IF_SVE_GZ_3A;
+                fmt = IF_ARM64_SVE_GZ_3A;
                 break;
             }
 
@@ -3273,13 +3272,13 @@ public partial class Emitter
                 if (opt == INS_OPTS_SCALABLE_H)
                 {
                     assert(isValidUimm(imm, 3));
-                    fmt = IF_SVE_GG_3B;
+                    fmt = IF_ARM64_SVE_GG_3B;
                 }
                 else
                 {
                     assert(opt == INS_OPTS_SCALABLE_B);
                     assert(isValidUimm(imm, 2));
-                    fmt = IF_SVE_GG_3A;
+                    fmt = IF_ARM64_SVE_GG_3A;
                 }
                 unreached();
                 break;
@@ -3295,12 +3294,12 @@ public partial class Emitter
                     assert(isValidUimm(imm, 2));
                     if (sopt == INS_SCALABLE_OPTS_WITH_VECTOR_PAIR)
                     {
-                        fmt = IF_SVE_GH_3B;
+                        fmt = IF_ARM64_SVE_GH_3B;
                     }
                     else
                     {
                         assert(insScalableOptsNone(sopt));
-                        fmt = IF_SVE_GH_3B_B;
+                        fmt = IF_ARM64_SVE_GH_3B_B;
                     }
                 }
                 else
@@ -3308,7 +3307,7 @@ public partial class Emitter
                     assert(opt == INS_OPTS_SCALABLE_B);
                     assert(insScalableOptsNone(sopt));
                     assert(isValidUimm(imm, 1));
-                    fmt = IF_SVE_GH_3A;
+                    fmt = IF_ARM64_SVE_GH_3A;
                 }
                 unreached();
                 break;
@@ -3334,4 +3333,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

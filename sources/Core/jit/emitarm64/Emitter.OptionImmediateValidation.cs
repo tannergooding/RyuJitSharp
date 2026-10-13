@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -184,10 +183,10 @@ public partial class Emitter
         }
     }
 
-    internal static bool isValidVectorIndex(emitAttr datasize, emitAttr elemsize, nint index)
+    private static bool isValidVectorIndexArm64(emitAttr datasize, emitAttr elemsize, nint index)
     {
-        assert(isValidVectorDatasize(datasize));
-        assert(isValidVectorElemsize(elemsize));
+        assert(isValidVectorDatasizeArm64(datasize));
+        assert(isValidVectorElemsizeArm64(elemsize));
 
         var result = false;
         if (index >= 0)
@@ -274,7 +273,7 @@ public partial class Emitter
         if (InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
             (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length)
         {
-            return (CodeGen.instInfo[nativeOrdinal] & vectorRightShiftFlag) != 0;
+            return (((byte)CodeGen.instInfo[nativeOrdinal] & vectorRightShiftFlag) != 0);
         }
         else
         {
@@ -282,4 +281,3 @@ public partial class Emitter
         }
     }
 }
-#endif

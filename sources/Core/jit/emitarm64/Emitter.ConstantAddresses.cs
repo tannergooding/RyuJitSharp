@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -24,7 +23,7 @@ public partial class Emitter
         {
             case INS_adr:
             {
-                fmt = IF_LARGEADR;
+                fmt = IF_ARM64_LARGEADR;
                 assert(isGeneralRegister(reg));
                 assert(isValidGeneralDatasize(size));
                 break;
@@ -32,11 +31,11 @@ public partial class Emitter
 
             case INS_ldr:
             {
-                fmt = IF_LARGELDC;
+                fmt = IF_ARM64_LARGELDC;
                 if (isVectorRegister(reg))
                 {
                     assert(isValidVectorLSDatasize(size));
-                    assert(isGeneralRegister(reg) || (addrReg != REG_NA));
+                    assert(isGeneralRegister(reg) || (addrReg != REG_ARM64_NA));
                 }
                 else
                 {
@@ -63,7 +62,7 @@ public partial class Emitter
         id.idAddr().iiaFieldHnd = fldHnd;
         id.idSetIsBound();
         id.idReg1(reg);
-        if (addrReg != REG_NA)
+        if (addrReg != REG_ARM64_NA)
         {
             id.idReg2(addrReg);
         }
@@ -98,4 +97,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif
