@@ -11,12 +11,15 @@ public partial class Emitter
 {
     public void emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd storeInd, GenTree src)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Read-modify-write instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Read-modify-write instruction recording requires xarch.");
+        }
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         var addr = storeInd.Addr;
         if (addr.Oper is GT_RELOAD or GT_COPY)
         {
@@ -56,7 +59,7 @@ public partial class Emitter
             else
             {
                 id = emitNewInstrAmdCns(attr, offset, iconVal);
-                emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD_CNS), ins);
+                emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_XARCH_ARD_CNS), ins);
                 id.idIns(ins);
                 sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
             }
@@ -73,7 +76,7 @@ public partial class Emitter
             }
 
             id = emitNewInstrAmd(attr, offset);
-            emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
+            emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_XARCH_ARD_RRD), ins);
             id.idReg1(src.RegNum);
             id.idIns(ins);
             sz = emitInsSizeAM(id, insCodeMR(ins));
@@ -82,17 +85,19 @@ public partial class Emitter
         id.idCodeSize(sz);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd storeInd)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Unary read-modify-write instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Unary read-modify-write instruction recording requires xarch.");
+        }
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         var addr = storeInd.Addr;
         if (addr.Oper is GT_RELOAD or GT_COPY)
         {
@@ -110,40 +115,53 @@ public partial class Emitter
         }
 
         var id = emitNewInstrAmd(attr, offset);
-        emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD), ins);
+        emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_XARCH_ARD), ins);
         id.idIns(ins);
         var sz = emitInsSizeAM(id, insCodeMR(ins));
         id.idCodeSize(sz);
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_R_ARR(instruction ins, emitAttr attr, regNumber reg, regNumber @base, regNumber index, int disp)
     {
-#if TARGET_ARM
-        recordArm32InsRARR(ins, attr, reg, @base, index, disp);
-#elif TARGET_ARM64
-        NYI("emitIns_R_ARR");
-#else
+        if (Configuration.TARGET_ARM)
+        {
+            recordArm32InsRARR(ins, attr, reg, @base, index, disp);
+            return;
+        }
+        if (Configuration.TARGET_ARM64)
+        {
+            NYI("emitIns_R_ARR");
+            return;
+        }
+
         emitIns_R_ARX(ins, attr, reg, @base, index, 1, disp);
-#endif
     }
 
     public void emitIns_R_ARX(instruction ins, emitAttr attr, regNumber reg, regNumber @base,
         regNumber index, uint scale, int disp)
     {
-#if TARGET_ARM
-        recordArm32InsRARX(ins, attr, reg, @base, index, scale, disp);
-#elif TARGET_ARM64
-        NYI("emitIns_R_ARR");
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            recordArm32InsRARX(ins, attr, reg, @base, index, scale, disp);
+            return;
+        }
+        if (Configuration.TARGET_ARM64)
+        {
+            NYI("emitIns_R_ARR");
+            return;
+        }
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Indexed-address instruction recording requires xarch.");
+        }
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(!CodeGen.instIsFP(ins) && (EA_SIZE(attr) <= EA_64BYTE) && (reg != REG_NA));
         noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg));
 
@@ -153,7 +171,7 @@ public partial class Emitter
         }
 
         var id = emitNewInstrAmd(attr, disp);
-        var fmt = emitInsModeFormat(ins, IF_RRD_ARD);
+        var fmt = emitInsModeFormat(ins, IF_XARCH_RRD_ARD);
         id.idIns(ins);
         id.idInsFmt(fmt);
         id.idReg1(reg);
@@ -167,17 +185,19 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg, int ival)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Base register-immediate instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Base register-immediate instruction recording requires xarch.");
+        }
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         if (DoJitUseApxNDD(ins) && (op1Reg != op2Reg))
         {
             if (IsShiftInstruction(ins) && (ival == 1))
@@ -201,15 +221,17 @@ public partial class Emitter
                 emitIns_R_I(ins, attr, op1Reg, ival);
             }
         }
-#endif
     }
 
-#if TARGET_XARCH
     public static bool IsShiftInstruction(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch shift instruction classification is not supported for this target.");
+        }
+
         return ins is INS_rcl_1 or INS_rcr_1 or INS_rol_1 or INS_ror_1 or INS_shl_1 or INS_shr_1 or INS_sar_1
             or INS_rcl or INS_rcr or INS_rol or INS_ror or INS_shl or INS_shr or INS_sar
             or INS_rcl_N or INS_rcr_N or INS_rol_N or INS_ror_N or INS_shl_N or INS_shr_N or INS_sar_N;
     }
-#endif
 }

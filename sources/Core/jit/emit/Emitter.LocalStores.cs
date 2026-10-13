@@ -9,12 +9,16 @@ public partial class Emitter
 {
     public void emitInsStoreLcl(instruction ins, emitAttr attr, GenTreeLclVarCommon tree)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Local store recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Local store recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper is GT_STORE_LCL_VAR);
         assert(tree.RegNum == REG_NA);
         var data = tree.Op1;
@@ -33,6 +37,5 @@ public partial class Emitter
             assert(!data.IsContained);
             emitIns_S_R(ins, attr, data.RegNum, tree.LclNum, 0);
         }
-#endif
     }
 }

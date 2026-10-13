@@ -44,8 +44,12 @@ public partial class Emitter
                     buffer.Append(CultureInfo.InvariantCulture,
                         $"igInLoop->igLoopBackEdge: IG{group.igLoopBackEdge.GetDisplayId():D2}\n");
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
-                    if (group.endsWithAlignInstr())
+#if EMIT_BACKWARDS_NAVIGATION
+                    const bool hasBackwardNavigation = true;
+#else
+                    var hasBackwardNavigation = Configuration.TARGET_XARCH;
+#endif
+                    if (hasBackwardNavigation && group.endsWithAlignInstr())
                     {
                         var lastAlign = group.igLastIns as instrDescAlign
                             ?? throw new FatalJitException("An aligned group requires a final alignment descriptor.");
@@ -55,7 +59,6 @@ public partial class Emitter
                         buffer.Append(CultureInfo.InvariantCulture,
                             $"igInLoop has align instruction for : IG{targetGroup.GetDisplayId():D2}\n");
                     }
-#endif
 
                     buffer.Append("Loop:\n");
                     var current = loopHeader;

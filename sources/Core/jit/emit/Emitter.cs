@@ -26,12 +26,39 @@ public partial class Emitter
 
     internal static bool IsCodeAligned(int offset)
     {
-        return (offset & (CODE_ALIGN - 1)) == 0;
+        return (offset & (TargetRuntimeMetadata.CodeAlignment - 1)) == 0;
     }
 
     internal static bool IsCodeAligned(uint offset)
     {
-        return (offset & unchecked((uint)(CODE_ALIGN - 1))) == 0;
+        return (offset & unchecked((uint)(TargetRuntimeMetadata.CodeAlignment - 1))) == 0;
+    }
+
+    private static void RequireArm64Target()
+    {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 emitter operations are not supported for this target.");
+        }
+    }
+
+    private static void RequireArm32Target()
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 emitter operations are not supported for this target.");
+        }
+    }
+
+    private static void RequireRiscV64Target()
+    {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "RISC-V64 emitter operations are not supported for this target.");
+        }
     }
 
     public static bool isValidSimm12(nint value)
@@ -55,12 +82,10 @@ public partial class Emitter
 
     protected NATIVE_OFFSET emitEpilogSize;
 
-#if TARGET_XARCH
     protected emitLocation emitExitSeqBegLoc;
 
     /// <summary>minimum size of any return sequence - the 'ret' after the epilog</summary>
     protected NATIVE_OFFSET emitExitSeqSize;
-#endif
 
     /// <summary>per method placeholder list - head</summary>
     protected insGroup? emitPlaceholderList;
@@ -68,13 +93,11 @@ public partial class Emitter
     /// <summary>per method placeholder list - tail</summary>
     protected insGroup? emitPlaceholderLast;
 
-#if JIT32_GCENCODER
     /// <summary>per method epilog list - head</summary>
     protected EpilogList? emitEpilogList;
 
     /// <summary>per method epilog list - tail</summary>
     protected EpilogList? emitEpilogLast;
-#endif
 
 #if DEBUG
     /// <summary>If we have started issuing instructions from the list of instrDesc, this is set</summary>
@@ -100,9 +123,7 @@ public partial class Emitter
 
     public NATIVE_OFFSET emitTotalColdCodeSize;
 
-#if TARGET_LOONGARCH64
     public int emitCounts_INS_OPTS_J;
-#endif
 
     public bool emitHasFramePtr;
 
@@ -113,17 +134,12 @@ public partial class Emitter
 
     public insGroup? emitCurIG;
 
-#if TARGET_AMD64
     private regMask srbmFltCalleeTrash;
 
     private regMask srbmAllInt;
 
     private regMask srbmIntCalleeTrash;
-#endif
-
-#if TARGET_XARCH
     private regMask srbmMskCalleeTrash;
-#endif
 
     private nuint emitIGbuffSize;
 
@@ -266,15 +282,11 @@ public partial class Emitter
 
     private insGroup? emitLastInsIG;
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
     private int emitLastInsFullSize;
-#endif
 
     private bool emitLastSavedIGWasNoGC;
 
-#if TARGET_ARMARCH
     private instrDesc? emitLastMemBarrier;
-#endif
 
     private int emitTrkVarCnt;
 
@@ -320,13 +332,11 @@ public partial class Emitter
     /// <summary>fully interruptible code?</summary>
     public bool emitFullyInt;
 
-#if EMIT_TRACK_STACK_DEPTH
     /// <summary>0 in prolog/epilog, One DWORD elsewhere</summary>
     public int emitCntStackDepth;
 
     /// <summary>actual computed max. stack depth</summary>
     public int emitMaxStackDepth;
-#endif
 
     /// <summary>using the "simple" stack table?</summary>
     public bool emitSimpleStkUsed;
@@ -353,11 +363,7 @@ public partial class Emitter
     {
         _compiler = comp;
         emitCmpHandle = cmpHandle;
-#if TARGET_X86
-        _debugInfoSize = TARGET_POINTER_SIZE;
-#else
-        _debugInfoSize = sizeof(nint);
-#endif
+        _debugInfoSize = Configuration.TARGET_POINTER_SIZE;
 
 #if !DEBUG
         if (!comp.opts.disAsm)
@@ -366,15 +372,17 @@ public partial class Emitter
         }
 #endif
 
-#if TARGET_AMD64
-        srbmFltCalleeTrash = _compiler.srbmFltCalleeTrash;
-        srbmIntCalleeTrash = _compiler.srbmIntCalleeTrash;
-        srbmAllInt = _compiler.srbmAllInt;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            srbmFltCalleeTrash = _compiler.srbmFltCalleeTrash;
+            srbmIntCalleeTrash = _compiler.srbmIntCalleeTrash;
+            srbmAllInt = _compiler.srbmAllInt;
+        }
 
-#if TARGET_XARCH
-        srbmMskCalleeTrash = _compiler.srbmMskCalleeTrash;
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            srbmMskCalleeTrash = _compiler.srbmMskCalleeTrash;
+        }
     }
 
     public void emitEndCG()

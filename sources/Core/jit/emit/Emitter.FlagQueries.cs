@@ -9,9 +9,12 @@ public partial class Emitter
 {
     public bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Redundant comparison queries outside xarch are not implemented.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Redundant comparison queries outside xarch are not implemented.");
+        }
+
         if (!genIsValidIntReg(reg1))
         {
             return false;
@@ -33,7 +36,7 @@ public partial class Emitter
             var ins = id.idIns();
             if (ins == INS_cmp)
             {
-                if (id.idInsFmt() != insFormat.IF_RRD_RRD)
+                if (id.idInsFmt() != insFormat.IF_XARCH_RRD_RRD)
                 {
                     return emitPeepholeResult.PEEPHOLE_ABORT;
                 }
@@ -60,14 +63,16 @@ public partial class Emitter
         });
 
         return result;
-#endif
     }
 
     public bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Zero-comparison flag queries outside xarch are not implemented.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Zero-comparison flag queries outside xarch are not implemented.");
+        }
+
         assert(reg != REG_NA);
         assert(_compiler is not null);
         if (!_compiler.opts.OptimizationEnabled)
@@ -112,14 +117,16 @@ public partial class Emitter
         }
 
         return false;
-#endif
     }
 
     public bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Sign-jump flag queries outside xarch are not implemented.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Sign-jump flag queries outside xarch are not implemented.");
+        }
+
         assert(reg != REG_NA);
         assert(_compiler is not null);
         if (!_compiler.opts.OptimizationEnabled)
@@ -153,14 +160,13 @@ public partial class Emitter
                 return id.idOpSize() == opSize;
             }
         }
-
         return false;
-#endif
+        return false;
     }
 
-#if TARGET_XARCH
     public static bool DoesWriteParityFlag(instruction ins)
     {
+        EnsureXarchFlagMetadata();
         var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
         return (flags & Writes_PF) != 0;
@@ -168,6 +174,7 @@ public partial class Emitter
 
     public static bool DoesWriteSignFlag(instruction ins)
     {
+        EnsureXarchFlagMetadata();
         var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
         return (flags & Writes_SF) != 0;
@@ -175,6 +182,7 @@ public partial class Emitter
 
     public static bool DoesResetOverflowAndCarryFlags(instruction ins)
     {
+        EnsureXarchFlagMetadata();
         var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
 
         return (flags & (Resets_OF | Resets_CF)) == (Resets_OF | Resets_CF);
@@ -182,9 +190,11 @@ public partial class Emitter
 
     public static bool IsFlagsAlwaysModified(instrDesc id)
     {
+        EnsureXarchFlagMetadata();
+
         var ins = id.idIns();
         var fmt = id.idInsFmt();
-        if (fmt == insFormat.IF_RRW_SHF)
+        if (fmt == insFormat.IF_XARCH_RRW_SHF)
         {
             if (id.idIsLargeCns())
             {
@@ -197,7 +207,7 @@ public partial class Emitter
                     INS_shl_N or INS_shr_N or INS_sar_N);
             }
         }
-        else if (fmt == insFormat.IF_RRW)
+        else if (fmt == insFormat.IF_XARCH_RRW)
         {
             // A register count may be zero, so flags cannot be reused conservatively.
             return ins is not (INS_rcl or INS_rcr or INS_rol or INS_ror or
@@ -207,16 +217,23 @@ public partial class Emitter
         return true;
     }
 
-#endif
-
-#if TARGET_XARCH
     public static bool emitDoesInsModifyFlags(instruction ins)
     {
+        EnsureXarchFlagMetadata();
+
         return (CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] &
             (Resets_OF | Resets_SF | Resets_AF | Resets_PF | Resets_CF |
              Undefined_OF | Undefined_SF | Undefined_AF | Undefined_PF | Undefined_CF | Undefined_ZF |
              Writes_OF | Writes_SF | Writes_AF | Writes_PF | Writes_CF | Writes_ZF |
              Restore_SF_ZF_AF_PF_CF)) != 0;
     }
-#endif
+
+    private static void EnsureXarchFlagMetadata()
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Xarch instruction-flag metadata is not available for this target.");
+        }
+    }
 }

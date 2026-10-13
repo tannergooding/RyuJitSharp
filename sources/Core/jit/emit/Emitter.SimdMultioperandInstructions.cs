@@ -3,68 +3,68 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    private void EnsureSimdMultioperandRecordingSupported()
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
+        }
+
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "SIMD multioperand recording requires hardware intrinsics.");
+        }
+
+        RequireSupportedInstructionRecording();
+    }
+
     public void emitIns_SIMD_R_R_R_A(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, GenTreeIndir indir, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         assert(Is3OpRmwInstruction(ins));
         assert(UseSimdEncoding());
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
         _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
         emitIns_R_R_A(ins, attr, targetReg, op2Reg, indir, instOptions);
-#endif
     }
 
     public unsafe void emitIns_SIMD_R_R_R_C(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         assert(Is3OpRmwInstruction(ins));
         assert(UseSimdEncoding());
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
         _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
         emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs, instOptions);
-#endif
     }
 
     public void emitIns_SIMD_R_R_R_S(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, int varx, int offs, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         assert(Is3OpRmwInstruction(ins));
         assert(UseSimdEncoding());
         assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
         _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
         emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs, instOptions);
-#endif
     }
 
     public void emitIns_SIMD_R_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         if (Is3OpRmwInstruction(ins))
         {
             assert(UseSimdEncoding());
@@ -126,16 +126,12 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_R(ins, attr, targetReg, op2Reg);
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_A_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, GenTreeIndir indir, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         if (UseSimdEncoding())
         {
             assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
@@ -178,16 +174,12 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_A(ins, attr, targetReg, indir);
         }
-#endif
     }
 
     public unsafe void emitIns_SIMD_R_R_C_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         if (UseSimdEncoding())
         {
             assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
@@ -230,16 +222,12 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_C(ins, attr, targetReg, fldHnd, offs);
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_S_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, int varx, int offs, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         if (UseSimdEncoding())
         {
             assert(isSse41Blendv(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
@@ -282,59 +270,41 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_S(ins, attr, targetReg, varx, offs);
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_R_A_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, GenTreeIndir indir, int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         assert(UseSimdEncoding());
         _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
-        emitIns_R_R_A_I(ins, attr, targetReg, op2Reg, indir, ival, IF_RWR_RRD_ARD_CNS, instOptions);
-#endif
+        emitIns_R_R_A_I(ins, attr, targetReg, op2Reg, indir, ival, IF_XARCH_RWR_RRD_ARD_CNS, instOptions);
     }
 
     public unsafe void emitIns_SIMD_R_R_R_C_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         assert(UseSimdEncoding());
         _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
         emitIns_R_R_C_I(ins, attr, targetReg, op2Reg, fldHnd, offs, ival, instOptions);
-#endif
     }
 
     public void emitIns_SIMD_R_R_R_S_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, int varx, int offs, int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         assert(UseSimdEncoding());
         _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
         emitIns_R_R_S_I(ins, attr, targetReg, op2Reg, varx, offs, ival, instOptions);
-#endif
     }
 
     public void emitIns_SIMD_R_R_R_R_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, regNumber op3Reg, int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD multioperand recording requires xarch.");
-#else
-        RequireSupportedInstructionRecording();
+        EnsureSimdMultioperandRecordingSupported();
         assert(UseSimdEncoding());
         _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
         emitIns_R_R_R_I(ins, attr, targetReg, op2Reg, op3Reg, ival, instOptions);
-#endif
     }
 }
-#endif

@@ -7,31 +7,57 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_ARM64 && !TARGET_WASM
     public void emitIns_I(instruction ins, emitAttr attr, nint val)
     {
-#if !TARGET_XARCH
-#if TARGET_ARM
-        recordArm32InsI(ins, attr, val);
-#elif TARGET_LOONGARCH64
-        emitInsILoongArch64(ins, attr, val);
-#elif TARGET_RISCV64
-        recordRiscVInsI(ins, attr, val);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Immediate-only instruction recording requires xarch.");
-#endif
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
-#if TARGET_X86
-        var valInByte = unchecked((sbyte)val) == unchecked((int)val);
-#else
-        var valInByte = unchecked((sbyte)val) == val;
-#endif
-#if TARGET_AMD64
-        noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_IArm64(ins, attr, val);
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            emitIns_IWasm(ins, attr, val);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            recordArm32InsI(ins, attr, val);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsILoongArch64(ins, attr, val);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            recordRiscVInsI(ins, attr, val);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Immediate-only instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
+        var valInByte = Configuration.TARGET_X86
+            ? unchecked((sbyte)val) == unchecked((int)val)
+            : unchecked((sbyte)val) == val;
+
+        if (Configuration.TARGET_AMD64)
+        {
+            noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
+        }
 
         if (EA_IS_CNS_RELOC(attr))
         {
@@ -69,21 +95,25 @@ public partial class Emitter
 
         var id = emitNewInstrSC(attr, val);
         id.idIns(ins);
-        id.idInsFmt(insFormat.IF_CNS);
+        id.idInsFmt(insFormat.IF_XARCH_CNS);
         size += emitGetAdjustedSize(id, insCodeMI(ins));
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#if TARGET_X86
-        emitAdjustStackDepthPushPop(ins);
-#endif
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            emitAdjustStackDepthPushPop(ins);
+        }
     }
-#endif
 
-#if TARGET_X86
     private void emitAdjustStackDepthPushPop(instruction ins)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "X86 stack-depth adjustment is not supported for this target.");
+        }
+
         if (ins == INS_push)
         {
             emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) +
@@ -102,5 +132,4 @@ public partial class Emitter
             assert(unchecked((int)emitCurStackLvl) >= 0);
         }
     }
-#endif
 }

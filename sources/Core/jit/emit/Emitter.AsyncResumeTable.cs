@@ -9,8 +9,9 @@ public partial class Emitter
 {
     public unsafe void emitAsyncResumeTable(uint numEntries, out uint dataSecOffs, out dataSection dataSec)
     {
-        var emittedSize = unchecked((uint)sizeof(CORINFO_AsyncResumeInfo) * numEntries);
-        var secOffs = roundUp(emitConsDsc.dsdOffs, TARGET_POINTER_SIZE);
+        var targetPointerSize = (uint)Configuration.TARGET_POINTER_SIZE;
+        var emittedSize = unchecked(2u * targetPointerSize * numEntries);
+        var secOffs = roundUp(emitConsDsc.dsdOffs, targetPointerSize);
         emitConsDsc.dsdOffs = unchecked(secOffs + emittedSize);
 
         // Locations are captured now; their final code addresses are resolved
@@ -20,7 +21,7 @@ public partial class Emitter
             dsType = dataSection.sectionType.asyncResumeInfo,
             Locations = new emitLocation[numEntries],
             dsSize = emittedSize,
-            dsAlignment = TARGET_POINTER_SIZE,
+            dsAlignment = targetPointerSize,
             dsOffset = secOffs,
             dsDataType = TYP_UNKNOWN,
         };

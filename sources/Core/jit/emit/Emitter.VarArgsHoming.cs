@@ -11,39 +11,35 @@ public partial class Emitter
 {
     public void spillIntArgRegsToShadowSlots()
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Varargs shadow-slot homing requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Varargs shadow-slot homing requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(emitGeneratingPrologOrFuncletProlog());
-#if TARGET_X86
-        // targetx86.cpp defines intArgRegs as ECX, EDX.
-        const int maxRegArg = 2;
-#else
-        const int maxRegArg = MAX_REG_ARG;
-#endif
+        var maxRegArg = Configuration.TARGET_X86 ? 2 : Configuration.MAX_REG_ARG;
         for (var argNum = 0; argNum < maxRegArg; argNum++)
         {
             // Shadow slots begin immediately above the return address, before any prolog pushes.
-            var offset = (argNum + 1) * TARGET_POINTER_SIZE;
+            var offset = (argNum + 1) * Configuration.TARGET_POINTER_SIZE;
             var id = emitNewInstrAmd(EA_PTRSIZE, offset);
             id.idIns(INS_mov);
-            id.idInsFmt(emitInsModeFormat(INS_mov, IF_ARD_RRD));
-            id.idAddr().iiaAddrMode.amBaseReg = REG_SPBASE;
-            id.idAddr().iiaAddrMode.amIndxReg = REG_NA;
+            id.idInsFmt(emitInsModeFormat(INS_mov, IF_XARCH_ARD_RRD));
+            id.idAddr().iiaAddrMode.amBaseReg = TargetRuntimeMetadata.StackPointerBaseRegister;
+            id.idAddr().iiaAddrMode.amIndxReg = TargetRuntimeMetadata.NoRegister;
             id.idAddr().iiaAddrMode.amScale = (uint)emitEncodeScale(1);
             assert(emitGetInsAmdAny(id) == offset);
-#if TARGET_X86
-            id.idReg1(argNum == 0 ? REG_ECX : REG_EDX);
-#else
-            id.idReg1(IntArgRegs[argNum]);
-#endif
+            id.idReg1(Configuration.TARGET_X86
+                ? argNum == 0 ? REG_X86_ECX : REG_X86_EDX
+                : IntArgRegs[argNum]);
             var size = emitInsSizeAM(id, insCodeMR(INS_mov));
             id.idCodeSize(size);
             emitCurIGsize = unchecked(emitCurIGsize + (int)size);
         }
-#endif
     }
 }

@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     public unsafe ulong insEncodeMRreg(instrDesc id, regNumber reg, emitAttr size, ulong code)
     {
         assert((code & 0xC000) == 0);
@@ -20,7 +19,17 @@ public partial class Emitter
 
     public unsafe uint insEncodeReg012(instrDesc id, regNumber reg, emitAttr size, ulong* code)
     {
-        assert(reg < REG_STK);
+        assert(Globals.genIsValidReg(reg));
+        if (!Configuration.TARGET_AMD64)
+        {
+            if (!Configuration.TARGET_X86)
+            {
+                throw new FatalJitException("xarch register encoding is not available for this target.");
+            }
+
+            return RegEncoding(reg);
+        }
+
         var ins = id.idIns();
         assert((code != null) || !IsExtendedReg(reg));
 
@@ -49,7 +58,7 @@ public partial class Emitter
                 // Some callers compute register bits before attaching a prefix.
             }
         }
-        else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_RBX) && (code != null))
+        else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_X64_RBX) && (code != null))
         {
             // A bare REX selects SPL/BPL/SIL/DIL instead of AH/CH/DH/BH.
             *code = (hasRex2Prefix(*code) || hasEvexPrefix(*code)) ? *code : AddRexPrefix(ins, *code);
@@ -63,6 +72,11 @@ public partial class Emitter
 
     public ulong AddRexXPrefix(instrDesc id, ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("REX.X output requires AMD64.");
+        }
+
         // VEX/EVEX store X inverted; REX and REX2 store it directly.
         if (hasEvexPrefix(code))
         {
@@ -83,6 +97,11 @@ public partial class Emitter
 
     public ulong AddRexBPrefix(instrDesc id, ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("REX.B output requires AMD64.");
+        }
+
         // VEX/EVEX store B inverted; REX and REX2 store it directly.
         if (hasEvexPrefix(code))
         {
@@ -103,8 +122,12 @@ public partial class Emitter
 
     public ulong AddRexPrefix(instruction ins, ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("REX output requires AMD64.");
+        }
+
         assert(!IsVexEncodableInstruction(ins));
         return code | 0x4000000000UL;
     }
-#endif
 }

@@ -39,14 +39,13 @@ public partial class Emitter
         {
             offset = ig.igSize;
         }
-#if TARGET_ARM64
-        else if (((ig.igFlags & InsGroupFlags.HasRemovedInstruction) != 0) && (number == ig.igInsCnt + 1u))
+        else if (Configuration.TARGET_ARM64 &&
+                 ((ig.igFlags & InsGroupFlags.HasRemovedInstruction) != 0) && (number == ig.igInsCnt + 1u))
         {
             // A replacement instruction may have moved into a new group when this one was full.
             assert(ig.igNext is not null);
             return unchecked(ig.igNext.igOffs + emitFindOffset(ig.igNext, 1));
         }
-#endif
         else if ((ig.igFlags & InsGroupFlags.UpdatedInstructionSize) != 0)
         {
             offset = emitFindOffset(ig, number);

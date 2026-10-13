@@ -28,12 +28,17 @@ public partial class Emitter
     public unsafe void emitIns_R_R_C(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register static-field instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Two-register static-field instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 
@@ -44,7 +49,7 @@ public partial class Emitter
 
         var id = emitNewInstrDsp(attr, offs);
         id.idIns(ins);
-        id.idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_MRD : emitInsModeFormat(ins, IF_RRD_RRD_MRD));
+        id.idInsFmt((ins == INS_mulx) ? IF_XARCH_RWR_RWR_MRD : emitInsModeFormat(ins, IF_XARCH_RRD_RRD_MRD));
         id.idReg1(reg1);
         id.idReg2(reg2);
         id.idAddr().iiaFieldHnd = fldHnd;
@@ -56,28 +61,32 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         int varx, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register stack instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Two-register stack instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
         var id = emitNewInstr(attr);
         var useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNddEncodableInstruction(ins);
         id.idIns(ins);
-        id.idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_SRD : emitInsModeFormat(ins, IF_RRD_RRD_SRD, useNDD));
+        id.idInsFmt((ins == INS_mulx) ? IF_XARCH_RWR_RWR_SRD : emitInsModeFormat(ins, IF_XARCH_RRD_RRD_SRD, useNDD));
         id.idReg1(reg1);
         id.idReg2(reg2);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
@@ -92,18 +101,22 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public unsafe void emitIns_R_R_C_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         CORINFO_FIELD_HANDLE fldHnd, int offs, int ival, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register field-immediate recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Two-register field-immediate recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 
@@ -114,7 +127,7 @@ public partial class Emitter
 
         var id = emitNewInstrCnsDsp(attr, ival, offs);
         id.idIns(ins);
-        id.idInsFmt(IF_RWR_RRD_MRD_CNS);
+        id.idInsFmt(IF_XARCH_RWR_RRD_MRD_CNS);
         id.idReg1(reg1);
         id.idReg2(reg2);
         id.idAddr().iiaFieldHnd = fldHnd;
@@ -126,27 +139,31 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_R_R_S_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         int varx, int offs, int ival, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register stack-immediate recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Two-register stack-immediate recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 
         var id = emitNewInstrCns(attr, ival);
         id.idIns(ins);
-        id.idInsFmt(IF_RWR_RRD_SRD_CNS);
+        id.idInsFmt(IF_XARCH_RWR_RRD_SRD_CNS);
         id.idReg1(reg1);
         id.idReg2(reg2);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
@@ -160,18 +177,22 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public unsafe void emitIns_R_R_C_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-field-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Register-field-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
         assert(UseSimdEncoding());
 
@@ -185,7 +206,7 @@ public partial class Emitter
         id.idIns(ins);
         id.idReg1(targetReg);
         id.idReg2(op1Reg);
-        id.idInsFmt(IF_RWR_RRD_MRD_RRD);
+        id.idInsFmt(IF_XARCH_RWR_RRD_MRD_RRD);
         id.idAddr().iiaFieldHnd = fldHnd;
 
         SetEvexBroadcastIfNeeded(id, instOptions);
@@ -195,18 +216,22 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_R_R_S_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-stack-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Register-stack-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
         assert(UseSimdEncoding());
 
@@ -215,8 +240,8 @@ public partial class Emitter
         id.idIns(ins);
         id.idReg1(targetReg);
         id.idReg2(op1Reg);
-        id.idInsFmt(IF_RWR_RRD_SRD_RRD);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idInsFmt(IF_XARCH_RWR_RRD_SRD_RRD);
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
@@ -225,30 +250,53 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
-#if !TARGET_ARM64
     public void emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int ival,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if TARGET_RISCV64
-        emitIns_R_R_I_RiscV(ins, attr, reg1, reg2, ival, instOptions);
-#elif TARGET_LOONGARCH64
-        emitInsRRILoongArch64(ins, attr, reg1, reg2, ival, instOptions);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register-immediate instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-        // Only mov reg,imm64 takes a full eight-byte immediate. Other instructions
-        // use a sign-extended dword, which cannot hold an eight-byte relocation.
-        noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_R_IArm64(ins, attr, reg1, reg2, (nint)ival, instOptions);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            emitIns_R_R_I(ins, attr, reg1, reg2, ival, INS_FLAGS_DONT_CARE, instOptions);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            emitIns_R_R_I_RiscV(ins, attr, reg1, reg2, ival, instOptions);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRRILoongArch64(ins, attr, reg1, reg2, ival, instOptions);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Two-register-immediate instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+            // Only mov reg,imm64 takes a full eight-byte immediate. Other instructions
+            // use a sign-extended dword, which cannot hold an eight-byte relocation.
+            noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
+        }
+
         var id = emitNewInstrSC(attr, ival);
         var useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNddEncodableInstruction(ins);
         id.idIns(ins);
-        id.idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_CNS, useNDD));
+        id.idInsFmt(emitInsModeFormat(ins, IF_XARCH_RRD_RRD_CNS, useNDD));
         id.idReg1(reg1);
         id.idReg2(reg2);
 
@@ -274,11 +322,8 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
-#endif
 
-#if TARGET_RISCV64
     private void emitIns_R_R_I_RiscV(
         instruction ins,
         emitAttr attr,
@@ -287,7 +332,9 @@ public partial class Emitter
         nint imm,
         insOpts opt)
     {
-        var code = emitInsCode(ins);
+        RequireRiscV64Target();
+
+        var code = emitInsCodeRiscV64(ins);
         var id = emitNewInstr(attr);
 
         switch (GetMajorOpcode(code))
@@ -348,7 +395,9 @@ public partial class Emitter
 
     private void emitIns_R_I_I_RiscV(instruction ins, emitAttr attr, regNumber reg, nint imm1, nint imm2)
     {
-        var code = emitInsCode(ins);
+        RequireRiscV64Target();
+
+        var code = emitInsCodeRiscV64(ins);
         if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_csrrwi, INS_csrrci))
         {
             assert(isGeneralRegisterOrR0(reg));
@@ -374,32 +423,47 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
     }
-#endif
 
-#if !TARGET_ARM64
     public void emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if TARGET_ARM
-        if (!insOptsNone(instOptions))
+        if (Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 three-register instruction options are not ported.");
+            emitIns_R_R_RArm64(ins, attr, targetReg, reg1, reg2, instOptions);
+            return;
         }
 
-        recordArm32InsRRR(ins, attr, targetReg, reg1, reg2, INS_FLAGS_DONT_CARE);
-#elif TARGET_LOONGARCH64
-        emitInsRRRLoongArch64(ins, attr, targetReg, reg1, reg2, instOptions);
-#elif TARGET_RISCV64
+        if (Configuration.TARGET_ARM)
+        {
+            if (!insOptsNone(instOptions))
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "ARM32 three-register instruction options are not ported.");
+            }
+
+            recordArm32InsRRR(ins, attr, targetReg, reg1, reg2, INS_FLAGS_DONT_CARE);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRRRLoongArch64(ins, attr, targetReg, reg1, reg2, instOptions);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            RequireRiscV64Target();
         if (tryEmitCompressedIns_R_R_R(ins, attr, targetReg, reg1, reg2, instOptions))
         {
             return;
         }
 
-        var code = emitInsCode(ins);
+        var code = emitInsCodeRiscV64(ins);
         if (IsRiscVThreeRegisterInstruction(ins))
         {
             // The source/data register for load-reserved must be empty.
-            assert((ins != INS_lr_w && ins != INS_lr_d) || reg2 == REG_R0);
+            assert((ins != INS_lr_w && ins != INS_lr_d) || reg2 == REG_RISCV64_R0);
 
             code |= (unchecked((uint)targetReg) & 0x1Fu) << 7;
             code |= (unchecked((uint)reg1) & 0x1Fu) << 15;
@@ -430,22 +494,30 @@ public partial class Emitter
                 CORJIT_SKIPPED, "Illegal instruction within RISC-V three-register instruction recording.");
         }
 
-        var id = emitNewInstr(attr);
-        id.idIns(ins);
-        id.idReg1(targetReg);
-        id.idReg2(reg1);
-        id.idReg3(reg2);
-        id.idAddr().iiaInstrEncode = code;
-        id.idCodeSize(4);
+        var riscVId = emitNewInstr(attr);
+        riscVId.idIns(ins);
+        riscVId.idReg1(targetReg);
+        riscVId.idReg2(reg1);
+        riscVId.idReg3(reg2);
+        riscVId.idAddr().iiaInstrEncode = code;
+        riscVId.idCodeSize(4);
 
-        dispIns(id);
-        appendToCurIG(id);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        dispIns(riscVId);
+        appendToCurIG(riscVId);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Three-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
@@ -453,7 +525,7 @@ public partial class Emitter
         var useNDD = ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0) && IsApxNddEncodableInstruction(ins);
         var id = emitNewInstr(attr);
         id.idIns(ins);
-        id.idInsFmt((ins == INS_mulx) ? IF_RWR_RWR_RRD : emitInsModeFormat(ins, IF_RRD_RRD_RRD, useNDD));
+        id.idInsFmt((ins == INS_mulx) ? IF_XARCH_RWR_RWR_RRD : emitInsModeFormat(ins, IF_XARCH_RRD_RRD_RRD, useNDD));
         id.idReg1(targetReg);
         id.idReg2(reg1);
         id.idReg3(reg2);
@@ -467,10 +539,8 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
-#if TARGET_RISCV64
     private bool tryEmitCompressedIns_R_R_R(
         instruction ins,
         emitAttr attr,
@@ -479,6 +549,8 @@ public partial class Emitter
         regNumber rs2,
         insOpts opt)
     {
+        RequireRiscV64Target();
+
         // RVC instructions are not emitted in prologs or epilogs.
         if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
         {
@@ -532,25 +604,45 @@ public partial class Emitter
 
         return true;
     }
-#endif
 
     public void emitIns_R_R_R_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber reg1, regNumber reg2, int ival, insOpts instOptions = INS_OPTS_NONE)
     {
-#if TARGET_LOONGARCH64
-        emitInsRRRIloongArch64(ins, attr, targetReg, reg1, reg2, ival, instOptions);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Three-register-immediate instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_R_R_IArm64(ins, attr, targetReg, reg1, reg2, (nint)ival, instOptions);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            emitIns_R_R_R_I(ins, attr, targetReg, reg1, reg2, ival, INS_FLAGS_DONT_CARE, instOptions);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRRRIloongArch64(ins, attr, targetReg, reg1, reg2, ival, instOptions);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Three-register-immediate instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 
         var id = emitNewInstrCns(attr, ival);
         id.idIns(ins);
-        id.idInsFmt(IF_RWR_RRD_RRD_CNS);
+        id.idInsFmt(IF_XARCH_RWR_RRD_RRD_CNS);
         id.idReg1(targetReg);
         id.idReg2(reg1);
         id.idReg3(reg2);
@@ -562,7 +654,5 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
-#endif
 }

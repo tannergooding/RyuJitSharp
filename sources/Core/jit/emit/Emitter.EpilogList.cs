@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if JIT32_GCENCODER
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -18,6 +17,11 @@ public partial class Emitter
 
     public unsafe nuint emitGenEpilogLst(emitEpilogCallbackType callback, void* context)
     {
+        if (!Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+        }
+
         nuint size = 0;
 
         for (var epilog = emitEpilogList; epilog is not null; epilog = epilog.elNext)
@@ -33,4 +37,3 @@ public partial class Emitter
         return size;
     }
 }
-#endif

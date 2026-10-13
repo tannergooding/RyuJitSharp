@@ -7,15 +7,16 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
-#if TARGET_AMD64
-    public static bool IsCCMP(instruction ins) => (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CCMP_INSTRUCTION, LAST_CCMP_INSTRUCTION));
-#else
-    public static bool IsCCMP(instruction ins) => false;
-#endif
+    public static bool IsCCMP(instruction ins) =>
+        Configuration.TARGET_AMD64 &&
+        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CCMP_INSTRUCTION, LAST_CCMP_INSTRUCTION);
 
     public bool IsApxNfEncodableInstruction(instruction ins)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
         if (!UsePromotedEvexEncodings)
         {
             return false;
@@ -26,6 +27,16 @@ public partial class Emitter
 
     public void SetEvexBroadcastIfNeeded(instrDesc id, insOpts instOptions)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            if ((instOptions & INS_OPTS_EVEX_eb) == INS_OPTS_NONE)
+            {
+                return;
+            }
+
+            throw new FatalJitException("EVEX broadcast options are not available for this target.");
+        }
+
         assert(id.idHasMem());
 
         if ((instOptions & INS_OPTS_EVEX_eb) != INS_OPTS_NONE)
@@ -37,6 +48,16 @@ public partial class Emitter
 
     public void SetEvexEmbRoundIfNeeded(instrDesc id, insOpts instOptions)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            if ((instOptions & INS_OPTS_EVEX_b_MASK) == INS_OPTS_NONE)
+            {
+                return;
+            }
+
+            throw new FatalJitException("EVEX embedded rounding is not available for this target.");
+        }
+
         assert(!id.idHasMem());
         if ((instOptions & INS_OPTS_EVEX_b_MASK) != INS_OPTS_NONE)
         {
@@ -48,6 +69,16 @@ public partial class Emitter
 
     public void SetEvexNdIfNeeded(instrDesc id, insOpts instOptions)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            if ((instOptions & INS_OPTS_EVEX_nd_MASK) == 0)
+            {
+                return;
+            }
+
+            throw new FatalJitException("EVEX NDD options are not available for this target.");
+        }
+
         if ((instOptions & INS_OPTS_EVEX_nd_MASK) != 0)
         {
             assert(UsePromotedEvexEncodings);
@@ -62,6 +93,16 @@ public partial class Emitter
 
     public void SetEvexNfIfNeeded(instrDesc id, insOpts instOptions)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            if ((instOptions & INS_OPTS_EVEX_nf_MASK) == 0)
+            {
+                return;
+            }
+
+            throw new FatalJitException("EVEX NF options are not available for this target.");
+        }
+
         if ((instOptions & INS_OPTS_EVEX_nf_MASK) != 0)
         {
             assert(UsePromotedEvexEncodings);
@@ -76,6 +117,16 @@ public partial class Emitter
 
     public static void SetApxPpxIfNeeded(instrDesc id, insOpts instOptions)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            if ((instOptions & INS_OPTS_APX_ppx_MASK) == 0)
+            {
+                return;
+            }
+
+            throw new FatalJitException("APX PPX options are not available for this target.");
+        }
+
         if ((instOptions & INS_OPTS_APX_ppx_MASK) != 0)
         {
             assert(HasApxPpx(id.idIns()));
@@ -85,14 +136,16 @@ public partial class Emitter
 
     public void SetEvexDFVIfNeeded(instrDesc id, insOpts instOptions)
     {
-#if TARGET_AMD64
         if ((instOptions & INS_OPTS_EVEX_dfv_MASK) != 0)
         {
+            if (!Configuration.TARGET_AMD64)
+            {
+                throw new FatalJitException("EVEX DFV options require AMD64.");
+            }
+
             assert(UsePromotedEvexEncodings);
             assert(IsCCMP(id.idIns()) || IsCTEST(id.idIns()));
             id.idSetEvexDFV((uint)instOptions);
         }
-#endif
     }
-#endif
 }

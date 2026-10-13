@@ -7,15 +7,16 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     public static bool IsCTEST(instruction ins)
     {
-        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CTEST_INSTRUCTION, LAST_CTEST_INSTRUCTION));
+        return Configuration.TARGET_AMD64 &&
+            InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CTEST_INSTRUCTION, LAST_CTEST_INSTRUCTION);
     }
 
     public static bool IsSSEOrAVXInstruction(instruction ins)
     {
-        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_AVX_INSTRUCTION));
+        return Configuration.TARGET_XARCH &&
+            InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_AVX_INSTRUCTION);
     }
 
     public bool IsSimdVexOrEvexEncodableInstruction(instruction ins)
@@ -40,7 +41,12 @@ public partial class Emitter
 
     public static bool IsExtendedReg(regNumber reg, emitAttr attr)
     {
-        if (reg > REG_XMM31)
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
+        if (reg > REG_X64_XMM31)
         {
             return false;
         }
@@ -56,11 +62,16 @@ public partial class Emitter
         }
 
         // SPL/BPL/SIL/DIL share encodings with AH/CH/DH/BH; even a bare REX selects the low bytes.
-        return reg >= REG_RSP;
+        return reg >= REG_X64_RSP;
     }
 
     public static bool IsLegacyMap1(ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         // Native opcode packing represents map 1 as XX0F, 0F00XX or 0FPP00XX.
         if ((code & 0xFFFF00FF) == 0x0000000F)
         {
@@ -83,7 +94,7 @@ public partial class Emitter
 
     public static bool ImmCanUseSByteEncoding(instruction ins, nint val)
     {
-        long targetVal = val;
+        long targetVal = Configuration.TARGET_X86 ? unchecked((int)val) : val;
 
         if (targetVal != val)
         {
@@ -118,6 +129,16 @@ public partial class Emitter
 
     public uint emitGetAdjustedSize(instrDesc id, ulong code)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+        }
+
+        if (Configuration.TARGET_X86)
+        {
+            return emitGetAdjustedSizeX86(id, code);
+        }
+
         var ins = id.idIns();
         uint adjustedSize = 0;
 
@@ -212,12 +233,83 @@ public partial class Emitter
         return adjustedSize;
     }
 
+    private uint emitGetAdjustedSizeX86(instrDesc id, ulong code)
+    {
+        var ins = id.idIns();
+        uint adjustedSize = 0;
+
+        if (IsSimdVexOrEvexEncodableInstruction(ins))
+        {
+            uint prefixAdjustedSize;
+
+            if (TakesEvexPrefix(id))
+            {
+                prefixAdjustedSize = emitGetEvexPrefixSize(id);
+                assert(prefixAdjustedSize == 4);
+            }
+            else
+            {
+                assert(IsVexEncodableInstruction(ins));
+                prefixAdjustedSize = emitGetVexPrefixSize(id);
+                assert((prefixAdjustedSize == 2) || (prefixAdjustedSize == 3));
+            }
+
+            assert(prefixAdjustedSize != 0);
+
+            // The prefix absorbs the opcode escape byte and any SIMD size prefix.
+            // A second escape byte and the otherwise uncounted ModRM byte cancel.
+            prefixAdjustedSize -= 1;
+            var check = (byte)((code >> 24) & 0xFF);
+
+            if (check != 0)
+            {
+                var sizePrefix = (byte)((code >> 16) & 0xFF);
+
+                if ((sizePrefix != 0) && isPrefix(sizePrefix))
+                {
+                    prefixAdjustedSize -= 1;
+                }
+            }
+
+            adjustedSize = prefixAdjustedSize;
+        }
+        else if (Is4ByteSSEInstruction(ins))
+        {
+            // These opcodes do not already include the ModRM byte.
+            adjustedSize++;
+        }
+        else
+        {
+            if (ins == INS_crc32)
+            {
+                adjustedSize++;
+            }
+
+            var attr = id.idOpSize();
+
+            if ((attr == EA_2BYTE) && (ins != INS_movzx) && (ins != INS_movsx) && !IsSimdInstruction(ins))
+            {
+                adjustedSize++;
+            }
+        }
+
+        return adjustedSize;
+    }
+
     public uint emitInsSize(instrDesc id, ulong code, bool includeRexPrefixSize)
     {
         var size = ((code & 0xFF000000) != 0) ? 4u : ((code & 0x00FF0000) != 0) ? 3u : 2u;
+        if (Configuration.TARGET_X86)
+        {
+            return size;
+        }
+
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch instruction sizing requires an xarch target.");
+        }
+
         size += emitGetPrefixSize(id, code, includeRexPrefixSize);
         return size;
     }
-
-#endif
 }

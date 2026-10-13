@@ -9,8 +9,33 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public static bool IsMovInstruction(instruction ins)
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return IsXarchMovInstruction(ins);
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return IsArm32MovInstruction(ins);
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return IsArm64MovInstruction(ins);
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return IsLoongArch64MovInstruction(ins);
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Move-instruction classification is not supported for this target.");
+    }
+
+    private static bool IsXarchMovInstruction(instruction ins)
     {
         // This is the native move-elision set, not all instructions with move-like semantics.
         return ins is INS_mov or INS_movapd or INS_movaps or INS_movd32 or INS_movd64 or
@@ -18,15 +43,25 @@ public partial class Emitter
             INS_vmovdqu64 or INS_movq or INS_movsd_simd or INS_movss or INS_vmovsh or
             INS_movsx or INS_movupd or INS_movups or INS_movzx or INS_kmovb_msk or
             INS_kmovw_msk or INS_kmovd_msk or INS_kmovq_msk or INS_kmovb_gpr or
-            INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr
-#if TARGET_64BIT
-            or INS_movsxd
-#endif
-            ;
+            INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr ||
+            (Configuration.TARGET_64BIT && ins == INS_movsxd);
+    }
+
+    private static bool IsArm64MovInstruction(instruction ins)
+    {
+        return ins is INS_fmov or INS_mov or INS_sxtb or INS_sxth or INS_sxtw or INS_uxtb or INS_uxth or
+            INS_sve_mov or INS_sve_movprfx;
+    }
+
+    private static bool IsLoongArch64MovInstruction(instruction ins)
+    {
+        return ins is INS_mov or INS_fmov_s or INS_fmov_d or INS_movgr2fr_w or INS_movgr2fr_d or
+            INS_movfr2gr_s or INS_movfr2gr_d;
     }
 
     public bool HasSideEffect(instruction ins, emitAttr size)
     {
+        RequireXarchStackMove();
         bool hasSideEffect;
 
         switch (ins)
@@ -79,13 +114,17 @@ public partial class Emitter
                 break;
             }
 
-#if TARGET_64BIT
             case INS_movsxd:
             {
+                if (!Configuration.TARGET_64BIT)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "MOVSXD side-effect classification is only supported on 64-bit xarch.");
+                }
+
                 hasSideEffect = true;
                 break;
             }
-#endif
 
             case INS_kmovq_msk:
             {
@@ -104,8 +143,9 @@ public partial class Emitter
 
     public bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)
     {
+        RequireXarchStackMove();
         assert(IsMovInstruction(ins));
-        assert(fmt is IF_SWR_RRD or IF_RWR_SRD);
+        assert(fmt is IF_XARCH_SWR_RRD or IF_XARCH_RWR_SRD);
         assert(_compiler is not null);
 
         if (!_compiler.opts.OptimizationEnabled)
@@ -131,7 +171,7 @@ public partial class Emitter
             return false;
         }
 
-        if (emitLastIns.idInsFmt() is not (IF_SWR_RRD or IF_RWR_SRD))
+        if (emitLastIns.idInsFmt() is not (IF_XARCH_SWR_RRD or IF_XARCH_RWR_SRD))
         {
             return false;
         }
@@ -143,8 +183,8 @@ public partial class Emitter
 
         if ((varNum == varx) && (lastReg1 == ireg) && (lastOffs == offs))
         {
-            if ((((emitLastIns.idInsFmt() == IF_RWR_SRD) && (fmt == IF_SWR_RRD)) ||
-                 ((emitLastIns.idInsFmt() == IF_SWR_RRD) && (fmt == IF_RWR_SRD))) && !hasSideEffect)
+            if ((((emitLastIns.idInsFmt() == IF_XARCH_RWR_SRD) && (fmt == IF_XARCH_SWR_RRD)) ||
+                 ((emitLastIns.idInsFmt() == IF_XARCH_SWR_RRD) && (fmt == IF_XARCH_RWR_SRD))) && !hasSideEffect)
             {
 #if DEBUG
                 if (_compiler.verbose)
@@ -169,5 +209,13 @@ public partial class Emitter
 
         return false;
     }
-#endif
+
+    private static void RequireXarchStackMove()
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Xarch stack-move optimization is not supported for this target.");
+        }
+    }
 }

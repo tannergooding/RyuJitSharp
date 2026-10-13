@@ -109,12 +109,10 @@ public partial class Emitter
                         else
                         {
                             newPadding = System.Math.Min(paddingToAdjust, INSTR_ENCODED_SIZE);
-#if TARGET_ARMARCH
-                            if (newPadding == 0)
+                            if (Configuration.TARGET_ARMARCH && newPadding == 0)
                             {
                                 current.idInsOpt(INS_OPTS_NONE);
                             }
-#endif
                         }
                         paddingToAdjust -= newPadding;
 #if DEBUG

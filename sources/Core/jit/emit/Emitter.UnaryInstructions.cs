@@ -9,22 +9,31 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_ARM64
     public void emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Single-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_RArm64(ins, attr, reg, instOptions);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Single-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         var size = EA_SIZE(attr);
         assert(size <= EA_PTRSIZE);
         noway_assert(emitVerifyEncodable(ins, size, reg));
 
         uint sz;
         var id = emitNewInstrSmall(attr);
-        var fmt = emitInsModeFormat(ins, IF_RRD);
+        var fmt = emitInsModeFormat(ins, IF_XARCH_RRD);
         id.idIns(ins);
         id.idInsFmt(fmt);
         id.idReg1(reg);
@@ -33,12 +42,16 @@ public partial class Emitter
         {
             case INS_inc or INS_dec:
             {
-#if TARGET_AMD64
-                // x64 has no one-byte opcode: that encoding is the REX prefix.
-                sz = 2;
-#else
-                sz = size == EA_1BYTE ? 2u : 1u;
-#endif
+                if (Configuration.TARGET_AMD64)
+                {
+                    // x64 has no one-byte opcode: that encoding is the REX prefix.
+                    sz = 2;
+                }
+                else
+                {
+                    sz = size == EA_1BYTE ? 2u : 1u;
+                }
+
                 break;
             }
 
@@ -89,21 +102,24 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 
-#if TARGET_X86
-        emitAdjustStackDepthPushPop(ins);
-#endif
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            emitAdjustStackDepthPushPop(ins);
+        }
     }
-#endif
 
     public void emitIns_BASE_R_R(instruction ins, emitAttr attr, regNumber op1Reg, regNumber op2Reg)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Base unary instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Base unary instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         if (DoJitUseApxNDD(ins) && (op1Reg != op2Reg))
         {
             emitIns_R_R(ins, attr, op1Reg, op2Reg, INS_OPTS_EVEX_nd);
@@ -113,42 +129,38 @@ public partial class Emitter
             _ = emitIns_Mov(INS_mov, attr, op1Reg, op2Reg, canSkip: true);
             emitIns_R(ins, attr, op1Reg);
         }
-#endif
     }
 
     public bool DoJitUseApxNDD(instruction ins)
     {
-#if TARGET_AMD64
-        return (JitConfig.EnableApxNDD != 0) && IsApxNddEncodableInstruction(ins);
-#else
-        return false;
-#endif
+        return Configuration.TARGET_AMD64 &&
+            (JitConfig.EnableApxNDD != 0) &&
+            IsApxNddEncodableInstruction(ins);
     }
 
-#if TARGET_AMD64
     public static bool IsApxZuCompatibleInstruction(instruction ins)
     {
-        return (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_seto_apx, INS_setg_apx));
+        return Configuration.TARGET_AMD64 &&
+            InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_seto_apx, INS_setg_apx);
     }
-#endif
 
-#if TARGET_XARCH
     public void SetEvexZuIfNeeded(instrDesc id, insOpts instOptions)
     {
         if ((instOptions & INS_OPTS_EVEX_zu_MASK) != 0)
         {
             assert(UsePromotedEvexEncodings);
-#if TARGET_AMD64
+
+            if (!Configuration.TARGET_AMD64)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "APX EVEX.zu instruction recording requires AMD64.");
+            }
+
             assert(IsApxZuCompatibleInstruction(id.idIns()));
             id.idSetEvexZuContext();
-#else
-            throw new FatalJitException(CORJIT_SKIPPED, "APX EVEX.zu instruction recording requires AMD64.");
-#endif
         }
         else
         {
             assert((instOptions & INS_OPTS_EVEX_zu_MASK) == 0);
         }
     }
-#endif
 }

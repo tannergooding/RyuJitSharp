@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public bool IsEvexEncodableInstruction(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         var flags = CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
         var isBmi = InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_BMI_INSTRUCTION, LAST_BMI_INSTRUCTION);
         var isKmov = ins is INS_kmovb_gpr or INS_kmovw_gpr or INS_kmovd_gpr or INS_kmovq_gpr or
@@ -27,14 +31,13 @@ public partial class Emitter
 
         if ((flags & Encoding_EVEX) != 0)
         {
-#if FEATURE_HW_INTRINSICS
-            if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(
+            if (Configuration.FEATURE_HW_INTRINSICS &&
+                InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(
                 ins, FIRST_AVXVNNIINT8_INSTRUCTION, LAST_AVXVNNIINT16_INSTRUCTION))
             {
                 var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
                 return compiler.compSupportsHWIntrinsic(InstructionSet_AVXVNNIINT_V512);
             }
-#endif
             return true;
         }
 
@@ -43,20 +46,21 @@ public partial class Emitter
             return UsePromotedEvexEncodings;
         }
 
-#if FEATURE_HW_INTRINSICS
-        var instructionCompiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
-        return ins switch {
-            INS_aesdec or INS_aesdeclast or INS_aesenc or INS_aesenclast or INS_pclmulqdq =>
-                instructionCompiler.compSupportsHWIntrinsic(InstructionSet_AES_V512),
-            INS_vpdpbusd or INS_vpdpwssd or INS_vpdpbusds or INS_vpdpwssds =>
-                instructionCompiler.compSupportsHWIntrinsic(InstructionSet_AVX512v3),
-            INS_vpmadd52huq or INS_vpmadd52luq =>
-                instructionCompiler.compSupportsHWIntrinsic(InstructionSet_AVX512v2),
-            _ => false,
-        };
-#else
+        if (Configuration.FEATURE_HW_INTRINSICS)
+        {
+            var instructionCompiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
+            return ins switch
+            {
+                INS_aesdec or INS_aesdeclast or INS_aesenc or INS_aesenclast or INS_pclmulqdq =>
+                    instructionCompiler.compSupportsHWIntrinsic(InstructionSet_AES_V512),
+                INS_vpdpbusd or INS_vpdpwssd or INS_vpdpbusds or INS_vpdpwssds =>
+                    instructionCompiler.compSupportsHWIntrinsic(InstructionSet_AVX512v3),
+                INS_vpmadd52huq or INS_vpmadd52luq =>
+                    instructionCompiler.compSupportsHWIntrinsic(InstructionSet_AVX512v2),
+                _ => false,
+            };
+        }
+
         return false;
-#endif
     }
-#endif
 }

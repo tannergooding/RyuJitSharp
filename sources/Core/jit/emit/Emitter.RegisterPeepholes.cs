@@ -9,9 +9,7 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private const int EMIT_MAX_PEEPHOLE_INS_COUNT = 32;
-#endif
 
     private enum emitPeepholeResult
     {
@@ -19,7 +17,6 @@ public partial class Emitter
         PEEPHOLE_CONTINUE,
     }
 
-#if TARGET_XARCH
     private bool emitGetLastIns(out insGroup? group, out instrDesc? descriptor)
     {
         for (var ig = emitIGlast; ig is not null; ig = ig.igPrev)
@@ -79,65 +76,70 @@ public partial class Emitter
 
         return false;
     }
-#endif
 
     private void emitPeepholeIterateLastInstrs(Func<instrDesc, emitPeepholeResult> action)
     {
         assert(emitCanPeepholeLastIns());
-#if TARGET_XARCH
-        if (!emitGetLastIns(out var curInsIG, out var id))
+        if (Configuration.TARGET_XARCH)
         {
+            if (!emitGetLastIns(out var curInsIG, out var id))
+            {
+                return;
+            }
+
+            for (var i = 0; i < EMIT_MAX_PEEPHOLE_INS_COUNT; i++)
+            {
+                assert(id is not null);
+                assert(curInsIG is not null);
+
+                switch (action(id))
+                {
+                    case emitPeepholeResult.PEEPHOLE_ABORT:
+                    {
+                        return;
+                    }
+
+                    case emitPeepholeResult.PEEPHOLE_CONTINUE:
+                    {
+                        var savedInsIG = curInsIG;
+                        if (emitPrevID(ref curInsIG, ref id))
+                        {
+                            assert(curInsIG is not null);
+                            if (isInsIGSafeForPeepholeOptimization(curInsIG, savedInsIG))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                return;
+                            }
+                        }
+                        return;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                        break;
+                    }
+                }
+            }
+
             return;
         }
 
-        for (var i = 0; i < EMIT_MAX_PEEPHOLE_INS_COUNT; i++)
-        {
-            assert(id is not null);
-            assert(curInsIG is not null);
-
-            switch (action(id))
-            {
-                case emitPeepholeResult.PEEPHOLE_ABORT:
-                {
-                    return;
-                }
-
-                case emitPeepholeResult.PEEPHOLE_CONTINUE:
-                {
-                    var savedInsIG = curInsIG;
-                    if (emitPrevID(ref curInsIG, ref id))
-                    {
-                        assert(curInsIG is not null);
-                        if (isInsIGSafeForPeepholeOptimization(curInsIG, savedInsIG))
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            return;
-                        }
-                    }
-                    return;
-                }
-
-                default:
-                {
-                    unreached();
-                    break;
-                }
-            }
-        }
-#else
         var lastIns = emitLastIns
             ?? throw new FatalJitException("Peephole iteration requires a last instruction.");
         _ = action(lastIns);
-#endif
     }
 
-#if TARGET_XARCH
-#if TARGET_AMD64
     public bool AreUpperBitsZero(regNumber reg, emitAttr size)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         if (!genIsValidIntReg(reg))
         {
             return false;
@@ -198,6 +200,11 @@ public partial class Emitter
 
     public bool AreUpperBitsSignExtended(regNumber reg, emitAttr size)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            return false;
+        }
+
         if (!genIsValidIntReg(reg))
         {
             return false;
@@ -250,12 +257,25 @@ public partial class Emitter
         return result;
     }
 
-#endif
-
     public static bool emitIsInstrWritingToReg(instrDesc id, regNumber reg)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Instruction write classification requires xarch.");
+        }
+
         assert(genIsValidIntReg(reg));
         var ins = id.idIns();
+        var stringDestinationReg = Configuration.TARGET_X86 ? REG_X86_EDI : REG_X64_RDI;
+        var stringSourceReg = Configuration.TARGET_X86 ? REG_X86_ESI : REG_X64_RSI;
+        var stringCountReg = Configuration.TARGET_X86 ? REG_X86_ECX : REG_X64_RCX;
+
+        var lastImulInstruction = Configuration.TARGET_AMD64 ? INS_imul_31 : INS_imul_SP;
+        if (((uint)ins >= (uint)INS_imul_AX) && ((uint)ins <= (uint)lastImulInstruction) &&
+            (reg == (regNumber)((uint)ins - (uint)INS_imul_AX)))
+        {
+            return true;
+        }
 
         switch (ins)
         {
@@ -265,22 +285,10 @@ public partial class Emitter
                 return true;
             }
 
-#if TARGET_AMD64
-            case >= INS_imul_AX and <= INS_imul_31:
-#else
-            case >= INS_imul_AX and <= INS_imul_SP:
-#endif
-            {
-                if (reg == (regNumber)(ins - INS_imul_AX))
-                {
-                    return true;
-                }
-                break;
-            }
-
             case INS_idiv or INS_div or INS_imulEAX or INS_mulEAX:
             {
-                if ((reg == REG_RAX) || (reg == REG_RDX))
+                if ((reg == TargetRuntimeMetadata.IntegerReturnRegister) ||
+                    (reg == TargetRuntimeMetadata.IntegerReturnRegister1))
                 {
                     return true;
                 }
@@ -289,55 +297,63 @@ public partial class Emitter
 
             case INS_cmpxchg:
             {
-                if (reg == REG_RAX)
+                if (reg == TargetRuntimeMetadata.IntegerReturnRegister)
                 {
                     return true;
                 }
                 break;
             }
 
-            case INS_movsb or INS_movsd:
-#if TARGET_AMD64
-            case INS_movsq:
-#endif
+            case INS_movsb or INS_movsd or INS_movsq:
             {
-                if ((reg == REG_RDI) || (reg == REG_RSI))
+                if ((ins == INS_movsq) && !Configuration.TARGET_AMD64)
+                {
+                    break;
+                }
+
+                if ((reg == stringDestinationReg) || (reg == stringSourceReg))
                 {
                     return true;
                 }
                 break;
             }
 
-            case INS_stosb or INS_stosd:
-#if TARGET_AMD64
-            case INS_stosq:
-#endif
+            case INS_stosb or INS_stosd or INS_stosq:
             {
-                if (reg == REG_RDI)
+                if ((ins == INS_stosq) && !Configuration.TARGET_AMD64)
+                {
+                    break;
+                }
+
+                if (reg == stringDestinationReg)
                 {
                     return true;
                 }
                 break;
             }
 
-            case INS_r_movsb or INS_r_movsd:
-#if TARGET_AMD64
-            case INS_r_movsq:
-#endif
+            case INS_r_movsb or INS_r_movsd or INS_r_movsq:
             {
-                if ((reg == REG_RDI) || (reg == REG_RSI) || (reg == REG_RCX))
+                if ((ins == INS_r_movsq) && !Configuration.TARGET_AMD64)
+                {
+                    break;
+                }
+
+                if ((reg == stringDestinationReg) || (reg == stringSourceReg) || (reg == stringCountReg))
                 {
                     return true;
                 }
                 break;
             }
 
-            case INS_r_stosb or INS_r_stosd:
-#if TARGET_AMD64
-            case INS_r_stosq:
-#endif
+            case INS_r_stosb or INS_r_stosd or INS_r_stosq:
             {
-                if ((reg == REG_RDI) || (reg == REG_RCX))
+                if ((ins == INS_r_stosq) && !Configuration.TARGET_AMD64)
+                {
+                    break;
+                }
+
+                if ((reg == stringDestinationReg) || (reg == stringCountReg))
                 {
                     return true;
                 }
@@ -350,33 +366,34 @@ public partial class Emitter
             }
         }
 
-#if TARGET_64BIT
-        switch (ins)
+        if (Configuration.TARGET_64BIT)
         {
-            case INS_cwde:
+            switch (ins)
             {
-                if (reg == REG_RAX)
+                case INS_cwde:
                 {
-                    return true;
+                    if (reg == TargetRuntimeMetadata.IntegerReturnRegister)
+                    {
+                        return true;
+                    }
+                    break;
                 }
-                break;
-            }
 
-            case INS_cdq:
-            {
-                if (reg == REG_RDX)
+                case INS_cdq:
                 {
-                    return true;
+                    if (reg == TargetRuntimeMetadata.IntegerReturnRegister1)
+                    {
+                        return true;
+                    }
+                    break;
                 }
-                break;
-            }
 
-            default:
-            {
-                break;
+                default:
+                {
+                    break;
+                }
             }
         }
-#endif
 
         if (id.idIsReg1Write() && (id.idReg1() == reg))
         {
@@ -392,5 +409,4 @@ public partial class Emitter
         assert(!id.idIsReg4Write());
         return false;
     }
-#endif
 }

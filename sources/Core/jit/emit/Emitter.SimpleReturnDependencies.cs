@@ -1,70 +1,80 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
 using static RyuJitSharp.GenTreeFlags;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_LOONGARCH64
-    public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0)
-#else
     public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg1, regNumber reg2)
-#endif
     {
-#if TARGET_RISCV64
-        assert(emitIsCmpJump(ins));
-        emitIns_Jump(ins, target, reg1, reg2);
-#elif TARGET_LOONGARCH64
-        var compiler = _compiler ?? throw new FatalJitException("LoongArch64 jump recording requires an active compiler.");
-        var currentBlock = compiler.compCurBB
-            ?? throw new FatalJitException("LoongArch64 jump recording requires a current basic block.");
-        assert(target is not null);
-        assert(target.HasFlag(BBF_HAS_LABEL));
-
-        // Native records a single-instruction placeholder; long conditional branches are not supported here.
-        var id = emitNewInstrJmp();
-        id.idIns(ins);
-        id.idReg1(reg1);
-        id.idReg2(reg2);
-        id.idjShort = false;
-        id.idInsOpt(INS_OPTS_J_cond);
-        id.idjTarget = target;
-
-        id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, target);
-#if DEBUG
-        if (compiler.opts.compLongAddress)
+        if (Configuration.TARGET_RISCV64)
         {
-            id.idjKeepLong = true;
+            assert(emitIsCmpJump(ins));
+            emitIns_Jump(ins, target, reg1, reg2);
+            return;
         }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            var compiler = _compiler
+                ?? throw new FatalJitException("LoongArch64 jump recording requires an active compiler.");
+            var currentBlock = compiler.compCurBB
+                ?? throw new FatalJitException("LoongArch64 jump recording requires a current basic block.");
+            assert(target is not null);
+            assert(target.HasFlag(BBF_HAS_LABEL));
+
+            // Native records a single-instruction placeholder; long conditional branches are not supported here.
+            var id = emitNewInstrJmp();
+            id.idIns(ins);
+            id.idReg1(reg1);
+            id.idReg2(reg2);
+            id.idjShort = false;
+            id.idInsOpt(INS_OPTS_J_cond);
+            id.idjTarget = target;
+
+            id.idjKeepLong = compiler.fgInDifferentRegions(currentBlock, target);
+#if DEBUG
+            if (compiler.opts.compLongAddress)
+            {
+                id.idjKeepLong = true;
+            }
 #endif
 
-        id.idjIG = emitCurIG;
-        id.idjOffs = unchecked((uint)emitCurIGsize);
-        id.idjNext = emitCurIGjmpList;
-        emitCurIGjmpList = id;
+            id.idjIG = emitCurIG;
+            id.idjOffs = unchecked((uint)emitCurIGsize);
+            id.idjNext = emitCurIGjmpList;
+            emitCurIGjmpList = id;
 #if EMITTER_STATS
-        emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
+            emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
 #endif
 
-        id.idCodeSize(4);
-        appendToCurIG(id);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Target conditional-branch recording is not implemented.");
-#endif
+            id.idCodeSize(4);
+            appendToCurIG(id);
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Target conditional-branch recording is not implemented.");
     }
 
-    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint imm)
+    public void emitIns_J_cond_la(instruction ins, BasicBlock target)
     {
-#if TARGET_RISCV64
-        emitIns_R_I(ins, attr, reg, imm, INS_OPTS_NONE);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Target register-immediate recording is not implemented.");
-#endif
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 conditional-branch recording requires LoongArch64.");
+        }
+
+        emitIns_J_cond_la(ins, target, TargetRuntimeMetadata.Register0, TargetRuntimeMetadata.Register0);
     }
 
-#if TARGET_RISCV64
+    public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)
+    {
+        RequireRiscV64Target();
+        emitIns_J_cond_la(ins, target, reg, TargetRuntimeMetadata.ZeroRegister);
+    }
+
     public unsafe void emitIns_R_AI(
         instruction ins,
         emitAttr attr,
@@ -72,13 +82,16 @@ public partial class Emitter
         regNumber addrReg,
         nint disp)
     {
+        RequireRiscV64Target();
+
         var compiler = _compiler ?? throw new FatalJitException("Relocated-address instruction recording requires an active compiler.");
 
         assert(EA_IS_RELOC(attr));
         assert(compiler.opts.compReloc ||
             (compiler.eeGetRelocTypeHint((void*)disp) is CorInfoReloc.RELATIVE32));
-        assert(ins is INS_addi || emitInsIsLoadOrStore(ins));
-        assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg is REG_ZERO) || (dataReg == addrReg));
+        assert(ins is INS_addi || emitInsIsLoadOrStoreRiscV64(ins));
+        assert(emitInsIsStore(ins) || isFloatReg(dataReg) ||
+            (dataReg == TargetRuntimeMetadata.ZeroRegister) || (dataReg == addrReg));
         assert(isGeneralRegister(addrReg));
 
         var id = emitNewInstr(attr);
@@ -95,6 +108,8 @@ public partial class Emitter
 
     public unsafe bool IsAddressInRange(void* addr)
     {
+        RequireRiscV64Target();
+
         var compiler = _compiler ?? throw new FatalJitException("Address range checks require an active compiler.");
 
         if (compiler.opts.compReloc)
@@ -112,13 +127,10 @@ public partial class Emitter
         return compiler.eeGetRelocTypeHint(addr) is CorInfoReloc.RELATIVE32;
     }
 
-    public void emitIns_J_cond_la(instruction ins, BasicBlock target, regNumber reg)
-    {
-        emitIns_J_cond_la(ins, target, reg, REG_ZERO);
-    }
-
     public void emitIns_Mov(emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip)
     {
+        RequireRiscV64Target();
+
         if (!canSkip || dstReg != srcReg)
         {
             assert(attr == EA_4BYTE || attr == EA_PTRSIZE);
@@ -153,8 +165,10 @@ public partial class Emitter
         regNumber regAddr,
         void* addr)
     {
-        assert(ins is INS_addi || emitInsIsLoadOrStore(ins));
-        assert(!EA_IS_RELOC(attr) && (EA_SIZE(attr) is EA_PTRSIZE));
+        RequireRiscV64Target();
+
+        assert(ins is INS_addi || emitInsIsLoadOrStoreRiscV64(ins));
+        assert(!EA_IS_RELOC(attr) && (EA_SIZE(attr) == EA_PTRSIZE));
 
         if (IsAddressInRange(addr))
         {
@@ -170,6 +184,4 @@ public partial class Emitter
             emitIns_R_R_I(ins, attr, regDest, regAddr, lo12);
         }
     }
-#endif
 }
-#endif

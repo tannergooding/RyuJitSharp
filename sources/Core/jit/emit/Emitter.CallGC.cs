@@ -7,125 +7,314 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     private regMaskTP RBM_ALLINT
     {
         get
         {
             assert(_compiler is not null);
-            return new regMaskTP(_compiler.SRBM_ALLINT);
+
+            if (Configuration.TARGET_AMD64)
+            {
+                return new regMaskTP(_compiler.SRBM_ALLINT);
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return new regMaskTP(SRBM_ALLINT_ARM64);
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_ALLINT_ARM);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_ALLINT_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_ALLINT));
         }
     }
 
-    private static regMaskTP RBM_CALLEE_SAVED
-        => new(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED, SRBM_MSK_CALLEE_SAVED);
-
-    private regMaskTP CallScratchRegisters
+    private regMaskTP RBM_CALLEE_SAVED
     {
         get
         {
-            assert(_compiler is not null);
-            return new regMaskTP(
-                _compiler.SRBM_INT_CALLEE_TRASH | _compiler.SRBM_FLT_CALLEE_TRASH, _compiler.SRBM_MSK_CALLEE_TRASH);
+            if (Configuration.TARGET_AMD64)
+            {
+                var intRegisters = SRBM_X64_EBX | SRBM_X64_R12 | SRBM_X64_R13 | SRBM_X64_R14 | SRBM_X64_R15;
+                if (!Configuration.UNIX_AMD64_ABI)
+                {
+                    intRegisters |= SRBM_X64_ESI | SRBM_X64_EDI;
+                }
+
+                intRegisters |= SRBM_ETW_FRAMED_EBP;
+
+                var floatRegisters = SRBM_NONE;
+                if (!Configuration.UNIX_AMD64_ABI)
+                {
+                    floatRegisters = SRBM_X64_XMM6 | SRBM_X64_XMM7 | SRBM_X64_XMM8 | SRBM_X64_XMM9 |
+                        SRBM_X64_XMM10 | SRBM_X64_XMM11 | SRBM_X64_XMM12 | SRBM_X64_XMM13 |
+                        SRBM_X64_XMM14 | SRBM_X64_XMM15;
+                }
+
+                return new regMaskTP(intRegisters | floatRegisters, SRBM_NONE);
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return new regMaskTP(SRBM_CALLEE_SAVED_ARM64);
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_CALLEE_SAVED_ARM);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_CALLEE_SAVED_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_CALLEE_SAVED));
         }
     }
 
-    private regMaskTP RBM_CALLEE_TRASH => CallScratchRegisters;
+    private regMaskTP RBM_CALLEE_TRASH
+    {
+        get
+        {
+            if (Configuration.TARGET_XARCH)
+            {
+                return CallScratchRegisters;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return SRBM_CALLEE_TRASH_ARM64;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_INT_CALLEE_TRASH_ARM | SRBM_FLT_CALLEE_TRASH_ARM);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_CALLEE_TRASH_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_CALLEE_TRASH));
+        }
+    }
 
     private regMaskTP RBM_INTERFACELOOKUP_FOR_SLOT_TRASH
-        => RBM_CALLEE_TRASH & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS);
+    {
+        get
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                return RBM_CALLEE_TRASH & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS);
+            }
 
-    private static regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER => new(SRBM_INT_CALLEE_TRASH_INIT);
+            if (Configuration.TARGET_ARM64)
+            {
+                return new regMaskTP(
+                    (SRBM_INT_CALLEE_TRASH_ARM64 | SRBM_FLT_CALLEE_TRASH_ARM64) &
+                    ~(SRBM_ARG_REGS_ARM64 | SRBM_FLTARG_REGS),
+                    SRBM_MSK_CALLEE_TRASH_ARM64);
+            }
 
-#if UNIX_AMD64_ABI
+            return MissingNoGCCallMask(nameof(RBM_INTERFACELOOKUP_FOR_SLOT_TRASH));
+        }
+    }
+
+    private regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER
+    {
+        get
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                var intRegisters = SRBM_X64_EAX | SRBM_X64_ECX | SRBM_X64_EDX |
+                    SRBM_X64_R8 | SRBM_X64_R9 | SRBM_X64_R10 | SRBM_X64_R11;
+                if (Configuration.UNIX_AMD64_ABI)
+                {
+                    intRegisters |= SRBM_X64_RDI | SRBM_X64_RSI;
+                }
+
+                return new regMaskTP(intRegisters);
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return new regMaskTP(SRBM_CALLEE_GCTRASH_WRITEBARRIER_ARM64);
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_CALLEE_GCTRASH_WRITEBARRIER_ARM);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_CALLEE_GCTRASH_WRITEBARRIER_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_CALLEE_GCTRASH_WRITEBARRIER));
+        }
+    }
+
     private regMaskTP RBM_PROFILER_ENTER_TRASH
-        => RBM_CALLEE_TRASH & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS);
-#else
-    private regMaskTP RBM_PROFILER_ENTER_TRASH => RBM_CALLEE_TRASH;
-#endif
+    {
+        get
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                return Configuration.UNIX_AMD64_ABI
+                    ? RBM_CALLEE_TRASH & ~new regMaskTP(SRBM_ARG_REGS | SRBM_FLTARG_REGS)
+                    : RBM_CALLEE_TRASH;
+            }
 
-#if UNIX_AMD64_ABI
-    private regMaskTP RBM_PROFILER_LEAVE_TRASH
-        => RBM_CALLEE_TRASH & ~new regMaskTP(SRBM_FLOATRET | SRBM_INTRET | SRBM_FLOATRET_1 | SRBM_INTRET_1);
-#else
-    private regMaskTP RBM_PROFILER_LEAVE_TRASH
-        => RBM_CALLEE_TRASH & ~new regMaskTP(SRBM_FLOATRET | SRBM_INTRET);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                return SRBM_CALLEE_TRASH_ARM64 &
+                    ~new regMaskTP(SRBM_ARG_REGS_ARM64 | SRBM_ARM64_R8 | SRBM_FLTARG_REGS | SRBM_ARM64_FP);
+            }
 
-    private regMaskTP RBM_PROFILER_TAILCALL_TRASH => RBM_PROFILER_LEAVE_TRASH;
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_NONE);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_PROFILER_ENTER_TRASH_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_PROFILER_ENTER_TRASH));
+        }
+    }
+
+    private regMaskTP RBM_PROFILER_LEAVE_TRASH
+    {
+        get
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                var returnRegisters = SRBM_FLOATRET_AMD64 | SRBM_INTRET_AMD64;
+                if (Configuration.UNIX_AMD64_ABI)
+                {
+                    returnRegisters |= SRBM_FLOATRET_1_AMD64 | SRBM_INTRET_1_AMD64;
+                }
+
+                return RBM_CALLEE_TRASH & ~new regMaskTP(returnRegisters);
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return RBM_PROFILER_ENTER_TRASH;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_PROFILER_RET_SCRATCH);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_PROFILER_LEAVE_TRASH_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_PROFILER_LEAVE_TRASH));
+        }
+    }
+
+    private regMaskTP RBM_PROFILER_TAILCALL_TRASH
+    {
+        get
+        {
+            if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
+            {
+                return RBM_PROFILER_LEAVE_TRASH;
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_NONE);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_PROFILER_TAILCALL_TRASH_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_PROFILER_TAILCALL_TRASH));
+        }
+    }
 
     private regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH
     {
         get
         {
-            assert(_compiler is not null);
-            return new regMaskTP(_compiler.SRBM_INT_CALLEE_TRASH & ~(SRBM_R10 | SRBM_RCX));
+            if (Configuration.TARGET_AMD64)
+            {
+                assert(_compiler is not null);
+                return new regMaskTP(_compiler.SRBM_INT_CALLEE_TRASH & ~(SRBM_X64_R10 | SRBM_X64_RCX));
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64);
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_VALIDATE_INDIRECT_CALL_TRASH_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_VALIDATE_INDIRECT_CALL_TRASH));
         }
     }
 
-    private regMaskTP RBM_CALLEE_TRASH_NOGC => RBM_CALLEE_TRASH;
-#elif TARGET_ARM64
-    private static regMaskTP RBM_CALLEE_TRASH => SRBM_CALLEE_TRASH;
-    private static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);
-    private static regMaskTP RBM_CALLEE_SAVED => new(SRBM_CALLEE_SAVED);
-    private static regMaskTP RBM_INTERFACELOOKUP_FOR_SLOT_TRASH => SRBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
-    private static regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER => new(SRBM_CALLEE_GCTRASH_WRITEBARRIER);
-    private static regMaskTP RBM_PROFILER_ENTER_TRASH
-        => SRBM_CALLEE_TRASH & ~new regMaskTP(SRBM_ARG_REGS | SRBM_ARG_RET_BUFF | SRBM_FLTARG_REGS | SRBM_FP);
-    private static regMaskTP RBM_PROFILER_LEAVE_TRASH => RBM_PROFILER_ENTER_TRASH;
-    private static regMaskTP RBM_PROFILER_TAILCALL_TRASH => RBM_PROFILER_LEAVE_TRASH;
-    private static regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH => new(SRBM_VALIDATE_INDIRECT_CALL_TRASH);
-    private static regMaskTP RBM_CALLEE_TRASH_NOGC => new(SRBM_CALLEE_TRASH_NOGC);
-#elif TARGET_ARM
-    private static regMaskTP RBM_CALLEE_TRASH => new(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
-    private static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);
-    private static regMaskTP RBM_CALLEE_SAVED => new(SRBM_CALLEE_SAVED);
-    private static regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER => new(SRBM_CALLEE_GCTRASH_WRITEBARRIER);
-    private static regMaskTP RBM_PROFILER_ENTER_TRASH => new(SRBM_NONE);
-    private static regMaskTP RBM_PROFILER_LEAVE_TRASH => new(SRBM_PROFILER_RET_SCRATCH);
-    private static regMaskTP RBM_PROFILER_TAILCALL_TRASH => new(SRBM_NONE);
-    private static regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH => new(SRBM_INT_CALLEE_TRASH);
-    private static regMaskTP RBM_CALLEE_TRASH_NOGC => new(SRBM_CALLEE_TRASH_NOGC);
-#elif TARGET_RISCV64
-    private static regMaskTP RBM_CALLEE_TRASH => new(SRBM_CALLEE_TRASH);
-    private static regMaskTP RBM_ALLINT => new(SRBM_ALLINT);
-    private static regMaskTP RBM_CALLEE_SAVED => new(SRBM_CALLEE_SAVED);
-    private static regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER => new(SRBM_CALLEE_GCTRASH_WRITEBARRIER);
-    private static regMaskTP RBM_PROFILER_ENTER_TRASH => new(SRBM_PROFILER_ENTER_TRASH);
-    private static regMaskTP RBM_PROFILER_LEAVE_TRASH => new(SRBM_PROFILER_LEAVE_TRASH);
-    private static regMaskTP RBM_PROFILER_TAILCALL_TRASH => new(SRBM_PROFILER_TAILCALL_TRASH);
-    private static regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH => new(SRBM_VALIDATE_INDIRECT_CALL_TRASH);
-    private static regMaskTP RBM_CALLEE_TRASH_NOGC => new(SRBM_CALLEE_TRASH_NOGC);
-#else
-#if TARGET_X86
-    private regMaskTP RBM_CALLEE_TRASH => CallScratchRegisters;
-#else
-    private static regMaskTP RBM_CALLEE_TRASH => MissingNoGCCallMask(nameof(RBM_CALLEE_TRASH));
-#endif
-    private static regMaskTP RBM_ALLINT => MissingNoGCCallMask(nameof(RBM_ALLINT));
-    private static regMaskTP RBM_CALLEE_SAVED => MissingNoGCCallMask(nameof(RBM_CALLEE_SAVED));
-    private static regMaskTP RBM_CALLEE_GCTRASH_WRITEBARRIER
-        => MissingNoGCCallMask(nameof(RBM_CALLEE_GCTRASH_WRITEBARRIER));
-    private static regMaskTP RBM_PROFILER_ENTER_TRASH => MissingNoGCCallMask(nameof(RBM_PROFILER_ENTER_TRASH));
-    private static regMaskTP RBM_PROFILER_LEAVE_TRASH => MissingNoGCCallMask(nameof(RBM_PROFILER_LEAVE_TRASH));
-    private static regMaskTP RBM_PROFILER_TAILCALL_TRASH => MissingNoGCCallMask(nameof(RBM_PROFILER_TAILCALL_TRASH));
-    private static regMaskTP RBM_VALIDATE_INDIRECT_CALL_TRASH
-        => MissingNoGCCallMask(nameof(RBM_VALIDATE_INDIRECT_CALL_TRASH));
-    private static regMaskTP RBM_CALLEE_TRASH_NOGC => MissingNoGCCallMask(nameof(RBM_CALLEE_TRASH_NOGC));
+    private regMaskTP RBM_CALLEE_TRASH_NOGC
+    {
+        get
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                return RBM_CALLEE_TRASH;
+            }
+
+            if (Configuration.TARGET_ARM64)
+            {
+                return new regMaskTP(SRBM_CALLEE_TRASH_NOGC_ARM64);
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                return new regMaskTP(SRBM_CALLEE_TRASH_NOGC_ARM);
+            }
+
+            if (Configuration.TARGET_RISCV64)
+            {
+                return new regMaskTP(SRBM_CALLEE_TRASH_NOGC_RISCV64);
+            }
+
+            return MissingNoGCCallMask(nameof(RBM_CALLEE_TRASH_NOGC));
+        }
+    }
+
+    private static regMaskTP RBM_INIT_PINVOKE_FRAME_TRASH
+        => MissingNoGCCallMask(nameof(RBM_INIT_PINVOKE_FRAME_TRASH));
 
     private static regMaskTP MissingNoGCCallMask(string mask)
         => throw new FatalJitException(CORJIT_SKIPPED, $"No-GC call register mask {mask} is not ported for this target.");
-#endif
-
-#if TARGET_ARM
-    private static regMaskTP RBM_PROFILER_RET_SCRATCH
-        => new(SRBM_PROFILER_RET_SCRATCH);
-#endif
-
-#if TARGET_X86
-    private static regMaskTP RBM_INIT_PINVOKE_FRAME_TRASH
-        => MissingNoGCCallMask(nameof(RBM_INIT_PINVOKE_FRAME_TRASH));
-#endif
 
     public static unsafe bool emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
     {
@@ -159,12 +348,11 @@ public partial class Emitter
             return savedSet;
         }
 
-#if TARGET_AMD64 || TARGET_ARM64
-        else if (helper == CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT)
+        else if ((Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64) &&
+                 (helper == CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
         {
             return RBM_ALLINT & ~RBM_INTERFACELOOKUP_FOR_SLOT_TRASH;
         }
-#endif
         else
         {
             return RBM_CALLEE_SAVED;
@@ -185,36 +373,34 @@ public partial class Emitter
                 break;
             }
 
-#if !TARGET_LOONGARCH64 && !TARGET_RISCV64
-            case CORINFO_HELP_PROF_FCN_ENTER:
+            case CORINFO_HELP_PROF_FCN_ENTER when !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64:
             {
                 killMask = RBM_PROFILER_ENTER_TRASH;
                 break;
             }
 
-            case CORINFO_HELP_PROF_FCN_LEAVE:
+            case CORINFO_HELP_PROF_FCN_LEAVE when !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64:
             {
                 killMask = RBM_PROFILER_LEAVE_TRASH;
-#if TARGET_ARM
-                killMask &= ~RBM_PROFILER_RET_SCRATCH;
-#endif
+                if (Configuration.TARGET_ARM)
+                {
+                    killMask &= ~new regMaskTP(SRBM_PROFILER_RET_SCRATCH);
+                }
+
                 break;
             }
 
-            case CORINFO_HELP_PROF_FCN_TAILCALL:
+            case CORINFO_HELP_PROF_FCN_TAILCALL when !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64:
             {
                 killMask = RBM_PROFILER_TAILCALL_TRASH;
                 break;
             }
-#endif
 
-#if TARGET_X86
-            case CORINFO_HELP_INIT_PINVOKE_FRAME:
+            case CORINFO_HELP_INIT_PINVOKE_FRAME when Configuration.TARGET_X86:
             {
                 killMask = RBM_INIT_PINVOKE_FRAME_TRASH;
                 break;
             }
-#endif
 
             case CORINFO_HELP_VALIDATE_INDIRECT_CALL:
             {

@@ -16,13 +16,15 @@ public partial class Emitter
         return type is GCT_GCREF or GCT_BYREF;
     }
 
-#if EMIT_TRACK_STACK_DEPTH
     private const int MAX_SIMPLE_STK_DEPTH = sizeof(uint) * 8;
-#endif
 
     internal unsafe void emitStackPush(byte* addr, GCInfo.GCtype gcType)
     {
-#if EMIT_TRACK_STACK_DEPTH
+        if (!Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+        }
+
         assert(gcType is GCT_NONE or GCT_GCREF or GCT_BYREF);
         if (emitSimpleStkUsed)
         {
@@ -40,14 +42,15 @@ public partial class Emitter
         }
 
         emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) + sizeof(int)));
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
-#endif
     }
 
     internal unsafe void emitStackPushN(byte* addr, uint count)
     {
-#if EMIT_TRACK_STACK_DEPTH
+        if (!Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+        }
+
         assert(count != 0);
         if (emitSimpleStkUsed)
         {
@@ -61,14 +64,15 @@ public partial class Emitter
         }
 
         emitCurStackLvl = unchecked((int)(unchecked((uint)emitCurStackLvl) + unchecked(count * sizeof(int))));
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
-#endif
     }
 
     internal unsafe void emitStackPop(byte* addr, bool isCall, byte callInstrSize, uint count = 1)
     {
-#if EMIT_TRACK_STACK_DEPTH
+        if (!Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+        }
+
         assert(unchecked((uint)emitCurStackLvl) / sizeof(int) >= count);
         assert(!isCall || callInstrSize > 0);
 
@@ -94,22 +98,21 @@ public partial class Emitter
         {
             assert(isCall);
             if (emitFullGCinfo
-#if !JIT32_GCENCODER
-                || (codeGen.IsFullPtrRegMapRequired && !codeGen.Interruptible && isCall)
-#endif
-                )
+                || (!Configuration.JIT32_GCENCODER && codeGen.IsFullPtrRegMapRequired
+                    && !codeGen.Interruptible && isCall))
             {
                 emitStackPopLargeStk(addr, isCall, callInstrSize, 0);
             }
         }
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
-#endif
     }
 
     private unsafe void emitStackPushLargeStk(byte* addr, GCInfo.GCtype gcType, uint count = 1)
     {
-#if EMIT_TRACK_STACK_DEPTH
+        if (!Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+        }
+
         var level = unchecked((uint)emitCurStackLvl) / sizeof(int);
         assert(gcType is GCT_NONE or GCT_GCREF or GCT_BYREF);
         assert(count != 0 && !emitSimpleStkUsed);
@@ -145,20 +148,23 @@ public partial class Emitter
             level = unchecked(level + 1);
             assert(level != 0);
         } while (--count != 0);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
-#endif
     }
 
     private unsafe void emitStackPopLargeStk(byte* addr, bool isCall, byte callInstrSize, uint count = 1)
     {
-#if EMIT_GENERATE_GCINFO && EMIT_TRACK_STACK_DEPTH
+        if (!Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+        }
+
+#if EMIT_GENERATE_GCINFO
 #if DEBUG
         assert(emitIssuing);
 #endif
-#if JIT32_GCENCODER
-        assert(!emitSimpleStkUsed);
-#endif
+        if (Configuration.JIT32_GCENCODER)
+        {
+            assert(!emitSimpleStkUsed);
+        }
         uint argRecCnt = 0;
         for (var remaining = count; remaining != 0; remaining--)
         {
@@ -181,40 +187,40 @@ public partial class Emitter
         var argRecValue = argRecCnt <= ushort.MaxValue ? unchecked((ushort)argRecCnt) : (ushort)0;
         u2.emitGcArgTrackCnt = unchecked((ushort)(u2.emitGcArgTrackCnt - argRecValue));
 
-#if JIT32_GCENCODER
-        if (!emitFullGCinfo)
+        if (Configuration.JIT32_GCENCODER && !emitFullGCinfo)
         {
             return;
         }
-#endif
 
-        var gcrefRegs = unchecked((uint)emitThisGCrefRegs) >> (int)REG_INT_FIRST;
-        var byrefRegs = unchecked((uint)emitThisByrefRegs) >> (int)REG_INT_FIRST;
-        assert(new regMaskTP((regMask)((ulong)gcrefRegs << (int)REG_INT_FIRST)) ==
+        var gcrefRegs = unchecked((uint)emitThisGCrefRegs) >> (int)TargetRuntimeMetadata.IntegerRegisterFirst;
+        var byrefRegs = unchecked((uint)emitThisByrefRegs) >> (int)TargetRuntimeMetadata.IntegerRegisterFirst;
+        assert(new regMaskTP((regMask)((ulong)gcrefRegs << (int)TargetRuntimeMetadata.IntegerRegisterFirst)) ==
             new regMaskTP(emitThisGCrefRegs));
-        assert(new regMaskTP((regMask)((ulong)byrefRegs << (int)REG_INT_FIRST)) ==
+        assert(new regMaskTP((regMask)((ulong)byrefRegs << (int)TargetRuntimeMetadata.IntegerRegisterFirst)) ==
             new regMaskTP(emitThisByrefRegs));
 
-#if JIT32_GCENCODER
-        var reportedRegs = unchecked((uint)(SRBM_INT_CALLEE_SAVED | SRBM_EBP)) >> (int)REG_INT_FIRST;
-        gcrefRegs &= reportedRegs;
-        byrefRegs &= reportedRegs;
+        if (Configuration.JIT32_GCENCODER)
+        {
+            var reportedRegs = unchecked((uint)(TargetRuntimeMetadata.IntegerCalleeSavedMask |
+                TargetRuntimeMetadata.FramePointerBaseRegister.SingleTypeMask)) >> (int)TargetRuntimeMetadata.IntegerRegisterFirst;
+            gcrefRegs &= reportedRegs;
+            byrefRegs &= reportedRegs;
 
 #if DEBUG
-        assert(argRecCnt <= ushort.MaxValue);
+            assert(argRecCnt <= ushort.MaxValue);
 #endif
-        if (argRecValue == 0)
-        {
-#if !FPO_INTERRUPTIBLE
-            if (emitFullyInt || (gcrefRegs == 0 && byrefRegs == 0 && u2.emitGcArgTrackCnt == 0))
+            if (argRecValue == 0)
             {
-                return;
-            }
+#if !FPO_INTERRUPTIBLE
+                if (emitFullyInt || (gcrefRegs == 0 && byrefRegs == 0 && u2.emitGcArgTrackCnt == 0))
+                {
+                    return;
+                }
 #else
-            return;
+                return;
 #endif
+            }
         }
-#endif
 
 #if DEBUG
         assert(argRecCnt <= ushort.MaxValue);
@@ -224,13 +230,11 @@ public partial class Emitter
         descriptor.rpdGCtype = GCT_GCREF;
         descriptor.rpdOffs = emitCurCodeOffs(addr);
         descriptor.rpdCall = isCall || isCallRelatedPop;
-#if !JIT32_GCENCODER
-        if (descriptor.rpdCall)
+        if (!Configuration.JIT32_GCENCODER && descriptor.rpdCall)
         {
             assert(isCall || callInstrSize == 0);
             descriptor.rpdCallInstrSize = callInstrSize;
         }
-#endif
         descriptor.rpdCallData.rpdCallGCrefRegs = gcrefRegs;
         descriptor.rpdCallData.rpdCallByrefRegs = byrefRegs;
         descriptor.rpdArg = true;
@@ -239,14 +243,16 @@ public partial class Emitter
         assert(argRecCnt <= ushort.MaxValue);
 #endif
         descriptor.rpdCallData.rpdPtrArg = argRecValue;
-#elif !EMIT_TRACK_STACK_DEPTH
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
 #endif
     }
 
     internal unsafe void emitStackKillArgs(byte* addr, uint count, byte callInstrSize)
     {
-#if EMIT_TRACK_STACK_DEPTH
+        if (!Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
+        }
+
         assert(count != 0);
         if (emitSimpleStkUsed)
         {
@@ -302,8 +308,5 @@ public partial class Emitter
             descriptor.rpdCallData.rpdPtrArg = gcCntValue;
         }
         emitStackPopLargeStk(addr, true, callInstrSize, 0);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-depth tracking is disabled for this target.");
-#endif
     }
 }

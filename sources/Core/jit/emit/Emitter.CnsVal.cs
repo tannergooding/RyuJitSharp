@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH || TARGET_LOONGARCH64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -14,4 +13,3 @@ public partial class Emitter
         public bool cnsReloc;
     }
 }
-#endif

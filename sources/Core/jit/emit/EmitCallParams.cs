@@ -30,9 +30,7 @@ public unsafe struct EmitCallParams
     public nint disp;
     public bool isJump;
     public bool noSafePoint;
-#if TARGET_WASM
     public CORINFO_WASM_TYPE_SYMBOL_HANDLE wasmSignature = null;
-#endif
     public GenTreeCall? returnValueCall;
 
     public EmitCallParams()

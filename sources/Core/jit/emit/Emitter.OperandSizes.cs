@@ -17,39 +17,28 @@ public partial class Emitter
         OPSZ4,
         OPSZ8,
         OPSZ16,
-#if TARGET_XARCH
         OPSZ32,
         OPSZ64,
-#elif TARGET_ARM64
-        OPSZ_SCALABLE,
-#endif
-        OPSZ_COUNT,
-#if TARGET_AMD64
-        OPSZP = OPSZ8,
-#else
-        OPSZP = OPSZ4,
-#endif
+        OPSZ_SCALABLE = OPSZ32,
     }
 
+    // The size tag at index 5 means 32 bytes on xarch and scalable on ARM64.
     private static ReadOnlySpan<emitAttr> emitSizeDecode =>
     [
         EA_1BYTE, EA_2BYTE, EA_4BYTE, EA_8BYTE, EA_16BYTE,
-#if TARGET_XARCH
-        EA_32BYTE, EA_64BYTE,
-#elif TARGET_ARM64
-        EA_SCALABLE,
-#endif
+        EA_SCALABLE_ARM64, (emitAttr)64,
     ];
 
     private static opSize emitEncodeSize(emitAttr size)
     {
-        assert((size != EA_UNKNOWN) && ((size & EA_SIZE_MASK) == size));
+        assert((size != EA_UNKNOWN) && (EA_SIZE(size) == size));
         return (opSize)BitOperations.Log2((uint)size);
     }
 
     private static emitAttr emitDecodeSize(opSize size)
     {
-        assert(size < opSize.OPSZ_COUNT);
+        var count = Configuration.TARGET_XARCH ? 7u : Configuration.TARGET_ARM64 ? 6u : 5u;
+        assert((uint)size < count);
         return emitSizeDecode[(int)size];
     }
 }

@@ -3,24 +3,28 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
 using static RyuJitSharp.GCInfo.GCtype;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_LOONGARCH64
-    public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, regNumber addrReg,
+    public unsafe void emitIns_R_CLoongArch64(instruction ins, emitAttr attr, regNumber reg, regNumber addrReg,
         CORINFO_FIELD_HANDLE fieldHandle, int offset)
     {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 embedded-data recording requires a LoongArch64 target.");
+        }
+
         assert(offset >= 0);
         assert(instrDesc.fitsInSmallCns(offset));
 
         var id = emitNewInstr(attr);
         id.idSetRelocFlags(attr);
         id.idIns(ins);
-        assert(reg != REG_R0);
+        assert(reg != TargetRuntimeMetadata.Register0);
         id.idReg1(reg);
         id.idSmallCns(offset);
         id.idInsOpt(INS_OPTS_RC);
@@ -53,14 +57,19 @@ public partial class Emitter
         id.idAddr().iiaFieldHnd = fieldHandle;
         appendToCurIG(id);
     }
-#else
     public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, regNumber addrReg,
         CORINFO_FIELD_HANDLE fieldHandle)
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "RISC-V embedded-data recording requires a RISC-V64 target.");
+        }
+
         var id = emitNewInstr(attr);
         id.idSetRelocFlags(attr);
         id.idIns(ins);
-        assert(reg != REG_R0);
+        assert(reg != TargetRuntimeMetadata.Register0);
         id.idReg1(reg);
         id.idInsOpt(INS_OPTS_RC);
         id.idCodeSize(8);
@@ -74,7 +83,4 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
     }
-#endif
-
 }
-#endif

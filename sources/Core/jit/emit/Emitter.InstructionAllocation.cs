@@ -81,13 +81,28 @@ public partial class Emitter
 
         var id = new T();
         emitLastIns = id;
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
-        emitCurIG.igLastIns = id;
+        if (Configuration.TARGET_XARCH)
+        {
+            emitCurIG.igLastIns = id;
+        }
+#if EMIT_BACKWARDS_NAVIGATION
+        else
+        {
+            emitCurIG.igLastIns = id;
+        }
 #endif
         assert(size >= (nuint)nint.Size);
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
-        id.idSetPrevSize(unchecked((uint)emitLastInsFullSize));
-        emitLastInsFullSize = (int)fullSize;
+        if (Configuration.TARGET_XARCH)
+        {
+            id.idSetPrevSize(unchecked((uint)emitLastInsFullSize));
+            emitLastInsFullSize = (int)fullSize;
+        }
+#if EMIT_BACKWARDS_NAVIGATION
+        else
+        {
+            id.idSetPrevSize(unchecked((uint)emitLastInsFullSize));
+            emitLastInsFullSize = (int)fullSize;
+        }
 #endif
         emitLastInsIG = emitCurIG;
 
@@ -100,14 +115,15 @@ public partial class Emitter
 
         assert(id.idReg1() == 0);
         assert(id.idReg2() == 0);
-#if TARGET_XARCH
-        assert(id.idCodeSize() == 0);
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(id.idCodeSize() == 0);
+        }
         emitInsCount = unchecked(emitInsCount + 1);
 
         if (_debugInfoSize > 0)
         {
-            var info = emitGetMem<instrDescDebugInfo>(DescriptorSizes.DebugInfo);
+            var info = emitGetMem<instrDescDebugInfo>(unchecked((nuint)DescriptorSizes.DebugInfo));
             info.idNum = unchecked((uint)emitInsCount);
             info.idSize = size;
             id.idDebugOnlyInfo(info);
@@ -129,11 +145,8 @@ public partial class Emitter
             id.idOpSize(EA_SIZE(opsz));
         }
 
-        if (EA_IS_DSP_RELOC(opsz)
-#if !TARGET_AMD64
-            && _compiler.opts.compReloc
-#endif
-            )
+        if (EA_IS_DSP_RELOC(opsz) &&
+            (Configuration.TARGET_AMD64 || _compiler.opts.compReloc))
         {
             id.idSetIsDspReloc();
         }
@@ -171,7 +184,7 @@ public partial class Emitter
         emitTotalIDescCnt = unchecked(emitTotalIDescCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescBasic>(INSTR_DESC_SIZE, attr);
+        return emitAllocAnyInstr<instrDescBasic>(unchecked((nuint)INSTR_DESC_SIZE), attr);
     }
 
     private instrDescJmp emitAllocInstrJmp()
@@ -180,19 +193,22 @@ public partial class Emitter
         emitTotalIDescJmpCnt = unchecked(emitTotalIDescJmpCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescJmp>(DescriptorSizes.Jump, EA_1BYTE);
+        return emitAllocAnyInstr<instrDescJmp>(unchecked((nuint)DescriptorSizes.Jump), EA_1BYTE);
     }
 
-#if TARGET_ARM || TARGET_XARCH
     private instrDescLbl emitAllocInstrLbl()
     {
+        if (!(Configuration.TARGET_ARM || Configuration.TARGET_XARCH))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Label instruction descriptors are not supported for this target.");
+        }
+
 #if EMITTER_STATS
         emitTotalIDescLblCnt = unchecked(emitTotalIDescLblCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescLbl>(DescriptorSizes.Label, EA_4BYTE);
+        return emitAllocAnyInstr<instrDescLbl>(unchecked((nuint)DescriptorSizes.Label), EA_4BYTE);
     }
-#endif
 
     private instrDescAlign emitAllocInstrAlign()
     {
@@ -226,21 +242,20 @@ public partial class Emitter
         return emitAllocInstrJmp();
     }
 
-#if TARGET_ARM || TARGET_XARCH
     private instrDescLbl emitNewInstrLbl()
     {
         return emitAllocInstrLbl();
     }
-#endif
 
     private instrDescAlign emitNewInstrAlign()
     {
         var id = emitAllocInstrAlign();
         id.idIns(instruction.INS_align);
-#if TARGET_ARM64
-        id.idInsFmt(insFormat.IF_SN_0A);
-        id.idInsOpt(INS_OPTS_ALIGN);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            id.idInsFmt(insFormat.IF_ARM64_SN_0A);
+            id.idInsOpt(INS_OPTS_ALIGN);
+        }
 
         return id;
     }

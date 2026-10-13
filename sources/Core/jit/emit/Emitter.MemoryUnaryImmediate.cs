@@ -11,17 +11,31 @@ public partial class Emitter
 {
     public unsafe void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs)
     {
-#if TARGET_ARM64
-        NYI("emitIns_C");
-#elif TARGET_ARM
-        NYI("emitIns_C");
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field instruction recording is not ported.");
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Single static-field instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            NYI("emitIns_C");
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 static-field instruction recording is not ported.");
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            NYI("emitIns_C");
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 static-field instruction recording is not ported.");
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Single static-field instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
             attr |= EA_DSP_RELOC_FLG;
@@ -32,14 +46,14 @@ public partial class Emitter
         if ((attr & EA_OFFSET_FLG) != 0)
         {
             assert(ins == INS_push);
-            size = 1 + TARGET_POINTER_SIZE;
+            size = 1u + (uint)Configuration.TARGET_POINTER_SIZE;
             id = emitNewInstrDsp(EA_1BYTE, offs);
             id.idIns(ins);
-            id.idInsFmt(IF_MRD_OFF);
+            id.idInsFmt(IF_XARCH_MRD_OFF);
         }
         else
         {
-            var format = emitInsModeFormat(ins, IF_MRD);
+            var format = emitInsModeFormat(ins, IF_XARCH_MRD);
             id = emitNewInstrDsp(attr, offs);
             id.idIns(ins);
             id.idInsFmt(format);
@@ -54,24 +68,29 @@ public partial class Emitter
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#if TARGET_X86
-        emitAdjustStackDepthPushPop(ins);
-#endif
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            emitAdjustStackDepthPushPop(ins);
+        }
     }
 
     public void emitIns_AR(instruction ins, emitAttr attr, regNumber baseReg, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Unary memory instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Unary memory instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(ins is INS_prefetcht0 or INS_prefetcht1 or INS_prefetcht2 or INS_prefetchnta or INS_inc or INS_dec);
         var id = emitNewInstrAmd(attr, offs);
         id.idIns(ins);
-        id.idInsFmt(emitInsModeFormat(ins, IF_ARD));
+        id.idInsFmt(emitInsModeFormat(ins, IF_XARCH_ARD));
         id.idAddr().iiaAddrMode.amBaseReg = baseReg;
         id.idAddr().iiaAddrMode.amIndxReg = REG_NA;
         if ((instOptions & INS_OPTS_EVEX_NoApxPromotion) != 0)
@@ -83,6 +102,5 @@ public partial class Emitter
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
     }
 }

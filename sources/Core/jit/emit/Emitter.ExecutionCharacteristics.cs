@@ -10,9 +10,52 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
+    private const float PERFSCORE_THROUGHPUT_7C = 7.0f;
+    private const float PERFSCORE_THROUGHPUT_9X = 1.0f / 9.0f;
+    private const float PERFSCORE_LATENCY_22C = 22.0f;
+
     internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
     {
+        if (Configuration.TARGET_XARCH)
+        {
+            return getInsExecutionCharacteristicsXarch(id);
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return getInsExecutionCharacteristicsArm64(id);
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return getInsExecutionCharacteristicsRiscV64(id);
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return getInsExecutionCharacteristicsLoongArch64(id);
+        }
+
+        if (Configuration.TARGET_WASM || Configuration.TARGET_ARM)
+        {
+            _ = id;
+            return new insExecutionCharacteristics
+            {
+                insThroughput = PERFSCORE_THROUGHPUT_1C,
+                insLatency = PERFSCORE_LATENCY_1C,
+            };
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside supported targets are not implemented.");
+    }
+
+    internal insExecutionCharacteristics getInsExecutionCharacteristicsXarch(instrDesc id)
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch execution characteristics are not available for this target.");
+        }
+
         var ins = id.idIns();
         var insFmt = id.idInsFmt();
         var opSize = id.idOpSize();
@@ -23,7 +66,7 @@ public partial class Emitter
 
         switch (memFmt)
         {
-            case IF_SRD:
+            case IF_XARCH_SRD:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RD;
                 memLatency = PERFSCORE_LATENCY_RD_STACK;
@@ -31,7 +74,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SWR:
+            case IF_XARCH_SWR:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_WR;
                 memLatency = PERFSCORE_LATENCY_WR_STACK;
@@ -39,7 +82,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SRW:
+            case IF_XARCH_SRW:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RW;
                 memLatency = PERFSCORE_LATENCY_RD_WR_STACK;
@@ -47,7 +90,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MRD:
+            case IF_XARCH_MRD:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RD;
                 memLatency = PERFSCORE_LATENCY_RD_CONST_ADDR;
@@ -55,7 +98,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MWR:
+            case IF_XARCH_MWR:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_WR;
                 memLatency = PERFSCORE_LATENCY_WR_CONST_ADDR;
@@ -63,7 +106,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MRW:
+            case IF_XARCH_MRW:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RW;
                 memLatency = PERFSCORE_LATENCY_RD_WR_CONST_ADDR;
@@ -71,7 +114,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARD:
+            case IF_XARCH_ARD:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RD;
                 memLatency = PERFSCORE_LATENCY_RD_GENERAL;
@@ -79,7 +122,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_AWR:
+            case IF_XARCH_AWR:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_WR;
                 memLatency = PERFSCORE_LATENCY_WR_GENERAL;
@@ -87,7 +130,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARW:
+            case IF_XARCH_ARW:
             {
                 memThroughput = PERFSCORE_THROUGHPUT_RW;
                 memLatency = PERFSCORE_LATENCY_RD_WR_GENERAL;
@@ -159,7 +202,7 @@ public partial class Emitter
                 insThroughput = PERFSCORE_THROUGHPUT_2X; // one or two components
                 insLatency = PERFSCORE_LATENCY_1C;
 
-                if (insFmt == IF_RWR_LABEL)
+                if (insFmt == IF_XARCH_RWR_LABEL)
                 {
                     // RIP relative addressing
                     //
@@ -167,12 +210,12 @@ public partial class Emitter
                     //
                     insThroughput = PERFSCORE_THROUGHPUT_1C;
                 }
-                else if (insFmt != IF_RWR_SRD)
+                else if (insFmt != IF_XARCH_RWR_SRD)
                 {
-                    if (id.idAddr().iiaAddrMode.amIndxReg != REG_NA)
+                    if (id.idAddr().iiaAddrMode.amIndxReg != TargetRuntimeMetadata.NoRegister)
                     {
                         var baseReg = id.idAddr().iiaAddrMode.amBaseReg;
-                        if (baseReg != REG_NA)
+                        if (baseReg != TargetRuntimeMetadata.NoRegister)
                         {
                             var dsp = emitGetInsAmdAny(id);
 
@@ -237,7 +280,7 @@ public partial class Emitter
             {
                 insLatency = PERFSCORE_LATENCY_3C;
 
-                if (insFmt == IF_RRW_RRD_CNS)
+                if (insFmt == IF_XARCH_RRW_RRD_CNS)
                 {
                     // ins   reg, reg, cns
                     insThroughput = PERFSCORE_THROUGHPUT_1C;
@@ -274,27 +317,27 @@ public partial class Emitter
 
                 switch (insFmt)
                 {
-                    case IF_LABEL:
+                    case IF_XARCH_LABEL:
                     {
                         insThroughput = PERFSCORE_THROUGHPUT_1C;
                         break;
                     }
 
-                    case IF_METHOD:
+                    case IF_XARCH_METHOD:
                     {
                         insThroughput = PERFSCORE_THROUGHPUT_1C;
                         break;
                     }
 
-                    case IF_METHPTR:
+                    case IF_XARCH_METHPTR:
                     {
                         insThroughput = PERFSCORE_THROUGHPUT_3C;
                         break;
                     }
 
-                    case IF_SRD:
-                    case IF_ARD:
-                    case IF_MRD:
+                    case IF_XARCH_SRD:
+                    case IF_XARCH_ARD:
+                    case IF_XARCH_MRD:
                     {
                         insThroughput = PERFSCORE_THROUGHPUT_3C;
                         break;
@@ -312,7 +355,7 @@ public partial class Emitter
             {
                 insLatency = PERFSCORE_LATENCY_ZERO;
 
-                if (insFmt == IF_CNS)
+                if (insFmt == IF_XARCH_CNS)
                 {
                     insThroughput = PERFSCORE_THROUGHPUT_2C;
                 }
@@ -331,15 +374,18 @@ public partial class Emitter
                 break;
             }
 
-#if TARGET_X86
             case INS_fld:
             case INS_fstp:
             {
+                if (!Configuration.TARGET_X86)
+                {
+                    goto default;
+                }
+
                 insThroughput = PERFSCORE_THROUGHPUT_2X;
                 insLatency = PERFSCORE_LATENCY_1C;
                 break;
             }
-#endif
 
             case INS_movd32:
             case INS_movd64:
@@ -574,7 +620,7 @@ public partial class Emitter
             case INS_psraw:
             case INS_vpsraq:
             {
-                if (insFmt == IF_RWR_CNS)
+                if (insFmt == IF_XARCH_RWR_CNS)
                 {
                     insLatency = PERFSCORE_LATENCY_1C;
                     insThroughput = PERFSCORE_THROUGHPUT_2X;
@@ -1161,23 +1207,4 @@ public partial class Emitter
         result.insMemoryAccessKind = memAccessKind;
         return result;
     }
-#elif !TARGET_ARM64
-    internal insExecutionCharacteristics getInsExecutionCharacteristics(instrDesc id)
-    {
-#if TARGET_WASM || TARGET_ARM
-        _ = id;
-        return new insExecutionCharacteristics
-        {
-            insThroughput = PERFSCORE_THROUGHPUT_1C,
-            insLatency = PERFSCORE_LATENCY_1C,
-        };
-#elif TARGET_RISCV64
-        return getInsExecutionCharacteristicsRiscV64(id);
-#elif TARGET_LOONGARCH64
-        return getInsExecutionCharacteristicsLoongArch64(id);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Execution characteristics outside xarch are not implemented.");
-#endif
-    }
-#endif
 }

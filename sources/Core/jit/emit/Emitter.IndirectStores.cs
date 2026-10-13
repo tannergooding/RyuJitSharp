@@ -12,23 +12,31 @@ public partial class Emitter
     public void emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd mem,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Indirect-store recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Indirect-store recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(mem.Oper is GT_STOREIND);
         var addr = mem.Addr;
         var data = mem.Data;
 
         if ((data.Oper is GT_BSWAP or GT_BSWAP16) && data.IsContained)
         {
-#if TARGET_AMD64
-            assert(ins is INS_movbe or INS_movbe_apx);
-#else
-            assert(ins == INS_movbe);
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                assert(ins is INS_movbe or INS_movbe_apx);
+            }
+            else
+            {
+                assert(ins == INS_movbe);
+            }
+
             data = data.AsUnOp().Op1;
         }
 
@@ -42,9 +50,14 @@ public partial class Emitter
                 assert(instOptions == INS_OPTS_NONE);
                 emitIns_S_I(ins, attr, varNode.LclNum, offset, unchecked((int)data.AsIntConCommon().IconValue));
             }
-#if FEATURE_HW_INTRINSICS
             else if ((data.Oper is GT_HWINTRINSIC) && data.IsContained)
             {
+                if (!Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Contained hardware-intrinsic stores require hardware-intrinsic support.");
+                }
+
                 var intrinsic = data.AsHWIntrinsic();
                 var numArgs = intrinsic.Operands.Length;
                 var op1 = intrinsic.GetOp(1);
@@ -61,7 +74,6 @@ public partial class Emitter
                     emitIns_S_R_I(ins, attr, varNode.LclNum, offset, op1.RegNum, icon);
                 }
             }
-#endif
             else
             {
                 assert(!data.IsContained);
@@ -82,13 +94,18 @@ public partial class Emitter
             var icon = unchecked((int)data.AsIntConCommon().IconValue);
             id = emitNewInstrAmdCns(attr, displacement, icon);
             id.idIns(ins);
-            emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_CNS), ins);
+            emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_XARCH_ARD_CNS), ins);
             size = emitInsSizeAM(id, insCodeMI(ins), icon);
             id.idCodeSize(size);
         }
-#if FEATURE_HW_INTRINSICS
         else if ((data.Oper is GT_HWINTRINSIC) && data.IsContained)
         {
+            if (!Configuration.FEATURE_HW_INTRINSICS)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Contained hardware-intrinsic stores require hardware-intrinsic support.");
+            }
+
             var intrinsic = data.AsHWIntrinsic();
             var numArgs = intrinsic.Operands.Length;
             var op1 = intrinsic.GetOp(1);
@@ -97,7 +114,7 @@ public partial class Emitter
             {
                 id = emitNewInstrAmd(attr, displacement);
                 id.idIns(ins);
-                emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
+                emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_XARCH_ARD_RRD), ins);
                 id.idReg1(op1.RegNum);
 
                 assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
@@ -115,18 +132,17 @@ public partial class Emitter
                 id = emitNewInstrAmdCns(attr, displacement, icon);
                 id.idIns(ins);
                 id.idReg1(op1.RegNum);
-                emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD_CNS), ins);
+                emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_XARCH_ARD_RRD_CNS), ins);
                 size = emitInsSizeAM(id, insCodeMR(ins), icon);
                 id.idCodeSize(size);
             }
         }
-#endif
         else
         {
             assert(!data.IsContained);
             id = emitNewInstrAmd(attr, displacement);
             id.idIns(ins);
-            emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
+            emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_XARCH_ARD_RRD), ins);
             id.idReg1(data.RegNum);
 
             assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
@@ -138,6 +154,5 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
     }
 }

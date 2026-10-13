@@ -9,25 +9,43 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_WASM
     public void emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
     {
-#if TARGET_ARM64
-        NYI("emitIns_S");
-#elif TARGET_ARM
-        NYI("emitIns_S");
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 stack instruction recording is not ported.");
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            emitIns_SWasm(ins, attr, varx, offs);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            NYI("emitIns_S");
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 stack instruction recording is not ported.");
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            NYI("emitIns_S");
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 stack instruction recording is not ported.");
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         var id = emitNewInstr(attr);
-        var fmt = emitInsModeFormat(ins, IF_SRD);
+        var fmt = emitInsModeFormat(ins, IF_XARCH_SRD);
         id.idIns(ins);
         id.idInsFmt(fmt);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
 
         var sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
         id.idCodeSize(sz);
@@ -39,27 +57,39 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 
-#if TARGET_X86
-        emitAdjustStackDepthPushPop(ins);
-#endif
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            emitAdjustStackDepthPushPop(ins);
+        }
     }
-#endif
 
     public void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
     {
-#if TARGET_ARM64
-        NYI("emitIns_S_I");
-#elif TARGET_ARM
-        NYI("emitIns_S_I");
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 stack-immediate instruction recording is not ported.");
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack-immediate instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-        noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            NYI("emitIns_S_I");
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 stack-immediate instruction recording is not ported.");
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            NYI("emitIns_S_I");
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 stack-immediate instruction recording is not ported.");
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Stack-immediate instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+            noway_assert((EA_SIZE(attr) < EA_8BYTE) || !EA_IS_CNS_RELOC(attr));
+        }
 
         insFormat fmt;
         switch (ins)
@@ -67,14 +97,14 @@ public partial class Emitter
             case INS_rcl_N or INS_rcr_N or INS_rol_N or INS_ror_N or INS_shl_N or INS_shr_N or INS_sar_N:
             {
                 assert(val != 1);
-                fmt = IF_SRW_SHF;
+                fmt = IF_XARCH_SRW_SHF;
                 val &= 0x7F;
                 break;
             }
 
             default:
             {
-                fmt = emitInsModeFormat(ins, IF_SRD_CNS);
+                fmt = emitInsModeFormat(ins, IF_XARCH_SRD_CNS);
                 break;
             }
         }
@@ -82,7 +112,7 @@ public partial class Emitter
         var id = emitNewInstrCns(attr, val);
         id.idIns(ins);
         id.idInsFmt(fmt);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
 
         var sz = emitInsSizeSV(id, insCodeMI(ins), varx, offs, val);
         id.idCodeSize(sz);
@@ -93,6 +123,5 @@ public partial class Emitter
 #endif
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 }

@@ -5,25 +5,51 @@
 
 using static RyuJitSharp.Globals;
 
-#if TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     public void emitIns_S_R(instruction ins, emitAttr attr, regNumber reg, int varNum, int offset)
     {
-#if TARGET_ARM
-        recordArm32InsSR(ins, attr, reg, varNum, offset);
-#elif TARGET_LOONGARCH64
-        emitInsSRLoongArch64(ins, attr, reg, varNum, offset);
-#elif TARGET_RISCV64
-        emitIns_S_R_R(ins, attr, reg, REG_NA, varNum, offset);
-#else
+        if (Configuration.TARGET_XARCH)
+        {
+            emitIns_S_R(ins, attr, reg, varNum, offset, INS_OPTS_NONE);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_S_RArm64(ins, attr, reg, varNum, offset);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            recordArm32InsSR(ins, attr, reg, varNum, offset);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsSRLoongArch64(ins, attr, reg, varNum, offset);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            emitIns_S_R_R(ins, attr, reg, REG_NA, varNum, offset);
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "WebAssembly local-stack store recording is not implemented.");
+        }
+
         throw new FatalJitException(CORJIT_SKIPPED, "Target local-stack store recording is not implemented.");
-#endif
     }
 
-#if TARGET_RISCV64
     public void emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber tmpReg,
         int varNum, int offset)
     {
@@ -53,7 +79,7 @@ public partial class Emitter
 #endif
 
         var baseOffset = _compiler.lvaFrameAddress(varNum, out var framePointerBased);
-        var frameReg = framePointerBased ? REG_FPBASE : REG_SPBASE;
+        var frameReg = framePointerBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
         var reg2 = tmpReg == REG_NA ? frameReg : tmpReg;
         var imm = tmpReg == REG_NA
             ? unchecked((nint)(baseOffset + offset))
@@ -78,20 +104,18 @@ public partial class Emitter
         id.idIns(ins);
 
         assert(isGeneralRegister(reg2));
-        var code = emitInsCode(ins);
+        var code = emitInsCodeRiscV64(ins);
         code |= (unchecked((uint)reg1) & 0x1f) << 20;
         code |= unchecked((uint)reg2) << 15;
         code |= ((unchecked((uint)(imm >> 5)) & 0x7f) << 25) |
                 ((unchecked((uint)imm) & 0x1f) << 7);
 
         id.idAddr().iiaInstrEncode = code;
-        id.idAddr().iiaLclVar.initLclVarAddr(varNum, unchecked((uint)offset));
+        id.idAddr().iiaInitLclVarAddr(varNum, unchecked((uint)offset));
         id.idSetIsLclVar();
         id.idCodeSize(4);
 
         dispIns(id);
         appendToCurIG(id);
     }
-#endif
 }
-#endif

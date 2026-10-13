@@ -9,22 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_ARM64
-#if TARGET_ARM
-    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val,
-        insFlags flags = INS_FLAGS_DONT_CARE
-#if DEBUG
-        , GenTreeFlags gtFlags = GTF_EMPTY
-#endif
-        )
-    {
-        recordArm32InsRI(ins, attr, reg, unchecked((int)val), flags
-#if DEBUG
-            , gtFlags
-#endif
-            );
-    }
-#else
     public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val,
         insOpts instOptions = INS_OPTS_NONE
 #if DEBUG
@@ -32,62 +16,111 @@ public partial class Emitter
 #endif
         )
     {
-#if TARGET_RISCV64
-        var code = emitInsCode(ins);
-
-        switch (ins)
+        if (Configuration.TARGET_ARM)
         {
-            case INS_lui:
-            case INS_auipc:
+            if (!insOptsNone(instOptions))
             {
-                assert(reg != REG_R0);
-                assert(isGeneralRegister(reg));
-                assert(isValidSimm20(val));
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "ARM32 register-immediate instruction options are not ported.");
+            }
 
-                code |= unchecked((uint)reg) << 7;
-                code |= (unchecked((uint)val) & 0xFFFFF) << 12;
-                break;
-            }
-            case INS_jal:
+#if DEBUG
+            if (targetHandle != 0)
             {
-                assert(isGeneralRegisterOrR0(reg));
-                assert(isValidSimm21(val));
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "ARM32 register-immediate recording does not accept a target handle.");
+            }
+#endif
 
-                code |= unchecked((uint)reg) << 7;
-                code |= (unchecked((uint)(val >> 12)) & 0xFF) << 12;
-                code |= (unchecked((uint)(val >> 11)) & 0x1) << 20;
-                code |= (unchecked((uint)(val >> 1)) & 0x3FF) << 21;
-                code |= (unchecked((uint)(val >> 20)) & 0x1) << 31;
-                break;
-            }
-            default:
-            {
-                NO_WAY("illegal ins within emitIns_R_I!");
-                return;
-            }
+            recordArm32InsRI(ins, attr, reg, unchecked((int)val), INS_FLAGS_DONT_CARE
+#if DEBUG
+                , gtFlags
+#endif
+                );
+            return;
         }
 
-        var id = emitNewInstr(attr);
-        id.idIns(ins);
-        id.idReg1(reg);
-        id.idAddr().iiaInstrEncode = code;
-        id.idCodeSize(4);
-
-        dispIns(id);
-        appendToCurIG(id);
-#elif TARGET_LOONGARCH64
-        emitInsRILoongArch64(ins, attr, reg, val, instOptions);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#else
-        val = unchecked((int)val);
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_IArm64(ins, attr, reg, val, instOptions
 #if DEBUG
-        targetHandle = unchecked((uint)targetHandle);
+                , targetHandle: targetHandle, gtFlags: gtFlags
 #endif
+                );
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            var code = emitInsCodeRiscV64(ins);
+
+            switch (ins)
+            {
+                case INS_lui:
+                case INS_auipc:
+                {
+                    assert(reg != TargetRuntimeMetadata.Register0);
+                    assert(isGeneralRegister(reg));
+                    assert(isValidSimm20(val));
+
+                    code |= unchecked((uint)reg) << 7;
+                    code |= (unchecked((uint)val) & 0xFFFFF) << 12;
+                    break;
+                }
+                case INS_jal:
+                {
+                    assert(isGeneralRegisterOrR0(reg));
+                    assert(isValidSimm21(val));
+
+                    code |= unchecked((uint)reg) << 7;
+                    code |= (unchecked((uint)(val >> 12)) & 0xFF) << 12;
+                    code |= (unchecked((uint)(val >> 11)) & 0x1) << 20;
+                    code |= (unchecked((uint)(val >> 1)) & 0x3FF) << 21;
+                    code |= (unchecked((uint)(val >> 20)) & 0x1) << 31;
+                    break;
+                }
+                default:
+                {
+                    NO_WAY("illegal ins within emitIns_R_I!");
+                    return;
+                }
+            }
+
+            var riscvInstr = emitNewInstr(attr);
+            riscvInstr.idIns(ins);
+            riscvInstr.idReg1(reg);
+            riscvInstr.idAddr().iiaInstrEncode = code;
+            riscvInstr.idCodeSize(4);
+
+            dispIns(riscvInstr);
+            appendToCurIG(riscvInstr);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRILoongArch64(ins, attr, reg, val, instOptions);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Register-immediate instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+        else
+        {
+            val = unchecked((int)val);
+#if DEBUG
+            targetHandle = unchecked((uint)targetHandle);
 #endif
+        }
+
         assert(_compiler is not null);
         var size = EA_SIZE(attr);
 
@@ -97,13 +130,14 @@ public partial class Emitter
 
         // Only mov reg, imm64 takes a full eight-byte immediate. All other opcodes
         // take a sign-extended four-byte immediate.
-#if TARGET_AMD64
-        noway_assert((size < EA_8BYTE) || (ins == INS_mov) ||
-            ((unchecked((int)val) == val) && !EA_IS_CNS_RELOC(attr)));
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            noway_assert((size < EA_8BYTE) || (ins == INS_mov) ||
+                ((unchecked((int)val) == val) && !EA_IS_CNS_RELOC(attr)));
+        }
 
         uint sz;
-        var fmt = emitInsModeFormat(ins, IF_RRD_CNS);
+        var fmt = emitInsModeFormat(ins, IF_XARCH_RRD_CNS);
         var valInByte = ImmCanUseSByteEncoding(ins, val);
 
         // BT reg,imm needs special handling because its immediate is always a byte.
@@ -117,20 +151,21 @@ public partial class Emitter
         {
             case INS_mov:
             {
-#if TARGET_AMD64
-                // A non-relocatable zero-extended imm32 can use mov r32, imm32.
-                if ((size > EA_4BYTE) && ((unchecked((ulong)val) & 0xFFFFFFFF00000000UL) == 0) &&
-                    !EA_IS_CNS_RELOC(attr))
+                if (Configuration.TARGET_AMD64)
                 {
-                    attr = size = EA_4BYTE;
-                }
+                    // A non-relocatable zero-extended imm32 can use mov r32, imm32.
+                    if ((size > EA_4BYTE) && ((unchecked((ulong)val) & 0xFFFFFFFF00000000UL) == 0) &&
+                        !EA_IS_CNS_RELOC(attr))
+                    {
+                        attr = size = EA_4BYTE;
+                    }
 
-                if (size > EA_4BYTE)
-                {
-                    sz = 9; // The REX prefix is counted below.
-                    break;
+                    if (size > EA_4BYTE)
+                    {
+                        sz = 9; // The REX prefix is counted below.
+                        break;
+                    }
                 }
-#endif
 
                 sz = 5;
                 break;
@@ -139,7 +174,7 @@ public partial class Emitter
             case INS_rcl_N or INS_rcr_N or INS_rol_N or INS_ror_N or INS_shl_N or INS_shr_N or INS_sar_N:
             {
                 assert(val != 1);
-                fmt = IF_RRW_SHF;
+                fmt = IF_XARCH_RRW_SHF;
                 sz = 3;
                 val &= 0x7F;
                 valInByte = true;
@@ -160,7 +195,8 @@ public partial class Emitter
                         sz = 1;
                         isSimdInsAndValInByte = true;
                     }
-                    else if ((size == EA_1BYTE) && (reg == REG_EAX) && !instrIs3opImul(ins))
+                    else if ((size == EA_1BYTE) && (reg == TargetRuntimeMetadata.IntegerReturnRegister) &&
+                        !IsThreeOperandImulInstruction(ins))
                     {
                         sz = 2;
                     }
@@ -172,7 +208,7 @@ public partial class Emitter
                 else
                 {
                     assert(!IsSimdInstruction(ins));
-                    if ((reg == REG_EAX) && !instrIs3opImul(ins))
+                    if ((reg == TargetRuntimeMetadata.IntegerReturnRegister) && !IsThreeOperandImulInstruction(ins))
                     {
                         sz = 1;
                     }
@@ -181,13 +217,11 @@ public partial class Emitter
                         sz = 2;
                     }
 
-#if TARGET_AMD64
-                    if (size > EA_4BYTE)
+                    if (Configuration.TARGET_AMD64 && size > EA_4BYTE)
                     {
                         sz += 4;
                     }
                     else
-#endif
                     {
                         sz += EA_SIZE_IN_BYTES(attr);
                     }
@@ -241,19 +275,21 @@ public partial class Emitter
 
         sz += emitGetAdjustedSize(id, insCodeMI(ins));
 
-#if TARGET_AMD64
-        if ((reg == REG_EAX) && !instrIs3opImul(ins) && TakesEvexPrefix(id))
+        if (Configuration.TARGET_AMD64)
         {
-            // The accumulator form is not promoted into EVEX space; use MI.
-            sz += 1;
-        }
+            if ((reg == TargetRuntimeMetadata.IntegerReturnRegister) &&
+                !IsThreeOperandImulInstruction(ins) && TakesEvexPrefix(id))
+            {
+                // The accumulator form is not promoted into EVEX space; use MI.
+                sz += 1;
+            }
 
-        if ((ins == INS_test) && (reg == REG_EAX) && TakesRex2Prefix(id))
-        {
-            // TEST's accumulator form is not REX2 compatible.
-            sz -= (size == EA_8BYTE) ? 1u : 2u;
+            if ((ins == INS_test) && (reg == TargetRuntimeMetadata.IntegerReturnRegister) && TakesRex2Prefix(id))
+            {
+                // TEST's accumulator form is not REX2 compatible.
+                sz -= (size == EA_8BYTE) ? 1u : 2u;
+            }
         }
-#endif
 
         // Three-operand IMUL has an implicit destination encoded in its opcode.
         if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id) || instrIsExtendedReg3opImul(ins))
@@ -265,36 +301,79 @@ public partial class Emitter
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 
-#if TARGET_X86
-        if (reg == REG_ESP)
+        if (Configuration.TARGET_X86 && reg == REG_X86_ESP)
         {
             emitAdjustStackDepth(ins, val);
         }
-#endif
-#endif
     }
-#endif
-#endif
 
-#if !TARGET_ARM64
+    public void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, nint val, insFlags flags
+#if DEBUG
+        , GenTreeFlags gtFlags = GTF_EMPTY
+#endif
+        )
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 register-immediate instruction flags are not supported for this target.");
+        }
+
+        recordArm32InsRI(ins, attr, reg, unchecked((int)val), flags
+#if DEBUG
+            , gtFlags
+#endif
+            );
+    }
+
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         insOpts instOptions = INS_OPTS_NONE)
     {
-#if TARGET_ARM
-        if (!insOptsNone(instOptions))
+        if (Configuration.TARGET_ARM)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 register-register instruction options are not ported.");
+            if (!insOptsNone(instOptions))
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "ARM32 register-register instruction options are not ported.");
+            }
+
+            recordArm32InsRR(ins, attr, reg1, reg2, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+            return;
         }
 
-        recordArm32InsRR(ins, attr, reg1, reg2, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
-#elif TARGET_LOONGARCH64
-        emitInsRRLLoongArch64(ins, attr, reg1, reg2);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_RArm64(ins, attr, reg1, reg2, instOptions);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRRLLoongArch64(ins, attr, reg1, reg2);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            if (!insOptsNone(instOptions))
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "RISC-V register-register instruction options are not implemented.");
+            }
+
+            emitIns_R_RRiscV64(ins, attr, reg1, reg2);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         if (IsMovInstruction(ins))
         {
             assert(false, "Please use emitIns_Mov() to correctly handle move elision");
@@ -306,7 +385,7 @@ public partial class Emitter
         var size = EA_SIZE(attr);
         assert(size <= EA_64BYTE);
         noway_assert(emitVerifyEncodable(ins, size, reg1, reg2));
-        var fmt = (ins == INS_xchg) ? IF_RRW_RRW : emitInsModeFormat(ins, IF_RRD_RRD, useNDD);
+        var fmt = (ins == INS_xchg) ? IF_XARCH_RRW_RRW : emitInsModeFormat(ins, IF_XARCH_RRD_RRD, useNDD);
 
         var id = emitNewInstrSmall(attr);
         id.idIns(ins);
@@ -325,7 +404,5 @@ public partial class Emitter
         id.idCodeSize(sz);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
-#endif
 }

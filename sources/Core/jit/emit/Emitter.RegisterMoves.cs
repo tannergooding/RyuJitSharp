@@ -9,29 +9,48 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_ARM64
     public bool emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
-#if TARGET_ARM
-        bool canSkip, insFlags flags = INS_FLAGS_DONT_CARE)
-#else
         bool canSkip, bool useApxNdd = false)
-#endif
     {
-#if TARGET_ARM
-        return recordArm32InsMov(ins, attr, dstReg, srcReg, canSkip, flags);
-#elif TARGET_LOONGARCH64
-        assert(!useApxNdd);
-        emitIns_MovLoongArch64(ins, attr, dstReg, srcReg, canSkip);
-        return true;
-#elif TARGET_RISCV64
-        return emitIns_MovRiscV64(ins, attr, dstReg, srcReg, canSkip);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
-#else
+        if (useApxNdd && !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "APX NDD move recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return recordArm32InsMov(ins, attr, dstReg, srcReg, canSkip, INS_FLAGS_DONT_CARE);
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            emitInsMovArm64(ins, attr, dstReg, srcReg, canSkip);
+            return true;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitIns_MovLoongArch64(ins, attr, dstReg, srcReg, canSkip);
+            return true;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return emitIns_MovRiscV64(ins, attr, dstReg, srcReg, canSkip);
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register move recording requires xarch.");
+        }
+
         assert(IsMovInstruction(ins));
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
 #if DEBUG
         switch (ins)
         {
@@ -41,13 +60,17 @@ public partial class Emitter
                 break;
             }
 
-#if TARGET_AMD64
             case INS_movsxd:
             {
+                if (!Configuration.TARGET_AMD64)
+                {
+                    unreached();
+                    break;
+                }
+
                 assert(dstReg.IsIntReg && srcReg.IsIntReg);
                 break;
             }
-#endif
 
             case INS_movapd or INS_movaps or INS_movdqa32 or INS_vmovdqa64 or INS_movdqu32 or
                 INS_vmovdqu8 or INS_vmovdqu16 or INS_vmovdqu64 or INS_movsd_simd or INS_movss or
@@ -91,7 +114,7 @@ public partial class Emitter
         var size = EA_SIZE(attr);
         assert(size <= EA_64BYTE);
         noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
-        var fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+        var fmt = emitInsModeFormat(ins, IF_XARCH_RRD_RRD);
 
         if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
         {
@@ -103,13 +126,11 @@ public partial class Emitter
             return false;
         }
 
-#if TARGET_AMD64
-        if (useApxNdd)
+        if (useApxNdd && Configuration.TARGET_AMD64)
         {
             // The move is required, but its APX NDD-aware caller will handle it.
             return true;
         }
-#endif
 
         var id = emitNewInstrSmall(attr);
         id.idIns(ins);
@@ -122,23 +143,35 @@ public partial class Emitter
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
 
         return true;
-#endif
     }
-#endif
 
-#if TARGET_XARCH
+    public bool emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
+        bool canSkip, insFlags flags)
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 register move flags are not supported for this target.");
+        }
+
+        return recordArm32InsMov(ins, attr, dstReg, srcReg, canSkip, flags);
+    }
+
     public bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
     {
-        if ((src == REG_EAX) && (src == dst))
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Move sign-extension optimization requires xarch.");
+        }
+
+        if ((src == TargetRuntimeMetadata.IntegerReturnRegister) && (src == dst))
         {
             // movsxd rax,eax and movsx eax,ax have shorter accumulator forms.
-#if TARGET_64BIT
-            if ((ins == INS_movsxd) && (size == EA_4BYTE))
+            if (Configuration.TARGET_64BIT && (ins == INS_movsxd) && (size == EA_4BYTE))
             {
                 emitIns(INS_cwde, EA_8BYTE);
                 return true;
             }
-#endif
 
             if ((ins == INS_movsx) && (size == EA_2BYTE))
             {
@@ -153,6 +186,11 @@ public partial class Emitter
     public bool IsRedundantMov(instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src,
         bool canIgnoreSideEffects)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Move elision is not implemented for this target.");
+        }
+
         assert(IsMovInstruction(ins));
         assert(_compiler is not null);
 
@@ -189,13 +227,17 @@ public partial class Emitter
                 return true;
             }
 
-#if TARGET_64BIT
-            switch (ins)
+            if (Configuration.TARGET_64BIT)
             {
-                case INS_movzx:
+                switch (ins)
                 {
-                    if (AreUpperBitsZero(src, size))
+                    case INS_movzx:
                     {
+                        if (!AreUpperBitsZero(src, size))
+                        {
+                            break;
+                        }
+
 #if DEBUG
                         if (_compiler.verbose)
                         {
@@ -203,14 +245,16 @@ public partial class Emitter
                         }
 #endif
                         return true;
-                    }
-                    break;
-                }
 
-                case INS_movsx or INS_movsxd:
-                {
-                    if (AreUpperBitsSignExtended(src, size))
+                    }
+
+                    case INS_movsx or INS_movsxd:
                     {
+                        if (!AreUpperBitsSignExtended(src, size))
+                        {
+                            break;
+                        }
+
 #if DEBUG
                         if (_compiler.verbose)
                         {
@@ -218,14 +262,16 @@ public partial class Emitter
                         }
 #endif
                         return true;
-                    }
-                    break;
-                }
 
-                case INS_mov:
-                {
-                    if ((size == EA_4BYTE) && AreUpperBitsZero(src, size))
+                    }
+
+                    case INS_mov:
                     {
+                        if ((size != EA_4BYTE) || !AreUpperBitsZero(src, size))
+                        {
+                            break;
+                        }
+
 #if DEBUG
                         if (_compiler.verbose)
                         {
@@ -233,16 +279,15 @@ public partial class Emitter
                         }
 #endif
                         return true;
-                    }
-                    break;
-                }
 
-                default:
-                {
-                    break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
                 }
             }
-#endif
         }
 
         if (!emitCanPeepholeLastIns())
@@ -283,6 +328,4 @@ public partial class Emitter
 
         return false;
     }
-#endif
-
 }

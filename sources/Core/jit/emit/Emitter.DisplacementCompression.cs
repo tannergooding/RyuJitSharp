@@ -9,15 +9,24 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public static bool hasTupleTypeInfo(instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_tupleTypes.Length);
         return s_tupleTypes[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != INS_TT_NONE;
     }
 
     public static nint GetInputSizeInBytes(instrDesc id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("Instruction input sizes are not available for this target.");
+        }
+
         var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(id.idIns());
         assert((uint)nativeOrdinal < (uint)CodeGen.instInfo.Length);
         var inputSize = CodeGen.instInfo[nativeOrdinal] & Input_Mask;
@@ -35,6 +44,11 @@ public partial class Emitter
 
     public bool TryEvexCompressDisp8Byte(instrDesc id, nint dsp, out nint compressedDsp, out bool fitsInByte)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("EVEX displacement compression is not available for this target.");
+        }
+
         var ins = id.idIns();
         assert(IsEvexEncodableInstruction(ins));
         assert(id.idHasMem() && !id.idHasMemGen());
@@ -93,17 +107,17 @@ public partial class Emitter
 
             switch (insFmt)
             {
-                case IF_RWR_RRD_ARD:
-                case IF_RWR_RRD_MRD:
-                case IF_RWR_RRD_SRD:
+                case IF_XARCH_RWR_RRD_ARD:
+                case IF_XARCH_RWR_RRD_MRD:
+                case IF_XARCH_RWR_RRD_SRD:
                 {
                     tt &= INS_TT_MEM128;
                     break;
                 }
 
-                case IF_RWR_ARD_CNS:
-                case IF_RWR_MRD_CNS:
-                case IF_RWR_SRD_CNS:
+                case IF_XARCH_RWR_ARD_CNS:
+                case IF_XARCH_RWR_MRD_CNS:
+                case IF_XARCH_RWR_SRD_CNS:
                 {
                     tt &= ~INS_TT_MEM128;
                     break;
@@ -240,5 +254,4 @@ public partial class Emitter
         fitsInByte = true;
         return true;
     }
-#endif
 }

@@ -10,32 +10,37 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public insFormat emitMapFmtAtoM(insFormat fmt)
     {
-        assert((fmt >= IF_ARD) && (fmt <= IF_RWR_RRD_ARD_RRD));
-        assert((IF_RWR_RRD_ARD_RRD - IF_ARD) == (IF_RWR_RRD_MRD_RRD - IF_MRD));
-        assert(IF_MRD < IF_ARD);
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Memory operand format mapping requires xarch.");
+        }
 
-        const uint delta = IF_ARD - IF_MRD;
-        assert((IF_ARD - delta) == IF_MRD);
-        assert((IF_ARD_CNS - delta) == IF_MRD_CNS);
-        assert((IF_ARD_RRD - delta) == IF_MRD_RRD);
-        assert((IF_RRD_ARD - delta) == IF_RRD_MRD);
-        assert((IF_RRD_ARD_CNS - delta) == IF_RRD_MRD_CNS);
-        assert((IF_RRD_ARD_RRD - delta) == IF_RRD_MRD_RRD);
-        assert((IF_RRD_RRD_ARD - delta) == IF_RRD_RRD_MRD);
-        assert((IF_RWR_RRD_ARD_RRD - delta) == IF_RWR_RRD_MRD_RRD);
+        assert((fmt >= IF_XARCH_ARD) && (fmt <= IF_XARCH_RWR_RRD_ARD_RRD));
+        assert((IF_XARCH_RWR_RRD_ARD_RRD - IF_XARCH_ARD) == (IF_XARCH_RWR_RRD_MRD_RRD - IF_XARCH_MRD));
+        assert(IF_XARCH_MRD < IF_XARCH_ARD);
+
+        const uint delta = IF_XARCH_ARD - IF_XARCH_MRD;
+        assert((IF_XARCH_ARD - delta) == IF_XARCH_MRD);
+        assert((IF_XARCH_ARD_CNS - delta) == IF_XARCH_MRD_CNS);
+        assert((IF_XARCH_ARD_RRD - delta) == IF_XARCH_MRD_RRD);
+        assert((IF_XARCH_RRD_ARD - delta) == IF_XARCH_RRD_MRD);
+        assert((IF_XARCH_RRD_ARD_CNS - delta) == IF_XARCH_RRD_MRD_CNS);
+        assert((IF_XARCH_RRD_ARD_RRD - delta) == IF_XARCH_RRD_MRD_RRD);
+        assert((IF_XARCH_RRD_RRD_ARD - delta) == IF_XARCH_RRD_RRD_MRD);
+        assert((IF_XARCH_RWR_RRD_ARD_RRD - delta) == IF_XARCH_RWR_RRD_MRD_RRD);
 
         return fmt - delta;
     }
-#endif
 
     public void emitHandleMemOp(GenTreeIndir indir, instrDesc id, insFormat fmt, instruction ins)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Memory operand descriptor initialization requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Memory operand descriptor initialization requires xarch.");
+        }
+
         assert(fmt != IF_NONE);
         assert(_compiler is not null);
         var memBase = indir.Base;
@@ -101,36 +106,39 @@ public partial class Emitter
             debugInfo.idMemCookie = memBase.AsIntCon().TargetHandle;
         }
 #endif
-#endif
     }
 
-#if TARGET_XARCH
     public insFormat emitMapFmtForIns(insFormat fmt, instruction ins)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Instruction memory format mapping requires xarch.");
+        }
+
         switch (ins)
         {
             case INS_rol_N or INS_ror_N or INS_rcl_N or INS_rcr_N or INS_shl_N or INS_shr_N or INS_sar_N:
             {
                 switch (fmt)
                 {
-                    case IF_RRW_CNS:
+                    case IF_XARCH_RRW_CNS:
                     {
-                        return IF_RRW_SHF;
+                        return IF_XARCH_RRW_SHF;
                     }
 
-                    case IF_MRW_CNS:
+                    case IF_XARCH_MRW_CNS:
                     {
-                        return IF_MRW_SHF;
+                        return IF_XARCH_MRW_SHF;
                     }
 
-                    case IF_SRW_CNS:
+                    case IF_XARCH_SRW_CNS:
                     {
-                        return IF_SRW_SHF;
+                        return IF_XARCH_SRW_SHF;
                     }
 
-                    case IF_ARW_CNS:
+                    case IF_XARCH_ARW_CNS:
                     {
-                        return IF_ARW_SHF;
+                        return IF_XARCH_ARW_SHF;
                     }
 
                     default:
@@ -145,9 +153,9 @@ public partial class Emitter
             default:
             {
                 // MOV writes its destination rather than reading and writing it.
-                if (IsMovInstruction(ins) && (fmt == IF_RRW_ARD))
+                if (IsMovInstruction(ins) && (fmt == IF_XARCH_RRW_ARD))
                 {
-                    return IF_RWR_ARD;
+                    return IF_XARCH_RWR_ARD;
                 }
                 break;
             }
@@ -158,8 +166,12 @@ public partial class Emitter
 
     private static opSize emitEncodeScale(nuint scale)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Address scaling is only supported on xarch.");
+        }
+
         assert(scale is 1 or 2 or 4 or 8);
         return (opSize)BitOperations.Log2(unchecked((uint)scale));
     }
-#endif
 }

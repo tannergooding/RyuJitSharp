@@ -35,17 +35,13 @@ public partial class Emitter
         emitPrologEndPos.Init();
         emitEpilogSize = 0;
         emitEpilogCnt = 0;
-#if TARGET_XARCH
         emitExitSeqBegLoc.Init();
         emitExitSeqSize = int.MaxValue;
-#endif
         emitPlaceholderList = null;
         emitPlaceholderLast = null;
 
-#if JIT32_GCENCODER
         emitEpilogList = null;
         emitEpilogLast = null;
-#endif
 
         emitJumpList = null;
         emitJumpLast = null;
@@ -93,9 +89,7 @@ public partial class Emitter
         emitFirstColdIG = null;
         emitTotalCodeSize = 0;
 
-#if TARGET_LOONGARCH64
         emitCounts_INS_OPTS_J = 0;
-#endif
 
 #if EMITTER_STATS
         emitTotalIGmcnt = unchecked(emitTotalIGmcnt + 1);
@@ -107,10 +101,11 @@ public partial class Emitter
         emitInsCount = 0;
         emitCurStackLvl = 0;
 
-#if EMIT_TRACK_STACK_DEPTH
-        emitMaxStackDepth = 0;
-        emitCntStackDepth = sizeof(int);
-#endif
+        if (Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            emitMaxStackDepth = 0;
+            emitCntStackDepth = sizeof(int);
+        }
         emitNxtIGnum = 1;
         var ig = emitAllocIG();
         emitIGlist = ig;
@@ -120,16 +115,12 @@ public partial class Emitter
         emitLastIns = null;
         emitLastInsIG = null;
 
-#if TARGET_ARMARCH
         emitLastMemBarrier = null;
-#endif
 
         ig.igNext = null;
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         emitLastInsFullSize = 0;
         ig.igPrev = null;
-#endif
 
         emitNewIG();
         assert(emitCurIG is not null);

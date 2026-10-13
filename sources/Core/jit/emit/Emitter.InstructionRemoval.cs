@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System;
 
 namespace RyuJitSharp;
@@ -15,6 +14,7 @@ public partial class Emitter
     // emitCodeOffset can resolve a replacement that spills into an extension group.
     private unsafe void emitRemoveLastInstruction()
     {
+        RequireArm64Target();
         assert(emitLastIns is not null);
         assert(emitLastInsIG is not null);
         assert(emitCurIGfreeBase is not null);
@@ -38,13 +38,15 @@ public partial class Emitter
             {
                 emitDispIns(lastInstruction, isNew: false, doffs: false, asmfm: false);
             }
-#endif
             assert(emitCurIGnonEmpty());
             assert(lastInstructionStart < emitCurIGfreeNext);
             assert(emitCurIGinsCnt >= 1);
             assert((uint)emitCurIGsize >= lastInstruction.idCodeSize());
             assert(lastInstruction.StorageIndex == emitCurIGfreeBase.Count - 1);
             assert(emitCurIG is not null);
+#endif
+            var currentGroup = emitCurIG
+                ?? throw new FatalJitException(CORJIT_INTERNALERROR, "The current instruction group is required.");
 
             emitCurIGfreeNext = lastInstructionStart;
             emitCurIGinsCnt = unchecked(emitCurIGinsCnt - 1);
@@ -53,7 +55,7 @@ public partial class Emitter
             // Dropping the removed descriptor clears the logical buffer region that native
             // memset zeroes before reuse. Its storage offset is reused by the replacement.
             emitCurIGfreeBase.RemoveAt(lastInstruction.StorageIndex);
-            emitCurIG.igFlags |= InsGroupFlags.HasRemovedInstruction;
+            currentGroup.igFlags |= InsGroupFlags.HasRemovedInstruction;
         }
         else
         {
@@ -86,4 +88,3 @@ public partial class Emitter
         emitLastInsIG = null;
     }
 }
-#endif

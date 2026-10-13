@@ -7,54 +7,62 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
-    public static bool emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1, regNumber reg2 = REG_NA)
+    public static bool emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1) =>
+        emitVerifyEncodable(ins, size, reg1, TargetRuntimeMetadata.NoRegister);
+
+    public static bool emitVerifyEncodable(instruction ins, emitAttr size, regNumber reg1, regNumber reg2)
     {
-#if TARGET_X86
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("Instruction encodability checks require xarch.");
+        }
+
+        if (!Configuration.TARGET_X86)
+        {
+            return true;
+        }
+
         if (size != EA_1BYTE)
         {
             return true;
         }
 
-        if ((ins is not (INS_movsx or INS_movzx)
-#if FEATURE_HW_INTRINSICS
-            and not INS_crc32
-#endif
-            ) && !IsX86ByteRegister(reg1))
+        var requireByteRegister =
+            (ins is not (INS_movsx or INS_movzx)) &&
+            (!Configuration.FEATURE_HW_INTRINSICS || (ins != INS_crc32));
+        if (requireByteRegister && !IsX86ByteRegister(reg1))
         {
             return false;
         }
 
-        if ((reg2 != REG_NA) && !IsX86ByteRegister(reg2))
+        if ((reg2 != TargetRuntimeMetadata.NoRegister) && !IsX86ByteRegister(reg2))
         {
             return false;
         }
 
         return true;
-#else
-        // CPU_HAS_BYTE_REGS is zero on AMD64: every GPR has a byte encoding.
-        return true;
-#endif
     }
 
-#if TARGET_X86
-    private static bool IsX86ByteRegister(regNumber reg) => reg is REG_EAX or REG_ECX or REG_EDX or REG_EBX;
-#endif
-#if TARGET_AMD64
-    public static bool instrIs3opImul(instruction ins) => (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_AX, INS_imul_31));
+    private static bool IsX86ByteRegister(regNumber reg) =>
+        reg is REG_X86_EAX or REG_X86_ECX or REG_X86_EDX or REG_X86_EBX;
 
-    public static bool instrIsExtendedReg3opImul(instruction ins) => (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_31));
-#elif TARGET_X86
-    public static bool instrIsExtendedReg3opImul(instruction ins) => false;
-#endif
+    public static bool instrIs3opImul(instruction ins) => IsThreeOperandImulInstruction(ins);
+
+    public static bool instrIsExtendedReg3opImul(instruction ins) =>
+        Configuration.TARGET_AMD64 &&
+        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_31);
 
     public static bool IsKInstruction(instruction ins) => (prefixFlags(ins) & KInstruction) != 0;
 
     public static bool IsKInstructionWithLBit(instruction ins) => (prefixFlags(ins) & KInstructionWithLBit) != 0;
 
-#if TARGET_AMD64
     public ulong AddVexPrefix(instruction ins, ulong code, emitAttr attr)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("VEX output requires xarch.");
+        }
+
         // Carry the three-byte VEX encoding until emission, when all conditions
         // for shortening it to the preferred two-byte form are known.
         assert(IsVexEncodableInstruction(ins));
@@ -81,10 +89,14 @@ public partial class Emitter
 
         return code;
     }
-#endif
 
     public uint emitInsSizeRR(instrDesc id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch register/register sizing is not available for this target.");
+        }
+
         var ins = id.idIns();
         ulong code = hasCodeRM(ins) ? insCodeRM(ins) : insCodeMR(ins);
 
@@ -120,8 +132,6 @@ public partial class Emitter
         {
             sz += emitInsSize(id, insEncodeRMreg(id, code), includeRexPrefixSize);
         }
-
         return sz;
     }
-#endif
 }

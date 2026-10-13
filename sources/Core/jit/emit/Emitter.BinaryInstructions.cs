@@ -9,36 +9,50 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     public static bool instrHasImplicitRegPairDest(instruction ins)
-        => ins is INS_mulEAX or INS_imulEAX or INS_div or INS_idiv;
-#endif
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Implicit register-pair destinations are only defined for xarch.");
+        }
+
+        return ins is INS_mulEAX or INS_imulEAX or INS_div or INS_idiv;
+    }
 
     public unsafe regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree dst, GenTree src,
-        regNumber targetReg = REG_NA)
+        regNumber targetReg)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Binary operand recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
-        assert(_compiler is not null);
-        var useNdd = UsePromotedEvexEncodings && (targetReg != REG_NA);
-#if TARGET_X86
-        assert(!useNdd);
-#else
-        if (useNdd)
+        if (!Configuration.TARGET_XARCH)
         {
-            assert(IsApxNddEncodableInstruction(ins));
-            assert(targetReg < REG_STK);
-            assert(dst.IsUsedFromReg);
-            var dstReg = dst.RegNum;
-            var srcReg = src.IsUsedFromReg ? src.RegNum : REG_NA;
-            assert(targetReg != dstReg);
-            assert(targetReg != srcReg);
+            throw new FatalJitException(CORJIT_SKIPPED, "Binary operand recording requires xarch.");
         }
-#endif
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
+        assert(_compiler is not null);
+        var noRegister = regNumberExtensions.NotAvailable;
+        var useNdd = UsePromotedEvexEncodings && (targetReg != noRegister);
+        if (Configuration.TARGET_X86)
+        {
+            assert(!useNdd);
+        }
+        else
+        {
+            if (useNdd)
+            {
+                assert(IsApxNddEncodableInstruction(ins));
+                assert(targetReg < REG_X64_STK);
+                assert(dst.IsUsedFromReg);
+                var dstReg = dst.RegNum;
+                var srcReg = src.IsUsedFromReg ? src.RegNum : noRegister;
+                assert(targetReg != dstReg);
+                assert(targetReg != srcReg);
+            }
+        }
 
         GenTree? memOp = null;
         GenTree? cnsOp = null;
@@ -46,9 +60,9 @@ public partial class Emitter
 
         // Only one operand can be memory, and only the source can be an immediate.
         // The apparent destination of three-operand IMUL is instead a ModRM operand.
-        if (dst.IsContained || (dst.Oper.IsLclField && (dst.RegNum == REG_NA)) || dst.IsUsedFromSpillTemp)
+        if (dst.IsContained || (dst.Oper.IsLclField && (dst.RegNum == noRegister)) || dst.IsUsedFromSpillTemp)
         {
-            assert(dst.IsUsedFromMemory || (dst.RegNum == REG_NA) || instrIs3opImul(ins));
+            assert(dst.IsUsedFromMemory || (dst.RegNum == noRegister) || IsThreeOperandImulInstruction(ins));
             assert(!src.IsUsedFromMemory);
             assert(!useNdd);
             memOp = dst;
@@ -144,11 +158,11 @@ public partial class Emitter
                         assert(ReferenceEquals(otherOp, dst));
                         if (instrHasImplicitRegPairDest(ins))
                         {
-                            format = emitInsModeFormat(ins, IF_ARD);
+                            format = emitInsModeFormat(ins, IF_XARCH_ARD);
                         }
                         else
                         {
-                            var baseFormat = useNdd ? IF_RRD_RRD_ARD : IF_RRD_ARD;
+                            var baseFormat = useNdd ? IF_XARCH_RRD_RRD_ARD : IF_XARCH_RRD_ARD;
                             format = emitInsModeFormat(ins, baseFormat, useNdd);
                         }
                     }
@@ -161,12 +175,12 @@ public partial class Emitter
                             assert(ReferenceEquals(cnsOp, src));
                             assert(otherOp is null);
                             assert(src.Oper.IsCnsIntOrI);
-                            format = emitInsModeFormat(ins, IF_ARD_CNS);
+                            format = emitInsModeFormat(ins, IF_XARCH_ARD_CNS);
                         }
                         else
                         {
                             assert(ReferenceEquals(otherOp, src));
-                            format = emitInsModeFormat(ins, IF_ARD_RRD);
+                            format = emitInsModeFormat(ins, IF_XARCH_ARD_RRD);
                         }
                     }
                     assert(format != IF_NONE);
@@ -202,7 +216,7 @@ public partial class Emitter
                     dispIns(id);
                     emitCurIGsize += (int)size;
 
-                    return ReferenceEquals(memOp, src) ? (useNdd ? targetReg : dst.RegNum) : REG_NA;
+                    return ReferenceEquals(memOp, src) ? (useNdd ? targetReg : dst.RegNum) : noRegister;
                 }
             }
             else
@@ -259,7 +273,7 @@ public partial class Emitter
             else
             {
                 assert(ReferenceEquals(memOp, dst));
-                assert((dst.RegNum == REG_NA) || dst.IsRegOptional);
+                assert((dst.RegNum == noRegister) || dst.IsRegOptional);
                 assert(!useNdd);
                 if (cnsOp is not null)
                 {
@@ -321,6 +335,5 @@ public partial class Emitter
         }
 
         return dst.RegNum;
-#endif
     }
 }

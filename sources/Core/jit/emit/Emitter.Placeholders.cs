@@ -21,11 +21,9 @@ public partial class Emitter
         assert(_compiler is not null);
         assert(block is not null);
         var extend = igType is IGPT_EPILOG or IGPT_FUNCLET_EPILOG;
-        if (extend)
+        if (extend && Configuration.TARGET_AMD64)
         {
-#if TARGET_AMD64
             emitOutputPreEpilogNOP();
-#endif
         }
 
         if (emitCurIGnonEmpty())
@@ -140,18 +138,28 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_AMD64
     internal bool emitIsLastInsCall()
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Last-instruction call tracking is not supported for this target.");
+        }
+
         return (emitLastIns is not null) && (emitLastIns.idIns() == INS_call);
     }
 
     private void emitOutputPreEpilogNOP()
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Pre-epilog nop insertion is not supported for this target.");
+        }
+
         if (emitIsLastInsCall())
         {
             emitIns(INS_nop);
         }
     }
-#endif
 }

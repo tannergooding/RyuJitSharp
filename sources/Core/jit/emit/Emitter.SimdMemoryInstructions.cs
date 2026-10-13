@@ -12,9 +12,11 @@ public partial class Emitter
     public void emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         regNumber @base, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register base-address instruction recording requires AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Two-register base-address instruction recording requires AMD64.");
+        }
+
         RequireSupportedInstructionRecording();
         assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
@@ -23,7 +25,7 @@ public partial class Emitter
         id.idIns(ins);
         id.idReg1(reg1);
         id.idReg2(reg2);
-        id.idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_ARD));
+        id.idInsFmt(emitInsModeFormat(ins, IF_XARCH_RRD_RRD_ARD));
         id.idAddr().iiaAddrMode.amBaseReg = @base;
         id.idAddr().iiaAddrMode.amIndxReg = REG_NA;
 
@@ -34,15 +36,16 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding() || IsDstSrcImmAvxInstruction(ins))
         {
@@ -54,15 +57,16 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_I(ins, attr, targetReg, ival);
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_A(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         GenTreeIndir indir, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD memory instruction recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD memory instruction recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
@@ -74,15 +78,16 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_A(ins, attr, targetReg, indir);
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_S(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int varx, int offs, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack instruction recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack instruction recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
@@ -94,19 +99,20 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_S(ins, attr, targetReg, varx, offs);
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_A_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         GenTreeIndir indir, int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD address-immediate recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD address-immediate recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
-            emitIns_R_R_A_I(ins, attr, targetReg, op1Reg, indir, ival, IF_RWR_RRD_ARD_CNS, instOptions);
+            emitIns_R_R_A_I(ins, attr, targetReg, op1Reg, indir, ival, IF_XARCH_RWR_RRD_ARD_CNS, instOptions);
         }
         else
         {
@@ -114,15 +120,16 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_A_I(ins, attr, targetReg, indir, ival);
         }
-#endif
     }
 
     public unsafe void emitIns_SIMD_R_R_C_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, CORINFO_FIELD_STRUCT_* field, int offset, int immediate, insOpts options)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD field-immediate recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD field-immediate recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
@@ -134,15 +141,16 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_C_I(ins, attr, targetReg, field, offset, immediate);
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_S_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         int varx, int offs, int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack-immediate recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD stack-immediate recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
@@ -154,10 +162,8 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_S_I(ins, attr, targetReg, varx, offs, ival);
         }
-#endif
     }
 
-#if TARGET_XARCH
     private static bool IsDstSrcImmAvxInstruction(instruction ins)
     {
         // These forms do not encode an operand in VEX.vvvv, and retain separate
@@ -165,5 +171,4 @@ public partial class Emitter
         return ins is INS_aeskeygenassist or INS_extractps or INS_pextrb or INS_pextrw or INS_pextrd or
             INS_pextrq or INS_pshufd or INS_pshufhw or INS_pshuflw or INS_roundpd or INS_roundps;
     }
-#endif
 }

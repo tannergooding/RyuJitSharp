@@ -9,13 +9,10 @@ namespace RyuJitSharp;
 
 public enum EmitCallType
 {
-    EC_FUNC_TOKEN,
-#if TARGET_XARCH
-    EC_FUNC_TOKEN_INDIR,
-#endif
-    EC_INDIR_R,
-#if TARGET_XARCH
-    EC_INDIR_ARD,
-#endif
-    EC_COUNT,
+    // Native ordinals vary by target; keep the xarch union values and compare call kinds symbolically.
+    EC_FUNC_TOKEN = 0,
+    EC_FUNC_TOKEN_INDIR = 1,
+    EC_INDIR_R = 2,
+    EC_INDIR_ARD = 3,
+    EC_COUNT = 4,
 }

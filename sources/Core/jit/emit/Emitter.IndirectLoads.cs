@@ -11,12 +11,16 @@ public partial class Emitter
 {
     public void emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir mem)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Indirect-load recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Indirect-load recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(mem.Oper is GT_IND or GT_NULLCHECK);
         var addr = mem.Addr;
 
@@ -35,12 +39,11 @@ public partial class Emitter
         var id = emitNewInstrAmd(attr, mem.Offset);
         id.idIns(ins);
         id.idReg1(dstReg);
-        emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_RRD_ARD), ins);
+        emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_XARCH_RRD_ARD), ins);
         var size = emitInsSizeAM(id, insCodeRM(ins));
         id.idCodeSize(size);
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
     }
 }

@@ -7,17 +7,28 @@ namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if TARGET_XARCH
     public static regNumber AbsRegNumber(regNumber reg)
     {
-        assert(reg < REG_STK);
-        if ((uint)reg >= KBASE)
+        if (!Configuration.TARGET_XARCH)
         {
-            return (regNumber)((uint)reg - KBASE);
+            throw new FatalJitException("Absolute xarch register numbering is not available for this target.");
         }
-        else if ((uint)reg >= XMMBASE)
+
+        assert(Globals.genIsValidReg(reg));
+        if (Configuration.TARGET_AMD64 && (uint)reg >= (uint)REG_X64_K0)
         {
-            return (regNumber)((uint)reg - XMMBASE);
+            return (regNumber)((uint)reg - (uint)REG_X64_K0);
+        }
+
+        if (Configuration.TARGET_X86 && (uint)reg >= (uint)REG_X86_K0)
+        {
+            return (regNumber)((uint)reg - (uint)REG_X86_K0);
+        }
+
+        var floatingRegisterFirst = TargetRuntimeMetadata.FloatingRegisterFirst;
+        if ((uint)reg >= (uint)floatingRegisterFirst)
+        {
+            return (regNumber)((uint)reg - (uint)floatingRegisterFirst);
         }
 
         return reg;
@@ -25,23 +36,20 @@ public static partial class Globals
 
     public static bool IsXMMReg(regNumber reg)
     {
-#if TARGET_AMD64
-        return (reg >= REG_XMM0) && (reg <= REG_XMM31);
-#else
-        return (reg >= REG_XMM0) && (reg <= REG_XMM7);
-#endif
+        return Configuration.TARGET_XARCH &&
+            (reg >= TargetRuntimeMetadata.FloatingRegisterFirst) &&
+            (reg <= TargetRuntimeMetadata.FloatingRegisterLast);
     }
 
     public static uint HighAwareRegEncoding(regNumber reg)
     {
-        assert(((uint)REG_XMM0 & 0x7) == 0);
+        assert(((uint)TargetRuntimeMetadata.FloatingRegisterFirst & 0x7) == 0);
         return (uint)AbsRegNumber(reg) & 0xF;
     }
 
     public static uint RegEncoding(regNumber reg)
     {
-        assert(((uint)REG_XMM0 & 0x7) == 0);
+        assert(((uint)TargetRuntimeMetadata.FloatingRegisterFirst & 0x7) == 0);
         return (uint)AbsRegNumber(reg) & 0x7;
     }
-#endif
 }

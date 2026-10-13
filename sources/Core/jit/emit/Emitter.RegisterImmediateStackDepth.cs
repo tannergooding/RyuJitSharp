@@ -3,13 +3,18 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     private void emitAdjustStackDepth(instruction ins, nint val)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "X86 stack-depth adjustment is not supported for this target.");
+        }
+
         if (emitCntStackDepth == 0)
         {
             return;
@@ -42,4 +47,3 @@ public partial class Emitter
         }
     }
 }
-#endif

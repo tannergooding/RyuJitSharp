@@ -5,18 +5,42 @@
 
 using static RyuJitSharp.Globals;
 
-#if TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     public void emitIns_R_S(instruction ins, emitAttr attr, regNumber reg, int varNum, int offset)
     {
-#if TARGET_ARM
-        recordArm32InsRS(ins, attr, reg, varNum, offset, out _);
-#elif TARGET_LOONGARCH64
-        emitInsRSLoongArch64(ins, attr, reg, varNum, offset);
-#elif TARGET_RISCV64
+        if (Configuration.TARGET_XARCH)
+        {
+            emitIns_R_S(ins, attr, reg, varNum, offset, INS_OPTS_NONE);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_SArm64(ins, attr, reg, varNum, offset);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            recordArm32InsRS(ins, attr, reg, varNum, offset, out _);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRSLoongArch64(ins, attr, reg, varNum, offset);
+            return;
+        }
+
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Target local-stack instruction recording is not implemented.");
+        }
+
         assert(_compiler is not null);
         assert(codeGen is not null);
         var size = EA_SIZE(attr);
@@ -54,7 +78,7 @@ public partial class Emitter
             ? unchecked((nint)(-offset - 8))
             : unchecked((nint)(baseOffset + offset));
 
-        var frameReg = framePointerBased ? REG_FPBASE : REG_SPBASE;
+        var frameReg = framePointerBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
         assert(offset >= 0);
         offset = offset < 0 ? unchecked(-offset - 8) : offset;
 
@@ -67,7 +91,7 @@ public partial class Emitter
                 ins = INS_addi;
             }
 
-            code = emitInsCode(ins);
+            code = emitInsCodeRiscV64(ins);
             code |= unchecked((uint)reg) << 7;
             code |= unchecked((uint)frameReg) << 15;
             code |= (unchecked((uint)imm) & 0xFFF) << 20;
@@ -82,7 +106,7 @@ public partial class Emitter
             emitIns_R_R_I(INS_addi, EA_PTRSIZE, reservedReg, reservedReg, lowImmediate);
 
             ins = INS_add;
-            code = emitInsCode(ins);
+            code = emitInsCodeRiscV64(ins);
             code |= unchecked((uint)reg) << 7;
             code |= unchecked((uint)frameReg) << 15;
             code |= unchecked((uint)reservedReg) << 20;
@@ -95,7 +119,7 @@ public partial class Emitter
             emitIns_R_R_R(INS_add, EA_PTRSIZE, reservedReg, reservedReg, frameReg);
 
             var lowImmediate = imm & 0xFFF;
-            code = emitInsCode(ins);
+            code = emitInsCodeRiscV64(ins);
             code |= unchecked((uint)reg) << 7;
             code |= unchecked((uint)reservedReg) << 15;
             code |= (unchecked((uint)lowImmediate) & 0xFFF) << 20;
@@ -105,15 +129,11 @@ public partial class Emitter
         id.idReg1(reg);
         id.idIns(ins);
         id.idAddr().iiaInstrEncode = code;
-        id.idAddr().iiaLclVar.initLclVarAddr(varNum, unchecked((uint)offset));
+        id.idAddr().iiaInitLclVarAddr(varNum, unchecked((uint)offset));
         id.idSetIsLclVar();
         id.idCodeSize(4);
 
         dispIns(id);
         appendToCurIG(id);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Target local-stack instruction recording is not implemented.");
-#endif
     }
 }
-#endif

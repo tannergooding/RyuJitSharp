@@ -10,9 +10,11 @@ public partial class Emitter
     public void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register instruction recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD register instruction recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
@@ -45,15 +47,16 @@ public partial class Emitter
                 emitIns_R_R(ins, attr, targetReg, op2Reg);
             }
         }
-#endif
     }
 
     public void emitIns_SIMD_R_R_R_I(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op2Reg, int ival, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate instruction recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD register-immediate instruction recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
@@ -67,35 +70,25 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_R_I(ins, attr, targetReg, op2Reg, ival);
         }
-#endif
-    }
-
-#if TARGET_AMD64
-    public bool UseSimdEncoding()
-    {
-        return UseVexEncodings || UseEvexEncodings;
     }
 
     public bool IsThreeOperandAVXInstruction(instruction ins)
     {
-        if (!UseSimdEncoding())
+        if (!Configuration.TARGET_AMD64 || !UseSimdEncoding())
         {
             return false;
         }
 
         return (prefixFlags(ins) & INS_FLAGS_Is3OperandInstructionMask) != 0;
     }
-#endif
 
-#if TARGET_XARCH
     public bool IsAvxCommutative(instruction ins)
     {
-        if (!UseVexEncodings)
+        if (!Configuration.TARGET_XARCH || !UseVexEncodings)
         {
             return false;
         }
 
         return (prefixFlags(ins) & INS_FLAGS_IsAvxCommutative) != 0;
     }
-#endif
 }

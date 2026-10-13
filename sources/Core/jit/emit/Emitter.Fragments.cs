@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -11,15 +10,14 @@ public partial class Emitter
     public unsafe delegate void emitSplitCallbackType(void* context, emitLocation location);
 
     // unwind.h's FunctionLength encoding limits: ARM/RISC-V use 19 bits, ARM64/LoongArch use 20.
-#if TARGET_ARM || TARGET_RISCV64
-    private const uint UW_MAX_FRAGMENT_SIZE_BYTES = 1u << 19;
-#else
-    private const uint UW_MAX_FRAGMENT_SIZE_BYTES = 1u << 20;
-#endif
+    private static uint UW_MAX_FRAGMENT_SIZE_BYTES =>
+        Configuration.TARGET_ARM || Configuration.TARGET_RISCV64 ? 1u << 19 : 1u << 20;
 
     // The instruction position does not affect whether the group ends a function or funclet.
     public bool emitIsFuncEnd(emitLocation emitLoc, emitLocation? emitLocNextFragment = null)
     {
+        RequireUnwindFragmentTarget();
+
         var ig = emitLoc.GetIG();
         assert(ig is not null);
 
@@ -57,6 +55,8 @@ public partial class Emitter
     public unsafe void emitSplit(emitLocation? startLoc, emitLocation? endLoc, uint maxSplitSize,
         void* context, emitSplitCallbackType callbackFunc)
     {
+        RequireUnwindFragmentTarget();
+
         var igStart = startLoc.HasValue ? startLoc.Value.GetIG() : emitIGlist;
         var igEnd = endLoc.HasValue ? endLoc.Value.GetIG() : null;
         insGroup? igPrev = null;
@@ -169,5 +169,12 @@ public partial class Emitter
 
         assert((curSize > 0) && (curSize < UW_MAX_FRAGMENT_SIZE_BYTES));
     }
+
+    private static void RequireUnwindFragmentTarget()
+    {
+        if (!Configuration.TARGET_ARMARCH && !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Unwind emitter fragmentation requires ARM, LoongArch64, or RISC-V64.");
+        }
+    }
 }
-#endif

@@ -9,12 +9,15 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_AMD64
     internal void RequireSupportedInstructionRecording()
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction recording outside AMD64 is not ported.");
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Instruction recording outside AMD64 is not ported.");
+        }
+
+        assert(_compiler is not null);
     }
-#endif
 
     public VARSET_TP InitGCrefVars => emitInitGCrefVars;
 
@@ -134,10 +137,11 @@ public partial class Emitter
     public void emitBegProlog()
     {
         assert(_compiler is not null);
-#if EMIT_TRACK_STACK_DEPTH
-        emitCntStackDepth = 0;
-        assert(emitCurStackLvl == 0);
-#endif
+        if (Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            emitCntStackDepth = 0;
+            assert(emitCurStackLvl == 0);
+        }
         emitNoGCRequestCount = 1;
         emitNoGCIG = true;
         emitForceNewIG = false;
@@ -167,10 +171,11 @@ public partial class Emitter
             _ = emitSavIG(emitAdd: false);
         }
 
-#if EMIT_TRACK_STACK_DEPTH
-        emitCurStackLvl = 0;
-        emitCntStackDepth = sizeof(int);
-#endif
+        if (Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            emitCurStackLvl = 0;
+            emitCntStackDepth = sizeof(int);
+        }
     }
 
     private void emitBegPrologEpilog(insGroup placeholder)
@@ -202,10 +207,11 @@ public partial class Emitter
         _compiler.funSetCurrentFunc(placeholder.igFuncIdx);
         emitCurCodeOffset = unchecked((int)placeholder.igOffs);
         emitGenIG(placeholder);
-#if EMIT_TRACK_STACK_DEPTH
-        emitCntStackDepth = 0;
-        assert(emitCurStackLvl == 0);
-#endif
+        if (Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            emitCntStackDepth = 0;
+            assert(emitCurStackLvl == 0);
+        }
     }
 
     private void emitEndPrologEpilog()
@@ -218,10 +224,11 @@ public partial class Emitter
         }
         assert(emitCurIGsize <= MAX_PLACEHOLDER_IG_SIZE);
 
-#if EMIT_TRACK_STACK_DEPTH
-        emitCurStackLvl = 0;
-        emitCntStackDepth = sizeof(int);
-#endif
+        if (Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            emitCurStackLvl = 0;
+            emitCntStackDepth = sizeof(int);
+        }
     }
 
     public void emitBegFnEpilog(insGroup placeholder)
@@ -229,47 +236,54 @@ public partial class Emitter
         emitEpilogCnt++;
         emitBegPrologEpilog(placeholder);
 
-#if JIT32_GCENCODER
-        var epilog = new EpilogList();
-        if (emitEpilogLast is not null)
+        if (Configuration.JIT32_GCENCODER)
         {
-            emitEpilogLast.elNext = epilog;
-        }
-        else
-        {
-            emitEpilogList = epilog;
-        }
+            var epilog = new EpilogList();
+            if (emitEpilogLast is not null)
+            {
+                emitEpilogLast.elNext = epilog;
+            }
+            else
+            {
+                emitEpilogList = epilog;
+            }
 
-        emitEpilogLast = epilog;
-#endif
+            emitEpilogLast = epilog;
+        }
     }
 
     public void emitEndFnEpilog()
     {
         emitEndPrologEpilog();
 
-#if JIT32_GCENCODER
-        assert(emitEpilogLast is not null);
-        var epilogBegin = emitEpilogLast.elLoc.CodeOffset(this);
-        var exitSequenceBegin = emitExitSeqBegLoc.CodeOffset(this);
-        var epilogSize = unchecked(exitSequenceBegin - epilogBegin);
-        assert((emitEpilogSize == 0) || (unchecked((uint)emitEpilogSize) == epilogSize));
-        emitEpilogSize = unchecked((int)epilogSize);
-
-        assert(emitCurIG is not null);
-        var epilogEnd = emitCodeOffset(emitCurIG, emitCurOffset());
-        assert(exitSequenceBegin != epilogEnd);
-        var exitSequenceSize = unchecked(epilogEnd - exitSequenceBegin);
-        if (exitSequenceSize < unchecked((uint)emitExitSeqSize))
+        if (Configuration.JIT32_GCENCODER)
         {
-            assert((emitEpilogCnt == 1) || (unchecked((uint)emitExitSeqSize - exitSequenceSize) <= 5u));
-            emitExitSeqSize = unchecked((int)exitSequenceSize);
+            assert(emitEpilogLast is not null);
+            var epilogBegin = emitEpilogLast.elLoc.CodeOffset(this);
+            var exitSequenceBegin = emitExitSeqBegLoc.CodeOffset(this);
+            var epilogSize = unchecked(exitSequenceBegin - epilogBegin);
+            assert((emitEpilogSize == 0) || (unchecked((uint)emitEpilogSize) == epilogSize));
+            emitEpilogSize = unchecked((int)epilogSize);
+
+            assert(emitCurIG is not null);
+            var epilogEnd = emitCodeOffset(emitCurIG, emitCurOffset());
+            assert(exitSequenceBegin != epilogEnd);
+            var exitSequenceSize = unchecked(epilogEnd - exitSequenceBegin);
+            if (exitSequenceSize < unchecked((uint)emitExitSeqSize))
+            {
+                assert((emitEpilogCnt == 1) || (unchecked((uint)emitExitSeqSize - exitSequenceSize) <= 5u));
+                emitExitSeqSize = unchecked((int)exitSequenceSize);
+            }
         }
-#endif
     }
 
     public uint emitGetEpilogCnt()
     {
+        if (!Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+        }
+
         return unchecked((uint)emitEpilogCnt);
     }
 
@@ -293,32 +307,42 @@ public partial class Emitter
         emitEndPrologEpilog();
     }
 
-#if JIT32_GCENCODER
     public void emitStartEpilog()
     {
+        if (!Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+        }
+
         assert(emitEpilogLast is not null);
         emitEpilogLast.elLoc.CaptureLocation(this);
     }
 
     public bool emitHasEpilogEnd()
     {
+        if (!Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "The epilog recorder is only supported by the x86 GC encoder.");
+        }
+
         if (emitEpilogCnt == 1)
         {
             assert(emitIGlast is not null);
             return (emitIGlast.igFlags & InsGroupFlags.Epilog) != 0;
         }
-
         return false;
     }
-#endif
 
-#if TARGET_XARCH
     public void emitStartExitSeq()
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Exit sequence recording is not implemented for this target.");
+        }
+
         assert(emitGeneratingEpilogOrFuncletEpilog());
         emitExitSeqBegLoc.CaptureLocation(this);
     }
-#endif
 
     public void emitSetFrameRangeGCRs(int offsLo, int offsHi)
     {
@@ -328,7 +352,7 @@ public partial class Emitter
         assert(_compiler is not null);
         if (_compiler.verbose)
         {
-            var count = unchecked((uint)(offsHi - offsLo)) / TARGET_POINTER_SIZE;
+            var count = unchecked((uint)(offsHi - offsLo)) / Configuration.TARGET_POINTER_SIZE;
             jitprintf($"{count} tracked GC refs are at stack offsets ");
             if (offsLo >= 0)
             {
@@ -337,45 +361,47 @@ public partial class Emitter
             }
             else
             {
-#if TARGET_ARM && PROFILING_SUPPORTED
-                if (!_compiler.compIsProfilerHookNeeded)
+                if (Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED &&
+                    _compiler.compIsProfilerHookNeeded)
                 {
-#endif
-#if TARGET_AMD64
-                jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                if (offsHi < 0)
-                {
-                    jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
+                    if (offsHi < 0)
+                    {
+                        jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
+                    }
+                    else
+                    {
+                        jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
+                    }
                 }
-                else
-                {
-                    jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
-                }
-#else
-                jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
-                assert(offsHi <= 0);
-#endif
-#if TARGET_ARM && PROFILING_SUPPORTED
-                }
-                else if (offsHi < 0)
-                {
-                    jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
-                }
-                else
+                else if (Configuration.TARGET_AMD64)
                 {
                     jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
                 }
-#endif
+                else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+                {
+                    if (offsHi < 0)
+                    {
+                        jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
+                    }
+                    else
+                    {
+                        jitprintf($"-{unchecked(-offsLo):X4} ... {offsHi:X4}\n");
+                    }
+                }
+                else
+                {
+                    jitprintf($"-{unchecked(-offsLo):X4} ... -{unchecked(-offsHi):X4}\n");
+                    assert(offsHi <= 0);
+                }
             }
         }
 #endif
-        assert(((offsHi - offsLo) % TARGET_POINTER_SIZE) == 0);
-        assert((offsLo % TARGET_POINTER_SIZE) == 0);
-        assert((offsHi % TARGET_POINTER_SIZE) == 0);
+        assert(((offsHi - offsLo) % Configuration.TARGET_POINTER_SIZE) == 0);
+        assert((offsLo % Configuration.TARGET_POINTER_SIZE) == 0);
+        assert((offsHi % Configuration.TARGET_POINTER_SIZE) == 0);
         emitGCrFrameOffsMin = offsLo;
         emitGCrFrameOffsMax = offsHi;
-        emitGCrFrameOffsCnt = (offsHi - offsLo) / TARGET_POINTER_SIZE;
+        emitGCrFrameOffsCnt = (offsHi - offsLo) / Configuration.TARGET_POINTER_SIZE;
     }
 
     public bool emitIsWithinFrameRangeGCRs(int offs)
