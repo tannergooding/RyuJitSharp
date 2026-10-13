@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
@@ -15,12 +14,22 @@ public partial class Emitter
 {
     private unsafe void emitIns_CallRiscV64(in EmitCallParams parameters)
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V call recording is only supported on RISC-V64.");
+        }
+
         var compiler = _compiler
             ?? throw new FatalJitException("RISC-V call recording requires an active compiler.");
 
-        assert(parameters.callType < EC_COUNT);
+        if (parameters.callType is not EC_FUNC_TOKEN and not EC_INDIR_R)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                $"RISC-V call recording does not support call kind {parameters.callType}.");
+        }
+
         assert(isGeneralRegister(parameters.ireg));
-        assert((parameters.callType < EC_INDIR_R) || (parameters.addr == null));
+        assert((parameters.callType is EC_FUNC_TOKEN) || (parameters.addr == null));
         assert(parameters.xreg == REG_NA && parameters.xmul == 0 && parameters.disp == 0);
 
         var argSize = parameters.argSize;
@@ -56,47 +65,39 @@ public partial class Emitter
             _ = emitLoadImmediate(true, EA_PTRSIZE, parameters.ireg, imm);
         }
 
-        assert((parameters.argSize % REGSIZE_BYTES) == 0);
-        var argCnt = unchecked((int)(parameters.argSize / REGSIZE_BYTES));
+        assert((parameters.argSize % Configuration.REGSIZE_BYTES) == 0);
+        var argCnt = unchecked((int)(parameters.argSize / Configuration.REGSIZE_BYTES));
         instrDesc id;
-        if (parameters.callType >= EC_INDIR_R)
+        if (parameters.callType is EC_INDIR_R)
         {
-            assert(parameters.callType is EC_INDIR_R);
             id = emitNewInstrCallInd(argCnt, parameters.disp, parameters.ptrVars, gcrefRegs, byrefRegs,
-                parameters.retSize,
-#if MULTIREG_HAS_SECOND_GC_RET
-                parameters.secondRetSize,
-#endif
+                parameters.retSize, parameters.secondRetSize,
                 parameters.hasAsyncRet);
         }
         else
         {
             assert(parameters.callType is EC_FUNC_TOKEN);
             id = emitNewInstrCallDir(argCnt, parameters.ptrVars, gcrefRegs, byrefRegs, parameters.retSize,
-#if MULTIREG_HAS_SECOND_GC_RET
                 parameters.secondRetSize,
-#endif
                 parameters.hasAsyncRet);
         }
 
-        if (parameters.retSize is EA_GCREF)
+        if (parameters.retSize == EA_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
-        else if (parameters.retSize is EA_BYREF)
+        else if (parameters.retSize == EA_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
-#if MULTIREG_HAS_SECOND_GC_RET
-        if (parameters.secondRetSize is EA_GCREF)
+        if (Configuration.MULTIREG_HAS_SECOND_GC_RET && parameters.secondRetSize == EA_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET_1);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
         }
-        else if (parameters.secondRetSize is EA_BYREF)
+        else if (Configuration.MULTIREG_HAS_SECOND_GC_RET && parameters.secondRetSize == EA_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET_1);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
         }
-#endif
 
         VarSetOps.Assign(compiler, ref emitThisGCrefVars, parameters.ptrVars);
         emitThisGCrefRegs = (regMask)gcrefRegs;
@@ -110,7 +111,7 @@ public partial class Emitter
             ((parameters.callType is EC_FUNC_TOKEN) && !IsAddressInRange(parameters.addr)))
         {
             id.idSetIsCallRegPtr();
-            id.idReg4(parameters.isJump ? REG_R0 : REG_RA);
+            id.idReg4(parameters.isJump ? REG_RISCV64_R0 : REG_RISCV64_RA);
             id.idReg3(parameters.ireg);
             id.idSmallCns(jalrOffset);
             id.idCodeSize(4);
@@ -155,4 +156,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

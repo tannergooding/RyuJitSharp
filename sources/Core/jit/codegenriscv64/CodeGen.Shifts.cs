@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -13,11 +12,11 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForShift(GenTree tree)
+    public void genCodeForShiftRiscV64(GenTree tree)
     {
         var size = tree.Type.EmitActualSize;
 
-        assert(tree.RegNum != REG_NA);
+        assert(tree.RegNum != REG_RISCV64_NA);
 
         genConsumeOperands(tree.AsOp());
 
@@ -64,17 +63,17 @@ public sealed partial class CodeGen
                     var shiftRight = tree.Oper is GT_ROR ? shiftBy.RegNum : tempReg;
                     var shiftLeft = tree.Oper is GT_ROR ? tempReg : shiftBy.RegNum;
 
-                    GetEmitter().emitIns_R_R_I(INS_addi, size, tempReg, REG_R0, unchecked((int)immWidth));
+                    GetEmitter().emitIns_R_R_I(INS_addi, size, tempReg, REG_RISCV64_R0, unchecked((int)immWidth));
                     GetEmitter().emitIns_R_R_R(INS_sub, size, tempReg, tempReg, shiftBy.RegNum);
 
                     if (size == EA_8BYTE)
                     {
-                        GetEmitter().emitIns_R_R_R(INS_srl, size, REG_RA, operand.RegNum, shiftRight);
+                        GetEmitter().emitIns_R_R_R(INS_srl, size, REG_RISCV64_RA, operand.RegNum, shiftRight);
                         GetEmitter().emitIns_R_R_R(INS_sll, size, tempReg, operand.RegNum, shiftLeft);
                     }
                     else
                     {
-                        GetEmitter().emitIns_R_R_R(INS_srlw, size, REG_RA, operand.RegNum, shiftRight);
+                        GetEmitter().emitIns_R_R_R(INS_srlw, size, REG_RISCV64_RA, operand.RegNum, shiftRight);
                         GetEmitter().emitIns_R_R_R(INS_sllw, size, tempReg, operand.RegNum, shiftLeft);
                     }
                 }
@@ -91,33 +90,33 @@ public sealed partial class CodeGen
 
                     if (((shiftByImm >= 32) && (shiftByImm < 64)) || (size == EA_8BYTE))
                     {
-                        GetEmitter().emitIns_R_R_I(INS_srli, size, REG_RA, operand.RegNum,
+                        GetEmitter().emitIns_R_R_I(INS_srli, size, REG_RISCV64_RA, operand.RegNum,
                             unchecked((int)shiftRight));
                         GetEmitter().emitIns_R_R_I(INS_slli, size, tempReg, operand.RegNum,
                             unchecked((int)shiftLeft));
                     }
                     else
                     {
-                        GetEmitter().emitIns_R_R_I(INS_srliw, size, REG_RA, operand.RegNum,
+                        GetEmitter().emitIns_R_R_I(INS_srliw, size, REG_RISCV64_RA, operand.RegNum,
                             unchecked((int)shiftRight));
                         GetEmitter().emitIns_R_R_I(INS_slliw, size, tempReg, operand.RegNum,
                             unchecked((int)shiftLeft));
                     }
                 }
 
-                GetEmitter().emitIns_R_R_R(INS_or, size, tree.RegNum, REG_RA, tempReg);
+                GetEmitter().emitIns_R_R_R(INS_or, size, tree.RegNum, REG_RISCV64_RA, tempReg);
             }
         }
         else if (!shiftBy.Oper.IsCnsIntOrI)
         {
-            var ins = genGetInsForOper(tree);
+            var ins = genGetInsForOperRiscV64(tree);
             GetEmitter().emitIns_R_R_R(ins, size, tree.RegNum, operand.RegNum, shiftBy.RegNum);
         }
         else
         {
             assert(isImmed(tree));
 
-            var ins = genGetInsForOper(tree);
+            var ins = genGetInsForOperRiscV64(tree);
             var shiftByImm = unchecked((uint)shiftBy.AsIntCon().IconValue);
             shiftByImm &= (immWidth - 1);
 
@@ -144,4 +143,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

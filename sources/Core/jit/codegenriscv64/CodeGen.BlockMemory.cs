@@ -3,63 +3,16 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreBlk(GenTreeBlk node)
-    {
-        assert(node.Oper is GT_STORE_BLK);
-
-        if (node._gcUnsafe)
-        {
-            Emitter.emitDisableGC();
-        }
-
-        var isCopyBlk = node.IsCopyBlkOp;
-
-        switch (node._kind)
-        {
-            case GenTreeBlk.BlkOpKindLoop:
-            {
-                assert(!isCopyBlk);
-                genCodeForInitBlkLoop(node);
-                break;
-            }
-
-            case GenTreeBlk.BlkOpKindUnroll:
-            {
-                if (isCopyBlk)
-                {
-                    genCodeForCpBlkUnroll(node);
-                }
-                else
-                {
-                    genCodeForInitBlkUnroll(node);
-                }
-                break;
-            }
-
-            default:
-            {
-                unreached();
-                break;
-            }
-        }
-
-        if (node._gcUnsafe)
-        {
-            Emitter.emitEnableGC();
-        }
-    }
-
-    public void genCodeForCpBlkUnroll(GenTreeBlk node)
+    public void genCodeForCpBlkUnrollRiscV64(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);
 
         var dstLclNum = BAD_VAR_NUM;
-        var dstAddrBaseReg = REG_NA;
+        var dstAddrBaseReg = REG_RISCV64_NA;
         var dstOffset = 0;
         var dstAddr = node.Addr;
 
@@ -90,7 +43,7 @@ public sealed partial class CodeGen
         }
 
         var srcLclNum = BAD_VAR_NUM;
-        var srcAddrBaseReg = REG_NA;
+        var srcAddrBaseReg = REG_RISCV64_NA;
         var srcOffset = 0;
         var src = node.Data;
 
@@ -146,13 +99,13 @@ public sealed partial class CodeGen
         assert(srcOffset < int.MaxValue - unchecked((int)size));
         assert(dstOffset < int.MaxValue - unchecked((int)size));
 
-        var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT));
+        var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_RISCV64));
 
-        if (size >= (uint)(2 * REGSIZE_BYTES))
+        if (size >= (uint)(2 * Configuration.REGSIZE_BYTES))
         {
-            var tempReg2 = REG_RA;
+            var tempReg2 = REG_RISCV64_RA;
 
-            for (var regSize = (uint)(2 * REGSIZE_BYTES); size >= regSize;
+            for (var regSize = (uint)(2 * Configuration.REGSIZE_BYTES); size >= regSize;
                  size -= regSize, srcOffset += (int)regSize, dstOffset += (int)regSize)
             {
                 if (srcLclNum != BAD_VAR_NUM)
@@ -179,7 +132,7 @@ public sealed partial class CodeGen
             }
         }
 
-        for (var regSize = (uint)REGSIZE_BYTES; size > 0;
+        for (var regSize = (uint)Configuration.REGSIZE_BYTES; size > 0;
              size -= regSize, srcOffset += (int)regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)
@@ -253,7 +206,7 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForInitBlkLoop(GenTreeBlk node)
+    public void genCodeForInitBlkLoopRiscV64(GenTreeBlk node)
     {
         var dstNode = node.Addr;
         _ = genConsumeReg(dstNode);
@@ -265,16 +218,16 @@ public sealed partial class CodeGen
         }
 
         var size = node.Layout.Size;
-        assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+        assert((size >= Configuration.TARGET_POINTER_SIZE) && ((size % Configuration.TARGET_POINTER_SIZE) == 0));
 
         // Store the first pointer before forming the loop's potentially large offset to retain nullcheck behavior.
-        Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, dstReg, 0);
-        if (size > TARGET_POINTER_SIZE)
+        Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_R0, dstReg, 0);
+        if (size > Configuration.TARGET_POINTER_SIZE)
         {
             GCInfo.gcMarkRegPtrVal(dstReg, dstNode.Type);
 
             var tempReg = InternalRegisters.GetSingle(node);
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, unchecked((nint)(size - TARGET_POINTER_SIZE)));
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, unchecked((nint)(size - Configuration.TARGET_POINTER_SIZE)));
 
             // tempReg = dstReg + tempReg (a new interior pointer, but in a nongc region).
             Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, tempReg, dstReg, tempReg);
@@ -284,8 +237,8 @@ public sealed partial class CodeGen
             // TODO: add GC info for tempReg and remove the no-GC region.
             Emitter.emitDisableGC();
 
-            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, tempReg, 0);
-            Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -TARGET_POINTER_SIZE);
+            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_RISCV64_R0, tempReg, 0);
+            Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -Configuration.TARGET_POINTER_SIZE);
             Emitter.emitIns_J_cond_la(INS_bne, loop, tempReg, dstReg);
             Emitter.emitEnableGC();
 
@@ -293,12 +246,12 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForInitBlkUnroll(GenTreeBlk node)
+    public void genCodeForInitBlkUnrollRiscV64(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);
 
         var dstLclNum = BAD_VAR_NUM;
-        var dstAddrBaseReg = REG_NA;
+        var dstAddrBaseReg = REG_RISCV64_NA;
         var dstOffset = 0;
         var dstAddr = node.Addr;
 
@@ -330,7 +283,7 @@ public sealed partial class CodeGen
             src = src.AsUnOp().Op1;
         }
 
-        var srcReg = REG_R0;
+        var srcReg = REG_RISCV64_R0;
         if (!src.IsContained)
         {
             srcReg = genConsumeReg(src);
@@ -349,7 +302,7 @@ public sealed partial class CodeGen
         assert(size <= int.MaxValue);
         assert(dstOffset < int.MaxValue - unchecked((int)size));
 
-        for (var regSize = (uint)(2 * REGSIZE_BYTES); size >= regSize; size -= regSize, dstOffset += (int)regSize)
+        for (var regSize = (uint)(2 * Configuration.REGSIZE_BYTES); size >= regSize; size -= regSize, dstOffset += (int)regSize)
         {
             if (dstLclNum != BAD_VAR_NUM)
             {
@@ -363,7 +316,7 @@ public sealed partial class CodeGen
             }
         }
 
-        for (var regSize = (uint)REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
+        for (var regSize = (uint)Configuration.REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)
             {
@@ -416,10 +369,4 @@ public sealed partial class CodeGen
             }
         }
     }
-
-    public void instGen_MemoryBarrier()
-    {
-        instGen_MemoryBarrier(BARRIER_FULL);
-    }
 }
-#endif

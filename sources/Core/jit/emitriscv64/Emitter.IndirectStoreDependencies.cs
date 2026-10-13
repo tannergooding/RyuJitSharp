@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -14,8 +13,10 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public unsafe void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
+    public unsafe void emitInsLoadStoreOpRiscV64(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
     {
+        RequireRiscV64Target();
+
         var compiler = _compiler ??
             throw new FatalJitException(CORJIT_INTERNALERROR, "Indirect load/store recording requires an active compiler.");
         var addr = indir.Addr;
@@ -47,7 +48,7 @@ public partial class Emitter
                 assert(offset == addr.AsIntCon().IconValue);
                 if (!addr.AsIntCon().AddrNeedsReloc(compiler) && isValidSimm12(offset))
                 {
-                    emitIns_R_R_I(ins, attr, dataReg, REG_ZERO, offset);
+                    emitIns_R_R_I(ins, attr, dataReg, REG_RISCV64_ZERO, unchecked((int)offset));
                 }
                 else
                 {
@@ -67,7 +68,7 @@ public partial class Emitter
                         var lo12 = unchecked((offset << (64 - 12)) >> (64 - 12));
                         offset = unchecked(offset - lo12);
 
-                        var addrReg = REG_ZERO;
+                        var addrReg = REG_RISCV64_ZERO;
                         if (offset != 0)
                         {
                             addrReg = needTemp
@@ -76,7 +77,7 @@ public partial class Emitter
                             _ = emitLoadImmediate(true, EA_PTRSIZE, addrReg, offset);
                         }
 
-                        emitIns_R_R_I(ins, attr, dataReg, addrReg, lo12);
+                        emitIns_R_R_I(ins, attr, dataReg, addrReg, unchecked((int)lo12));
                     }
                 }
             }
@@ -84,7 +85,7 @@ public partial class Emitter
             {
                 var baseReg = memBase?.RegNum ??
                     throw new FatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base register.");
-                emitIns_R_R_I(ins, attr, dataReg, baseReg, offset);
+                emitIns_R_R_I(ins, attr, dataReg, baseReg, unchecked((int)offset));
             }
             else
             {
@@ -98,7 +99,7 @@ public partial class Emitter
                     throw new FatalJitException(CORJIT_INTERNALERROR, "Contained RISC-V address mode is missing its base tree.");
                 var addType = varTypeIsGC(baseTree.Type) ? EA_BYREF : EA_PTRSIZE;
                 emitIns_R_R_R(INS_add, addType, tmpReg, baseTree.RegNum, tmpReg);
-                emitIns_R_R_I(ins, attr, dataReg, tmpReg, lo12);
+                emitIns_R_R_I(ins, attr, dataReg, tmpReg, unchecked((int)lo12));
             }
         }
         else
@@ -111,8 +112,8 @@ public partial class Emitter
                 assert(!local.lvTracked);
             }
 #endif
+
             emitIns_R_R_I(ins, attr, dataReg, addr.RegNum, 0);
         }
     }
 }
-#endif

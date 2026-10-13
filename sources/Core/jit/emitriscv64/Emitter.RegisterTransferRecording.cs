@@ -1,20 +1,16 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_RISCV64
 using static RyuJitSharp.regNumber;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
+    public void emitIns_R_RRiscV64(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "RISCV64: NYI");
-    }
+        RequireRiscV64Target();
 
-    public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
-    {
-        var code = emitInsCode(ins);
+        var code = emitInsCodeRiscV64(ins);
 
         if (ins is INS_mov or INS_sext_w or INS_not || (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_clz, INS_rev8)))
         {
@@ -90,4 +86,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

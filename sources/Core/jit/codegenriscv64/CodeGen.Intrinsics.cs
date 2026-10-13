@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genIntrinsic(GenTreeIntrinsic treeNode)
+    public void genIntrinsicRiscV64(GenTreeIntrinsic treeNode)
     {
         var op1 = treeNode.Op1;
         var op2 = treeNode.Op2;
@@ -196,4 +195,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -49,4 +48,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

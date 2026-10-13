@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,7 +14,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree tree)
+    public unsafe void genSetRegToConstRiscV64(regNumber targetReg, var_types targetType, GenTree tree)
     {
         switch (tree.Oper)
         {
@@ -56,13 +55,13 @@ public sealed partial class CodeGen
 
                 if (Emitter.isSingleInstructionFpImm(value, size, out var bits))
                 {
-                    var tempReg = REG_ZERO;
+                    var tempReg = REG_RISCV64_ZERO;
                     if (bits != 0)
                     {
                         tempReg = InternalRegisters.GetSingle(tree);
                         if (Emitter.isValidSimm12(unchecked((nint)bits)))
                         {
-                            emit.emitIns_R_R_I(INS_addi, size, tempReg, REG_ZERO, unchecked((nint)bits));
+                            emit.emitIns_R_R_I(INS_addi, size, tempReg, REG_RISCV64_ZERO, unchecked((nint)bits));
                         }
                         else
                         {
@@ -79,7 +78,7 @@ public sealed partial class CodeGen
 
                 var handle = emit.emitFltOrDblConst(value, size);
                 var loadIns = size is EA_4BYTE ? INS_flw : INS_fld;
-                emit.emitIns_R_C(loadIns, size, targetReg, REG_NA, handle);
+                emit.emitIns_R_C(loadIns, size, targetReg, REG_RISCV64_NA, handle);
                 break;
             }
 
@@ -91,4 +90,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

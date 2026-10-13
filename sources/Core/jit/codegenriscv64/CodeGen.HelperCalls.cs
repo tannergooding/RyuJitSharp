@@ -3,21 +3,20 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
-        regNumber callTargetReg = REG_NA)
+    public unsafe void genEmitHelperCallRiscV64(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
+        regNumber callTargetReg = REG_RISCV64_NA)
     {
         var parameters = new EmitCallParams();
         var helperFunction = _compiler.compGetHelperFtn(helper);
         var killMask = _compiler.compHelperCallKillSet(helper);
 
-        if (callTargetReg is REG_NA)
+        if (callTargetReg is REG_RISCV64_NA)
         {
-            callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+            callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET_RISCV64;
         }
         parameters.ireg = callTargetReg;
 
@@ -57,4 +56,3 @@ public sealed partial class CodeGen
         _regSet.verifyRegistersUsed(killMask);
     }
 }
-#endif

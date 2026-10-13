@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
@@ -15,7 +14,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForSelect(GenTreeOp tree)
+    public void genCodeForSelectRiscV64(GenTreeOp tree)
     {
         assert(tree.Oper is GT_SELECT);
         assert(_compiler.compOpportunisticallyDependsOn(InstructionSet_Zicond));
@@ -32,15 +31,15 @@ public sealed partial class CodeGen
 
         var targetReg = tree.RegNum;
         var conditionReg = condition.RegNum;
-        var trueReg = trueValue.IsContained ? REG_ZERO : trueValue.RegNum;
-        var falseReg = falseValue.IsContained ? REG_ZERO : falseValue.RegNum;
+        var trueReg = trueValue.IsContained ? REG_RISCV64_ZERO : trueValue.RegNum;
+        var falseReg = falseValue.IsContained ? REG_RISCV64_ZERO : falseValue.RegNum;
 
         var attr = tree.Type.EmitActualSize;
-        if (falseReg == REG_ZERO)
+        if (falseReg == REG_RISCV64_ZERO)
         {
             Emitter.emitIns_R_R_R(INS_czero_eqz, attr, targetReg, trueReg, conditionReg);
         }
-        else if (trueReg == REG_ZERO)
+        else if (trueReg == REG_RISCV64_ZERO)
         {
             Emitter.emitIns_R_R_R(INS_czero_nez, attr, targetReg, falseReg, conditionReg);
         }
@@ -55,4 +54,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

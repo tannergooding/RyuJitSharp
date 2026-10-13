@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -11,23 +10,29 @@ public partial class Emitter
     private const byte RISCV64_LD = 1;
     private const byte RISCV64_ST = 2;
 
-    public bool emitInsIsLoad(instruction ins)
+    public bool emitInsIsLoadRiscV64(instruction ins)
     {
+        RequireRiscV64Target();
+
         // Pseudo instructions such as LEA are not represented in the instruction table.
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
                (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
-               ((CodeGen.instInfo[nativeOrdinal] & RISCV64_LD) != 0);
+               (((byte)CodeGen.instInfo[nativeOrdinal] & RISCV64_LD) != 0);
     }
 
-    public bool emitInsIsLoadOrStore(instruction ins)
+    public bool emitInsIsLoadOrStoreRiscV64(instruction ins)
     {
+        RequireRiscV64Target();
+
         return InstructionOrdinalMaps.TryGetNativeInstructionOrdinal(ins, out var nativeOrdinal) &&
                (uint)nativeOrdinal < (uint)CodeGen.instInfo.Length &&
-               ((CodeGen.instInfo[nativeOrdinal] & (RISCV64_LD | RISCV64_ST)) != 0);
+               (((byte)CodeGen.instInfo[nativeOrdinal] & (RISCV64_LD | RISCV64_ST)) != 0);
     }
 
-    public bool emitInsWritesToLclVarStackLoc(instrDesc id)
+    public bool emitInsWritesToLclVarStackLocRiscV64(instrDesc id)
     {
+        RequireRiscV64Target();
+
         if (!id.idIsLclVar())
         {
             return false;
@@ -44,8 +49,10 @@ public partial class Emitter
         };
     }
 
-    public bool emitInsMayWriteToGCReg(instruction ins)
+    public bool emitInsMayWriteToGCRegRiscV64(instruction ins)
     {
+        RequireRiscV64Target();
+
         assert(ins != INS_invalid);
         if (ins is INS_nop or INS_j)
         {
@@ -57,7 +64,7 @@ public partial class Emitter
             return true;
         }
 
-        var code = emitInsCode(ins);
+        var code = emitInsCodeRiscV64(ins);
         switch (GetMajorOpcode(code))
         {
             case MajorOpcode.Store:
@@ -105,4 +112,3 @@ public partial class Emitter
         }
     }
 }
-#endif

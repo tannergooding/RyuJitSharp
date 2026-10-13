@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.CodeGen.GenIntCastDesc.CheckKind;
 using static RyuJitSharp.CodeGen.GenIntCastDesc.ExtendKind;
 using static RyuJitSharp.Globals;
@@ -15,7 +14,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private void genIntCastOverflowCheck(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
+    private void genIntCastOverflowCheckRiscV64(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
     {
         var tempReg = InternalRegisters.GetSingle(cast);
 
@@ -30,7 +29,7 @@ public sealed partial class CodeGen
                     reg = tempReg;
                 }
 
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, null, REG_R0);
+                genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_blt, reg, null, REG_RISCV64_R0);
                 break;
             }
 
@@ -38,7 +37,7 @@ public sealed partial class CodeGen
             {
                 // Any set bit above bit 31 means the value does not fit in uint.
                 GetEmitter().emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, 32);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, null, REG_R0);
+                genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, REG_RISCV64_R0);
                 break;
             }
 
@@ -46,7 +45,7 @@ public sealed partial class CodeGen
             {
                 // Any set bit above bit 30 means the value does not fit in positive int.
                 GetEmitter().emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, 31);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, null, REG_R0);
+                genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, REG_RISCV64_R0);
                 break;
             }
 
@@ -54,7 +53,7 @@ public sealed partial class CodeGen
             {
                 // A sign-extended low word must equal the original value.
                 GetEmitter().emitIns_R_R(INS_sext_w, EA_4BYTE, tempReg, reg);
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, null, reg);
+                genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, reg);
                 break;
             }
 
@@ -71,7 +70,7 @@ public sealed partial class CodeGen
                     var excludeMsb = isDstSigned ? 1 : 0;
                     var typeSize = (8 * castSize) - excludeMsb;
                     GetEmitter().emitIns_R_R_I(INS_srli, EA_8BYTE, tempReg, reg, typeSize);
-                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, null, REG_R0);
+                    genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, REG_RISCV64_R0);
                 }
                 else
                 {
@@ -79,14 +78,14 @@ public sealed partial class CodeGen
                     var extensionSize = (8 - castSize) * 8;
                     GetEmitter().emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, reg, extensionSize);
                     GetEmitter().emitIns_R_R_I(INS_srai, EA_8BYTE, tempReg, tempReg, extensionSize);
-                    genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, null, reg);
+                    genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, reg);
                 }
                 break;
             }
         }
     }
 
-    private void genIntToIntCast(GenTreeCast cast)
+    private void genIntToIntCastRiscV64(GenTreeCast cast)
     {
         genConsumeRegs(cast.CastOp);
 
@@ -100,7 +99,7 @@ public sealed partial class CodeGen
         var desc = new GenIntCastDesc(cast);
         if (desc.Check != CHECK_NONE)
         {
-            genIntCastOverflowCheck(cast, in desc, srcReg);
+            genIntCastOverflowCheckRiscV64(cast, in desc, srcReg);
         }
 
         if ((desc.Extend != COPY) || (srcReg != dstReg))
@@ -147,7 +146,7 @@ public sealed partial class CodeGen
                 {
                     if (_compiler.compOpportunisticallyDependsOn(InstructionSet_Zba))
                     {
-                        emit.emitIns_R_R_R(INS_add_uw, EA_PTRSIZE, dstReg, srcReg, REG_R0);
+                        emit.emitIns_R_R_R(INS_add_uw, EA_PTRSIZE, dstReg, srcReg, REG_RISCV64_R0);
                     }
                     else
                     {
@@ -182,4 +181,3 @@ public sealed partial class CodeGen
         genProduceReg(cast);
     }
 }
-#endif

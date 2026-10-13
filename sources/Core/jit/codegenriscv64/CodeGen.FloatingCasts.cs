@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,7 +14,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genIntToFloatCast(GenTree treeNode)
+    public void genIntToFloatCastRiscV64(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
@@ -96,7 +95,7 @@ public sealed partial class CodeGen
         genProduceReg(cast);
     }
 
-    public void genFloatToIntCast(GenTreeCast treeNode)
+    public void genFloatToIntCastRiscV64(GenTreeCast treeNode)
     {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
@@ -186,13 +185,13 @@ public sealed partial class CodeGen
 
         // feq returns zero for NaN and one for every other value; negating it yields a mask for valid conversions.
         Emitter.emitIns_R_R_R(feqIns, dstSize, tempReg, op1.RegNum, op1.RegNum);
-        Emitter.emitIns_R_R_R(INS_sub, dstSize, tempReg, REG_ZERO, tempReg);
+        Emitter.emitIns_R_R_R(INS_sub, dstSize, tempReg, REG_RISCV64_ZERO, tempReg);
         Emitter.emitIns_R_R_R(INS_and, dstSize, treeNode.RegNum, treeNode.RegNum, tempReg);
 
         genProduceReg(treeNode);
     }
 
-    public void genCkfinite(GenTree treeNode)
+    public void genCkfiniteRiscV64(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CKFINITE);
 
@@ -210,7 +209,7 @@ public sealed partial class CodeGen
         emit.emitIns_R_R(classifyIns, attr, intReg, fpReg);
         emit.emitIns_R_R_I(INS_andi, EA_PTRSIZE, intReg, intReg, expMask);
 
-        genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_bne, intReg);
+        genJumpToThrowHlpBlk_laRiscV64(SCK_ARITH_EXCPN, INS_bne, intReg);
 
         if (treeNode.RegNum != fpReg)
         {
@@ -220,4 +219,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

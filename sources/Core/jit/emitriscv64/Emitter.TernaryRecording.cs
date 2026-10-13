@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,8 +14,10 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree dst, GenTree src1, GenTree src2)
+    public regNumber emitInsTernaryRiscV64(instruction ins, emitAttr attr, GenTree dst, GenTree src1, GenTree src2)
     {
+        RequireRiscV64Target();
+
         assert(!dst.IsContained);
 
         var intConst = (GenTreeIntConCommon?)null;
@@ -151,7 +152,7 @@ public partial class Emitter
             assert(ins is INS_addi or INS_addiw or INS_andi or INS_ori or INS_xori or
                 INS_bseti or INS_bclri or INS_bexti or INS_binvi);
 
-            var tempReg = needCheckOv ? codeGen.InternalRegisters.Extract(dst) : REG_NA;
+            var tempReg = needCheckOv ? codeGen.InternalRegisters.Extract(dst) : REG_RISCV64_NA;
 
             if (needCheckOv)
             {
@@ -166,16 +167,16 @@ public partial class Emitter
 
                 if (dst.AsOp().IsUnsigned)
                 {
-                    codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bltu, dstReg, null, tempReg);
+                    codeGen.genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bltu, dstReg, null, tempReg);
                 }
                 else if (imm > 0)
                 {
                     // B > 0 and C > 0, if A < B, goto overflow.
                     var tmpLabel = codeGen.genCreateTempLabel();
-                    emitIns_J_cond_la(INS_bge, tmpLabel, REG_R0, tempReg);
+                    emitIns_J_cond_la(INS_bge, tmpLabel, REG_RISCV64_R0, tempReg);
                     emitIns_R_R_I(INS_slti, EA_PTRSIZE, tempReg, dstReg, unchecked((int)imm));
 
-                    codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+                    codeGen.genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg);
 
                     codeGen.genDefineTempLabel(tmpLabel);
                 }
@@ -183,10 +184,10 @@ public partial class Emitter
                 {
                     // B < 0 and C < 0, if A > B, goto overflow.
                     var tmpLabel = codeGen.genCreateTempLabel();
-                    emitIns_J_cond_la(INS_bge, tmpLabel, tempReg, REG_R0);
-                    emitIns_R_R_I(INS_addi, attr, tempReg, REG_R0, unchecked((int)imm));
+                    emitIns_J_cond_la(INS_bge, tmpLabel, tempReg, REG_RISCV64_R0);
+                    emitIns_R_R_I(INS_addi, attr, tempReg, REG_RISCV64_R0, unchecked((int)imm));
 
-                    codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, null, dstReg);
+                    codeGen.genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_blt, tempReg, null, dstReg);
 
                     codeGen.genDefineTempLabel(tmpLabel);
                 }
@@ -198,7 +199,7 @@ public partial class Emitter
         }
         else
         {
-            var tempReg = needCheckOv ? codeGen.InternalRegisters.Extract(dst) : REG_NA;
+            var tempReg = needCheckOv ? codeGen.InternalRegisters.Extract(dst) : REG_RISCV64_NA;
 
             switch (dst.Oper)
             {
@@ -216,17 +217,17 @@ public partial class Emitter
                             assert(tempReg != src1Reg);
                             assert(tempReg != src2Reg);
 
-                            assert(REG_RA != dstReg);
-                            assert(REG_RA != src1Reg);
-                            assert(REG_RA != src2Reg);
+                            assert(REG_RISCV64_RA != dstReg);
+                            assert(REG_RISCV64_RA != src1Reg);
+                            assert(REG_RISCV64_RA != src2Reg);
 
                             if (dst.AsOp().IsUnsigned)
                             {
                                 if (attr == EA_4BYTE)
                                 {
                                     emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, src1Reg, 32);
-                                    emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RA, src2Reg, 32);
-                                    emitIns_R_R_R(INS_mulhu, EA_8BYTE, tempReg, tempReg, REG_RA);
+                                    emitIns_R_R_I(INS_slli, EA_8BYTE, REG_RISCV64_RA, src2Reg, 32);
+                                    emitIns_R_R_R(INS_mulhu, EA_8BYTE, tempReg, tempReg, REG_RISCV64_RA);
                                     emitIns_R_R_I(INS_srai, attr, tempReg, tempReg, 32);
                                 }
                                 else
@@ -256,7 +257,7 @@ public partial class Emitter
 
                             if (dst.AsOp().IsUnsigned)
                             {
-                                codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg);
+                                codeGen.genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg);
                             }
                             else
                             {
@@ -268,7 +269,7 @@ public partial class Emitter
                                 var shift = EA_SIZE(attr) == EA_8BYTE ? 63 : 31;
                                 var shiftIns = EA_SIZE(attr) == EA_8BYTE ? INS_srai : INS_sraiw;
                                 emitIns_R_R_I(shiftIns, attr, tempReg2, dstReg, shift);
-                                codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, tempReg, null, tempReg2);
+                                codeGen.genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, INS_bne, tempReg, null, tempReg2);
                             }
                         }
                     }
@@ -302,8 +303,8 @@ public partial class Emitter
                 {
                     var regOp1 = src1Reg;
                     var regOp2 = src2Reg;
-                    var saveOperReg1 = REG_NA;
-                    var saveOperReg2 = REG_NA;
+                    var saveOperReg1 = REG_RISCV64_NA;
+                    var saveOperReg2 = REG_RISCV64_NA;
 
                     if (dst.AsOp().IsUnsigned && (attr == EA_8BYTE))
                     {
@@ -357,7 +358,7 @@ public partial class Emitter
                     */
                     if (needCheckOv)
                     {
-                        var resultReg = REG_NA;
+                        var resultReg = REG_RISCV64_NA;
 
                         if (dst.OperIs(GT_ADD))
                         {
@@ -373,8 +374,8 @@ public partial class Emitter
                         }
 
                         var branchIns = INS_none;
-                        var branchReg1 = REG_NA;
-                        var branchReg2 = REG_NA;
+                        var branchReg1 = REG_RISCV64_NA;
+                        var branchReg2 = REG_RISCV64_NA;
 
                         if (dst.AsOp().IsUnsigned)
                         {
@@ -415,7 +416,7 @@ public partial class Emitter
                             }
                         }
 
-                        codeGen.genJumpToThrowHlpBlk_la(SCK_OVERFLOW, branchIns, branchReg1, null, branchReg2);
+                        codeGen.genJumpToThrowHlpBlk_laRiscV64(SCK_OVERFLOW, branchIns, branchReg1, null, branchReg2);
                     }
 
                     break;
@@ -432,4 +433,3 @@ public partial class Emitter
         return dstReg;
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -100,8 +99,6 @@ public partial class Emitter
         }
         id.idCodeSize(2 * sizeof(uint));
         id.idReg1(reg);
-
         appendToCurIG(id);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
@@ -67,14 +66,18 @@ public sealed partial class CodeGen
             noway_assert(block.FirstNode is not null);
 
             var jmpNode = lastNode;
-#if !FEATURE_FASTTAILCALL
-            noway_assert(jmpNode.OperIs(GT_JMP));
-#else
-            noway_assert(!jmpNode.OperIs(GT_JMP) || (jmpNode.Next is null));
-            noway_assert(jmpNode.OperIs(GT_JMP) ||
-                (jmpNode.OperIs(GT_CALL) && jmpNode.AsCall().IsFastTailCall));
-            if (jmpNode.OperIs(GT_JMP))
-#endif
+            if (!Configuration.FEATURE_FASTTAILCALL)
+            {
+                noway_assert(jmpNode.OperIs(GT_JMP));
+            }
+            else
+            {
+                noway_assert(!jmpNode.OperIs(GT_JMP) || (jmpNode.Next is null));
+                noway_assert(jmpNode.OperIs(GT_JMP) ||
+                    (jmpNode.OperIs(GT_CALL) && jmpNode.AsCall().IsFastTailCall));
+            }
+
+            if (!Configuration.FEATURE_FASTTAILCALL || jmpNode.OperIs(GT_JMP))
             {
                 noway_assert(methHnd != null);
                 noway_assert(addrInfo.addr != null);
@@ -88,7 +91,7 @@ public sealed partial class CodeGen
                 {
                     case IAT_VALUE:
                     {
-                        parameters.ireg = REG_INDIRECT_CALL_TARGET_REG;
+                        parameters.ireg = REG_INDIRECT_CALL_TARGET_REG_RISCV64;
                         parameters.callType = EC_FUNC_TOKEN;
                         parameters.addr = addrInfo.addr;
                         break;
@@ -96,7 +99,7 @@ public sealed partial class CodeGen
                     case IAT_PVALUE:
                     {
                         parameters.callType = EC_INDIR_R;
-                        parameters.ireg = REG_INDIRECT_CALL_TARGET_REG;
+                        parameters.ireg = REG_INDIRECT_CALL_TARGET_REG_RISCV64;
                         Emitter.emitIns_R_R_Addr(
                             INS_ld, EA_PTRSIZE, parameters.ireg, parameters.ireg, addrInfo.addr);
                         _regSet.verifyRegUsed(parameters.ireg);
@@ -106,7 +109,7 @@ public sealed partial class CodeGen
                     {
                         parameters.callType = EC_INDIR_R;
                         // Keep the target in a volatile temporary outside the argument registers.
-                        parameters.ireg = REG_T2;
+                        parameters.ireg = REG_RISCV64_T2;
                         _regSet.verifyRegUsed(parameters.ireg);
                         break;
                     }
@@ -121,20 +124,18 @@ public sealed partial class CodeGen
                 parameters.isJump = true;
                 genEmitCallWithCurrentGC(ref parameters);
             }
-#if FEATURE_FASTTAILCALL
             else
             {
                 genPopCalleeSavedRegisters(jmpEpilog: true);
-                genCallInstruction(jmpNode.AsCall());
+                genCallInstructionRiscV64(jmpNode.AsCall());
             }
-#endif
         }
         else
         {
             genPopCalleeSavedRegisters(jmpEpilog: false);
 
-            Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_R0, REG_RA, 0);
-            _compiler.unwindReturn(REG_RA);
+            Emitter.emitIns_R_R_I(INS_jalr, EA_PTRSIZE, REG_RISCV64_R0, REG_RISCV64_RA, 0);
+            _compiler.unwindReturn(REG_RISCV64_RA);
         }
 
         _compiler.unwindEndEpilog();
@@ -151,7 +152,7 @@ public sealed partial class CodeGen
         var localFrameSize = _compiler.compLclFrameSize;
         if ((_compiler.lvaMonAcquired != BAD_VAR_NUM) && !_compiler.opts.IsOSR)
         {
-            localFrameSize -= TARGET_POINTER_SIZE;
+            localFrameSize -= Configuration.TARGET_POINTER_SIZE;
         }
 
         JITDUMP(
@@ -166,8 +167,8 @@ public sealed partial class CodeGen
             {
                 var spToFpDelta = genSPtoFPdelta;
                 // Restore SP from FP after localloc changed the stack pointer.
-                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -spToFpDelta);
-                _compiler.unwindSetFrameReg(REG_FPBASE, unchecked((uint)spToFpDelta));
+                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE_RISCV64, REG_FPBASE_RISCV64, -spToFpDelta);
+                _compiler.unwindSetFrameReg(REG_FPBASE_RISCV64, unchecked((uint)spToFpDelta));
             }
         }
         else
@@ -178,20 +179,20 @@ public sealed partial class CodeGen
                 // Restore SP from FP after localloc changed the stack pointer.
                 if (Emitter.isValidSimm12(spToFpDelta))
                 {
-                    Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, -spToFpDelta);
+                    Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE_RISCV64, REG_FPBASE_RISCV64, -spToFpDelta);
                 }
                 else
                 {
                     var tempReg = rsGetRsvdReg();
                     _ = Emitter.emitLoadImmediate(true, EA_PTRSIZE, tempReg, spToFpDelta);
-                    Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, tempReg);
+                    Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, REG_SPBASE_RISCV64, REG_FPBASE_RISCV64, tempReg);
                 }
             }
 
             if ((localFrameSize + (_compiler.compCalleeRegsPushed << 3)) > 2040)
             {
                 remainingSpSize = localFrameSize & -16;
-                genStackPointerAdjustment(remainingSpSize, REG_RA, null, reportUnwindData: true);
+                genStackPointerAdjustmentRiscV64(remainingSpSize, REG_RISCV64_RA, null, reportUnwindData: true);
 
                 remainingSpSize = totalFrameSize - remainingSpSize;
                 fpOffset = localFrameSize & 0xf;
@@ -199,24 +200,24 @@ public sealed partial class CodeGen
         }
 
         JITDUMP($"    calleeSaveSPOffset={fpOffset + 16}\n");
-        genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, REG_SPBASE, fpOffset + 16,
+        genRestoreCalleeSavedRegistersHelpRiscV64(regsToRestoreMask, REG_SPBASE_RISCV64, fpOffset + 16,
             reportUnwindData: true);
 
-        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RA, REG_SPBASE, fpOffset + 8);
-        _compiler.unwindSaveReg(REG_RA, unchecked((uint)(fpOffset + 8)));
+        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RISCV64_RA, REG_SPBASE_RISCV64, fpOffset + 8);
+        _compiler.unwindSaveReg(REG_RISCV64_RA, unchecked((uint)(fpOffset + 8)));
 
-        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_FP, REG_SPBASE, fpOffset);
-        _compiler.unwindSaveReg(REG_FP, unchecked((uint)fpOffset));
+        Emitter.emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_RISCV64_FP, REG_SPBASE_RISCV64, fpOffset);
+        _compiler.unwindSaveReg(REG_RISCV64_FP, unchecked((uint)fpOffset));
 
         if (Emitter.isValidUimm11(remainingSpSize))
         {
-            Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, remainingSpSize);
+            Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE_RISCV64, REG_SPBASE_RISCV64, remainingSpSize);
         }
         else
         {
             var tempReg = rsGetRsvdReg();
             _ = Emitter.emitLoadImmediate(true, EA_PTRSIZE, tempReg, remainingSpSize);
-            Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
+            Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE_RISCV64, REG_SPBASE_RISCV64, tempReg);
         }
         _compiler.unwindAllocStack(unchecked((uint)remainingSpSize));
 
@@ -228,16 +229,15 @@ public sealed partial class CodeGen
             // Remove the original Tier0 frame after restoring the current frame.
             if (Emitter.isValidUimm11(tier0FrameSize))
             {
-                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tier0FrameSize);
+                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, REG_SPBASE_RISCV64, REG_SPBASE_RISCV64, tier0FrameSize);
             }
             else
             {
                 var tempReg = rsGetRsvdReg();
                 _ = Emitter.emitLoadImmediate(true, EA_PTRSIZE, tempReg, tier0FrameSize);
-                Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, tempReg);
+                Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, REG_SPBASE_RISCV64, REG_SPBASE_RISCV64, tempReg);
             }
             _compiler.unwindAllocStack(unchecked((uint)tier0FrameSize));
         }
     }
 }
-#endif

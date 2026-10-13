@@ -3,21 +3,20 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genJumpTable(GenTree tree)
+    public unsafe void genJumpTableRiscV64(GenTree tree)
     {
         var tableBase = genEmitJumpTable(tree, relativeAddr: true);
         // The handle identifies inline jump-table data, not an EE static field.
-        Emitter.emitIns_R_C(INS_addi, EA_PTRSIZE, tree.RegNum, REG_NA,
+        Emitter.emitIns_R_C(INS_addi, EA_PTRSIZE, tree.RegNum, REG_RISCV64_NA,
             Compiler.eeFindJitDataOffs(tableBase));
         genProduceReg(tree);
     }
 
-    public void genTableBasedSwitch(GenTree tree)
+    public void genTableBasedSwitchRiscV64(GenTree tree)
     {
         var operands = tree.AsOp();
         genConsumeOperands(operands);
@@ -26,7 +25,7 @@ public sealed partial class CodeGen
         var indexReg = indexNode.RegNum;
         var baseNode = operands.Op2;
         assert(baseNode is not null);
-        assert(baseNode.Type is TYP_I_IMPL);
+        assert((baseNode.Type == TYP_I_IMPL));
         var baseReg = baseNode.RegNum;
         var tempReg = InternalRegisters.GetSingle(tree);
 
@@ -38,7 +37,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            assert(indexNode.Type is TYP_I_IMPL);
+            assert((indexNode.Type == TYP_I_IMPL));
             Emitter.emitIns_R_R_I(INS_slli, EA_8BYTE, tempReg, indexReg, 2);
             Emitter.emitIns_R_R_R(INS_add, EA_8BYTE, baseReg, baseReg, tempReg);
         }
@@ -50,7 +49,6 @@ public sealed partial class CodeGen
         assert(firstBlock is not null);
         Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, firstBlock, tempReg);
         Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, baseReg, baseReg, tempReg);
-        Emitter.emitIns_R_R_I(INS_jalr, TYP_I_IMPL.EmitActualSize, REG_R0, baseReg, 0);
+        Emitter.emitIns_R_R_I(INS_jalr, TYP_I_IMPL.EmitActualSize, REG_RISCV64_R0, baseReg, 0);
     }
 }
-#endif

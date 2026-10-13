@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -15,6 +14,8 @@ public partial class Emitter
 {
     public static int emitLoadImmediate(bool doEmit, emitAttr size, regNumber reg, nint immediate)
     {
+        RequireRiscV64Target();
+
         assert(!EA_IS_RELOC(size));
         assert(!doEmit || isGeneralRegister(reg));
 
@@ -25,7 +26,7 @@ public partial class Emitter
 
         if (isValidSimm12(immediate))
         {
-            getCurrentEmitter().emitIns_R_R_I(INS_addi, size, reg, REG_R0, immediate & 0xFFF);
+            getCurrentEmitter().emitIns_R_R_I(INS_addi, size, reg, REG_RISCV64_R0, immediate & 0xFFF);
             return 1;
         }
 
@@ -280,7 +281,7 @@ public partial class Emitter
                         INS_ld,
                         EA_PTRSIZE,
                         reg,
-                        REG_NA,
+                        REG_RISCV64_NA,
                         Compiler.eeFindJitDataOffs(constAddr));
                 }
             }
@@ -294,6 +295,8 @@ public partial class Emitter
 
     private static Emitter getCurrentEmitter()
     {
+        RequireRiscV64Target();
+
         var compiler = JitTls.Compiler ??
             throw new FatalJitException(CORJIT_INTERNALERROR, "RISC-V64 emission requires an active compiler.");
         return compiler.GetEmitter();
@@ -306,6 +309,8 @@ public partial class Emitter
         ReadOnlySpan<instruction> instructions,
         ReadOnlySpan<int> values)
     {
+        RequireRiscV64Target();
+
         assert(instructions.Length > 0);
         assert(instructions.Length <= instrDescLoadImm.absMaxInsCount);
         assert(instructions.Length == values.Length);
@@ -324,4 +329,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

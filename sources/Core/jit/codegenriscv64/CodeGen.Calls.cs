@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 #if DEBUG
 using System.Runtime.CompilerServices;
 #endif
@@ -19,14 +18,14 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genCall(GenTreeCall call)
+    public unsafe void genCallRiscV64(GenTreeCall call)
     {
         genCallPlaceRegArgs(call);
 
         if (call.NeedsNullCheck)
         {
             var thisReg = genGetThisArgReg(call);
-            Emitter.emitIns_R_R_I(INS_lw, EA_4BYTE, REG_R0, thisReg, 0);
+            Emitter.emitIns_R_R_I(INS_lw, EA_4BYTE, REG_RISCV64_R0, thisReg, 0);
         }
 
         if (call.IsFastTailCall)
@@ -43,7 +42,7 @@ public sealed partial class CodeGen
                 assert(call.ControlExpr is null);
 
                 var tempReg = InternalRegisters.GetSingle(call);
-                assert(new regMaskTP(SRBM_INT_CALLEE_TRASH & ~SRBM_RA).IsRegNumInMask(tempReg));
+                assert(new regMaskTP(SRBM_INT_CALLEE_TRASH_RISCV64 & ~SRBM_RISCV64_RA).IsRegNumInMask(tempReg));
 
                 regNumber callAddressReg;
                 if (call.IsVirtualStubRelativeIndir)
@@ -53,7 +52,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    callAddressReg = REG_R2R_INDIRECT_PARAM;
+                    callAddressReg = REG_R2R_INDIRECT_PARAM_RISCV64;
                 }
 
                 Emitter.emitIns_R_R_I(ins_Load(TYP_I_IMPL), TYP_I_IMPL.EmitActualSize, tempReg, callAddressReg, 0);
@@ -67,11 +66,11 @@ public sealed partial class CodeGen
             genDefineTempLabel(genCreateTempLabel());
         }
 
-        genCallInstruction(call);
+        genCallInstructionRiscV64(call);
         genDefinePendingCallLabel(call);
 
 #if DEBUG
-        var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
+        var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH_RISCV64 | SRBM_FLT_CALLEE_TRASH_RISCV64);
         if (call.IsHelperCall())
         {
             killMask = _compiler.compHelperCallKillSet(call.HelperNum);
@@ -99,7 +98,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                returnReg = varTypeUsesFloatArgReg(returnType) ? REG_FLOATRET : REG_INTRET;
+                returnReg = varTypeUsesFloatArgReg(returnType) ? REG_FLOATRET : REG_INTRET_RISCV64;
                 if (call.RegNum != returnReg)
                 {
                     inst_Mov(returnType, call.RegNum, returnReg, canSkip: false);
@@ -111,11 +110,11 @@ public sealed partial class CodeGen
 
         if ((call.Next is null) && !_compiler.opts.MinOpts && !_compiler.opts.compDbgCode)
         {
-            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INTRET));
+            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INTRET_RISCV64));
         }
     }
 
-    public unsafe void genCallInstruction(GenTreeCall call)
+    public unsafe void genCallInstructionRiscV64(GenTreeCall call)
     {
         ref readonly var returnTypeDesc = ref call.ReturnTypeDesc;
         var parameters = new EmitCallParams();
@@ -127,7 +126,7 @@ public sealed partial class CodeGen
                 parameters.retSize = returnTypeDesc.GetReturnRegType(0).EmitSize;
                 parameters.secondRetSize = returnTypeDesc.GetReturnRegType(1).EmitSize;
 
-                if (returnTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv) is REG_INTRET)
+                if (returnTypeDesc.GetAbiReturnReg(1, call.UnmanagedCallConv) is REG_INTRET_RISCV64)
                 {
                     assert(!EA_IS_GCREF(parameters.retSize) && !EA_IS_BYREF(parameters.retSize));
                     parameters.retSize = parameters.secondRetSize;
@@ -188,13 +187,13 @@ public sealed partial class CodeGen
         }
         else
         {
-            var callThroughIndirReg = REG_NA;
+            var callThroughIndirReg = REG_RISCV64_NA;
             if (!call.IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
             {
                 callThroughIndirReg = getCallIndirectionCellReg(call);
             }
 
-            if (callThroughIndirReg != REG_NA)
+            if (callThroughIndirReg != REG_RISCV64_NA)
             {
                 assert(call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir);
                 var targetAddrReg = InternalRegisters.GetSingle(call);
@@ -205,7 +204,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    assert(new regMaskTP(SRBM_INT_CALLEE_TRASH & ~SRBM_RA).IsRegNumInMask(targetAddrReg));
+                    assert(new regMaskTP(SRBM_INT_CALLEE_TRASH_RISCV64 & ~SRBM_RISCV64_RA).IsRegNumInMask(targetAddrReg));
                 }
 
                 assert(genIsValidIntReg(targetAddrReg));
@@ -220,10 +219,9 @@ public sealed partial class CodeGen
 
                 parameters.callType = EC_FUNC_TOKEN;
                 parameters.addr = call._directCallAddress;
-                parameters.ireg = parameters.isJump ? rsGetRsvdReg() : REG_RA;
+                parameters.ireg = parameters.isJump ? rsGetRsvdReg() : REG_RISCV64_RA;
                 genEmitCallWithCurrentGC(ref parameters);
             }
         }
     }
 }
-#endif

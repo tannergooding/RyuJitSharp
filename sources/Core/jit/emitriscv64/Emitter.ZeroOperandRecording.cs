@@ -3,20 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns(instruction ins)
+    public void emitInsRiscV64(instruction ins)
     {
+        RequireRiscV64Target();
         var id = emitNewInstr(EA_8BYTE);
         id.idIns(ins);
-        id.idAddr().iiaInstrEncode = emitInsCode(ins);
+        id.idAddr().iiaInstrEncode = emitInsCodeRiscV64(ins);
         id.idCodeSize(4);
 
         dispIns(id);
         appendToCurIG(id);
     }
 }
-#endif

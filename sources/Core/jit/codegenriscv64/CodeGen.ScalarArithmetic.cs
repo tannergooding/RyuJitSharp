@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -15,7 +14,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForNegNot(GenTreeUnOp tree)
+    public void genCodeForNegNotRiscV64(GenTreeUnOp tree)
     {
         assert(tree.Oper is GT_NEG or GT_NOT);
 
@@ -24,7 +23,7 @@ public sealed partial class CodeGen
 
         var targetReg = tree.RegNum;
         assert(!tree.IsContained);
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_RISCV64_NA);
 
         var operand = tree.Op1;
         assert(!operand.IsContained);
@@ -48,7 +47,7 @@ public sealed partial class CodeGen
                     attr is EA_4BYTE ? INS_subw : INS_sub,
                     attr,
                     targetReg,
-                    REG_R0,
+                    REG_RISCV64_R0,
                     operandReg);
             }
         }
@@ -61,7 +60,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForBswap(GenTree tree)
+    public void genCodeForBswapRiscV64(GenTree tree)
     {
         assert(tree.Oper is GT_BSWAP or GT_BSWAP16);
 
@@ -126,13 +125,13 @@ public sealed partial class CodeGen
         {
             var shiftIns = attr == EA_4BYTE ? INS_slliw : INS_slli;
             var addIns = attr == EA_4BYTE ? INS_addw : INS_add;
-            assert(scaleTempReg != REG_NA);
+            assert(scaleTempReg != REG_RISCV64_NA);
             Emitter.emitIns_R_R_I(shiftIns, attr, scaleTempReg, indexReg, scale);
             Emitter.emitIns_R_R_R(addIns, attr, targetReg, baseReg, scaleTempReg);
         }
     }
 
-    public void genCodeForDivMod(GenTreeOp tree)
+    public void genCodeForDivModRiscV64(GenTreeOp tree)
     {
         assert(tree.Oper is GT_MOD or GT_UMOD or GT_DIV or GT_UDIV);
 
@@ -147,7 +146,7 @@ public sealed partial class CodeGen
             assert(varTypeIsFloating(tree.Op2.Type));
             assert(tree.Oper is GT_DIV);
 
-            var ins = genGetInsForOper(tree);
+            var ins = genGetInsForOperRiscV64(tree);
             emit.emitIns_R_R_R(ins, targetType.EmitActualSize, tree.RegNum,
                 tree.Op1.RegNum, tree.Op2.RegNum);
         }
@@ -164,7 +163,7 @@ public sealed partial class CodeGen
             var exceptions = tree.Exceptions(_compiler);
             if ((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None)
             {
-                if (divisor.IsIntegralConst(0) || (divisorReg == REG_R0))
+                if (divisor.IsIntegralConst(0) || (divisorReg == REG_RISCV64_R0))
                 {
                     genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
                     genProduceReg(tree);
@@ -173,13 +172,13 @@ public sealed partial class CodeGen
                 else
                 {
                     assert(Emitter.isGeneralRegister(divisorReg));
-                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
+                    genJumpToThrowHlpBlk_laRiscV64(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
                 }
             }
 
             assert(!divisor.IsIntegralConst(0));
 
-            var tempReg = REG_NA;
+            var tempReg = REG_RISCV64_NA;
             instruction ins;
 
             if (divisor.IsContainedIntOrIImmed)
@@ -209,12 +208,12 @@ public sealed partial class CodeGen
             {
                 if ((exceptions & ExceptionSetFlags.ArithmeticException) is not ExceptionSetFlags.None)
                 {
-                    if (tempReg == REG_NA)
+                    if (tempReg == REG_RISCV64_NA)
                     {
                         tempReg = _internalRegisters.GetSingle(tree);
                     }
 
-                    emit.emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_R0, -1);
+                    emit.emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, REG_RISCV64_R0, -1);
                     var sdivLabel = genCreateTempLabel();
                     emit.emitIns_J_cond_la(INS_bne, sdivLabel, tempReg, divisorReg);
 
@@ -223,7 +222,7 @@ public sealed partial class CodeGen
                     var shiftBy = is4 ? 31 : 63;
                     emit.emitIns_R_R_I(shiftIns, size, tempReg, tempReg, shiftBy);
 
-                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, tempReg, null,
+                    genJumpToThrowHlpBlk_laRiscV64(SCK_ARITH_EXCPN, INS_beq, tempReg, null,
                         checkedDividendReg);
                     genDefineTempLabel(sdivLabel);
                 }
@@ -257,8 +256,8 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public unsafe void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
-        BasicBlock? failBlk = null, regNumber reg2 = REG_R0)
+    public unsafe void genJumpToThrowHlpBlk_laRiscV64(SpecialCodeKind codeKind, instruction ins, regNumber reg1,
+        BasicBlock? failBlk = null, regNumber reg2 = REG_RISCV64_R0)
     {
         assert(InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_beq, INS_bgeu));
 
@@ -279,9 +278,10 @@ public sealed partial class CodeGen
                 var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
                 assert(add.acdUsed);
                 assert(ReferenceEquals(excpRaisingBlock, add.acdDstBlk));
-#if !FEATURE_FIXED_OUT_ARGS
-                assert(add.acdStkLvlInit || IsFramePointerUsed);
-#endif
+                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                {
+                    assert(add.acdStkLvlInit || IsFramePointerUsed);
+                }
 #endif
             }
             else
@@ -291,9 +291,10 @@ public sealed partial class CodeGen
                 assert(add is not null);
                 assert(add.acdUsed);
                 excpRaisingBlock = add.acdDstBlk;
-#if !FEATURE_FIXED_OUT_ARGS
-                assert(add.acdStkLvlInit || IsFramePointerUsed);
-#endif
+                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                {
+                    assert(add.acdStkLvlInit || IsFramePointerUsed);
+                }
             }
 
             noway_assert(excpRaisingBlock is not null);
@@ -335,21 +336,21 @@ public sealed partial class CodeGen
                 // A value helper is called by its address.
                 callParams.addr = helperFunction.addr;
                 callParams.callType = EC_FUNC_TOKEN;
-                callParams.ireg = callParams.isJump ? rsGetRsvdReg() : REG_RA;
+                callParams.ireg = callParams.isJump ? rsGetRsvdReg() : REG_RISCV64_RA;
             }
             else
             {
                 callParams.addr = null;
                 assert(helperFunction.accessType is IAT_PVALUE);
                 callParams.callType = EC_INDIR_R;
-                callParams.ireg = REG_DEFAULT_HELPER_CALL_TARGET;
+                callParams.ireg = REG_DEFAULT_HELPER_CALL_TARGET_RISCV64;
                 emit.emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, callParams.ireg, callParams.ireg,
                     unchecked((nint)helperFunction.addr));
                 _regSet.verifyRegUsed(callParams.ireg);
             }
 
             callParams.methHnd = Compiler.eeFindHelper(helper);
-            // TODO-RISCV64: Why is this not using genEmitHelperCall?
+            // TODO-RISCV64: Why is this not using genEmitHelperCallRiscV64?
             genEmitCallWithCurrentGC(ref callParams);
 
             var killMask = _compiler.compHelperCallKillSet(helper);
@@ -359,11 +360,11 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForIncSaturate(GenTree tree)
+    public void genCodeForIncSaturateRiscV64(GenTree tree)
     {
         var targetReg = tree.RegNum;
         assert(!tree.IsContained);
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_RISCV64_NA);
 
         var operand = tree.AsUnOp().Op1;
         assert(!operand.IsContained);
@@ -379,7 +380,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForMulHi(GenTreeOp treeNode)
+    public void genCodeForMulHiRiscV64(GenTreeOp treeNode)
     {
         assert(!treeNode.HasOverflowCheckEx);
 
@@ -397,7 +398,7 @@ public sealed partial class CodeGen
         assert(!varTypeIsFloating(targetType));
         assert(!op1.IsContained);
         assert(!op2.IsContained);
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_RISCV64_NA);
 
         if (EA_SIZE(attr) == EA_8BYTE)
         {
@@ -427,4 +428,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

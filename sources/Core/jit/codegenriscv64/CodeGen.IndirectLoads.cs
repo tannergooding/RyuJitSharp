@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -13,17 +12,15 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForIndir(GenTreeIndir tree)
+    public void genCodeForIndirRiscV64(GenTreeIndir tree)
     {
         assert(tree.Oper is GT_IND);
 
-#if FEATURE_SIMD
-        if (tree.Type is TYP_SIMD12)
+        if (Configuration.FEATURE_SIMD && (tree.Type is TYP_SIMD12))
         {
-            genLoadIndTypeSimd12(tree);
+            genLoadIndTypeSimd12RiscV64(tree);
             return;
         }
-#endif
 
         var type = tree.Type;
         var ins = ins_Load(type);
@@ -36,15 +33,12 @@ public sealed partial class CodeGen
             instGen_MemoryBarrier(BARRIER_FULL);
         }
 
-        Emitter.emitInsLoadStoreOp(ins, type.EmitActualSize, targetReg, tree);
+        Emitter.emitInsLoadStoreOpRiscV64(ins, type.EmitActualSize, targetReg, tree);
         genProduceReg(tree);
     }
 
-#if FEATURE_SIMD
-    private void genLoadIndTypeSimd12(GenTreeIndir tree)
+    private void genLoadIndTypeSimd12RiscV64(GenTreeIndir tree)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 SIMD12 indirect loads are not ported.");
     }
-#endif
 }
-#endif

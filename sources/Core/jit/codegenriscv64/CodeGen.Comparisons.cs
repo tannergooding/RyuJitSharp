@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.emitAttr;
@@ -16,7 +15,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForCompare(GenTreeOp tree)
+    public void genCodeForCompareRiscV64(GenTreeOp tree)
     {
         assert(tree.Oper.IsCompare);
 
@@ -33,7 +32,7 @@ public sealed partial class CodeGen
         var emit = Emitter;
         var targetReg = tree.RegNum;
 
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_RISCV64_NA);
         assert(tree.Type is not TYP_VOID);
 
         var isReversed = false;
@@ -118,11 +117,13 @@ public sealed partial class CodeGen
             assert(oper is GT_LT);
 
             assert(!op1.IsContainedIntOrIImmed || op1.IsIntegralConst(0));
-            var reg1 = op1.IsContainedIntOrIImmed ? REG_ZERO : op1.RegNum;
+            var reg1 = op1.IsContainedIntOrIImmed ? REG_RISCV64_ZERO : op1.RegNum;
             if (op2.IsContainedIntOrIImmed)
             {
                 var slti = isUnsigned ? INS_sltiu : INS_slti;
-                emit.emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, op2.AsIntCon().IconValue);
+                var immediate = op2.AsIntCon().IconValue;
+                assert(Emitter.isValidSimm12(immediate));
+                emit.emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, reg1, unchecked((int)immediate));
             }
             else
             {
@@ -139,14 +140,14 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    public void genCodeForJumpCompare(GenTreeOpCC tree)
+    public void genCodeForJumpCompareRiscV64(GenTreeOpCC tree)
     {
         var block = _compiler.compCurBB;
         assert(block is not null);
         assert(block!.Kind is BBJ_COND);
         assert(tree.Oper is GT_JCMP);
         assert(tree.Type is TYP_VOID);
-        assert(tree.RegNum is REG_NA);
+        assert(tree.RegNum is REG_RISCV64_NA);
 
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -157,8 +158,8 @@ public sealed partial class CodeGen
 
         var condition = tree.Condition;
         genConsumeOperands(tree);
-        var reg1 = op1.IsContainedIntOrIImmed ? REG_R0 : op1.RegNum;
-        var reg2 = op2.IsContainedIntOrIImmed ? REG_R0 : op2.RegNum;
+        var reg1 = op1.IsContainedIntOrIImmed ? REG_RISCV64_R0 : op1.RegNum;
+        var reg2 = op2.IsContainedIntOrIImmed ? REG_RISCV64_R0 : op2.RegNum;
         if (condition.Code is GenCondition.CodeKind.SGT or GenCondition.CodeKind.UGT or
             GenCondition.CodeKind.SLE or GenCondition.CodeKind.ULE)
         {
@@ -217,4 +218,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -143,8 +142,8 @@ public partial class Emitter
             }
             case INS_fence:
             {
-                assert(rd == REG_ZERO);
-                assert(rs1 == REG_ZERO);
+                assert(rd == REG_RISCV64_ZERO);
+                assert(rs1 == REG_RISCV64_ZERO);
                 var format = (long)(immediate >> 8);
                 assert((format == 0) || (format == 0x8));
                 assert((opcode & kInstructionFunct7Mask) == 0);
@@ -205,7 +204,7 @@ public partial class Emitter
         {
             case INS_beqz or INS_bnez:
             {
-                assert((rs1 == REG_ZERO) || (rs2 == REG_ZERO));
+                assert((rs1 == REG_RISCV64_ZERO) || (rs2 == REG_RISCV64_ZERO));
                 assert(isGeneralRegisterOrR0(rs1));
                 assert(isGeneralRegisterOrR0(rs2));
                 break;
@@ -230,7 +229,7 @@ public partial class Emitter
         {
             case INS_j:
             {
-                assert(rd == REG_ZERO);
+                assert(rd == REG_RISCV64_ZERO);
                 break;
             }
             case INS_jal:
@@ -249,7 +248,7 @@ public partial class Emitter
 
     private unsafe byte emitOutput_RTypeInstr(byte* dst, instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
     {
-        var insCode = emitInsCode(ins);
+        var insCode = emitInsCodeRiscV64(ins);
 #if DEBUG
         emitOutput_RTypeInstr_SanityCheck(ins, rd, rs1, rs2);
 #endif
@@ -269,7 +268,7 @@ public partial class Emitter
 
     private unsafe byte emitOutput_ITypeInstr(byte* dst, instruction ins, regNumber rd, regNumber rs1, uint imm12)
     {
-        var insCode = emitInsCode(ins);
+        var insCode = emitInsCodeRiscV64(ins);
 #if DEBUG
         emitOutput_ITypeInstr_SanityCheck(ins, rd, rs1, imm12, insCode);
 #endif
@@ -284,7 +283,7 @@ public partial class Emitter
 
     private unsafe byte emitOutput_STypeInstr(byte* dst, instruction ins, regNumber rs1, regNumber rs2, uint imm12)
     {
-        var insCode = emitInsCode(ins);
+        var insCode = emitInsCodeRiscV64(ins);
 #if DEBUG
         emitOutput_STypeInstr_SanityCheck(ins, rs1, rs2);
 #endif
@@ -298,7 +297,7 @@ public partial class Emitter
 
     private unsafe byte emitOutput_UTypeInstr(byte* dst, instruction ins, regNumber rd, uint imm20)
     {
-        var insCode = emitInsCode(ins);
+        var insCode = emitInsCodeRiscV64(ins);
 #if DEBUG
         emitOutput_UTypeInstr_SanityCheck(ins, rd);
 #endif
@@ -307,7 +306,7 @@ public partial class Emitter
 
     private unsafe byte emitOutput_BTypeInstr(byte* dst, instruction ins, regNumber rs1, regNumber rs2, uint imm13)
     {
-        var insCode = emitInsCode(ins);
+        var insCode = emitInsCodeRiscV64(ins);
 #if DEBUG
         emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
 #endif
@@ -322,7 +321,7 @@ public partial class Emitter
     private unsafe byte emitOutput_BTypeInstr_InvertComparation(
         byte* dst, instruction ins, regNumber rs1, regNumber rs2, uint imm13)
     {
-        var insCode = emitInsCode(ins) ^ 0x1000;
+        var insCode = emitInsCodeRiscV64(ins) ^ 0x1000;
 #if DEBUG
         emitOutput_BTypeInstr_SanityCheck(ins, rs1, rs2);
 #endif
@@ -336,7 +335,7 @@ public partial class Emitter
 
     private unsafe byte emitOutput_JTypeInstr(byte* dst, instruction ins, regNumber rd, uint imm21)
     {
-        var insCode = emitInsCode(ins);
+        var insCode = emitInsCodeRiscV64(ins);
 #if DEBUG
         emitOutput_JTypeInstr_SanityCheck(ins, rd);
 #endif
@@ -429,18 +428,18 @@ public partial class Emitter
         public void EmitRType(instruction ins, regNumber rd, regNumber rs1, regNumber rs2)
         {
             var code = insEncodeRTypeInstr(
-                emitInsCode(ins) & kInstructionOpcodeMask,
+                emitInsCodeRiscV64(ins) & kInstructionOpcodeMask,
                 castFloatOrIntegralReg(rd),
-                (emitInsCode(ins) & kInstructionFunct3Mask) >> 12,
+                (emitInsCodeRiscV64(ins) & kInstructionFunct3Mask) >> 12,
                 castFloatOrIntegralReg(rs1),
                 castFloatOrIntegralReg(rs2),
-                (emitInsCode(ins) & kInstructionFunct7Mask) >> 25);
+                (emitInsCodeRiscV64(ins) & kInstructionFunct7Mask) >> 25);
             _emitter.emitDispInsNameRiscV64(code, _id);
         }
 
         public void EmitIType(instruction ins, regNumber rd, regNumber rs1, uint imm12)
         {
-            var baseOpcode = emitInsCode(ins);
+            var baseOpcode = emitInsCodeRiscV64(ins);
             var code = insEncodeITypeInstr(
                 baseOpcode & kInstructionOpcodeMask,
                 castFloatOrIntegralReg(rd),
@@ -452,7 +451,7 @@ public partial class Emitter
 
         public void EmitSType(instruction ins, regNumber rs1, regNumber rs2, uint imm12)
         {
-            var baseOpcode = emitInsCode(ins);
+            var baseOpcode = emitInsCodeRiscV64(ins);
             var code = insEncodeSTypeInstr(
                 baseOpcode & kInstructionOpcodeMask,
                 (baseOpcode & kInstructionFunct3Mask) >> 12,
@@ -465,7 +464,7 @@ public partial class Emitter
         public void EmitUType(instruction ins, regNumber rd, uint imm20)
         {
             var code = insEncodeUTypeInstr(
-                emitInsCode(ins) & kInstructionOpcodeMask,
+                emitInsCodeRiscV64(ins) & kInstructionOpcodeMask,
                 castFloatOrIntegralReg(rd),
                 imm20);
             _emitter.emitDispInsNameRiscV64(code, _id);
@@ -473,7 +472,7 @@ public partial class Emitter
 
         public void EmitBType(instruction ins, regNumber rs1, regNumber rs2, uint imm13)
         {
-            var baseOpcode = emitInsCode(ins);
+            var baseOpcode = emitInsCodeRiscV64(ins);
             var code = insEncodeBTypeInstr(
                 baseOpcode & kInstructionOpcodeMask,
                 (baseOpcode & kInstructionFunct3Mask) >> 12,
@@ -485,7 +484,7 @@ public partial class Emitter
 
         public void EmitBTypeInverted(instruction ins, regNumber rs1, regNumber rs2, uint imm13)
         {
-            var baseOpcode = emitInsCode(ins) ^ 0x1000;
+            var baseOpcode = emitInsCodeRiscV64(ins) ^ 0x1000;
             var code = insEncodeBTypeInstr(
                 baseOpcode & kInstructionOpcodeMask,
                 (baseOpcode & kInstructionFunct3Mask) >> 12,
@@ -498,7 +497,7 @@ public partial class Emitter
         public void EmitJType(instruction ins, regNumber rd, uint imm21)
         {
             var code = insEncodeJTypeInstr(
-                emitInsCode(ins) & kInstructionOpcodeMask,
+                emitInsCodeRiscV64(ins) & kInstructionOpcodeMask,
                 castFloatOrIntegralReg(rd),
                 imm21);
             _emitter.emitDispInsNameRiscV64(code, _id);
@@ -519,7 +518,7 @@ public partial class Emitter
         var dataReg = id.idReg1();
         var addrReg = id.idReg2();
 
-        assert((ins == INS_addi) || emitInsIsLoadOrStore(ins));
+        assert((ins == INS_addi) || emitInsIsLoadOrStoreRiscV64(ins));
         policy.EmitUType(INS_auipc, addrReg, 0);
         policy.MarkGCRegDead(addrReg);
         if (emitInsIsStore(ins))
@@ -567,18 +566,18 @@ public partial class Emitter
             assert(jmp.idCodeSize() == 2 * sizeof(uint));
             assert(isValidSimm32(immediate));
             var linkReg = jmp.idReg1();
-            var tempReg = linkReg == REG_ZERO ? codeGen.rsGetRsvdReg() : linkReg;
+            var tempReg = linkReg == REG_RISCV64_ZERO ? codeGen.rsGetRsvdReg() : linkReg;
             policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend(immediate, 20));
             policy.EmitIType(INS_jalr, linkReg, tempReg, LowerNBitsOfWord(immediate, 12));
         }
         else
         {
-            assert(!jmp.idInsIs(INS_beqz, INS_bnez) || (jmp.idReg2() == REG_ZERO));
+            assert(!jmp.idInsIs(INS_beqz, INS_bnez) || (jmp.idReg2() == REG_RISCV64_ZERO));
             policy.EmitBTypeInverted(ins, jmp.idReg1(), jmp.idReg2(), jmp.idCodeSize());
             immediate -= sizeof(uint);
             if (jmp.idCodeSize() == 2 * sizeof(uint))
             {
-                policy.EmitJType(INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+                policy.EmitJType(INS_jal, REG_RISCV64_ZERO, TrimSignedToImm21(immediate));
             }
             else
             {
@@ -586,7 +585,7 @@ public partial class Emitter
                 assert(isValidSimm32(immediate));
                 var tempReg = codeGen.rsGetRsvdReg();
                 policy.EmitUType(INS_auipc, tempReg, UpperNBitsOfWordSignExtend(immediate, 20));
-                policy.EmitIType(INS_jalr, REG_ZERO, tempReg, LowerNBitsOfWord(immediate, 12));
+                policy.EmitIType(INS_jalr, REG_RISCV64_ZERO, tempReg, LowerNBitsOfWord(immediate, 12));
             }
         }
     }
@@ -602,10 +601,10 @@ public partial class Emitter
 
         var address = unchecked((nuint)id.idAddr().iiaAddr);
         var linkReg = (regNumber)(address & 1);
-        assert((linkReg == REG_ZERO) || (linkReg == REG_RA));
+        assert((linkReg == REG_RISCV64_ZERO) || (linkReg == REG_RISCV64_RA));
         address -= (uint)linkReg;
         assert((address & 1) == 0);
-        var tempReg = linkReg == REG_ZERO ? REG_DEFAULT_HELPER_CALL_TARGET : REG_RA;
+        var tempReg = linkReg == REG_RISCV64_ZERO ? TargetRuntimeMetadata.DefaultHelperCallTargetRegister : REG_RISCV64_RA;
         policy.EmitUType(INS_auipc, tempReg, 0);
         policy.MarkGCRegDead(tempReg);
         policy.EmitIType(INS_jalr, linkReg, tempReg, 0);
@@ -621,7 +620,7 @@ public partial class Emitter
         var instructions = idli.ins;
         var values = idli.values;
         var reg = idli.idReg1();
-        assert((reg != REG_NA) && (reg != REG_R0));
+        assert((reg != REG_RISCV64_NA) && (reg != REG_RISCV64_R0));
 
         var numberOfInstructions = GetLoadImmediateNumberOfInstructions(idli);
         for (var i = 0u; i < numberOfInstructions; i++)
@@ -635,7 +634,7 @@ public partial class Emitter
             {
                 assert(isValidSimm12(values[i]) ||
                        ((instructions[i] == INS_addiw) && isValidUimm12(values[i])));
-                policy.EmitIType(instructions[i], reg, REG_R0, unchecked((uint)values[i]) & 0xFFF);
+                policy.EmitIType(instructions[i], reg, REG_RISCV64_R0, unchecked((uint)values[i]) & 0xFFF);
             }
             else if (i == 0)
             {
@@ -683,7 +682,7 @@ public partial class Emitter
         var dstBase = dst;
         ins = id.idIns();
         var reg1 = id.idReg1();
-        assert(reg1 != REG_ZERO);
+        assert(reg1 != REG_RISCV64_ZERO);
         assert(id.idCodeSize() == 2 * sizeof(uint));
         var immediate = id.idIsReloc() ? (nint)0 : (nint)(emitDataOffsetToPtr((uint)offset) - dst);
         if (!id.idIsReloc())
@@ -836,11 +835,11 @@ public partial class Emitter
 
         if (id.idGCref() == GCT_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_INTRET);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
         else if (id.idGCref() == GCT_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_INTRET);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
 
         if (id.idIsLargeCall())
@@ -848,15 +847,15 @@ public partial class Emitter
             var idCall = (instrDescCGCA)id;
             if (idCall.idSecondGCref() == GCT_GCREF)
             {
-                gcrefRegs |= new regMaskTP(SRBM_INTRET_1);
+                gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
             else if (idCall.idSecondGCref() == GCT_BYREF)
             {
-                byrefRegs |= new regMaskTP(SRBM_INTRET_1);
+                byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
             if (idCall.hasAsyncContinuationRet())
             {
-                gcrefRegs |= new regMaskTP(SRBM_ASYNC_CONTINUATION_RET);
+                gcrefRegs |= new regMaskTP(SRBM_ASYNC_CONTINUATION_RET_RISCV64);
             }
         }
 
@@ -940,7 +939,7 @@ public partial class Emitter
             }
         }
 
-        if (emitInsMayWriteToGCReg(ins))
+        if (emitInsMayWriteToGCRegRiscV64(ins))
         {
             if (id.idGCref() != GCT_NONE)
             {
@@ -952,11 +951,11 @@ public partial class Emitter
             }
         }
 
-        if (emitInsWritesToLclVarStackLoc(id))
+        if (emitInsWritesToLclVarStackLocRiscV64(id))
         {
             var varNum = id.idAddr().iiaLclVar.lvaVarNum();
             var lclOffset = id.idAddr().iiaLclVar.lvaOffset();
-            var offset = lclOffset - (lclOffset % TARGET_POINTER_SIZE);
+            var offset = lclOffset - (lclOffset % Configuration.TARGET_POINTER_SIZE);
             var address = compiler.lvaFrameAddress(varNum, out _);
             if (id.idGCref() != GCT_NONE)
             {
@@ -1019,4 +1018,3 @@ public partial class Emitter
         return descriptorSize;
     }
 }
-#endif

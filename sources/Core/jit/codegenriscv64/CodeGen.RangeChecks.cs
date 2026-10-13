@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.var_types;
@@ -12,7 +11,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genRangeCheck(GenTree oper)
+    public void genRangeCheckRiscV64(GenTree oper)
     {
         noway_assert(oper.Oper is GT_BOUNDS_CHECK);
         var boundsCheck = oper.AsBoundsChk();
@@ -46,7 +45,6 @@ public sealed partial class CodeGen
         assert(indexType is TYP_INT or TYP_LONG);
 #endif
 
-        genJumpToThrowHlpBlk_la(boundsCheck.ThrowKind, INS_bgeu, indexReg, null, lengthReg);
+        genJumpToThrowHlpBlk_laRiscV64(boundsCheck.ThrowKind, INS_bgeu, indexReg, null, lengthReg);
     }
 }
-#endif

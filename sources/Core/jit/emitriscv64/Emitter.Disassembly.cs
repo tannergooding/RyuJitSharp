@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -17,14 +16,16 @@ public partial class Emitter
 #if DEBUG
     public string emitRegNameRiscV64(regNumber reg, emitAttr size, bool varName)
     {
-        assert((uint)reg < (uint)REG_COUNT);
+        RequireRiscV64Target();
+
+        assert((uint)reg < (uint)REG_RISCV64_COUNT);
         return RiscVRegisterName((uint)reg);
     }
 #endif
 
     private static string RiscVRegisterName(uint reg)
     {
-        assert(reg < (uint)REG_COUNT);
+        assert(reg < (uint)REG_RISCV64_COUNT);
         return ((regNumber)reg).Name;
     }
 
@@ -93,7 +94,7 @@ public partial class Emitter
     private bool emitDispBranchRiscV64(
         uint opcode2, uint rs1, uint rs2, instrDesc id, insGroup? ig, bool printOffsetPlaceholder)
     {
-        if (!emitDispBranchInstrTypeRiscV64(opcode2, rs2 == (uint)REG_ZERO, out var printSecondReg))
+        if (!emitDispBranchInstrTypeRiscV64(opcode2, rs2 == (uint)REG_RISCV64_ZERO, out var printSecondReg))
         {
             return false;
         }
@@ -115,10 +116,10 @@ public partial class Emitter
         assert(false, "RISCV64 illegal instruction");
     }
 
-    private void emitDispImmediateRiscV64(nint immediate, bool newLine = true, uint regBase = (uint)REG_ZERO)
+    private void emitDispImmediateRiscV64(nint immediate, bool newLine = true, uint regBase = (uint)REG_RISCV64_ZERO)
     {
         var compiler = _compiler ?? throw new InvalidOperationException("RISC-V disassembly requires an active compiler.");
-        if (compiler.opts.disDiffable && (regBase != (uint)REG_FP) && (regBase != (uint)REG_SP))
+        if (compiler.opts.disDiffable && (regBase != (uint)REG_RISCV64_FP) && (regBase != (uint)REG_RISCV64_SP))
         {
             jitprintf("0xD1FFAB1E");
         }
@@ -337,7 +338,7 @@ public partial class Emitter
         {
             case 0:
             {
-                if (code == emitInsCode(INS_nop))
+                if (code == emitInsCodeRiscV64(INS_nop))
                 {
                     jitprintf("nop\n");
                     return;
@@ -657,14 +658,14 @@ public partial class Emitter
             },
             0b0000100 => funct3 switch
             {
-                0 => rs2 == (uint)REG_ZERO ? "zext.w" : "add.uw",
-                4 => rs2 == (uint)REG_ZERO ? "zext.h" : string.Empty,
+                0 => rs2 == (uint)REG_RISCV64_ZERO ? "zext.w" : "add.uw",
+                4 => rs2 == (uint)REG_RISCV64_ZERO ? "zext.h" : string.Empty,
                 _ => string.Empty,
             },
             _ => string.Empty,
         };
 
-        if ((mnemonic.Length == 0) || ((funct7 == 0b0000100) && (funct3 == 4) && (rs2 != (uint)REG_ZERO)))
+        if ((mnemonic.Length == 0) || ((funct7 == 0b0000100) && (funct3 == 4) && (rs2 != (uint)REG_RISCV64_ZERO)))
         {
             emitDispIllegalInstructionRiscV64(code);
             return true;
@@ -684,15 +685,15 @@ public partial class Emitter
         var immediate = unchecked((int)code) >> 20;
         var callHasRelocOffset = noAddress && (id?.idInsOpt() == INS_OPTS_RISCV64_C) && (id?.idIsCallRegPtr() == false);
 
-        if ((immediate == 0) && (rs1 == (uint)REG_RA) && (rd == (uint)REG_ZERO))
+        if ((immediate == 0) && (rs1 == (uint)REG_RISCV64_RA) && (rd == (uint)REG_RISCV64_ZERO))
         {
             jitprintf("ret");
             return;
         }
 
-        if ((immediate == 0) && ((rd == (uint)REG_RA) || (rd == (uint)REG_ZERO)) && !callHasRelocOffset)
+        if ((immediate == 0) && ((rd == (uint)REG_RISCV64_RA) || (rd == (uint)REG_RISCV64_ZERO)) && !callHasRelocOffset)
         {
-            var mnemonic = rd == (uint)REG_RA ? "jalr" : "jr";
+            var mnemonic = rd == (uint)REG_RISCV64_RA ? "jalr" : "jr";
             jitprintf($"{mnemonic,-15}{RiscVRegisterName(rs1)}");
         }
         else
@@ -723,9 +724,9 @@ public partial class Emitter
             (((code >> 21) & 0x3ff) << 1)));
         immediate = (immediate << 11) >> 11;
 
-        if ((rd == (uint)REG_ZERO) || (rd == (uint)REG_RA))
+        if ((rd == (uint)REG_RISCV64_ZERO) || (rd == (uint)REG_RISCV64_RA))
         {
-            var mnemonic = rd == (uint)REG_RA ? "jal" : "j";
+            var mnemonic = rd == (uint)REG_RISCV64_RA ? "jal" : "j";
             jitprintf($"{mnemonic,-15}");
             if (id?.idIsBound() == true)
             {
@@ -817,12 +818,12 @@ public partial class Emitter
             return true;
         }
 
-        if (code == emitInsCode(INS_ebreak))
+        if (code == emitInsCodeRiscV64(INS_ebreak))
         {
             jitprintf("ebreak\n");
             return true;
         }
-        if (code == emitInsCode(INS_ecall))
+        if (code == emitInsCodeRiscV64(INS_ecall))
         {
             jitprintf("ecall\n");
             return true;
@@ -845,9 +846,9 @@ public partial class Emitter
         }
 
         var type = format == 0 ? 's' : 'd';
-        var fd = RiscVRegisterName(((code >> 7) & 0x1f) | (uint)REG_FT0);
-        var fs1 = RiscVRegisterName(((code >> 15) & 0x1f) | (uint)REG_FT0);
-        var fs2 = RiscVRegisterName(((code >> 20) & 0x1f) | (uint)REG_FT0);
+        var fd = RiscVRegisterName(((code >> 7) & 0x1f) | (uint)REG_RISCV64_FT0);
+        var fs1 = RiscVRegisterName(((code >> 15) & 0x1f) | (uint)REG_RISCV64_FT0);
+        var fs2 = RiscVRegisterName(((code >> 20) & 0x1f) | (uint)REG_RISCV64_FT0);
         var xd = RiscVRegisterName((code >> 7) & 0x1f);
         var xs1 = RiscVRegisterName((code >> 15) & 0x1f);
         switch (funct5)
@@ -1042,7 +1043,7 @@ public partial class Emitter
         }
         var width = funct3 == 2 ? 'w' : 'd';
         var prefix = isStore ? "fs" : "fl";
-        var reg = RiscVRegisterName(register | (uint)REG_FT0);
+        var reg = RiscVRegisterName(register | (uint)REG_RISCV64_FT0);
         jitprintf($"{prefix}{width,-13}{reg}, ");
         emitDispImmediateRiscV64(immediate, false, rs1);
         jitprintf($"({RiscVRegisterName(rs1)})\n");
@@ -1092,7 +1093,7 @@ public partial class Emitter
         var rs2 = (code >> 20) & 0x1f;
         if (funct5 == 0b00010)
         {
-            if (rs2 != (uint)REG_ZERO)
+            if (rs2 != (uint)REG_RISCV64_ZERO)
             {
                 emitDispIllegalInstructionRiscV64(code);
                 return;
@@ -1111,7 +1112,7 @@ public partial class Emitter
         var funct4 = (code >> 12) & 0xf;
         var rdRs1 = (code >> 7) & 0x1f;
         var rs2 = (code >> 2) & 0x1f;
-        if ((rdRs1 == (uint)REG_ZERO) || (rs2 == (uint)REG_ZERO) || (funct4 is not 0b1000 and not 0b1001))
+        if ((rdRs1 == (uint)REG_RISCV64_ZERO) || (rs2 == (uint)REG_RISCV64_ZERO) || (funct4 is not 0b1000 and not 0b1001))
         {
             emitDispIllegalInstructionRiscV64(code);
             return;
@@ -1305,4 +1306,3 @@ public partial class Emitter
         }
     }
 }
-#endif

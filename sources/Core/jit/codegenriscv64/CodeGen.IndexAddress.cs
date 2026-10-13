@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using System.Numerics;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForIndexAddr(GenTreeIndexAddr tree)
+    public void genCodeForIndexAddrRiscV64(GenTreeIndexAddr tree)
     {
         var baseAddress = tree.Arr;
         var index = tree.Index;
@@ -32,7 +31,7 @@ public sealed partial class CodeGen
         if (tree.IsBoundsChecked)
         {
             Emitter.emitIns_R_R_I(INS_lw, EA_4BYTE, tempReg, baseAddress.RegNum, tree.LenOffset);
-            genJumpToThrowHlpBlk_la(SCK_RNGCHK_FAIL, INS_bgeu, index.RegNum, null, tempReg);
+            genJumpToThrowHlpBlk_laRiscV64(SCK_RNGCHK_FAIL, INS_bgeu, index.RegNum, null, tempReg);
         }
 
         var attr = tree.Type.EmitActualSize;
@@ -78,4 +77,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
 
@@ -13,6 +12,8 @@ public partial class Emitter
 {
     internal insExecutionCharacteristics getInsExecutionCharacteristicsRiscV64(instrDesc id)
     {
+        RequireRiscV64Target();
+
         var result = new insExecutionCharacteristics
         {
             insThroughput = PERFSCORE_LATENCY_1C,
@@ -32,7 +33,7 @@ public partial class Emitter
             return result;
         }
 
-        var opcode = GetMajorOpcode(emitInsCode(ins));
+        var opcode = GetMajorOpcode(emitInsCodeRiscV64(ins));
         switch (opcode)
         {
             case MajorOpcode.OpImm:
@@ -169,7 +170,7 @@ public partial class Emitter
                 result.insLatency = isLoad ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
                 if (isLoad)
                 {
-                    var log2Size = (emitInsCode(ins) >> 12) & 0b11;
+                    var log2Size = (emitInsCodeRiscV64(ins) >> 12) & 0b11;
                     if (log2Size < 2)
                     {
                         result.insLatency += PERFSCORE_LATENCY_1C;
@@ -177,7 +178,7 @@ public partial class Emitter
                 }
 
                 var baseReg = id.idReg2();
-                if ((baseReg != REG_SP) && (baseReg != REG_FP))
+                if ((baseReg != REG_RISCV64_SP) && (baseReg != REG_RISCV64_FP))
                 {
                     result.insLatency += PERFSCORE_LATENCY_1C;
                 }
@@ -203,4 +204,3 @@ public partial class Emitter
         return result;
     }
 }
-#endif

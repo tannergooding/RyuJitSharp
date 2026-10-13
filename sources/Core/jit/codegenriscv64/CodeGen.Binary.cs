@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForBinary(GenTreeOp treeNode)
+    public void genCodeForBinaryRiscV64(GenTreeOp treeNode)
     {
         var oper = treeNode.Oper;
         var targetReg = treeNode.RegNum;
@@ -24,17 +23,17 @@ public sealed partial class CodeGen
 
         var op1 = treeNode.Op1;
         var op2 = treeNode.Op2;
-        var ins = genGetInsForOper(treeNode);
+        var ins = genGetInsForOperRiscV64(treeNode);
 
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_RISCV64_NA);
 
-        var resultReg = genEmitTernaryInstruction(ins, treeNode.Type.EmitActualSize, treeNode, op1, op2);
+        var resultReg = genEmitTernaryInstructionRiscV64(ins, treeNode.Type.EmitActualSize, treeNode, op1, op2);
         assert(resultReg == targetReg);
 
         genProduceReg(treeNode);
     }
 
-    public instruction genGetInsForOper(GenTree treeNode)
+    public instruction genGetInsForOperRiscV64(GenTree treeNode)
     {
         var type = treeNode.Type;
         var oper = treeNode.Oper;
@@ -86,7 +85,7 @@ public sealed partial class CodeGen
                     isImm = isImmed(treeNode);
                     if (isImm)
                     {
-                        if (attr is EA_8BYTE or EA_BYREF)
+                        if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                         {
                             ins = INS_addi;
                         }
@@ -98,7 +97,7 @@ public sealed partial class CodeGen
                     }
                     else
                     {
-                        if (attr is EA_8BYTE or EA_BYREF)
+                        if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                         {
                             ins = INS_add;
                         }
@@ -113,7 +112,7 @@ public sealed partial class CodeGen
 
                 case GT_SUB:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_sub;
                     }
@@ -127,7 +126,7 @@ public sealed partial class CodeGen
 
                 case GT_MOD:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_rem;
                     }
@@ -141,7 +140,7 @@ public sealed partial class CodeGen
 
                 case GT_DIV:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_div;
                     }
@@ -155,7 +154,7 @@ public sealed partial class CodeGen
 
                 case GT_UMOD:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_remu;
                     }
@@ -169,7 +168,7 @@ public sealed partial class CodeGen
 
                 case GT_UDIV:
                 {
-                    if (attr is EA_8BYTE or EA_BYREF)
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         ins = INS_divu;
                     }
@@ -183,7 +182,7 @@ public sealed partial class CodeGen
 
                 case GT_MUL:
                 {
-                    if ((attr is EA_8BYTE or EA_BYREF))
+                    if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                     {
                         var operands = treeNode.AsOp();
                         ins = genActualTypeIsInt(operands.Op1.Type) && genActualTypeIsInt(operands.Op2.Type)
@@ -359,7 +358,7 @@ public sealed partial class CodeGen
 
     public void genCodeForShxadd(GenTreeOp tree)
     {
-        var ins = genGetInsForOper(tree);
+        var ins = genGetInsForOperRiscV64(tree);
 
         assert(ins is INS_sh1add or INS_sh2add or INS_sh3add or INS_sh1add_uw or INS_sh2add_uw or INS_sh3add_uw);
 
@@ -401,17 +400,9 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    private static bool isImmed(GenTree treeNode)
-    {
-        assert(treeNode.Oper.IsBinary);
-
-        return treeNode.AsOp().Op2.IsContainedIntOrIImmed;
-    }
-
-    private regNumber genEmitTernaryInstruction(instruction ins, emitAttr attr, GenTree destination,
+    private regNumber genEmitTernaryInstructionRiscV64(instruction ins, emitAttr attr, GenTree destination,
         GenTree source1, GenTree source2)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "RISC-V ternary instruction recording is not ported.");
     }
 }
-#endif

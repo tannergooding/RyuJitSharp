@@ -3,18 +3,18 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_RISCV64
 using static RyuJitSharp.Globals;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    internal static uint emitInsCode(instruction ins)
+    internal static uint emitInsCodeRiscV64(instruction ins)
     {
+        RequireRiscV64Target();
         var nativeOrdinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);
-        assert((uint)nativeOrdinal < (uint)insCodes.Length);
-        var code = insCodes[nativeOrdinal];
+        assert((uint)nativeOrdinal < (uint)insCodesRiscV64.Length);
+        var code = insCodesRiscV64[nativeOrdinal];
         assert(code != BAD_CODE);
 
         return code;
@@ -144,24 +144,9 @@ public partial class Emitter
         return isValidSignedImmediate(value, 13);
     }
 
-    public static bool isValidUimm12(nint value)
-    {
-        return value >> 12 == 0;
-    }
-
-    public static bool isValidUimm11(nint value)
-    {
-        return value >> 11 == 0;
-    }
-
     public static bool isValidUimm5(nint value)
     {
         return value >> 5 == 0;
-    }
-
-    public static bool isValidSimm20(nint value)
-    {
-        return (-((nint)1 << 19) <= value) && (value < ((nint)1 << 19));
     }
 
     public static bool isValidUimm20(nint value)
@@ -180,23 +165,6 @@ public partial class Emitter
         var maxValueExclusive = ((nint)1 << 31) - 0x800;
 
         return (minValue <= value) && (value < maxValueExclusive);
-    }
-
-    public static uint getBitWidth(emitAttr size)
-    {
-        assert(size <= EA_8BYTE);
-
-        return (uint)size * BITS_PER_BYTE;
-    }
-
-    public static bool isGeneralRegisterOrR0(regNumber reg)
-    {
-        return (reg >= REG_FIRST) && (reg <= REG_INT_LAST);
-    }
-
-    public static bool isFloatReg(regNumber reg)
-    {
-        return (reg >= REG_FP_FIRST) && (reg <= REG_FP_LAST);
     }
 
     internal static uint TrimSignedToImm12(nint immediate)
@@ -256,11 +224,11 @@ public partial class Emitter
         {
             case INS_add:
             {
-                if ((rs1 == REG_R0) && (rd != REG_R0) && (rs2 != REG_R0))
+                if ((rs1 == REG_RISCV64_R0) && (rd != REG_RISCV64_R0) && (rs2 != REG_RISCV64_R0))
                 {
                     return INS_c_mv;
                 }
-                else if ((rd == rs1) && (rd != REG_R0) && (rs2 != REG_R0))
+                else if ((rd == rs1) && (rd != REG_RISCV64_R0) && (rs2 != REG_RISCV64_R0))
                 {
                     return INS_c_add;
                 }
@@ -298,14 +266,14 @@ public partial class Emitter
         // The compressed register field encodes x8 through x15 as 0 through 7.
         return reg switch
         {
-            REG_FP => 0,
-            REG_S1 => 1,
-            REG_A0 => 2,
-            REG_A1 => 3,
-            REG_A2 => 4,
-            REG_A3 => 5,
-            REG_A4 => 6,
-            REG_A5 => 7,
+            REG_RISCV64_FP => 0,
+            REG_RISCV64_S1 => 1,
+            REG_RISCV64_A0 => 2,
+            REG_RISCV64_A1 => 3,
+            REG_RISCV64_A2 => 4,
+            REG_RISCV64_A3 => 5,
+            REG_RISCV64_A4 => 6,
+            REG_RISCV64_A5 => 7,
             _ => uint.MaxValue,
         };
     }
@@ -318,35 +286,35 @@ public partial class Emitter
         {
             case 0:
             {
-                return REG_FP;
+                return REG_RISCV64_FP;
             }
             case 1:
             {
-                return REG_S1;
+                return REG_RISCV64_S1;
             }
             case 2:
             {
-                return REG_A0;
+                return REG_RISCV64_A0;
             }
             case 3:
             {
-                return REG_A1;
+                return REG_RISCV64_A1;
             }
             case 4:
             {
-                return REG_A2;
+                return REG_RISCV64_A2;
             }
             case 5:
             {
-                return REG_A3;
+                return REG_RISCV64_A3;
             }
             case 6:
             {
-                return REG_A4;
+                return REG_RISCV64_A4;
             }
             case 7:
             {
-                return REG_A5;
+                return REG_RISCV64_A5;
             }
             default:
             {
@@ -399,7 +367,7 @@ public partial class Emitter
     {
         assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_c_mv, INS_c_add)));
 
-        var code = emitInsCode(ins);
+        var code = emitInsCodeRiscV64(ins);
         assertCodeLength(code, 16);
         assertCodeLength(rdRs1, 5);
         assertCodeLength(rs2, 5);
@@ -411,7 +379,7 @@ public partial class Emitter
     {
         assert((InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_c_and, INS_c_subw)));
 
-        var code = emitInsCode(ins);
+        var code = emitInsCodeRiscV64(ins);
         assertCodeLength(code, 16);
         assertCodeLength(rdRs1Rvc, 3);
         assertCodeLength(rs2Rvc, 3);
@@ -524,4 +492,3 @@ public partial class Emitter
                (imm20HiBit << 31);
     }
 }
-#endif
