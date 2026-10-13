@@ -101,8 +101,12 @@ public partial class Emitter
 
     public void emitDataGenEnd()
     {
+        if (Configuration.DEBUG)
+        {
+            assert(emitDataSecCur is not null);
+        }
+
 #if DEBUG
-        assert(emitDataSecCur is not null);
         emitDataSecCur = null;
 #endif
     }

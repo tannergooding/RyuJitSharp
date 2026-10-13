@@ -43,35 +43,36 @@ public partial class Emitter
 
         assert(_compiler is not null);
         assert(codeGen is not null);
-        var size = EA_SIZE(attr);
-
-#if DEBUG
-        switch (ins)
+        if (Configuration.DEBUG)
         {
-            case INS_lb:
-            case INS_lbu:
-            case INS_lh:
-            case INS_lhu:
-            case INS_lw:
-            case INS_lwu:
-            case INS_flw:
-            case INS_ld:
-            case INS_fld:
+            var size = EA_SIZE(attr);
+
+            switch (ins)
             {
-                break;
-            }
-            case INS_lea:
-            {
-                assert(size == EA_8BYTE);
-                break;
-            }
-            default:
-            {
-                NYI_RISCV64("illegal ins within emitIns_R_S!");
-                return;
+                case INS_lb:
+                case INS_lbu:
+                case INS_lh:
+                case INS_lhu:
+                case INS_lw:
+                case INS_lwu:
+                case INS_flw:
+                case INS_ld:
+                case INS_fld:
+                {
+                    break;
+                }
+                case INS_lea:
+                {
+                    assert(size == EA_8BYTE);
+                    break;
+                }
+                default:
+                {
+                    NYI_RISCV64("illegal ins within emitIns_R_S!");
+                    return;
+                }
             }
         }
-#endif
 
         var baseOffset = _compiler.lvaFrameAddress(varNum, out var framePointerBased);
         var imm = offset < 0
