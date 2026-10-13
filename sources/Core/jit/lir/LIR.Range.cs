@@ -548,8 +548,12 @@ public partial class LIR
         {
 #if DEBUG
             assert(Contains(firstNode));
-            assert((firstNode == lastNode) || firstNode.Precedes(lastNode));
 #endif
+
+            if (Configuration.DEBUG)
+            {
+                assert((firstNode == lastNode) || firstNode.Precedes(lastNode));
+            }
 
             var prev = firstNode.Prev;
             var next = lastNode.Next;
