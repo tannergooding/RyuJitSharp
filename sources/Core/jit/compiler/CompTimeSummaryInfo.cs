@@ -307,10 +307,8 @@ public struct CompTimeSummaryInfo
 
             uint shownCalls = 0;
             var shownMillis = 0.0;
-#if DEBUG
             uint checkedCalls = 0;
             var checkedMillis = 0.0;
-#endif
 
             for (var pass = 0; pass < 2; pass++)
             {
@@ -355,17 +353,19 @@ public struct CompTimeSummaryInfo
                     streamWriter.WriteLine(FormattableString.Invariant(
                         $"     {api.Name,-40} {calls,8} {ms,9:F1} ms {max_ms,8:F1} ms  {(1000000.0 * ms) / calls,8:F1} ns     {(100.0 * ms) / shownMillis,5:F1}%"));
 
-#if DEBUG
-                    checkedCalls = unchecked(checkedCalls + _total._perClrApiCalls[(int)api]);
-                    checkedMillis += ms;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        checkedCalls = unchecked(checkedCalls + _total._perClrApiCalls[(int)api]);
+                        checkedMillis += ms;
+                    }
                 }
             }
 
-#if DEBUG
-            assert(checkedCalls == shownCalls);
-            assert(checkedMillis == shownMillis);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(checkedCalls == shownCalls);
+                assert(checkedMillis == shownMillis);
+            }
 
             if ((shownCalls > 0) || (shownMillis > 0))
             {
