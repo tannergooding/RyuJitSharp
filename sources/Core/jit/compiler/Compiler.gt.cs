@@ -10364,14 +10364,20 @@ public partial class Compiler
 
         assert(lookupType == type);
 
-#if DEBUG
         if (Configuration.TARGET_XARCH)
         {
-            assert(varTypeIsIntegral(simdBaseType));
+            if (Configuration.DEBUG)
+            {
+                assert(varTypeIsIntegral(simdBaseType));
+            }
+#if DEBUG
             assert(!canUseEvexEncodingDebugOnly());
-            assert((simdSize is 16) || ((simdSize is 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)));
-        }
 #endif
+            if (Configuration.DEBUG)
+            {
+                assert((simdSize is 16) || ((simdSize is 32) && compOpportunisticallyDependsOn(InstructionSet_AVX2)));
+            }
+        }
         if (Configuration.TARGET_WASM)
         {
             assert(simdBaseType == TYP_ULONG);
