@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_XARCH
 namespace RyuJitSharp;
 
 // x86 condition-code encodings used by CTEST/CCMP; parity is not represented.
@@ -50,4 +49,3 @@ public enum insCC : uint
     INS_CC_NLE = 0xF,
     INS_CC_G = 0xF,
 }
-#endif

@@ -9,11 +9,9 @@ public partial class GenTree
 {
     public ulong GetIntegralVectorConstElement(int index, var_types baseType)
     {
-#if FEATURE_HW_INTRINSICS
-        if (Oper.IsCnsVec)
+        if (Configuration.FEATURE_HW_INTRINSICS && Oper.IsCnsVec)
         {
-#if TARGET_ARM64
-            if (Type is TYP_SIMD_ARM64)
+            if (Configuration.TARGET_ARM64 && (Type is TYP_SIMD_ARM64))
             {
                 ref var value = ref AsVecCon().SimdScalableVal;
                 assert(baseType == value.BaseType);
@@ -27,7 +25,6 @@ public partial class GenTree
                     _ => throw new FatalJitException("Unexpected scalable vector constant kind."),
                 };
             }
-#endif
             var integralType = baseType switch {
                 TYP_FLOAT => TYP_INT,
                 TYP_DOUBLE => TYP_LONG,
@@ -35,7 +32,6 @@ public partial class GenTree
             };
             return unchecked((ulong)AsVecCon().GetElementIntegral(integralType, index));
         }
-#endif
         return 0;
     }
 }

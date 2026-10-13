@@ -440,7 +440,7 @@ public sealed class GenTreeCall : GenTree
 
     /// <summary>Whether or not this call is to an async function.</summary>
     /// <remarks>
-    ///   <para>async involves passing an async continuation as a separate argument and returning an async continuation in REG_ASYNC_CONTINUATION_RET.</para>
+    ///   <para>async involves passing an async continuation as a separate argument and returning an async continuation in TargetRuntimeMetadata.AsyncContinuationReturnRegister.</para>
     ///   <para>The async continuation is usually JIT added (WellKnownArg.AsyncContinuation). This is the case for an async method calling another async method by normal means. However, the VM also creates stubs that call async methods through calli where the async continuations are passed explicitly. See CEEJitInfo.getAsyncResumptionStub and MethodDesc.EmitTaskReturningThunk for examples. In those cases the JIT does not know (and does not need to know) which arg is the async continuation.</para>
     ///   <para>The VM also uses the AsyncHelpers.AsyncCallContinuation() intrinsic in the stubs discussed above. The JIT must take care in those cases to still mark the preceding call as an async call; this is required for correct LSRA behavior and GC reporting around the returned async continuation. This is currently done in lowering; see LowerAsyncContinuation().</para>
     /// </remarks>
@@ -896,7 +896,7 @@ public sealed class GenTreeCall : GenTree
     /// <remarks>Returns REG_NA if there is no valid return register for the given index.</remarks>
     public regNumber GetRegNumByIdx(byte idx)
     {
-        assert(idx < MAX_RET_REG_COUNT);
+        assert(idx < Configuration.MAX_RET_REG_COUNT);
 
         var result = REG_NA;
 
@@ -914,7 +914,7 @@ public sealed class GenTreeCall : GenTree
 
     public void SetRegNumByIdx(regNumber reg, byte idx)
     {
-        assert(idx < MAX_RET_REG_COUNT);
+        assert(idx < Configuration.MAX_RET_REG_COUNT);
 
         if (idx == 0)
         {
@@ -937,7 +937,7 @@ public sealed class GenTreeCall : GenTree
 
         if (Configuration.FEATURE_MULTIREG_RET)
         {
-            for (var i = 0; i < MAX_RET_REG_COUNT - 1; i++)
+            for (var i = 0; i < Configuration.MAX_RET_REG_COUNT - 1; i++)
             {
                 var reg = _otherRegs[i];
                 if (reg != REG_NA)

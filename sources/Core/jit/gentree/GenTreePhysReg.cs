@@ -13,7 +13,12 @@ public sealed class GenTreePhysReg : GenTree
     // whereas reg indicates the source
     private regNumber _srcReg;
 
-    public GenTreePhysReg(regNumber srcReg, var_types type = TYP_I_IMPL)
+    public GenTreePhysReg(regNumber srcReg)
+        : this(srcReg, TYP_I_IMPL)
+    {
+    }
+
+    public GenTreePhysReg(regNumber srcReg, var_types type)
         : base(GT_PHYSREG, type)
     {
         _srcReg = srcReg;

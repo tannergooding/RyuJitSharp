@@ -15,14 +15,12 @@ public partial struct CallArgs
 
     private int _argsStackSize;
 
-#if UNIX_X86_ABI
     /// <summary>Number of stack bytes pushed before we start pushing these arguments.</summary>
     private int _stkSizeBytes;
 
     /// <summary>Stack alignment in bytes required before arguments are pushed for this call.</summary>
     /// <remarks>Computed dynamically during codegen, based on _stkSizeBytes and the current stack level (genStackLevel) when the first stack adjustment is made for this call.</remarks>
     private int _padStkAlign;
-#endif
 
     private Flags _flags;
 
@@ -50,7 +48,6 @@ public partial struct CallArgs
 
     public readonly bool IsEmpty => _head is null;
 
-#if UNIX_X86_ABI
     public bool IsStkAlignmentDone
     {
         readonly get
@@ -63,7 +60,6 @@ public partial struct CallArgs
             _flags = (_flags & ~Flags.AlignmentDone) | (value ? Flags.AlignmentDone : Flags.None);
         }
     }
-#endif
 
     public bool IsVarArgs
     {
@@ -474,12 +470,9 @@ public partial struct CallArgs
         assert((_head is null) && (_lateHead is null));
         _argsStackSize = other._argsStackSize;
 
-#if UNIX_X86_ABI
-        // Unix x86 info related to stack alignment intentionally not copied as they depend on where the call will be inserted.
-        _flags = other._flags & ~Flags.AlignmentDone;
-#else
-        _flags = other._flags;
-#endif
+        _flags = Configuration.UNIX_X86_ABI
+            ? other._flags & ~Flags.AlignmentDone
+            : other._flags;
 
 #nullable disable
         ref var tail = ref _head;

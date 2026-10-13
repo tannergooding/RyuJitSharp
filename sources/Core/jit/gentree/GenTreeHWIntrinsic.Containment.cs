@@ -5,28 +5,30 @@
 
 namespace RyuJitSharp;
 
-#if FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
 public sealed partial class GenTreeHWIntrinsic
 {
-#if TARGET_XARCH
-    public bool OperIsVectorFusedMultiplyOp => HWIntrinsicId is
-        NI_AVX2_MultiplyAdd or NI_AVX2_MultiplyAddNegated or NI_AVX2_MultiplyAddNegatedScalar or
-        NI_AVX2_MultiplyAddScalar or NI_AVX2_MultiplySubtract or NI_AVX2_MultiplySubtractNegated or
-        NI_AVX2_MultiplySubtractNegatedScalar or NI_AVX2_MultiplySubtractScalar or
-        NI_AVX512_FusedMultiplyAdd or NI_AVX512_FusedMultiplyAddNegated or
-        NI_AVX512_FusedMultiplyAddNegatedScalar or NI_AVX512_FusedMultiplyAddScalar or
-        NI_AVX512_FusedMultiplySubtract or NI_AVX512_FusedMultiplySubtractNegated or
-        NI_AVX512_FusedMultiplySubtractNegatedScalar or NI_AVX512_FusedMultiplySubtractScalar;
-#endif
+    public bool OperIsVectorFusedMultiplyOp => Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH &&
+        (HWIntrinsicId is
+            NI_AVX2_MultiplyAdd or NI_AVX2_MultiplyAddNegated or NI_AVX2_MultiplyAddNegatedScalar or
+            NI_AVX2_MultiplyAddScalar or NI_AVX2_MultiplySubtract or NI_AVX2_MultiplySubtractNegated or
+            NI_AVX2_MultiplySubtractNegatedScalar or NI_AVX2_MultiplySubtractScalar or
+            NI_AVX512_FusedMultiplyAdd or NI_AVX512_FusedMultiplyAddNegated or
+            NI_AVX512_FusedMultiplyAddNegatedScalar or NI_AVX512_FusedMultiplyAddScalar or
+            NI_AVX512_FusedMultiplySubtract or NI_AVX512_FusedMultiplySubtractNegated or
+            NI_AVX512_FusedMultiplySubtractNegatedScalar or NI_AVX512_FusedMultiplySubtractScalar);
 
     public int GetResultOpNumForRmwIntrinsic(GenTree? user, GenTree op1, GenTree op2, GenTree op3)
     {
-#if TARGET_XARCH
-        assert(HWIntrinsicInfo.IsFmaIntrinsic(HWIntrinsicId) || HWIntrinsicInfo.IsPermuteVar2x(HWIntrinsicId) ||
+        if (!Configuration.FEATURE_HW_INTRINSICS ||
+            (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64))
+        {
+            throw new FatalJitException("RMW hardware-intrinsic operand selection is unsupported on this target.");
+        }
+
+        assert(!Configuration.TARGET_XARCH ||
+            HWIntrinsicInfo.IsFmaIntrinsic(HWIntrinsicId) || HWIntrinsicInfo.IsPermuteVar2x(HWIntrinsicId) ||
             HWIntrinsicId is NI_AVX512_TernaryLogic);
-#else
-        assert(HWIntrinsicInfo.IsFmaIntrinsic(HWIntrinsicId));
-#endif
+        assert(Configuration.TARGET_XARCH || HWIntrinsicInfo.IsFmaIntrinsic(HWIntrinsicId));
 
         if (user?.Oper is GT_STORE_LCL_VAR)
         {
@@ -61,9 +63,13 @@ public sealed partial class GenTreeHWIntrinsic
         return 0;
     }
 
-#if TARGET_XARCH
     public bool IsEmbeddedBroadcastCompatibleHWIntrinsic(Compiler compiler)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("Embedded-broadcast compatibility is only supported on xarch targets.");
+        }
+
         var id = HWIntrinsicId;
         var ins = HWIntrinsicInfo.lookupIns(id, SimdBaseType, compiler);
         var codeGen = compiler.codeGen ?? throw new System.InvalidOperationException("Code generation is not initialized.");
@@ -86,6 +92,4 @@ public sealed partial class GenTreeHWIntrinsic
 
         return true;
     }
-#endif
 }
-#endif

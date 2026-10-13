@@ -374,77 +374,81 @@ public partial class GenTree
 
     public bool IsCnsInitVal => _oper.IsCnsIntOrI || (_oper.IsInitVal && AsUnOp().Op1.Oper.IsCnsIntOrI);
 
-#if FEATURE_HW_INTRINSICS
     public bool IsContainableHWIntrinsic
     {
         get
         {
+            if (!Configuration.FEATURE_HW_INTRINSICS)
+            {
+                return false;
+            }
+
             var node = AsHWIntrinsic();
-#if TARGET_XARCH
-            return node.HWIntrinsicId switch {
-                NI_AVX512_ConvertToVector128UInt32 or
-                NI_AVX512_ConvertToVector128UInt32WithSaturation or
-                NI_AVX512_ConvertToVector256Int32 or
-                NI_AVX512_ConvertToVector256UInt32 => !varTypeIsFloating(node.SimdBaseType),
+            if (Configuration.TARGET_XARCH)
+            {
+                return node.HWIntrinsicId switch {
+                    NI_AVX512_ConvertToVector128UInt32 or
+                    NI_AVX512_ConvertToVector128UInt32WithSaturation or
+                    NI_AVX512_ConvertToVector256Int32 or
+                    NI_AVX512_ConvertToVector256UInt32 => !varTypeIsFloating(node.SimdBaseType),
 
-                NI_X86Base_LoadAlignedVector128 or
-                NI_X86Base_LoadScalarVector128 or
-                NI_AVX_LoadAlignedVector256 or
-                NI_AVX512_LoadAlignedVector512 or
-                NI_Vector_ToScalar or
-                NI_X86Base_ConvertToInt32 or
-                NI_X86Base_ConvertToUInt32 or
-                NI_X86Base_Extract or
-                NI_X86Base_X64_ConvertToInt64 or
-                NI_X86Base_X64_ConvertToUInt64 or
-                NI_X86Base_X64_Extract or
-                NI_AVX_ExtractVector128 or
-                NI_AVX2_ConvertToInt32 or
-                NI_AVX2_ConvertToUInt32 or
-                NI_AVX2_ExtractVector128 or
-                NI_AVX512_ConvertToVector128Byte or
-                NI_AVX512_ConvertToVector128ByteWithSaturation or
-                NI_AVX512_ConvertToVector128Int16 or
-                NI_AVX512_ConvertToVector128Int16WithSaturation or
-                NI_AVX512_ConvertToVector128Int32 or
-                NI_AVX512_ConvertToVector128Int32WithSaturation or
-                NI_AVX512_ConvertToVector128SByte or
-                NI_AVX512_ConvertToVector128SByteWithSaturation or
-                NI_AVX512_ConvertToVector128UInt16 or
-                NI_AVX512_ConvertToVector128UInt16WithSaturation or
-                NI_AVX512_ConvertToVector256Byte or
-                NI_AVX512_ConvertToVector256ByteWithSaturation or
-                NI_AVX512_ConvertToVector256Int16 or
-                NI_AVX512_ConvertToVector256Int16WithSaturation or
-                NI_AVX512_ConvertToVector256Int32WithSaturation or
-                NI_AVX512_ConvertToVector256SByte or
-                NI_AVX512_ConvertToVector256SByteWithSaturation or
-                NI_AVX512_ConvertToVector256UInt16 or
-                NI_AVX512_ConvertToVector256UInt16WithSaturation or
-                NI_AVX512_ConvertToVector256UInt32WithSaturation or
-                NI_AVX512_ExtractVector128 or
-                NI_AVX512_ExtractVector256 or
-                NI_X86Base_LoadAndDuplicateToVector128 or
-                NI_X86Base_MoveAndDuplicate or
-                NI_AVX_BroadcastScalarToVector128 or
-                NI_AVX_BroadcastScalarToVector256 or
-                NI_AVX2_BroadcastScalarToVector128 or
-                NI_AVX2_BroadcastScalarToVector256 or
-                NI_AVX512_BroadcastScalarToVector512 => true,
+                    NI_X86Base_LoadAlignedVector128 or
+                    NI_X86Base_LoadScalarVector128 or
+                    NI_AVX_LoadAlignedVector256 or
+                    NI_AVX512_LoadAlignedVector512 or
+                    NI_Vector_ToScalar or
+                    NI_X86Base_ConvertToInt32 or
+                    NI_X86Base_ConvertToUInt32 or
+                    NI_X86Base_Extract or
+                    NI_X86Base_X64_ConvertToInt64 or
+                    NI_X86Base_X64_ConvertToUInt64 or
+                    NI_X86Base_X64_Extract or
+                    NI_AVX_ExtractVector128 or
+                    NI_AVX2_ConvertToInt32 or
+                    NI_AVX2_ConvertToUInt32 or
+                    NI_AVX2_ExtractVector128 or
+                    NI_AVX512_ConvertToVector128Byte or
+                    NI_AVX512_ConvertToVector128ByteWithSaturation or
+                    NI_AVX512_ConvertToVector128Int16 or
+                    NI_AVX512_ConvertToVector128Int16WithSaturation or
+                    NI_AVX512_ConvertToVector128Int32 or
+                    NI_AVX512_ConvertToVector128Int32WithSaturation or
+                    NI_AVX512_ConvertToVector128SByte or
+                    NI_AVX512_ConvertToVector128SByteWithSaturation or
+                    NI_AVX512_ConvertToVector128UInt16 or
+                    NI_AVX512_ConvertToVector128UInt16WithSaturation or
+                    NI_AVX512_ConvertToVector256Byte or
+                    NI_AVX512_ConvertToVector256ByteWithSaturation or
+                    NI_AVX512_ConvertToVector256Int16 or
+                    NI_AVX512_ConvertToVector256Int16WithSaturation or
+                    NI_AVX512_ConvertToVector256Int32WithSaturation or
+                    NI_AVX512_ConvertToVector256SByte or
+                    NI_AVX512_ConvertToVector256SByteWithSaturation or
+                    NI_AVX512_ConvertToVector256UInt16 or
+                    NI_AVX512_ConvertToVector256UInt16WithSaturation or
+                    NI_AVX512_ConvertToVector256UInt32WithSaturation or
+                    NI_AVX512_ExtractVector128 or
+                    NI_AVX512_ExtractVector256 or
+                    NI_X86Base_LoadAndDuplicateToVector128 or
+                    NI_X86Base_MoveAndDuplicate or
+                    NI_AVX_BroadcastScalarToVector128 or
+                    NI_AVX_BroadcastScalarToVector256 or
+                    NI_AVX2_BroadcastScalarToVector128 or
+                    NI_AVX2_BroadcastScalarToVector256 or
+                    NI_AVX512_BroadcastScalarToVector512 => true,
 
-                NI_Vector_GetElement => node.SimdSize == 16,
-                _ => IsEmbeddedMaskingCompatible(),
-            };
-#elif TARGET_ARM64
-            return (node.HWIntrinsicId is NI_Sve_ConditionalSelect) || IsEmbeddedMaskingCompatible();
-#else
+                    NI_Vector_GetElement => node.SimdSize == 16,
+                    _ => IsEmbeddedMaskingCompatible(),
+                };
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                return (node.HWIntrinsicId is NI_Sve_ConditionalSelect) || IsEmbeddedMaskingCompatible();
+            }
+
             return false;
-#endif
         }
     }
-#else
-    public bool IsContainableHWIntrinsic => false;
-#endif
 
     /// <summary>check whether this tree node is a subcomponent of its parent for codegen purposes</summary>
     /// <returns>Returns true if there is no code generated explicitly for this node.</returns>
@@ -542,9 +546,7 @@ public partial class GenTree
         GT_MDARR_LENGTH => true,
         GT_MDARR_LOWER_BOUND => true,
         GT_INTRINSIC => AsIntrinsic().IntrinsicName is NI_System_Object_GetType,
-#if FEATURE_HW_INTRINSICS
-        GT_HWINTRINSIC => AsHWIntrinsic().IsMemoryLoadOrStore,
-#endif
+        GT_HWINTRINSIC => Configuration.FEATURE_HW_INTRINSICS && AsHWIntrinsic().IsMemoryLoadOrStore,
         _ => false,
     };
 
@@ -571,11 +573,8 @@ public partial class GenTree
     public bool IsInitVal => IsIntegralConst(0) || Oper.IsInitVal;
 
     /// <summary>Is this node an integer constant that fits in a 32-bit signed integer</summary>
-#if TARGET_64BIT
-    public bool IsIntCnsFitsInI32 => _oper.IsCnsIntOrI && AsIntCon().FitsInI32;
-#else
-    public bool IsIntCnsFitsInI32 => _oper.IsCnsIntOrI;
-#endif
+    public bool IsIntCnsFitsInI32 =>
+        _oper.IsCnsIntOrI && (!Configuration.TARGET_64BIT || AsIntCon().FitsInI32);
 
     /// <summary>Determines whether the absolute value of an integral constant is the power of 2.</summary>
     public bool IsIntegralConstAbsPow2
@@ -603,37 +602,39 @@ public partial class GenTree
     /// <summary>Get the implicit-byref parameter local before its accesses have been morphed.</summary>
     public GenTreeLclVarCommon? IsImplicitByrefParameterValuePreMorph(Compiler compiler)
     {
-#if FEATURE_IMPLICIT_BYREFS && !TARGET_LOONGARCH64
-        var local = Oper.IsLocal ? AsLclVarCommon() : null;
-        if ((local is not null) && compiler.lvaIsImplicitByRefLocal(local.LclNum))
+        if (Configuration.FEATURE_IMPLICIT_BYREFS && !Configuration.TARGET_LOONGARCH64)
         {
-            return local;
+            var local = Oper.IsLocal ? AsLclVarCommon() : null;
+            if ((local is not null) && compiler.lvaIsImplicitByRefLocal(local.LclNum))
+            {
+                return local;
+            }
         }
-#endif
         return null;
     }
 
     /// <summary>Get the implicit-byref local and its complete address after morphing its accesses.</summary>
     public GenTreeLclVar? IsImplicitByrefParameterValuePostMorph(Compiler compiler, ref GenTree? address, ref target_ssize_t offset)
     {
-#if FEATURE_IMPLICIT_BYREFS && !TARGET_LOONGARCH64
-        if (!Oper.IsLoad)
+        if (Configuration.FEATURE_IMPLICIT_BYREFS && !Configuration.TARGET_LOONGARCH64)
         {
-            return null;
-        }
-
-        var innerAddress = AsIndir().Addr;
-        address = innerAddress;
-        compiler.gtPeelOffsets(ref innerAddress, out offset);
-        if (innerAddress.Oper is GT_LCL_VAR)
-        {
-            var local = innerAddress.AsLclVar();
-            if (compiler.lvaIsImplicitByRefLocal(local.LclNum))
+            if (!Oper.IsLoad)
             {
-                return local;
+                return null;
+            }
+
+            var innerAddress = AsIndir().Addr;
+            address = innerAddress;
+            compiler.gtPeelOffsets(ref innerAddress, out offset);
+            if (innerAddress.Oper is GT_LCL_VAR)
+            {
+                var local = innerAddress.AsLclVar();
+                if (compiler.lvaIsImplicitByRefLocal(local.LclNum))
+                {
+                    return local;
+                }
             }
         }
-#endif
 
         return null;
     }
@@ -690,12 +691,11 @@ public partial class GenTree
             return AsUnOp().Op1.GetRegisterDstCount(compiler);
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (Oper.IsHWIntrinsic && HWIntrinsicInfo.IsMultiReg(AsHWIntrinsic().HWIntrinsicId))
+        if (Configuration.FEATURE_HW_INTRINSICS && Oper.IsHWIntrinsic &&
+            HWIntrinsicInfo.IsMultiReg(AsHWIntrinsic().HWIntrinsicId))
         {
             return HWIntrinsicInfo.GetMultiRegCount(AsHWIntrinsic().HWIntrinsicId);
         }
-#endif
 
         if (IsMultiRegLclVar)
         {
@@ -733,12 +733,10 @@ public partial class GenTree
                 return true;
             }
 
-#if FEATURE_HW_INTRINSICS
-            if (_oper.IsHWIntrinsic)
+            if (Configuration.FEATURE_HW_INTRINSICS && _oper.IsHWIntrinsic)
             {
                 return HWIntrinsicInfo.IsMultiReg(AsHWIntrinsic().HWIntrinsicId);
             }
-#endif
 
             return IsMultiRegLclVar;
         }
@@ -897,8 +895,12 @@ public partial class GenTree
     {
         get
         {
-#if FEATURE_HW_INTRINSICS
             assert(Oper.IsHWIntrinsic);
+            if (!Configuration.FEATURE_HW_INTRINSICS)
+            {
+                return false;
+            }
+
             var node = AsHWIntrinsic();
             var id = node.HWIntrinsicId;
             if (HWIntrinsicInfo.IsCommutative(id))
@@ -910,36 +912,34 @@ public partial class GenTree
             {
                 switch (id)
                 {
-#if TARGET_XARCH
-                    case NI_X86Base_MultiplyAddAdjacent:
-                    case NI_AVX2_MultiplyAddAdjacent:
-                    case NI_AVX512_MultiplyAddAdjacent:
+                    case NI_X86Base_MultiplyAddAdjacent when Configuration.TARGET_XARCH:
+                    case NI_AVX2_MultiplyAddAdjacent when Configuration.TARGET_XARCH:
+                    case NI_AVX512_MultiplyAddAdjacent when Configuration.TARGET_XARCH:
                     {
                         return !varTypeIsShort(node.SimdBaseType);
                     }
 
-                    case NI_X86Base_Max:
-                    case NI_X86Base_Min:
-                    case NI_AVX512_Max:
-                    case NI_AVX512_Min:
+                    case NI_X86Base_Max when Configuration.TARGET_XARCH:
+                    case NI_X86Base_Min when Configuration.TARGET_XARCH:
+                    case NI_AVX512_Max when Configuration.TARGET_XARCH:
+                    case NI_AVX512_Min when Configuration.TARGET_XARCH:
                     {
                         return !varTypeIsFloating(node.SimdBaseType);
                     }
 
-                    case NI_AVX_Max:
-                    case NI_AVX_Min:
+                    case NI_AVX_Max when Configuration.TARGET_XARCH:
+                    case NI_AVX_Min when Configuration.TARGET_XARCH:
                     {
                         return false;
                     }
 
-                    case NI_AVX512_Add:
-                    case NI_AVX512_Multiply:
-                    case NI_AVX2_MultiplyNoFlags:
-                    case NI_AVX2_X64_MultiplyNoFlags:
+                    case NI_AVX512_Add when Configuration.TARGET_XARCH:
+                    case NI_AVX512_Multiply when Configuration.TARGET_XARCH:
+                    case NI_AVX2_MultiplyNoFlags when Configuration.TARGET_XARCH:
+                    case NI_AVX2_X64_MultiplyNoFlags when Configuration.TARGET_XARCH:
                     {
                         return node.Operands.Length == 2;
                     }
-#endif
                     default:
                     {
                         unreached();
@@ -947,8 +947,6 @@ public partial class GenTree
                     }
                 }
             }
-#endif
-
             return false;
         }
     }
@@ -1021,7 +1019,7 @@ public partial class GenTree
         {
 #if DEBUG
             // TODO-Cleanup: get rid of the NONE case, and fix everyplace that reads undefined values
-            assert((_regTag is GT_REGTAG_NONE) || genIsValidReg(_regNum) || (_regNum is REG_NA));
+            assert((_regTag is GT_REGTAG_NONE) || genIsValidReg(_regNum) || (_regNum == REG_NA));
 #endif
             return _regNum;
         }
@@ -1061,9 +1059,7 @@ public partial class GenTree
         GT_STOREIND => true,
         GT_STORE_BLK => true,
         GT_CALL => AsCall().IsOptimizingRetBufAsLocal,
-#if FEATURE_HW_INTRINSICS
-        GT_HWINTRINSIC => AsHWIntrinsic().IsMemoryStoreOrBarrier,
-#endif
+        GT_HWINTRINSIC => Configuration.FEATURE_HW_INTRINSICS && AsHWIntrinsic().IsMemoryStoreOrBarrier,
         _ => false,
     };
 
@@ -1080,9 +1076,15 @@ public partial class GenTree
                     return (HasOverflowCheck || op.Op1.Oper.IsCnsIntOrI) ? 0 : op.Op2.ScaleIndexMul;
                 }
 
-#if TARGET_RISCV64
                 case GT_SLLI_UW:
-#endif
+                {
+                    if (!Configuration.TARGET_RISCV64)
+                    {
+                        throw new FatalJitException("GT_SLLI_UW scale-index handling is only supported on RISC-V64.");
+                    }
+                    goto case GT_LSH;
+                }
+
                 case GT_LSH:
                 {
                     var op = AsOp();
@@ -1194,9 +1196,7 @@ public partial class GenTree
             GT_PATCHPOINT => true,
             GT_PATCHPOINT_FORCED => true,
             GT_NONLOCAL_JMP => true,
-#if SWIFT_SUPPORT
-            GT_SWIFT_ERROR => true,
-#endif
+            GT_SWIFT_ERROR => Configuration.SWIFT_SUPPORT,
             _ => false,
         };
     }
@@ -1609,12 +1609,10 @@ public partial class GenTree
                 return GenTreeCall.Equals(op1.AsCall(), op2.AsCall());
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 return GenTreeHWIntrinsic.Equals(op1.AsHWIntrinsic(), op2.AsHWIntrinsic());
             }
-#endif
 
             case GT_ARR_ELEM:
             {
@@ -1806,10 +1804,8 @@ public partial class GenTree
             case GT_SUB:
             case GT_MUL:
             case GT_CAST:
-#if !TARGET_64BIT
-            case GT_ADD_HI:
-            case GT_SUB_HI:
-#endif // !TARGET_64BIT
+            case GT_ADD_HI when Configuration.TARGET_32BIT:
+            case GT_SUB_HI when Configuration.TARGET_32BIT:
             {
                 return HasOverflowCheck ? ExceptionSetFlags.OverflowException : ExceptionSetFlags.None;
             }
@@ -1911,15 +1907,12 @@ public partial class GenTree
                 return ExceptionSetFlags.ArithmeticException;
             }
 
-#if TARGET_WASM
-            case GT_WASM_THROW_REF:
+            case GT_WASM_THROW_REF when Configuration.TARGET_WASM:
             {
                 return ExceptionSetFlags.UnknownException;
             }
-#endif
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 var hwintrinsic = AsHWIntrinsic();
 
@@ -1937,21 +1930,21 @@ public partial class GenTree
                     flags |= ExceptionSetFlags.NullReferenceException;
                 }
 
-#if TARGET_XARCH
-                var intrinsicId = hwintrinsic.HWIntrinsicId;
-
-                if (intrinsicId is NI_Vector_op_Division)
+                if (Configuration.TARGET_XARCH)
                 {
-                    // We currently don't try to avoid setting these flags and GTF_EXCEPT when
-                    // we know that the operation in fact cannot overflow/divide by zero.
-                    assert(varTypeIsInt(hwintrinsic.SimdBaseType));
-                    flags |= (ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException);
+                    var intrinsicId = hwintrinsic.HWIntrinsicId;
+
+                    if (intrinsicId is NI_Vector_op_Division)
+                    {
+                        // We currently don't try to avoid setting these flags and GTF_EXCEPT when
+                        // we know that the operation in fact cannot overflow/divide by zero.
+                        assert(varTypeIsInt(hwintrinsic.SimdBaseType));
+                        flags |= (ExceptionSetFlags.OverflowException | ExceptionSetFlags.DivideByZeroException);
+                    }
                 }
-#endif
 
                 return flags;
             }
-#endif
 
             default:
             {
@@ -2006,12 +1999,10 @@ public partial class GenTree
                 return AsOp().Op2.GetLayout(compiler);
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 return AsHWIntrinsic().GetLayout(compiler);
             }
-#endif
 
             case GT_CALL:
             {
@@ -2057,12 +2048,10 @@ public partial class GenTree
             return AsCopyOrReload().RegCount;
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (_oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && _oper.IsHWIntrinsic)
         {
             return HWIntrinsicInfo.GetMultiRegCount(AsHWIntrinsic().HWIntrinsicId);
         }
-#endif
 
         if (IsMultiRegLclVar)
         {
@@ -2103,12 +2092,10 @@ public partial class GenTree
             return AsCopyOrReload().GetRegNumByIdx(regIndex);
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (_oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && _oper.IsHWIntrinsic)
         {
             return AsHWIntrinsic().GetRegNumByIdx(regIndex);
         }
-#endif
 
         if (_oper.IsScalarLocal)
         {
@@ -2188,8 +2175,7 @@ public partial class GenTree
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
-                    case GT_HWINTRINSIC:
+                    case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                     {
                         foreach (ref var multiOpUse in AsMultiOp().Operands)
                         {
@@ -2201,7 +2187,6 @@ public partial class GenTree
                         }
                         break;
                     }
-#endif
 
                     case GT_ARR_ELEM:
                     {
@@ -2432,11 +2417,8 @@ public partial class GenTree
         return ((_flags & GTF_IND_NONFAULTING) == 0) && compiler.fgAddrCouldBeNull(IndirOrArrMetaDataAddr);
     }
 
-#if FEATURE_HW_INTRINSICS
-    public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
-#else
-    public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) => false;
-#endif
+    public bool IsHWIntrinsic(NamedIntrinsic intrinsicId) =>
+        Configuration.FEATURE_HW_INTRINSICS && _oper.IsHWIntrinsic && (AsHWIntrinsic().HWIntrinsicId == intrinsicId);
 
     public GenTree? GetOp2IfPresent()
     {
@@ -2493,19 +2475,13 @@ public partial class GenTree
         return false;
     }
 
-#if TARGET_XARCH
-    public bool IsConvertMaskToVector => IsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
+    public bool IsConvertMaskToVector =>
+        (Configuration.TARGET_XARCH && IsHWIntrinsic(NI_AVX512_ConvertMaskToVector)) ||
+        (Configuration.TARGET_ARM64 && IsHWIntrinsic(NI_Sve_ConvertMaskToVector));
 
-    public bool IsConvertVectorToMask => IsHWIntrinsic(NI_AVX512_ConvertVectorToMask);
-#elif TARGET_ARM64
-    public bool IsConvertMaskToVector => IsHWIntrinsic(NI_Sve_ConvertMaskToVector);
-
-    public bool IsConvertVectorToMask => IsHWIntrinsic(NI_Sve_ConvertVectorToMask);
-#else
-    public bool IsConvertMaskToVector => false;
-
-    public bool IsConvertVectorToMask => false;
-#endif
+    public bool IsConvertVectorToMask =>
+        (Configuration.TARGET_XARCH && IsHWIntrinsic(NI_AVX512_ConvertVectorToMask)) ||
+        (Configuration.TARGET_ARM64 && IsHWIntrinsic(NI_Sve_ConvertVectorToMask));
 
     public bool IsIconHandle() => _oper.IsCnsIntOrI && AsIntCon().IsIconHandle();
 
@@ -2619,7 +2595,11 @@ public partial class GenTree
             return false;
         }
 
-#if FEATURE_HW_INTRINSICS
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return false;
+        }
+
         // Keep in sync with ValueNumStore.IsVectorPerElementMask.
         var elementCount = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
         if (!varTypeIsSimd(Type) || (Type.Size != simdSize))
@@ -2656,16 +2636,12 @@ public partial class GenTree
             return intrinsic.SimdBaseType.Size >= simdBaseType.Size;
         }
 
-#if TARGET_ARM64
         var oper = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(intrinsicId, simdBaseType, out var isScalar);
         // Some AdvSimd comparisons still lack the ReturnsPerElementMask annotation.
-        if (!isScalar && (oper is GT_EQ or GT_NE or GT_GT or GT_GE or GT_LT or GT_LE))
+        if (Configuration.TARGET_ARM64 && !isScalar && (oper is GT_EQ or GT_NE or GT_GT or GT_GE or GT_LT or GT_LE))
         {
             return intrinsic.SimdBaseType.Size >= simdBaseType.Size;
         }
-#else
-        var oper = GenTreeHWIntrinsic.GetOperForHWIntrinsicId(intrinsicId, simdBaseType, out _);
-#endif
 
         switch (oper)
         {
@@ -2691,7 +2667,6 @@ public partial class GenTree
                 break;
             }
         }
-#endif
         return false;
     }
 
@@ -2768,17 +2743,12 @@ public partial class GenTree
         GT_KEEPALIVE => true,
         GT_LCLHEAP => true,
         GT_NONLOCAL_JMP => true,
-#if FEATURE_HW_INTRINSICS
-        GT_HWINTRINSIC => AsHWIntrinsic().RequiresCallFlag(),
-#endif
+        GT_HWINTRINSIC => Configuration.FEATURE_HW_INTRINSICS && AsHWIntrinsic().RequiresCallFlag(),
         GT_CALL => true,
         GT_RETURN_SUSPEND => true,
         GT_PATCHPOINT => true,
         GT_PATCHPOINT_FORCED => true,
-#if SWIFT_SUPPORT
-        GT_SWIFT_ERROR => true,
-#endif
-#if FEATURE_FIXED_OUT_ARGS && !TARGET_64BIT
+        GT_SWIFT_ERROR => Configuration.SWIFT_SUPPORT,
         // Variable shifts of a long end up being helper calls, so mark the tree as such in morph.
         // This is potentially too conservative, since they'll get treated as having side effects.
         // It is important to mark them as calls so if they are part of an argument list,
@@ -2787,10 +2757,12 @@ public partial class GenTree
         // could mark the trees just before argument processing, but it would require a full
         // tree walk of the argument tree, so we just do it when morphing, instead, even though we'll
         // mark non-argument trees (that will still get converted to calls, anyway).
-        GT_LSH => Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
-        GT_RSH => Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
-        GT_RSZ => Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
-#endif
+        GT_LSH when Configuration.FEATURE_FIXED_OUT_ARGS && Configuration.TARGET_32BIT =>
+            Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
+        GT_RSH when Configuration.FEATURE_FIXED_OUT_ARGS && Configuration.TARGET_32BIT =>
+            Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
+        GT_RSZ when Configuration.FEATURE_FIXED_OUT_ARGS && Configuration.TARGET_32BIT =>
+            Type is TYP_LONG && (AsOp().Op2.Oper is not GT_CNS_INT),
         _ => false,
     };
 
@@ -2874,13 +2846,9 @@ public partial class GenTree
         {
             assert(varTypeIsIntegral(type) || varTypeIsGC(type));
             type = type.ActualType;
-#if TARGET_64BIT
-            result = new GenTreeIntCon(type, 0, fields: null, this, threading);
-#else
-            result = (type is TYP_LONG)
-                ? new GenTreeLngCon(0, this, threading)
-                : new GenTreeIntCon(type, 0, fields: null, this, threading);
-#endif
+            result = Configuration.TARGET_64BIT || (type is not TYP_LONG)
+                ? new GenTreeIntCon(type, 0, fields: null, this, threading)
+                : new GenTreeLngCon(0, this, threading);
         }
 
         result._vnPair.SetBoth(ValueNumStore.NoVN);
@@ -2911,13 +2879,12 @@ public partial class GenTree
 
     public void SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate = CLEAR_VN)
     {
-#if HOST_64BIT && !TARGET_64BIT
-        if ((Oper is GT_CNS_LNG) && (oper is GT_CNS_INT))
+        if (Configuration.HOST_64BIT && !Configuration.TARGET_64BIT &&
+            (Oper is GT_CNS_LNG) && (oper is GT_CNS_INT))
         {
             throw new InvalidOperationException(
                 "Replace a long constant at its owning use rather than changing its managed runtime type");
         }
-#endif
 
 #if DEBUG
         assert(oper.StructType == GetType());
@@ -2947,12 +2914,13 @@ public partial class GenTree
                 AsIntCon().TargetHandle = 0;
 #endif
                 break;
-#if TARGET_ARM
             case GT_MUL_LONG:
-                AsMultiRegOp().OtherReg = REG_NA;
-                AsMultiRegOp().ClearOtherRegFlags();
+                if (Configuration.TARGET_ARM)
+                {
+                    AsMultiRegOp().OtherReg = REG_NA;
+                    AsMultiRegOp().ClearOtherRegFlags();
+                }
                 break;
-#endif
             case GT_LCL_FLD:
             case GT_STORE_LCL_FLD:
                 AsLclFld().LclOffs = 0;
@@ -3165,8 +3133,7 @@ public partial class GenTree
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
+                case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                 {
                     var hwintrinsic = AsHWIntrinsic();
 
@@ -3181,7 +3148,6 @@ public partial class GenTree
                     }
                     break;
                 }
-#endif
 
                 case GT_ARR_ELEM:
                 {

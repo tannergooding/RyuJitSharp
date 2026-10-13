@@ -53,14 +53,10 @@ public readonly partial struct GenCondition
 
     public string Name => s_names[(int)(_code)];
 
-#if TARGET_XARCH
     // Indicate whether the condition should be swapped in order to avoid generating
     // multiple branches. This happens for certain floating point conditions on XARCH,
     // see GenConditionDesc and its associated mapping table for more details.
-    public bool PreferSwap => _code is FLT or FLE or FGTU or FGEU;
-#else
-    public bool PreferSwap => false;
-#endif
+    public bool PreferSwap => Configuration.TARGET_XARCH && (_code is FLT or FLE or FGTU or FGEU);
 
     public static GenCondition FromFloatRelop(GenTreeOp relop)
     {

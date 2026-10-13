@@ -73,13 +73,11 @@ public partial class GenTree
             {
                 return AsAllocObj().NewHelperHasSideEffects;
             }
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 var intrinsic = AsHWIntrinsic();
                 return intrinsic.IsMemoryLoad() || intrinsic.RequiresAsgFlag || intrinsic.RequiresCallFlag();
             }
-#endif
             default:
             {
                 assert(!RequiresCallFlag(compiler) || (Oper is GT_INTRINSIC));

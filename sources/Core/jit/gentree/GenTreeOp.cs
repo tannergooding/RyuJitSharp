@@ -57,37 +57,31 @@ public class GenTreeOp : GenTreeUnOp
     public ref GenTree ReturnValueRef()
     {
         assert(Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
-#if SWIFT_SUPPORT
-        if (Oper is GT_SWIFT_ERROR_RET)
+        if (Configuration.SWIFT_SUPPORT && (Oper is GT_SWIFT_ERROR_RET))
         {
             return ref Op2Ref;
         }
-#endif
         return ref Op1Ref;
     }
 
     public GenTree GetReturnValue()
     {
         assert(Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
-#if SWIFT_SUPPORT
-        if (Oper is GT_SWIFT_ERROR_RET)
+        if (Configuration.SWIFT_SUPPORT && (Oper is GT_SWIFT_ERROR_RET))
         {
             return Op2;
         }
-#endif
         return Op1;
     }
 
     public void SetReturnValue(GenTree retVal)
     {
         assert(Oper is GT_RETURN or GT_RETFILT or GT_SWIFT_ERROR_RET);
-#if SWIFT_SUPPORT
-        if (Oper is GT_SWIFT_ERROR_RET)
+        if (Configuration.SWIFT_SUPPORT && (Oper is GT_SWIFT_ERROR_RET))
         {
             Op2 = retVal;
         }
         else
-#endif
         {
             Op1 = retVal;
         }
@@ -101,9 +95,7 @@ public class GenTreeOp : GenTreeUnOp
         GT_SELECT_NEGCC => true,
         GT_SELECT_INCCC => true,
 
-#if SWIFT_SUPPORT
-        GT_SWIFT_ERROR_RET => Type is TYP_VOID,
-#endif
+        GT_SWIFT_ERROR_RET => Configuration.SWIFT_SUPPORT && Type is TYP_VOID,
 
         _ => false,
     };
@@ -125,10 +117,14 @@ public class GenTreeOp : GenTreeUnOp
         }
     }
 
-#if TARGET_XARCH
     // A contained memory operand establishes the legal comparison width even when small operand types differ.
     public int GetCompareSize()
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("Comparison operand sizes are only supported on xarch targets.");
+        }
+
         assert(Oper.IsCompare || Oper is GT_CMP or GT_TEST or GT_BT);
 
         var op1Type = Op1.Type;
@@ -157,7 +153,6 @@ public class GenTreeOp : GenTreeUnOp
         assert(size >= op1Type.Size && size >= op2Type.Size);
         return size;
     }
-#endif
 
     public bool IsValidLongMul()
     {
@@ -231,10 +226,15 @@ public class GenTreeOp : GenTreeUnOp
         return true;
     }
 
-#if !TARGET_64BIT && !TARGET_WASM && DEBUG
+#if DEBUG
     // The 32-bit lowering path must preserve the MUL_LONG-compatible tree shape from morph through decomposition.
     public void DebugCheckLongMul()
     {
+        if (Configuration.TARGET_64BIT || Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException("Long-multiply shape checks are only supported on non-Wasm 32-bit targets.");
+        }
+
         assert(Oper is GT_MUL);
         assert(Is64RsltMul);
         assert(Type is TYP_LONG);
@@ -322,21 +322,17 @@ public class GenTreeOp : GenTreeUnOp
             return false;
         }
 
-#if TARGET_ARM64
-        if (Oper is GT_MOD or GT_UMOD)
+        if (Configuration.TARGET_ARM64 && (Oper is GT_MOD or GT_UMOD))
         {
             return false;
         }
-#endif
         var isSigned = Oper is GT_DIV or GT_MOD;
         var dividend = Op1.EffectiveVal;
         var divisor = Op2.EffectiveVal;
-#if !TARGET_64BIT
-        if (dividend.Oper is GT_LONG)
+        if (Configuration.TARGET_32BIT && (dividend.Oper is GT_LONG))
         {
             return false;
         }
-#endif
         // Constant operands should fold earlier; remaining pairs may throw.
         if (dividend.Oper.IsCnsIntOrI)
         {
@@ -357,6 +353,11 @@ public class GenTreeOp : GenTreeUnOp
             return false;
         }
 
+        if (Configuration.TARGET_32BIT)
+        {
+            divisorValue = unchecked((nint)Target.CastToSignedSize((long)divisorValue));
+        }
+
         if (divisorValue == 0)
         {
             return false;
@@ -369,8 +370,10 @@ public class GenTreeOp : GenTreeUnOp
                 return false;
             }
 
-            var magnitude = unchecked((nuint)(divisorValue >= 0 ? divisorValue : -divisorValue));
-            if (nuint.IsPow2(magnitude))
+            var magnitude = unchecked((ulong)(divisorValue >= 0 ? divisorValue : -divisorValue));
+            if (Configuration.TARGET_64BIT
+                ? ulong.IsPow2(magnitude)
+                : uint.IsPow2(unchecked((uint)magnitude)))
             {
                 return true;
             }
@@ -383,7 +386,9 @@ public class GenTreeOp : GenTreeUnOp
                 divisorValue &= unchecked((nint)uint.MaxValue);
             }
 
-            if (nuint.IsPow2(unchecked((nuint)divisorValue)))
+            if (Configuration.TARGET_64BIT
+                ? ulong.IsPow2(unchecked((ulong)divisorValue))
+                : uint.IsPow2(unchecked((uint)divisorValue)))
             {
                 return true;
             }
@@ -393,11 +398,8 @@ public class GenTreeOp : GenTreeUnOp
         {
             if (isSigned)
             {
-                if (((Type is TYP_INT) && (divisorValue == int.MinValue))
-#if TARGET_64BIT
-                    || ((Type is TYP_LONG) && (divisorValue == long.MinValue))
-#endif
-                )
+                if (((Type is TYP_INT) && (divisorValue == int.MinValue)) ||
+                    (Configuration.TARGET_64BIT && (Type is TYP_LONG) && (divisorValue == long.MinValue)))
                 {
                     return true;
                 }
@@ -409,14 +411,14 @@ public class GenTreeOp : GenTreeUnOp
             }
         }
 
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         // Reciprocal multiplication also handles negative magic divisors.
         // ARM32 has no GT_MULHI support for this path.
-        if (!compiler.opts.MinOpts && (!isSigned || (divisorValue >= 3) || (divisorValue <= -3)))
+        if ((Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64) &&
+            !compiler.opts.MinOpts && (!isSigned || (divisorValue >= 3) || (divisorValue <= -3)))
         {
             return true;
         }
-#endif
         return false;
     }
 

@@ -31,12 +31,10 @@ public struct ReturnTypeDesc
 
     private InlineArrayMaxRetRegCount<var_types> _regType;
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
     // Structs according to hardware floating-point calling convention are passed as two logical fields, each in
     // separate register, disregarding struct layout such as packing, custom alignment, padding with empty structs, etc.
     // We need size (can be derived from _regType) & offset of each field for memory load/stores
     private InlineArrayMaxRetRegCount<int> _fieldOffset;
-#endif
 
 #if DEBUG
     private bool _inited;
@@ -55,7 +53,7 @@ public struct ReturnTypeDesc
         {
             var result = false;
 
-            if (Configuration.FEATURE_MULTIREG_RET && (MAX_RET_REG_COUNT >= 2))
+            if (Configuration.FEATURE_MULTIREG_RET && (Configuration.MAX_RET_REG_COUNT >= 2))
             {
 #if DEBUG
                 assert(Debugger.IsAttached || _inited);
@@ -69,7 +67,7 @@ public struct ReturnTypeDesc
 
     private readonly bool HasReturnRegType(byte index)
     {
-        assert(index < MAX_RET_REG_COUNT);
+        assert(index < Configuration.MAX_RET_REG_COUNT);
         return _regType[index] != TYP_UNKNOWN;
     }
 
@@ -84,7 +82,7 @@ public struct ReturnTypeDesc
 
             byte regCount = 0;
 
-            for (var i = 0; i < MAX_RET_REG_COUNT; i++)
+            for (var i = 0; i < Configuration.MAX_RET_REG_COUNT; i++)
             {
                 if (_regType[i] == TYP_UNKNOWN)
                 {
@@ -97,13 +95,11 @@ public struct ReturnTypeDesc
 
 #if DEBUG
             // Any remaining elements in _regTypes[] should also be TYP_UNKNOWN
-            for (var i = regCount + 1; i < MAX_RET_REG_COUNT; i++)
+            for (var i = regCount + 1; i < Configuration.MAX_RET_REG_COUNT; i++)
             {
                 assert(_regType[i] == TYP_UNKNOWN);
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
                 assert(_fieldOffset[i] == 0);
-#endif
             }
 #endif
 
@@ -124,19 +120,13 @@ public struct ReturnTypeDesc
             assert(!IsMultiRegRetType);
             assert(_regType[0] != TYP_UNKNOWN);
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
             return _fieldOffset[0];
-#else
-            return 0;
-#endif
         }
     }
 
-#if SWIFT_SUPPORT
-    private static ReadOnlySpan<regNumber> SwiftFloatReturnRegs => REG_SWIFT_FLOATRET_ORDER;
+    private static ReadOnlySpan<regNumber> SwiftFloatReturnRegs => TargetRuntimeMetadata.SwiftFloatReturnRegisters;
 
-    private static ReadOnlySpan<regNumber> SwiftIntReturnRegs => REG_SWIFT_INTRET_ORDER;
-#endif
+    private static ReadOnlySpan<regNumber> SwiftIntReturnRegs => TargetRuntimeMetadata.SwiftIntegerReturnRegisters;
 
     /// <summary>Initialize the Return Type Descriptor for a method that returns a TYP_LONG</summary>
     /// <remarks>Only needed for X86 and arm32.</remarks>
@@ -146,16 +136,18 @@ public struct ReturnTypeDesc
         assert(!_inited);
 #endif
 
-#if TARGET_X86 || TARGET_ARM
-        // Setups up a ReturnTypeDesc for returning a long using two registers
-        assert(MAX_RET_REG_COUNT >= 2);
+        if (Configuration.TARGET_X86 || Configuration.TARGET_ARM)
+        {
+            // Setups up a ReturnTypeDesc for returning a long using two registers
+            assert(Configuration.MAX_RET_REG_COUNT >= 2);
 
-        _regType[0] = TYP_INT;
-        _regType[1] = TYP_INT;
-#else
-
-        _regType[0] = TYP_LONG;
-#endif
+            _regType[0] = TYP_INT;
+            _regType[1] = TYP_INT;
+        }
+        else
+        {
+            _regType[0] = TYP_LONG;
+        }
 
 #if DEBUG
         _inited = true;
@@ -214,15 +206,16 @@ public struct ReturnTypeDesc
                 assert(returnType is not TYP_UNKNOWN and not TYP_STRUCT);
                 _regType[0] = returnType;
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
-                var lowering = compiler.GetFpStructLowering(retClsHnd);
-
-                if (!lowering.byIntegerCallConv)
+                if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
                 {
-                    assert(lowering.numLoweredElements == 1);
-                    _fieldOffset[0] = lowering.offsets[0];
+                    var lowering = compiler.GetFpStructLowering(retClsHnd);
+
+                    if (!lowering.byIntegerCallConv)
+                    {
+                        assert(lowering.numLoweredElements == 1);
+                        _fieldOffset[0] = lowering.offsets[0];
+                    }
                 }
-#endif
                 break;
             }
 
@@ -255,107 +248,116 @@ public struct ReturnTypeDesc
             {
                 assert(varTypeIsStruct(returnType));
 
-#if SWIFT_SUPPORT
-                if (callConv is CorInfoCallConvExtension.Swift)
+                if (Configuration.SWIFT_SUPPORT && (callConv is CorInfoCallConvExtension.Swift))
                 {
                     InitializeSwiftReturnRegs(compiler, retClsHnd);
                     break;
                 }
-#endif
 
-#if UNIX_AMD64_ABI
-                compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, out var structDesc);
-                assert(structDesc.passedInRegisters);
-
-                for (byte i = 0; i < structDesc.eightByteCount; i++)
+                if (Configuration.UNIX_AMD64_ABI)
                 {
-                    assert(i < MAX_RET_REG_COUNT);
-                    _regType[i] = compiler.GetEightByteType(structDesc, i);
-                }
-#elif TARGET_ARM64
-                // a non-HFA struct returned using two registers
-                assert(structSize is > TARGET_POINTER_SIZE and <= (2 * TARGET_POINTER_SIZE));
+                    compiler.eeGetSystemVAmd64PassStructInRegisterDescriptor(retClsHnd, out var structDesc);
+                    assert(structDesc.passedInRegisters);
 
-                var gcPtrs = stackalloc CorInfoGCType[2] { TYPE_GC_NONE, TYPE_GC_NONE };
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrs);
-
-                for (byte i = 0; i < 2; i++)
-                {
-                    _regType[i] = compiler.getJitGCType(gcPtrs[i]);
-                }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                assert(structSize is > sizeof(float) and <= (2 * TARGET_POINTER_SIZE));
-
-                Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
-                var gcPtrs = (Span<CorInfoGCType>)inlineGcPtrs;
-                gcPtrs[0] = TYPE_GC_NONE;
-                gcPtrs[1] = TYPE_GC_NONE;
-
-                fixed (CorInfoGCType* gcPtrsPointer = gcPtrs)
-                {
-                    compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrsPointer);
-                }
-
-                var lowering = compiler.GetFpStructLowering(retClsHnd);
-
-                if (!lowering.byIntegerCallConv)
-                {
-                    compiler.compFloatingPointUsed = true;
-
-                    assert(lowering.numLoweredElements == MAX_RET_REG_COUNT);
-                    assert(MAX_RET_REG_COUNT == MAX_FPSTRUCT_LOWERED_ELEMENTS);
-
-                    var foundFloatingPointReg = false;
-
-                    for (byte i = 0; i < MAX_RET_REG_COUNT; i++)
+                    for (byte i = 0; i < structDesc.eightByteCount; i++)
                     {
-                        var regType = lowering.loweredElements[i].VarType;
-                        var fieldOffset = lowering.offsets[i];
-
-                        _regType[i] = regType;
-                        _fieldOffset[i] = fieldOffset;
-
-                        if ((regType is TYP_LONG) && ((fieldOffset % TARGET_POINTER_SIZE) == 0))
-                        {
-                            var slot = fieldOffset / TARGET_POINTER_SIZE;
-                            _regType[i] = compiler.getJitGCType(gcPtrs[slot]);
-                        }
-                        else if (varTypeIsFloating(regType))
-                        {
-                            foundFloatingPointReg = true;
-                        }
+                        assert(i < Configuration.MAX_RET_REG_COUNT);
+                        _regType[i] = compiler.GetEightByteType(structDesc, i);
                     }
-
-                    assert(foundFloatingPointReg);
                 }
-                else
+                else if (Configuration.TARGET_ARM64)
                 {
+                    // a non-HFA struct returned using two registers
+                    assert((structSize > Configuration.TARGET_POINTER_SIZE) &&
+                        (structSize <= (2 * Configuration.TARGET_POINTER_SIZE)));
+
+                    var gcPtrs = stackalloc CorInfoGCType[2] { TYPE_GC_NONE, TYPE_GC_NONE };
+                    compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrs);
+
                     for (byte i = 0; i < 2; i++)
                     {
                         _regType[i] = compiler.getJitGCType(gcPtrs[i]);
-                        _fieldOffset[i] = i * TARGET_POINTER_SIZE;
                     }
                 }
-#elif TARGET_X86
-                // an 8-byte struct returned using two registers
-                assert(structSize == 8);
-
-                Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
-                var gcPtrs = (Span<CorInfoGCType>)(inlineGcPtrs);
-                compiler.info.compCompHnd->getClassGClayout(retClsHnd, &inlineGcPtrs.e0);
-
-                for (byte i = 0; i < 2; i++)
+                else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
                 {
-                    _regType[i] = compiler.getJitGCType(gcPtrs[i]);
-                }
-#elif TARGET_WASM
-                // For Wasm, structs are either returned by-ref or as primitives.
-                unreached();
-#else
+                    assert((structSize > sizeof(float)) && (structSize <= (2 * Configuration.TARGET_POINTER_SIZE)));
 
-                // This target needs support here!
-                NYI("Unsupported TARGET returning a TYP_STRUCT in InitializeStructReturnType");
-#endif
+                    Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
+                    var gcPtrs = (Span<CorInfoGCType>)inlineGcPtrs;
+                    gcPtrs[0] = TYPE_GC_NONE;
+                    gcPtrs[1] = TYPE_GC_NONE;
+
+                    fixed (CorInfoGCType* gcPtrsPointer = gcPtrs)
+                    {
+                        compiler.info.compCompHnd->getClassGClayout(retClsHnd, gcPtrsPointer);
+                    }
+
+                    var lowering = compiler.GetFpStructLowering(retClsHnd);
+
+                    if (!lowering.byIntegerCallConv)
+                    {
+                        compiler.compFloatingPointUsed = true;
+
+                        assert(lowering.numLoweredElements == Configuration.MAX_RET_REG_COUNT);
+                        assert(Configuration.MAX_RET_REG_COUNT == MAX_FPSTRUCT_LOWERED_ELEMENTS);
+
+                        var foundFloatingPointReg = false;
+
+                        for (byte i = 0; i < Configuration.MAX_RET_REG_COUNT; i++)
+                        {
+                            var regType = lowering.loweredElements[i].VarType;
+                            var fieldOffset = lowering.offsets[i];
+
+                            _regType[i] = regType;
+                            _fieldOffset[i] = fieldOffset;
+
+                            if ((regType is TYP_LONG) && ((fieldOffset % Configuration.TARGET_POINTER_SIZE) == 0))
+                            {
+                                var slot = fieldOffset / Configuration.TARGET_POINTER_SIZE;
+                                _regType[i] = compiler.getJitGCType(gcPtrs[slot]);
+                            }
+                            else if (varTypeIsFloating(regType))
+                            {
+                                foundFloatingPointReg = true;
+                            }
+                        }
+
+                        assert(foundFloatingPointReg);
+                    }
+                    else
+                    {
+                        for (byte i = 0; i < 2; i++)
+                        {
+                            _regType[i] = compiler.getJitGCType(gcPtrs[i]);
+                            _fieldOffset[i] = i * Configuration.TARGET_POINTER_SIZE;
+                        }
+                    }
+                }
+                else if (Configuration.TARGET_X86)
+                {
+                    // an 8-byte struct returned using two registers
+                    assert(structSize == 8);
+
+                    Unsafe.SkipInit(out InlineArray2<CorInfoGCType> inlineGcPtrs);
+                    var gcPtrs = (Span<CorInfoGCType>)(inlineGcPtrs);
+                    compiler.info.compCompHnd->getClassGClayout(retClsHnd, &inlineGcPtrs.e0);
+
+                    for (byte i = 0; i < 2; i++)
+                    {
+                        _regType[i] = compiler.getJitGCType(gcPtrs[i]);
+                    }
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    // For Wasm, structs are either returned by-ref or as primitives.
+                    unreached();
+                }
+                else
+                {
+                    // This target needs support here!
+                    NYI("Unsupported TARGET returning a TYP_STRUCT in InitializeStructReturnType");
+                }
                 break;
             }
 
@@ -381,13 +383,11 @@ public struct ReturnTypeDesc
     // Reset type descriptor to defaults
     public void Reset()
     {
-        for (byte i = 0; i < MAX_RET_REG_COUNT; i++)
+        for (byte i = 0; i < Configuration.MAX_RET_REG_COUNT; i++)
         {
             _regType[i] = TYP_UNKNOWN;
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
             _fieldOffset[i] = 0;
-#endif
         }
 
 #if DEBUG
@@ -413,9 +413,11 @@ public struct ReturnTypeDesc
     {
         assert(_regType[index] is not TYP_UNKNOWN);
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
-        return _fieldOffset[index];
-#else
+        if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
+        {
+            return _fieldOffset[index];
+        }
+
         var offset = 0;
 
         for (byte i = 0; i < index; i++)
@@ -423,7 +425,6 @@ public struct ReturnTypeDesc
             offset += _regType[i].Size;
         }
         return offset;
-#endif
     }
 
     /// <summary>Return i'th return register as per target ABI</summary>
@@ -441,8 +442,7 @@ public struct ReturnTypeDesc
 
         var resultReg = REG_NA;
 
-#if SWIFT_SUPPORT
-        if (callConv == CorInfoCallConvExtension.Swift)
+        if (Configuration.SWIFT_SUPPORT && (callConv == CorInfoCallConvExtension.Swift))
         {
             assert((idx < SwiftIntReturnRegs.Length) && (idx < SwiftFloatReturnRegs.Length));
 
@@ -473,149 +473,158 @@ public struct ReturnTypeDesc
             assert(resultReg != REG_NA);
             return resultReg;
         }
-#endif
 
-#if UNIX_AMD64_ABI
-        var regType0 = GetReturnRegType(0);
+        if (Configuration.UNIX_AMD64_ABI)
+        {
+            var regType0 = GetReturnRegType(0);
 
-        if (idx == 0)
-        {
-            if (varTypeUsesIntReg(regType0))
-            {
-                resultReg = REG_INTRET;
-            }
-            else
-            {
-                noway_assert(varTypeUsesFloatReg(regType0));
-                resultReg = REG_FLOATRET;
-            }
-        }
-        else if (idx == 1)
-        {
-            var regType1 = GetReturnRegType(1);
-
-            if (varTypeUsesIntReg(regType1))
-            {
-                if (varTypeIsIntegralOrI(regType0))
-                {
-                    resultReg = REG_INTRET_1;
-                }
-                else
-                {
-                    resultReg = REG_INTRET;
-                }
-            }
-            else
-            {
-                noway_assert(varTypeUsesFloatReg(regType1));
-
-                if (varTypeUsesFloatReg(regType0))
-                {
-                    resultReg = REG_FLOATRET_1;
-                }
-                else
-                {
-                    resultReg = REG_FLOATRET;
-                }
-            }
-        }
-#elif WINDOWS_AMD64_ABI
-        assert(idx == 0);
-
-        if (varTypeUsesIntReg(GetReturnRegType(0)))
-        {
-            resultReg = REG_INTRET;
-        }
-        else
-        {
-            assert(varTypeUsesFloatReg(GetReturnRegType(0)));
-            resultReg = REG_FLOATRET;
-        }
-#elif TARGET_X86
-        if (idx == 0)
-        {
-            resultReg = REG_LNGRET_LO;
-        }
-        else if (idx == 1)
-        {
-            resultReg = REG_LNGRET_HI;
-        }
-#elif TARGET_ARM
-        var regType = GetReturnRegType(idx);
-
-        if (varTypeIsIntegralOrI(regType))
-        {
-            // Ints are returned in one return register.
-            // Longs are returned in two return registers.
             if (idx == 0)
             {
-                resultReg = REG_LNGRET_LO;
+                if (varTypeUsesIntReg(regType0))
+                {
+                    resultReg = TargetRuntimeMetadata.IntegerReturnRegister;
+                }
+                else
+                {
+                    noway_assert(varTypeUsesFloatReg(regType0));
+                    resultReg = TargetRuntimeMetadata.FloatingReturnRegister;
+                }
             }
             else if (idx == 1)
             {
-                resultReg = REG_LNGRET_HI;
+                var regType1 = GetReturnRegType(1);
+
+                if (varTypeUsesIntReg(regType1))
+                {
+                    if (varTypeIsIntegralOrI(regType0))
+                    {
+                        resultReg = TargetRuntimeMetadata.IntegerReturnRegister1;
+                    }
+                    else
+                    {
+                        resultReg = TargetRuntimeMetadata.IntegerReturnRegister;
+                    }
+                }
+                else
+                {
+                    noway_assert(varTypeUsesFloatReg(regType1));
+
+                    if (varTypeUsesFloatReg(regType0))
+                    {
+                        resultReg = TargetRuntimeMetadata.FloatingReturnRegister1;
+                    }
+                    else
+                    {
+                        resultReg = TargetRuntimeMetadata.FloatingReturnRegister;
+                    }
+                }
             }
         }
-        else
+        else if (Configuration.WINDOWS_AMD64_ABI)
         {
-            // Floats are returned in one return register (f0).
-            // Doubles are returned in one return register (d0).
-            // Structs are returned in four registers with HFAs.
-            assert(idx < MAX_RET_REG_COUNT); // Up to 4 return registers for HFA's
+            assert(idx == 0);
 
-            if (regType == TYP_DOUBLE)
+            if (varTypeUsesIntReg(GetReturnRegType(0)))
             {
-                resultReg = REG_FLOATRET + (byte)(idx * 2); // d0, d1, d2 or d3
+                resultReg = TargetRuntimeMetadata.IntegerReturnRegister;
             }
             else
             {
-                resultReg = REG_FLOATRET + idx; // f0, f1, f2 or f3
+                assert(varTypeUsesFloatReg(GetReturnRegType(0)));
+                resultReg = TargetRuntimeMetadata.FloatingReturnRegister;
             }
-
-            assert(resultReg != REG_NA);
         }
-#elif TARGET_ARM64
-        var regType = GetReturnRegType(idx);
-
-        if (varTypeIsIntegralOrI(regType))
+        else if (Configuration.TARGET_X86)
         {
-            noway_assert(idx < 2);                              // Up to 2 return registers for 16-byte structs
-            resultReg = (idx == 0) ? REG_INTRET : REG_INTRET_1; // X0 or X1
-        }
-        else
-        {
-            noway_assert(idx < 4);          // Up to 4 return registers for HFA's
-            resultReg = REG_FLOATRET + idx; // V0, V1, V2 or V3
-            assert(resultReg != REG_NA);
-        }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-        var regType = GetReturnRegType(idx);
-
-        if (idx == 0)
-        {
-            resultReg = varTypeIsIntegralOrI(regType) ? REG_INTRET : REG_FLOATRET; // A0 or FA0
-        }
-        else
-        {
-            noway_assert(idx == 1); // Up to 2 return registers for two-float-field structs
-
-            // If the first return register is from the same register file, return the one next to it.
-            if (varTypeUsesIntReg(regType))
+            if (idx == 0)
             {
-                resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // A0 or A1
+                resultReg = TargetRuntimeMetadata.LongReturnLowRegister;
+            }
+            else if (idx == 1)
+            {
+                resultReg = TargetRuntimeMetadata.LongReturnHighRegister;
+            }
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            var regType = GetReturnRegType(idx);
+
+            if (varTypeIsIntegralOrI(regType))
+            {
+                // Ints are returned in one return register.
+                // Longs are returned in two return registers.
+                if (idx == 0)
+                {
+                    resultReg = TargetRuntimeMetadata.LongReturnLowRegister;
+                }
+                else if (idx == 1)
+                {
+                    resultReg = TargetRuntimeMetadata.LongReturnHighRegister;
+                }
             }
             else
             {
-                assert(varTypeUsesFloatReg(regType));
-                resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
+                // Floats are returned in one return register (f0).
+                // Doubles are returned in one return register (d0).
+                // Structs are returned in four registers with HFAs.
+                assert(idx < Configuration.MAX_RET_REG_COUNT); // Up to 4 return registers for HFA's
+
+                if (regType == TYP_DOUBLE)
+                {
+                    resultReg = TargetRuntimeMetadata.FloatingReturnRegister + (byte)(idx * 2); // d0, d1, d2 or d3
+                }
+                else
+                {
+                    resultReg = TargetRuntimeMetadata.FloatingReturnRegister + idx; // f0, f1, f2 or f3
+                }
+
+                assert(resultReg != REG_NA);
             }
         }
-#endif
+        else if (Configuration.TARGET_ARM64)
+        {
+            var regType = GetReturnRegType(idx);
+
+            if (varTypeIsIntegralOrI(regType))
+            {
+                noway_assert(idx < 2);                              // Up to 2 return registers for 16-byte structs
+                resultReg = (idx == 0) ? TargetRuntimeMetadata.IntegerReturnRegister : TargetRuntimeMetadata.IntegerReturnRegister1; // X0 or X1
+            }
+            else
+            {
+                noway_assert(idx < 4);          // Up to 4 return registers for HFA's
+                resultReg = TargetRuntimeMetadata.FloatingReturnRegister + idx; // V0, V1, V2 or V3
+                assert(resultReg != REG_NA);
+            }
+        }
+        else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            var regType = GetReturnRegType(idx);
+
+            if (idx == 0)
+            {
+                resultReg = varTypeIsIntegralOrI(regType) ? TargetRuntimeMetadata.IntegerReturnRegister : TargetRuntimeMetadata.FloatingReturnRegister; // A0 or FA0
+            }
+            else
+            {
+                noway_assert(idx == 1); // Up to 2 return registers for two-float-field structs
+
+                // If the first return register is from the same register file, return the one next to it.
+                if (varTypeUsesIntReg(regType))
+                {
+                    resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? TargetRuntimeMetadata.IntegerReturnRegister1 : TargetRuntimeMetadata.IntegerReturnRegister; // A0 or A1
+                }
+                else
+                {
+                    assert(varTypeUsesFloatReg(regType));
+                    resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? TargetRuntimeMetadata.FloatingReturnRegister : TargetRuntimeMetadata.FloatingReturnRegister1; // FA0 or FA1
+                }
+            }
+        }
 
         return resultReg;
     }
 
-#if HAS_FIXED_REGISTER_SET
     /// <summary>Get the mask of return registers as per the target ABI.</summary>
     /// <param name="callConv">The calling convention</param>
     /// <returns>The register mask containing the return registers.</returns>
@@ -624,6 +633,11 @@ public struct ReturnTypeDesc
     /// </remarks>
     public readonly regMaskTP GetAbiReturnRegs(CorInfoCallConvExtension callConv)
     {
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            throw new FatalJitException("ABI return-register masks are unsupported on this target.");
+        }
+
         var resultMask = new regMaskTP(SRBM_NONE);
         var count = ReturnRegCount;
 
@@ -635,9 +649,7 @@ public struct ReturnTypeDesc
 
         return resultMask;
     }
-#endif
 
-#if SWIFT_SUPPORT
     /// <summary>Initialize the Return Type Descriptor for a method that returns with the Swift calling convention.</summary>
     /// <param name="compiler">Compiler instance</param>
     /// <param name="retClsHnd">Struct type being returned</param>
@@ -646,13 +658,12 @@ public struct ReturnTypeDesc
         ref readonly var lowering = ref compiler.GetSwiftLowering(retClsHnd);
         assert(!lowering.byReference);
 
-        assert(MAX_SWIFT_LOWERED_ELEMENTS <= MAX_RET_REG_COUNT);
-        assert(lowering.numLoweredElements <= MAX_RET_REG_COUNT);
+        assert(MAX_SWIFT_LOWERED_ELEMENTS <= Configuration.MAX_RET_REG_COUNT);
+        assert(lowering.numLoweredElements <= Configuration.MAX_RET_REG_COUNT);
 
         for (byte i = 0; i < lowering.numLoweredElements; i++)
         {
             _regType[i] = lowering.loweredElements[i].VarType;
         }
     }
-#endif
 }

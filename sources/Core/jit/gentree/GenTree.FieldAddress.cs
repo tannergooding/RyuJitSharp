@@ -9,7 +9,7 @@ public partial class GenTree
 {
     public unsafe bool IsFieldAddr(Compiler compiler, out GenTree? baseAddr, out FieldSeq? fieldSeq, out nint offset)
     {
-        assert(Type is TYP_I_IMPL or TYP_BYREF or TYP_REF);
+        assert((Type is var __targetAliasValue0 && ((__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF) || __targetAliasValue0 is TYP_REF)));
 
         baseAddr = null;
         fieldSeq = null;

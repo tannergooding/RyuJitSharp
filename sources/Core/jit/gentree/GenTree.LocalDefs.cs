@@ -64,7 +64,7 @@ public partial class GenTree
 
         if (def == compiler.gtCallGetDefinedAsyncResumedLclAddr(call))
         {
-            return compiler.lvaLclExactSize(def.LclNum) == TARGET_POINTER_SIZE;
+            return compiler.lvaLclExactSize(def.LclNum) == Configuration.TARGET_POINTER_SIZE;
         }
 
         assert(def == compiler.gtCallGetDefinedRetBufLclAddr(call));
@@ -141,10 +141,11 @@ public partial class GenTree
 
             if (asyncResumedLclAddr is not null)
             {
-                var isEntire = compiler.lvaLclExactSize(asyncResumedLclAddr.LclNum) == TARGET_POINTER_SIZE;
+                var isEntire = compiler.lvaLclExactSize(asyncResumedLclAddr.LclNum) ==
+                    Configuration.TARGET_POINTER_SIZE;
 
                 if (VisitLocalDef(compiler, asyncResumedLclAddr, isEntire, asyncResumedLclAddr.LclOffs,
-                    new ValueSize(TARGET_POINTER_SIZE), ref visitor) == VisitResult.Abort)
+                    new ValueSize(Configuration.TARGET_POINTER_SIZE), ref visitor) == VisitResult.Abort)
                 {
                     return VisitResult.Abort;
                 }

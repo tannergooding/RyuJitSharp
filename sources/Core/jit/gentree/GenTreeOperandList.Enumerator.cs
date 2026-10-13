@@ -138,30 +138,31 @@ public partial struct GenTreeOperandsList
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
                     {
-                        var hwintrinsic = tree.AsHWIntrinsic();
-                        var operands = hwintrinsic.Operands;
+                        if (Configuration.FEATURE_HW_INTRINSICS)
+                        {
+                            var hwintrinsic = tree.AsHWIntrinsic();
+                            var operands = hwintrinsic.Operands;
 
-                        if (tree.IsReverseOp)
-                        {
-                            if (index < 0)
+                            if (tree.IsReverseOp)
                             {
-                                current = operands[1];
+                                if (index < 0)
+                                {
+                                    current = operands[1];
+                                }
+                                else if (index == 0)
+                                {
+                                    current = operands[0];
+                                }
                             }
-                            else if (index == 0)
+                            else if ((index + 1) < operands.Length)
                             {
-                                current = operands[0];
+                                current = operands[index + 1];
                             }
-                        }
-                        else if ((index + 1) < operands.Length)
-                        {
-                            current = operands[index + 1];
                         }
                         break;
                     }
-#endif
 
                     case GT_ARR_ELEM:
                     {

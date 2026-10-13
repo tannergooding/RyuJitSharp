@@ -38,10 +38,9 @@ public sealed class GenTreeLclFld : GenTreeLclVarCommon
         _layout = layout;
     }
 
-#if TARGET_ARM
     /// <summary>check if the field needs a special handling on arm.</summary>
-    public bool IsOffsetMisaligned => varTypeIsFloating(Type) && ((_lclOffs % (ushort)TYP_FLOAT.EmitSize) is not 0);
-#endif
+    public bool IsOffsetMisaligned => Configuration.TARGET_ARM &&
+        varTypeIsFloating(Type) && ((_lclOffs % (ushort)TYP_FLOAT.EmitSize) is not 0);
 
     /// <summary>offset into the variable to access</summary>
     public new ushort LclOffs

@@ -31,7 +31,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
             // but for COPY or RELOAD there is only a valid register for the register positions
             // that must be copied or reloaded.
 
-            for (byte i = MAX_MULTIREG_COUNT; i > 1; i--)
+            for (var i = (byte)Configuration.MAX_MULTIREG_COUNT; i > 1; i--)
             {
                 if (_otherRegs[i - 2] != REG_NA)
                 {
@@ -48,7 +48,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
     /// <summary>set gtOtherRegs to REG_NA.</summary>
     public void ClearOtherRegs()
     {
-        for (byte i = 0; i < MAX_MULTIREG_COUNT - 1; i++)
+        for (byte i = 0; i < Configuration.MAX_MULTIREG_COUNT - 1; i++)
         {
             _otherRegs[i] = REG_NA;
         }
@@ -63,12 +63,13 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
         // TODO-ARM: Implement this routine for Arm64 and Arm32
         // TODO-X86: Implement this routine for x86
 
-#if UNIX_AMD64_ABI
-        for (byte i = 0; i < MAX_MULTIREG_COUNT - 1; i++)
+        if (Configuration.UNIX_AMD64_ABI)
         {
-            _otherRegs[i] = tree._otherRegs[i];
+            for (byte i = 0; i < Configuration.MAX_MULTIREG_COUNT - 1; i++)
+            {
+                _otherRegs[i] = tree._otherRegs[i];
+            }
         }
-#endif
     }
 
     /// <summary>Get regNumber of i'th position.</summary>
@@ -76,7 +77,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
     /// <returns>Returns regNumber assigned to i'th position.</returns>
     public regNumber GetRegNumByIdx(byte idx)
     {
-        assert(idx < MAX_MULTIREG_COUNT);
+        assert(idx < Configuration.MAX_MULTIREG_COUNT);
 
         if (idx == 0)
         {
@@ -91,7 +92,7 @@ public sealed class GenTreeCopyOrReload : GenTreeUnOp
     /// <param name="idx">register position.</param>
     public void SetRegNumByIdx(regNumber reg, byte idx)
     {
-        assert(idx < MAX_MULTIREG_COUNT);
+        assert(idx < Configuration.MAX_MULTIREG_COUNT);
 
         if (idx == 0)
         {

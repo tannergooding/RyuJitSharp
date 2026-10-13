@@ -7,15 +7,16 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
-#if TARGET_XARCH
     public void SetDontExtend()
     {
+        EnsureXarchDontExtend();
         assert(varTypeIsSmall(Type) && (Oper is GT_IND or GT_LCL_FLD));
         Flags |= GTF_DONT_EXTEND;
     }
 
     public void ClearDontExtend()
     {
+        EnsureXarchDontExtend();
         Flags &= ~GTF_DONT_EXTEND;
     }
 
@@ -23,12 +24,20 @@ public partial class GenTree
     {
         get
         {
+            EnsureXarchDontExtend();
             assert(varTypeIsSmall(Type) || ((Flags & GTF_DONT_EXTEND) == 0));
 
             return (Flags & GTF_DONT_EXTEND) != 0;
         }
     }
-#endif
+
+    private static void EnsureXarchDontExtend()
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("Dont-extend state is only supported on xarch targets.");
+        }
+    }
 
 #if DEBUG
     internal int UseNum

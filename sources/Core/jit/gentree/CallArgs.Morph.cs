@@ -459,7 +459,7 @@ public partial struct CallArgs
             if (Configuration.TARGET_ARM)
             {
                 // LSRA does not yet account for this register kill on non-VSD calls.
-                address.RegNum = REG_R2R_INDIRECT_PARAM;
+                address.RegNum = TargetRuntimeMetadata.R2RIndirectParameterRegister;
                 address.Flags |= GTF_DONT_CSE;
             }
 
@@ -555,17 +555,17 @@ public partial struct CallArgs
         var layout = signatureClass == NO_CLASS_HANDLE ? null : compiler.typGetObjLayout(signatureClass);
         if (GetCustomRegister(compiler, call.UnmanagedCallConv, argument.WellKnownArg, out var register))
         {
-            return register == REG_NA
+            return register == TargetRuntimeMetadata.NoRegister
                 ? new AbiPassingInformation(0)
                 : AbiPassingInformation.FromSegment(compiler, false,
-                    AbiPassingSegment.InRegister(register, 0, TARGET_POINTER_SIZE));
+                    AbiPassingSegment.InRegister(register, 0, Configuration.TARGET_POINTER_SIZE));
         }
 
         return classifier.Classify(compiler, argument.SignatureType, layout, argument.WellKnownArg);
     }
 
     public readonly int OutgoingArgsStackSize
-        => int.Max(Compiler.GetOutgoingArgByteSize(_argsStackSize), MIN_ARG_AREA_FOR_CALL);
+        => int.Max(Compiler.GetOutgoingArgByteSize(_argsStackSize), Configuration.MIN_ARG_AREA_FOR_CALL);
 
     /// <summary>Remove final arguments before ABI reclassification; argument morphing must not have finished.</summary>
     public void ResetFinalArgsAndAbiInfo()
@@ -597,30 +597,30 @@ public partial struct CallArgs
 
     public static bool IsNonStandard(Compiler compiler, GenTreeCall call, CallArg argument)
         => GetCustomRegister(compiler, call.UnmanagedCallConv, argument.WellKnownArg, out var register) &&
-           (register != REG_NA);
+           (register != TargetRuntimeMetadata.NoRegister);
 
     public static bool GetCustomRegister(
         Compiler compiler, CorInfoCallConvExtension callConv, WellKnownArg argument, out regNumber register)
     {
-        register = REG_NA;
+        register = TargetRuntimeMetadata.NoRegister;
         switch (argument)
         {
             case WellKnownArg.PInvokeFrame when Configuration.HAS_FIXED_REGISTER_SET &&
                 (Configuration.TARGET_X86 || Configuration.TARGET_ARM):
             {
-                register = REG_PINVOKE_FRAME;
+                register = TargetRuntimeMetadata.PInvokeFrameRegister;
                 return true;
             }
 
             case WellKnownArg.ShiftLow when Configuration.HAS_FIXED_REGISTER_SET && Configuration.TARGET_X86:
             {
-                register = REG_LNGARG_LO;
+                register = TargetRuntimeMetadata.LongArgumentLowRegister;
                 return true;
             }
 
             case WellKnownArg.ShiftHigh when Configuration.HAS_FIXED_REGISTER_SET && Configuration.TARGET_X86:
             {
-                register = REG_LNGARG_HI;
+                register = TargetRuntimeMetadata.LongArgumentHighRegister;
                 return true;
             }
 
@@ -644,17 +644,18 @@ public partial struct CallArgs
 
             case WellKnownArg.R2RIndirectionCell when Configuration.HAS_FIXED_REGISTER_SET:
             {
-                register = REG_R2R_INDIRECT_PARAM;
+                register = TargetRuntimeMetadata.R2RIndirectParameterRegister;
                 return true;
             }
 
             case WellKnownArg.ValidateIndirectCallTarget when Configuration.HAS_FIXED_REGISTER_SET:
             {
 #pragma warning disable CA1508 // Register assignments differ between targets.
-                if (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)
+                if (TargetRuntimeMetadata.ValidateIndirectCallAddressRegister !=
+                    TargetRuntimeMetadata.FirstIntegerArgumentRegister)
 #pragma warning restore CA1508
                 {
-                    register = REG_VALIDATE_INDIRECT_CALL_ADDR;
+                    register = TargetRuntimeMetadata.ValidateIndirectCallAddressRegister;
                     return true;
                 }
 
@@ -664,21 +665,21 @@ public partial struct CallArgs
             case WellKnownArg.DispatchIndirectCallTarget when Configuration.HAS_FIXED_REGISTER_SET &&
                 (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64):
             {
-                register = REG_DISPATCH_INDIRECT_CALL_ADDR;
+                register = TargetRuntimeMetadata.DispatchIndirectCallAddressRegister;
                 return true;
             }
 
             case WellKnownArg.SwiftError when Configuration.HAS_FIXED_REGISTER_SET && Configuration.SWIFT_SUPPORT:
             {
                 assert(callConv is CorInfoCallConvExtension.Swift);
-                register = REG_SWIFT_ERROR;
+                register = TargetRuntimeMetadata.SwiftErrorRegister;
                 return true;
             }
 
             case WellKnownArg.SwiftSelf when Configuration.HAS_FIXED_REGISTER_SET && Configuration.SWIFT_SUPPORT:
             {
                 assert(callConv is CorInfoCallConvExtension.Swift);
-                register = REG_SWIFT_SELF;
+                register = TargetRuntimeMetadata.SwiftSelfRegister;
                 return true;
             }
             case WellKnownArg.StackArrayLocal:

@@ -19,8 +19,6 @@ public partial struct CallArgs
         HasStackArgs = 1 << 6,
         ArgsComplete = 1 << 7,
         NeedsTemps = 1 << 8,
-#if UNIX_X86_ABI
         AlignmentDone = 1 << 9,
-#endif
     }
 }

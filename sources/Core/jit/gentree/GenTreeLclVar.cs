@@ -68,7 +68,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
 
     public void CopyOtherRegs(GenTreeLclVar tree)
     {
-        for (byte i = 1; i < MAX_MULTIREG_COUNT; i++)
+        for (byte i = 1; i < Configuration.MAX_MULTIREG_COUNT; i++)
         {
             var regNum = tree.GetRegNumByIdx(i);
             SetRegNumByIdx(regNum, i);
@@ -107,7 +107,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
 
     public regNumber GetRegNumByIdx(byte regIndex)
     {
-        assert(regIndex < MAX_MULTIREG_COUNT);
+        assert(regIndex < Configuration.MAX_MULTIREG_COUNT);
         return (regIndex == 0) ? RegNum : _otherReg[regIndex - 1];
     }
 
@@ -137,7 +137,7 @@ public sealed class GenTreeLclVar : GenTreeLclVarCommon
 
     public void SetRegNumByIdx(regNumber reg, byte regIndex)
     {
-        assert(regIndex < MAX_MULTIREG_COUNT);
+        assert(regIndex < Configuration.MAX_MULTIREG_COUNT);
 
         if (regIndex == 0)
         {

@@ -431,7 +431,7 @@ public sealed partial class GenTreeHWIntrinsic : GenTreeJitIntrinsic
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
                     {
-                        if (AuxiliaryType is TYP_U_IMPL)
+                        if ((AuxiliaryType == TYP_U_IMPL))
                         {
                             addr = GetOp(1);
                         }

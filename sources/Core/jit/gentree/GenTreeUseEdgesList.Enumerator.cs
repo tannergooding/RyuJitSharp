@@ -148,33 +148,34 @@ public partial struct GenTreeUseEdgesList
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
                     {
-                        var hwintrinsic = tree.AsHWIntrinsic();
-                        var operands = hwintrinsic.Operands;
-
-                        if (tree.IsReverseOp)
+                        if (Configuration.FEATURE_HW_INTRINSICS)
                         {
-                            assert(operands.Length == 2);
+                            var hwintrinsic = tree.AsHWIntrinsic();
+                            var operands = hwintrinsic.Operands;
 
-                            if (index < 0)
+                            if (tree.IsReverseOp)
                             {
-                                return SetCurrent(ref operands[1], 0);
+                                assert(operands.Length == 2);
+
+                                if (index < 0)
+                                {
+                                    return SetCurrent(ref operands[1], 0);
+                                }
+                                else if (index == 0)
+                                {
+                                    return SetCurrent(ref operands[0], 1);
+                                }
                             }
-                            else if (index == 0)
+                            else if ((index + 1) < operands.Length)
                             {
-                                return SetCurrent(ref operands[0], 1);
+                                return SetCurrent(ref operands[index + 1], index + 1);
                             }
-                        }
-                        else if ((index + 1) < operands.Length)
-                        {
-                            return SetCurrent(ref operands[index + 1], index + 1);
                         }
 
                         break;
                     }
-#endif
 
                     case GT_ARR_ELEM:
                     {

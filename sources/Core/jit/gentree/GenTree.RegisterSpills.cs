@@ -22,23 +22,25 @@ public partial class GenTree
             }
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (Oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && Oper.IsHWIntrinsic)
         {
             assert(Type is TYP_STRUCT);
-#if TARGET_ARM64
-            if (AsHWIntrinsic().SimdSize == 16)
+            if (Configuration.TARGET_ARM64)
             {
-                return TYP_SIMD16;
+                if (AsHWIntrinsic().SimdSize == 16)
+                {
+                    return TYP_SIMD16;
+                }
+
+                assert(AsHWIntrinsic().SimdSize == 8);
+                return TYP_SIMD8;
             }
 
-            assert(AsHWIntrinsic().SimdSize == 8);
-            return TYP_SIMD8;
-#elif TARGET_XARCH
-            return AsHWIntrinsic().GetOp(1).Type;
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                return AsHWIntrinsic().GetOp(1).Type;
+            }
         }
-#endif
         if (Oper.IsScalarLocal)
         {
             if (Type is TYP_LONG)
@@ -69,12 +71,10 @@ public partial class GenTree
             }
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (Oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && Oper.IsHWIntrinsic)
         {
             return AsHWIntrinsic().GetRegSpillFlagByIdx(checked((byte)regIndex));
         }
-#endif
         if (Oper.IsScalarLocal)
         {
             return AsLclVar().GetRegSpillFlagByIdx(checked((byte)regIndex));
@@ -100,13 +100,11 @@ public partial class GenTree
             }
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (Oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && Oper.IsHWIntrinsic)
         {
             AsHWIntrinsic().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));
             return;
         }
-#endif
         if (Oper.IsScalarLocal)
         {
             AsLclVar().SetRegSpillFlagByIdx(flags, checked((byte)regIndex));

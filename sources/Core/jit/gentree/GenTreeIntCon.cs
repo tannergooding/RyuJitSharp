@@ -30,21 +30,21 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     internal GenTreeIntCon(var_types type, nint value, FieldSeq? fields = null)
         : base(GT_CNS_INT, type)
     {
-        _value.Icon = value;
+        _value.Icon = unchecked((nint)Target.CastToSignedSize((long)value));
         _fieldSeq = fields;
     }
 
     internal GenTreeIntCon(var_types type, nint value, FieldSeq? fields, GenTree source)
         : base(GT_CNS_INT, type, source)
     {
-        _value.Icon = value;
+        _value.Icon = unchecked((nint)Target.CastToSignedSize((long)value));
         _fieldSeq = fields;
     }
 
     internal GenTreeIntCon(var_types type, nint value, FieldSeq? fields, GenTree source, NodeThreading threading)
         : base(GT_CNS_INT, type, source, threading)
     {
-        _value.Icon = value;
+        _value.Icon = unchecked((nint)Target.CastToSignedSize((long)value));
         _fieldSeq = fields;
     }
 
@@ -74,11 +74,7 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
         }
     }
 
-#if TARGET_64BIT
-    public new bool FitsInI32 => Globals.FitsInI32(_value.Icon);
-#else
-    public new bool FitsInI32 => true;
-#endif
+    public new bool FitsInI32 => !Configuration.TARGET_64BIT || Globals.FitsInI32(_value.Icon);
 
     public GenTreeFlags IconHandleFlag => (Flags & GTF_ICON_HDL_MASK);
 
@@ -86,12 +82,12 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
     {
         get
         {
-            return _value.Icon;
+            return unchecked((nint)Target.CastToSignedSize(_value.Icon));
         }
 
         set
         {
-            _value.Icon = value;
+            _value.Icon = unchecked((nint)Target.CastToSignedSize((long)value));
         }
     }
 
@@ -108,12 +104,10 @@ public sealed class GenTreeIntCon : GenTreeIntConCommon
             if (size >= 4)
             {
                 value |= value << 16;
-#if TARGET_64BIT
-                if (size is 8)
+                if (Configuration.TARGET_64BIT && (size is 8))
                 {
                     value |= value << 32;
                 }
-#endif
                 // Match the store type for evaluation types.
                 Type = type;
 

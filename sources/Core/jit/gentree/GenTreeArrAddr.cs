@@ -20,7 +20,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
         _elemType = elemType;
         _firstElemOffset = firstElemOffset;
 
-        assert(addr.Type is TYP_BYREF or TYP_I_IMPL);
+        assert((addr.Type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)));
         assert(((elemType is TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) || (elemClassHandle == NO_CLASS_HANDLE));
     }
 
@@ -138,7 +138,7 @@ public sealed class GenTreeArrAddr : GenTreeUnOp
             assert(inputMul == 1);
             treeIsArrayRef = true;
         }
-        else if ((tree.Oper is GT_LCL_VAR) && (tree.Type is TYP_BYREF or TYP_I_IMPL))
+        else if ((tree.Oper is GT_LCL_VAR) && ((tree.Type is var __targetAliasValue1 && (__targetAliasValue1 is TYP_BYREF || __targetAliasValue1 == TYP_I_IMPL))))
         {
             var handle = compiler.lvaGetDesc(tree.AsLclVar().LclNum).lvClassHnd;
             if (handle != NO_CLASS_HANDLE)

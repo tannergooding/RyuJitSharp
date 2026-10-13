@@ -21,13 +21,8 @@ public partial class Globals
     /// <summary>execution cost for an indirection</summary>
     public const int IND_COST_EX = 3;
 
-#if TARGET_XARCH
     // floating-point indirections are slightly more expensive
-    public const int FLT_IND_COST_EX = 5;
-#else
-    // TODO-CQ: Determine the appropriate cost of a floating-point indirection on other targets
-    public const int FLT_IND_COST_EX = IND_COST_EX;
-#endif
+    public static int FLT_IND_COST_EX => Configuration.TARGET_XARCH ? 5 : IND_COST_EX;
 
     public const int EMPTY_STRING_SCON = -1;
 
@@ -62,8 +57,8 @@ public partial class Globals
     /// <returns>Returns GTF_* flags associated with the register. Only GTF_SPILL and GTF_SPILLED are considered.</returns>
     public static GenTreeFlags GetMultiRegSpillFlagsByIdx(MultiRegSpillFlags flags, byte idx)
     {
-        assert((MAX_MULTIREG_COUNT * 2) <= (sizeof(byte) * BITS_PER_BYTE));
-        assert(idx < MAX_MULTIREG_COUNT);
+        assert((Configuration.MAX_MULTIREG_COUNT * 2) <= (sizeof(byte) * BITS_PER_BYTE));
+        assert(idx < Configuration.MAX_MULTIREG_COUNT);
 
         // It doesn't matter that we possibly leave other high bits here.
 
@@ -103,8 +98,8 @@ public partial class Globals
     /// <returns>The new value for the node's MultiRegSpillFlags.</returns>
     public static MultiRegSpillFlags SetMultiRegSpillFlagsByIdx(MultiRegSpillFlags oldFlags, GenTreeFlags flagsToSet, byte idx)
     {
-        assert((MAX_MULTIREG_COUNT * 2) <= (sizeof(byte) * BITS_PER_BYTE));
-        assert(idx < MAX_MULTIREG_COUNT);
+        assert((Configuration.MAX_MULTIREG_COUNT * 2) <= (sizeof(byte) * BITS_PER_BYTE));
+        assert(idx < Configuration.MAX_MULTIREG_COUNT);
 
         var bits = 0;
 

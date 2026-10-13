@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if UNIX_X86_ABI
 namespace RyuJitSharp;
 
 public partial struct CallArgs
@@ -19,7 +18,7 @@ public partial struct CallArgs
 
     public void ComputeStackAlignment(uint stackLevel)
     {
-        _padStkAlign = unchecked((int)((STACK_ALIGN - (stackLevel % STACK_ALIGN)) % STACK_ALIGN));
+        var stackAlignment = unchecked((uint)Configuration.STACK_ALIGN);
+        _padStkAlign = unchecked((int)((stackAlignment - (stackLevel % stackAlignment)) % stackAlignment));
     }
 }
-#endif

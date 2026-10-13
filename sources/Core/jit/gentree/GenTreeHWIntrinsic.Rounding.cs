@@ -13,7 +13,11 @@ public partial class GenTreeHWIntrinsic
     {
         get
         {
-#if TARGET_XARCH
+            if (!Configuration.TARGET_XARCH)
+            {
+                return false;
+            }
+
             var intrinsic = HWIntrinsicId;
             if ((HWIntrinsicInfo.lookupFlags(intrinsic) & HW_Flag_EmbRoundingCompatible) == 0)
             {
@@ -47,10 +51,6 @@ public partial class GenTreeHWIntrinsic
                 NI_AVX512_Scale or
                 NI_AVX512_ScaleScalar or
                 NI_AVX512_ConvertScalarToVector128Single or
-#if TARGET_AMD64
-                NI_AVX512_X64_ConvertScalarToVector128Double or
-                NI_AVX512_X64_ConvertScalarToVector128Single or
-#endif
                 NI_AVX10v1_AddScalar or
                 NI_AVX10v1_DivideScalar or
                 NI_AVX10v1_MultiplyScalar or
@@ -58,6 +58,9 @@ public partial class GenTreeHWIntrinsic
                 NI_AVX10v1_ConvertScalarToVector128Half or
                 NI_AVX10v1_ConvertScalarToVector128Single or
                 NI_AVX10v1_ConvertScalarToVector128Double => count == 3,
+
+                NI_AVX512_X64_ConvertScalarToVector128Double or
+                NI_AVX512_X64_ConvertScalarToVector128Single when Configuration.TARGET_AMD64 => count == 3,
 
                 NI_AVX512_ConvertToInt32 or
                 NI_AVX512_ConvertToUInt32 or
@@ -71,18 +74,14 @@ public partial class GenTreeHWIntrinsic
                 NI_AVX512_ConvertToVector512UInt32 or
                 NI_AVX512_ConvertToVector512UInt64 or
                 NI_AVX512_Sqrt or
-#if TARGET_AMD64
-                NI_AVX512_X64_ConvertToInt64 or
-                NI_AVX512_X64_ConvertToUInt64 or
-#endif
                 NI_AVX10v2_ConvertToSByteWithSaturationAndZeroExtendToInt32 or
                 NI_AVX10v2_ConvertToByteWithSaturationAndZeroExtendToInt32 => count == 2,
 
+                NI_AVX512_X64_ConvertToInt64 or
+                NI_AVX512_X64_ConvertToUInt64 when Configuration.TARGET_AMD64 => count == 2,
+
                 _ => throw new InvalidOperationException("Unexpected embedded-rounding intrinsic."),
             };
-#else
-            return false;
-#endif
         }
     }
 }

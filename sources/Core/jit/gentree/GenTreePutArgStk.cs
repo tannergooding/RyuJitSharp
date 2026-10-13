@@ -9,94 +9,98 @@ namespace RyuJitSharp;
 
 public sealed partial class GenTreePutArgStk : GenTreeUnOp
 {
-#if DEBUG || UNIX_X86_ABI
     private GenTreeCall? _call;
-#endif
 
     private int _argOffset;
     private int _stackByteSize;
 
-#if UNIX_X86_ABI
     private int _argPadding;
-#endif
 
-#if FEATURE_FASTTAILCALL || TARGET_WASM
     private bool _putInIncomingArgArea;
-#endif
 
     internal Kind _kind;
 
-#if TARGET_XARCH
     private byte _argLoadSizeDelta;
-#endif
 
     public GenTreePutArgStk(var_types type, GenTree op1, GenTreeCall? call, int argOffset, int stackByteSize, bool putInIncomingArgArea)
         : base(GT_PUTARG_STK, type, op1)
     {
-#if DEBUG || UNIX_X86_ABI
+#if DEBUG
         _call = call;
+#else
+        if (Configuration.UNIX_X86_ABI)
+        {
+            _call = call;
+        }
 #endif
 
         _argOffset = argOffset;
         _stackByteSize = stackByteSize;
 
-#if FEATURE_FASTTAILCALL || TARGET_WASM
-        _putInIncomingArgArea = putInIncomingArgArea;
-#else
-        assert(!putInIncomingArgArea);
-#endif
+        if (Configuration.FEATURE_FASTTAILCALL || Configuration.TARGET_WASM)
+        {
+            _putInIncomingArgArea = putInIncomingArgArea;
+        }
+        else
+        {
+            assert(!putInIncomingArgArea);
+        }
 
-#if TARGET_XARCH
         _argLoadSizeDelta = byte.MaxValue;
-#endif
     }
 
-#if TARGET_XARCH
     /// <summary>Get or set the optimal number of bytes to load for this argument.</summary>
     public int ArgLoadSize
     {
         get
         {
+            EnsureXarchArgLoadSize();
             assert(Debugger.IsAttached || (_argLoadSizeDelta is not byte.MaxValue));
             return _stackByteSize - _argLoadSizeDelta;
         }
 
         set
         {
+            EnsureXarchArgLoadSize();
             // On XARCH, it is profitable to use wider loads when our source is a local
             // variable. To not duplicate the logic between lowering, LSRA and codegen,
             // we do the legality check once, in lowering, and save the result here, as
             // a negative delta relative to the size of the argument with padding.
 
             var stackByteSize = _stackByteSize;
-            assert(roundUp(value, TARGET_POINTER_SIZE) == stackByteSize);
+            assert(roundUp(value, Configuration.TARGET_POINTER_SIZE) == stackByteSize);
             _argLoadSizeDelta = (byte)(stackByteSize - value);
         }
     }
-#endif
 
     public int ArgOffset => _argOffset;
 
-#if UNIX_X86_ABI
     public int ArgPadding
     {
         get
         {
+            EnsureUnixX86Abi();
             return _argPadding;
         }
 
         set
         {
+            EnsureUnixX86Abi();
             _argPadding = value;
         }
     }
-#endif
 
-#if DEBUG || UNIX_X86_ABI
-    public GenTreeCall? Call => _call;
+    public GenTreeCall? Call
+    {
+        get
+        {
+#if DEBUG
+            return _call;
 #else
-    public GenTreeCall? Call => null;
+            return Configuration.UNIX_X86_ABI ? _call : null;
 #endif
+        }
+    }
 
     public new GenTree Data => Op1;
 
@@ -110,12 +114,24 @@ public sealed partial class GenTreePutArgStk : GenTreeUnOp
     ///   <para>By default this is false and will be placed in out-going arg area.</para>
     ///   <para>Fast tail calls set this to true.</para>
     /// </remarks>
-#if FEATURE_FASTTAILCALL || TARGET_WASM
-    public bool PutInIncomingArgArea => _putInIncomingArgArea;
-#else
-    public bool PutInIncomingArgArea => false;
-#endif
+    public bool PutInIncomingArgArea =>
+        (Configuration.FEATURE_FASTTAILCALL || Configuration.TARGET_WASM) && _putInIncomingArgArea;
 
     public int StackByteSize => _stackByteSize;
 
+    private static void EnsureXarchArgLoadSize()
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("Argument load sizes are only supported on xarch targets.");
+        }
+    }
+
+    private static void EnsureUnixX86Abi()
+    {
+        if (!Configuration.UNIX_X86_ABI)
+        {
+            throw new FatalJitException("Argument padding is only supported on the Unix x86 ABI.");
+        }
+    }
 }

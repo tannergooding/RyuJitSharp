@@ -157,7 +157,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
 
         if (Configuration.TARGET_ARM64)
         {
-            assert(idx < MAX_MULTIREG_COUNT);
+            assert(idx < Configuration.MAX_MULTIREG_COUNT);
 
             if (NeedsConsecutiveRegisters)
             {
@@ -180,7 +180,7 @@ public abstract class GenTreeJitIntrinsic : GenTreeMultiOp
     {
         if (Configuration.TARGET_ARM64)
         {
-            assert(idx < MAX_MULTIREG_COUNT);
+            assert(idx < Configuration.MAX_MULTIREG_COUNT);
 
             if (idx == 0)
             {

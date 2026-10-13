@@ -31,24 +31,22 @@ public abstract class GenTreeIntConCommon : GenTree
         assert(oper.IsIntegralConst);
     }
 
-#if TARGET_64BIT
-    public bool FitsInI32 => Globals.FitsInI32(_value.Icon);
-#else
-    public bool FitsInI32 => Oper is GT_CNS_INT || Globals.FitsInI32(_value.Lcon);
-#endif
+    public bool FitsInI32 => Configuration.TARGET_64BIT
+        ? Globals.FitsInI32(_value.Icon)
+        : Oper is GT_CNS_INT || Globals.FitsInI32(_value.Lcon);
 
     public nint IconValue
     {
         get
         {
             assert(Debugger.IsAttached || Oper.IsCnsIntOrI);
-            return _value.Icon;
+            return unchecked((nint)Target.CastToSignedSize(_value.Icon));
         }
 
         set
         {
             assert(Oper.IsCnsIntOrI);
-            _value.Icon = value;
+            _value.Icon = unchecked((nint)Target.CastToSignedSize((long)value));
         }
     }
 
@@ -56,28 +54,29 @@ public abstract class GenTreeIntConCommon : GenTree
     {
         get
         {
-#if TARGET_32BIT
-            if (Oper is GT_CNS_LNG)
+            if (Configuration.TARGET_32BIT && Oper is GT_CNS_LNG)
             {
                 return _value.Lcon;
             }
-#endif
 
             assert(Debugger.IsAttached || Oper.IsCnsIntOrI);
-            return _value.Icon;
+            return Target.CastToSignedSize(_value.Icon);
         }
 
         set
         {
-#if TARGET_32BIT
-            if (Oper is GT_CNS_LNG)
+            if (Configuration.TARGET_32BIT && Oper is GT_CNS_LNG)
             {
                 _value.Lcon = value;
                 return;
             }
 
-            assert((nint)(value) == value);
-#endif
+            if (Configuration.TARGET_32BIT)
+            {
+                assert(Target.CastToSignedSize(value) == value);
+                _value.Icon = unchecked((nint)Target.CastToSignedSize(value));
+                return;
+            }
 
             assert(Oper.IsCnsIntOrI);
             _value.Icon = (nint)(value);
@@ -97,24 +96,28 @@ public abstract class GenTreeIntConCommon : GenTree
     {
         get
         {
-#if TARGET_32BIT
-            assert(Debugger.IsAttached || Oper.IsLong);
-            return _value.Lcon;
-#else
+            if (Configuration.TARGET_32BIT)
+            {
+                assert(Debugger.IsAttached || Oper.IsLong);
+                return _value.Lcon;
+            }
+
             assert(Debugger.IsAttached || Oper.IsCnsIntOrI);
-            return _value.Icon;
-#endif
+            return Target.CastToSignedSize(_value.Icon);
         }
 
         set
         {
-#if TARGET_32BIT
-            assert(Oper.IsLong);
-            _value.Lcon = value;
-#else
-            assert(Oper.IsCnsIntOrI);
-            _value.Icon = (nint)(value);
-#endif
+            if (Configuration.TARGET_32BIT)
+            {
+                assert(Oper.IsLong);
+                _value.Lcon = value;
+            }
+            else
+            {
+                assert(Oper.IsCnsIntOrI);
+                _value.Icon = (nint)(value);
+            }
         }
     }
 
@@ -143,18 +146,24 @@ public abstract class GenTreeIntConCommon : GenTree
     /// <returns>True if this immediate value requires us to record a relocation for it; false otherwise.</returns>
     public bool ImmedValNeedsReloc(Compiler comp) => comp.opts.compReloc && IsIconHandle();
 
-#if TARGET_AMD64 || TARGET_RISCV64 || TARGET_X86
     public unsafe bool FitsInAddrBase(Compiler comp)
     {
+        if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_X86)
+        {
+            throw new FatalJitException("Address-base fit checks are unsupported on this target.");
+        }
+
 #if DEBUG
         if (!comp.opts.compEnablePCRelAddr)
         {
             return false;
         }
 #endif
-#if TARGET_X86
-        return Oper.IsCnsIntOrI;
-#else
+        if (Configuration.TARGET_X86)
+        {
+            return Oper.IsCnsIntOrI;
+        }
+
         if (comp.opts.compReloc)
         {
             return IsIconHandle() && (comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32);
@@ -162,10 +171,7 @@ public abstract class GenTreeIntConCommon : GenTree
 
         // Query the VM first: RIP-relative encoding is smaller than a zero-relative address.
         return (comp.eeGetRelocTypeHint(unchecked((void*)IconValue)) == CorInfoReloc.RELATIVE32) || FitsInI32;
-#endif
     }
-
-#endif
 
     public unsafe bool AddrNeedsReloc(Compiler comp)
     {
@@ -184,15 +190,15 @@ public abstract class GenTreeIntConCommon : GenTree
 
     public new bool IsIntegralConst(nint value)
     {
-#if TARGET_32BIT
-        if (Oper.IsCnsIntOrI)
+        if (Configuration.TARGET_32BIT)
         {
-            return _value.Icon == value;
+            if (Oper.IsCnsIntOrI)
+            {
+                return Target.CastToSignedSize(_value.Icon) == Target.CastToSignedSize((long)value);
+            }
+            return _value.Lcon == Target.CastToSignedSize((long)value);
         }
-        return _value.Lcon == value;
-#else
         return _value.Icon == value;
-#endif
     }
 
     protected struct Value

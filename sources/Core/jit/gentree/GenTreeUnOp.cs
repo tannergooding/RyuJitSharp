@@ -61,11 +61,14 @@ public class GenTreeUnOp : GenTree
 
         set
         {
-#if TARGET_64BIT
-            assert(Oper.IsCompare || Oper.IsMul || (Oper is GT_ADD or GT_SUB or GT_CAST));
-#else
-            assert(Oper.IsCompare || Oper.IsMul || (Oper is GT_ADD or GT_SUB or GT_CAST or GT_ADD_HI or GT_SUB_HI));
-#endif
+            if (Configuration.TARGET_64BIT)
+            {
+                assert(Oper.IsCompare || Oper.IsMul || (Oper is GT_ADD or GT_SUB or GT_CAST));
+            }
+            else
+            {
+                assert(Oper.IsCompare || Oper.IsMul || (Oper is GT_ADD or GT_SUB or GT_CAST or GT_ADD_HI or GT_SUB_HI));
+            }
 
             if (value)
             {

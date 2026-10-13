@@ -9,10 +9,13 @@ namespace RyuJitSharp;
 
 public partial class GenTree
 {
-#if FEATURE_HW_INTRINSICS
     public bool IsEvexCompatibleHWIntrinsic(Compiler compiler)
     {
-#if TARGET_XARCH
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            return false;
+        }
+
         if (Oper.IsHWIntrinsic)
         {
             var intrinsic = AsHWIntrinsic().HWIntrinsicId;
@@ -20,34 +23,35 @@ public partial class GenTree
                 ? compiler.compOpportunisticallyDependsOn(InstructionSet_AES_V512)
                 : HWIntrinsicInfo.HasEvexSemantics(intrinsic);
         }
-#endif
         return false;
     }
 
     public bool IsEmbeddedMaskingCompatible()
     {
-        if (!Oper.IsHWIntrinsic)
+        if (!Configuration.FEATURE_HW_INTRINSICS ||
+            (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64) ||
+            !Oper.IsHWIntrinsic)
         {
             return false;
         }
 
         var node = AsHWIntrinsic();
         var intrinsic = node.HWIntrinsicId;
-#if TARGET_XARCH
-        var baseType = node.SimdBaseType;
-        if ((baseType is TYP_UNKNOWN) ||
-            !HWIntrinsicInfo.genIsTableDrivenHWIntrinsic(intrinsic, HWIntrinsicInfo.lookupCategory(intrinsic)) ||
-            node.IsMemoryLoadOrStore)
+        if (Configuration.TARGET_XARCH)
         {
-            return false;
+            var baseType = node.SimdBaseType;
+            if ((baseType is TYP_UNKNOWN) ||
+                !HWIntrinsicInfo.genIsTableDrivenHWIntrinsic(intrinsic, HWIntrinsicInfo.lookupCategory(intrinsic)) ||
+                node.IsMemoryLoadOrStore)
+            {
+                return false;
+            }
+
+            return CodeGen.instIsEmbeddedMaskingCompatible(HWIntrinsicInfo.lookupIns(intrinsic, baseType, null));
         }
-        return CodeGen.instIsEmbeddedMaskingCompatible(HWIntrinsicInfo.lookupIns(intrinsic, baseType, null));
-#elif TARGET_ARM64
+
         var flags = HWIntrinsicInfo.lookupFlags(intrinsic);
         return (flags & (HW_Flag_EmbeddedMaskedOperation | HW_Flag_OptionalEmbeddedMaskedOperation)) != 0;
-#else
-        return false;
-#endif
     }
 
     public bool IsRmwHWIntrinsic(Compiler compiler)
@@ -56,92 +60,98 @@ public partial class GenTree
         assert(compiler is not null);
         var node = AsHWIntrinsic();
         var intrinsic = node.HWIntrinsicId;
-#if TARGET_XARCH
-        if (!compiler.canUseVexEncoding())
+        if (!Configuration.FEATURE_HW_INTRINSICS ||
+            (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64))
         {
-            return HWIntrinsicInfo.HasRMWSemantics(intrinsic);
+            return false;
         }
-        if (HWIntrinsicInfo.IsRmwIntrinsic(intrinsic))
+
+        if (Configuration.TARGET_XARCH)
         {
-            return true;
-        }
-        switch (intrinsic)
-        {
-            case NI_AVX512_BlendVariableMask:
+            if (!compiler.canUseVexEncoding())
             {
-                if ((node.GetOp(2).Flags & GTF_HW_EM_OP) == 0)
-                {
-                    return false;
-                }
-                goto case NI_AVX512_CompressMask;
+                return HWIntrinsicInfo.HasRMWSemantics(intrinsic);
             }
 
-            case NI_AVX512_CompressMask:
-            case NI_AVX512_ExpandMask:
+            if (HWIntrinsicInfo.IsRmwIntrinsic(intrinsic))
             {
-                var first = node.GetOp(1);
-                if (first.IsContained)
-                {
-                    assert(first.IsVectorZero);
-                    return false;
-                }
                 return true;
             }
 
-            case NI_AVX512_Fixup:
-            case NI_AVX512_FixupScalar:
+            switch (intrinsic)
             {
-                var table = node.GetOp(3);
-                if ((node.GetOp(4).Oper is not GT_CNS_INT and not GT_CNS_LNG) || !table.Oper.IsCnsVec)
+                case NI_AVX512_BlendVariableMask:
                 {
+                    if ((node.GetOp(2).Flags & GTF_HW_EM_OP) == 0)
+                    {
+                        return false;
+                    }
+                    goto case NI_AVX512_CompressMask;
+                }
+
+                case NI_AVX512_CompressMask:
+                case NI_AVX512_ExpandMask:
+                {
+                    var first = node.GetOp(1);
+                    if (first.IsContained)
+                    {
+                        assert(first.IsVectorZero);
+                        return false;
+                    }
                     return true;
                 }
 
-                var count = intrinsic is NI_AVX512_FixupScalar ? 1 : node.SimdSize / sizeof(uint);
-                var stride = node.SimdBaseType is TYP_FLOAT ? 1 : 2;
-                for (var index = 0; index < count; index += stride)
+                case NI_AVX512_Fixup:
+                case NI_AVX512_FixupScalar:
                 {
-                    var value = table.AsVecCon().SimdVal.u32[index];
-                    if (((value & 0x0000000F) == 0) || ((value & 0x000000F0) == 0) ||
-                        ((value & 0x00000F00) == 0) || ((value & 0x0000F000) == 0) ||
-                        ((value & 0x000F0000) == 0) || ((value & 0x00F00000) == 0) ||
-                        ((value & 0x0F000000) == 0) || ((value & 0xF0000000) == 0))
+                    var table = node.GetOp(3);
+                    if ((node.GetOp(4).Oper is not GT_CNS_INT and not GT_CNS_LNG) || !table.Oper.IsCnsVec)
                     {
                         return true;
                     }
-                }
-                return false;
-            }
 
-            case NI_AVX512_TernaryLogic:
-            {
-                var immediate = node.GetOp(4);
-                if (immediate.Oper is not GT_CNS_INT and not GT_CNS_LNG)
+                    var count = intrinsic is NI_AVX512_FixupScalar ? 1 : node.SimdSize / sizeof(uint);
+                    var stride = node.SimdBaseType is TYP_FLOAT ? 1 : 2;
+                    for (var index = 0; index < count; index += stride)
+                    {
+                        var value = table.AsVecCon().SimdVal.u32[index];
+                        if (((value & 0x0000000F) == 0) || ((value & 0x000000F0) == 0) ||
+                            ((value & 0x00000F00) == 0) || ((value & 0x0000F000) == 0) ||
+                            ((value & 0x000F0000) == 0) || ((value & 0x00F00000) == 0) ||
+                            ((value & 0x0F000000) == 0) || ((value & 0xF0000000) == 0))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                case NI_AVX512_TernaryLogic:
                 {
-                    return true;
+                    var immediate = node.GetOp(4);
+                    if (immediate.Oper is not GT_CNS_INT and not GT_CNS_LNG)
+                    {
+                        return true;
+                    }
+
+                    var control = unchecked((byte)immediate.AsIntConCommon().IntegralValue);
+                    // A, B, and C select truth-table bits 4, 2, and 1. Each input is used
+                    // precisely when flipping its bit changes at least one output.
+                    return (((control ^ (control >> 4)) & 0x0F) != 0) &&
+                        (((control ^ (control >> 2)) & 0x33) != 0) &&
+                        (((control ^ (control >> 1)) & 0x55) != 0);
                 }
 
-                var control = unchecked((byte)immediate.AsIntConCommon().IntegralValue);
-                // A, B, and C select truth-table bits 4, 2, and 1. Each input is used
-                // precisely when flipping its bit changes at least one output.
-                return (((control ^ (control >> 4)) & 0x0F) != 0) &&
-                    (((control ^ (control >> 2)) & 0x33) != 0) &&
-                    (((control ^ (control >> 1)) & 0x55) != 0);
-            }
-
-            default:
-            {
-                return false;
+                default:
+                {
+                    return false;
+                }
             }
         }
-#elif TARGET_ARM64
+
         return HWIntrinsicInfo.HasRMWSemantics(intrinsic);
-#else
-        return false;
-#endif
     }
 
-#if TARGET_XARCH
     public bool IsEmbeddedMaskingCompatible(Compiler compiler, int targetMaskSize, ref var_types targetBaseType)
     {
         return IsEmbeddedMaskingCompatible(compiler, targetMaskSize, ref targetBaseType, out _);
@@ -150,6 +160,11 @@ public partial class GenTree
     public bool IsEmbeddedMaskingCompatible(Compiler compiler, int targetMaskSize, ref var_types targetBaseType,
         out int broadcastOperandIndex)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("Xarch embedded-masking compatibility is unsupported on this target.");
+        }
+
         broadcastOperandIndex = 0;
         if (!IsEmbeddedMaskingCompatible() || !compiler.opts.Tier0OptimizationEnabled ||
             (JitConfig.EnableEmbeddedMasking == 0) || NodeOrContainedOperandsMayThrow(compiler) ||
@@ -288,6 +303,4 @@ public partial class GenTree
         assert(maskSize != 0);
         return maskSize == targetMaskSize;
     }
-#endif
-#endif
 }
