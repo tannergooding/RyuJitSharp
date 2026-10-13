@@ -6,9 +6,8 @@ the same inputs and configuration, except for explicitly approved differences.
 Internal C# representation may differ without changing those results.
 
 Start with [state.json](state.json) for revisions and the current checkpoint.
-Read the [milestone journal](MILESTONES.md) to catch up on completed capabilities,
-project history and remaining work without replaying the conversation.
-The [continuation plan](PLAN.md) records the porting sequence; the
+Read [milestones](MILESTONES.md) for achieved capabilities and remaining limits.
+The [continuation plan](PLAN.md) records current priorities and parity gates; the
 [deviation register](DEVIATIONS.md) distinguishes accepted changes from existing
 limitations. Confirmed native defects are listed in
 [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md). The source-port backlog has been
@@ -17,10 +16,9 @@ limitations. The remaining dynamic TLS input-ownership evidence boundary is
 kept in [state.json](state.json); do not claim parity or change compiler
 constants until its EE-assigned slot inputs are understood.
 Keep completion evidence with tests, artifacts, and commits, and record accepted
-observable differences only in the deviation register. The port is implemented
-in this repository; the exact upstream source revision used for reference is
-recorded in [state.json](state.json). Do not recreate a native-definition
-inventory.
+observable differences only in the deviation register. The managed implementation
+and tests live in this repository; its upstream source reference is pinned in
+[state.json](state.json). Do not recreate a native-definition inventory.
 
 An implemented managed body, a passing build, or an explicit unsupported-target
 path does not by itself establish runtime or generated-code parity. Compare
@@ -35,11 +33,11 @@ use `stash pop` as the only backup or interpret `stash@{0}` as a stable identity
 
 ## Unit of work
 
-Resolve backlog items in dependency-coherent batches. Use the pinned native
+Resolve tracked gaps in dependency-coherent batches. Use the pinned native
 reference and managed tests to establish the relevant behavior, and validate at
 the narrowest meaningful integration boundary. Before a substantial batch,
 record its scope, completion condition, validation and deferred work in
-`checkpoint.activeBatch`. After validation, update the backlog, deviations,
+`checkpoint.activeBatch`. After validation, update the deviations,
 checkpoint and evidence as applicable; commit locally and continue.
 Push or open a PR only with explicit authorization; a local commit is not
 publication approval. Do not rewrite published history or update other branches
@@ -190,7 +188,7 @@ Keep implementation and evidence separate:
 | Implemented | Managed behavior is present; parity still requires relevant validation. |
 
 Retain validation evidence in the active checkpoint only while it informs an
-open decision or uncommitted unit. Git history, the milestone journal and
+open decision or uncommitted unit. Git history, the milestone summary and
 reproducible artifact paths preserve completed work; do not duplicate a
 function-by-function acceptance ledger in `state.json`. No percentage should be
 inferred from removed lines, file counts, or TODO counts.
@@ -219,7 +217,8 @@ the archived bytes before removing loose originals. Discard obsolete rebuildable
 binaries rather than archiving every build. Historical build paths in older
 records are not guaranteed to remain live; preserve their source/revision and
 build instructions, while keeping current checkpoint inputs directly available.
-The milestone journal remains the capability history, not an artifact inventory.
+The milestone summary records capabilities and open limits, not an artifact
+inventory.
 
 For upstream synchronization, compare immutable old and new oracle revisions,
 then apply relevant deltas to the managed implementation. Review changed tables,
@@ -247,17 +246,17 @@ Unavoidable address/timing/path differences require a narrowly documented rule
 and approval before any post-processing allowance is added. Allocation statistics
 are the already accepted exception in [DEVIATIONS.md](DEVIATIONS.md).
 
-Until codegen exists, compare named phase boundaries and their IR/dumps.
-Explicitly report the phase reached and compilation result. Phase equality is
-not full-pipeline equality. Once codegen is available, compare disassembly and
-machine code with relocation-aware tooling, plus GC/EH/unwind metadata, and
-execute focused semantic tests. Text equality alone is insufficient.
+Compare named phase boundaries and their IR/dumps when diagnosing a pipeline
+gap. Explicitly report the phase reached and compilation result; phase equality
+is not full-pipeline equality. For implemented backends, compare disassembly
+and machine code with relocation-aware tooling, plus GC/EH/unwind metadata,
+and execute focused semantic tests. Text equality alone is insufficient.
 
 Reuse runtime's SuperPMI tooling where feasible; see the pinned oracle's
 `src/coreclr/tools/superpmi/readme.md` and `src/coreclr/scripts/superpmi.md`.
-SuperPMI's native replay/result comparison may need a separate phase-dump path
-while this port deliberately returns `CORJIT_SKIPPED`. Treat that as an explicit
-harness capability, not a successful replay.
+Unsupported configurations that return `CORJIT_SKIPPED` may need a separate
+phase-dump path rather than native replay/result comparison. Treat that as an
+explicit harness limitation, not a successful replay.
 
 A parity report must record both revisions and binary hashes, toolchain/flavors,
 host/target/ISA, relevant environment and commands, corpus identity, expected and
@@ -340,10 +339,11 @@ different heuristic ordering.
 
 Use `-MinOpts` on both captures to exercise required, unoptimized compilation;
 the default method set then includes `InlineCandidate`, which is no longer
-inlined. For optimized captures that exclude the still-unported object stack
-allocation analysis, use `-DisableObjectStackAllocation` on both runs. These
-switches are recorded in the manifest and do not themselves enable managed
-execution.
+inlined. To isolate optimized captures from object stack allocation, use
+`-DisableObjectStackAllocation` on both runs. Object stack allocation is
+implemented; disabling it narrows the evidence scope rather than proving
+that phase's behavior. These switches are recorded in the manifest and do
+not themselves enable managed execution.
 
 Use `-OptimizationRepeatCount 2` on native and managed optimized captures to
 exercise two optimization iterations, including annotation reset and CFG
@@ -399,12 +399,13 @@ using `--config`, `--native-root`, `--native-repeat-root`, `--managed-root`,
 contains one directory per cohort produced by `Invoke-PortingCorpus.ps1`.
 It checks exact methods, inputs, positive helper work, complete named phases
 through the next phase start, and raw-byte coverage against complete method size.
-Only CRLF-to-LF normalization is applied. Missing cold bytes, fallback, invalid
-captures, differences, and native/native repeat variation produce a failing exit
-and a JSON report; no address or relocation masking is performed. Consequently,
-address-bearing methods can fail even the native repeat control. Referenced
-data and relocation-target contents are outside this comparison's coverage.
-The focused tooling tests run with
+It normalizes CRLF to LF in phase text and runtime stdout, so equality does
+not establish raw dump or newline fidelity. Missing cold bytes, fallback,
+invalid captures, differences, and native/native repeat variation produce a
+failing exit and a JSON report; no address or relocation masking is performed.
+Consequently, address-bearing methods can fail even the native repeat control.
+Referenced data and relocation-target contents are outside this comparison's
+coverage. The focused tooling tests run with
 `python -B .\tests\PortingTools\test_helper_capture_comparison.py`.
 
 Use `-GcStress` to request collections at every allowable JIT-compiled
@@ -421,6 +422,11 @@ or missing phase boundaries are errors;
 ordinary differences are diagnostic report entries, not a failing process exit.
 This deliberately narrow prefix comparison does not include the final
 post-import phase dump and must not be reported as full phase or pipeline parity.
+`-Phase FullDump` compares the captured per-method text without independently
+validating compilation completion. Verify successful compilation and complete
+output before interpreting equality; identical truncated captures are not
+parity evidence. Use a fresh `-OutputPath` to preserve previous reports. Dump
+comparison alone does not verify binary provenance or JIT selection.
 
 ## Build and generated code
 
@@ -439,13 +445,14 @@ dotnet build .\RyuJitSharp.slnx --no-restore --configuration Release --verbosity
 
 Restore when assets are absent or dependencies changed. Existing wrappers in
 `scripts\build.ps1` also support restore/build/test and binary logging. Use the
-smallest relevant test selection once tests exist, and verify a nonzero count.
+smallest relevant test selection and verify the expected executed count.
 Focused output tests do not establish compiler coverage. NativeAOT publish and
 native loading are separate gates from these managed builds.
 
-The core test project obtains compilation symbols from the referenced core
-project before compiling. Target- and feature-guarded tests therefore use the
+Both test projects obtain compilation symbols from the referenced core project
+before compiling. Target- and feature-guarded tests therefore use the
 implementation's actual configuration, rather than a separate symbol list.
+The target project remains an explicit project selection, outside the solution.
 
 `AnalysisModeStyle=Default` preserves the prior style-rule selection: .NET 11
 otherwise also applies `AnalysisLevel=latest-all` to style diagnostics. Explicit
@@ -464,11 +471,48 @@ on that process's `PATH`.
 to its working directory. It verifies that the working directory contains
 `GenerateTables.csproj` and `Inputs` before deleting an existing `Outputs`
 subtree, preventing an invocation from an unrelated directory from deleting its
-`Outputs`. Run it from `sources\GenerateTables`, check input provenance, review
-generated output, and update the corresponding files under `sources\Core`;
-generating output does not integrate it automatically. The CLR API timing
-generator produces both the managed forwarding methods and their
-`UnmanagedCallersOnly` `ICorJitInfo` vtable proxy.
+`Outputs`. The CLR API proxy generator also reads the managed `ICorJitInfo`,
+`ICorDynamicInfo` and `ICorStaticInfo` declarations from sibling `Core\inc`
+directories. Build the generator normally, then execute it from a fresh staging
+tree under `artifacts` that preserves this input layout. This keeps generated
+intermediates outside the source tree:
+
+```powershell
+$repoRoot = (Get-Location).Path
+$stagingRoot = Join-Path $repoRoot "artifacts\table-generation\baseline"
+if (Test-Path -LiteralPath $stagingRoot) {
+    throw "Choose a fresh table-generation staging directory."
+}
+dotnet build .\sources\GenerateTables\GenerateTables.csproj -c Debug
+if ($LASTEXITCODE -ne 0) {
+    throw "GenerateTables build failed."
+}
+$generator = Join-Path $repoRoot "artifacts\bin\sources\GenerateTables\Debug\net11.0\GenerateTables.dll"
+$staging = Join-Path $stagingRoot "GenerateTables"
+$corjit = Join-Path $stagingRoot "Core\inc\corjit"
+$corinfo = Join-Path $stagingRoot "Core\inc\corinfo"
+New-Item -ItemType Directory -Path $staging, $corjit, $corinfo | Out-Null
+Copy-Item -LiteralPath .\sources\GenerateTables\GenerateTables.csproj -Destination $staging
+Copy-Item -LiteralPath .\sources\GenerateTables\Inputs -Destination $staging -Recurse
+Copy-Item -LiteralPath .\sources\Core\inc\corjit\ICorJitInfo.cs -Destination $corjit
+Copy-Item -LiteralPath .\sources\Core\inc\corinfo\ICorDynamicInfo.cs -Destination $corinfo
+Copy-Item -LiteralPath .\sources\Core\inc\corinfo\ICorStaticInfo.cs -Destination $corinfo
+Push-Location $staging
+try {
+    dotnet $generator
+    if ($LASTEXITCODE -ne 0) {
+        throw "Table generation failed."
+    }
+}
+finally {
+    Pop-Location
+}
+```
+
+Check input provenance, review staged `Outputs`, and update only the intended
+files under `sources\Core`; generation does not integrate them automatically.
+The CLR API timing generator produces both the managed forwarding methods and
+their `UnmanagedCallersOnly` `ICorJitInfo` vtable proxy.
 Establish clean-baseline reproducibility before regenerating against new inputs.
 `NamedIntrinsic` uses the pinned `namedintrinsiclist.h` enum body as well as the
 hardware tables; validate the complete ordered enum, not just HWI row counts.

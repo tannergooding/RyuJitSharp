@@ -1,4 +1,4 @@
-# Contributing to TerraFX
+# Contributing to RyuJitSharp
 
 The following is a set of guidelines for contributing to RyuJitSharp.
 
@@ -18,7 +18,7 @@ wiki, etc) must abide by the .NET Foundation Code of Conduct:
 https://dotnetfoundation.org/about/code-of-conduct.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported reported by contacting the project team.
+reported by contacting the project team.
 
 ### License
 
@@ -33,6 +33,9 @@ Original source is Copyright (c) .NET Foundation and Contributors. Licensed unde
 Most of the basics of the project, such as what it is about, and its goals are
 covered in our [README](README.md).
 
+Compiler changes must follow the [porting contract](porting/README.md).
+Use its build, target-test, and comparison commands for the relevant scope.
+
 ### Pull Requests
 
 All pull requests should follow our
@@ -45,8 +48,8 @@ before being accepted.
 
 ### Issues
 
-All issues should follow our [ISSUE_TEMPLATE](ISSUE_TEMPLATE.md). It is
-additionaly recommended to prefix your issue with an appriopriate "tag" such as
+All issues should follow the appropriate [issue template](../.github/ISSUE_TEMPLATE).
+It is additionally recommended to prefix your issue with an appropriate tag such as
 `[QUESTION]`, `[BUG]`, `[REGRESSION]`, `[IDEA]`, or `[PROPOSAL]`.
 
 ### Questions

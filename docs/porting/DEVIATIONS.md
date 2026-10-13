@@ -28,9 +28,8 @@ root object and field initializers allocated before that body and non-GC native
 allocations. It is not native arena capacity or page usage. Collection is enabled
 by `JitReportMetrics` or timing CSV collection. The CSV's `Total Bytes Allocated`
 column reads the same root-thread delta at its own reporting point; native uses
-arena allocation rather than arena usage for that column. B352's twelve checked
-compilations compare all 71 neighboring metric lines exactly while recording
-both allocation values.
+arena allocation rather than arena usage for that column. The exclusion applies
+only to allocation values; neighboring semantic metrics still must compare.
 
 When optional `MEASURE_MEM_ALLOC` reporting is enabled, the managed port aggregates
 that same per-root-compilation GC-allocation delta and records its rounded-up KB
@@ -44,9 +43,7 @@ minimum capacity, doubling growth, stack order and by-reference element access,
 but uses a managed `T[]` instead of inline/`CompAllocator` storage. Its `Emplace`
 factory runs after capacity growth, and `Data()` exposes the active elements as a
 `Span<T>`. These are internal representation/API adaptations covered by D001;
-they do not accept generated-code or diagnostic differences. The new helper has
-no production C# callers yet, and remaining native callsites are still
-untranslated. Focused `ArrayStackTests` pass 3/3 in Debug and Release.
+they do not accept generated-code or diagnostic differences.
 
 Optional `DISPLAY_SIZES` totals measure emitted IL, code/data and GC payloads,
 not managed compiler allocations. They retain native arithmetic and diagnostic
@@ -55,13 +52,13 @@ formatting and are not covered by the allocation-statistics exclusion.
 Expression cloning constructs simple nodes and hardware intrinsics before their
 operand clones, preserving native logical IDs despite managed allocation.
 Array-element, compare-exchange and select nodes retain their distinct native
-construction order. This closes B307's finally and runtime-lookup tree differences;
-it does not accept ID normalization or establish whole-dump equality.
+construction order. This does not accept ID normalization or establish
+whole-dump equality.
 
 Integer clones preserve native types and compile-time handles. Their diagnostic
 target cookie follows the native cloning mode: late-disassembly handle clones
 omit it, and cheap `gtClone` omits it for ordinary constants too. Matching this
-metadata policy closes B320 without changing the instruction-comment formatter.
+metadata policy is not an instruction-comment formatting exception.
 
 Custom layouts with no GC pointers do not allocate unused per-slot GC arrays,
 including layouts whose unsigned byte sizes exceed `Int32.MaxValue`. Native
@@ -71,18 +68,14 @@ same zero-GC-count early return without materializing that storage.
 Each inline attempt constructs a fresh managed `Compiler` and updates the
 inliner's `InlineeCompiler` reference. Native reuses storage but invokes its
 constructor again with placement-new; retaining the managed instance instead
-retained the previous method's metadata and SIMD state (B132). Allocation reuse
-is not part of the semantic contract. The native inlinee's apparently
-uninitialized profile-diagnostic flag is tracked in B322; managed fields are
-not poisoned to reproduce it. The resulting checked diagnostic difference is
-documented in D015. A checked optimized `GenericCatch` capture confirms that
-when profile incorporation finds no profile data and synthesis does not run,
-native prints the deferred-check skip while managed reports that no blocks
-were profiled.
+retained the previous method's metadata and SIMD state. Allocation reuse is not
+part of the semantic contract. The native inlinee's uninitialized
+profile-diagnostic flag is tracked in B322; managed fields are not poisoned to
+reproduce it. The resulting checked diagnostic difference is documented in D015.
 
-**Remaining action:** audit identity/lifetime assumptions as functions are
-ported. If a comparator excludes allocation statistics, identify the exact
-fields/lines and test that neighboring semantic metrics still compare.
+**Remaining action:** preserve identity/lifetime assumptions when changing
+affected functions. If a comparator excludes allocation statistics, identify
+the exact fields/lines and test that neighboring semantic metrics still compare.
 
 ### D002: Idiomatic C# representation
 
@@ -97,7 +90,7 @@ Larger algorithmic or architectural changes require separate approval.
 **How to read this section:** Each topic names the managed representation and
 the native contract it must preserve. Explicitly unported behavior is a scope
 limit, not an accepted difference; its actionable follow-up belongs in the
-backlog. Test counts and parity observations are scoped evidence, not blanket
+checkpoint. Test counts and parity observations are scoped evidence, not blanket
 claims about the whole compiler.
 
 **Topics:** [Storage and diagnostics](#core-storage-ownership-and-diagnostics),
@@ -2299,9 +2292,6 @@ serialized control shows one. A separate deferred-assembly probe JIT-compiles it
 resolver while importing the outer method on the same thread; native, locked and
 unlocked compilers all preserve the nested trace and result 120.
 
-The tested unlocked NativeAOT source is `45c49ea` plus only the entry-lock removal,
-verified against 1,784 compiler/build inputs; its entry file matches the integrated
-source byte-for-byte. Full-analysis controls pass 182 Debug / 47 Release.
 `artifacts/compilation-concurrency/compiler-evidence.json` records the inputs,
 capture commands and limits. These are execution and overlap results, not
 whole-dump, machine-byte or exhaustive runtime parity.
@@ -2333,7 +2323,8 @@ managed dump. The Unix branch preserves LF; execution on Unix is not yet verifie
 the writer cannot restore newlines omitted at individual ported call sites.
 Using managed output is not itself a defect. Broader culture/encoding fidelity
 still needs comparison. The later numeric-IL investigation found and corrected
-fixed-point and non-finite formatting differences; see B006 in the backlog.
+fixed-point and non-finite formatting differences; neither is an accepted
+comparison exclusion.
 
 The earlier object-identity concern was too broad: the two `PendingDsc` hash-code
 diagnostics in `Compiler.imp.cs` are both behind `if (false && verbose)`, matching

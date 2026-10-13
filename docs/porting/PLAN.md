@@ -1,24 +1,24 @@
 # Continuation plan
 
-The whole-function porting sequence below is historical context. The managed
-port is implemented and its source-port backlog is retired. The current
+The managed source port is established and its source-port backlog is retired.
+Scoped target deferrals are not execution or parity passes. The current
 checkpoint and remaining parity evidence boundary are in [state.json](state.json).
 Accepted behavior differences and confirmed upstream defects are recorded in
 [DEVIATIONS.md](DEVIATIONS.md) and [UPSTREAM-REPORTS.md](UPSTREAM-REPORTS.md).
 
 ## Execution order and iteration
 
-Resume from `checkpoint.nextAction` in [state.json]. Use the pinned upstream
-revision for behavior comparisons; do not replay completed translation or setup
-work.
+Resume from `checkpoint.nextAction` in [state.json](state.json). Use the pinned
+upstream revision for behavior comparisons; do not replay completed translation
+or setup work.
 
 The compiler pipeline remains the main parity boundary: rationalization,
 lowering, LSRA, code generation and emission. Resolve tracked gaps without
 making unrelated optional features prerequisites, and keep remaining
 differences explicit rather than hiding them.
 
-Parallelize substantial work as bounded, non-overlapping feature or platform
-packets when dependencies and ownership allow. Select packets by dependency
+Work directly by default. When delegation is appropriate and authorized, use
+bounded, non-overlapping feature or platform packets. Select packets by dependency
 readiness, ownership, and validation boundaries; do not gate one target's
 progress on unrelated integration for another target. Give each packet explicit
 source ownership, scope, and a completion boundary; do not invent assignments or
@@ -28,23 +28,22 @@ Resolve shared-contract changes there before dependent packets rely on them.
 Integrate packets at target-aware gates: build the affected target and collect
 the phase, code-generation, metadata, or execution evidence appropriate to its
 implemented frontier. Record evidence per target and distinguish compilation
-from execution parity. Use Sol for implementation, Luna for documentation, and
-Astra for complex investigations, shared-contract decisions, and final
-integration/review.
+from execution parity. Follow the current task's model and reviewer requirements
+rather than duplicating model-selection policy in this plan. App-native child
+sessions require an explicit orchestration request.
 
 Work in substantial dependency-coherent batches during both synchronization and
 new porting. Use source spot checks and localized incremental builds between
 milestones, not exhaustive new fixtures or repeated full validation per helper.
-The default completion boundary is an entire phase or a larger runnable section,
-not each helper that it depends on. Keep native-source review, ownership analysis
-and numeric-semantic care in the implementation loop; defer test authoring and
-validation runs to that completion boundary unless a concrete defect blocks
-progress. Unit tests remain valuable, especially given RyuJIT's limited unit
-coverage, but completing missing compiler code is the immediate goal. Reuse the
-port's existing unit coverage and add focused regressions for concrete defects
-rather than growing a new validation matrix for every ported area. Keep builds
-and relevant existing checks at coherent integration boundaries. Do not turn
-helper-level commits into repeated testing, capture and documentation cycles.
+Choose a file, related-method group, or larger runnable phase section with a
+meaningful integration boundary, not each helper that it depends on. Keep
+native-source review, ownership analysis and numeric-semantic care in the
+implementation loop. Defer test authoring and validation runs to that completion
+boundary unless a concrete defect blocks progress. Reuse existing unit coverage
+and add focused regressions for concrete defects rather than growing a new
+validation matrix for every ported area. Keep builds and relevant existing checks
+at coherent integration boundaries. Do not turn helper-level commits into
+repeated testing, capture and documentation cycles.
 
 At the port's completion gate, automate broader oracle/port dump comparisons
 and run the official runtime test suite with the port as the primary JIT, not
@@ -60,15 +59,12 @@ Reuse the matching oracle product build and `Core_Root`. The native setup is
 `.\src\tests\build.cmd x64 checked generatelayoutonly`.
 Do not repeat that setup unless the native revision or required artifacts change.
 
-Choose a required phase, port a substantial dependency-coherent section with
-localized incremental builds or spot checks, then build RyuJitSharp and run a
-small hello-world-style program using its DLL/PDB as the AltJIT against that
-layout. The small program should execute in milliseconds; builds and publication
-are separate costs, not part of each test invocation. Follow the next real
-failure or missing transformation. Deep analysis and focused regression checks
-belong at concrete bugs or mismatches, not automatically at every helper.
-Use dumps and eventual disassembly to preserve fidelity without mistaking native
-fallback or stub phases for managed code generation.
+Use small existing corpora to diagnose concrete failures or missing
+transformations. Builds and NativeAOT publication are separate costs, not part
+of each corpus invocation. Keep selected-method AltJIT evidence scoped; primary-JIT
+captures and the runtime suites remain the acceptance boundary. Deep analysis
+and regression checks belong at concrete bugs or mismatches, not automatically
+at every helper.
 
 ### Active batch contract
 
@@ -78,8 +74,9 @@ Before editing, record four fields in `checkpoint.activeBatch` in
 - **Scope:** the capability or bounded dependency closure being ported, and the
   larger milestone it serves. A helper alone is not the default batch boundary.
 - **Done when:** the concrete completion condition, including the logical commit.
-  Commit complete, validated units; keep incomplete functions as WIP and retain
-  their native bodies. Do not add stubs to satisfy the boundary.
+  Commit complete, validated batches; keep incomplete work as WIP. Do not add
+  stubs to satisfy the boundary. Intermediate implementation commits may be
+  logically scoped without repeating the batch's expensive validation.
 - **Validation:** select the smallest checks that establish this batch's outcome
   before writing tests. Default to a batch build and relevant existing checks.
   Add focused coverage for concrete defects or non-obvious managed adaptations,
@@ -104,40 +101,27 @@ or extensive fixtures, reassess the boundary rather than silently expanding it.
 After committing a batch, select the next batch and continue. A logical commit
 is a checkpoint, not a reason to stop. At a substantial validated milestone,
 update [MILESTONES.md](MILESTONES.md), commit the checkpoint locally, then continue
-into the next dependency boundary. The completed handoff was published to main
-with explicit authorization on 2026-09-26. That authorization does not extend to
-future pushes or PRs; obtain explicit authorization before either.
-Keep the journal reader-facing: explain capabilities, their significance and
+into the next approved dependency boundary. Obtain explicit authorization
+before pushing or opening a PR.
+Keep milestones reader-facing: explain capabilities, their significance and
 remaining limitations, rather than test results, provenance or recovery details.
 Keep only evidence needed for active decisions in `state.json`; completed
-capabilities belong in the milestone journal and Git history.
+capabilities belong in the milestone summary and Git history.
 Pause only for an explicit user request, a decision requiring approval,
 a publication conflict, or a blocker that cannot be safely resolved.
 
-## 0. Preserve and establish the starting point
-
-Completed setup: the isolated C# branch started from `fgImport`, its latest WIP
-was preserved separately, and the pinned upstream source was established as the
-reference revision. The managed implementation and its tests now live in this
-repository; current maintenance proceeds from the managed code and tracked gaps.
-
-The initial unstashed C# baseline built in Debug and Release, before native
-publish/loading and phase comparisons were established; its test project had no
-test sources. Current revisions and accumulated validation are recorded in
-[state.json](state.json), rather than inferred from this setup milestone.
-
-## 1. Establish reproducible comparison inputs
+## Reproducible comparison inputs
 
 Capture a small baseline before changing source revisions. Inventory existing
 native artifacts rather than assuming they match. Build the required native
-host/JIT/SuperPMI artifacts from the original oracle revision if matching ones
+host/JIT/SuperPMI artifacts from the pinned oracle revision if matching ones
 are unavailable. Record commands, flavors, hashes, and the JIT/EE version.
 
 Publish the C# JIT for a supported host/target combination and verify its
 exports, ABI, and loading. Establish a tiny local corpus covering straight-line
 arithmetic, branches, locals, direct calls, and an inline candidate. Record the
-actual phase frontier and known gaps without requiring the unfinished compiler
-to emit code.
+actual phase frontier and known gaps. Verify generated code and execution for
+implemented backends; other-target phase evidence must retain its limits.
 
 Check table-generator input provenance and baseline reproducibility in an
 isolated output directory. Use a small comparison runner and existing tooling,
@@ -151,24 +135,15 @@ boundary while separately correcting any ported message-layout differences.
 focused checks of the comparison runner's failure cases. Any unavailable evidence is
 named; no claim of current dump parity is required or implied.
 
-## 2. Synchronize already ported code to the pinned upstream head
+## Upstream synchronization
 
-The initial synchronization covered 270 candidate files in 501 commits. The
-2026-09-26 refresh starts from the previously reconciled `206bf81` and targets
-immutable `33baf8e`; its raw JIT/interface delta contains 67 candidate files.
-Inventory size does not imply that every change needs translation. Preserve both
-revisions in `state.json`; do not chase a moving `main` while reconciling them.
-
-The 2026-10-08 refresh reconciles immutable `33baf8e` to `6ff62b1d` across all
-92 changed `src/coreclr/jit` and `src/coreclr/inc` paths (60 JIT, 32 include
-paths). The repeatable capture, disposition, validation, and pin-update procedure
-is [the oracle-update skill](../../.github/skills/oracle-update/SKILL.md).
-Isolated regeneration matches all five affected generated outputs. The
-21-method phase corpus matches for 20 methods; its sole `GenericCatch`
-diagnostic difference is the already accepted D015. This evidence ends before
-Importation and does not establish code-generation or runtime parity; the
-dynamic TLS input-ownership boundary also remains unresolved. Full-runtime
-parity is a separate stage in section 6.
+Use [the oracle-update skill](../../.github/skills/oracle-update/SKILL.md) for
+the immutable-diff capture, disposition, validation, and pin-update procedure.
+Compare `upstream.reconciledCommit` with one captured immutable target revision;
+do not chase a moving branch while reconciling changes. Keep raw inventories
+and per-refresh evidence in artifacts and Git history, not this roadmap.
+Source synchronization and its phase corpus do not establish full-runtime
+parity or close the dynamic TLS input-ownership boundary.
 
 Prefer substantial source sections and their dependency closure over individual
 helper batches. Use builds and small focused checks for concrete behavior changes
@@ -218,27 +193,10 @@ reconciled; generated changes are explained; Debug/Release and relevant checks
 pass; the supported phase corpus has new-baseline evidence. Only then advance
 the recorded port baseline.
 
-## 3. Reconcile and resume the saved C# work
+## Resolving compiler gaps
 
-Apply preserved C# WIP by immutable ID, keeping the snapshot. It affects
-inlining/flowgraph support, tree visitors, local sequencing, LIR, rationalization,
-and support-file moves. A preserved snapshot is not evidence that its contents
-are already integrated or covered.
-
-Resolve conflicts against the updated native definitions and completed sync
-batches. Preserve the WIP's intent and file moves; do not gratuitously repeat or
-reformat it. Inventory its whole-function completion and remaining stubs before
-marking anything ported. Validate newly reachable paths and extend the phase
-corpus through each supported boundary.
-
-**Exit:** WIP integrated without losing behavior, complete functions reconciled,
-new platform deferrals documented, and focused regression/phase evidence saved.
-Retain recovery refs until these checks are complete.
-
-## 4. Continue by compiler dependencies
-
-Select the next required minopts phase and its dependency cluster from the
-backlog and actual reachable frontier. Prioritize mandatory importer,
+Select a concrete failure or tracked gap from the checkpoint and actual reachable
+frontier. Follow its dependency cluster through importer,
 morph, rationalization, lowering, register allocation, code generation, and
 GC/EH/unwind support. Inlining and other optional optimizations can wait.
 Do not bypass required transformations or claim an optional phase is implemented
@@ -261,17 +219,18 @@ regression/parity evidence, and a small continuation checkpoint naming the next
 dependency, committed together as one logical batch.
 Do not start the next batch with completed work still waiting for a commit.
 
-## 5. Post-port work
+## Post-port work
 
 The source port is established. Keep post-port refactoring, stronger unit-test
 coverage, and more substantial C#-specific designs outside the porting contract
 unless separately approved. Use the deviation and upstream-report registers for
 the existing behavior record; do not recreate the retired source-port backlog.
 
-## 6. Full-runtime parity verification
+## Full-runtime parity verification
 
-Start this stage only after the upstream synchronization exit in section 2 is
-accepted and its recorded baseline has advanced. The synchronization phase
+Start this stage only after the
+[upstream synchronization](#upstream-synchronization) exit is accepted and its
+recorded baseline has advanced. The synchronization phase
 corpus is a prerequisite for accepting that update; the broader captures below
 are a separate completion gate and must not be generated early.
 
@@ -284,10 +243,10 @@ Keep an untouched native control root. Record build identities, file hashes,
 JIT selection, flags, and environment; verify the managed JIT is the main JIT
 and that no AltJIT or native fallback supplied the observed output.
 
-Inspect `CILJit.compileMethod` for a process-wide compilation lock before
-parallel captures or suite runs. If it serializes independent compilations,
-remove it only after checking shared mutable state and adding concurrency
-coverage; do not trade correctness for throughput.
+`CILJit.compileMethod` has no process-wide compilation lock. Preserve the shared
+writer/report synchronization and nested compiler scope lifetimes recorded in
+R001. Existing concurrency evidence is scoped; add coverage before relying on
+new shared-state or optional diagnostic configurations.
 
 ### Differential sequence
 

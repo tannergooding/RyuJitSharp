@@ -10,8 +10,11 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Select the next dependency-coherent batch from docs/porting/BACKLOG.md; the 7462dfde source refresh passed focused Core and Wasm target tests. The fast full-Core run had three failures outside the changed paths; do not treat source-sync validation as runtime parity. Preserve the unresolved dynamic TLS input-ownership boundary and defer genAsyncResumeInfo until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "nextAction": "Resume the dynamic TLS input-ownership investigation using artifacts\\dynamic-tls-inputs: identify the earlier EE slot allocations responsible for the managed shift before claiming helper parity or changing compiler constants. The completion boundary is a reproducible account of the matching compilation inputs, followed by full primary-JIT dump comparison at the pinned oracle revision.",
     "activeBatch": null,
+    "validationGaps": [
+      "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation."
+    ],
     "parityEvidence": {
       "corelibCodegen": {
         "architecture": "Windows x64",

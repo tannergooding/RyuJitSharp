@@ -18,10 +18,12 @@ do not treat a successful build or a partial source comparison as completion.
    `checkpoint.nextAction` before starting a new batch.
 2. Inspect the worktree and active work. Preserve all pre-existing staged,
    unstaged, and untracked changes. Do not overlap another oracle update or
-   edit files assigned to active workers. For a large diff, split work into
-   dependency-coherent, file-owned lanes; keep generated inputs/outputs and
-   state/evidence coordination with one integrator. Pause workers before
-   shared builds and tests.
+   edit files assigned to active workers. Work directly by default. When
+   delegation is appropriate and authorized, assign dependency-coherent,
+   file-owned lanes and keep generated inputs/outputs and state/evidence
+   coordination with one integrator. Pause workers before shared builds and
+   tests. Do not create or engage app-native child sessions without an
+   explicit orchestration request.
 3. Obtain the oracle checkout path from the current session setup; never infer
    it from another checkout or hard-code a machine-local path. Verify its
    remote is `https://github.com/dotnet/runtime`. Fetch the intended branch,
@@ -88,9 +90,10 @@ file appears generated, unrelated, or platform-specific.
   dependencies where required; do not use silent no-ops or success-shaped
   fallbacks.
 - When table inputs change, update the input and generator together. Run the
-  generator only in an isolated copy or directory: it deletes that working
-  directory's `Outputs` subtree. Review the generated diff and copy only
-  intended outputs; never repair generated files alone.
+  generator only in a fresh staging tree under `artifacts`, preserving its
+  sibling managed ABI inputs as described in `docs/porting/README.md`: it
+  deletes the working directory's `Outputs` subtree. Review the generated
+  diff and copy only intended outputs; never repair generated files alone.
 - Keep unrelated cleanup out of the update. Preserve upstream behavior unless
   an existing approved deviation applies. Record a suspected native defect in
   `UPSTREAM-REPORTS.md`; record an intentional observable difference in
@@ -100,8 +103,9 @@ file appears generated, unrelated, or platform-specific.
 
 ## Validate and accept
 
-Run focused tests for each coherent unit, then validate the integrated change
-at a meaningful boundary. The repository's fast inner loop is:
+Implement a dependency-coherent batch, then run its relevant build and focused
+tests at a meaningful integration boundary. Run checks earlier only to diagnose
+a concrete failure or resolve a material risk. The repository's fast inner loop is:
 
 ```powershell
 .\build.cmd -fast -test -solution tests\Core\RyuJitSharp.UnitTests.csproj
