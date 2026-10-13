@@ -75,8 +75,11 @@ public partial class Emitter
 
             if (igLastCandidate is null)
             {
+                if (Configuration.DEBUG)
+                {
+                    assert(_compiler is not null);
+                }
 #if DEBUG
-                assert(_compiler is not null);
                 if (_compiler.verbose)
                 {
                     assert(ig is not null);
@@ -88,8 +91,11 @@ public partial class Emitter
 
             if (igLastCandidate == igLastReported)
             {
+                if (Configuration.DEBUG)
+                {
+                    assert(_compiler is not null);
+                }
 #if DEBUG
-                assert(_compiler is not null);
                 if (_compiler.verbose)
                 {
                     jitprintf($"emitSplit: can't split at IG{igLastCandidate.GetDisplayId():D2}; we already reported it\n");
@@ -102,8 +108,11 @@ public partial class Emitter
             // fragment must still contain a nonzero amount of code.
             if (candidateSize == 0)
             {
+                if (Configuration.DEBUG)
+                {
+                    assert(_compiler is not null);
+                }
 #if DEBUG
-                assert(_compiler is not null);
                 if (_compiler.verbose)
                 {
                     jitprintf($"emitSplit: can't split at IG{igLastCandidate.GetDisplayId():D2}; zero-sized candidate\n");
@@ -112,8 +121,11 @@ public partial class Emitter
                 return;
             }
 
+            if (Configuration.DEBUG)
+            {
+                assert(_compiler is not null);
+            }
 #if DEBUG
-            assert(_compiler is not null);
             if (_compiler.verbose)
             {
                 jitprintf($"emitSplit: split at IG{igLastCandidate.GetDisplayId():D2} is size {candidateSize:x}, "

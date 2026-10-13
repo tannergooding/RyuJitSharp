@@ -23,9 +23,12 @@ public partial class Emitter
         assert(tree.RegNum == REG_NA);
         var data = tree.Op1;
 
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+            assert((uint)tree.LclNum < _compiler.lvaCount);
+        }
 #if DEBUG
-        assert(_compiler is not null);
-        assert((uint)tree.LclNum < _compiler.lvaCount);
         emitVarRefOffs = unchecked((int)tree.AsLclVar().LclIlOffs);
 #endif
         if (data.IsContainedIntOrIImmed)

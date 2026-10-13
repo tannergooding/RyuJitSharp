@@ -32,8 +32,11 @@ public partial class Emitter
         if (isInCurrentBuffer)
         {
             JITDUMP($"Removing saved instruction in current IG {emitLabelString(lastGroup)}:\n> ");
+            if (Configuration.DEBUG)
+            {
+                assert(_compiler is not null);
+            }
 #if DEBUG
-            assert(_compiler is not null);
             if (_compiler.verbose)
             {
                 emitDispIns(lastInstruction, isNew: false, doffs: false, asmfm: false);
@@ -60,8 +63,11 @@ public partial class Emitter
         else
         {
             JITDUMP($"Removing saved instruction in saved IG {emitLabelString(lastGroup)}:\n> ");
+            if (Configuration.DEBUG)
+            {
+                assert(_compiler is not null);
+            }
 #if DEBUG
-            assert(_compiler is not null);
             if (_compiler.verbose)
             {
                 emitDispIns(lastInstruction, isNew: false, doffs: false, asmfm: false);

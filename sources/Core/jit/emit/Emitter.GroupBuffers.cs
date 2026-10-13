@@ -74,9 +74,11 @@ public partial class Emitter
         var ig = emitAllocAndLinkIG();
         emitGenIG(ig);
 
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+        }
 #if DEBUG
-        assert(_compiler is not null);
-
         if (_compiler.verbose)
         {
             jitprintf("Created:\n      ");

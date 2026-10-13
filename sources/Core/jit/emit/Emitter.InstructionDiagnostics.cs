@@ -24,8 +24,11 @@ public partial class Emitter
 
     private unsafe void emitDispInsAddr(byte* code)
     {
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+        }
 #if DEBUG
-        assert(_compiler is not null);
         if (_compiler.opts.disAddr)
         {
             // FMT_ADDR/DBG_ADDR print the raw address, not the diffable FMT_PTR representation.

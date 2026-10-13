@@ -93,8 +93,11 @@ public partial class Emitter
             }
             placeholder = next;
         }
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+        }
 #if DEBUG
-        assert(_compiler is not null);
         if (_compiler.verbose)
         {
             jitprintf($"{prologCount} prologs, {epilogCount} epilogs");
@@ -348,8 +351,11 @@ public partial class Emitter
     {
         assert(emitGeneratingPrologOrFuncletProlog());
         assert(offsHi > offsLo);
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+        }
 #if DEBUG
-        assert(_compiler is not null);
         if (_compiler.verbose)
         {
             var count = unchecked((uint)(offsHi - offsLo)) / Configuration.TARGET_POINTER_SIZE;
