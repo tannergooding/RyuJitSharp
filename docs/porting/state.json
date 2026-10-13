@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Review the empty-range null-pair assertion in sources/Core/jit/lir/LIR.ReadOnlyRange.cs::ReadOnlyRange; runtime-gate only that Release-visible invariant and leave the Contains-based membership assertion under DEBUG.",
+    "nextAction": "Review the Release-visible IsInitialized assertions in sources/Core/jit/lir/LIR.Use.cs::ReplaceWith and ReplaceWithLclVar as a separate candidate; preserve DEBUG-only Contains and AssertIsValid checks.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources.",
@@ -108,7 +108,8 @@
       "IndirectCallTransformer.GuardedDevirtualizationTransformer.cs::PreOrderVisit remains DEBUG-guarded because GenTreeCall.IsGuarded is defined only under DEBUG; no runtime-dispatch conversion is safe.",
       "Emitter.InstructionOutput.cs runtime-gates the Release-visible no-alignment-instruction assertion in loop-alignment overestimation compensation; Emitter.ImmediateOutput.cs runtime-gates two byref-immediate GC register checks over Release-visible masks and instruction state. EmitterBranchOutputTests, EmitterInstructionOutputTests, EmitterRegisterInstructionTests, EmitterMemoryOutputTests, and loop-alignment tests passed 213/213 in Debug and 194/194 in Release with win-x64 semantics; Release excluded the two known unsupported xarch test sources. The full-analysis Release build reported 64 IDE0058/IDE0059 errors in other files and none in the changed files.",
       "The remaining GenTree operator-null assertions depend on DEBUG-only IsNullOp1Legal/IsNullOp2Legal properties; CheckTransformableIndirectCallsVisitor is itself DEBUG-only, and LocalAddressVisitor.Value.Consume depends on DEBUG-only _consumed state. These are not runtime-gated.",
-      "The changed emitter output batch passed git diff --check and state.json parsing."
+      "The changed emitter output batch passed git diff --check and state.json parsing.",
+      "LIR.ReadOnlyRange.cs::ReadOnlyRange runtime-gates only the Release-visible firstNode/lastNode null-pair assertion and preserves the DEBUG-only Contains membership check. LirRangeEnumerationTests, LirTerminatorInsertionTests, LirBlockSplittingTests, and LoweringDispatchTests passed 103/103 in both Debug and Release with win-x64 semantics and analyzer-disabled builds; Release excluded the two known unsupported xarch test sources using artifacts\\ExcludeKnownReleaseTestSources.targets. git diff --check and state.json parsing passed."
     ],
     "activeBatch": null,
     "parityEvidence": {

@@ -47,8 +47,12 @@ public partial class LIR
             _firstNode = firstNode;
             _lastNode = lastNode;
 
+            if (Configuration.DEBUG)
+            {
+                assert((firstNode is null) == (lastNode is null));
+            }
+
 #if DEBUG
-            assert((firstNode is null) == (lastNode is null));
             assert((firstNode == lastNode) || (Contains(lastNode!)));
 #endif
         }
