@@ -63,8 +63,12 @@ public partial class Emitter
     {
 #if DEBUG
         assert(ig.igSelf == ig);
-        assert(ig.igInsCnt >= insNum);
 #endif
+        if (Configuration.DEBUG)
+        {
+            assert(ig.igInsCnt >= insNum);
+        }
+
         var offset = 0u;
 
         for (var index = 0u; index < insNum; index++)
