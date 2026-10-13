@@ -183,11 +183,13 @@ public partial class Emitter
     private void emitInsSRLoongArch64(instruction ins, emitAttr attr, regNumber reg1, int varNum, int offset)
     {
         var size = EA_SIZE(attr);
-#if DEBUG
-        assert(ins is INS_st_d or INS_stx_d or INS_st_w or INS_stx_w or
-            INS_fst_s or INS_fst_d or INS_fstx_s or INS_fstx_d or
-            INS_st_b or INS_st_h or INS_stx_b or INS_stx_h);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(ins is INS_st_d or INS_stx_d or INS_st_w or INS_stx_w or
+                INS_fst_s or INS_fst_d or INS_fstx_s or INS_fstx_d or
+                INS_st_b or INS_st_h or INS_stx_b or INS_stx_h);
+        }
+
         var compiler = _compiler ?? throw new FatalJitException("LoongArch64 stack stores require an active compiler.");
         var baseOffset = compiler.lvaFrameAddress(varNum, out var framePointerBased);
         var imm = offset < 0 ? unchecked((nint)(-offset - 8)) : unchecked((nint)(baseOffset + offset));
@@ -234,10 +236,12 @@ public partial class Emitter
     private void emitInsRSLoongArch64(instruction ins, emitAttr attr, regNumber reg1, int varNum, int offset)
     {
         var size = EA_SIZE(attr);
-#if DEBUG
-        assert(ins is INS_ld_b or INS_ld_bu or INS_ld_h or INS_ld_hu or INS_ld_w or INS_ld_wu or
-            INS_fld_s or INS_ld_d or INS_fld_d or INS_lea);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(ins is INS_ld_b or INS_ld_bu or INS_ld_h or INS_ld_hu or INS_ld_w or INS_ld_wu or
+                INS_fld_s or INS_ld_d or INS_fld_d or INS_lea);
+        }
+
         if (ins == INS_lea)
         {
             assert(size == EA_8BYTE);

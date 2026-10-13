@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Runtime-gate the Release-visible frame-offset and temporary-register assertions in sources/Core/jit/compiler/Compiler.FinalFrameLayout.cs and Compiler.FinalFrameLayout.Locals.cs, then run CodeGenFrameFinalizationTests in Debug and Release.",
+    "nextAction": "Runtime-gate the Release-visible flow-edge likelihood assertions in sources/Core/jit/block/FlowEdge.cs and sources/Core/jit/fgprofile/EfficientEdgeCountReconstructor.cs after confirming all referenced state exists in Release; then run focused flow-profile tests in Debug and Release.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources.",
@@ -40,13 +40,15 @@
       "Lowering.Arm64OperandContainment.cs::IsContainableUnaryOrBinaryOp runtime-gates its Release-visible parent/child shape assertions. Arm64OperandContainmentTests passed 62/62 in Debug and 62/62 in Release with win-arm64 target semantics using tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj and analyzers disabled.",
       "The compCurBB assertions in Compiler.ap.LocalDispatch.cs and Compiler.ap.Locals.cs remain inside DEBUG-only verbose dump blocks: moving them independently fails Release compilation because verbose is DEBUG-only and breaks Debug nullable flow to the dump formatter.",
       "Emitter.Locations.cs::emitFindOffset runtime-gates the Release-visible instruction-count assertion while retaining the DEBUG-only igSelf assertion first. EmitterLocationTests passed 14/14 in Debug and 13/13 in Release with analyzers disabled; Release excluded the two known unsupported xarch test sources. Full-analysis attempts were blocked by the already-recorded IDE0058/IDE0059 diagnostics in unchanged JIT files.",
-      "Compiler.Options.cs::SetMinOpts runtime-gates the Release-visible min-opts consistency assertion while retaining the DEBUG-only usage-tracking assertion. MinOpts-focused arithmetic tests passed 36/36 in Debug and 35/35 in Release with analyzers disabled; Release excluded the two known unsupported xarch test sources. Full-analysis attempts were blocked by the already-recorded IDE0058/IDE0059 diagnostics in unchanged JIT files."
+      "Compiler.Options.cs::SetMinOpts runtime-gates the Release-visible min-opts consistency assertion while retaining the DEBUG-only usage-tracking assertion. MinOpts-focused arithmetic tests passed 36/36 in Debug and 35/35 in Release with analyzers disabled; Release excluded the two known unsupported xarch test sources. Full-analysis attempts were blocked by the already-recorded IDE0058/IDE0059 diagnostics in unchanged JIT files.",
+      "The LoongArch64 stack store/load instruction-family assertions in Emitter.InstructionRecording.cs were runtime-gated; focused linux-loongarch64 target tests passed 53/53 in Debug and Release with analyzers disabled. Full-analysis attempts remain blocked by existing IDE0058/IDE0059 diagnostics, including the unchanged IDE0059 assignment at Emitter.InstructionRecording.cs:185 and diagnostics in JitTimer.cs, CodeGen.BlockMemoryCopy.cs, CodeGen.FloatingCasts.cs, CodeGen.FrameInitializationDependencies.cs, and CodeGen.Intrinsics.ArmArch.cs. Broader target filters also included unrelated unfinished-path expectations: the broad local-codegen selector failed 62/81 in Debug and 61/81 in Release, and the wider three-class selector failed 10/63 in both configurations.",
+      "The final-frame StackOffset assertions in Compiler.FinalFrameLayout.cs and Compiler.FinalFrameLayout.Locals.cs remain DEBUG-guarded because BAD_STK_OFFS is defined only under DEBUG in Globals.cs. Runtime-gating the assertions caused Release CS0103 errors at those two sites; the source changes were restored."
     ],
     "activeBatch": {
-      "scope": "Move the Release-visible compMinOptsIsSet/compMinOpts consistency assertion in sources/Core/jit/compiler/Compiler.Options.cs::SetMinOpts out of the mixed DEBUG guard while retaining the DEBUG-only compMinOptsIsUsed check.",
-      "completion": "Assertion ordering and Debug behavior remain unchanged; Release compilation confirms the consistency fields are available without compMinOptsIsUsed.",
-      "validation": "Run MinOpts-focused ArithmeticLoweringTests and ArithmeticMorphTests in Debug and Release.",
-      "deferred": "Do not move compMinOptsIsUsed out of DEBUG because the usage-tracking field is DEBUG-only."
+      "scope": "Runtime-gate the Release-visible flow-edge likelihood assertions in sources/Core/jit/block/FlowEdge.cs and sources/Core/jit/fgprofile/EfficientEdgeCountReconstructor.cs.",
+      "completion": "Preserve likelihood assertion conditions and ordering in Debug after confirming the field/property references are available in Release.",
+      "validation": "Run focused flow-graph and profile-reconstruction tests in Debug and Release.",
+      "deferred": "Do not alter likelihood semantics or unrelated DEBUG-only edge diagnostic state."
     },
     "parityEvidence": {
       "asyncResumeCodegen": {
