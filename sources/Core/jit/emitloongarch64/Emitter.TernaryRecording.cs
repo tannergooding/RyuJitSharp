@@ -56,63 +56,64 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (needCheckOv)
+        if (Configuration.DEBUG)
         {
-            switch (ins)
+            if (needCheckOv)
             {
-                case INS_add_d:
+                switch (ins)
                 {
-                    assert(attr == EA_8BYTE);
-                    break;
-                }
-                case INS_add_w:
-                {
-                    assert(attr == EA_4BYTE);
-                    break;
-                }
-                case INS_addi_d:
-                case INS_addi_w:
-                {
-                    assert(intConst is not null);
-                    break;
-                }
-                case INS_sub_d:
-                {
-                    assert(attr == EA_8BYTE);
-                    break;
-                }
-                case INS_sub_w:
-                {
-                    assert(attr == EA_4BYTE);
-                    break;
-                }
-                case INS_mul_d:
-                case INS_mulh_d:
-                case INS_mulh_du:
-                {
-                    assert(attr == EA_8BYTE);
-                    assert(intConst is null);
-                    break;
-                }
-                case INS_mul_w:
-                case INS_mulw_d_w:
-                case INS_mulh_w:
-                case INS_mulh_wu:
-                case INS_mulw_d_wu:
-                {
-                    assert(attr == EA_4BYTE);
-                    assert(intConst is null);
-                    break;
-                }
-                default:
-                {
-                    assert(false, $"LOONGARCH64-Invalid ins for overflow check: {ins}");
-                    break;
+                    case INS_add_d:
+                    {
+                        assert(attr == EA_8BYTE);
+                        break;
+                    }
+                    case INS_add_w:
+                    {
+                        assert(attr == EA_4BYTE);
+                        break;
+                    }
+                    case INS_addi_d:
+                    case INS_addi_w:
+                    {
+                        assert(intConst is not null);
+                        break;
+                    }
+                    case INS_sub_d:
+                    {
+                        assert(attr == EA_8BYTE);
+                        break;
+                    }
+                    case INS_sub_w:
+                    {
+                        assert(attr == EA_4BYTE);
+                        break;
+                    }
+                    case INS_mul_d:
+                    case INS_mulh_d:
+                    case INS_mulh_du:
+                    {
+                        assert(attr == EA_8BYTE);
+                        assert(intConst is null);
+                        break;
+                    }
+                    case INS_mul_w:
+                    case INS_mulw_d_w:
+                    case INS_mulh_w:
+                    case INS_mulh_wu:
+                    case INS_mulw_d_wu:
+                    {
+                        assert(attr == EA_4BYTE);
+                        assert(intConst is null);
+                        break;
+                    }
+                    default:
+                    {
+                        assert(false, $"LOONGARCH64-Invalid ins for overflow check: {ins}");
+                        break;
+                    }
                 }
             }
         }
-#endif
 
         var dstReg = dst.RegNum;
 
