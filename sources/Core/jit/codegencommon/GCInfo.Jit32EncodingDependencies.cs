@@ -507,9 +507,11 @@ public partial struct GCInfo
         temporary[16] = 0xAB;
 #endif
         var size = gcMakeRegPtrTable(temporary, 0, header, codeSize, ref argTabOffset);
-#if DEBUG
-        assert(temporary[16] == 0xAB);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(temporary[16] == 0xAB);
+        }
+
         return size;
     }
 
