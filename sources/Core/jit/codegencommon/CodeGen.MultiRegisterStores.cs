@@ -123,18 +123,19 @@ public sealed partial class CodeGen
                 // stores may cover padding beyond an individual narrow field.
                 Emitter.emitIns_S_R(ins_Store(srcType), srcType.EmitSize, reg, lclNum, unchecked((int)offset));
                 offset = unchecked(offset + srcType.Size);
-#if DEBUG
-                var stackHomeSize = _compiler.lvaLclStackHomeSize(lclNum);
-                if (Configuration.TARGET_64BIT || varTypeIsStruct(varDsc.Type))
+                if (Configuration.DEBUG)
                 {
-                    assert(offset <= stackHomeSize);
+                    var stackHomeSize = _compiler.lvaLclStackHomeSize(lclNum);
+                    if (Configuration.TARGET_64BIT || varTypeIsStruct(varDsc.Type))
+                    {
+                        assert(offset <= stackHomeSize);
+                    }
+                    else
+                    {
+                        assert(varDsc.Type is TYP_LONG);
+                        assert(offset <= TYP_LONG.Size);
+                    }
                 }
-                else
-                {
-                    assert(varDsc.Type is TYP_LONG);
-                    assert(offset <= TYP_LONG.Size);
-                }
-#endif
             }
         }
 
