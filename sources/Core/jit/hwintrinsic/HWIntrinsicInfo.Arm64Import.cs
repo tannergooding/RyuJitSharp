@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
     public static int lookupIval(NamedIntrinsic id)
     {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new System.PlatformNotSupportedException("ARM64 intrinsic immediates are unavailable for this target.");
+        }
+
         switch (id)
         {
             case NI_Sve_Compute16BitAddresses:
@@ -38,4 +42,3 @@ public readonly partial struct HWIntrinsicInfo
         return -1;
     }
 }
-#endif

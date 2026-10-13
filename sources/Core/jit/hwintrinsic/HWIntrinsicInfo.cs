@@ -20,9 +20,19 @@ public readonly partial struct HWIntrinsicInfo
         return name;
     }
 
-#if FEATURE_HW_INTRINSICS
+    private static void EnsureHardwareIntrinsicSupport()
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            Globals.NYI("Hardware-intrinsic metadata without hardware-intrinsic support");
+            throw new FatalJitException("Hardware-intrinsic metadata is unsupported on this target.");
+        }
+    }
+
     private static ReadOnlySpan<ushort> GetIsaRangeBounds()
     {
+        EnsureHardwareIntrinsicSupport();
+
         if (Configuration.TARGET_XARCH)
         {
             return s_xarchIsaRangeBounds;
@@ -135,11 +145,11 @@ public readonly partial struct HWIntrinsicInfo
 
         return utf8Name.Length.CompareTo(intrinsicName.Length);
     }
-#endif
 
     private static int GetTableIndex(NamedIntrinsic id)
     {
-#if FEATURE_HW_INTRINSICS
+        EnsureHardwareIntrinsicSupport();
+
         var unionIndex = (int)id - (int)NI_HW_INTRINSIC_START - 1;
 
         if ((uint)unionIndex >= (uint)GetTableIndexByUnionIndex().Length)
@@ -156,10 +166,6 @@ public readonly partial struct HWIntrinsicInfo
         }
 
         return tableIndex;
-#else
-        Globals.NYI("Hardware-intrinsic metadata without hardware-intrinsic support");
-        throw new FatalJitException("Hardware-intrinsic metadata is unsupported on this target.");
-#endif
     }
 
     internal static int GetNativeTableEntryCount()
@@ -407,14 +413,15 @@ public readonly partial struct HWIntrinsicInfo
             }
         }
 
-#if FEATURE_SIMD
+        if (!Configuration.FEATURE_SIMD)
+        {
+            Globals.NYI("Hardware-intrinsic SIMD size lookup without SIMD support");
+            throw new FatalJitException("Hardware-intrinsic SIMD size lookup is unsupported on this target.");
+        }
+
         var simdBaseType = compiler.getBaseTypeAndSizeOfSimdType(typeHnd, out var sizeBytes);
         assert((sizeBytes > 0) && (simdBaseType != TYP_UNDEF));
         return unchecked((uint)sizeBytes);
-#else
-        Globals.NYI("Hardware-intrinsic SIMD size lookup without SIMD support");
-        throw new FatalJitException("Hardware-intrinsic SIMD size lookup is unsupported on this target.");
-#endif
     }
 
     public static bool BaseTypeFromFirstArg(NamedIntrinsic id) =>
@@ -425,11 +432,8 @@ public readonly partial struct HWIntrinsicInfo
 
     public static bool ReturnsBoolean(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsBoolean) != 0;
 
-#if FEATURE_MASKED_HW_INTRINSICS
-    public static bool ReturnsPerElementMask(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_ReturnsPerElementMask) != 0;
-#else
-    public static bool ReturnsPerElementMask(NamedIntrinsic id) => false;
-#endif
+    public static bool ReturnsPerElementMask(NamedIntrinsic id) =>
+        Configuration.FEATURE_MASKED_HW_INTRINSICS && ((lookupFlags(id) & HW_Flag_ReturnsPerElementMask) != 0);
 
     public static bool IsFloatingPointUsed(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_NoFloatingPointUsed) == 0;
 

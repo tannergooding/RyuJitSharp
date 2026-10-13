@@ -12,7 +12,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS
     private unsafe GenTree? impXplatIntrinsic(
         NamedIntrinsic intrinsic,
         CORINFO_CLASS_HANDLE clsHnd,
@@ -24,10 +23,15 @@ public partial class Compiler
         byte simdSize,
         bool mustExpand)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS ||
+            (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Cross-platform intrinsic import requires a supported hardware-intrinsic target.");
+        }
+
         assert(HWIntrinsicInfo.lookupIsa(intrinsic) == InstructionSet_Vector);
 
-#if TARGET_XARCH
-        if (simdSize == 32)
+        if (Configuration.TARGET_XARCH && (simdSize == 32))
         {
             var potentiallyNotSupported = true;
 
@@ -131,7 +135,6 @@ public partial class Compiler
                 return null;
             }
         }
-#endif
 
         if (simdSize != 0)
         {
@@ -197,9 +200,7 @@ public partial class Compiler
             case NI_Vector_AsUInt32:
             case NI_Vector_AsUInt64:
             case NI_Vector_AsVector4:
-#if TARGET_ARM64 || TARGET_WASM
-            case NI_Vector_AsVector:
-#endif
+            case NI_Vector_AsVector when Configuration.TARGET_ARM64 || Configuration.TARGET_WASM:
             {
                 assert(sig.numArgs == 1);
                 retNode = impSIMDPopStack();
@@ -207,10 +208,9 @@ public partial class Compiler
                 break;
             }
 
-#if TARGET_XARCH
-            case NI_Vector_AsVector:
-            case NI_Vector_AsVector256:
-            case NI_Vector_AsVector512:
+            case NI_Vector_AsVector when Configuration.TARGET_XARCH:
+            case NI_Vector_AsVector256 when Configuration.TARGET_XARCH:
+            case NI_Vector_AsVector512 when Configuration.TARGET_XARCH:
             {
                 assert(sig.numArgs == 1);
                 var vectorTByteLength = getCompileTimeVectorTByteLength();
@@ -321,7 +321,6 @@ public partial class Compiler
                 retNode = gtNewSimdHWIntrinsicNode(retType, convertIntrinsic, simdBaseType, (byte)convertSize, op1);
                 break;
             }
-#endif
 
             case NI_Vector_AsVector128:
             {
@@ -345,11 +344,8 @@ public partial class Compiler
                         return vecCon;
                     }
 
-#if TARGET_ARM64
-                    var convertIntrinsic = simdSize == 8 ? NI_Vector_ToVector128Unsafe : NI_Vector_AsVector128Unsafe;
-#else
-                    var convertIntrinsic = NI_Vector_AsVector128Unsafe;
-#endif
+                    var convertIntrinsic = Configuration.TARGET_ARM64 && (simdSize == 8)
+                        ? NI_Vector_ToVector128Unsafe : NI_Vector_AsVector128Unsafe;
                     op1 = gtNewSimdHWIntrinsicNode(retType, convertIntrinsic, simdBaseType, simdSize, op1);
 
                     for (var index = firstZero; index < 4; index++)
@@ -365,14 +361,12 @@ public partial class Compiler
                     retNode = impSIMDPopStack();
                     assert(retNode.Type == GetSimdTypeForSize(GetSimdTypeSizeInBytes(sig.retTypeSigClass)));
                 }
-#if TARGET_XARCH
-                else if (simdSize is 32 or 64)
+                else if (Configuration.TARGET_XARCH && (simdSize is 32 or 64))
                 {
                     var convertIntrinsic = simdSize == 32 ? NI_Vector_GetLower : NI_Vector_GetLower128;
                     retNode = gtNewSimdHWIntrinsicNode(retType, convertIntrinsic,
                         simdBaseType, simdSize, impSIMDPopStack());
                 }
-#endif
                 else
                 {
                     unreached();
@@ -394,13 +388,11 @@ public partial class Compiler
                 assert(simdSize == 16 && simdBaseType == TYP_FLOAT && sig.numArgs == 1);
                 assert(retType is TYP_SIMD8 or TYP_SIMD12);
                 op1 = impSIMDPopStack();
-#if TARGET_ARM64
-                if (retType == TYP_SIMD8)
+                if (Configuration.TARGET_ARM64 && (retType == TYP_SIMD8))
                 {
                     retNode = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseType, simdSize);
                     break;
                 }
-#endif
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1);
                 break;
             }
@@ -451,27 +443,36 @@ public partial class Compiler
             {
                 assert(sig.numArgs == 1 && varTypeIsLong(simdBaseType));
 
-#if TARGET_XARCH
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (Configuration.TARGET_XARCH)
                 {
-                    break;
+                    if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        break;
+                    }
+
+                    intrinsic = simdSize switch {
+                        64 => NI_AVX512_ConvertToVector512Double,
+                        32 => NI_AVX512_ConvertToVector256Double,
+                        16 => NI_AVX512_ConvertToVector128Double,
+                        _ => throw new System.InvalidOperationException(),
+                    };
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    intrinsic = simdSize == 16 ? NI_AdvSimd_Arm64_ConvertToDouble :
+                        NI_AdvSimd_Arm64_ConvertToDoubleScalar;
+                    assert(simdSize is 8 or 16);
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    return null;
+                }
+                else
+                {
+                    unreached();
+                    throw new FatalJitException("Unsupported SIMD conversion target.");
                 }
 
-                intrinsic = simdSize switch {
-                    64 => NI_AVX512_ConvertToVector512Double,
-                    32 => NI_AVX512_ConvertToVector256Double,
-                    16 => NI_AVX512_ConvertToVector128Double,
-                    _ => throw new System.InvalidOperationException(),
-                };
-#elif TARGET_ARM64
-                intrinsic = simdSize == 16 ? NI_AdvSimd_Arm64_ConvertToDouble :
-                    NI_AdvSimd_Arm64_ConvertToDoubleScalar;
-                assert(simdSize is 8 or 16);
-#elif TARGET_WASM
-                return null;
-#else
-                unreached();
-#endif
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, impSIMDPopStack());
                 break;
             }
@@ -497,17 +498,15 @@ public partial class Compiler
 
                 assert(simdBaseType == (destinationType is TYP_INT or TYP_UINT ? TYP_FLOAT : TYP_DOUBLE));
 
-#if TARGET_XARCH
-                if (destinationType != TYP_INT && !compOpportunisticallyDependsOn(InstructionSet_AVX512, native))
+                if (Configuration.TARGET_XARCH && destinationType != TYP_INT &&
+                    !compOpportunisticallyDependsOn(InstructionSet_AVX512, native))
                 {
                     break;
                 }
-#elif TARGET_WASM
-                if (destinationType is TYP_LONG or TYP_ULONG)
+                else if (Configuration.TARGET_WASM && (destinationType is TYP_LONG or TYP_ULONG))
                 {
                     return null;
                 }
-#endif
 
                 op1 = impSIMDPopStack();
                 retNode = native
@@ -520,36 +519,44 @@ public partial class Compiler
             {
                 assert(sig.numArgs == 1 && varTypeIsInt(simdBaseType));
 
-#if TARGET_XARCH
-                if (simdBaseType == TYP_INT)
+                if (Configuration.TARGET_XARCH)
                 {
-                    intrinsic = simdSize switch {
-                        64 => NI_AVX512_ConvertToVector512Single,
-                        32 => NI_AVX_ConvertToVector256Single,
-                        16 => NI_X86Base_ConvertToVector128Single,
-                        _ => throw new System.InvalidOperationException(),
-                    };
+                    if (simdBaseType == TYP_INT)
+                    {
+                        intrinsic = simdSize switch {
+                            64 => NI_AVX512_ConvertToVector512Single,
+                            32 => NI_AVX_ConvertToVector256Single,
+                            16 => NI_X86Base_ConvertToVector128Single,
+                            _ => throw new System.InvalidOperationException(),
+                        };
+                    }
+                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        intrinsic = simdSize switch {
+                            64 => NI_AVX512_ConvertToVector512Single,
+                            32 => NI_AVX512_ConvertToVector256Single,
+                            16 => NI_AVX512_ConvertToVector128Single,
+                            _ => throw new System.InvalidOperationException(),
+                        };
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
-                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                else if (Configuration.TARGET_ARM64)
                 {
-                    intrinsic = simdSize switch {
-                        64 => NI_AVX512_ConvertToVector512Single,
-                        32 => NI_AVX512_ConvertToVector256Single,
-                        16 => NI_AVX512_ConvertToVector128Single,
-                        _ => throw new System.InvalidOperationException(),
-                    };
+                    intrinsic = NI_AdvSimd_ConvertToSingle;
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    intrinsic = NI_PackedSimd_ConvertToSingle;
                 }
                 else
                 {
-                    break;
+                    unreached();
+                    throw new FatalJitException("Unsupported SIMD conversion target.");
                 }
-#elif TARGET_ARM64
-                intrinsic = NI_AdvSimd_ConvertToSingle;
-#elif TARGET_WASM
-                intrinsic = NI_PackedSimd_ConvertToSingle;
-#else
-                unreached();
-#endif
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, impSIMDPopStack());
                 break;
@@ -573,12 +580,10 @@ public partial class Compiler
             case NI_Vector_CreateSequence:
             {
                 assert(sig.numArgs == 2);
-#if TARGET_ARM64
-                if (varTypeIsLong(simdBaseType) && !impStackTop(0).val.Oper.IsConst)
+                if (Configuration.TARGET_ARM64 && varTypeIsLong(simdBaseType) && !impStackTop(0).val.Oper.IsConst)
                 {
                     break;
                 }
-#endif
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
                 retNode = gtNewSimdCreateSequenceNode(retType, op1, op2, simdBaseType, simdSize);
@@ -592,16 +597,10 @@ public partial class Compiler
                 var multiplierIsConst = impStackTop(0).val.Oper.IsConst;
                 var initialIsConst = impStackTop(1).val.Oper.IsConst;
                 var canGenerate = multiplierIsConst;
-#if !TARGET_XARCH
-                if (canGenerate && !initialIsConst)
+                if (!Configuration.TARGET_XARCH && canGenerate && !initialIsConst)
                 {
-#if TARGET_ARM64
-                    canGenerate = !varTypeIsLong(simdBaseType) || simdSize == 8;
-#else
-                    canGenerate = false;
-#endif
+                    canGenerate = Configuration.TARGET_ARM64 && (!varTypeIsLong(simdBaseType) || simdSize == 8);
                 }
-#endif
                 if (!canGenerate)
                 {
                     if (opts.OptimizationEnabled)
@@ -638,28 +637,22 @@ public partial class Compiler
             case NI_Vector_Dot:
             {
                 assert(sig.numArgs == 2);
-#if TARGET_ARM64
-                if (varTypeIsLong(simdBaseType))
+                if (Configuration.TARGET_ARM64 && varTypeIsLong(simdBaseType))
                 {
                     break;
                 }
-#endif
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
                 var simdType = GetSimdTypeForSize(simdSize);
 
-#if TARGET_WASM
-                var product = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
-                retNode = gtNewSimdSumNode(retType, product, simdBaseType, simdSize);
-                break;
-#elif TARGET_XARCH
-                if (simdSize == 64 || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
+                if (Configuration.TARGET_WASM ||
+                    (Configuration.TARGET_XARCH &&
+                        (simdSize == 64 || varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))))
                 {
                     var product = gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
                     retNode = gtNewSimdSumNode(retType, product, simdBaseType, simdSize);
                     break;
                 }
-#endif
                 var dot = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseType, simdSize);
                 retNode = gtNewSimdToScalarNode(retType, dot, simdBaseType, simdSize);
                 break;
@@ -714,70 +707,73 @@ public partial class Compiler
                 assert(sig.numArgs == 1);
                 op1 = impSIMDPopStack();
 
-#if TARGET_XARCH
-                if (simdSize == 64 || canUseEvexEncoding())
+                if (Configuration.TARGET_XARCH)
                 {
-                    op1 = gtFoldExpr(gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseType, simdSize));
-                    retNode = gtNewSimdHWIntrinsicNode(retType, NI_AVX512_MoveMask,
-                        simdBaseType, simdSize, op1);
-                    break;
-                }
-
-                switch (simdBaseType)
-                {
-                    case TYP_BYTE:
-                    case TYP_UBYTE:
+                    if (simdSize == 64 || canUseEvexEncoding())
                     {
-                        intrinsic = simdSize == 32 ? NI_AVX2_MoveMask : NI_X86Base_MoveMask;
+                        op1 = gtFoldExpr(gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseType, simdSize));
+                        retNode = gtNewSimdHWIntrinsicNode(retType, NI_AVX512_MoveMask,
+                            simdBaseType, simdSize, op1);
                         break;
                     }
 
-                    case TYP_SHORT:
-                    case TYP_USHORT:
+                    switch (simdBaseType)
                     {
-                        break;
-                    }
+                        case TYP_BYTE:
+                        case TYP_UBYTE:
+                        {
+                            intrinsic = simdSize == 32 ? NI_AVX2_MoveMask : NI_X86Base_MoveMask;
+                            break;
+                        }
 
-                    case TYP_INT:
-                    case TYP_UINT:
-                    case TYP_FLOAT:
-                    {
-                        simdBaseType = TYP_FLOAT;
-                        intrinsic = simdSize == 32 ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
-                        break;
-                    }
+                        case TYP_SHORT:
+                        case TYP_USHORT:
+                        {
+                            break;
+                        }
 
-                    case TYP_LONG:
-                    case TYP_ULONG:
-                    case TYP_DOUBLE:
-                    {
-                        simdBaseType = TYP_DOUBLE;
-                        intrinsic = simdSize == 32 ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
-                        break;
-                    }
+                        case TYP_INT:
+                        case TYP_UINT:
+                        case TYP_FLOAT:
+                        {
+                            simdBaseType = TYP_FLOAT;
+                            intrinsic = simdSize == 32 ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
+                            break;
+                        }
 
-                    default:
-                    {
-                        unreached();
-                        break;
+                        case TYP_LONG:
+                        case TYP_ULONG:
+                        case TYP_DOUBLE:
+                        {
+                            simdBaseType = TYP_DOUBLE;
+                            intrinsic = simdSize == 32 ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                            break;
+                        }
                     }
                 }
-#elif TARGET_WASM
-                if (simdBaseType == TYP_FLOAT)
+                else if (Configuration.TARGET_WASM)
                 {
-                    simdBaseType = TYP_INT;
-                }
-                else if (simdBaseType == TYP_DOUBLE)
-                {
-                    simdBaseType = TYP_LONG;
-                }
-                else
-                {
-                    assert(varTypeIsIntegral(simdBaseType));
-                }
+                    if (simdBaseType == TYP_FLOAT)
+                    {
+                        simdBaseType = TYP_INT;
+                    }
+                    else if (simdBaseType == TYP_DOUBLE)
+                    {
+                        simdBaseType = TYP_LONG;
+                    }
+                    else
+                    {
+                        assert(varTypeIsIntegral(simdBaseType));
+                    }
 
-                intrinsic = NI_PackedSimd_Bitmask;
-#endif
+                    intrinsic = NI_PackedSimd_Bitmask;
+                }
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1);
                 break;
@@ -787,19 +783,21 @@ public partial class Compiler
             {
                 assert(sig.numArgs == 3 && varTypeIsFloating(simdBaseType));
 
-#if TARGET_XARCH
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                if (Configuration.TARGET_XARCH && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     break;
                 }
-#elif TARGET_ARM64
-                impSpillSideEffect(true, stackState.esStackDepth - 3,
-                    "Spilling op1 side effects for FusedMultiplyAdd");
-                impSpillSideEffect(true, stackState.esStackDepth - 2,
-                    "Spilling op2 side effects for FusedMultiplyAdd");
-#elif TARGET_WASM
-                return null;
-#endif
+                else if (Configuration.TARGET_ARM64)
+                {
+                    impSpillSideEffect(true, stackState.esStackDepth - 3,
+                        "Spilling op1 side effects for FusedMultiplyAdd");
+                    impSpillSideEffect(true, stackState.esStackDepth - 2,
+                        "Spilling op2 side effects for FusedMultiplyAdd");
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    return null;
+                }
 
                 op3 = impSIMDPopStack();
                 op2 = impSIMDPopStack();
@@ -811,36 +809,34 @@ public partial class Compiler
             case NI_Vector_GetElement:
             {
                 assert(sig.numArgs == 2);
-#if TARGET_WASM
-                var index = impStackTop(0).val;
-                if (index.Oper.IsConst)
+                if (Configuration.TARGET_WASM)
                 {
-                    var lane = index.AsIntCon().IconValue;
-                    var count = simdSize / simdBaseType.Size;
-                    if (lane < 0 || lane >= count)
+                    var index = impStackTop(0).val;
+                    if (index.Oper.IsConst)
                     {
-                        return null;
+                        var lane = index.AsIntCon().IconValue;
+                        var count = simdSize / simdBaseType.Size;
+                        if (lane < 0 || lane >= count)
+                        {
+                            return null;
+                        }
                     }
                 }
-#endif
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack();
                 retNode = gtNewSimdGetElementNode(retType, op1, op2, simdBaseType, simdSize);
                 break;
             }
 
-#if TARGET_XARCH || TARGET_ARM64
-            case NI_Vector_GetLower:
-            case NI_Vector_GetUpper:
+            case NI_Vector_GetLower when Configuration.TARGET_XARCH || Configuration.TARGET_ARM64:
+            case NI_Vector_GetUpper when Configuration.TARGET_XARCH || Configuration.TARGET_ARM64:
             {
                 assert(sig.numArgs == 1);
 
-#if TARGET_XARCH
-                if (simdSize == 8)
+                if (Configuration.TARGET_XARCH && (simdSize == 8))
                 {
                     break;
                 }
-#endif
 
                 op1 = impSIMDPopStack();
                 retNode = intrinsic == NI_Vector_GetLower
@@ -848,7 +844,6 @@ public partial class Compiler
                     : gtNewSimdGetUpperNode(retType, op1, simdBaseType, simdSize);
                 break;
             }
-#endif
 
             case NI_Vector_IsEvenInteger:
             case NI_Vector_IsOddInteger:
@@ -901,12 +896,11 @@ public partial class Compiler
             case NI_Vector_LoadAlignedNonTemporal:
             case NI_Vector_LoadUnsafe:
             {
-#if TARGET_ARM64 || TARGET_WASM
-                if (intrinsic != NI_Vector_LoadUnsafe && opts.OptimizationDisabled)
+                if ((Configuration.TARGET_ARM64 || Configuration.TARGET_WASM) &&
+                    intrinsic != NI_Vector_LoadUnsafe && opts.OptimizationDisabled)
                 {
                     break;
                 }
-#endif
                 GenTree? offset = null;
                 if (intrinsic == NI_Vector_LoadUnsafe)
                 {
@@ -971,28 +965,26 @@ public partial class Compiler
             {
                 assert(sig.numArgs == 3);
 
-#if TARGET_ARM64
-                if (varTypeIsFloating(simdBaseType))
+                if (Configuration.TARGET_ARM64 && varTypeIsFloating(simdBaseType))
                 {
                     impSpillSideEffect(true, stackState.esStackDepth - 3,
                         "Spilling op1 side effects for MultiplyAddEstimate");
                     impSpillSideEffect(true, stackState.esStackDepth - 2,
                         "Spilling op2 side effects for MultiplyAddEstimate");
                 }
-#endif
                 op3 = impSIMDPopStack();
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
                 var isFmaSupported = varTypeIsFloating(simdBaseType);
-#if TARGET_XARCH
-                if (isFmaSupported)
+                if (Configuration.TARGET_XARCH && isFmaSupported)
                 {
                     isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2, true);
                 }
-#elif TARGET_WASM
-                isFmaSupported = false;
-#endif
+                else if (Configuration.TARGET_WASM)
+                {
+                    isFmaSupported = false;
+                }
                 if (isFmaSupported)
                 {
                     retNode = gtNewSimdFmaNode(retType, op1, op2, op3, simdBaseType, simdSize);
@@ -1020,85 +1012,93 @@ public partial class Compiler
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-#if TARGET_XARCH
-                if (simdBaseType == TYP_DOUBLE)
+                if (Configuration.TARGET_XARCH)
                 {
-                    retNode = gtNewSimdNarrowNode(retType, op1, op2, TYP_FLOAT, simdSize);
-                }
-                else if (simdSize == 16 && simdBaseType is TYP_SHORT or TYP_INT)
-                {
-                    // PackSignedSaturate uses the base type of the return for the simdBaseType.
-                    simdBaseType = simdBaseType == TYP_SHORT ? TYP_BYTE : TYP_SHORT;
-                    retNode = gtNewSimdHWIntrinsicNode(retType,
-                        NI_X86Base_PackSignedSaturate, simdBaseType, simdSize, op1, op2);
-                }
-                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
-                {
-                    var widenedSize = simdSize == 16 ? (byte)32 : (byte)64;
-                    var widenedType = GetSimdTypeForSize(widenedSize);
-                    var unsafeIntrinsic = simdSize == 16 ? NI_Vector_ToVector256Unsafe : NI_Vector_ToVector512Unsafe;
-
-                    if (simdSize != 64)
+                    if (simdBaseType == TYP_DOUBLE)
                     {
-                        op1 = gtNewSimdHWIntrinsicNode(widenedType, unsafeIntrinsic, simdBaseType, simdSize, op1);
-                        op1 = gtNewSimdWithUpperNode(widenedType, op1, op2, simdBaseType, widenedSize);
+                        retNode = gtNewSimdNarrowNode(retType, op1, op2, TYP_FLOAT, simdSize);
                     }
-
-                    intrinsic = (simdSize, simdBaseType) switch {
-                        (16, TYP_USHORT) => NI_AVX512_ConvertToVector128ByteWithSaturation,
-                        (16, TYP_UINT) => NI_AVX512_ConvertToVector128UInt16WithSaturation,
-                        (16, TYP_LONG) => NI_AVX512_ConvertToVector128Int32WithSaturation,
-                        (16, TYP_ULONG) => NI_AVX512_ConvertToVector128UInt32WithSaturation,
-                        (_, TYP_SHORT) => NI_AVX512_ConvertToVector256SByteWithSaturation,
-                        (_, TYP_USHORT) => NI_AVX512_ConvertToVector256ByteWithSaturation,
-                        (_, TYP_INT) => NI_AVX512_ConvertToVector256Int16WithSaturation,
-                        (_, TYP_UINT) => NI_AVX512_ConvertToVector256UInt16WithSaturation,
-                        (_, TYP_LONG) => NI_AVX512_ConvertToVector256Int32WithSaturation,
-                        (_, TYP_ULONG) => NI_AVX512_ConvertToVector256UInt32WithSaturation,
-                        _ => throw new System.InvalidOperationException(),
-                    };
-
-                    if (simdSize == 64)
+                    else if (simdSize == 16 && simdBaseType is TYP_SHORT or TYP_INT)
                     {
-                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, intrinsic, simdBaseType, simdSize, op1);
-                        op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, intrinsic, simdBaseType, simdSize, op2);
-                        retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseType, simdSize);
+                        // PackSignedSaturate uses the base type of the return for the simdBaseType.
+                        simdBaseType = simdBaseType == TYP_SHORT ? TYP_BYTE : TYP_SHORT;
+                        retNode = gtNewSimdHWIntrinsicNode(retType,
+                            NI_X86Base_PackSignedSaturate, simdBaseType, simdSize, op1, op2);
+                    }
+                    else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        var widenedSize = simdSize == 16 ? (byte)32 : (byte)64;
+                        var widenedType = GetSimdTypeForSize(widenedSize);
+                        var unsafeIntrinsic = simdSize == 16 ? NI_Vector_ToVector256Unsafe : NI_Vector_ToVector512Unsafe;
+
+                        if (simdSize != 64)
+                        {
+                            op1 = gtNewSimdHWIntrinsicNode(widenedType, unsafeIntrinsic, simdBaseType, simdSize, op1);
+                            op1 = gtNewSimdWithUpperNode(widenedType, op1, op2, simdBaseType, widenedSize);
+                        }
+
+                        intrinsic = (simdSize, simdBaseType) switch {
+                            (16, TYP_USHORT) => NI_AVX512_ConvertToVector128ByteWithSaturation,
+                            (16, TYP_UINT) => NI_AVX512_ConvertToVector128UInt16WithSaturation,
+                            (16, TYP_LONG) => NI_AVX512_ConvertToVector128Int32WithSaturation,
+                            (16, TYP_ULONG) => NI_AVX512_ConvertToVector128UInt32WithSaturation,
+                            (_, TYP_SHORT) => NI_AVX512_ConvertToVector256SByteWithSaturation,
+                            (_, TYP_USHORT) => NI_AVX512_ConvertToVector256ByteWithSaturation,
+                            (_, TYP_INT) => NI_AVX512_ConvertToVector256Int16WithSaturation,
+                            (_, TYP_UINT) => NI_AVX512_ConvertToVector256UInt16WithSaturation,
+                            (_, TYP_LONG) => NI_AVX512_ConvertToVector256Int32WithSaturation,
+                            (_, TYP_ULONG) => NI_AVX512_ConvertToVector256UInt32WithSaturation,
+                            _ => throw new System.InvalidOperationException(),
+                        };
+
+                        if (simdSize == 64)
+                        {
+                            op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, intrinsic, simdBaseType, simdSize, op1);
+                            op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, intrinsic, simdBaseType, simdSize, op2);
+                            retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseType, simdSize);
+                        }
+                        else
+                        {
+                            retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, widenedSize, op1);
+                        }
                     }
                     else
                     {
-                        retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, widenedSize, op1);
+                        retNode = gtNewSimdNarrowWithSaturationNode(retType, op1, op2, simdBaseType, simdSize);
                     }
                 }
-                else
+                else if (Configuration.TARGET_ARM64)
+                {
+                    if (varTypeIsFloating(simdBaseType))
+                    {
+                        retNode = gtNewSimdNarrowNode(retType, op1, op2, simdBaseType, simdSize);
+                    }
+                    else if (simdSize == 16)
+                    {
+                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8,
+                            NI_AdvSimd_ExtractNarrowingSaturateLower, simdBaseType, 8, op1);
+                        retNode = gtNewSimdHWIntrinsicNode(retType,
+                            NI_AdvSimd_ExtractNarrowingSaturateUpper, simdBaseType, simdSize, op1, op2);
+                    }
+                    else
+                    {
+                        assert(simdSize == 8);
+                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16,
+                            NI_Vector_ToVector128Unsafe, simdBaseType, simdSize, op1);
+                        op1 = gtNewSimdWithUpperNode(TYP_SIMD16, op1, op2, simdBaseType, 16);
+                        retNode = gtNewSimdHWIntrinsicNode(retType,
+                            NI_AdvSimd_ExtractNarrowingSaturateLower, simdBaseType, simdSize, op1);
+                    }
+                }
+                else if (Configuration.TARGET_WASM)
                 {
                     retNode = gtNewSimdNarrowWithSaturationNode(retType, op1, op2, simdBaseType, simdSize);
                 }
-#elif TARGET_ARM64
-                if (varTypeIsFloating(simdBaseType))
-                {
-                    retNode = gtNewSimdNarrowNode(retType, op1, op2, simdBaseType, simdSize);
-                }
-                else if (simdSize == 16)
-                {
-                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8,
-                        NI_AdvSimd_ExtractNarrowingSaturateLower, simdBaseType, 8, op1);
-                    retNode = gtNewSimdHWIntrinsicNode(retType,
-                        NI_AdvSimd_ExtractNarrowingSaturateUpper, simdBaseType, simdSize, op1, op2);
-                }
                 else
                 {
-                    assert(simdSize == 8);
-                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16,
-                        NI_Vector_ToVector128Unsafe, simdBaseType, simdSize, op1);
-                    op1 = gtNewSimdWithUpperNode(TYP_SIMD16, op1, op2, simdBaseType, 16);
-                    retNode = gtNewSimdHWIntrinsicNode(retType,
-                        NI_AdvSimd_ExtractNarrowingSaturateLower, simdBaseType, simdSize, op1);
+                    unreached();
+                    throw new FatalJitException("Unsupported SIMD narrowing target.");
                 }
-#elif TARGET_WASM
-                retNode = gtNewSimdNarrowWithSaturationNode(retType, op1, op2, simdBaseType, simdSize);
-#else
-                unreached();
-#endif
                 break;
             }
 
@@ -1106,13 +1106,11 @@ public partial class Compiler
             {
                 assert(sig.numArgs == 1);
 
-#if TARGET_XARCH
-                if (simdSize == 64 && varTypeIsByte(simdBaseType) &&
+                if (Configuration.TARGET_XARCH && simdSize == 64 && varTypeIsByte(simdBaseType) &&
                     !compOpportunisticallyDependsOn(InstructionSet_AVX512v2))
                 {
                     break;
                 }
-#endif
 
                 retNode = gtNewSimdReverseNode(retType, impSIMDPopStack(), simdBaseType, simdSize);
                 break;
@@ -1126,45 +1124,54 @@ public partial class Compiler
                     break;
                 }
 
-#if TARGET_WASM
-                return null;
-#elif TARGET_XARCH
-                if (simdSize == 16 && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                if (Configuration.TARGET_WASM)
+                {
+                    return null;
+                }
+                else if (Configuration.TARGET_XARCH && simdSize == 16 &&
+                    !compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     break;
                 }
-#endif
 
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-#if TARGET_XARCH
-                if (simdSize == 64)
+                if (Configuration.TARGET_XARCH)
                 {
-                    intrinsic = NI_AVX512_ShiftLeftLogicalVariable;
+                    if (simdSize == 64)
+                    {
+                        intrinsic = NI_AVX512_ShiftLeftLogicalVariable;
+                    }
+                    else
+                    {
+                        assert(simdSize is 16 or 32);
+                        intrinsic = NI_AVX2_ShiftLeftLogicalVariable;
+                    }
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    if (simdSize == 16)
+                    {
+                        intrinsic = NI_AdvSimd_ShiftLogical;
+                    }
+                    else
+                    {
+                        assert(simdSize == 8);
+                        intrinsic = varTypeIsLong(simdBaseType)
+                            ? NI_AdvSimd_ShiftLogicalScalar : NI_AdvSimd_ShiftLogical;
+                    }
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    // Unreachable: WASM bails out to the software path above, before the operands are popped.
+                    return null;
                 }
                 else
                 {
-                    assert(simdSize is 16 or 32);
-                    intrinsic = NI_AVX2_ShiftLeftLogicalVariable;
+                    unreached();
+                    throw new FatalJitException("Unsupported SIMD shift target.");
                 }
-#elif TARGET_ARM64
-                if (simdSize == 16)
-                {
-                    intrinsic = NI_AdvSimd_ShiftLogical;
-                }
-                else
-                {
-                    assert(simdSize == 8);
-                    intrinsic = varTypeIsLong(simdBaseType)
-                        ? NI_AdvSimd_ShiftLogicalScalar : NI_AdvSimd_ShiftLogical;
-                }
-#elif TARGET_WASM
-                // Unreachable: WASM bails out to the software path above, before the operands are popped.
-                return null;
-#else
-                unreached();
-#endif
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2);
                 break;
             }
@@ -1234,12 +1241,11 @@ public partial class Compiler
             case NI_Vector_StoreUnsafe:
             {
                 assert(retType == TYP_VOID);
-#if TARGET_ARM64 || TARGET_WASM
-                if (intrinsic != NI_Vector_StoreUnsafe && opts.OptimizationDisabled)
+                if ((Configuration.TARGET_ARM64 || Configuration.TARGET_WASM) &&
+                    intrinsic != NI_Vector_StoreUnsafe && opts.OptimizationDisabled)
                 {
                     break;
                 }
-#endif
                 GenTree? offset = null;
 
                 if (intrinsic == NI_Vector_StoreUnsafe && sig.numArgs == 3)
@@ -1293,13 +1299,11 @@ public partial class Compiler
             case NI_Vector_UnzipOdd:
             {
                 assert(sig.numArgs == 2);
-#if TARGET_XARCH
-                if (simdSize == 16 && simdBaseType.Size != 4 &&
+                if (Configuration.TARGET_XARCH && simdSize == 16 && simdBaseType.Size != 4 &&
                     !compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     break;
                 }
-#endif
 
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
@@ -1322,47 +1326,49 @@ public partial class Compiler
             case NI_Vector_WithElement:
             {
                 assert(sig.numArgs == 3);
-#if TARGET_X86
-                if (varTypeIsLong(simdBaseType))
+                var indexIsConst = true;
+                if (Configuration.TARGET_X86 && varTypeIsLong(simdBaseType))
                 {
                     return null;
                 }
-#elif TARGET_ARM64
-                var index = impStackTop(1).val;
-                var indexIsConst = index.Oper.IsConst;
-                if (!indexIsConst)
+                else if (Configuration.TARGET_ARM64)
                 {
-                    if (opts.OptimizationDisabled)
+                    var index = impStackTop(1).val;
+                    indexIsConst = index.Oper.IsConst;
+                    if (!indexIsConst)
                     {
-                        return null;
+                        if (opts.OptimizationDisabled)
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        var lane = index.AsIntCon().IconValue;
+                        var count = simdSize / simdBaseType.Size;
+                        if (lane < 0 || lane >= count)
+                        {
+                            return null;
+                        }
                     }
                 }
-                else
+                else if (Configuration.TARGET_WASM)
                 {
-                    var lane = index.AsIntCon().IconValue;
-                    var count = simdSize / simdBaseType.Size;
-                    if (lane < 0 || lane >= count)
+                    var index = impStackTop(1).val;
+                    if (index.Oper.IsConst)
                     {
-                        return null;
+                        var lane = index.AsIntCon().IconValue;
+                        var count = simdSize / simdBaseType.Size;
+                        if (lane < 0 || lane >= count)
+                        {
+                            return null;
+                        }
                     }
                 }
-#elif TARGET_WASM
-                var index = impStackTop(1).val;
-                if (index.Oper.IsConst)
-                {
-                    var lane = index.AsIntCon().IconValue;
-                    var count = simdSize / simdBaseType.Size;
-                    if (lane < 0 || lane >= count)
-                    {
-                        return null;
-                    }
-                }
-#endif
                 op3 = impPopStack().val;
                 op2 = impPopStack().val;
                 op1 = impSIMDPopStack();
-#if TARGET_ARM64
-                if (!indexIsConst)
+                if (Configuration.TARGET_ARM64 && !indexIsConst)
                 {
                     retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2, op3);
                     retNode.AsHWIntrinsic().MethodHandle = method;
@@ -1373,22 +1379,18 @@ public partial class Compiler
 
                     break;
                 }
-#endif
                 retNode = gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseType, simdSize);
                 break;
             }
 
-#if TARGET_XARCH || TARGET_ARM64
-            case NI_Vector_WithLower:
-            case NI_Vector_WithUpper:
+            case NI_Vector_WithLower when Configuration.TARGET_XARCH || Configuration.TARGET_ARM64:
+            case NI_Vector_WithUpper when Configuration.TARGET_XARCH || Configuration.TARGET_ARM64:
             {
                 assert(sig.numArgs == 2);
-#if TARGET_XARCH
-                if (simdSize == 16)
+                if (Configuration.TARGET_XARCH && (simdSize == 16))
                 {
                     break;
                 }
-#endif
 
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
@@ -1397,7 +1399,6 @@ public partial class Compiler
                     : gtNewSimdWithUpperNode(retType, op1, op2, simdBaseType, simdSize);
                 break;
             }
-#endif
 
             case NI_Vector_ZipLower:
             case NI_Vector_ZipUpper:
@@ -1480,8 +1481,7 @@ public partial class Compiler
                 assert(sig.numArgs == 2);
                 if (intrinsic == NI_Vector_op_Division && varTypeIsIntegral(simdBaseType))
                 {
-#if TARGET_XARCH
-                    if (varTypeIsLong(simdBaseType))
+                    if (!Configuration.TARGET_XARCH || varTypeIsLong(simdBaseType))
                     {
                         break;
                     }
@@ -1494,9 +1494,6 @@ public partial class Compiler
                         impSpillSideEffect(true, stackState.esStackDepth - 2,
                             "Spilling op1 side effects for vector integer division");
                     }
-#else
-                    break;
-#endif
                 }
 
                 var arg1 = sig.args;
@@ -1557,15 +1554,13 @@ public partial class Compiler
             op1 = impSIMDPopStack();
             retNode = gtNewSimdConcatNode(retType, op1, op2, simdBaseType, simdSize, leftUpper, rightUpper);
         }
-#if TARGET_XARCH
-        else if (retType == TYP_MASK)
+        else if (Configuration.TARGET_XARCH && (retType == TYP_MASK))
         {
             var vectorType = GetSimdTypeForSize(simdSize);
             assert(vectorType == GetSimdTypeForSize(GetSimdTypeSizeInBytes(sig.retTypeSigClass)));
             assert(retNode is not null);
             retNode = gtNewSimdCvtMaskToVectorNode(vectorType, gtFoldExpr(retNode), simdBaseType, simdSize);
         }
-#endif
 
         return retNode;
     }
@@ -1574,6 +1569,12 @@ public partial class Compiler
         NamedIntrinsic intrinsic, var_types retType, ref GenTree op1, GenTree op2,
         var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS ||
+            (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_WASM))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Saturating SIMD operations require a supported hardware-intrinsic target.");
+        }
+
         var addition = intrinsic == NI_Vector_AddSaturate;
         var oper = addition ? GT_ADD : GT_SUB;
 
@@ -1582,29 +1583,38 @@ public partial class Compiler
             return gtNewSimdBinOpNode(oper, retType, op1, op2, simdBaseType, simdSize);
         }
 
-#if TARGET_ARM64
-        var armIntrinsic = addition ? NI_AdvSimd_AddSaturate : NI_AdvSimd_SubtractSaturate;
-        if (simdSize == 8 && varTypeIsLong(simdBaseType))
+        if (Configuration.TARGET_ARM64)
         {
-            armIntrinsic = addition ? NI_AdvSimd_AddSaturateScalar : NI_AdvSimd_SubtractSaturateScalar;
+            var armIntrinsic = addition ? NI_AdvSimd_AddSaturate : NI_AdvSimd_SubtractSaturate;
+            if (simdSize == 8 && varTypeIsLong(simdBaseType))
+            {
+                armIntrinsic = addition ? NI_AdvSimd_AddSaturateScalar : NI_AdvSimd_SubtractSaturateScalar;
+            }
+
+            return gtNewSimdHWIntrinsicNode(retType, armIntrinsic, simdBaseType, simdSize, op1, op2);
         }
 
-        return gtNewSimdHWIntrinsicNode(retType, armIntrinsic, simdBaseType, simdSize, op1, op2);
-#else
         if (varTypeIsSmall(simdBaseType))
         {
-#if TARGET_XARCH
-            var saturatingIntrinsic = simdSize switch {
-                64 => addition ? NI_AVX512_AddSaturate : NI_AVX512_SubtractSaturate,
-                32 => addition ? NI_AVX2_AddSaturate : NI_AVX2_SubtractSaturate,
-                16 => addition ? NI_X86Base_AddSaturate : NI_X86Base_SubtractSaturate,
-                _ => throw new System.InvalidOperationException(),
-            };
-#elif TARGET_WASM
-            var saturatingIntrinsic = addition ? NI_PackedSimd_AddSaturate : NI_PackedSimd_SubtractSaturate;
-#else
-#error Unsupported platform
-#endif
+            NamedIntrinsic saturatingIntrinsic;
+            if (Configuration.TARGET_XARCH)
+            {
+                saturatingIntrinsic = simdSize switch {
+                    64 => addition ? NI_AVX512_AddSaturate : NI_AVX512_SubtractSaturate,
+                    32 => addition ? NI_AVX2_AddSaturate : NI_AVX2_SubtractSaturate,
+                    16 => addition ? NI_X86Base_AddSaturate : NI_X86Base_SubtractSaturate,
+                    _ => throw new System.InvalidOperationException(),
+                };
+            }
+            else if (Configuration.TARGET_WASM)
+            {
+                saturatingIntrinsic = addition ? NI_PackedSimd_AddSaturate : NI_PackedSimd_SubtractSaturate;
+            }
+            else
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "Unsupported saturating SIMD target.");
+            }
+
             return gtNewSimdHWIntrinsicNode(retType, saturatingIntrinsic,
                 simdBaseType, simdSize, op1, op2);
         }
@@ -1654,15 +1664,13 @@ public partial class Compiler
         var saturation = gtNewSimdCndSelNode(retType, sign, maximum, minimum, simdBaseType, simdSize);
 
         GenTree mask;
-#if TARGET_XARCH
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        if (Configuration.TARGET_XARCH && compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             // Inputs are (result, left, right); 0x18 detects add overflow and 0x24 detects subtract overflow.
             mask = gtNewSimdTernaryLogicNode(retType, sum, firstDuplicate, secondDuplicate,
                 gtNewIconNode(TYP_INT, addition ? 0x18 : 0x24), simdBaseType, simdSize);
         }
         else
-#endif
         {
             var firstDuplicate2 = gtCloneExpr(firstDuplicate);
             var difference = gtNewSimdBinOpNode(GT_XOR, retType, sum, firstDuplicate,
@@ -1676,7 +1684,6 @@ public partial class Compiler
         mask = gtNewSimdIsNegativeNode(retType, mask, simdBaseType, simdSize);
         return gtNewSimdCndSelNode(retType, mask, saturation, sumDuplicate2,
             simdBaseType, simdSize);
-#endif
     }
 
     private GenTree? impXplatVectorConstant(
@@ -1776,5 +1783,4 @@ public partial class Compiler
 
         return constant;
     }
-#endif
 }

@@ -7,10 +7,14 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS
     public GenTree gtNewSimdNarrowWithSaturationNode(var_types type, GenTree op1, GenTree op2,
         var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Saturating SIMD narrowing requires hardware intrinsics.");
+        }
+
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(op1 is not null && op1.Type == type);
         assert(op2 is not null && op2.Type == type);
@@ -91,5 +95,4 @@ public partial class Compiler
             isMax: false, isMagnitude: false, isNumber: false);
         return gtNewSimdNarrowNode(type, op1, op2, narrowBaseType, simdSize);
     }
-#endif
 }

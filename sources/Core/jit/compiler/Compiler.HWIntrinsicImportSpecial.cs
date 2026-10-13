@@ -14,8 +14,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
-    private unsafe GenTree? impSpecialIntrinsic(
+    private unsafe GenTree? impSpecialIntrinsicXarchCore(
         NamedIntrinsic intrinsic,
         CORINFO_CLASS_HANDLE clsHnd,
         CORINFO_METHOD_HANDLE method,
@@ -26,6 +25,11 @@ public partial class Compiler
         byte simdSize,
         bool mustExpand)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch hardware-intrinsic special import requires xarch hardware intrinsics.");
+        }
+
         var isa = HWIntrinsicInfo.lookupIsa(intrinsic);
         if (isa is InstructionSet_Vector)
         {
@@ -862,5 +866,4 @@ public partial class Compiler
         return gtNewSimdTernaryLogicNode(retType, first, second, third,
             controlNode, simdBaseType, simdSize);
     }
-#endif
 }

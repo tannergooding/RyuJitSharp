@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
-    private GenTreeHWIntrinsic? impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
+    private GenTreeHWIntrinsic? impNonConstFallbackXarchCore(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch hardware-intrinsic fallback requires xarch hardware intrinsics.");
+        }
+
         assert((HWIntrinsicInfo.lookupFlags(intrinsic) &
             (HW_Flag_NoJmpTableIMM | HW_Flag_MaybeNoJmpTableIMM)) != 0);
 
@@ -67,5 +71,4 @@ public partial class Compiler
             }
         }
     }
-#endif
 }

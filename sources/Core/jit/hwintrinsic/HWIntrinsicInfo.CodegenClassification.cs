@@ -7,14 +7,8 @@ namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
-#if FEATURE_HW_INTRINSICS
-#if TARGET_ARM64
-    internal static bool IsScalable(NamedIntrinsic id)
-    {
-        var flags = lookupFlags(id);
-        return (flags & HW_Flag_Scalable) != 0;
-    }
-#endif
+    internal static bool IsScalable(NamedIntrinsic id) =>
+        Configuration.TARGET_ARM64 && ((lookupFlags(id) & HW_Flag_Scalable) != 0);
 
     internal static bool RequiresCodegen(NamedIntrinsic id)
     {
@@ -34,18 +28,15 @@ public readonly partial struct HWIntrinsicInfo
         return (flags & (HW_Flag_SpecialImport | HW_Flag_InvalidNodeId)) != 0;
     }
 
-#if TARGET_XARCH
     public static bool IsEmbRoundingCompatible(NamedIntrinsic id) =>
-        (lookupFlags(id) & HW_Flag_EmbRoundingCompatible) != 0;
+        Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_EmbRoundingCompatible) != 0);
 
     public static bool MaybeImm(NamedIntrinsic id) =>
-        (lookupFlags(id) & HW_Flag_MaybeIMM) != 0;
-#endif
+        Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_MaybeIMM) != 0);
 
     public static bool NoJmpTableImm(NamedIntrinsic id) =>
         (lookupFlags(id) & HW_Flag_NoJmpTableIMM) != 0;
 
     public static bool MaybeNoJmpTableImm(NamedIntrinsic id) =>
         (lookupFlags(id) & HW_Flag_MaybeNoJmpTableIMM) != 0;
-#endif
 }

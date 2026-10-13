@@ -29,7 +29,13 @@ public partial class Compiler
             return null;
         }
 
-#if FEATURE_HW_INTRINSICS
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            NYI("Hardware-intrinsic import without hardware-intrinsic and SIMD support");
+            fatal(CORJIT_IMPLLIMITATION);
+            throw new FatalJitException("Hardware-intrinsic import without hardware-intrinsic and SIMD support.");
+        }
+
         var category = HWIntrinsicInfo.lookupCategory(intrinsic);
         _ = HWIntrinsicInfo.lookupIsa(intrinsic);
         var numArgs = (int)sig.numArgs;
@@ -44,8 +50,8 @@ public partial class Compiler
             {
                 assert(sizeBytes == 0);
             }
-#if TARGET_ARM64
-            else if (intrinsic is NI_AdvSimd_LoadAndInsertScalar or NI_AdvSimd_Arm64_LoadAndInsertScalar)
+            else if (Configuration.TARGET_ARM64 &&
+                (intrinsic is NI_AdvSimd_LoadAndInsertScalar or NI_AdvSimd_Arm64_LoadAndInsertScalar))
             {
                 var retFieldType = impNormStructType(sig.retTypeSigClass, out var retFieldBaseType);
                 if (retFieldType is TYP_STRUCT)
@@ -98,7 +104,6 @@ public partial class Compiler
                     retType = GetSimdTypeForSize(sizeBytes);
                 }
             }
-#endif
             else
             {
                 // A struct result must be a supported SIMD type even when an
@@ -129,8 +134,8 @@ public partial class Compiler
             else
             {
                 simdBaseType = getBaseTypeAndSizeOfSimdType(clsHnd, out var sizeBytes);
-#if TARGET_ARM64
-                if ((simdBaseType is TYP_UNDEF) && HWIntrinsicInfo.HasScalarInputVariant(intrinsic))
+                if (Configuration.TARGET_ARM64 && (simdBaseType is TYP_UNDEF) &&
+                    HWIntrinsicInfo.HasScalarInputVariant(intrinsic))
                 {
                     assert(sizeBytes == 0);
                     intrinsic = HWIntrinsicInfo.GetScalarInputVariant(intrinsic);
@@ -140,14 +145,13 @@ public partial class Compiler
                     assert(simdBaseType is not TYP_VOID and not TYP_UNDEF and not TYP_STRUCT);
                 }
                 else
-#endif
                 {
                     assert((category is HW_Category_Special or HW_Category_Helper) || (sizeBytes != 0));
                 }
             }
         }
-#if TARGET_ARM64
-        else if ((simdBaseType is TYP_STRUCT) && HWIntrinsicInfo.BaseTypeFromValueTupleArg(intrinsic))
+        else if (Configuration.TARGET_ARM64 && (simdBaseType is TYP_STRUCT) &&
+            HWIntrinsicInfo.BaseTypeFromValueTupleArg(intrinsic))
         {
             assert(HWIntrinsicInfo.BaseTypeFromFirstArg(intrinsic) || HWIntrinsicInfo.BaseTypeFromSecondArg(intrinsic));
             var arg = sig.args;
@@ -173,7 +177,6 @@ public partial class Compiler
             simdSize = checked((byte)sizeBytes);
             assert(simdSize > 0);
         }
-#endif
 
         if ((category is not HW_Category_Special and not HW_Category_Scalar) &&
             !isSupportedBaseType(intrinsic, simdBaseType))
@@ -181,13 +184,11 @@ public partial class Compiler
             return null;
         }
 
-#if TARGET_XARCH
-        if ((simdBaseType is not TYP_UNDEF) &&
+        if (Configuration.TARGET_XARCH && (simdBaseType is not TYP_UNDEF) &&
             HWIntrinsicInfo.NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
         {
             simdBaseType = varTypeIsUnsigned(simdBaseType) ? TYP_UINT : TYP_INT;
         }
-#endif
 
         if (simdSize == 0)
         {
@@ -200,60 +201,69 @@ public partial class Compiler
         var immUpperBound = 0;
         var setMethodHandle = false;
         getHWIntrinsicImmOps(intrinsic, sig, ref immOp1, ref immOp2);
-#if TARGET_ARM64
-        if (immOp2 is not null)
+        if (Configuration.TARGET_ARM64)
         {
-            var immSimdSize = simdSize;
-            var immSimdBaseType = simdBaseType;
-            getHWIntrinsicImmTypes(intrinsic, sig, 2, ref immSimdSize, ref immSimdBaseType);
-            HWIntrinsicInfo.lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2,
-                out immLowerBound, out immUpperBound);
-
-            if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp2, mustExpand,
-                immLowerBound, immUpperBound, false, out var useFallback))
+            if (immOp2 is not null)
             {
-                if (useFallback)
+                var immSimdSize = simdSize;
+                var immSimdBaseType = simdBaseType;
+                getHWIntrinsicImmTypes(intrinsic, sig, 2, ref immSimdSize, ref immSimdBaseType);
+                HWIntrinsicInfo.lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2,
+                    out immLowerBound, out immUpperBound);
+
+                if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp2, mustExpand,
+                    immLowerBound, immUpperBound, false, out var useFallback))
                 {
-                    return impNonConstFallback(intrinsic, retType, simdBaseType);
-                }
-                else if (immOp2.Oper.IsCnsIntOrI)
-                {
-                    return impUnsupportedNamedIntrinsic(
-                        CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, method, sig, mustExpand);
-                }
-                else
-                {
-                    assert(!mustExpand);
-                    if (opts.OptimizationEnabled)
+                    if (useFallback)
                     {
-                        setMethodHandle = true;
+                        return impNonConstFallback(intrinsic, retType, simdBaseType);
+                    }
+                    else if (immOp2.Oper.IsCnsIntOrI)
+                    {
+                        return impUnsupportedNamedIntrinsic(
+                            CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, method, sig, mustExpand);
                     }
                     else
                     {
-                        return null;
+                        assert(!mustExpand);
+                        if (opts.OptimizationEnabled)
+                        {
+                            setMethodHandle = true;
+                        }
+                        else
+                        {
+                            return null;
+                        }
                     }
                 }
             }
         }
-#else
-        assert(immOp2 is null);
-#endif
+        else
+        {
+            assert(immOp2 is null);
+        }
 
         if (immOp1 is not null)
         {
             var hasFullRangeImm = false;
-#if TARGET_ARM64
-            var immSimdSize = simdSize;
-            var immSimdBaseType = simdBaseType;
-            getHWIntrinsicImmTypes(intrinsic, sig, 1, ref immSimdSize, ref immSimdBaseType);
-            HWIntrinsicInfo.lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1,
-                out immLowerBound, out immUpperBound);
-#elif TARGET_XARCH
-            immUpperBound = HWIntrinsicInfo.lookupImmUpperBound(intrinsic);
-            hasFullRangeImm = HWIntrinsicInfo.HasFullRangeImm(intrinsic);
-#elif TARGET_WASM
-            immUpperBound = HWIntrinsicInfo.lookupImmUpperBound(intrinsic, simdSize, simdBaseType);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                var immSimdSize = simdSize;
+                var immSimdBaseType = simdBaseType;
+                getHWIntrinsicImmTypes(intrinsic, sig, 1, ref immSimdSize, ref immSimdBaseType);
+                HWIntrinsicInfo.lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1,
+                    out immLowerBound, out immUpperBound);
+            }
+            else if (Configuration.TARGET_XARCH)
+            {
+                immUpperBound = HWIntrinsicInfo.lookupImmUpperBound(intrinsic);
+                hasFullRangeImm = HWIntrinsicInfo.HasFullRangeImm(intrinsic);
+            }
+            else if (Configuration.TARGET_WASM)
+            {
+                immUpperBound = HWIntrinsicInfo.lookupImmUpperBound(intrinsic, simdSize, simdBaseType);
+            }
+
             if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseType, immOp1, mustExpand,
                 immLowerBound, immUpperBound, hasFullRangeImm, out var useFallback))
             {
@@ -289,12 +299,11 @@ public partial class Compiler
         }
 
         var nodeRetType = retType;
-#if FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
-        if (HWIntrinsicInfo.ReturnsPerElementMask(intrinsic))
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 &&
+            HWIntrinsicInfo.ReturnsPerElementMask(intrinsic))
         {
             nodeRetType = TYP_MASK;
         }
-#endif
 
         if (impIsTableDrivenHWIntrinsic(intrinsic, category))
         {
@@ -307,13 +316,9 @@ public partial class Compiler
                     assert(false, "Unexpected HW intrinsic");
                     return null;
                 }
-#if TARGET_ARM64
-                if (simdSize is not 8 and not 16 and not SIZE_UNKNOWN)
-#elif TARGET_XARCH
-                if (simdSize is not 16 and not 32 and not 64)
-#elif TARGET_WASM
-                if (simdSize is not 16)
-#endif
+                if ((Configuration.TARGET_ARM64 && (simdSize is not 8 and not 16 and not SIZE_UNKNOWN)) ||
+                    (Configuration.TARGET_XARCH && (simdSize is not 16 and not 32 and not 64)) ||
+                    (Configuration.TARGET_WASM && (simdSize is not 16)))
                 {
                     assert(false, "Unexpected SIMD size");
                     return null;
@@ -387,7 +392,6 @@ public partial class Compiler
                         ? gtNewScalarHWIntrinsicNode(nodeRetType, intrinsic, op1)
                         : gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseType, simdSize, op1);
 
-#if TARGET_XARCH
                     switch (intrinsic)
                     {
                         case NI_X86Base_ConvertToVector128Int16:
@@ -399,21 +403,22 @@ public partial class Compiler
                         case NI_AVX2_ConvertToVector256Int32:
                         case NI_AVX2_ConvertToVector256Int64:
                         {
-                            // Pointer and vector overloads share these IDs.
-                            var auxiliaryType = TYP_UNKNOWN;
-                            if (!varTypeIsSimd(op1.Type))
+                            if (Configuration.TARGET_XARCH)
                             {
-                                auxiliaryType = TYP_U_IMPL;
-                                retNode.Flags |= GTF_EXCEPT | GTF_GLOB_REF;
+                                // Pointer and vector overloads share these IDs.
+                                var auxiliaryType = TYP_UNKNOWN;
+                                if (!varTypeIsSimd(op1.Type))
+                                {
+                                    auxiliaryType = TYP_U_IMPL;
+                                    retNode.Flags |= GTF_EXCEPT | GTF_GLOB_REF;
+                                }
+
+                                retNode.AsHWIntrinsic().AuxiliaryType = auxiliaryType;
                             }
 
-                            retNode.AsHWIntrinsic().AuxiliaryType = auxiliaryType;
                             break;
                         }
-                    }
-#elif TARGET_ARM64
-                    switch (intrinsic)
-                    {
+
                         case NI_Sve_ConvertToDouble:
                         case NI_Sve_ConvertToInt32:
                         case NI_Sve_ConvertToInt64:
@@ -421,12 +426,14 @@ public partial class Compiler
                         case NI_Sve_ConvertToUInt32:
                         case NI_Sve_ConvertToUInt64:
                         {
-                            // ConditionalSelect needs the result vector's base type for containment.
-                            retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sig.retTypeSigClass);
+                            if (Configuration.TARGET_ARM64)
+                            {
+                                // ConditionalSelect needs the result vector's base type for containment.
+                                retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sig.retTypeSigClass);
+                            }
                             break;
                         }
                     }
-#endif
                     break;
                 }
 
@@ -436,114 +443,114 @@ public partial class Compiler
                     retNode = isScalar
                         ? gtNewScalarHWIntrinsicNode(nodeRetType, intrinsic, op1, op2)
                         : gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseType, simdSize, op1, op2);
-#if TARGET_XARCH
-                    if (intrinsic is NI_X86Base_Crc32 or NI_X86Base_X64_Crc32)
+                    if (Configuration.TARGET_XARCH &&
+                        (intrinsic is NI_X86Base_Crc32 or NI_X86Base_X64_Crc32))
                     {
                         retNode.AsHWIntrinsic().SimdBaseType = sigReader.GetOp2TypeAsPrecise();
                     }
-#elif TARGET_ARM64
-                    switch (intrinsic)
+                    else if (Configuration.TARGET_ARM64)
                     {
-                        case NI_Crc32_ComputeCrc32:
-                        case NI_Crc32_ComputeCrc32C:
-                        case NI_Crc32_Arm64_ComputeCrc32:
-                        case NI_Crc32_Arm64_ComputeCrc32C:
+                        switch (intrinsic)
                         {
-                            retNode.AsHWIntrinsic().SimdBaseType = sigReader.GetOp2TypeAsPrecise();
-                            break;
-                        }
-
-                        case NI_AdvSimd_AddWideningUpper:
-                        case NI_AdvSimd_SubtractWideningUpper:
-                        {
-                            assert(varTypeIsSimd(op1.Type));
-                            retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op1ClsHnd);
-                            break;
-                        }
-
-                        case NI_AdvSimd_Arm64_AddSaturateScalar:
-                        {
-                            assert(varTypeIsSimd(op2.Type));
-                            retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op2ClsHnd);
-                            break;
-                        }
-
-                        case NI_ArmBase_Arm64_MultiplyHigh:
-                        {
-                            if (sig.retType is CORINFO_TYPE_ULONG)
+                            case NI_Crc32_ComputeCrc32:
+                            case NI_Crc32_ComputeCrc32C:
+                            case NI_Crc32_Arm64_ComputeCrc32:
+                            case NI_Crc32_Arm64_ComputeCrc32C:
                             {
-                                retNode.AsHWIntrinsic().SimdBaseType = TYP_ULONG;
+                                retNode.AsHWIntrinsic().SimdBaseType = sigReader.GetOp2TypeAsPrecise();
+                                break;
                             }
-                            else
+
+                            case NI_AdvSimd_AddWideningUpper:
+                            case NI_AdvSimd_SubtractWideningUpper:
                             {
-                                assert(sig.retType is CORINFO_TYPE_LONG);
-                                retNode.AsHWIntrinsic().SimdBaseType = TYP_LONG;
+                                assert(varTypeIsSimd(op1.Type));
+                                retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op1ClsHnd);
+                                break;
                             }
-                            break;
-                        }
 
-                        case NI_Sve_CreateWhileLessThanMaskByte:
-                        case NI_Sve_CreateWhileLessThanMaskDouble:
-                        case NI_Sve_CreateWhileLessThanMaskInt16:
-                        case NI_Sve_CreateWhileLessThanMaskInt32:
-                        case NI_Sve_CreateWhileLessThanMaskInt64:
-                        case NI_Sve_CreateWhileLessThanMaskSByte:
-                        case NI_Sve_CreateWhileLessThanMaskSingle:
-                        case NI_Sve_CreateWhileLessThanMaskUInt16:
-                        case NI_Sve_CreateWhileLessThanMaskUInt32:
-                        case NI_Sve_CreateWhileLessThanMaskUInt64:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskInt16:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskInt32:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskInt64:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskSByte:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskSingle:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
-                        case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
-                        case NI_Sve2_CreateWhileGreaterThanMaskByte:
-                        case NI_Sve2_CreateWhileGreaterThanMaskDouble:
-                        case NI_Sve2_CreateWhileGreaterThanMaskInt16:
-                        case NI_Sve2_CreateWhileGreaterThanMaskInt32:
-                        case NI_Sve2_CreateWhileGreaterThanMaskInt64:
-                        case NI_Sve2_CreateWhileGreaterThanMaskSByte:
-                        case NI_Sve2_CreateWhileGreaterThanMaskSingle:
-                        case NI_Sve2_CreateWhileGreaterThanMaskUInt16:
-                        case NI_Sve2_CreateWhileGreaterThanMaskUInt32:
-                        case NI_Sve2_CreateWhileGreaterThanMaskUInt64:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskByte:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskDouble:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt16:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt32:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt64:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSByte:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSingle:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt16:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt32:
-                        case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt64:
-                        {
-                            retNode.AsHWIntrinsic().AuxiliaryType = sigReader.op1JitType.PreciseVarType;
-                            break;
-                        }
+                            case NI_AdvSimd_Arm64_AddSaturateScalar:
+                            {
+                                assert(varTypeIsSimd(op2.Type));
+                                retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op2ClsHnd);
+                                break;
+                            }
 
-                        case NI_Sve_ShiftLeftLogical:
-                        case NI_Sve_ShiftRightArithmetic:
-                        case NI_Sve_ShiftRightLogical:
-                        {
-                            retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op2ClsHnd);
-                            break;
+                            case NI_ArmBase_Arm64_MultiplyHigh:
+                            {
+                                if (sig.retType is CORINFO_TYPE_ULONG)
+                                {
+                                    retNode.AsHWIntrinsic().SimdBaseType = TYP_ULONG;
+                                }
+                                else
+                                {
+                                    assert(sig.retType is CORINFO_TYPE_LONG);
+                                    retNode.AsHWIntrinsic().SimdBaseType = TYP_LONG;
+                                }
+                                break;
+                            }
+
+                            case NI_Sve_CreateWhileLessThanMaskByte:
+                            case NI_Sve_CreateWhileLessThanMaskDouble:
+                            case NI_Sve_CreateWhileLessThanMaskInt16:
+                            case NI_Sve_CreateWhileLessThanMaskInt32:
+                            case NI_Sve_CreateWhileLessThanMaskInt64:
+                            case NI_Sve_CreateWhileLessThanMaskSByte:
+                            case NI_Sve_CreateWhileLessThanMaskSingle:
+                            case NI_Sve_CreateWhileLessThanMaskUInt16:
+                            case NI_Sve_CreateWhileLessThanMaskUInt32:
+                            case NI_Sve_CreateWhileLessThanMaskUInt64:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskByte:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskDouble:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskInt16:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskInt32:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskInt64:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskSByte:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskSingle:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt16:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt32:
+                            case NI_Sve_CreateWhileLessThanOrEqualMaskUInt64:
+                            case NI_Sve2_CreateWhileGreaterThanMaskByte:
+                            case NI_Sve2_CreateWhileGreaterThanMaskDouble:
+                            case NI_Sve2_CreateWhileGreaterThanMaskInt16:
+                            case NI_Sve2_CreateWhileGreaterThanMaskInt32:
+                            case NI_Sve2_CreateWhileGreaterThanMaskInt64:
+                            case NI_Sve2_CreateWhileGreaterThanMaskSByte:
+                            case NI_Sve2_CreateWhileGreaterThanMaskSingle:
+                            case NI_Sve2_CreateWhileGreaterThanMaskUInt16:
+                            case NI_Sve2_CreateWhileGreaterThanMaskUInt32:
+                            case NI_Sve2_CreateWhileGreaterThanMaskUInt64:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskByte:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskDouble:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt16:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt32:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskInt64:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSByte:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskSingle:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt16:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt32:
+                            case NI_Sve2_CreateWhileGreaterThanOrEqualMaskUInt64:
+                            {
+                                retNode.AsHWIntrinsic().AuxiliaryType = sigReader.op1JitType.PreciseVarType;
+                                break;
+                            }
+
+                            case NI_Sve_ShiftLeftLogical:
+                            case NI_Sve_ShiftRightArithmetic:
+                            case NI_Sve_ShiftRightLogical:
+                            {
+                                retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op2ClsHnd);
+                                break;
+                            }
                         }
                     }
-#endif
                     break;
                 }
 
                 case 3:
                 {
                     assert((op1 is not null) && (op2 is not null) && (op3 is not null));
-#if TARGET_ARM64
-                    if (intrinsic is NI_AdvSimd_LoadAndInsertScalar)
+                    if (Configuration.TARGET_ARM64 && (intrinsic is NI_AdvSimd_LoadAndInsertScalar))
                     {
                         op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
                         if ((op1.Oper is GT_CAST) && (op1.AsUnOp().Op1.Type is TYP_BYREF))
@@ -551,18 +558,16 @@ public partial class Compiler
                             op1 = op1.AsUnOp().Op1;
                         }
                     }
-                    else if (intrinsic is NI_AdvSimd_Insert or NI_AdvSimd_InsertScalar)
+                    else if (Configuration.TARGET_ARM64 &&
+                        (intrinsic is NI_AdvSimd_Insert or NI_AdvSimd_InsertScalar))
+                    {
+                        op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
+                    }
+                    else if (Configuration.TARGET_WASM && (intrinsic is NI_PackedSimd_ReplaceScalar))
                     {
                         op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
                     }
                     else
-#elif TARGET_WASM
-                    if (intrinsic is NI_PackedSimd_ReplaceScalar)
-                    {
-                        op2 = addRangeCheckIfNeeded(intrinsic, op2, immLowerBound, immUpperBound);
-                    }
-                    else
-#endif
                     {
                         op3 = addRangeCheckIfNeeded(intrinsic, op3, immLowerBound, immUpperBound);
                     }
@@ -571,18 +576,19 @@ public partial class Compiler
                         ? gtNewScalarHWIntrinsicNode(nodeRetType, intrinsic, op1, op2, op3)
                         : gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseType, simdSize, op1, op2, op3);
 
-#if TARGET_XARCH || TARGET_ARM64
                     switch (intrinsic)
                     {
-#if TARGET_XARCH
                         case NI_AVX2_GatherVector128:
                         case NI_AVX2_GatherVector256:
                         {
-                            assert(varTypeIsSimd(op2.Type));
-                            retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op2ClsHnd);
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                assert(varTypeIsSimd(op2.Type));
+                                retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op2ClsHnd);
+                            }
                             break;
                         }
-#elif TARGET_ARM64
+
                         case NI_Sve_GatherVector:
                         case NI_Sve_GatherVectorByteZeroExtend:
                         case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
@@ -620,16 +626,17 @@ public partial class Compiler
                         case NI_Sve2_GatherVectorUInt32ZeroExtendNonTemporal:
                         case NI_Sve2_GatherVectorWithByteOffsetsNonTemporal:
                         {
-                            assert(varTypeIsSimd(op3.Type));
-                            if (numArgs == 3)
+                            if (Configuration.TARGET_ARM64)
                             {
-                                retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op3ClsHnd);
+                                assert(varTypeIsSimd(op3.Type));
+                                if (numArgs == 3)
+                                {
+                                    retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op3ClsHnd);
+                                }
                             }
                             break;
                         }
-#endif
                     }
-#endif
                     break;
                 }
 
@@ -638,8 +645,7 @@ public partial class Compiler
                     assert(!isScalar);
                     assert((op1 is not null) && (op2 is not null) && (op3 is not null) && (op4 is not null));
                     retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseType, simdSize, op1, op2, op3, op4);
-#if TARGET_ARM64
-                    if (intrinsic is NI_Sve_Scatter)
+                    if (Configuration.TARGET_ARM64 && (intrinsic is NI_Sve_Scatter))
                     {
                         assert(varTypeIsSimd(op3.Type));
                         if (numArgs == 4)
@@ -647,7 +653,6 @@ public partial class Compiler
                             retNode.AsHWIntrinsic().AuxiliaryType = getBaseTypeOfSimdType(sigReader.op3ClsHnd);
                         }
                     }
-#endif
                     break;
                 }
             }
@@ -656,19 +661,16 @@ public partial class Compiler
         {
             retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig, entryPoint, simdBaseType,
                 nodeRetType, simdSize, mustExpand);
-#if FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
-            if (retNode is not null)
+            if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 && (retNode is not null))
             {
                 nodeRetType = retNode.Type;
             }
-#endif
         }
 
         if (setMethodHandle && (retNode is not null))
         {
             var userCall = retNode;
-#if TARGET_XARCH
-            if (userCall.IsConvertMaskToVector)
+            if (Configuration.TARGET_XARCH && userCall.IsConvertMaskToVector)
             {
                 // The fallback call replaces the mask producer, not its wrapper.
                 var conversion = userCall.AsHWIntrinsic();
@@ -676,7 +678,6 @@ public partial class Compiler
                 userCall = conversion.GetOp(1);
                 assert(userCall.Type is TYP_MASK);
             }
-#endif
 
             userCall.AsHWIntrinsic().MethodHandle = method;
             if (Configuration.FEATURE_READYTORUN)
@@ -687,8 +688,8 @@ public partial class Compiler
             gtUpdateNodeSideEffects(retNode);
         }
 
-#if FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
-        if (HWIntrinsicInfo.IsExplicitMaskedOperation(intrinsic))
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 &&
+            HWIntrinsicInfo.IsExplicitMaskedOperation(intrinsic))
         {
             assert(numArgs > 0);
             assert(retNode is not null);
@@ -732,7 +733,8 @@ public partial class Compiler
             }
         }
 
-        if (HWIntrinsicInfo.IsEmbeddedMaskedOperation(intrinsic))
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 &&
+            HWIntrinsicInfo.IsEmbeddedMaskedOperation(intrinsic))
         {
             if (intrinsic is NI_Sve_CreateBreakPropagateMask)
             {
@@ -743,12 +745,11 @@ public partial class Compiler
             }
         }
 
-        if (nodeRetType is TYP_MASK)
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS && Configuration.TARGET_ARM64 && (nodeRetType is TYP_MASK))
         {
             assert(retNode is not null);
             retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseType, simdSize);
         }
-#endif
 
         if ((retNode is not null) && (retNode.Oper is GT_HWINTRINSIC))
         {
@@ -758,14 +759,8 @@ public partial class Compiler
         }
 
         return retNode;
-#else
-        NYI("Hardware-intrinsic import without hardware-intrinsic and SIMD support");
-        fatal(CORJIT_IMPLLIMITATION);
-        throw new FatalJitException("Hardware-intrinsic import without hardware-intrinsic and SIMD support.");
-#endif
     }
 
-#if FEATURE_HW_INTRINSICS
     private unsafe var_types getBaseTypeFromArgIfNeeded(
         NamedIntrinsic intrinsic, in CORINFO_SIG_INFO sig, var_types simdBaseType)
     {
@@ -799,5 +794,4 @@ public partial class Compiler
 
         return simdBaseType;
     }
-#endif
 }

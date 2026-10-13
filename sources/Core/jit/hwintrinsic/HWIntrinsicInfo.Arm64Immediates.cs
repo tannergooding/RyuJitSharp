@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using System;
 
 namespace RyuJitSharp;
@@ -12,6 +11,8 @@ public readonly partial struct HWIntrinsicInfo
 {
     public static void GetImmOpsPositions(NamedIntrinsic id, int argumentCount, out int first, out int second)
     {
+        EnsureArm64ImmediateSupport();
+
         first = -1;
         second = -1;
         switch (id)
@@ -80,6 +81,8 @@ public readonly partial struct HWIntrinsicInfo
     public static void lookupImmBounds(NamedIntrinsic id, int simdSize, var_types baseType, int number,
         out int lower, out int upper)
     {
+        EnsureArm64ImmediateSupport();
+
         assert(HasImmediateOperand(id));
         lower = 0;
         upper = 0;
@@ -255,5 +258,12 @@ public readonly partial struct HWIntrinsicInfo
         }
         assert(lower <= upper);
     }
+
+    private static void EnsureArm64ImmediateSupport()
+    {
+        if (!Configuration.TARGET_ARM64 || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new System.PlatformNotSupportedException("ARM64 intrinsic immediates are unavailable for this target.");
+        }
+    }
 }
-#endif

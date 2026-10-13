@@ -7,20 +7,22 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS
     private GenTree? impSimdCreate(
         NamedIntrinsic intrinsic, in CORINFO_SIG_INFO sig, var_types simdBaseType, var_types retType, byte simdSize)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD creation requires hardware intrinsics.");
+        }
+
         if (sig.numArgs == 1)
         {
             var op1 = impStackTop().val;
 
-#if TARGET_WASM
-            if (!op1.Oper.IsIntegralConst && !op1.Oper.IsCnsFltOrDbl)
+            if (Configuration.TARGET_WASM && !op1.Oper.IsIntegralConst && !op1.Oper.IsCnsFltOrDbl)
             {
                 return null;
             }
-#endif
 
             op1 = impPopStack().val;
             return gtNewSimdCreateBroadcastNode(retType, op1, simdBaseType, simdSize);
@@ -136,9 +138,11 @@ public partial class Compiler
             return vecCon;
         }
 
-#if TARGET_WASM
-        return null;
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            return null;
+        }
+
         var operands = new GenTree[sig.numArgs];
 
         for (var index = operands.Length - 1; index >= 0; index--)
@@ -147,7 +151,5 @@ public partial class Compiler
         }
 
         return gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, operands);
-#endif
     }
-#endif
 }

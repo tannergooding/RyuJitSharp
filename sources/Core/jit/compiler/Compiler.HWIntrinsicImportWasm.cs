@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_WASM
 using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.NamedIntrinsic;
 using static RyuJitSharp.genTreeOps;
@@ -24,6 +23,11 @@ public partial class Compiler
         byte simdSize,
         bool mustExpand)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm hardware-intrinsic special import requires Wasm hardware intrinsics.");
+        }
+
         var isa = HWIntrinsicInfo.lookupIsa(intrinsic);
         if (isa is InstructionSet_Vector)
         {
@@ -139,4 +143,3 @@ public partial class Compiler
         return node;
     }
 }
-#endif

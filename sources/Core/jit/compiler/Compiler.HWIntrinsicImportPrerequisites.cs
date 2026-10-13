@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS
     private static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsic, HWIntrinsicCategory category)
     {
         return (category != HW_Category_Special) &&
@@ -86,55 +85,68 @@ public partial class Compiler
     private void getHWIntrinsicImmOps(
         NamedIntrinsic intrinsic, in CORINFO_SIG_INFO sig, ref GenTree? immOp1, ref GenTree? immOp2)
     {
-#if TARGET_XARCH
-        if ((sig.numArgs > 0) && HWIntrinsicInfo.isImmOp(intrinsic, impStackTop().val))
+        if (!Configuration.FEATURE_HW_INTRINSICS)
         {
-            // Xarch immediate operands occupy the last position on the importer stack.
-            immOp1 = impStackTop().val;
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic immediate discovery requires hardware intrinsics.");
         }
-#elif TARGET_ARM64
-        getHWIntrinsicImmOpsArm64Core(intrinsic, in sig, ref immOp1, ref immOp2);
-#elif TARGET_WASM
-        if (!HWIntrinsicInfo.HasImmediateOperand(intrinsic))
+
+        if (Configuration.TARGET_XARCH)
         {
+            if ((sig.numArgs > 0) && HWIntrinsicInfo.isImmOp(intrinsic, impStackTop().val))
+            {
+                // Xarch immediate operands occupy the last position on the importer stack.
+                immOp1 = impStackTop().val;
+            }
+
+            return;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            getHWIntrinsicImmOpsArm64Core(intrinsic, in sig, ref immOp1, ref immOp2);
+
+            return;
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            if (!HWIntrinsicInfo.HasImmediateOperand(intrinsic))
+            {
+                return;
+            }
+
+            var imm1Pos = -1;
+            var imm2Pos = -1;
+            var numArgs = HWIntrinsicInfo.lookupNumArgs(intrinsic);
+            HWIntrinsicInfo.GetImmOpsPositions(intrinsic, out imm1Pos, out imm2Pos);
+            if (imm1Pos >= 0)
+            {
+                var imm1StackPos = numArgs - imm1Pos;
+                var immOp = impStackTop(imm1StackPos).val;
+                immOp1 = immOp;
+                assert(HWIntrinsicInfo.isImmOp(intrinsic, immOp));
+            }
+
+            if (imm2Pos >= 0)
+            {
+                var imm2StackPos = numArgs - imm2Pos;
+                var immOp = impStackTop(imm2StackPos).val;
+                immOp2 = immOp;
+                assert(HWIntrinsicInfo.isImmOp(intrinsic, immOp));
+            }
+
             return;
         }
 
-        var imm1Pos = -1;
-        var imm2Pos = -1;
-        var numArgs = HWIntrinsicInfo.lookupNumArgs(intrinsic);
-        HWIntrinsicInfo.GetImmOpsPositions(intrinsic, out imm1Pos, out imm2Pos);
-        if (imm1Pos >= 0)
-        {
-            var imm1StackPos = numArgs - imm1Pos;
-            var immOp = impStackTop(imm1StackPos).val;
-            immOp1 = immOp;
-            assert(HWIntrinsicInfo.isImmOp(intrinsic, immOp));
-        }
-
-        if (imm2Pos >= 0)
-        {
-            var imm2StackPos = numArgs - imm2Pos;
-            var immOp = impStackTop(imm2StackPos).val;
-            immOp2 = immOp;
-            assert(HWIntrinsicInfo.isImmOp(intrinsic, immOp));
-        }
-#else
         NYI("Hardware-intrinsic immediate discovery outside xarch");
         fatal(CORJIT_IMPLLIMITATION);
         throw new FatalJitException("Hardware-intrinsic immediate discovery outside xarch.");
-#endif
     }
 
     private GenTree addRangeCheckIfNeeded(
         NamedIntrinsic intrinsic, GenTree immOp, int immLowerBound, int immUpperBound)
     {
-        if (!immOp.Oper.IsCnsIntOrI && HWIntrinsicInfo.isImmOp(intrinsic, immOp)
-#if TARGET_XARCH
-            && !HWIntrinsicInfo.isAVX2GatherIntrinsic(intrinsic) &&
-            !HWIntrinsicInfo.HasFullRangeImm(intrinsic)
-#endif
-            )
+        if (!immOp.Oper.IsCnsIntOrI && HWIntrinsicInfo.isImmOp(intrinsic, immOp) &&
+            (!Configuration.TARGET_XARCH || (!HWIntrinsicInfo.isAVX2GatherIntrinsic(intrinsic) &&
+                !HWIntrinsicInfo.HasFullRangeImm(intrinsic))))
         {
             assert(varTypeIsIntegral(immOp.Type));
             return addRangeCheckForHWIntrinsic(immOp, immLowerBound, immUpperBound);
@@ -142,5 +154,4 @@ public partial class Compiler
 
         return immOp;
     }
-#endif
 }

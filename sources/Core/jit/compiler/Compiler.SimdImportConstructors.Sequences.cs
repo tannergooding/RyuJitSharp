@@ -7,14 +7,17 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if FEATURE_HW_INTRINSICS
     public GenTree gtNewSimdGetIndicesNode(var_types type, var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD indices require hardware intrinsics.");
+        }
+
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
 
-#if TARGET_ARM64
-        if (type == TYP_SIMD_ARM64)
+        if (Configuration.TARGET_ARM64 && (type == TYP_SIMD_ARM64))
         {
             if (simdBaseType == TYP_FLOAT)
             {
@@ -29,7 +32,6 @@ public partial class Compiler
 
             return gtNewSimdVconNode(type, simdBaseType, SimdScalableKind.SimdScalableSequence, 0, 1);
         }
-#endif
 
         var indices = gtNewVconNode(type);
         var count = GenTreeVecCon.ElementCount(simdSize, simdBaseType);
@@ -50,10 +52,14 @@ public partial class Compiler
     public GenTree gtNewSimdCreateSequenceNode(var_types type, GenTree op1, GenTree op2,
         var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD sequences require hardware intrinsics.");
+        }
+
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
-#if TARGET_ARM64
-        if (type == TYP_SIMD_ARM64)
+        if (Configuration.TARGET_ARM64 && (type == TYP_SIMD_ARM64))
         {
             // SVE can do this in a single instruction.
             if (varTypeIsIntegral(simdBaseType))
@@ -76,7 +82,6 @@ public partial class Compiler
 
             return gtNewSimdBinOpNode(GT_ADD, type, product, start, simdBaseType, simdSize);
         }
-#endif
 
         // This effectively does: (Indices * op2) + Create(op1).
         //
@@ -160,6 +165,11 @@ public partial class Compiler
     public GenTree gtNewSimdCreateAlternatingSequenceNode(var_types type, GenTree op1, GenTree op2,
         var_types simdBaseType, byte simdSize)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Alternating SIMD sequences require hardware intrinsics.");
+        }
+
         assert(varTypeIsSimd(type) && GetSimdTypeForSize(simdSize) == type);
         assert(varTypeIsArithmetic(simdBaseType));
 
@@ -203,5 +213,4 @@ public partial class Compiler
         var odd = gtNewSimdCreateBroadcastNode(type, op2, simdBaseType, simdSize);
         return gtNewSimdZipNode(type, even, odd, simdBaseType, simdSize, upper: false);
     }
-#endif
 }

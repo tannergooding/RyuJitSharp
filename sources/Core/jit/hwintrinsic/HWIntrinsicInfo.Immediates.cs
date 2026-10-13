@@ -7,35 +7,42 @@ namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
-#if FEATURE_HW_INTRINSICS
     public static bool isImmOp(NamedIntrinsic intrinsic, GenTree operand)
     {
-#if TARGET_XARCH
-        if (lookupCategory(intrinsic) is not HW_Category_IMM)
+        if (Configuration.TARGET_XARCH)
+        {
+            if (lookupCategory(intrinsic) is not HW_Category_IMM)
+            {
+                return false;
+            }
+
+            if ((lookupFlags(intrinsic) & HW_Flag_MaybeIMM) == 0)
+            {
+                return true;
+            }
+        }
+        else if (!HasImmediateOperand(intrinsic))
         {
             return false;
         }
-        if ((lookupFlags(intrinsic) & HW_Flag_MaybeIMM) == 0)
-        {
-            return true;
-        }
-#else
-        if (!HasImmediateOperand(intrinsic))
-        {
-            return false;
-        }
-#endif
+
         return operand.Type.ActualType is TYP_INT;
     }
 
-#if TARGET_XARCH
-    public static bool HasFullRangeImm(NamedIntrinsic intrinsic) => (lookupFlags(intrinsic) & HW_Flag_FullRangeIMM) != 0;
+    public static bool HasFullRangeImm(NamedIntrinsic intrinsic) =>
+        Configuration.TARGET_XARCH && ((lookupFlags(intrinsic) & HW_Flag_FullRangeIMM) != 0);
 
     public static bool isAVX2GatherIntrinsic(NamedIntrinsic intrinsic)
-        => intrinsic is NI_AVX2_GatherVector128 or NI_AVX2_GatherVector256 or NI_AVX2_GatherMaskVector128 or NI_AVX2_GatherMaskVector256;
+        => Configuration.TARGET_XARCH && (intrinsic is NI_AVX2_GatherVector128 or NI_AVX2_GatherVector256 or
+            NI_AVX2_GatherMaskVector128 or NI_AVX2_GatherMaskVector256);
 
     public static int lookupImmUpperBound(NamedIntrinsic intrinsic)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new System.PlatformNotSupportedException("Immediate bounds are only defined for xarch intrinsics.");
+        }
+
         if ((lookupFlags(intrinsic) & HW_Flag_EmbRoundingCompatible) != 0)
         {
             // Jump-table fallbacks compute entries 0..11; the managed fallback
@@ -79,6 +86,4 @@ public readonly partial struct HWIntrinsicInfo
             }
         }
     }
-#endif
-#endif
 }

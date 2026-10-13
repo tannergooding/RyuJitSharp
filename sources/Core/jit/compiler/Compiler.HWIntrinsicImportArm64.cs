@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 namespace RyuJitSharp;
 
 public partial class Compiler
@@ -11,6 +10,11 @@ public partial class Compiler
     private void getHWIntrinsicImmOpsArm64Core(
         NamedIntrinsic intrinsic, in CORINFO_SIG_INFO sig, ref GenTree? immOp1, ref GenTree? immOp2)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 immediate discovery requires ARM64 hardware intrinsics.");
+        }
+
         if (!HWIntrinsicInfo.HasImmediateOperand(intrinsic))
         {
             return;
@@ -34,6 +38,11 @@ public partial class Compiler
     private GenTreeHWIntrinsic? impNonConstFallbackArm64Core(
         NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic fallback requires ARM64 hardware intrinsics.");
+        }
+
         var isRightShift = true;
         switch (intrinsic)
         {
@@ -89,6 +98,11 @@ public partial class Compiler
         in CORINFO_SIG_INFO sig, in CORINFO_CONST_LOOKUP entryPoint,
         var_types simdBaseType, var_types retType, byte simdSize, bool mustExpand)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 hardware-intrinsic special import requires ARM64 hardware intrinsics.");
+        }
+
         var isa = HWIntrinsicInfo.lookupIsa(intrinsic);
         if (isa == InstructionSet_Vector)
         {
@@ -925,4 +939,3 @@ public partial class Compiler
         }
     }
 }
-#endif

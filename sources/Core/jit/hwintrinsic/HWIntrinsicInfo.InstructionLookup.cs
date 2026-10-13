@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
-#if FEATURE_HW_INTRINSICS
     public static instruction lookupIns(GenTreeHWIntrinsic intrinsicNode, Compiler? compiler)
     {
         assert(intrinsicNode is not null);
@@ -15,8 +14,6 @@ public readonly partial struct HWIntrinsicInfo
         var type = lookupCategory(intrinsic) is HW_Category_Scalar
             ? intrinsicNode.Type
             : intrinsicNode.SimdBaseType;
-
         return lookupIns(intrinsic, type, compiler);
     }
-#endif
 }

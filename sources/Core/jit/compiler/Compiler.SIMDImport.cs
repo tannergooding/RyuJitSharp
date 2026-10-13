@@ -21,9 +21,13 @@ public partial class Compiler
         return tree;
     }
 
-#if FEATURE_HW_INTRINSICS
     private unsafe GenTree getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware intrinsic arguments are not supported on this target.");
+        }
+
         GenTree arg;
 
         if (varTypeIsStruct(argType))
@@ -50,8 +54,6 @@ public partial class Compiler
                 BADCODE("the hwintrinsic argument has a type that can't be implicitly converted to the signature type");
             }
         }
-
         return arg;
     }
-#endif
 }

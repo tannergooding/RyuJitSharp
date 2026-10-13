@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
-#if FEATURE_HW_INTRINSICS
     public static instruction lookupIns(NamedIntrinsic id, var_types type, Compiler? compiler)
     {
         if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
@@ -19,14 +18,12 @@ public readonly partial struct HWIntrinsicInfo
         var instructionCount = (int)TYP_DOUBLE - (int)TYP_BYTE + 1;
         var ins = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
             s_instructions[(GetTableIndex(id) * instructionCount) + (int)type - (int)TYP_BYTE]);
-#if TARGET_X86
-        if (ins is INS_movd64)
+        if (Configuration.TARGET_X86 && (ins is INS_movd64))
         {
             ins = INS_movd32;
         }
-#endif
-#if TARGET_XARCH
-        if (compiler is not null)
+
+        if (Configuration.TARGET_XARCH && (compiler is not null))
         {
             var evexIns = ins switch {
                 INS_movdqa32 when varTypeIsLong(type) => INS_vmovdqa64,
@@ -52,38 +49,41 @@ public readonly partial struct HWIntrinsicInfo
                 ins = evexIns;
             }
         }
-#endif
+
         return ins;
     }
 
     public static bool HasEvexSemantics(NamedIntrinsic id)
     {
-#if TARGET_XARCH
-        return (lookupFlags(id) & HW_Flag_NoEvexSemantics) == 0;
-#else
-        return false;
-#endif
+        return Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_NoEvexSemantics) == 0);
     }
 
     public static bool HasRMWSemantics(NamedIntrinsic id)
     {
-#if TARGET_XARCH
-        return (lookupFlags(id) & HW_Flag_NoRMWSemantics) == 0;
-#elif TARGET_ARM64
-        return (lookupFlags(id) & HW_Flag_HasRMWSemantics) != 0;
-#else
+        if (Configuration.TARGET_XARCH)
+        {
+            return (lookupFlags(id) & HW_Flag_NoRMWSemantics) == 0;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return (lookupFlags(id) & HW_Flag_HasRMWSemantics) != 0;
+        }
+
         return false;
-#endif
     }
 
-#if TARGET_XARCH
-    public static bool IsRmwIntrinsic(NamedIntrinsic id) => (lookupFlags(id) & HW_Flag_RmwIntrinsic) != 0;
+    public static bool IsRmwIntrinsic(NamedIntrinsic id) =>
+        Configuration.TARGET_XARCH && ((lookupFlags(id) & HW_Flag_RmwIntrinsic) != 0);
 
     public static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic id, HWIntrinsicCategory category)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new System.PlatformNotSupportedException("Table-driven hardware intrinsics are only supported on xarch.");
+        }
+
         return (category is not HW_Category_Special and not HW_Category_Scalar and not HW_Category_Helper) &&
             ((lookupFlags(id) & HW_Flag_SpecialCodeGen) == 0);
     }
-#endif
-#endif
 }

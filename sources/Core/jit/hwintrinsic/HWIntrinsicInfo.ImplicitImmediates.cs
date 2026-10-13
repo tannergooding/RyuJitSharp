@@ -5,13 +5,17 @@
 
 using FloatComparisonMode = System.Runtime.Intrinsics.X86.FloatComparisonMode;
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
 namespace RyuJitSharp;
 
 public readonly partial struct HWIntrinsicInfo
 {
     public static int lookupIval(Compiler compiler, NamedIntrinsic intrinsic, var_types baseType)
     {
+        if (!Configuration.TARGET_XARCH || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new System.PlatformNotSupportedException("Xarch intrinsic immediates are unavailable for this target.");
+        }
+
         switch (intrinsic)
         {
             case NI_X86Base_CompareEqual:
@@ -223,4 +227,3 @@ public readonly partial struct HWIntrinsicInfo
         return -1;
     }
 }
-#endif
