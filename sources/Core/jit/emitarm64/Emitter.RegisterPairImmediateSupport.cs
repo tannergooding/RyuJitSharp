@@ -313,11 +313,8 @@ public partial class Emitter
     }
 
     private bool OptimizeLdrStr(instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2,
-        nint imm, emitAttr size, insFormat fmt, bool localVar = false, int varx = -1, int offs = -1
-#if DEBUG
-        , bool useRsvdReg = false
-#endif
-        )
+        nint imm, emitAttr size, insFormat fmt, bool localVar = false, int varx = -1, int offs = -1,
+        bool useRsvdReg = false)
     {
         RequireArm64Target();
         assert(ins is INS_ldr or INS_str);
@@ -342,9 +339,10 @@ public partial class Emitter
 
         if (ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt, localVar, varx, offs))
         {
-#if DEBUG
-            assert(!useRsvdReg);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(!useRsvdReg);
+            }
             return true;
         }
 

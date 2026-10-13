@@ -94,20 +94,14 @@ internal static unsafe class Arm64EmitterInstructionRemovalTests
 
     private static bool TryOptimizeLdrStr(Emitter emitter)
     {
-        return OptimizeLdrStr(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R0, REG_ARM64_SP, 0, EA_8BYTE, IF_ARM64_LS_2A, false, -1, -1
-#if DEBUG
-            , false
-#endif
-        );
+        return OptimizeLdrStr(emitter, INS_ldr, EA_8BYTE, REG_ARM64_R0, REG_ARM64_SP, 0, EA_8BYTE,
+            IF_ARM64_LS_2A, false, -1, -1, false);
     }
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "OptimizeLdrStr")]
     private static extern bool OptimizeLdrStr(Emitter emitter, instruction ins, emitAttr reg1Attr, regNumber reg1,
-        regNumber reg2, nint imm, emitAttr size, Emitter.insFormat fmt, bool localVar, int varx, int offs
-#if DEBUG
-        , bool useRsvdReg
-#endif
-    );
+        regNumber reg2, nint imm, emitAttr size, Emitter.insFormat fmt, bool localVar, int varx, int offs,
+        bool useRsvdReg);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitRemoveLastInstruction")]
     private static extern void RemoveLastInstruction(Emitter emitter);

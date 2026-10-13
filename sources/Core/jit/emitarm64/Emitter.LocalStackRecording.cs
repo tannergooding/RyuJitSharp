@@ -233,11 +233,7 @@ public partial class Emitter
         assert(fmt != IF_NONE);
 
         if (isLdrStr && _compiler.opts.OptimizationEnabled &&
-            OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs
-#if DEBUG
-                , useRegForImm
-#endif
-                ))
+            OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs, useRegForImm))
         {
             return;
         }
@@ -503,11 +499,7 @@ public partial class Emitter
         assert(fmt != IF_NONE);
 
         if (isStr && _compiler.opts.OptimizationEnabled &&
-            OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs
-#if DEBUG
-                , useRegForImm
-#endif
-                ))
+            OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs, useRegForImm))
         {
             return;
         }

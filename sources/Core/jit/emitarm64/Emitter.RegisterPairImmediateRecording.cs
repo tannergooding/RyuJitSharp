@@ -642,11 +642,7 @@ public unsafe partial class Emitter
                 return;
             }
             if (isLdrStr && _compiler.opts.OptimizationEnabled &&
-                OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1
-#if DEBUG
-                    , false
-#endif
-                ))
+                OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1, false))
             {
                 return;
             }
