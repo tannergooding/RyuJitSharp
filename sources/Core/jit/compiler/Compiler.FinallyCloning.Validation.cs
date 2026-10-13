@@ -12,7 +12,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if DEBUG
     private void fgDebugCheckTryFinallyExitsCore()
     {
         var allTryExitsValid = true;
@@ -84,5 +83,4 @@ public partial class Compiler
             assert(allTryExitsValid);
         }
     }
-#endif
 }

@@ -54,8 +54,12 @@ public partial class Compiler
             fgDispHandlerTab();
             jitprintf("\n");
         }
-        fgDebugCheckTryFinallyExitsCore();
 #endif
+
+        if (Configuration.DEBUG)
+        {
+            fgDebugCheckTryFinallyExitsCore();
+        }
 
         var cloneCount = 0;
         for (ushort xtnum = 0; xtnum < compHndBBtabCount; xtnum++)
@@ -464,8 +468,12 @@ public partial class Compiler
                 fgDispHandlerTab();
                 jitprintf("\n");
             }
-            fgDebugCheckTryFinallyExitsCore();
 #endif
+
+            if (Configuration.DEBUG)
+            {
+                fgDebugCheckTryFinallyExitsCore();
+            }
         }
 
         return cloneCount > 0 ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
