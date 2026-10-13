@@ -77,25 +77,26 @@ public partial class Emitter
                 else
                 {
                     var paddingToAdjust = actualPaddingNeeded;
-#if DEBUG
-                    int instructionsToAdjust;
-                    if (Configuration.TARGET_XARCH)
+                    var instructionsToAdjust = 0;
+                    if (Configuration.DEBUG)
                     {
-                        instructionsToAdjust = unchecked((int)((compiler.opts.compJitAlignLoopBoundary
-                            + (MAX_XARCH_ALIGN_INSTR_SIZE - 1)) / MAX_XARCH_ALIGN_INSTR_SIZE));
-                    }
-                    else
-                    {
-                        var arm64InstructionsToAdjust = unchecked((ushort)((compiler.opts.compJitAlignLoopBoundary >> 1)
-                            / INSTR_ENCODED_SIZE));
-                        if (!compiler.opts.compJitAlignLoopAdaptive)
+                        if (Configuration.TARGET_XARCH)
                         {
-                            arm64InstructionsToAdjust = unchecked((ushort)(compiler.opts.compJitAlignLoopBoundary
-                                / INSTR_ENCODED_SIZE));
+                            instructionsToAdjust = unchecked((int)((compiler.opts.compJitAlignLoopBoundary
+                                + (MAX_XARCH_ALIGN_INSTR_SIZE - 1)) / MAX_XARCH_ALIGN_INSTR_SIZE));
                         }
-                        instructionsToAdjust = arm64InstructionsToAdjust;
+                        else
+                        {
+                            var arm64InstructionsToAdjust = unchecked((ushort)((compiler.opts.compJitAlignLoopBoundary >> 1)
+                                / INSTR_ENCODED_SIZE));
+                            if (!compiler.opts.compJitAlignLoopAdaptive)
+                            {
+                                arm64InstructionsToAdjust = unchecked((ushort)(compiler.opts.compJitAlignLoopBoundary
+                                    / INSTR_ENCODED_SIZE));
+                            }
+                            instructionsToAdjust = arm64InstructionsToAdjust;
+                        }
                     }
-#endif
                     for (var current = alignInstr;
                         (current is not null) && ReferenceEquals(current.idaIG, containingIG);
                         current = current.idaNext)
@@ -115,22 +116,24 @@ public partial class Emitter
                             }
                         }
                         paddingToAdjust -= newPadding;
-#if DEBUG
-                        if (Configuration.TARGET_XARCH)
+                        if (Configuration.DEBUG)
                         {
-                            instructionsToAdjust--;
+                            if (Configuration.TARGET_XARCH)
+                            {
+                                instructionsToAdjust--;
+                            }
+                            else
+                            {
+                                instructionsToAdjust = unchecked((ushort)(instructionsToAdjust - 1));
+                            }
                         }
-                        else
-                        {
-                            instructionsToAdjust = unchecked((ushort)(instructionsToAdjust - 1));
-                        }
-#endif
                     }
 
                     assert(paddingToAdjust == 0);
-#if DEBUG
-                    assert(instructionsToAdjust == 0);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(instructionsToAdjust == 0);
+                    }
                 }
 
                 JITDUMP($"Adjusted alignment for {emitLabelString(loopHeadIG)} " +
