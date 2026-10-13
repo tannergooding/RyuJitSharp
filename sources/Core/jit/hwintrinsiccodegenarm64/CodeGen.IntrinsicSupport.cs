@@ -196,20 +196,19 @@ public sealed partial class CodeGen
         assert(firstField is not null);
         firstReg = firstField.Node.RegNum;
         uint count = 0;
-#if DEBUG
         var argReg = firstReg;
-#endif
         foreach (var use in fieldList.Uses)
         {
             count++;
-#if DEBUG
-            assert(argReg == use.Node.RegNum);
-            if (excludedReg != REG_NA)
+            if (Configuration.DEBUG)
             {
-                assert(excludedReg != argReg);
+                assert(argReg == use.Node.RegNum);
+                if (excludedReg != REG_NA)
+                {
+                    assert(excludedReg != argReg);
+                }
+                argReg = getNextSIMDRegWithWraparound(argReg);
             }
-            argReg = getNextSIMDRegWithWraparound(argReg);
-#endif
         }
 
         return count;
