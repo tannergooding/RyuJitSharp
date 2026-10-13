@@ -61,9 +61,9 @@ public partial class Emitter
         {
 #if DEBUG
             emitCheckIGList();
+#endif
             insGroup? lastIG = null;
             instrDescJmp? lastJump = null;
-#endif
             insGroup? previousJumpIG = null;
             uint groupAdjustment = 0;
             uint localAdjustment = 0;
@@ -196,13 +196,15 @@ public partial class Emitter
                     throw new FatalJitException(CORJIT_SKIPPED, "Jump distance binding is not supported for this target.");
                 }
 
-#if DEBUG
-                assert(lastJump is null || !ReferenceEquals(lastIG, jumpIG) || lastJump.idjOffs < jump.idjOffs);
-                lastJump = ReferenceEquals(lastIG, jumpIG) ? jump : null;
-                assert(lastIG is null || ReferenceEquals(lastIG, jumpIG) || lastIG.IsBefore(jumpIG)
-                    || emitIGisInProlog(jumpIG));
-                lastIG = jumpIG;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(lastJump is null || !ReferenceEquals(lastIG, jumpIG) || lastJump.idjOffs < jump.idjOffs);
+                    lastJump = ReferenceEquals(lastIG, jumpIG) ? jump : null;
+                    assert(lastIG is null || ReferenceEquals(lastIG, jumpIG) || lastIG.IsBefore(jumpIG)
+                        || emitIGisInProlog(jumpIG));
+                    lastIG = jumpIG;
+                }
+
                 if (!ReferenceEquals(previousJumpIG, jumpIG))
                 {
                     if (previousJumpIG is not null)

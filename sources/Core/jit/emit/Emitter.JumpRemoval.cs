@@ -47,9 +47,13 @@ public partial class Emitter
 
             if (jmp.idjIsRemovableJmpCandidate)
             {
+                if (Configuration.DEBUG)
+                {
+                    assert(jmp.idInsFmt() == IF_XARCH_LABEL);
+                    assert(jmp.idIns() == INS_jmp);
+                }
+
 #if DEBUG
-                assert(jmp.idInsFmt() == IF_XARCH_LABEL);
-                assert(jmp.idIns() == INS_jmp);
                 var debugInfo = jmp.idDebugOnlyInfo();
                 assert(debugInfo is not null);
                 assert((previousJumpIG is null) || jmpGroup.IsAfter(previousJumpIG)
@@ -66,10 +70,14 @@ public partial class Emitter
                     && ((jmpGroup.igFlags & InsGroupFlags.HasRemovableJump) != 0))
                 {
                     assert(!jmpGroup.endsWithAlignInstr());
+                    if (Configuration.DEBUG)
+                    {
+                        assert(jmpGroup.igInsCnt > 0);
+                        assert(jmpGroup.igData is not null);
+                        assert(jmpGroup.igData.Length == jmpGroup.igInsCnt);
+                    }
+
 #if DEBUG
-                    assert(jmpGroup.igInsCnt > 0);
-                    assert(jmpGroup.igData is not null);
-                    assert(jmpGroup.igData.Length == jmpGroup.igInsCnt);
                     var lastInstruction = jmpGroup.igData[^1];
                     if (!ReferenceEquals(jmp, lastInstruction))
                     {
