@@ -104,14 +104,15 @@ public partial class Emitter
         }
         else
         {
-#if DEBUG
-            if (addr.Oper is GT_LCL_ADDR)
+            if (Configuration.DEBUG)
             {
-                // This path does not update GC local lifetimes, so an uncontained local address must be untracked.
-                ref var local = ref compiler.lvaGetDesc(addr.AsLclVarCommon().LclNum);
-                assert(!local.lvTracked);
+                if (addr.Oper is GT_LCL_ADDR)
+                {
+                    // This path does not update GC local lifetimes, so an uncontained local address must be untracked.
+                    ref var local = ref compiler.lvaGetDesc(addr.AsLclVarCommon().LclNum);
+                    assert(!local.lvTracked);
+                }
             }
-#endif
 
             emitIns_R_R_I(ins, attr, dataReg, addr.RegNum, 0);
         }

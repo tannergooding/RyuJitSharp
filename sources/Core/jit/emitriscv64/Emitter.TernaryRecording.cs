@@ -55,59 +55,60 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (needCheckOv)
+        if (Configuration.DEBUG)
         {
-            switch (ins)
+            if (needCheckOv)
             {
-                case INS_add:
+                switch (ins)
                 {
-                    assert(attr == EA_8BYTE);
-                    break;
-                }
-                case INS_addw:
-                {
-                    assert(attr == EA_4BYTE);
-                    break;
-                }
-                case INS_addi:
-                case INS_addiw:
-                {
-                    assert(intConst is not null);
-                    break;
-                }
-                case INS_sub:
-                {
-                    assert(attr == EA_8BYTE);
-                    break;
-                }
-                case INS_subw:
-                {
-                    assert(attr == EA_4BYTE);
-                    break;
-                }
-                case INS_mul:
-                case INS_mulh:
-                case INS_mulhu:
-                {
-                    assert(attr == EA_8BYTE);
-                    assert(intConst is null);
-                    break;
-                }
-                case INS_mulw:
-                {
-                    assert(attr == EA_4BYTE);
-                    assert(intConst is null);
-                    break;
-                }
-                default:
-                {
-                    assert(false, $"RISCV64-Invalid ins for overflow check: {ins}");
-                    break;
+                    case INS_add:
+                    {
+                        assert(attr == EA_8BYTE);
+                        break;
+                    }
+                    case INS_addw:
+                    {
+                        assert(attr == EA_4BYTE);
+                        break;
+                    }
+                    case INS_addi:
+                    case INS_addiw:
+                    {
+                        assert(intConst is not null);
+                        break;
+                    }
+                    case INS_sub:
+                    {
+                        assert(attr == EA_8BYTE);
+                        break;
+                    }
+                    case INS_subw:
+                    {
+                        assert(attr == EA_4BYTE);
+                        break;
+                    }
+                    case INS_mul:
+                    case INS_mulh:
+                    case INS_mulhu:
+                    {
+                        assert(attr == EA_8BYTE);
+                        assert(intConst is null);
+                        break;
+                    }
+                    case INS_mulw:
+                    {
+                        assert(attr == EA_4BYTE);
+                        assert(intConst is null);
+                        break;
+                    }
+                    default:
+                    {
+                        assert(false, $"RISCV64-Invalid ins for overflow check: {ins}");
+                        break;
+                    }
                 }
             }
         }
-#endif
 
         var dstReg = dst.RegNum;
         var src1Reg = src1.RegNum;
