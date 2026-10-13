@@ -1093,12 +1093,13 @@ public partial class Compiler
         {
             var inlineCandidateInfo = impInlineInfo.inlineCandidateInfo;
 
-#if DEBUG
-            var methAttr_Old = inlineCandidateInfo.methAttr;
-            var methAttr_New = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
-            var flagsToIgnore = CORINFO_FLG_DONT_INLINE | CORINFO_FLG_FORCEINLINE;
-            assert((methAttr_Old & (~flagsToIgnore)) == (methAttr_New & (~flagsToIgnore)));
-#endif
+            if (Configuration.DEBUG)
+            {
+                var methAttr_Old = inlineCandidateInfo.methAttr;
+                var methAttr_New = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
+                var flagsToIgnore = CORINFO_FLG_DONT_INLINE | CORINFO_FLG_FORCEINLINE;
+                assert((methAttr_Old & (~flagsToIgnore)) == (methAttr_New & (~flagsToIgnore)));
+            }
 
             info.compFlags = inlineCandidateInfo.methAttr;
             compInlineContext = impInlineInfo.inlineContext;

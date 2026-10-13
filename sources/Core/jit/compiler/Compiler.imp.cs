@@ -1183,12 +1183,13 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            JITDUMP($"{(isInterface ? "interface" : call.IsDelegateInvoke ? "delegate" : "virtual")} call would invoke method {eeGetMethodFullName(
-                likelyMethod,
-                includeReturnType: true,
-                includeThisSpecifier: true)}\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"{(isInterface ? "interface" : call.IsDelegateInvoke ? "delegate" : "virtual")} call would invoke method {eeGetMethodFullName(
+                    likelyMethod,
+                    includeReturnType: true,
+                    includeThisSpecifier: true)}\n");
+            }
 
             // Add this as a potential candidate.
             addGuardedDevirtualizationCandidate(
@@ -2438,17 +2439,18 @@ public partial class Compiler
             var clsHandle = compCompHnd->getMethodClass(fncHandle);
             var clsAttr = compCompHnd->getClassAttribs(clsHandle);
 
-#if DEBUG
-            // Return type
-            var fncRetType = call._returnType;
-            var fncRealRetType = methInfo.args.retType.VarType;
+            if (Configuration.DEBUG)
+            {
+                // Return type
+                var fncRetType = call._returnType;
+                var fncRealRetType = methInfo.args.retType.VarType;
 
-            // <BUGNUM> VSW 288602 </BUGNUM>
-            // In case of IJW, we allow to assign a native pointer to a BYREF.
-            assert((fncRealRetType.ActualType == fncRetType.ActualType) ||
-                   ((fncRetType is TYP_BYREF) && (methInfo.args.retType is CORINFO_TYPE_PTR)) ||
-                   (varTypeIsStruct(fncRetType) && (fncRealRetType is TYP_STRUCT)));
-#endif
+                // <BUGNUM> VSW 288602 </BUGNUM>
+                // In case of IJW, we allow to assign a native pointer to a BYREF.
+                assert((fncRealRetType.ActualType == fncRetType.ActualType) ||
+                       ((fncRetType is TYP_BYREF) && (methInfo.args.retType is CORINFO_TYPE_PTR)) ||
+                       (varTypeIsStruct(fncRetType) && (fncRealRetType is TYP_STRUCT)));
+            }
 
             // Allocate an InlineCandidateInfo structure,
             //
@@ -2612,9 +2614,10 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        JITLOG(LL_INFO1000000, $"\nInline a PINVOKE call from method {info.compFullName}\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITLOG(LL_INFO1000000, $"\nInline a PINVOKE call from method {info.compFullName}\n");
+        }
 
         call.Flags |= GTF_CALL_UNMANAGED;
         call._unmgdCallConv = unmanagedCallConv;
@@ -2927,13 +2930,13 @@ public partial class Compiler
 
             var helperMap = impInlineRoot._helperToManagedMap ??= [];
 
-#if DEBUG
-            if (helperMap.TryGetValue(helperCallHnd, out var existingValue))
+            if (Configuration.DEBUG)
             {
-                assert(existingValue == managedCallHnd);
+                if (helperMap.TryGetValue(helperCallHnd, out var existingValue))
+                {
+                    assert(existingValue == managedCallHnd);
+                }
             }
-
-#endif
             helperMap[helperCallHnd] = managedCallHnd;
 
 #if DEBUG
@@ -3181,8 +3184,7 @@ public partial class Compiler
             // For late devirt we may not have method attributes, so fetch them.
             baseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
         }
-#if DEBUG
-        else
+        else if (Configuration.DEBUG)
         {
             // Validate that callInfo has up to date method flags
             var freshBaseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
@@ -3201,7 +3203,6 @@ public partial class Compiler
                 NO_WAY("mismatched method attributes");
             }
         }
-#endif
 
         // In R2R mode, we might see virtual stub calls / gvm calls to
         // non-virtuals. For instance cases where the non-virtual method
@@ -11519,29 +11520,30 @@ public partial class Compiler
                 lclTyp = op2.Type.ActualType;
             }
 
-#if DEBUG
-            // Check target type.
-            if ((op2.Type is TYP_BYREF) || (lclTyp is TYP_BYREF))
+            if (Configuration.DEBUG)
             {
-                if (op2.Type is TYP_BYREF)
+                // Check target type.
+                if ((op2.Type is TYP_BYREF) || (lclTyp is TYP_BYREF))
                 {
-                    compiler.assertImp((lclTyp is var __targetAliasValue11 && (__targetAliasValue11 is TYP_BYREF || __targetAliasValue11 == TYP_I_IMPL)), op1, op2);
+                    if (op2.Type is TYP_BYREF)
+                    {
+                        compiler.assertImp((lclTyp is var __targetAliasValue11 && (__targetAliasValue11 is TYP_BYREF || __targetAliasValue11 == TYP_I_IMPL)), op1, op2);
+                    }
+                    else if (lclTyp is TYP_BYREF)
+                    {
+                        compiler.assertImp((op2.Type is TYP_BYREF) || varTypeIsIntOrI(op2.Type), op1, op2);
+                    }
                 }
-                else if (lclTyp is TYP_BYREF)
+                else
                 {
-                    compiler.assertImp((op2.Type is TYP_BYREF) || varTypeIsIntOrI(op2.Type), op1, op2);
+                    compiler.assertImp(
+                        (op2.Type.ActualType == lclTyp.ActualType) ||
+                        (((lclTyp == TYP_I_IMPL)) && (op2.Type.ActualType is TYP_INT)) ||
+                        (varTypeIsFloating(op2.Type) && varTypeIsFloating(lclTyp)),
+                        op1, op2
+                    );
                 }
             }
-            else
-            {
-                compiler.assertImp(
-                    (op2.Type.ActualType == lclTyp.ActualType) ||
-                    (((lclTyp == TYP_I_IMPL)) && (op2.Type.ActualType is TYP_INT)) ||
-                    (varTypeIsFloating(op2.Type) && varTypeIsFloating(lclTyp)),
-                    op1, op2
-                );
-            }
-#endif
 
             var storeInd = compiler.gtNewStoreIndNode(lclTyp, op1, op2, impPrefixFlagsToIndirFlags(prefixFlags));
             Append(compiler, storeInd, CHECK_SPILL_ALL);
@@ -11797,11 +11799,14 @@ public partial class Compiler
             // The stack should have the same height on entry to the block from all its predecessors.
             if (block.bbStackDepthOnEntry != stackState.esStackDepth)
             {
-#if DEBUG
-                NO_WAY($"Block at offset {block.bbCodeOffs:x4} to {block.bbCodeOffsEnd:x4} in {info.compFullName,200} entered with different stack depths.\nPrevious depth was {block.bbStackDepthOnEntry}, current depth is {stackState.esStackDepth}");
-#else
-                NO_WAY("Block entered with different stack depths");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    NO_WAY($"Block at offset {block.bbCodeOffs:x4} to {block.bbCodeOffsEnd:x4} in {info.compFullName,200} entered with different stack depths.\nPrevious depth was {block.bbStackDepthOnEntry}, current depth is {stackState.esStackDepth}");
+                }
+                else
+                {
+                    NO_WAY("Block entered with different stack depths");
+                }
             }
 
             if (!addToPending)
@@ -13874,21 +13879,22 @@ public partial class Compiler
                 lvaSetStruct(tmpNum, inlineeLocal.lclTypeHandle, true /* unsafe value cls check */);
             }
 
-#if DEBUG
-            // Sanity check that we're properly prepared for gc ref locals.
-            if (varTypeIsGC(lclTyp))
+            if (Configuration.DEBUG)
             {
-                // Since there are gc locals we should have seen them earlier
-                // and if there was a return value, set up the spill temp.
-                assert(impInlineInfo.HasGcRefLocals);
-                assert((info.compRetNativeType == TYP_VOID) || fgNeedReturnSpillTemp);
+                // Sanity check that we're properly prepared for gc ref locals.
+                if (varTypeIsGC(lclTyp))
+                {
+                    // Since there are gc locals we should have seen them earlier
+                    // and if there was a return value, set up the spill temp.
+                    assert(impInlineInfo.HasGcRefLocals);
+                    assert((info.compRetNativeType == TYP_VOID) || fgNeedReturnSpillTemp);
+                }
+                else
+                {
+                    // Make sure all pinned locals count as gc refs.
+                    assert(!inlineeLocal.lclIsPinned);
+                }
             }
-            else
-            {
-                // Make sure all pinned locals count as gc refs.
-                assert(!inlineeLocal.lclIsPinned);
-            }
-#endif
         }
 
         return tmpNum;
@@ -14879,12 +14885,10 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (compStressCompile(STRESS_FORCE_INLINE, 0))
+        if (Configuration.DEBUG && compStressCompile(STRESS_FORCE_INLINE, 0))
         {
             methAttr |= CORINFO_FLG_FORCEINLINE;
         }
-#endif
 
         if (compDoAggressiveInlining)
         {
@@ -15423,9 +15427,10 @@ public partial class Compiler
                 case 2:
                 {
                     assert(eeGetArgType(arg, sigInfo) == callType);
-#if DEBUG
-                    arg = info.compCompHnd->getArgNext(arg);
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        arg = info.compCompHnd->getArgNext(arg);
+                    }
                     assert(eeGetArgType(arg, sigInfo) == callType);
 
                     op2 = impPopStack().val;
@@ -17471,15 +17476,16 @@ public partial class Compiler
 
                         op2 = tmpOp2;
 
-#if DEBUG
-                        if (inlRetExpr.SubstExpr is not null)
+                        if (Configuration.DEBUG)
                         {
-                            // Some other block(s) have seen the CEE_RET first.
-                            // Better they spilled to the same temp.
-                            assert(inlRetExpr.SubstExpr.Oper is GT_LCL_VAR);
-                            assert(inlRetExpr.SubstExpr.AsLclVarCommon().LclNum == op2.AsLclVarCommon().LclNum);
+                            if (inlRetExpr.SubstExpr is not null)
+                            {
+                                // Some other block(s) have seen the CEE_RET first.
+                                // Better they spilled to the same temp.
+                                assert(inlRetExpr.SubstExpr.Oper is GT_LCL_VAR);
+                                assert(inlRetExpr.SubstExpr.AsLclVarCommon().LclNum == op2.AsLclVarCommon().LclNum);
+                            }
                         }
-#endif
                     }
 
 #if DEBUG

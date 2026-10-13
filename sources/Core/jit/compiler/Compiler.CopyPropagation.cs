@@ -378,13 +378,14 @@ public partial class Compiler
 
         public readonly void End()
         {
-#if DEBUG
-            foreach (var local in s_copyPropKeyOrders.GetValue(_curSsaName, static _ => new CopyPropKeyOrder()).Keys(_curSsaName))
+            if (Configuration.DEBUG)
             {
-                assert(_compiler.lvaGetDesc(local).lvIsParam || local == _compiler.info.compThisArg);
-                assert(_curSsaName[local].Count == 1);
+                foreach (var local in s_copyPropKeyOrders.GetValue(_curSsaName, static _ => new CopyPropKeyOrder()).Keys(_curSsaName))
+                {
+                    assert(_compiler.lvaGetDesc(local).lvIsParam || local == _compiler.info.compThisArg);
+                    assert(_curSsaName[local].Count == 1);
+                }
             }
-#endif
         }
 
         public void WalkTree(FlowGraphDominatorTree tree)
