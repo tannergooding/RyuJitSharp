@@ -400,12 +400,13 @@ public partial class Compiler
                 lvaCount = startVars;
                 fgBBNumMax = startBBNumMax;
 
-#if DEBUG
-                foreach (var block in Blocks)
+                if (Configuration.DEBUG)
                 {
-                    assert(block.bbNum <= fgBBNumMax);
+                    foreach (var block in Blocks)
+                    {
+                        assert(block.bbNum <= fgBBNumMax);
+                    }
                 }
-#endif
             }
         }
     }
@@ -1925,27 +1926,28 @@ public partial class Compiler
             noway_assert((lastStmt is not null) && (lastStmt.NextStmt is null));
             var insertionPoint = lastStmt.PrevStmt;
 
-#if DEBUG
-            if (block.Kind is BBJ_COND)
+            if (Configuration.DEBUG)
             {
-                assert(lastStmt.RootNode.Oper is GT_JTRUE);
+                if (block.Kind is BBJ_COND)
+                {
+                    assert(lastStmt.RootNode.Oper is GT_JTRUE);
+                }
+                else if (block.Kind is BBJ_RETURN)
+                {
+                    assert((lastStmt.RootNode.Oper is GT_RETURN or GT_SWIFT_ERROR_RET or GT_JMP) ||
+                           // Void tail-prefixed calls and real tail calls have no trailing GT_RETURN.
+                           ((lastStmt.RootNode.Oper is GT_CALL) && ((info.compRetType is TYP_VOID) || lastStmt.RootNode.AsCall().IsTailCall)));
+                }
+                else if (block.Kind is BBJ_EHFINALLYRET or BBJ_EHFAULTRET or BBJ_EHFILTERRET)
+                {
+                    assert(lastStmt.RootNode.Oper is GT_RETFILT);
+                }
+                else
+                {
+                    assert(block.Kind is BBJ_SWITCH);
+                    assert(lastStmt.RootNode.Oper is GT_SWITCH);
+                }
             }
-            else if (block.Kind is BBJ_RETURN)
-            {
-                assert((lastStmt.RootNode.Oper is GT_RETURN or GT_SWIFT_ERROR_RET or GT_JMP) ||
-                       // Void tail-prefixed calls and real tail calls have no trailing GT_RETURN.
-                       ((lastStmt.RootNode.Oper is GT_CALL) && ((info.compRetType is TYP_VOID) || lastStmt.RootNode.AsCall().IsTailCall)));
-            }
-            else if (block.Kind is BBJ_EHFINALLYRET or BBJ_EHFAULTRET or BBJ_EHFILTERRET)
-            {
-                assert(lastStmt.RootNode.Oper is GT_RETFILT);
-            }
-            else
-            {
-                assert(block.Kind is BBJ_SWITCH);
-                assert(lastStmt.RootNode.Oper is GT_SWITCH);
-            }
-#endif
 
             stmt.NextStmt = lastStmt;
             lastStmt.PrevStmt = stmt;
@@ -4733,15 +4735,16 @@ public partial class Compiler
                     block.TryIndex = XTnum;
                 }
 
-#if DEBUG
-                // Note: the BB can't span the 'try' block
-
-                if (!block.HasFlag(BBF_INTERNAL))
+                if (Configuration.DEBUG)
                 {
-                    noway_assert(tryBegOff <= block.bbCodeOffs);
-                    noway_assert(tryEndOff >= block.bbCodeOffsEnd || tryEndOff == tryBegOff);
+                    // Note: the BB can't span the 'try' block
+
+                    if (!block.HasFlag(BBF_INTERNAL))
+                    {
+                        noway_assert(tryBegOff <= block.bbCodeOffs);
+                        noway_assert(tryEndOff >= block.bbCodeOffsEnd || tryEndOff == tryBegOff);
+                    }
                 }
-#endif
             }
 
             // Init ebdHandlerNestingLevel of current clause, and bump up value for all
@@ -4826,16 +4829,17 @@ public partial class Compiler
                      (putInTryRegion && (regionIndex > 0) && (startBlk.bbTryIndex == regionIndex)) || // Search in the specified try region
                      (!putInTryRegion && (regionIndex > 0) && (startBlk.bbHndIndex == regionIndex))); // Search in the specified handler region
 
-#if DEBUG
         // Assert that startBlk precedes endBlk in the block list.
         // We don't want to use bbNum to assert this condition, as we cannot depend on the block numbers being sequential at all times.
 
-        for (var block = startBlk; block != endBlk; block = block.Next)
+        if (Configuration.DEBUG)
         {
-            // We reached the end of the block list, but never found endBlk.
-            assert(block is not null);
+            for (var block = startBlk; block != endBlk; block = block.Next)
+            {
+                // We reached the end of the block list, but never found endBlk.
+                assert(block is not null);
+            }
         }
-#endif
 
         JITDUMP($"fgFindInsertPoint(regionIndex={regionIndex}, putInTryRegion={dspBool(putInTryRegion)}, startBlk={FMT_BB(startBlk.bbNum)}, endBlk={FMT_BB((endBlk is null) ? 0 : endBlk.bbNum)}, nearBlk={FMT_BB((nearBlk is null) ? 0 : nearBlk.bbNum)}, jumpBlk={FMT_BB((jumpBlk is null) ? 0 : jumpBlk.bbNum)}, runRarely={dspBool(runRarely)})\n");
 
@@ -5124,10 +5128,11 @@ public partial class Compiler
                     compInlineResult.Note(InlineObservation.CALLSITE_IN_LOOP);
                 }
 
-#if DEBUG
-                // If inlining, this method should still be a candidate.
-                assert(compInlineResult.IsCandidate);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    // If inlining, this method should still be a candidate.
+                    assert(compInlineResult.IsCandidate);
+                }
             }
 
             // note that we're starting to look at the opcodes.
@@ -9806,13 +9811,16 @@ public partial class Compiler
             {
                 jitprintf($"Removing empty {FMT_BB(block.bbNum)}\n");
             }
-
-            // Some extra checks for the empty case
-            assert(block.Kind is BBJ_ALWAYS);
-
-            // Do not remove a block that jumps to itself - used for while (true){}
-            assert(block.Target != block);
 #endif
+
+            if (Configuration.DEBUG)
+            {
+                // Some extra checks for the empty case
+                assert(block.Kind is BBJ_ALWAYS);
+
+                // Do not remove a block that jumps to itself - used for while (true){}
+                assert(block.Target != block);
+            }
 
             var succBlock = block.Target;
 
@@ -11181,13 +11189,14 @@ public partial class Compiler
             edge.Likelihood = weight_t.Min(1.0, newLikelihood);
         }
 
-#if DEBUG
-        // We only expect to see a successor once in the table.
-        for (var i = succIndex; i < succs.Length; i++)
+        if (Configuration.DEBUG)
         {
-            assert(succs[i].DestinationBlock != succEdge.DestinationBlock);
+            // We only expect to see a successor once in the table.
+            for (var i = succIndex; i < succs.Length; i++)
+            {
+                assert(succs[i].DestinationBlock != succEdge.DestinationBlock);
+            }
         }
-#endif
     }
 
     /// <summary>Decrements the reference count of `edge`, removing it from its successor block's pred list if the reference count is zero.</summary>
@@ -11534,16 +11543,17 @@ public partial class Compiler
     /// <remarks>Also sets the sequence numbers for dumps. The last and first node of the resulting "range" will have their "gtNext" and "gtPrev" links set to "null".</remarks>
     internal GenTree fgSetTreeSeq(GenTree tree, bool isLIR = false)
     {
-#if DEBUG
-        if (isLIR)
+        if (Configuration.DEBUG)
         {
-            assert((fgNodeThreading == NodeThreading.LIR) || (mostRecentlyActivePhase == PHASE_RATIONALIZE));
+            if (isLIR)
+            {
+                assert((fgNodeThreading == NodeThreading.LIR) || (mostRecentlyActivePhase == PHASE_RATIONALIZE));
+            }
+            else
+            {
+                assert((fgNodeThreading == NodeThreading.AllTrees) || (mostRecentlyActivePhase == PHASE_SET_BLOCK_ORDER));
+            }
         }
-        else
-        {
-            assert((fgNodeThreading == NodeThreading.AllTrees) || (mostRecentlyActivePhase == PHASE_SET_BLOCK_ORDER));
-        }
-#endif
 
         return new SetTreeSeqVisitor(this, tree, isLIR).Sequence();
     }

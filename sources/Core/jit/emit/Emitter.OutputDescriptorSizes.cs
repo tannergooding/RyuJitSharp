@@ -10,11 +10,13 @@ public partial class Emitter
     private static int emitSizeOfInsDsc_AMD(instrDesc id)
     {
         assert(!id.idIsSmallDsc());
-#if DEBUG
-        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
-        var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
-        assert(idOp is ID_OPS.ID_OP_AMD or ID_OPS.ID_OP_AMD_CNS);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
+            var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
+            assert(idOp is ID_OPS.ID_OP_AMD or ID_OPS.ID_OP_AMD_CNS);
+        }
+
         if (id.idIsLargeCns())
         {
             return id.idIsLargeDsp() ? ConstantDescriptorSizes.ConstantAddressMode : ConstantDescriptorSizes.Constant;
@@ -29,11 +31,13 @@ public partial class Emitter
 
     private static int emitSizeOfInsDsc_CNS(instrDesc id)
     {
-#if DEBUG
-        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
-        var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
-        assert(idOp is ID_OPS.ID_OP_CNS or ID_OPS.ID_OP_SCNS);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
+            var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
+            assert(idOp is ID_OPS.ID_OP_CNS or ID_OPS.ID_OP_SCNS);
+        }
+
         if (id.idIsSmallDsc())
         {
             return SMALL_IDSC_SIZE;
@@ -48,10 +52,12 @@ public partial class Emitter
 
     private static int emitSizeOfInsDsc_NONE(instrDesc id)
     {
-#if DEBUG
-        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
-        assert((ID_OPS)emitFmtToOps[(int)id.idInsFmt()] == ID_OPS.ID_OP_NONE);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
+            assert((ID_OPS)emitFmtToOps[(int)id.idInsFmt()] == ID_OPS.ID_OP_NONE);
+        }
+
         if (id.idIsSmallDsc())
         {
             return SMALL_IDSC_SIZE;
@@ -66,11 +72,13 @@ public partial class Emitter
     private static int emitSizeOfInsDsc_SPEC(instrDesc id)
     {
         assert(!id.idIsSmallDsc());
-#if DEBUG
-        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
-        var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
-        assert(idOp is ID_OPS.ID_OP_CALL or ID_OPS.ID_OP_SPEC);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
+            var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
+            assert(idOp is ID_OPS.ID_OP_CALL or ID_OPS.ID_OP_SPEC);
+        }
+
         if (id.idIsLargeCall())
         {
             return ((instrDescCGCA)id).NativeLogicalSize;
@@ -90,11 +98,13 @@ public partial class Emitter
     private static int emitSizeOfInsDsc_DSP(instrDesc id)
     {
         assert(!id.idIsSmallDsc());
-#if DEBUG
-        assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
-        var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
-        assert(idOp is ID_OPS.ID_OP_DSP or ID_OPS.ID_OP_DSP_CNS);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((uint)id.idInsFmt() < (uint)emitFmtToOps.Length);
+            var idOp = (ID_OPS)emitFmtToOps[(int)id.idInsFmt()];
+            assert(idOp is ID_OPS.ID_OP_DSP or ID_OPS.ID_OP_DSP_CNS);
+        }
+
         if (id.idIsLargeCns())
         {
             return id.idIsLargeDsp() ? ConstantDescriptorSizes.ConstantDisplacement : ConstantDescriptorSizes.Constant;

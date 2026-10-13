@@ -17253,15 +17253,18 @@ public partial class Compiler
     {
         var isTailCall = (prefixFlags & PREFIX_TAILCALL) is not 0;
 
-#if DEBUG
         // If we are importing an inlinee and have GC ref locals we always
         // need to have a spill temp for the return value.  This temp
         // should have been set up in advance, over in fgFindBasicBlocks.
         if (compIsForInlining && impInlineInfo.HasGcRefLocals && (info.compRetType is not TYP_VOID))
         {
-            assert(lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
+            if (Configuration.DEBUG)
+            {
+                assert(lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
+            }
         }
 
+#if DEBUG
         if (!compIsForInlining && ((prefixFlags & (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_STRESS)) is 0) && compStressCompile(STRESS_POISON_IMPLICIT_BYREFS, 25))
         {
             impPoisonImplicitByrefsBeforeReturn();
