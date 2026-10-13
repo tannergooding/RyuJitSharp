@@ -209,10 +209,11 @@ public partial class Emitter
         var word1 = code & 0xFFFF;
         assert(word1 == code);
 
-#if DEBUG
-        var top5bits = (word1 & 0xF800) >> 11;
-        assert(top5bits < 29);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var top5bits = (word1 & 0xF800) >> 11;
+            assert(top5bits < 29);
+        }
 
         return emitOutputWord(dst, word1);
     }
@@ -225,10 +226,11 @@ public partial class Emitter
         var word2 = code & 0xFFFF;
         assert(((word1 << 16) | word2) == code);
 
-#if DEBUG
-        var top5bits = (word1 & 0xF800) >> 11;
-        assert(top5bits >= 29);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var top5bits = (word1 & 0xF800) >> 11;
+            assert(top5bits >= 29);
+        }
 
         emitOutputWord(dst, word1);
         emitOutputWord(unchecked(dst + sizeof(short)), word2);

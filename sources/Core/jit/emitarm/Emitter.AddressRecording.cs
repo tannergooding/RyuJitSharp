@@ -168,14 +168,15 @@ public partial class Emitter
         }
         else
         {
-#if DEBUG
-            if (addr.Oper is GT_LCL_ADDR)
+            if (Configuration.DEBUG)
             {
-                assert(_compiler is not null);
-                ref var varDsc = ref _compiler.lvaGetDesc(addr.AsLclVarCommon().LclNum);
-                assert(!varDsc.lvTracked);
+                if (addr.Oper is GT_LCL_ADDR)
+                {
+                    assert(_compiler is not null);
+                    ref var varDsc = ref _compiler.lvaGetDesc(addr.AsLclVarCommon().LclNum);
+                    assert(!varDsc.lvTracked);
+                }
             }
-#endif
 
             if (offset != 0)
             {
