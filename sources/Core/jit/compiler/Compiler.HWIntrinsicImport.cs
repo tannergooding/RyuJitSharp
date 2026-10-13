@@ -165,10 +165,12 @@ public partial class Compiler
             {
                 argClass = info.compCompHnd->getArgClass(sigPointer, arg);
             }
-#if DEBUG
-            var fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
-            assert(fieldCount > 1);
-#endif
+            if (Configuration.DEBUG)
+            {
+                var fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
+                assert(fieldCount > 1);
+            }
+
             CORINFO_CLASS_HANDLE classHnd;
             var fieldHandle = info.compCompHnd->getFieldInClass(argClass, 0);
             _ = info.compCompHnd->getFieldType(fieldHandle, &classHnd);
