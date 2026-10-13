@@ -28,26 +28,34 @@ public partial class Compiler
 
         if (updateLoop is null)
         {
+            if (Configuration.DEBUG)
+            {
+                assert(_blockToLoop is not null);
+                var blockLoop = _blockToLoop.GetLoop(block);
+                assert(blockLoop is not null);
 #if DEBUG
-            assert(_blockToLoop is not null);
-            var blockLoop = _blockToLoop.GetLoop(block);
-            assert(blockLoop is not null);
-            JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}]/L{blockLoop.Index:D2}, " +
-                $"memory definition {memoryVN}/L{definingLoop.Index:D2} is not dependent on an ancestor loop\n");
+                JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}]/L{blockLoop.Index:D2}, " +
+                    $"memory definition {memoryVN}/L{definingLoop.Index:D2} is not dependent on an ancestor loop\n");
 #endif
+            }
+
             return;
         }
 
         var map = NodeToLoopMemoryBlockMap;
         if (map.TryGetValue(tree, out var mapBlock) && updateLoop.ContainsBlock(mapBlock))
         {
+            if (Configuration.DEBUG)
+            {
+                assert(_blockToLoop is not null);
+                var mapLoop = _blockToLoop.GetLoop(mapBlock);
+                assert(mapLoop is not null);
 #if DEBUG
-            assert(_blockToLoop is not null);
-            var mapLoop = _blockToLoop.GetLoop(mapBlock);
-            assert(mapLoop is not null);
-            JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}]; " +
-                $"already constrained to L{mapLoop.Index:D2} nested in L{updateLoop.Index:D2}\n");
+                JITDUMP($"      ==> Not updating loop memory dependence of [{tree.TreeId:D6}]; " +
+                    $"already constrained to L{mapLoop.Index:D2} nested in L{updateLoop.Index:D2}\n");
 #endif
+            }
+
             return;
         }
 
