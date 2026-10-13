@@ -7,9 +7,7 @@ using System.Diagnostics;
 
 namespace RyuJitSharp;
 
-#if DEBUG
 [DebuggerDisplay("[reg={regNum}, type={registerType}]")]
-#endif
 public sealed partial class RegRecord : Referenceable
 {
     public RegRecord()

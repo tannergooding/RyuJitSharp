@@ -239,7 +239,6 @@ public partial struct LclVarDsc
 #endif
 }
 
-#if DEBUG
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
 public sealed partial class Interval
 {
@@ -249,24 +248,36 @@ public sealed partial class Interval
         {
             if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && isUpperVector)
             {
-                return $"[U{relatedInterval?.varNum ?? varNum}, #{intervalIndex}, reg={physReg}]";
+                return FormatDebuggerDisplay($"U{relatedInterval?.varNum ?? varNum}", hasNamedNumber: true);
             }
 
             if (isLocalVar)
             {
-                return $"[V{varNum}, #{intervalIndex}, reg={physReg}]";
+                return FormatDebuggerDisplay($"V{varNum}", hasNamedNumber: true);
             }
 
             if (isConstant)
             {
-                return $"[C{intervalIndex}, reg={physReg}]";
+                return FormatDebuggerDisplay("C", hasNamedNumber: false);
             }
 
-            return $"[I{intervalIndex}, reg={physReg}]";
+            return FormatDebuggerDisplay("I", hasNamedNumber: false);
         }
+    }
+
+    private string FormatDebuggerDisplay(string category, bool hasNamedNumber)
+    {
+#if DEBUG
+        return hasNamedNumber
+            ? $"[{category}, #{intervalIndex}, reg={physReg}]"
+            : $"[{category}{intervalIndex}, reg={physReg}]";
+#else
+        return $"[{category}, reg={physReg}]";
+#endif
     }
 }
 
+#if DEBUG
 [DebuggerDisplay("[#{rpNum} - {refType}]")]
 [DebuggerTypeProxy(typeof(RefPositionDebuggerProxy))]
 public sealed partial class RefPosition

@@ -4,6 +4,8 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using NUnit.Framework;
+using static RyuJitSharp.regMask;
+using static RyuJitSharp.var_types;
 
 namespace RyuJitSharp.UnitTests;
 
@@ -79,6 +81,26 @@ internal static class DebuggerProxyTests
             "{DebuggerDisplayText,nq}",
             typeof(FlowGraphNaturalLoopDebuggerProxy));
         AssertDebuggerProxy<FlowGraphNaturalLoops>(typeof(FlowGraphNaturalLoopsDebuggerProxy));
+    }
+
+    [Test]
+    public static void RegisterAllocationDebuggerDisplaysAreAvailableInAllConfigurations()
+    {
+        AssertDebuggerDisplay<Interval>("{DebuggerDisplayText,nq}");
+        AssertDebuggerDisplay<RegRecord>("[reg={regNum}, type={registerType}]");
+
+        var interval = new Interval(TYP_INT, SRBM_NONE) { isLocalVar = true, varNum = 7 };
+#if DEBUG
+        interval.intervalIndex = 2;
+        var expected = $"[V7, #2, reg={interval.physReg}]";
+#else
+        var expected = $"[V7, reg={interval.physReg}]";
+#endif
+        var displayProperty = typeof(Interval).GetProperty(
+            "DebuggerDisplayText",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+
+        Assert.That(displayProperty?.GetValue(interval), Is.EqualTo(expected));
     }
 
     [Test]
