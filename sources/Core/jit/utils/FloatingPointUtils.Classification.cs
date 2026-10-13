@@ -77,8 +77,7 @@ public static partial class FloatingPointUtils
 
     public static double normalize(double value)
     {
-#if HOST_X86
-        if (!isNaN(value))
+        if (!Configuration.HOST_X86 || !isNaN(value))
         {
             return value;
         }
@@ -89,8 +88,5 @@ public static partial class FloatingPointUtils
         value = UInt64BitsToDouble(bits);
 
         return value;
-#else
-        return value;
-#endif
     }
 }

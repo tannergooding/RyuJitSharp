@@ -115,11 +115,15 @@ public partial class Emitter
             }
 
             assert((previousSize % 4) == 0);
-#if HOST_64BIT
-            _idScaledPrevOffset = (previousSize / 4) & 0x1F;
-#else
-            _idScaledPrevOffset = (previousSize / 4) & 0xF;
-#endif
+            if (Configuration.HOST_64BIT)
+            {
+                _idScaledPrevOffset = (previousSize / 4) & 0x1F;
+            }
+            else
+            {
+                _idScaledPrevOffset = (previousSize / 4) & 0xF;
+            }
+
             assert(idPrevSize() == previousSize);
         }
 

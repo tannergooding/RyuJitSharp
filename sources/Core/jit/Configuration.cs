@@ -1,9 +1,14 @@
 using System;
+using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
 
 internal static class Configuration
 {
+    private static readonly Architecture s_hostArchitecture = RuntimeInformation.ProcessArchitecture;
+
+    private static readonly bool s_hostWindows = OperatingSystem.IsWindows();
+
     internal static bool FEATURE_HW_INTRINSICS => GetFeatureSwitch(nameof(FEATURE_HW_INTRINSICS));
 
     // RyuJitSharp currently includes timing support in every build.
@@ -243,6 +248,12 @@ internal static class Configuration
 
     internal static bool HOST_64BIT => Environment.Is64BitProcess;
 
+    internal static bool HOST_AMD64 => s_hostArchitecture == Architecture.X64;
+
+    internal static bool HOST_X86 => s_hostArchitecture == Architecture.X86;
+
+    internal static bool HOST_WINDOWS => s_hostWindows;
+
     internal static bool TARGET_ARM => GetFeatureSwitch(nameof(TARGET_ARM));
 
     internal static bool TARGET_ARMV6 => GetFeatureSwitch(nameof(TARGET_ARMV6));
@@ -286,6 +297,18 @@ internal static class Configuration
         {
             throw new FatalJitException("WebAssembly-only compiler code requires the WebAssembly target.");
         }
+    }
+
+    internal static void EnsureSupportedHostArchitecture()
+    {
+        if (s_hostArchitecture is
+            Architecture.X86 or Architecture.X64 or Architecture.Arm or Architecture.Arm64 or Architecture.LoongArch64 or
+            Architecture.RiscV64)
+        {
+            return;
+        }
+
+        throw new FatalJitException($"Unsupported host architecture: {s_hostArchitecture}.");
     }
 
     internal static bool TARGET_WINDOWS => GetFeatureSwitch(nameof(TARGET_WINDOWS));

@@ -236,17 +236,18 @@ internal sealed class JitTextWriter : StreamWriter
                 _ = stream.Seek(0, SeekOrigin.End);
             }
 
-#if HOST_WINDOWS
-            var newline = buffer.IndexOf((byte)('\n'));
-
-            while (newline >= 0)
+            if (Configuration.HOST_WINDOWS)
             {
-                stream.Write(buffer[..newline]);
-                stream.Write("\r\n"u8);
-                buffer = buffer[(newline + 1)..];
-                newline = buffer.IndexOf((byte)('\n'));
+                var newline = buffer.IndexOf((byte)('\n'));
+
+                while (newline >= 0)
+                {
+                    stream.Write(buffer[..newline]);
+                    stream.Write("\r\n"u8);
+                    buffer = buffer[(newline + 1)..];
+                    newline = buffer.IndexOf((byte)('\n'));
+                }
             }
-#endif
 
             stream.Write(buffer);
             if (append)

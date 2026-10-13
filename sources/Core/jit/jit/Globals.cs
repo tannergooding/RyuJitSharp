@@ -16,109 +16,17 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if HOST_X86
-#if HOST_ARM
-#error Cannot define both HOST_X86 and HOST_ARM
-#endif
-#if HOST_AMD64
-#error Cannot define both HOST_X86 and HOST_AMD64
-#endif
-#if HOST_ARM64
-#error Cannot define both HOST_X86 and HOST_ARM64
-#endif
-#if HOST_LOONGARCH64
-#error Cannot define both HOST_X86 and HOST_LOONGARCH64
-#endif
-#if HOST_RISCV64
-#error Cannot define both HOST_X86 and HOST_RISCV64
-#endif
-#elif HOST_AMD64
-#if HOST_X86
-#error Cannot define both HOST_AMD64 and HOST_X86
-#endif
-#if HOST_ARM
-#error Cannot define both HOST_AMD64 and HOST_ARM
-#endif
-#if HOST_ARM64
-#error Cannot define both HOST_AMD64 and HOST_ARM64
-#endif
-#if HOST_LOONGARCH64
-#error Cannot define both HOST_AMD64 and HOST_LOONGARCH64
-#endif
-#if HOST_RISCV64
-#error Cannot define both HOST_AMD64 and HOST_RISCV64
-#endif
-#elif HOST_ARM
-#if HOST_X86
-#error Cannot define both HOST_ARM and HOST_X86
-#endif
-#if HOST_AMD64
-#error Cannot define both HOST_ARM and HOST_AMD64
-#endif
-#if HOST_ARM64
-#error Cannot define both HOST_ARM and HOST_ARM64
-#endif
-#if HOST_LOONGARCH64
-#error Cannot define both HOST_ARM and HOST_LOONGARCH64
-#endif
-#if HOST_RISCV64
-#error Cannot define both HOST_ARM and HOST_RISCV64
-#endif
-#elif HOST_ARM64
-#if HOST_X86
-#error Cannot define both HOST_ARM64 and HOST_X86
-#endif
-#if HOST_AMD64
-#error Cannot define both HOST_ARM64 and HOST_AMD64
-#endif
-#if HOST_ARM
-#error Cannot define both HOST_ARM64 and HOST_ARM
-#endif
-#if HOST_LOONGARCH64
-#error Cannot define both HOST_ARM64 and HOST_LOONGARCH64
-#endif
-#if HOST_RISCV64
-#error Cannot define both HOST_ARM64 and HOST_RISCV64
-#endif
-#elif HOST_LOONGARCH64
-#if HOST_X86
-#error Cannot define both HOST_LOONGARCH64 and HOST_X86
-#endif
-#if HOST_AMD64
-#error Cannot define both HOST_LOONGARCH64 and HOST_AMD64
-#endif
-#if HOST_ARM
-#error Cannot define both HOST_LOONGARCH64 and HOST_ARM
-#endif
-#if HOST_ARM64
-#error Cannot define both HOST_LOONGARCH64 and HOST_ARM64
-#endif
-#if HOST_RISCV64
-#error Cannot define both HOST_LOONGARCH64 and HOST_RISCV64
-#endif
-#elif HOST_RISCV64
-#if HOST_X86
-#error Cannot define both HOST_RISCV64 and HOST_X86
-#endif
-#if HOST_AMD64
-#error Cannot define both HOST_RISCV64 and HOST_AMD64
-#endif
-#if HOST_ARM
-#error Cannot define both HOST_RISCV64 and HOST_ARM
-#endif
-#if HOST_ARM64
-#error Cannot define both HOST_RISCV64 and HOST_ARM64
-#endif
-#if HOST_LOONGARCH64
-#error Cannot define both HOST_RISCV64 and HOST_LOONGARCH64
-#endif
-#else
-#error Unsupported or unset host architecture
-#endif
-
     static Globals()
     {
+        Configuration.EnsureSupportedHostArchitecture();
         ValidateTargetConfiguration();
+
+#if MEASURE_CLRAPI_CALLS
+        if (!Configuration.HOST_X86 && !Configuration.HOST_AMD64)
+        {
+            throw new FatalJitException("Cycle counters only hooked up on x86/x64.");
+        }
+#endif
 
         if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
         {
@@ -206,9 +114,6 @@ public partial class Globals
 #if MEASURE_CLRAPI_CALLS
 #if DEBUG
 #error No point in measuring DEBUG code.
-#endif
-#if !HOST_X86 && !HOST_AMD64
-#error Cycle counters only hooked up on x86/x64.
 #endif
 #endif
 
@@ -538,19 +443,20 @@ public partial class Globals
             return sign + "inf";
         }
 
-#if HOST_WINDOWS
-        var bits = BitConverter.DoubleToUInt64Bits(value);
-
-        if (bits == 0xFFF8000000000000)
+        if (Configuration.HOST_WINDOWS)
         {
-            return "-nan(ind)";
-        }
+            var bits = BitConverter.DoubleToUInt64Bits(value);
 
-        if ((bits & 0x0008000000000000) == 0)
-        {
-            return sign + "nan(snan)";
+            if (bits == 0xFFF8000000000000)
+            {
+                return "-nan(ind)";
+            }
+
+            if ((bits & 0x0008000000000000) == 0)
+            {
+                return sign + "nan(snan)";
+            }
         }
-#endif
 
         return sign + "nan";
     }

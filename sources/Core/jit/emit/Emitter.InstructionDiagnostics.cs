@@ -30,11 +30,14 @@ public partial class Emitter
         {
             // FMT_ADDR/DBG_ADDR print the raw address, not the diffable FMT_PTR representation.
             var address = unchecked((nuint)code);
-#if HOST_64BIT
-            jitprintf($" {unchecked((uint)(address >> 32)):x8}`{unchecked((uint)address):x8} ");
-#else
-            jitprintf($" {unchecked((uint)address):x8} ");
-#endif
+            if (Configuration.HOST_64BIT)
+            {
+                jitprintf($" {unchecked((uint)(address >> 32)):x8}`{unchecked((uint)address):x8} ");
+            }
+            else
+            {
+                jitprintf($" {unchecked((uint)address):x8} ");
+            }
         }
 #endif
     }

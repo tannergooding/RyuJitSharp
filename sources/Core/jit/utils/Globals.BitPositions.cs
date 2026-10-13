@@ -13,36 +13,27 @@ public static partial class Globals
     {
         assert(value != 0);
 
-#if HOST_WINDOWS
         return (uint)BitOperations.TrailingZeroCount(value);
-#else
-        var result = BitOperations.TrailingZeroCount(value);
-        return (uint)result;
-#endif
     }
 
     public static uint BitScanForward(ulong value)
     {
         assert(value != 0);
 
-#if HOST_WINDOWS
-#if HOST_64BIT
-        return (uint)BitOperations.TrailingZeroCount(value);
-#else
-        var lower = unchecked((uint)value);
-
-        if (lower == 0)
+        if (Configuration.HOST_WINDOWS && !Configuration.HOST_64BIT)
         {
-            var upper = (uint)(value >> 32);
-            return 32 + BitScanForward(upper);
+            var lower = unchecked((uint)value);
+
+            if (lower == 0)
+            {
+                var upper = (uint)(value >> 32);
+                return 32 + BitScanForward(upper);
+            }
+
+            return BitScanForward(lower);
         }
 
-        return BitScanForward(lower);
-#endif
-#else
-        var result = BitOperations.TrailingZeroCount(value);
-        return (uint)result;
-#endif
+        return (uint)BitOperations.TrailingZeroCount(value);
     }
 
     public static uint LeadingZeroCount(uint value)
@@ -52,17 +43,18 @@ public static partial class Globals
             return 32;
         }
 
-#if HOST_WINDOWS
-        // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
-        // 31 ^ BSR here is equivalent to 31 - BSR since the BSR result is always between 0 and 31.
-        // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+        if (Configuration.HOST_WINDOWS)
+        {
+            // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+            // 31 ^ BSR here is equivalent to 31 - BSR since the BSR result is always between 0 and 31.
+            // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
 
-        var result = BitScanReverse(value);
-        return 31 ^ result;
-#else
+            var windowsResult = BitScanReverse(value);
+            return 31 ^ windowsResult;
+        }
+
         var result = BitOperations.LeadingZeroCount(value);
         return (uint)result;
-#endif
     }
 
     public static uint LeadingZeroCount(ulong value)
@@ -72,17 +64,18 @@ public static partial class Globals
             return 64;
         }
 
-#if HOST_WINDOWS
-        // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
-        // 63 ^ BSR here is equivalent to 63 - BSR since the BSR result is always between 0 and 63.
-        // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
+        if (Configuration.HOST_WINDOWS)
+        {
+            // LZCNT returns index starting from MSB, whereas BSR gives the index from LSB.
+            // 63 ^ BSR here is equivalent to 63 - BSR since the BSR result is always between 0 and 63.
+            // This saves an instruction, as subtraction from constant requires either MOV/SUB or NEG/ADD.
 
-        var result = BitScanReverse(value);
-        return 63 ^ result;
-#else
+            var windowsResult = BitScanReverse(value);
+            return 63 ^ windowsResult;
+        }
+
         var result = BitOperations.LeadingZeroCount(value);
         return (uint)result;
-#endif
     }
 
     public static uint Log2(uint value)
@@ -106,12 +99,13 @@ public static partial class Globals
             return 32;
         }
 
-#if HOST_WINDOWS
-        return BitScanForward(value);
-#else
+        if (Configuration.HOST_WINDOWS)
+        {
+            return BitScanForward(value);
+        }
+
         var result = BitOperations.TrailingZeroCount(value);
         return (uint)result;
-#endif
     }
 
     public static uint TrailingZeroCount(ulong value)
@@ -121,11 +115,12 @@ public static partial class Globals
             return 64;
         }
 
-#if HOST_WINDOWS
-        return BitScanForward(value);
-#else
+        if (Configuration.HOST_WINDOWS)
+        {
+            return BitScanForward(value);
+        }
+
         var result = BitOperations.TrailingZeroCount(value);
         return (uint)result;
-#endif
     }
 }
