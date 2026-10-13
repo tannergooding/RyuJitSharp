@@ -11,10 +11,8 @@ namespace RyuJitSharp;
 /// <remarks>These are different from the more common temps allocated by lvaGrabTemp</remarks>
 public sealed class TempDsc
 {
-#if DEBUG
     // used as a sentinel "bad value" for tdOffs in DEBUG
     private const int BAD_TEMP_OFFSET = unchecked((int)(0xDDDDDDDD));
-#endif
 
     public TempDsc? tdNext;
 
@@ -31,9 +29,10 @@ public sealed class TempDsc
         // temps must have a negative number (so they have a different number from all local variables)
         assert(tdNum < 0);
 
-#if DEBUG
-        _tdOffs = BAD_TEMP_OFFSET;
-#endif
+        if (Configuration.DEBUG)
+        {
+            _tdOffs = BAD_TEMP_OFFSET;
+        }
 
         _tdNum = tdNum;
         _tdSize = tdSize;
@@ -50,9 +49,11 @@ public sealed class TempDsc
     {
         get
         {
-#if DEBUG
-            assert(Debugger.IsAttached || tdLegalOffset);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(Debugger.IsAttached || (_tdOffs != BAD_TEMP_OFFSET));
+            }
+
             return _tdOffs;
         }
 
@@ -60,9 +61,10 @@ public sealed class TempDsc
         {
             _tdOffs = value;
 
-#if DEBUG
-            assert(tdLegalOffset);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(_tdOffs != BAD_TEMP_OFFSET);
+            }
         }
     }
 
@@ -72,18 +74,17 @@ public sealed class TempDsc
 
     public void tdAdjustTempOffs(int offs)
     {
-#if DEBUG
         // Cannot adjust temporary offsets on the UnknownSizeFrame.
-        if (Configuration.TARGET_ARM64)
+        if (Configuration.DEBUG && Configuration.TARGET_ARM64)
         {
             assert(!varTypeHasUnknownSize(_tdType));
         }
-#endif
 
         tdTempOffs = _tdOffs + offs;
 
-#if DEBUG
-        assert(tdLegalOffset);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_tdOffs != BAD_TEMP_OFFSET);
+        }
     }
 }

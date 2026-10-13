@@ -1300,14 +1300,15 @@ public partial struct LclVarDsc
     /// <returns>Ref count for the local.</returns>
     public readonly ushort lvRefCnt(RefCountState state = RCS_NORMAL)
     {
-#if DEBUG
-        assert(state != RCS_INVALID);
+        if (Configuration.DEBUG)
+        {
+            assert(state != RCS_INVALID);
 
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
 
-        assert(compiler.lvaRefCountState == state);
-#endif
+            assert(compiler.lvaRefCountState == state);
+        }
 
         var refCnt = _lvRefCnt;
 
@@ -1334,14 +1335,15 @@ public partial struct LclVarDsc
     /// </remarks>
     public void setLvRefCnt(ushort newValue, RefCountState state = RCS_NORMAL)
     {
-#if DEBUG
-        assert(state != RCS_INVALID);
+        if (Configuration.DEBUG)
+        {
+            assert(state != RCS_INVALID);
 
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
 
-        assert(compiler.lvaRefCountState == state);
-#endif
+            assert(compiler.lvaRefCountState == state);
+        }
 
         _lvRefCnt = newValue;
     }
@@ -1357,14 +1359,15 @@ public partial struct LclVarDsc
     /// <returns>Weighted ref count for the local.</returns>
     public readonly weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL)
     {
-#if DEBUG
-        assert(state != RCS_INVALID);
+        if (Configuration.DEBUG)
+        {
+            assert(state != RCS_INVALID);
 
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
 
-        assert(compiler.lvaRefCountState == state);
-#endif
+            assert(compiler.lvaRefCountState == state);
+        }
 
         if (lvImplicitlyReferenced && (_lvRefCntWtd == 0))
         {
@@ -1389,14 +1392,15 @@ public partial struct LclVarDsc
     /// </remarks>
     public void setLvRefCntWtd(weight_t newValue, RefCountState state = RCS_NORMAL)
     {
-#if DEBUG
-        assert(state != RCS_INVALID);
+        if (Configuration.DEBUG)
+        {
+            assert(state != RCS_INVALID);
 
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
 
-        assert(compiler.lvaRefCountState == state);
-#endif
+            assert(compiler.lvaRefCountState == state);
+        }
 
         _lvRefCntWtd = newValue;
     }
@@ -1644,13 +1648,14 @@ public partial struct LclVarDsc
             targetType = layout.RegisterType;
         }
 
-#if DEBUG
-        if ((targetType is not TYP_UNDEF) && (tree.Oper is GT_STORE_LCL_VAR) && lvNormalizeOnStore)
+        if (Configuration.DEBUG &&
+            (targetType is not TYP_UNDEF) &&
+            (tree.Oper is GT_STORE_LCL_VAR) &&
+            lvNormalizeOnStore)
         {
             // Ensure that the lclVar node is typed correctly, does not apply to phi-stores because they do not produce code in the merge block.
             assert(!tree.AsUnOp().Op1.Oper.IsNonPhiLocal || (targetType == Type.ActualType));
         }
-#endif
 
         return targetType;
     }

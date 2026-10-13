@@ -26,11 +26,7 @@ public partial class Compiler
             lvaGetDesc(lvaLocAllocSPvar).Type = TYP_I_IMPL;
         }
         lvaRefCountState = RCS_NORMAL;
-#if DEBUG
-        const bool setSlotNumbers = true;
-#else
-        var setSlotNumbers = opts.compScopeInfo && (info.compVarScopesCount > 0);
-#endif
+        var setSlotNumbers = Configuration.DEBUG || (opts.compScopeInfo && (info.compVarScopesCount > 0));
         lvaComputeRefCounts(isRecompute: false, setSlotNumbers);
 
         if (!PreciseRefCountsRequired)
