@@ -133,14 +133,15 @@ public partial class Compiler
 
             if (giveIndex.TryGetValue(sideEntry.Target, out var index))
             {
-#if DEBUG
-                var existing = targetPaths[index];
-                var common = Math.Min(existing.Count, path.Count);
-                for (var p = 0; p < common; p++)
+                if (Configuration.DEBUG)
                 {
-                    assert(existing[p] == path[p]);
+                    var existing = targetPaths[index];
+                    var common = Math.Min(existing.Count, path.Count);
+                    for (var p = 0; p < common; p++)
+                    {
+                        assert(existing[p] == path[p]);
+                    }
                 }
-#endif
 
                 if (path.Count > targetPaths[index].Count)
                 {
