@@ -100,25 +100,27 @@ public partial class Emitter
 
         if (isMaskReg(id.idReg2()))
         {
-#if DEBUG
-            assert((prefixFlags(id.idIns()) & KInstruction) != 0);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert((prefixFlags(id.idIns()) & KInstruction) != 0);
+            }
             return UsePromotedEvexEncodings;
         }
 
-#if DEBUG
-        if (!id.idIsSmallDsc())
+        if (Configuration.DEBUG)
         {
-            if (id.idHasReg3())
+            if (!id.idIsSmallDsc())
             {
-                assert(!isMaskReg(id.idReg3()));
-            }
-            if (id.idHasReg4())
-            {
-                assert(!isMaskReg(id.idReg4()));
+                if (id.idHasReg3())
+                {
+                    assert(!isMaskReg(id.idReg3()));
+                }
+                if (id.idHasReg4())
+                {
+                    assert(!isMaskReg(id.idReg4()));
+                }
             }
         }
-#endif
         return false;
     }
 
