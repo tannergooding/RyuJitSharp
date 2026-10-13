@@ -44,12 +44,13 @@ public partial class Compiler
             transformed = fgWasm.WasmTransformSccs(sccs);
             assert(transformed);
 
-#if DEBUG
-            var dfsTree2 = fgWasm.WasmDfs(out var hasBlocksOnlyReachableViaEH2);
-            assert(!hasBlocksOnlyReachableViaEH2);
-            var loops2 = FlowGraphNaturalLoops.Find(dfsTree2);
-            assert(loops2.ImproperLoopHeaders == 0);
-#endif
+            if (Configuration.DEBUG)
+            {
+                var dfsTree2 = fgWasm.WasmDfs(out var hasBlocksOnlyReachableViaEH2);
+                assert(!hasBlocksOnlyReachableViaEH2);
+                var loops2 = FlowGraphNaturalLoops.Find(dfsTree2);
+                assert(loops2.ImproperLoopHeaders == 0);
+            }
         }
 
         return transformed ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
