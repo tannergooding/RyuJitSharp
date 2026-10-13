@@ -610,15 +610,48 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
     }
 
     [Test]
-    [Explicit("Deferred until the B209 target-width table/emitter dependency closure is ported.")]
-    public static void AsyncResumeInfoDispatchReachesTheSharedRecordingBoundary()
+    public static void AsyncResumeInfoDispatchRecordsATargetEmbeddedDataAddress()
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var tree = new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, 0) { RegNum = REG_S0 };
-            var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForTreeNode(tree));
+            ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
+            vtable.Base.getAsyncResumptionStub = &GetAsyncResumptionStub;
+            CORINFO_METHOD_STRUCT_ method = default;
+            var context = new AsyncResumeInfoContext
+            {
+                JitInfo = new ICorJitInfo { lpVtbl = &vtable },
+                Method = &method,
+                EntryPoint = (void*)(delegate* unmanaged<void>)&AsyncResumeStub,
+            };
+            compiler.info.compCompHnd = &context.JitInfo;
+            compiler.compSuspensionPoints = [new ICorDebugInfo.AsyncSuspensionPoint()];
+            codeGen.Emitter.emitCmpHandle = &context.JitInfo;
 
-            Assert.That(failure?.Message, Does.Contain("Instruction recording outside AMD64 is not ported."));
+            var tree = new GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, 0) { RegNum = REG_S0 };
+            var emitter = codeGen.Emitter;
+            var instructions = CurrentInstructionBuffer(emitter)
+                ?? throw new AssertionException("Missing current instruction buffer.");
+            var initialSize = CurrentInstructionGroupSize(emitter);
+
+            codeGen.genCodeForTreeNode(tree);
+
+            Assert.That(instructions, Has.Count.EqualTo(1));
+            Assert.That(instructions[0].idReg1(), Is.EqualTo(REG_S0));
+            Assert.That(instructions[0].idInsOpt(), Is.EqualTo(INS_OPTS_RC));
+            Assert.That(instructions[0].idIsBound(), Is.True);
+            Assert.That(Compiler.eeIsJitDataOffs(instructions[0].idAddr().iiaFieldHnd), Is.True);
+            Assert.That(emitter.emitConsDsc.dsdLast?.dsType,
+                Is.EqualTo(Emitter.dataSection.sectionType.asyncResumeInfo));
+            Assert.That(context.Queries, Is.EqualTo(1));
+#if TARGET_LOONGARCH64
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_bl));
+            Assert.That(instructions[0].idCodeSize(), Is.EqualTo(12u));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialSize + 12));
+#else
+            Assert.That(instructions[0].idIns(), Is.EqualTo(INS_addi));
+            Assert.That(instructions[0].idCodeSize(), Is.EqualTo(8u));
+            Assert.That(CurrentInstructionGroupSize(emitter), Is.EqualTo(initialSize + 8));
+#endif
         });
     }
 
@@ -2185,6 +2218,29 @@ internal static unsafe class LoongArchRiscVLocalCodeGenTests
         {
             return exception;
         }
+    }
+
+    private struct AsyncResumeInfoContext
+    {
+        public ICorJitInfo JitInfo;
+        public CORINFO_METHOD_STRUCT_* Method;
+        public void* EntryPoint;
+        public int Queries;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+    private static CORINFO_METHOD_STRUCT_* GetAsyncResumptionStub(ICorJitInfo* self, void** entryPoint)
+    {
+        var context = (AsyncResumeInfoContext*)self;
+        context->Queries++;
+        *entryPoint = context->EntryPoint;
+
+        return context->Method;
+    }
+
+    [UnmanagedCallersOnly]
+    private static void AsyncResumeStub()
+    {
     }
 
 #if TARGET_RISCV64

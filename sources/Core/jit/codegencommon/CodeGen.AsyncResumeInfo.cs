@@ -22,63 +22,89 @@ public sealed partial class CodeGen
 
     public unsafe void genAsyncResumeInfo(GenTreeVal treeNode)
     {
-#if TARGET_WASM
-        assert(treeNode.Oper is GT_ASYNC_RESUME_INFO);
-        assert(treeNode.Type is TYP_I_IMPL);
-
-        var field = genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1));
-        assert(Compiler.eeIsJitDataOffs(field));
-        var dataOffset = Compiler.eeGetJitDataOffs(field);
-        assert(dataOffset >= 0);
-
-        GetEmitter().emitDataOffsetConstant(unchecked((nuint)dataOffset));
-        WasmProduceReg(treeNode);
-#elif TARGET_LOONGARCH64
-        // INS_bl/b are placeholders that is not the final instruction.
-        var ins = INS_bl;
-        var attr = EA_PTRSIZE;
-        if (_compiler.eeDataWithCodePointersNeedsRelocs())
+        if (Configuration.TARGET_WASM)
         {
-            ins = INS_b;
-            attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+            assert(treeNode.Oper is GT_ASYNC_RESUME_INFO);
+            assert(treeNode.Type == TYP_I_IMPL);
+
+            var field = genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1));
+            assert(Compiler.eeIsJitDataOffs(field));
+            var dataOffset = Compiler.eeGetJitDataOffs(field);
+            assert(dataOffset >= 0);
+
+            GetEmitter().emitDataOffsetConstant(unchecked((nuint)dataOffset));
+            WasmProduceReg(treeNode);
+
+            return;
         }
 
-        GetEmitter().emitIns_R_CLoongArch64(ins, attr, treeNode.RegNum, REG_NA,
-            genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
-        genProduceReg(treeNode);
-#elif TARGET_RISCV64
-        var attr = EA_PTRSIZE;
-        if (_compiler.eeDataWithCodePointersNeedsRelocs())
+        if (Configuration.TARGET_LOONGARCH64)
         {
-            attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+            // INS_bl/b are placeholders that is not the final instruction.
+            var ins = INS_bl;
+            var attr = EA_PTRSIZE;
+            if (_compiler.eeDataWithCodePointersNeedsRelocs())
+            {
+                ins = INS_b;
+                attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+            }
+
+            GetEmitter().emitIns_R_CLoongArch64(ins, attr, treeNode.RegNum, REG_NA,
+                genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
+            genProduceReg(treeNode);
+
+            return;
         }
 
-        GetEmitter().emitIns_R_C(INS_addi, attr, treeNode.RegNum, REG_NA,
-            genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)));
-        genProduceReg(treeNode);
-#elif TARGET_ARM64
-        var attr = EA_PTRSIZE;
-        if (_compiler.eeDataWithCodePointersNeedsRelocs())
+        if (Configuration.TARGET_RISCV64)
         {
-            attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+            var attr = EA_PTRSIZE;
+            if (_compiler.eeDataWithCodePointersNeedsRelocs())
+            {
+                attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+            }
+
+            GetEmitter().emitIns_R_C(INS_addi, attr, treeNode.RegNum, REG_NA,
+                genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)));
+            genProduceReg(treeNode);
+
+            return;
         }
 
-        Emitter.emitIns_R_C(INS_adr, attr, treeNode.RegNum, REG_NA,
-            genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
-        genProduceReg(treeNode);
-#elif TARGET_ARM
-        var field = genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1));
-        assert(Compiler.eeIsJitDataOffs(field));
-        genMov32RelocatableDataLabel(unchecked((uint)Compiler.eeGetJitDataOffs(field)), treeNode.RegNum);
-        genProduceReg(treeNode);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Async resume address generation requires Windows AMD64.");
-#else
+        if (Configuration.TARGET_ARM64)
+        {
+            var attr = EA_PTRSIZE;
+            if (_compiler.eeDataWithCodePointersNeedsRelocs())
+            {
+                attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
+            }
+
+            Emitter.emitIns_R_C(INS_adr, attr, treeNode.RegNum, REG_NA,
+                genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
+            genProduceReg(treeNode);
+
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            var field = genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1));
+            assert(Compiler.eeIsJitDataOffs(field));
+            genMov32RelocatableDataLabel(unchecked((uint)Compiler.eeGetJitDataOffs(field)), treeNode.RegNum);
+            genProduceReg(treeNode);
+
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Async resume address generation requires Windows AMD64.");
+        }
+
         Emitter.RequireSupportedInstructionRecording();
         Emitter.emitIns_R_C(INS_lea, TYP_I_IMPL.EmitSize, treeNode.RegNum,
             genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
         genProduceReg(treeNode);
-#endif
     }
 
     public uint genEmitAsyncResumeInfoTable(out Emitter.dataSection dataSection)

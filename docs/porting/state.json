@@ -9,11 +9,25 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "async-resume-codegen",
-    "nextAction": "Reconcile the target-specific `genAsyncResumeInfo` branches against pinned e23d559 and validate the remaining ARM64/xarch fixtures. Keep the browser-WASM CS9135 failure in `CodeGen.AsyncResumeInfo.cs:27` explicit.",
+    "stage": "corelib-phase-dump-parity",
+    "nextAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
     "parityEvidence": {
+      "asyncResumeCodegen": {
+        "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+        "sourceReview": "The target-specific genAsyncResumeInfo bodies in the pinned ARM32, ARM64, xarch, Wasm, LoongArch64 and RISC-V64 sources match the managed branches; no algorithmic parity fix was needed.",
+        "tests": {
+          "win-arm": "The earlier 1/1 Debug/Release fixture used an isolated setup helper. The post-dispatch target test build is blocked by unrelated CS0246 (Arm32UnwindTests.cs:130) and CS0182 compilation errors.",
+          "win-arm64": "1/1 passed in Debug and Release with analyzer-disabled focused test builds.",
+          "win-x64": "2/2 passed in Debug and Release with analyzer-disabled focused test builds; Release excluded two unrelated test files with missing register names.",
+          "win-x86": "Full-analysis compiler builds passed in Debug and Release.",
+          "linux-loongarch64": "1/1 passed in Debug and Release; the full-analyzer Debug test passed and verified the 12-byte INS_bl embedded-data descriptor.",
+          "linux-riscv64": "1/1 passed in Debug and Release; the full-analyzer Debug test passed and verified the 8-byte INS_addi embedded-data descriptor."
+        },
+        "runtimeDispatchBuilds": "Full-analysis RyuJitSharp library builds passed with zero warnings or errors in Debug and Release for win-x86, win-x64, win-arm, win-arm64, linux-loongarch64, linux-riscv64, and browser-wasm.",
+        "validation": "The focused x64 and ARM64 tests passed with analyzers disabled; LoongArch64 and RISC-V64 recording tests passed in both configurations, including full-analyzer Debug runs. Full-analyzer test builds for x64 and ARM64 remain blocked by unrelated existing analyzer diagnostics, and the post-dispatch ARM32 fixture could not compile because of unrelated target-test source errors. Browser-WASM now compiles in full-analysis Debug and Release; native execution/generated-code parity is not established."
+      },
       "asyncResumeTargetWidth": {
         "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
         "targets": [
@@ -73,6 +87,24 @@
   },
   "sourceMap": [
     {
+      "area": "universal-async-resume-codegen",
+      "native": [
+        "src\\coreclr\\jit\\codegenarm.cpp",
+        "src\\coreclr\\jit\\codegenarm64.cpp",
+        "src\\coreclr\\jit\\codegenxarch.cpp",
+        "src\\coreclr\\jit\\codegenwasm.cpp",
+        "src\\coreclr\\jit\\codegenloongarch64.cpp",
+        "src\\coreclr\\jit\\codegenriscv64.cpp",
+        "src\\coreclr\\jit\\codegencommon.cpp"
+      ],
+      "csharp": [
+        "sources\\Core\\jit\\codegencommon\\CodeGen.AsyncResumeInfo.cs"
+      ],
+      "disposition": "The managed partial consolidates the six target-specific genAsyncResumeInfo bodies and the shared async-resume table/field helpers. Runtime Configuration dispatch retains each target algorithm and the explicit unsupported path.",
+      "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
+      "validation": "Full-analysis compiler builds passed for the x86/x64, ARM32/64, LoongArch64, RISC-V64, and browser-WASM target configurations in Debug and Release; focused fixture results are recorded in checkpoint.parityEvidence.asyncResumeCodegen. Runtime/generated-code parity remains unestablished."
+    },
+    {
       "area": "universal-target-signed-size",
       "native": [
         "src\\coreclr\\jit\\target.h"
@@ -96,7 +128,7 @@
       ],
       "disposition": "Managed simd_t uses universal simd64_t storage while SimdStorageSize preserves native logical capacities (64 bytes on xarch, 32 on ARM64, 16 otherwise). Active vector payloads and typed VN identity remain limited to the native type size; this is an internal representation change, not an observable deviation.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
-      "validation": "UniversalSimdStorageTests passed with full analyzers in Debug and Release using a win-x64 test host and win-x64, win-x86, linux-arm64, browser-wasm, and linux-riscv64 target configurations. The new predicate helpers passed in Debug/Release for win-x64 (11/11) and linux-arm64 (10/10), plus the Debug Core suite (17,778 passed, 15 skipped); focused target tests used analyzer-disabled builds because unrelated test analyzer errors block full-analysis test builds. Full-analysis library builds passed in Debug/Release. The browser-wasm target build is blocked by CS9135 in the unchanged, deferred `CodeGen.AsyncResumeInfo.cs:27` path. Generated-code parity capture remains deferred."
+      "validation": "UniversalSimdStorageTests passed with full analyzers in Debug and Release using a win-x64 test host and win-x64, win-x86, linux-arm64, browser-wasm, and linux-riscv64 target configurations. The new predicate helpers passed in Debug/Release for win-x64 (11/11) and linux-arm64 (10/10), plus the Debug Core suite (17,778 passed, 15 skipped); focused target tests used analyzer-disabled builds because unrelated test analyzer errors block full-analysis test builds. Full-analysis library builds passed in Debug/Release. The browser-wasm build was blocked at the time by CS9135 in the then-deferred `CodeGen.AsyncResumeInfo.cs:27` path; the later universal async-resume dispatch batch resolves that compile error. Generated-code parity capture remains deferred."
     },
     {
       "area": "universal-instruction-set-identities",
