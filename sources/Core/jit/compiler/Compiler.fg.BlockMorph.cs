@@ -96,9 +96,11 @@ public partial class Compiler
 
         if (optLocalAssertionProp)
         {
-#if DEBUG
-            JITDUMP($"morph assertion stats: {optMaxAssertionCount} table size, {optAssertionCount} assertions, {optAssertionOverflow} dropped\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"morph assertion stats: {optMaxAssertionCount} table size, {optAssertionCount} assertions, {optAssertionOverflow} dropped\n");
+            }
+
             Metrics.LocalAssertionCount = optAssertionCount;
             Metrics.LocalAssertionOverflow = optAssertionOverflow;
             Metrics.MorphTrackedLocals = lvaTrackedCount;

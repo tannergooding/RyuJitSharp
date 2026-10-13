@@ -22,8 +22,7 @@ public partial class Compiler
     {
         assert(apTraits is not null);
         var killed = GetAssertionDep(lclNum);
-#if DEBUG
-        if (!BitVecOps.IsEmptyIntersection(apTraits, apLocal, killed))
+        if (Configuration.DEBUG && !BitVecOps.IsEmptyIntersection(apTraits, apLocal, killed))
         {
             for (var index = optAssertionCount; index > 0; index--)
             {
@@ -32,6 +31,7 @@ public partial class Compiler
                     var assertion = optGetAssertion(index);
                     noway_assert((assertion.Op1.LclNum == lclNum)
                         || (assertion.Op2.KindIs(optOp2Kind.O2K_LCLVAR_COPY) && (assertion.Op2.LclNum == lclNum)));
+#if DEBUG
                     if (verbose)
                     {
                         jitprintf("\nThe store ");
@@ -39,10 +39,10 @@ public partial class Compiler
                         jitprintf($" using V{assertion.Op1.LclNum:D2} removes: ");
                         optPrintAssertion(assertion, index);
                     }
+#endif
                 }
             }
         }
-#endif
         BitVecOps.DiffD(apTraits, apLocal, killed);
         BitVecOps.DiffD(apTraits, apLocalPostorder, killed);
     }
