@@ -9,11 +9,12 @@ public sealed partial class CodeGen
 {
     public unsafe void genPutArgStk(GenTreePutArgStk putArgStk)
     {
-#if TARGET_X86
+        if (Configuration.TARGET_X86)
+        {
         var data = putArgStk.Op1;
         var targetType = data.Type.ActualType;
         assert(targetType != TYP_LONG);
-        assert((putArgStk.StackByteSize % TARGET_POINTER_SIZE) == 0);
+        assert((putArgStk.StackByteSize % Configuration.TARGET_POINTER_SIZE) == 0);
 
         genAlignStackBeforeCall(putArgStk);
 
@@ -37,13 +38,17 @@ public sealed partial class CodeGen
         }
         else
         {
-            assert(data.Type.Size == TARGET_POINTER_SIZE);
+            assert(data.Type.Size == Configuration.TARGET_POINTER_SIZE);
             inst_TT(INS_push, data.Type.EmitSize, data);
-            AddStackLevel(TARGET_POINTER_SIZE);
+            AddStackLevel(unchecked((uint)Configuration.TARGET_POINTER_SIZE));
         }
-#elif TARGET_LOONGARCH64
-        genPutArgStkLoongArch64(putArgStk);
-#elif TARGET_ARMARCH
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genPutArgStkLoongArch64(putArgStk);
+        }
+        else if (Configuration.TARGET_ARMARCH)
+        {
         assert(putArgStk.Oper is GT_PUTARG_STK);
         var emit = GetEmitter();
         int varNumOut;
@@ -55,12 +60,13 @@ public sealed partial class CodeGen
         {
             varNumOut = getFirstArgWithStackSlot();
             argOffsetMax = unchecked((uint)_compiler.lvaParameterStackSize);
-#if FEATURE_FASTTAILCALL
-            var call = putArgStk.Call;
-            assert(call is not null);
-            assert(call.IsFastTailCall);
-            _ = _compiler.lvaGetDesc(varNumOut);
-#endif
+            if (Configuration.FEATURE_FASTTAILCALL)
+            {
+                var call = putArgStk.Call;
+                assert(call is not null);
+                assert(call.IsFastTailCall);
+                _ = _compiler.lvaGetDesc(varNumOut);
+            }
         }
         else
         {
@@ -76,16 +82,14 @@ public sealed partial class CodeGen
                 assert(!source.IsContained);
                 var srcReg = genConsumeReg(source);
                 assert((srcReg != REG_NA) && genIsValidFloatReg(srcReg));
-                assert(compAppleArm64Abi() || ((putArgStk.StackByteSize % TARGET_POINTER_SIZE) == 0));
+                assert(compAppleArm64Abi() || ((putArgStk.StackByteSize % Configuration.TARGET_POINTER_SIZE) == 0));
 
-#if TARGET_ARM64
-                if (putArgStk.StackByteSize == 12)
+                if (Configuration.TARGET_ARM64 && (putArgStk.StackByteSize == 12))
                 {
                     emit.emitStoreSimd12ToLclOffset(unchecked((uint)varNumOut), argOffsetOut, srcReg, putArgStk);
                     argOffsetOut = unchecked(argOffsetOut + 12);
                 }
                 else
-#endif
                 {
                     var simdStoreAttr = source.Type.EmitSize;
                     emit.emitIns_S_R(INS_str, simdStoreAttr, srcReg, varNumOut, unchecked((int)argOffsetOut));
@@ -126,21 +130,22 @@ public sealed partial class CodeGen
             var storeAttr = slotType.EmitSize;
             if (source.IsContained)
             {
-#if TARGET_ARM64
-                assert(source.Oper is GT_CNS_INT);
-                assert(source.AsIntConCommon().IconValue == 0);
-                emit.emitIns_S_R(storeIns, storeAttr, REG_ZR, varNumOut, unchecked((int)argOffsetOut));
-#else
-                // ARM32 has no zero register.
-                unreached();
-#endif
+                if (Configuration.TARGET_ARM64)
+                {
+                    assert(source.Oper is GT_CNS_INT);
+                    assert(source.AsIntConCommon().IconValue == 0);
+                    emit.emitIns_S_R(storeIns, storeAttr, REG_ARM64_ZR, varNumOut, unchecked((int)argOffsetOut));
+                }
+                else
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "ARM32 cannot place this contained stack argument.");
+                }
             }
             else
             {
                 _ = genConsumeReg(source);
                 emit.emitIns_S_R(storeIns, storeAttr, source.RegNum, varNumOut, unchecked((int)argOffsetOut));
-#if TARGET_ARM
-                if (source.Type == TYP_LONG)
+                if (Configuration.TARGET_ARM && (source.Type == TYP_LONG))
                 {
                     // Only doubles retyped as long reach this path; actual longs have been decomposed.
                     assert(source.Oper.IsCopyOrReload);
@@ -149,7 +154,6 @@ public sealed partial class CodeGen
                     argOffsetOut = unchecked(argOffsetOut + (uint)EA_4BYTE);
                     emit.emitIns_S_R(storeIns, storeAttr, otherReg, varNumOut, unchecked((int)argOffsetOut));
                 }
-#endif
             }
 
             argOffsetOut = unchecked(argOffsetOut + (uint)EA_SIZE_IN_BYTES(storeAttr));
@@ -169,9 +173,7 @@ public sealed partial class CodeGen
                 noway_assert(varTypeIsStruct(targetType));
 
                 var loReg = InternalRegisters.Extract(putArgStk);
-#if TARGET_ARM64
-                var hiReg = InternalRegisters.GetSingle(putArgStk);
-#endif
+                var hiReg = Configuration.TARGET_ARM64 ? InternalRegisters.GetSingle(putArgStk) : REG_NA;
                 GenTreeLclVarCommon? srcLclNode = null;
                 var addrReg = REG_NA;
                 ClassLayout layout;
@@ -187,14 +189,12 @@ public sealed partial class CodeGen
                 {
                     layout = source.AsBlk().Layout;
                     addrReg = genConsumeReg(source.AsBlk().Addr);
-#if TARGET_ARM64
-                    // Keep the address-overwrite case confined to the high register.
-                    if (loReg == addrReg)
+                    if (Configuration.TARGET_ARM64 && (loReg == addrReg))
                     {
+                        // Keep the address-overwrite case confined to the high register.
                         loReg = hiReg;
                         hiReg = addrReg;
                     }
-#endif
                 }
 
                 var srcSize = layout.Size;
@@ -202,20 +202,17 @@ public sealed partial class CodeGen
                 {
                     noway_assert(!layout.HasGCPtr);
                 }
-#if TARGET_ARM64
-                else
+                if (Configuration.TARGET_ARM64)
                 {
-                    noway_assert(srcSize <= (2 * TARGET_POINTER_SIZE));
+                    noway_assert(srcSize <= (2 * Configuration.TARGET_POINTER_SIZE));
+                    noway_assert(srcSize <= Configuration.MAX_PASS_MULTIREG_BYTES);
                 }
-
-                noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
-#endif
                 var dstSize = unchecked((uint)putArgStk.StackByteSize);
 
                 // Widen only local reads, which cannot fault, and only within the destination padding.
                 if ((dstSize != srcSize) && (srcLclNode is not null))
                 {
-                    var widenedSrcSize = roundUp(srcSize, TARGET_POINTER_SIZE);
+                    var widenedSrcSize = roundUp(srcSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
                     if (widenedSrcSize <= dstSize)
                     {
                         srcSize = widenedSrcSize;
@@ -228,63 +225,66 @@ public sealed partial class CodeGen
                 var lclOffset = srcLclNode is not null ? srcLclNode.LclOffs : 0u;
                 uint nextIndex = 0;
 
-#if TARGET_ARM64
-                while (remainingSize >= (2 * TARGET_POINTER_SIZE))
+                if (Configuration.TARGET_ARM64)
                 {
-                    var type0 = layout.GetGCPtrType(unchecked((int)nextIndex));
-                    var type1 = layout.GetGCPtrType(unchecked((int)(nextIndex + 1)));
-                    if (srcLclNode is not null)
+                    while (remainingSize >= (2 * Configuration.TARGET_POINTER_SIZE))
                     {
-                        emit.emitIns_R_R_S_S(INS_ldp, type0.EmitSize, type1.EmitSize, loReg, hiReg,
-                            srcLclNode.LclNum, unchecked((int)(lclOffset + structOffset)));
-                    }
-                    else
-                    {
-                        assert(loReg != addrReg);
-                        noway_assert((remainingSize == (2 * TARGET_POINTER_SIZE)) || (hiReg != addrReg));
-                        emit.emitIns_R_R_R_I(INS_ldp, type0.EmitSize, loReg, hiReg, addrReg,
-                            unchecked((nint)structOffset), INS_OPTS_NONE, type0.EmitSize);
-                    }
+                        var type0 = layout.GetGCPtrType(unchecked((int)nextIndex));
+                        var type1 = layout.GetGCPtrType(unchecked((int)(nextIndex + 1)));
+                        if (srcLclNode is not null)
+                        {
+                            emit.emitIns_R_R_S_S(INS_ldp, type0.EmitSize, type1.EmitSize, loReg, hiReg,
+                                srcLclNode.LclNum, unchecked((int)(lclOffset + structOffset)));
+                        }
+                        else
+                        {
+                            assert(loReg != addrReg);
+                            noway_assert((remainingSize == (2 * Configuration.TARGET_POINTER_SIZE)) || (hiReg != addrReg));
+                            emit.emitIns_R_R_R_I(INS_ldp, type0.EmitSize, loReg, hiReg, addrReg,
+                                unchecked((nint)structOffset), INS_OPTS_NONE, type0.EmitSize);
+                        }
 
-                    emit.emitIns_S_S_R_R(INS_stp, type0.EmitSize, type1.EmitSize, loReg, hiReg, varNumOut,
-                        unchecked((int)argOffsetOut));
-                    argOffsetOut = unchecked(argOffsetOut + (2 * TARGET_POINTER_SIZE));
-                    assert(argOffsetOut <= argOffsetMax);
+                        emit.emitIns_S_S_R_R(INS_stp, type0.EmitSize, type1.EmitSize, loReg, hiReg, varNumOut,
+                            unchecked((int)argOffsetOut));
+                        argOffsetOut = unchecked(argOffsetOut + (2 * unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
+                        assert(argOffsetOut <= argOffsetMax);
 
-                    remainingSize -= 2 * TARGET_POINTER_SIZE;
-                    structOffset = unchecked(structOffset + (2 * TARGET_POINTER_SIZE));
-                    nextIndex = unchecked(nextIndex + 2);
+                        remainingSize -= 2 * Configuration.TARGET_POINTER_SIZE;
+                        structOffset = unchecked(structOffset + (2 * unchecked((uint)Configuration.TARGET_POINTER_SIZE)));
+                        nextIndex = unchecked(nextIndex + 2);
+                    }
                 }
-#else
-                while (remainingSize >= TARGET_POINTER_SIZE)
+                else
                 {
-                    var type = layout.GetGCPtrType(unchecked((int)nextIndex));
-                    if (srcLclNode is not null)
+                    while (remainingSize >= Configuration.TARGET_POINTER_SIZE)
                     {
-                        emit.emitIns_R_S(INS_ldr, type.EmitSize, loReg, srcLclNode.LclNum,
-                            unchecked((int)(lclOffset + structOffset)));
-                    }
-                    else
-                    {
-                        assert((loReg != addrReg) || (remainingSize == TARGET_POINTER_SIZE));
-                        emit.emitIns_R_R_I(INS_ldr, type.EmitSize, loReg, addrReg,
-                            unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
-                    }
+                        var type = layout.GetGCPtrType(unchecked((int)nextIndex));
+                        if (srcLclNode is not null)
+                        {
+                            emit.emitIns_R_S(INS_ldr, type.EmitSize, loReg, srcLclNode.LclNum,
+                                unchecked((int)(lclOffset + structOffset)));
+                        }
+                        else
+                        {
+                            assert((loReg != addrReg) || (remainingSize == Configuration.TARGET_POINTER_SIZE));
+                            emit.emitIns_R_R_I(INS_ldr, type.EmitSize, loReg, addrReg,
+                                unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
+                        }
 
-                    emit.emitIns_S_R(INS_str, type.EmitSize, loReg, varNumOut, unchecked((int)argOffsetOut));
-                    argOffsetOut = unchecked(argOffsetOut + TARGET_POINTER_SIZE);
-                    assert(argOffsetOut <= argOffsetMax);
+                        emit.emitIns_S_R(INS_str, type.EmitSize, loReg, varNumOut, unchecked((int)argOffsetOut));
+                        argOffsetOut = unchecked(argOffsetOut + unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                        assert(argOffsetOut <= argOffsetMax);
 
-                    remainingSize -= TARGET_POINTER_SIZE;
-                    structOffset = unchecked(structOffset + TARGET_POINTER_SIZE);
-                    nextIndex = unchecked(nextIndex + 1);
+                        remainingSize -= Configuration.TARGET_POINTER_SIZE;
+                        structOffset = unchecked(structOffset + unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                        nextIndex = unchecked(nextIndex + 1);
+                    }
                 }
-#endif
                 while (remainingSize > 0)
                 {
-                    nextIndex = structOffset / TARGET_POINTER_SIZE;
+                    nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
                     var_types type;
-                    if (remainingSize >= TARGET_POINTER_SIZE)
+                    if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
                     {
                         type = layout.GetGCPtrType(unchecked((int)nextIndex));
                     }
@@ -319,13 +319,16 @@ public sealed partial class CodeGen
                     else
                     {
                         assert(loReg != addrReg);
-#if TARGET_ARM64
-                        emit.emitIns_R_R_I(loadIns, attr, loReg, addrReg,
-                            unchecked((nint)structOffset), INS_OPTS_NONE);
-#else
-                        emit.emitIns_R_R_I(loadIns, attr, loReg, addrReg,
-                            unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
-#endif
+                        if (Configuration.TARGET_ARM64)
+                        {
+                            emit.emitIns_R_R_IArm64(loadIns, attr, loReg, addrReg,
+                                unchecked((nint)structOffset), INS_OPTS_NONE);
+                        }
+                        else
+                        {
+                            emit.emitIns_R_R_I(loadIns, attr, loReg, addrReg,
+                                unchecked((int)structOffset), INS_FLAGS_DONT_CARE);
+                        }
                     }
 
                     var storeIns = ins_Store(type);
@@ -336,7 +339,9 @@ public sealed partial class CodeGen
                 }
             }
         }
-#elif TARGET_RISCV64
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
         assert(putArgStk.Oper is GT_PUTARG_STK);
         var emit = GetEmitter();
         int varNumOut;
@@ -347,12 +352,13 @@ public sealed partial class CodeGen
         {
             varNumOut = getFirstArgWithStackSlot();
             argOffsetMax = unchecked((uint)_compiler.lvaParameterStackSize);
-#if FEATURE_FASTTAILCALL
-            var call = putArgStk.Call;
-            assert(call is not null);
-            assert(call.IsFastTailCall);
-            _ = _compiler.lvaGetDesc(varNumOut);
-#endif
+            if (Configuration.FEATURE_FASTTAILCALL)
+            {
+                var call = putArgStk.Call;
+                assert(call is not null);
+                assert(call.IsFastTailCall);
+                _ = _compiler.lvaGetDesc(varNumOut);
+            }
         }
         else
         {
@@ -384,7 +390,7 @@ public sealed partial class CodeGen
             {
                 assert(source.Oper is GT_CNS_INT);
                 assert(source.AsIntConCommon().IconValue == 0);
-                emit.emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, unchecked((int)argOffsetOut));
+                emit.emitIns_S_R(storeIns, storeAttr, REG_RISCV64_R0, varNumOut, unchecked((int)argOffsetOut));
             }
             else
             {
@@ -428,13 +434,13 @@ public sealed partial class CodeGen
                 }
 
                 var srcSize = layout.Size;
-                noway_assert(srcSize <= MAX_PASS_MULTIREG_BYTES);
+                noway_assert(srcSize <= Configuration.MAX_PASS_MULTIREG_BYTES);
                 var dstSize = unchecked((uint)putArgStk.StackByteSize);
 
                 // Reading past a local's end is safe only within the argument's padding.
                 if ((dstSize != srcSize) && (srcLclNode is not null))
                 {
-                    var widenedSrcSize = roundUp(srcSize, TARGET_POINTER_SIZE);
+                    var widenedSrcSize = roundUp(srcSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
                     if (widenedSrcSize <= dstSize)
                     {
                         srcSize = widenedSrcSize;
@@ -449,9 +455,9 @@ public sealed partial class CodeGen
 
                 while (remainingSize > 0)
                 {
-                    nextIndex = structOffset / TARGET_POINTER_SIZE;
+                    nextIndex = structOffset / unchecked((uint)Configuration.TARGET_POINTER_SIZE);
                     var_types type;
-                    if (remainingSize >= TARGET_POINTER_SIZE)
+                    if (remainingSize >= Configuration.TARGET_POINTER_SIZE)
                     {
                         type = layout.GetGCPtrType(unchecked((int)nextIndex));
                     }
@@ -496,10 +502,14 @@ public sealed partial class CodeGen
                 }
             }
         }
-#elif !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument generation requires xarch.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
+        }
+        else if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack argument generation requires xarch.");
+        }
+        else
+        {
+            Emitter.RequireSupportedInstructionRecording();
         var data = putArgStk.Op1;
         var targetType = data.Type.ActualType;
         var baseVarNum = getBaseVarForPutArgStk(putArgStk);
@@ -539,27 +549,28 @@ public sealed partial class CodeGen
             _ = genConsumeReg(data);
             Emitter.emitIns_S_R(ins_Store(targetType), targetType.EmitSize, data.RegNum, baseVarNum, argOffset);
         }
-#endif
+        }
     }
 
     public void genPutStructArgStk(GenTreePutArgStk putArgStk)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Struct stack argument generation requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Struct stack argument generation requires xarch.");
+        }
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var source = putArgStk.Op1;
         var targetType = source.Type;
 
-#if TARGET_X86 && FEATURE_SIMD
-        if (putArgStk.IsSimd12)
+        if (Configuration.TARGET_X86 && Configuration.FEATURE_SIMD && putArgStk.IsSimd12)
         {
             genPutArgStkSimd12(putArgStk);
             return;
         }
-#endif
         if (varTypeIsSimd(targetType))
         {
             var srcReg = genConsumeReg(source);
@@ -579,11 +590,11 @@ public sealed partial class CodeGen
 
             case GenTreePutArgStk.Kind.PartialRepInstr:
             {
-#if TARGET_X86
-                unreached();
-#else
+                if (Configuration.TARGET_X86)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+                }
                 genStructPutArgPartialRepMovs(putArgStk);
-#endif
                 break;
             }
 
@@ -593,89 +604,95 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if TARGET_X86
             case GenTreePutArgStk.Kind.Push:
             {
+                if (!Configuration.TARGET_X86)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Push struct arguments are only supported on x86.");
+                }
                 genStructPutArgPush(putArgStk);
                 break;
             }
-#endif
             default:
             {
                 unreached();
                 break;
             }
         }
-#endif
     }
 
     public int getFirstArgWithStackSlot()
     {
-#if UNIX_AMD64_ABI || TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-        for (var index = 0; index < _compiler.info.compArgsCount; index++)
+        if (Configuration.FEATURE_MULTIREG_ARGS)
         {
-            assert(_compiler.lvaGetDesc(index).lvIsParam);
-            ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(index);
-            assert(!abiInfo.IsSplitAcrossRegistersAndStack);
-            if (abiInfo.HasAnyStackSegment)
+            for (var index = 0; index < _compiler.info.compArgsCount; index++)
             {
-                return index;
+                assert(_compiler.lvaGetDesc(index).lvIsParam);
+                ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(index);
+                assert(!abiInfo.IsSplitAcrossRegistersAndStack);
+                if (abiInfo.HasAnyStackSegment)
+                {
+                    return index;
+                }
             }
+
+            assert(false, "Expected to find a parameter passed on the stack");
+            return BAD_VAR_NUM;
+        }
+        if (Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "The first incoming stack argument is not implemented for x86.");
+        }
+        if (Configuration.TARGET_AMD64)
+        {
+            return 0;
         }
 
-        assert(false, "Expected to find a parameter passed on the stack");
-        return BAD_VAR_NUM;
-#elif TARGET_X86
-        throw new FatalJitException(CORJIT_SKIPPED, "The first incoming stack argument is not implemented for x86.");
-#elif TARGET_AMD64
-        return 0;
-#else
         throw new FatalJitException(CORJIT_SKIPPED, "Incoming stack argument selection is not yet ported for this target.");
-#endif
     }
 
     public int getBaseVarForPutArgStk(GenTree treeNode)
     {
-#if TARGET_X86
-        assert(treeNode.Oper is GT_PUTARG_STK);
-        if (treeNode.AsPutArgStk().PutInIncomingArgArea)
+        if (Configuration.TARGET_X86)
         {
-            return getFirstArgWithStackSlot();
+            assert(treeNode.Oper is GT_PUTARG_STK);
+            if (treeNode.AsPutArgStk().PutInIncomingArgArea)
+            {
+                return getFirstArgWithStackSlot();
+            }
+
+            if (Configuration.FEATURE_FIXED_OUT_ARGS)
+            {
+                return _compiler.lvaOutgoingArgSpaceVar;
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED, "x86 stack argument bases require fixed outgoing arguments.");
+        }
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack argument base selection requires xarch.");
         }
 
-#if FEATURE_FIXED_OUT_ARGS
-        return _compiler.lvaOutgoingArgSpaceVar;
-#else
-        assert(false, "No BaseVarForPutArgStk on x86");
-        return BAD_VAR_NUM;
-#endif
-#elif !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "Stack argument base selection requires xarch.");
-#else
         assert(treeNode.Oper is GT_PUTARG_STK);
         var baseVarNum = treeNode.AsPutArgStk().PutInIncomingArgArea
             ? getFirstArgWithStackSlot()
             : _compiler.lvaOutgoingArgSpaceVar;
 
         return baseVarNum;
-#endif
     }
 
-#if TARGET_X86
     private bool genAdjustStackForPutArgStk(GenTreePutArgStk putArgStk)
     {
         var argSize = putArgStk.StackByteSize;
         var source = putArgStk.Op1;
 
-#if FEATURE_SIMD
-        if ((source.Oper is not GT_FIELD_LIST) && varTypeIsSimd(source.Type))
+        if (Configuration.FEATURE_SIMD && (source.Oper is not GT_FIELD_LIST) && varTypeIsSimd(source.Type))
         {
-            inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+            inst_RV_IV(INS_sub, TargetRuntimeMetadata.StackPointerBaseRegister, argSize, EA_PTRSIZE);
             AddStackLevel(unchecked((uint)argSize));
             _pushStkArg = false;
             return true;
         }
-#endif
 
 #if DEBUG
         switch (putArgStk._kind)
@@ -690,7 +707,7 @@ public sealed partial class CodeGen
             case GenTreePutArgStk.Kind.Push:
             {
                 assert((source.Oper is GT_FIELD_LIST) || source.GetLayout(_compiler).HasGCPtr ||
-                    (argSize < XMM_REGSIZE_BYTES));
+                    (argSize < Configuration.XMM_REGSIZE_BYTES));
                 break;
             }
 
@@ -712,7 +729,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+                inst_RV_IV(INS_sub, TargetRuntimeMetadata.StackPointerBaseRegister, argSize, EA_PTRSIZE);
             }
 
             AddStackLevel(unchecked((uint)argSize));
@@ -746,13 +763,13 @@ public sealed partial class CodeGen
 
         var layout = source.GetLayout(_compiler);
         var loadSize = putArgNode.ArgLoadSize;
-        assert(((loadSize < XMM_REGSIZE_BYTES) || layout.HasGCPtr) &&
-            ((loadSize % TARGET_POINTER_SIZE) == 0));
+        assert(((loadSize < Configuration.XMM_REGSIZE_BYTES) || layout.HasGCPtr) &&
+            ((loadSize % Configuration.TARGET_POINTER_SIZE) == 0));
 
-        for (var slot = (loadSize / TARGET_POINTER_SIZE) - 1; slot >= 0; slot--)
+        for (var slot = (loadSize / Configuration.TARGET_POINTER_SIZE) - 1; slot >= 0; slot--)
         {
             var slotAttr = layout.GetGCPtrType(slot).EmitSize;
-            var offset = slot * TARGET_POINTER_SIZE;
+            var offset = slot * Configuration.TARGET_POINTER_SIZE;
             if (sourceReg != REG_NA)
             {
                 Emitter.emitIns_AR_R(INS_push, slotAttr, REG_NA, sourceReg, offset);
@@ -762,7 +779,7 @@ public sealed partial class CodeGen
                 Emitter.emitIns_S(INS_push, slotAttr, sourceLocal, unchecked(sourceOffset + offset));
             }
 
-            AddStackLevel(TARGET_POINTER_SIZE);
+            AddStackLevel(unchecked((uint)Configuration.TARGET_POINTER_SIZE));
         }
     }
 
@@ -811,13 +828,13 @@ public sealed partial class CodeGen
                 var pushSize = fieldType.ActualType.Size;
                 assert((pushSize % 4) == 0);
                 adjustment -= pushSize;
-                assert((adjustment % TARGET_POINTER_SIZE) == 0);
+                assert((adjustment % Configuration.TARGET_POINTER_SIZE) == 0);
                 while (adjustment != 0)
                 {
                     inst_IV(INS_push, 0);
-                    currentOffset -= TARGET_POINTER_SIZE;
-                    AddStackLevel(TARGET_POINTER_SIZE);
-                    adjustment -= TARGET_POINTER_SIZE;
+                    currentOffset -= Configuration.TARGET_POINTER_SIZE;
+                    AddStackLevel(unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+                    adjustment -= Configuration.TARGET_POINTER_SIZE;
                 }
 
                 _pushStkArg = true;
@@ -828,18 +845,18 @@ public sealed partial class CodeGen
                 assert(varTypeIsIntegralOrI(fieldNode.Type) || varTypeIsSimd(fieldNode.Type));
                 if (adjustment != 0)
                 {
-                    inst_RV_IV(INS_sub, REG_SPBASE, adjustment, EA_PTRSIZE);
+                    inst_RV_IV(INS_sub, TargetRuntimeMetadata.StackPointerBaseRegister, adjustment, EA_PTRSIZE);
                     currentOffset -= adjustment;
                     AddStackLevel(unchecked((uint)adjustment));
                 }
 
                 if (varTypeIsByte(fieldType) && ((argReg == REG_NA) ||
-                    ((argReg != REG_EAX) && (argReg != REG_EBX) &&
-                     (argReg != REG_ECX) && (argReg != REG_EDX))))
+                    ((argReg != REG_X86_EAX) && (argReg != REG_X86_EBX) &&
+                     (argReg != REG_X86_ECX) && (argReg != REG_X86_EDX))))
                 {
                     assert(intTmpReg != REG_NA);
-                    noway_assert((intTmpReg == REG_EAX) || (intTmpReg == REG_EBX) ||
-                        (intTmpReg == REG_ECX) || (intTmpReg == REG_EDX));
+                    noway_assert((intTmpReg == REG_X86_EAX) || (intTmpReg == REG_X86_EBX) ||
+                        (intTmpReg == REG_X86_ECX) || (intTmpReg == REG_X86_EDX));
                     if (argReg != REG_NA)
                     {
                         inst_Mov(fieldType, intTmpReg, argReg, canSkip: false);
@@ -852,9 +869,9 @@ public sealed partial class CodeGen
             var canLoadFullSlot = genIsValidIntReg(argReg);
             if (argReg == REG_NA)
             {
-                assert(fieldNode.Type.Size <= TARGET_POINTER_SIZE);
+                assert(fieldNode.Type.Size <= Configuration.TARGET_POINTER_SIZE);
                 assert(fieldNode.Type.ActualType.Size == fieldType.ActualType.Size);
-                canLoadFullSlot = (fieldNode.Type.Size == TARGET_POINTER_SIZE) ||
+                canLoadFullSlot = (fieldNode.Type.Size == Configuration.TARGET_POINTER_SIZE) ||
                     fieldNode.IsUsedFromSpillTemp ||
                     (fieldNode.Oper.IsLocalRead && (fieldNode.Type.Size >= fieldType.Size));
             }
@@ -862,10 +879,10 @@ public sealed partial class CodeGen
             if (canStoreFullSlot && canLoadFullSlot)
             {
                 assert(_pushStkArg);
-                assert(fieldNode.Type.Size <= TARGET_POINTER_SIZE);
+                assert(fieldNode.Type.Size <= Configuration.TARGET_POINTER_SIZE);
                 inst_TT(INS_push, fieldNode.Type.EmitActualSize, fieldNode);
-                currentOffset -= TARGET_POINTER_SIZE;
-                AddStackLevel(TARGET_POINTER_SIZE);
+                currentOffset -= Configuration.TARGET_POINTER_SIZE;
+                AddStackLevel(unchecked((uint)Configuration.TARGET_POINTER_SIZE));
             }
             else
             {
@@ -875,7 +892,13 @@ public sealed partial class CodeGen
                     assert(varTypeIsIntegralOrI(fieldNode.Type) && genIsValidIntReg(intTmpReg));
                     if (fieldNode.IsContainedIntOrIImmed)
                     {
-                        genSetRegToConst(intTmpReg, fieldNode.Type, fieldNode);
+                        if (!Configuration.TARGET_X86)
+                        {
+                            throw new FatalJitException(CORJIT_SKIPPED,
+                                "x86 stack-argument constant materialization is unavailable.");
+                        }
+
+                        genSetRegToConstXarch(intTmpReg, fieldNode.Type, fieldNode);
                     }
                     else
                     {
@@ -887,14 +910,16 @@ public sealed partial class CodeGen
                     argReg = intTmpReg;
                 }
 
-#if FEATURE_SIMD
-                if (fieldType == TYP_SIMD12)
+                if (fieldType == TYP_SIMD12 && !Configuration.FEATURE_SIMD)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "SIMD12 stack arguments are unavailable for this target.");
+                }
+                if (Configuration.FEATURE_SIMD && fieldType == TYP_SIMD12)
                 {
                     assert(genIsValidFloatReg(simdTmpReg));
                     genStoreSimd12ToStack(argReg, simdTmpReg);
                 }
                 else
-#endif
                 {
                     var storeType = canStoreFullSlot ? fieldType.ActualType : fieldType;
                     genStoreRegToStackArg(storeType, argReg, fieldOffset - currentOffset);
@@ -902,7 +927,7 @@ public sealed partial class CodeGen
 
                 if (_pushStkArg)
                 {
-                    currentOffset -= roundUp(fieldType.Size, TARGET_POINTER_SIZE);
+                    currentOffset -= roundUp(fieldType.Size, Configuration.TARGET_POINTER_SIZE);
                 }
             }
 
@@ -911,14 +936,11 @@ public sealed partial class CodeGen
 
         if (currentOffset != 0)
         {
-            inst_RV_IV(INS_sub, REG_SPBASE, currentOffset, EA_PTRSIZE);
+            inst_RV_IV(INS_sub, TargetRuntimeMetadata.StackPointerBaseRegister, currentOffset, EA_PTRSIZE);
             AddStackLevel(unchecked((uint)currentOffset));
         }
     }
-#endif
 
-#if TARGET_XARCH
-#if TARGET_X86
     private bool _pushStkArg;
 
     private void genPushReg(var_types type, regNumber srcReg)
@@ -933,13 +955,11 @@ public sealed partial class CodeGen
         {
             var ins = type == TYP_LONG ? INS_movq : ins_Store(type);
             assert(genIsValidFloatReg(srcReg));
-            inst_RV_IV(INS_sub, REG_SPBASE, size, EA_PTRSIZE);
-            Emitter.emitIns_AR_R(ins, type.EmitSize, srcReg, REG_SPBASE, 0);
+            inst_RV_IV(INS_sub, TargetRuntimeMetadata.StackPointerBaseRegister, size, EA_PTRSIZE);
+            Emitter.emitIns_AR_R(ins, type.EmitSize, srcReg, TargetRuntimeMetadata.StackPointerBaseRegister, 0);
         }
-
         AddStackLevel(unchecked((uint)size));
     }
-#endif
 
     private void genStoreRegToStackArg(var_types type, regNumber srcReg, int offset)
     {
@@ -955,22 +975,17 @@ public sealed partial class CodeGen
         }
         else
         {
-#if FEATURE_SIMD
-            if (varTypeIsSimd(type))
+            if (Configuration.FEATURE_SIMD && varTypeIsSimd(type))
             {
                 assert(genIsValidFloatReg(srcReg));
                 ins = ins_Store(type);
             }
-            else
-#endif
-#if TARGET_X86
-            if (type == TYP_LONG)
+            else if (Configuration.TARGET_X86 && type == TYP_LONG)
             {
                 assert(genIsValidFloatReg(srcReg));
                 ins = INS_movq;
             }
             else
-#endif
             {
                 assert((varTypeUsesFloatReg(type) && genIsValidFloatReg(srcReg)) ||
                     (varTypeUsesIntReg(type) && genIsValidIntReg(srcReg)));
@@ -979,19 +994,22 @@ public sealed partial class CodeGen
             attr = type.EmitSize;
         }
 
-#if TARGET_X86
-        if (_pushStkArg)
+        if (Configuration.TARGET_X86)
         {
-            genPushReg(type, srcReg);
+            if (_pushStkArg)
+            {
+                genPushReg(type, srcReg);
+            }
+            else
+            {
+                Emitter.emitIns_AR_R(ins, attr, srcReg, TargetRuntimeMetadata.StackPointerBaseRegister, offset);
+            }
         }
         else
         {
-            Emitter.emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, offset);
+            assert(_stkArgVarNum != BAD_VAR_NUM);
+            Emitter.emitIns_S_R(ins, attr, srcReg, _stkArgVarNum, unchecked(_stkArgOffset + offset));
         }
-#else
-        assert(_stkArgVarNum != BAD_VAR_NUM);
-        Emitter.emitIns_S_R(ins, attr, srcReg, _stkArgVarNum, unchecked(_stkArgOffset + offset));
-#endif
     }
 
     private void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree source, int offset)
@@ -1011,11 +1029,8 @@ public sealed partial class CodeGen
     {
         if ((size & 8) != 0)
         {
-#if TARGET_X86
-            genCodeForLoadOffset(INS_movq, EA_8BYTE, longTmpReg, src, offset);
-#else
-            genCodeForLoadOffset(INS_mov, EA_8BYTE, longTmpReg, src, offset);
-#endif
+            var loadInstruction = Configuration.TARGET_X86 ? INS_movq : INS_mov;
+            genCodeForLoadOffset(loadInstruction, EA_8BYTE, longTmpReg, src, offset);
             genStoreRegToStackArg(TYP_LONG, longTmpReg, offset);
             return 8;
         }
@@ -1065,9 +1080,10 @@ public sealed partial class CodeGen
         assert(src.IsContained && (src.Type == TYP_STRUCT) &&
             ((src.Oper is GT_BLK) || src.Oper.IsLocalRead));
 
-#if TARGET_X86
-        assert(!_pushStkArg);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            assert(!_pushStkArg);
+        }
 
         if (src.Oper is GT_BLK)
         {
@@ -1082,34 +1098,26 @@ public sealed partial class CodeGen
         var intTmpReg = REG_NA;
         var longTmpReg = REG_NA;
 
-#if TARGET_X86
-        if (loadSize >= 8)
-#else
-        if (loadSize >= XMM_REGSIZE_BYTES)
-#endif
+        if (loadSize >= (Configuration.TARGET_X86 ? 8 : Configuration.XMM_REGSIZE_BYTES))
         {
             xmmTmpReg = _internalRegisters.GetSingle(putArgNode, new regMaskTP(SRBM_ALLFLOAT));
         }
-        if ((loadSize % XMM_REGSIZE_BYTES) != 0)
+        if ((loadSize % Configuration.XMM_REGSIZE_BYTES) != 0)
         {
             intTmpReg = _internalRegisters.GetSingle(putArgNode, new regMaskTP(SRBM_ALLINT));
         }
 
-#if TARGET_X86
-        longTmpReg = xmmTmpReg;
-#else
-        longTmpReg = intTmpReg;
-#endif
+        longTmpReg = Configuration.TARGET_X86 ? xmmTmpReg : intTmpReg;
 
-        var slots = loadSize / XMM_REGSIZE_BYTES;
+        var slots = loadSize / Configuration.XMM_REGSIZE_BYTES;
         while (slots-- > 0)
         {
             genCodeForLoadOffset(INS_movdqu32, EA_16BYTE, xmmTmpReg, src, offset);
             genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
-            offset += XMM_REGSIZE_BYTES;
+            offset += Configuration.XMM_REGSIZE_BYTES;
         }
 
-        if ((loadSize % XMM_REGSIZE_BYTES) != 0)
+        if ((loadSize % Configuration.XMM_REGSIZE_BYTES) != 0)
         {
             offset += genMove8IfNeeded(loadSize, longTmpReg, src, offset);
             offset += genMove4IfNeeded(loadSize, intTmpReg, src, offset);
@@ -1122,19 +1130,26 @@ public sealed partial class CodeGen
     private void genStructPutArgRepMovs(GenTreePutArgStk putArgNode)
     {
         var src = putArgNode.Op1;
+        var dstReg = Configuration.TARGET_X86 ? REG_X86_EDI : REG_X64_RDI;
+        var srcReg = Configuration.TARGET_X86 ? REG_X86_ESI : REG_X64_RSI;
+        var countReg = Configuration.TARGET_X86 ? REG_X86_ECX : REG_X64_RCX;
         assert((src.Type == TYP_STRUCT) && !src.GetLayout(_compiler).HasGCPtr);
         assert(_internalRegisters.GetAll(putArgNode) ==
-            new regMaskTP(REG_RDI.SingleTypeMask | REG_RCX.SingleTypeMask | REG_RSI.SingleTypeMask));
+            new regMaskTP(dstReg.SingleTypeMask | countReg.SingleTypeMask | srcReg.SingleTypeMask));
         assert(src.IsContained);
 
-        genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_RCX);
+        genConsumePutStructArgStk(putArgNode, dstReg, srcReg, countReg);
         instGen(INS_r_movsb);
     }
 
-#if !TARGET_X86
     private void genStructPutArgPartialRepMovs(GenTreePutArgStk putArgNode)
     {
-        genConsumePutStructArgStk(putArgNode, REG_RDI, REG_RSI, REG_NA);
+        if (Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Partial REP struct copies are unavailable on x86.");
+        }
+
+        genConsumePutStructArgStk(putArgNode, REG_X64_RDI, REG_X64_RSI, REG_NA);
         var src = putArgNode.Data;
         var layout = src.GetLayout(_compiler);
         var srcAddrAttr = src.Oper.IsLocalRead ? EA_PTRSIZE : EA_BYREF;
@@ -1143,8 +1158,8 @@ public sealed partial class CodeGen
 #endif
         assert(layout.HasGCPtr);
         var argSize = putArgNode.StackByteSize;
-        assert((argSize % TARGET_POINTER_SIZE) == 0);
-        var numSlots = argSize / TARGET_POINTER_SIZE;
+        assert((argSize % Configuration.TARGET_POINTER_SIZE) == 0);
+        var numSlots = argSize / Configuration.TARGET_POINTER_SIZE;
 
         // Pointer slots are copied atomically and recorded as stack stores, so GC need not be disabled.
         for (var i = 0; i < numSlots;)
@@ -1168,7 +1183,7 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    Emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, adjacentNonGCSlotCount);
+                    Emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_X64_RCX, adjacentNonGCSlotCount);
                     instGen(INS_r_movsq);
                 }
             }
@@ -1176,16 +1191,16 @@ public sealed partial class CodeGen
             {
                 // String moves cannot record individual GC stack slots; use a typed load/store instead.
                 var memType = layout.GetGCPtrType(i);
-                Emitter.emitIns_R_AR(ins_Load(memType), memType.EmitSize, REG_RCX, REG_RSI, 0);
-                genStoreRegToStackArg(memType, REG_RCX, i * TARGET_POINTER_SIZE);
+                Emitter.emitIns_R_AR(ins_Load(memType), memType.EmitSize, REG_X64_RCX, REG_X64_RSI, 0);
+                genStoreRegToStackArg(memType, REG_X64_RCX, i * Configuration.TARGET_POINTER_SIZE);
 #if DEBUG
                 numGCSlotsCopied++;
 #endif
                 i++;
                 if (i < numSlots)
                 {
-                    Emitter.emitIns_R_I(INS_add, srcAddrAttr, REG_RSI, TARGET_POINTER_SIZE);
-                    Emitter.emitIns_R_I(INS_add, EA_PTRSIZE, REG_RDI, TARGET_POINTER_SIZE);
+                    Emitter.emitIns_R_I(INS_add, srcAddrAttr, REG_X64_RSI, Configuration.TARGET_POINTER_SIZE);
+                    Emitter.emitIns_R_I(INS_add, EA_PTRSIZE, REG_X64_RDI, Configuration.TARGET_POINTER_SIZE);
                 }
             }
         }
@@ -1194,6 +1209,4 @@ public sealed partial class CodeGen
         assert(numGCSlotsCopied == layout.GCPtrCount);
 #endif
     }
-#endif
-#endif
 }

@@ -3,12 +3,15 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86 && JIT32_GCENCODER
 namespace RyuJitSharp;
 
 public partial struct GCInfo
 {
-    private static readonly InfoHdrSmall[] s_infoHdrShortcut =
+}
+
+internal static class GCInfoJit32HeaderTable
+{
+    internal static readonly GCInfo.InfoHdrSmall[] InfoHdrShortcut =
     [
         new(0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
         new(0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -140,4 +143,3 @@ public partial struct GCInfo
         new(51, 7, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0),
     ];
 }
-#endif

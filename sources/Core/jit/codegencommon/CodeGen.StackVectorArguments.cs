@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if UNIX_AMD64_ABI && FEATURE_SIMD
     public void genClearStackVec3ArgUpperBits()
     {
+        if (!Configuration.UNIX_AMD64_ABI || !Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack vector argument upper-bit clearing requires SysV AMD64 SIMD.");
+        }
+
 #if DEBUG
         if (_verbose)
         {
@@ -39,5 +43,4 @@ public sealed partial class CodeGen
             }
         }
     }
-#endif
 }

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if !TARGET_WASM
 using System.Collections.Generic;
 
 namespace RyuJitSharp;
@@ -40,7 +39,6 @@ public sealed partial class CodeGen
                     return node;
                 }
             }
-
             return null;
         }
 
@@ -146,4 +144,3 @@ public sealed partial class CodeGen
 #endif
     }
 }
-#endif

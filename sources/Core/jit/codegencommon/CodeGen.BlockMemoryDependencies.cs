@@ -7,38 +7,124 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM && !TARGET_ARM64 && !TARGET_RISCV64 && !TARGET_LOONGARCH64
     public void genCodeForStoreBlk(GenTreeBlk node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Block memory generation requires Windows AMD64.");
+        if (Configuration.TARGET_XARCH)
+        {
+            genCodeForStoreBlkXarch(node);
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            genCodeForStoreBlkWasm(node);
+        }
+        else if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
+        {
+            genCodeForStoreBlkLoadStore64(node);
+        }
+        else if (Configuration.TARGET_ARMARCH)
+        {
+            genCodeForStoreBlkArmArch(node);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Block memory generation is not implemented for this target.");
+        }
     }
-#endif
 
-#if !TARGET_XARCH && !TARGET_ARM64
     public void genCodeForMemmove(GenTreeBlk node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Unrolled memmove requires Windows AMD64.");
+        if (Configuration.TARGET_XARCH)
+        {
+            genCodeForMemmoveXarch(node);
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            genCodeForMemmoveArm64(node);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Unrolled memmove is not implemented for this target.");
+        }
     }
-#endif
 
-#if !TARGET_XARCH && !TARGET_WASM && !TARGET_ARM && !TARGET_ARM64 && !TARGET_RISCV64 && !TARGET_LOONGARCH64
     public void genCodeForInitBlkLoop(GenTreeBlk node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Loop block initialization requires Windows AMD64.");
+        if (Configuration.TARGET_XARCH)
+        {
+            genCodeForInitBlkLoopXarch(node);
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            genCodeForInitBlkLoopWasm(node);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            genCodeForInitBlkLoopRiscV64(node);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genCodeForInitBlkLoopLoongArch64(node);
+        }
+        else if (Configuration.TARGET_ARMARCH)
+        {
+            genCodeForInitBlkLoopArmArch(node);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Loop block initialization is not implemented for this target.");
+        }
     }
-#endif
 
-#if !TARGET_XARCH && !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !TARGET_ARM && !TARGET_ARM64
     public void genCodeForInitBlkUnroll(GenTreeBlk node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block initialization requires Windows AMD64.");
+        if (Configuration.TARGET_XARCH)
+        {
+            genCodeForInitBlkUnrollXarch(node);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            genCodeForInitBlkUnrollRiscV64(node);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genCodeForInitBlkUnrollLoongArch64(node);
+        }
+        else if (Configuration.TARGET_ARMARCH)
+        {
+            genCodeForInitBlkUnrollArmArch(node);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Unrolled block initialization is not implemented for this target.");
+        }
     }
-#endif
 
-#if !TARGET_XARCH && !TARGET_RISCV64 && !TARGET_ARM && !TARGET_ARM64 && !TARGET_LOONGARCH64
     public void genCodeForCpBlkUnroll(GenTreeBlk node)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Unrolled block copy requires Windows AMD64.");
+        if (Configuration.TARGET_XARCH)
+        {
+            genCodeForCpBlkUnrollXarch(node);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            genCodeForCpBlkUnrollRiscV64(node);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genCodeForCpBlkUnrollLoongArch64(node);
+        }
+        else if (Configuration.TARGET_ARMARCH)
+        {
+            genCodeForCpBlkUnrollArmArch(node);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Unrolled block copy is not implemented for this target.");
+        }
     }
-#endif
 }

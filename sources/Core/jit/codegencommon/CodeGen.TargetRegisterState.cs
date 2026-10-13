@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class CodeGen
 {
-#if !HAS_FIXED_REGISTER_SET
     public void SetStackPointerReg(int funcletIndex, regNumber reg)
     {
         assert(funcletIndex < _compiler.compFuncInfoCount);
@@ -21,5 +20,4 @@ public partial class CodeGen
         assert(reg != REG_NA);
         _compiler.compFuncInfos[funcletIndex].funFramePointerReg = reg;
     }
-#endif
 }

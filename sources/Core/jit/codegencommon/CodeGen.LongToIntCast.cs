@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public void genLongToIntCast(GenTreeCast cast)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Long-to-int cast generation requires X86.");
+        }
+
         assert(cast.Oper is GT_CAST);
 
         var src = cast.CastOp.AsOp();
@@ -67,4 +71,3 @@ public sealed partial class CodeGen
         genProduceReg(cast);
     }
 }
-#endif

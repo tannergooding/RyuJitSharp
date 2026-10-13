@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86 && JIT32_GCENCODER
 using System;
 using System.Numerics;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -289,7 +288,7 @@ public partial struct GCInfo
                 var argument = (GCtype)topArray[checked((int)(index - PasMaskBits - 1))];
                 if (argument != GCT_NONE)
                 {
-                    offset = unchecked((_depth - index) * TARGET_POINTER_SIZE);
+                    offset = unchecked((_depth - index) * (uint)Configuration.TARGET_POINTER_SIZE);
                     if (argument == GCT_BYREF)
                     {
                         offset |= ByrefOffsetFlag;
@@ -310,7 +309,7 @@ public partial struct GCInfo
                 {
                     var level = _depth > PasMaskBits ? _depth - PasMaskBits : 0;
                     level += index;
-                    offset = unchecked(level * TARGET_POINTER_SIZE);
+                    offset = unchecked(level * (uint)Configuration.TARGET_POINTER_SIZE);
                     if ((_byrefBottomMask & bit) != 0)
                     {
                         offset |= ByrefOffsetFlag;
@@ -459,7 +458,7 @@ public partial struct GCInfo
                         }
 
                         var offset = unchecked((int)((uint)variable.StackOffset +
-                            ((uint)slot * TARGET_POINTER_SIZE)));
+                            ((uint)slot * (uint)Configuration.TARGET_POINTER_SIZE)));
                         if (Configuration.DOUBLE_ALIGN && compiler.genDoubleAlign && variable.lvIsParam &&
                             !variable.lvIsRegArg)
                         {
@@ -886,10 +885,10 @@ public partial struct GCInfo
                         var gcRefRegisterMask = 0u;
                         var byrefRegisterMask = 0u;
                         ReadOnlySpan<regNumber> calleeSaveOrder =
-                            [REG_EDI, REG_ESI, REG_EBX, REG_EBP];
+                            [REG_X86_EDI, REG_X86_ESI, REG_X86_EBX, REG_X86_EBP];
                         for (var index = 0; index < calleeSaveOrder.Length; index++)
                         {
-                            var registerBit = 1u << (int)(calleeSaveOrder[index] - REG_INT_FIRST);
+                            var registerBit = 1u << (int)(calleeSaveOrder[index] - TargetRuntimeMetadata.IntegerRegisterFirst);
                             if ((descriptor.rpdCallData.rpdCallGCrefRegs & registerBit) != 0)
                             {
                                 gcRefRegisterMask |= 1u << index;
@@ -1169,4 +1168,3 @@ public partial struct GCInfo
         return totalSize;
     }
 }
-#endif

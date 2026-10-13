@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public void genFloatReturn(GenTree tree)
     {
+        if (!Configuration.TARGET_X86)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "x87 floating-point return generation requires X86.");
+        }
+
         assert(tree.Oper is GT_RETURN or GT_RETFILT);
         assert(varTypeIsFloating(tree.Type));
 
@@ -41,4 +45,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

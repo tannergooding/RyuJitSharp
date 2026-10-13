@@ -12,12 +12,12 @@ public sealed partial class CodeGen
         // Epilog mappings deliberately allow duplicate locations.
         genIPmappingAdd(IPmappingDscKind.Epilog, default, true);
 
-#if EMIT_GENERATE_GCINFO && DEBUG && !TARGET_WASM
-        if (!block.HasFlag(BBF_HAS_JMP))
+#if EMIT_GENERATE_GCINFO && DEBUG
+        if (!Configuration.TARGET_WASM && !block.HasFlag(BBF_HAS_JMP))
         {
             if (_compiler.compMethodReturnsRetBufAddr)
             {
-                var returnRegisterMask = regMaskTP.CreateFromRegNum(REG_INTRET, REG_INTRET.SingleTypeMask);
+                var returnRegisterMask = regMaskTP.CreateFromRegNum(TargetRuntimeMetadata.IntegerReturnRegister, TargetRuntimeMetadata.IntegerReturnRegister.SingleTypeMask);
                 assert((GCInfo.gcRegByrefSetCur & returnRegisterMask) != RBM_NONE);
             }
             else

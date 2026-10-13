@@ -11,51 +11,83 @@ public sealed partial class CodeGen
         return IsFramePointerUsed || (Configuration.DOUBLE_ALIGN && _compiler.genDoubleAlign);
     }
 
-#if !TARGET_XARCH
     public unsafe void genPopCalleeSavedRegisters(bool jmpEpilog = false)
     {
-#if TARGET_ARM
-        genPopCalleeSavedRegistersArmCore(jmpEpilog);
-#elif TARGET_RISCV64
-        genPopCalleeSavedRegistersRiscV(jmpEpilog);
-#elif TARGET_LOONGARCH64
-        genPopCalleeSavedRegistersLoongArch64(jmpEpilog);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            genPopCalleeSavedRegistersArmCore(jmpEpilog);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            genPopCalleeSavedRegistersRiscV(jmpEpilog);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genPopCalleeSavedRegistersLoongArch64(jmpEpilog);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration is not supported by this dispatcher.");
+        }
     }
 
     public uint genPopCalleeSavedRegistersFromMask(regMaskTP popRegs)
     {
-        throw new FatalJitException(CORJIT_SKIPPED, "Callee-save restoration requires xarch.");
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch callee-save restoration is not supported on this target.");
+        }
+
+        return genPopCalleeSavedRegistersFromMaskXarch(popRegs);
     }
 
     public unsafe void genFnEpilog(BasicBlock block)
     {
-#if TARGET_WASM
-        genFnEpilogWasm(block);
-#elif TARGET_ARMARCH
-        genFnEpilogArmArch(block);
-#elif TARGET_RISCV64
-        genFnEpilogRiscV(block);
-#elif TARGET_LOONGARCH64
-        genFnEpilogLoongArch64(block);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation requires xarch.");
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            genFnEpilogWasm(block);
+        }
+        else if (Configuration.TARGET_ARMARCH)
+        {
+            genFnEpilogArmArch(block);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            genFnEpilogRiscV(block);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genFnEpilogLoongArch64(block);
+        }
+        else if (Configuration.TARGET_XARCH)
+        {
+            genFnEpilogXarch(block);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Root epilog generation is not supported by this dispatcher.");
+        }
     }
 
     public void instGen_Return(uint stackArgumentSize)
     {
-#if TARGET_ARM
-        // ARM emits the return as part of the register-restoring epilog pop.
-#elif TARGET_ARM64
-        unreached();
-        throw new FatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
-#else
+        if (Configuration.TARGET_ARM)
+        {
+            // ARM emits the return as part of the register-restoring epilog pop.
+            return;
+        }
+        if (Configuration.TARGET_ARM64)
+        {
+            unreached();
+            throw new FatalJitException(CORJIT_SKIPPED, "instGen_Return is not used on ARM64.");
+        }
+        if (Configuration.TARGET_XARCH)
+        {
+            instGen_ReturnXarch(stackArgumentSize);
+            return;
+        }
+
         NYI("instGen_Return");
         throw new FatalJitException(CORJIT_SKIPPED, "Return instruction generation is not implemented on this target.");
-#endif
     }
-#endif
 }

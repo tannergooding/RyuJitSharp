@@ -6,25 +6,34 @@
 using System;
 using static RyuJitSharp.insCFlags;
 
-#if TARGET_AMD64
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public static instruction JumpKindToCcmp(emitJumpKind condition)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "EVEX conditional-compare mapping requires AMD64.");
+        }
+
         ReadOnlySpan<instruction> table =
         [
             INS_none, INS_none, INS_ccmpo, INS_ccmpno, INS_ccmpb, INS_ccmpae, INS_ccmpe, INS_ccmpne, INS_ccmpbe,
             INS_ccmpa, INS_ccmps, INS_ccmpns, INS_none, INS_none, INS_ccmpl, INS_ccmpge, INS_ccmple, INS_ccmpg,
         ];
-        assert((condition >= EJ_NONE) && (condition < EJ_COUNT));
+        assert((condition >= EJ_NONE) && ((int)condition < Configuration.EMIT_JUMPKIND_COUNT));
 
         return table[(int)condition];
     }
 
     public static insOpts OptsFromCFlags(insCFlags flags)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "EVEX conditional-compare options require AMD64.");
+        }
+
         var opts = INS_OPTS_NONE;
         if ((flags & INS_FLAGS_CF) != 0)
         {
@@ -48,74 +57,72 @@ public sealed partial class CodeGen
 
     public void genCodeForCCMP(GenTreeCCMP tree)
     {
-        Emitter.RequireSupportedInstructionRecording();
-        assert(Emitter.UsePromotedEvexEncodings);
-        genConsumeOperands(tree);
-        var op1 = tree.Op1;
-        var op2 = tree.Op2;
-        var size = op1.Type.ActualType.EmitActualSize;
-        var srcReg1 = op1.RegNum;
-        assert(!varTypeIsFloating(op2.Type.ActualType));
-        assert(!op1.IsContainedIntOrIImmed);
-
-        var condition = GenConditionDesc.Get(tree.Condition);
-        var ins = JumpKindToCcmp(condition.JumpKind1);
-        var opts = OptsFromCFlags(tree.FlagsVal);
-        if (op2.IsContainedIntOrIImmed)
+        if (Configuration.TARGET_AMD64)
         {
-            var value = op2.AsIntConCommon().IconValue;
-            if (value == 0)
+            Emitter.RequireSupportedInstructionRecording();
+            assert(Emitter.UsePromotedEvexEncodings);
+            genConsumeOperands(tree);
+            var op1 = tree.Op1;
+            var op2 = tree.Op2;
+            var size = op1.Type.ActualType.EmitActualSize;
+            var srcReg1 = op1.RegNum;
+            assert(!varTypeIsFloating(op2.Type.ActualType));
+            assert(!op1.IsContainedIntOrIImmed);
+
+            var condition = GenConditionDesc.Get(tree.Condition);
+            var ins = JumpKindToCcmp(condition.JumpKind1);
+            var opts = OptsFromCFlags(tree.FlagsVal);
+            if (op2.IsContainedIntOrIImmed)
             {
-                // CTEST reg,reg is one byte shorter than CCMP reg,0.
-                var instructionOffset = InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CTEST_INSTRUCTION) -
-                                        InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CCMP_INSTRUCTION);
-                assert(instructionOffset == 32);
-                var ctest = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
-                    InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) + instructionOffset);
-                Emitter.emitIns_R_R(ctest, size, srcReg1, srcReg1, opts);
+                var value = op2.AsIntConCommon().IconValue;
+                if (value == 0)
+                {
+                    // CTEST reg,reg is one byte shorter than CCMP reg,0.
+                    var instructionOffset = InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CTEST_INSTRUCTION) -
+                                            InstructionOrdinalMaps.GetNativeInstructionOrdinal(FIRST_CCMP_INSTRUCTION);
+                    assert(instructionOffset == 32);
+                    var ctest = InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(
+                        InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) + instructionOffset);
+                    Emitter.emitIns_R_R(ctest, size, srcReg1, srcReg1, opts);
+                }
+                else
+                {
+                    Emitter.emitIns_R_I(ins, size, srcReg1, unchecked((int)value), opts);
+                }
             }
             else
             {
-                Emitter.emitIns_R_I(ins, size, srcReg1, unchecked((int)value), opts);
+                Emitter.emitIns_R_R(ins, size, srcReg1, op2.RegNum, opts);
+            }
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            genConsumeOperands(tree);
+            var op1 = tree.Op1;
+            var op2 = tree.Op2;
+            var op1Type = op1.Type.ActualType;
+            var op2Type = op2.Type.ActualType;
+            var cmpSize = op1Type.EmitActualSize;
+            var srcReg1 = op1.RegNum;
+
+            assert(!varTypeIsFloating(op2Type));
+            assert(!op1.IsContainedIntOrIImmed);
+
+            var condition = GenConditionDesc.Get(tree.Condition);
+            var insCond = JumpKindToInsCond(condition.JumpKind1);
+            if (op2.IsContainedIntOrIImmed)
+            {
+                var value = unchecked((int)op2.AsIntConCommon().IconValue);
+                Emitter.emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, value, tree.FlagsVal, insCond);
+            }
+            else
+            {
+                Emitter.emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, op2.RegNum, tree.FlagsVal, insCond);
             }
         }
         else
         {
-            Emitter.emitIns_R_R(ins, size, srcReg1, op2.RegNum, opts);
+            throw new FatalJitException(CORJIT_SKIPPED, "Conditional compare is only supported on AMD64 and ARM64.");
         }
     }
 }
-#endif
-
-#if TARGET_ARM64
-namespace RyuJitSharp;
-
-public sealed partial class CodeGen
-{
-    public void genCodeForCCMP(GenTreeCCMP tree)
-    {
-        genConsumeOperands(tree);
-        var op1 = tree.Op1;
-        var op2 = tree.Op2;
-        var op1Type = op1.Type.ActualType;
-        var op2Type = op2.Type.ActualType;
-        var cmpSize = op1Type.EmitActualSize;
-        var srcReg1 = op1.RegNum;
-
-        assert(!varTypeIsFloating(op2Type));
-        assert(!op1.IsContainedIntOrIImmed);
-
-        var condition = GenConditionDesc.Get(tree.Condition);
-        var insCond = JumpKindToInsCond(condition.JumpKind1);
-        if (op2.IsContainedIntOrIImmed)
-        {
-            var value = unchecked((int)op2.AsIntConCommon().IconValue);
-            Emitter.emitIns_R_I_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, value, tree.FlagsVal, insCond);
-        }
-        else
-        {
-            Emitter.emitIns_R_R_FLAGS_COND(INS_ccmp, cmpSize, srcReg1, op2.RegNum, tree.FlagsVal, insCond);
-        }
-    }
-}
-#endif

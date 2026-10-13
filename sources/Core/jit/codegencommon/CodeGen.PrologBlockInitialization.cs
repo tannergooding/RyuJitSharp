@@ -9,388 +9,404 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_AMD64
     private instruction simdAlignedMovIns()
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Aligned SIMD stores require AMD64.");
+        }
+
         // VEX removes MOVAPS's size advantage; MOVDQA can use more ports on older CPUs.
         return _compiler.canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
     }
-#endif
 
-#if !TARGET_ARM64
-    public void genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
+    public void genZeroInitFrameUsingBlockInitNonArm64(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
     {
-#if TARGET_WASM
-        unreached();
-#elif TARGET_ARM
-        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
-        assert(UseBlockInit);
-        assert(untrLclHi > untrLclLo);
-
-        var availMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH);
-        availMask &= ~_calleeRegArgMaskLiveIn;
-        availMask &= ~genRegMask(initReg);
-        if (_compiler.compLocallocUsed)
+        if (Configuration.TARGET_WASM)
         {
-            availMask &= ~new regMaskTP(SRBM_SAVED_LOCALLOC_SP);
+            throw new FatalJitException(CORJIT_SKIPPED, "Block-based prolog initialization is not supported on Wasm.");
         }
-
-        noway_assert(availMask.IsNonEmpty);
-        var rZero2Mask = genFindLowestBit(availMask);
-        var rZero2 = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rZero2Mask.Lower));
-        availMask &= ~rZero2Mask;
-        assert((genRegMask(rZero2) & _calleeRegArgMaskLiveIn).IsEmpty);
-
-        noway_assert(availMask.IsNonEmpty);
-        var rAddrMask = genFindLowestBit(availMask);
-        var rAddr = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rAddrMask.Lower));
-        availMask &= ~rAddrMask;
-
-        var cntBytes = unchecked((uint)(untrLclHi - untrLclLo));
-        assert((cntBytes % sizeof(int)) == 0);
-        var cntSlots = cntBytes / REGSIZE_BYTES;
-        var useLoop = cntSlots >= 10;
-        var rCnt = REG_NA;
-        if (useLoop)
+        else if (Configuration.TARGET_ARM)
         {
+            assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+            assert(UseBlockInit);
+            assert(untrLclHi > untrLclLo);
+
+            var availMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH);
+            availMask &= ~_calleeRegArgMaskLiveIn;
+            availMask &= ~genRegMask(initReg);
+            if (_compiler.compLocallocUsed)
+            {
+                availMask &= ~new regMaskTP(SRBM_SAVED_LOCALLOC_SP);
+            }
+
             noway_assert(availMask.IsNonEmpty);
-            var rCntMask = genFindLowestBit(availMask);
-            rCnt = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rCntMask.Lower));
-            availMask &= ~rCntMask;
-        }
+            var rZero2Mask = genFindLowestBit(availMask);
+            var rZero2 = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rZero2Mask.Lower));
+            availMask &= ~rZero2Mask;
+            assert((genRegMask(rZero2) & _calleeRegArgMaskLiveIn).IsEmpty);
 
-        assert((genRegMask(rAddr) & _calleeRegArgMaskLiveIn).IsEmpty);
-        if (arm_Valid_Imm_For_Add(untrLclLo, INS_FLAGS_DONT_CARE))
-        {
-            Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo,
-                INS_FLAGS_DONT_CARE);
-        }
-        else
-        {
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, untrLclLo);
-            Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
-            initRegZeroed = false;
-        }
-
-        if (useLoop)
-        {
-            noway_assert(cntSlots >= 2);
-            assert((genRegMask(rCnt) & _calleeRegArgMaskLiveIn).IsEmpty);
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, unchecked((nint)(cntSlots / 2)));
-        }
-
-        var rZero1 = genGetZeroReg(initReg, ref initRegZeroed);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
-        var stmImm = unchecked((nint)(genRegMask(rZero1) | genRegMask(rZero2)).Lower);
-
-        if (!useLoop)
-        {
-            while (cntBytes >= REGSIZE_BYTES * 2)
-            {
-                Emitter.emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm);
-                cntBytes -= REGSIZE_BYTES * 2;
-            }
-        }
-        else
-        {
-            var loopHead = genCreateTempLabel();
-            genDefineInlineTempLabel(loopHead);
-            Emitter.emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm);
-            Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, rCnt, 1, INS_FLAGS_SET);
-            Emitter.emitIns_ShortJ(INS_bhi, loopHead);
-            cntBytes %= REGSIZE_BYTES * 2;
-        }
-
-        if (cntBytes >= REGSIZE_BYTES)
-        {
-            Emitter.emitIns_R_R_I(INS_str, EA_PTRSIZE, rZero1, rAddr, 0, INS_FLAGS_DONT_CARE);
-            cntBytes -= REGSIZE_BYTES;
-        }
-
-        noway_assert(cntBytes == 0);
-#elif TARGET_RISCV64
-        var availMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH);
-        availMask &= ~_calleeRegArgMaskLiveIn;
-        availMask &= ~genRegMask(initReg);
-
-        var addrReg = initReg;
-        initRegZeroed = false;
-
-        assert((genRegMask(addrReg) & _calleeRegArgMaskLiveIn).IsEmpty);
-        assert((untrLclLo % 4) == 0);
-
-        if (Emitter.isValidSimm12(untrLclLo))
-        {
-            Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo);
-        }
-        else
-        {
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, unchecked((nint)untrLclLo));
-            Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), initReg);
-            initRegZeroed = false;
-        }
-
-        var lclBytes = unchecked((nint)(untrLclHi - untrLclLo));
-        assert((lclBytes % 4) == 0);
-        var padding = untrLclLo & 0x7;
-        if (padding != 0)
-        {
-            assert(padding == 4);
-            Emitter.emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, addrReg, 0);
-            lclBytes -= sizeof(int);
-        }
-
-        var regSlots = lclBytes / REGSIZE_BYTES;
-        nint addrOffset = 0;
-        if (regSlots >= 12)
-        {
             noway_assert(availMask.IsNonEmpty);
-            var endAddrMask = genFindLowestBit(availMask);
-            var endAddrReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)endAddrMask.Lower));
-            availMask &= ~endAddrMask;
+            var rAddrMask = genFindLowestBit(availMask);
+            var rAddr = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rAddrMask.Lower));
+            availMask &= ~rAddrMask;
 
-            assert((genRegMask(endAddrReg) & _calleeRegArgMaskLiveIn).IsEmpty);
-            var loopBytes = (regSlots & ~((nint)0x3)) * REGSIZE_BYTES;
-            if (loopBytes != 0)
+            var cntBytes = unchecked((uint)(untrLclHi - untrLclLo));
+            assert((cntBytes % sizeof(int)) == 0);
+            var cntSlots = cntBytes / Configuration.REGSIZE_BYTES;
+            var useLoop = cntSlots >= 10;
+            var rCnt = REG_NA;
+            if (useLoop)
             {
-                if (Emitter.isValidSimm12(loopBytes))
-                {
-                    Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, endAddrReg, addrReg, loopBytes);
-                }
-                else
-                {
-                    instGen_Set_Reg_To_Imm(EA_PTRSIZE, endAddrReg, loopBytes);
-                    Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, endAddrReg, endAddrReg, addrReg);
-                }
-
-                var loopHead = genCreateTempLabel();
-                genDefineInlineTempLabel(loopHead);
-                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding);
-                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding + REGSIZE_BYTES);
-                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding + 2 * REGSIZE_BYTES);
-                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, padding + 3 * REGSIZE_BYTES);
-
-                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, addrReg, addrReg, 4 * REGSIZE_BYTES);
-                Emitter.emitIns_J_cond_la(INS_bltu, loopHead, addrReg, endAddrReg);
-
-                lclBytes -= loopBytes;
-                addrOffset = 0;
-            }
-        }
-
-        while (lclBytes >= REGSIZE_BYTES)
-        {
-            Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, REG_R0, addrReg, addrOffset + padding);
-            lclBytes -= REGSIZE_BYTES;
-            addrOffset += REGSIZE_BYTES;
-        }
-
-        if (addrOffset != 0)
-        {
-            addrOffset -= REGSIZE_BYTES;
-        }
-
-        if (lclBytes != 0)
-        {
-            assert(lclBytes == sizeof(int));
-            Emitter.emitIns_R_R_I(INS_sw, EA_4BYTE, REG_R0, addrReg, addrOffset + padding);
-            lclBytes -= sizeof(int);
-        }
-
-        noway_assert(lclBytes == 0);
-#elif TARGET_LOONGARCH64
-        genZeroInitFrameUsingBlockInitLoongArch64(
-            untrLclHi, untrLclLo, initReg, ref initRegZeroed);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
-        assert(Emitter.emitGeneratingPrologOrFuncletProlog());
-        assert(UseBlockInit);
-        assert(untrLclHi > untrLclLo);
-        var frameReg = genFramePointerReg();
-        var zeroReg = REG_NA;
-        var blkSize = untrLclHi - untrLclLo;
-        assert(blkSize >= 0);
-        noway_assert((blkSize % sizeof(int)) == 0);
-        assert((regMaskTP.CreateFromRegNum(initReg, initReg.SingleTypeMask) & _calleeRegArgMaskLiveIn).IsEmpty);
-
-#if TARGET_AMD64
-        var simdMov = simdAlignedMovIns();
-        var alignedLclLo = (untrLclLo + XMM_REGSIZE_BYTES - 1) & -XMM_REGSIZE_BYTES;
-        if ((untrLclLo != alignedLclLo) && (blkSize < 2 * XMM_REGSIZE_BYTES))
-        {
-            assert(alignedLclLo - untrLclLo < XMM_REGSIZE_BYTES);
-            simdMov = simdUnalignedMovIns();
-        }
-#else
-        var simdMov = simdUnalignedMovIns();
-        var alignedLclLo = untrLclLo;
-#endif
-
-        if (blkSize < XMM_REGSIZE_BYTES)
-        {
-            zeroReg = genGetZeroReg(initReg, ref initRegZeroed);
-            var i = 0;
-            for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
-            {
-                Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
+                noway_assert(availMask.IsNonEmpty);
+                var rCntMask = genFindLowestBit(availMask);
+                rCnt = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)rCntMask.Lower));
+                availMask &= ~rCntMask;
             }
 
-#if TARGET_AMD64
-            assert((i == blkSize) || (i + sizeof(int) == blkSize));
-            if (i != blkSize)
+            assert((genRegMask(rAddr) & _calleeRegArgMaskLiveIn).IsEmpty);
+            if (arm_Valid_Imm_For_Add(untrLclLo, INS_FLAGS_DONT_CARE))
             {
-                Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
-                i += sizeof(int);
-            }
-#endif
-            assert(i == blkSize);
-        }
-        else
-        {
-#if UNIX_AMD64_ABI
-            var zeroSimdReg = REG_XMM8;
-#else
-            // Windows xarch's first non-argument, caller-saved SIMD register is XMM4.
-            var zeroSimdReg = REG_XMM4;
-#endif
-            int alignedLclHi;
-            int alignmentHiBlkSize;
-#if TARGET_AMD64
-            if ((blkSize < 2 * XMM_REGSIZE_BYTES) || (untrLclLo == alignedLclLo))
-            {
-                var alignmentBlkSize = blkSize & -XMM_REGSIZE_BYTES;
-                alignmentHiBlkSize = blkSize - alignmentBlkSize;
-                alignedLclHi = untrLclLo + alignmentBlkSize;
-                alignedLclLo = untrLclLo;
-                blkSize = alignmentBlkSize;
-                assert(blkSize + alignmentHiBlkSize == untrLclHi - untrLclLo);
+                Emitter.emitIns_R_R_I(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), untrLclLo,
+                    INS_FLAGS_DONT_CARE);
             }
             else
             {
-                alignedLclHi = untrLclHi & -XMM_REGSIZE_BYTES;
-                alignmentHiBlkSize = untrLclHi - alignedLclHi;
-                var alignmentLoBlkSize = alignedLclLo - untrLclLo;
-                blkSize = alignedLclHi - alignedLclLo;
-                assert(blkSize + alignmentLoBlkSize + alignmentHiBlkSize == untrLclHi - untrLclLo);
-                assert((alignmentLoBlkSize > 0) && (alignmentLoBlkSize < XMM_REGSIZE_BYTES));
-                assert(alignedLclLo - alignmentLoBlkSize == untrLclLo);
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, untrLclLo);
+                Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, rAddr, genFramePointerReg(), initReg);
+                initRegZeroed = false;
+            }
 
+            if (useLoop)
+            {
+                noway_assert(cntSlots >= 2);
+                assert((genRegMask(rCnt) & _calleeRegArgMaskLiveIn).IsEmpty);
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, rCnt, unchecked((nint)(cntSlots / 2)));
+            }
+
+            var rZero1 = genGetZeroReg(initReg, ref initRegZeroed);
+            instGen_Set_Reg_To_Zero(EA_PTRSIZE, rZero2);
+            var stmImm = unchecked((nint)(genRegMask(rZero1) | genRegMask(rZero2)).Lower);
+
+            if (!useLoop)
+            {
+                while (cntBytes >= Configuration.REGSIZE_BYTES * 2)
+                {
+                    Emitter.emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm);
+                    cntBytes -= unchecked((uint)(Configuration.REGSIZE_BYTES * 2));
+                }
+            }
+            else
+            {
+                var loopHead = genCreateTempLabel();
+                genDefineInlineTempLabel(loopHead);
+                Emitter.emitIns_R_I(INS_stm, EA_PTRSIZE, rAddr, stmImm);
+                Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, rCnt, 1, INS_FLAGS_SET);
+                Emitter.emitIns_ShortJ(INS_bhi, loopHead);
+                cntBytes %= unchecked((uint)(Configuration.REGSIZE_BYTES * 2));
+            }
+
+            if (cntBytes >= Configuration.REGSIZE_BYTES)
+            {
+                Emitter.emitIns_R_R_I(INS_str, EA_PTRSIZE, rZero1, rAddr, 0, INS_FLAGS_DONT_CARE);
+                cntBytes -= unchecked((uint)Configuration.REGSIZE_BYTES);
+            }
+
+            noway_assert(cntBytes == 0);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            var availMask = _regSet.rsGetModifiedRegsMask() | new regMaskTP(SRBM_INT_CALLEE_TRASH);
+            availMask &= ~_calleeRegArgMaskLiveIn;
+            availMask &= ~genRegMask(initReg);
+
+            var addrReg = initReg;
+            initRegZeroed = false;
+
+            assert((genRegMask(addrReg) & _calleeRegArgMaskLiveIn).IsEmpty);
+            assert((untrLclLo % 4) == 0);
+
+            if (Emitter.isValidSimm12(untrLclLo))
+            {
+                Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, addrReg, genFramePointerReg(), untrLclLo);
+            }
+            else
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, unchecked((nint)untrLclLo));
+                Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, addrReg, genFramePointerReg(), initReg);
+                initRegZeroed = false;
+            }
+
+            var lclBytes = unchecked((nint)(untrLclHi - untrLclLo));
+            assert((lclBytes % 4) == 0);
+            var padding = untrLclLo & 0x7;
+            if (padding != 0)
+            {
+                assert(padding == 4);
+                Emitter.emitIns_R_R_I(INS_sw, EA_4BYTE, TargetRuntimeMetadata.Register0, addrReg, 0);
+                lclBytes -= sizeof(int);
+            }
+
+            var regSlots = lclBytes / Configuration.REGSIZE_BYTES;
+            nint addrOffset = 0;
+            if (regSlots >= 12)
+            {
+                noway_assert(availMask.IsNonEmpty);
+                var endAddrMask = genFindLowestBit(availMask);
+                var endAddrReg = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)endAddrMask.Lower));
+                availMask &= ~endAddrMask;
+
+                assert((genRegMask(endAddrReg) & _calleeRegArgMaskLiveIn).IsEmpty);
+                var loopBytes = (regSlots & ~((nint)0x3)) * Configuration.REGSIZE_BYTES;
+                if (loopBytes != 0)
+                {
+                    if (Emitter.isValidSimm12(loopBytes))
+                    {
+                        Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, endAddrReg, addrReg, unchecked((int)loopBytes));
+                    }
+                    else
+                    {
+                        instGen_Set_Reg_To_Imm(EA_PTRSIZE, endAddrReg, loopBytes);
+                        Emitter.emitIns_R_R_R(INS_add, EA_PTRSIZE, endAddrReg, endAddrReg, addrReg);
+                    }
+
+                    var loopHead = genCreateTempLabel();
+                    genDefineInlineTempLabel(loopHead);
+                    Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, TargetRuntimeMetadata.Register0, addrReg, unchecked((int)padding));
+                    Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, TargetRuntimeMetadata.Register0, addrReg, unchecked((int)(padding + Configuration.REGSIZE_BYTES)));
+                    Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, TargetRuntimeMetadata.Register0, addrReg, unchecked((int)(padding + 2 * Configuration.REGSIZE_BYTES)));
+                    Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, TargetRuntimeMetadata.Register0, addrReg, unchecked((int)(padding + 3 * Configuration.REGSIZE_BYTES)));
+
+                    Emitter.emitIns_R_R_I(INS_addi, EA_PTRSIZE, addrReg, addrReg, 4 * Configuration.REGSIZE_BYTES);
+                    Emitter.emitIns_J_cond_la(INS_bltu, loopHead, addrReg, endAddrReg);
+
+                    lclBytes -= loopBytes;
+                    addrOffset = 0;
+                }
+            }
+
+            while (lclBytes >= Configuration.REGSIZE_BYTES)
+            {
+                Emitter.emitIns_R_R_I(INS_sd, EA_PTRSIZE, TargetRuntimeMetadata.Register0, addrReg, unchecked((int)(addrOffset + padding)));
+                lclBytes -= Configuration.REGSIZE_BYTES;
+                addrOffset += Configuration.REGSIZE_BYTES;
+            }
+
+            if (addrOffset != 0)
+            {
+                addrOffset -= Configuration.REGSIZE_BYTES;
+            }
+
+            if (lclBytes != 0)
+            {
+                assert(lclBytes == sizeof(int));
+                Emitter.emitIns_R_R_I(INS_sw, EA_4BYTE, TargetRuntimeMetadata.Register0, addrReg, unchecked((int)(addrOffset + padding)));
+                lclBytes -= sizeof(int);
+            }
+
+            noway_assert(lclBytes == 0);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genZeroInitFrameUsingBlockInitLoongArch64(
+                untrLclHi, untrLclLo, initReg, ref initRegZeroed);
+        }
+        else if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Prolog block initialization requires a supported target.");
+        }
+        else
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                Emitter.RequireSupportedInstructionRecording();
+            }
+            assert(Emitter.emitGeneratingPrologOrFuncletProlog());
+            assert(UseBlockInit);
+            assert(untrLclHi > untrLclLo);
+            var frameReg = genFramePointerReg();
+            var zeroReg = REG_NA;
+            var blkSize = untrLclHi - untrLclLo;
+            assert(blkSize >= 0);
+            noway_assert((blkSize % sizeof(int)) == 0);
+            assert((regMaskTP.CreateFromRegNum(initReg, initReg.SingleTypeMask) & _calleeRegArgMaskLiveIn).IsEmpty);
+
+            instruction simdMov;
+            int alignedLclLo;
+            if (Configuration.TARGET_AMD64)
+            {
+                simdMov = simdAlignedMovIns();
+                alignedLclLo = (untrLclLo + Configuration.XMM_REGSIZE_BYTES - 1) & -Configuration.XMM_REGSIZE_BYTES;
+                if ((untrLclLo != alignedLclLo) && (blkSize < 2 * Configuration.XMM_REGSIZE_BYTES))
+                {
+                    assert(alignedLclLo - untrLclLo < Configuration.XMM_REGSIZE_BYTES);
+                    simdMov = simdUnalignedMovIns();
+                }
+            }
+            else
+            {
+                simdMov = simdUnalignedMovIns();
+                alignedLclLo = untrLclLo;
+            }
+
+            if (blkSize < Configuration.XMM_REGSIZE_BYTES)
+            {
                 zeroReg = genGetZeroReg(initReg, ref initRegZeroed);
                 var i = 0;
-                for (; i + REGSIZE_BYTES <= alignmentLoBlkSize; i += REGSIZE_BYTES)
+                for (; i + Configuration.REGSIZE_BYTES <= blkSize; i += Configuration.REGSIZE_BYTES)
                 {
                     Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
                 }
 
-                assert((i == alignmentLoBlkSize) || (i + sizeof(int) == alignmentLoBlkSize));
-                if (i != alignmentLoBlkSize)
+                if (Configuration.TARGET_AMD64)
                 {
-                    Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
-                    i += sizeof(int);
-                }
-                assert(i == alignmentLoBlkSize);
-            }
-#else
-            var alignmentBlkSize = blkSize & -XMM_REGSIZE_BYTES;
-            alignmentHiBlkSize = blkSize - alignmentBlkSize;
-            alignedLclHi = untrLclLo + alignmentBlkSize;
-            blkSize = alignmentBlkSize;
-            assert(blkSize + alignmentHiBlkSize == untrLclHi - untrLclLo);
-#endif
-
-            var maxSimdSize = _compiler.roundDownSimdSize((uint)blkSize);
-#if TARGET_AMD64
-            assert((maxSimdSize >= XMM_REGSIZE_BYTES) && (maxSimdSize <= ZMM_REGSIZE_BYTES));
-#else
-            // ZMM_REGSIZE_BYTES is not declared for managed x86; four XMM widths retain its 64-byte bound.
-            assert((maxSimdSize >= XMM_REGSIZE_BYTES) && (maxSimdSize <= 4 * XMM_REGSIZE_BYTES));
-#endif
-            // Three stores per loop iteration: use a loop only for at least two iterations.
-            if (blkSize < 6 * maxSimdSize)
-            {
-                // VEX/EVEX XORPS also clears the upper YMM/ZMM lanes.
-                Emitter.emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSimdReg, zeroSimdReg, zeroSimdReg, INS_OPTS_NONE);
-                assert((blkSize % XMM_REGSIZE_BYTES) == 0);
-                var regSize = _compiler.roundDownSimdSize((uint)blkSize);
-                var lenRemaining = blkSize;
-                while (lenRemaining > 0)
-                {
-                    // For 112 bytes, two overlapping 64-byte stores replace 64+32+16.
-                    if ((regSize > lenRemaining) && !BitOperations.IsPow2(lenRemaining))
+                    assert((i == blkSize) || (i + sizeof(int) == blkSize));
+                    if (i != blkSize)
                     {
-                        lenRemaining = regSize;
+                        Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
+                        i += sizeof(int);
                     }
-
-                    regSize = _compiler.roundDownSimdSize((uint)lenRemaining);
-                    assert(regSize >= XMM_REGSIZE_BYTES);
-                    var ins = regSize > XMM_REGSIZE_BYTES ? simdUnalignedMovIns() : simdMov;
-                    var offset = blkSize - lenRemaining;
-                    Emitter.emitIns_AR_R(ins, (emitAttr)regSize, zeroSimdReg, frameReg, alignedLclLo + offset);
-                    lenRemaining -= regSize;
                 }
-                assert(lenRemaining == 0);
+                assert(i == blkSize);
             }
             else
             {
-                Emitter.emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSimdReg, zeroSimdReg, zeroSimdReg, INS_OPTS_NONE);
-                var extraSimd = blkSize % (XMM_REGSIZE_BYTES * 3) / XMM_REGSIZE_BYTES;
-                if (extraSimd != 0)
+                var zeroSimdReg = Configuration.UNIX_AMD64_ABI
+                    ? REG_X64_XMM8
+                    : Configuration.TARGET_X86 ? REG_X86_XMM4 : REG_X64_XMM4;
+                int alignedLclHi;
+                int alignmentHiBlkSize;
+                if (Configuration.TARGET_AMD64)
                 {
-                    blkSize -= XMM_REGSIZE_BYTES;
-                    Emitter.emitIns_AR_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, alignedLclLo);
-                    if (extraSimd == 2)
+                    if ((blkSize < 2 * Configuration.XMM_REGSIZE_BYTES) || (untrLclLo == alignedLclLo))
                     {
-                        blkSize -= XMM_REGSIZE_BYTES;
-                        Emitter.emitIns_AR_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, alignedLclLo + XMM_REGSIZE_BYTES);
+                        var alignmentBlkSize = blkSize & -Configuration.XMM_REGSIZE_BYTES;
+                        alignmentHiBlkSize = blkSize - alignmentBlkSize;
+                        alignedLclHi = untrLclLo + alignmentBlkSize;
+                        alignedLclLo = untrLclLo;
+                        blkSize = alignmentBlkSize;
+                        assert(blkSize + alignmentHiBlkSize == untrLclHi - untrLclLo);
+                    }
+                    else
+                    {
+                        alignedLclHi = untrLclHi & -Configuration.XMM_REGSIZE_BYTES;
+                        alignmentHiBlkSize = untrLclHi - alignedLclHi;
+                        var alignmentLoBlkSize = alignedLclLo - untrLclLo;
+                        blkSize = alignedLclHi - alignedLclLo;
+                        assert(blkSize + alignmentLoBlkSize + alignmentHiBlkSize == untrLclHi - untrLclLo);
+                        assert((alignmentLoBlkSize > 0) && (alignmentLoBlkSize < Configuration.XMM_REGSIZE_BYTES));
+                        assert(alignedLclLo - alignmentLoBlkSize == untrLclLo);
+
+                        zeroReg = genGetZeroReg(initReg, ref initRegZeroed);
+                        var i = 0;
+                        for (; i + Configuration.REGSIZE_BYTES <= alignmentLoBlkSize; i += Configuration.REGSIZE_BYTES)
+                        {
+                            Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
+                        }
+
+                        assert((i == alignmentLoBlkSize) || (i + sizeof(int) == alignmentLoBlkSize));
+                        if (i != alignmentLoBlkSize)
+                        {
+                            Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
+                            i += sizeof(int);
+                        }
+                        assert(i == alignmentLoBlkSize);
                     }
                 }
-
-                noway_assert((blkSize % (3 * XMM_REGSIZE_BYTES)) == 0);
-                assert(blkSize >= 3 * XMM_REGSIZE_BYTES);
-                assert(alignedLclHi - blkSize >= untrLclLo);
-                assert(alignedLclHi - blkSize + 2 * XMM_REGSIZE_BYTES < untrLclHi - XMM_REGSIZE_BYTES);
-                assert(alignedLclHi - 3 * XMM_REGSIZE_BYTES + 2 * XMM_REGSIZE_BYTES <= untrLclHi - XMM_REGSIZE_BYTES);
-                assert(alignedLclHi - (blkSize + extraSimd * XMM_REGSIZE_BYTES) == alignedLclLo);
-
-                Emitter.emitIns_R_I(INS_mov, EA_PTRSIZE, initReg, -(nint)blkSize);
-                var loopHead = genCreateTempLabel();
-                genDefineInlineTempLabel(loopHead);
-                Emitter.emitIns_ARX_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, initReg, 1, alignedLclHi);
-                Emitter.emitIns_ARX_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, initReg, 1, alignedLclHi + XMM_REGSIZE_BYTES);
-                Emitter.emitIns_ARX_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, initReg, 1,
-                    alignedLclHi + 2 * XMM_REGSIZE_BYTES);
-                Emitter.emitIns_R_I(INS_add, EA_PTRSIZE, initReg, 3 * XMM_REGSIZE_BYTES);
-                Emitter.emitIns_ShortJ(INS_jne, loopHead);
-                initRegZeroed = true;
-            }
-
-            if (untrLclHi != alignedLclHi)
-            {
-                assert((alignmentHiBlkSize > 0) && (alignmentHiBlkSize < XMM_REGSIZE_BYTES));
-                assert(alignedLclHi + alignmentHiBlkSize == untrLclHi);
-                zeroReg = genGetZeroReg(initReg, ref initRegZeroed);
-                var i = 0;
-                for (; i + REGSIZE_BYTES <= alignmentHiBlkSize; i += REGSIZE_BYTES)
+                else
                 {
-                    Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
+                    var alignmentBlkSize = blkSize & -Configuration.XMM_REGSIZE_BYTES;
+                    alignmentHiBlkSize = blkSize - alignmentBlkSize;
+                    alignedLclHi = untrLclLo + alignmentBlkSize;
+                    blkSize = alignmentBlkSize;
+                    assert(blkSize + alignmentHiBlkSize == untrLclHi - untrLclLo);
                 }
 
-#if TARGET_AMD64
-                assert((i == alignmentHiBlkSize) || (i + sizeof(int) == alignmentHiBlkSize));
-                if (i != alignmentHiBlkSize)
+                var maxSimdSize = _compiler.roundDownSimdSize((uint)blkSize);
+                // Both xarch targets bound the SIMD store size at 64 bytes.
+                assert((maxSimdSize >= Configuration.XMM_REGSIZE_BYTES) && (maxSimdSize <= 4 * Configuration.XMM_REGSIZE_BYTES));
+                // Three stores per loop iteration: use a loop only for at least two iterations.
+                if (blkSize < 6 * maxSimdSize)
                 {
-                    Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
-                    i += sizeof(int);
+                    // VEX/EVEX XORPS also clears the upper YMM/ZMM lanes.
+                    Emitter.emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSimdReg, zeroSimdReg, zeroSimdReg, INS_OPTS_NONE);
+                    assert((blkSize % Configuration.XMM_REGSIZE_BYTES) == 0);
+                    var regSize = _compiler.roundDownSimdSize((uint)blkSize);
+                    var lenRemaining = blkSize;
+                    while (lenRemaining > 0)
+                    {
+                        // For 112 bytes, two overlapping 64-byte stores replace 64+32+16.
+                        if ((regSize > lenRemaining) && !BitOperations.IsPow2(lenRemaining))
+                        {
+                            lenRemaining = regSize;
+                        }
+
+                        regSize = _compiler.roundDownSimdSize((uint)lenRemaining);
+                        assert(regSize >= Configuration.XMM_REGSIZE_BYTES);
+                        var ins = regSize > Configuration.XMM_REGSIZE_BYTES ? simdUnalignedMovIns() : simdMov;
+                        var offset = blkSize - lenRemaining;
+                        Emitter.emitIns_AR_R(ins, (emitAttr)regSize, zeroSimdReg, frameReg, alignedLclLo + offset);
+                        lenRemaining -= regSize;
+                    }
+                    assert(lenRemaining == 0);
                 }
-#endif
-                assert(i == alignmentHiBlkSize);
+                else
+                {
+                    Emitter.emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSimdReg, zeroSimdReg, zeroSimdReg, INS_OPTS_NONE);
+                    var extraSimd = blkSize % (Configuration.XMM_REGSIZE_BYTES * 3) / Configuration.XMM_REGSIZE_BYTES;
+                    if (extraSimd != 0)
+                    {
+                        blkSize -= Configuration.XMM_REGSIZE_BYTES;
+                        Emitter.emitIns_AR_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, alignedLclLo);
+                        if (extraSimd == 2)
+                        {
+                            blkSize -= Configuration.XMM_REGSIZE_BYTES;
+                            Emitter.emitIns_AR_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, alignedLclLo + Configuration.XMM_REGSIZE_BYTES);
+                        }
+                    }
+
+                    noway_assert((blkSize % (3 * Configuration.XMM_REGSIZE_BYTES)) == 0);
+                    assert(blkSize >= 3 * Configuration.XMM_REGSIZE_BYTES);
+                    assert(alignedLclHi - blkSize >= untrLclLo);
+                    assert(alignedLclHi - blkSize + 2 * Configuration.XMM_REGSIZE_BYTES < untrLclHi - Configuration.XMM_REGSIZE_BYTES);
+                    assert(alignedLclHi - 3 * Configuration.XMM_REGSIZE_BYTES + 2 * Configuration.XMM_REGSIZE_BYTES <= untrLclHi - Configuration.XMM_REGSIZE_BYTES);
+                    assert(alignedLclHi - (blkSize + extraSimd * Configuration.XMM_REGSIZE_BYTES) == alignedLclLo);
+
+                    Emitter.emitIns_R_I(INS_mov, EA_PTRSIZE, initReg, -(nint)blkSize);
+                    var loopHead = genCreateTempLabel();
+                    genDefineInlineTempLabel(loopHead);
+                    Emitter.emitIns_ARX_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, initReg, 1, alignedLclHi);
+                    Emitter.emitIns_ARX_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, initReg, 1, alignedLclHi + Configuration.XMM_REGSIZE_BYTES);
+                    Emitter.emitIns_ARX_R(simdMov, EA_16BYTE, zeroSimdReg, frameReg, initReg, 1,
+                        alignedLclHi + 2 * Configuration.XMM_REGSIZE_BYTES);
+                    Emitter.emitIns_R_I(INS_add, EA_PTRSIZE, initReg, 3 * Configuration.XMM_REGSIZE_BYTES);
+                    Emitter.emitIns_ShortJ(INS_jne, loopHead);
+                    initRegZeroed = true;
+                }
+
+                if (untrLclHi != alignedLclHi)
+                {
+                    assert((alignmentHiBlkSize > 0) && (alignmentHiBlkSize < Configuration.XMM_REGSIZE_BYTES));
+                    assert(alignedLclHi + alignmentHiBlkSize == untrLclHi);
+                    zeroReg = genGetZeroReg(initReg, ref initRegZeroed);
+                    var i = 0;
+                    for (; i + Configuration.REGSIZE_BYTES <= alignmentHiBlkSize; i += Configuration.REGSIZE_BYTES)
+                    {
+                        Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, alignedLclHi + i);
+                    }
+
+                    if (Configuration.TARGET_AMD64)
+                    {
+                        assert((i == alignmentHiBlkSize) || (i + sizeof(int) == alignmentHiBlkSize));
+                        if (i != alignmentHiBlkSize)
+                        {
+                            Emitter.emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, alignedLclHi + i);
+                            i += sizeof(int);
+                        }
+                    }
+                    assert(i == alignmentHiBlkSize);
+                }
             }
         }
-#endif
     }
-#endif
 }

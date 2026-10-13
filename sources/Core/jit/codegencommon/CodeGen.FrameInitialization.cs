@@ -13,22 +13,21 @@ public sealed partial class CodeGen
 
     public regMaskTP genGetParameterHomingTempRegisterCandidates()
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Parameter homing register selection requires AMD64.");
-#else
-#if HAS_MORE_THAN_64_REGISTERS
-        var calleeTrash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH, SRBM_MSK_CALLEE_TRASH);
-#elif TARGET_XARCH
-        var calleeTrash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH | SRBM_MSK_CALLEE_TRASH);
-#else
-        var calleeTrash = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Parameter homing register selection requires AMD64.");
+        }
+
+        var calleeTrash = Configuration.HAS_MORE_THAN_64_REGISTERS
+            ? new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH, SRBM_MSK_CALLEE_TRASH)
+            : Configuration.TARGET_XARCH
+                ? new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH | SRBM_MSK_CALLEE_TRASH)
+                : new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
         var regs = calleeTrash | _calleeRegArgMaskLiveIn | _regSet.rsGetModifiedRegsMask();
         // Reserved registers may be needed to address stack locals during homing.
         regs &= ~_regSet.rsMaskResvd;
 
         return regs;
-#endif
     }
 
     public void genCheckUseBlockInit()
@@ -94,7 +93,7 @@ public sealed partial class CodeGen
                                 if (!varDsc.lvIsInReg || varDsc.IsLiveInOutOfHandler)
                                 {
                                     initStkLclCnt = unchecked(initStkLclCnt +
-                                        (uint)(roundUp(_compiler.lvaLclStackHomeSize(varNum), TARGET_POINTER_SIZE) / sizeof(int)));
+                                        (uint)(roundUp(_compiler.lvaLclStackHomeSize(varNum), Configuration.TARGET_POINTER_SIZE) / sizeof(int)));
                                     counted = true;
                                 }
                             }
@@ -122,14 +121,12 @@ public sealed partial class CodeGen
                         JITDUMP($"must init a tracked V{varNum:D2} because it a struct with a GC ref\n");
                         mustInitThisVar = true;
                     }
-#if TARGET_WASM
-                    else if (hasGCPtr)
+                    else if (Configuration.TARGET_WASM && hasGCPtr)
                     {
                         // On wasm all GC vars are reported as untracked, so the slot must be zero-inited.
                         JITDUMP($"must init V{varNum:D2} because wasm reports tracked GC vars as untracked\n");
                         mustInitThisVar = true;
                     }
-#endif
                     else if (!isTracked)
                     {
                         assert(!hasGCPtr && !isTemp);
@@ -146,7 +143,7 @@ public sealed partial class CodeGen
                         if (!counted)
                         {
                             initStkLclCnt = unchecked(initStkLclCnt +
-                                (uint)(roundUp(_compiler.lvaLclStackHomeSize(varNum), TARGET_POINTER_SIZE) / sizeof(int)));
+                                (uint)(roundUp(_compiler.lvaLclStackHomeSize(varNum), Configuration.TARGET_POINTER_SIZE) / sizeof(int)));
                             counted = true;
                         }
                     }
@@ -170,22 +167,26 @@ public sealed partial class CodeGen
 
         // Compiler.fgVarNeedsExplicitZeroInit relies on this logic to find
         // structs that are guaranteed to be block initialized.
-#if TARGET_WASM
-        // On WASM we always use a single memory.fill for prolog zeroing.
-        UseBlockInit = InitStkLclCnt > 0;
-#elif TARGET_64BIT && !TARGET_AMD64
-        UseBlockInit = InitStkLclCnt > 8;
-#else
-        // AMD64 can clear using aligned SIMD so the threshold is lower,
-        // and clears in order which is better for auto-prefetching.
-        UseBlockInit = InitStkLclCnt > 4;
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            // On WASM we always use a single memory.fill for prolog zeroing.
+            UseBlockInit = InitStkLclCnt > 0;
+        }
+        else if (Configuration.TARGET_64BIT && !Configuration.TARGET_AMD64)
+        {
+            UseBlockInit = InitStkLclCnt > 8;
+        }
+        else
+        {
+            // AMD64 can clear using aligned SIMD so the threshold is lower,
+            // and clears in order which is better for auto-prefetching.
+            UseBlockInit = InitStkLclCnt > 4;
+        }
 
-#if TARGET_ARM
-        if (UseBlockInit)
+        if (Configuration.TARGET_ARM && UseBlockInit)
         {
             // Force spill R4/R5/R6 so they can be used during block initialization.
-            var maskCalleeRegArgMask = _calleeRegArgMaskLiveIn & RBM_ALLINT;
+            var maskCalleeRegArgMask = _calleeRegArgMaskLiveIn & RBM_ALLINT_ARM;
             var forceSpillRegCount = unchecked((int)(genCountBits(
                 maskCalleeRegArgMask & ~genPrespilledUnmappedRegs()) - 1));
             if (forceSpillRegCount > 0)
@@ -201,6 +202,5 @@ public sealed partial class CodeGen
                 _regSet.rsSetRegsModified(RBM_R6);
             }
         }
-#endif
     }
 }

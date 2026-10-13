@@ -7,15 +7,42 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
     public void genCodeForIncSaturate(GenTree tree)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Saturating increment generation requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            genCodeForIncSaturateArm64(tree);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            genCodeForIncSaturateArm(tree);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            genCodeForIncSaturateLoongArch64(tree);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            genCodeForIncSaturateRiscV64(tree);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Saturating increment generation is not implemented for this target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
         var targetReg = tree.RegNum;
         var targetType = tree.Type;
         var operand = tree.AsUnOp().Op1;
@@ -26,18 +53,20 @@ public sealed partial class CodeGen
         inst_RV_IV(INS_add, targetReg, 1, targetType.EmitActualSize);
         inst_RV_IV(INS_sbb, targetReg, 0, targetType.EmitActualSize);
         genProduceReg(tree);
-#endif
     }
-#endif
 
     public void genCodeForBitOp(GenTreeOp tree)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Bit modification generation requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Bit modification generation requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper is GT_BIT_SET or GT_BIT_CLEAR or GT_BIT_INVERT);
         var op1 = tree.Op1;
         var op2 = tree.Op2;
@@ -53,50 +82,64 @@ public sealed partial class CodeGen
         inst_Mov(targetType, targetReg, op1.RegNum, canSkip: true);
         Emitter.emitIns_R_R(ins, targetType.EmitSize, targetReg, op2.RegNum);
         genProduceReg(tree);
-#endif
     }
 
-#if !TARGET_WASM
     public void genCodeForPhysReg(GenTreePhysReg tree)
     {
-#if TARGET_ARM || TARGET_ARM64
-        assert(tree.Oper == GT_PHYSREG);
-#if TARGET_ARM64
-        if (varTypeIsMask(tree.Type))
+        if (Configuration.TARGET_ARM || Configuration.TARGET_ARM64)
         {
-            assert(tree.SrcReg == REG_FFR);
-            Emitter.emitIns_R(INS_sve_rdffr, EA_SCALABLE, tree.RegNum);
+            assert(tree.Oper == GT_PHYSREG);
+            if (Configuration.TARGET_ARM64 && varTypeIsMask(tree.Type))
+            {
+                assert(tree.SrcReg == REG_FFR);
+                Emitter.emitIns_R(INS_sve_rdffr, EA_SCALABLE_ARM64, tree.RegNum);
+            }
+            else
+            {
+                inst_Mov(tree.Type, tree.RegNum, tree.SrcReg, canSkip: true);
+                genTransferRegGCState(tree.RegNum, tree.SrcReg);
+            }
+
+            genProduceReg(tree);
+            return;
         }
-        else
-#endif
+
+        if (Configuration.TARGET_LOONGARCH64)
         {
-            inst_Mov(tree.Type, tree.RegNum, tree.SrcReg, canSkip: true);
-            genTransferRegGCState(tree.RegNum, tree.SrcReg);
+            genCodeForPhysRegLoongArch64(tree);
+            return;
         }
-        genProduceReg(tree);
-#elif TARGET_LOONGARCH64
-        genCodeForPhysRegLoongArch64(tree);
-#elif TARGET_RISCV64
-        genCodeForPhysRegRiscV64(tree);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Physical register generation requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            genCodeForPhysRegRiscV64(tree);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Physical register generation is not implemented for this target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.Oper == GT_PHYSREG);
         inst_Mov(tree.Type, tree.RegNum, tree.SrcReg, canSkip: true);
         genTransferRegGCState(tree.RegNum, tree.SrcReg);
         genProduceReg(tree);
-#endif
     }
-#endif
 
     public void genCodeForCatchArg(GenTree tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         var block = _compiler.compCurBB;
         assert(block is not null);
         noway_assert(handlerGetsXcptnObj(block.CatchType));
@@ -112,17 +155,24 @@ public sealed partial class CodeGen
 
     public void genCodeForReuseVal(GenTree tree)
     {
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
+
         assert(tree.IsReuseRegVal);
-#if FEATURE_MASKED_HW_INTRINSICS
-        assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL or GT_CNS_VEC or GT_CNS_MSK);
-#elif FEATURE_SIMD
-        assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL or GT_CNS_VEC);
-#else
-        assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL);
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL or GT_CNS_VEC or GT_CNS_MSK);
+        }
+        else if (Configuration.FEATURE_SIMD)
+        {
+            assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL or GT_CNS_VEC);
+        }
+        else
+        {
+            assert(tree.Oper is GT_CNS_INT or GT_CNS_DBL);
+        }
         JITDUMP("  TreeNode is marked ReuseReg\n");
 
         // An integer zero can reuse a formerly GC-tracked null register.

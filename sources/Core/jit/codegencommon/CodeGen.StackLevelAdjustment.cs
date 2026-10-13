@@ -9,14 +9,21 @@ public sealed partial class CodeGen
 {
     private void genAdjustStackLevel(BasicBlock block)
     {
-#if !FEATURE_FIXED_OUT_ARGS && !TARGET_WASM
-#if UNIX_X86_ABI
-        if (IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block))
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-level adjustment is not supported on Wasm.");
+        }
+
+        if (Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            return;
+        }
+
+        if (Configuration.UNIX_X86_ABI && IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block))
         {
             // A throw reached while pushing arguments may have an unaligned SP even with a frame pointer.
-            Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, unchecked(-genSPtoFPdelta));
+            Emitter.emitIns_R_AR(INS_lea, EA_PTRSIZE, TargetRuntimeMetadata.StackPointerBaseRegister, TargetRuntimeMetadata.FramePointerBaseRegister, unchecked(-genSPtoFPdelta));
         }
-#endif
 
         if (!IsFramePointerUsed && _compiler.fgIsThrowHlpBlk(block))
         {
@@ -25,15 +32,17 @@ public sealed partial class CodeGen
 
             if (genStackLevel != 0)
             {
-#if TARGET_X86
-                Emitter.emitMarkStackLvl(genStackLevel);
-                inst_RV_IV(INS_add, REG_SPBASE, unchecked((nint)genStackLevel), EA_PTRSIZE);
-                SetStackLevel(0);
-#else
-                NYI("Need emitMarkStackLvl()");
-#endif
+                if (Configuration.TARGET_X86)
+                {
+                    Emitter.emitMarkStackLvl(genStackLevel);
+                    inst_RV_IV(INS_add, TargetRuntimeMetadata.StackPointerBaseRegister, unchecked((nint)genStackLevel), EA_PTRSIZE);
+                    SetStackLevel(0);
+                }
+                else
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Stack-level marking is not available for this target.");
+                }
             }
         }
-#endif
     }
 }

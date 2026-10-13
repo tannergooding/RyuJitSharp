@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if !TARGET_WASM && SWIFT_SUPPORT
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public void genHomeSwiftStructStackParameters()
     {
+        if (!Configuration.SWIFT_SUPPORT)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Swift stack parameter homing is not supported on this target.");
+        }
+
         for (var localNumber = 0; localNumber < _compiler.info.compArgsCount; localNumber++)
         {
             if ((localNumber == _compiler.lvaSwiftSelfArg) || (localNumber == _compiler.lvaSwiftIndirectResultArg))
@@ -35,10 +39,9 @@ public sealed partial class CodeGen
             {
                 if (segment.IsPassedOnStack)
                 {
-                    genHomeStackSegment(localNumber, in segment, REG_SCRATCH);
+                    genHomeStackSegment(localNumber, in segment, TargetRuntimeMetadata.ScratchRegister);
                 }
             }
         }
     }
 }
-#endif

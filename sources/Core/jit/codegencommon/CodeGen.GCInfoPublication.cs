@@ -9,26 +9,17 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if JIT32_GCENCODER
-    internal unsafe void* genCreateAndStoreGCInfo(uint codeSize, uint prologSize, uint epilogSize
-#if DEBUG
-        , void* codePtr
-#endif
-        )
-    {
-        return genCreateAndStoreGCInfoJIT32(codeSize, prologSize, epilogSize
-#if DEBUG
-            , codePtr
-#endif
-            );
-    }
-
     internal unsafe void* genCreateAndStoreGCInfoJIT32(uint codeSize, uint prologSize, uint epilogSize
 #if DEBUG
         , void* codePtr
 #endif
         )
     {
+        if (!Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "The JIT32 GC encoder requires X86.");
+        }
+
 #pragma warning disable IDE0007
         byte* headerBuf = stackalloc byte[64];
 #pragma warning restore IDE0007
@@ -103,41 +94,67 @@ public sealed partial class CodeGen
 
         return infoPtr;
     }
-#else
+
     internal unsafe void genCreateAndStoreGCInfo(uint codeSize, uint prologSize, uint epilogSize
 #if DEBUG
         , void* codePtr
 #endif
         )
     {
-#if TARGET_WASM
-        genCreateAndStoreGCInfoWasm();
-#elif TARGET_ARM || TARGET_ARMARCH
-        genCreateAndStoreGCInfoArmArch(codeSize, prologSize, epilogSize
+        if (Configuration.JIT32_GCENCODER)
+        {
+            _ = genCreateAndStoreGCInfoJIT32(codeSize, prologSize, epilogSize
+#if DEBUG
+                , codePtr
+#endif
+                );
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            genCreateAndStoreGCInfoWasm();
+            return;
+        }
+
+        if (Configuration.TARGET_ARMARCH)
+        {
+            genCreateAndStoreGCInfoArmArch(codeSize, prologSize, epilogSize
 #if DEBUG
             , codePtr
 #endif
             );
-#elif TARGET_RISCV64
-        genCreateAndStoreGCInfoRiscV64(codeSize, prologSize, epilogSize
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            genCreateAndStoreGCInfoRiscV64(codeSize, prologSize, epilogSize
 #if DEBUG
             , codePtr
 #endif
             );
-#elif TARGET_LOONGARCH64
-        genCreateAndStoreGCInfoLoongArch64(codeSize, prologSize, epilogSize);
-#elif !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires Windows AMD64.");
-#else
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            genCreateAndStoreGCInfoLoongArch64(codeSize, prologSize, epilogSize);
+            return;
+        }
+
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication is unsupported for this target.");
+        }
+
         genCreateAndStoreGCInfoX64(codeSize, prologSize
 #if DEBUG
             , codePtr
 #endif
             );
-#endif
     }
 
-#if TARGET_RISCV64
     internal unsafe void genCreateAndStoreGCInfoRiscV64(uint codeSize, uint prologSize, uint epilogSize
 #if DEBUG
         , void* codePtr
@@ -171,9 +188,7 @@ public sealed partial class CodeGen
         _compiler.compInfoBlkAddr = encoder.Emit();
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
     }
-#endif
 
-#if TARGET_ARM || TARGET_ARMARCH
     internal unsafe void genCreateAndStoreGCInfoArmArch(uint codeSize, uint prologSize, uint epilogSize
 #if DEBUG
         , void* codePtr
@@ -190,42 +205,41 @@ public sealed partial class CodeGen
         GCInfo.gcMakeRegPtrTable(encoder, codeSize, prologSize,
             GCInfo.MakeRegPtrMode.MAKE_REG_PTR_MODE_DO_WORK, ref callCount);
 
-#if TARGET_ARM64
-        if (_compiler.opts.compDbgEnC)
+        if (Configuration.TARGET_ARM64 && _compiler.opts.compDbgEnC)
         {
             // Preserve the return address, saved frame pointer, varargs callee-saves,
             // synchronized-method state, and async contexts for EnC remapping.
-            var preservedAreaSize = (2 + BitOperations.PopCount((ulong)SRBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
+            var preservedAreaSize = (2 + BitOperations.PopCount((ulong)TargetRuntimeMetadata.EncodedCalleeSavedMask)) * Configuration.REGSIZE_BYTES;
             if (_compiler.info.compIsVarArgs)
             {
-                preservedAreaSize += MAX_REG_ARG * REGSIZE_BYTES;
+                preservedAreaSize += Configuration.MAX_REG_ARG * Configuration.REGSIZE_BYTES;
             }
             if ((_compiler.info.compFlags & CORINFO_FLG_SYNCH) != 0)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaMonAcquired) == -preservedAreaSize);
             }
             if (_compiler.lvaResumedIndicator != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaResumedIndicator) ==
                     -preservedAreaSize);
             }
             if (_compiler.lvaAsyncThreadObjectVar != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaAsyncThreadObjectVar) ==
                     -preservedAreaSize);
             }
             if (_compiler.lvaAsyncExecutionContextVar != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaAsyncExecutionContextVar) ==
                     -preservedAreaSize);
             }
             if (_compiler.lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaAsyncSynchronizationContextVar) ==
                     -preservedAreaSize);
             }
@@ -236,8 +250,6 @@ public sealed partial class CodeGen
             JITDUMP($"  EnC preserved area size = {preservedAreaSize}\n");
             JITDUMP($"  Fixed stack frame size = {genTotalFrameSize}\n");
         }
-#endif
-
         if (_compiler.opts.IsReversePInvoke)
         {
             var reversePInvokeFrameVarNumber = _compiler.lvaReversePInvokeFrameVar;
@@ -250,7 +262,6 @@ public sealed partial class CodeGen
         _compiler.compInfoBlkAddr = encoder.Emit();
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
     }
-#endif
 
     internal unsafe void genCreateAndStoreGCInfoX64(uint codeSize, uint prologSize
 #if DEBUG
@@ -258,9 +269,11 @@ public sealed partial class CodeGen
 #endif
         )
     {
-#if !TARGET_AMD64
-        throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires Windows AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "GC-info publication requires AMD64.");
+        }
+
         using var encoder = new GcInfoEncoder(_compiler.info.compCompHnd, _compiler.info.compMethodInfo);
         GCInfo.gcInfoBlockHdrSave(encoder, codeSize, prologSize);
 
@@ -276,30 +289,30 @@ public sealed partial class CodeGen
         {
             // The EnC frame header contains the return address, saved frame pointer
             // and callee-saves, followed by synchronized and async state when present.
-            var preservedAreaSize = (2 + BitOperations.PopCount((ulong)SRBM_ENC_CALLEE_SAVED)) * REGSIZE_BYTES;
+            var preservedAreaSize = (2 + BitOperations.PopCount((ulong)TargetRuntimeMetadata.EncodedCalleeSavedMask)) * Configuration.REGSIZE_BYTES;
             if ((_compiler.info.compFlags & CORINFO_FLG_SYNCH) != 0)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaMonAcquired) == -preservedAreaSize);
             }
             if (_compiler.lvaResumedIndicator != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaResumedIndicator) == -preservedAreaSize);
             }
             if (_compiler.lvaAsyncThreadObjectVar != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaAsyncThreadObjectVar) == -preservedAreaSize);
             }
             if (_compiler.lvaAsyncExecutionContextVar != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaAsyncExecutionContextVar) == -preservedAreaSize);
             }
             if (_compiler.lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
             {
-                preservedAreaSize += TARGET_POINTER_SIZE;
+                preservedAreaSize += Configuration.TARGET_POINTER_SIZE;
                 assert(_compiler.lvaGetCallerSPRelativeOffset(_compiler.lvaAsyncSynchronizationContextVar) == -preservedAreaSize);
             }
 
@@ -319,7 +332,5 @@ public sealed partial class CodeGen
         encoder.Build();
         _compiler.compInfoBlkAddr = encoder.Emit();
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
-#endif
     }
-#endif
 }

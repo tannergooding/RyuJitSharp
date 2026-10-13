@@ -9,12 +9,15 @@ public sealed partial class CodeGen
 {
     public void genCallPlaceRegArgs(GenTreeCall call)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Call register argument placement requires a native target.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Call register argument placement requires a native target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+        }
 
         foreach (var arg in call.Args.LateArgs)
         {
@@ -65,25 +68,25 @@ public sealed partial class CodeGen
             assert(!abiInfo.HasAnyRegisterSegment);
         }
 
-#if WINDOWS_AMD64_ABI
-        // Windows AMD64 varargs duplicate floating-point arguments in the corresponding
-        // integer registers after all arguments have reached their ABI registers.
-        if (call.Args.IsVarArgs)
+        if (Configuration.WINDOWS_AMD64_ABI)
         {
-            foreach (var arg in call.Args.Args)
+            // Windows AMD64 varargs duplicate floating-point arguments in the corresponding
+            // integer registers after all arguments have reached their ABI registers.
+            if (call.Args.IsVarArgs)
             {
-                foreach (ref readonly var segment in arg.AbiInfo.Segments)
+                foreach (var arg in call.Args.Args)
                 {
-                    if (segment.IsPassedInRegister && genIsValidFloatReg(segment.Register))
+                    foreach (ref readonly var segment in arg.AbiInfo.Segments)
                     {
-                        var targetReg = _compiler.getCallArgIntRegister(segment.Register);
-                        inst_Mov(TYP_LONG, targetReg, segment.Register, canSkip: false,
-                            size: TYP_I_IMPL.EmitActualSize);
+                        if (segment.IsPassedInRegister && genIsValidFloatReg(segment.Register))
+                        {
+                            var targetReg = _compiler.getCallArgIntRegister(segment.Register);
+                            inst_Mov(TYP_LONG, targetReg, segment.Register, canSkip: false,
+                                size: TYP_I_IMPL.EmitActualSize);
+                        }
                     }
                 }
             }
         }
-#endif
-#endif
     }
 }

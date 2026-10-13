@@ -12,9 +12,13 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_ARM
     private regMaskTP genPrespilledUnmappedRegs()
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Prespilled unmapped registers are only supported on ARM.");
+        }
+
         var regs = _regSet.rsMaskPreSpillRegs(false);
 
         if (_compiler._paramRegLocalMappings is not null)
@@ -29,10 +33,52 @@ public sealed partial class CodeGen
 
         return regs;
     }
-#endif
 
-#if TARGET_RISCV64
     private bool genInstrWithConstant(instruction ins, emitAttr attr, regNumber reg1,
+        regNumber reg2, nint imm, regNumber tmpReg, bool inUnwindRegion = false)
+    {
+        if (Configuration.TARGET_RISCV64)
+        {
+            return genInstrWithConstantRiscV64(ins, attr, reg1, reg2, imm, tmpReg, inUnwindRegion);
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return genInstrWithConstantLoongArch64(ins, attr, reg1, reg2, imm, tmpReg, inUnwindRegion);
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return genInstrWithConstantArm64(ins, attr, reg1, reg2, imm, tmpReg, inUnwindRegion);
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            if (inUnwindRegion)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Unwind-region immediate materialization is not implemented for ARM.");
+            }
+            return genInstrWithConstantArm(ins, attr, reg1, reg2, imm, tmpReg, INS_FLAGS_DONT_CARE);
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Immediate materialization is not implemented for this target.");
+    }
+
+    private bool genInstrWithConstant(instruction ins, emitAttr attr, regNumber reg1,
+        regNumber reg2, nint imm, regNumber tmpReg, insFlags flags)
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Instruction flags for immediate materialization are only supported on ARM.");
+        }
+
+        return genInstrWithConstantArm(ins, attr, reg1, reg2, imm, tmpReg, flags);
+    }
+
+    private bool genInstrWithConstantRiscV64(instruction ins, emitAttr attr, regNumber reg1,
         regNumber reg2, nint imm, regNumber tmpReg, bool inUnwindRegion = false)
     {
         var size = EA_SIZE(attr);
@@ -100,5 +146,4 @@ public sealed partial class CodeGen
 
         return immediateFits;
     }
-#endif
 }

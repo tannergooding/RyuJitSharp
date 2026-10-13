@@ -7,10 +7,22 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_LOONGARCH64
     public void genFloatToFloatCast(GenTree treeNode)
     {
-#if TARGET_ARM
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            genFloatToFloatCastLoongArch64(treeNode.AsCast());
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            genFloatToFloatCastWasm(treeNode);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
         var cast = treeNode.AsCast();
@@ -35,7 +47,9 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(cast);
-#elif TARGET_ARM64
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
         var cast = treeNode.AsCast();
@@ -60,7 +74,9 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(cast);
-#elif TARGET_RISCV64
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
 
@@ -92,12 +108,18 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(cast);
-#elif !TARGET_XARCH
+        }
+        else if (!Configuration.TARGET_XARCH)
+        {
         throw new FatalJitException(CORJIT_SKIPPED, "Floating casts outside xarch are not implemented.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        }
+        else
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                Emitter.RequireSupportedInstructionRecording();
+            }
+
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
         var cast = treeNode.AsCast();
@@ -134,14 +156,31 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(cast);
-#endif
+        }
     }
-#endif
 
-#if !TARGET_LOONGARCH64 && !TARGET_RISCV64
     public void genIntToFloatCast(GenTree treeNode)
     {
-#if TARGET_ARM
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            genIntToFloatCastLoongArch64(treeNode);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            genIntToFloatCastRiscV64(treeNode);
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            genIntToFloatCastWasm(treeNode);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
 
@@ -183,7 +222,9 @@ public sealed partial class CodeGen
         Emitter.emitIns_R_R(insVcvt, srcSize, targetReg, targetReg);
 
         genProduceReg(cast);
-#elif TARGET_ARM64
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
 
@@ -217,12 +258,18 @@ public sealed partial class CodeGen
         genConsumeOperands(cast);
         Emitter.emitIns_R_R(ins, emitActualTypeSize(dstType), targetReg, op1.RegNum, cvtOption);
         genProduceReg(cast);
-#elif !TARGET_XARCH
+        }
+        else if (!Configuration.TARGET_XARCH)
+        {
         throw new FatalJitException(CORJIT_SKIPPED, "Integral-to-floating casts outside xarch are not implemented.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
+        }
+        else
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                Emitter.RequireSupportedInstructionRecording();
+            }
+
         assert(treeNode.Oper is GT_CAST);
         assert(!treeNode.HasOverflowCheck);
         var cast = treeNode.AsCast();
@@ -294,9 +341,7 @@ public sealed partial class CodeGen
             var isRmw = !_compiler.canUseVexEncoding();
             inst_RV_RV_TT(ins, srcType.EmitSize, targetReg, targetReg, op1, isRmw, INS_OPTS_NONE);
         }
-
         genProduceReg(cast);
-#endif
     }
-#endif
+    }
 }

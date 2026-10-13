@@ -7,9 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if UNIX_X86_ABI
     private uint curNestedAlignment { get; set; }
-#endif
 
     public BasicBlock genCreateTempLabel()
     {
@@ -28,11 +26,14 @@ public sealed partial class CodeGen
         assert(_compiler.compCurBB is not null);
         block.CopyFlags(_compiler.compCurBB, BBF_COLD);
 #if DEBUG
-#if UNIX_X86_ABI
-        block.bbTgtStkDepth = unchecked((int)((genStackLevel - curNestedAlignment) / sizeof(int)));
-#else
-        block.bbTgtStkDepth = unchecked((int)(genStackLevel / sizeof(int)));
-#endif
+        if (Configuration.UNIX_X86_ABI)
+        {
+            block.bbTgtStkDepth = unchecked((int)((genStackLevel - curNestedAlignment) / sizeof(int)));
+        }
+        else
+        {
+            block.bbTgtStkDepth = unchecked((int)(genStackLevel / sizeof(int)));
+        }
 #endif
 
         return block;
@@ -54,7 +55,6 @@ public sealed partial class CodeGen
         label.bbEmitCookie = Emitter.emitAddLabel(GCInfo.gcVarPtrSetCur, GCInfo.gcRegGCrefSetCur, GCInfo.gcRegByrefSetCur);
     }
 
-#if !TARGET_WASM
     public void genDefineInlineTempLabel(BasicBlock label)
     {
         genLogLabel(label);
@@ -91,5 +91,4 @@ public sealed partial class CodeGen
         genDefineInlineTempLabel(genPendingCallLabel);
         genPendingCallLabel = null;
     }
-#endif
 }

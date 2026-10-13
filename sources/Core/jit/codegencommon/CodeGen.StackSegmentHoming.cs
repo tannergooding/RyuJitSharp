@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if !TARGET_WASM && (SWIFT_SUPPORT || TARGET_RISCV64 || TARGET_LOONGARCH64)
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -25,6 +24,12 @@ public sealed partial class CodeGen
     private unsafe void genHomeStackSegment(int lclNum, in AbiPassingSegment segment, regNumber initReg,
         bool* initRegStillZeroed)
     {
+        if (Configuration.TARGET_WASM ||
+            (!Configuration.SWIFT_SUPPORT && !Configuration.TARGET_RISCV64 && !Configuration.TARGET_LOONGARCH64))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Stack-segment homing is not supported for this target.");
+        }
+
         var loadType = TYP_UNDEF;
         switch (segment.Size)
         {
@@ -70,11 +75,14 @@ public sealed partial class CodeGen
             loadOffset -= genCallerSPtoInitialSPdelta;
         }
 
-#if TARGET_XARCH
-        Emitter.emitIns_R_AR(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset);
-#else
-        genInstrWithConstant(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset, initReg);
-#endif
+        if (Configuration.TARGET_XARCH)
+        {
+            Emitter.emitIns_R_AR(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset);
+        }
+        else
+        {
+            genInstrWithConstant(ins_Load(loadType), size, initReg, genFramePointerReg(), loadOffset, initReg);
+        }
         Emitter.emitIns_S_R(ins_Store(loadType), size, initReg, lclNum, segment.Offset);
         if (initRegStillZeroed != null)
         {
@@ -82,4 +90,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

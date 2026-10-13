@@ -31,8 +31,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        var info = new EmittedCallReturnInfo
-        {
+        var info = new EmittedCallReturnInfo {
             callILOffset = debugInfo.GetRoot().Location.Offset,
             returnLocation = new emitLocation(Emitter),
         };
@@ -40,10 +39,11 @@ public sealed partial class CodeGen
         if (retBuffer is not null)
         {
             var node = retBuffer.Node;
-#if HAS_FIXED_REGISTER_SET
-            assert(node.Oper.IsPutArg);
-            node = node.AsUnOp().Op1.SkipCopyOrReload;
-#endif
+            if (Configuration.HAS_FIXED_REGISTER_SET)
+            {
+                assert(node.Oper.IsPutArg);
+                node = node.AsUnOp().Op1.SkipCopyOrReload;
+            }
             if (node.Oper != GT_LCL_ADDR)
             {
                 return;
@@ -51,14 +51,15 @@ public sealed partial class CodeGen
 
             var local = node.AsLclVarCommon();
             var stackLevelBias = 0;
-#if TARGET_X86
-            stackLevelBias = unchecked((int)getCurrentStackLevel());
-            if (parameters.argSize > 0)
+            if (Configuration.TARGET_X86)
             {
-                // The call popped these arguments before the codegen stack level was adjusted.
-                stackLevelBias = unchecked(stackLevelBias - (int)parameters.argSize);
+                stackLevelBias = unchecked((int)getCurrentStackLevel());
+                if (parameters.argSize > 0)
+                {
+                    // The call popped these arguments before the codegen stack level was adjusted.
+                    stackLevelBias = unchecked(stackLevelBias - (int)parameters.argSize);
+                }
             }
-#endif
 
             if (_compiler.lvaIsUnknownSizeLocal(local.LclNum))
             {
@@ -78,47 +79,45 @@ public sealed partial class CodeGen
             var reg1 = returnDescriptor.GetAbiReturnReg(0, call.UnmanagedCallConv);
             var reg2 = returnDescriptor.GetAbiReturnReg(1, call.UnmanagedCallConv);
 
-#if TARGET_ARM64
-            if ((!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2)) &&
-                (returnDescriptor.GetReturnFieldOffset(1) != TARGET_POINTER_SIZE))
+            if (Configuration.TARGET_ARM64 &&
+                (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2)) &&
+                (returnDescriptor.GetReturnFieldOffset(1) != sizeof(long)))
             {
                 // The debugger's two-register representation assumes pointer-sized pieces.
                 return;
             }
-#endif
 
-#if !TARGET_64BIT
-            // FP-containing pairs require both 64-bit pieces and debugger FP-register support.
-            if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+            if (!Configuration.TARGET_64BIT ||
+                (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64))
             {
-                return;
+                // FP-containing pairs require both 64-bit pieces and debugger FP-register support.
+                if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
+                {
+                    return;
+                }
             }
-#elif !TARGET_AMD64 && !TARGET_ARM64
-            // Only AMD64 and ARM64 include FP registers in their debugger register encodings.
-            if (!genIsValidIntReg(reg1) || !genIsValidIntReg(reg2))
-            {
-                return;
-            }
-#endif
 
             info.returnValueLoc.storeVariableInRegisters(reg1, reg2);
         }
         else if (varTypeIsFloating(call.Type))
         {
-#if TARGET_X86
-            info.returnValueLoc.vlType = VLT_FPSTK;
-            info.returnValueLoc.vlFPstk.vlfReg = 0;
-#else
-            info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
-#endif
+            if (Configuration.TARGET_X86)
+            {
+                info.returnValueLoc.vlType = VLT_FPSTK;
+                info.returnValueLoc.vlFPstk.vlfReg = 0;
+            }
+            else
+            {
+                info.returnValueLoc.storeVariableInRegisters(TargetRuntimeMetadata.FloatingReturnRegister, REG_NA);
+            }
         }
         else if (varTypeUsesFloatReg(call.Type))
         {
-            info.returnValueLoc.storeVariableInRegisters(REG_FLOATRET, REG_NA);
+            info.returnValueLoc.storeVariableInRegisters(TargetRuntimeMetadata.FloatingReturnRegister, REG_NA);
         }
         else
         {
-            info.returnValueLoc.storeVariableInRegisters(REG_INTRET, REG_NA);
+            info.returnValueLoc.storeVariableInRegisters(TargetRuntimeMetadata.IntegerReturnRegister, REG_NA);
         }
 
         assert(emittedCallReturnInfo is not null);

@@ -9,28 +9,38 @@ public sealed partial class CodeGen
 {
     public void genPutArgReg(GenTreeUnOp tree)
     {
-#if TARGET_LOONGARCH64
-        genPutArgRegLoongArch64(tree);
-#elif TARGET_RISCV64
-        genPutArgRegRiscV64(tree);
-#elif !TARGET_XARCH && !TARGET_ARMARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register argument generation requires xarch.");
-#else
-#if TARGET_AMD64
-        Emitter.RequireSupportedInstructionRecording();
-#endif
-        assert(tree.Oper is GT_PUTARG_REG);
-        var targetType = tree.Type;
-        var targetReg = tree.RegNum;
-#if !UNIX_AMD64_ABI
-        assert(targetType != TYP_STRUCT);
-#endif
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            genPutArgRegLoongArch64(tree);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            genPutArgRegRiscV64(tree);
+        }
+        else if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARMARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register argument generation is not ported for this target.");
+        }
+        else
+        {
+            if (Configuration.TARGET_AMD64)
+            {
+                Emitter.RequireSupportedInstructionRecording();
+            }
 
-        var operand = tree.Op1;
-        _ = genConsumeReg(operand);
+            assert(tree.Oper is GT_PUTARG_REG);
+            var targetType = tree.Type;
+            var targetReg = tree.RegNum;
+            if (!Configuration.UNIX_AMD64_ABI)
+            {
+                assert(targetType != TYP_STRUCT);
+            }
 
-        inst_Mov(targetType, targetReg, operand.RegNum, canSkip: true);
-        genProduceReg(tree);
-#endif
+            var operand = tree.Op1;
+            _ = genConsumeReg(operand);
+
+            inst_Mov(targetType, targetReg, operand.RegNum, canSkip: true);
+            genProduceReg(tree);
+        }
     }
 }

@@ -9,58 +9,98 @@ public sealed partial class CodeGen
 {
     public void genCallFinally(BasicBlock block)
     {
-#if TARGET_ARM
-        assert(block.Kind == BBJ_CALLFINALLY);
-        var nextBlock = block.Next;
-
-        if (block.HasFlag(BBF_RETLESS_CALL))
+        if (Configuration.TARGET_ARM)
         {
-            Emitter.emitIns_J(INS_bl, block.Target);
+            assert(block.Kind == BBJ_CALLFINALLY);
+            var nextBlock = block.Next;
 
-            if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+            if (block.HasFlag(BBF_RETLESS_CALL))
             {
-                instGen(INS_BREAKPOINT);
-            }
-        }
-        else
-        {
-            Emitter.emitDisableGC();
-            Emitter.emitIns_J(INS_bl, block.Target);
+                Emitter.emitIns_J(INS_bl, block.Target);
 
-            assert(nextBlock is not null);
-            assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
-            var finallyContinuation = nextBlock.Target;
-            if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
-            {
-                instGen(INS_nop);
+                if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+                {
+                    instGen(INS_BREAKPOINT);
+                }
             }
             else
             {
-                Emitter.emitIns_J(INS_b, finallyContinuation);
+                Emitter.emitDisableGC();
+                Emitter.emitIns_J(INS_bl, block.Target);
+
+                assert(nextBlock is not null);
+                assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
+                var finallyContinuation = nextBlock.Target;
+                if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
+                {
+                    instGen(INS_nop);
+                }
+                else
+                {
+                    Emitter.emitIns_J(INS_b, finallyContinuation);
+                }
+
+                Emitter.emitEnableGC();
             }
-
-            Emitter.emitEnableGC();
         }
-#elif TARGET_ARM64
-        Emitter.RequireSupportedInstructionRecording();
-        assert(block.Kind == BBJ_CALLFINALLY);
-        var nextBlock = block.Next;
-
-        if (block.HasFlag(BBF_RETLESS_CALL))
+        else if (Configuration.TARGET_ARM64)
         {
-            Emitter.emitIns_J(INS_bl_local, block.Target);
+            Emitter.RequireSupportedInstructionRecording();
+            assert(block.Kind == BBJ_CALLFINALLY);
+            var nextBlock = block.Next;
 
-            // Keep the call's return address in its EH region for unwind lookup.
-            if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+            if (block.HasFlag(BBF_RETLESS_CALL))
             {
-                instGen(INS_BREAKPOINT);
+                Emitter.emitIns_J(INS_bl_local, block.Target);
+
+                // Keep the call's return address in its EH region for unwind lookup.
+                if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+                {
+                    instGen(INS_BREAKPOINT);
+                }
+            }
+            else
+            {
+                // The handler's last uses are not represented by liveness at this call site.
+                Emitter.emitDisableGC();
+                Emitter.emitIns_J(INS_bl_local, block.Target);
+
+                assert(nextBlock is not null);
+                assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
+                var finallyContinuation = nextBlock.Target;
+                if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
+                {
+                    // Keep a return address in this EH region for stack walking from the handler.
+                    instGen(INS_nop);
+                }
+                else
+                {
+                    inst_JMP(EJ_jmp, finallyContinuation);
+                }
+
+                Emitter.emitEnableGC();
             }
         }
-        else
+        else if (Configuration.TARGET_RISCV64)
         {
-            // The handler's last uses are not represented by liveness at this call site.
+            assert(block.Kind == BBJ_CALLFINALLY);
+            var nextBlock = block.Next;
+
+            if (block.HasFlag(BBF_RETLESS_CALL))
+            {
+                Emitter.emitIns_J(INS_jal, block.Target);
+
+                if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+                {
+                    instGen(INS_ebreak);
+                }
+
+                return;
+            }
+
+            // Liveness after this call cannot represent last uses in the handler.
             Emitter.emitDisableGC();
-            Emitter.emitIns_J(INS_bl_local, block.Target);
+            Emitter.emitIns_J(INS_jal, block.Target);
 
             assert(nextBlock is not null);
             assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
@@ -77,110 +117,97 @@ public sealed partial class CodeGen
 
             Emitter.emitEnableGC();
         }
-#elif TARGET_RISCV64
-        assert(block.Kind == BBJ_CALLFINALLY);
-        var nextBlock = block.Next;
-
-        if (block.HasFlag(BBF_RETLESS_CALL))
+        else if (Configuration.TARGET_WASM)
         {
-            Emitter.emitIns_J(INS_jal, block.Target);
-
-            if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
-            {
-                instGen(INS_ebreak);
-            }
-
-            return;
+            genCallFinallyWasm(block);
         }
-
-        // Liveness after this call cannot represent last uses in the handler.
-        Emitter.emitDisableGC();
-        Emitter.emitIns_J(INS_jal, block.Target);
-
-        assert(nextBlock is not null);
-        assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
-        var finallyContinuation = nextBlock.Target;
-        if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
+        else if (Configuration.TARGET_LOONGARCH64)
         {
-            // Keep a return address in this EH region for stack walking from the handler.
-            instGen(INS_nop);
+            genCallFinallyLoongArch64(block);
+        }
+        else if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Finally-call generation is not supported by this dispatcher.");
         }
         else
         {
-            inst_JMP(EJ_jmp, finallyContinuation);
-        }
+            Emitter.RequireSupportedInstructionRecording();
+            assert(block.Kind == BBJ_CALLFINALLY);
+            var nextBlock = block.Next;
 
-        Emitter.emitEnableGC();
-#elif TARGET_WASM
-        genCallFinallyWasm(block);
-#elif TARGET_LOONGARCH64
-        genCallFinallyLoongArch64(block);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Finally-call generation requires xarch.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
-        assert(block.Kind == BBJ_CALLFINALLY);
-        var nextBlock = block.Next;
-
-        if (block.HasFlag(BBF_RETLESS_CALL))
-        {
-            Emitter.emitIns_J(INS_call, block.Target);
-
-            // The unreachable breakpoint keeps the call's return address inside
-            // its EH region for unwind lookup, including at the end of the code.
-            if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+            if (block.HasFlag(BBF_RETLESS_CALL))
             {
-                instGen(INS_BREAKPOINT);
-            }
-        }
-        else
-        {
-            // Liveness after the finally call cannot describe last uses in the
-            // handler. Keep the call and its continuation instruction non-GC.
-            Emitter.emitDisableGC();
-            Emitter.emitIns_J(INS_call, block.Target);
+                Emitter.emitIns_J(INS_call, block.Target);
 
-            assert(nextBlock is not null);
-            assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
-            var finallyContinuation = nextBlock.Target;
-            if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
-            {
-                // Stack walking from the handler still needs a return address
-                // in this special EH region even when the continuation follows.
-                instGen(INS_nop);
+                // The unreachable breakpoint keeps the call's return address inside
+                // its EH region for unwind lookup, including at the end of the code.
+                if ((nextBlock is null) || !BasicBlock.sameEHRegion(block, nextBlock))
+                {
+                    instGen(INS_BREAKPOINT);
+                }
             }
             else
             {
-                inst_JMP(EJ_jmp, finallyContinuation);
-            }
+                // Liveness after the finally call cannot describe last uses in the
+                // handler. Keep the call and its continuation instruction non-GC.
+                Emitter.emitDisableGC();
+                Emitter.emitIns_J(INS_call, block.Target);
 
-            Emitter.emitEnableGC();
+                assert(nextBlock is not null);
+                assert(nextBlock.Kind == BBJ_CALLFINALLYRET);
+                var finallyContinuation = nextBlock.Target;
+                if ((nextBlock.Next == finallyContinuation) && !_compiler.fgInDifferentRegions(nextBlock, finallyContinuation))
+                {
+                    // Stack walking from the handler still needs a return address
+                    // in this special EH region even when the continuation follows.
+                    instGen(INS_nop);
+                }
+                else
+                {
+                    inst_JMP(EJ_jmp, finallyContinuation);
+                }
+
+                Emitter.emitEnableGC();
+            }
         }
-#endif
     }
 
     public void genEHCatchRet(BasicBlock block)
     {
-#if TARGET_ARM
-        genMov32RelocatableDisplacement(block.Target, REG_INTRET);
-#elif TARGET_ARM64
-        Emitter.RequireSupportedInstructionRecording();
-        // The emitter selects ADR or ADRP+ADD after laying out the target.
-        Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, block.Target, REG_INTRET);
-#elif TARGET_WASM
-        // TODO-WASM: return the actual ResumeIP here?
-        // The runtime expects a return value from a catch funclet,
-        // but nothing will depend on it.
-        GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, 0);
-#elif TARGET_RISCV64
-        Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, block.Target, REG_INTRET);
-#elif TARGET_LOONGARCH64
-        genEHCatchRetLoongArch64(block);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation requires xarch.");
-#else
-        Emitter.RequireSupportedInstructionRecording();
-        Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE | EA_DSP_RELOC_FLG, block.Target, REG_INTRET);
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            genMov32RelocatableDisplacement(block.Target, REG_ARM32_R0);
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+            // The emitter selects ADR or ADRP+ADD after laying out the target.
+            Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, block.Target, REG_ARM64_R0);
+        }
+        else if (Configuration.TARGET_WASM)
+        {
+            // TODO-WASM: return the actual ResumeIP here?
+            // The runtime expects a return value from a catch funclet,
+            // but nothing will depend on it.
+            GetEmitter().emitIns_I(INS_i32_const, EA_4BYTE, 0);
+        }
+        else if (Configuration.TARGET_RISCV64)
+        {
+            Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE, block.Target, REG_RISCV64_A0);
+        }
+        else if (Configuration.TARGET_LOONGARCH64)
+        {
+            genEHCatchRetLoongArch64(block);
+        }
+        else if (Configuration.TARGET_XARCH)
+        {
+            Emitter.RequireSupportedInstructionRecording();
+            var intReturnReg = Configuration.TARGET_X86 ? REG_X86_EAX : REG_X64_RAX;
+            Emitter.emitIns_R_L(INS_lea, EA_PTRSIZE | EA_DSP_RELOC_FLG, block.Target, intReturnReg);
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Catch-return generation is not supported by this dispatcher.");
+        }
     }
 }

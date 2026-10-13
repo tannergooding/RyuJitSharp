@@ -7,9 +7,20 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if !TARGET_WASM
     public unsafe void genEnregisterOSRArgsAndLocals(regNumber initReg, ref bool initRegZeroed)
     {
+        if (Configuration.TARGET_WASM)
+        {
+            genEnregisterOSRArgsAndLocalsWasm(initReg, ref initRegZeroed);
+            return;
+        }
+
+        if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_ARM64 &&
+            !Configuration.TARGET_LOONGARCH64 && !Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "OSR local homing is not ported for this target.");
+        }
+
         assert(_compiler.opts.IsOSR);
         var patchpoint = _compiler.info.compPatchpointInfo;
         assert(patchpoint->NumberOfLocals == _compiler.info.compLocalsCount);
@@ -51,76 +62,79 @@ public sealed partial class CodeGen
             var size = localType.EmitActualSize;
             var tier0Offset = _compiler.lvaOSRLocalTier0FrameOffset(localNumber) + fieldOffset;
 
-#if TARGET_AMD64
-            // Tier0's FP-relative slot is reached via the original frame size,
-            // plus either the OSR saved FP or this frame's SP-to-FP delta.
-            var offset = originalFrameSize + tier0Offset;
-            if (IsFramePointerUsed)
+            if (Configuration.TARGET_AMD64)
             {
-                offset += TARGET_POINTER_SIZE;
+                // Tier0's FP-relative slot is reached via the original frame size,
+                // plus either the OSR saved FP or this frame's SP-to-FP delta.
+                var offset = originalFrameSize + tier0Offset;
+                if (IsFramePointerUsed)
+                {
+                    offset += Configuration.TARGET_POINTER_SIZE;
+                }
+                else
+                {
+                    offset += genSPtoFPdelta;
+                }
+
+#if DEBUG
+                if (_verbose)
+                {
+                    jitprintf($"---OSR--- V{varNum:D2} (reg) old rbp offset {tier0Offset} old frame " +
+                        $"{originalFrameSize} this frame sp-fp {genSPtoFPdelta} new offset {offset} (0x{offset:x2})\n");
+                }
+#endif
+                Emitter.emitIns_R_AR(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset);
             }
             else
             {
-                offset += genSPtoFPdelta;
+                // Patchpoint offset is from top of Tier0 frame. Convert through the
+                // bottoms of both frames, then subtract the OSR SP-to-FP delta.
+                var tier0FrameSize = patchpoint->TotalFrameSize;
+                var osrFrameSize = genTotalFrameSize;
+                var osrSpToFpDelta = genSPtoFPdelta;
+                var offset = tier0Offset + tier0FrameSize + osrFrameSize - osrSpToFpDelta;
+
+                JITDUMP($"---OSR--- V{varNum:D2} (reg) Tier0 virtual offset {tier0Offset} OSR frame size " +
+                    $"{osrFrameSize} OSR sp-fp delta {osrSpToFpDelta} total offset {offset} (0x{offset:x})\n");
+
+                genInstrWithConstant(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset, initReg);
+                initRegZeroed = false;
             }
-
-#if DEBUG
-            if (_verbose)
-            {
-                jitprintf($"---OSR--- V{varNum:D2} (reg) old rbp offset {tier0Offset} old frame " +
-                    $"{originalFrameSize} this frame sp-fp {genSPtoFPdelta} new offset {offset} (0x{offset:x2})\n");
-            }
-#endif
-            Emitter.emitIns_R_AR(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset);
-#elif TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-            // Patchpoint offset is from top of Tier0 frame. Convert through the
-            // bottoms of both frames, then subtract the OSR SP-to-FP delta.
-            var tier0FrameSize = patchpoint->TotalFrameSize;
-            var osrFrameSize = genTotalFrameSize;
-            var osrSpToFpDelta = genSPtoFPdelta;
-            var offset = tier0Offset + tier0FrameSize + osrFrameSize - osrSpToFpDelta;
-
-            JITDUMP($"---OSR--- V{varNum:D2} (reg) Tier0 virtual offset {tier0Offset} OSR frame size " +
-                $"{osrFrameSize} OSR sp-fp delta {osrSpToFpDelta} total offset {offset} (0x{offset:x})\n");
-
-            genInstrWithConstant(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset, initReg);
-            initRegZeroed = false;
-#endif
         }
     }
-#endif
 
     public void genHomeStackPartOfSplitParameter(regNumber initReg, ref bool initRegStillZeroed)
     {
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
-        for (var localNumber = 0; localNumber < _compiler.info.compArgsCount; localNumber++)
+        if (Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64)
         {
-            ref var local = ref _compiler.lvaGetDesc(localNumber);
-            if (!local.lvOnFrame || (local.Type != TYP_STRUCT))
+            for (var localNumber = 0; localNumber < _compiler.info.compArgsCount; localNumber++)
             {
-                continue;
-            }
-
-            ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
-            if (abiInfo.IsSplitAcrossRegistersAndStack)
-            {
-                JITDUMP($"Homing stack part of split parameter V{localNumber:D2}\n");
-                assert(abiInfo.NumSegments == 2);
-                assert(abiInfo.Segments[0].Register == REG_ARG_LAST);
-                assert(abiInfo.Segments[1].StackOffset == 0);
-                ref readonly var segment = ref abiInfo.Segments[1];
-
-                genHomeStackSegment(localNumber, in segment, initReg, ref initRegStillZeroed);
-#if DEBUG
-                for (localNumber += 1; localNumber < _compiler.info.compArgsCount; localNumber++)
+                ref var local = ref _compiler.lvaGetDesc(localNumber);
+                if (!local.lvOnFrame || (local.Type != TYP_STRUCT))
                 {
-                    ref readonly var otherAbiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
-                    assert(!otherAbiInfo.IsSplitAcrossRegistersAndStack);
+                    continue;
                 }
+
+                ref readonly var abiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
+                if (abiInfo.IsSplitAcrossRegistersAndStack)
+                {
+                    JITDUMP($"Homing stack part of split parameter V{localNumber:D2}\n");
+                    assert(abiInfo.NumSegments == 2);
+                    assert(abiInfo.Segments[0].Register == TargetRuntimeMetadata.LastIntegerArgumentRegister);
+                    assert(abiInfo.Segments[1].StackOffset == 0);
+                    ref readonly var segment = ref abiInfo.Segments[1];
+
+                    genHomeStackSegment(localNumber, in segment, initReg, ref initRegStillZeroed);
+#if DEBUG
+                    for (localNumber += 1; localNumber < _compiler.info.compArgsCount; localNumber++)
+                    {
+                        ref readonly var otherAbiInfo = ref _compiler.lvaGetParameterAbiInfo(localNumber);
+                        assert(!otherAbiInfo.IsSplitAcrossRegistersAndStack);
+                    }
 #endif
-                break;
+                    break;
+                }
             }
         }
-#endif
     }
 }

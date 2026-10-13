@@ -17,20 +17,23 @@ public sealed partial class CodeGen
 {
     public void genReportEH()
     {
-#if TARGET_WASM
-        var clauses = _compiler.fgWasmEHInfo;
-        if (clauses is null)
+        if (Configuration.TARGET_WASM)
         {
+            var wasmClauses = _compiler.fgWasmEHInfo;
+            if (wasmClauses is null)
+            {
+                return;
+            }
+
+            var wasmClauseCount = _compiler.compHndBBtabCount;
+            assert(wasmClauses.Length == wasmClauseCount);
+            _compiler.eeSetEHcount(wasmClauseCount);
+            _compiler.Metrics.EHClauseCount = wasmClauseCount;
+
+            genReportEHClauses(wasmClauses);
             return;
         }
 
-        var count = _compiler.compHndBBtabCount;
-        assert(clauses.Length == count);
-        _compiler.eeSetEHcount(count);
-        _compiler.Metrics.EHClauseCount = count;
-
-        genReportEHClauses(clauses);
-#else
         var count = _compiler.compHndBBtabCount;
         if (count == 0)
         {
@@ -82,9 +85,7 @@ public sealed partial class CodeGen
             var vmIndex = ehToVmOrder[XTnum];
             clauses[vmIndex] = new EHClauseInfo { clause = clause, EHIndex = XTnum };
         }
-
         genReportEHClauses(clauses);
-#endif
     }
 
     public unsafe void genReportEHClauses(EHClauseInfo[] clauses)

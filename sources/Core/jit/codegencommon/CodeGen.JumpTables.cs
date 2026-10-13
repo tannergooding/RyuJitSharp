@@ -3,13 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if !TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     public uint genEmitJumpTable(GenTree tree, bool relativeAddr)
     {
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Jump table emission is not supported on Wasm.");
+        }
+
         assert(_compiler.compCurBB is not null);
         noway_assert(_compiler.compCurBB.Kind == BBJ_SWITCH);
         assert(tree.Oper == GT_JMPTABLE);
@@ -39,4 +43,3 @@ public sealed partial class CodeGen
         return tableBase;
     }
 }
-#endif

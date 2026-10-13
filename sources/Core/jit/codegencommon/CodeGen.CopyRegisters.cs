@@ -9,9 +9,11 @@ public sealed partial class CodeGen
 {
     public void genRegCopy(GenTree treeNode)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Register copy generation is not supported on Wasm.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register copy generation is not supported on Wasm.");
+        }
+
         assert(treeNode.Oper is GT_COPY);
         var op1 = treeNode.AsUnOp().Op1;
 
@@ -20,7 +22,7 @@ public sealed partial class CodeGen
             // Copy before reloading the next field: that reload can overwrite this field's source.
             // The child supplies the full count; COPY only counts through its last assigned register.
             var regCount = op1.GetMultiRegCount(_compiler);
-            assert(regCount <= MAX_MULTIREG_COUNT);
+            assert(regCount <= Configuration.MAX_MULTIREG_COUNT);
             var busyRegs = RBM_NONE;
 
             for (byte i = 0; i < regCount; i++)
@@ -85,19 +87,20 @@ public sealed partial class CodeGen
         }
 
         genProduceReg(treeNode);
-#endif
     }
 
     public regNumber genRegCopy(GenTree treeNode, byte multiRegIndex)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Indexed register copies are not supported on Wasm.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Indexed register copies are not supported on Wasm.");
+        }
+
         assert(treeNode.Oper is GT_COPY);
         var op1 = treeNode.AsUnOp().Op1;
         assert(op1.IsMultiRegNode);
         var copyNode = treeNode.AsCopyOrReload();
-        assert(copyNode.RegCount <= MAX_MULTIREG_COUNT);
+        assert(copyNode.RegCount <= Configuration.MAX_MULTIREG_COUNT);
         _ = genConsumeReg(op1, multiRegIndex);
 
         var sourceReg = op1.GetRegByIndex(multiRegIndex);
@@ -143,6 +146,5 @@ public sealed partial class CodeGen
         }
 
         return sourceReg;
-#endif
     }
 }

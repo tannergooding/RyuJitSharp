@@ -7,10 +7,13 @@ namespace RyuJitSharp;
 
 public partial struct NodeInternalRegisters
 {
-#if !HAS_FIXED_REGISTER_SET
     public readonly NodeInternalRegistersTable.Enumerator Iterate()
     {
-        return _table.GetEnumerator();
+        return GetFixedTable().GetEnumerator();
     }
-#endif
+
+    public readonly WasmNodeInternalRegistersTable.Enumerator IterateWasm()
+    {
+        return GetWasmTable().GetEnumerator();
+    }
 }

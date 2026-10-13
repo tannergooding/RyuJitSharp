@@ -62,8 +62,7 @@ public partial class Compiler
             var isByRef = varDsc.Type == TYP_BYREF;
             var isInReg = varDsc.lvIsInReg;
             var isInMemory = !isInReg || varDsc.IsAlwaysAliveInMemory;
-#if !TARGET_WASM
-            if (isInReg)
+            if (Configuration.HAS_FIXED_REGISTER_SET && isInReg)
             {
                 var regMask = codeGen.genGetRegMask(in varDsc);
                 if (isGCRef)
@@ -81,7 +80,6 @@ public partial class Compiler
 #endif
                     );
             }
-#endif
             if (isInMemory && (isGCRef || isByRef))
             {
                 VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, deadVarIndex);
@@ -108,34 +106,35 @@ public partial class Compiler
 
             if (varDsc.lvIsInReg)
             {
-#if !TARGET_WASM
-                // EH and spill-at-single-definition locals retain their stack home while enregistered.
-                if (!varDsc.IsAlwaysAliveInMemory)
+                if (Configuration.HAS_FIXED_REGISTER_SET)
                 {
-#if DEBUG
-                    if (verbose && VarSetOps.IsMember(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex))
+                    // EH and spill-at-single-definition locals retain their stack home while enregistered.
+                    if (!varDsc.IsAlwaysAliveInMemory)
                     {
-                        jitprintf($"\t\t\t\t\t\t\tRemoving V{varNum:D2} from gcVarPtrSetCur\n");
-                    }
-#endif
-                    VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
-                }
-
-                codeGen.genUpdateRegLife(in varDsc, isBorn: true, isDying: false
 #if DEBUG
-                    , null
+                        if (verbose && VarSetOps.IsMember(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex))
+                        {
+                            jitprintf($"\t\t\t\t\t\t\tRemoving V{varNum:D2} from gcVarPtrSetCur\n");
+                        }
 #endif
-                    );
-                var regMask = codeGen.genGetRegMask(in varDsc);
-                if (isGCRef)
-                {
-                    codeGen.GCInfo.gcRegGCrefSetCur |= regMask;
-                }
-                else if (isByRef)
-                {
-                    codeGen.GCInfo.gcRegByrefSetCur |= regMask;
-                }
+                        VarSetOps.RemoveElemD(this, codeGen.GCInfo.gcVarPtrSetCur, bornVarIndex);
+                    }
+
+                    codeGen.genUpdateRegLife(in varDsc, isBorn: true, isDying: false
+#if DEBUG
+                        , null
 #endif
+                        );
+                    var regMask = codeGen.genGetRegMask(in varDsc);
+                    if (isGCRef)
+                    {
+                        codeGen.GCInfo.gcRegGCrefSetCur |= regMask;
+                    }
+                    else if (isByRef)
+                    {
+                        codeGen.GCInfo.gcRegByrefSetCur |= regMask;
+                    }
+                }
             }
             else if (lvaIsGCTracked(in varDsc))
             {

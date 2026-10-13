@@ -43,7 +43,7 @@ public sealed partial class CodeGen
             attr = EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG);
         }
 
-        GetEmitter().emitIns_R_C(ins, attr, treeNode.RegNum, REG_NA,
+        GetEmitter().emitIns_R_CLoongArch64(ins, attr, treeNode.RegNum, REG_NA,
             genEmitAsyncResumeInfo(unchecked((uint)treeNode.Val1)), 0);
         genProduceReg(treeNode);
 #elif TARGET_RISCV64

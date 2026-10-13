@@ -17,14 +17,11 @@ public sealed partial class CodeGen
         genStackLevel = newStackLevel;
     }
 
-#if !TARGET_WASM
     private void genSinglePush()
     {
-        AddStackLevel(REGSIZE_BYTES);
+        AddStackLevel(unchecked((uint)Configuration.REGSIZE_BYTES));
     }
-#endif
 
-#if UNIX_X86_ABI
     private uint maxNestedAlignment;
 
     private void SubtractNestedAlignment(uint adjustment)
@@ -53,5 +50,4 @@ public sealed partial class CodeGen
             maxNestedAlignment = curNestedAlignment;
         }
     }
-#endif
 }

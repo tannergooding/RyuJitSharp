@@ -65,25 +65,26 @@ public sealed partial class CodeGen
 
             // Inspect the selected ISA directly; opportunistic dependency queries
             // here would add JIT/EE calls to diagnostic-only execution.
-#if TARGET_XARCH
-            if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
+            if (Configuration.TARGET_XARCH)
             {
-                jitprintf(" + VEX");
+                if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
+                {
+                    jitprintf(" + VEX");
+                }
+                if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX512))
+                {
+                    jitprintf(" + EVEX");
+                }
+                if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_APX))
+                {
+                    jitprintf(" + APX");
+                }
             }
-            if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX512))
-            {
-                jitprintf(" + EVEX");
-            }
-            if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_APX))
-            {
-                jitprintf(" + APX");
-            }
-#elif TARGET_ARM64
-            if (_compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
+            else if (Configuration.TARGET_ARM64
+                && _compiler.opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
             {
                 jitprintf(" + SVE");
             }
-#endif
             if (TargetOS.IsWindows)
             {
                 jitprintf(" on Windows");
@@ -134,7 +135,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                jitprintf($"; {(IsFramePointerUsed ? STR_FPBASE : STR_SPBASE)} based frame\n");
+                jitprintf($"; {(IsFramePointerUsed ? TargetRuntimeMetadata.FramePointerBaseName : TargetRuntimeMetadata.StackPointerBaseName)} based frame\n");
             }
             jitprintf(Interruptible ? "; fully interruptible\n" : "; partially interruptible\n");
 
@@ -177,9 +178,10 @@ public sealed partial class CodeGen
 #endif
         genGeneratePrologsAndEpilogs();
         Emitter.emitRemoveJumpToNextInst();
-#if !TARGET_WASM
-        Emitter.emitJumpDistBind();
-#endif
+        if (!Configuration.TARGET_WASM)
+        {
+            Emitter.emitJumpDistBind();
+        }
         if (Configuration.FEATURE_LOOP_ALIGN)
         {
             Emitter.emitLoopAlignAdjustments();
@@ -209,20 +211,19 @@ public sealed partial class CodeGen
         uint instrCount;
 #endif
         _compiler.unwindReserve();
-#if TARGET_WASM
-        Emitter.emitUpdateFuncletLocations();
-#endif
-#if TARGET_64BIT
-        var trackedStackPtrsContig = false;
-#else
-        var trackedStackPtrsContig = !_compiler.opts.compDbgEnC
+        if (Configuration.TARGET_WASM)
+        {
+            Emitter.emitUpdateFuncletLocations();
+        }
+        var trackedStackPtrsContig = !Configuration.TARGET_64BIT
+            && !_compiler.opts.compDbgEnC
             && (_compiler.lvaAsyncThreadObjectVar == BAD_VAR_NUM)
             && (_compiler.lvaAsyncExecutionContextVar == BAD_VAR_NUM)
             && (_compiler.lvaAsyncSynchronizationContextVar == BAD_VAR_NUM);
-#if TARGET_ARM
-        trackedStackPtrsContig &= !_compiler.compIsProfilerHookNeeded;
-#endif
-#endif
+        if (!Configuration.TARGET_64BIT && Configuration.TARGET_ARM)
+        {
+            trackedStackPtrsContig &= !_compiler.compIsProfilerHookNeeded;
+        }
         if (_compiler.opts.disAsm && _compiler.opts.disTesting)
         {
             jitprintf($"; BEGIN METHOD {_compiler.eeGetMethodFullName(_compiler.info.compMethodHnd)}\n");

@@ -7,7 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private static regNumber genGetThisArgReg(GenTreeCall call) => REG_ARG_0;
+    private static regNumber genGetThisArgReg(GenTreeCall call) => TargetRuntimeMetadata.FirstIntegerArgumentRegister;
 
     public static unsafe GenTree? getCallTarget(GenTreeCall call, out CORINFO_METHOD_HANDLE methHnd)
     {
@@ -29,7 +29,7 @@ public sealed partial class CodeGen
 
             case WellKnownArg.R2RIndirectionCell:
             {
-                result = REG_R2R_INDIRECT_PARAM;
+                result = TargetRuntimeMetadata.R2RIndirectParameterRegister;
                 break;
             }
 
@@ -62,22 +62,21 @@ public sealed partial class CodeGen
 #if DEBUG
     public void genCheckTailCallEpilogRegisters(GenTreeCall call)
     {
-#if TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm tailcall epilog-register verification is not ported.");
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm tailcall epilog-register verification is not ported.");
+        }
+
         if (!call.IsFastTailCall)
         {
             return;
         }
 
-#if HAS_MORE_THAN_64_REGISTERS && TARGET_XARCH
-        var trashedByEpilog = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED,
-            SRBM_MSK_CALLEE_SAVED);
-#elif TARGET_XARCH
-        var trashedByEpilog = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED | SRBM_MSK_CALLEE_SAVED);
-#else
-        var trashedByEpilog = new regMaskTP(SRBM_INT_CALLEE_SAVED | SRBM_FLT_CALLEE_SAVED);
-#endif
+        var trashedByEpilog = Configuration.TARGET_XARCH
+            ? Configuration.HAS_MORE_THAN_64_REGISTERS
+                ? new regMaskTP(TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask, TargetRuntimeMetadata.MaskCalleeSavedMask)
+                : new regMaskTP(TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask | TargetRuntimeMetadata.MaskCalleeSavedMask)
+            : new regMaskTP(TargetRuntimeMetadata.IntegerCalleeSavedMask | TargetRuntimeMetadata.FloatingCalleeSavedMask);
         if (_compiler.NeedsGSSecurityCookie)
         {
             trashedByEpilog |= genGetGSCookieTempRegs(tailCall: true, call);
@@ -92,11 +91,9 @@ public sealed partial class CodeGen
                     continue;
                 }
 
-#if TARGET_ARM
-                var segmentMask = new regMaskTP(unchecked((regMask)((ulong)segment.RegisterMask << segment.RegisterMaskBase)));
-#else
-                var segmentMask = regMaskTP.CreateFromRegNum(segment.Register, segment.Register.SingleTypeMask);
-#endif
+                var segmentMask = Configuration.TARGET_ARM
+                    ? new regMaskTP(unchecked((regMask)((ulong)segment.RegisterMask << segment.RegisterMaskBase)))
+                    : regMaskTP.CreateFromRegNum(segment.Register, segment.Register.SingleTypeMask);
                 if ((trashedByEpilog & segmentMask).IsNonEmpty)
                 {
                     if (_compiler.verbose)
@@ -109,7 +106,6 @@ public sealed partial class CodeGen
                 }
             }
         }
-#endif
     }
 #endif
 }

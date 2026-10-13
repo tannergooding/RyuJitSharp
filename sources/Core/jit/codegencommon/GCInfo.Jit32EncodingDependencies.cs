@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86 && JIT32_GCENCODER
 using System;
 
 namespace RyuJitSharp;
@@ -115,7 +114,9 @@ public partial struct GCInfo
                 {
                     var offset = variable.StackOffset;
                     jitprintf($"GCINFO: untrckd {Globals.varTypeGCstring(variable.Type)} lcl at " +
-                        $"[{(_codeGen.IsFramePointerUsed ? STR_FPBASE : STR_SPBASE)}");
+                        $"[{(_codeGen.IsFramePointerUsed
+                            ? TargetRuntimeMetadata.FramePointerBaseName
+                            : TargetRuntimeMetadata.StackPointerBaseName)}");
                     if (offset < 0)
                     {
                         jitprintf($"-0x{unchecked(-offset):X2}");
@@ -153,7 +154,9 @@ public partial struct GCInfo
             {
                 var offset = temp.tdTempOffs;
                 jitprintf($"GCINFO: untrck {Globals.varTypeGCstring(temp.tdTempType)} Temp at " +
-                    $"[{(_codeGen.IsFramePointerUsed ? STR_FPBASE : STR_SPBASE)}");
+                    $"[{(_codeGen.IsFramePointerUsed
+                        ? TargetRuntimeMetadata.FramePointerBaseName
+                        : TargetRuntimeMetadata.StackPointerBaseName)}");
                 if (offset < 0)
                 {
                     jitprintf($"-0x{unchecked(-offset):X2}");
@@ -349,7 +352,7 @@ public partial struct GCInfo
             assert(header.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET);
         }
 
-        var argCount = compiler.lvaParameterStackSize / REGSIZE_BYTES;
+        var argCount = compiler.lvaParameterStackSize / Configuration.REGSIZE_BYTES;
         assert(argCount <= ushort.MaxValue);
         header.argCount = unchecked((ushort)argCount);
 
@@ -516,4 +519,3 @@ public partial struct GCInfo
         return destination + (nint)gcMakeRegPtrTable(destination, -1, header, codeSize, ref argTabOffset);
     }
 }
-#endif

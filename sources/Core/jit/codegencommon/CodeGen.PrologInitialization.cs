@@ -59,7 +59,7 @@ public sealed partial class CodeGen
         var fltInitReg = REG_NA;
         var dblInitReg = REG_NA;
 
-        for (var reg = REG_FP_FIRST; reg <= REG_FP_LAST; reg++)
+        for (var reg = TargetRuntimeMetadata.FloatingRegisterFirst; reg <= TargetRuntimeMetadata.FloatingRegisterLast; reg++)
         {
             var mask = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
             if ((mask & initFltRegs) != RBM_NONE)
@@ -169,7 +169,14 @@ public sealed partial class CodeGen
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (UseBlockInit)
         {
-            genZeroInitFrameUsingBlockInit(untrLclHi, untrLclLo, initReg, ref initRegZeroed);
+            if (Configuration.TARGET_ARM64)
+            {
+                genZeroInitFrameUsingBlockInit(untrLclHi, untrLclLo, initReg, ref initRegZeroed);
+            }
+            else
+            {
+                genZeroInitFrameUsingBlockInitNonArm64(untrLclHi, untrLclLo, initReg, ref initRegZeroed);
+            }
         }
         else if (InitStkLclCnt > 0)
         {
@@ -192,10 +199,10 @@ public sealed partial class CodeGen
                 noway_assert(varTypeIsGC(local.Type) || (local.Type == TYP_STRUCT)
                     || _compiler.info.compInitMem || _compiler.opts.compDbgCode);
                 if ((local.Type == TYP_STRUCT) && !_compiler.info.compInitMem
-                    && (local.lvExactSize >= TARGET_POINTER_SIZE))
+                    && (local.lvExactSize >= Configuration.TARGET_POINTER_SIZE))
                 {
                     // Only initialize the GC slots of a struct when initlocals was not requested.
-                    var slots = _compiler.lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
+                    var slots = _compiler.lvaLclStackHomeSize(varNum) / Configuration.REGSIZE_BYTES;
                     var layout = local.Layout;
                     assert(layout is not null);
                     for (var i = 0; i < slots; i++)
@@ -203,7 +210,7 @@ public sealed partial class CodeGen
                         if (layout.IsGCPtr(i))
                         {
                             Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
-                                genGetZeroReg(initReg, ref initRegZeroed), varNum, i * REGSIZE_BYTES);
+                                genGetZeroReg(initReg, ref initRegZeroed), varNum, i * Configuration.REGSIZE_BYTES);
                         }
                     }
                 }
@@ -213,7 +220,7 @@ public sealed partial class CodeGen
                     // Zero the whole home rounded up to a single stack slot size.
                     var size = roundUp(_compiler.lvaLclStackHomeSize(varNum), sizeof(int));
                     var i = 0;
-                    for (; i + REGSIZE_BYTES <= size; i += REGSIZE_BYTES)
+                    for (; i + Configuration.REGSIZE_BYTES <= size; i += Configuration.REGSIZE_BYTES)
                     {
                         Emitter.emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, varNum, i);
                     }
@@ -247,16 +254,21 @@ public sealed partial class CodeGen
 
     private void genZeroInitFltRegArm64(regNumber reg)
     {
-#if TARGET_ARM64
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 floating-register zeroing is unavailable.");
+        }
+
         Emitter.emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 floating-register zeroing is unavailable.");
-#endif
     }
 
     private void genZeroInitFrameWasm(int untrLclHi, int untrLclLo, regNumber initReg, ref bool initRegZeroed)
     {
-#if TARGET_WASM
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm frame initialization is unavailable for this target.");
+        }
+
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         if (!UseBlockInit)
         {
@@ -277,14 +289,15 @@ public sealed partial class CodeGen
         Emitter.emitIns_I(INS_i32_const, EA_4BYTE, 0);
         Emitter.emitIns_I(INS_I_const, EA_PTRSIZE, untrLclHi - untrLclLo);
         Emitter.emitIns_I(INS_memory_fill, EA_4BYTE, LINEAR_MEMORY_INDEX);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm frame initialization is unavailable for this target.");
-#endif
     }
 
     private void genReportGenericContextArgWasm()
     {
-#if TARGET_WASM
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm generic-context reporting is unavailable for this target.");
+        }
+
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
 
         var reportArg = _compiler.lvaReportParamTypeArg();
@@ -306,49 +319,50 @@ public sealed partial class CodeGen
             unchecked((nint)regNumberExtensions.WasmRegToIndex(register)));
         Emitter.emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE,
             unchecked((nint)_compiler.lvaCachedGenericContextArgOffset()));
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Wasm generic-context reporting is unavailable for this target.");
-#endif
     }
 
     private void genStoreGenericContextArgArm32(regNumber reg, int offset)
     {
-#if TARGET_ARM
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 generic-context storage is unavailable.");
+        }
+
         Emitter.emitIns_R_R_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             offset, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 generic-context storage is unavailable.");
-#endif
     }
 
     private void genStoreGenericContextArgArm64(regNumber reg, nint offset)
     {
-#if TARGET_ARM64
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 generic-context storage is unavailable.");
+        }
+
         genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             offset, rsGetRsvdReg());
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM64 generic-context storage is unavailable.");
-#endif
     }
 
     private void genStoreGenericContextArgLoongArch64(regNumber reg, nint offset)
     {
-#if TARGET_LOONGARCH64
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 generic-context storage is unavailable.");
+        }
+
         genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             offset, REG_LOONGARCH64_R21);
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 generic-context storage is unavailable.");
-#endif
     }
 
     private void genStoreGenericContextArgRiscV64(regNumber reg, nint offset)
     {
-#if TARGET_RISCV64
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 generic-context storage is unavailable.");
+        }
+
         genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
             offset, rsGetRsvdReg());
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 generic-context storage is unavailable.");
-#endif
     }
 
     private void genLoadGenericContextArgFromStack(regNumber reg, int stackOffset)
@@ -358,7 +372,7 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "Native generic-context loading is unavailable on Wasm.");
         }
 
-        var frameReg = IsFramePointerUsed ? REG_FPBASE : REG_SPBASE;
+        var frameReg = IsFramePointerUsed ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
         Emitter.emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, reg, frameReg, stackOffset);
     }
 
@@ -369,7 +383,7 @@ public sealed partial class CodeGen
             throw new FatalJitException(CORJIT_SKIPPED, "xarch generic-context storage is unavailable.");
         }
 
-        var frameReg = IsFramePointerUsed ? REG_FPBASE : REG_SPBASE;
+        var frameReg = IsFramePointerUsed ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
         Emitter.emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, frameReg, offset);
     }
 
@@ -419,7 +433,7 @@ public sealed partial class CodeGen
 
         var contextArg = reportArg ? _compiler.info.compTypeCtxtArg : _compiler.info.compThisArg;
         noway_assert(contextArg != BAD_VAR_NUM);
-        ref         var local = ref _compiler.lvaGetDesc(contextArg);
+        ref var local = ref _compiler.lvaGetDesc(contextArg);
         var isPrespilledForProfiling = false;
         if (Configuration.TARGET_ARM && Configuration.PROFILING_SUPPORTED)
         {
