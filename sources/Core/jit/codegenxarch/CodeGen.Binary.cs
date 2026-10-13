@@ -10,17 +10,18 @@ public sealed partial class CodeGen
     public void genCodeForBinaryXarch(GenTreeOp tree)
     {
         Emitter.RequireSupportedInstructionRecording();
-#if DEBUG
-        var valid = tree.Oper is GT_ADD or GT_SUB;
-        valid |= varTypeIsFloating(tree.Type)
-            ? tree.Oper is GT_MUL or GT_DIV
-            : tree.Oper is GT_AND or GT_OR or GT_XOR;
-        if (!Configuration.TARGET_64BIT && !varTypeIsFloating(tree.Type))
+        if (Configuration.DEBUG)
         {
-            valid |= tree.Oper is GT_ADD_LO or GT_ADD_HI or GT_SUB_LO or GT_SUB_HI;
+            var valid = tree.Oper is GT_ADD or GT_SUB;
+            valid |= varTypeIsFloating(tree.Type)
+                ? tree.Oper is GT_MUL or GT_DIV
+                : tree.Oper is GT_AND or GT_OR or GT_XOR;
+            if (!Configuration.TARGET_64BIT && !varTypeIsFloating(tree.Type))
+            {
+                valid |= tree.Oper is GT_ADD_LO or GT_ADD_HI or GT_SUB_LO or GT_SUB_HI;
+            }
+            assert(valid);
         }
-        assert(valid);
-#endif
         genConsumeOperands(tree);
 
         var oper = tree.Oper;

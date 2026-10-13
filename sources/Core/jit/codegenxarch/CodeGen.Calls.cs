@@ -123,21 +123,23 @@ public sealed partial class CodeGen
         }
         genDefinePendingCallLabel(call);
 
-#if DEBUG
-        var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
-        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        if (Configuration.DEBUG)
         {
-            var firstMaskReg = Configuration.TARGET_AMD64 ? REG_MASK_FIRST_AMD64 : REG_MASK_FIRST_X86;
-            killMask |= regMaskTP.CreateFromRegNum(firstMaskReg, SRBM_MSK_CALLEE_TRASH);
-        }
+            var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
+            if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+            {
+                var firstMaskReg = Configuration.TARGET_AMD64 ? REG_MASK_FIRST_AMD64 : REG_MASK_FIRST_X86;
+                killMask |= regMaskTP.CreateFromRegNum(firstMaskReg, SRBM_MSK_CALLEE_TRASH);
+            }
 
-        if (call.IsHelperCall())
-        {
-            killMask = _compiler.compHelperCallKillSet(call.HelperNum);
+            if (call.IsHelperCall())
+            {
+                killMask = _compiler.compHelperCallKillSet(call.HelperNum);
+            }
+
+            assert((GCInfo.gcRegGCrefSetCur & killMask).IsEmpty);
+            assert((GCInfo.gcRegByrefSetCur & killMask).IsEmpty);
         }
-        assert((GCInfo.gcRegGCrefSetCur & killMask).IsEmpty);
-        assert((GCInfo.gcRegByrefSetCur & killMask).IsEmpty);
-#endif
         var returnType = call.Type;
         if (returnType != TYP_VOID)
         {

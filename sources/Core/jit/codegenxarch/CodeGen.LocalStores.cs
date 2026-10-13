@@ -68,18 +68,19 @@ public sealed partial class CodeGen
             ref var varDsc = ref _compiler.lvaGetDesc(lclNum);
             var targetType = varDsc.GetRegisterType(tree);
 
-#if DEBUG
-            var op1Type = op1.Type;
-            if (op1Type is TYP_STRUCT)
+            if (Configuration.DEBUG)
             {
-                assert(op1.Oper.IsLocal);
-                var op1LclVar = op1.AsLclVar();
-                ref var op1VarDsc = ref _compiler.lvaGetDesc(op1LclVar.LclNum);
-                op1Type = op1VarDsc.GetRegisterType(op1LclVar);
+                var op1Type = op1.Type;
+                if (op1Type is TYP_STRUCT)
+                {
+                    assert(op1.Oper.IsLocal);
+                    var op1LclVar = op1.AsLclVar();
+                    ref var op1VarDsc = ref _compiler.lvaGetDesc(op1LclVar.LclNum);
+                    op1Type = op1VarDsc.GetRegisterType(op1LclVar);
+                }
+                assert(varTypeUsesSameRegType(targetType, op1Type));
+                assert(varTypeUsesIntReg(targetType) || (targetType.EmitSize == op1Type.EmitSize));
             }
-            assert(varTypeUsesSameRegType(targetType, op1Type));
-            assert(varTypeUsesIntReg(targetType) || (targetType.EmitSize == op1Type.EmitSize));
-#endif
 
             if (!Configuration.TARGET_64BIT && (targetType is TYP_LONG))
             {
