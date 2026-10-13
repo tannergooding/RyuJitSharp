@@ -296,7 +296,7 @@ internal static class EmitterLoopAlignmentRecordingTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX,
+        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, REG_X64_RAX,
             (compiler, codeGen, _) => action(compiler, codeGen.Emitter));
     }
 

@@ -21,7 +21,7 @@ internal static unsafe class EmitterInstructionDisplayTests
 #if DEBUG && TARGET_AMD64
     [Test]
     public static void NonSimdFormatsRejectSimdEvexButAllowPromotedApx(
-        [Values(IF_CNS, IF_ARD, IF_SRD, IF_RRD, IF_RWR_MRD_OFF, IF_MRD, IF_MRD_OFF, IF_LABEL, IF_METHOD)]
+        [Values(IF_XARCH_CNS, IF_XARCH_ARD, IF_XARCH_SRD, IF_XARCH_RRD, IF_XARCH_RWR_MRD_OFF, IF_XARCH_MRD, IF_XARCH_MRD_OFF, IF_XARCH_LABEL, IF_XARCH_METHOD)]
         Emitter.insFormat format,
         [Values] bool evex,
         [Values] bool apx)
@@ -37,12 +37,12 @@ internal static unsafe class EmitterInstructionDisplayTests
         emitter.UsePromotedEvexEncodings = apx;
         var ins = apx ? instruction.INS_add : instruction.INS_addps;
         var size = apx ? emitAttr.EA_8BYTE : emitAttr.EA_16BYTE;
-        var reg = apx ? regNumber.REG_RAX : regNumber.REG_XMM0;
-        var id = Descriptor(ins, format, size, reg, regNumber.REG_NA);
+        var reg = apx ? regNumber.REG_X64_RAX : regNumber.REG_X64_XMM0;
+        var id = Descriptor(ins, format, size, reg, regNumber.REG_X64_NA);
         if (id.idHasMemAdr())
         {
-            id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_RAX;
-            id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_NA;
+            id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_X64_RAX;
+            id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_X64_NA;
         }
         else if (id.idHasMemGen())
         {
@@ -52,7 +52,7 @@ internal static unsafe class EmitterInstructionDisplayTests
         var output = Capture(() => emitter.emitDispIns(id, isNew: true, doffs: false, asmfm: false));
 
         var expectedAssertions = evex && !apx ? 1 : 0;
-        if (format == IF_LABEL && !apx)
+        if (format == IF_XARCH_LABEL && !apx)
         {
             // Continuing after the display assertion reaches idIsBound's separate SIMD guard.
             expectedAssertions++;
@@ -85,18 +85,18 @@ internal static unsafe class EmitterInstructionDisplayTests
     [Test]
     public static void FormatNamesFollowNativeTableAndInvalidValueMarker()
     {
-        for (uint format = 0; format < (uint)IF_COUNT; format++)
+        for (uint format = 0; format < (uint)IF_XARCH_COUNT; format++)
         {
             Assert.That(Emitter.emitIfName(format),
-                Is.EqualTo(Enum.GetName((Emitter.insFormat)format)));
+                Is.EqualTo(Emitter.emitFmtNames[(int)format]));
         }
-        Assert.That(Emitter.emitIfName((uint)IF_COUNT), Is.EqualTo("??120??"));
+        Assert.That(Emitter.emitIfName((uint)IF_XARCH_COUNT), Is.EqualTo("??120??"));
         Assert.That(Emitter.emitIfName(uint.MaxValue), Is.EqualTo("??4294967295??"));
     }
 
-    [TestCase(instruction.INS_mov, IF_RWR_RRD, emitAttr.EA_8BYTE, regNumber.REG_EAX, regNumber.REG_ECX, "mov      rax, rcx")]
-    [TestCase(instruction.INS_movsxd, IF_RWR_RRD, emitAttr.EA_4BYTE, regNumber.REG_EAX, regNumber.REG_ECX, "movsxd   rax, ecx")]
-    [TestCase(instruction.INS_shl_1, IF_RRW, emitAttr.EA_4BYTE, regNumber.REG_EAX, regNumber.REG_NA, "shl      eax, 1")]
+    [TestCase(instruction.INS_mov, IF_XARCH_RWR_RRD, emitAttr.EA_8BYTE, regNumber.REG_X64_EAX, regNumber.REG_X64_ECX, "mov      rax, rcx")]
+    [TestCase(instruction.INS_movsxd, IF_XARCH_RWR_RRD, emitAttr.EA_4BYTE, regNumber.REG_X64_EAX, regNumber.REG_X64_ECX, "movsxd   rax, ecx")]
+    [TestCase(instruction.INS_shl_1, IF_XARCH_RRW, emitAttr.EA_4BYTE, regNumber.REG_X64_EAX, regNumber.REG_X64_NA, "shl      eax, 1")]
     public static void DisplayRegisterOperandsInNativeOrder(instruction ins, Emitter.insFormat format,
         emitAttr size, regNumber first, regNumber second, string expected)
     {
@@ -120,7 +120,7 @@ internal static unsafe class EmitterInstructionDisplayTests
     public static void DisplayMnemonicUsesNativeTableName(instruction ins, string expected)
     {
         var emitter = CreateEmitter();
-        var id = Descriptor(ins, IF_NONE, emitAttr.EA_4BYTE, regNumber.REG_NA, regNumber.REG_NA);
+        var id = Descriptor(ins, IF_NONE, emitAttr.EA_4BYTE, regNumber.REG_X64_NA, regNumber.REG_X64_NA);
 
         Assert.That(DisplayName(emitter, id), Is.EqualTo(expected));
     }
@@ -154,7 +154,7 @@ internal static unsafe class EmitterInstructionDisplayTests
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = vex;
         var id = Descriptor(ins, IF_NONE, emitAttr.EA_16BYTE,
-            regNumber.REG_NA, regNumber.REG_NA, control);
+            regNumber.REG_X64_NA, regNumber.REG_X64_NA, control);
 
         Assert.That(DisplayName(emitter, id), Is.EqualTo(expected));
     }
@@ -170,7 +170,7 @@ internal static unsafe class EmitterInstructionDisplayTests
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = vex;
         emitter.UseEvexEncodings = evex;
-        var id = Descriptor(ins, IF_NONE, size, regNumber.REG_NA, regNumber.REG_NA);
+        var id = Descriptor(ins, IF_NONE, size, regNumber.REG_X64_NA, regNumber.REG_X64_NA);
 
         Assert.That(DisplayName(emitter, id), Is.EqualTo(expected));
     }
@@ -181,7 +181,7 @@ internal static unsafe class EmitterInstructionDisplayTests
     {
         var emitter = CreateEmitter();
         var id = Descriptor(instruction.INS_push, IF_NONE, emitAttr.EA_4BYTE,
-            regNumber.REG_NA, regNumber.REG_NA);
+            regNumber.REG_X64_NA, regNumber.REG_X64_NA);
         if (ppx)
         {
             id.idSetApxPpxContext();
@@ -196,7 +196,7 @@ internal static unsafe class EmitterInstructionDisplayTests
     {
         var emitter = CreateEmitter();
         var id = Descriptor(instruction.INS_nop, IF_NONE, emitAttr.EA_4BYTE,
-            regNumber.REG_NA, regNumber.REG_NA);
+            regNumber.REG_X64_NA, regNumber.REG_X64_NA);
 
         var output = Capture(() => emitter.emitDispIns(id, isNew: false, doffs: false,
             asmfm: false, offset: 42, code: null, size: 0, ig: null));
@@ -208,10 +208,10 @@ internal static unsafe class EmitterInstructionDisplayTests
     public static void AddressModeKeepsRegisterScaleAndSignedFrameDisplacement()
     {
         var emitter = CreateEmitter();
-        var id = Descriptor(instruction.INS_mov, IF_RWR_ARD, emitAttr.EA_8BYTE,
-            regNumber.REG_EAX, regNumber.REG_NA);
-        id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_EAX;
-        id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_ECX;
+        var id = Descriptor(instruction.INS_mov, IF_XARCH_RWR_ARD, emitAttr.EA_8BYTE,
+            regNumber.REG_X64_EAX, regNumber.REG_X64_NA);
+        id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_X64_EAX;
+        id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_X64_ECX;
         id.idAddr().iiaAddrMode.amScale = 2;
         id.idAddr().iiaAddrMode.amDisp = -32;
 
@@ -227,10 +227,10 @@ internal static unsafe class EmitterInstructionDisplayTests
     public static void LeaDisplayPreservesNativeGcQualifiers(emitAttr size, GCInfo.GCtype gcType, string operands)
     {
         var emitter = CreateEmitter();
-        var id = Descriptor(instruction.INS_lea, IF_RWR_ARD, size, regNumber.REG_EAX, regNumber.REG_NA);
+        var id = Descriptor(instruction.INS_lea, IF_XARCH_RWR_ARD, size, regNumber.REG_X64_EAX, regNumber.REG_X64_NA);
         id.idGCref(gcType);
-        id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_ECX;
-        id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_EDX;
+        id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_X64_ECX;
+        id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_X64_EDX;
         id.idAddr().iiaAddrMode.amScale = 2;
         id.idAddr().iiaAddrMode.amDisp = 16;
 
@@ -257,16 +257,16 @@ internal static unsafe class EmitterInstructionDisplayTests
     private static Emitter.instrDesc Descriptor(instruction ins, Emitter.insFormat format,
         emitAttr size, regNumber first, regNumber second, int constant = 0)
     {
-        var id = format == IF_LABEL ? DescriptorView.CreateLabel() : DescriptorView.Create(constant);
+        var id = format == IF_XARCH_LABEL ? DescriptorView.CreateLabel() : DescriptorView.Create(constant);
         id.idIns(ins);
         id.idInsFmt(format);
         id.idOpSize(size);
         id.idCodeSize(1);
-        if (first != regNumber.REG_NA)
+        if (first != regNumber.REG_X64_NA)
         {
             id.idReg1(first);
         }
-        if (second != regNumber.REG_NA)
+        if (second != regNumber.REG_X64_NA)
         {
             id.idReg2(second);
         }

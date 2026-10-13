@@ -20,6 +20,23 @@ internal static class EmitterOpcodeTests
         Assert.That(insCodeACC(INS_mov), Is.EqualTo((nuint)0xB0));
     }
 
+    [Test]
+    public static void NativeOpcodeTableIsSelectedFromRuntimeTarget()
+    {
+        if (Configuration.TARGET_X86)
+        {
+            Assert.That(insCode(INS_fld), Is.EqualTo((nuint)0x0000D9));
+        }
+        else if (Configuration.TARGET_AMD64)
+        {
+            Assert.That(insCodeMI(INS_imul_08), Is.EqualTo(unchecked((nuint)0x4400000068UL)));
+        }
+        else
+        {
+            Assert.Fail("Xarch opcode tables require an x86 or x64 target.");
+        }
+    }
+
     [TestCase(INS_mov, true, true, true)]
     [TestCase(INS_lea, false, false, true)]
     [TestCase(INS_push, true, true, false)]
@@ -37,6 +54,8 @@ internal static class EmitterOpcodeTests
     [Test]
     public static void ImmediateMultiplyPreservesRexBitsAboveTheLowWord()
     {
+        Assume.That(Configuration.TARGET_AMD64, Is.True);
+
         Assert.That(insCodeMI(INS_imul_AX), Is.EqualTo((nuint)0x68));
         Assert.That(insCodeMI(INS_imul_08), Is.EqualTo(unchecked((nuint)0x4400000068UL)));
         Assert.That(insCodeMI(INS_imul_15), Is.EqualTo(unchecked((nuint)0x4400003868UL)));

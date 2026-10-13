@@ -18,12 +18,12 @@ internal static unsafe class EmitterStackStoreTests
 {
     private static readonly JitFlags[] s_jitFlags = GC.AllocateArray<JitFlags>(1, pinned: true);
 
-    [TestCase(INS_mov, EA_8BYTE, REG_RAX, 4u, IF_SWR_RRD)]
-    [TestCase(INS_mov, EA_4BYTE, REG_R8, 4u, IF_SWR_RRD)]
-    [TestCase(INS_mov, EA_2BYTE, REG_RAX, 4u, IF_SWR_RRD)]
-    [TestCase(INS_mov, EA_1BYTE, REG_RSI, 4u, IF_SWR_RRD)]
-    [TestCase(INS_xchg, EA_8BYTE, REG_RAX, 4u, IF_SRW_RRW)]
-    [TestCase(INS_movups, EA_16BYTE, REG_XMM0, 5u, IF_SWR_RRD)]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_RAX, 4u, IF_XARCH_SWR_RRD)]
+    [TestCase(INS_mov, EA_4BYTE, REG_X64_R8, 4u, IF_XARCH_SWR_RRD)]
+    [TestCase(INS_mov, EA_2BYTE, REG_X64_RAX, 4u, IF_XARCH_SWR_RRD)]
+    [TestCase(INS_mov, EA_1BYTE, REG_X64_RSI, 4u, IF_XARCH_SWR_RRD)]
+    [TestCase(INS_xchg, EA_8BYTE, REG_X64_RAX, 4u, IF_XARCH_SRW_RRW)]
+    [TestCase(INS_movups, EA_16BYTE, REG_X64_XMM0, 5u, IF_XARCH_SWR_RRD)]
     public static void StackStoresRecordOperandsNativeCodeSizeAndDescriptorAccounting(
         instruction ins, emitAttr size, regNumber reg, uint expectedSize, Emitter.insFormat format)
     {
@@ -53,7 +53,7 @@ internal static unsafe class EmitterStackStoreTests
     {
         var emitter = CreateEmitter(out var compiler);
 
-        emitter.emitStoreSimd12ToLclOffset(0, offset, REG_XMM1, null);
+        emitter.emitStoreSimd12ToLclOffset(0, offset, REG_X64_XMM1, null);
 
         var codeGen = compiler.codeGen as CodeGen ?? throw new AssertionException("Missing code generator.");
         var ids = CodeGenShiftTests.Descriptors(codeGen);
@@ -74,22 +74,22 @@ internal static unsafe class EmitterStackStoreTests
     public static void OptimizedIdenticalStoresAreElidedButMinoptsStoresAreRetained(bool optimized, int count)
     {
         var emitter = CreateEmitter(out _, minopts: !optimized);
-        emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_RAX, 0, 0);
+        emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_X64_RAX, 0, 0);
         var first = LastInstruction(emitter);
-        emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_RAX, 0, 0);
+        emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_X64_RAX, 0, 0);
 
         Assert.That(CurrentCount(emitter), Is.EqualTo(count));
         Assert.That(CurrentSize(emitter), Is.EqualTo(4 * count));
         Assert.That(ReferenceEquals(first, LastInstruction(emitter)), Is.EqualTo(optimized));
     }
 
-    [TestCase(EA_GCREF, GCtype.GCT_GCREF)]
-    [TestCase(EA_BYREF, GCtype.GCT_BYREF)]
+    [TestCase(EA_64BIT_GCREF, GCtype.GCT_GCREF)]
+    [TestCase(EA_64BIT_BYREF, GCtype.GCT_BYREF)]
     public static void GcBirthStoresKeepTheirPointerClassificationAndAreNeverElided(emitAttr attr, GCtype type)
     {
         var emitter = CreateEmitter(out _, minopts: false);
-        emitter.emitIns_S_R(INS_mov, attr, REG_RAX, 0, 0);
-        emitter.emitIns_S_R(INS_mov, attr, REG_RAX, 0, 0);
+        emitter.emitIns_S_R(INS_mov, attr, REG_X64_RAX, 0, 0);
+        emitter.emitIns_S_R(INS_mov, attr, REG_X64_RAX, 0, 0);
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No pointer store was recorded.");
 
         Assert.That(CurrentCount(emitter), Is.EqualTo(2));
@@ -103,7 +103,7 @@ internal static unsafe class EmitterStackStoreTests
     public static void EmbeddedMaskOptionsRetainAllMaskBitsAndZeroing(insOpts options, uint mask, bool zero)
     {
         var emitter = CreateEmitter(out _);
-        emitter.emitIns_S_R(INS_movups, EA_16BYTE, REG_XMM0, 0, 0, options);
+        emitter.emitIns_S_R(INS_movups, EA_16BYTE, REG_X64_XMM0, 0, 0, options);
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No masked store was recorded.");
 
         Assert.That(descriptor.idGetEvexAaaContext(), Is.EqualTo(mask));
@@ -115,11 +115,11 @@ internal static unsafe class EmitterStackStoreTests
     public static void SimdExtractStoreRecordsItsImmediateAndActualSize()
     {
         var emitter = CreateEmitter(out _);
-        emitter.emitIns_S_R_I(INS_extractps, EA_4BYTE, 0, 8, REG_XMM0, 2);
+        emitter.emitIns_S_R_I(INS_extractps, EA_4BYTE, 0, 8, REG_X64_XMM0, 2);
         var descriptor = LastInstruction(emitter) ?? throw new AssertionException("No extract store was recorded.");
 
         Assert.That(descriptor.idIns(), Is.EqualTo(INS_extractps));
-        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_SWR_RRD_CNS));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_XARCH_SWR_RRD_CNS));
         Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(8u));
         Assert.That(descriptor.idSmallCns(), Is.EqualTo(2));
         Assert.That(descriptor.idCodeSize(), Is.EqualTo(7u));
@@ -138,11 +138,11 @@ internal static unsafe class EmitterStackStoreTests
         {
             if (immediate)
             {
-                emitter.emitIns_S_R_I(INS_extractps, EA_4BYTE, 0, 0, REG_XMM0, 2);
+                emitter.emitIns_S_R_I(INS_extractps, EA_4BYTE, 0, 0, REG_X64_XMM0, 2);
             }
             else
             {
-                emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_RAX, 0, 0);
+                emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_X64_RAX, 0, 0);
             }
         });
 

@@ -309,7 +309,7 @@ internal static unsafe class EmitterDataSectionOutputTests
             var output = CaptureOutput(emitter, chunks);
 
             Assert.That(output, Is.EqualTo(
-                $"{Environment.NewLine}RWD00  \tdd\t3FC00000h\t;       1.5{Environment.NewLine}" +
+                $"{Environment.NewLine}RWD00  \tdd\t3FC00000h\t\t;       1.5{Environment.NewLine}" +
                 $"RWD08  \tdq\t3FF8000000000000h\t;          1.5{Environment.NewLine}"));
         });
     }

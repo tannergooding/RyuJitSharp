@@ -83,7 +83,7 @@ internal static unsafe class EmitterLoopAlignmentClosureTests
             var id = emitter.NewAlignment();
 
             Assert.That(id.idIns(), Is.EqualTo(instruction.INS_align));
-            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_SN_0A));
+            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_ARM64_SN_0A));
             Assert.That(id.idInsOpt(), Is.EqualTo(insOpts.INS_OPTS_ALIGN));
             Assert.That(id.idCodeSize(), Is.EqualTo(4u));
             id.idInsOpt(insOpts.INS_OPTS_NONE);

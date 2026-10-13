@@ -14,12 +14,12 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterRegisterValueTests
 {
-    [TestCase(REG_XMM0)]
-    [TestCase(REG_XMM7)]
-    [TestCase(REG_K0)]
-    [TestCase(REG_K7)]
+    [TestCase(REG_X64_XMM0)]
+    [TestCase(REG_X64_XMM7)]
+    [TestCase(REG_X64_K0)]
+    [TestCase(REG_X64_K7)]
 #if TARGET_AMD64
-    [TestCase(REG_XMM15)]
+    [TestCase(REG_X64_XMM15)]
 #endif
     public static void ImmediateRegistersRoundTripWithoutChangingTheRegisterNumber(regNumber reg)
     {
@@ -28,17 +28,17 @@ internal static unsafe class EmitterRegisterValueTests
         Assert.That(Decode(null, value), Is.EqualTo(reg));
     }
 
-    [TestCase(REG_RAX, 0u)]
-    [TestCase(REG_RDI, 7u)]
-    [TestCase(REG_XMM0, 0u)]
-    [TestCase(REG_XMM7, 7u)]
-    [TestCase(REG_K0, 0u)]
-    [TestCase(REG_K7, 7u)]
+    [TestCase(REG_X64_RAX, 0u)]
+    [TestCase(REG_X64_RDI, 7u)]
+    [TestCase(REG_X64_XMM0, 0u)]
+    [TestCase(REG_X64_XMM7, 7u)]
+    [TestCase(REG_X64_K0, 0u)]
+    [TestCase(REG_X64_K7, 7u)]
 #if TARGET_AMD64
-    [TestCase(REG_R24, 24u)]
-    [TestCase(REG_XMM15, 15u)]
-    [TestCase(REG_XMM16, 16u)]
-    [TestCase(REG_XMM31, 31u)]
+    [TestCase(REG_X64_R24, 24u)]
+    [TestCase(REG_X64_XMM15, 15u)]
+    [TestCase(REG_X64_XMM16, 16u)]
+    [TestCase(REG_X64_XMM31, 31u)]
 #endif
     public static void RegisterClassesUseNativeAbsoluteAndOpcodeBits(regNumber reg, uint number)
     {

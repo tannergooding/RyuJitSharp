@@ -25,20 +25,20 @@ internal static class EmitterBinaryOperandTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var dst = Register(compiler, REG_RAX);
-            var src = Register(compiler, immediate ? REG_NA : REG_RCX);
+            var dst = Register(compiler, REG_X64_RAX);
+            var src = Register(compiler, immediate ? REG_X64_NA : REG_X64_RCX);
             src.IsContained = immediate;
             codeGen.Emitter.UsePromotedEvexEncodings = ndd;
 
-            var result = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src, ndd ? REG_RDX : REG_NA);
+            var result = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src, ndd ? REG_X64_RDX : REG_X64_NA);
 
             var descriptor = Last(codeGen);
-            Assert.That(result, Is.EqualTo(ndd ? REG_RDX : REG_RAX));
+            Assert.That(result, Is.EqualTo(ndd ? REG_X64_RDX : REG_X64_RAX));
             Assert.That(descriptor.idReg1(), Is.EqualTo(result));
             Assert.That(descriptor.idIsEvexNdContextSet(), Is.EqualTo(ndd));
             if (ndd)
             {
-                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_RAX));
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_RAX));
             }
             Assert.That(Descriptors(codeGen.Emitter), Has.Count.EqualTo(1));
         });
@@ -56,22 +56,22 @@ internal static class EmitterBinaryOperandTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var dst = Register(compiler, REG_RAX);
+            var dst = Register(compiler, REG_X64_RAX);
             var src = Memory(compiler, kind);
             codeGen.Emitter.UsePromotedEvexEncodings = ndd;
 
-            var result = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src, ndd ? REG_RDX : REG_NA);
+            var result = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src, ndd ? REG_X64_RDX : REG_X64_NA);
 
-            Assert.That(result, Is.EqualTo(ndd ? REG_RDX : REG_RAX));
+            Assert.That(result, Is.EqualTo(ndd ? REG_X64_RDX : REG_X64_RAX));
             Assert.That(Last(codeGen).idReg1(), Is.EqualTo(result));
             Assert.That(Last(codeGen).idIsEvexNdContextSet(), Is.EqualTo(ndd));
             Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(kind == 3
-                ? (ndd ? Emitter.insFormat.IF_RWR_RRD_ARD : Emitter.insFormat.IF_RRW_ARD)
-                : (ndd ? Emitter.insFormat.IF_RWR_RRD_SRD : Emitter.insFormat.IF_RRW_SRD)));
+                ? (ndd ? Emitter.insFormat.IF_XARCH_RWR_RRD_ARD : Emitter.insFormat.IF_XARCH_RRW_ARD)
+                : (ndd ? Emitter.insFormat.IF_XARCH_RWR_RRD_SRD : Emitter.insFormat.IF_XARCH_RRW_SRD)));
             if (kind == 3)
             {
-                Assert.That(Last(codeGen).idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RCX));
-                Assert.That(Last(codeGen).idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_RDX));
+                Assert.That(Last(codeGen).idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RCX));
+                Assert.That(Last(codeGen).idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_RDX));
             }
         });
     }
@@ -85,15 +85,15 @@ internal static class EmitterBinaryOperandTests
         WithCodeGen((compiler, codeGen) =>
         {
             var dst = Memory(compiler, kind);
-            var src = Register(compiler, immediate ? REG_NA : REG_RAX);
+            var src = Register(compiler, immediate ? REG_X64_NA : REG_X64_RAX);
             src.IsContained = immediate;
 
             var result = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src);
 
-            Assert.That(result, Is.EqualTo(REG_NA));
+            Assert.That(result, Is.EqualTo(REG_X64_NA));
             Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(kind == 3
-                ? (immediate ? Emitter.insFormat.IF_ARW_CNS : Emitter.insFormat.IF_ARW_RRD)
-                : (immediate ? Emitter.insFormat.IF_SRW_CNS : Emitter.insFormat.IF_SRW_RRD)));
+                ? (immediate ? Emitter.insFormat.IF_XARCH_ARW_CNS : Emitter.insFormat.IF_XARCH_ARW_RRD)
+                : (immediate ? Emitter.insFormat.IF_XARCH_SRW_CNS : Emitter.insFormat.IF_XARCH_SRW_RRD)));
         });
     }
 
@@ -104,16 +104,16 @@ internal static class EmitterBinaryOperandTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var dst = Register(compiler, REG_RAX);
-            var src = memoryKind < 0 ? Register(compiler, REG_RCX) : Memory(compiler, memoryKind);
+            var dst = Register(compiler, REG_X64_RAX);
+            var src = memoryKind < 0 ? Register(compiler, REG_X64_RCX) : Memory(compiler, memoryKind);
             var result = codeGen.Emitter.emitInsBinary(INS_idiv, EA_4BYTE, dst, src);
 
-            Assert.That(result, Is.EqualTo(REG_RAX));
+            Assert.That(result, Is.EqualTo(REG_X64_RAX));
             Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(memoryKind switch
             {
-                -1 => Emitter.insFormat.IF_RRD,
-                0 => Emitter.insFormat.IF_SRD,
-                _ => Emitter.insFormat.IF_ARD,
+                -1 => Emitter.insFormat.IF_XARCH_RRD,
+                0 => Emitter.insFormat.IF_XARCH_SRD,
+                _ => Emitter.insFormat.IF_XARCH_ARD,
             }));
         });
     }
@@ -124,7 +124,7 @@ internal static class EmitterBinaryOperandTests
         WithCodeGen((compiler, codeGen) =>
         {
             var dst = compiler.gtNewDconNode(TYP_DOUBLE, 0);
-            dst.RegNum = REG_XMM0;
+            dst.RegNum = REG_X64_XMM0;
             var src = compiler.gtNewDconNode(TYP_DOUBLE, -0.0);
             src.IsContained = true;
 
@@ -133,7 +133,7 @@ internal static class EmitterBinaryOperandTests
             var section = codeGen.Emitter.emitConsDsc.dsdList ?? throw new AssertionException("Missing constant data.");
             Assert.That(BitConverter.ToUInt64(section.Data), Is.EqualTo(0x8000000000000000UL));
             Assert.That(Last(codeGen).idIsDspReloc(), Is.True);
-            Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_MRD));
+            Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_MRD));
         });
     }
 
@@ -143,24 +143,24 @@ internal static class EmitterBinaryOperandTests
         WithCodeGen((compiler, codeGen) =>
         {
             PrepareTemps(codeGen, 2);
-            var first = Register(compiler, REG_RAX);
-            var second = Register(compiler, REG_RAX);
+            var first = Register(compiler, REG_X64_RAX);
+            var second = Register(compiler, REG_X64_RAX);
             first.Flags |= GTF_SPILL;
             second.Flags |= GTF_SPILL;
-            codeGen.RegSet.rsSpillTree(REG_RAX, first);
-            codeGen.RegSet.rsSpillTree(REG_RAX, second);
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, first);
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, second);
             first.Flags |= GTF_NOREG_AT_USE;
             second.Flags |= GTF_NOREG_AT_USE;
             first.IsRegOptional = true;
             second.IsRegOptional = true;
-            var dst = Register(compiler, REG_RCX);
+            var dst = Register(compiler, REG_X64_RCX);
 
             _ = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, first);
             var firstNumber = Last(codeGen).idAddr().iiaLclVar.lvaVarNum();
             _ = codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, second);
             var secondNumber = Last(codeGen).idAddr().iiaLclVar.lvaVarNum();
             Assert.That(firstNumber, Is.Not.EqualTo(secondNumber));
-            Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RRW_SRD));
+            Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RRW_SRD));
 
             var temp1 = codeGen.RegSet.tmpGetTemp(TYP_INT);
             var temp2 = codeGen.RegSet.tmpGetTemp(TYP_INT);
@@ -170,17 +170,17 @@ internal static class EmitterBinaryOperandTests
         });
     }
 
-    [TestCase(GT_BSWAP, TYP_INT, REG_RAX, 1)]
-    [TestCase(GT_BSWAP, TYP_LONG, REG_RCX, 2)]
-    [TestCase(GT_BSWAP16, TYP_INT, REG_RAX, 2)]
-    [TestCase(GT_BSWAP16, TYP_INT, REG_RCX, 3)]
+    [TestCase(GT_BSWAP, TYP_INT, REG_X64_RAX, 1)]
+    [TestCase(GT_BSWAP, TYP_LONG, REG_X64_RCX, 2)]
+    [TestCase(GT_BSWAP16, TYP_INT, REG_X64_RAX, 2)]
+    [TestCase(GT_BSWAP16, TYP_INT, REG_X64_RCX, 3)]
     public static void RegisterByteSwapsRetainCopyRotateAndNormalization(
         genTreeOps oper, var_types type, regNumber destination, int count)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             var operand = compiler.gtNewIconNode(type, 1);
-            operand.RegNum = REG_RAX;
+            operand.RegNum = REG_X64_RAX;
             var tree = compiler.gtNewUnaryNode(oper, type, operand);
             tree.RegNum = destination;
 
@@ -188,16 +188,16 @@ internal static class EmitterBinaryOperandTests
 
             var descriptors = Descriptors(codeGen.Emitter);
             Assert.That(descriptors, Has.Count.EqualTo(count));
-            var operationIndex = destination == REG_RAX ? 0 : 1;
+            var operationIndex = destination == REG_X64_RAX ? 0 : 1;
             Assert.That(descriptors[operationIndex].idIns(), Is.EqualTo(oper == GT_BSWAP ? INS_bswap : INS_ror_N));
             Assert.That(descriptors[^1].idIns(), Is.EqualTo(oper == GT_BSWAP ? INS_bswap : INS_movzx));
         });
     }
 
-    [TestCase(REG_RAX, REG_RCX, REG_RDX, INS_movbe)]
-    [TestCase(REG_R16, REG_RCX, REG_RDX, INS_movbe_apx)]
-    [TestCase(REG_RAX, REG_R16, REG_RDX, INS_movbe_apx)]
-    [TestCase(REG_RAX, REG_RCX, REG_R17, INS_movbe_apx)]
+    [TestCase(REG_X64_RAX, REG_X64_RCX, REG_X64_RDX, INS_movbe)]
+    [TestCase(REG_X64_R16, REG_X64_RCX, REG_X64_RDX, INS_movbe_apx)]
+    [TestCase(REG_X64_RAX, REG_X64_R16, REG_X64_RDX, INS_movbe_apx)]
+    [TestCase(REG_X64_RAX, REG_X64_RCX, REG_X64_R17, INS_movbe_apx)]
     public static void ContainedByteSwapsUseMovbeAndHonorAllExtendedRegisters(
         regNumber destination, regNumber baseReg, regNumber indexReg, instruction expected)
     {
@@ -226,7 +226,7 @@ internal static class EmitterBinaryOperandTests
             var operand = Memory(compiler, kind);
             operand.Type = TYP_USHORT;
             var tree = compiler.gtNewUnaryNode(GT_BSWAP16, TYP_INT, operand);
-            tree.RegNum = REG_RAX;
+            tree.RegNum = REG_X64_RAX;
 
             codeGen.genCodeForBswap(tree);
 
@@ -244,19 +244,19 @@ internal static class EmitterBinaryOperandTests
         WithCodeGen((compiler, codeGen) =>
         {
             PrepareTemps(codeGen, 1);
-            var operand = Register(compiler, REG_RAX);
+            var operand = Register(compiler, REG_X64_RAX);
             operand.Flags |= GTF_SPILL;
-            codeGen.RegSet.rsSpillTree(REG_RAX, operand);
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, operand);
             operand.Flags |= GTF_NOREG_AT_USE;
             operand.IsRegOptional = true;
             var tree = compiler.gtNewUnaryNode(GT_BSWAP, TYP_INT, operand);
-            tree.RegNum = REG_RCX;
+            tree.RegNum = REG_X64_RCX;
 
             codeGen.genCodeForBswap(tree);
 
             Assert.That(Descriptors(codeGen.Emitter), Has.Count.EqualTo(2));
             Assert.That(Last(codeGen).idIns(), Is.EqualTo(INS_movbe));
-            Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RWR_SRD));
+            Assert.That(Last(codeGen).idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RWR_SRD));
             var temp = codeGen.RegSet.tmpGetTemp(TYP_INT);
             codeGen.RegSet.tmpRlsTemp(temp);
         });
@@ -273,9 +273,9 @@ internal static class EmitterBinaryOperandTests
     {
         WithCodeGen((compiler, codeGen) =>
         {
-            var operand = Register(compiler, REG_RAX);
+            var operand = Register(compiler, REG_X64_RAX);
             var tree = compiler.gtNewUnaryNode(GT_BSWAP16, TYP_INT, operand);
-            tree.RegNum = REG_RAX;
+            tree.RegNum = REG_X64_RAX;
             var cast = compiler.gtNewCastNode(TYP_INT, sameOperand ? tree : operand, false, castType);
             if (overflow)
             {
@@ -297,12 +297,12 @@ internal static class EmitterBinaryOperandTests
         WithCodeGen((compiler, codeGen) =>
         {
             PrepareTemps(codeGen, 1);
-            var src = Register(compiler, REG_RAX);
+            var src = Register(compiler, REG_X64_RAX);
             src.Flags |= GTF_SPILL;
-            codeGen.RegSet.rsSpillTree(REG_RAX, src);
+            codeGen.RegSet.rsSpillTree(REG_X64_RAX, src);
             src.Flags |= GTF_NOREG_AT_USE;
             src.IsRegOptional = true;
-            var dst = Register(compiler, REG_RCX);
+            var dst = Register(compiler, REG_X64_RCX);
             compiler.opts.dspCode = true;
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
@@ -321,7 +321,7 @@ internal static class EmitterBinaryOperandTests
     }
 
     private static GenTree Memory(Compiler compiler, int kind,
-        regNumber baseReg = REG_RCX, regNumber indexReg = REG_RDX)
+        regNumber baseReg = REG_X64_RCX, regNumber indexReg = REG_X64_RDX)
     {
         GenTree node;
         if (kind == 0)
@@ -339,7 +339,7 @@ internal static class EmitterBinaryOperandTests
         }
         else
         {
-            var baseNode = compiler.gtNewIconNode(TYP_I_IMPL, 0);
+            var baseNode = compiler.gtNewIconNode(TYP_LONG, 0);
             baseNode.RegNum = baseReg;
             var indexNode = Register(compiler, indexReg);
             var address = new GenTreeAddrMode(TYP_BYREF, baseNode, indexNode, 4, 24) { IsContained = true };
@@ -369,7 +369,7 @@ internal static class EmitterBinaryOperandTests
 
     private static void WithCodeGen(Action<Compiler, CodeGen> action, bool minopts = true)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;

@@ -87,8 +87,8 @@ internal static unsafe class EmitterCallGCOutputTests
         WithEmitter((_, emitter, buffer) =>
         {
             emitter.emitSimpleStkUsed = true;
-            GCrefRegs(emitter) = SRBM_RCX;
-            ByrefRegs(emitter) = SRBM_RDX;
+            GCrefRegs(emitter) = SRBM_X64_RCX;
+            ByrefRegs(emitter) = SRBM_X64_RDX;
 
             emitter.emitStackPush(buffer + 1, GCT_GCREF);
             emitter.emitStackPush(buffer + 2, GCT_BYREF);
@@ -105,8 +105,8 @@ internal static unsafe class EmitterCallGCOutputTests
             Assert.That(CallField<nint>(first, "cdBlock"), Is.EqualTo((nint)0));
             Assert.That(CallField<uint>(first, "cdOffs"), Is.EqualTo(12u));
             Assert.That(CallField<ushort>(first, "cdCallInstrSize"), Is.EqualTo((ushort)5));
-            Assert.That(CallField<regMask>(first, "cdGCrefRegs"), Is.EqualTo(SRBM_RCX));
-            Assert.That(CallField<regMask>(first, "cdByrefRegs"), Is.EqualTo(SRBM_RDX));
+            Assert.That(CallField<regMask>(first, "cdGCrefRegs"), Is.EqualTo(SRBM_X64_RCX));
+            Assert.That(CallField<regMask>(first, "cdByrefRegs"), Is.EqualTo(SRBM_X64_RDX));
             Assert.That(CallField<ushort>(first, "cdArgCnt"), Is.EqualTo((ushort)0));
             Assert.That(CallField<uint>(first, "cdArgMask"), Is.EqualTo(4u));
             Assert.That(CallField<uint>(first, "cdByrefArgMask"), Is.EqualTo(0u));
@@ -207,8 +207,8 @@ internal static unsafe class EmitterCallGCOutputTests
             emitter.u2.emitArgTrackTab = tracking;
             emitter.u2.emitArgTrackTop = tracking;
             emitter.u2.emitGcArgTrackCnt = 0;
-            GCrefRegs(emitter) = SRBM_RCX;
-            ByrefRegs(emitter) = SRBM_RDX;
+            GCrefRegs(emitter) = SRBM_X64_RCX;
+            ByrefRegs(emitter) = SRBM_X64_RDX;
 
             emitter.emitStackPush(buffer + 1, GCT_NONE);
             emitter.emitStackPush(buffer + 2, GCT_GCREF);
@@ -241,8 +241,8 @@ internal static unsafe class EmitterCallGCOutputTests
             Assert.That(record.rpdCall, Is.True);
             Assert.That(record.rpdCallInstrSize, Is.EqualTo((byte)5));
             Assert.That(record.rpdCallData.rpdPtrArg, Is.EqualTo((ushort)0));
-            Assert.That(record.rpdCallData.rpdCallGCrefRegs, Is.EqualTo((uint)SRBM_RCX));
-            Assert.That(record.rpdCallData.rpdCallByrefRegs, Is.EqualTo((uint)SRBM_RDX));
+            Assert.That(record.rpdCallData.rpdCallGCrefRegs, Is.EqualTo((uint)SRBM_X64_RCX));
+            Assert.That(record.rpdCallData.rpdCallByrefRegs, Is.EqualTo((uint)SRBM_X64_RDX));
             record = record.rpdNext ?? throw new AssertionException("Missing final argument pop.");
             Assert.That(record.rpdArgTypeGet(), Is.EqualTo(rpdARG_POP));
             Assert.That(record.rpdCall, Is.True);
@@ -314,7 +314,7 @@ internal static unsafe class EmitterCallGCOutputTests
 
     private static void WithEmitter(EmitterTest test, bool fullPtrMap = false, bool minopts = true)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             codeGen.IsFullPtrRegMapRequired = fullPtrMap;
             var emitter = codeGen.Emitter;

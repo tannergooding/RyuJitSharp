@@ -11,13 +11,13 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class X86EmitterStaticFieldDependencyTests
 {
-    [TestCase(INS_add, EA_1BYTE, REG_EAX, REG_NA, true)]
-    [TestCase(INS_add, EA_1BYTE, REG_EBX, REG_ECX, true)]
-    [TestCase(INS_add, EA_1BYTE, REG_ESI, REG_NA, false)]
-    [TestCase(INS_add, EA_1BYTE, REG_EAX, REG_EDI, false)]
-    [TestCase(INS_add, EA_4BYTE, REG_ESI, REG_EDI, true)]
-    [TestCase(INS_movsx, EA_1BYTE, REG_ESI, REG_NA, true)]
-    [TestCase(INS_movzx, EA_1BYTE, REG_ESI, REG_EDI, false)]
+    [TestCase(INS_add, EA_1BYTE, REG_X86_EAX, REG_X86_NA, true)]
+    [TestCase(INS_add, EA_1BYTE, REG_X86_EBX, REG_X86_ECX, true)]
+    [TestCase(INS_add, EA_1BYTE, REG_X86_ESI, REG_X86_NA, false)]
+    [TestCase(INS_add, EA_1BYTE, REG_X86_EAX, REG_X86_EDI, false)]
+    [TestCase(INS_add, EA_4BYTE, REG_X86_ESI, REG_X86_EDI, true)]
+    [TestCase(INS_movsx, EA_1BYTE, REG_X86_ESI, REG_X86_NA, true)]
+    [TestCase(INS_movzx, EA_1BYTE, REG_X86_ESI, REG_X86_EDI, false)]
     public static void ByteOperandsRequireEncodableRegisters(instruction ins, emitAttr size, regNumber reg1,
         regNumber reg2, bool expected)
     {
@@ -28,14 +28,14 @@ internal static class X86EmitterStaticFieldDependencyTests
     [Test]
     public static void Crc32AllowsNonByteDestination()
     {
-        Assert.That(Emitter.emitVerifyEncodable(INS_crc32, EA_1BYTE, REG_ESI), Is.True);
+        Assert.That(Emitter.emitVerifyEncodable(INS_crc32, EA_1BYTE, REG_X86_ESI), Is.True);
     }
 #endif
 
-    [TestCase(REG_EAX, EA_1BYTE)]
-    [TestCase(REG_ESP, EA_1BYTE)]
-    [TestCase(REG_ESI, EA_4BYTE)]
-    [TestCase(REG_XMM7, EA_16BYTE)]
+    [TestCase(REG_X86_EAX, EA_1BYTE)]
+    [TestCase(REG_X86_ESP, EA_1BYTE)]
+    [TestCase(REG_X86_ESI, EA_4BYTE)]
+    [TestCase(REG_X86_XMM7, EA_16BYTE)]
     public static void X86HasNoExtendedRegisters(regNumber reg, emitAttr attr)
     {
         Assert.That(Emitter.IsExtendedReg(reg), Is.False);

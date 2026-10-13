@@ -16,16 +16,16 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class EmitterXarchDiagnosticHelpersTests
 {
 #if TARGET_AMD64
-    [TestCase(regNumber.REG_EAX, emitAttr.EA_1BYTE, "al")]
-    [TestCase(regNumber.REG_EBP, emitAttr.EA_1BYTE, "bpl")]
-    [TestCase(regNumber.REG_R8, emitAttr.EA_1BYTE, "r8b")]
-    [TestCase(regNumber.REG_R8, emitAttr.EA_2BYTE, "r8w")]
-    [TestCase(regNumber.REG_R8, emitAttr.EA_4BYTE, "r8d")]
-    [TestCase(regNumber.REG_R8, emitAttr.EA_8BYTE, "r8")]
+    [TestCase(regNumber.REG_X64_EAX, emitAttr.EA_1BYTE, "al")]
+    [TestCase(regNumber.REG_X64_EBP, emitAttr.EA_1BYTE, "bpl")]
+    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_1BYTE, "r8b")]
+    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_2BYTE, "r8w")]
+    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_4BYTE, "r8d")]
+    [TestCase(regNumber.REG_X64_R8, emitAttr.EA_8BYTE, "r8")]
 #endif
-    [TestCase(regNumber.REG_XMM0, emitAttr.EA_16BYTE, "xmm0")]
-    [TestCase(regNumber.REG_XMM0, emitAttr.EA_32BYTE, "ymm0")]
-    [TestCase(regNumber.REG_XMM0, emitAttr.EA_64BYTE, "zmm0")]
+    [TestCase(regNumber.REG_X64_XMM0, emitAttr.EA_16BYTE, "xmm0")]
+    [TestCase(regNumber.REG_X64_XMM0, emitAttr.EA_32BYTE, "ymm0")]
+    [TestCase(regNumber.REG_X64_XMM0, emitAttr.EA_64BYTE, "zmm0")]
     public static void RegisterNamesUseNativeOperandWidths(regNumber reg, emitAttr attr, string expected)
     {
         Assert.That(CreateEmitter().emitRegName(reg, attr, varName: false), Is.EqualTo(expected));
@@ -36,9 +36,9 @@ internal static unsafe class EmitterXarchDiagnosticHelpersTests
     {
         Assert.Multiple(() =>
         {
-            Assert.That(Emitter.emitXMMregName(regNumber.REG_XMM1), Is.EqualTo("xmm1"));
-            Assert.That(Emitter.emitYMMregName(regNumber.REG_XMM1), Is.EqualTo("ymm1"));
-            Assert.That(Emitter.emitZMMregName(regNumber.REG_XMM1), Is.EqualTo("zmm1"));
+            Assert.That(Emitter.emitXMMregName(regNumber.REG_X64_XMM1), Is.EqualTo("xmm1"));
+            Assert.That(Emitter.emitYMMregName(regNumber.REG_X64_XMM1), Is.EqualTo("ymm1"));
+            Assert.That(Emitter.emitZMMregName(regNumber.REG_X64_XMM1), Is.EqualTo("zmm1"));
         });
     }
 
@@ -51,8 +51,8 @@ internal static unsafe class EmitterXarchDiagnosticHelpersTests
         var id = displacement < -0xFFFFFF
             ? Descriptor(largeDisplacement: displacement)
             : Descriptor();
-        id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_NA;
-        id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_NA;
+        id.idAddr().iiaAddrMode.amBaseReg = regNumber.REG_X64_NA;
+        id.idAddr().iiaAddrMode.amIndxReg = regNumber.REG_X64_NA;
         id.idAddr().iiaAddrMode.amDisp = displacement;
 
         Assert.That(Capture(() => emitter.emitDispAddrMode(id)), Is.EqualTo(expected));
@@ -146,7 +146,7 @@ internal static unsafe class EmitterXarchDiagnosticHelpersTests
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = true;
         var id = Descriptor(instruction.INS_addps);
-        id.idInsFmt(Emitter.insFormat.IF_RWR_ARD);
+        id.idInsFmt(Emitter.insFormat.IF_XARCH_RWR_ARD);
         id.idOpSize(emitAttr.EA_16BYTE);
         id.idSetEvexBroadcastBit();
 
@@ -183,7 +183,7 @@ internal static unsafe class EmitterXarchDiagnosticHelpersTests
     {
         var id = new DescriptorView(constant, largeDisplacement).Value;
         id.idIns(ins);
-        id.idInsFmt(Emitter.insFormat.IF_CNS);
+        id.idInsFmt(Emitter.insFormat.IF_XARCH_CNS);
         id.idOpSize(emitAttr.EA_4BYTE);
         id.idCodeSize(1);
         return id;

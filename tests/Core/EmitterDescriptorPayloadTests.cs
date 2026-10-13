@@ -228,8 +228,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
     {
         var descriptor = new Descriptor();
         descriptor.idIns(INS_nop);
-        descriptor.idReg1(REG_RAX);
-        descriptor.idReg2(REG_XMM0);
+        descriptor.idReg1(REG_X64_RAX);
+        descriptor.idReg2(REG_X64_XMM0);
         descriptor.idSetIsBound();
         descriptor.idSetIsLargeDsp();
         descriptor.idSmallCns(-1);
@@ -245,8 +245,8 @@ internal static unsafe class EmitterDescriptorPayloadTests
                 Assert.That(descriptor.idCodeSize(), Is.EqualTo(size));
                 Assert.That(descriptor.idOpSize(), Is.EqualTo(operandSize));
                 Assert.That(descriptor.idGCref(), Is.EqualTo((GCInfo.GCtype)gc));
-                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_RAX));
-                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_XMM0));
+                Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_RAX));
+                Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_XMM0));
                 Assert.That(descriptor.idIsBound(), Is.True);
                 Assert.That(descriptor.idIsLargeDsp(), Is.True);
                 Assert.That(descriptor.idSmallCns(), Is.EqualTo(-1));
@@ -254,22 +254,22 @@ internal static unsafe class EmitterDescriptorPayloadTests
         }
     }
 
-    [TestCase(REG_RAX)]
-    [TestCase(REG_XMM0)]
-    [TestCase(REG_K7)]
+    [TestCase(REG_X64_RAX)]
+    [TestCase(REG_X64_XMM0)]
+    [TestCase(REG_X64_K7)]
 #if TARGET_AMD64
-    [TestCase(REG_R31)]
-    [TestCase(REG_XMM31)]
+    [TestCase(REG_X64_R31)]
+    [TestCase(REG_X64_XMM31)]
 #endif
     public static void XarchRegistersPreserveTheirBankAndTheOtherOperand(regNumber reg)
     {
         var descriptor = new Descriptor();
-        descriptor.idReg1(REG_RAX);
-        descriptor.idReg2(REG_XMM0);
+        descriptor.idReg1(REG_X64_RAX);
+        descriptor.idReg2(REG_X64_XMM0);
         descriptor.idReg1(reg);
 
         Assert.That(descriptor.idReg1(), Is.EqualTo(reg));
-        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_XMM0));
+        Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_XMM0));
 
         descriptor.idReg2(reg);
 

@@ -120,7 +120,7 @@ internal static unsafe class EmitterEmissionFinalizationClosureTests
     public static void AllocationUsesUnsignedCodeWidthsForLoopAlignmentAndColdPresence(
         int hotAllocationSize, int coldAllocationSize, int expectedHotAlignment)
     {
-        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_RAX,
+        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_X64_RAX,
             (compiler, codeGen, tree) =>
             {
                 compiler.eeInfoInitialized = true;

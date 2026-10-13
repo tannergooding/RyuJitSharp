@@ -39,13 +39,13 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             var id = Last(emitter);
             var format = memoryKind switch
             {
-                0 => twoRegisters ? IF_RWR_RRD_ARD_CNS : IF_RWR_ARD_CNS,
-                1 => twoRegisters ? IF_RWR_RRD_MRD_CNS : IF_RWR_MRD_CNS,
-                _ => twoRegisters ? IF_RWR_RRD_SRD_CNS : IF_RWR_SRD_CNS,
+                0 => twoRegisters ? IF_XARCH_RWR_RRD_ARD_CNS : IF_XARCH_RWR_ARD_CNS,
+                1 => twoRegisters ? IF_XARCH_RWR_RRD_MRD_CNS : IF_XARCH_RWR_MRD_CNS,
+                _ => twoRegisters ? IF_XARCH_RWR_RRD_SRD_CNS : IF_XARCH_RWR_SRD_CNS,
             };
 
             Assert.That(id.idInsFmt(), Is.EqualTo(format));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM0));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM0));
             Assert.That(Constant(emitter, id), Is.EqualTo((nint)value));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
             Assert.That(id.NativeLogicalSize, Is.EqualTo(logicalSize));
@@ -53,14 +53,14 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
             if (twoRegisters)
             {
-                Assert.That(id.idReg2(), Is.EqualTo(REG_XMM1));
+                Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM1));
             }
 
             switch (memoryKind)
             {
                 case 0:
                 {
-                    Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+                    Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
                     Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
                     break;
                 }
@@ -121,11 +121,11 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             var attr = relocation ? EA_16BYTE | EA_DSP_RELOC_FLG : EA_16BYTE;
             if (twoRegisters)
             {
-                emitter.emitIns_R_R_C_I(INS_shufps, attr, REG_XMM0, REG_XMM1, FLD_GLOBAL_DS, -4, 7);
+                emitter.emitIns_R_R_C_I(INS_shufps, attr, REG_X64_XMM0, REG_X64_XMM1, FLD_GLOBAL_DS, -4, 7);
             }
             else
             {
-                emitter.emitIns_R_C_I(INS_pshufd, attr, REG_XMM0, FLD_GLOBAL_DS, -4, 7);
+                emitter.emitIns_R_C_I(INS_pshufd, attr, REG_X64_XMM0, FLD_GLOBAL_DS, -4, 7);
             }
 
             var id = Last(emitter);
@@ -144,9 +144,9 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.compReloc = true;
-            var constant = new GenTreeIntCon(TYP_I_IMPL, (nint)0x12345678)
+            var constant = new GenTreeIntCon(TYP_LONG, (nint)0x12345678)
             {
-                RegNum = REG_NA,
+                RegNum = REG_X64_NA,
                 IsContained = true,
             };
             constant.Flags |= GTF_ICON_FIELD_HDL;
@@ -156,20 +156,20 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             var indir = new GenTreeIndir(GT_IND, TYP_SIMD16, constant);
             if (form == 0)
             {
-                emitter.emitIns_R_A_I(INS_pshufd, EA_16BYTE, REG_XMM0, indir, 7);
+                emitter.emitIns_R_A_I(INS_pshufd, EA_16BYTE, REG_X64_XMM0, indir, 7);
             }
             else if (form == 1)
             {
-                emitter.emitIns_R_R_A_I(INS_shufps, EA_16BYTE, REG_XMM0, REG_XMM1, indir, 7, IF_RWR_RRD_ARD_CNS);
+                emitter.emitIns_R_R_A_I(INS_shufps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, indir, 7, IF_XARCH_RWR_RRD_ARD_CNS);
             }
             else
             {
-                emitter.emitIns_R_R_A(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, indir);
+                emitter.emitIns_R_R_A(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, indir);
             }
 
             var id = Last(emitter);
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_NA));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(id.idIsDspReloc(), Is.True);
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)0x12345678));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
@@ -187,26 +187,26 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
         WithEmitter((compiler, emitter) =>
         {
             var indir = Address(compiler, 0);
-            emitter.emitIns_R_R_A(INS_mulx, EA_8BYTE, REG_R8, REG_R9, indir);
-            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_RWR_RWR_ARD));
+            emitter.emitIns_R_R_A(INS_mulx, EA_8BYTE, REG_X64_R8, REG_X64_R9, indir);
+            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RWR_ARD));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(5u));
 
             emitter.UsePromotedEvexEncodings = true;
-            emitter.emitIns_R_R_A(INS_add, EA_8BYTE, REG_R8, REG_R9, indir, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf);
+            emitter.emitIns_R_R_A(INS_add, EA_8BYTE, REG_X64_R8, REG_X64_R9, indir, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf);
             var id = Last(emitter);
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RRW_RRD_ARD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RRW_RRD_ARD));
             Assert.That(id.idIsEvexNdContextSet(), Is.True);
             Assert.That(id.idIsEvexNfContextSet(), Is.True);
             Assert.That(id.idCodeSize(), Is.EqualTo(6u));
         });
     }
 
-    [TestCase(false, false, REG_XMM0, 1, 3)]
-    [TestCase(false, false, REG_XMM1, 2, 6)]
-    [TestCase(false, true, REG_XMM1, 1, 4)]
-    [TestCase(true, false, REG_XMM0, 1, 4)]
-    [TestCase(true, false, REG_XMM1, 2, 7)]
-    [TestCase(true, true, REG_XMM1, 1, 5)]
+    [TestCase(false, false, REG_X64_XMM0, 1, 3)]
+    [TestCase(false, false, REG_X64_XMM1, 2, 6)]
+    [TestCase(false, true, REG_X64_XMM1, 1, 4)]
+    [TestCase(true, false, REG_X64_XMM0, 1, 4)]
+    [TestCase(true, false, REG_X64_XMM1, 2, 7)]
+    [TestCase(true, true, REG_X64_XMM1, 1, 5)]
     public static void SimdMemoryWrappersCopyOnlyForLegacyDistinctDestinations(
         bool stack, bool vex, regNumber source, int count, int size)
     {
@@ -216,18 +216,18 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             emitter.UseVexEncodings = vex;
             if (stack)
             {
-                emitter.emitIns_SIMD_R_R_S(INS_addps, EA_16BYTE, REG_XMM0, source, 0, 0, INS_OPTS_NONE);
+                emitter.emitIns_SIMD_R_R_S(INS_addps, EA_16BYTE, REG_X64_XMM0, source, 0, 0, INS_OPTS_NONE);
             }
             else
             {
-                emitter.emitIns_SIMD_R_R_A(INS_addps, EA_16BYTE, REG_XMM0, source, Address(compiler, 0), INS_OPTS_NONE);
+                emitter.emitIns_SIMD_R_R_A(INS_addps, EA_16BYTE, REG_X64_XMM0, source, Address(compiler, 0), INS_OPTS_NONE);
             }
 
             Assert.That(CurrentCount(emitter), Is.EqualTo(count));
             Assert.That(CurrentSize(emitter), Is.EqualTo(size));
             var id = Last(emitter);
             Assert.That(id.idIns(), Is.EqualTo(INS_addps));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM0));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM0));
             if (vex)
             {
                 Assert.That(id.idReg2(), Is.EqualTo(source));
@@ -241,10 +241,10 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
         });
     }
 
-    [TestCase(INS_pslld, false, REG_XMM0, 1, 5, IF_RWR_CNS)]
-    [TestCase(INS_pslld, false, REG_XMM1, 2, 8, IF_RWR_CNS)]
-    [TestCase(INS_pslld, true, REG_XMM1, 1, 5, IF_RWR_RRD_CNS)]
-    [TestCase(INS_pshufd, false, REG_XMM1, 1, 5, IF_RWR_RRD_CNS)]
+    [TestCase(INS_pslld, false, REG_X64_XMM0, 1, 5, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_pslld, false, REG_X64_XMM1, 2, 8, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_pslld, true, REG_X64_XMM1, 1, 5, IF_XARCH_RWR_RRD_CNS)]
+    [TestCase(INS_pshufd, false, REG_X64_XMM1, 1, 5, IF_XARCH_RWR_RRD_CNS)]
     public static void SimdImmediateWrappersRetainLegacyCopiesAndIndependentDestinationExceptions(
         instruction ins, bool vex, regNumber source, int count, int size, Emitter.insFormat format)
     {
@@ -252,13 +252,13 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
         {
             emitter.UseEvexEncodings = vex;
             emitter.UseVexEncodings = vex;
-            emitter.emitIns_SIMD_R_R_I(ins, EA_16BYTE, REG_XMM0, source, 7, INS_OPTS_NONE);
+            emitter.emitIns_SIMD_R_R_I(ins, EA_16BYTE, REG_X64_XMM0, source, 7, INS_OPTS_NONE);
 
             Assert.That(CurrentCount(emitter), Is.EqualTo(count));
             Assert.That(CurrentSize(emitter), Is.EqualTo(size));
             Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(format));
             Assert.That(Constant(emitter, Last(emitter)), Is.EqualTo((nint)7));
-            if (format == IF_RWR_RRD_CNS)
+            if (format == IF_XARCH_RWR_RRD_CNS)
             {
                 Assert.That(Last(emitter).idReg2(), Is.EqualTo(source));
             }
@@ -277,7 +277,7 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
         {
             var id = EmitterInstructionAllocationTests.Allocate(emitter, attr);
             id.idIns(ins);
-            id.idInsFmt(IF_MRW_CNS);
+            id.idInsFmt(IF_XARCH_MRW_CNS);
             if (relocation)
             {
                 id.idSetIsCnsReloc();
@@ -317,67 +317,67 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
                 {
                     case 0:
                     {
-                        emitter.emitIns_R_A_I(INS_pshufd, EA_16BYTE, REG_XMM0, address, 7);
+                        emitter.emitIns_R_A_I(INS_pshufd, EA_16BYTE, REG_X64_XMM0, address, 7);
                         break;
                     }
 
                     case 1:
                     {
-                        emitter.emitIns_R_C_I(INS_pshufd, EA_16BYTE, REG_XMM0, field, 0, 7);
+                        emitter.emitIns_R_C_I(INS_pshufd, EA_16BYTE, REG_X64_XMM0, field, 0, 7);
                         break;
                     }
 
                     case 2:
                     {
-                        emitter.emitIns_R_S_I(INS_pshufd, EA_16BYTE, REG_XMM0, 0, 0, 7);
+                        emitter.emitIns_R_S_I(INS_pshufd, EA_16BYTE, REG_X64_XMM0, 0, 0, 7);
                         break;
                     }
 
                     case 3:
                     {
-                        emitter.emitIns_R_R_A_I(INS_shufps, EA_16BYTE, REG_XMM0, REG_XMM1, address, 7, IF_RWR_RRD_ARD_CNS);
+                        emitter.emitIns_R_R_A_I(INS_shufps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, address, 7, IF_XARCH_RWR_RRD_ARD_CNS);
                         break;
                     }
 
                     case 4:
                     {
-                        emitter.emitIns_R_R_C_I(INS_shufps, EA_16BYTE, REG_XMM0, REG_XMM1, field, 0, 7);
+                        emitter.emitIns_R_R_C_I(INS_shufps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, field, 0, 7);
                         break;
                     }
 
                     case 5:
                     {
-                        emitter.emitIns_R_R_S_I(INS_shufps, EA_16BYTE, REG_XMM0, REG_XMM1, 0, 0, 7);
+                        emitter.emitIns_R_R_S_I(INS_shufps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, 0, 0, 7);
                         break;
                     }
 
                     case 6:
                     {
-                        emitter.emitIns_R_R_A(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, address);
+                        emitter.emitIns_R_R_A(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, address);
                         break;
                     }
 
                     case 7:
                     {
-                        emitter.emitIns_R_A(INS_addps, EA_16BYTE, REG_XMM0, address);
+                        emitter.emitIns_R_A(INS_addps, EA_16BYTE, REG_X64_XMM0, address);
                         break;
                     }
 
                     case 8:
                     {
-                        emitter.emitIns_SIMD_R_R_I(INS_pslld, EA_16BYTE, REG_XMM0, REG_XMM1, 7, INS_OPTS_NONE);
+                        emitter.emitIns_SIMD_R_R_I(INS_pslld, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, 7, INS_OPTS_NONE);
                         break;
                     }
 
                     case 9:
                     {
-                        emitter.emitIns_SIMD_R_R_A(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, address, INS_OPTS_NONE);
+                        emitter.emitIns_SIMD_R_R_A(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, address, INS_OPTS_NONE);
                         break;
                     }
 
                     default:
                     {
-                        emitter.emitIns_SIMD_R_R_S(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, 0, 0, INS_OPTS_NONE);
+                        emitter.emitIns_SIMD_R_R_S(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, 0, 0, INS_OPTS_NONE);
                         break;
                     }
                 }
@@ -406,11 +406,11 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             var address = Address(compiler, offset);
             if (twoRegisters)
             {
-                emitter.emitIns_R_R_A_I(ins, attr, REG_XMM0, REG_XMM1, address, value, IF_RWR_RRD_ARD_CNS, options);
+                emitter.emitIns_R_R_A_I(ins, attr, REG_X64_XMM0, REG_X64_XMM1, address, value, IF_XARCH_RWR_RRD_ARD_CNS, options);
             }
             else
             {
-                emitter.emitIns_R_A_I(ins, attr, REG_XMM0, address, value, options);
+                emitter.emitIns_R_A_I(ins, attr, REG_X64_XMM0, address, value, options);
             }
         }
         else if (memoryKind == 1)
@@ -418,33 +418,33 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
             var field = Compiler.eeFindJitDataOffs(64);
             if (twoRegisters)
             {
-                emitter.emitIns_R_R_C_I(ins, attr, REG_XMM0, REG_XMM1, field, offset, value, options);
+                emitter.emitIns_R_R_C_I(ins, attr, REG_X64_XMM0, REG_X64_XMM1, field, offset, value, options);
             }
             else
             {
-                emitter.emitIns_R_C_I(ins, attr, REG_XMM0, field, offset, value, options);
+                emitter.emitIns_R_C_I(ins, attr, REG_X64_XMM0, field, offset, value, options);
             }
         }
         else if (twoRegisters)
         {
-            emitter.emitIns_R_R_S_I(ins, attr, REG_XMM0, REG_XMM1, 0, offset, value, options);
+            emitter.emitIns_R_R_S_I(ins, attr, REG_X64_XMM0, REG_X64_XMM1, 0, offset, value, options);
         }
         else
         {
-            emitter.emitIns_R_S_I(ins, attr, REG_XMM0, 0, offset, value, options);
+            emitter.emitIns_R_S_I(ins, attr, REG_X64_XMM0, 0, offset, value, options);
         }
     }
 
     private static GenTreeIndir Address(Compiler compiler, int offset)
     {
-        var reg = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-        reg.RegNum = REG_RAX;
+        var reg = compiler.gtNewLclvNode(TYP_LONG, 0);
+        reg.RegNum = REG_X64_RAX;
         GenTree address = reg;
         if (offset != 0)
         {
             address = new GenTreeAddrMode(TYP_BYREF, reg, null, 0, offset)
             {
-                RegNum = REG_NA,
+                RegNum = REG_X64_NA,
                 IsContained = true,
             };
         }
@@ -454,7 +454,7 @@ internal static unsafe class EmitterMemoryImmediateInstructionTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.getRelocTypeHint = &GetRelocTypeHint;

@@ -246,7 +246,7 @@ internal static unsafe class EmitterIssueBookkeepingClosureTests
 #if TARGET_XARCH
             descriptor.idInsFmt(insFormat.IF_NONE);
 #else
-            descriptor.idInsFmt(insFormat.IF_SN_0A);
+            descriptor.idInsFmt(insFormat.IF_ARM64_SN_0A);
 #endif
 
             return descriptor;

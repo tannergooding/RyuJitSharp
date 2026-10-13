@@ -16,12 +16,12 @@ namespace RyuJitSharp.UnitTests;
 internal static class EmitterAddressInstructionTests
 {
 #if TARGET_X86
-    [TestCase(INS_mov, EA_4BYTE, REG_NA, REG_NA, 0u, REG_EAX, IF_RWR_ARD, 5u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_NA, REG_NA, 0u, REG_EAX, IF_AWR_RRD, 5u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_NA, REG_NA, 0u, REG_ECX, IF_RWR_ARD, 6u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_ESP, REG_NA, 0u, REG_EAX, IF_RWR_ARD, 3u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_EBP, REG_NA, 0u, REG_EAX, IF_RWR_ARD, 3u)]
-    [TestCase(INS_mov, EA_4BYTE, REG_EBP, REG_ECX, 0u, REG_EAX, IF_RWR_ARD, 3u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 5u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_AWR_RRD, 5u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_X64_NA, REG_X64_NA, 0u, REG_X64_ECX, IF_XARCH_RWR_ARD, 6u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_ESP, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_X64_EBP, REG_X64_NA, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u)]
+    [TestCase(INS_mov, EA_4BYTE, REG_X64_EBP, REG_X64_ECX, 0u, REG_X64_EAX, IF_XARCH_RWR_ARD, 3u)]
     public static void X86AbsoluteAndIndexedAddressesPreserveNativeWidth(
         instruction ins, emitAttr attr, regNumber baseReg, regNumber index, uint scale,
         regNumber targetReg, Emitter.insFormat format, uint size)
@@ -30,20 +30,20 @@ internal static class EmitterAddressInstructionTests
         {
             var id = Address(emitter, ins, attr, baseReg, index, scale, 0, targetReg);
             id.idInsFmt(format);
-            var code = format == IF_AWR_RRD ? insCodeMR(ins) : insCodeRM(ins);
+            var code = format == IF_XARCH_AWR_RRD ? insCodeMR(ins) : insCodeRM(ins);
 
             Assert.That(emitter.emitInsSizeAM(id, code), Is.EqualTo(size));
-            if ((baseReg == REG_EBP) && (index == REG_ECX))
+            if ((baseReg == REG_X64_EBP) && (index == REG_X64_ECX))
             {
-                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_ECX));
-                Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_EBP));
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_ECX));
+                Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_EBP));
             }
         });
     }
 #endif
 
-    [TestCase(INS_inc, EA_4BYTE, REG_RAX, 0, IF_ARW, 2u)]
-    [TestCase(INS_dec, EA_2BYTE, REG_RSP, -8, IF_ARW, 5u)]
+    [TestCase(INS_inc, EA_4BYTE, REG_X64_RAX, 0, IF_XARCH_ARW, 2u)]
+    [TestCase(INS_dec, EA_2BYTE, REG_X64_RSP, -8, IF_XARCH_ARW, 5u)]
     public static void UnaryBaseAddressRecordsSizeAndOptions(
         instruction ins, emitAttr attr, regNumber baseReg, int displacement, Emitter.insFormat format, uint size)
     {
@@ -54,7 +54,7 @@ internal static class EmitterAddressInstructionTests
 
             Assert.That(id.idInsFmt(), Is.EqualTo(format));
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(Displacement(emitter, id), Is.EqualTo((nint)displacement));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
             Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
@@ -67,18 +67,18 @@ internal static class EmitterAddressInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_AR(INS_mov, EA_8BYTE, REG_RAX, REG_RSP, 8);
+            emitter.emitIns_R_AR(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RSP, 8);
             var id = Last(emitter);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_ARD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RAX));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RSP));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_ARD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RSP));
             Assert.That(Displacement(emitter, id), Is.EqualTo((nint)8));
             Assert.That(id.idCodeSize(), Is.EqualTo(5u));
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
             Assert.That(CurrentSize(emitter), Is.EqualTo(5));
 
-            emitter.emitIns_R_AR(INS_lea, EA_8BYTE, REG_RAX, REG_RAX, 0);
+            emitter.emitIns_R_AR(INS_lea, EA_8BYTE, REG_X64_RAX, REG_X64_RAX, 0);
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
             Assert.That(CurrentSize(emitter), Is.EqualTo(5));
         });
@@ -89,13 +89,13 @@ internal static class EmitterAddressInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_AR_R(INS_xchg, EA_4BYTE, REG_RCX, REG_RAX, 0);
+            emitter.emitIns_AR_R(INS_xchg, EA_4BYTE, REG_X64_RCX, REG_X64_RAX, 0);
             var id = Last(emitter);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARW_RRW));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RCX));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_ARW_RRW));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RCX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.Zero);
             Assert.That(id.idCodeSize(), Is.EqualTo(2u));
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
@@ -108,13 +108,13 @@ internal static class EmitterAddressInstructionTests
         WithEmitter((_, emitter) =>
         {
             emitter.UseVexEncodings = true;
-            emitter.emitIns_AR_R_R(INS_vmaskmovps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_RAX, 16);
+            emitter.emitIns_AR_R_R(INS_vmaskmovps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_RAX, 16);
             var id = Last(emitter);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_AWR_RRD_RRD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM1));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_AWR_RRD_RRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM1));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM2));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
             Assert.That(Displacement(emitter, id), Is.EqualTo((nint)16));
             Assert.That(id.idCodeSize(), Is.GreaterThan(0u));
             Assert.That(CurrentSize(emitter), Is.EqualTo((int)id.idCodeSize()));
@@ -122,14 +122,14 @@ internal static class EmitterAddressInstructionTests
         });
     }
 
-    [TestCase(INS_mov, EA_4BYTE, REG_RAX, 0L, 7u, false)]
-    [TestCase(INS_lea, EA_8BYTE, REG_RAX, 0x12345678L, 8u, true)]
-    [TestCase(INS_mov, EA_8BYTE | EA_DSP_RELOC_FLG, REG_RAX, 0L, 7u, false)]
-    [TestCase(INS_lea, EA_8BYTE | EA_DSP_RELOC_FLG, REG_R8, -8192L, 7u, true)]
-    [TestCase(INS_mov, EA_2BYTE, REG_RAX, 8191L, 8u, false)]
-    [TestCase(INS_mov, EA_1BYTE, REG_RSI, 8192L, 8u, true)]
-    [TestCase(INS_lea, EA_8BYTE, REG_RAX, -8191L, 8u, false)]
-    [TestCase(INS_mov, EA_GCREF, REG_RAX, long.MaxValue, 8u, true)]
+    [TestCase(INS_mov, EA_4BYTE, REG_X64_RAX, 0L, 7u, false)]
+    [TestCase(INS_lea, EA_8BYTE, REG_X64_RAX, 0x12345678L, 8u, true)]
+    [TestCase(INS_mov, EA_8BYTE | EA_DSP_RELOC_FLG, REG_X64_RAX, 0L, 7u, false)]
+    [TestCase(INS_lea, EA_8BYTE | EA_DSP_RELOC_FLG, REG_X64_R8, -8192L, 7u, true)]
+    [TestCase(INS_mov, EA_2BYTE, REG_X64_RAX, 8191L, 8u, false)]
+    [TestCase(INS_mov, EA_1BYTE, REG_X64_RSI, 8192L, 8u, true)]
+    [TestCase(INS_lea, EA_8BYTE, REG_X64_RAX, -8191L, 8u, false)]
+    [TestCase(INS_mov, EA_64BIT_GCREF, REG_X64_RAX, long.MaxValue, 8u, true)]
     public static void AbsoluteAddressesRetainDisplacementWidthAndRelocationSizing(
         instruction ins, emitAttr attr, regNumber reg, long displacement, uint size, bool large)
     {
@@ -139,10 +139,10 @@ internal static class EmitterAddressInstructionTests
             var id = Last(emitter);
 
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_ARD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_ARD));
             Assert.That(id.idReg1(), Is.EqualTo(reg));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_NA));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(Displacement(emitter, id), Is.EqualTo((nint)displacement));
             Assert.That(id.idIsLargeDsp(), Is.EqualTo(large));
             Assert.That(id.NativeLogicalSize, Is.EqualTo(large ? 24 : 16));
@@ -168,7 +168,7 @@ internal static class EmitterAddressInstructionTests
             Assert.That(prefix.idCodeSize(), Is.EqualTo(1u));
             Assert.That(prefix.NativeLogicalSize, Is.EqualTo(8));
 
-            emitter.emitIns_R_AI(INS_lea, EA_8BYTE | EA_DSP_RELOC_FLG | EA_CNS_TLSGD_RELOC, REG_RDI, 0);
+            emitter.emitIns_R_AI(INS_lea, EA_8BYTE | EA_DSP_RELOC_FLG | EA_CNS_TLSGD_RELOC, REG_X64_RDI, 0);
             Assert.That(Last(emitter).idIsTlsGD(), Is.True);
             Assert.That(Last(emitter).idIsNoGC(), Is.False);
             Assert.That(CurrentCount(emitter), Is.EqualTo(2));
@@ -176,28 +176,28 @@ internal static class EmitterAddressInstructionTests
         });
     }
 
-    [TestCase(REG_RAX, 0L, 2u)]
-    [TestCase(REG_RSP, 0L, 3u)]
-    [TestCase(REG_RBP, 0L, 3u)]
-    [TestCase(REG_R12, 0L, 4u)]
-    [TestCase(REG_R13, 0L, 4u)]
-    [TestCase(REG_R20, 0L, 5u)]
-    [TestCase(REG_R21, 0L, 5u)]
-    [TestCase(REG_R28, 0L, 5u)]
-    [TestCase(REG_R29, 0L, 5u)]
-    [TestCase(REG_R31, 0L, 4u)]
-    [TestCase(REG_RAX, -128L, 3u)]
-    [TestCase(REG_RAX, 127L, 3u)]
-    [TestCase(REG_RAX, -129L, 6u)]
-    [TestCase(REG_RAX, 128L, 6u)]
-    [TestCase(REG_NA, 0L, 7u)]
+    [TestCase(REG_X64_RAX, 0L, 2u)]
+    [TestCase(REG_X64_RSP, 0L, 3u)]
+    [TestCase(REG_X64_RBP, 0L, 3u)]
+    [TestCase(REG_X64_R12, 0L, 4u)]
+    [TestCase(REG_X64_R13, 0L, 4u)]
+    [TestCase(REG_X64_R20, 0L, 5u)]
+    [TestCase(REG_X64_R21, 0L, 5u)]
+    [TestCase(REG_X64_R28, 0L, 5u)]
+    [TestCase(REG_X64_R29, 0L, 5u)]
+    [TestCase(REG_X64_R31, 0L, 4u)]
+    [TestCase(REG_X64_RAX, -128L, 3u)]
+    [TestCase(REG_X64_RAX, 127L, 3u)]
+    [TestCase(REG_X64_RAX, -129L, 6u)]
+    [TestCase(REG_X64_RAX, 128L, 6u)]
+    [TestCase(REG_X64_NA, 0L, 7u)]
     public static void BaseRegistersSelectSibDisplacementAndExtendedPrefixes(regNumber reg, long displacement, uint size)
     {
         WithEmitter((_, emitter) =>
         {
             emitter.UseRex2Encodings = true;
             emitter.UsePromotedEvexEncodings = true;
-            var id = Address(emitter, INS_mov, EA_4BYTE, reg, REG_NA, 0, (nint)displacement);
+            var id = Address(emitter, INS_mov, EA_4BYTE, reg, REG_X64_NA, 0, (nint)displacement);
 
             Assert.That(emitter.emitInsSizeAM(id, insCodeRM(INS_mov)), Is.EqualTo(size));
             Assert.That(Displacement(emitter, id), Is.EqualTo((nint)displacement));
@@ -205,16 +205,16 @@ internal static class EmitterAddressInstructionTests
         });
     }
 
-    [TestCase(REG_RAX, REG_RCX, 0u, 0L, 3u, REG_RAX, REG_RCX)]
-    [TestCase(REG_RBP, REG_RCX, 0u, 0L, 3u, REG_RCX, REG_RBP)]
-    [TestCase(REG_R13, REG_RCX, 0u, 0L, 4u, REG_RCX, REG_R13)]
-    [TestCase(REG_R21, REG_RCX, 0u, 0L, 5u, REG_RCX, REG_R21)]
-    [TestCase(REG_RBP, REG_R13, 0u, 0L, 5u, REG_RBP, REG_R13)]
-    [TestCase(REG_RBP, REG_RCX, 1u, 0L, 4u, REG_RBP, REG_RCX)]
-    [TestCase(REG_RBP, REG_RCX, 0u, 1L, 4u, REG_RBP, REG_RCX)]
-    [TestCase(REG_RAX, REG_RCX, 2u, 128L, 7u, REG_RAX, REG_RCX)]
-    [TestCase(REG_NA, REG_RCX, 1u, 0L, 7u, REG_NA, REG_RCX)]
-    [TestCase(REG_NA, REG_RCX, 3u, 1L, 7u, REG_NA, REG_RCX)]
+    [TestCase(REG_X64_RAX, REG_X64_RCX, 0u, 0L, 3u, REG_X64_RAX, REG_X64_RCX)]
+    [TestCase(REG_X64_RBP, REG_X64_RCX, 0u, 0L, 3u, REG_X64_RCX, REG_X64_RBP)]
+    [TestCase(REG_X64_R13, REG_X64_RCX, 0u, 0L, 4u, REG_X64_RCX, REG_X64_R13)]
+    [TestCase(REG_X64_R21, REG_X64_RCX, 0u, 0L, 5u, REG_X64_RCX, REG_X64_R21)]
+    [TestCase(REG_X64_RBP, REG_X64_R13, 0u, 0L, 5u, REG_X64_RBP, REG_X64_R13)]
+    [TestCase(REG_X64_RBP, REG_X64_RCX, 1u, 0L, 4u, REG_X64_RBP, REG_X64_RCX)]
+    [TestCase(REG_X64_RBP, REG_X64_RCX, 0u, 1L, 4u, REG_X64_RBP, REG_X64_RCX)]
+    [TestCase(REG_X64_RAX, REG_X64_RCX, 2u, 128L, 7u, REG_X64_RAX, REG_X64_RCX)]
+    [TestCase(REG_X64_NA, REG_X64_RCX, 1u, 0L, 7u, REG_X64_NA, REG_X64_RCX)]
+    [TestCase(REG_X64_NA, REG_X64_RCX, 3u, 1L, 7u, REG_X64_NA, REG_X64_RCX)]
     public static void IndexedAddressesPreserveScaleAndOnlySwapEligibleUnscaledBases(
         regNumber reg, regNumber index, uint scale, long displacement, uint size,
         regNumber expectedBase, regNumber expectedIndex)
@@ -237,17 +237,17 @@ internal static class EmitterAddressInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            var id = Address(emitter, INS_vgatherdps, EA_16BYTE, REG_RBP, REG_XMM1, 0, 0, REG_XMM0);
+            var id = Address(emitter, INS_vgatherdps, EA_16BYTE, REG_X64_RBP, REG_X64_XMM1, 0, 0, REG_X64_XMM0);
 
             Assert.That(emitter.emitInsSizeAM(id, insCodeRM(INS_vgatherdps)), Is.EqualTo(7u));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RBP));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_XMM1));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RBP));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_XMM1));
         });
     }
 
-    [TestCase(REG_NA, REG_NA, 6u)]
-    [TestCase(REG_RAX, REG_NA, 6u)]
-    [TestCase(REG_RBP, REG_RCX, 7u)]
+    [TestCase(REG_X64_NA, REG_X64_NA, 6u)]
+    [TestCase(REG_X64_RAX, REG_X64_NA, 6u)]
+    [TestCase(REG_X64_RBP, REG_X64_RCX, 7u)]
     public static void DisplacementRelocationsKeepDisp32AndPreventBaseSwapping(
         regNumber reg, regNumber index, uint size)
     {
@@ -273,7 +273,7 @@ internal static class EmitterAddressInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            var id = Address(emitter, INS_addps, attr, REG_RAX, REG_NA, 0, (nint)displacement, REG_XMM0);
+            var id = Address(emitter, INS_addps, attr, REG_X64_RAX, REG_X64_NA, 0, (nint)displacement, REG_X64_XMM0);
             if (broadcast)
             {
                 id.idSetEvexBroadcastBit();
@@ -291,12 +291,12 @@ internal static class EmitterAddressInstructionTests
         WithEmitter((_, emitter) =>
         {
             var vector = Address(emitter, INS_addps, EA_64BYTE | EA_DSP_RELOC_FLG,
-                REG_RAX, REG_NA, 0, 64, REG_XMM0);
+                REG_X64_RAX, REG_X64_NA, 0, 64, REG_X64_XMM0);
             Assert.That(emitter.emitInsSizeAM(vector, insCodeRM(INS_addps)), Is.EqualTo(10u));
             Assert.That(vector.idGetEvexbContext(), Is.Zero);
 
             emitter.UsePromotedEvexEncodings = true;
-            var scalar = Address(emitter, INS_add, EA_8BYTE, REG_RAX, REG_NA, 0, 128);
+            var scalar = Address(emitter, INS_add, EA_8BYTE, REG_X64_RAX, REG_X64_NA, 0, 128);
             scalar.idSetEvexNdContext();
             Assert.That(emitter.emitInsSizeAM(scalar, insCodeRM(INS_add)), Is.EqualTo(10u));
             Assert.That(scalar.idIsEvexNdContextSet(), Is.True);
@@ -313,7 +313,7 @@ internal static class EmitterAddressInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            var id = Address(emitter, ins, attr, REG_RAX, REG_NA, 0, 0);
+            var id = Address(emitter, ins, attr, REG_X64_RAX, REG_X64_NA, 0, 0);
             var code = ins is INS_cmpxchg or INS_prefetcht0 ? insCodeMR(ins) : insCodeRM(ins);
 
             Assert.That(emitter.emitInsSizeAM(id, code), Is.EqualTo(size));
@@ -325,7 +325,7 @@ internal static class EmitterAddressInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            var id = Address(emitter, INS_imul_08, EA_4BYTE, REG_RAX, REG_NA, 0, 0);
+            var id = Address(emitter, INS_imul_08, EA_4BYTE, REG_X64_RAX, REG_X64_NA, 0, 0);
 
             Assert.That(emitter.emitInsSizeAM(id, insCodeMI(INS_imul_08)), Is.EqualTo(3u));
         });
@@ -350,9 +350,9 @@ internal static class EmitterAddressInstructionTests
             }
             var id = NewAddressConstant(emitter, attr, 0, value);
             id.idIns(ins);
-            id.idInsFmt(emitter.emitInsModeFormat(ins, IF_ARD_CNS));
-            id.idAddr().iiaAddrMode.amBaseReg = REG_RAX;
-            id.idAddr().iiaAddrMode.amIndxReg = REG_NA;
+            id.idInsFmt(emitter.emitInsModeFormat(ins, IF_XARCH_ARD_CNS));
+            id.idAddr().iiaAddrMode.amBaseReg = REG_X64_RAX;
+            id.idAddr().iiaAddrMode.amIndxReg = REG_X64_NA;
 
             Assert.That(emitter.emitInsSizeAM(id, insCodeMI(ins), value), Is.EqualTo(size));
             Assert.That(id.idIsCnsReloc(), Is.EqualTo(relocatable));
@@ -365,8 +365,8 @@ internal static class EmitterAddressInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            var id = Address(emitter, ins, EA_8BYTE, REG_RSP, REG_NA, 0, 0);
-            id.idInsFmt(IF_ARD);
+            var id = Address(emitter, ins, EA_8BYTE, REG_X64_RSP, REG_X64_NA, 0, 0);
+            id.idInsFmt(IF_XARCH_ARD);
             id.idSetIsCall();
             Assert.That(emitter.emitInsSizeAM(id, insCodeMR(ins)), Is.EqualTo(3u));
             id.idAddr().iiaAddrMode.amDisp = 127;
@@ -395,18 +395,18 @@ internal static class EmitterAddressInstructionTests
         });
     }
 
-    [TestCase(IF_RWR_LABEL)]
-    [TestCase(IF_MRW_CNS)]
-    [TestCase(IF_MRW_RRD)]
-    [TestCase(IF_MRW_SHF)]
+    [TestCase(IF_XARCH_RWR_LABEL)]
+    [TestCase(IF_XARCH_MRW_CNS)]
+    [TestCase(IF_XARCH_MRW_RRD)]
+    [TestCase(IF_XARCH_MRW_SHF)]
     public static void NonAddressUnionFormatsDoNotInterpretTheirStorageAsBaseAndIndex(Emitter.insFormat format)
     {
         WithEmitter((_, emitter) =>
         {
-            var id = Address(emitter, INS_add, EA_4BYTE, REG_RSP, REG_RCX, 3, 0);
+            var id = Address(emitter, INS_add, EA_4BYTE, REG_X64_RSP, REG_X64_RCX, 3, 0);
             id.idInsFmt(format);
             Assert.That(emitter.emitInsSizeAM(id, insCodeRM(INS_add)), Is.EqualTo(7u));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RSP));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RSP));
         });
     }
 
@@ -417,7 +417,7 @@ internal static class EmitterAddressInstructionTests
         WithEmitter((_, emitter) =>
         {
             var handle = unchecked((nuint)0xFEDCBA9876543210UL);
-            emitter.emitIns_R_AI(INS_lea, EA_8BYTE, REG_RAX, 128, handle, GTF_ICON_HDL_MASK);
+            emitter.emitIns_R_AI(INS_lea, EA_8BYTE, REG_X64_RAX, 128, handle, GTF_ICON_HDL_MASK);
             var info = Last(emitter).idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
 
             Assert.That(info.idMemCookie, Is.EqualTo(unchecked((nint)handle)));
@@ -441,7 +441,7 @@ internal static class EmitterAddressInstructionTests
                 }
                 else
                 {
-                    emitter.emitIns_R_AI(INS_lea, EA_8BYTE, REG_RAX, 128);
+                    emitter.emitIns_R_AI(INS_lea, EA_8BYTE, REG_X64_RAX, 128);
                 }
             });
 
@@ -455,11 +455,11 @@ internal static class EmitterAddressInstructionTests
 #endif
 
     private static Emitter.instrDesc Address(Emitter emitter, instruction ins, emitAttr attr,
-        regNumber reg, regNumber index, uint scale, nint displacement, regNumber destination = REG_RAX)
+        regNumber reg, regNumber index, uint scale, nint displacement, regNumber destination = REG_X64_RAX)
     {
         var id = NewAddress(emitter, attr, displacement);
         id.idIns(ins);
-        id.idInsFmt(emitter.emitInsModeFormat(ins, IF_RRD_ARD));
+        id.idInsFmt(emitter.emitInsModeFormat(ins, IF_XARCH_RRD_ARD));
         id.idReg1(destination);
         id.idAddr().iiaAddrMode.amBaseReg = reg;
         id.idAddr().iiaAddrMode.amIndxReg = index;
@@ -469,7 +469,7 @@ internal static class EmitterAddressInstructionTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX,
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX,
             (compiler, codeGen, _) => action(compiler, codeGen.Emitter));
     }
 
@@ -489,10 +489,10 @@ internal static class EmitterAddressInstructionTests
             var id = new instrDescCGCA { idcDisp = displacement };
             id.idIns(INS_call);
             id.idOpSize(EA_8BYTE);
-            id.idInsFmt(IF_ARD);
+            id.idInsFmt(IF_XARCH_ARD);
             id.idSetIsLargeCall();
-            id.idAddr().iiaAddrMode.amBaseReg = REG_RAX;
-            id.idAddr().iiaAddrMode.amIndxReg = REG_NA;
+            id.idAddr().iiaAddrMode.amBaseReg = REG_X64_RAX;
+            id.idAddr().iiaAddrMode.amIndxReg = REG_X64_NA;
             // Deliberately differ from the large-call displacement slot.
             id.idAddr().iiaAddrMode.amDisp = 42;
             return id;

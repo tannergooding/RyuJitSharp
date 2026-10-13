@@ -14,8 +14,8 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class X86EmitterAddressStackOutputTests
 {
-    [TestCase(REG_NA, REG_NA, 0u, 0x12345678, "A178563412")]
-    [TestCase(REG_EBX, REG_ECX, 1u, 127, "8B444B7F")]
+    [TestCase(REG_X86_NA, REG_X86_NA, 0u, 0x12345678, "A178563412")]
+    [TestCase(REG_X86_EBX, REG_X86_ECX, 1u, 127, "8B444B7F")]
     public static void AddressLoadsRetainAccumulatorMoffsetAndScaledSib(regNumber baseReg, regNumber index,
         uint scale, int displacement, string hex)
     {
@@ -23,8 +23,8 @@ internal static unsafe class X86EmitterAddressStackOutputTests
         {
             var id = NewAddress(emitter, EA_4BYTE, displacement);
             id.idIns(INS_mov);
-            id.idInsFmt(IF_RWR_ARD);
-            id.idReg1(REG_EAX);
+            id.idInsFmt(IF_XARCH_RWR_ARD);
+            id.idReg1(REG_X86_EAX);
             id.idAddr().iiaAddrMode.amBaseReg = baseReg;
             id.idAddr().iiaAddrMode.amIndxReg = index;
             id.idAddr().iiaAddrMode.amScale = scale;

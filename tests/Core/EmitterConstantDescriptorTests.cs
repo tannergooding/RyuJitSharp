@@ -7,6 +7,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -235,11 +236,11 @@ internal static unsafe class EmitterConstantDescriptorTests
         descriptor.idIns(INS_add);
         ref var constant = ref DescriptorFactory.ConstantAlias(descriptor, addressMode);
         ref var address = ref descriptor.idAddr();
-        address.iiaLclVar.initLclVarAddr(32768, 255);
+        address.iiaInitLclVarAddr(32768, 255);
         var group = Save(emitter, false);
 
         constant = nint.MaxValue;
-        address.iiaLclVar.initLclVarAddr(-1, 7);
+        address.iiaInitLclVarAddr(-1, 7);
         Assert.That(group.igData, Has.Length.EqualTo(1));
         var saved = group.igData![0];
         Assert.That(saved, Is.SameAs(descriptor));

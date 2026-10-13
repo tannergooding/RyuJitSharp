@@ -36,9 +36,9 @@ internal static class EmitterShiftInstructionTests
         WithApxNdd(ndd, () => WithEmitter((_, emitter) =>
         {
             emitter.UsePromotedEvexEncodings = ndd;
-            var source = sameRegister ? REG_RAX : REG_RCX;
+            var source = sameRegister ? REG_X64_RAX : REG_X64_RCX;
             var ins = count == 1 ? one : many;
-            emitter.emitIns_BASE_R_R_I(ins, EA_8BYTE, REG_RAX, source, count);
+            emitter.emitIns_BASE_R_R_I(ins, EA_8BYTE, REG_X64_RAX, source, count);
 
             var descriptors = Descriptors(emitter);
             var useNdd = ndd && !sameRegister;
@@ -47,11 +47,11 @@ internal static class EmitterShiftInstructionTests
             var instructionSize = useNdd ? (count == 1 ? 6u : 7u) : (count == 1 ? 3u : 4u);
             Assert.That(descriptors, Has.Count.EqualTo(needsCopy ? 2 : 1));
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RAX));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RAX));
             Assert.That(id.idIsEvexNdContextSet(), Is.EqualTo(useNdd));
             Assert.That(id.idInsFmt(), Is.EqualTo(useNdd
-                ? (count == 1 ? IF_RWR_RRD : IF_RWR_RRD_SHF)
-                : (count == 1 ? IF_RRW : IF_RRW_SHF)));
+                ? (count == 1 ? IF_XARCH_RWR_RRD : IF_XARCH_RWR_RRD_SHF)
+                : (count == 1 ? IF_XARCH_RRW : IF_XARCH_RRW_SHF)));
             Assert.That(id.idCodeSize(), Is.EqualTo(instructionSize));
             Assert.That(CurrentSize(emitter), Is.EqualTo((int)instructionSize + (needsCopy ? 3 : 0)));
             if (useNdd)
@@ -65,7 +65,7 @@ internal static class EmitterShiftInstructionTests
             if (needsCopy)
             {
                 Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
-                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_RAX));
+                Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_RAX));
                 Assert.That(descriptors[0].idReg2(), Is.EqualTo(source));
             }
         }));
@@ -79,12 +79,12 @@ internal static class EmitterShiftInstructionTests
         WithApxNdd(enabled, () => WithEmitter((_, emitter) =>
         {
             emitter.UsePromotedEvexEncodings = promoted;
-            emitter.emitIns_BASE_R_R_I(INS_add, EA_8BYTE, REG_RAX, REG_RCX, 1);
+            emitter.emitIns_BASE_R_R_I(INS_add, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, 1);
 
             var id = Last(emitter);
             var ndd = enabled && promoted;
             Assert.That(Descriptors(emitter), Has.Count.EqualTo(ndd ? 1 : 2));
-            Assert.That(id.idInsFmt(), Is.EqualTo(ndd ? IF_RWR_RRD_CNS : IF_RRW_CNS));
+            Assert.That(id.idInsFmt(), Is.EqualTo(ndd ? IF_XARCH_RWR_RRD_CNS : IF_XARCH_RRW_CNS));
             Assert.That(id.idIsEvexNdContextSet(), Is.EqualTo(ndd));
             Assert.That(Constant(emitter, id), Is.EqualTo((nint)1));
         }));
@@ -104,21 +104,21 @@ internal static class EmitterShiftInstructionTests
         Assert.That(Emitter.IsShiftInstruction(INS_add), Is.False);
     }
 
-    [TestCase(REG_RCX, REG_NA, 1u, 0, 3u)]
-    [TestCase(REG_RBP, REG_NA, 1u, 0, 4u)]
-    [TestCase(REG_RCX, REG_RDX, 2u, 24, 5u)]
-    [TestCase(REG_RCX, REG_R8, 4u, 65536, 8u)]
-    [TestCase(REG_NA, REG_RDX, 8u, 0, 8u)]
+    [TestCase(REG_X64_RCX, REG_X64_NA, 1u, 0, 3u)]
+    [TestCase(REG_X64_RBP, REG_X64_NA, 1u, 0, 4u)]
+    [TestCase(REG_X64_RCX, REG_X64_RDX, 2u, 24, 5u)]
+    [TestCase(REG_X64_RCX, REG_X64_R8, 4u, 65536, 8u)]
+    [TestCase(REG_X64_NA, REG_X64_RDX, 8u, 0, 8u)]
     public static void IndexedLeaRetainsAllAddressFieldsAndDisplacementWidths(
         regNumber baseReg, regNumber indexReg, uint scale, int displacement, uint size)
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_ARX(INS_lea, EA_8BYTE, REG_RAX, baseReg, indexReg, scale, displacement);
+            emitter.emitIns_R_ARX(INS_lea, EA_8BYTE, REG_X64_RAX, baseReg, indexReg, scale, displacement);
             var id = Last(emitter);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_ARD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RAX));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_ARD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RAX));
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
             Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(indexReg));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(scale switch
@@ -134,18 +134,18 @@ internal static class EmitterShiftInstructionTests
         });
     }
 
-    [TestCase(INS_lea, REG_RAX, REG_NA, 0, 0)]
-    [TestCase(INS_lea, REG_RCX, REG_NA, 0, 1)]
-    [TestCase(INS_lea, REG_RAX, REG_RDX, 0, 1)]
-    [TestCase(INS_lea, REG_RAX, REG_NA, 1, 1)]
-    [TestCase(INS_mov, REG_RAX, REG_NA, 0, 1)]
+    [TestCase(INS_lea, REG_X64_RAX, REG_X64_NA, 0, 0)]
+    [TestCase(INS_lea, REG_X64_RCX, REG_X64_NA, 0, 1)]
+    [TestCase(INS_lea, REG_X64_RAX, REG_X64_RDX, 0, 1)]
+    [TestCase(INS_lea, REG_X64_RAX, REG_X64_NA, 1, 1)]
+    [TestCase(INS_mov, REG_X64_RAX, REG_X64_NA, 0, 1)]
     public static void OnlyIdentityLeaElidesTheDescriptor(
         instruction ins, regNumber baseReg, regNumber indexReg, int displacement, int count)
     {
         WithEmitter((_, emitter) =>
         {
             var used = Used(emitter);
-            emitter.emitIns_R_ARX(ins, EA_8BYTE, REG_RAX, baseReg, indexReg, 1, displacement);
+            emitter.emitIns_R_ARX(ins, EA_8BYTE, REG_X64_RAX, baseReg, indexReg, 1, displacement);
             Assert.That(CurrentCount(emitter), Is.EqualTo(count));
             if (count == 0)
             {
@@ -156,10 +156,10 @@ internal static class EmitterShiftInstructionTests
         });
     }
 
-    [TestCase(false, REG_XMM0, EA_16BYTE, 3u)]
-    [TestCase(true, REG_XMM0, EA_16BYTE, 4u)]
-    [TestCase(true, REG_XMM16, EA_16BYTE, 6u)]
-    [TestCase(true, REG_XMM0, EA_64BYTE, 6u)]
+    [TestCase(false, REG_X64_XMM0, EA_16BYTE, 3u)]
+    [TestCase(true, REG_X64_XMM0, EA_16BYTE, 4u)]
+    [TestCase(true, REG_X64_XMM16, EA_16BYTE, 6u)]
+    [TestCase(true, REG_X64_XMM0, EA_64BYTE, 6u)]
     public static void IndexedSimdLoadsUseLegacyVexAndEvexSizing(
         bool vex, regNumber destination, emitAttr attr, uint size)
     {
@@ -167,9 +167,9 @@ internal static class EmitterShiftInstructionTests
         {
             emitter.UseVexEncodings = vex;
             emitter.UseEvexEncodings = vex;
-            emitter.emitIns_R_ARX(INS_movups, attr, destination, REG_RAX, REG_NA, 1, 0);
+            emitter.emitIns_R_ARX(INS_movups, attr, destination, REG_X64_RAX, REG_X64_NA, 1, 0);
             var id = Last(emitter);
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_ARD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_ARD));
             Assert.That(id.idReg1(), Is.EqualTo(destination));
             Assert.That(id.idOpSize(), Is.EqualTo(attr));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
@@ -190,7 +190,7 @@ internal static class EmitterShiftInstructionTests
 
             var id = Last(emitter);
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(addressKind == 0 ? IF_SRW_SHF : IF_ARW_SHF));
+            Assert.That(id.idInsFmt(), Is.EqualTo(addressKind == 0 ? IF_XARCH_SRW_SHF : IF_XARCH_ARW_SHF));
             Assert.That(Constant(emitter, id), Is.EqualTo((nint)(count & 0x7F)));
             Assert.That(id.idCodeSize(), Is.EqualTo(addressKind switch { 0 => 5u, 1 => 4u, _ => 6u }));
             CheckAddress(emitter, id, addressKind);
@@ -209,7 +209,7 @@ internal static class EmitterShiftInstructionTests
 
             var id = Last(emitter);
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(addressKind == 0 ? IF_SRW : IF_ARW));
+            Assert.That(id.idInsFmt(), Is.EqualTo(addressKind == 0 ? IF_XARCH_SRW : IF_XARCH_ARW));
             Assert.That(id.idCodeSize(), Is.EqualTo(addressKind switch { 0 => 4u, 1 => 3u, _ => 5u }));
             CheckAddress(emitter, id, addressKind);
         });
@@ -228,15 +228,15 @@ internal static class EmitterShiftInstructionTests
             }
             else
             {
-                source.RegNum = REG_RCX;
+                source.RegNum = REG_X64_RCX;
             }
             var store = Store(compiler, addressKind, source);
             emitter.emitInsRMW(INS_add, EA_8BYTE, store, source);
 
             var id = Last(emitter);
             Assert.That(id.idInsFmt(), Is.EqualTo(addressKind == 0
-                ? (immediate ? IF_SRW_CNS : IF_SRW_RRD)
-                : (immediate ? IF_ARW_CNS : IF_ARW_RRD)));
+                ? (immediate ? IF_XARCH_SRW_CNS : IF_XARCH_SRW_RRD)
+                : (immediate ? IF_XARCH_ARW_CNS : IF_XARCH_ARW_RRD)));
             var size = addressKind switch { 0 => 4u, 1 => 3u, _ => 5u };
             if (immediate)
             {
@@ -245,7 +245,7 @@ internal static class EmitterShiftInstructionTests
             }
             else
             {
-                Assert.That(id.idReg1(), Is.EqualTo(REG_RCX));
+                Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RCX));
             }
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
             CheckAddress(emitter, id, addressKind);
@@ -286,17 +286,17 @@ internal static class EmitterShiftInstructionTests
                     }
                     case 2:
                     {
-                        emitter.emitIns_R_ARX(INS_lea, EA_8BYTE, REG_RAX, REG_RAX, REG_NA, 1, 0);
+                        emitter.emitIns_R_ARX(INS_lea, EA_8BYTE, REG_X64_RAX, REG_X64_RAX, REG_X64_NA, 1, 0);
                         break;
                     }
                     case 3:
                     {
-                        emitter.emitIns_R_ARX(INS_lea, EA_8BYTE, REG_RAX, REG_RCX, REG_NA, 1, 0);
+                        emitter.emitIns_R_ARX(INS_lea, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, REG_X64_NA, 1, 0);
                         break;
                     }
                     default:
                     {
-                        emitter.emitIns_BASE_R_R_I(INS_shl_N, EA_8BYTE, REG_RAX, REG_RCX, 3);
+                        emitter.emitIns_BASE_R_R_I(INS_shl_N, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, 3);
                         break;
                     }
                 }
@@ -320,12 +320,12 @@ internal static class EmitterShiftInstructionTests
         }
         else
         {
-            address = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-            address.RegNum = REG_RAX;
+            address = compiler.gtNewLclvNode(TYP_LONG, 0);
+            address.RegNum = REG_X64_RAX;
             if (kind == 2)
             {
-                var index = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-                index.RegNum = REG_RDX;
+                var index = compiler.gtNewLclvNode(TYP_LONG, 0);
+                index.RegNum = REG_X64_RDX;
                 address = new GenTreeAddrMode(TYP_BYREF, address, index, 4, 24) { IsContained = true };
             }
         }
@@ -342,8 +342,8 @@ internal static class EmitterShiftInstructionTests
         }
         else
         {
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(kind == 2 ? REG_RDX : REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(kind == 2 ? REG_X64_RDX : REG_X64_NA));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(kind == 2 ? 2u : 0u));
             Assert.That(Displacement(emitter, id), Is.EqualTo(kind == 2 ? (nint)24 : 0));
         }
@@ -365,7 +365,7 @@ internal static class EmitterShiftInstructionTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;

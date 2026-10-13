@@ -52,11 +52,11 @@ internal static unsafe class EmitterStackGCOutputTests
         });
     }
 
-#if !JIT32_GCENCODER
     [Test]
     [NonParallelizable]
     public static void SimpleStackZeroCountCallRecordsGeneralEncoderDescriptor()
     {
+        Assume.That(!Configuration.JIT32_GCENCODER);
         WithEmitter((compiler, codeGen, buffer) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -84,7 +84,6 @@ internal static unsafe class EmitterStackGCOutputTests
             Assert.That(record.rpdNext, Is.Null);
         });
     }
-#endif
 
     [TestCase(false, false, 1)]
     [TestCase(false, true, 2)]
@@ -257,13 +256,13 @@ internal static unsafe class EmitterStackGCOutputTests
         {
             var emitter = codeGen.Emitter;
             emitter.emitFullGCinfo = fullMap;
-            SyncThisRegister(emitter) = REG_NA;
-            ReferenceRegisters(emitter) = SRBM_RAX | SRBM_RDX;
-            ByrefRegisters(emitter) = SRBM_RCX;
+            SyncThisRegister(emitter) = REG_X64_NA;
+            ReferenceRegisters(emitter) = SRBM_X64_RAX | SRBM_X64_RDX;
+            ByrefRegisters(emitter) = SRBM_X64_RCX;
 
-            UpdateRegisters(emitter, GCT_GCREF, new regMaskTP(SRBM_RCX | SRBM_R8), buffer + 9);
+            UpdateRegisters(emitter, GCT_GCREF, new regMaskTP(SRBM_X64_RCX | SRBM_X64_R8), buffer + 9);
 
-            Assert.That(ReferenceRegisters(emitter), Is.EqualTo(SRBM_RCX | SRBM_R8));
+            Assert.That(ReferenceRegisters(emitter), Is.EqualTo(SRBM_X64_RCX | SRBM_X64_R8));
             Assert.That(ByrefRegisters(emitter), Is.EqualTo(SRBM_NONE));
             var record = RegPtrList(ref codeGen.GCInfo);
             if (!fullMap)
@@ -274,11 +273,11 @@ internal static unsafe class EmitterStackGCOutputTests
 
             (regMask add, regMask del, GCInfo.GCtype kind)[] expected =
             [
-                (SRBM_NONE, SRBM_RAX, GCT_GCREF),
-                (SRBM_NONE, SRBM_RCX, GCT_BYREF),
-                (SRBM_RCX, SRBM_NONE, GCT_GCREF),
-                (SRBM_NONE, SRBM_RDX, GCT_GCREF),
-                (SRBM_R8, SRBM_NONE, GCT_GCREF),
+                (SRBM_NONE, SRBM_X64_RAX, GCT_GCREF),
+                (SRBM_NONE, SRBM_X64_RCX, GCT_BYREF),
+                (SRBM_X64_RCX, SRBM_NONE, GCT_GCREF),
+                (SRBM_NONE, SRBM_X64_RDX, GCT_GCREF),
+                (SRBM_X64_R8, SRBM_NONE, GCT_GCREF),
             ];
             foreach (var (add, del, kind) in expected)
             {
@@ -297,7 +296,7 @@ internal static unsafe class EmitterStackGCOutputTests
 
     private static void WithEmitter(TestBody body)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_REF, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             codeGen.IsFullPtrRegMapRequired = true;
             var emitter = codeGen.Emitter;

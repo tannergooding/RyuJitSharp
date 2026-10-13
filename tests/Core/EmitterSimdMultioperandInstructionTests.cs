@@ -54,14 +54,14 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         WithEmitter((compiler, emitter) =>
         {
             emitter.UseVexEncodings = true;
-            emitter.emitIns_SIMD_R_R_A_R(INS_blendvps, EA_16BYTE, REG_XMM3, REG_XMM1,
-                REG_XMM2, Address(compiler, 0), INS_OPTS_NONE);
+            emitter.emitIns_SIMD_R_R_A_R(INS_blendvps, EA_16BYTE, REG_X64_XMM3, REG_X64_XMM1,
+                REG_X64_XMM2, Address(compiler, 0), INS_OPTS_NONE);
             var id = Last(emitter);
             Assert.That(id.idIns(), Is.EqualTo(INS_vblendvps));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_RRD_ARD_RRD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM1));
-            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)REG_XMM2));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RRD_ARD_RRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM3));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM1));
+            Assert.That(Emitter.emitGetInsSC(id), Is.EqualTo((nint)REG_X64_XMM2));
         });
     }
 
@@ -71,17 +71,17 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         WithEmitter((compiler, emitter) =>
         {
             emitter.UseVexEncodings = true;
-            emitter.emitIns_SIMD_R_R_R_A(INS_vfmadd132ps, EA_16BYTE, REG_XMM3,
-                REG_XMM1, REG_XMM2, Address(compiler, 0), INS_OPTS_NONE);
+            emitter.emitIns_SIMD_R_R_R_A(INS_vfmadd132ps, EA_16BYTE, REG_X64_XMM3,
+                REG_X64_XMM1, REG_X64_XMM2, Address(compiler, 0), INS_OPTS_NONE);
             var id = Last(emitter);
             Assert.That(id.idIns(), Is.EqualTo(INS_vfmadd132ps));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RRW_RRD_ARD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RRW_RRD_ARD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM3));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM2));
         });
     }
-    [TestCase(INS_addps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_RAX, -128, INS_OPTS_NONE, IF_RWR_RRD_ARD)]
-    [TestCase(INS_add, EA_8BYTE, REG_R16, REG_R17, REG_R31, 65536, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf, IF_RRW_RRD_ARD)]
+    [TestCase(INS_addps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_RAX, -128, INS_OPTS_NONE, IF_XARCH_RWR_RRD_ARD)]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_R16, REG_X64_R17, REG_X64_R31, 65536, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf, IF_XARCH_RRW_RRD_ARD)]
     public static void TwoRegisterBaseAddressesPreserveOperandsAndEncodingOptions(
         instruction ins, emitAttr attr, regNumber destination, regNumber source, regNumber baseReg,
         int offset, insOpts options, Emitter.insFormat format)
@@ -99,7 +99,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             Assert.That(id.idReg1(), Is.EqualTo(destination));
             Assert.That(id.idReg2(), Is.EqualTo(source));
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
             if (options != INS_OPTS_NONE)
             {
@@ -119,16 +119,16 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         WithEmitter((_, emitter) =>
         {
             emitter.UseEvexEncodings = false;
-            emitter.emitIns_R_AR_R(ins, attr, REG_XMM1, REG_XMM2, REG_R12, REG_XMM15, scale, 0);
+            emitter.emitIns_R_AR_R(ins, attr, REG_X64_XMM1, REG_X64_XMM2, REG_X64_R12, REG_X64_XMM15, scale, 0);
             var id = Last(emitter);
 
             Assert.That(id.idIns(), Is.EqualTo(ins));
             Assert.That(id.idOpSize(), Is.EqualTo(attr));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_ARD_RRD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM1));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R12));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_XMM15));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_ARD_RRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM1));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM2));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_R12));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_XMM15));
             Assert.That(1u << (int)id.idAddr().iiaAddrMode.amScale, Is.EqualTo((uint)scale));
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)0));
             Assert.That(id.idCodeSize(), Is.EqualTo(6u));
@@ -138,20 +138,20 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         });
     }
 
-    [TestCase(REG_RAX, 1, -129, 10u)]
-    [TestCase(REG_RAX, 1, -128, 7u)]
-    [TestCase(REG_RAX, 1, 127, 7u)]
-    [TestCase(REG_RAX, 1, 128, 10u)]
-    [TestCase(REG_RBP, 1, 0, 7u)]
-    [TestCase(REG_R13, 1, 0, 7u)]
-    [TestCase(REG_RBP, 8, 0, 7u)]
-    [TestCase(REG_NA, 8, 0, 10u)]
-    [TestCase(REG_RAX, 4, -8192, 10u)]
-    [TestCase(REG_RAX, 4, -8191, 10u)]
-    [TestCase(REG_RAX, 4, 8191, 10u)]
-    [TestCase(REG_RAX, 4, 8192, 10u)]
-    [TestCase(REG_RAX, 4, int.MinValue, 10u)]
-    [TestCase(REG_RAX, 4, int.MaxValue, 10u)]
+    [TestCase(REG_X64_RAX, 1, -129, 10u)]
+    [TestCase(REG_X64_RAX, 1, -128, 7u)]
+    [TestCase(REG_X64_RAX, 1, 127, 7u)]
+    [TestCase(REG_X64_RAX, 1, 128, 10u)]
+    [TestCase(REG_X64_RBP, 1, 0, 7u)]
+    [TestCase(REG_X64_R13, 1, 0, 7u)]
+    [TestCase(REG_X64_RBP, 8, 0, 7u)]
+    [TestCase(REG_X64_NA, 8, 0, 10u)]
+    [TestCase(REG_X64_RAX, 4, -8192, 10u)]
+    [TestCase(REG_X64_RAX, 4, -8191, 10u)]
+    [TestCase(REG_X64_RAX, 4, 8191, 10u)]
+    [TestCase(REG_X64_RAX, 4, 8192, 10u)]
+    [TestCase(REG_X64_RAX, 4, int.MinValue, 10u)]
+    [TestCase(REG_X64_RAX, 4, int.MaxValue, 10u)]
     public static void GatherAddressSizingPreservesVectorIndexAndDisplacement(
         regNumber baseReg, int scale, int offset, uint size)
     {
@@ -159,11 +159,11 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         {
             emitter.UseEvexEncodings = false;
             emitter.emitIns_R_AR_R(INS_vgatherdps, EA_32BYTE,
-                REG_XMM1, REG_XMM2, baseReg, REG_XMM3, scale, offset);
+                REG_X64_XMM1, REG_X64_XMM2, baseReg, REG_X64_XMM3, scale, offset);
             var id = Last(emitter);
 
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_XMM3));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_XMM3));
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
             Assert.That(id.idIsLargeDsp(), Is.EqualTo(offset is < -8191 or > 8191));
             Assert.That(id.NativeLogicalSize, Is.EqualTo(offset is < -8191 or > 8191 ? 24 : 16));
@@ -181,7 +181,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             compiler.opts.dspCode = true;
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
-                emitter.emitIns_R_AR_R(INS_vgatherdps, EA_32BYTE, REG_XMM1, REG_XMM2, REG_RAX, REG_XMM3, 4, 0));
+                emitter.emitIns_R_AR_R(INS_vgatherdps, EA_32BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_RAX, REG_X64_XMM3, 4, 0));
 
             Assert.That(Used(emitter), Is.GreaterThan(used));
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
@@ -199,17 +199,17 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            var data = sameRegister ? REG_XMM1 : REG_XMM15;
-            emitter.emitIns_AR_R_R(ins, attr, REG_XMM1, data, REG_RAX, 0);
+            var data = sameRegister ? REG_X64_XMM1 : REG_X64_XMM15;
+            emitter.emitIns_AR_R_R(ins, attr, REG_X64_XMM1, data, REG_X64_RAX, 0);
             var id = Last(emitter);
 
             Assert.That(id.idIns(), Is.EqualTo(ins));
             Assert.That(id.idOpSize(), Is.EqualTo(attr));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_AWR_RRD_RRD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM1));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_AWR_RRD_RRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM1));
             Assert.That(id.idReg2(), Is.EqualTo(data));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)0));
             Assert.That(id.idCodeSize(), Is.EqualTo(5u));
             Assert.That(id.NativeLogicalSize, Is.EqualTo(16));
@@ -218,34 +218,34 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         });
     }
 
-    [TestCase(REG_RAX, -129, false, 9u)]
-    [TestCase(REG_RAX, -128, false, 6u)]
-    [TestCase(REG_RAX, 127, false, 6u)]
-    [TestCase(REG_RAX, 128, false, 9u)]
-    [TestCase(REG_RSP, 0, false, 6u)]
-    [TestCase(REG_RBP, 0, false, 6u)]
-    [TestCase(REG_R12, 0, false, 6u)]
-    [TestCase(REG_R13, 0, false, 6u)]
-    [TestCase(REG_NA, 0, false, 10u)]
-    [TestCase(REG_RAX, 0, true, 9u)]
-    [TestCase(REG_NA, 0, true, 9u)]
-    [TestCase(REG_RAX, -8192, false, 9u)]
-    [TestCase(REG_RAX, -8191, false, 9u)]
-    [TestCase(REG_RAX, 8191, false, 9u)]
-    [TestCase(REG_RAX, 8192, false, 9u)]
-    [TestCase(REG_RAX, int.MinValue, false, 9u)]
-    [TestCase(REG_RAX, int.MaxValue, false, 9u)]
+    [TestCase(REG_X64_RAX, -129, false, 9u)]
+    [TestCase(REG_X64_RAX, -128, false, 6u)]
+    [TestCase(REG_X64_RAX, 127, false, 6u)]
+    [TestCase(REG_X64_RAX, 128, false, 9u)]
+    [TestCase(REG_X64_RSP, 0, false, 6u)]
+    [TestCase(REG_X64_RBP, 0, false, 6u)]
+    [TestCase(REG_X64_R12, 0, false, 6u)]
+    [TestCase(REG_X64_R13, 0, false, 6u)]
+    [TestCase(REG_X64_NA, 0, false, 10u)]
+    [TestCase(REG_X64_RAX, 0, true, 9u)]
+    [TestCase(REG_X64_NA, 0, true, 9u)]
+    [TestCase(REG_X64_RAX, -8192, false, 9u)]
+    [TestCase(REG_X64_RAX, -8191, false, 9u)]
+    [TestCase(REG_X64_RAX, 8191, false, 9u)]
+    [TestCase(REG_X64_RAX, 8192, false, 9u)]
+    [TestCase(REG_X64_RAX, int.MinValue, false, 9u)]
+    [TestCase(REG_X64_RAX, int.MaxValue, false, 9u)]
     public static void MaskStoresRetainNativeAddressAndDescriptorBoundaries(
         regNumber baseReg, int offset, bool relocation, uint size)
     {
         WithEmitter((_, emitter) =>
         {
             var attr = relocation ? EA_32BYTE | EA_DSP_RELOC_FLG : EA_32BYTE;
-            emitter.emitIns_AR_R_R(INS_vpmaskmovd, attr, REG_XMM1, REG_XMM2, baseReg, offset, INS_OPTS_NONE);
+            emitter.emitIns_AR_R_R(INS_vpmaskmovd, attr, REG_X64_XMM1, REG_X64_XMM2, baseReg, offset, INS_OPTS_NONE);
             var id = Last(emitter);
 
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
             Assert.That(id.idIsDspReloc(), Is.EqualTo(relocation));
             Assert.That(id.idIsLargeDsp(), Is.EqualTo(offset is < -8191 or > 8191));
@@ -264,7 +264,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             compiler.opts.dspCode = true;
             var used = Used(emitter);
             var diagnostic = InstructionRecordingTestSupport.Capture(() =>
-                emitter.emitIns_AR_R_R(INS_vmaskmovps, EA_32BYTE, REG_XMM1, REG_XMM2, REG_RAX, 0));
+                emitter.emitIns_AR_R_R(INS_vmaskmovps, EA_32BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_RAX, 0));
 
             Assert.That(Used(emitter), Is.GreaterThan(used));
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
@@ -317,24 +317,24 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            var first = sameDestination ? REG_XMM3 : REG_XMM1;
+            var first = sameDestination ? REG_X64_XMM3 : REG_X64_XMM1;
             EmitRmw(compiler, emitter, kind, INS_vfmadd132ps, EA_16BYTE, first, INS_OPTS_NONE);
             var id = Last(emitter);
 
             Assert.That(CurrentCount(emitter), Is.EqualTo(sameDestination ? 1 : 2));
             Assert.That(id.idIns(), Is.EqualTo(INS_vfmadd132ps));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM3));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(id.idInsFmt(), Is.EqualTo(kind switch
             {
-                0 => IF_RRW_RRD_ARD,
-                1 => IF_RRW_RRD_MRD,
-                2 => IF_RRW_RRD_SRD,
-                _ => IF_RRW_RRD_RRD,
+                0 => IF_XARCH_RRW_RRD_ARD,
+                1 => IF_XARCH_RRW_RRD_MRD,
+                2 => IF_XARCH_RRW_RRD_SRD,
+                _ => IF_XARCH_RRW_RRD_RRD,
             }));
             if (kind == 3)
             {
-                Assert.That(id.idReg3(), Is.EqualTo(REG_XMM4));
+                Assert.That(id.idReg3(), Is.EqualTo(REG_X64_XMM4));
             }
             else
             {
@@ -343,22 +343,22 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
             if (!sameDestination)
             {
-                CheckCopy(Instructions(emitter)[0], REG_XMM3, REG_XMM1);
+                CheckCopy(Instructions(emitter)[0], REG_X64_XMM3, REG_X64_XMM1);
             }
             CheckAccounting(emitter);
         });
     }
 
-    [TestCase(REG_XMM3, REG_XMM3)]
-    [TestCase(REG_XMM3, REG_XMM4)]
-    [TestCase(REG_XMM2, REG_XMM3)]
+    [TestCase(REG_X64_XMM3, REG_X64_XMM3)]
+    [TestCase(REG_X64_XMM3, REG_X64_XMM4)]
+    [TestCase(REG_X64_XMM2, REG_X64_XMM3)]
     public static void RmwRegisterAliasesAreSafeWhenTheFirstOperandIsTheDestination(
         regNumber second, regNumber third)
     {
         WithEmitter((_, emitter) =>
         {
             emitter.emitIns_SIMD_R_R_R_R(INS_vfmadd132ps, EA_16BYTE,
-                REG_XMM3, REG_XMM3, second, third, INS_OPTS_NONE);
+                REG_X64_XMM3, REG_X64_XMM3, second, third, INS_OPTS_NONE);
             var id = Last(emitter);
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
             Assert.That(id.idReg2(), Is.EqualTo(second));
@@ -371,7 +371,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            EmitRmw(compiler, emitter, kind, INS_vfmadd132ps, EA_64BYTE, REG_XMM3,
+            EmitRmw(compiler, emitter, kind, INS_vfmadd132ps, EA_64BYTE, REG_X64_XMM3,
                 INS_OPTS_EVEX_em_k3 | INS_OPTS_EVEX_em_zero);
             var id = Last(emitter);
             Assert.That(id.idGetEvexAaaContext(), Is.EqualTo(3u));
@@ -385,7 +385,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            EmitRmw(compiler, emitter, 3, INS_vfmadd132ps, EA_64BYTE, REG_XMM3, INS_OPTS_EVEX_er_ru);
+            EmitRmw(compiler, emitter, 3, INS_vfmadd132ps, EA_64BYTE, REG_X64_XMM3, INS_OPTS_EVEX_er_ru);
             Assert.That(Last(emitter).idGetEvexbContext(), Is.EqualTo(2u));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(6u));
         });
@@ -399,11 +399,11 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         {
             if (immediate)
             {
-                EmitImmediate(compiler, emitter, kind, REG_XMM3, 7, INS_OPTS_EVEX_eb);
+                EmitImmediate(compiler, emitter, kind, REG_X64_XMM3, 7, INS_OPTS_EVEX_eb);
             }
             else
             {
-                EmitRmw(compiler, emitter, kind, INS_vfmadd132ps, EA_64BYTE, REG_XMM3, INS_OPTS_EVEX_eb);
+                EmitRmw(compiler, emitter, kind, INS_vfmadd132ps, EA_64BYTE, REG_X64_XMM3, INS_OPTS_EVEX_eb);
             }
 
             Assert.That(Last(emitter).idGetEvexbContext(), Is.EqualTo(kind == 1 ? 1u : 3u));
@@ -419,7 +419,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         WithEmitter((compiler, emitter) =>
         {
             emitter.UseEvexEncodings = false;
-            EmitBlend(compiler, emitter, kind, ins, EA_16BYTE, REG_XMM3, REG_XMM1, REG_XMM15, 0);
+            EmitBlend(compiler, emitter, kind, ins, EA_16BYTE, REG_X64_XMM3, REG_X64_XMM1, REG_X64_XMM15, 0);
             var id = Last(emitter);
 
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
@@ -430,18 +430,18 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
                 _ => INS_vpblendvb,
             }));
             Assert.That(id.idInsFmt(), Is.EqualTo(BlendFormat(kind)));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM1));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM3));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM1));
             Assert.That(id.idCodeSize(), Is.EqualTo(kind switch { 1 => 10u, 2 => 7u, _ => 6u }));
             Assert.That(id.NativeLogicalSize, Is.EqualTo(kind == 3 ? 16 : 24));
             if (kind == 3)
             {
-                Assert.That(id.idReg3(), Is.EqualTo(REG_XMM2));
-                Assert.That(id.idReg4(), Is.EqualTo(REG_XMM15));
+                Assert.That(id.idReg3(), Is.EqualTo(REG_X64_XMM2));
+                Assert.That(id.idReg4(), Is.EqualTo(REG_X64_XMM15));
             }
             else
             {
-                Assert.That(Constant(emitter, id), Is.EqualTo((nint)REG_XMM15));
+                Assert.That(Constant(emitter, id), Is.EqualTo((nint)REG_X64_XMM15));
                 CheckMemory(emitter, id, kind, 0);
             }
             CheckAccounting(emitter);
@@ -457,29 +457,29 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         {
             emitter.UseVexEncodings = false;
             emitter.UseEvexEncodings = false;
-            var first = sameDestination ? REG_XMM3 : REG_XMM1;
-            EmitBlend(compiler, emitter, kind, INS_blendvps, EA_16BYTE, REG_XMM3, first,
-                maskAlreadyInXmm0 ? REG_XMM0 : REG_XMM4, 0);
+            var first = sameDestination ? REG_X64_XMM3 : REG_X64_XMM1;
+            EmitBlend(compiler, emitter, kind, INS_blendvps, EA_16BYTE, REG_X64_XMM3, first,
+                maskAlreadyInXmm0 ? REG_X64_XMM0 : REG_X64_XMM4, 0);
             var id = Last(emitter);
             var copyCount = 0;
             if (!maskAlreadyInXmm0)
             {
-                CheckCopy(Instructions(emitter)[copyCount++], REG_XMM0, REG_XMM4);
+                CheckCopy(Instructions(emitter)[copyCount++], REG_X64_XMM0, REG_X64_XMM4);
             }
             if (!sameDestination)
             {
-                CheckCopy(Instructions(emitter)[copyCount++], REG_XMM3, REG_XMM1);
+                CheckCopy(Instructions(emitter)[copyCount++], REG_X64_XMM3, REG_X64_XMM1);
             }
 
             Assert.That(CurrentCount(emitter), Is.EqualTo(copyCount + 1));
             Assert.That(id.idIns(), Is.EqualTo(INS_blendvps));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM3));
             Assert.That(id.idInsFmt(), Is.EqualTo(kind switch
             {
-                0 => IF_RWR_ARD,
-                1 => IF_RWR_MRD,
-                2 => IF_RWR_SRD,
-                _ => IF_RWR_RRD,
+                0 => IF_XARCH_RWR_ARD,
+                1 => IF_XARCH_RWR_MRD,
+                2 => IF_XARCH_RWR_SRD,
+                _ => IF_XARCH_RWR_RRD,
             }));
             CheckAccounting(emitter);
         });
@@ -492,10 +492,10 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         {
             emitter.UseVexEncodings = false;
             emitter.UseEvexEncodings = false;
-            EmitBlend(compiler, emitter, kind, INS_blendvps, EA_16BYTE, REG_XMM0, REG_XMM4, REG_XMM4, 0);
-            Assert.That(Last(emitter).idReg1(), Is.EqualTo(REG_XMM0));
+            EmitBlend(compiler, emitter, kind, INS_blendvps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM4, REG_X64_XMM4, 0);
+            Assert.That(Last(emitter).idReg1(), Is.EqualTo(REG_X64_XMM0));
             Assert.That(Last(emitter).idIns(), Is.EqualTo(INS_blendvps));
-            CheckCopy(Instructions(emitter)[0], REG_XMM0, REG_XMM4);
+            CheckCopy(Instructions(emitter)[0], REG_X64_XMM0, REG_X64_XMM4);
             CheckAccounting(emitter);
         });
     }
@@ -504,11 +504,11 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     public static void EvexBlendStoresTheExplicitMaskAndUsesNoRegisterImmediateByte(
         [Values(0, 1, 2, 3)] int kind,
         [Values(INS_vblendmps, INS_vblendmpd, INS_vpblendmb, INS_vpblendmd, INS_vpblendmq, INS_vpblendmw)] instruction ins,
-        [Values(REG_K1, REG_K4, REG_K7)] regNumber mask)
+        [Values(REG_X64_K1, REG_X64_K4, REG_X64_K7)] regNumber mask)
     {
         WithEmitter((compiler, emitter) =>
         {
-            EmitBlend(compiler, emitter, kind, ins, EA_64BYTE, REG_XMM3, REG_XMM1, mask, 0);
+            EmitBlend(compiler, emitter, kind, ins, EA_64BYTE, REG_X64_XMM3, REG_X64_XMM1, mask, 0);
             var id = Last(emitter);
             Assert.That(CurrentCount(emitter), Is.EqualTo(1));
             Assert.That(id.idIns(), Is.EqualTo(ins));
@@ -527,7 +527,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
                 Assert.That(id.NativeLogicalSize, Is.EqualTo(24));
             }
             var prefix = AddEvexPrefix(emitter, id, 0, EA_64BYTE);
-            Assert.That((prefix >> 32) & 7, Is.EqualTo((ulong)(mask - REG_K0)));
+            Assert.That((prefix >> 32) & 7, Is.EqualTo((ulong)(mask - REG_X64_K0)));
             CheckAccounting(emitter);
         });
     }
@@ -539,7 +539,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         {
             var offset = kind == 2 ? 0 : 16;
             EmitBlend(compiler, emitter, kind, INS_vblendmps, EA_64BYTE,
-                REG_XMM3, REG_XMM1, REG_K3, offset, INS_OPTS_EVEX_eb | INS_OPTS_EVEX_em_zero);
+                REG_X64_XMM3, REG_X64_XMM1, REG_K3, offset, INS_OPTS_EVEX_eb | INS_OPTS_EVEX_em_zero);
             var id = Last(emitter);
             Assert.That(id.idGetEvexbContext(), Is.EqualTo(kind == 1 ? 1u : 3u));
             Assert.That(id.idIsEvexZContextSet(), Is.True);
@@ -555,10 +555,10 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         WithEmitter((compiler, emitter) =>
         {
             EmitBlend(compiler, emitter, kind, INS_vblendvps, EA_16BYTE,
-                REG_XMM3, REG_XMM1, REG_XMM15, 65536);
+                REG_X64_XMM3, REG_X64_XMM1, REG_X64_XMM15, 65536);
             var id = Last(emitter);
             Assert.That(id.NativeLogicalSize, Is.EqualTo(32));
-            Assert.That(Constant(emitter, id), Is.EqualTo((nint)REG_XMM15));
+            Assert.That(Constant(emitter, id), Is.EqualTo((nint)REG_X64_XMM15));
             CheckMemory(emitter, id, kind, 65536);
             CheckAccounting(emitter);
         });
@@ -571,7 +571,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         WithEmitter((_, emitter) =>
         {
             emitter.emitIns_SIMD_R_R_C_R(INS_vblendvps, relocation ? EA_16BYTE | EA_DSP_RELOC_FLG : EA_16BYTE,
-                REG_XMM3, REG_XMM1, REG_XMM4, FLD_GLOBAL_DS, -4, INS_OPTS_NONE);
+                REG_X64_XMM3, REG_X64_XMM1, REG_X64_XMM4, FLD_GLOBAL_DS, -4, INS_OPTS_NONE);
             var id = Last(emitter);
             Assert.That(id.idIsDspReloc(), Is.EqualTo(relocation));
             Assert.That((nuint)id.idAddr().iiaFieldHnd, Is.EqualTo((nuint)FLD_GLOBAL_DS));
@@ -586,27 +586,27 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            EmitImmediate(compiler, emitter, kind, sameDestination ? REG_XMM3 : REG_XMM1, value,
+            EmitImmediate(compiler, emitter, kind, sameDestination ? REG_X64_XMM3 : REG_X64_XMM1, value,
                 INS_OPTS_EVEX_em_k3 | INS_OPTS_EVEX_em_zero);
             var id = Last(emitter);
             Assert.That(CurrentCount(emitter), Is.EqualTo(sameDestination ? 1 : 2));
             Assert.That(id.idIns(), Is.EqualTo(INS_vpternlogd));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM3));
-            Assert.That(id.idReg2(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM3));
+            Assert.That(id.idReg2(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(Constant(emitter, id), Is.EqualTo((nint)value));
             Assert.That(id.NativeLogicalSize, Is.EqualTo((value is >= -16 and <= 15) ? 16 : 24));
             Assert.That(id.idGetEvexAaaContext(), Is.EqualTo(3u));
             Assert.That(id.idIsEvexZContextSet(), Is.True);
             Assert.That(id.idInsFmt(), Is.EqualTo(kind switch
             {
-                0 => IF_RWR_RRD_ARD_CNS,
-                1 => IF_RWR_RRD_MRD_CNS,
-                2 => IF_RWR_RRD_SRD_CNS,
-                _ => IF_RWR_RRD_RRD_CNS,
+                0 => IF_XARCH_RWR_RRD_ARD_CNS,
+                1 => IF_XARCH_RWR_RRD_MRD_CNS,
+                2 => IF_XARCH_RWR_RRD_SRD_CNS,
+                _ => IF_XARCH_RWR_RRD_RRD_CNS,
             }));
             if (kind == 3)
             {
-                Assert.That(id.idReg3(), Is.EqualTo(REG_XMM4));
+                Assert.That(id.idReg3(), Is.EqualTo(REG_X64_XMM4));
             }
             else
             {
@@ -614,7 +614,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             }
             if (!sameDestination)
             {
-                CheckCopy(Instructions(emitter)[0], REG_XMM3, REG_XMM1);
+                CheckCopy(Instructions(emitter)[0], REG_X64_XMM3, REG_X64_XMM1);
             }
             CheckAccounting(emitter);
         });
@@ -635,20 +635,20 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
                 {
                     case 0:
                     {
-                        EmitRmw(compiler, emitter, kind, INS_vfmadd132ps, EA_16BYTE, REG_XMM1, INS_OPTS_NONE);
+                        EmitRmw(compiler, emitter, kind, INS_vfmadd132ps, EA_16BYTE, REG_X64_XMM1, INS_OPTS_NONE);
                         break;
                     }
 
                     case 1:
                     {
                         EmitBlend(compiler, emitter, kind, INS_blendvps, EA_16BYTE,
-                            REG_XMM3, REG_XMM1, REG_XMM4, 0);
+                            REG_X64_XMM3, REG_X64_XMM1, REG_X64_XMM4, 0);
                         break;
                     }
 
                     default:
                     {
-                        EmitImmediate(compiler, emitter, kind, REG_XMM1, 7, INS_OPTS_NONE);
+                        EmitImmediate(compiler, emitter, kind, REG_X64_XMM1, 7, INS_OPTS_NONE);
                         break;
                     }
                 }
@@ -674,26 +674,26 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         {
             case 0:
             {
-                emitter.emitIns_SIMD_R_R_R_A(ins, attr, REG_XMM3, first, REG_XMM2, Address(compiler, 0), options);
+                emitter.emitIns_SIMD_R_R_R_A(ins, attr, REG_X64_XMM3, first, REG_X64_XMM2, Address(compiler, 0), options);
                 break;
             }
 
             case 1:
             {
-                emitter.emitIns_SIMD_R_R_R_C(ins, attr, REG_XMM3, first, REG_XMM2,
+                emitter.emitIns_SIMD_R_R_R_C(ins, attr, REG_X64_XMM3, first, REG_X64_XMM2,
                     Compiler.eeFindJitDataOffs(64), 0, options);
                 break;
             }
 
             case 2:
             {
-                emitter.emitIns_SIMD_R_R_R_S(ins, attr, REG_XMM3, first, REG_XMM2, 0, 0, options);
+                emitter.emitIns_SIMD_R_R_R_S(ins, attr, REG_X64_XMM3, first, REG_X64_XMM2, 0, 0, options);
                 break;
             }
 
             default:
             {
-                emitter.emitIns_SIMD_R_R_R_R(ins, attr, REG_XMM3, first, REG_XMM2, REG_XMM4, options);
+                emitter.emitIns_SIMD_R_R_R_R(ins, attr, REG_X64_XMM3, first, REG_X64_XMM2, REG_X64_XMM4, options);
                 break;
             }
         }
@@ -726,7 +726,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
             default:
             {
-                emitter.emitIns_SIMD_R_R_R_R(ins, attr, target, first, REG_XMM2, mask, options);
+                emitter.emitIns_SIMD_R_R_R_R(ins, attr, target, first, REG_X64_XMM2, mask, options);
                 break;
             }
         }
@@ -740,28 +740,28 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
             case 0:
             {
                 emitter.emitIns_SIMD_R_R_R_A_I(INS_vpternlogd, EA_16BYTE,
-                    REG_XMM3, first, REG_XMM2, Address(compiler, 0), value, options);
+                    REG_X64_XMM3, first, REG_X64_XMM2, Address(compiler, 0), value, options);
                 break;
             }
 
             case 1:
             {
                 emitter.emitIns_SIMD_R_R_R_C_I(INS_vpternlogd, EA_16BYTE,
-                    REG_XMM3, first, REG_XMM2, Compiler.eeFindJitDataOffs(64), 0, value, options);
+                    REG_X64_XMM3, first, REG_X64_XMM2, Compiler.eeFindJitDataOffs(64), 0, value, options);
                 break;
             }
 
             case 2:
             {
                 emitter.emitIns_SIMD_R_R_R_S_I(INS_vpternlogd, EA_16BYTE,
-                    REG_XMM3, first, REG_XMM2, 0, 0, value, options);
+                    REG_X64_XMM3, first, REG_X64_XMM2, 0, 0, value, options);
                 break;
             }
 
             default:
             {
                 emitter.emitIns_SIMD_R_R_R_R_I(INS_vpternlogd, EA_16BYTE,
-                    REG_XMM3, first, REG_XMM2, REG_XMM4, value, options);
+                    REG_X64_XMM3, first, REG_X64_XMM2, REG_X64_XMM4, value, options);
                 break;
             }
         }
@@ -771,10 +771,10 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
     {
         return kind switch
         {
-            0 => IF_RWR_RRD_ARD_RRD,
-            1 => IF_RWR_RRD_MRD_RRD,
-            2 => IF_RWR_RRD_SRD_RRD,
-            _ => IF_RWR_RRD_RRD_RRD,
+            0 => IF_XARCH_RWR_RRD_ARD_RRD,
+            1 => IF_XARCH_RWR_RRD_MRD_RRD,
+            2 => IF_XARCH_RWR_RRD_SRD_RRD,
+            _ => IF_XARCH_RWR_RRD_RRD_RRD,
         };
     }
 
@@ -792,7 +792,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
         {
             case 0:
             {
-                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
                 Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
                 break;
             }
@@ -810,7 +810,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
                 Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
                 Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo((uint)offset));
 #if DEBUG
-                if (id.idInsFmt() == IF_RWR_RRD_SRD_RRD || immediate)
+                if (id.idInsFmt() == IF_XARCH_RWR_RRD_SRD_RRD || immediate)
                 {
                     var info = id.idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
                     Assert.That(info.idVarRefOffs, Is.EqualTo(immediate ? 0x1234u : 0u));
@@ -843,14 +843,14 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
     private static GenTreeIndir Address(Compiler compiler, int offset)
     {
-        var reg = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-        reg.RegNum = REG_RAX;
+        var reg = compiler.gtNewLclvNode(TYP_LONG, 0);
+        reg.RegNum = REG_X64_RAX;
         GenTree address = reg;
         if (offset != 0)
         {
             address = new GenTreeAddrMode(TYP_BYREF, reg, null, 0, offset)
             {
-                RegNum = REG_NA,
+                RegNum = REG_X64_NA,
                 IsContained = true,
             };
         }
@@ -860,7 +860,7 @@ internal static unsafe class EmitterSimdMultioperandInstructionTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.getRelocTypeHint = &GetRelocTypeHint;

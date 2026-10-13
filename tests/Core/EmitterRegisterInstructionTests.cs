@@ -6,6 +6,7 @@ using NUnit.Framework;
 using static RyuJitSharp.CORINFO_RUNTIME_ABI;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.GenTreeFlags;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
@@ -22,7 +23,7 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_BASE_R_R(ins, EA_4BYTE, REG_RAX, sameRegister ? REG_RAX : REG_RCX);
+            emitter.emitIns_BASE_R_R(ins, EA_4BYTE, REG_X64_RAX, sameRegister ? REG_X64_RAX : REG_X64_RCX);
 
             Assert.That(Last(emitter).idIns(), Is.EqualTo(ins));
             Assert.That(CurrentCount(emitter), Is.EqualTo(sameRegister ? 1 : 2));
@@ -35,30 +36,30 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_BASE_R_R_I(ins, EA_4BYTE, REG_RAX, REG_RCX, value);
+            emitter.emitIns_BASE_R_R_I(ins, EA_4BYTE, REG_X64_RAX, REG_X64_RCX, value);
 
             Assert.That(CurrentCount(emitter), Is.EqualTo(count));
             Assert.That(Last(emitter).idIns(), Is.EqualTo(ins));
         });
     }
 
-    [TestCase(INS_mov, EA_8BYTE, REG_RAX, 0xFFFFFFFFL, EA_4BYTE, 5u, IF_RWR_CNS)]
-    [TestCase(INS_mov, EA_8BYTE, REG_R8, 0xFFFFFFFFL, EA_4BYTE, 6u, IF_RWR_CNS)]
-    [TestCase(INS_mov, EA_8BYTE, REG_RAX, 0x100000000L, EA_8BYTE, 10u, IF_RWR_CNS)]
-    [TestCase(INS_mov, EA_8BYTE, REG_RAX, -1L, EA_8BYTE, 10u, IF_RWR_CNS)]
-    [TestCase(INS_add, EA_8BYTE, REG_RAX, 127L, EA_8BYTE, 4u, IF_RRW_CNS)]
-    [TestCase(INS_add, EA_8BYTE, REG_RCX, -128L, EA_8BYTE, 4u, IF_RRW_CNS)]
-    [TestCase(INS_add, EA_8BYTE, REG_RAX, 128L, EA_8BYTE, 6u, IF_RRW_CNS)]
-    [TestCase(INS_add, EA_8BYTE, REG_RCX, -129L, EA_8BYTE, 7u, IF_RRW_CNS)]
-    [TestCase(INS_add, EA_1BYTE, REG_RAX, 5L, EA_1BYTE, 2u, IF_RRW_CNS)]
-    [TestCase(INS_add, EA_1BYTE, REG_RSI, 5L, EA_1BYTE, 4u, IF_RRW_CNS)]
-    [TestCase(INS_add, EA_2BYTE, REG_RAX, 128L, EA_2BYTE, 4u, IF_RRW_CNS)]
-    [TestCase(INS_test, EA_8BYTE, REG_RAX, 1L, EA_8BYTE, 6u, IF_RRD_CNS)]
-    [TestCase(INS_test, EA_8BYTE, REG_RCX, 1L, EA_8BYTE, 7u, IF_RRD_CNS)]
-    [TestCase(INS_imul_08, EA_4BYTE, REG_RAX, 7L, EA_4BYTE, 4u, IF_RRD_CNS)]
-    [TestCase(INS_pslld, EA_16BYTE, REG_XMM0, 4L, EA_16BYTE, 5u, IF_RWR_CNS)]
-    [TestCase(INS_pslld, EA_16BYTE, REG_XMM8, 4L, EA_16BYTE, 6u, IF_RWR_CNS)]
-    [TestCase(INS_pslld, EA_16BYTE, REG_XMM16, 4L, EA_16BYTE, 7u, IF_RWR_CNS)]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_RAX, 0xFFFFFFFFL, EA_4BYTE, 5u, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_R8, 0xFFFFFFFFL, EA_4BYTE, 6u, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_RAX, 0x100000000L, EA_8BYTE, 10u, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_RAX, -1L, EA_8BYTE, 10u, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_RAX, 127L, EA_8BYTE, 4u, IF_XARCH_RRW_CNS)]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_RCX, -128L, EA_8BYTE, 4u, IF_XARCH_RRW_CNS)]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_RAX, 128L, EA_8BYTE, 6u, IF_XARCH_RRW_CNS)]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_RCX, -129L, EA_8BYTE, 7u, IF_XARCH_RRW_CNS)]
+    [TestCase(INS_add, EA_1BYTE, REG_X64_RAX, 5L, EA_1BYTE, 2u, IF_XARCH_RRW_CNS)]
+    [TestCase(INS_add, EA_1BYTE, REG_X64_RSI, 5L, EA_1BYTE, 4u, IF_XARCH_RRW_CNS)]
+    [TestCase(INS_add, EA_2BYTE, REG_X64_RAX, 128L, EA_2BYTE, 4u, IF_XARCH_RRW_CNS)]
+    [TestCase(INS_test, EA_8BYTE, REG_X64_RAX, 1L, EA_8BYTE, 6u, IF_XARCH_RRD_CNS)]
+    [TestCase(INS_test, EA_8BYTE, REG_X64_RCX, 1L, EA_8BYTE, 7u, IF_XARCH_RRD_CNS)]
+    [TestCase(INS_imul_08, EA_4BYTE, REG_X64_RAX, 7L, EA_4BYTE, 4u, IF_XARCH_RRD_CNS)]
+    [TestCase(INS_pslld, EA_16BYTE, REG_X64_XMM0, 4L, EA_16BYTE, 5u, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_pslld, EA_16BYTE, REG_X64_XMM8, 4L, EA_16BYTE, 6u, IF_XARCH_RWR_CNS)]
+    [TestCase(INS_pslld, EA_16BYTE, REG_X64_XMM16, 4L, EA_16BYTE, 7u, IF_XARCH_RWR_CNS)]
     public static void ImmediatesPreserveWidthSignExtensionAndPrefixSizing(
         instruction ins, emitAttr attr, regNumber reg, long value, emitAttr expectedAttr,
         uint expectedSize, Emitter.insFormat expectedFormat)
@@ -86,18 +87,18 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_I(ins, EA_8BYTE, REG_RCX, (nint)value);
+            emitter.emitIns_R_I(ins, EA_8BYTE, REG_X64_RCX, (nint)value);
             var id = Last(emitter);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RRW_SHF));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RRW_SHF));
             Assert.That(Constant(emitter, id), Is.EqualTo((nint)expected));
             Assert.That(id.idCodeSize(), Is.EqualTo(4u));
         });
     }
 
-    [TestCase(INS_mov, EA_8BYTE, REG_RAX, 10u)]
-    [TestCase(INS_add, EA_4BYTE, REG_RAX, 5u)]
-    [TestCase(INS_add, EA_4BYTE, REG_RCX, 6u)]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_RAX, 10u)]
+    [TestCase(INS_add, EA_4BYTE, REG_X64_RAX, 5u)]
+    [TestCase(INS_add, EA_4BYTE, REG_X64_RCX, 6u)]
     public static void RelocatableImmediatesDoNotUseNarrowEncodings(
         instruction ins, emitAttr attr, regNumber reg, uint size)
     {
@@ -125,7 +126,7 @@ internal static class EmitterRegisterInstructionTests
         {
             compiler.eeInfo.targetAbi = nativeAot ? CORINFO_NATIVEAOT_ABI : CORINFO_CORECLR_ABI;
             var attr = EA_4BYTE | (sectionRelative ? EA_CNS_SEC_RELOC : EA_UNKNOWN);
-            emitter.emitIns_R_I(INS_mov, attr, REG_RAX, 7);
+            emitter.emitIns_R_I(INS_mov, attr, REG_X64_RAX, 7);
             var id = Last(emitter);
 
             Assert.That(id.NativeLogicalSize, Is.EqualTo(logicalSize));
@@ -137,17 +138,17 @@ internal static class EmitterRegisterInstructionTests
         });
     }
 
-    [TestCase(INS_add, EA_8BYTE, REG_RAX, REG_RCX, 3u, IF_RRW_RRD)]
-    [TestCase(INS_xor, EA_8BYTE, REG_RAX, REG_RAX, 2u, IF_RRW_RRD)]
-    [TestCase(INS_xor, EA_8BYTE, REG_R8, REG_R8, 3u, IF_RRW_RRD)]
-    [TestCase(INS_xchg, EA_8BYTE, REG_RAX, REG_RCX, 3u, IF_RRW_RRW)]
-    [TestCase(INS_add, EA_1BYTE, REG_RSI, REG_RDI, 3u, IF_RRW_RRD)]
-    [TestCase(INS_add, EA_2BYTE, REG_RAX, REG_RCX, 3u, IF_RRW_RRD)]
-    [TestCase(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, 4u, IF_RWR_RRD)]
-    [TestCase(INS_addps, EA_16BYTE, REG_XMM8, REG_XMM1, 4u, IF_RWR_RRD)]
-    [TestCase(INS_addps, EA_16BYTE, REG_XMM1, REG_XMM8, 5u, IF_RWR_RRD)]
-    [TestCase(INS_addps, EA_16BYTE, REG_XMM16, REG_XMM1, 6u, IF_RWR_RRD)]
-    [TestCase(INS_addps, EA_64BYTE, REG_XMM0, REG_XMM1, 6u, IF_RWR_RRD)]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, 3u, IF_XARCH_RRW_RRD)]
+    [TestCase(INS_xor, EA_8BYTE, REG_X64_RAX, REG_X64_RAX, 2u, IF_XARCH_RRW_RRD)]
+    [TestCase(INS_xor, EA_8BYTE, REG_X64_R8, REG_X64_R8, 3u, IF_XARCH_RRW_RRD)]
+    [TestCase(INS_xchg, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, 3u, IF_XARCH_RRW_RRW)]
+    [TestCase(INS_add, EA_1BYTE, REG_X64_RSI, REG_X64_RDI, 3u, IF_XARCH_RRW_RRD)]
+    [TestCase(INS_add, EA_2BYTE, REG_X64_RAX, REG_X64_RCX, 3u, IF_XARCH_RRW_RRD)]
+    [TestCase(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, 4u, IF_XARCH_RWR_RRD)]
+    [TestCase(INS_addps, EA_16BYTE, REG_X64_XMM8, REG_X64_XMM1, 4u, IF_XARCH_RWR_RRD)]
+    [TestCase(INS_addps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM8, 5u, IF_XARCH_RWR_RRD)]
+    [TestCase(INS_addps, EA_16BYTE, REG_X64_XMM16, REG_X64_XMM1, 6u, IF_XARCH_RWR_RRD)]
+    [TestCase(INS_addps, EA_64BYTE, REG_X64_XMM0, REG_X64_XMM1, 6u, IF_XARCH_RWR_RRD)]
     public static void RegisterPairsRetainNativeFormatsAndSizing(
         instruction ins, emitAttr attr, regNumber dst, regNumber src, uint size, Emitter.insFormat format)
     {
@@ -174,12 +175,12 @@ internal static class EmitterRegisterInstructionTests
 #if DEBUG
             emitter.emitIssuing = true;
 #endif
-            GCrefRegs(emitter) = regMask.SRBM_RAX;
-            ByrefRegs(emitter) = regMask.SRBM_RCX;
+            GCrefRegs(emitter) = regMask.SRBM_X64_RAX;
+            ByrefRegs(emitter) = regMask.SRBM_X64_RCX;
 
-            Assert.That(RegisterGCtype(emitter, REG_RAX), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
-            Assert.That(RegisterGCtype(emitter, REG_RCX), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
-            Assert.That(RegisterGCtype(emitter, REG_RDX), Is.EqualTo(GCInfo.GCtype.GCT_NONE));
+            Assert.That(RegisterGCtype(emitter, REG_X64_RAX), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
+            Assert.That(RegisterGCtype(emitter, REG_X64_RCX), Is.EqualTo(GCInfo.GCtype.GCT_BYREF));
+            Assert.That(RegisterGCtype(emitter, REG_X64_RDX), Is.EqualTo(GCInfo.GCtype.GCT_NONE));
         });
     }
 
@@ -190,12 +191,12 @@ internal static class EmitterRegisterInstructionTests
         {
             emitter.UseEvexEncodings = false;
             emitter.UseVexEncodings = false;
-            emitter.emitIns_R_R(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1);
+            emitter.emitIns_R_R(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1);
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(3u));
 
             emitter.UseVexEncodings = true;
             emitter.UseEvexEncodings = true;
-            Assert.That(emitter.emitIns_Mov(INS_kmovq_msk, EA_8BYTE, REG_K1, REG_K2, canSkip: false), Is.True);
+            Assert.That(emitter.emitIns_Mov(INS_kmovq_msk, EA_8BYTE, REG_X64_K1, REG_X64_K2, canSkip: false), Is.True);
             // Native emitInsSizeRR adds the provisional VEX prefix before sizing K instructions.
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(8u));
         });
@@ -208,32 +209,32 @@ internal static class EmitterRegisterInstructionTests
         {
             emitter.UseRex2Encodings = true;
             emitter.UsePromotedEvexEncodings = true;
-            emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_R16, REG_R31);
+            emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_X64_R16, REG_X64_R31);
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(4u));
-            emitter.emitIns_R_I(INS_add, EA_8BYTE, REG_R16, 7);
+            emitter.emitIns_R_I(INS_add, EA_8BYTE, REG_X64_R16, 7);
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(5u));
 
-            emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_R16, REG_R31, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf);
+            emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_X64_R16, REG_X64_R31, INS_OPTS_EVEX_nd | INS_OPTS_EVEX_nf);
             var ndd = Last(emitter);
-            Assert.That(ndd.idInsFmt(), Is.EqualTo(IF_RWR_RRD));
+            Assert.That(ndd.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RRD));
             Assert.That(ndd.idIsEvexNdContextSet(), Is.True);
             Assert.That(ndd.idIsEvexNfContextSet(), Is.True);
             Assert.That(ndd.idCodeSize(), Is.EqualTo(6u));
 
-            emitter.emitIns_R_I(INS_add, EA_8BYTE, REG_RAX, 7, INS_OPTS_EVEX_nf);
+            emitter.emitIns_R_I(INS_add, EA_8BYTE, REG_X64_RAX, 7, INS_OPTS_EVEX_nf);
             Assert.That(Last(emitter).idIsEvexNfContextSet(), Is.True);
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(8u));
 
-            emitter.emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_RAX, REG_RCX,
+            emitter.emitIns_R_R(INS_ccmpe, EA_4BYTE, REG_X64_RAX, REG_X64_RCX,
                 INS_OPTS_EVEX_dfv_cf | INS_OPTS_EVEX_dfv_of);
             Assert.That(Last(emitter).idGetEvexDFV(), Is.EqualTo(9u));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(6u));
 
-            emitter.emitIns_R_I(INS_cteste, EA_4BYTE, REG_RAX, 7, INS_OPTS_EVEX_dfv_zf);
+            emitter.emitIns_R_I(INS_cteste, EA_4BYTE, REG_X64_RAX, 7, INS_OPTS_EVEX_dfv_zf);
             Assert.That(Last(emitter).idGetEvexDFV(), Is.EqualTo(2u));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(10u));
 
-            emitter.emitIns_R_R(INS_push2, EA_8BYTE, REG_RAX, REG_RCX, INS_OPTS_APX_ppx);
+            emitter.emitIns_R_R(INS_push2, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, INS_OPTS_APX_ppx);
             Assert.That(Last(emitter).idIsApxPpxContextSet(), Is.True);
         });
     }
@@ -243,7 +244,7 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_R(INS_sqrtps, EA_64BYTE, REG_XMM0, REG_XMM1,
+            emitter.emitIns_R_R(INS_sqrtps, EA_64BYTE, REG_X64_XMM0, REG_X64_XMM1,
                 INS_OPTS_EVEX_er_ru | INS_OPTS_EVEX_em_k7 | INS_OPTS_EVEX_em_zero);
             var id = Last(emitter);
 
@@ -263,8 +264,8 @@ internal static class EmitterRegisterInstructionTests
         {
             var id = EmitterInstructionAllocationTests.Allocate(emitter, EA_16BYTE);
             id.idIns(INS_addps);
-            id.idInsFmt(IF_RWR_SRD);
-            id.idReg1(REG_XMM0);
+            id.idInsFmt(IF_XARCH_RWR_SRD);
+            id.idReg1(REG_X64_XMM0);
 
             emitter.SetEvexBroadcastIfNeeded(id, options);
 
@@ -278,9 +279,9 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_RAX, REG_RCX, canSkip: false);
-            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_RAX, REG_RCX, canSkip: false);
-            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_RCX, REG_RAX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RAX, canSkip: false);
             Assert.That(CurrentCount(emitter), Is.EqualTo(count));
         }, minopts: !optimized);
     }
@@ -290,18 +291,18 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            Assert.That(emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_RAX, REG_RAX, canSkip: true), Is.False);
+            Assert.That(emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_X64_RAX, REG_X64_RAX, canSkip: true), Is.False);
             Assert.That(CurrentCount(emitter), Is.Zero);
-            Assert.That(emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_RAX, REG_RCX,
+            Assert.That(emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX,
                 canSkip: false, useApxNdd: true), Is.True);
             Assert.That(CurrentCount(emitter), Is.Zero);
 
-            _ = emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_RAX, REG_RCX, canSkip: false);
-            _ = emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_RCX, REG_RAX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_X64_RAX, REG_X64_RCX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_X64_RCX, REG_X64_RAX, canSkip: false);
             Assert.That(CurrentCount(emitter), Is.EqualTo(2));
 
-            _ = emitter.emitIns_Mov(INS_mov, EA_GCREF, REG_RAX, REG_RAX, canSkip: false);
-            _ = emitter.emitIns_Mov(INS_mov, EA_GCREF, REG_RAX, REG_RAX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_GCREF, REG_X64_RAX, REG_X64_RAX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_GCREF, REG_X64_RAX, REG_X64_RAX, canSkip: false);
             Assert.That(CurrentCount(emitter), Is.EqualTo(4));
             Assert.That(Last(emitter).idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
         }, minopts: false);
@@ -314,7 +315,7 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            Assert.That(emitter.emitIns_Mov(ins, sourceSize, REG_RAX, REG_RAX, canSkip: false), Is.False);
+            Assert.That(emitter.emitIns_Mov(ins, sourceSize, REG_X64_RAX, REG_X64_RAX, canSkip: false), Is.False);
             Assert.That(Last(emitter).idIns(), Is.EqualTo(INS_cwde));
             Assert.That(Last(emitter).idOpSize(), Is.EqualTo(resultSize));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(size));
@@ -328,14 +329,14 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, 42);
+            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_X64_RCX, 42);
             for (var index = 0; index < intervening; index++)
             {
                 emitter.emitIns_Nop(1);
             }
 
             var before = CurrentCount(emitter);
-            Assert.That(emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_RCX, REG_RCX, canSkip: false),
+            Assert.That(emitter.emitIns_Mov(INS_mov, EA_4BYTE, REG_X64_RCX, REG_X64_RCX, canSkip: false),
                 Is.EqualTo(!redundant));
             Assert.That(CurrentCount(emitter), Is.EqualTo(before + (redundant ? 0 : 1)));
         }, minopts: false);
@@ -347,7 +348,7 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, 42);
+            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_X64_RCX, 42);
             ForceNewGroup(emitter) = true;
             emitter.emitIns_Nop(1);
             Assert.That(emitter.emitCurIG?.igFlags & InsGroupFlags.Extend, Is.EqualTo(InsGroupFlags.Extend));
@@ -356,7 +357,7 @@ internal static class EmitterRegisterInstructionTests
                 emitter.emitCurIG!.igFlags ^= InsGroupFlags.NoGCInterrupt;
             }
 
-            Assert.That(emitter.AreUpperBitsZero(REG_RCX, EA_4BYTE), Is.EqualTo(zero));
+            Assert.That(emitter.AreUpperBitsZero(REG_X64_RCX, EA_4BYTE), Is.EqualTo(zero));
         });
     }
 
@@ -365,19 +366,19 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            _ = emitter.emitIns_Mov(INS_movsx, EA_1BYTE, REG_RCX, REG_RDX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_movsx, EA_1BYTE, REG_X64_RCX, REG_X64_RDX, canSkip: false);
             emitter.emitIns_Nop(1);
-            Assert.That(emitter.AreUpperBitsSignExtended(REG_RCX, EA_2BYTE), Is.True);
-            Assert.That(emitter.AreUpperBitsZero(REG_RCX, EA_4BYTE), Is.False);
+            Assert.That(emitter.AreUpperBitsSignExtended(REG_X64_RCX, EA_2BYTE), Is.True);
+            Assert.That(emitter.AreUpperBitsZero(REG_X64_RCX, EA_4BYTE), Is.False);
 
-            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, 42);
+            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_X64_RCX, 42);
             emitter.emitIns(INS_r_movsb);
-            Assert.That(emitter.AreUpperBitsZero(REG_RCX, EA_4BYTE), Is.True);
-            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_R8, 42);
-            emitter.emitIns_R_I(INS_imul_08, EA_8BYTE, REG_RCX, 42);
-            Assert.That(Emitter.emitIsInstrWritingToReg(Last(emitter), REG_R8), Is.True);
-            Assert.That(Emitter.emitIsInstrWritingToReg(Last(emitter), REG_RCX), Is.False);
-            Assert.That(emitter.AreUpperBitsZero(REG_R8, EA_4BYTE), Is.False);
+            Assert.That(emitter.AreUpperBitsZero(REG_X64_RCX, EA_4BYTE), Is.True);
+            emitter.emitIns_R_I(INS_mov, EA_4BYTE, REG_X64_R8, 42);
+            emitter.emitIns_R_I(INS_imul_08, EA_8BYTE, REG_X64_RCX, 42);
+            Assert.That(Emitter.emitIsInstrWritingToReg(Last(emitter), REG_X64_R8), Is.True);
+            Assert.That(Emitter.emitIsInstrWritingToReg(Last(emitter), REG_X64_RCX), Is.False);
+            Assert.That(emitter.AreUpperBitsZero(REG_X64_R8, EA_4BYTE), Is.False);
         });
     }
 
@@ -388,7 +389,7 @@ internal static class EmitterRegisterInstructionTests
         WithEmitter((_, emitter) =>
         {
             var handle = unchecked((nuint)0xFEDCBA9876543210UL);
-            emitter.emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, -1, targetHandle: handle, gtFlags: GTF_ICON_HDL_MASK);
+            emitter.emitIns_R_I(INS_mov, EA_8BYTE, REG_X64_RAX, -1, targetHandle: handle, gtFlags: GTF_ICON_HDL_MASK);
             var info = Last(emitter).idDebugOnlyInfo() ?? throw new AssertionException("Missing debug information.");
 
             Assert.That(info.idMemCookie, Is.EqualTo(unchecked((nint)handle)));
@@ -411,19 +412,19 @@ internal static class EmitterRegisterInstructionTests
                 {
                     case 0:
                     {
-                        emitter.emitIns_R_I(INS_mov, EA_8BYTE, REG_RAX, 1);
+                        emitter.emitIns_R_I(INS_mov, EA_8BYTE, REG_X64_RAX, 1);
                         break;
                     }
 
                     case 1:
                     {
-                        emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_RAX, REG_RCX);
+                        emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_X64_RAX, REG_X64_RCX);
                         break;
                     }
 
                     default:
                     {
-                        _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_RAX, REG_RAX, canSkip: true);
+                        _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RAX, canSkip: true);
                         break;
                     }
                 }
@@ -442,7 +443,7 @@ internal static class EmitterRegisterInstructionTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            emitter.emitIns_R_R(INS_mov, EA_8BYTE, REG_RAX, REG_RCX);
+            emitter.emitIns_R_R(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX);
             Assert.That(CurrentCount(emitter), Is.EqualTo(2));
             Assert.That(CurrentSize(emitter), Is.EqualTo(6));
         });
@@ -451,7 +452,7 @@ internal static class EmitterRegisterInstructionTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action, bool minopts = true)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;

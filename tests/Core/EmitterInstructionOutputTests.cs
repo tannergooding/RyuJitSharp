@@ -45,9 +45,9 @@ internal static unsafe class EmitterInstructionOutputTests
         WithOutput((_, emitter) => emitter.emitIns_Nop(size), hex);
     }
 
-    [TestCase(INS_inc, EA_8BYTE, REG_RAX, "48FFC0")]
-    [TestCase(INS_push, EA_8BYTE, REG_R9, "4151")]
-    [TestCase(INS_setne, EA_1BYTE, REG_RAX, "0F95C0")]
+    [TestCase(INS_inc, EA_8BYTE, REG_X64_RAX, "48FFC0")]
+    [TestCase(INS_push, EA_8BYTE, REG_X64_R9, "4151")]
+    [TestCase(INS_setne, EA_1BYTE, REG_X64_RAX, "0F95C0")]
     public static void RegisterDispatchUsesSmallDescriptors(instruction ins, emitAttr attr, regNumber reg, string hex)
     {
         WithOutput((_, emitter) => emitter.emitIns_R(ins, attr, reg), hex);
@@ -57,18 +57,18 @@ internal static unsafe class EmitterInstructionOutputTests
     [TestCase(INS_add, EA_8BYTE, -1L, "4983C1FF")]
     public static void RegisterImmediateDispatchUsesNativeConstantLayouts(instruction ins, emitAttr attr, long value, string hex)
     {
-        WithOutput((_, emitter) => emitter.emitIns_R_I(ins, attr, REG_R9, (nint)value), hex);
+        WithOutput((_, emitter) => emitter.emitIns_R_I(ins, attr, REG_X64_R9, (nint)value), hex);
     }
 
     [Test]
     public static void RegisterPairAndThreeRegisterDispatchRetainSourceFields()
     {
         WithOutput((compiler, emitter) =>
-            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_RAX, REG_RCX, canSkip: false), "488BC1");
+            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, canSkip: false), "488BC1");
         WithOutput((_, emitter) =>
         {
             emitter.UseVexEncodings = true;
-            emitter.emitIns_R_R_R(INS_addps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_XMM3);
+            emitter.emitIns_R_R_R(INS_addps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3);
         }, "C5E858CB");
     }
 
@@ -79,7 +79,7 @@ internal static unsafe class EmitterInstructionOutputTests
         WithOutput((_, emitter) =>
         {
             emitter.UseVexEncodings = vex;
-            emitter.emitIns_R_R_I(INS_cmppd, EA_16BYTE, REG_XMM1, REG_XMM2, 3);
+            emitter.emitIns_R_R_I(INS_cmppd, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM2, 3);
         }, hex);
     }
 
@@ -91,11 +91,11 @@ internal static unsafe class EmitterInstructionOutputTests
         {
             if (store)
             {
-                emitter.emitIns_AR_R(INS_mov, EA_8BYTE, REG_RCX, REG_RAX, 8);
+                emitter.emitIns_AR_R(INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RAX, 8);
             }
             else
             {
-                emitter.emitIns_R_AR(INS_mov, EA_8BYTE, REG_RCX, REG_RAX, 8);
+                emitter.emitIns_R_AR(INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RAX, 8);
             }
         }, hex);
     }
@@ -108,11 +108,11 @@ internal static unsafe class EmitterInstructionOutputTests
         {
             if (store)
             {
-                emitter.emitIns_ARR_R(INS_mov, EA_8BYTE, REG_RCX, REG_RAX, REG_RDX, 8);
+                emitter.emitIns_ARR_R(INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RAX, REG_X64_RDX, 8);
             }
             else
             {
-                emitter.emitIns_R_ARR(INS_mov, EA_8BYTE, REG_RCX, REG_RAX, REG_RDX, 8);
+                emitter.emitIns_R_ARR(INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RAX, REG_X64_RDX, 8);
             }
         }, hex);
     }
@@ -128,11 +128,11 @@ internal static unsafe class EmitterInstructionOutputTests
             compiler.lvaTable[0].StackOffset = -16;
             if (store)
             {
-                emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_RCX, 0, 0);
+                emitter.emitIns_S_R(INS_mov, EA_8BYTE, REG_X64_RCX, 0, 0);
             }
             else
             {
-                emitter.emitIns_R_S(INS_mov, EA_8BYTE, REG_RCX, 0, 0);
+                emitter.emitIns_R_S(INS_mov, EA_8BYTE, REG_X64_RCX, 0, 0);
             }
         }, hex);
     }
@@ -142,7 +142,7 @@ internal static unsafe class EmitterInstructionOutputTests
     public static void StaticDispatchPreservesSegmentPrefixes(bool gs, string hex)
     {
         WithOutput((_, emitter) =>
-            emitter.emitIns_R_C(INS_mov, EA_8BYTE, REG_RAX, gs ? FLD_GLOBAL_GS : FLD_GLOBAL_FS, 16), hex);
+            emitter.emitIns_R_C(INS_mov, EA_8BYTE, REG_X64_RAX, gs ? FLD_GLOBAL_GS : FLD_GLOBAL_FS, 16), hex);
     }
 
     [TestCase(0, "6448890510000000")]
@@ -156,7 +156,7 @@ internal static unsafe class EmitterInstructionOutputTests
             {
                 case 0:
                 {
-                    emitter.emitIns_C_R(INS_mov, EA_8BYTE, FLD_GLOBAL_FS, REG_RAX, 16);
+                    emitter.emitIns_C_R(INS_mov, EA_8BYTE, FLD_GLOBAL_FS, REG_X64_RAX, 16);
                     break;
                 }
 
@@ -169,7 +169,7 @@ internal static unsafe class EmitterInstructionOutputTests
                 default:
                 {
                     emitter.UseVexEncodings = true;
-                    emitter.emitIns_C_R_I(INS_vcvtps2ph, EA_32BYTE, FLD_GLOBAL_DS, 16, REG_XMM1, 3);
+                    emitter.emitIns_C_R_I(INS_vcvtps2ph, EA_32BYTE, FLD_GLOBAL_DS, 16, REG_X64_XMM1, 3);
                     break;
                 }
             }
@@ -185,12 +185,12 @@ internal static unsafe class EmitterInstructionOutputTests
             compiler.lvaTable[0].lvFramePointerBased = true;
             compiler.lvaTable[0].StackOffset = -16;
             emitter.UseVexEncodings = true;
-            emitter.emitIns_R_R_S(INS_addps, EA_16BYTE, REG_XMM1, REG_XMM2, 0, 0);
+            emitter.emitIns_R_R_S(INS_addps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM2, 0, 0);
         }, "C5E8584DF0");
         WithOutput((_, emitter) =>
         {
             emitter.UseVexEncodings = true;
-            emitter.emitIns_R_R_R_I(INS_cmpps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_XMM3, 3);
+            emitter.emitIns_R_R_R_I(INS_cmpps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3, 3);
         }, "C5E8C2CB03");
     }
 
@@ -214,7 +214,7 @@ internal static unsafe class EmitterInstructionOutputTests
     {
         WithOutput((_, emitter) =>
         {
-            emitter.emitIns_R(INS_inc, EA_8BYTE, REG_RAX);
+            emitter.emitIns_R(INS_inc, EA_8BYTE, REG_X64_RAX);
             var descriptor = LastInstruction(emitter) ?? throw new AssertionException("Missing instruction.");
             descriptor.idCodeSize(descriptor.idCodeSize() + 2);
             LastAlignedGroup(emitter) = emitter.emitCurIG;
@@ -233,7 +233,7 @@ internal static unsafe class EmitterInstructionOutputTests
             s_jitstdout = writer;
             WithOutput((compiler, emitter) =>
             {
-                emitter.emitIns_R(INS_inc, EA_8BYTE, REG_RAX);
+                emitter.emitIns_R(INS_inc, EA_8BYTE, REG_X64_RAX);
                 compiler.opts.disAsm = true;
                 compiler.opts.disCodeBytes = true;
             }, "48FFC0", aliasOffset);
@@ -248,14 +248,14 @@ internal static unsafe class EmitterInstructionOutputTests
 
     private static void WithOutput(Action<Compiler, Emitter> record, string hex, int aliasOffset = 32)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;
             var emitter = codeGen.Emitter;
             emitter.UseVexEncodings = false;
             emitter.UseEvexEncodings = false;
-            SyncThisRegister(emitter) = REG_NA;
+            SyncThisRegister(emitter) = REG_X64_NA;
             record(compiler, emitter);
             var id = LastInstruction(emitter) ?? throw new AssertionException("No instruction was recorded.");
             var group = emitter.emitCurIG ?? throw new AssertionException("No current instruction group.");

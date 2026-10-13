@@ -17,42 +17,42 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterPrefixTests
 {
-    [TestCase(REG_RAX, EA_1BYTE, 0u)]
-    [TestCase(REG_RBX, EA_1BYTE, 24u)]
-    [TestCase(REG_RBP, EA_1BYTE, 40u)]
-    [TestCase(REG_RDI, EA_1BYTE, 56u)]
-    [TestCase(REG_RBP, EA_8BYTE, 40u)]
-    [TestCase(REG_RDI, EA_8BYTE, 56u)]
+    [TestCase(REG_X64_RAX, EA_1BYTE, 0u)]
+    [TestCase(REG_X64_RBX, EA_1BYTE, 24u)]
+    [TestCase(REG_X64_RBP, EA_1BYTE, 40u)]
+    [TestCase(REG_X64_RDI, EA_1BYTE, 56u)]
+    [TestCase(REG_X64_RBP, EA_8BYTE, 40u)]
+    [TestCase(REG_X64_RDI, EA_8BYTE, 56u)]
     public static void UnextendedRegisterFieldsAllowOmittedOpcodeStorage(regNumber reg, emitAttr size, uint expected)
     {
         var emitter = CreateEmitter();
-        var descriptor = CreateDescriptor(INS_mov, IF_RWR_RRD, size);
+        var descriptor = CreateDescriptor(INS_mov, IF_XARCH_RWR_RRD, size);
 
         Assert.That(EncodeRegisterField(emitter, descriptor, reg, size, null), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_psrldq, REG_RBX)]
-    [TestCase(INS_pslldq, REG_RDI)]
-    [TestCase(INS_psrlw, REG_RDX)]
-    [TestCase(INS_psllq, REG_RSI)]
-    [TestCase(INS_vpsraq, REG_RSP)]
-    [TestCase(INS_vprolq, REG_RCX)]
-    [TestCase(INS_vprord, REG_RAX)]
+    [TestCase(INS_psrldq, REG_X64_RBX)]
+    [TestCase(INS_pslldq, REG_X64_RDI)]
+    [TestCase(INS_psrlw, REG_X64_RDX)]
+    [TestCase(INS_psllq, REG_X64_RSI)]
+    [TestCase(INS_vpsraq, REG_X64_RSP)]
+    [TestCase(INS_vprolq, REG_X64_RCX)]
+    [TestCase(INS_vprord, REG_X64_RAX)]
     public static void ShiftImmediateOpcodeSelectsNativeRegisterField(instruction ins, regNumber expected)
     {
         Assert.That(GetSseShiftRegNumber(CreateEmitter(), ins), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_addps, REG_XMM0, EA_16BYTE, false, true)]
-    [TestCase(INS_addps, REG_XMM16, EA_16BYTE, true, false)]
-    [TestCase(INS_mov, REG_RAX, EA_8BYTE, false, false)]
+    [TestCase(INS_addps, REG_X64_XMM0, EA_16BYTE, false, true)]
+    [TestCase(INS_addps, REG_X64_XMM16, EA_16BYTE, true, false)]
+    [TestCase(INS_mov, REG_X64_RAX, EA_8BYTE, false, false)]
     public static void SimdPrefixHelperSelectsTheRequiredEncoding(
         instruction ins, regNumber reg, emitAttr size, bool expectEvex, bool expectVex)
     {
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = true;
-        var descriptor = CreateDescriptor(ins, IF_RWR_RRD, size);
+        var descriptor = CreateDescriptor(ins, IF_XARCH_RWR_RRD, size);
         descriptor.idReg1(reg);
 
         const ulong code = 0x1234;
@@ -76,7 +76,7 @@ internal static unsafe class EmitterPrefixTests
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
         using var tls = new JitTls(&context.JitInfo);
 
-        Assert.That(GetSseShiftRegNumber(CreateEmitter(), INS_mov), Is.EqualTo(REG_NA));
+        Assert.That(GetSseShiftRegNumber(CreateEmitter(), INS_mov), Is.EqualTo(REG_X64_NA));
         Assert.That(context.Assertions, Is.EqualTo(1));
     }
 #endif
@@ -94,29 +94,29 @@ internal static unsafe class EmitterPrefixTests
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = evex;
         emitter.UsePromotedEvexEncodings = promotedEvex;
-        var descriptor = CreateDescriptor(INS_addps, IF_RWR_RRD, EA_16BYTE);
+        var descriptor = CreateDescriptor(INS_addps, IF_XARCH_RWR_RRD, EA_16BYTE);
         ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
         vtable.doAssert = &RecordAssertion;
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
         using var tls = new JitTls(&context.JitInfo);
 
         var expectedCode = code & 0xFFEFFFFFFFFFFFFFUL;
-        Assert.That(EncodeRegisterField(emitter, descriptor, REG_XMM16, EA_16BYTE, &code), Is.Zero);
+        Assert.That(EncodeRegisterField(emitter, descriptor, REG_X64_XMM16, EA_16BYTE, &code), Is.Zero);
         Assert.That(code, Is.EqualTo(expectedCode));
         Assert.That(context.Assertions, Is.EqualTo(expectedAssertions));
     }
 
-    [TestCase(REG_XMM15, false)]
-    [TestCase(REG_XMM16, true)]
-    [TestCase(REG_XMM31, true)]
+    [TestCase(REG_X64_XMM15, false)]
+    [TestCase(REG_X64_XMM16, true)]
+    [TestCase(REG_X64_XMM31, true)]
     public static void HighSimdRegisterClassifierMatchesExtendedRegisterRange(regNumber reg, bool expected)
     {
         Assert.That(Emitter.isHighSimdReg(reg), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R15, false)]
-    [TestCase(REG_R16, true)]
-    [TestCase(REG_R31, true)]
+    [TestCase(REG_X64_R15, false)]
+    [TestCase(REG_X64_R16, true)]
+    [TestCase(REG_X64_R31, true)]
     public static void HighGeneralPurposeRegisterClassifierMatchesApxRegisterRange(regNumber reg, bool expected)
     {
         Assert.That(IsHighGPReg(CreateEmitter(), reg), Is.EqualTo(expected));
@@ -168,22 +168,22 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(Unsafe.SizeOf<Emitter.emitAddrMode>(), Is.EqualTo(4));
         Assert.That(Unsafe.SizeOf<Emitter.instrDesc.idAddrUnion>(), Is.EqualTo(8));
 
-        var descriptor = CreateDescriptor(INS_add, IF_RWR_RRD_RRD, EA_8BYTE);
-        descriptor.idReg3(REG_R16);
-        descriptor.idReg4(REG_R31);
-        Assert.That(descriptor.idReg3(), Is.EqualTo(REG_R16));
-        Assert.That(descriptor.idReg4(), Is.EqualTo(REG_R31));
+        var descriptor = CreateDescriptor(INS_add, IF_XARCH_RWR_RRD_RRD, EA_8BYTE);
+        descriptor.idReg3(REG_X64_R16);
+        descriptor.idReg4(REG_X64_R31);
+        Assert.That(descriptor.idReg3(), Is.EqualTo(REG_X64_R16));
+        Assert.That(descriptor.idReg4(), Is.EqualTo(REG_X64_R31));
 
         ref var address = ref descriptor.idAddr().iiaAddrMode;
-        address.amBaseReg = REG_R18;
-        address.amIndxReg = REG_R19;
+        address.amBaseReg = REG_X64_R18;
+        address.amIndxReg = REG_X64_R19;
         address.amScale = 3;
         address.amDisp = -17;
-        Assert.That(address.amBaseReg, Is.EqualTo(REG_R18));
-        Assert.That(address.amIndxReg, Is.EqualTo(REG_R19));
+        Assert.That(address.amBaseReg, Is.EqualTo(REG_X64_R18));
+        Assert.That(address.amIndxReg, Is.EqualTo(REG_X64_R19));
         Assert.That(address.amScale, Is.EqualTo(3u));
         Assert.That(address.amDisp, Is.EqualTo(-17));
-        Assert.That(descriptor.idReg3(), Is.EqualTo((regNumber)((uint)REG_R18 & 0x7F)));
+        Assert.That(descriptor.idReg3(), Is.EqualTo((regNumber)((uint)REG_X64_R18 & 0x7F)));
     }
 
     [Test]
@@ -193,8 +193,8 @@ internal static unsafe class EmitterPrefixTests
         emitter.UseVexEncodings = true;
         emitter.UseRex2Encodings = true;
         emitter.UsePromotedEvexEncodings = true;
-        var descriptor = CreateDescriptor(INS_add, IF_RWR_RRD, EA_8BYTE);
-        descriptor.idReg1(REG_R16);
+        var descriptor = CreateDescriptor(INS_add, IF_XARCH_RWR_RRD, EA_8BYTE);
+        descriptor.idReg1(REG_X64_R16);
 
         Assert.That(TakesEvex(emitter, descriptor), Is.False);
         Assert.That(TakesRex2(emitter, descriptor), Is.True);
@@ -203,8 +203,8 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(TakesEvex(emitter, descriptor), Is.True);
         Assert.That(TakesRex2(emitter, descriptor), Is.False);
 
-        var noPromotion = CreateDescriptor(INS_add, IF_RWR_RRD, EA_8BYTE);
-        noPromotion.idReg1(REG_R16);
+        var noPromotion = CreateDescriptor(INS_add, IF_XARCH_RWR_RRD, EA_8BYTE);
+        noPromotion.idReg1(REG_X64_R16);
         noPromotion.idSetEvexNdContext();
         noPromotion.idSetNoApxEvexPromotion();
         Assert.That(TakesEvex(emitter, noPromotion), Is.False);
@@ -217,15 +217,15 @@ internal static unsafe class EmitterPrefixTests
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = true;
-        var high = CreateDescriptor(INS_addps, IF_RWR_RRD, EA_16BYTE);
-        high.idReg1(REG_XMM16);
+        var high = CreateDescriptor(INS_addps, IF_XARCH_RWR_RRD, EA_16BYTE);
+        high.idReg1(REG_X64_XMM16);
         Assert.That(TakesEvex(emitter, high), Is.True);
 
-        var embeddedMask = CreateDescriptor(INS_addps, IF_RWR_RRD, EA_16BYTE);
+        var embeddedMask = CreateDescriptor(INS_addps, IF_XARCH_RWR_RRD, EA_16BYTE);
         embeddedMask.idSetEvexAaaContext(4);
         Assert.That(TakesEvex(emitter, embeddedMask), Is.True);
 
-        var broadcast = CreateDescriptor(INS_addps, IF_RWR_RRD, EA_16BYTE);
+        var broadcast = CreateDescriptor(INS_addps, IF_XARCH_RWR_RRD, EA_16BYTE);
         broadcast.idSetEvexBroadcastBit();
         Assert.That(TakesEvex(emitter, broadcast), Is.True);
     }
@@ -240,7 +240,7 @@ internal static unsafe class EmitterPrefixTests
     public static void RexWUsesOpcodeClassAndOperandSize(instruction ins, emitAttr size, bool expected)
     {
         var emitter = CreateEmitter();
-        var descriptor = CreateDescriptor(ins, IF_RWR_RRD, size);
+        var descriptor = CreateDescriptor(ins, IF_XARCH_RWR_RRD, size);
         Assert.That(TakesRexW(emitter, descriptor), Is.EqualTo(expected));
     }
 
@@ -248,19 +248,19 @@ internal static unsafe class EmitterPrefixTests
     public static void ApxOnlyInstructionsRequirePromotedEvexMode()
     {
         var emitter = CreateEmitter();
-        var descriptor = CreateDescriptor(INS_push2, IF_RRD, EA_8BYTE);
+        var descriptor = CreateDescriptor(INS_push2, IF_XARCH_RRD, EA_8BYTE);
         Assert.That(TakesEvex(emitter, descriptor), Is.False);
         emitter.UsePromotedEvexEncodings = true;
         Assert.That(TakesEvex(emitter, descriptor), Is.True);
     }
 
-    [TestCase(INS_addps, IF_RWR_RRD, EA_16BYTE, 0x6200000000000000UL, 4u)]
-    [TestCase(INS_addps, IF_RWR_RRD, EA_16BYTE, 0xC4000000000000UL, 2u)]
-    [TestCase(INS_pshufb, IF_RWR_RRD, EA_16BYTE, 0xC4000000000000UL, 3u)]
-    [TestCase(INS_sarx, IF_RWR_RRD, EA_4BYTE, 0xC4000000000000UL, 3u)]
-    [TestCase(INS_add, IF_RWR_RRD, EA_8BYTE, 0xD50000000000UL, 2u)]
-    [TestCase(INS_add, IF_RWR_RRD, EA_8BYTE, 0x4800000000UL, 1u)]
-    [TestCase(INS_add, IF_RWR_RRD, EA_8BYTE, 0UL, 0u)]
+    [TestCase(INS_addps, IF_XARCH_RWR_RRD, EA_16BYTE, 0x6200000000000000UL, 4u)]
+    [TestCase(INS_addps, IF_XARCH_RWR_RRD, EA_16BYTE, 0xC4000000000000UL, 2u)]
+    [TestCase(INS_pshufb, IF_XARCH_RWR_RRD, EA_16BYTE, 0xC4000000000000UL, 3u)]
+    [TestCase(INS_sarx, IF_XARCH_RWR_RRD, EA_4BYTE, 0xC4000000000000UL, 3u)]
+    [TestCase(INS_add, IF_XARCH_RWR_RRD, EA_8BYTE, 0xD50000000000UL, 2u)]
+    [TestCase(INS_add, IF_XARCH_RWR_RRD, EA_8BYTE, 0x4800000000UL, 1u)]
+    [TestCase(INS_add, IF_XARCH_RWR_RRD, EA_8BYTE, 0UL, 0u)]
     public static void EncodedPrefixUsesNativeByteCount(
         instruction ins, Emitter.insFormat format, emitAttr size, ulong code, uint expected)
     {
@@ -277,13 +277,13 @@ internal static unsafe class EmitterPrefixTests
         }
     }
 
-    [TestCase(REG_XMM0, REG_XMM8, 3u)]
-    [TestCase(REG_XMM8, REG_XMM0, 2u)]
+    [TestCase(REG_X64_XMM0, REG_X64_XMM8, 3u)]
+    [TestCase(REG_X64_XMM8, REG_X64_XMM0, 2u)]
     public static void VexUsesRMRegisterForRexB(regNumber destination, regNumber source, uint expected)
     {
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
-        var descriptor = CreateDescriptor(INS_addps, IF_RWR_RRD, EA_16BYTE);
+        var descriptor = CreateDescriptor(INS_addps, IF_XARCH_RWR_RRD, EA_16BYTE);
         descriptor.idReg1(destination);
         descriptor.idReg2(source);
         Assert.That(GetVexPrefixSize(emitter, descriptor), Is.EqualTo(expected));
@@ -294,8 +294,8 @@ internal static unsafe class EmitterPrefixTests
     {
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
-        var descriptor = CreateDescriptor(INS_addps, IF_RWR_ARD, EA_16BYTE);
-        descriptor.idAddr().iiaAddrMode.amIndxReg = REG_R8;
+        var descriptor = CreateDescriptor(INS_addps, IF_XARCH_RWR_ARD, EA_16BYTE);
+        descriptor.idAddr().iiaAddrMode.amIndxReg = REG_X64_R8;
         Assert.That(GetVexPrefixSize(emitter, descriptor), Is.EqualTo(3u));
     }
 
@@ -305,7 +305,7 @@ internal static unsafe class EmitterPrefixTests
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
         emitter.UseEvexEncodings = true;
-        var descriptor = CreateDescriptor(INS_addps, IF_RWR_ARD, EA_16BYTE);
+        var descriptor = CreateDescriptor(INS_addps, IF_XARCH_RWR_ARD, EA_16BYTE);
 
         Assert.That(HasBroadcast(emitter, descriptor), Is.False);
         descriptor.idSetEvexBroadcastBit();
@@ -315,13 +315,13 @@ internal static unsafe class EmitterPrefixTests
         Assert.That(descriptor.idGetEvexbContext(), Is.EqualTo(3u));
     }
 
-    [TestCase(REG_R8, REG_XMM0, 3u)]
-    [TestCase(REG_RAX, REG_XMM8, 2u)]
+    [TestCase(REG_X64_R8, REG_X64_XMM0, 3u)]
+    [TestCase(REG_X64_RAX, REG_X64_XMM8, 2u)]
     public static void VexMovdUsesGeneralPurposeRegisterForRexB(regNumber destination, regNumber source, uint expected)
     {
         var emitter = CreateEmitter();
         emitter.UseVexEncodings = true;
-        var descriptor = CreateDescriptor(INS_movd32, IF_RWR_RRD, EA_4BYTE);
+        var descriptor = CreateDescriptor(INS_movd32, IF_XARCH_RWR_RRD, EA_4BYTE);
         descriptor.idReg1(destination);
         descriptor.idReg2(source);
         Assert.That(GetVexPrefixSize(emitter, descriptor), Is.EqualTo(expected));

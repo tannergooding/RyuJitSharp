@@ -93,7 +93,7 @@ internal static unsafe class LinuxX64EmitterBranchPaddingTests
         {
             var descriptor = new instrDescJmp();
             descriptor.idIns(INS_jmp);
-            descriptor.idInsFmt(IF_LABEL);
+            descriptor.idInsFmt(IF_XARCH_LABEL);
             descriptor.idCodeSize(5);
             descriptor.idjTargetIG = group;
             return descriptor;

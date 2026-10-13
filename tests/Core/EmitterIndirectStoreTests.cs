@@ -30,12 +30,12 @@ internal static unsafe class EmitterIndirectStoreTests
             var address = Address(local);
             var load = new GenTreeIndir(GT_IND, TYP_INT, address);
 
-            codeGen.Emitter.emitInsLoadInd(INS_mov, EA_4BYTE, REG_RDX, load);
+            codeGen.Emitter.emitInsLoadInd(INS_mov, EA_4BYTE, REG_X64_RDX, load);
 
             var id = Only(codeGen);
             Assert.That(id.idIns(), Is.EqualTo(INS_mov));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RDX));
-            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_RWR_SRD : IF_RWR_ARD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RDX));
+            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_XARCH_RWR_SRD : IF_XARCH_RWR_ARD));
             if (local)
             {
                 Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
@@ -43,7 +43,7 @@ internal static unsafe class EmitterIndirectStoreTests
             }
             else
             {
-                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+                Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
             }
         });
     }
@@ -56,8 +56,8 @@ internal static unsafe class EmitterIndirectStoreTests
         {
             ref var local = ref compiler.lvaTable[0];
             local.Type = TYP_INT;
-            local.RegNum = REG_STK;
-            GenTree source = Physical(REG_RDX, TYP_INT);
+            local.RegNum = REG_X64_STK;
+            GenTree source = Physical(REG_X64_RDX, TYP_INT);
             if (immediate)
             {
                 source = compiler.gtNewIconNode(TYP_INT, 7);
@@ -68,10 +68,10 @@ internal static unsafe class EmitterIndirectStoreTests
             codeGen.Emitter.emitInsStoreLcl(INS_mov, EA_4BYTE, store);
 
             var id = Only(codeGen);
-            Assert.That(id.idInsFmt(), Is.EqualTo(immediate ? IF_SWR_CNS : IF_SWR_RRD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(immediate ? IF_XARCH_SWR_CNS : IF_XARCH_SWR_RRD));
             Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.Zero);
-            Assert.That(store.RegNum, Is.EqualTo(REG_NA));
+            Assert.That(store.RegNum, Is.EqualTo(REG_X64_NA));
         });
     }
 
@@ -84,23 +84,23 @@ internal static unsafe class EmitterIndirectStoreTests
     {
         WithEmitter((compiler, codeGen) =>
         {
-            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_RAX), Physical(REG_RCX), 2, offset)
+            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_X64_RAX), Physical(REG_X64_RCX), 2, offset)
             {
                 IsContained = true,
             };
             var indir = storeNode
-                ? new GenTreeStoreInd(TYP_SIMD16, address, Physical(REG_XMM1, TYP_SIMD16))
+                ? new GenTreeStoreInd(TYP_SIMD16, address, Physical(REG_X64_XMM1, TYP_SIMD16))
                 : new GenTreeIndir(GT_IND, TYP_SIMD16, address);
 
-            codeGen.Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, indir, REG_XMM2, immediate);
+            codeGen.Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, indir, REG_X64_XMM2, immediate);
 
             var id = Only(codeGen);
             Assert.That(id.idIns(), Is.EqualTo(INS_extractps));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_AWR_RRD_CNS));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_AWR_RRD_CNS));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_16BYTE));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_RCX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_RCX));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(1u));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)offset));
             Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)immediate));
@@ -115,12 +115,12 @@ internal static unsafe class EmitterIndirectStoreTests
     {
         WithEmitter((compiler, codeGen) =>
         {
-            var store = new GenTreeStoreInd(TYP_SIMD16, Physical(REG_RAX), Physical(REG_XMM2, TYP_SIMD16));
+            var store = new GenTreeStoreInd(TYP_SIMD16, Physical(REG_X64_RAX), Physical(REG_X64_XMM2, TYP_SIMD16));
             var used = Used(codeGen.Emitter);
             compiler.opts.dspCode = true;
 
             var diagnostic = InstructionRecordingTestSupport.Capture(
-                () => codeGen.Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, store, REG_XMM2, 2));
+                () => codeGen.Emitter.emitIns_A_R_I(INS_extractps, EA_16BYTE, store, REG_X64_XMM2, 2));
 
             Assert.That(Descriptors(codeGen), Has.Count.EqualTo(1));
             Assert.That(Used(codeGen.Emitter), Is.GreaterThan(used));
@@ -131,24 +131,24 @@ internal static unsafe class EmitterIndirectStoreTests
     }
 #endif
 
-    [TestCase(TYP_BYTE, EA_1BYTE, INS_mov, REG_RDX, 2u)]
-    [TestCase(TYP_BYTE, EA_1BYTE, INS_mov, REG_RSI, 3u)]
-    [TestCase(TYP_SHORT, EA_2BYTE, INS_mov, REG_RDX, 3u)]
-    [TestCase(TYP_INT, EA_4BYTE, INS_mov, REG_RDX, 2u)]
-    [TestCase(TYP_INT, EA_4BYTE, INS_mov, REG_R16, 4u)]
-    [TestCase(TYP_LONG, EA_8BYTE, INS_mov, REG_RDX, 3u)]
-    [TestCase(TYP_REF, EA_GCREF, INS_mov, REG_RDX, 3u)]
-    [TestCase(TYP_BYREF, EA_BYREF, INS_mov, REG_RDX, 3u)]
-    [TestCase(TYP_FLOAT, EA_4BYTE, INS_movss, REG_XMM2, 4u)]
-    [TestCase(TYP_DOUBLE, EA_8BYTE, INS_movsd_simd, REG_XMM2, 4u)]
+    [TestCase(TYP_BYTE, EA_1BYTE, INS_mov, REG_X64_RDX, 2u)]
+    [TestCase(TYP_BYTE, EA_1BYTE, INS_mov, REG_X64_RSI, 3u)]
+    [TestCase(TYP_SHORT, EA_2BYTE, INS_mov, REG_X64_RDX, 3u)]
+    [TestCase(TYP_INT, EA_4BYTE, INS_mov, REG_X64_RDX, 2u)]
+    [TestCase(TYP_INT, EA_4BYTE, INS_mov, REG_X64_R16, 4u)]
+    [TestCase(TYP_LONG, EA_8BYTE, INS_mov, REG_X64_RDX, 3u)]
+    [TestCase(TYP_REF, EA_64BIT_GCREF, INS_mov, REG_X64_RDX, 3u)]
+    [TestCase(TYP_BYREF, EA_64BIT_BYREF, INS_mov, REG_X64_RDX, 3u)]
+    [TestCase(TYP_FLOAT, EA_4BYTE, INS_movss, REG_X64_XMM2, 4u)]
+    [TestCase(TYP_DOUBLE, EA_8BYTE, INS_movsd_simd, REG_X64_XMM2, 4u)]
     public static void RegisterStoresRetainWidthGcClassificationAndNativeSizes(
         var_types type, emitAttr attr, instruction ins, regNumber source, uint size)
     {
         WithEmitter((compiler, codeGen) =>
         {
             var data = Physical(source, type.ActualType);
-            var store = new GenTreeStoreInd(type, Physical(REG_RAX, TYP_BYREF), data);
-            codeGen.GCInfo.gcMarkRegPtrVal(REG_RAX, TYP_BYREF);
+            var store = new GenTreeStoreInd(type, Physical(REG_X64_RAX, TYP_BYREF), data);
+            codeGen.GCInfo.gcMarkRegPtrVal(REG_X64_RAX, TYP_BYREF);
             if (varTypeIsGC(type))
             {
                 codeGen.GCInfo.gcMarkRegPtrVal(source, type);
@@ -160,7 +160,7 @@ internal static unsafe class EmitterIndirectStoreTests
 
             var id = Only(codeGen);
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_AWR_RRD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_AWR_RRD));
             Assert.That(id.idReg1(), Is.EqualTo(source));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_SIZE(attr)));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
@@ -178,7 +178,7 @@ internal static unsafe class EmitterIndirectStoreTests
     [TestCase(EA_4BYTE, 1L, 6u)]
     [TestCase(EA_4BYTE, 4294967297L, 6u)]
     [TestCase(EA_8BYTE, -1L, 7u)]
-    [TestCase(EA_GCREF, 0L, 7u)]
+    [TestCase(EA_64BIT_GCREF, 0L, 7u)]
     public static void ContainedImmediatesRetainNativeIntTruncationAndStoreWidth(
         emitAttr attr, long value, uint size)
     {
@@ -186,12 +186,12 @@ internal static unsafe class EmitterIndirectStoreTests
         {
             var data = compiler.gtNewIconNode(TYP_LONG, unchecked((nint)value));
             data.IsContained = true;
-            var store = new GenTreeStoreInd(TYP_LONG, Physical(REG_RAX), data);
+            var store = new GenTreeStoreInd(TYP_LONG, Physical(REG_X64_RAX), data);
 
             codeGen.Emitter.emitInsStoreInd(INS_mov, attr, store);
 
             var id = Only(codeGen);
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_AWR_CNS));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_AWR_CNS));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_SIZE(attr)));
             Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)unchecked((int)value)));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
@@ -211,11 +211,11 @@ internal static unsafe class EmitterIndirectStoreTests
     {
         WithEmitter((compiler, codeGen) =>
         {
-            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_R8), Physical(REG_RCX), 4, offset)
+            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_X64_R8), Physical(REG_X64_RCX), 4, offset)
             {
                 IsContained = true,
             };
-            GenTree data = Physical(REG_RDX);
+            GenTree data = Physical(REG_X64_RDX);
             if (immediate)
             {
                 data = compiler.gtNewIconNode(TYP_INT, 12345);
@@ -226,12 +226,12 @@ internal static unsafe class EmitterIndirectStoreTests
             codeGen.Emitter.emitInsStoreInd(INS_mov, EA_8BYTE, store);
 
             var id = Only(codeGen);
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R8));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_RCX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_R8));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_RCX));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(2u));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)offset));
             Assert.That(id.idIsLargeDsp(), Is.EqualTo(offset is < -8191 or > 8191));
-            Assert.That(id.idInsFmt(), Is.EqualTo(immediate ? IF_AWR_CNS : IF_AWR_RRD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(immediate ? IF_XARCH_AWR_CNS : IF_XARCH_AWR_RRD));
             if (immediate)
             {
                 Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)12345));
@@ -246,18 +246,18 @@ internal static unsafe class EmitterIndirectStoreTests
     {
         WithEmitter((compiler, codeGen) =>
         {
-            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_RAX), Physical(REG_RCX), 8, 32)
+            var address = new GenTreeAddrMode(TYP_BYREF, Physical(REG_X64_RAX), Physical(REG_X64_RCX), 8, 32)
             {
                 IsContained = true,
                 BaseAddress = null,
             };
-            var store = new GenTreeStoreInd(TYP_LONG, address, Physical(REG_RDX));
+            var store = new GenTreeStoreInd(TYP_LONG, address, Physical(REG_X64_RDX));
 
             codeGen.Emitter.emitInsStoreInd(INS_mov, EA_8BYTE, store);
 
             var id = Only(codeGen);
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_NA));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_RCX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_RCX));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(3u));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)32));
             Assert.That(id.idCodeSize(), Is.EqualTo(8u));
@@ -274,7 +274,7 @@ internal static unsafe class EmitterIndirectStoreTests
         WithEmitter((compiler, codeGen) =>
         {
             compiler.opts.compReloc = relocation;
-            var address = compiler.gtNewIconNode(TYP_I_IMPL, 0x1234);
+            var address = compiler.gtNewIconNode(TYP_LONG, 0x1234);
             address.IsContained = true;
             if (relocation)
             {
@@ -283,7 +283,7 @@ internal static unsafe class EmitterIndirectStoreTests
                 address.TargetHandle = 0x5678;
 #endif
             }
-            GenTree data = Physical(REG_RDX);
+            GenTree data = Physical(REG_X64_RDX);
             if (immediate)
             {
                 data = compiler.gtNewIconNode(TYP_INT, 7);
@@ -294,8 +294,8 @@ internal static unsafe class EmitterIndirectStoreTests
             codeGen.Emitter.emitInsStoreInd(INS_mov, EA_4BYTE, store);
 
             var id = Only(codeGen);
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_NA));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(Displacement(codeGen.Emitter, id), Is.EqualTo((nint)0x1234));
             Assert.That(id.idIsDspReloc(), Is.EqualTo(relocation));
             Assert.That(id.idCodeSize(), Is.EqualTo((relocation ? 6u : 7u) + (immediate ? 4u : 0u)));
@@ -321,7 +321,7 @@ internal static unsafe class EmitterIndirectStoreTests
         {
             ref var local = ref compiler.lvaTable[0];
             local.Type = TYP_REF;
-            local.RegNum = REG_STK;
+            local.RegNum = REG_X64_STK;
             codeGen.GCInfo.gcTrkStkPtrLcls = VarSetOps.MakeSingleton(compiler, 0);
             if (dying)
             {
@@ -333,7 +333,7 @@ internal static unsafe class EmitterIndirectStoreTests
                 Flags = dying ? GTF_VAR_DEATH : GTF_VAR_DEF,
                 IsContained = true,
             };
-            GenTree data = Physical(REG_RDX, TYP_REF);
+            GenTree data = Physical(REG_X64_RDX, TYP_REF);
             if (immediate)
             {
                 data = compiler.gtNewIconNode(TYP_REF, 0);
@@ -344,7 +344,7 @@ internal static unsafe class EmitterIndirectStoreTests
             codeGen.Emitter.emitInsStoreInd(INS_mov, EA_GCREF, store);
 
             var id = Only(codeGen);
-            Assert.That(id.idInsFmt(), Is.EqualTo(immediate ? IF_SWR_CNS : IF_SWR_RRD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(immediate ? IF_XARCH_SWR_CNS : IF_XARCH_SWR_RRD));
             Assert.That(id.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.Zero);
             Assert.That(id.idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
@@ -354,12 +354,12 @@ internal static unsafe class EmitterIndirectStoreTests
         });
     }
 
-    [TestCase(GT_BSWAP, EA_4BYTE, REG_RDX, INS_movbe, false)]
-    [TestCase(GT_BSWAP, EA_4BYTE, REG_RDX, INS_movbe, true)]
-    [TestCase(GT_BSWAP16, EA_2BYTE, REG_RDX, INS_movbe, false)]
-    [TestCase(GT_BSWAP16, EA_2BYTE, REG_RDX, INS_movbe, true)]
-    [TestCase(GT_BSWAP, EA_8BYTE, REG_R16, INS_movbe_apx, false)]
-    [TestCase(GT_BSWAP, EA_8BYTE, REG_R16, INS_movbe_apx, true)]
+    [TestCase(GT_BSWAP, EA_4BYTE, REG_X64_RDX, INS_movbe, false)]
+    [TestCase(GT_BSWAP, EA_4BYTE, REG_X64_RDX, INS_movbe, true)]
+    [TestCase(GT_BSWAP16, EA_2BYTE, REG_X64_RDX, INS_movbe, false)]
+    [TestCase(GT_BSWAP16, EA_2BYTE, REG_X64_RDX, INS_movbe, true)]
+    [TestCase(GT_BSWAP, EA_8BYTE, REG_X64_R16, INS_movbe_apx, false)]
+    [TestCase(GT_BSWAP, EA_8BYTE, REG_X64_R16, INS_movbe_apx, true)]
     public static void ContainedByteSwapsUseTheirOperandRatherThanTheContainedNodeRegister(
         genTreeOps oper, emitAttr attr, regNumber source, instruction ins, bool local)
     {
@@ -374,8 +374,8 @@ internal static unsafe class EmitterIndirectStoreTests
             Assert.That(id.idIns(), Is.EqualTo(ins));
             Assert.That(id.idReg1(), Is.EqualTo(source));
             Assert.That(id.idOpSize(), Is.EqualTo(attr));
-            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_SWR_RRD : IF_AWR_RRD));
-            Assert.That(data.RegNum, Is.EqualTo(REG_NA));
+            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_XARCH_SWR_RRD : IF_XARCH_AWR_RRD));
+            Assert.That(data.RegNum, Is.EqualTo(REG_X64_NA));
             Assert.That(data.IsContained, Is.True);
             Assert.That(compiler.compCurLifeTree, local ? Is.SameAs(store) : Is.Null);
         });
@@ -391,17 +391,17 @@ internal static unsafe class EmitterIndirectStoreTests
         {
             GenTree data = intrinsic
                 ? new GenTreeHWIntrinsic(TYP_INT, NI_X86Base_ConvertToInt32, TYP_INT, 16,
-                    Physical(REG_XMM2, TYP_SIMD16))
-                : new GenTreeUnOp(GT_BSWAP, TYP_INT, Physical(REG_RCX, TYP_INT));
-            data.RegNum = REG_RDX;
+                    Physical(REG_X64_XMM2, TYP_SIMD16))
+                : new GenTreeUnOp(GT_BSWAP, TYP_INT, Physical(REG_X64_RCX, TYP_INT));
+            data.RegNum = REG_X64_RDX;
             var store = new GenTreeStoreInd(TYP_INT, Address(local), data);
 
             codeGen.Emitter.emitInsStoreInd(INS_mov, EA_4BYTE, store);
 
             var id = Only(codeGen);
             Assert.That(id.idIns(), Is.EqualTo(INS_mov));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RDX));
-            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_SWR_RRD : IF_AWR_RRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RDX));
+            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_XARCH_SWR_RRD : IF_XARCH_AWR_RRD));
             Assert.That(compiler.compCurLifeTree, local ? Is.SameAs(store) : Is.Null);
         });
     }
@@ -414,7 +414,7 @@ internal static unsafe class EmitterIndirectStoreTests
     {
         WithEmitter((compiler, codeGen) =>
         {
-            var vector = Physical(REG_XMM2, narrowing ? TYP_SIMD64 : TYP_SIMD16);
+            var vector = Physical(REG_X64_XMM2, narrowing ? TYP_SIMD64 : TYP_SIMD16);
             var data = new GenTreeHWIntrinsic(narrowing ? TYP_SIMD16 : TYP_INT,
                 narrowing ? NI_AVX512_ConvertToVector128Byte : NI_X86Base_ConvertToInt32,
                 TYP_INT, narrowing ? (byte)64 : (byte)16, vector) { IsContained = true };
@@ -427,11 +427,11 @@ internal static unsafe class EmitterIndirectStoreTests
 
             var id = Only(codeGen);
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(id.idOpSize(), Is.EqualTo(attr));
-            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_SWR_RRD : IF_AWR_RRD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_XARCH_SWR_RRD : IF_XARCH_AWR_RRD));
             Assert.That(id.idGetEvexAaaContext(), Is.EqualTo(narrowing ? 3u : 0u));
-            Assert.That(data.RegNum, Is.EqualTo(REG_NA));
+            Assert.That(data.RegNum, Is.EqualTo(REG_X64_NA));
             Assert.That(compiler.compCurLifeTree, local ? Is.SameAs(store) : Is.Null);
         });
     }
@@ -447,14 +447,14 @@ internal static unsafe class EmitterIndirectStoreTests
             var icon = compiler.gtNewIconNode(TYP_INT, immediate);
             icon.IsContained = true;
             var data = new GenTreeHWIntrinsic(TYP_FLOAT, NI_Vector_GetElement, TYP_FLOAT, 16,
-                Physical(REG_XMM2, TYP_SIMD16), icon) { IsContained = true };
+                Physical(REG_X64_XMM2, TYP_SIMD16), icon) { IsContained = true };
             var store = new GenTreeStoreInd(TYP_FLOAT, Address(local), data);
 
             codeGen.Emitter.emitInsStoreInd(INS_extractps, EA_16BYTE, store);
 
             var id = Only(codeGen);
-            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_SWR_RRD_CNS : IF_AWR_RRD_CNS));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM2));
+            Assert.That(id.idInsFmt(), Is.EqualTo(local ? IF_XARCH_SWR_RRD_CNS : IF_XARCH_AWR_RRD_CNS));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM2));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_16BYTE));
             Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)immediate));
             Assert.That(id.idCodeSize(), Is.EqualTo(local ? 7u : 6u));
@@ -473,7 +473,7 @@ internal static unsafe class EmitterIndirectStoreTests
         {
             codeGen.Emitter.UseVexEncodings = vex;
             codeGen.Emitter.UseEvexEncodings = vex;
-            var store = new GenTreeStoreInd(TYP_SIMD16, Address(local), Physical(REG_XMM2, TYP_SIMD16));
+            var store = new GenTreeStoreInd(TYP_SIMD16, Address(local), Physical(REG_X64_XMM2, TYP_SIMD16));
             codeGen.Emitter.emitInsStoreInd(INS_movups, EA_16BYTE, store);
             var id = Only(codeGen);
             Assert.That(id.idCodeSize(), Is.EqualTo((vex ? 4u : 3u) + (local ? 1u : 0u)));
@@ -502,7 +502,7 @@ internal static unsafe class EmitterIndirectStoreTests
             {
                 address.Flags |= GTF_VAR_DEF;
             }
-            GenTree data = Physical(REG_RDX);
+            GenTree data = Physical(REG_X64_RDX);
             if (immediate)
             {
                 data = compiler.gtNewIconNode(TYP_INT, 7);
@@ -523,12 +523,12 @@ internal static unsafe class EmitterIndirectStoreTests
     }
 #endif
 
-    private static GenTreePhysReg Physical(regNumber reg, var_types type = TYP_I_IMPL)
+    private static GenTreePhysReg Physical(regNumber reg, var_types type = TYP_LONG)
         => new(reg, type) { RegNum = reg };
 
     private static GenTree Address(bool local) => local
         ? new GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, 0, 4) { IsContained = true }
-        : Physical(REG_RAX, TYP_BYREF);
+        : Physical(REG_X64_RAX, TYP_BYREF);
 
     private static Emitter.instrDesc Only(CodeGen codeGen)
     {
@@ -545,7 +545,7 @@ internal static unsafe class EmitterIndirectStoreTests
         Assert.That(tree._debugFlags & GenTreeDebugFlags.GTF_DEBUG_NODE_CG_CONSUMED,
             Is.EqualTo(GenTreeDebugFlags.GTF_DEBUG_NONE));
 #else
-        Assert.That(tree.RegNum, Is.Not.EqualTo(REG_NA));
+        Assert.That(tree.RegNum, Is.Not.EqualTo(REG_X64_NA));
 #endif
     }
 

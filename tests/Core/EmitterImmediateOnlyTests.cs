@@ -6,6 +6,7 @@
 using System.Linq;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.UnitTests.CodeGenShiftTests;
@@ -28,7 +29,7 @@ internal static class EmitterImmediateOnlyTests
             codeGen.inst_IV(ins, value);
             var id = Descriptors(codeGen).Single();
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_CNS));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_CNS));
             Assert.That(id.idOpSize(), Is.EqualTo(EA_PTRSIZE));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
             Assert.That(InstructionConstant(codeGen.Emitter, id), Is.EqualTo((nint)value));

@@ -28,7 +28,7 @@ internal static unsafe class X86EmitterStaticOutputTests
             compiler.eeInfo.targetAbi = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
             var id = NewInstructionDisplacement(emitter, size, 0x12345678);
             id.idIns(INS_mov);
-            id.idInsFmt(store ? IF_MWR_RRD : IF_RWR_MRD);
+            id.idInsFmt(store ? IF_XARCH_MWR_RRD : IF_XARCH_RWR_MRD);
             id.idReg1(REG_EAX);
             id.idAddr().iiaFieldHnd = FLD_GLOBAL_DS;
             var code = (ulong)(store ? insCodeMR(INS_mov) : insCodeRM(INS_mov)) | 0x0500;
@@ -54,7 +54,7 @@ internal static unsafe class X86EmitterStaticOutputTests
             emitter.emitFullGCinfo = true;
             var id = NewInstructionDisplacement(emitter, EA_1BYTE, 0x12345678);
             id.idIns(INS_mov);
-            id.idInsFmt(IF_RWR_MRD_OFF);
+            id.idInsFmt(IF_XARCH_RWR_MRD_OFF);
             id.idReg1(REG_EAX);
             id.idAddr().iiaFieldHnd = FLD_GLOBAL_DS;
             SyncThisReg(emitter) = REG_NA;

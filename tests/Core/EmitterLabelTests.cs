@@ -155,7 +155,7 @@ internal static class EmitterLabelTests
     {
         var call = EmitterInstructionAllocationTests.Allocate(emitter, EA_PTRSIZE);
         call.idIns(INS_call);
-        call.idInsFmt(IF_METHOD);
+        call.idInsFmt(IF_XARCH_METHOD);
         call.idSetIsCall();
         call.idSetIsNoGC(noGc);
         call.idCodeSize(5);

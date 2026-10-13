@@ -19,9 +19,10 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
     [Test]
     public static void FormatNamesIncludeEveryTargetFormat()
     {
-        for (uint format = 0; format < (uint)Emitter.insFormat.IF_COUNT; format++)
+        Assert.That(Emitter.emitFmtNames.Length, Is.EqualTo(Emitter.emitFmtToOps.Length));
+        for (uint format = 0; format < (uint)Emitter.emitFmtNames.Length; format++)
         {
-            Assert.That(Emitter.emitIfName(format), Is.EqualTo(((Emitter.insFormat)format).ToString()));
+            Assert.That(Emitter.emitIfName(format), Is.EqualTo(Emitter.emitFmtNames[(int)format]));
         }
     }
 
@@ -30,8 +31,8 @@ internal static unsafe class EmitterSharedDiagnosticsAndCostTests
     public static void InvalidFormatNamesKeepUnsignedDecimalWidth(uint format, string expected)
     {
         Assert.That(Emitter.emitIfName(format), Is.EqualTo(expected));
-        Assert.That(Emitter.emitIfName(Emitter.insFormat.IF_COUNT),
-            Is.EqualTo($"??{(uint)Emitter.insFormat.IF_COUNT}??"));
+        Assert.That(Emitter.emitIfName((uint)Emitter.emitFmtNames.Length),
+            Is.EqualTo($"??{(uint)Emitter.emitFmtNames.Length}??"));
     }
 
     [TestCase(0u, true, "000000")]

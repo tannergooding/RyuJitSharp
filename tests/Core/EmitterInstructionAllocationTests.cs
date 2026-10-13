@@ -74,8 +74,8 @@ internal static unsafe class EmitterInstructionAllocationTests
 #endif
     }
 
-    [TestCase(EA_GCREF, GCtype.GCT_GCREF)]
-    [TestCase(EA_BYREF, GCtype.GCT_BYREF)]
+    [TestCase(EA_64BIT_GCREF, GCtype.GCT_GCREF)]
+    [TestCase(EA_64BIT_BYREF, GCtype.GCT_BYREF)]
     [TestCase(EA_GCREF_FLG | EA_BYREF_FLG | EA_4BYTE, GCtype.GCT_GCREF)]
     public static void PointerAttributesOverrideOperandWidth(emitAttr attr, GCtype type)
     {

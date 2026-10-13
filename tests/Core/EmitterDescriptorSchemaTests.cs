@@ -77,10 +77,10 @@ internal static unsafe class EmitterDescriptorSchemaTests
         Assert.That(Marshal.OffsetOf<NativeDebugInfoLayout>(nameof(NativeDebugInfoLayout.targetBlock)), Is.EqualTo((nint)48));
 
         var sizes = typeof(Emitter).GetNestedType("DescriptorSizes", BindingFlags.NonPublic)!;
-        Assert.That(sizes.GetField("DebugInfo", BindingFlags.Static | BindingFlags.NonPublic)!
-            .GetRawConstantValue(), Is.EqualTo(Unsafe.SizeOf<NativeDebugInfoLayout>()));
-        Assert.That(sizes.GetField("DebugPrefix", BindingFlags.Static | BindingFlags.NonPublic)!
-            .GetRawConstantValue(), Is.EqualTo(IntPtr.Size));
+        Assert.That(sizes.GetProperty("DebugInfo", BindingFlags.Static | BindingFlags.NonPublic)!
+            .GetValue(null), Is.EqualTo(Unsafe.SizeOf<NativeDebugInfoLayout>()));
+        Assert.That(sizes.GetProperty("DebugPrefix", BindingFlags.Static | BindingFlags.NonPublic)!
+            .GetValue(null), Is.EqualTo(IntPtr.Size));
     }
 
     [TestCase("instrDescBasic", 16)]
@@ -99,7 +99,7 @@ internal static unsafe class EmitterDescriptorSchemaTests
             "instrDescAlign" => INS_align,
             _ => INS_nop,
         });
-        descriptor.idInsFmt(typeName == "instrDescJmp" ? IF_LABEL : IF_NONE);
+        descriptor.idInsFmt(typeName == "instrDescJmp" ? IF_XARCH_LABEL : IF_NONE);
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(size));
 
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));

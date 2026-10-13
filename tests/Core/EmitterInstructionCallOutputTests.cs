@@ -8,6 +8,7 @@ using NUnit.Framework;
 using static RyuJitSharp.CORINFO_RUNTIME_ABI;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.GCInfo.rpdArgType_t;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.regMask;
 using static RyuJitSharp.regNumber;
@@ -90,10 +91,10 @@ internal static unsafe class EmitterInstructionCallOutputTests
             });
     }
 
-    [TestCase(EA_GCREF, false)]
-    [TestCase(EA_GCREF, true)]
-    [TestCase(EA_BYREF, false)]
-    [TestCase(EA_BYREF, true)]
+    [TestCase(EA_64BIT_GCREF, false)]
+    [TestCase(EA_64BIT_GCREF, true)]
+    [TestCase(EA_64BIT_BYREF, false)]
+    [TestCase(EA_64BIT_BYREF, true)]
     public static void FullMapsEndStackVariableAtCallStartAndBirthReturnRegistersAtCallEnd(
         emitAttr retSize, bool asyncReturn)
     {

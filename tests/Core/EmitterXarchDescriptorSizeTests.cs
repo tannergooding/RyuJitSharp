@@ -27,27 +27,27 @@ internal static class EmitterXarchDescriptorSizeTests
 
     [TestCase(IF_NONE, false, false, false, Full)]
     [TestCase(IF_NONE, true, false, false, 8)]
-    [TestCase(IF_LABEL, false, false, false, Jump)]
-    [TestCase(IF_SWR_LABEL, false, false, false, Label)]
-    [TestCase(IF_METHOD, false, false, false, Full)]
-    [TestCase(IF_MRD, false, false, false, Full)]
-    [TestCase(IF_MRD, false, false, true, Extended)]
-    [TestCase(IF_MRD, false, true, false, Extended)]
-    [TestCase(IF_MRD, false, true, true, Combined)]
-    [TestCase(IF_CNS, true, false, false, 8)]
-    [TestCase(IF_CNS, false, false, false, Full)]
-    [TestCase(IF_CNS, false, true, false, Extended)]
-    [TestCase(IF_SRD_CNS, false, true, false, Extended)]
-    [TestCase(IF_MWR, false, false, true, Extended)]
-    [TestCase(IF_MRD_CNS, false, true, true, Combined)]
-    [TestCase(IF_AWR, false, false, true, Extended)]
-    [TestCase(IF_ARD_CNS, false, true, false, Extended)]
-    [TestCase(IF_ARD_CNS, false, true, true, Combined)]
+    [TestCase(IF_XARCH_LABEL, false, false, false, Jump)]
+    [TestCase(IF_XARCH_SWR_LABEL, false, false, false, Label)]
+    [TestCase(IF_XARCH_METHOD, false, false, false, Full)]
+    [TestCase(IF_XARCH_MRD, false, false, false, Full)]
+    [TestCase(IF_XARCH_MRD, false, false, true, Extended)]
+    [TestCase(IF_XARCH_MRD, false, true, false, Extended)]
+    [TestCase(IF_XARCH_MRD, false, true, true, Combined)]
+    [TestCase(IF_XARCH_CNS, true, false, false, 8)]
+    [TestCase(IF_XARCH_CNS, false, false, false, Full)]
+    [TestCase(IF_XARCH_CNS, false, true, false, Extended)]
+    [TestCase(IF_XARCH_SRD_CNS, false, true, false, Extended)]
+    [TestCase(IF_XARCH_MWR, false, false, true, Extended)]
+    [TestCase(IF_XARCH_MRD_CNS, false, true, true, Combined)]
+    [TestCase(IF_XARCH_AWR, false, false, true, Extended)]
+    [TestCase(IF_XARCH_ARD_CNS, false, true, false, Extended)]
+    [TestCase(IF_XARCH_ARD_CNS, false, true, true, Combined)]
     public static void OperandCategoryAndPayloadFlagsDetermineNativeSize(
         Emitter.insFormat format, bool small, bool largeConstant, bool largeDisplacement, int expected)
     {
         var descriptor = new FlagDescriptor();
-        descriptor.idIns(format == IF_METHOD ? INS_call : INS_mov);
+        descriptor.idIns(format == IF_XARCH_METHOD ? INS_call : INS_mov);
         descriptor.idInsFmt(format);
         if (small)
         {
@@ -95,7 +95,7 @@ internal static class EmitterXarchDescriptorSizeTests
             ?? throw new AssertionException("Missing call descriptor type.");
         var descriptor = (Emitter.instrDesc)RuntimeHelpers.GetUninitializedObject(type);
         descriptor.idIns(INS_call);
-        descriptor.idInsFmt(IF_METHOD);
+        descriptor.idInsFmt(IF_XARCH_METHOD);
         descriptor.idSetIsCall();
         descriptor.idSetIsLargeCns();
         descriptor.idSetIsLargeDsp();

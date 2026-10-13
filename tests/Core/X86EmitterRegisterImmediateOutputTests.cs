@@ -13,15 +13,15 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class X86EmitterRegisterImmediateOutputTests
 {
-    [TestCase(INS_inc, EA_4BYTE, REG_EAX, "40")]
-    [TestCase(INS_inc, EA_1BYTE, REG_EAX, "FEC0")]
-    [TestCase(INS_push, EA_4BYTE, REG_ECX, "51")]
+    [TestCase(INS_inc, EA_4BYTE, REG_X86_EAX, "40")]
+    [TestCase(INS_inc, EA_1BYTE, REG_X86_EAX, "FEC0")]
+    [TestCase(INS_push, EA_4BYTE, REG_X86_ECX, "51")]
     public static void RegisterOutputRetainsCompactAndByteForms(
         instruction ins, emitAttr size, regNumber reg, string expected)
     {
         X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
         {
-            var id = NewDescriptor(ins, size, ins == INS_inc ? IF_RRW : IF_RRD, reg);
+            var id = NewDescriptor(ins, size, ins == INS_inc ? IF_XARCH_RRW : IF_XARCH_RRD, reg);
             var buffer = stackalloc byte[32];
 #if DEBUG
             emitter.emitIssuing = true;
@@ -40,7 +40,7 @@ internal static unsafe class X86EmitterRegisterImmediateOutputTests
     {
         X86EmitterStaticOutputTests.WithEmitter((_, emitter) =>
         {
-            var id = NewDescriptor(ins, size, IF_CNS, constant: immediate);
+            var id = NewDescriptor(ins, size, IF_XARCH_CNS, constant: immediate);
             var buffer = stackalloc byte[32];
 #if DEBUG
             emitter.emitIssuing = true;
@@ -52,7 +52,7 @@ internal static unsafe class X86EmitterRegisterImmediateOutputTests
     }
 
     private static Emitter.instrDesc NewDescriptor(instruction ins, emitAttr size, Emitter.insFormat format,
-        regNumber reg = REG_NA, nint? constant = null)
+        regNumber reg = REG_X86_NA, nint? constant = null)
     {
         var descriptorType = typeof(Emitter).GetNestedType(
             constant.HasValue ? "instrDescCns" : "instrDescBasic", BindingFlags.NonPublic)
@@ -69,7 +69,7 @@ internal static unsafe class X86EmitterRegisterImmediateOutputTests
         id.idInsFmt(format);
         Assert.That(id.idOpSize(), Is.EqualTo(size));
 
-        if (reg != REG_NA)
+        if (reg != REG_X86_NA)
         {
             var regField = typeof(Emitter.instrDesc).GetField("_idReg1", BindingFlags.Instance | BindingFlags.NonPublic)
                 ?? throw new AssertionException("Missing first register field.");

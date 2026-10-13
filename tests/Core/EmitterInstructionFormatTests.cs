@@ -25,15 +25,15 @@ internal static class EmitterInstructionFormatTests
         Assert.That(Unsafe.SizeOf<Emitter.insFormat>(), Is.EqualTo(4));
         Assert.That(Unsafe.SizeOf<insUpdateModes>(), Is.EqualTo(4));
         Assert.That((uint)IF_NONE, Is.Zero);
-        Assert.That((uint)IF_RRD, Is.EqualTo(7u));
-        Assert.That((uint)IF_RRD_RRD_RRD, Is.EqualTo(22u));
-        Assert.That((uint)IF_MRD, Is.EqualTo(28u));
-        Assert.That((uint)IF_SRD, Is.EqualTo(60u));
-        Assert.That((uint)IF_SWR_RRD, Is.EqualTo(68u));
-        Assert.That((uint)IF_ARD, Is.EqualTo(90u));
-        Assert.That((uint)IF_RWR_RRD_ARD_RRD, Is.EqualTo(119u));
-        Assert.That((uint)IF_COUNT, Is.EqualTo(120u));
-        Assert.That(Emitter.emitFmtToOps.Length, Is.EqualTo((int)IF_COUNT));
+        Assert.That((uint)IF_XARCH_RRD, Is.EqualTo(7u));
+        Assert.That((uint)IF_XARCH_RRD_RRD_RRD, Is.EqualTo(22u));
+        Assert.That((uint)IF_XARCH_MRD, Is.EqualTo(28u));
+        Assert.That((uint)IF_XARCH_SRD, Is.EqualTo(60u));
+        Assert.That((uint)IF_XARCH_SWR_RRD, Is.EqualTo(68u));
+        Assert.That((uint)IF_XARCH_ARD, Is.EqualTo(90u));
+        Assert.That((uint)IF_XARCH_RWR_RRD_ARD_RRD, Is.EqualTo(119u));
+        Assert.That((uint)IF_XARCH_COUNT, Is.EqualTo(120u));
+        Assert.That(Emitter.emitFmtToOps.Length, Is.EqualTo((int)IF_XARCH_COUNT));
         Assert.That((int)IUM_RD, Is.Zero);
         Assert.That((int)IUM_WR, Is.EqualTo(1));
         Assert.That((int)IUM_RW, Is.EqualTo(2));
@@ -43,11 +43,12 @@ internal static class EmitterInstructionFormatTests
     public static void EveryInstructionHasOneByteOfUpdateMetadataInInstructionOrder()
     {
         var emitter = CreateEmitter();
-        Assert.That(Emitter.emitInsModeFmtTab.Length, Is.EqualTo((int)INS_count));
-        for (var index = 0; index < (int)INS_count; index++)
+        var instructionCount = InstructionOrdinalMaps.GetNativeInstructionCount();
+        Assert.That(Emitter.emitInsModeFmtTab.Length, Is.EqualTo(instructionCount));
+        for (var index = 0; index < instructionCount; index++)
         {
             Assert.That(Emitter.emitInsModeFmtTab[index], Is.InRange((byte)IUM_RD, (byte)IUM_RW));
-            Assert.That(emitter.emitInsUpdateMode((instruction)index),
+            Assert.That(emitter.emitInsUpdateMode(InstructionOrdinalMaps.GetInstructionFromNativeOrdinal(index)),
                 Is.EqualTo((insUpdateModes)Emitter.emitInsModeFmtTab[index]));
         }
     }
@@ -69,29 +70,29 @@ internal static class EmitterInstructionFormatTests
         Assert.That(CreateEmitter().emitInsUpdateMode(ins), Is.EqualTo(mode));
     }
 
-    [TestCase(INS_cmp, IF_SRD_RRD, IF_SRD_RRD)]
-    [TestCase(INS_mov, IF_SRD_RRD, IF_SWR_RRD)]
-    [TestCase(INS_add, IF_SRD_RRD, IF_SRW_RRD)]
-    [TestCase(INS_push, IF_RRD, IF_RRD)]
-    [TestCase(INS_pop, IF_RRD, IF_RWR)]
-    [TestCase(INS_inc, IF_RRD, IF_RRW)]
-    [TestCase(INS_cmp, IF_MRD_CNS, IF_MRD_CNS)]
-    [TestCase(INS_mov, IF_MRD_CNS, IF_MWR_CNS)]
-    [TestCase(INS_add, IF_MRD_CNS, IF_MRW_CNS)]
-    [TestCase(INS_cmp, IF_RRD_ARD, IF_RRD_ARD)]
-    [TestCase(INS_mov, IF_RRD_ARD, IF_RWR_ARD)]
-    [TestCase(INS_add, IF_RRD_ARD, IF_RRW_ARD)]
+    [TestCase(INS_cmp, IF_XARCH_SRD_RRD, IF_XARCH_SRD_RRD)]
+    [TestCase(INS_mov, IF_XARCH_SRD_RRD, IF_XARCH_SWR_RRD)]
+    [TestCase(INS_add, IF_XARCH_SRD_RRD, IF_XARCH_SRW_RRD)]
+    [TestCase(INS_push, IF_XARCH_RRD, IF_XARCH_RRD)]
+    [TestCase(INS_pop, IF_XARCH_RRD, IF_XARCH_RWR)]
+    [TestCase(INS_inc, IF_XARCH_RRD, IF_XARCH_RRW)]
+    [TestCase(INS_cmp, IF_XARCH_MRD_CNS, IF_XARCH_MRD_CNS)]
+    [TestCase(INS_mov, IF_XARCH_MRD_CNS, IF_XARCH_MWR_CNS)]
+    [TestCase(INS_add, IF_XARCH_MRD_CNS, IF_XARCH_MRW_CNS)]
+    [TestCase(INS_cmp, IF_XARCH_RRD_ARD, IF_XARCH_RRD_ARD)]
+    [TestCase(INS_mov, IF_XARCH_RRD_ARD, IF_XARCH_RWR_ARD)]
+    [TestCase(INS_add, IF_XARCH_RRD_ARD, IF_XARCH_RRW_ARD)]
     public static void OrdinaryFormatSelectionAddsTheNativeUpdateMode(instruction ins, Emitter.insFormat baseFormat,
         Emitter.insFormat expected)
     {
         Assert.That(CreateEmitter().emitInsModeFormat(ins, baseFormat), Is.EqualTo(expected));
     }
 
-    [TestCase(IF_RRD_RRD_RRD, IF_RWR_RRD_RRD)]
-    [TestCase(IF_RRD_RRD_ARD, IF_RWR_RRD_ARD)]
-    [TestCase(IF_RRD_RRD_CNS, IF_RWR_RRD_CNS)]
-    [TestCase(IF_RRD_RRD_SRD, IF_RWR_RRD_SRD)]
-    [TestCase(IF_RRD_RRD, IF_RWR_RRD)]
+    [TestCase(IF_XARCH_RRD_RRD_RRD, IF_XARCH_RWR_RRD_RRD)]
+    [TestCase(IF_XARCH_RRD_RRD_ARD, IF_XARCH_RWR_RRD_ARD)]
+    [TestCase(IF_XARCH_RRD_RRD_CNS, IF_XARCH_RWR_RRD_CNS)]
+    [TestCase(IF_XARCH_RRD_RRD_SRD, IF_XARCH_RWR_RRD_SRD)]
+    [TestCase(IF_XARCH_RRD_RRD, IF_XARCH_RWR_RRD)]
     public static void ApxNddWritesANewDestinationForEverySupportedBase(Emitter.insFormat baseFormat,
         Emitter.insFormat expected)
     {
@@ -113,7 +114,7 @@ internal static class EmitterInstructionFormatTests
         var emitter = CreateEmitter();
         emitter.UsePromotedEvexEncodings = true;
 
-        Assert.That(emitter.emitInsModeFormat(ins, IF_RRD_RRD_CNS, useNDD: true), Is.EqualTo(IF_RWR_RRD_SHF));
+        Assert.That(emitter.emitInsModeFormat(ins, IF_XARCH_RRD_RRD_CNS, useNDD: true), Is.EqualTo(IF_XARCH_RWR_RRD_SHF));
     }
 
     [Test]
@@ -128,7 +129,7 @@ internal static class EmitterInstructionFormatTests
 
         Assert.That(emitter.IsApxNddEncodableInstruction(INS_add), Is.True);
         Assert.That(emitter.IsApxNddEncodableInstruction(INS_mov), Is.False);
-        Assert.That(() => emitter.emitInsModeFormat(INS_add, IF_MRD, useNDD: true),
+        Assert.That(() => emitter.emitInsModeFormat(INS_add, IF_XARCH_MRD, useNDD: true),
             Throws.TypeOf<FatalJitException>());
     }
 
@@ -188,19 +189,19 @@ internal static class EmitterInstructionFormatTests
     }
 
     [TestCase(IF_NONE, ID_OP_NONE, IS_NONE)]
-    [TestCase(IF_LABEL, ID_OP_JMP, IS_NONE)]
-    [TestCase(IF_SWR_LABEL, ID_OP_LBL, IS_SF_WR)]
-    [TestCase(IF_METHOD, ID_OP_CALL, IS_NONE)]
-    [TestCase(IF_RRW_SHF, ID_OP_SCNS, IS_R1_RW)]
-    [TestCase(IF_MRD, ID_OP_SPEC, IS_GM_RD)]
-    [TestCase(IF_SRD, ID_OP_SPEC, IS_SF_RD)]
-    [TestCase(IF_ARD, ID_OP_SPEC, IS_AM_RD)]
-    [TestCase(IF_SWR_RRD, ID_OP_NONE, IS_SF_WR | IS_R1_RD)]
-    [TestCase(IF_MRW_RRW, ID_OP_DSP, IS_GM_RW | IS_R1_RW)]
-    [TestCase(IF_SRW_RRD_CNS, ID_OP_CNS, IS_SF_RW | IS_R1_RD)]
-    [TestCase(IF_RWR_RRD_MRD_CNS, ID_OP_DSP_CNS, IS_R1_WR | IS_R2_RD | IS_GM_RD)]
-    [TestCase(IF_RWR_RRD_ARD_CNS, ID_OP_AMD_CNS, IS_R1_WR | IS_R2_RD | IS_AM_RD)]
-    [TestCase(IF_RWR_RRD_RRD_RRD, ID_OP_SCNS, IS_R1_WR | IS_R2_RD | IS_R3_RD | IS_R4_RD)]
+    [TestCase(IF_XARCH_LABEL, ID_OP_JMP, IS_NONE)]
+    [TestCase(IF_XARCH_SWR_LABEL, ID_OP_LBL, IS_SF_WR)]
+    [TestCase(IF_XARCH_METHOD, ID_OP_CALL, IS_NONE)]
+    [TestCase(IF_XARCH_RRW_SHF, ID_OP_SCNS, IS_R1_RW)]
+    [TestCase(IF_XARCH_MRD, ID_OP_SPEC, IS_GM_RD)]
+    [TestCase(IF_XARCH_SRD, ID_OP_SPEC, IS_SF_RD)]
+    [TestCase(IF_XARCH_ARD, ID_OP_SPEC, IS_AM_RD)]
+    [TestCase(IF_XARCH_SWR_RRD, ID_OP_NONE, IS_SF_WR | IS_R1_RD)]
+    [TestCase(IF_XARCH_MRW_RRW, ID_OP_DSP, IS_GM_RW | IS_R1_RW)]
+    [TestCase(IF_XARCH_SRW_RRD_CNS, ID_OP_CNS, IS_SF_RW | IS_R1_RD)]
+    [TestCase(IF_XARCH_RWR_RRD_MRD_CNS, ID_OP_DSP_CNS, IS_R1_WR | IS_R2_RD | IS_GM_RD)]
+    [TestCase(IF_XARCH_RWR_RRD_ARD_CNS, ID_OP_AMD_CNS, IS_R1_WR | IS_R2_RD | IS_AM_RD)]
+    [TestCase(IF_XARCH_RWR_RRD_RRD_RRD, ID_OP_SCNS, IS_R1_WR | IS_R2_RD | IS_R3_RD | IS_R4_RD)]
     public static void OperandAndSchedulingMetadataRetainNativeSpecialCases(Emitter.insFormat format,
         ID_OPS operands, IS_INFO scheduling)
     {
@@ -209,10 +210,10 @@ internal static class EmitterInstructionFormatTests
     }
 
 #if DEBUG && TARGET_XARCH
-    [TestCase(IF_RRW_SHF, false, false, false)]
-    [TestCase(IF_RWR_RRD_RRD_RRD, true, true, false)]
-    [TestCase(IF_MRW_RRW, false, false, true)]
-    [TestCase(IF_RWR_RRD_ARD_CNS, false, true, true)]
+    [TestCase(IF_XARCH_RRW_SHF, false, false, false)]
+    [TestCase(IF_XARCH_RWR_RRD_RRD_RRD, true, true, false)]
+    [TestCase(IF_XARCH_MRW_RRW, false, false, true)]
+    [TestCase(IF_XARCH_RWR_RRD_ARD_CNS, false, true, true)]
     public static void SanityCheckAcceptsNativeRelocationOperandClasses(
         Emitter.insFormat format, bool largeConstant, bool constantRelocation, bool displacementRelocation)
     {
@@ -234,11 +235,11 @@ internal static class EmitterInstructionFormatTests
             descriptor.idSetIsDspReloc();
         }
 
-        CheckSanity(null, descriptor);
+        CheckSanity(CreateEmitter(), descriptor);
     }
 
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "emitInsSanityCheck")]
-    private static extern void CheckSanity(Emitter? emitter, Emitter.instrDesc descriptor);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitInsSanityCheck")]
+    private static extern void CheckSanity(Emitter emitter, Emitter.instrDesc descriptor);
 #endif
 
     [Test]
@@ -248,11 +249,11 @@ internal static class EmitterInstructionFormatTests
         descriptor.idIns(INS_add);
         descriptor.idOpSize(EA_8BYTE);
         descriptor.idCodeSize(7);
-        descriptor.idReg1(REG_R8);
-        descriptor.idReg2(REG_R9);
+        descriptor.idReg1(REG_X64_R8);
+        descriptor.idReg2(REG_X64_R9);
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_NONE));
 
-        for (uint value = 0; value < (uint)IF_COUNT; value++)
+        for (uint value = 0; value < (uint)IF_XARCH_COUNT; value++)
         {
             var format = (Emitter.insFormat)value;
             descriptor.idInsFmt(format);
@@ -260,22 +261,22 @@ internal static class EmitterInstructionFormatTests
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(descriptor.idCodeSize(), Is.EqualTo(7u));
-            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R8));
-            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R9));
+            Assert.That(descriptor.idReg1(), Is.EqualTo(REG_X64_R8));
+            Assert.That(descriptor.idReg2(), Is.EqualTo(REG_X64_R9));
             Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(16));
         }
 
         descriptor.idSetIsSmallDsc();
-        descriptor.idInsFmt(IF_RWR_RRD);
+        descriptor.idInsFmt(IF_XARCH_RWR_RRD);
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(8));
-        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_RWR_RRD));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RRD));
     }
 
     [Test]
     public static void SchedulingQueriesCoverAllRegisterAndMemoryBanks()
     {
         var descriptor = CreateDescriptor();
-        descriptor.idInsFmt(IF_RWR_RRD_RRD_RRD);
+        descriptor.idInsFmt(IF_XARCH_RWR_RRD_RRD_RRD);
         Assert.That(descriptor.idHasReg1(), Is.True);
         Assert.That(descriptor.idIsReg1Read(), Is.False);
         Assert.That(descriptor.idIsReg1Write(), Is.True);
@@ -292,7 +293,7 @@ internal static class EmitterInstructionFormatTests
         Assert.That(descriptor.idHasMemRead(), Is.False);
         Assert.That(descriptor.idHasMemWrite(), Is.False);
 
-        descriptor.idInsFmt(IF_MRW_RRW);
+        descriptor.idInsFmt(IF_XARCH_MRW_RRW);
         Assert.That(descriptor.idHasMemGen(), Is.True);
         Assert.That(descriptor.idHasMemGenRead(), Is.True);
         Assert.That(descriptor.idHasMemGenWrite(), Is.True);
@@ -302,14 +303,14 @@ internal static class EmitterInstructionFormatTests
         Assert.That(descriptor.idIsReg1Write(), Is.True);
         Assert.That(descriptor.idHasReg2(), Is.False);
 
-        descriptor.idInsFmt(IF_SWR_RRD);
+        descriptor.idInsFmt(IF_XARCH_SWR_RRD);
         Assert.That(descriptor.idHasMemStk(), Is.True);
         Assert.That(descriptor.idHasMemStkRead(), Is.False);
         Assert.That(descriptor.idHasMemStkWrite(), Is.True);
         Assert.That(descriptor.idHasMem(), Is.True);
         Assert.That(descriptor.idHasMemGen(), Is.False);
 
-        descriptor.idInsFmt(IF_RWR_RRD_ARD);
+        descriptor.idInsFmt(IF_XARCH_RWR_RRD_ARD);
         Assert.That(descriptor.idHasMemAdr(), Is.True);
         Assert.That(descriptor.idHasMemAdrRead(), Is.True);
         Assert.That(descriptor.idHasMemAdrWrite(), Is.False);
@@ -318,12 +319,12 @@ internal static class EmitterInstructionFormatTests
         Assert.That(descriptor.idHasReg4(), Is.False);
     }
 
-    [TestCase(IF_RWR_CNS, false)]
-    [TestCase(IF_SWR_RRD, false)]
-    [TestCase(IF_SWR_CNS, true)]
-    [TestCase(IF_MWR_CNS, true)]
-    [TestCase(IF_AWR_CNS, true)]
-    [TestCase(IF_RWR_RRD_ARD_RRD, true)]
+    [TestCase(IF_XARCH_RWR_CNS, false)]
+    [TestCase(IF_XARCH_SWR_RRD, false)]
+    [TestCase(IF_XARCH_SWR_CNS, true)]
+    [TestCase(IF_XARCH_MWR_CNS, true)]
+    [TestCase(IF_XARCH_AWR_CNS, true)]
+    [TestCase(IF_XARCH_RWR_RRD_ARD_RRD, true)]
     public static void MemoryAndConstantQueriesUseDescriptorOperandClassification(Emitter.insFormat format, bool expected)
     {
         var descriptor = CreateDescriptor();
@@ -337,10 +338,10 @@ internal static class EmitterInstructionFormatTests
     public static void DescriptorFormatStorageRetainsTheNativeSevenBitTruncation()
     {
         var descriptor = CreateDescriptor();
-        descriptor.idInsFmt((Emitter.insFormat)(0x180u | (uint)IF_SWR_RRD));
+        descriptor.idInsFmt((Emitter.insFormat)(0x180u | (uint)IF_XARCH_SWR_RRD));
 
-        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_SWR_RRD));
-        Assert.That(Emitter.emitGetSchedInfo(IF_COUNT), Is.EqualTo(IS_NONE));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_XARCH_SWR_RRD));
+        Assert.That(Emitter.emitGetSchedInfo(IF_XARCH_COUNT), Is.EqualTo(IS_NONE));
     }
 #endif
 

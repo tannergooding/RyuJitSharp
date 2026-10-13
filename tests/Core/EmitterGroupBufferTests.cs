@@ -57,8 +57,8 @@ internal static unsafe class EmitterGroupBufferTests
         Prepare(emitter, previous);
         var buffer = Buffer(emitter);
         ThisVars(emitter)[0] = 4;
-        ThisRefs(emitter) = SRBM_RAX;
-        ThisByrefs(emitter) = SRBM_RCX;
+        ThisRefs(emitter) = SRBM_X64_RAX;
+        ThisByrefs(emitter) = SRBM_X64_RCX;
         ForceNewGroup(emitter) = true;
 
         Transition(emitter, extend);
@@ -71,8 +71,8 @@ internal static unsafe class EmitterGroupBufferTests
         Assert.That(current.igFlags & InsGroupFlags.NoGCInterrupt, Is.EqualTo(InsGroupFlags.NoGCInterrupt));
         Assert.That(current.igFlags & InsGroupFlags.Extend, Is.EqualTo(extend ? InsGroupFlags.Extend : InsGroupFlags.None));
         Assert.That(InitVars(emitter)[0], Is.EqualTo(extend ? (nint)0 : (nint)4));
-        Assert.That(InitRefs(emitter), Is.EqualTo(extend ? SRBM_NONE : SRBM_RAX));
-        Assert.That(InitByrefs(emitter), Is.EqualTo(extend ? SRBM_NONE : SRBM_RCX));
+        Assert.That(InitRefs(emitter), Is.EqualTo(extend ? SRBM_NONE : SRBM_X64_RAX));
+        Assert.That(InitByrefs(emitter), Is.EqualTo(extend ? SRBM_NONE : SRBM_X64_RCX));
         Assert.That(Buffer(emitter), Is.SameAs(buffer));
         Assert.That(Used(emitter), Is.EqualTo((nuint)0));
         Assert.That(ForceNewGroup(emitter), Is.False);
@@ -110,23 +110,23 @@ internal static unsafe class EmitterGroupBufferTests
         var group = new insGroup();
         Prepare(emitter, group);
         InitVars(emitter)[^1] = 1;
-        InitRefs(emitter) = SRBM_RAX;
-        InitByrefs(emitter) = SRBM_RCX;
+        InitRefs(emitter) = SRBM_X64_RAX;
+        InitByrefs(emitter) = SRBM_X64_RCX;
         ThisVars(emitter)[^1] = 2;
-        ThisRefs(emitter) = SRBM_RDX;
-        ThisByrefs(emitter) = SRBM_RBX;
+        ThisRefs(emitter) = SRBM_X64_RDX;
+        ThisByrefs(emitter) = SRBM_X64_RBX;
 
         Assert.That(Save(emitter, false), Is.SameAs(group));
 
         Assert.That(group.igFlags, Is.EqualTo(InsGroupFlags.GCVars | InsGroupFlags.ByrefRegs));
         Assert.That(group.igGCvars()[^1], Is.EqualTo((nint)1));
-        Assert.That(group.igByrefRegs(), Is.EqualTo((uint)SRBM_RCX));
-        Assert.That(group.igGCregs, Is.EqualTo(SRBM_RAX));
+        Assert.That(group.igByrefRegs(), Is.EqualTo((uint)SRBM_X64_RCX));
+        Assert.That(group.igGCregs, Is.EqualTo(SRBM_X64_RAX));
         Assert.That(GroupDataOffset(group), Is.EqualTo((nuint)(nint.Size + sizeof(uint))));
         Assert.That(GroupStorageSize(group), Is.EqualTo(GroupDataOffset(group)));
         Assert.That(PrevVars(emitter)[^1], Is.EqualTo((nint)2));
-        Assert.That(PrevRefs(emitter), Is.EqualTo(SRBM_RDX));
-        Assert.That(PrevByrefs(emitter), Is.EqualTo(SRBM_RBX));
+        Assert.That(PrevRefs(emitter), Is.EqualTo(SRBM_X64_RDX));
+        Assert.That(PrevByrefs(emitter), Is.EqualTo(SRBM_X64_RBX));
 
         InitVars(emitter)[^1] = 4;
         ThisVars(emitter)[^1] = 8;
@@ -142,13 +142,13 @@ internal static unsafe class EmitterGroupBufferTests
         var emitter = CreateEmitter();
         var group = new insGroup();
         Prepare(emitter, group);
-        InitByrefs(emitter) = SRBM_R8;
-        PrevByrefs(emitter) = SRBM_R8;
+        InitByrefs(emitter) = SRBM_X64_R8;
+        PrevByrefs(emitter) = SRBM_X64_R8;
 
         _ = Save(emitter, false);
 
         Assert.That(group.igFlags, Is.EqualTo(InsGroupFlags.ByrefRegs));
-        Assert.That(group.igByrefRegs(), Is.EqualTo((uint)SRBM_R8));
+        Assert.That(group.igByrefRegs(), Is.EqualTo((uint)SRBM_X64_R8));
         Assert.That(GroupStorageSize(group), Is.EqualTo((nuint)sizeof(uint)));
     }
 
@@ -164,8 +164,8 @@ internal static unsafe class EmitterGroupBufferTests
         ForceGcState(emitter) = true;
         AddedLabel(emitter) = addedLabel;
         ThisVars(emitter)[0] = 4;
-        ThisRefs(emitter) = SRBM_RDX;
-        ThisByrefs(emitter) = SRBM_RBX;
+        ThisRefs(emitter) = SRBM_X64_RDX;
+        ThisByrefs(emitter) = SRBM_X64_RBX;
 
         _ = Save(emitter, overflow);
 
@@ -173,8 +173,8 @@ internal static unsafe class EmitterGroupBufferTests
         Assert.That(ForceGcState(emitter), Is.EqualTo(overflow || !addedLabel));
         Assert.That(AddedLabel(emitter), Is.EqualTo(overflow && addedLabel));
         Assert.That(PrevVars(emitter)[0], Is.EqualTo(overflow ? (nint)0 : (nint)4));
-        Assert.That(PrevRefs(emitter), Is.EqualTo(overflow ? SRBM_NONE : SRBM_RDX));
-        Assert.That(PrevByrefs(emitter), Is.EqualTo(overflow ? SRBM_NONE : SRBM_RBX));
+        Assert.That(PrevRefs(emitter), Is.EqualTo(overflow ? SRBM_NONE : SRBM_X64_RDX));
+        Assert.That(PrevByrefs(emitter), Is.EqualTo(overflow ? SRBM_NONE : SRBM_X64_RBX));
     }
 
     [Test]
@@ -190,8 +190,8 @@ internal static unsafe class EmitterGroupBufferTests
         Prepare(emitter, group);
         InitVars(emitter)[0] = 1;
         ForceGcState(emitter) = true;
-        InitRefs(emitter) = SRBM_RAX;
-        InitByrefs(emitter) = SRBM_RCX;
+        InitRefs(emitter) = SRBM_X64_RAX;
+        InitByrefs(emitter) = SRBM_X64_RCX;
 
         _ = Save(emitter, true);
 

@@ -16,25 +16,25 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
 {
 #if TARGET_XARCH
     [TestCase(IF_NONE, IS_NONE)]
-    [TestCase(IF_RRD, IS_R1_RD)]
-    [TestCase(IF_RWR, IS_R1_WR)]
-    [TestCase(IF_RRW, IS_R1_RW)]
-    [TestCase(IF_RRW_RRW, IS_R1_RW | IS_R2_RW)]
-    [TestCase(IF_RWR_RWR_RRD, IS_R1_WR | IS_R2_WR | IS_R3_RD)]
-    [TestCase(IF_RWR_RRD_RRD_RRD, IS_R1_WR | IS_R2_RD | IS_R3_RD | IS_R4_RD)]
-    [TestCase(IF_MRD, IS_GM_RD)]
-    [TestCase(IF_MWR, IS_GM_WR)]
-    [TestCase(IF_MRW, IS_GM_RW)]
-    [TestCase(IF_SRD, IS_SF_RD)]
-    [TestCase(IF_SWR, IS_SF_WR)]
-    [TestCase(IF_SRW, IS_SF_RW)]
-    [TestCase(IF_ARD, IS_AM_RD)]
-    [TestCase(IF_AWR, IS_AM_WR)]
-    [TestCase(IF_ARW, IS_AM_RW)]
-    [TestCase(IF_RWR_RRD_MRD, IS_R1_WR | IS_R2_RD | IS_GM_RD)]
-    [TestCase(IF_SWR_RRD_RRD, IS_SF_WR | IS_R1_RD | IS_R2_RD)]
-    [TestCase(IF_ARW_RRW, IS_AM_RW | IS_R1_RW)]
-    [TestCase(IF_RWR_RRD_ARD_RRD, IS_R1_WR | IS_R2_RD | IS_AM_RD | IS_R3_RD)]
+    [TestCase(IF_XARCH_RRD, IS_R1_RD)]
+    [TestCase(IF_XARCH_RWR, IS_R1_WR)]
+    [TestCase(IF_XARCH_RRW, IS_R1_RW)]
+    [TestCase(IF_XARCH_RRW_RRW, IS_R1_RW | IS_R2_RW)]
+    [TestCase(IF_XARCH_RWR_RWR_RRD, IS_R1_WR | IS_R2_WR | IS_R3_RD)]
+    [TestCase(IF_XARCH_RWR_RRD_RRD_RRD, IS_R1_WR | IS_R2_RD | IS_R3_RD | IS_R4_RD)]
+    [TestCase(IF_XARCH_MRD, IS_GM_RD)]
+    [TestCase(IF_XARCH_MWR, IS_GM_WR)]
+    [TestCase(IF_XARCH_MRW, IS_GM_RW)]
+    [TestCase(IF_XARCH_SRD, IS_SF_RD)]
+    [TestCase(IF_XARCH_SWR, IS_SF_WR)]
+    [TestCase(IF_XARCH_SRW, IS_SF_RW)]
+    [TestCase(IF_XARCH_ARD, IS_AM_RD)]
+    [TestCase(IF_XARCH_AWR, IS_AM_WR)]
+    [TestCase(IF_XARCH_ARW, IS_AM_RW)]
+    [TestCase(IF_XARCH_RWR_RRD_MRD, IS_R1_WR | IS_R2_RD | IS_GM_RD)]
+    [TestCase(IF_XARCH_SWR_RRD_RRD, IS_SF_WR | IS_R1_RD | IS_R2_RD)]
+    [TestCase(IF_XARCH_ARW_RRW, IS_AM_RW | IS_R1_RW)]
+    [TestCase(IF_XARCH_RWR_RRD_ARD_RRD, IS_R1_WR | IS_R2_RD | IS_AM_RD | IS_R3_RD)]
     public static void NativeSchedulingMasksDriveEveryOperandClassification(Emitter.insFormat format, IS_INFO expected)
     {
         var descriptor = new Descriptor();
@@ -67,14 +67,14 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
     }
 
     [TestCase(IF_NONE, false)]
-    [TestCase(IF_CNS, false)]
-    [TestCase(IF_RRD_CNS, false)]
-    [TestCase(IF_MRD, false)]
-    [TestCase(IF_MRD_CNS, true)]
-    [TestCase(IF_SRD_CNS, true)]
-    [TestCase(IF_ARD_CNS, true)]
-    [TestCase(IF_RWR_RRD_ARD_CNS, true)]
-    [TestCase(IF_RWR_RRD_ARD_RRD, true)]
+    [TestCase(IF_XARCH_CNS, false)]
+    [TestCase(IF_XARCH_RRD_CNS, false)]
+    [TestCase(IF_XARCH_MRD, false)]
+    [TestCase(IF_XARCH_MRD_CNS, true)]
+    [TestCase(IF_XARCH_SRD_CNS, true)]
+    [TestCase(IF_XARCH_ARD_CNS, true)]
+    [TestCase(IF_XARCH_RWR_RRD_ARD_CNS, true)]
+    [TestCase(IF_XARCH_RWR_RRD_ARD_RRD, true)]
     public static void MemoryAndConstantClassificationUsesTheNativeOperandKind(Emitter.insFormat format, bool expected)
     {
         var descriptor = new Descriptor();
@@ -92,7 +92,7 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
         var context = new AssertionContext { JitInfo = new ICorJitInfo { lpVtbl = &vtable } };
         using var tls = new JitTls(&context.JitInfo);
 #endif
-        Assert.That(Emitter.emitGetSchedInfo(IF_COUNT), Is.EqualTo(IS_NONE));
+        Assert.That(Emitter.emitGetSchedInfo(IF_XARCH_COUNT), Is.EqualTo(IS_NONE));
         Assert.That(Emitter.emitGetSchedInfo((Emitter.insFormat)uint.MaxValue), Is.EqualTo(IS_NONE));
 #if DEBUG
         Assert.That(context.Assertions, Is.EqualTo(2));
@@ -105,7 +105,11 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
     public static void HighestValidFormatRetainsAllItsNativeBits()
     {
         var descriptor = new Descriptor();
-        var format = (Emitter.insFormat)((uint)IF_COUNT - 1);
+#if TARGET_XARCH
+        var format = (Emitter.insFormat)(IF_XARCH_COUNT - 1);
+#else
+        var format = (Emitter.insFormat)(IF_ARM64_COUNT - 1);
+#endif
         descriptor.idInsFmt(format);
 
         Assert.That(descriptor.idInsFmt(), Is.EqualTo(format));
@@ -146,7 +150,8 @@ internal static unsafe class EmitterDescriptorFormatHeaderTests
 #endif
             Assert.That((uint)descriptor.idInsFmt(), Is.EqualTo(value & mask));
 #if DEBUG
-            var expectedAssertions = value >= (uint)IF_COUNT ? 1 : 0;
+            var expectedAssertions = (value >= 128 ? 1 : 0) +
+                (value >= (uint)Emitter.emitFmtToOps.Length ? 1 : 0);
             Assert.That(context.Assertions, Is.EqualTo(expectedAssertions));
             if (expectedAssertions != 0)
             {

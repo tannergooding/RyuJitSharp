@@ -34,12 +34,10 @@ internal static unsafe class EmitterMemoryOperandTests
     {
         WithEmitter((_, emitter) =>
         {
-            for (var format = IF_ARD; format <= IF_RWR_RRD_ARD_RRD; format++)
+            var nativeFormatDelta = (int)IF_XARCH_ARD - (int)IF_XARCH_MRD;
+            for (var format = IF_XARCH_ARD; format <= IF_XARCH_RWR_RRD_ARD_RRD; format++)
             {
-                var expectedName = format.ToString().Replace("ARD", "MRD", StringComparison.Ordinal)
-                    .Replace("ARW", "MRW", StringComparison.Ordinal)
-                    .Replace("AWR", "MWR", StringComparison.Ordinal);
-                Assert.That(emitter.emitMapFmtAtoM(format).ToString(), Is.EqualTo(expectedName));
+                Assert.That((int)emitter.emitMapFmtAtoM(format), Is.EqualTo((int)format - nativeFormatDelta));
             }
         });
     }
@@ -50,8 +48,8 @@ internal static unsafe class EmitterMemoryOperandTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            var baseNode = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-            baseNode.RegNum = REG_RAX;
+            var baseNode = compiler.gtNewLclvNode(TYP_LONG, 0);
+            baseNode.RegNum = REG_X64_RAX;
             var address = new GenTreeAddrMode(TYP_BYREF, baseNode, null, 0, offset) { IsContained = true };
             var indir = new GenTreeIndir(GT_IND, TYP_LONG, address);
 
@@ -59,7 +57,7 @@ internal static unsafe class EmitterMemoryOperandTests
             var id = Last(emitter);
 
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_RAX));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_RAX));
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
             Assert.That(CurrentSize(emitter), Is.EqualTo((int)size));
@@ -67,27 +65,27 @@ internal static unsafe class EmitterMemoryOperandTests
         });
     }
 
-    [TestCase(REG_RAX, REG_NA, 1, 0, 0u)]
-    [TestCase(REG_RBP, REG_R8, 2, 128, 1u)]
-    [TestCase(REG_RAX, REG_RCX, 4, 65536, 2u)]
-    [TestCase(REG_NA, REG_R12, 8, -8191, 3u)]
-    [TestCase(REG_NA, REG_NA, 1, 32, 0u)]
+    [TestCase(REG_X64_RAX, REG_X64_NA, 1, 0, 0u)]
+    [TestCase(REG_X64_RBP, REG_X64_R8, 2, 128, 1u)]
+    [TestCase(REG_X64_RAX, REG_X64_RCX, 4, 65536, 2u)]
+    [TestCase(REG_X64_NA, REG_X64_R12, 8, -8191, 3u)]
+    [TestCase(REG_X64_NA, REG_X64_NA, 1, 32, 0u)]
     public static void AddressModesPreserveConstructorDisplacementsAndRegisterScaleFields(
         regNumber baseReg, regNumber indexReg, byte scale, int offset, uint encodedScale)
     {
         WithEmitter((compiler, emitter) =>
         {
-            var baseNode = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-            baseNode.RegNum = baseReg == REG_NA ? REG_RAX : baseReg;
+            var baseNode = compiler.gtNewLclvNode(TYP_LONG, 0);
+            baseNode.RegNum = baseReg == REG_X64_NA ? REG_X64_RAX : baseReg;
             GenTree? index = null;
-            if (indexReg != REG_NA)
+            if (indexReg != REG_X64_NA)
             {
-                index = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
+                index = compiler.gtNewLclvNode(TYP_LONG, 0);
                 index.RegNum = indexReg;
             }
 
             var address = new GenTreeAddrMode(TYP_BYREF, baseNode, index, scale, offset) { IsContained = true };
-            if (baseReg == REG_NA)
+            if (baseReg == REG_X64_NA)
             {
                 address.BaseAddress = null;
             }
@@ -95,17 +93,17 @@ internal static unsafe class EmitterMemoryOperandTests
             var indir = new GenTreeIndir(GT_IND, TYP_INT, address);
             var id = NewAddress(emitter, EA_4BYTE, offset);
             id.idIns(INS_mov);
-            id.idReg1(REG_RDX);
+            id.idReg1(REG_X64_RDX);
             var count = CurrentCount(emitter);
             var used = Used(emitter);
-            emitter.emitHandleMemOp(indir, id, IF_RRW_ARD, INS_mov);
+            emitter.emitHandleMemOp(indir, id, IF_XARCH_RRW_ARD, INS_mov);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_ARD));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_ARD));
             Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(baseReg));
             Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(indexReg));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.EqualTo(encodedScale));
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_RDX));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RDX));
             Assert.That(id.idCodeSize(), Is.Zero);
             Assert.That(CurrentSize(emitter), Is.Zero);
             Assert.That(CurrentCount(emitter), Is.EqualTo(count));
@@ -119,8 +117,8 @@ internal static unsafe class EmitterMemoryOperandTests
     {
         WithEmitter((compiler, emitter) =>
         {
-            var reg = compiler.gtNewLclvNode(TYP_I_IMPL, 0);
-            reg.RegNum = REG_R9;
+            var reg = compiler.gtNewLclvNode(TYP_LONG, 0);
+            reg.RegNum = REG_X64_R9;
             GenTree address = reg;
             if (offset != 0)
             {
@@ -130,11 +128,11 @@ internal static unsafe class EmitterMemoryOperandTests
             var indir = new GenTreeIndir(GT_IND, TYP_INT, address);
             var id = NewAddressConstant(emitter, EA_GCREF, offset, 77);
             id.idIns(INS_add);
-            emitter.emitHandleMemOp(indir, id, IF_ARW_CNS, INS_add);
+            emitter.emitHandleMemOp(indir, id, IF_XARCH_ARW_CNS, INS_add);
 
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARW_CNS));
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_R9));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_ARW_CNS));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_R9));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.Zero);
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)offset));
             Assert.That(Constant(emitter, id), Is.EqualTo((nint)77));
@@ -154,7 +152,7 @@ internal static unsafe class EmitterMemoryOperandTests
         WithEmitter((compiler, emitter) =>
         {
             compiler.opts.compReloc = relocatable;
-            var constant = new GenTreeIntCon(TYP_I_IMPL, (nint)address) { IsContained = true };
+            var constant = new GenTreeIntCon(TYP_LONG, (nint)address) { IsContained = true };
             if (handle)
             {
                 constant.Flags |= GTF_ICON_FIELD_HDL;
@@ -165,11 +163,11 @@ internal static unsafe class EmitterMemoryOperandTests
             var indir = new GenTreeIndir(GT_IND, TYP_INT, constant);
             var id = NewAddress(emitter, EA_4BYTE, (nint)address);
             id.idIns(INS_mov);
-            id.idReg1(REG_RAX);
-            emitter.emitHandleMemOp(indir, id, IF_RWR_ARD, INS_mov);
+            id.idReg1(REG_X64_RAX);
+            emitter.emitHandleMemOp(indir, id, IF_XARCH_RWR_ARD, INS_mov);
 
-            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_NA));
-            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amBaseReg, Is.EqualTo(REG_X64_NA));
+            Assert.That(id.idAddr().iiaAddrMode.amIndxReg, Is.EqualTo(REG_X64_NA));
             Assert.That(id.idAddr().iiaAddrMode.amScale, Is.Zero);
             Assert.That(AddressDisplacement(emitter, id), Is.EqualTo((nint)address));
             Assert.That(id.idIsDspReloc(), Is.EqualTo(displacementRelocation));
@@ -182,27 +180,27 @@ internal static unsafe class EmitterMemoryOperandTests
         }, hint);
     }
 
-    [TestCase(INS_rol_N, IF_RRW_CNS, IF_RRW_SHF)]
-    [TestCase(INS_ror_N, IF_MRW_CNS, IF_MRW_SHF)]
-    [TestCase(INS_rcl_N, IF_SRW_CNS, IF_SRW_SHF)]
-    [TestCase(INS_rcr_N, IF_ARW_CNS, IF_ARW_SHF)]
-    [TestCase(INS_shl_N, IF_ARW_CNS, IF_ARW_SHF)]
-    [TestCase(INS_shr_N, IF_ARW_CNS, IF_ARW_SHF)]
-    [TestCase(INS_sar_N, IF_ARW_CNS, IF_ARW_SHF)]
-    [TestCase(INS_mov, IF_RRW_ARD, IF_RWR_ARD)]
-    [TestCase(INS_mov, IF_AWR_RRD, IF_AWR_RRD)]
-    [TestCase(INS_add, IF_RRW_ARD, IF_RRW_ARD)]
+    [TestCase(INS_rol_N, IF_XARCH_RRW_CNS, IF_XARCH_RRW_SHF)]
+    [TestCase(INS_ror_N, IF_XARCH_MRW_CNS, IF_XARCH_MRW_SHF)]
+    [TestCase(INS_rcl_N, IF_XARCH_SRW_CNS, IF_XARCH_SRW_SHF)]
+    [TestCase(INS_rcr_N, IF_XARCH_ARW_CNS, IF_XARCH_ARW_SHF)]
+    [TestCase(INS_shl_N, IF_XARCH_ARW_CNS, IF_XARCH_ARW_SHF)]
+    [TestCase(INS_shr_N, IF_XARCH_ARW_CNS, IF_XARCH_ARW_SHF)]
+    [TestCase(INS_sar_N, IF_XARCH_ARW_CNS, IF_XARCH_ARW_SHF)]
+    [TestCase(INS_mov, IF_XARCH_RRW_ARD, IF_XARCH_RWR_ARD)]
+    [TestCase(INS_mov, IF_XARCH_AWR_RRD, IF_XARCH_AWR_RRD)]
+    [TestCase(INS_add, IF_XARCH_RRW_ARD, IF_XARCH_RRW_ARD)]
     public static void InstructionFormatsRetainAllShiftClassesAndTheMovWriteException(
         instruction ins, Emitter.insFormat original, Emitter.insFormat expected)
     {
         WithEmitter((_, emitter) => Assert.That(emitter.emitMapFmtForIns(original, ins), Is.EqualTo(expected)));
     }
 
-    [TestCase(INS_neg, EA_8BYTE, 0, IF_SRW, 4u)]
-    [TestCase(INS_inc, EA_4BYTE, 16, IF_SRW, 3u)]
-    [TestCase(INS_push, EA_8BYTE, 0, IF_SRD, 3u)]
-    [TestCase(INS_pop, EA_8BYTE, 0, IF_SWR, 3u)]
-    [TestCase(INS_push, EA_GCREF, 0, IF_SRD, 3u)]
+    [TestCase(INS_neg, EA_8BYTE, 0, IF_XARCH_SRW, 4u)]
+    [TestCase(INS_inc, EA_4BYTE, 16, IF_XARCH_SRW, 3u)]
+    [TestCase(INS_push, EA_8BYTE, 0, IF_XARCH_SRD, 3u)]
+    [TestCase(INS_pop, EA_8BYTE, 0, IF_XARCH_SWR, 3u)]
+    [TestCase(INS_push, EA_64BIT_GCREF, 0, IF_XARCH_SRD, 3u)]
     public static void StackOnlyInstructionsKeepFormatsSizesAndDiagnosticOffsets(
         instruction ins, emitAttr attr, int offset, Emitter.insFormat format, uint size)
     {
@@ -223,16 +221,16 @@ internal static unsafe class EmitterMemoryOperandTests
         });
     }
 
-    [TestCase(INS_mov, EA_8BYTE, 1, 1, false, IF_SWR_CNS, 8u)]
-    [TestCase(INS_add, EA_8BYTE, 127, 127, false, IF_SRW_CNS, 5u)]
-    [TestCase(INS_add, EA_8BYTE, 128, 128, false, IF_SRW_CNS, 8u)]
-    [TestCase(INS_test, EA_4BYTE, 1, 1, false, IF_SRD_CNS, 7u)]
-    [TestCase(INS_add, EA_4BYTE, 3, 3, true, IF_SRW_CNS, 7u)]
-    [TestCase(INS_add, EA_4BYTE, 16, 16, true, IF_SRW_CNS, 7u)]
-    [TestCase(INS_shl_N, EA_8BYTE, -1, 127, false, IF_SRW_SHF, 5u)]
-    [TestCase(INS_sar_N, EA_4BYTE, 129, 1, false, IF_SRW_SHF, 4u)]
-    [TestCase(INS_rol_N, EA_4BYTE, 128, 0, false, IF_SRW_SHF, 4u)]
-    [TestCase(INS_rcr_N, EA_4BYTE, 255, 127, false, IF_SRW_SHF, 4u)]
+    [TestCase(INS_mov, EA_8BYTE, 1, 1, false, IF_XARCH_SWR_CNS, 8u)]
+    [TestCase(INS_add, EA_8BYTE, 127, 127, false, IF_XARCH_SRW_CNS, 5u)]
+    [TestCase(INS_add, EA_8BYTE, 128, 128, false, IF_XARCH_SRW_CNS, 8u)]
+    [TestCase(INS_test, EA_4BYTE, 1, 1, false, IF_XARCH_SRD_CNS, 7u)]
+    [TestCase(INS_add, EA_4BYTE, 3, 3, true, IF_XARCH_SRW_CNS, 7u)]
+    [TestCase(INS_add, EA_4BYTE, 16, 16, true, IF_XARCH_SRW_CNS, 7u)]
+    [TestCase(INS_shl_N, EA_8BYTE, -1, 127, false, IF_XARCH_SRW_SHF, 5u)]
+    [TestCase(INS_sar_N, EA_4BYTE, 129, 1, false, IF_XARCH_SRW_SHF, 4u)]
+    [TestCase(INS_rol_N, EA_4BYTE, 128, 0, false, IF_XARCH_SRW_SHF, 4u)]
+    [TestCase(INS_rcr_N, EA_4BYTE, 255, 127, false, IF_XARCH_SRW_SHF, 4u)]
     public static void StackImmediatesRetainSignedWidthsRelocationAndNativeShiftMasking(
         instruction ins, emitAttr attr, int value, int stored, bool relocation, Emitter.insFormat format, uint size)
     {
@@ -258,19 +256,19 @@ internal static unsafe class EmitterMemoryOperandTests
         });
     }
 
-    [TestCase(REG_XMM1, EA_16BYTE, 0, 5u)]
-    [TestCase(REG_XMM8, EA_16BYTE, 0, 5u)]
-    [TestCase(REG_XMM16, EA_16BYTE, 0, 7u)]
-    [TestCase(REG_XMM1, EA_64BYTE, 80, 7u)]
+    [TestCase(REG_X64_XMM1, EA_16BYTE, 0, 5u)]
+    [TestCase(REG_X64_XMM8, EA_16BYTE, 0, 5u)]
+    [TestCase(REG_X64_XMM16, EA_16BYTE, 0, 7u)]
+    [TestCase(REG_X64_XMM1, EA_64BYTE, 80, 7u)]
     public static void TwoRegisterStackLoadsKeepVexAndEvexSourceAndCompressionChoices(
         regNumber source, emitAttr attr, int offset, uint size)
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_R_S(INS_addps, attr, REG_XMM0, source, 0, offset);
+            emitter.emitIns_R_R_S(INS_addps, attr, REG_X64_XMM0, source, 0, offset);
             var id = Last(emitter);
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_RRD_SRD));
-            Assert.That(id.idReg1(), Is.EqualTo(REG_XMM0));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RRD_SRD));
+            Assert.That(id.idReg1(), Is.EqualTo(REG_X64_XMM0));
             Assert.That(id.idReg2(), Is.EqualTo(source));
             Assert.That(id.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo((uint)offset));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
@@ -283,18 +281,18 @@ internal static unsafe class EmitterMemoryOperandTests
     {
         WithEmitter((_, emitter) =>
         {
-            emitter.emitIns_R_R_S(INS_mulx, EA_8BYTE, REG_R8, REG_R9, 0, 0);
-            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_RWR_RWR_SRD));
+            emitter.emitIns_R_R_S(INS_mulx, EA_8BYTE, REG_X64_R8, REG_X64_R9, 0, 0);
+            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RWR_SRD));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(6u));
 
             emitter.UseRex2Encodings = true;
             emitter.UsePromotedEvexEncodings = true;
-            emitter.emitIns_R_R_S(INS_add, EA_8BYTE, REG_R16, REG_R31, 0, 0, INS_OPTS_EVEX_nd);
-            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_RWR_RRD_SRD));
+            emitter.emitIns_R_R_S(INS_add, EA_8BYTE, REG_X64_R16, REG_X64_R31, 0, 0, INS_OPTS_EVEX_nd);
+            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_XARCH_RWR_RRD_SRD));
             Assert.That(Last(emitter).idIsEvexNdContextSet(), Is.True);
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(7u));
 
-            emitter.emitIns_R_R_S(INS_addps, EA_64BYTE, REG_XMM0, REG_XMM1, 0, 0,
+            emitter.emitIns_R_R_S(INS_addps, EA_64BYTE, REG_X64_XMM0, REG_X64_XMM1, 0, 0,
                 INS_OPTS_EVEX_eb | INS_OPTS_EVEX_em_k3 | INS_OPTS_EVEX_em_zero);
             Assert.That(Last(emitter).idGetEvexbContext(), Is.EqualTo(3u));
             Assert.That(Last(emitter).idGetEvexAaaContext(), Is.EqualTo(3u));
@@ -307,7 +305,7 @@ internal static unsafe class EmitterMemoryOperandTests
     [Test]
     public static void StackRecordingRetainsNegativeSpillTemporaryNumbers()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (_, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (_, codeGen, _) =>
         {
             codeGen.RegSet.tmpInit();
             codeGen.RegSet.tmpBeginPreAllocateTemps();
@@ -323,7 +321,7 @@ internal static unsafe class EmitterMemoryOperandTests
                 emitter.emitIns_S_I(INS_mov, EA_8BYTE, temp.tdTempNum, 8, 7);
                 Assert.That(Last(emitter).idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(8u));
                 Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(8u));
-                emitter.emitIns_R_R_S(INS_mulx, EA_8BYTE, REG_R8, REG_R9, temp.tdTempNum, 0);
+                emitter.emitIns_R_R_S(INS_mulx, EA_8BYTE, REG_X64_R8, REG_X64_R9, temp.tdTempNum, 0);
                 Assert.That(Last(emitter).idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(temp.tdTempNum));
                 Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(6u));
                 Assert.That(codeGen.RegSet.tmpGetNum(temp.tdTempNum), Is.SameAs(temp));
@@ -363,7 +361,7 @@ internal static unsafe class EmitterMemoryOperandTests
 
                     default:
                     {
-                        emitter.emitIns_R_R_S(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, 0, 0);
+                        emitter.emitIns_R_R_S(INS_addps, EA_16BYTE, REG_X64_XMM0, REG_X64_XMM1, 0, 0);
                         break;
                     }
                 }
@@ -380,7 +378,7 @@ internal static unsafe class EmitterMemoryOperandTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action, CorInfoReloc hint = CorInfoReloc.NONE)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
             vtable.getRelocTypeHint = &GetRelocTypeHint;

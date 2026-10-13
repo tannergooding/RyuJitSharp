@@ -30,9 +30,9 @@ internal static unsafe class EmitterInstructionSizeTests
     }
 
 #if TARGET_X86
-    [TestCase(INS_addps, EA_16BYTE, IF_RWR_SRD, 4, 256, 16, true)]
-    [TestCase(INS_pslld, EA_16BYTE, IF_RWR_RRD_SRD, 4, 16, 1, true)]
-    [TestCase(INS_addps, EA_16BYTE, IF_RWR_SRD, 4, 257, 257, false)]
+    [TestCase(INS_addps, EA_16BYTE, IF_XARCH_RWR_SRD, 4, 256, 16, true)]
+    [TestCase(INS_pslld, EA_16BYTE, IF_XARCH_RWR_RRD_SRD, 4, 16, 1, true)]
+    [TestCase(INS_addps, EA_16BYTE, IF_XARCH_RWR_SRD, 4, 257, 257, false)]
     public static void X86TupleMetadataControlsEvexDisp8Compression(
         instruction ins, emitAttr attr, Emitter.insFormat format, int inputSize,
         int displacement, int expectedDisplacement, bool expected)
@@ -50,25 +50,25 @@ internal static unsafe class EmitterInstructionSizeTests
     }
 #endif
 
-    [TestCase(false, 0, 0u, EA_4BYTE, REG_RAX, 3u)]
-    [TestCase(true, 0, 0u, EA_4BYTE, REG_RAX, 3u)]
-    [TestCase(false, -128, 0u, EA_4BYTE, REG_RAX, 4u)]
-    [TestCase(false, 127, 0u, EA_4BYTE, REG_RAX, 4u)]
-    [TestCase(false, 128, 0u, EA_4BYTE, REG_RAX, 7u)]
-    [TestCase(true, -129, 0u, EA_4BYTE, REG_RAX, 6u)]
-    [TestCase(true, -129, 1u, EA_4BYTE, REG_RAX, 3u)]
-    [TestCase(false, -1, 1u, EA_4BYTE, REG_RAX, 3u)]
-    [TestCase(true, 0, 0u, EA_8BYTE, REG_RAX, 4u)]
-    [TestCase(true, 0, 0u, EA_2BYTE, REG_RAX, 4u)]
-    [TestCase(true, 0, 0u, EA_1BYTE, REG_RSI, 4u)]
-    [TestCase(true, 0, 0u, EA_4BYTE, REG_R8, 4u)]
+    [TestCase(false, 0, 0u, EA_4BYTE, REG_X64_RAX, 3u)]
+    [TestCase(true, 0, 0u, EA_4BYTE, REG_X64_RAX, 3u)]
+    [TestCase(false, -128, 0u, EA_4BYTE, REG_X64_RAX, 4u)]
+    [TestCase(false, 127, 0u, EA_4BYTE, REG_X64_RAX, 4u)]
+    [TestCase(false, 128, 0u, EA_4BYTE, REG_X64_RAX, 7u)]
+    [TestCase(true, -129, 0u, EA_4BYTE, REG_X64_RAX, 6u)]
+    [TestCase(true, -129, 1u, EA_4BYTE, REG_X64_RAX, 3u)]
+    [TestCase(false, -1, 1u, EA_4BYTE, REG_X64_RAX, 3u)]
+    [TestCase(true, 0, 0u, EA_8BYTE, REG_X64_RAX, 4u)]
+    [TestCase(true, 0, 0u, EA_2BYTE, REG_X64_RAX, 4u)]
+    [TestCase(true, 0, 0u, EA_1BYTE, REG_X64_RSI, 4u)]
+    [TestCase(true, 0, 0u, EA_4BYTE, REG_X64_R8, 4u)]
     public static void StackStoreSizeUsesFrameBaseDisplacementOperandWidthAndRegisters(
         bool fpBased, int offset, uint fieldOffset, emitAttr attr, regNumber reg, uint expected)
     {
         var emitter = CreateEmitter(fpBased, offset);
-        var id = CreateDescriptor(INS_mov, attr, IF_SWR_RRD);
+        var id = CreateDescriptor(INS_mov, attr, IF_XARCH_SWR_RRD);
         id.idReg1(reg);
-        id.idAddr().iiaLclVar.initLclVarAddr(0, fieldOffset);
+        id.idAddr().iiaInitLclVarAddr(0, fieldOffset);
 
         Assert.That(emitter.emitInsSizeSV(id, insCodeMR(INS_mov), 0, 123456), Is.EqualTo(expected));
     }
@@ -83,29 +83,29 @@ internal static unsafe class EmitterInstructionSizeTests
         instruction ins, emitAttr attr, int value, uint expected)
     {
         var emitter = CreateEmitter(true, 0);
-        var id = CreateDescriptor(ins, attr, IF_SRW_CNS);
+        var id = CreateDescriptor(ins, attr, IF_XARCH_SRW_CNS);
         id.idAddr().iiaLclVar.initLclVarAddr(0, 0);
 
         Assert.That(emitter.emitInsSizeSV(id, insCodeMI(ins), 0, 0, value), Is.EqualTo(expected));
     }
 
-    [TestCase(INS_addps, EA_64BYTE, IF_RWR_SRD, 64)]
-    [TestCase(INS_cvtps2pd, EA_64BYTE, IF_RWR_SRD, 32)]
-    [TestCase(INS_pshufb, EA_64BYTE, IF_RWR_SRD, 64)]
-    [TestCase(INS_movss, EA_4BYTE, IF_RWR_SRD, 4)]
-    [TestCase(INS_cvtsd2si64, EA_8BYTE, IF_RWR_SRD, 8)]
-    [TestCase(INS_vbroadcastf32x2, EA_64BYTE, IF_RWR_SRD, 8)]
-    [TestCase(INS_vbroadcastf32x4, EA_64BYTE, IF_RWR_SRD, 16)]
-    [TestCase(INS_vbroadcastf32x8, EA_64BYTE, IF_RWR_SRD, 32)]
-    [TestCase(INS_vcvtps2ph, EA_64BYTE, IF_SWR_RRD_CNS, 32)]
-    [TestCase(INS_vpmovdb, EA_64BYTE, IF_SWR_RRD, 16)]
-    [TestCase(INS_vpmovqb, EA_64BYTE, IF_SWR_RRD, 8)]
-    [TestCase(INS_pslld, EA_64BYTE, IF_RWR_RRD_SRD, 16)]
-    [TestCase(INS_pslld, EA_64BYTE, IF_RWR_SRD_CNS, 64)]
-    [TestCase(INS_psllw, EA_64BYTE, IF_RWR_RRD_SRD, 16)]
-    [TestCase(INS_psllw, EA_64BYTE, IF_RWR_SRD_CNS, 64)]
-    [TestCase(INS_movddup, EA_16BYTE, IF_RWR_SRD, 8)]
-    [TestCase(INS_movddup, EA_32BYTE, IF_RWR_SRD, 32)]
+    [TestCase(INS_addps, EA_64BYTE, IF_XARCH_RWR_SRD, 64)]
+    [TestCase(INS_cvtps2pd, EA_64BYTE, IF_XARCH_RWR_SRD, 32)]
+    [TestCase(INS_pshufb, EA_64BYTE, IF_XARCH_RWR_SRD, 64)]
+    [TestCase(INS_movss, EA_4BYTE, IF_XARCH_RWR_SRD, 4)]
+    [TestCase(INS_cvtsd2si64, EA_8BYTE, IF_XARCH_RWR_SRD, 8)]
+    [TestCase(INS_vbroadcastf32x2, EA_64BYTE, IF_XARCH_RWR_SRD, 8)]
+    [TestCase(INS_vbroadcastf32x4, EA_64BYTE, IF_XARCH_RWR_SRD, 16)]
+    [TestCase(INS_vbroadcastf32x8, EA_64BYTE, IF_XARCH_RWR_SRD, 32)]
+    [TestCase(INS_vcvtps2ph, EA_64BYTE, IF_XARCH_SWR_RRD_CNS, 32)]
+    [TestCase(INS_vpmovdb, EA_64BYTE, IF_XARCH_SWR_RRD, 16)]
+    [TestCase(INS_vpmovqb, EA_64BYTE, IF_XARCH_SWR_RRD, 8)]
+    [TestCase(INS_pslld, EA_64BYTE, IF_XARCH_RWR_RRD_SRD, 16)]
+    [TestCase(INS_pslld, EA_64BYTE, IF_XARCH_RWR_SRD_CNS, 64)]
+    [TestCase(INS_psllw, EA_64BYTE, IF_XARCH_RWR_RRD_SRD, 16)]
+    [TestCase(INS_psllw, EA_64BYTE, IF_XARCH_RWR_SRD_CNS, 64)]
+    [TestCase(INS_movddup, EA_16BYTE, IF_XARCH_RWR_SRD, 8)]
+    [TestCase(INS_movddup, EA_32BYTE, IF_XARCH_RWR_SRD, 32)]
     public static void EveryEvexTupleScalesExactSignedByteBoundaries(
         instruction ins, emitAttr attr, Emitter.insFormat format, int scale)
     {
@@ -137,7 +137,7 @@ internal static unsafe class EmitterInstructionSizeTests
         int displacement, bool compressed, bool fits)
     {
         var emitter = CreateEmitter(false, 0);
-        var id = CreateDescriptor(INS_addps, EA_16BYTE, IF_RWR_SRD);
+        var id = CreateDescriptor(INS_addps, EA_16BYTE, IF_XARCH_RWR_SRD);
 
         Assert.That(emitter.TryEvexCompressDisp8Byte(id, displacement, out var result, out var actualFits),
             Is.EqualTo(compressed));
@@ -152,7 +152,7 @@ internal static unsafe class EmitterInstructionSizeTests
     {
         var emitter = CreateEmitter(false, 0);
         emitter.UsePromotedEvexEncodings = true;
-        var id = CreateDescriptor(INS_add, EA_8BYTE, IF_SRW_RRD);
+        var id = CreateDescriptor(INS_add, EA_8BYTE, IF_XARCH_SRW_RRD);
 
         Assert.That(emitter.TryEvexCompressDisp8Byte(id, displacement, out var result, out var actualFits),
             Is.EqualTo(fits));
@@ -166,7 +166,7 @@ internal static unsafe class EmitterInstructionSizeTests
     public static void EmbeddedBroadcastUsesInputWidthInsteadOfVectorWidth(instruction ins, int inputWidth)
     {
         var emitter = CreateEmitter(false, 0);
-        var id = CreateDescriptor(ins, EA_64BYTE, IF_RWR_SRD);
+        var id = CreateDescriptor(ins, EA_64BYTE, IF_XARCH_RWR_SRD);
         id.idSetEvexBroadcastBit();
         var displacement = 127 * inputWidth;
 
@@ -185,7 +185,7 @@ internal static unsafe class EmitterInstructionSizeTests
     public static void OutOfRangeDisplacementsAreNotTruncatedBeforeCompression(long displacement)
     {
         var emitter = CreateEmitter(false, 0);
-        var id = CreateDescriptor(INS_addps, EA_64BYTE, IF_RWR_SRD);
+        var id = CreateDescriptor(INS_addps, EA_64BYTE, IF_XARCH_RWR_SRD);
 
         Assert.That(emitter.TryEvexCompressDisp8Byte(id, (nint)displacement, out var result, out var fits), Is.False);
         Assert.That(result, Is.EqualTo((nint)displacement));
@@ -201,8 +201,8 @@ internal static unsafe class EmitterInstructionSizeTests
         var emitter = CreateEmitter(true, 0);
         emitter.UseRex2Encodings = true;
         emitter.UsePromotedEvexEncodings = true;
-        var id = CreateDescriptor(ins, EA_8BYTE, ndd ? IF_RWR_RRD_SRD : IF_RWR_SRD);
-        id.idReg1(REG_R16);
+        var id = CreateDescriptor(ins, EA_8BYTE, ndd ? IF_XARCH_RWR_RRD_SRD : IF_XARCH_RWR_SRD);
+        id.idReg1(REG_X64_R16);
         id.idAddr().iiaLclVar.initLclVarAddr(0, 0);
 
         if (ndd)
@@ -217,8 +217,8 @@ internal static unsafe class EmitterInstructionSizeTests
     public static void StackSizingPromotesToEvexForACompressibleVectorDisplacement()
     {
         var emitter = CreateEmitter(false, 256);
-        var id = CreateDescriptor(INS_movups, EA_16BYTE, IF_SWR_RRD);
-        id.idReg1(REG_XMM0);
+        var id = CreateDescriptor(INS_movups, EA_16BYTE, IF_XARCH_SWR_RRD);
+        id.idReg1(REG_X64_XMM0);
         id.idAddr().iiaLclVar.initLclVarAddr(0, 0);
 
         Assert.That(TakesEvexPrefix(emitter, id), Is.False);
@@ -238,8 +238,8 @@ internal static unsafe class EmitterInstructionSizeTests
         id.idIns(ins);
         id.idOpSize(attr);
         id.idInsFmt(format);
-        id.idReg1(REG_RAX);
-        id.idReg2(REG_RAX);
+        id.idReg1(REG_X64_RAX);
+        id.idReg2(REG_X64_RAX);
         return id;
     }
 

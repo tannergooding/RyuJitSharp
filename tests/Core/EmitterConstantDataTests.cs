@@ -20,7 +20,7 @@ internal static unsafe class EmitterConstantDataTests
             Assert.That(emitter.emitDataConst(input, 1, TYP_INT), Is.Zero);
             input[0] = 9;
             Assert.That(emitter.emitDataConst(input, 16, TYP_INT), Is.EqualTo(16));
-            Assert.That(emitter.emitDataGenBeg(8, 4, TYP_LONG), Is.EqualTo(20));
+            Assert.That(emitter.emitDataGenBeg(8, 4, var_types.TYP_LONG), Is.EqualTo(20));
             emitter.emitDataGenData(0, input);
             emitter.emitDataGenData(4, input);
             emitter.emitDataGenEnd();
@@ -51,13 +51,13 @@ internal static unsafe class EmitterConstantDataTests
         WithEmitter((_, emitter) =>
         {
             byte[] bytes = [1, 2, 3, 4, 5, 6, 7, 8];
-            Assert.That(emitter.emitDataConst(bytes, 4, TYP_LONG), Is.Zero);
+            Assert.That(emitter.emitDataConst(bytes, 4, var_types.TYP_LONG), Is.Zero);
             var first = Required(emitter.emitConsDsc.dsdList);
             Assert.That(emitter.emitDataConst(bytes.AsSpan(0, 4), 4, TYP_FLOAT), Is.Zero);
-            Assert.That(first.dsDataType, Is.EqualTo(TYP_LONG));
+            Assert.That(first.dsDataType, Is.EqualTo(var_types.TYP_LONG));
             Assert.That(emitter.emitDataConst(bytes, 4, TYP_DOUBLE), Is.Zero);
             Assert.That(first.dsDataType, Is.EqualTo(TYP_DOUBLE));
-            Assert.That(emitter.emitDataConst(bytes, 4, TYP_LONG), Is.Zero);
+            Assert.That(emitter.emitDataConst(bytes, 4, var_types.TYP_LONG), Is.Zero);
             Assert.That(first.dsDataType, Is.EqualTo(TYP_DOUBLE));
             Assert.That(emitter.emitDataConst(bytes, 8, TYP_DOUBLE), Is.EqualTo(8));
             Assert.That(emitter.emitConsDsc.dsdOffs, Is.EqualTo(16));
@@ -264,7 +264,7 @@ internal static unsafe class EmitterConstantDataTests
 
     private static void WithEmitter(Action<Compiler, Emitter> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_INT, REG_X64_RAX, (compiler, codeGen, _) =>
             action(compiler, codeGen.Emitter));
     }
 }

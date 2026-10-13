@@ -88,8 +88,7 @@ internal static unsafe class EmitterLocalAddressTests
         descriptor.idIns(INS_mov);
         descriptor.idCodeSize(3);
         CurrentSize(emitter) = 3;
-        ref var address = ref descriptor.idAddr().iiaLclVar;
-        address.initLclVarAddr(32768, 255);
+        descriptor.idAddr().iiaInitLclVarAddr(32768, 255);
 
         var group = Save(emitter, false);
         var saved = group.igData ?? throw new AssertionException("The saved group has no instruction descriptors.");
@@ -99,7 +98,7 @@ internal static unsafe class EmitterLocalAddressTests
         Assert.That(saved[0].idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(255u));
         Assert.That(descriptor.NativeLogicalSize, Is.EqualTo(16));
 
-        address.initLclVarAddr(-1, 7);
+        descriptor.idAddr().iiaInitLclVarAddr(-1, 7);
         Assert.That(saved[0].idAddr().iiaLclVar.lvaVarNum(), Is.EqualTo(-1));
     }
 

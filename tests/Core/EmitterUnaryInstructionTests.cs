@@ -16,16 +16,16 @@ namespace RyuJitSharp.UnitTests;
 
 internal static unsafe class EmitterUnaryInstructionTests
 {
-    [TestCase(INS_neg, EA_4BYTE, REG_RAX, IF_RRW, 2u)]
-    [TestCase(INS_not, EA_8BYTE, REG_RCX, IF_RRW, 3u)]
-    [TestCase(INS_inc, EA_1BYTE, REG_RSP, IF_RRW, 3u)]
-    [TestCase(INS_dec, EA_2BYTE, REG_R8, IF_RRW, 4u)]
-    [TestCase(INS_inc, EA_4BYTE, REG_R8, IF_RRW, 3u)]
-    [TestCase(INS_neg, EA_8BYTE, REG_R16, IF_RRW, 4u)]
-    [TestCase(INS_shl_1, EA_8BYTE, REG_RAX, IF_RRW, 3u)]
-    [TestCase(INS_seto, EA_1BYTE, REG_RAX, IF_RWR, 3u)]
-    [TestCase(INS_setg, EA_1BYTE, REG_RSP, IF_RWR, 4u)]
-    [TestCase(INS_sete, EA_1BYTE, REG_R16, IF_RWR, 4u)]
+    [TestCase(INS_neg, EA_4BYTE, REG_X64_RAX, IF_XARCH_RRW, 2u)]
+    [TestCase(INS_not, EA_8BYTE, REG_X64_RCX, IF_XARCH_RRW, 3u)]
+    [TestCase(INS_inc, EA_1BYTE, REG_X64_RSP, IF_XARCH_RRW, 3u)]
+    [TestCase(INS_dec, EA_2BYTE, REG_X64_R8, IF_XARCH_RRW, 4u)]
+    [TestCase(INS_inc, EA_4BYTE, REG_X64_R8, IF_XARCH_RRW, 3u)]
+    [TestCase(INS_neg, EA_8BYTE, REG_X64_R16, IF_XARCH_RRW, 4u)]
+    [TestCase(INS_shl_1, EA_8BYTE, REG_X64_RAX, IF_XARCH_RRW, 3u)]
+    [TestCase(INS_seto, EA_1BYTE, REG_X64_RAX, IF_XARCH_RWR, 3u)]
+    [TestCase(INS_setg, EA_1BYTE, REG_X64_RSP, IF_XARCH_RWR, 4u)]
+    [TestCase(INS_sete, EA_1BYTE, REG_X64_R16, IF_XARCH_RWR, 4u)]
     public static void SingleRegisterInstructionsRetainNativeFormatsAndWidths(
         instruction ins, emitAttr attr, regNumber reg, Emitter.insFormat format, uint size)
     {
@@ -47,13 +47,13 @@ internal static unsafe class EmitterUnaryInstructionTests
         });
     }
 
-    [TestCase(INS_push, REG_RAX, INS_OPTS_NONE, IF_RRD, 1u, false)]
-    [TestCase(INS_pop, REG_R8, INS_OPTS_NONE, IF_RWR, 2u, false)]
-    [TestCase(INS_push, REG_R16, INS_OPTS_NONE, IF_RRD, 3u, false)]
-    [TestCase(INS_push, REG_RAX, INS_OPTS_APX_ppx, IF_RRD, 3u, true)]
-    [TestCase(INS_pop, REG_RAX, INS_OPTS_APX_ppx, IF_RWR, 3u, true)]
-    [TestCase(INS_push_hide, REG_RAX, INS_OPTS_APX_ppx, IF_RRD, 1u, false)]
-    [TestCase(INS_pop_hide, REG_R8, INS_OPTS_APX_ppx, IF_RWR, 2u, false)]
+    [TestCase(INS_push, REG_X64_RAX, INS_OPTS_NONE, IF_XARCH_RRD, 1u, false)]
+    [TestCase(INS_pop, REG_X64_R8, INS_OPTS_NONE, IF_XARCH_RWR, 2u, false)]
+    [TestCase(INS_push, REG_X64_R16, INS_OPTS_NONE, IF_XARCH_RRD, 3u, false)]
+    [TestCase(INS_push, REG_X64_RAX, INS_OPTS_APX_ppx, IF_XARCH_RRD, 3u, true)]
+    [TestCase(INS_pop, REG_X64_RAX, INS_OPTS_APX_ppx, IF_XARCH_RWR, 3u, true)]
+    [TestCase(INS_push_hide, REG_X64_RAX, INS_OPTS_APX_ppx, IF_XARCH_RRD, 1u, false)]
+    [TestCase(INS_pop_hide, REG_X64_R8, INS_OPTS_APX_ppx, IF_XARCH_RWR, 2u, false)]
     public static void PushPopVariantsPreservePpxEligibilityAndFixedOutgoingStackDepth(
         instruction ins, regNumber reg, insOpts options, Emitter.insFormat format, uint size, bool ppx)
     {
@@ -78,7 +78,7 @@ internal static unsafe class EmitterUnaryInstructionTests
     {
         WithEmitter(emitter =>
         {
-            emitter.emitIns_R(INS_push, EA_GCREF, REG_RAX);
+            emitter.emitIns_R(INS_push, EA_GCREF, REG_X64_RAX);
             Assert.That(Last(emitter).idGCref(), Is.EqualTo(GCInfo.GCtype.GCT_GCREF));
             Assert.That(Last(emitter).idOpSize(), Is.EqualTo(EA_8BYTE));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(1u));
@@ -91,16 +91,16 @@ internal static unsafe class EmitterUnaryInstructionTests
         WithEmitter(emitter =>
         {
             emitter.UsePromotedEvexEncodings = true;
-            emitter.emitIns_R(INS_neg, EA_8BYTE, REG_RAX, INS_OPTS_EVEX_nf);
+            emitter.emitIns_R(INS_neg, EA_8BYTE, REG_X64_RAX, INS_OPTS_EVEX_nf);
             Assert.That(Last(emitter).idIsEvexNfContextSet(), Is.True);
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(6u));
 
-            emitter.emitIns_R(INS_seto_apx, EA_4BYTE, REG_RAX, INS_OPTS_EVEX_zu);
+            emitter.emitIns_R(INS_seto_apx, EA_4BYTE, REG_X64_RAX, INS_OPTS_EVEX_zu);
             Assert.That(Last(emitter).idIsEvexZuContextSet(), Is.True);
-            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_RWR));
+            Assert.That(Last(emitter).idInsFmt(), Is.EqualTo(IF_XARCH_RWR));
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(6u));
 
-            emitter.emitIns_R(INS_setg_apx, EA_4BYTE, REG_RAX);
+            emitter.emitIns_R(INS_setg_apx, EA_4BYTE, REG_X64_RAX);
             Assert.That(Last(emitter).idIsEvexZuContextSet(), Is.False);
             Assert.That(Last(emitter).idCodeSize(), Is.EqualTo(6u));
         });
@@ -124,8 +124,8 @@ internal static unsafe class EmitterUnaryInstructionTests
             WithEmitter(emitter =>
             {
                 emitter.UsePromotedEvexEncodings = promoted;
-                var source = sameRegister ? REG_RAX : REG_RCX;
-                emitter.emitIns_BASE_R_R(ins, EA_8BYTE, REG_RAX, source);
+                var source = sameRegister ? REG_X64_RAX : REG_X64_RCX;
+                emitter.emitIns_BASE_R_R(ins, EA_8BYTE, REG_X64_RAX, source);
                 var id = Last(emitter);
 
                 Assert.That(emitter.DoJitUseApxNDD(ins), Is.EqualTo(enabled && promoted));
@@ -133,9 +133,9 @@ internal static unsafe class EmitterUnaryInstructionTests
                 Assert.That(CurrentCount(emitter), Is.EqualTo(count));
                 Assert.That(CurrentSize(emitter), Is.EqualTo(sameRegister ? 3 : 6));
                 Assert.That(id.idIns(), Is.EqualTo(ins));
-                Assert.That(id.idReg1(), Is.EqualTo(REG_RAX));
+                Assert.That(id.idReg1(), Is.EqualTo(REG_X64_RAX));
                 Assert.That(id.idIsEvexNdContextSet(), Is.EqualTo(ndd));
-                Assert.That(id.idInsFmt(), Is.EqualTo(ndd ? IF_RWR_RRD : IF_RRW));
+                Assert.That(id.idInsFmt(), Is.EqualTo(ndd ? IF_XARCH_RWR_RRD : IF_XARCH_RRW));
                 if (ndd)
                 {
                     Assert.That(id.idReg2(), Is.EqualTo(source));
@@ -144,7 +144,7 @@ internal static unsafe class EmitterUnaryInstructionTests
                 {
                     var descriptors = Buffer(emitter) ?? throw new AssertionException("Missing instruction buffer.");
                     Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_mov));
-                    Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_RAX));
+                    Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_X64_RAX));
                     Assert.That(descriptors[0].idReg2(), Is.EqualTo(source));
                 }
             });
@@ -155,16 +155,16 @@ internal static unsafe class EmitterUnaryInstructionTests
         }
     }
 
-    [TestCase(REG_RSP, EA_1BYTE, 0UL, 0x4000000000UL, 4u)]
-    [TestCase(REG_R8, EA_4BYTE, 0UL, 0x4100000000UL, 0u)]
-    [TestCase(REG_R16, EA_8BYTE, 0UL, 0UL, 0u)]
-    [TestCase(REG_R16, EA_8BYTE, 0xD50000000000UL, 0xD51000000000UL, 0u)]
-    [TestCase(REG_R24, EA_8BYTE, 0UL, 0xD51100000000UL, 0u)]
-    [TestCase(REG_R24, EA_8BYTE, 0x62F0000000000000UL, 0x62D8000000000000UL, 0u)]
-    [TestCase(REG_RSP, EA_1BYTE, 0x62F0000000000000UL, 0x62F0000000000000UL, 4u)]
-    [TestCase(REG_XMM8, EA_16BYTE, 0xC4E07800000000UL, 0xC4C07800000000UL, 0u)]
-    [TestCase(REG_XMM16, EA_16BYTE, 0x62F0000000000000UL, 0x62B0000000000000UL, 0u)]
-    [TestCase(REG_XMM27, EA_16BYTE, 0x62F0000000000000UL, 0x6290000000000000UL, 3u)]
+    [TestCase(REG_X64_RSP, EA_1BYTE, 0UL, 0x4000000000UL, 4u)]
+    [TestCase(REG_X64_R8, EA_4BYTE, 0UL, 0x4100000000UL, 0u)]
+    [TestCase(REG_X64_R16, EA_8BYTE, 0UL, 0UL, 0u)]
+    [TestCase(REG_X64_R16, EA_8BYTE, 0xD50000000000UL, 0xD51000000000UL, 0u)]
+    [TestCase(REG_X64_R24, EA_8BYTE, 0UL, 0xD51100000000UL, 0u)]
+    [TestCase(REG_X64_R24, EA_8BYTE, 0x62F0000000000000UL, 0x62D8000000000000UL, 0u)]
+    [TestCase(REG_X64_RSP, EA_1BYTE, 0x62F0000000000000UL, 0x62F0000000000000UL, 4u)]
+    [TestCase(REG_X64_XMM8, EA_16BYTE, 0xC4E07800000000UL, 0xC4C07800000000UL, 0u)]
+    [TestCase(REG_X64_XMM16, EA_16BYTE, 0x62F0000000000000UL, 0x62B0000000000000UL, 0u)]
+    [TestCase(REG_X64_XMM27, EA_16BYTE, 0x62F0000000000000UL, 0x6290000000000000UL, 3u)]
     public static void RegisterOperandBitsPreserveExistingPrefixesAndHighRegisterEncodings(
         regNumber reg, emitAttr attr, ulong code, ulong expected, uint encoding)
     {
@@ -173,7 +173,7 @@ internal static unsafe class EmitterUnaryInstructionTests
             emitter.UseRex2Encodings = true;
             var id = EmitterInstructionAllocationTests.Allocate(emitter, attr);
             id.idIns(reg.IsFltReg ? INS_movaps : INS_neg);
-            id.idInsFmt(IF_RWR_RRD);
+            id.idInsFmt(IF_XARCH_RWR_RRD);
             id.idReg1(reg);
             var encoded = code;
             var actual = emitter.insEncodeReg012(id, reg, attr, &encoded);
@@ -190,12 +190,12 @@ internal static unsafe class EmitterUnaryInstructionTests
         {
             var id = EmitterInstructionAllocationTests.Allocate(emitter, EA_4BYTE);
             id.idIns(INS_neg);
-            Assert.That(emitter.insEncodeReg012(id, REG_RDX, EA_4BYTE, null), Is.EqualTo(2u));
-            Assert.That(emitter.insEncodeReg012(id, REG_RSP, EA_1BYTE, null), Is.EqualTo(4u));
-            Assert.That(AbsRegNumber(REG_XMM27), Is.EqualTo((regNumber)27));
+            Assert.That(emitter.insEncodeReg012(id, REG_X64_RDX, EA_4BYTE, null), Is.EqualTo(2u));
+            Assert.That(emitter.insEncodeReg012(id, REG_X64_RSP, EA_1BYTE, null), Is.EqualTo(4u));
+            Assert.That(AbsRegNumber(REG_X64_XMM27), Is.EqualTo((regNumber)27));
             Assert.That(AbsRegNumber(REG_K3), Is.EqualTo((regNumber)3));
             Assert.That(RegEncoding(REG_K3), Is.EqualTo(3u));
-            Assert.That(emitter.insEncodeMRreg(id, REG_RDX, EA_4BYTE, insCodeMR(INS_neg)),
+            Assert.That(emitter.insEncodeMRreg(id, REG_X64_RDX, EA_4BYTE, insCodeMR(INS_neg)),
                 Is.EqualTo(0xDAF6UL));
         });
     }
@@ -209,11 +209,11 @@ internal static unsafe class EmitterUnaryInstructionTests
         {
             var id = EmitterInstructionAllocationTests.Allocate(emitter, EA_4BYTE);
             id.idIns(INS_neg);
-            id.idInsFmt(IF_RRW);
+            id.idInsFmt(IF_XARCH_RRW);
             Assert.That(emitter.AddRexXPrefix(id, code), Is.EqualTo(expected));
 
             emitter.UseRex2Encodings = true;
-            id.idReg1(REG_R16);
+            id.idReg1(REG_X64_R16);
             Assert.That(emitter.AddRexXPrefix(id, 0), Is.EqualTo(0xD50200000000UL));
         });
     }
@@ -224,7 +224,7 @@ internal static unsafe class EmitterUnaryInstructionTests
     [TestCase(2)]
     public static void DisassemblyRecordsUnaryInstructionsAndRequiredCopies(int entrypoint)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             var emitter = codeGen.Emitter;
             compiler.opts.dspCode = true;
@@ -233,11 +233,11 @@ internal static unsafe class EmitterUnaryInstructionTests
             {
                 if (entrypoint == 0)
                 {
-                    emitter.emitIns_R(INS_neg, EA_8BYTE, REG_RAX);
+                    emitter.emitIns_R(INS_neg, EA_8BYTE, REG_X64_RAX);
                 }
                 else
                 {
-                    emitter.emitIns_BASE_R_R(INS_neg, EA_8BYTE, REG_RAX, entrypoint == 1 ? REG_RCX : REG_RAX);
+                    emitter.emitIns_BASE_R_R(INS_neg, EA_8BYTE, REG_X64_RAX, entrypoint == 1 ? REG_X64_RCX : REG_X64_RAX);
                 }
             });
 
@@ -252,7 +252,7 @@ internal static unsafe class EmitterUnaryInstructionTests
 
     private static void WithEmitter(Action<Emitter> action)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (_, codeGen, _) => action(codeGen.Emitter));
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (_, codeGen, _) => action(codeGen.Emitter));
     }
 
     private static Emitter.instrDesc Last(Emitter emitter)

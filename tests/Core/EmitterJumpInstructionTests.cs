@@ -6,6 +6,7 @@ using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.BBKinds;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.emitJumpKind;
 using static RyuJitSharp.instruction;
@@ -19,23 +20,23 @@ internal static class EmitterJumpInstructionTests
 {
     [TestCase(EJ_NONE, INS_nop)]
     [TestCase(EJ_jmp, INS_jmp)]
-    [TestCase(EJ_jo, INS_jo)]
-    [TestCase(EJ_jno, INS_jno)]
-    [TestCase(EJ_jb, INS_jb)]
-    [TestCase(EJ_jae, INS_jae)]
-    [TestCase(EJ_je, INS_je)]
-    [TestCase(EJ_jne, INS_jne)]
-    [TestCase(EJ_jbe, INS_jbe)]
-    [TestCase(EJ_ja, INS_ja)]
-    [TestCase(EJ_js, INS_js)]
-    [TestCase(EJ_jns, INS_jns)]
-    [TestCase(EJ_jp, INS_jp)]
-    [TestCase(EJ_jnp, INS_jnp)]
-    [TestCase(EJ_jl, INS_jl)]
-    [TestCase(EJ_jge, INS_jge)]
-    [TestCase(EJ_jle, INS_jle)]
-    [TestCase(EJ_jg, INS_jg)]
-    [TestCase(EJ_COUNT, INS_call)]
+    [TestCase(EJ_XARCH_jo, INS_jo)]
+    [TestCase(EJ_XARCH_jno, INS_jno)]
+    [TestCase(EJ_XARCH_jb, INS_jb)]
+    [TestCase(EJ_XARCH_jae, INS_jae)]
+    [TestCase(EJ_XARCH_je, INS_je)]
+    [TestCase(EJ_XARCH_jne, INS_jne)]
+    [TestCase(EJ_XARCH_jbe, INS_jbe)]
+    [TestCase(EJ_XARCH_ja, INS_ja)]
+    [TestCase(EJ_XARCH_js, INS_js)]
+    [TestCase(EJ_XARCH_jns, INS_jns)]
+    [TestCase(EJ_XARCH_jp, INS_jp)]
+    [TestCase(EJ_XARCH_jnp, INS_jnp)]
+    [TestCase(EJ_XARCH_jl, INS_jl)]
+    [TestCase(EJ_XARCH_jge, INS_jge)]
+    [TestCase(EJ_XARCH_jle, INS_jle)]
+    [TestCase(EJ_XARCH_jg, INS_jg)]
+    [TestCase(EJ_XARCH_COUNT, INS_call)]
     public static void JumpKindsRetainTheCompleteNativeMappingIncludingTheCallSentinel(
         emitJumpKind kind, instruction expected)
     {
@@ -59,7 +60,7 @@ internal static class EmitterJumpInstructionTests
             var id = Last(emitter);
 
             Assert.That(id.idIns(), Is.EqualTo(ins));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_LABEL));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_LABEL));
             Assert.That(id.idCodeSize(), Is.EqualTo(size));
             Assert.That(id.NativeLogicalSize, Is.EqualTo(48));
             Assert.That(id.idIsSmallDsc(), Is.False);
@@ -85,7 +86,7 @@ internal static class EmitterJumpInstructionTests
 
             var id = Last(emitter);
             Assert.That(id.idIns(), Is.EqualTo(INS_lea));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_RWR_LABEL));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_XARCH_RWR_LABEL));
             Assert.That(JumpView.TargetGroup(id), Is.SameAs(target));
             Assert.That(JumpView.Group(id), Is.SameAs(emitter.emitCurIG));
             Assert.That(JumpView.KeepLong(id), Is.True);

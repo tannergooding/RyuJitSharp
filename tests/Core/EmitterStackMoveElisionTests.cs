@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -38,7 +39,7 @@ internal static unsafe class EmitterStackMoveElisionTests
     public static void MoveSideEffectsRetainUpperBitAndRegisterClassSemantics(
         instruction ins, emitAttr size, bool vex, bool evex, bool expected)
     {
-        var emitter = CreateEmitter(ins, size, IF_SWR_RRD);
+        var emitter = CreateEmitter(ins, size, IF_XARCH_SWR_RRD);
         emitter.UseVexEncodings = vex;
         emitter.UseEvexEncodings = evex;
 
@@ -55,14 +56,14 @@ internal static unsafe class EmitterStackMoveElisionTests
         Assert.That(Emitter.IsMovInstruction(ins), Is.False);
     }
 
-    [TestCase(IF_SWR_RRD, IF_SWR_RRD, EA_8BYTE, true)]
-    [TestCase(IF_RWR_SRD, IF_RWR_SRD, EA_4BYTE, true)]
-    [TestCase(IF_SWR_RRD, IF_RWR_SRD, EA_8BYTE, true)]
-    [TestCase(IF_RWR_SRD, IF_SWR_RRD, EA_8BYTE, true)]
-    [TestCase(IF_SWR_RRD, IF_RWR_SRD, EA_4BYTE, false)]
-    [TestCase(IF_RWR_SRD, IF_SWR_RRD, EA_4BYTE, false)]
-    [TestCase(IF_SWR_RRD, IF_SWR_RRD, EA_GCREF, false)]
-    [TestCase(IF_RWR_SRD, IF_RWR_SRD, EA_BYREF, false)]
+    [TestCase(IF_XARCH_SWR_RRD, IF_XARCH_SWR_RRD, EA_8BYTE, true)]
+    [TestCase(IF_XARCH_RWR_SRD, IF_XARCH_RWR_SRD, EA_4BYTE, true)]
+    [TestCase(IF_XARCH_SWR_RRD, IF_XARCH_RWR_SRD, EA_8BYTE, true)]
+    [TestCase(IF_XARCH_RWR_SRD, IF_XARCH_SWR_RRD, EA_8BYTE, true)]
+    [TestCase(IF_XARCH_SWR_RRD, IF_XARCH_RWR_SRD, EA_4BYTE, false)]
+    [TestCase(IF_XARCH_RWR_SRD, IF_XARCH_SWR_RRD, EA_4BYTE, false)]
+    [TestCase(IF_XARCH_SWR_RRD, IF_XARCH_SWR_RRD, EA_64BIT_GCREF, false)]
+    [TestCase(IF_XARCH_RWR_SRD, IF_XARCH_RWR_SRD, EA_64BIT_BYREF, false)]
     public static void RepeatedAndReversedMovesRespectSideEffectsAndGcBirth(
         Emitter.insFormat previous, Emitter.insFormat current, emitAttr size, bool expected)
     {
@@ -73,17 +74,17 @@ internal static unsafe class EmitterStackMoveElisionTests
     [Test]
     public static void OperandIdentityAndInstructionKindMustMatch()
     {
-        var emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_SWR_RRD);
+        var emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_XARCH_SWR_RRD);
 
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RCX, 7, 3), Is.False);
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RAX, 8, 3), Is.False);
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RAX, 7, 4), Is.False);
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_4BYTE, REG_RAX, 7, 3), Is.False);
-        Assert.That(emitter.IsRedundantStackMov(INS_movq, IF_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RCX, 7, 3), Is.False);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 8, 3), Is.False);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 7, 4), Is.False);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_4BYTE, REG_RAX, 7, 3), Is.False);
+        Assert.That(emitter.IsRedundantStackMov(INS_movq, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
 
         var previous = LastInstruction(emitter) ?? throw new AssertionException("Missing previous instruction.");
-        previous.idInsFmt(IF_RWR_RRD);
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
+        previous.idInsFmt(IF_XARCH_RWR_RRD);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
     }
 
     [TestCase(false, false, false, false, false)]
@@ -95,7 +96,7 @@ internal static unsafe class EmitterStackMoveElisionTests
     public static void GroupCrossingRequiresAnExtensionAndMatchingGcInterruptibility(
         bool sameGroup, bool extension, bool previousNoGc, bool currentNoGc, bool expected)
     {
-        var emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_SWR_RRD);
+        var emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_XARCH_SWR_RRD);
         var previous = LastGroup(emitter) ?? throw new AssertionException("Missing previous group.");
         previous.igFlags = previousNoGc ? InsGroupFlags.NoGCInterrupt : InsGroupFlags.None;
         var current = sameGroup ? previous : new insGroup();
@@ -103,21 +104,21 @@ internal static unsafe class EmitterStackMoveElisionTests
             (currentNoGc ? InsGroupFlags.NoGCInterrupt : InsGroupFlags.None);
         emitter.emitCurIG = current;
 
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.EqualTo(expected));
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.EqualTo(expected));
         ForceNewGroup(emitter) = true;
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
     }
 
     [Test]
     public static void MinoptsAndAbsentPreviousInstructionsNeverElideMoves()
     {
-        var emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_SWR_RRD, minopts: true);
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
+        var emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_XARCH_SWR_RRD, minopts: true);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
 
-        emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_SWR_RRD);
+        emitter = CreateEmitter(INS_mov, EA_8BYTE, IF_XARCH_SWR_RRD);
         LastInstruction(emitter) = null;
         LastGroup(emitter) = null;
-        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
+        Assert.That(emitter.IsRedundantStackMov(INS_mov, IF_XARCH_SWR_RRD, EA_8BYTE, REG_RAX, 7, 3), Is.False);
     }
 
     private static Emitter CreateEmitter(instruction ins, emitAttr size, Emitter.insFormat format, bool minopts = false)
@@ -133,12 +134,13 @@ internal static unsafe class EmitterStackMoveElisionTests
             ?? throw new AssertionException("Could not create a basic instruction descriptor."));
         descriptor.idIns(ins);
         descriptor.idInsFmt(format);
-        descriptor.idOpSize(size is EA_GCREF or EA_BYREF ? EA_8BYTE : size);
+        descriptor.idOpSize(size == EA_GCREF || size == EA_BYREF ? EA_8BYTE : size);
         descriptor.idReg1(REG_RAX);
-        descriptor.idAddr().iiaLclVar.initLclVarAddr(7, 3);
+        descriptor.idAddr().iiaInitLclVarAddr(7, 3);
         emitter.emitCurIG = new insGroup();
         LastInstruction(emitter) = descriptor;
         LastGroup(emitter) = emitter.emitCurIG;
+        ForceNewGroup(emitter) = false;
         return emitter;
     }
 

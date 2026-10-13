@@ -27,7 +27,7 @@ internal static unsafe class EmitterJumpBindingClosureTests
     [TestCase(true)]
     public static void VerboseBindingPreservesTargetAndDistanceTraceOrdering(bool backward)
     {
-        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_RAX,
+        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_X64_RAX,
             (compiler, codeGen, tree) =>
             {
                 var emitter = codeGen.Emitter;
@@ -97,7 +97,7 @@ internal static unsafe class EmitterJumpBindingClosureTests
     [Test]
     public static void MisplacedRemovalCandidatePrintsBothInstructionsAndGroups()
     {
-        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_RAX,
+        CodeGenSpillVariableTests.WithCompiler(var_types.TYP_LONG, regNumber.REG_X64_RAX,
             (compiler, codeGen, _) =>
             {
                 ICorJitInfo.Vtbl<ICorJitInfo> vtable = default;
@@ -218,7 +218,7 @@ internal static unsafe class EmitterJumpBindingClosureTests
         {
             var jump = new instrDescJmp { idjTargetIG = target };
             jump.idIns(instruction.INS_jmp);
-            jump.idInsFmt(insFormat.IF_LABEL);
+            jump.idInsFmt(insFormat.IF_XARCH_LABEL);
             jump.idSetIsBound();
             jump.idDebugOnlyInfo(new instrDescDebugInfo());
             return jump;

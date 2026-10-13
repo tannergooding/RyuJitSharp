@@ -15,8 +15,8 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class EmitterExecutionCostX86Tests
 {
-    [TestCase(INS_fld, IF_SRD, 0.5f, Read)]
-    [TestCase(INS_fstp, IF_SWR, 1.0f, Write)]
+    [TestCase(INS_fld, IF_XARCH_SRD, 0.5f, Read)]
+    [TestCase(INS_fstp, IF_XARCH_SWR, 1.0f, Write)]
     public static void X87LoadAndStorePreserveNativeThroughputAndLatency(
         instruction ins, Emitter.insFormat format, float throughput, Emitter.PerfScoreMemoryAccessKind accessKind)
     {

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.CORINFO_RUNTIME_ABI;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.insOpts;
@@ -19,11 +20,11 @@ internal static unsafe class EmitterRegisterOutputTests
 {
     private delegate byte* Output(Emitter emitter, byte* dst, Emitter.instrDesc descriptor);
 
-    [TestCase(INS_inc, EA_8BYTE, REG_RAX, "48FFC0")]
-    [TestCase(INS_bswap, EA_8BYTE, REG_R8, "490FC8")]
-    [TestCase(INS_push, EA_8BYTE, REG_R9, "4151")]
-    [TestCase(INS_pop, EA_8BYTE, REG_R9, "4159")]
-    [TestCase(INS_setne, EA_1BYTE, REG_RAX, "0F95C0")]
+    [TestCase(INS_inc, EA_8BYTE, REG_X64_RAX, "48FFC0")]
+    [TestCase(INS_bswap, EA_8BYTE, REG_X64_R8, "490FC8")]
+    [TestCase(INS_push, EA_8BYTE, REG_X64_R9, "4151")]
+    [TestCase(INS_pop, EA_8BYTE, REG_X64_R9, "4159")]
+    [TestCase(INS_setne, EA_1BYTE, REG_X64_RAX, "0F95C0")]
     public static void SingleRegisterInstructionsPreservePrefixesAndOpcodeWidths(
         instruction ins, emitAttr attr, regNumber reg, string hex)
     {
@@ -31,9 +32,9 @@ internal static unsafe class EmitterRegisterOutputTests
             (emitter, dst, id) => emitter.emitOutputR(dst, id), hex);
     }
 
-    [TestCase(INS_mov, EA_8BYTE, REG_RAX, REG_RCX, "488BC1")]
-    [TestCase(INS_xor, EA_8BYTE, REG_R8, REG_R8, "4533C0")]
-    [TestCase(INS_add, EA_2BYTE, REG_RAX, REG_RCX, "6603C1")]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_RAX, REG_X64_RCX, "488BC1")]
+    [TestCase(INS_xor, EA_8BYTE, REG_X64_R8, REG_X64_R8, "4533C0")]
+    [TestCase(INS_add, EA_2BYTE, REG_X64_RAX, REG_X64_RCX, "6603C1")]
     public static void RegisterPairsPreserveModRmAndOperandWidth(
         instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, string hex)
     {
@@ -54,7 +55,7 @@ internal static unsafe class EmitterRegisterOutputTests
     [Test]
     public static void ThreeRegisterAvxUsesTheFirstSourceInVvvv()
     {
-        WithOutput(emitter => emitter.emitIns_R_R_R(INS_addps, EA_16BYTE, REG_XMM1, REG_XMM2, REG_XMM3),
+        WithOutput(emitter => emitter.emitIns_R_R_R(INS_addps, EA_16BYTE, REG_X64_XMM1, REG_X64_XMM2, REG_X64_XMM3),
             (emitter, dst, id) => emitter.emitOutputRRR(dst, id), "C5E858CB", vex: true);
     }
 
@@ -64,7 +65,7 @@ internal static unsafe class EmitterRegisterOutputTests
         WithOutput(emitter =>
         {
             emitter.UseEvexEncodings = true;
-            emitter.emitIns_R_R_R(INS_addps, EA_64BYTE, REG_XMM16, REG_XMM17, REG_XMM18);
+            emitter.emitIns_R_R_R(INS_addps, EA_64BYTE, REG_X64_XMM16, REG_XMM17, REG_XMM18);
         }, (emitter, dst, id) => emitter.emitOutputRRR(dst, id), "62A1744058C2", vex: true);
     }
 
@@ -75,16 +76,16 @@ internal static unsafe class EmitterRegisterOutputTests
         {
             emitter.UseRex2Encodings = true;
             emitter.UsePromotedEvexEncodings = true;
-            emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_R16, REG_R17, INS_OPTS_EVEX_nd);
+            emitter.emitIns_R_R(INS_add, EA_8BYTE, REG_X64_R16, REG_X64_R17, INS_OPTS_EVEX_nd);
         }, (emitter, dst, id) => emitter.emitOutputRR(dst, id), "62FCFC1003C1", vex: true);
     }
 
-    [TestCase(INS_mov, EA_8BYTE, REG_RAX, 0x1122334455667788L, "48B88877665544332211")]
-    [TestCase(INS_mov, EA_8BYTE, REG_R9, 0x1122334455667788L, "49B98877665544332211")]
-    [TestCase(INS_add, EA_8BYTE, REG_RCX, -1L, "4883C1FF")]
-    [TestCase(INS_add, EA_8BYTE, REG_R9, -1L, "4983C1FF")]
-    [TestCase(INS_add, EA_4BYTE, REG_RAX, 5L, "83C005")]
-    [TestCase(INS_pslld, EA_16BYTE, REG_XMM0, 4L, "660F72F004")]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_RAX, 0x1122334455667788L, "48B88877665544332211")]
+    [TestCase(INS_mov, EA_8BYTE, REG_X64_R9, 0x1122334455667788L, "49B98877665544332211")]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_RCX, -1L, "4883C1FF")]
+    [TestCase(INS_add, EA_8BYTE, REG_X64_R9, -1L, "4983C1FF")]
+    [TestCase(INS_add, EA_4BYTE, REG_X64_RAX, 5L, "83C005")]
+    [TestCase(INS_pslld, EA_16BYTE, REG_X64_XMM0, 4L, "660F72F004")]
     public static void RegisterImmediatesPreserveSignExtensionAndSimdShiftByte(
         instruction ins, emitAttr attr, regNumber reg, long immediate, string hex)
     {
@@ -116,14 +117,14 @@ internal static unsafe class EmitterRegisterOutputTests
     [Test]
     public static void RegisterOutputRecordsGCRegisterBirthAndDeathAtIssuedOffsets()
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, local) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, local) =>
         {
             codeGen.IsFullPtrRegMapRequired = true;
             var emitter = codeGen.Emitter;
             emitter.emitFullGCinfo = true;
-            _ = emitter.emitIns_Mov(INS_mov, EA_GCREF, REG_RCX, REG_RAX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_GCREF, REG_X64_RCX, REG_X64_RAX, canSkip: false);
             var born = Last(emitter);
-            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_RCX, REG_RDX, canSkip: false);
+            _ = emitter.emitIns_Mov(INS_mov, EA_8BYTE, REG_X64_RCX, REG_X64_RDX, canSkip: false);
             var dead = Last(emitter);
 
             var buffer = stackalloc byte[32];
@@ -139,33 +140,33 @@ internal static unsafe class EmitterRegisterOutputTests
             var record = RegPtrList(ref codeGen.GCInfo) ?? throw new AssertionException("Missing GC birth record.");
             Assert.That(record.rpdGCtype, Is.EqualTo(GCT_GCREF));
             Assert.That(record.rpdOffs, Is.EqualTo(birthOffset));
-            Assert.That(record.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_RCX));
+            Assert.That(record.rpdCompiler.rpdAdd, Is.EqualTo(SRBM_X64_RCX));
             record = record.rpdNext ?? throw new AssertionException("Missing GC death record.");
             Assert.That(record.rpdGCtype, Is.EqualTo(GCT_GCREF));
             Assert.That(record.rpdOffs, Is.EqualTo((uint)(end - buffer)));
-            Assert.That(record.rpdCompiler.rpdDel, Is.EqualTo(SRBM_RCX));
+            Assert.That(record.rpdCompiler.rpdDel, Is.EqualTo(SRBM_X64_RCX));
             Assert.That(record.rpdNext, Is.Null);
             Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_NONE));
         });
     }
 
-    [TestCase(EA_PTRSIZE)]
-    [TestCase(EA_GCREF)]
-    [TestCase(EA_BYREF)]
+    [TestCase(EA_64BIT_PTRSIZE)]
+    [TestCase(EA_64BIT_GCREF)]
+    [TestCase(EA_64BIT_BYREF)]
     public static void RegisterExchangeKillsBothGCTypesBeforeRecordingTheirNewOwners(emitAttr attr)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             codeGen.IsFullPtrRegMapRequired = true;
             var emitter = codeGen.Emitter;
             emitter.emitFullGCinfo = true;
-            emitter.emitIns_R_R(INS_xchg, attr, REG_RAX, REG_RCX);
+            emitter.emitIns_R_R(INS_xchg, attr, REG_X64_RAX, REG_X64_RCX);
             var id = Last(emitter);
-            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_RRW_RRW));
+            Assert.That(id.idInsFmt(), Is.EqualTo(Emitter.insFormat.IF_XARCH_RRW_RRW));
 
-            SyncThisReg(emitter) = REG_NA;
-            GCrefRegs(emitter) = SRBM_RAX;
-            ByrefRegs(emitter) = SRBM_RCX;
+            SyncThisReg(emitter) = REG_X64_NA;
+            GCrefRegs(emitter) = SRBM_X64_RAX;
+            ByrefRegs(emitter) = SRBM_X64_RCX;
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
@@ -179,10 +180,10 @@ internal static unsafe class EmitterRegisterOutputTests
 
             var expected = new[]
             {
-                (GCT_GCREF, SRBM_NONE, SRBM_RAX),
-                (GCT_BYREF, SRBM_NONE, SRBM_RCX),
-                (GCT_GCREF, SRBM_RCX, SRBM_NONE),
-                (GCT_BYREF, SRBM_RAX, SRBM_NONE),
+                (GCT_GCREF, SRBM_NONE, SRBM_X64_RAX),
+                (GCT_BYREF, SRBM_NONE, SRBM_X64_RCX),
+                (GCT_GCREF, SRBM_X64_RCX, SRBM_NONE),
+                (GCT_BYREF, SRBM_X64_RAX, SRBM_NONE),
             };
             var record = RegPtrList(ref codeGen.GCInfo);
             foreach (var (type, add, del) in expected)
@@ -195,8 +196,8 @@ internal static unsafe class EmitterRegisterOutputTests
                 record = record.rpdNext;
             }
             Assert.That(record, Is.Null);
-            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_RCX));
-            Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_RAX));
+            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_X64_RCX));
+            Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_X64_RAX));
         });
     }
 
@@ -206,20 +207,20 @@ internal static unsafe class EmitterRegisterOutputTests
         [Values(GCT_NONE, GCT_GCREF, GCT_BYREF)] GCInfo.GCtype secondType,
         [Values(false, true)] bool fullMap)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (_, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (_, codeGen, _) =>
         {
             codeGen.IsFullPtrRegMapRequired = true;
             var emitter = codeGen.Emitter;
             emitter.emitFullGCinfo = fullMap;
-            emitter.emitIns_R_R(INS_xchg, EA_PTRSIZE, REG_RAX, REG_RCX);
+            emitter.emitIns_R_R(INS_xchg, EA_PTRSIZE, REG_X64_RAX, REG_X64_RCX);
             var id = Last(emitter);
             Assert.That(id.idGCref(), Is.EqualTo(GCT_NONE));
 
-            SyncThisReg(emitter) = REG_NA;
-            GCrefRegs(emitter) = SRBM_RDX | (firstType == GCT_GCREF ? SRBM_RAX : SRBM_NONE)
-                | (secondType == GCT_GCREF ? SRBM_RCX : SRBM_NONE);
-            ByrefRegs(emitter) = SRBM_R8 | (firstType == GCT_BYREF ? SRBM_RAX : SRBM_NONE)
-                | (secondType == GCT_BYREF ? SRBM_RCX : SRBM_NONE);
+            SyncThisReg(emitter) = REG_X64_NA;
+            GCrefRegs(emitter) = SRBM_X64_RDX | (firstType == GCT_GCREF ? SRBM_X64_RAX : SRBM_NONE)
+                | (secondType == GCT_GCREF ? SRBM_X64_RCX : SRBM_NONE);
+            ByrefRegs(emitter) = SRBM_X64_R8 | (firstType == GCT_BYREF ? SRBM_X64_RAX : SRBM_NONE)
+                | (secondType == GCT_BYREF ? SRBM_X64_RCX : SRBM_NONE);
             var buffer = stackalloc byte[32];
             emitter.emitCodeBlock = buffer;
             emitter.emitTotalHotCodeSize = 32;
@@ -228,12 +229,12 @@ internal static unsafe class EmitterRegisterOutputTests
 #endif
             var end = emitter.emitOutputRR(buffer, id);
 
-            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_RDX
-                | (firstType == GCT_GCREF ? SRBM_RCX : SRBM_NONE)
-                | (secondType == GCT_GCREF ? SRBM_RAX : SRBM_NONE)));
-            Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_R8
-                | (firstType == GCT_BYREF ? SRBM_RCX : SRBM_NONE)
-                | (secondType == GCT_BYREF ? SRBM_RAX : SRBM_NONE)));
+            Assert.That(GCrefRegs(emitter), Is.EqualTo(SRBM_X64_RDX
+                | (firstType == GCT_GCREF ? SRBM_X64_RCX : SRBM_NONE)
+                | (secondType == GCT_GCREF ? SRBM_X64_RAX : SRBM_NONE)));
+            Assert.That(ByrefRegs(emitter), Is.EqualTo(SRBM_X64_R8
+                | (firstType == GCT_BYREF ? SRBM_X64_RCX : SRBM_NONE)
+                | (secondType == GCT_BYREF ? SRBM_X64_RAX : SRBM_NONE)));
 
             var records = 0;
             for (var record = RegPtrList(ref codeGen.GCInfo); record is not null; record = record.rpdNext)
@@ -257,7 +258,7 @@ internal static unsafe class EmitterRegisterOutputTests
         {
             var attr = EA_8BYTE | EA_CNS_RELOC_FLG
                 | (sectionRelative ? EA_CNS_SEC_RELOC : 0);
-            emitter.emitIns_R_I(INS_mov, attr, REG_RAX, 0x12345678);
+            emitter.emitIns_R_I(INS_mov, attr, REG_X64_RAX, 0x12345678);
         }, (emitter, buffer, id) => emitter.emitOutputRI(buffer, id), relocation, 2,
             "48B87856341200000000");
     }
@@ -274,7 +275,7 @@ internal static unsafe class EmitterRegisterOutputTests
     private static void WithRelocation(Action<Emitter> record, Output output, CorInfoReloc kind,
         int siteOffset, string hex)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_NATIVEAOT_ABI;
@@ -324,7 +325,7 @@ internal static unsafe class EmitterRegisterOutputTests
 
     private static void WithOutput(Action<Emitter> record, Output output, string hex, bool vex = false)
     {
-        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_RAX, (compiler, codeGen, _) =>
+        CodeGenSpillVariableTests.WithCompiler(TYP_LONG, REG_X64_RAX, (compiler, codeGen, _) =>
         {
             compiler.eeInfoInitialized = true;
             compiler.eeInfo.targetAbi = CORINFO_CORECLR_ABI;

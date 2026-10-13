@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using static RyuJitSharp.BasicBlockFlags;
 using static RyuJitSharp.Emitter.insFormat;
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.GCInfo.GCtype;
 using static RyuJitSharp.instruction;
@@ -478,7 +479,7 @@ internal static unsafe class EmitterBranchOutputTests
         {
             var descriptor = new instrDescJmp();
             descriptor.idIns(INS_jmp);
-            descriptor.idInsFmt(IF_LABEL);
+            descriptor.idInsFmt(IF_XARCH_LABEL);
             descriptor.idCodeSize(5);
             descriptor.idjIG = source;
             descriptor.idjTargetIG = target;
@@ -492,7 +493,7 @@ internal static unsafe class EmitterBranchOutputTests
         {
             var descriptor = new instrDescLbl();
             descriptor.idIns(INS_mov);
-            descriptor.idInsFmt(IF_SWR_LABEL);
+            descriptor.idInsFmt(IF_XARCH_SWR_LABEL);
             descriptor.idOpSize(EA_8BYTE);
             descriptor.idCodeSize(8);
             descriptor.idjIG = source;

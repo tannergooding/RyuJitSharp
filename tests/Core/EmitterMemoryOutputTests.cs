@@ -317,7 +317,7 @@ internal static unsafe class EmitterMemoryOutputTests
                 emitter.emitIns_R_S_I(ins, size, reg, 0, 0, 1);
             }
             var id = Last(emitter);
-            Assert.That(id.idInsFmt(), Is.EqualTo(staticMemory ? IF_RWR_MRD_CNS : IF_RWR_SRD_CNS));
+            Assert.That(id.idInsFmt(), Is.EqualTo(staticMemory ? IF_XARCH_RWR_MRD_CNS : IF_XARCH_RWR_SRD_CNS));
             Assert.That(id.idGCref(), Is.EqualTo(GCT_NONE));
 
             SyncThisReg(emitter) = REG_NA;

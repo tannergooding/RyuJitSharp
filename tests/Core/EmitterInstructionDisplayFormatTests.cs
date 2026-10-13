@@ -26,10 +26,10 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         var emitter = CreateEmitter();
         var id = DescriptorView.Create();
         id.idIns(INS_pshufd);
-        id.idInsFmt(IF_SRD_RRD_CNS);
+        id.idInsFmt(IF_XARCH_SRD_RRD_CNS);
         id.idOpSize(EA_16BYTE);
         id.idCodeSize(1);
-        id.idReg1(REG_XMM0);
+        id.idReg1(REG_X64_XMM0);
         id.idSmallCns(7);
         id.idAddr().iiaLclVar.initLclVarAddr(0, 0);
 
@@ -45,11 +45,11 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         var emitter = CreateEmitter();
         var id = DescriptorView.Create();
         id.idIns(INS_bextr);
-        id.idInsFmt(IF_RWR_RRD_SRD_CNS);
+        id.idInsFmt(IF_XARCH_RWR_RRD_SRD_CNS);
         id.idOpSize(EA_4BYTE);
         id.idCodeSize(1);
-        id.idReg1(REG_EAX);
-        id.idReg2(REG_ECX);
+        id.idReg1(REG_X64_EAX);
+        id.idReg2(REG_X64_ECX);
         id.idSmallCns(7);
         id.idAddr().iiaLclVar.initLclVarAddr(0, 0);
 
@@ -60,9 +60,9 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
     }
 
 #if DEBUG
-    [TestCase(INS_pmovmskb, EA_16BYTE, REG_EAX, REG_XMM0)]
-    [TestCase(INS_cvtsi2ss32, EA_4BYTE, REG_XMM0, REG_EAX)]
-    [TestCase(INS_cvttsd2si32, EA_4BYTE, REG_EAX, REG_XMM0)]
+    [TestCase(INS_pmovmskb, EA_16BYTE, REG_X64_EAX, REG_X64_XMM0)]
+    [TestCase(INS_cvtsi2ss32, EA_4BYTE, REG_X64_XMM0, REG_X64_EAX)]
+    [TestCase(INS_cvttsd2si32, EA_4BYTE, REG_X64_EAX, REG_X64_XMM0)]
     public static void RegisterPairRejectsUnexpectedEvexMask(
         instruction ins, emitAttr size, regNumber destination, regNumber source)
     {
@@ -73,7 +73,7 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         var emitter = CreateEmitter();
         var id = DescriptorView.Create();
         id.idIns(ins);
-        id.idInsFmt(IF_RWR_RRD);
+        id.idInsFmt(IF_XARCH_RWR_RRD);
         id.idOpSize(size);
         id.idCodeSize(1);
         id.idReg1(destination);
@@ -97,11 +97,11 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         var emitter = CreateEmitter();
         var id = DescriptorView.Create();
         id.idIns(ins);
-        id.idInsFmt(IF_RWR_RRD);
+        id.idInsFmt(IF_XARCH_RWR_RRD);
         id.idOpSize(EA_16BYTE);
         id.idCodeSize(1);
-        id.idReg1(REG_XMM0);
-        id.idReg2(REG_XMM1);
+        id.idReg1(REG_X64_XMM0);
+        id.idReg2(REG_X64_XMM1);
 
         var output = Capture(() => emitter.emitDispIns(id, true, false, false));
 
@@ -109,8 +109,8 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         Assert.That(context.Assertions, Is.Zero);
     }
 
-    [TestCase(IF_SRD_RRD_CNS, INS_mov)]
-    [TestCase(IF_RWR_RRD_SHF, INS_add)]
+    [TestCase(IF_XARCH_SRD_RRD_CNS, INS_mov)]
+    [TestCase(IF_XARCH_RWR_RRD_SHF, INS_add)]
     public static void SpecializedFormatsKeepTheirNativeInstructionAssertions(
         Emitter.insFormat format, instruction ins)
     {
@@ -124,10 +124,10 @@ internal static unsafe class EmitterInstructionDisplayFormatTests
         id.idInsFmt(format);
         id.idOpSize(EA_4BYTE);
         id.idCodeSize(1);
-        id.idReg1(REG_EAX);
-        if (format == IF_RWR_RRD_SHF)
+        id.idReg1(REG_X64_EAX);
+        if (format == IF_XARCH_RWR_RRD_SHF)
         {
-            id.idReg2(REG_ECX);
+            id.idReg2(REG_X64_ECX);
         }
         id.idSmallCns(7);
         id.idAddr().iiaLclVar.initLclVarAddr(0, 0);

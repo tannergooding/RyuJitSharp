@@ -45,8 +45,8 @@ internal static unsafe class EmitterInitializationTests
         DebugPrevVars(emitter)[0] = 8;
         DebugThisVars(emitter)[0] = 16;
         DebugPrevRegPtr(emitter) = new GCInfo.regPtrDsc();
-        DebugPrevGCrefRegs(emitter) = new regMaskTP(SRBM_RAX);
-        DebugPrevByrefRegs(emitter) = new regMaskTP(SRBM_RBX);
+        DebugPrevGCrefRegs(emitter) = new regMaskTP(SRBM_X64_RAX);
+        DebugPrevByrefRegs(emitter) = new regMaskTP(SRBM_X64_RBX);
 #endif
 
         emitter.Init();

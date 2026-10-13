@@ -31,8 +31,8 @@ internal static unsafe class EmitterCallInstructionTests
         Assert.That(parameters.hasAsyncRet, Is.False);
         Assert.That(parameters.ptrVars, Is.Empty);
         Assert.That(parameters.gcrefRegs.IsEmpty && parameters.byrefRegs.IsEmpty, Is.True);
-        Assert.That(parameters.ireg, Is.EqualTo(REG_NA));
-        Assert.That(parameters.xreg, Is.EqualTo(REG_NA));
+        Assert.That(parameters.ireg, Is.EqualTo(REG_X64_NA));
+        Assert.That(parameters.xreg, Is.EqualTo(REG_X64_NA));
         Assert.That(parameters.xmul, Is.Zero);
         Assert.That(parameters.disp, Is.EqualTo((nint)0));
         Assert.That(parameters.isJump || parameters.noSafePoint, Is.False);
@@ -42,14 +42,14 @@ internal static unsafe class EmitterCallInstructionTests
 #endif
     }
 
-    [TestCase(EC_FUNC_TOKEN, false, IF_METHOD, INS_call, 5u)]
-    [TestCase(EC_FUNC_TOKEN, true, IF_METHOD, INS_l_jmp, 5u)]
-    [TestCase(EC_FUNC_TOKEN_INDIR, false, IF_METHPTR, INS_call, 6u)]
-    [TestCase(EC_FUNC_TOKEN_INDIR, true, IF_METHPTR, INS_tail_i_jmp, 6u)]
-    [TestCase(EC_INDIR_R, false, IF_ARD, INS_call, 2u)]
-    [TestCase(EC_INDIR_R, true, IF_ARD, INS_tail_i_jmp, 3u)]
-    [TestCase(EC_INDIR_ARD, false, IF_ARD, INS_call, 2u)]
-    [TestCase(EC_INDIR_ARD, true, IF_ARD, INS_tail_i_jmp, 3u)]
+    [TestCase(EC_FUNC_TOKEN, false, IF_XARCH_METHOD, INS_call, 5u)]
+    [TestCase(EC_FUNC_TOKEN, true, IF_XARCH_METHOD, INS_l_jmp, 5u)]
+    [TestCase(EC_FUNC_TOKEN_INDIR, false, IF_XARCH_METHPTR, INS_call, 6u)]
+    [TestCase(EC_FUNC_TOKEN_INDIR, true, IF_XARCH_METHPTR, INS_tail_i_jmp, 6u)]
+    [TestCase(EC_INDIR_R, false, IF_XARCH_ARD, INS_call, 2u)]
+    [TestCase(EC_INDIR_R, true, IF_XARCH_ARD, INS_tail_i_jmp, 3u)]
+    [TestCase(EC_INDIR_ARD, false, IF_XARCH_ARD, INS_call, 2u)]
+    [TestCase(EC_INDIR_ARD, true, IF_XARCH_ARD, INS_tail_i_jmp, 3u)]
     public static void CallKindsRetainInstructionFormatsAndTailJumpPrefixes(
         EmitCallType type, bool tail, Emitter.insFormat format, instruction ins, uint size)
     {
@@ -77,14 +77,14 @@ internal static unsafe class EmitterCallInstructionTests
         });
     }
 
-    [TestCase(REG_RBP, false, 2u)]
-    [TestCase(REG_R12, false, 3u)]
-    [TestCase(REG_R13, false, 3u)]
-    [TestCase(REG_R20, false, 4u)]
-    [TestCase(REG_R21, false, 4u)]
-    [TestCase(REG_RBP, true, 3u)]
-    [TestCase(REG_R12, true, 3u)]
-    [TestCase(REG_R20, true, 4u)]
+    [TestCase(REG_X64_RBP, false, 2u)]
+    [TestCase(REG_X64_R12, false, 3u)]
+    [TestCase(REG_X64_R13, false, 3u)]
+    [TestCase(REG_X64_R20, false, 4u)]
+    [TestCase(REG_X64_R21, false, 4u)]
+    [TestCase(REG_X64_RBP, true, 3u)]
+    [TestCase(REG_X64_R12, true, 3u)]
+    [TestCase(REG_X64_R20, true, 4u)]
     public static void RegisterCallsDoNotAcquireMemorySibBytesOrDisplacements(
         regNumber reg, bool tail, uint size)
     {
@@ -102,14 +102,14 @@ internal static unsafe class EmitterCallInstructionTests
         });
     }
 
-    [TestCase(REG_R12, REG_NA, 0u, 0, 4u, false)]
-    [TestCase(REG_RBP, REG_NA, 0u, 0, 3u, false)]
-    [TestCase(REG_RAX, REG_RCX, 4u, 128, 7u, false)]
-    [TestCase(REG_RAX, REG_NA, 0u, 8191, 6u, false)]
-    [TestCase(REG_RAX, REG_NA, 0u, 8192, 6u, true)]
-    [TestCase(REG_RAX, REG_NA, 0u, -8191, 6u, false)]
-    [TestCase(REG_RAX, REG_NA, 0u, -8192, 6u, true)]
-    [TestCase(REG_RAX, REG_NA, 0u, -8193, 6u, true)]
+    [TestCase(REG_X64_R12, REG_X64_NA, 0u, 0, 4u, false)]
+    [TestCase(REG_X64_RBP, REG_X64_NA, 0u, 0, 3u, false)]
+    [TestCase(REG_X64_RAX, REG_X64_RCX, 4u, 128, 7u, false)]
+    [TestCase(REG_X64_RAX, REG_X64_NA, 0u, 8191, 6u, false)]
+    [TestCase(REG_X64_RAX, REG_X64_NA, 0u, 8192, 6u, true)]
+    [TestCase(REG_X64_RAX, REG_X64_NA, 0u, -8191, 6u, false)]
+    [TestCase(REG_X64_RAX, REG_X64_NA, 0u, -8192, 6u, true)]
+    [TestCase(REG_X64_RAX, REG_X64_NA, 0u, -8193, 6u, true)]
     public static void AddressCallsPreserveIndexScaleAndSmallOrLargeDisplacements(
         regNumber baseReg, regNumber indexReg, uint scale, int displacement, uint size, bool large)
     {
@@ -150,7 +150,7 @@ internal static unsafe class EmitterCallInstructionTests
             var parameters = Parameters(compiler, type);
             if (type == EC_INDIR_ARD)
             {
-                parameters.ireg = REG_NA;
+                parameters.ireg = REG_X64_NA;
                 parameters.disp = (nint)address;
             }
             else
@@ -237,20 +237,20 @@ internal static unsafe class EmitterCallInstructionTests
         });
     }
 
-    [TestCase(REG_RSI, 1u, 0u)]
-    [TestCase(REG_RDI, 2u, 0u)]
-    [TestCase(REG_RBX, 4u, 0u)]
-    [TestCase(REG_RBP, 8u, 0u)]
-    [TestCase(REG_R12, 0u, 1u)]
-    [TestCase(REG_R13, 0u, 2u)]
-    [TestCase(REG_R14, 0u, 4u)]
-    [TestCase(REG_R15, 0u, 8u)]
+    [TestCase(REG_X64_RSI, 1u, 0u)]
+    [TestCase(REG_X64_RDI, 2u, 0u)]
+    [TestCase(REG_X64_RBX, 4u, 0u)]
+    [TestCase(REG_X64_RBP, 8u, 0u)]
+    [TestCase(REG_X64_R12, 0u, 1u)]
+    [TestCase(REG_X64_R13, 0u, 2u)]
+    [TestCase(REG_X64_R14, 0u, 4u)]
+    [TestCase(REG_X64_R15, 0u, 8u)]
     public static void SmallCallsEncodeAllWindowsCalleeSavedGcRegisters(regNumber reg, uint reg1, uint reg2)
     {
         WithEmitter((compiler, codeGen) =>
         {
             var parameters = Parameters(compiler, EC_FUNC_TOKEN);
-            parameters.gcrefRegs = new(reg.SingleTypeMask | SRBM_RAX | SRBM_RCX);
+            parameters.gcrefRegs = new(reg.SingleTypeMask | SRBM_X64_RAX | SRBM_X64_RCX);
             codeGen.Emitter.emitIns_Call(parameters);
             var id = Last(codeGen.Emitter);
 
@@ -262,10 +262,10 @@ internal static unsafe class EmitterCallInstructionTests
         });
     }
 
-    [TestCase(EC_FUNC_TOKEN, EA_GCREF)]
-    [TestCase(EC_FUNC_TOKEN, EA_BYREF)]
-    [TestCase(EC_INDIR_ARD, EA_GCREF)]
-    [TestCase(EC_INDIR_ARD, EA_BYREF)]
+    [TestCase(EC_FUNC_TOKEN, EA_64BIT_GCREF)]
+    [TestCase(EC_FUNC_TOKEN, EA_64BIT_BYREF)]
+    [TestCase(EC_INDIR_ARD, EA_64BIT_GCREF)]
+    [TestCase(EC_INDIR_ARD, EA_64BIT_BYREF)]
     public static void LargeCallsOwnGcSnapshotsAndApplyReturnLivenessAfterRecording(
         EmitCallType type, emitAttr returnType)
     {
@@ -274,17 +274,17 @@ internal static unsafe class EmitterCallInstructionTests
             var emitter = codeGen.Emitter;
             var parameters = Parameters(compiler, type);
             parameters.ptrVars = VarSetOps.MakeSingleton(compiler, 0);
-            parameters.gcrefRegs = new(SRBM_RBX | SRBM_RCX);
-            parameters.byrefRegs = new(SRBM_R12 | SRBM_RDX);
+            parameters.gcrefRegs = new(SRBM_X64_RBX | SRBM_X64_RCX);
+            parameters.byrefRegs = new(SRBM_R12 | SRBM_X64_RDX);
             parameters.retSize = returnType;
             emitter.emitIns_Call(parameters);
             var id = Last(emitter);
 
             Assert.That(id.NativeLogicalSize, Is.EqualTo(72));
-            Assert.That(CallView.Refs(id), Is.EqualTo(new regMaskTP(SRBM_RBX)));
+            Assert.That(CallView.Refs(id), Is.EqualTo(new regMaskTP(SRBM_X64_RBX)));
             Assert.That(CallView.Byrefs(id), Is.EqualTo(new regMaskTP(SRBM_R12)));
-            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_RBX | (returnType == EA_GCREF ? SRBM_RAX : 0)));
-            Assert.That(ThisByrefs(emitter), Is.EqualTo(SRBM_R12 | (returnType == EA_BYREF ? SRBM_RAX : 0)));
+            Assert.That(ThisRefs(emitter), Is.EqualTo(SRBM_X64_RBX | (returnType == EA_GCREF ? SRBM_X64_RAX : 0)));
+            Assert.That(ThisByrefs(emitter), Is.EqualTo(SRBM_R12 | (returnType == EA_BYREF ? SRBM_X64_RAX : 0)));
             Assert.That(CallView.Variables(id), Is.Not.SameAs(parameters.ptrVars));
             Assert.That(ThisVars(emitter), Is.Not.SameAs(parameters.ptrVars).And.Not.SameAs(CallView.Variables(id)));
             VarSetOps.RemoveElemD(compiler, parameters.ptrVars, 0);
@@ -308,7 +308,7 @@ internal static unsafe class EmitterCallInstructionTests
             var parameters = Parameters(compiler, type);
             if (byref)
             {
-                parameters.byrefRegs = new(SRBM_RBX);
+                parameters.byrefRegs = new(SRBM_X64_RBX);
             }
             else
             {
@@ -353,16 +353,16 @@ internal static unsafe class EmitterCallInstructionTests
         Assert.That(Emitter.emitNoGChelper(Compiler.eeFindHelper(helper)), Is.EqualTo(noGc));
     }
 
-    [TestCase(CORINFO_HELP_PROF_FCN_ENTER, REG_RCX, false, true)]
-    [TestCase(CORINFO_HELP_PROF_FCN_LEAVE, REG_RAX, true, true)]
-    [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL, REG_RAX, true, true)]
-    [TestCase(CORINFO_HELP_VALIDATE_INDIRECT_CALL, REG_RCX, true, true)]
-    [TestCase(CORINFO_HELP_VALIDATE_INDIRECT_CALL, REG_R10, true, true)]
-    [TestCase(CORINFO_HELP_VALIDATE_INDIRECT_CALL, REG_R11, false, true)]
-    [TestCase(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, REG_RCX, true, false)]
-    [TestCase(CORINFO_HELP_ASSIGN_REF, REG_RCX, false, true)]
-    [TestCase(CORINFO_HELP_ASSIGN_REF, REG_R20, true, true)]
-    [TestCase(CORINFO_HELP_LLSH, REG_R20, false, true)]
+    [TestCase(CORINFO_HELP_PROF_FCN_ENTER, REG_X64_RCX, false, true)]
+    [TestCase(CORINFO_HELP_PROF_FCN_LEAVE, REG_X64_RAX, true, true)]
+    [TestCase(CORINFO_HELP_PROF_FCN_TAILCALL, REG_X64_RAX, true, true)]
+    [TestCase(CORINFO_HELP_VALIDATE_INDIRECT_CALL, REG_X64_RCX, true, true)]
+    [TestCase(CORINFO_HELP_VALIDATE_INDIRECT_CALL, REG_X64_R10, true, true)]
+    [TestCase(CORINFO_HELP_VALIDATE_INDIRECT_CALL, REG_X64_R11, false, true)]
+    [TestCase(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT, REG_X64_RCX, true, false)]
+    [TestCase(CORINFO_HELP_ASSIGN_REF, REG_X64_RCX, false, true)]
+    [TestCase(CORINFO_HELP_ASSIGN_REF, REG_X64_R20, true, true)]
+    [TestCase(CORINFO_HELP_LLSH, REG_X64_R20, false, true)]
     public static void SpecialHelperKillMasksPreserveOnlyTheNativeGcRegisters(
         CorInfoHelpFunc helper, regNumber reg, bool preserved, bool noGc)
     {
@@ -391,7 +391,7 @@ internal static unsafe class EmitterCallInstructionTests
         {
             var parameters = Parameters(compiler, EC_FUNC_TOKEN);
             parameters.noSafePoint = true;
-            parameters.byrefRegs = new(SRBM_RBX);
+            parameters.byrefRegs = new(SRBM_X64_RBX);
             parameters.retSize = EA_GCREF;
 #if DEBUG
             parameters.sigInfo = new StrongBox<CORINFO_SIG_INFO>();
@@ -399,8 +399,8 @@ internal static unsafe class EmitterCallInstructionTests
             codeGen.Emitter.emitIns_Call(parameters);
             var id = Last(codeGen.Emitter);
             Assert.That(id.idIsNoGC(), Is.True);
-            Assert.That(ThisRefs(codeGen.Emitter), Is.EqualTo(SRBM_RAX));
-            Assert.That(ThisByrefs(codeGen.Emitter), Is.EqualTo(SRBM_RBX));
+            Assert.That(ThisRefs(codeGen.Emitter), Is.EqualTo(SRBM_X64_RAX));
+            Assert.That(ThisByrefs(codeGen.Emitter), Is.EqualTo(SRBM_X64_RBX));
 #if DEBUG
             var info = id.idDebugOnlyInfo();
             assert(info is not null);
@@ -491,7 +491,7 @@ internal static unsafe class EmitterCallInstructionTests
             var vars = ThisVars(emitter);
             var parameters = Parameters(compiler, EC_FUNC_TOKEN);
             parameters.ptrVars = VarSetOps.MakeSingleton(compiler, 0);
-            parameters.gcrefRegs = new(SRBM_RBX);
+            parameters.gcrefRegs = new(SRBM_X64_RBX);
             parameters.retSize = EA_GCREF;
             if (Configuration.LATE_DISASM)
             {
@@ -528,7 +528,7 @@ internal static unsafe class EmitterCallInstructionTests
         callType = type,
         methHnd = (CORINFO_METHOD_STRUCT_*)0x2000,
         addr = type is EC_FUNC_TOKEN or EC_FUNC_TOKEN_INDIR ? (void*)0x1234 : null,
-        ireg = type is EC_INDIR_R or EC_INDIR_ARD ? REG_RAX : REG_NA,
+        ireg = type is EC_INDIR_R or EC_INDIR_ARD ? REG_X64_RAX : REG_X64_NA,
         ptrVars = VarSetOps.MakeEmpty(compiler),
     };
 

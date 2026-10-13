@@ -66,12 +66,12 @@ internal static unsafe class EmitterMethodInitializationTests
     [TestCase("emitGCrFrameOffsMin", -8, 0)]
     [TestCase("emitGCrFrameOffsMax", 88, 0)]
     [TestCase("emitGCrFrameOffsCnt", 17, 0)]
-    [TestCase("emitPrevGCrefRegs", SRBM_RAX, SRBM_NONE)]
-    [TestCase("emitInitGCrefRegs", SRBM_RAX, SRBM_NONE)]
-    [TestCase("emitThisGCrefRegs", SRBM_RAX, SRBM_NONE)]
-    [TestCase("emitPrevByrefRegs", SRBM_RCX, SRBM_NONE)]
-    [TestCase("emitInitByrefRegs", SRBM_RCX, SRBM_NONE)]
-    [TestCase("emitThisByrefRegs", SRBM_RCX, SRBM_NONE)]
+    [TestCase("emitPrevGCrefRegs", SRBM_X64_RAX, SRBM_NONE)]
+    [TestCase("emitInitGCrefRegs", SRBM_X64_RAX, SRBM_NONE)]
+    [TestCase("emitThisGCrefRegs", SRBM_X64_RAX, SRBM_NONE)]
+    [TestCase("emitPrevByrefRegs", SRBM_X64_RCX, SRBM_NONE)]
+    [TestCase("emitInitByrefRegs", SRBM_X64_RCX, SRBM_NONE)]
+    [TestCase("emitThisByrefRegs", SRBM_X64_RCX, SRBM_NONE)]
     public static void StartupResetsNativeScalarState(string name, object initialValue, object expected)
     {
         var emitter = CreateEmitter();
