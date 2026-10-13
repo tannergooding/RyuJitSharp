@@ -123,13 +123,14 @@ public sealed partial class CodeGen
 
             case BBJ_ALWAYS:
             {
-#if DEBUG
-                var call = block.LastNode;
-                if (call is GenTreeCall callNode)
+                if (Configuration.DEBUG)
                 {
-                    assert(!callNode.IsNoReturn);
+                    var call = block.LastNode;
+                    if (call is GenTreeCall callNode)
+                    {
+                        assert(!callNode.IsNoReturn);
+                    }
                 }
-#endif
                 if (block.CanRemoveJumpToNext(_compiler))
                 {
                     if (emitNopBeforeEHRegion)
