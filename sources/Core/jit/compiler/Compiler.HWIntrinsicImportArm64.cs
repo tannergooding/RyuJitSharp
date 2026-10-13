@@ -131,9 +131,7 @@ public partial class Compiler
         GenTree op2;
         GenTree op3;
         GenTree op4;
-#if DEBUG
         var isValidScalarIntrinsic = false;
-#endif
         fixed (CORINFO_SIG_INFO* signature = &sig)
         {
             switch (intrinsic)
@@ -591,9 +589,10 @@ public partial class Compiler
                 case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
                 case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
                 {
-#if DEBUG
-                    isValidScalarIntrinsic = true;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        isValidScalarIntrinsic = true;
+                    }
                     goto case NI_Sve_SaturatingDecrementBy16BitElementCount;
                 }
                 case NI_Sve_SaturatingDecrementBy16BitElementCount:
@@ -676,17 +675,18 @@ public partial class Compiler
                         var op2BaseType = getBaseTypeOfSimdType(argClass);
                         argType = strip(info.compCompHnd->getArgType(signature, arg1, &argClass)).VarType;
                         op1 = impPopStack().val;
-#if DEBUG
-                        if (intrinsic is NI_Sve_GatherPrefetch8Bit or NI_Sve_GatherPrefetch16Bit or
-                            NI_Sve_GatherPrefetch32Bit or NI_Sve_GatherPrefetch64Bit)
+                        if (Configuration.DEBUG)
                         {
-                            assert(varTypeIsSimd(op2.Type));
+                            if (intrinsic is NI_Sve_GatherPrefetch8Bit or NI_Sve_GatherPrefetch16Bit or
+                                NI_Sve_GatherPrefetch32Bit or NI_Sve_GatherPrefetch64Bit)
+                            {
+                                assert(varTypeIsSimd(op2.Type));
+                            }
+                            else
+                            {
+                                assert(varTypeIsIntegral(op2.Type));
+                            }
                         }
-                        else
-                        {
-                            assert(varTypeIsIntegral(op2.Type));
-                        }
-#endif
                         var node = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseType, simdSize, op1, op2, op3);
                         node.AuxiliaryType = op2BaseType;
                         retNode = node;
@@ -717,9 +717,10 @@ public partial class Compiler
                 case NI_Sve_ConditionalExtractLastActiveElementScalar:
                 {
                     assert(sig.numArgs == 3);
-#if DEBUG
-                    isValidScalarIntrinsic = true;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        isValidScalarIntrinsic = true;
+                    }
                     var arg1 = sig.args;
                     var arg2 = info.compCompHnd->getArgNext(arg1);
                     var arg3 = info.compCompHnd->getArgNext(arg2);
@@ -739,9 +740,10 @@ public partial class Compiler
                 case NI_Sve_ExtractLastActiveElementScalar:
                 {
                     assert(sig.numArgs == 2);
-#if DEBUG
-                    isValidScalarIntrinsic = true;
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        isValidScalarIntrinsic = true;
+                    }
                     var arg1 = sig.args;
                     var arg2 = info.compCompHnd->getArgNext(arg1);
                     var argClass = NO_CLASS_HANDLE;
@@ -858,9 +860,10 @@ public partial class Compiler
                 }
             }
         }
-#if DEBUG
-        assert(!isScalar || isValidScalarIntrinsic);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(!isScalar || isValidScalarIntrinsic);
+        }
 
         return retNode;
     }
