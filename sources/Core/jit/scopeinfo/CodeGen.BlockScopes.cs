@@ -47,10 +47,12 @@ public sealed partial class CodeGen
 
     private void siOpenScopesForNonTrackedVars(BasicBlock block, IL_OFFSET lastBlockILEndOffset)
     {
-#if TARGET_WASM
-        // Native Wasm defers scopes because structured control flow need not follow IL offset order.
-        return;
-#else
+        if (Configuration.TARGET_WASM)
+        {
+            // Native Wasm defers scopes because structured control flow need not follow IL offset order.
+            return;
+        }
+
         var beginOffs = block.bbCodeOffs;
         if (_compiler.opts.OptimizationDisabled)
         {
@@ -103,7 +105,6 @@ public sealed partial class CodeGen
                 }
             }
         }
-#endif
     }
 
     public void siEndBlock(BasicBlock block)

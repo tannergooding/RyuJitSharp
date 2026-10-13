@@ -237,9 +237,7 @@ public partial class Compiler
         /// <summary>Number of class profile probes in this method</summary>
         public int compHandleHistogramProbeCount;
 
-#if TARGET_ARM64
         public bool compNeedsConsecutiveRegisters;
-#endif
 
         public Info()
         {

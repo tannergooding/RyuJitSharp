@@ -13,9 +13,7 @@ public sealed class StackLevelSetter : Phase
     private Dictionary<GenTreePutArgStk, uint>? _putArgNumSlots;
     private readonly bool _throwHelperBlocksUsed;
 
-#if !FEATURE_FIXED_OUT_ARGS
     private bool _framePointerRequired;
-#endif
 
     private uint _currentStackLevel;
     private uint _maxStackLevel;
@@ -26,9 +24,10 @@ public sealed class StackLevelSetter : Phase
         _throwHelperBlocksUsed = compiler.fgUseThrowHelperBlocks();
         var codeGen = compiler.codeGen;
         assert(codeGen is not null);
-#if !FEATURE_FIXED_OUT_ARGS
-        _framePointerRequired = codeGen.IsFramePointerRequired;
-#endif
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+        {
+            _framePointerRequired = codeGen.IsFramePointerRequired;
+        }
         codeGen.ResetWritePhaseForFramePointerRequired();
     }
 
@@ -37,14 +36,12 @@ public sealed class StackLevelSetter : Phase
         var compiler = CompilerInstance;
         ProcessBlocks();
 
-#if !FEATURE_FIXED_OUT_ARGS
-        if (_framePointerRequired)
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS && _framePointerRequired)
         {
             var codeGen = compiler.codeGen;
             assert(codeGen is not null);
             codeGen.IsFramePointerRequired = true;
         }
-#endif
 
         CheckAdditionalArgs();
         CheckArgCnt();
@@ -93,12 +90,10 @@ public sealed class StackLevelSetter : Phase
 
     private void ProcessBlocks()
     {
-#if !TARGET_X86
-        if (!_throwHelperBlocksUsed)
+        if (!Configuration.TARGET_X86 && !_throwHelperBlocksUsed)
         {
             return;
         }
-#endif
 
         var compiler = CompilerInstance;
         for (var block = compiler.fgFirstBB; block is not null; block = block.Next)
@@ -113,26 +108,28 @@ public sealed class StackLevelSetter : Phase
 
         for (var node = block.LastLIRNode; node is not null; node = node.Prev)
         {
-#if TARGET_X86
-            if (node.Oper.IsPutArgStk)
+            if (Configuration.TARGET_X86)
             {
-                var putArg = node.AsPutArgStk();
-                var putArgNumSlots = _putArgNumSlots;
-                assert(putArgNumSlots is not null);
-                var found = putArgNumSlots.Remove(putArg, out var numSlots);
-                assert(found);
-                SubStackLevel(numSlots);
-            }
+                if (node.Oper.IsPutArgStk)
+                {
+                    var putArg = node.AsPutArgStk();
+                    var putArgNumSlots = _putArgNumSlots;
+                    assert(putArgNumSlots is not null);
+                    var found = putArgNumSlots.Remove(putArg, out var numSlots);
+                    assert(found);
+                    SubStackLevel(numSlots);
+                }
 
-            if (node.Oper.IsCall)
-            {
-                var call = node.AsCall();
-                var usedStackSlotsCount = PopArgumentsFromCall(call);
-#if UNIX_X86_ABI
-                call.Args.SetStkSizeBytes(unchecked(usedStackSlotsCount * (uint)TARGET_POINTER_SIZE));
-#endif
+                if (node.Oper.IsCall)
+                {
+                    var call = node.AsCall();
+                    var usedStackSlotsCount = PopArgumentsFromCall(call);
+                    if (Configuration.UNIX_X86_ABI)
+                    {
+                        call.Args.SetStkSizeBytes(unchecked(usedStackSlotsCount * (uint)Configuration.TARGET_POINTER_SIZE));
+                    }
+                }
             }
-#endif
 
             if (!_throwHelperBlocksUsed)
             {
@@ -140,9 +137,10 @@ public sealed class StackLevelSetter : Phase
             }
 
             var checkForHelpers = true;
-#if !FEATURE_FIXED_OUT_ARGS
-            checkForHelpers |= !_framePointerRequired;
-#endif
+            if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+            {
+                checkForHelpers |= !_framePointerRequired;
+            }
 
             if (checkForHelpers && MayUseThrowHelperBlock(node))
             {
@@ -160,23 +158,24 @@ public sealed class StackLevelSetter : Phase
             return true;
         }
 
-#if TARGET_WASM
-        switch (node.Oper)
+        if (Configuration.TARGET_WASM)
         {
-            case GT_NULLCHECK:
-            case GT_IND:
-            case GT_STORE_BLK:
-            case GT_STOREIND:
+            switch (node.Oper)
             {
-                return (node.Flags & GTF_IND_NONFAULTING) == 0;
-            }
+                case GT_NULLCHECK:
+                case GT_IND:
+                case GT_STORE_BLK:
+                case GT_STOREIND:
+                {
+                    return (node.Flags & GTF_IND_NONFAULTING) == 0;
+                }
 
-            case GT_CALL:
-            {
-                return node.AsCall().NeedsNullCheck;
+                case GT_CALL:
+                {
+                    return node.AsCall().NeedsNullCheck;
+                }
             }
         }
-#endif
 
         return false;
     }
@@ -193,27 +192,27 @@ public sealed class StackLevelSetter : Phase
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
             case GT_HWINTRINSIC:
             {
-                if (node.AsHWIntrinsic().HWIntrinsicId is NI_Vector_op_Division)
+                if (Configuration.FEATURE_HW_INTRINSICS)
                 {
-                    SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
-                    SetThrowHelperBlock(SCK_OVERFLOW, block);
+                    if (Configuration.TARGET_XARCH &&
+                        (node.AsHWIntrinsic().HWIntrinsicId is NI_Vector_op_Division))
+                    {
+                        SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
+                        SetThrowHelperBlock(SCK_OVERFLOW, block);
+                    }
+                    else if (Configuration.TARGET_WASM)
+                    {
+                        var category = HWIntrinsicInfo.lookupCategory(node.AsHWIntrinsic().HWIntrinsicId);
+                        if (category is HW_Category_MemoryLoad or HW_Category_MemoryStore)
+                        {
+                            SetThrowHelperBlock(SCK_NULL_CHECK, block);
+                        }
+                    }
                 }
                 break;
             }
-#elif FEATURE_HW_INTRINSICS && TARGET_WASM
-            case GT_HWINTRINSIC:
-            {
-                var category = HWIntrinsicInfo.lookupCategory(node.AsHWIntrinsic().HWIntrinsicId);
-                if (category is HW_Category_MemoryLoad or HW_Category_MemoryStore)
-                {
-                    SetThrowHelperBlock(SCK_NULL_CHECK, block);
-                }
-                break;
-            }
-#endif
             case GT_INDEX_ADDR:
             {
                 if (node.AsIndexAddr().IsBoundsChecked)
@@ -229,40 +228,52 @@ public sealed class StackLevelSetter : Phase
                 break;
             }
 
-#if TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
             case GT_DIV:
             case GT_UDIV:
-#if TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
             case GT_MOD:
             case GT_UMOD:
-#endif
             {
-                var exceptionFlags = node.Exceptions(CompilerInstance);
-                if ((exceptionFlags & ExceptionSetFlags.DivideByZeroException) != ExceptionSetFlags.None)
+                var supportsDivideExceptions =
+                    Configuration.TARGET_ARM64 ||
+                    Configuration.TARGET_ARM ||
+                    Configuration.TARGET_LOONGARCH64 ||
+                    Configuration.TARGET_RISCV64 ||
+                    Configuration.TARGET_WASM;
+                var supportsModuloExceptions =
+                    Configuration.TARGET_LOONGARCH64 ||
+                    Configuration.TARGET_RISCV64 ||
+                    Configuration.TARGET_WASM;
+                if (supportsDivideExceptions &&
+                    ((node.Oper is GT_DIV or GT_UDIV) || supportsModuloExceptions))
                 {
-                    SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
-                }
-                else
-                {
-                    node.Flags |= GTF_DIV_MOD_NO_BY_ZERO;
-                }
+                    var exceptionFlags = node.Exceptions(CompilerInstance);
+                    if ((exceptionFlags & ExceptionSetFlags.DivideByZeroException) != ExceptionSetFlags.None)
+                    {
+                        SetThrowHelperBlock(SCK_DIV_BY_ZERO, block);
+                    }
+                    else
+                    {
+                        node.Flags |= GTF_DIV_MOD_NO_BY_ZERO;
+                    }
 
-                if ((exceptionFlags & ExceptionSetFlags.ArithmeticException) != ExceptionSetFlags.None)
-                {
-                    SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
-                }
-                else
-                {
-                    node.Flags |= GTF_DIV_MOD_NO_OVERFLOW;
+                    if ((exceptionFlags & ExceptionSetFlags.ArithmeticException) != ExceptionSetFlags.None)
+                    {
+                        SetThrowHelperBlock(SCK_ARITH_EXCPN, block);
+                    }
+                    else
+                    {
+                        node.Flags |= GTF_DIV_MOD_NO_OVERFLOW;
+                    }
                 }
                 break;
             }
-#endif
 
-#if TARGET_WASM
             case GT_NULLCHECK:
             {
-                SetThrowHelperBlock(SCK_NULL_CHECK, block);
+                if (Configuration.TARGET_WASM)
+                {
+                    SetThrowHelperBlock(SCK_NULL_CHECK, block);
+                }
                 break;
             }
 
@@ -270,7 +281,7 @@ public sealed class StackLevelSetter : Phase
             case GT_STORE_BLK:
             case GT_STOREIND:
             {
-                if ((node.Flags & GTF_IND_NONFAULTING) == 0)
+                if (Configuration.TARGET_WASM && ((node.Flags & GTF_IND_NONFAULTING) == 0))
                 {
                     SetThrowHelperBlock(SCK_NULL_CHECK, block);
                 }
@@ -279,13 +290,12 @@ public sealed class StackLevelSetter : Phase
 
             case GT_CALL:
             {
-                if (node.AsCall().NeedsNullCheck)
+                if (Configuration.TARGET_WASM && node.AsCall().NeedsNullCheck)
                 {
                     SetThrowHelperBlock(SCK_NULL_CHECK, block);
                 }
                 break;
             }
-#endif
         }
 
         if (node.HasOverflowCheckEx)
@@ -300,35 +310,36 @@ public sealed class StackLevelSetter : Phase
         var add = compiler.fgGetExcptnTarget(kind, block, createIfNeeded: true);
         add.acdUsed = true;
 
-#if !FEATURE_FIXED_OUT_ARGS
-        if (add.acdStkLvlInit)
+        if (!Configuration.FEATURE_FIXED_OUT_ARGS)
         {
-#if UNIX_X86_ABI
-            _framePointerRequired = true;
-#else
-            if (unchecked((uint)add.acdStkLvl) != _currentStackLevel)
+            if (add.acdStkLvlInit)
             {
-                _framePointerRequired = true;
+                if (Configuration.UNIX_X86_ABI)
+                {
+                    _framePointerRequired = true;
+                }
+                else if (unchecked((uint)add.acdStkLvl) != _currentStackLevel)
+                {
+                    _framePointerRequired = true;
+                }
             }
-#endif
-        }
-        else
-        {
-            add.acdStkLvlInit = true;
-            if (unchecked((uint)add.acdStkLvl) != _currentStackLevel)
+            else
             {
-                var mismatchedDestination = add.acdDstBlk;
-                assert(mismatchedDestination is not null);
-                JITDUMP($"Wrong stack level was set for {FMT_BB(mismatchedDestination.bbNum)}\n");
-            }
+                add.acdStkLvlInit = true;
+                if (unchecked((uint)add.acdStkLvl) != _currentStackLevel)
+                {
+                    var mismatchedDestination = add.acdDstBlk;
+                    assert(mismatchedDestination is not null);
+                    JITDUMP($"Wrong stack level was set for {FMT_BB(mismatchedDestination.bbNum)}\n");
+                }
 #if DEBUG
-            var destination = add.acdDstBlk;
-            assert(destination is not null);
-            destination.bbTgtStkDepth = unchecked((int)_currentStackLevel);
+                var destination = add.acdDstBlk;
+                assert(destination is not null);
+                destination.bbTgtStkDepth = unchecked((int)_currentStackLevel);
 #endif
-            add.acdStkLvl = unchecked((int)_currentStackLevel);
+                add.acdStkLvl = unchecked((int)_currentStackLevel);
+            }
         }
-#endif
     }
 
     private uint PopArgumentsFromCall(GenTreeCall call)
@@ -347,16 +358,17 @@ public sealed class StackLevelSetter : Phase
                     }
                 }
 
-                var pointerSize = (uint)TARGET_POINTER_SIZE;
+                var pointerSize = (uint)Configuration.TARGET_POINTER_SIZE;
                 var slotCount = unchecked((stackBytesConsumed + pointerSize - 1) / pointerSize);
                 if (slotCount != 0)
                 {
                     var node = arg.Node;
                     assert(node.Oper.IsPutArgStk);
                     var putArg = node.AsPutArgStk();
-#if !FEATURE_FIXED_OUT_ARGS
-                    assert(unchecked(slotCount * (uint)TARGET_POINTER_SIZE) == (uint)putArg.StackByteSize);
-#endif
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                    {
+                        assert(unchecked(slotCount * (uint)Configuration.TARGET_POINTER_SIZE) == (uint)putArg.StackByteSize);
+                    }
                     var putArgNumSlots = _putArgNumSlots ??= [];
                     putArgNumSlots[putArg] = slotCount;
                     usedStackSlotsCount = unchecked(usedStackSlotsCount + slotCount);
@@ -385,34 +397,36 @@ public sealed class StackLevelSetter : Phase
 
     private void CheckArgCnt()
     {
-#if JIT32_GCENCODER
-        // The x86 GC unwind table represents argument slots with a 1024-bit map.
-        const uint maxPtrArgOffset = 1024;
-        if (_maxStackLevel >= maxPtrArgOffset)
+        if (Configuration.JIT32_GCENCODER)
         {
-            var codeGen = CompilerInstance.codeGen;
-            assert(codeGen is not null);
-            codeGen.Interruptible = false;
-        }
+            // The x86 GC unwind table represents argument slots with a 1024-bit map.
+            const uint maxPtrArgOffset = 1024;
+            if (_maxStackLevel >= maxPtrArgOffset)
+            {
+                var codeGen = CompilerInstance.codeGen;
+                assert(codeGen is not null);
+                codeGen.Interruptible = false;
+            }
 
-        if (_maxStackLevel >= sizeof(uint))
-        {
-            var codeGen = CompilerInstance.codeGen;
-            assert(codeGen is not null);
-            codeGen.IsFramePointerRequired = true;
+            if (_maxStackLevel >= sizeof(uint))
+            {
+                var codeGen = CompilerInstance.codeGen;
+                assert(codeGen is not null);
+                codeGen.IsFramePointerRequired = true;
+            }
         }
-#endif
     }
 
     private void CheckAdditionalArgs()
     {
-#if TARGET_X86
-        var compiler = CompilerInstance;
-        if (compiler.compIsProfilerHookNeeded && (_maxStackLevel == 0))
+        if (Configuration.TARGET_X86)
         {
-            JITDUMP($"Upping fgPtrArgCntMax from {_maxStackLevel} to 1\n");
-            _maxStackLevel = 1;
+            var compiler = CompilerInstance;
+            if (compiler.compIsProfilerHookNeeded && (_maxStackLevel == 0))
+            {
+                JITDUMP($"Upping fgPtrArgCntMax from {_maxStackLevel} to 1\n");
+                _maxStackLevel = 1;
+            }
         }
-#endif
     }
 }

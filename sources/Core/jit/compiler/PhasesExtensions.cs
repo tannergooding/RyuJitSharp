@@ -9,7 +9,6 @@ public static partial class PhasesExtensions
 {
     extension(Phases phase)
     {
-#if FEATURE_JIT_METHOD_PERF || DUMP_FLOWGRAPHS
         public string Name
         {
             get
@@ -18,11 +17,7 @@ public static partial class PhasesExtensions
                 return GetName(phase);
             }
         }
-#else
-        public string Name => phase.ToString();
-#endif
 
-#if FEATURE_JIT_METHOD_PERF
         public bool HasChildren
         {
             get
@@ -49,6 +44,5 @@ public static partial class PhasesExtensions
                 return s_reportsIRSize[(int)(phase)];
             }
         }
-#endif
     }
 }

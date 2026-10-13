@@ -207,7 +207,7 @@ public partial class DiscretionaryPolicy : DefaultPolicy
         var args = methodInfo.args;
         var argCount = (uint)args.numArgs;
         _argCount = argCount;
-        var pointerSize = TARGET_POINTER_SIZE;
+        var pointerSize = Configuration.TARGET_POINTER_SIZE;
         var i = 0;
 
         if (args.hasThis())

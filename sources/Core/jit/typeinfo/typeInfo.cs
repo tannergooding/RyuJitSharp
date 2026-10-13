@@ -53,7 +53,7 @@ public readonly struct typeInfo
     }
 
     [MemberNotNullWhen(true, nameof(_methodPointerInfo), nameof(MethodPointerInfo))]
-    public unsafe bool IsMethod => (_type is TYP_I_IMPL) && (_methodPointerInfo is not null);
+    public unsafe bool IsMethod => ((_type == TYP_I_IMPL)) && (_methodPointerInfo is not null);
 
     public unsafe CORINFO_METHOD_HANDLE Method
     {

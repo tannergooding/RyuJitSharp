@@ -34,9 +34,7 @@ public partial struct JitFlags
     public const JitFlag JIT_FLAG_TIER1 = JitFlag.JIT_FLAG_TIER1;
     public const JitFlag JIT_FLAG_NO_INLINING = JitFlag.JIT_FLAG_NO_INLINING;
 
-#if TARGET_ARM
     public const JitFlag JIT_FLAG_RELATIVE_CODE_RELOCS = JitFlag.JIT_FLAG_RELATIVE_CODE_RELOCS;
-#endif
 
     public const JitFlag JIT_FLAG_SOFTFP_ABI = JitFlag.JIT_FLAG_SOFTFP_ABI;
 
@@ -130,10 +128,8 @@ public partial struct JitFlags
         /// <summary>JIT should not inline any called method into this method</summary>
         JIT_FLAG_NO_INLINING = 28,
 
-#if TARGET_ARM
         /// <summary>JIT should generate PC-relative address computations instead of EE relocation records</summary>
         JIT_FLAG_RELATIVE_CODE_RELOCS = 29,
-#endif
 
         /// <summary>Enable the ARM soft-float calling convention</summary>
         JIT_FLAG_SOFTFP_ABI = 30,

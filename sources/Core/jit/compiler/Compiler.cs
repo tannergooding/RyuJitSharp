@@ -161,9 +161,7 @@ public partial class Compiler
 
     public SignatureToLookupInfoMap? _signatureToLookupInfoMap;
 
-#if SWIFT_SUPPORT
     public SwiftLoweringMap? _swiftLoweringCache;
-#endif
 
     public bool[]? _specialCopyArgs;
 
@@ -215,11 +213,9 @@ public partial class Compiler
 
     public bool asyncInfoInitialized;
 
-#if TARGET_WASM
     public CORINFO_WASM_WELLKNOWN_GLOBALS wasmWellKnownGlobals;
 
     public bool wasmWellKnownGlobalsInitialized;
-#endif
 
     public VirtualStubParamInfo? virtualStubParamInfo;
 
@@ -342,11 +338,8 @@ public partial class Compiler
     public static BitSetSupport.BitSetOpCounter _allvarsetOpCounter = new("AllVarSetOpCounts.log");
 #endif
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
     public FpStructLoweringMap? _fpStructLoweringCache;
-#endif
 
-#if TARGET_AMD64
     // The following are for initializing register allocator "constants" defined in targetamd64.h
     // that now depend upon runtime ISA information, e.g., the presence of AVX512, which increases
     // the number of simd (xmm, ymm, and zmm) registers from 16 to 32.
@@ -378,9 +371,7 @@ public partial class Compiler
     private int cntCalleeTrashInt;
 
     private regNumber regIntLast;
-#endif
 
-#if TARGET_XARCH
     // The following are for initializing register allocator "constants" defined in targetamd64.h
     // that now depend upon runtime ISA information, e.g., the presence of AVX512, which adds
     // 8 mask registers for use.
@@ -397,14 +388,13 @@ public partial class Compiler
     // This was done to avoid polluting all `targetXXX.h` macro definitions with a compiler parameter, where only
     // TARGET_XARCH requires one.
 
-    private regMask srbmAllMask;
-    
-    internal regMask srbmMskCalleeTrash;
-
     private int cntCalleeTrashMask;
 
     private InlineArrayTypCount<regMask> varTypeCalleeTrashRegMasks;
-#endif
+
+    private regMask srbmAllMask;
+
+    internal regMask srbmMskCalleeTrash;
 
 #if DEBUG
     private static ConfigMethodRange fJitStressRange;
@@ -546,14 +536,15 @@ public partial class Compiler
         // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
         // with an ARM-targeting "altjit").
         // Match CPU/ABI for compMatchedVM
-        info.compMatchedVM = info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_TARGET;
+        info.compMatchedVM = info.compCompHnd->getExpectedTargetArchitecture() == TargetRuntimeMetadata.CorInfoArchitecture;
 
         // Match OS for compMatchedVM
         var eeInfo = eeGetEEInfo();
 
-#if TARGET_OS_RUNTIMEDETERMINED
-        noway_assert(TargetOS.OSSettingConfigured);
-#endif
+        if (Configuration.TARGET_OS_RUNTIMEDETERMINED)
+        {
+            noway_assert(TargetOS.OSSettingConfigured);
+        }
 
         if (TargetOS.IsApplePlatform)
         {
@@ -578,10 +569,10 @@ public partial class Compiler
 
         compMaxUncheckedOffsetForNullObject = (int)(eeInfo.maxUncheckedOffsetForNullObject);
 
-#if DEBUG && TARGET_WASM
+#if DEBUG
         // TODO-WASM: remove once we no longer need to use x86/arm collections for wasm replay
         // if we are cross-replaying wasm, override compMaxUncheckedOffsetForNullObject
-        if (!info.compMatchedVM)
+        if (Configuration.TARGET_WASM && !info.compMatchedVM)
         {
             compMaxUncheckedOffsetForNullObject = 1024 - 1;
         }
@@ -631,7 +622,6 @@ public partial class Compiler
 
     public unsafe bool IsReadyToRun => IsAot && !IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
-#if FEATURE_JIT_METHOD_PERF
     public static unsafe string? JitTimeLogCsv
     {
         get
@@ -645,7 +635,6 @@ public partial class Compiler
             return Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(value));
         }
     }
-#endif
 
     public bool MethodHasBoundsChecks
     {
@@ -799,12 +788,13 @@ public partial class Compiler
 
         set
         {
-#if TARGET_WASM
+            if (Configuration.TARGET_WASM)
+            {
 #if DEBUG
-            compGSSecurityCheckBlocker = "Not currently enabled for Wasm";
+                compGSSecurityCheckBlocker = "Not currently enabled for Wasm";
 #endif
-            return;
-#endif
+                return;
+            }
 
             if (opts.compDbgEnC)
             {
@@ -854,47 +844,62 @@ public partial class Compiler
 
     public bool PreciseRefCountsRequired =>  opts.OptimizationEnabled;
 
-#if TARGET_AMD64
-    public int CNT_CALLEE_TRASH_FLOAT => cntCalleeTrashFloat;
+    public int CNT_CALLEE_TRASH_FLOAT =>
+        Configuration.TARGET_AMD64 ? cntCalleeTrashFloat : Globals.CNT_CALLEE_TRASH_FLOAT;
 
-    public int CNT_CALLEE_TRASH_INT => cntCalleeTrashInt;
+    public int CNT_CALLEE_TRASH_INT =>
+        Configuration.TARGET_AMD64 ? cntCalleeTrashInt : Globals.CNT_CALLEE_TRASH;
 
-    public regMask SRBM_ALLFLOAT => srbmAllFloat;
+    public regMask SRBM_ALLFLOAT =>
+        Configuration.TARGET_AMD64 ? srbmAllFloat : Globals.SRBM_ALLFLOAT;
 
-    public regMask SRBM_ALLINT => srbmAllInt;
+    public regMask SRBM_ALLINT =>
+        Configuration.TARGET_AMD64 ? srbmAllInt : Globals.SRBM_ALLINT;
 
-    public regMask SRBM_FLT_CALLEE_TRASH => srbmFltCalleeTrash;
+    public regMask SRBM_FLT_CALLEE_TRASH =>
+        Configuration.TARGET_AMD64 ? srbmFltCalleeTrash : Globals.SRBM_FLT_CALLEE_TRASH;
 
-    public regMask SRBM_INT_CALLEE_TRASH => srbmIntCalleeTrash;
+    public regMask SRBM_INT_CALLEE_TRASH =>
+        Configuration.TARGET_AMD64 ? srbmIntCalleeTrash : Globals.SRBM_INT_CALLEE_TRASH;
 
-    public int REG_INT_COUNT => unchecked((int)(REG_INT_LAST - REG_INT_FIRST + 1));
+    public int REG_INT_COUNT => unchecked((int)(REG_INT_LAST - TargetRuntimeMetadata.IntegerRegisterFirst + 1));
 
-    public regNumber REG_INT_LAST => regIntLast;
-#else
-    public int CNT_CALLEE_TRASH_FLOAT => Globals.CNT_CALLEE_TRASH_FLOAT;
+    public regNumber REG_INT_LAST =>
+        Configuration.TARGET_AMD64 ? regIntLast : TargetRuntimeMetadata.IntegerRegisterLast;
 
-    public int CNT_CALLEE_TRASH_INT => CNT_CALLEE_TRASH;
+    private const regMask SRBM_ARM64_ALLMASK =
+        SRBM_ARM64_P0 | SRBM_ARM64_P1 | SRBM_ARM64_P2 | SRBM_ARM64_P3 |
+        SRBM_ARM64_P4 | SRBM_ARM64_P5 | SRBM_ARM64_P6 | SRBM_ARM64_P7 |
+        SRBM_ARM64_P8 | SRBM_ARM64_P9 | SRBM_ARM64_P10 | SRBM_ARM64_P11 |
+        SRBM_ARM64_P12 | SRBM_ARM64_P13 | SRBM_ARM64_P14 | SRBM_ARM64_P15;
 
-#if TARGET_X86
-    public regMask SRBM_ALLINT => Globals.SRBM_ALLINT;
-#endif
+    private regMask getMaskRegisterSet(regMask xarchMask)
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return xarchMask;
+        }
 
-    public regMask SRBM_FLT_CALLEE_TRASH => Globals.SRBM_FLT_CALLEE_TRASH;
+        if (Configuration.TARGET_ARM64)
+        {
+            return SRBM_ARM64_ALLMASK;
+        }
 
-    public regMask SRBM_INT_CALLEE_TRASH => Globals.SRBM_INT_CALLEE_TRASH;
+        if (Configuration.TARGET_ARM || Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
+        {
+            return SRBM_NONE;
+        }
 
-    public regNumber REG_INT_LAST => Globals.REG_INT_LAST;
-#endif
+        throw new FatalJitException("Mask registers are not defined for the configured target.");
+    }
 
-#if TARGET_XARCH
-    public regMask SRBM_ALLMASK => srbmAllMask;
+    public regMask SRBM_ALLMASK => getMaskRegisterSet(srbmAllMask);
 
-    public regMask SRBM_MSK_CALLEE_TRASH => srbmMskCalleeTrash;
+    public regMask SRBM_MSK_CALLEE_TRASH => getMaskRegisterSet(srbmMskCalleeTrash);
 
-    public int CNT_CALLEE_TRASH_MASK => cntCalleeTrashMask;
-#else
-    public int CNT_CALLEE_TRASH_MASK => Globals.CNT_CALLEE_TRASH_MASK;
-#endif
+    public int CNT_CALLEE_TRASH_MASK =>
+        Configuration.TARGET_XARCH ? cntCalleeTrashMask : Globals.CNT_CALLEE_TRASH_MASK;
 
     /// <summary>Are we running a replay under SuperPMI?</summary>
 #if DEBUG
@@ -1021,9 +1026,10 @@ public partial class Compiler
     /// <param name="phase">the phase that has just finished</param>
     public void EndPhase(Phases phase)
     {
-#if FEATURE_JIT_METHOD_PERF
-        compJitTimer?.EndPhase(this, phase);
-#endif
+        if (Configuration.FEATURE_JIT_METHOD_PERF)
+        {
+            compJitTimer?.EndPhase(this, phase);
+        }
 
         mostRecentlyActivePhase = phase;
     }
@@ -1031,16 +1037,18 @@ public partial class Compiler
 #if MEASURE_CLRAPI_CALLS
     public void CLRApiCallEnter(uint apix)
     {
-#if FEATURE_JIT_METHOD_PERF
-        compJitTimer?.ClrApiCallEnter(unchecked((API_ICorJitInfo_Names)apix));
-#endif
+        if (Configuration.FEATURE_JIT_METHOD_PERF)
+        {
+            compJitTimer?.ClrApiCallEnter(unchecked((API_ICorJitInfo_Names)apix));
+        }
     }
 
     public void CLRApiCallLeave(uint apix)
     {
-#if FEATURE_JIT_METHOD_PERF
-        compJitTimer?.ClrApiCallLeave(unchecked((API_ICorJitInfo_Names)apix));
-#endif
+        if (Configuration.FEATURE_JIT_METHOD_PERF)
+        {
+            compJitTimer?.ClrApiCallLeave(unchecked((API_ICorJitInfo_Names)apix));
+        }
     }
 
     public void CLR_API_Enter(API_ICorJitInfo_Names ename)
@@ -1071,15 +1079,14 @@ public partial class Compiler
         Configuration.TARGET_XARCH && compIsaSupportedDebugOnly(InstructionSet_AVX512);
 #endif
 
-#if TARGET_XARCH
     /// <summary>Answer the question: Are APX encodings supported on this target.</summary>
     /// <returns></returns>
-    public bool canUseApxEncoding() => compOpportunisticallyDependsOn(InstructionSet_APX);
+    public bool canUseApxEncoding() =>
+        Configuration.TARGET_AMD64 && compOpportunisticallyDependsOn(InstructionSet_APX);
 
     /// <summary>Answer the question: Are APX-EVEX encodings supported on this target.</summary>
     /// <returns></returns>
     public bool canUseApxEvexEncoding() => canUseApxEncoding() && canUseEvexEncoding();
-#endif
 
     public unsafe bool checkTailCallConstraint(OPCODE opcode, in CORINFO_RESOLVED_TOKEN resolvedToken, in CORINFO_RESOLVED_TOKEN constrainedResolvedToken)
     {
@@ -1335,9 +1342,11 @@ public partial class Compiler
     public unsafe uint GetHfaCount(CORINFO_CLASS_HANDLE hClass)
     {
         assert(IsHfa(hClass));
-#if TARGET_ARM
-        return unchecked((uint)info.compCompHnd->getClassSize(hClass)) / REGSIZE_BYTES;
-#else
+        if (Configuration.TARGET_ARM)
+        {
+            return unchecked((uint)info.compCompHnd->getClassSize(hClass)) / (uint)Configuration.REGSIZE_BYTES;
+        }
+
         var hfaType = GetHfaType(hClass);
         var classSize = unchecked((uint)info.compCompHnd->getClassSize(hClass));
 
@@ -1345,7 +1354,6 @@ public partial class Compiler
         var elemSize = Math.Max(1u, EA_SIZE_IN_BYTES(hfaType.EmitActualSize));
 
         return classSize / elemSize;
-#endif
     }
 
     /// <summary>Given the VM's CorInfoGCType convert it to the JIT's var_types</summary>
@@ -1458,25 +1466,29 @@ public partial class Compiler
     // X86.AVX512:   32-byte Vector<T> and Vector512<T>
     public int GetMaxVectorByteLength()
     {
-#if TARGET_XARCH
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+        if (Configuration.TARGET_XARCH)
         {
-            return ZMM_REGSIZE_BYTES;
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+            {
+                return Configuration.ZMM_REGSIZE_BYTES;
+            }
+            else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+            {
+                return Configuration.YMM_REGSIZE_BYTES;
+            }
+            else
+            {
+                return Configuration.XMM_REGSIZE_BYTES;
+            }
         }
-        else if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
         {
-            return YMM_REGSIZE_BYTES;
+            return Configuration.FP_REGSIZE_BYTES;
         }
-        else
-        {
-            return XMM_REGSIZE_BYTES;
-        }
-#elif TARGET_ARM64 || TARGET_WASM
-        return FP_REGSIZE_BYTES;
-#else
+
         unreached();
         return 0;
-#endif
     }
 
     public unsafe CORINFO_CLASS_HANDLE getMethodInstantiationArgument(CORINFO_METHOD_HANDLE ftn, int index)
@@ -1509,9 +1521,7 @@ public partial class Compiler
             {
                 case 4:
                 case 8:
-#if TARGET_ARM64
-                case 16:
-#endif
+                case 16 when Configuration.TARGET_ARM64:
                 {
                     var hfaType = GetHfaType(clsHnd);
 
@@ -1552,36 +1562,27 @@ public partial class Compiler
                 break;
             }
 
-#if !TARGET_XARCH || UNIX_AMD64_ABI
-            case 3:
+            case 3 when !Configuration.TARGET_XARCH || Configuration.UNIX_AMD64_ABI:
             {
                 useType = TYP_INT;
                 break;
             }
 
-#endif
-
-#if TARGET_64BIT
-            case 4:
+            case 4 when Configuration.TARGET_64BIT:
             {
                 // We dealt with the one-float HFA above. All other 4-byte structs are handled as INT.
                 useType = TYP_INT;
                 break;
             }
 
-#if !TARGET_XARCH || UNIX_AMD64_ABI
-            case 5:
-            case 6:
-            case 7:
+            case 5 or 6 or 7 when Configuration.TARGET_64BIT &&
+                (!Configuration.TARGET_XARCH || Configuration.UNIX_AMD64_ABI):
             {
                 useType = TYP_I_IMPL;
                 break;
             }
 
-#endif
-#endif
-
-            case TARGET_POINTER_SIZE:
+            case int size when size == Configuration.TARGET_POINTER_SIZE:
             {
                 var gcPtr = TYPE_GC_NONE;
                 // Check if this pointer-sized struct is wrapping a GC object
@@ -1640,24 +1641,27 @@ public partial class Compiler
         }
         assert(structSize > 0);
 
-#if TARGET_WASM
-        var abiType = info.compCompHnd->getWasmLowering(clsHnd);
-
-        // An aggregate wider than its lowered wasm value returns through a hidden buffer.
-        if ((abiType is CORINFO_WASM_TYPE_VOID) || (structSize > WasmClassifier.ToJitType(abiType).Size))
+        if (Configuration.TARGET_WASM)
         {
-            howToReturnStruct = SPK_ByReference;
-            useType = TYP_UNKNOWN;
-        }
-        else
-        {
-            howToReturnStruct = SPK_PrimitiveType;
-            useType = WasmClassifier.ToJitType(abiType);
+            var abiType = info.compCompHnd->getWasmLowering(clsHnd);
+
+            // An aggregate wider than its lowered wasm value returns through a hidden buffer.
+            if ((abiType is CORINFO_WASM_TYPE_VOID) || (structSize > WasmClassifier.ToJitType(abiType).Size))
+            {
+                howToReturnStruct = SPK_ByReference;
+                useType = TYP_UNKNOWN;
+            }
+            else
+            {
+                howToReturnStruct = SPK_PrimitiveType;
+                useType = WasmClassifier.ToJitType(abiType);
+            }
+
+            wbReturnStruct = howToReturnStruct;
+            return useType;
         }
 
-        wbReturnStruct = howToReturnStruct;
-        return useType;
-#elif DEBUG
+#if DEBUG
         // Extra query to facilitate wasm replay of native collections.
         // TODO-WASM: delete once we can get a wasm collection.
 
@@ -1667,8 +1671,7 @@ public partial class Compiler
         }
 #endif
 
-#if SWIFT_SUPPORT
-        if (callConv is CorInfoCallConvExtension.Swift)
+        if (Configuration.SWIFT_SUPPORT && (callConv is CorInfoCallConvExtension.Swift))
         {
             ref readonly var lowering = ref GetSwiftLowering(clsHnd);
 
@@ -1699,47 +1702,50 @@ public partial class Compiler
             wbReturnStruct = howToReturnStruct;
             return useType;
         }
-#endif
 
         var structDesc = default(SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR);
-#if UNIX_AMD64_ABI
-        // An 8-byte struct may need to be returned in a floating point registerm, so we always consult the struct "Classifier" routine
-        eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, out structDesc);
-
-        if (structDesc.eightByteCount is 1)
+        if (Configuration.UNIX_AMD64_ABI)
         {
-            assert(structSize <= sizeof(double));
-            assert(structDesc.passedInRegisters);
+            // An 8-byte struct may need to be returned in a floating point registerm, so we always consult the struct "Classifier" routine
+            eeGetSystemVAmd64PassStructInRegisterDescriptor(clsHnd, out structDesc);
 
-            if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
+            if (structDesc.eightByteCount is 1)
             {
-                // If this is returned as a floating type, use that.
-                // Otherwise, leave as TYP_UNKNOWN and we'll sort things out below.
-                useType = GetEightByteType(structDesc, 0);
-                howToReturnStruct = SPK_PrimitiveType;
+                assert(structSize <= sizeof(double));
+                assert(structDesc.passedInRegisters);
+
+                if (structDesc.eightByteClassifications[0] == SystemVClassificationTypeSSE)
+                {
+                    // If this is returned as a floating type, use that.
+                    // Otherwise, leave as TYP_UNKNOWN and we'll sort things out below.
+                    useType = GetEightByteType(structDesc, 0);
+                    howToReturnStruct = SPK_PrimitiveType;
+                }
+            }
+            else
+            {
+                // Return classification is not always size based...
+                canReturnInRegister = structDesc.passedInRegisters;
+
+                if (!canReturnInRegister)
+                {
+                    assert(structDesc.eightByteCount is 0);
+                    howToReturnStruct = SPK_ByReference;
+                    useType = TYP_UNKNOWN;
+                }
             }
         }
-        else
+        else if (Configuration.UNIX_X86_ABI)
         {
-            // Return classification is not always size based...
-            canReturnInRegister = structDesc.passedInRegisters;
-
-            if (!canReturnInRegister)
+            if ((callConv is not CorInfoCallConvExtension.Managed) && !isNativePrimitiveStructType(clsHnd))
             {
-                assert(structDesc.eightByteCount is 0);
+                canReturnInRegister = false;
                 howToReturnStruct = SPK_ByReference;
                 useType = TYP_UNKNOWN;
             }
         }
-#elif UNIX_X86_ABI
-        if ((callConv is not CorInfoCallConvExtension.Managed) && !isNativePrimitiveStructType(clsHnd))
-        {
-            canReturnInRegister = false;
-            howToReturnStruct = SPK_ByReference;
-            useType = TYP_UNKNOWN;
-        }
-#elif TARGET_RISCV64 || TARGET_LOONGARCH64
-        if (structSize <= (TARGET_POINTER_SIZE * 2))
+        else if ((Configuration.TARGET_RISCV64 || Configuration.TARGET_LOONGARCH64) &&
+            (structSize <= (Configuration.TARGET_POINTER_SIZE * 2)))
         {
             ref var lowering = ref GetFpStructLowering(clsHnd);
 
@@ -1759,7 +1765,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         if (TargetOS.IsWindows && !TargetArchitecture.IsArm32 && callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
         {
@@ -1771,17 +1776,14 @@ public partial class Compiler
         // Check for cases where a small struct is returned in a register
         // via a primitive type.
         //
-        // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
+        // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES.
         // so we can skip calling getPrimitiveTypeForStruct when we
         // have a struct that is larger than that.
 
-#if UNIX_AMD64_ABI || TARGET_RISCV64 || TARGET_LOONGARCH64
-        var unknownUseType = useType is TYP_UNKNOWN;
-#else
-        var unknownUseType = true;
-#endif
+        var unknownUseType = !(Configuration.UNIX_AMD64_ABI || Configuration.TARGET_RISCV64 ||
+            Configuration.TARGET_LOONGARCH64) || (useType is TYP_UNKNOWN);
 
-        if (canReturnInRegister && unknownUseType && (structSize <= MAX_PASS_SINGLEREG_BYTES))
+        if (canReturnInRegister && unknownUseType && (structSize <= Configuration.MAX_PASS_SINGLEREG_BYTES))
         {
             // We set the "primitive" useType based upon the structSize
             // and also examine the clsHnd to see if it is an HFA of count one
@@ -1834,7 +1836,7 @@ public partial class Compiler
             // See if we can return this struct by value, possibly in multiple registers
             // or if we should return it using a return buffer register
 
-            if (Configuration.FEATURE_MULTIREG_RET && (structSize <= MAX_RET_MULTIREG_BYTES))
+            if (Configuration.FEATURE_MULTIREG_RET && (structSize <= Configuration.MAX_RET_MULTIREG_BYTES))
             {
                 // Structs that are HFA's are returned in multiple registers
                 if (IsHfa(clsHnd))
@@ -1865,7 +1867,7 @@ public partial class Compiler
                     else if (Configuration.TARGET_ARM64)
                     {
                         // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
-                        assert(structSize > TARGET_POINTER_SIZE);
+                        assert(structSize > Configuration.TARGET_POINTER_SIZE);
 
                         // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
                         var isScalableSimdType = Configuration.FEATURE_SIMD &&
@@ -1878,7 +1880,7 @@ public partial class Compiler
                             howToReturnStruct = SPK_ByReference;
                             useType = TYP_UNKNOWN;
                         }
-                        else if (structSize <= (TARGET_POINTER_SIZE * 2))
+                        else if (structSize <= (Configuration.TARGET_POINTER_SIZE * 2))
                         {
                             // On ARM64 structs that are 9-16 bytes are returned by value in multiple registers
                             // setup wbPassType and useType indicate that this is return by value in multiple registers
@@ -1900,7 +1902,8 @@ public partial class Compiler
                         // Only 8-byte structs are return in multiple registers.
                         // We also only support multireg struct returns on x86 to match the native calling convention.
                         // So return 8-byte structs only when the calling convention is a native calling convention.
-                        if ((structSize is MAX_RET_MULTIREG_BYTES) && (callConv is not CorInfoCallConvExtension.Managed))
+                        if ((structSize == Configuration.MAX_RET_MULTIREG_BYTES) &&
+                            (callConv is not CorInfoCallConvExtension.Managed))
                         {
                             // setup wbPassType and useType indicate that this is return by value in multiple registers
                             howToReturnStruct = SPK_ByValue;
@@ -2058,64 +2061,65 @@ public partial class Compiler
         // such as R2R work correctly for larger vector sizes, so we always
         // do `compExactlyDependsOn` for such cases.
 
-#if TARGET_XARCH
-        if (compExactlyDependsOn(InstructionSet_VectorT512))
+        if (Configuration.TARGET_XARCH)
         {
-            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT256));
-            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
-            return ZMM_REGSIZE_BYTES;
-        }
-        else if (compExactlyDependsOn(InstructionSet_VectorT256))
-        {
-            assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
-            return YMM_REGSIZE_BYTES;
-        }
-        else if (compExactlyDependsOn(InstructionSet_VectorT128))
-        {
-            return XMM_REGSIZE_BYTES;
-        }
-        else
-        {
-            // TODO: We should be returning 0 here, but there are a number of
-            // places that don't quite get handled correctly in that scenario
-            return XMM_REGSIZE_BYTES;
-        }
-#elif TARGET_ARM64
-#if DEBUG
-        if ((JitConfig.JitUseScalableVectorT != 0) && compExactlyDependsOn(InstructionSet_VectorT))
-        {
-            return SIZE_UNKNOWN;
-        }
-        else
-#endif
-            if (compExactlyDependsOn(InstructionSet_VectorT128))
+            if (compExactlyDependsOn(InstructionSet_VectorT512))
             {
-                return FP_REGSIZE_BYTES;
+                assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT256));
+                assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
+                return Configuration.ZMM_REGSIZE_BYTES;
+            }
+            else if (compExactlyDependsOn(InstructionSet_VectorT256))
+            {
+                assert(!compIsaSupportedDebugOnly(InstructionSet_VectorT128));
+                return Configuration.YMM_REGSIZE_BYTES;
+            }
+            else if (compExactlyDependsOn(InstructionSet_VectorT128))
+            {
+                return Configuration.XMM_REGSIZE_BYTES;
             }
             else
             {
                 // TODO: We should be returning 0 here, but there are a number of
                 // places that don't quite get handled correctly in that scenario
-                return FP_REGSIZE_BYTES;
+                return Configuration.XMM_REGSIZE_BYTES;
             }
-#else
-            NO_WAY("getVectorTByteLength() unimplemented on target arch");
-            unreached();
-            return 0;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+#if DEBUG
+            if ((JitConfig.JitUseScalableVectorT != 0) && compExactlyDependsOn(InstructionSet_VectorT))
+            {
+                return SIZE_UNKNOWN;
+            }
 #endif
+            if (compExactlyDependsOn(InstructionSet_VectorT128))
+            {
+                return Configuration.FP_REGSIZE_BYTES;
+            }
+            else
+            {
+                // TODO: We should be returning 0 here, but there are a number of
+                // places that don't quite get handled correctly in that scenario
+                return Configuration.FP_REGSIZE_BYTES;
+            }
+        }
+
+        NO_WAY("getVectorTByteLength() unimplemented on target arch");
+        unreached();
+        return 0;
     }
 
     public unsafe bool IsHfa(CORINFO_CLASS_HANDLE hClass) => varTypeIsValidHfaType(GetHfaType(hClass));
 
     public unsafe bool IsHwSimdClass(CORINFO_CLASS_HANDLE clsHnd)
     {
-#if FEATURE_HW_INTRINSICS
-        if (isIntrinsicType(clsHnd))
+        if (Configuration.FEATURE_HW_INTRINSICS && isIntrinsicType(clsHnd))
         {
             _ = getClassNameFromMetadata(clsHnd, out var namespaceName);
             return namespaceName.Equals("System.Runtime.Intrinsics", StringComparison.Ordinal);
         }
-#endif
         return false;
     }
 
@@ -2130,13 +2134,10 @@ public partial class Compiler
             return false;
         }
 
-#if TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         var returnType = GetReturnTypeForStruct(hClass, callConv, out var howToReturnStruct);
-        return varTypeIsStruct(returnType) && (howToReturnStruct is not SPK_PrimitiveType);
-#else
-        var returnType = GetReturnTypeForStruct(hClass, callConv, out _);
-        return varTypeIsStruct(returnType);
-#endif
+        return varTypeIsStruct(returnType) &&
+            (!(Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) ||
+                (howToReturnStruct is not SPK_PrimitiveType));
     }
 
     /// <summary>Check if the given struct type is an intrinsic type that should be treated as though it is not a struct at the unmanaged ABI boundary.</summary>
@@ -2255,13 +2256,11 @@ public partial class Compiler
     /// <remarks>Local address nodes cannot point beyond the local or exceed 16 bits of offset; locals numbered 32768 or greater require a byte-sized offset.</remarks>
     public bool IsValidLclAddr(int lclNum, int offset)
     {
-#if TARGET_ARM64
-        if (lvaIsUnknownSizeLocal(lclNum))
+        if (Configuration.TARGET_ARM64 && lvaIsUnknownSizeLocal(lclNum))
         {
             return offset is 0;
         }
 
-#endif
         if ((lclNum >= 32768) && (offset >= 256))
         {
             return false;
@@ -2392,7 +2391,7 @@ public partial class Compiler
         // Keep the signed shift and minimum: a high-bit input has a negative nearestPow2.
         var nearestPow2 = unchecked(1 << BitOperations.Log2(size));
 
-        switch (int.Min(nearestPow2, REGSIZE_BYTES))
+        switch (int.Min(nearestPow2, Configuration.REGSIZE_BYTES))
         {
             case 1:
             {
@@ -2412,7 +2411,7 @@ public partial class Compiler
             case 8:
             {
 #pragma warning disable CA1508 // Native retains this register-width assertion even when the target constant proves it.
-                assert(REGSIZE_BYTES == 8);
+                assert(Configuration.REGSIZE_BYTES == 8);
 #pragma warning restore CA1508
                 return TYP_LONG;
             }
@@ -2431,15 +2430,13 @@ public partial class Compiler
     public var_types roundDownMaxType(uint size, bool conservative)
     {
         var result = roundDownMaxType(size);
-#if TARGET_XARCH
-        if (Configuration.FEATURE_SIMD && conservative)
+        if (Configuration.TARGET_XARCH && Configuration.FEATURE_SIMD && conservative)
         {
             if (result == TYP_SIMD32)
             {
                 result = compOpportunisticallyDependsOn(InstructionSet_AVX2) ? result : TYP_SIMD16;
             }
         }
-#endif
         return result;
     }
 
@@ -2453,39 +2450,42 @@ public partial class Compiler
             return 0;
         }
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
-        var maxSize = GetPreferredVectorByteLength();
-        assert(maxSize is (>= XMM_REGSIZE_BYTES and <= ZMM_REGSIZE_BYTES));
-
-        if (size >= maxSize)
+        if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
         {
-            return maxSize;
+            var maxSize = GetPreferredVectorByteLength();
+            assert((maxSize >= Configuration.XMM_REGSIZE_BYTES) &&
+                (maxSize <= Configuration.ZMM_REGSIZE_BYTES));
+
+            if (size >= maxSize)
+            {
+                return maxSize;
+            }
+
+            if ((size >= Configuration.YMM_REGSIZE_BYTES) && (maxSize >= Configuration.YMM_REGSIZE_BYTES))
+            {
+                return Configuration.YMM_REGSIZE_BYTES;
+            }
+            return (size >= Configuration.XMM_REGSIZE_BYTES) ? Configuration.XMM_REGSIZE_BYTES : 0;
         }
 
-        if ((size >= YMM_REGSIZE_BYTES) && (maxSize >= YMM_REGSIZE_BYTES))
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
         {
-            return YMM_REGSIZE_BYTES;
+            assert(GetMaxVectorByteLength() == Configuration.FP_REGSIZE_BYTES);
+            return (size >= Configuration.FP_REGSIZE_BYTES) ? Configuration.FP_REGSIZE_BYTES : 0;
         }
-        return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
-#elif TARGET_ARM64 || TARGET_WASM
-        assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
-        return (size >= FP_REGSIZE_BYTES) ? FP_REGSIZE_BYTES : 0;
-#else
+
         assert(false, "roundDownSIMDSize unimplemented on target arch");
         unreached();
         return 0;
-#endif
     }
 
     public static int roundUpGprSize(int size)
     {
         var unsignedSize = unchecked((uint)size);
-#if TARGET_64BIT
-        if (unsignedSize > 4)
+        if (Configuration.TARGET_64BIT && (unsignedSize > 4))
         {
             return 8;
         }
-#endif
         return (unsignedSize > 2) ? 4 : size;
     }
 
@@ -2495,9 +2495,7 @@ public partial class Compiler
             1 => TYP_UBYTE,
             2 => TYP_USHORT,
             4 => TYP_INT,
-#if TARGET_64BIT
-            8 => TYP_LONG,
-#endif
+            8 when Configuration.TARGET_64BIT => TYP_LONG,
             _ => throw new FatalJitException("Invalid GPR size."),
         };
     }
@@ -2513,34 +2511,38 @@ public partial class Compiler
             return 0;
         }
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
-        var unsignedSize = unchecked((uint)size);
-        var maxSize = GetPreferredVectorByteLength();
-        assert(maxSize <= ZMM_REGSIZE_BYTES);
+        if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
+        {
+            var unsignedSize = unchecked((uint)size);
+            var maxSize = GetPreferredVectorByteLength();
+            assert(maxSize <= Configuration.ZMM_REGSIZE_BYTES);
 
-        if (unsignedSize <= XMM_REGSIZE_BYTES)
-        {
-            if (maxSize > XMM_REGSIZE_BYTES)
+            if (unsignedSize <= Configuration.XMM_REGSIZE_BYTES)
             {
-                maxSize = XMM_REGSIZE_BYTES;
+                if (maxSize > Configuration.XMM_REGSIZE_BYTES)
+                {
+                    maxSize = Configuration.XMM_REGSIZE_BYTES;
+                }
             }
-        }
-        else if (unsignedSize <= YMM_REGSIZE_BYTES)
-        {
-            if (maxSize > YMM_REGSIZE_BYTES)
+            else if (unsignedSize <= Configuration.YMM_REGSIZE_BYTES)
             {
-                maxSize = YMM_REGSIZE_BYTES;
+                if (maxSize > Configuration.YMM_REGSIZE_BYTES)
+                {
+                    maxSize = Configuration.YMM_REGSIZE_BYTES;
+                }
             }
+            return maxSize;
         }
-        return maxSize;
-#elif TARGET_ARM64 || TARGET_WASM
-        assert(GetMaxVectorByteLength() is FP_REGSIZE_BYTES);
-        return FP_REGSIZE_BYTES;
-#else
+
+        if (Configuration.TARGET_ARM64 || Configuration.TARGET_WASM)
+        {
+            assert(GetMaxVectorByteLength() == Configuration.FP_REGSIZE_BYTES);
+            return Configuration.FP_REGSIZE_BYTES;
+        }
+
         assert(false, "roundUpSimdSize unimplemented on target arch");
         unreached();
         return 0;
-#endif
     }
 
     public unsafe var_types TypeHandleToVarType(CORINFO_CLASS_HANDLE handle) => TypeHandleToVarType(handle, out _);
@@ -2844,15 +2846,13 @@ public partial class Compiler
                 }
             }
         }
-#if FEATURE_HW_INTRINSICS
-        else
+        else if (Configuration.FEATURE_HW_INTRINSICS)
         {
             size = info.compCompHnd->getClassSize(typeHnd);
 
             switch (size)
             {
-#if TARGET_ARM64
-                case 8:
+                case 8 when Configuration.TARGET_ARM64:
                 {
                     if (!className.Equals("Vector64`1", StringComparison.Ordinal))
                     {
@@ -2870,7 +2870,6 @@ public partial class Compiler
                     JITDUMP($" Found Vector64<{simdBaseType.Name}>\n");
                     break;
                 }
-#endif
 
                 case 16:
                 {
@@ -2891,8 +2890,7 @@ public partial class Compiler
                     break;
                 }
 
-#if TARGET_XARCH
-                case 32:
+                case 32 when Configuration.TARGET_XARCH:
                 {
                     if (!className.Equals("Vector256`1", StringComparison.Ordinal))
                     {
@@ -2917,7 +2915,7 @@ public partial class Compiler
                     break;
                 }
 
-                case 64:
+                case 64 when Configuration.TARGET_XARCH:
                 {
                     if (!className.Equals("Vector512`1", StringComparison.Ordinal))
                     {
@@ -2941,7 +2939,6 @@ public partial class Compiler
                     JITDUMP($" Found Vector512<{simdBaseType.Name}>\n");
                     break;
                 }
-#endif
 
                 default:
                 {
@@ -2949,17 +2946,13 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         sizeBytes = size;
 
         if (simdBaseType != TYP_UNDEF)
         {
-#if TARGET_ARM64
-            assert((size == info.compCompHnd->getClassSize(typeHnd)) || (size == SIZE_UNKNOWN));
-#else
-            assert(size == info.compCompHnd->getClassSize(typeHnd));
-#endif
+            assert((size == info.compCompHnd->getClassSize(typeHnd)) ||
+                (Configuration.TARGET_ARM64 && (size == SIZE_UNKNOWN)));
             UsesSimdTypes = true;
         }
 
@@ -2998,14 +2991,15 @@ public partial class Compiler
     {
         var maxVectorByteLength = GetMaxVectorByteLength();
 
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
-        var preferredVectorByteLength = opts.preferredVectorByteLength;
-
-        if (preferredVectorByteLength is not 0)
+        if (Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH)
         {
-            return int.Min(maxVectorByteLength, preferredVectorByteLength);
+            var preferredVectorByteLength = opts.preferredVectorByteLength;
+
+            if (preferredVectorByteLength is not 0)
+            {
+                return int.Min(maxVectorByteLength, preferredVectorByteLength);
+            }
         }
-#endif
 
         return maxVectorByteLength;
     }
@@ -3019,56 +3013,56 @@ public partial class Compiler
         if (type is Memcmp)
         {
             // Match the unroller's supported ISA width, not the preferred vector width.
-#if TARGET_AMD64 || TARGET_ARM64
+            if (!(Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64))
+            {
+                return 0;
+            }
+
             if (Configuration.FEATURE_SIMD && canUseSimd)
             {
-#if TARGET_AMD64
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                if (Configuration.TARGET_AMD64 && compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     return 128;
                 }
-                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                if (Configuration.TARGET_AMD64 && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                 {
                     // 256-bit equality requires AVX2, not just AVX.
                     return 64;
                 }
-#endif
                 return 32;
             }
             return 16;
-#else
-            return 0;
-#endif
         }
 
-        var maxRegSize = REGSIZE_BYTES;
+        var maxRegSize = Configuration.REGSIZE_BYTES;
         var threshold = maxRegSize;
 
         if (Configuration.FEATURE_SIMD && canUseSimd)
         {
             maxRegSize = GetPreferredVectorByteLength();
 
-#if TARGET_XARCH
-            assert(maxRegSize <= ZMM_REGSIZE_BYTES);
-            threshold = maxRegSize;
-#elif TARGET_ARM64
-            // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
-            //
-            //   ldp q0, q1, [x1]
-            //   stp q0, q1, [x0]
-            //
-            threshold = maxRegSize * 2;
-#endif
+            if (Configuration.TARGET_XARCH)
+            {
+                assert(maxRegSize <= Configuration.ZMM_REGSIZE_BYTES);
+                threshold = maxRegSize;
+            }
+            else if (Configuration.TARGET_ARM64)
+            {
+                // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
+                //
+                //   ldp q0, q1, [x1]
+                //   stp q0, q1, [x0]
+                //
+                threshold = maxRegSize * 2;
+            }
         }
-#if TARGET_XARCH
-        else if (Configuration.FEATURE_SIMD)
+        else if (Configuration.TARGET_XARCH && Configuration.FEATURE_SIMD)
         {
             // Compatibility with previous logic: we used to allow memset:128/memcpy:64
             // on AMD64 (and 64/32 on x86) for cases where we don't use SIMD
             // see https://github.com/dotnet/runtime/issues/83297
             threshold *= 2;
         }
-#endif
 
         if (type is Memset)
         {
@@ -3101,21 +3095,14 @@ public partial class Compiler
 
         if (type is MemcmpU16)
         {
-            threshold = maxRegSize * 2;
-#if TARGET_ARM64
-            threshold = maxRegSize * 6;
-#endif
+            threshold = maxRegSize * (Configuration.TARGET_ARM64 ? 6 : 2);
         }
 
         // For profiled memmove we don't want to unroll too much as it's just a guess.
 
         if (type is ProfiledMemmove)
         {
-#if TARGET_ARM64
-            threshold = maxRegSize * 4;
-#else
-            threshold = maxRegSize * 2;
-#endif
+            threshold = maxRegSize * (Configuration.TARGET_ARM64 ? 4 : 2);
         }
 
         return threshold;
@@ -3181,7 +3168,6 @@ public partial class Compiler
     public static bool StructHasIndexableFields(CorInfoFlag attribs)
         => (attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0;
 
-#if TARGET_64BIT
     /// <summary>Returns true if 'type' is a struct that can be enregistered for call args or can be returned by value in multiple registers.</summary>
     /// <param name="type">the basic jit var_type for the item being queried</param>
     /// <param name="typeClass">the handle for the struct when 'type' is TYP_STRUCT</param>
@@ -3192,6 +3178,8 @@ public partial class Compiler
     /// <remarks>if 'type' is not a struct the return value will be false.</remarks>
     public unsafe bool VarTypeIsMultiByteAndCanEnreg(var_types type, CORINFO_CLASS_HANDLE typeClass, out int typeSize, bool isVarArg, CorInfoCallConvExtension callConv)
     {
+        assert(Configuration.TARGET_64BIT);
+
         var result = false;
         var size = 0;
 
@@ -3215,7 +3203,6 @@ public partial class Compiler
         typeSize = size;
         return result;
     }
-#endif
 
 #if DEBUG
     /// <summary>helper to determine if the local should not be promoted under a stress mode.</summary>

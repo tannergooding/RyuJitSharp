@@ -27,25 +27,23 @@ public sealed partial class CodeGen
             }
             case VLT_REG_FP:
             {
-#if TARGET_AMD64 || TARGET_ARM64
-                var reg = (regNumber)((int)REG_FP_FIRST + (int)varLoc.vlReg.vlrReg -
-                    (int)ICorDebugInfo.RegNum.REGNUM_FP_FIRST);
-#else
-                var reg = (regNumber)((int)REG_FP_FIRST + (int)varLoc.vlReg.vlrReg);
-#endif
+                var reg = Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64
+                    ? (regNumber)((int)TargetRuntimeMetadata.FloatingRegisterFirst + (int)varLoc.vlReg.vlrReg -
+                        (int)ICorDebugInfo.REGNUM_FP_FIRST)
+                    : (regNumber)((int)TargetRuntimeMetadata.FloatingRegisterFirst + (int)varLoc.vlReg.vlrReg);
                 jitprintf(reg.Name);
                 break;
             }
             case VLT_STK:
             case VLT_STK_BYREF:
             {
-                if (varLoc.vlStk.vlsBaseReg != ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP)
+                if (varLoc.vlStk.vlsBaseReg != ICorDebugInfo.REGNUM_AMBIENT_SP)
                 {
                     jitprintf($"{((regNumber)varLoc.vlStk.vlsBaseReg).Name}[{varLoc.vlStk.vlsOffset}] (1 slot)");
                 }
                 else
                 {
-                    jitprintf($"{STR_SPBASE}'[{varLoc.vlStk.vlsOffset}] (1 slot)");
+                    jitprintf($"{TargetRuntimeMetadata.StackPointerBaseName}'[{varLoc.vlStk.vlsOffset}] (1 slot)");
                 }
                 if (varLoc.vlType == VLT_STK_BYREF)
                 {
@@ -55,60 +53,87 @@ public sealed partial class CodeGen
             }
             case VLT_REG_REG:
             {
-#if TARGET_AMD64 || TARGET_ARM64
-                var reg1 = ToJitReg(varLoc.vlRegReg.vlrrReg1);
-                var reg2 = ToJitReg(varLoc.vlRegReg.vlrrReg2);
-#else
-                var reg1 = (regNumber)varLoc.vlRegReg.vlrrReg1;
-                var reg2 = (regNumber)varLoc.vlRegReg.vlrrReg2;
-#endif
+                var reg1 = Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64
+                    ? ToJitReg(varLoc.vlRegReg.vlrrReg1)
+                    : (regNumber)varLoc.vlRegReg.vlrrReg1;
+                var reg2 = Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64
+                    ? ToJitReg(varLoc.vlRegReg.vlrrReg2)
+                    : (regNumber)varLoc.vlRegReg.vlrrReg2;
                 jitprintf($"{reg1.Name}-{reg2.Name}");
                 break;
             }
-#if !TARGET_AMD64
             case VLT_REG_STK:
             {
+                if (Configuration.TARGET_AMD64)
+                {
+                    unreached();
+                    break;
+                }
+
                 var reg = (regNumber)varLoc.vlRegStk.vlrsReg;
                 var baseReg = varLoc.vlRegStk.vlrsStk.vlrssBaseReg;
                 var offset = varLoc.vlRegStk.vlrsStk.vlrssOffset;
-                if (baseReg != ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP)
+                if (baseReg != ICorDebugInfo.REGNUM_AMBIENT_SP)
                 {
                     jitprintf($"{reg.Name}-{((regNumber)baseReg).Name}[{offset}]");
                 }
                 else
                 {
-                    jitprintf($"{reg.Name}-{STR_SPBASE}'[{offset}]");
+                    jitprintf($"{reg.Name}-{TargetRuntimeMetadata.StackPointerBaseName}'[{offset}]");
                 }
                 break;
             }
             case VLT_STK_REG:
             {
+                if (Configuration.TARGET_AMD64)
+                {
+                    unreached();
+                    break;
+                }
+
                 unreached();
                 break;
             }
             case VLT_STK2:
             {
-                if (varLoc.vlStk2.vls2BaseReg != ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP)
+                if (Configuration.TARGET_AMD64)
+                {
+                    unreached();
+                    break;
+                }
+
+                if (varLoc.vlStk2.vls2BaseReg != ICorDebugInfo.REGNUM_AMBIENT_SP)
                 {
                     jitprintf($"{((regNumber)varLoc.vlStk2.vls2BaseReg).Name}[{varLoc.vlStk2.vls2Offset}] (2 slots)");
                 }
                 else
                 {
-                    jitprintf($"{STR_SPBASE}'[{varLoc.vlStk2.vls2Offset}] (2 slots)");
+                    jitprintf($"{TargetRuntimeMetadata.StackPointerBaseName}'[{varLoc.vlStk2.vls2Offset}] (2 slots)");
                 }
                 break;
             }
             case VLT_FPSTK:
             {
+                if (Configuration.TARGET_AMD64)
+                {
+                    unreached();
+                    break;
+                }
+
                 jitprintf($"ST(L-{varLoc.vlFPstk.vlfReg})");
                 break;
             }
             case VLT_FIXED_VA:
             {
+                if (Configuration.TARGET_AMD64)
+                {
+                    unreached();
+                    break;
+                }
+
                 jitprintf($"fxd_va[{varLoc.vlFixedVarArg.vlfvOffset}]");
                 break;
             }
-#endif
             default:
             {
                 unreached();
@@ -116,17 +141,16 @@ public sealed partial class CodeGen
             }
         }
 
-#if TARGET_AMD64 || TARGET_ARM64
         static regNumber ToJitReg(ICorDebugInfo.RegNum reg)
         {
-            if (reg >= ICorDebugInfo.RegNum.REGNUM_FP_FIRST)
+            if (reg >= ICorDebugInfo.REGNUM_FP_FIRST)
             {
-                return (regNumber)((int)REG_FP_FIRST + (int)reg - (int)ICorDebugInfo.RegNum.REGNUM_FP_FIRST);
+                return (regNumber)((int)TargetRuntimeMetadata.FloatingRegisterFirst + (int)reg -
+                    (int)ICorDebugInfo.REGNUM_FP_FIRST);
             }
 
             return (regNumber)reg;
         }
-#endif
     }
 
     public sealed partial class VariableLiveKeeper

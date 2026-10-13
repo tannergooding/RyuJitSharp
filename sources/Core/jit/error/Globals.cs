@@ -367,30 +367,81 @@ public partial class Globals
         }
     }
 
-    [Conditional("TARGET_AMD64")]
-    public static void NYI_AMD64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)  => NYIRAW($"NYI_AMD64: {message}", filePath, lineNumber);
-
-    [Conditional("TARGET_X86")]
-    public static void NYI_X86(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)    => NYIRAW($"NYI_X86: {message}", filePath, lineNumber);
-
-    [Conditional("TARGET_ARM")]
-    public static void NYI_ARM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)    => NYIRAW($"NYI_ARM: {message}", filePath, lineNumber);
-
-    [Conditional("TARGET_ARM64")]
-    public static void NYI_ARM64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)  => NYIRAW($"NYI_ARM64: {message}", filePath, lineNumber);
-
-    [Conditional("TARGET_LOONGARCH64")]
-    public static void NYI_LOONGARCH64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => NYIRAW($"NYI_LOONGARCH64: {message}", filePath, lineNumber);
-
-    [Conditional("TARGET_RISCV64")]
-    public static void NYI_RISCV64(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0) => NYIRAW($"NYI_RISCV64: {message}", filePath, lineNumber);
-
-    [Conditional("TARGET_WASM")]
-    public static void NYI_WASM(ReadOnlySpan<char> message, [CallerFilePath] ReadOnlySpan<char> filePath = "", [CallerLineNumber] int lineNumber = 0)
+    public static void NYI_AMD64(
+        ReadOnlySpan<char> message,
+        [CallerFilePath] ReadOnlySpan<char> filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
     {
-#if TARGET_WASM
-        NYIRAW($"NYI_WASM: {message}", filePath, lineNumber);
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            NYIRAW($"NYI_AMD64: {message}", filePath, lineNumber);
+        }
+    }
+
+    public static void NYI_X86(
+        ReadOnlySpan<char> message,
+        [CallerFilePath] ReadOnlySpan<char> filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.TARGET_X86)
+        {
+            NYIRAW($"NYI_X86: {message}", filePath, lineNumber);
+        }
+    }
+
+    public static void NYI_ARM(
+        ReadOnlySpan<char> message,
+        [CallerFilePath] ReadOnlySpan<char> filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.TARGET_ARM)
+        {
+            NYIRAW($"NYI_ARM: {message}", filePath, lineNumber);
+        }
+    }
+
+    public static void NYI_ARM64(
+        ReadOnlySpan<char> message,
+        [CallerFilePath] ReadOnlySpan<char> filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.TARGET_ARM64)
+        {
+            NYIRAW($"NYI_ARM64: {message}", filePath, lineNumber);
+        }
+    }
+
+    public static void NYI_LOONGARCH64(
+        ReadOnlySpan<char> message,
+        [CallerFilePath] ReadOnlySpan<char> filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            NYIRAW($"NYI_LOONGARCH64: {message}", filePath, lineNumber);
+        }
+    }
+
+    public static void NYI_RISCV64(
+        ReadOnlySpan<char> message,
+        [CallerFilePath] ReadOnlySpan<char> filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.TARGET_RISCV64)
+        {
+            NYIRAW($"NYI_RISCV64: {message}", filePath, lineNumber);
+        }
+    }
+
+    public static void NYI_WASM(
+        ReadOnlySpan<char> message,
+        [CallerFilePath] ReadOnlySpan<char> filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        if (Configuration.TARGET_WASM)
+        {
+            NYIRAW($"NYI_WASM: {message}", filePath, lineNumber);
+        }
     }
 
     public static void BreakIfDebuggerPresent() => Debugger.Break();

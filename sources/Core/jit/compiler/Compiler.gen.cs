@@ -35,10 +35,8 @@ public partial class Compiler
     /// <summary>jumped to when not optimizing for speed.</summary>
     public BasicBlock? genReturnBB;
 
-#if SWIFT_SUPPORT
     /// <summary>Local number for the Swift error value when applicable.</summary>
     public int genReturnErrorLocal = BAD_VAR_NUM;
-#endif
 
     public bool IsFramePointerUsed
     {

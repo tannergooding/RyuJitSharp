@@ -21,12 +21,12 @@ public sealed partial class CodeGen
 
         if (!varDsc.lvFramePointerBased)
         {
-            baseReg = REG_SPBASE;
+            baseReg = TargetRuntimeMetadata.StackPointerBaseRegister;
             offset = unchecked(offset + stackLevel);
         }
         else
         {
-            baseReg = REG_FPBASE;
+            baseReg = TargetRuntimeMetadata.FramePointerBaseRegister;
         }
 
         return new siVarLoc(in varDsc, baseReg, offset, IsFramePointerUsed);
@@ -170,9 +170,9 @@ public sealed partial class CodeGen
                 }
             }
 
-            if (actualReg == ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP)
+            if (actualReg == ICorDebugInfo.REGNUM_AMBIENT_SP)
             {
-                actualReg = (ICorDebugInfo.RegNum)REG_SPBASE;
+                actualReg = (ICorDebugInfo.RegNum)TargetRuntimeMetadata.StackPointerBaseRegister;
             }
 
             return (actualReg == (ICorDebugInfo.RegNum)reg) &&
@@ -183,17 +183,10 @@ public sealed partial class CodeGen
 
         public static ICorDebugInfo.RegNum mapRegNumToDebugRegNum(regNumber reg)
         {
-#if TARGET_AMD64 || TARGET_ARM64
-            const uint fpRegDebugNumBase = (uint)ICorDebugInfo.RegNum.REGNUM_FP_FIRST;
-#if TARGET_AMD64
-            const uint maxEncodableFpRegs = 16; // Only XMM0-XMM15.
-#else
-            const uint maxEncodableFpRegs = 32; // V0-V31.
-#endif
-#else
-            // Other targets use zero-based FP indices in the debug register number.
-            const uint fpRegDebugNumBase = 0;
-#endif
+            var usesExtendedFpNumbering = Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64;
+            var fpRegDebugNumBase = usesExtendedFpNumbering
+                ? (uint)ICorDebugInfo.REGNUM_FP_FIRST
+                : 0;
 
             if (genIsValidIntReg(reg))
             {
@@ -202,17 +195,19 @@ public sealed partial class CodeGen
 
             if (genIsValidFloatReg(reg))
             {
-                var fpIndex = (uint)(reg - REG_FP_FIRST);
-#if TARGET_AMD64 || TARGET_ARM64
-                if (fpIndex >= maxEncodableFpRegs)
+                var fpIndex = (uint)(reg - TargetRuntimeMetadata.FloatingRegisterFirst);
+                if (usesExtendedFpNumbering)
                 {
-                    return ICorDebugInfo.RegNum.REGNUM_COUNT;
+                    var maxEncodableFpRegs = Configuration.TARGET_AMD64 ? 16u : 32u;
+                    if (fpIndex >= maxEncodableFpRegs)
+                    {
+                        return ICorDebugInfo.REGNUM_COUNT;
+                    }
                 }
-#endif
                 return (ICorDebugInfo.RegNum)(fpRegDebugNumBase + fpIndex);
             }
 
-            return ICorDebugInfo.RegNum.REGNUM_COUNT;
+            return ICorDebugInfo.REGNUM_COUNT;
         }
 
         public void storeVariableInRegisters(regNumber reg, regNumber otherReg)
@@ -221,20 +216,23 @@ public sealed partial class CodeGen
             {
                 if (genIsValidFloatReg(reg))
                 {
-#if TARGET_AMD64 || TARGET_ARM64
-                    var debugReg = mapRegNumToDebugRegNum(reg);
-                    if (debugReg == ICorDebugInfo.RegNum.REGNUM_COUNT)
+                    if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
                     {
-                        vlType = VLT_INVALID;
-                        return;
-                    }
+                        var debugReg = mapRegNumToDebugRegNum(reg);
+                        if (debugReg == ICorDebugInfo.REGNUM_COUNT)
+                        {
+                            vlType = VLT_INVALID;
+                            return;
+                        }
 
-                    vlType = VLT_REG_FP;
-                    vlReg.vlrReg = debugReg;
-#else
-                    vlType = VLT_REG_FP;
-                    vlReg.vlrReg = (ICorDebugInfo.RegNum)(reg - REG_FP_FIRST);
-#endif
+                        vlType = VLT_REG_FP;
+                        vlReg.vlrReg = debugReg;
+                    }
+                    else
+                    {
+                        vlType = VLT_REG_FP;
+                        vlReg.vlrReg = (ICorDebugInfo.RegNum)(reg - TargetRuntimeMetadata.FloatingRegisterFirst);
+                    }
                 }
                 else if (genIsValidIntReg(reg))
                 {
@@ -248,30 +246,33 @@ public sealed partial class CodeGen
             }
             else
             {
-#if TARGET_AMD64 || TARGET_ARM64
-                var debugReg1 = mapRegNumToDebugRegNum(reg);
-                var debugReg2 = mapRegNumToDebugRegNum(otherReg);
-                if ((debugReg1 == ICorDebugInfo.RegNum.REGNUM_COUNT) ||
-                    (debugReg2 == ICorDebugInfo.RegNum.REGNUM_COUNT))
+                if (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64)
                 {
-                    vlType = VLT_INVALID;
-                    return;
-                }
+                    var debugReg1 = mapRegNumToDebugRegNum(reg);
+                    var debugReg2 = mapRegNumToDebugRegNum(otherReg);
+                    if ((debugReg1 == ICorDebugInfo.REGNUM_COUNT) ||
+                        (debugReg2 == ICorDebugInfo.REGNUM_COUNT))
+                    {
+                        vlType = VLT_INVALID;
+                        return;
+                    }
 
-                vlType = VLT_REG_REG;
-                vlRegReg.vlrrReg1 = debugReg1;
-                vlRegReg.vlrrReg2 = debugReg2;
-#else
-                if (!genIsValidIntReg(reg) || !genIsValidIntReg(otherReg))
+                    vlType = VLT_REG_REG;
+                    vlRegReg.vlrrReg1 = debugReg1;
+                    vlRegReg.vlrrReg2 = debugReg2;
+                }
+                else
                 {
-                    vlType = VLT_INVALID;
-                    return;
-                }
+                    if (!genIsValidIntReg(reg) || !genIsValidIntReg(otherReg))
+                    {
+                        vlType = VLT_INVALID;
+                        return;
+                    }
 
-                vlType = VLT_REG_REG;
-                vlRegReg.vlrrReg1 = (ICorDebugInfo.RegNum)reg;
-                vlRegReg.vlrrReg2 = (ICorDebugInfo.RegNum)otherReg;
-#endif
+                    vlType = VLT_REG_REG;
+                    vlRegReg.vlrrReg1 = (ICorDebugInfo.RegNum)reg;
+                    vlRegReg.vlrrReg2 = (ICorDebugInfo.RegNum)otherReg;
+                }
             }
         }
 
@@ -333,59 +334,58 @@ public sealed partial class CodeGen
                 case TYP_REF:
                 case TYP_BYREF:
                 case TYP_FLOAT:
-                case TYP_STRUCT:
-#if TARGET_64BIT
                 case TYP_LONG:
                 case TYP_DOUBLE:
-#endif
-#if FEATURE_SIMD
+                case TYP_STRUCT:
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
-#if TARGET_XARCH
                 case TYP_SIMD32:
                 case TYP_SIMD64:
-#endif
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
                 case TYP_MASK:
-#endif
                 {
-#if FEATURE_IMPLICIT_BYREFS
-                    if (varDsc.IsImplicitByRef)
+                    if ((type is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64) &&
+                        (!Configuration.FEATURE_SIMD ||
+                         ((type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH)))
+                    {
+                        throw new FatalJitException("Invalid stack variable type.");
+                    }
+                    if ((type is TYP_MASK) &&
+                        !Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                    {
+                        throw new FatalJitException("Invalid stack variable type.");
+                    }
+                    if ((type is TYP_LONG or TYP_DOUBLE) && !Configuration.TARGET_64BIT)
+                    {
+                        vlType = VLT_STK2;
+                        vlStk2.vls2BaseReg = (ICorDebugInfo.RegNum)baseReg;
+                        vlStk2.vls2Offset = offset;
+                        if (!isFramePointerUsed && (baseReg == TargetRuntimeMetadata.StackPointerBaseRegister))
+                        {
+                            vlStk2.vls2BaseReg = ICorDebugInfo.REGNUM_AMBIENT_SP;
+                        }
+                        break;
+                    }
+
+                    if (Configuration.FEATURE_IMPLICIT_BYREFS && varDsc.IsImplicitByRef)
                     {
                         assert(varDsc.lvIsParam);
-                        assert(varDsc.Type is TYP_I_IMPL or TYP_BYREF);
+                        assert((varDsc.Type is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF)));
                         vlType = VLT_STK_BYREF;
                     }
                     else
-#endif
                     {
                         vlType = VLT_STK;
                     }
 
                     vlStk.vlsBaseReg = (ICorDebugInfo.RegNum)baseReg;
                     vlStk.vlsOffset = offset;
-                    if (!isFramePointerUsed && (baseReg == REG_SPBASE))
+                    if (!isFramePointerUsed && (baseReg == TargetRuntimeMetadata.StackPointerBaseRegister))
                     {
-                        vlStk.vlsBaseReg = ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP;
+                        vlStk.vlsBaseReg = ICorDebugInfo.REGNUM_AMBIENT_SP;
                     }
                     break;
                 }
-#if !TARGET_64BIT
-                case TYP_LONG:
-                case TYP_DOUBLE:
-                {
-                    vlType = VLT_STK2;
-                    vlStk2.vls2BaseReg = (ICorDebugInfo.RegNum)baseReg;
-                    vlStk2.vls2Offset = offset;
-                    if (!isFramePointerUsed && (baseReg == REG_SPBASE))
-                    {
-                        vlStk2.vls2BaseReg = ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP;
-                    }
-                    break;
-                }
-#endif
                 default:
                 {
                     throw new FatalJitException("Invalid stack variable type.");
@@ -401,78 +401,77 @@ public sealed partial class CodeGen
                 case TYP_INT:
                 case TYP_REF:
                 case TYP_BYREF:
-#if TARGET_64BIT
                 case TYP_LONG:
-#endif
                 {
+                    if ((type is TYP_LONG) && !Configuration.TARGET_64BIT)
+                    {
+                        if (varDsc.OtherReg != REG_STK)
+                        {
+                            vlType = VLT_REG_REG;
+                            vlRegReg.vlrrReg1 = (ICorDebugInfo.RegNum)varDsc.RegNum;
+                            vlRegReg.vlrrReg2 = (ICorDebugInfo.RegNum)varDsc.OtherReg;
+                        }
+                        else
+                        {
+                            vlType = VLT_REG_STK;
+                            vlRegStk.vlrsReg = (ICorDebugInfo.RegNum)varDsc.RegNum;
+                            vlRegStk.vlrsStk.vlrssBaseReg = (ICorDebugInfo.RegNum)baseReg;
+                            if (isFramePointerUsed && (baseReg == TargetRuntimeMetadata.StackPointerBaseRegister))
+                            {
+                                vlRegStk.vlrsStk.vlrssBaseReg = ICorDebugInfo.REGNUM_AMBIENT_SP;
+                            }
+                            vlRegStk.vlrsStk.vlrssOffset = unchecked(offset + sizeof(int));
+                        }
+                        break;
+                    }
+
                     vlType = VLT_REG;
                     vlReg.vlrReg = (ICorDebugInfo.RegNum)varDsc.RegNum;
                     break;
                 }
-#if !TARGET_64BIT
-                case TYP_LONG:
+                case TYP_FLOAT:
+                case TYP_DOUBLE:
                 {
-                    if (varDsc.OtherReg != REG_STK)
+                    if (Configuration.TARGET_64BIT)
                     {
-                        vlType = VLT_REG_REG;
-                        vlRegReg.vlrrReg1 = (ICorDebugInfo.RegNum)varDsc.RegNum;
-                        vlRegReg.vlrrReg2 = (ICorDebugInfo.RegNum)varDsc.OtherReg;
-                    }
-                    else
-                    {
-                        vlType = VLT_REG_STK;
-                        vlRegStk.vlrsReg = (ICorDebugInfo.RegNum)varDsc.RegNum;
-                        vlRegStk.vlrsStk.vlrssBaseReg = (ICorDebugInfo.RegNum)baseReg;
-                        if (isFramePointerUsed && (baseReg == REG_SPBASE))
+                        var debugReg = mapRegNumToDebugRegNum(varDsc.RegNum);
+                        if (debugReg == ICorDebugInfo.REGNUM_COUNT)
                         {
-                            vlRegStk.vlrsStk.vlrssBaseReg = ICorDebugInfo.RegNum.REGNUM_AMBIENT_SP;
+                            vlType = VLT_INVALID;
+                            break;
                         }
-                        vlRegStk.vlrsStk.vlrssOffset = unchecked(offset + sizeof(int));
-                    }
-                    break;
-                }
-#else
-                case TYP_FLOAT:
-                case TYP_DOUBLE:
-                {
-                    var debugReg = mapRegNumToDebugRegNum(varDsc.RegNum);
-                    if (debugReg == ICorDebugInfo.RegNum.REGNUM_COUNT)
-                    {
-                        vlType = VLT_INVALID;
-                        break;
-                    }
 
-                    vlType = VLT_REG_FP;
-                    vlReg.vlrReg = debugReg;
-                    break;
-                }
-#endif
-#if !TARGET_64BIT
-                case TYP_FLOAT:
-                case TYP_DOUBLE:
-                {
-                    if (isFloatRegType(type))
+                        vlType = VLT_REG_FP;
+                        vlReg.vlrReg = debugReg;
+                    }
+                    else if (isFloatRegType(type))
                     {
                         vlType = VLT_FPSTK;
                         vlFPstk.vlfReg = (int)varDsc.RegNum;
                     }
                     break;
                 }
-#endif
-#if FEATURE_SIMD
                 case TYP_SIMD8:
                 case TYP_SIMD12:
                 case TYP_SIMD16:
-#if TARGET_XARCH
                 case TYP_SIMD32:
                 case TYP_SIMD64:
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
                 case TYP_MASK:
-#endif
                 {
+                    if ((type is TYP_SIMD8 or TYP_SIMD12 or TYP_SIMD16 or TYP_SIMD32 or TYP_SIMD64) &&
+                        (!Configuration.FEATURE_SIMD ||
+                         ((type is TYP_SIMD32 or TYP_SIMD64) && !Configuration.TARGET_XARCH)))
+                    {
+                        throw new FatalJitException("Invalid register variable type.");
+                    }
+                    if ((type is TYP_MASK) &&
+                        !Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                    {
+                        throw new FatalJitException("Invalid register variable type.");
+                    }
+
                     var debugReg = mapRegNumToDebugRegNum(varDsc.RegNum);
-                    if (debugReg == ICorDebugInfo.RegNum.REGNUM_COUNT)
+                    if (debugReg == ICorDebugInfo.REGNUM_COUNT)
                     {
                         vlType = VLT_INVALID;
                         break;
@@ -482,7 +481,6 @@ public sealed partial class CodeGen
                     vlReg.vlrReg = debugReg;
                     break;
                 }
-#endif
                 default:
                 {
                     throw new FatalJitException("Invalid register variable type.");

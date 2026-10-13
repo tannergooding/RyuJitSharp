@@ -11,16 +11,17 @@ public sealed partial class CodeGen
 {
     private int psiGetVarStackOffset(in LclVarDsc local)
     {
-#if TARGET_AMD64
-        return _compiler.lvaToCallerSPRelativeOffset(local.StackOffset, local.lvFramePointerBased) + REGSIZE_BYTES;
-#else
+        if (Configuration.TARGET_AMD64)
+        {
+            return _compiler.lvaToCallerSPRelativeOffset(local.StackOffset, local.lvFramePointerBased) + Configuration.REGSIZE_BYTES;
+        }
+
         if (doubleAlignOrFramePointerUsed())
         {
-            return local.StackOffset - REGSIZE_BYTES;
+            return local.StackOffset - Configuration.REGSIZE_BYTES;
         }
 
         return local.StackOffset - genTotalFrameSize;
-#endif
     }
 
     public void psiBegProlog()
@@ -63,9 +64,10 @@ public sealed partial class CodeGen
             }
 
             // Prolog scopes expose multiple registers only on the SysV x64 ABI.
-#if !UNIX_AMD64_ABI
-            reg2 = REG_NA;
-#endif
+            if (!Configuration.UNIX_AMD64_ABI)
+            {
+                reg2 = REG_NA;
+            }
 
             siVarLoc location = default;
             if ((reg1 != REG_NA) && (genIsValidIntReg(reg1) || genIsValidFloatReg(reg1)))
@@ -74,7 +76,8 @@ public sealed partial class CodeGen
             }
             else
             {
-                location.storeVariableOnStack(REG_SPBASE, psiGetVarStackOffset(in local));
+                location.storeVariableOnStack(
+                    TargetRuntimeMetadata.StackPointerBaseRegister, psiGetVarStackOffset(in local));
             }
 
             getVariableLiveKeeper().psiStartVariableLiveRange(location, scope.vsdVarNum);

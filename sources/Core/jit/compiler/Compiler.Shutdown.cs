@@ -53,20 +53,21 @@ public partial class Compiler
         GenTree.ReportOperBashing(jitstdout());
 #endif
 
-#if FEATURE_JIT_METHOD_PERF
-        if (compJitTimeLogFilename != 0)
+        if (Configuration.FEATURE_JIT_METHOD_PERF)
         {
-            var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)compJitTimeLogFilename));
-            using var file = OpenJitOutputFile(path);
-            if (file is not null)
+            if (compJitTimeLogFilename != 0)
             {
-                using var writer = new JitTextWriter(file, leaveOpen: true);
-                CompTimeSummaryInfo.s_compTimeSummary.Print(writer);
+                var path = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)compJitTimeLogFilename));
+                using var file = OpenJitOutputFile(path);
+                if (file is not null)
+                {
+                    using var writer = new JitTextWriter(file, leaveOpen: true);
+                    CompTimeSummaryInfo.s_compTimeSummary.Print(writer);
+                }
             }
-        }
 
-        JitTimer.Shutdown();
-#endif
+            JitTimer.Shutdown();
+        }
 
 #if COUNT_AST_OPERS
         unchecked

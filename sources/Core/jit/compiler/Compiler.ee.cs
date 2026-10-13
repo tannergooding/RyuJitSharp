@@ -51,9 +51,13 @@ public partial class Compiler
         return 1;
     }
 
-#if TARGET_WASM
     public unsafe ref CORINFO_WASM_WELLKNOWN_GLOBALS eeGetWasmWellKnownGlobals()
     {
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm globals are not available on this target.");
+        }
+
         if (!wasmWellKnownGlobalsInitialized)
         {
             fixed (CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobals = &wasmWellKnownGlobals)
@@ -63,10 +67,8 @@ public partial class Compiler
 
             wasmWellKnownGlobalsInitialized = true;
         }
-
         return ref wasmWellKnownGlobals;
     }
-#endif
 
     /// <summary>Append the output of one of the JIT-EE 'print' functions to a StringBuilder.</summary>
     /// <param name="stringBuilder">the builder</param>

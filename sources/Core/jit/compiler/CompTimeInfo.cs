@@ -3,13 +3,12 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_JIT_METHOD_PERF && MEASURE_CLRAPI_CALLS
+#if MEASURE_CLRAPI_CALLS
 using System.Runtime.CompilerServices;
 #endif
 
 namespace RyuJitSharp;
 
-#if FEATURE_JIT_METHOD_PERF
 /// <summary>for tracking the compilation time of one or more methods.</summary>
 /// <remarks>
 ///   <para>We divide a compilation into a sequence of contiguous phases, and track the total(per - thread) cycles of the compilation, as well as the cycles for each phase.  We also track the number of bytecodes.</para>
@@ -60,4 +59,3 @@ public struct CompTimeInfo
         _byteCodeBytes = unchecked((uint)byteCodeBytes);
     }
 }
-#endif

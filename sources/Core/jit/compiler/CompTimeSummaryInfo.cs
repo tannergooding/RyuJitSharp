@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_JIT_METHOD_PERF
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -390,4 +389,3 @@ public struct CompTimeSummaryInfo
     // belongs in the filtered section (it's always included in the unfiltered section)
     private readonly bool IncludedInFilteredData(in CompTimeInfo info) => false;
 }
-#endif

@@ -205,25 +205,17 @@ public partial class Compiler
     /// <remarks>keeps track of how many bytes of local frame space we've grabbed so far in the current function, and how many argument bytes we need to pop when we return.</remarks>
     public int compLclFrameSize;
 
-#if HAS_FIXED_REGISTER_SET
     /// <summary>Count of callee-saved regs we pushed in the prolog.</summary>
     /// <remarks>
     ///   <para>Does not include EBP for IsFramePointerUsed and double-aligned frames.</para>
     ///   <para>In case of Amd64 this doesn't include float regs saved on stack.</para>
     /// </remarks>
-    public int compCalleeRegsPushed = -1;
-#elif TARGET_WASM
-    public int compCalleeRegsPushed;
-#endif
+    public int compCalleeRegsPushed = Configuration.HAS_FIXED_REGISTER_SET ? -1 : 0;
 
-#if TARGET_XARCH
     /// <summary>Mask of callee saved float regs on stack.</summary>
     public regMask compCalleeFPRegsSavedMask;
-#endif
 
-#if TARGET_ARM64
     public FrameInfo compFrameInfo;
-#endif
 
     // Map to keep variables' scope indexed by varNum containing it's scope dscs at the index.
     public VarNumToScopeDscMap? compVarScopeMap;
@@ -244,13 +236,10 @@ public partial class Compiler
         return !info.compInitMem && opts.compDbgCode;
     }
 
-#if PROFILING_SUPPORTED
     // Match the VM's exclusion of IL stubs, including when hooks are stressed.
     public unsafe bool compIsProfilerHookNeeded
-        => compProfilerHookNeeded || (opts.compJitELTHookEnabled && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB));
-#else
-    public bool compIsProfilerHookNeeded => false;
-#endif
+        => Configuration.PROFILING_SUPPORTED &&
+            (compProfilerHookNeeded || (opts.compJitELTHookEnabled && !opts.jitFlags->IsSet(JitFlags.JIT_FLAG_IL_STUB)));
 
     public int compNextEnterScopeIndex;
 
@@ -263,7 +252,6 @@ public partial class Compiler
 
     protected internal int compMaxUncheckedOffsetForNullObject;
 
-#if PROFILING_SUPPORTED
     // Data required for generating profiler Enter/Leave/TailCall hooks
 
     /// <summary>Whether profiler Enter/Leave/TailCall hook needs to be generated for the method</summary>
@@ -274,13 +262,11 @@ public partial class Compiler
 
     /// <summary>Whether compProfilerHandle is pointer to the handle or is an actual handle</summary>
     protected internal bool compProfilerMethHndIndirected;
-#endif
 
 #if DEBUG
     public bool compDebugBreak;
 #endif
 
-#if FEATURE_JIT_METHOD_PERF
     /// <summary>Timer data structure (by phases) for current compilation.</summary>
     private unsafe JitTimer? compJitTimer;
     
@@ -289,7 +275,6 @@ public partial class Compiler
     
     /// <summary>If a log file for JIT time is desired, filename to write it to.</summary>
     private static nint compJitTimeLogFilename;
-#endif
 
 #if MEASURE_CLRAPI_CALLS
     private WrapICorJitInfo? _wrapICorJitInfo;
@@ -367,17 +352,18 @@ public partial class Compiler
     ///   <para>There are cases where implicit RetBuf argument should be explicitly returned in a register.</para>
     ///   <para>In such cases the return type is changed to TYP_BYREF and appropriate IR is generated.</para>
     /// </remarks>
-#if TARGET_AMD64
-    // 1. on x64 Windows and Unix the address of RetBuf needs to be returned by
-    //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
-    //    returning the address of RetBuf.
-    public bool compMethodReturnsRetBufAddr => info.compRetBuffArg != BAD_VAR_NUM;
-#else
     public bool compMethodReturnsRetBufAddr
     {
         get
         {
-#if PROFILING_SUPPORTED
+            // 1. on x64 Windows and Unix the address of RetBuf needs to be returned by
+            //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
+            //    returning the address of RetBuf.
+            if (Configuration.TARGET_AMD64)
+            {
+                return info.compRetBuffArg != BAD_VAR_NUM;
+            }
+
             // 2. Profiler Leave callback expects the address of retbuf as return value for
             //    methods with hidden RetBuf argument.  impReturnInstruction() when profiler
             //    callbacks are needed creates GT_RETURN(TYP_BYREF, op1 = Addr of RetBuf) for
@@ -386,10 +372,7 @@ public partial class Compiler
             {
                 return info.compRetBuffArg is not BAD_VAR_NUM;
             }
-#endif
-
-#if TARGET_ARM64
-            if (TargetOS.IsWindows)
+            if (Configuration.TARGET_ARM64 && TargetOS.IsWindows)
             {
                 // 3. Windows ARM64 native instance calling convention requires the address of RetBuff to be returned in x0.
 
@@ -398,18 +381,15 @@ public partial class Compiler
                     return info.compRetBuffArg is not BAD_VAR_NUM;
                 }
             }
-#elif TARGET_X86
-            if (info.compCallConv is not CorInfoCallConvExtension.Managed)
+            else if (Configuration.TARGET_X86 && (info.compCallConv is not CorInfoCallConvExtension.Managed))
             {
                 // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
                 return info.compRetBuffArg is not BAD_VAR_NUM;
             }
-#endif
 
             return false;
         }
     }
-#endif
 
     // Object stack allocation takes the address of locals around suspension points. Disable entirely under async for now.
     public bool compObjectStackAllocation => !compIsAsync && (JitConfig.JitObjectStackAllocation != 0);
@@ -586,10 +566,11 @@ public partial class Compiler
         // Initialize the table of tree node sizes
         GenTree.InitNodeSize();
 
-#if JIT32_GCENCODER
-        // Initialize the GC encoder lookup table
-        GCInfo.gcInitEncoderLookupTable();
-#endif
+        if (Configuration.JIT32_GCENCODER)
+        {
+            // Initialize the GC encoder lookup table
+            GCInfo.gcInitEncoderLookupTable();
+        }
 
         // Initialize the emitter
         Emitter.emitInit();
@@ -614,7 +595,6 @@ public partial class Compiler
 
     private static bool s_checkedForJitTimeLog;
 
-#if FEATURE_JIT_METHOD_PERF
     private unsafe void InitializeJitTimer()
     {
         if ((compJitTimeLogFilename is not 0) || (JitConfig.JitTimeLogCsv is not null) || (JitConfig.JitEECallTimingInfo is not 0))
@@ -622,7 +602,6 @@ public partial class Compiler
             compJitTimer = new JitTimer(info.compMethodInfo->ILCodeSize);
         }
     }
-#endif
 
     public unsafe CorJitResult compCompileAfterInit(CORINFO_MODULE_HANDLE moduleHandle, out void* methodCodePtr, out int methodCodeSize, JitFlags* jitFlags)
     {
@@ -631,19 +610,20 @@ public partial class Compiler
         noway_assert(info.compCompHnd is not null);
         noway_assert(info.compMethodHnd is not null);
 
-#if FEATURE_JIT_METHOD_PERF
-        if (!s_checkedForJitTimeLog)
+        if (Configuration.FEATURE_JIT_METHOD_PERF)
         {
-            _ = Interlocked.CompareExchange(ref compJitTimeLogFilename, (nint)(JitConfig.JitTimeLogFile), comparand: 0);
+            if (!s_checkedForJitTimeLog)
+            {
+                _ = Interlocked.CompareExchange(ref compJitTimeLogFilename, (nint)(JitConfig.JitTimeLogFile), comparand: 0);
 
-            // At a process or module boundary clear the file and start afresh.
-            JitTimer.PrintCsvHeader();
+                // At a process or module boundary clear the file and start afresh.
+                JitTimer.PrintCsvHeader();
 
-            s_checkedForJitTimeLog = true;
+                s_checkedForJitTimeLog = true;
+            }
+
+            InitializeJitTimer();
         }
-
-        InitializeJitTimer();
-#endif
 
 #if MEASURE_CLRAPI_CALLS
         if (JitConfig.JitEECallTimingInfo is not 0)
@@ -727,237 +707,242 @@ public partial class Compiler
             // to, for example, see and debug ARM64 codegen for any desired CPU configuration without
             // needing to have the hardware in question.
 
-#if TARGET_ARM64
-            if (info.compMatchedVM)
+            if (Configuration.TARGET_ARM64)
             {
-                // Keep the existing VectorT* ISAs.
-                if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+                if (info.compMatchedVM)
                 {
-                    instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
-                }
+                    // Keep the existing VectorT* ISAs.
+                    if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+                    {
+                        instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+                    }
 
 #if DEBUG
-                if ((JitConfig.JitUseScalableVectorT != 0) && currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
-                {
-                    // Vector<T> will use SVE instead of NEON.
-                    instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
-                    instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
-                }
+                    if ((JitConfig.JitUseScalableVectorT != 0) && currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
+                    {
+                        // Vector<T> will use SVE instead of NEON.
+                        instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
+                        instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
+                    }
 #endif
-            }
-
-            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
-
-            if (JitConfig.EnableArm64Aes != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Aes);
-            }
-
-            if (JitConfig.EnableArm64Crc32 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
-            }
-
-            if (JitConfig.EnableArm64Cssc != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Cssc);
-            }
-
-            if (JitConfig.EnableArm64Dp != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
-            }
-
-            if (JitConfig.EnableArm64Rdm != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
-            }
-
-            if (JitConfig.EnableArm64Fp16 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Fp16);
-            }
-
-            if (JitConfig.EnableArm64Sha1 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Sha1);
-            }
-
-            if (JitConfig.EnableArm64Sha256 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Sha256);
-            }
-
-            if (JitConfig.EnableArm64Atomics != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Atomics);
-            }
-
-            if (JitConfig.EnableArm64Dczva != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
-            }
-
-            if (JitConfig.EnableArm64Sve != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
-            }
-
-            if (JitConfig.EnableArm64Sve2 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
-            }
-
-            if (JitConfig.EnableArm64Sha3 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Sha3);
-            }
-
-            if (JitConfig.EnableArm64Sm4 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Sm4);
-            }
-
-            if (JitConfig.EnableArm64SveAes != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
-            }
-
-            if (JitConfig.EnableArm64SveSha3 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);
-            }
-
-            if (JitConfig.EnableArm64SveSm4 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_SveSm4);
-            }
-#elif TARGET_XARCH
-            if (info.compMatchedVM)
-            {
-                // Keep the existing VectorT* ISAs.
-                if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
-                {
-                    instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
                 }
-                if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
+
+                instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+                instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
+
+                if (JitConfig.EnableArm64Aes != 0)
                 {
-                    instructionSetFlags.AddInstructionSet(InstructionSet_VectorT256);
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Aes);
                 }
-                if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT512))
+
+                if (JitConfig.EnableArm64Crc32 != 0)
                 {
-                    instructionSetFlags.AddInstructionSet(InstructionSet_VectorT512);
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
+                }
+
+                if (JitConfig.EnableArm64Cssc != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Cssc);
+                }
+
+                if (JitConfig.EnableArm64Dp != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
+                }
+
+                if (JitConfig.EnableArm64Rdm != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
+                }
+
+                if (JitConfig.EnableArm64Fp16 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Fp16);
+                }
+
+                if (JitConfig.EnableArm64Sha1 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Sha1);
+                }
+
+                if (JitConfig.EnableArm64Sha256 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Sha256);
+                }
+
+                if (JitConfig.EnableArm64Atomics != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Atomics);
+                }
+
+                if (JitConfig.EnableArm64Dczva != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
+                }
+
+                if (JitConfig.EnableArm64Sve != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
+                }
+
+                if (JitConfig.EnableArm64Sve2 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
+                }
+
+                if (JitConfig.EnableArm64Sha3 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Sha3);
+                }
+
+                if (JitConfig.EnableArm64Sm4 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Sm4);
+                }
+
+                if (JitConfig.EnableArm64SveAes != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+                }
+
+                if (JitConfig.EnableArm64SveSha3 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);
+                }
+
+                if (JitConfig.EnableArm64SveSm4 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_SveSm4);
                 }
             }
-
-            instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
-
-            if (JitConfig.EnableAVX != 0)
+            else if (Configuration.TARGET_XARCH)
             {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX);
-            }
-
-            if (JitConfig.EnableAVX2 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
-            }
-
-            if (JitConfig.EnableAVX512 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
-            }
-
-            if (JitConfig.EnableAVX512v2 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v2);
-            }
-
-            if (JitConfig.EnableAVX512v3 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v3);
-            }
-
-            if (JitConfig.EnableAVX10v1 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
-            }
-
-            if (JitConfig.EnableAVX10v2 != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v2);
-            }
-
-            if (JitConfig.EnableAPX != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_APX);
-            }
-
-            if (JitConfig.EnableAES != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AES);
-
-                if (JitConfig.EnableVAES != 0)
+                if (info.compMatchedVM)
                 {
-                    instructionSetFlags.AddInstructionSet(InstructionSet_AES_V256);
-                    instructionSetFlags.AddInstructionSet(InstructionSet_AES_V512);
+                    // Keep the existing VectorT* ISAs.
+                    if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+                    {
+                        instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+                    }
+                    if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
+                    {
+                        instructionSetFlags.AddInstructionSet(InstructionSet_VectorT256);
+                    }
+                    if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT512))
+                    {
+                        instructionSetFlags.AddInstructionSet(InstructionSet_VectorT512);
+                    }
+                }
+
+                instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
+
+                if (JitConfig.EnableAVX != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX);
+                }
+
+                if (JitConfig.EnableAVX2 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
+                }
+
+                if (JitConfig.EnableAVX512 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
+                }
+
+                if (JitConfig.EnableAVX512v2 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v2);
+                }
+
+                if (JitConfig.EnableAVX512v3 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v3);
+                }
+
+                if (JitConfig.EnableAVX10v1 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
+                }
+
+                if (JitConfig.EnableAVX10v2 != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v2);
+                }
+
+                if (JitConfig.EnableAPX != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_APX);
+                }
+
+                if (JitConfig.EnableAES != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AES);
+
+                    if (JitConfig.EnableVAES != 0)
+                    {
+                        instructionSetFlags.AddInstructionSet(InstructionSet_AES_V256);
+                        instructionSetFlags.AddInstructionSet(InstructionSet_AES_V512);
+                    }
+                }
+
+                if (JitConfig.EnableAVX512VP2INTERSECT != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+                }
+
+                if (JitConfig.EnableAVXIFMA != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
+                }
+
+                if (JitConfig.EnableAVXVNNI != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+                }
+
+                if (JitConfig.EnableGFNI != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
+                    instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
+                    instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
+                }
+
+                if (JitConfig.EnableSHA != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_SHA);
+                }
+
+                if (JitConfig.EnableWAITPKG != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_WAITPKG);
+                }
+
+                if (JitConfig.EnableX86Serialize != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_X86Serialize);
                 }
             }
-
-            if (JitConfig.EnableAVX512VP2INTERSECT != 0)
+            else if (Configuration.TARGET_RISCV64)
             {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
-            }
+                instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
 
-            if (JitConfig.EnableAVXIFMA != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
-            }
+                if (JitConfig.EnableRiscV64Zba != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Zba);
+                }
 
-            if (JitConfig.EnableAVXVNNI != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
-            }
+                if (JitConfig.EnableRiscV64Zbb != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
+                }
 
-            if (JitConfig.EnableGFNI != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
-                instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V256);
-                instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
+                if (JitConfig.EnableRiscV64Zicond != 0)
+                {
+                    instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
+                }
             }
-
-            if (JitConfig.EnableSHA != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_SHA);
-            }
-
-            if (JitConfig.EnableWAITPKG != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_WAITPKG);
-            }
-
-            if (JitConfig.EnableX86Serialize != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_X86Serialize);
-            }
-#elif TARGET_RISCV64
-            instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
-
-            if (JitConfig.EnableRiscV64Zba != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Zba);
-            }
-
-            if (JitConfig.EnableRiscV64Zbb != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
-            }
-
-            if (JitConfig.EnableRiscV64Zicond != 0)
-            {
-                instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
-            }
-#endif
 
             // These calls are important and explicitly ordered to ensure that the flags are correct in
             // the face of missing or removed instruction sets. Without them, we might end up with incorrect
@@ -1233,17 +1218,15 @@ public partial class Compiler
 
             var frameSizeUpdate = 0;
 
-#if TARGET_AMD64
-            if ((totalFrameSize % 16) != 8)
+            if (Configuration.TARGET_AMD64 && ((totalFrameSize % 16) != 8))
             {
                 frameSizeUpdate = 8;
             }
-#elif TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
-            if ((totalFrameSize % 16) != 0)
+            else if ((Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64) &&
+                ((totalFrameSize % 16) != 0))
             {
                 frameSizeUpdate = 8;
             }
-#endif
 
             if (frameSizeUpdate != 0)
             {
@@ -1690,38 +1673,39 @@ public partial class Compiler
         opts.compJitUnrollLoopMaxIterationCount = DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT;
 #endif
 
-#if TARGET_XARCH
-        if (opts.compJitAlignLoopAdaptive)
+        if (Configuration.TARGET_XARCH)
         {
-            // For adaptive alignment, padding limit is equal to the max instruction encoding size which == 15 bytes.
-            // Hence (32 >>> 1) - 1 = 15 bytes.
-            opts.compJitAlignPaddingLimit = (ushort)((opts.compJitAlignLoopBoundary >>> 1) - 1);
+            if (opts.compJitAlignLoopAdaptive)
+            {
+                // For adaptive alignment, padding limit is equal to the max instruction encoding size which == 15 bytes.
+                // Hence (32 >>> 1) - 1 = 15 bytes.
+                opts.compJitAlignPaddingLimit = (ushort)((opts.compJitAlignLoopBoundary >>> 1) - 1);
+            }
+            else
+            {
+                // For non-adaptive alignment, padding limit == 1 less than the alignment boundary specified.
+                opts.compJitAlignPaddingLimit = (ushort)(opts.compJitAlignLoopBoundary - 1);
+            }
         }
-        else
+        else if (Configuration.TARGET_ARM64)
         {
-            // For non-adaptive alignment, padding limit == 1 less than the alignment boundary specified.
-            opts.compJitAlignPaddingLimit = (ushort)(opts.compJitAlignLoopBoundary - 1);
+            if (opts.compJitAlignLoopAdaptive)
+            {
+                // For adaptive alignment, padding limit is same as specified by the alignment boundary because all instructions are 4 bytes long.
+                // Hence (32 >>> 1) = 16 bytes.
+                opts.compJitAlignPaddingLimit = (ushort)(opts.compJitAlignLoopBoundary >>> 1);
+            }
+            else
+            {
+                // For non-adaptive, padding limit is same as specified by the alignment.
+                opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
+            }
         }
-#elif TARGET_ARM64
-        if (opts.compJitAlignLoopAdaptive)
-        {
-            // For adaptive alignment, padding limit is same as specified by the alignment boundary because all instructions are 4 bytes long.
-            // Hence (32 >>> 1) = 16 bytes.
-            opts.compJitAlignPaddingLimit = (ushort)(opts.compJitAlignLoopBoundary >>> 1);
-        }
-        else
-        {
-            // For non-adaptive, padding limit is same as specified by the alignment.
-            opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
-        }
-#endif
 
         assert(ushort.IsPow2(opts.compJitAlignLoopBoundary));
 
-#if TARGET_ARM64
         // The minimum encoding size for Arm64 == 4 bytes.
-        assert(opts.compJitAlignLoopBoundary >= 4);
-#endif
+        assert(!Configuration.TARGET_ARM64 || (opts.compJitAlignLoopBoundary >= 4));
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
         // We never want to have debugging enabled when regenerating GC encoding patterns
@@ -1931,16 +1915,12 @@ public partial class Compiler
         lvaEnregEHVars = compEnregLocals && (JitConfig.EnableEHWriteThru != 0);
         lvaEnregMultiRegVars = compEnregLocals && (JitConfig.EnableMultiRegLocals != 0);
 
-#if FEATURE_TAILCALL_OPT
         // By default opportunistic tail call optimization is enabled.
         // Recognition is done in the importer so this must be set for inlinees as well.
-        opts.compTailCallOpt = true;
-#endif
+        opts.compTailCallOpt = Configuration.FEATURE_TAILCALL_OPT;
 
-#if FEATURE_FASTTAILCALL || TARGET_WASM
         // By default fast tail calls are enabled.
-        opts.compFastTailCalls = true;
-#endif
+        opts.compFastTailCalls = Configuration.FEATURE_FASTTAILCALL || Configuration.TARGET_WASM;
 
         // Profile data
         fgPgoQueryResult = E_FAIL;
@@ -2054,9 +2034,7 @@ public partial class Compiler
         // The rest of the opts fields that we initialize here should only be used when we generate code for the method
         // They should not be used when importing or inlining
 
-#if FEATURE_TAILCALL_OPT
-        opts.compTailCallLoopOpt = true;
-#endif
+        opts.compTailCallLoopOpt = Configuration.FEATURE_TAILCALL_OPT;
 
         opts.genFPorder = true;
         opts.genFPopt = true;
@@ -2065,14 +2043,10 @@ public partial class Compiler
         assert(opts.callInstrCount == 0);
         assert(opts.lvRefCount == 0);
 
-#if PROFILING_SUPPORTED
-        assert(opts.compJitELTHookEnabled is false);
-#endif
+        assert(!Configuration.PROFILING_SUPPORTED || (opts.compJitELTHookEnabled is false));
 
-#if TARGET_ARM64
         // 0 is default: use the appropriate frame type based on the function.
-        assert(opts.compJitSaveFpLrWithCalleeSavedRegisters == 0);
-#endif
+        assert(!Configuration.TARGET_ARM64 || (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0));
 
         assert(opts.disAsm is false);
         assert(opts.disDiffable is false);
@@ -2329,121 +2303,121 @@ public partial class Compiler
         opts.compGcChecks = (JitConfig.JitGCChecks != 0) || compStressCompile(STRESS_GENERIC_VARN, 5);
 #endif
 
-#if DEBUG && TARGET_XARCH
-        const int STACK_CHECK_ON_RETURN = 0x1;
-#if TARGET_X86
-        const int STACK_CHECK_ON_CALL = 0x2;
-#endif
-        const int STACK_CHECK_ALL = 0x3;
-
-        var dwJitStackChecks = JitConfig.JitStackChecks;
-
-        if (compStressCompile(STRESS_GENERIC_VARN, 5))
+#if DEBUG
+        if (Configuration.TARGET_XARCH)
         {
-            dwJitStackChecks = STACK_CHECK_ALL;
-        }
-        opts.compStackCheckOnRet = (dwJitStackChecks & STACK_CHECK_ON_RETURN) != 0;
+            const int STACK_CHECK_ON_RETURN = 0x1;
+            const int STACK_CHECK_ON_CALL = 0x2;
+            const int STACK_CHECK_ALL = 0x3;
 
-#if TARGET_X86
-        opts.compStackCheckOnCall = (dwJitStackChecks & STACK_CHECK_ON_CALL) != 0;
-#endif
+            var dwJitStackChecks = JitConfig.JitStackChecks;
+
+            if (compStressCompile(STRESS_GENERIC_VARN, 5))
+            {
+                dwJitStackChecks = STACK_CHECK_ALL;
+            }
+            opts.compStackCheckOnRet = (dwJitStackChecks & STACK_CHECK_ON_RETURN) != 0;
+
+            if (Configuration.TARGET_X86)
+            {
+                opts.compStackCheckOnCall = (dwJitStackChecks & STACK_CHECK_ON_CALL) != 0;
+            }
+        }
 #endif
 
 #if MEASURE_MEM_ALLOC
         s_dspMemStats = JitConfig.DisplayMemStats != 0;
 #endif
 
-#if PROFILING_SUPPORTED
-        opts.compNoPInvokeInlineCB = jitFlags->IsSet(JitFlags.JIT_FLAG_PROF_NO_PINVOKE_INLINE);
-
-        // Cache the profiler handle
-        if (jitFlags->IsSet(JitFlags.JIT_FLAG_PROF_ENTERLEAVE))
+        if (Configuration.PROFILING_SUPPORTED)
         {
-            bool hookNeeded;
-            bool indirected;
+            opts.compNoPInvokeInlineCB = jitFlags->IsSet(JitFlags.JIT_FLAG_PROF_NO_PINVOKE_INLINE);
 
-            fixed (void** pProfilerHandle = &compProfilerMethHnd)
+            // Cache the profiler handle
+            if (jitFlags->IsSet(JitFlags.JIT_FLAG_PROF_ENTERLEAVE))
             {
-                info.compCompHnd->GetProfilingHandle(&hookNeeded, pProfilerHandle, &indirected);
-            }
+                bool hookNeeded;
+                bool indirected;
 
-            compProfilerHookNeeded = hookNeeded;
-            compProfilerMethHndIndirected = indirected;
-        }
-        else
-        {
-            assert(compProfilerHookNeeded is false);
-            assert(compProfilerMethHnd is null);
-            assert(compProfilerMethHndIndirected is false);
-        }
+                fixed (void** pProfilerHandle = &compProfilerMethHnd)
+                {
+                    info.compCompHnd->GetProfilingHandle(&hookNeeded, pProfilerHandle, &indirected);
+                }
 
-        // Honour DOTNET_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
-        // only if VM has not asked us to generate profiler hooks in the first place.
-        // That is, override VM only if it hasn't asked for a profiler callback for this method.
-        // Don't run this stress mode under AOT, as we would need to emit a relocation
-        // for the call to the fake ELT hook, which wouldn't make sense, as we can't store that
-        // in the AOT image.
-        if (!compProfilerHookNeeded)
-        {
-            if ((JitConfig.JitELTHookEnabled != 0) ||
-                (!jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
-            {
-                opts.compJitELTHookEnabled = true;
-            }
-        }
-
-        // TBD: Exclude PInvoke stubs
-        if (opts.compJitELTHookEnabled)
-        {
-#if DEBUG
-            // We currently only know if we're running under SuperPMI in DEBUG
-            // We don't want to get spurious SuperPMI asm diffs because profile stress kicks in and we use the address of `DummyProfilerELTStub` in the JIT binary, without relocation.
-            // So just use a fixed address in this case; It's SuperPMI replay, so the generated code won't be run.
-            if (RunningSuperPmiReplay)
-            {
-#if HOST_64BIT
-                assert(sizeof(void*) == 8);
-                compProfilerMethHnd = (void*)(0x0BADF00DBEADCAFE);
-#else
-                assert(sizeof(void*) == 4);
-                compProfilerMethHnd = (void*)(0x0BADF00D);
-#endif
+                compProfilerHookNeeded = hookNeeded;
+                compProfilerMethHndIndirected = indirected;
             }
             else
-#endif
             {
-#if TARGET_AMD64
-                compProfilerMethHnd = (delegate*<nint, nint, void>)(&DummyProfilerELTStub);
-#else
-                compProfilerMethHnd = (delegate*<nint, void>)(&DummyProfilerELTStub);
-#endif
+                assert(compProfilerHookNeeded is false);
+                assert(compProfilerMethHnd is null);
+                assert(compProfilerMethHndIndirected is false);
             }
-            compProfilerMethHndIndirected = false;
-        }
 
+            // Honour DOTNET_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
+            // only if VM has not asked us to generate profiler hooks in the first place.
+            // That is, override VM only if it hasn't asked for a profiler callback for this method.
+            // Don't run this stress mode under AOT, as we would need to emit a relocation
+            // for the call to the fake ELT hook, which wouldn't make sense, as we can't store that
+            // in the AOT image.
+            if (!compProfilerHookNeeded)
+            {
+                if ((JitConfig.JitELTHookEnabled != 0) ||
+                    (!jitFlags->IsSet(JitFlags.JIT_FLAG_AOT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+                {
+                    opts.compJitELTHookEnabled = true;
+                }
+            }
+
+            // TBD: Exclude PInvoke stubs
+            if (opts.compJitELTHookEnabled)
+            {
+#if DEBUG
+                // We currently only know if we're running under SuperPMI in DEBUG
+                // We don't want to get spurious SuperPMI asm diffs because profile stress kicks in and we use the address of `DummyProfilerELTStub` in the JIT binary, without relocation.
+                // So just use a fixed address in this case; It's SuperPMI replay, so the generated code won't be run.
+                if (RunningSuperPmiReplay)
+                {
+                    compProfilerMethHnd = sizeof(void*) == 8
+                        ? (void*)(0x0BADF00DBEADCAFE)
+                        : (void*)(0x0BADF00D);
+                }
+                else
 #endif
-
-#if FEATURE_TAILCALL_OPT
-        var pStrTailCallOpt = JitConfig.TailCallOpt;
-
-        if (pStrTailCallOpt is not null)
-        {
-            var strTailCallOpt = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pStrTailCallOpt);
-            opts.compTailCallOpt = int.TryParse(strTailCallOpt, out var numTailCallOpt) && (numTailCallOpt != 0);
+                {
+                    if (Configuration.TARGET_AMD64)
+                    {
+                        compProfilerMethHnd = (delegate*<nint, nint, void>)(&DummyProfilerELTStub);
+                    }
+                    else
+                    {
+                        compProfilerMethHnd = (delegate*<nint, void>)(&DummyProfilerELTStub);
+                    }
+                }
+                compProfilerMethHndIndirected = false;
+            }
         }
 
-        if (JitConfig.TailCallLoopOpt == 0)
+        if (Configuration.FEATURE_TAILCALL_OPT)
         {
-            opts.compTailCallLoopOpt = false;
-        }
-#endif
+            var pStrTailCallOpt = JitConfig.TailCallOpt;
 
-#if FEATURE_FASTTAILCALL || TARGET_WASM
-        if (JitConfig.FastTailCalls == 0)
+            if (pStrTailCallOpt is not null)
+            {
+                var strTailCallOpt = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pStrTailCallOpt);
+                opts.compTailCallOpt = int.TryParse(strTailCallOpt, out var numTailCallOpt) && (numTailCallOpt != 0);
+            }
+
+            if (JitConfig.TailCallLoopOpt == 0)
+            {
+                opts.compTailCallLoopOpt = false;
+            }
+        }
+
+        if ((Configuration.FEATURE_FASTTAILCALL || Configuration.TARGET_WASM) && (JitConfig.FastTailCalls == 0))
         {
             opts.compFastTailCalls = false;
         }
-#endif
 
         if (Configuration.CONFIGURABLE_ARM_ABI)
         {
@@ -2470,10 +2444,11 @@ public partial class Compiler
 
         opts.compScopeInfo = opts.compDbgInfo;
 
-#if TARGET_WASM
-        // Wasm virtual registers cannot be represented by ICorDebugInfo.
-        opts.compScopeInfo = false;
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            // Wasm virtual registers cannot be represented by ICorDebugInfo.
+            opts.compScopeInfo = false;
+        }
 
         if (Configuration.LATE_DISASM)
         {
@@ -2488,25 +2463,25 @@ public partial class Compiler
 #if DEBUG
         enableFakeSplitting = JitConfig.JitFakeProcedureSplitting != 0;
 
-#if TARGET_XARCH || TARGET_RISCV64
-        // Whether encoding of absolute addr as PC-rel offset is enabled
-        opts.compEnablePCRelAddr = JitConfig.EnablePCRelAddr != 0;
-#endif
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_RISCV64)
+        {
+            // Whether encoding of absolute addr as PC-rel offset is enabled
+            opts.compEnablePCRelAddr = JitConfig.EnablePCRelAddr != 0;
+        }
 #endif
 
         opts.compProcedureSplitting = jitFlags->IsSet(JitFlags.JIT_FLAG_PROCSPLIT) || enableFakeSplitting;
 
-#if FEATURE_CFI_SUPPORT
         // Hot/cold splitting is not being tested on NativeAOT.
         if (generateCFIUnwindCodes())
         {
             opts.compProcedureSplitting = false;
         }
-#endif
 
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-        opts.compProcedureSplitting = false;
-#endif
+        if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            opts.compProcedureSplitting = false;
+        }
 
 #if DEBUG
         opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -2540,18 +2515,21 @@ public partial class Compiler
 #endif
         }
 
-#if TARGET_64BIT
-        opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts != 0;
+        if (Configuration.TARGET_64BIT)
+        {
+            opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts != 0;
 
 #if DEBUG
-        if (JitConfig.JitRandomlyCollect64BitCounts != 0)
-        {
-            opts.compCollect64BitCounts = new Random(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts ^ 0x3485E20E).Next(2) == 0;
+            if (JitConfig.JitRandomlyCollect64BitCounts != 0)
+            {
+                opts.compCollect64BitCounts = new Random(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts ^ 0x3485E20E).Next(2) == 0;
+            }
+#endif
         }
-#endif
-#else
-        opts.compCollect64BitCounts = false;
-#endif
+        else
+        {
+            opts.compCollect64BitCounts = false;
+        }
 
 #if DEBUG
         // Now, set compMaxUncheckedOffsetForNullObject for STRESS_NULL_OBJECT_CHECK
@@ -2608,12 +2586,10 @@ public partial class Compiler
 
             // This is rare; don't clutter up the dump with it normally.
 
-#if PROFILING_SUPPORTED
-            if (compProfilerHookNeeded)
+            if (Configuration.PROFILING_SUPPORTED && compProfilerHookNeeded)
             {
                 jitprintf($"OPTIONS: compProfilerHookNeeded   = {dspBool(compProfilerHookNeeded)}\n");
             }
-#endif
 
             if (jitFlags->IsSet(JitFlags.JIT_FLAG_BBOPT))
             {
@@ -2637,63 +2613,83 @@ public partial class Compiler
         }
 #endif
 
-#if PROFILING_SUPPORTED && UNIX_AMD64_ABI
-        if (compIsProfilerHookNeeded)
+        if (Configuration.PROFILING_SUPPORTED && Configuration.UNIX_AMD64_ABI && compIsProfilerHookNeeded)
         {
             opts.compNeedToAlignFrame = true;
         }
-#endif
 
-#if DEBUG && TARGET_ARM64
-        if ((s_pJitMethodSet is null) || s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash()))
+#if DEBUG
+        if (Configuration.TARGET_ARM64 &&
+            ((s_pJitMethodSet is null) || s_pJitMethodSet.IsActiveMethod(info.compFullName, info.compMethodHash())))
         {
             opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters;
         }
 #endif
 
-#if TARGET_AMD64
-        srbmAllFloat = SRBM_ALLFLOAT_INIT;
-        srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;
-        cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
-
-        srbmAllInt = SRBM_ALLINT_INIT;
-        srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
-        cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
-        regIntLast = REG_R15;
-
-        if (canUseEvexEncoding())
+        if (Configuration.TARGET_AMD64)
         {
-            srbmAllFloat |= SRBM_HIGHFLOAT;
-            srbmFltCalleeTrash |= SRBM_HIGHFLOAT;
-            cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+            srbmAllFloat = SRBM_ALLFLOAT_INIT;
+            srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;
+            cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
+
+            srbmAllInt = SRBM_ALLINT_INIT;
+            srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
+            cntCalleeTrashInt = CNT_CALLEE_TRASH_INT_INIT;
+            regIntLast = REG_X64_R15;
+
+            if (canUseEvexEncoding())
+            {
+                srbmAllFloat |= SRBM_HIGHFLOAT;
+                srbmFltCalleeTrash |= SRBM_HIGHFLOAT;
+                cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
+            }
+
+            if (canUseApxEncoding())
+            {
+                srbmAllInt |= SRBM_HIGHINT;
+                srbmIntCalleeTrash |= SRBM_HIGHINT;
+                cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
+                regIntLast = REG_X64_R31;
+            }
         }
 
-        if (canUseApxEncoding())
+        if (Configuration.TARGET_XARCH)
         {
-            srbmAllInt |= SRBM_HIGHINT;
-            srbmIntCalleeTrash |= SRBM_HIGHINT;
-            cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
-            regIntLast = REG_R31;
+            var isX86 = Configuration.TARGET_X86;
+
+            if (isX86 == Configuration.TARGET_AMD64)
+            {
+                throw new FatalJitException("xarch register metadata is not defined for the configured target.");
+            }
+
+            srbmAllMask = isX86
+                ? SRBM_ALLMASK_INIT_X86
+                : SRBM_ALLMASK_INIT_AMD64;
+            srbmMskCalleeTrash = isX86
+                ? SRBM_MSK_CALLEE_TRASH_INIT_X86
+                : SRBM_MSK_CALLEE_TRASH_INIT_AMD64;
+            cntCalleeTrashMask = isX86
+                ? CNT_CALLEE_TRASH_MASK_INIT_X86
+                : CNT_CALLEE_TRASH_MASK_INIT_AMD64;
+
+            if (canUseEvexEncoding())
+            {
+                srbmAllMask |= isX86
+                    ? SRBM_ALLMASK_EVEX_X86
+                    : SRBM_ALLMASK_EVEX_AMD64;
+                srbmMskCalleeTrash |= isX86
+                    ? SRBM_MSK_CALLEE_TRASH_EVEX_X86
+                    : SRBM_MSK_CALLEE_TRASH_EVEX_AMD64;
+                cntCalleeTrashMask += isX86
+                    ? CNT_CALLEE_TRASH_MASK_EVEX_X86
+                    : CNT_CALLEE_TRASH_MASK_EVEX_AMD64;
+            }
+
+            // Make sure we copy the register info and initialize the trash regs after the underlying fields are initialized
+            compInitVarTypeCalleeTrashRegMasks();
+
+            codeGen.CopyRegisterInfo();
         }
-#endif
-
-#if TARGET_XARCH
-        srbmAllMask = SRBM_ALLMASK_INIT;
-        srbmMskCalleeTrash = SRBM_MSK_CALLEE_TRASH_INIT;
-        cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
-
-        if (canUseEvexEncoding())
-        {
-            srbmAllMask |= SRBM_ALLMASK_EVEX;
-            srbmMskCalleeTrash |= SRBM_MSK_CALLEE_TRASH_EVEX;
-            cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
-        }
-
-        // Make sure we copy the register info and initialize the trash regs after the underlying fields are initialized
-        compInitVarTypeCalleeTrashRegMasks();
-
-        codeGen.CopyRegisterInfo();
-#endif
     }
 
     public void compInitScopeLists()
@@ -2919,9 +2915,10 @@ public partial class Compiler
 
     public string compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false)
     {
-#if TARGET_ARM
-        isFloatReg = genIsValidFloatReg(reg);
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            isFloatReg = genIsValidFloatReg(reg);
+        }
 
 #if DEBUG
         if (displayVar && (reg != REG_NA))
@@ -3262,15 +3259,13 @@ public partial class Compiler
         // If this is a failed inline attempt, we're done.
         if (compIsForInlining && compInlineResult.IsFailure)
         {
-#if FEATURE_JIT_METHOD_PERF
-            if (compJitTimer is not null)
+            if (Configuration.FEATURE_JIT_METHOD_PERF && (compJitTimer is not null))
             {
 #if MEASURE_CLRAPI_CALLS
                 EndPhase(PHASE_CLR_API);
 #endif
                 compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, includePhases: false);
             }
-#endif
 
             methodCodePtr = null;
             methodCodeSize = 0;
@@ -3303,15 +3298,13 @@ public partial class Compiler
         // If we're importing for inlining, we're done.
         if (compIsForInlining)
         {
-#if FEATURE_JIT_METHOD_PERF
-            if (compJitTimer is not null)
+            if (Configuration.FEATURE_JIT_METHOD_PERF && (compJitTimer is not null))
             {
 #if MEASURE_CLRAPI_CALLS
                 EndPhase(PHASE_CLR_API);
 #endif
                 compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, false);
             }
-#endif
 
             methodCodePtr = null;
             methodCodeSize = 0;
@@ -3357,10 +3350,11 @@ public partial class Compiler
         // Add any internal blocks/trees we may need
         DoPhase(this, PHASE_MORPH_ADD_INTERNAL, fgAddInternal);
 
-#if SWIFT_SUPPORT
-        // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
-        DoPhase(this, PHASE_SWIFT_ERROR_RET, fgAddSwiftErrorReturns);
-#endif
+        if (Configuration.SWIFT_SUPPORT)
+        {
+            // Transform GT_RETURN nodes into GT_SWIFT_ERROR_RET nodes if this method has Swift error handling
+            DoPhase(this, PHASE_SWIFT_ERROR_RET, fgAddSwiftErrorReturns);
+        }
 
         // Remove empty try regions (try/finally)
         DoPhase(this, PHASE_EMPTY_TRY, fgRemoveEmptyTry);
@@ -3835,19 +3829,20 @@ public partial class Compiler
         // GS security checks for unsafe buffers
         DoPhase(this, PHASE_GS_COOKIE, gsPhase);
 
-#if TARGET_WASM
-        // Make EH continuation flow explicit
-        DoPhase(this, PHASE_WASM_EH_FLOW, fgWasmEhFlow);
+        if (Configuration.TARGET_WASM)
+        {
+            // Make EH continuation flow explicit
+            DoPhase(this, PHASE_WASM_EH_FLOW, fgWasmEhFlow);
 
-        // Clean up unreachable blocks.
-        DoPhase(this, PHASE_DFS_BLOCKS_WASM, fgDfsBlocksAndRemove);
+            // Clean up unreachable blocks.
+            DoPhase(this, PHASE_DFS_BLOCKS_WASM, fgDfsBlocksAndRemove);
 
-        // Repair any multiple-entry try regions back to single entry.
-        DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, fgWasmRepairTryEntries);
+            // Repair any multiple-entry try regions back to single entry.
+            DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, fgWasmRepairTryEntries);
 
-        // Transform any strongly connected components into reducible flow.
-        DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, fgWasmTransformSccs);
-#endif
+            // Transform any strongly connected components into reducible flow.
+            DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, fgWasmTransformSccs);
+        }
 
         // Assign registers to variables, etc.
 
@@ -3869,13 +3864,14 @@ public partial class Compiler
         // Run the final liveness pass after adding throw helper calls.
         DoPhase(this, PHASE_LCLVARLIVENESS, fgLateLiveness);
 
-#if TARGET_WASM
-        // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
-        DoPhase(this, PHASE_WASM_VIRTUAL_IP, fgWasmVirtualIP);
+        if (Configuration.TARGET_WASM)
+        {
+            // Determine if a Virtual IP is needed and add code as needed to keep the Virtual IP updated.
+            DoPhase(this, PHASE_WASM_VIRTUAL_IP, fgWasmVirtualIP);
 
-        // Spill live refs and byrefs at calls into pinned stack slots.
-        DoPhase(this, PHASE_WASM_SPILL_REFS, fgWasmSpillRefs);
-#endif
+            // Spill live refs and byrefs at calls into pinned stack slots.
+            DoPhase(this, PHASE_WASM_SPILL_REFS, fgWasmSpillRefs);
+        }
 
         FinalizeEH();
 
@@ -3890,11 +3886,12 @@ public partial class Compiler
         // Copied from rpPredictRegUse()
         IsFullPtrRegMapRequired = codeGen.Interruptible || !codeGen.IsFramePointerUsed;
 
-#if TARGET_WASM
-        // Reorder blocks for wasm and figure out wasm control flow nesting
-        DoPhase(this, PHASE_WASM_CONTROL_FLOW, fgWasmControlFlow);
-#else
-        if (opts.OptimizationEnabled)
+        if (Configuration.TARGET_WASM)
+        {
+            // Reorder blocks for wasm and figure out wasm control flow nesting
+            DoPhase(this, PHASE_WASM_CONTROL_FLOW, fgWasmControlFlow);
+        }
+        else if (opts.OptimizationEnabled)
         {
             // We won't introduce new blocks from here on out, so run the new block layout.
             DoPhase(this, PHASE_OPTIMIZE_LAYOUT, fgSearchImprovedLayout);
@@ -3905,7 +3902,6 @@ public partial class Compiler
             // Determine start of cold region if we are hot/cold splitting
             DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, fgDetermineFirstColdBlock);
         }
-#endif
 
         if (Configuration.FEATURE_LOOP_ALIGN)
         {
@@ -3930,8 +3926,7 @@ public partial class Compiler
         // We're done -- set the active phase to the last phase (which isn't really a phase)
         mostRecentlyActivePhase = PHASE_POST_EMIT;
 
-#if FEATURE_JIT_METHOD_PERF
-        if (compJitTimer is not null)
+        if (Configuration.FEATURE_JIT_METHOD_PERF && (compJitTimer is not null))
         {
 #if MEASURE_CLRAPI_CALLS
             EndPhase(PHASE_CLR_API);
@@ -3940,7 +3935,6 @@ public partial class Compiler
 #endif
             compJitTimer.Terminate(this, ref CompTimeSummaryInfo.s_compTimeSummary, true);
         }
-#endif
 
         // Generate PatchpointInfo
         generatePatchpointInfo();
@@ -4224,18 +4218,16 @@ public partial class Compiler
                 codeGen.IsFramePointerRequired = false;
                 codeGen.IsFrameRequired = compiler.opts.OptimizationDisabled;
 
-#if !TARGET_AMD64
                 // The VM sets JitFlags.JIT_FLAG_FRAMED for two reasons:
                 //   1. the DOTNET_JitFramed variable is set, or
                 //   2. the function is marked "noinline".
                 //
                 // The reason for #2 is that people mark functions noinline to ensure the show up on in a stack walk.
                 // But for AMD64, we don't need a frame pointer for the frame to show up in stack walk.
-                if (compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_FRAMED))
+                if (!Configuration.TARGET_AMD64 && compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_FRAMED))
                 {
                     codeGen.IsFrameRequired = true;
                 }
-#endif
 
                 if (compiler.opts.OptimizationDisabled || compiler.IsReadyToRun)
                 {
@@ -4282,77 +4274,82 @@ public partial class Compiler
         // We also take care of adding the virtual vector ISAs (i.e. Vector64/128/256/512)
         // here, based on the combination of hardware ISA support and config values.
 
-#if TARGET_XARCH
-        // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
-        // No check is done for the validity of the value, since it will be clamped to max supported by
-        // hardware and config when queried.  We will, therefore, remove the marker ISA and allow it to
-        // be re-added if appropriate based on the hardware ISA evaluations below.
-
-        var preferredVectorBitWidth = 0;
-
-        if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector128))
+        if (Configuration.TARGET_XARCH)
         {
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector128);
-            preferredVectorBitWidth = 128;
+            // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
+            // No check is done for the validity of the value, since it will be clamped to max supported by
+            // hardware and config when queried.  We will, therefore, remove the marker ISA and allow it to
+            // be re-added if appropriate based on the hardware ISA evaluations below.
+
+            var preferredVectorBitWidth = 0;
+
+            if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector128))
+            {
+                instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector128);
+                preferredVectorBitWidth = 128;
+            }
+            else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector256))
+            {
+                instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector256);
+                preferredVectorBitWidth = 256;
+            }
+            else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector512))
+            {
+                instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector512);
+                preferredVectorBitWidth = 512;
+            }
+
+            opts.preferredVectorByteLength = preferredVectorBitWidth / BITS_PER_BYTE;
+
+            // Only one marker ISA should have been passed in, and it should now be cleared.
+            assert(!instructionSetFlags.HasInstructionSet(InstructionSet_Vector128) &&
+                   !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
+                   !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
+
+            // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+            instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
+
+            if (Configuration.TARGET_AMD64)
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_X86Base_X64);
+            }
+
+            // We can now add the virtual vector ISAs as appropriate. Vector128 is part of the required baseline.
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+
+            if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
+            }
+
+            if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+            }
         }
-        else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector256))
+        else if (Configuration.TARGET_ARM64)
         {
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector256);
-            preferredVectorBitWidth = 256;
+            // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
+
+            // Add virtual vector ISAs. These are both supported as part of the required baseline.
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
         }
-        else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector512))
+        else if (Configuration.TARGET_WASM)
         {
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector512);
-            preferredVectorBitWidth = 512;
+            instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
+            instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
+            instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
         }
-
-        opts.preferredVectorByteLength = preferredVectorBitWidth / BITS_PER_BYTE;
-
-        // Only one marker ISA should have been passed in, and it should now be cleared.
-        assert(!instructionSetFlags.HasInstructionSet(InstructionSet_Vector128) &&
-               !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
-               !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
-
-        // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
-        instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
-
-#if TARGET_AMD64
-        instructionSetFlags.AddInstructionSet(InstructionSet_X86Base_X64);
-#endif
-
-        // We can now add the virtual vector ISAs as appropriate. Vector128 is part of the required baseline.
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-
-        if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-        }
-
-        if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512))
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-        }
-#elif TARGET_ARM64
-        // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
-        instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
-
-        // Add virtual vector ISAs. These are both supported as part of the required baseline.
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-#elif TARGET_WASM
-        instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
-        instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-#endif
 
         assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
         opts.setSupportedISAs(instructionSetFlags);
 
-#if TARGET_XARCH
-        if (!compIsForInlining)
+        if (Configuration.TARGET_XARCH && !compIsForInlining)
         {
             var emitter = codeGen.Emitter;
 
@@ -4381,7 +4378,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
     }
 
     /// <summary>Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?</summary>
@@ -4391,7 +4387,11 @@ public partial class Compiler
     /// <remarks>The result exactly matches the target machine, except for CoreLib unless preserving negative dependencies.</remarks>
     private bool compExactlyDependsOn(ManagedInstructionSet isa, bool preserveNegativeDependency = false)
     {
-#if TARGET_XARCH || TARGET_ARM64 || TARGET_RISCV64
+        if (!(Configuration.TARGET_XARCH || Configuration.TARGET_ARM64 || Configuration.TARGET_RISCV64))
+        {
+            return false;
+        }
+
         // Non-deterministic intrinsics must notify the EE even if an earlier query cached this ISA.
         if (preserveNegativeDependency || !opts.compSupportsISAReported.HasInstructionSet(isa))
         {
@@ -4402,9 +4402,6 @@ public partial class Compiler
             opts.compSupportsISAReported.AddInstructionSet(isa);
         }
         return (opts.compSupportsISAExactly.HasInstructionSet(isa));
-#else
-        return false;
-#endif
     }
 
     /// <summary>Search for variable's scope containing offset.</summary>
@@ -4486,25 +4483,26 @@ public partial class Compiler
     /// <remarks>Use this api when asking the question so that future ISA questions can be asked correctly or when asserting support/nonsupport for an instruction set</remarks>
     internal bool compIsaSupportedDebugOnly(ManagedInstructionSet isa)
     {
-#if DEBUG && (TARGET_XARCH || TARGET_ARM64)
-        return opts.compSupportsISA.HasInstructionSet(isa);
-#else
+#if DEBUG
+        if (Configuration.TARGET_XARCH || Configuration.TARGET_ARM64)
+        {
+            return opts.compSupportsISA.HasInstructionSet(isa);
+        }
+#endif
         unreached();
         return false;
-#endif
     }
 
     public int compMapILargNum(int ILargNum)
     {
         assert((ILargNum >= 0) && (ILargNum < info.compILargsCount));
 
-#if TARGET_WASM
-        if ((lvaWasmSpArg >= 0) && (lvaWasmSpArg <= ILargNum) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
+        if (Configuration.TARGET_WASM && (lvaWasmSpArg >= 0) && (lvaWasmSpArg <= ILargNum) &&
+            lvaGetDesc(lvaWasmSpArg).lvIsParam)
         {
             ILargNum++;
             assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
         }
-#endif
 
         // Note that this works because if compRetBuffArg/compTypeCtxtArg/lvVarargsHandleArg are not present
         // they will be BAD_VAR_NUM (MAX_UINT), which is larger than any variable number.
@@ -4621,24 +4619,20 @@ public partial class Compiler
             return ICorDebugInfo.TYPECTXT_ILNUM;
         }
 
-#if FEATURE_FIXED_OUT_ARGS
-        if (varNum == lvaOutgoingArgSpaceVar)
+        if (Configuration.FEATURE_FIXED_OUT_ARGS && (varNum == lvaOutgoingArgSpaceVar))
         {
             return ICorDebugInfo.UNKNOWN_ILNUM; // Cannot be mapped
         }
-#endif
 
         if (varNum == lvaAsyncContinuationArg)
         {
             return ICorDebugInfo.ASYNC_CONTINUATION_ILNUM;
         }
 
-#if TARGET_WASM
-        if (varNum == lvaWasmSpArg)
+        if (Configuration.TARGET_WASM && (varNum == lvaWasmSpArg))
         {
             return ICorDebugInfo.UNKNOWN_ILNUM;
         }
-#endif
 
         var originalVarNum = varNum;
 
@@ -4666,12 +4660,11 @@ public partial class Compiler
             varNum--;
         }
 
-#if TARGET_WASM
-        if ((lvaWasmSpArg >= 0) && (lvaWasmSpArg < originalVarNum) && lvaGetDesc(lvaWasmSpArg).lvIsParam)
+        if (Configuration.TARGET_WASM && (lvaWasmSpArg >= 0) && (lvaWasmSpArg < originalVarNum) &&
+            lvaGetDesc(lvaWasmSpArg).lvIsParam)
         {
             varNum--;
         }
-#endif
 
         if ((varNum < 0) || (varNum >= info.compLocalsCount))
         {

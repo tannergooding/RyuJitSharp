@@ -29,16 +29,17 @@ public sealed partial class CodeGen
     [Conditional("DEBUG")]
     public static void checkICodeDebugInfo()
     {
-#if TARGET_X86
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_EAX == (uint)regNumber.REG_EAX);
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_ECX == (uint)regNumber.REG_ECX);
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_EDX == (uint)regNumber.REG_EDX);
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_EBX == (uint)regNumber.REG_EBX);
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_ESP == (uint)regNumber.REG_ESP);
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_EBP == (uint)regNumber.REG_EBP);
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_ESI == (uint)regNumber.REG_ESI);
-        assert((uint)ICorDebugInfo.RegNum.REGNUM_EDI == (uint)regNumber.REG_EDI);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_EAX == (uint)regNumber.REG_X86_EAX);
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_ECX == (uint)regNumber.REG_X86_ECX);
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_EDX == (uint)regNumber.REG_X86_EDX);
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_EBX == (uint)regNumber.REG_X86_EBX);
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_ESP == (uint)regNumber.REG_X86_ESP);
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_EBP == (uint)regNumber.REG_X86_EBP);
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_ESI == (uint)regNumber.REG_X86_ESI);
+            assert((uint)ICorDebugInfo.RegNum.REGNUM_X86_EDI == (uint)regNumber.REG_X86_EDI);
+        }
 
         // Managed siVarLoc uses the EE's VarLoc and VLT enum directly.
         assert(Unsafe.SizeOf<siVarLoc>() == Unsafe.SizeOf<ICorDebugInfo.VarLoc>());
@@ -183,10 +184,10 @@ public sealed partial class CodeGen
         var ilVarNum = _compiler.compMap2ILvarNum(varNum);
         noway_assert(ilVarNum != ICorDebugInfo.UNKNOWN_ILNUM);
 
-#if TARGET_X86
         // Non-x86 targets access arguments directly. Stack varargs instead use
         // a cookie-relative location, replacing the original live-range home.
-        if (_compiler.info.compIsVarArgs && (varNum != _compiler.lvaVarargsHandleArg) &&
+        if (Configuration.TARGET_X86 && _compiler.info.compIsVarArgs &&
+            (varNum != _compiler.lvaVarargsHandleArg) &&
             (varNum < _compiler.info.compArgsCount) && !_compiler.lvaGetDesc(varNum).lvIsRegArg)
         {
             noway_assert(varLoc.vlType is VLT_STK or VLT_STK2);
@@ -213,7 +214,6 @@ public sealed partial class CodeGen
             varLoc.vlType = VLT_FIXED_VA;
             varLoc.vlFixedVarArg.vlfvOffset = unchecked((int)offset);
         }
-#endif
 
 #if DEBUG
         VarName? name = null;

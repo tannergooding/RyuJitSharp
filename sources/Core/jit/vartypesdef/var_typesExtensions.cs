@@ -135,8 +135,9 @@ public static partial class var_typesExtensions
         {
             get
             {
-                assert(s_alignments.Length == (int)(TYP_COUNT));
-                return s_alignments[(int)(varType)];
+                var alignments = s_alignments;
+                assert(alignments.Length == (int)(TYP_COUNT));
+                return alignments[(int)(varType)];
             }
         }
 
@@ -144,8 +145,9 @@ public static partial class var_typesExtensions
         {
             get
             {
-                assert(s_classifications.Length == (int)(TYP_COUNT));
-                return s_classifications[(int)(varType)];
+                var classifications = s_classifications;
+                assert(classifications.Length == (int)(TYP_COUNT));
+                return classifications[(int)(varType)];
             }
         }
 
@@ -153,8 +155,9 @@ public static partial class var_typesExtensions
         {
             get
             {
-                assert(s_emitActualSizes.Length == (int)(TYP_COUNT));
-                return s_emitActualSizes[(int)(varType)];
+                var emitActualSizes = s_emitActualSizes;
+                assert(emitActualSizes.Length == (int)(TYP_COUNT));
+                return emitActualSizes[(int)(varType)];
             }
         }
 
@@ -162,8 +165,9 @@ public static partial class var_typesExtensions
         {
             get
             {
-                assert(s_emitSizes.Length == (int)(TYP_COUNT));
-                return s_emitSizes[(int)(varType)];
+                var emitSizes = s_emitSizes;
+                assert(emitSizes.Length == (int)(TYP_COUNT));
+                return emitSizes[(int)(varType)];
             }
         }
 
@@ -195,8 +199,9 @@ public static partial class var_typesExtensions
         {
             get
             {
-                assert(s_sizes.Length == (int)(TYP_COUNT));
-                return s_sizes[(int)(varType)];
+                var sizes = s_sizes;
+                assert(sizes.Length == (int)(TYP_COUNT));
+                return sizes[(int)(varType)];
             }
         }
 
@@ -210,8 +215,9 @@ public static partial class var_typesExtensions
                     assert(varType is not TYP_SIMD_ARM64 and not TYP_MASK);
                 }
 
-                assert(s_stSzs.Length == (int)(TYP_COUNT));
-                return s_stSzs[(int)(varType)];
+                var stackSizes = s_stSzs;
+                assert(stackSizes.Length == (int)(TYP_COUNT));
+                return stackSizes[(int)(varType)];
             }
         }
     }

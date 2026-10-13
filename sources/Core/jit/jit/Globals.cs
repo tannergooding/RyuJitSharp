@@ -116,163 +116,53 @@ public partial class Globals
 #error Unsupported or unset host architecture
 #endif
 
-#if TARGET_X86
-#if TARGET_ARM
-#error Cannot define both TARGET_X86 and TARGET_ARM
-#endif
-#if TARGET_AMD64
-#error Cannot define both TARGET_X86 and TARGET_AMD64
-#endif
-#if TARGET_ARM64
-#error Cannot define both TARGET_X86 and TARGET_ARM64
-#endif
-#if TARGET_LOONGARCH64
-#error Cannot define both TARGET_X86 and TARGET_LOONGARCH64
-#endif
-#if TARGET_RISCV64
-#error Cannot define both TARGET_X86 and TARGET_RISCV64
-#endif
-#if TARGET_WASM32
-#error Cannot define both TARGET_X86 and TARGET_WASM32
-#endif
-#elif TARGET_AMD64
-#if TARGET_X86
-#error Cannot define both TARGET_AMD64 and TARGET_X86
-#endif
-#if TARGET_ARM
-#error Cannot define both TARGET_AMD64 and TARGET_ARM
-#endif
-#if TARGET_ARM64
-#error Cannot define both TARGET_AMD64 and TARGET_ARM64
-#endif
-#if TARGET_LOONGARCH64
-#error Cannot define both TARGET_AMD64 and TARGET_LOONGARCH64
-#endif
-#if TARGET_RISCV64
-#error Cannot define both TARGET_AMD64 and TARGET_RISCV64
-#endif
-#if TARGET_WASM32
-#error Cannot define both TARGET_AMD64 and TARGET_WASM32
-#endif
-#elif TARGET_ARM
-#if TARGET_X86
-#error Cannot define both TARGET_ARM and TARGET_X86
-#endif
-#if TARGET_AMD64
-#error Cannot define both TARGET_ARM and TARGET_AMD64
-#endif
-#if TARGET_ARM64
-#error Cannot define both TARGET_ARM and TARGET_ARM64
-#endif
-#if TARGET_LOONGARCH64
-#error Cannot define both TARGET_ARM and TARGET_LOONGARCH64
-#endif
-#if TARGET_RISCV64
-#error Cannot define both TARGET_ARM and TARGET_RISCV64
-#endif
-#if TARGET_WASM32
-#error Cannot define both TARGET_ARM and TARGET_WASM32
-#endif
-#elif TARGET_ARM64
-#if TARGET_X86
-#error Cannot define both TARGET_ARM64 and TARGET_X86
-#endif
-#if TARGET_AMD64
-#error Cannot define both TARGET_ARM64 and TARGET_AMD64
-#endif
-#if TARGET_ARM
-#error Cannot define both TARGET_ARM64 and TARGET_ARM
-#endif
-#if TARGET_LOONGARCH64
-#error Cannot define both TARGET_ARM64 and TARGET_LOONGARCH64
-#endif
-#if TARGET_RISCV64
-#error Cannot define both TARGET_ARM64 and TARGET_RISCV64
-#endif
-#if TARGET_WASM32
-#error Cannot define both TARGET_ARM64 and TARGET_WASM32
-#endif
-#elif TARGET_LOONGARCH64
-#if TARGET_X86
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_X86
-#endif
-#if TARGET_AMD64
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_AMD64
-#endif
-#if TARGET_ARM
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_ARM
-#endif
-#if TARGET_ARM64
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_ARM64
-#endif
-#if TARGET_RISCV64
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
-#endif
-#if TARGET_WASM32
-#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASM32
-#endif
-#elif TARGET_RISCV64
-#if TARGET_X86
-#error Cannot define both TARGET_RISCV64 and TARGET_X86
-#endif
-#if TARGET_AMD64
-#error Cannot define both TARGET_RISCV64 and TARGET_AMD64
-#endif
-#if TARGET_ARM
-#error Cannot define both TARGET_RISCV64 and TARGET_ARM
-#endif
-#if TARGET_ARM64
-#error Cannot define both TARGET_RISCV64 and TARGET_ARM64
-#endif
-#if TARGET_LOONGARCH64
-#error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
-#endif
-#if TARGET_WASM32
-#error Cannot define both TARGET_RISCV64 and TARGET_WASM32
-#endif
+    static Globals()
+    {
+        ValidateTargetConfiguration();
 
-#elif TARGET_WASM32
-#if TARGET_X86
-#error Cannot define both TARGET_WASM32 and TARGET_X86
-#endif
-#if TARGET_AMD64
-#error Cannot define both TARGET_WASM32 and TARGET_AMD64
-#endif
-#if TARGET_ARM
-#error Cannot define both TARGET_WASM32 and TARGET_ARM
-#endif
-#if TARGET_ARM64
-#error Cannot define both TARGET_WASM32 and TARGET_ARM64
-#endif
-#if TARGET_LOONGARCH64
-#error Cannot define both TARGET_WASM32 and TARGET_LOONGARCH64
-#endif
-#if TARGET_RISCV64
-#error Cannot define both TARGET_WASM32 and TARGET_RISCV64
-#endif
-#else
-#error Unsupported or unset target architecture
-#endif
+        if (Configuration.TARGET_LOONGARCH64 && Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException("SIMD Unimplemented yet LOONGARCH");
+        }
+    }
 
-#if TARGET_64BIT
-#if TARGET_X86
-#error Cannot define both TARGET_X86 and TARGET_64BIT
-#endif
-#if TARGET_ARM
-#error Cannot define both TARGET_ARM and TARGET_64BIT
-#endif
-#if TARGET_WASM32
-#error Cannot define both TARGET_WASM32 and TARGET_64BIT
-#endif
-#endif
+    private static void ValidateTargetConfiguration()
+    {
+        int targetCount =
+            (Configuration.TARGET_X86 ? 1 : 0) +
+            (Configuration.TARGET_AMD64 ? 1 : 0) +
+            (Configuration.TARGET_ARM ? 1 : 0) +
+            (Configuration.TARGET_ARM64 ? 1 : 0) +
+            (Configuration.TARGET_LOONGARCH64 ? 1 : 0) +
+            (Configuration.TARGET_RISCV64 ? 1 : 0) +
+            (Configuration.TARGET_WASM32 ? 1 : 0);
 
-#if UNIX_AMD64_ABI && !TARGET_AMD64
-#error When UNIX_AMD64_ABI is defined, you must define TARGET_AMD64 as well.
-#endif
+        if (targetCount != 1)
+        {
+            throw new FatalJitException("Exactly one target architecture must be selected.");
+        }
 
-#if UNIX_X86_ABI && !TARGET_X86
-#error When UNIX_X86_ABI is defined, you must define TARGET_X86 as well.
-#endif
+        bool targetIs64Bit =
+            Configuration.TARGET_AMD64 ||
+            Configuration.TARGET_ARM64 ||
+            Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64;
+
+        if (Configuration.TARGET_64BIT != targetIs64Bit)
+        {
+            throw new FatalJitException("Target bitness does not match the selected architecture.");
+        }
+
+        if (Configuration.UNIX_AMD64_ABI && !Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("When UNIX_AMD64_ABI is enabled, TARGET_AMD64 must be enabled.");
+        }
+
+        if (Configuration.UNIX_X86_ABI && !Configuration.TARGET_X86)
+        {
+            throw new FatalJitException("When UNIX_X86_ABI is enabled, TARGET_X86 must be enabled.");
+        }
+    }
 
     public const int REGEN_SHORTCUTS = 0;
 
@@ -314,9 +204,6 @@ public partial class Globals
     public const int VPTR_OFFS = 0;
 
 #if MEASURE_CLRAPI_CALLS
-#if !FEATURE_JIT_METHOD_PERF
-#error Can't time these calls without METHOD_PERF.
-#endif
 #if DEBUG
 #error No point in measuring DEBUG code.
 #endif

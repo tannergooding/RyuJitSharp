@@ -886,14 +886,11 @@ public partial class DefaultPolicy : LegacyPolicy
             JITDUMP($"\nmultiplier in methods of promotable struct increased to {multiplier}.");
         }
 
-#if FEATURE_SIMD
-        if (HasSimd)
+        if (Configuration.FEATURE_SIMD && HasSimd)
         {
             multiplier += JitConfig.JitInlineSIMDMultiplier;
             JITDUMP($"\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to {multiplier}.");
         }
-
-#endif
 
         if (LooksLikeWrapperMethod)
         {
@@ -1047,8 +1044,8 @@ public partial class DefaultPolicy : LegacyPolicy
                 // "lea     EAX, bword ptr [EBP-14H]"
                 callsiteSize += 10;
 
-                var opsz = roundUp(comp->getClassSize(sigClass), TARGET_POINTER_SIZE);
-                var slots = opsz / TARGET_POINTER_SIZE;
+                var opsz = roundUp(comp->getClassSize(sigClass), Configuration.TARGET_POINTER_SIZE);
+                var slots = opsz / Configuration.TARGET_POINTER_SIZE;
 
                 // "push    gword ptr [EAX+offs]  "
                 callsiteSize += slots * 20;

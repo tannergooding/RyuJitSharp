@@ -321,26 +321,27 @@ public sealed unsafe class ReplayPolicy : DiscretionaryPolicy
                 break;
             }
 
-#if HOST_WINDOWS
-            if (value == 0x1a)
+            if (OperatingSystem.IsWindows())
             {
-                s_endOfFile = true;
-                break;
-            }
+                if (value == 0x1a)
+                {
+                    s_endOfFile = true;
+                    break;
+                }
 
-            if (value == '\r')
-            {
-                var next = file.ReadByte();
-                if (next == '\n')
+                if (value == '\r')
                 {
-                    value = '\n';
-                }
-                else if (next != -1)
-                {
-                    _ = file.Seek(-1, SeekOrigin.Current);
+                    var next = file.ReadByte();
+                    if (next == '\n')
+                    {
+                        value = '\n';
+                    }
+                    else if (next != -1)
+                    {
+                        _ = file.Seek(-1, SeekOrigin.Current);
+                    }
                 }
             }
-#endif
 
             buffer[length++] = (byte)value;
             if (value == '\n')

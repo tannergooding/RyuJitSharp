@@ -130,11 +130,15 @@ public partial class Globals
         var sep = "";
         jitprintf("[");
 
-        sep = dspRegRange(regMask, ref minSiz, sep, REG_INT_FIRST, REG_INT_LAST);
-        sep = dspRegRange(regMask, ref minSiz, sep, REG_FP_FIRST, REG_FP_LAST);
-#if FEATURE_MASKED_HW_INTRINSICS
-        sep = dspRegRange(regMask, ref minSiz, sep, REG_MASK_FIRST, REG_MASK_LAST);
-#endif
+        sep = dspRegRange(regMask, ref minSiz, sep,
+            TargetRuntimeMetadata.IntegerRegisterFirst, TargetRuntimeMetadata.IntegerRegisterLast);
+        sep = dspRegRange(regMask, ref minSiz, sep,
+            TargetRuntimeMetadata.FloatingRegisterFirst, TargetRuntimeMetadata.FloatingRegisterLast);
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            sep = dspRegRange(regMask, ref minSiz, sep,
+                TargetRuntimeMetadata.MaskRegisterFirst, TargetRuntimeMetadata.MaskRegisterLast);
+        }
 
         jitprintf("]");
 
@@ -147,15 +151,25 @@ public partial class Globals
 
     public static string dspRegRange(regMaskTP regMask, ref nint minSiz, string sep, regNumber regFirst, regNumber regLast)
     {
-#if HAS_FIXED_REGISTER_SET
-#if FEATURE_MASKED_HW_INTRINSICS
-        assert(((regFirst is REG_INT_FIRST) && (regLast is REG_INT_LAST)) ||
-               ((regFirst is REG_FP_FIRST) && (regLast is REG_FP_LAST)) ||
-               ((regFirst is REG_MASK_FIRST) && (regLast is REG_MASK_LAST)));
-#else
-        assert(((regFirst is REG_INT_FIRST) && (regLast is REG_INT_LAST)) ||
-               ((regFirst is REG_FP_FIRST) && (regLast is REG_FP_LAST)));
-#endif
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            return sep;
+        }
+
+        var isIntegerRegisterRange = (regFirst == TargetRuntimeMetadata.IntegerRegisterFirst) &&
+            (regLast == TargetRuntimeMetadata.IntegerRegisterLast);
+        var isFloatingRegisterRange = (regFirst == TargetRuntimeMetadata.FloatingRegisterFirst) &&
+            (regLast == TargetRuntimeMetadata.FloatingRegisterLast);
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            var isMaskRegisterRange = (regFirst == TargetRuntimeMetadata.MaskRegisterFirst) &&
+                (regLast == TargetRuntimeMetadata.MaskRegisterLast);
+            assert(isIntegerRegisterRange || isFloatingRegisterRange || isMaskRegisterRange);
+        }
+        else
+        {
+            assert(isIntegerRegisterRange || isFloatingRegisterRange);
+        }
 
         if (sep.Length > 0)
         {
@@ -164,9 +178,10 @@ public partial class Globals
         }
 
         // When we start a range, remember the first register of the range, so we don't use range notation if the range contains just a single register.
+        const regNumber invalidRegister = unchecked((regNumber)uint.MaxValue);
         var inRegRange = false;
-        var regPrev = REG_NA;
-        var regHead = REG_NA;
+        var regPrev = invalidRegister;
+        var regHead = invalidRegister;
 
         for (var regNum = regFirst; regNum <= regLast; regNum = REG_NEXT(regNum))
         {
@@ -190,48 +205,58 @@ public partial class Globals
                         // By default, we're not starting a potential register range.
                         sep = " ";
 
-#if TARGET_AMD64
-                        // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
-                        if (regNum >= REG_R8)
+                        if (Configuration.TARGET_AMD64)
                         {
-                            regHead    = regNum;
-                            inRegRange = true;
-                            sep        = "-";
+                            // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
+                            if (regNum >= REG_X64_R8)
+                            {
+                                regHead = regNum;
+                                inRegRange = true;
+                                sep = "-";
+                            }
                         }
-#elif TARGET_ARM64
-                        // R17 and R28 can't be the start of a range, since the range would include TEB or FP
-                        if ((regNum < REG_R17) || (regNum is >= REG_R19 and < REG_R28))
+                        else if (Configuration.TARGET_ARM64)
                         {
-                            regHead    = regNum;
-                            inRegRange = true;
-                            sep        = "-";
+                            // R17 and R28 can't be the start of a range, since the range would include TEB or FP.
+                            if ((regNum < REG_ARM64_R17) || (regNum is >= REG_ARM64_R19 and < REG_ARM64_R28))
+                            {
+                                regHead = regNum;
+                                inRegRange = true;
+                                sep = "-";
+                            }
                         }
-#elif TARGET_ARM
-                        if (regNum < REG_R12)
+                        else if (Configuration.TARGET_ARM)
                         {
-                            regHead    = regNum;
-                            inRegRange = true;
-                            sep        = "-";
+                            if (regNum < REG_ARM32_R12)
+                            {
+                                regHead = regNum;
+                                inRegRange = true;
+                                sep = "-";
+                            }
                         }
-#elif TARGET_X86
-                        // No register ranges
-#elif TARGET_LOONGARCH64
-                        if (regNum is (>= REG_A0 and <= REG_T8))
+                        else if (Configuration.TARGET_LOONGARCH64)
                         {
-                            regHead    = regNum;
-                            inRegRange = true;
-                            sep        = "-";
+                            if (regNum is (>= REG_LOONGARCH64_A0 and <= REG_LOONGARCH64_T8))
+                            {
+                                regHead = regNum;
+                                inRegRange = true;
+                                sep = "-";
+                            }
                         }
-#elif TARGET_RISCV64
-                        if (regNum is (>= REG_A0 and <= REG_A7) or REG_T0 or REG_T1 or (>= REG_T2 and <= REG_T6))
+                        else if (Configuration.TARGET_RISCV64)
                         {
-                            regHead    = regNum;
-                            inRegRange = true;
-                            sep        = "-";
+                            if (regNum is (>= REG_RISCV64_A0 and <= REG_RISCV64_A7) or REG_RISCV64_T0 or
+                                REG_RISCV64_T1 or (>= REG_RISCV64_T2 and <= REG_RISCV64_T6))
+                            {
+                                regHead = regNum;
+                                inRegRange = true;
+                                sep = "-";
+                            }
                         }
-#else
-#error Unsupported or unset target architecture
-#endif
+                        else if (!Configuration.TARGET_X86)
+                        {
+                            throw new FatalJitException("Register range formatting is not supported for this target.");
+                        }
                     }
                     else
                     {
@@ -240,15 +265,10 @@ public partial class Globals
                         sep = "-";
                     }
                 }
-#if TARGET_ARM64
-                // R17: last register before TEB
-                // R28: last register before FP
-                else if ((regNum == regLast) || (regNum is REG_R17 or REG_R28))
-#elif TARGET_LOONGARCH64
-                else if ((regNum == regLast) || (regNum is REG_A7 or REG_T8))
-#else
-                else if (regNum == regLast)
-#endif
+                else if ((regNum == regLast) ||
+                    (Configuration.TARGET_ARM64 && (regNum is REG_ARM64_R17 or REG_ARM64_R28)) ||
+                    (Configuration.TARGET_LOONGARCH64 &&
+                        (regNum is REG_LOONGARCH64_A7 or REG_LOONGARCH64_T8)))
                 {
                     // We've already printed a register and hit the end of a range
                     var nam = regNum.Name;
@@ -256,14 +276,14 @@ public partial class Globals
                     minSiz -= (sep.Length + nam.Length);
 
                     // No longer in the middle of a register range
-                    regHead = REG_NA;
+                    regHead = invalidRegister;
                     inRegRange = false;
                     sep = " ";
                 }
             }
             else if (inRegRange)
             {
-                assert(regHead != REG_NA);
+                assert(regHead != invalidRegister);
 
                 if (regPrev != regHead)
                 {
@@ -273,15 +293,13 @@ public partial class Globals
                     minSiz -= (sep.Length + nam.Length);
                 }
 
-                regHead = REG_NA;
+                regHead = invalidRegister;
                 inRegRange = false;
                 sep = " ";
             }
 
             regPrev = regNum;
         }
-#endif
-
         return sep;
     }
 

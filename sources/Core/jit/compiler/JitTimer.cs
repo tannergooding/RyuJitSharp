@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_JIT_METHOD_PERF
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -379,5 +378,4 @@ public sealed class JitTimer
         }
         sum.AddInfo(_info, includePhases);
     }
-#endif
 }

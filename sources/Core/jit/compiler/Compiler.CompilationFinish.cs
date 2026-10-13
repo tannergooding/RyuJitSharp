@@ -162,11 +162,11 @@ public partial class Compiler
         jitprintf(compHndBBtabCount > 0 ? "EH | " : "   | ");
         if (rpFrameType == FT_EBP_FRAME)
         {
-            jitprintf($"{STR_FPBASE,3} | ");
+            jitprintf($"{TargetRuntimeMetadata.FramePointerBaseName,3} | ");
         }
         else if (rpFrameType == FT_ESP_FRAME)
         {
-            jitprintf($"{STR_SPBASE,3} | ");
+            jitprintf($"{TargetRuntimeMetadata.StackPointerBaseName,3} | ");
         }
         else if (Configuration.DOUBLE_ALIGN && (rpFrameType == FT_DOUBLE_ALIGN_FRAME))
         {

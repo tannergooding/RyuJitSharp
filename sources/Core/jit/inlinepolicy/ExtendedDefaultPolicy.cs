@@ -448,13 +448,11 @@ public class ExtendedDefaultPolicy : DefaultPolicy
                 JITDUMP($"\nInline has {(int)_foldableBox} foldable BOX ops.  Multiplier increased to {FormatGeneral(multiplier)}.");
             }
 
-#if FEATURE_SIMD
-            if (HasSimd)
+            if (Configuration.FEATURE_SIMD && HasSimd)
             {
                 multiplier += JitConfig.JitInlineSIMDMultiplier;
                 JITDUMP($"\nInline candidate has SIMD type args, locals or return value.  Multiplier increased to {FormatGeneral(multiplier)}.");
             }
-#endif
 
             if (_intrinsic > 0)
             {

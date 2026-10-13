@@ -30,9 +30,7 @@ global using NodeToLoopMemoryBlockMap = System.Collections.Generic.Dictionary<Ry
 
 global using SignatureToLookupInfoMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer, RyuJitSharp.CORINFO_RUNTIME_LOOKUP>;
 
-#if SWIFT_SUPPORT
 global using SwiftLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, System.Runtime.CompilerServices.StrongBox<RyuJitSharp.CORINFO_SWIFT_LOWERING>>;
-#endif
 
 // To represent sets of VN's that have already been hoisted in outer loops.
 global using VNSet = System.Collections.Generic.Dictionary<int, bool>;
@@ -51,6 +49,4 @@ global using VarNumToScopeDscMap = System.Collections.Generic.Dictionary<int, Ry
 global using NodeToIntMap = System.Collections.Generic.Dictionary<RyuJitSharp.GenTree, int>;
 #endif
 
-#if TARGET_RISCV64 || TARGET_LOONGARCH64
 global using FpStructLoweringMap = System.Collections.Generic.Dictionary<RyuJitSharp.Pointer<RyuJitSharp.CORINFO_CLASS_STRUCT_>, System.Runtime.CompilerServices.StrongBox<RyuJitSharp.CORINFO_FPSTRUCT_LOWERING>>;
-#endif

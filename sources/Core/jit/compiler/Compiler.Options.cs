@@ -42,9 +42,7 @@ public partial class Compiler
         /// <summary>what type of code optimizations</summary>
         public codeOptimize compCodeOpt;
 
-#if TARGET_XARCH
         public int preferredVectorByteLength;
-#endif
 
         public bool canUseTier0Opts;
 
@@ -125,20 +123,28 @@ public partial class Compiler
         {
             get
             {
-#if TARGET_ARM64 || TARGET_AMD64
-                // On these platforms we assume the register that the target is passed in is preserved by the validator and take care to get the target from the register for the call (even in debug mode).
-                // SRBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
-#if TARGET_AMD64
-                assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & SRBM_VALIDATE_INDIRECT_CALL_ADDR) == SRBM_NONE);
-#else
-                assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH & genSingleTypeRegMask(REG_VALIDATE_INDIRECT_CALL_ADDR)) == SRBM_NONE);
-#endif
-                if (JitConfig.JitForceControlFlowGuard != 0)
+                if (Configuration.TARGET_ARM64 || Configuration.TARGET_AMD64)
                 {
-                    return true;
+                    // On these platforms we assume the register that the target is passed in is preserved by the validator and take care to get the target from the register for the call (even in debug mode).
+                    // SRBM_INT_CALLEE_TRASH is not known at compile time on TARGET_AMD64 since it's dependent on APX support.
+                    if (Configuration.TARGET_AMD64)
+                    {
+                        assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH_ALL & SRBM_VALIDATE_INDIRECT_CALL_ADDR) == SRBM_NONE);
+                    }
+                    else
+                    {
+                        assert((SRBM_VALIDATE_INDIRECT_CALL_TRASH_ARM64 &
+                            genSingleTypeRegMask(REG_VALIDATE_INDIRECT_CALL_ADDR_ARM64)) == SRBM_NONE);
+                    }
+
+                    if (JitConfig.JitForceControlFlowGuard != 0)
+                    {
+                        return true;
+                    }
+
+                    return jitFlags->IsSet(JitFlags.JIT_FLAG_ENABLE_CFG);
                 }
-                return jitFlags->IsSet(JitFlags.JIT_FLAG_ENABLE_CFG);
-#else
+
                 // The remaining platforms are not supported and would require some
                 // work to support.
                 //
@@ -155,7 +161,6 @@ public partial class Compiler
                 //   through.
                 //
                 return false;
-#endif
             }
         }
 
@@ -197,23 +202,19 @@ public partial class Compiler
 
         public bool compDbgEnC;
 
-#if PROFILING_SUPPORTED
         public bool compNoPInvokeInlineCB;
-#else
-        public const bool compNoPInvokeInlineCB = false;
-#endif
 
 #if DEBUG
         /// <summary>Check arguments and return values to ensure they are sane</summary>
         public bool compGcChecks;
 #endif
 
-#if DEBUG && TARGET_XARCH
+#if DEBUG
         /// <summary>Check stack pointer on return to ensure it is correct.</summary>
         public bool compStackCheckOnRet;
 #endif
 
-#if DEBUG && TARGET_X86
+#if DEBUG
         /// <summary>Check stack pointer after call to ensure it is correct. Only for x86.</summary>
         public bool compStackCheckOnCall;
 #endif
@@ -221,12 +222,11 @@ public partial class Compiler
         /// <summary>Generate relocs for pointers in code, true for all AOT codegen</summary>
         public bool compReloc;
 
-#if DEBUG && (TARGET_XARCH || TARGET_RISCV64)
+#if DEBUG
         /// <summary>Whether absolute addr be encoded as PC-rel offset by RyuJIT where possible</summary>
         public bool compEnablePCRelAddr;
 #endif
 
-#if UNIX_AMD64_ABI
         /// <summary>This flag is indicating if there is a need to align the frame.</summary>
         /// <remarks>
         ///   <para>On AMD64-Windows, if there are calls, 4 slots for the outgoing ars are allocated, except for FastTailCall.</para>
@@ -235,7 +235,6 @@ public partial class Compiler
         ///   <para>This flags takes care of the AMD64-Unix case by remembering that there are calls and making sure the frame alignment logic is executed.</para>
         /// </remarks>
         public bool compNeedToAlignFrame;
-#endif
 
         /// <summary>Separate cold code from hot code</summary>
         public bool compProcedureSplitting;
@@ -369,29 +368,21 @@ public partial class Compiler
         public const bool dspGCtbls = true;
 #endif
 
-#if PROFILING_SUPPORTED
         /// <summary>Whether to emit Enter/Leave/TailCall hooks using a dummy stub (DummyProfilerELTStub()).</summary>
         /// <remarks>This option helps make the JIT behave as if it is running under a profiler.</remarks>
         public bool compJitELTHookEnabled;
-#endif
 
-#if FEATURE_TAILCALL_OPT
         /// <summary>Whether opportunistic or implicit tail call optimization is enabled.</summary>
         public bool compTailCallOpt;
 
         /// <summary>Whether optimization of transforming a recursive tail call into a loop is enabled.</summary>
         public bool compTailCallLoopOpt;
-#endif
 
-#if FEATURE_FASTTAILCALL || TARGET_WASM
         /// <summary>Whether fast tail calls are allowed.</summary>
         public bool compFastTailCalls;
-#endif
 
-#if TARGET_ARM64
         /// <summary>Decision about whether to save FP/LR registers with callee-saved registers (see DOTNET_JitSaveFpLrWithCalleSavedRegisters).</summary>
         public int compJitSaveFpLrWithCalleeSavedRegisters;
-#endif
 
         public bool compUseSoftFP;
 

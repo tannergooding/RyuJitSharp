@@ -7,41 +7,19 @@ namespace RyuJitSharp;
 
 public partial class Globals
 {
-#if TARGET_64BIT
-    public const var_types TYP_I_IMPL = TYP_LONG;
+    public static var_types TYP_I_IMPL => Configuration.TARGET_64BIT ? TYP_LONG : TYP_INT;
 
-    public const var_types TYP_U_IMPL = TYP_ULONG;
-#else
-    public const var_types TYP_I_IMPL = TYP_INT;
-
-    public const var_types TYP_U_IMPL = TYP_UINT;
-#endif
+    public static var_types TYP_U_IMPL => Configuration.TARGET_64BIT ? TYP_ULONG : TYP_UINT;
 
     public const byte SIZE_UNKNOWN = byte.MaxValue;
-
-    public const emitAttr GCS = EA_GCREF;
-
-    public const emitAttr BRS = EA_BYREF;
-
-    public const emitAttr EPS = EA_PTRSIZE;
 
     public const emitAttr EAU = EA_UNKNOWN;
 
     public const byte SZU = SIZE_UNKNOWN;
 
-    public const byte PS = TARGET_POINTER_SIZE;
+    public static byte PS => (byte)Configuration.TARGET_POINTER_SIZE;
 
-    public const byte PST = TARGET_POINTER_SIZE / sizeof(int);
-
-#if TARGET_64BIT
-    public const var_types_classification VTF_I32 = VTF_ANY;
-
-    public const var_types_classification VTF_I64 = VTF_I;
-#else
-    public const var_types_classification VTF_I32 = VTF_I;
-
-    public const var_types_classification VTF_I64 = VTF_ANY;
-#endif
+    public static byte PST => (byte)(Configuration.TARGET_POINTER_SIZE / sizeof(int));
 
     public static bool varTypeIsSimd(var_types v)
     {
@@ -87,11 +65,7 @@ public partial class Globals
 
     public static bool varTypeIsIntOrI(var_types vt)
     {
-#if TARGET_64BIT
-        return vt is TYP_INT or TYP_I_IMPL;
-#else
-        return vt is TYP_INT;
-#endif
+        return (vt == TYP_INT) || (Configuration.TARGET_64BIT && (vt == TYP_LONG));
     }
 
     public static var_types genActualType(var_types type)
@@ -111,7 +85,11 @@ public partial class Globals
 
     public static bool genActualTypeIsInt(var_types vt) => vt is >= TYP_BYTE && vt <= TYP_UINT;
 
-    public static bool genActualTypeIsIntOrI(var_types vt) => vt is >= TYP_BYTE && vt <= TYP_U_IMPL;
+    public static bool genActualTypeIsIntOrI(var_types vt)
+    {
+        var upperBound = Configuration.TARGET_64BIT ? TYP_ULONG : TYP_UINT;
+        return ((int)vt >= (int)TYP_BYTE) && ((int)vt <= (int)upperBound);
+    }
 
     public static bool varTypeIsLong(var_types vt) => vt is TYP_LONG or TYP_ULONG;
 
@@ -119,20 +97,12 @@ public partial class Globals
 
     public static bool varTypeIsMultiReg(var_types vt)
     {
-#if TARGET_64BIT
-        return false;
-#else
-        return vt is TYP_LONG;
-#endif
+        return !Configuration.TARGET_64BIT && (vt is TYP_LONG);
     }
 
     public static bool varTypeIsSingleReg(var_types vt)
     {
-#if TARGET_64BIT
-        return true;
-#else
-        return vt is not TYP_LONG;
-#endif
+        return Configuration.TARGET_64BIT || (vt is not TYP_LONG);
     }
 
     public static bool varTypeIsComposite(var_types vt) => !varTypeIsArithmetic(vt) && (vt != TYP_VOID);
@@ -145,11 +115,7 @@ public partial class Globals
     // handled as if they are structs with two integer fields.
     public static bool varTypeIsPromotable(var_types vt)
     {
-#if TARGET_32BIT
-        return varTypeIsStruct(vt) || varTypeIsLong(vt);
-#else
-        return varTypeIsStruct(vt);
-#endif
+        return varTypeIsStruct(vt) || (Configuration.TARGET_32BIT && varTypeIsLong(vt));
     }
 
     public static bool varTypeIsStruct(var_types vt) => (vt.Classification & VTF_S) != 0;
@@ -168,26 +134,28 @@ public partial class Globals
         // However, we only have one type that uses VTR_MASK today
         // and so its quite a bit cheaper to just check that directly
 
-#if FEATURE_MASKED_HW_INTRINSICS
-        assert((vt == TYP_MASK) || (vt.Register != VTR_MASK));
-        return vt == TYP_MASK;
-#else
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            assert((vt == TYP_MASK) || (vt.Register != VTR_MASK));
+            return vt == TYP_MASK;
+        }
+
         assert(vt.Register != VTR_MASK);
         return false;
-#endif
     }
 
     public static bool varTypeUsesFloatArgReg(var_types vt)
     {
-#if TARGET_ARM64
-        // Arm64 passes simd types in floating point registers.
-        // Exception: Windows arm64 native varargs passes them using general-purpose (integer) registers or
-        // by value on the stack, or split between registers and stack.
-        return varTypeUsesFloatReg(vt);
-#else
+        if (Configuration.TARGET_ARM64)
+        {
+            // Arm64 passes simd types in floating point registers.
+            // Exception: Windows arm64 native varargs passes them using general-purpose (integer) registers or
+            // by value on the stack, or split between registers and stack.
+            return varTypeUsesFloatReg(vt);
+        }
+
         // Other targets pass them as regular structs - by reference or by value.
         return varTypeIsFloating(vt);
-#endif
     }
 
     /// <summary>Determine if the type is a valid HFA type</summary>

@@ -11,16 +11,17 @@ public partial class Compiler
     {
         var argType = corInfoType.VarType;
 
-#if TARGET_AMD64
-#if UNIX_AMD64_ABI
-        if (varTypeIsStruct(argType))
+        if (Configuration.TARGET_AMD64)
         {
-            var structSize = unchecked((uint)info.compCompHnd->getClassSize(typeHnd));
-            return roundUp(structSize, TARGET_POINTER_SIZE);
+            if (Configuration.UNIX_AMD64_ABI && varTypeIsStruct(argType))
+            {
+                var structSize = unchecked((uint)info.compCompHnd->getClassSize(typeHnd));
+                return roundUp(structSize, unchecked((uint)Configuration.TARGET_POINTER_SIZE));
+            }
+
+            return unchecked((uint)Configuration.TARGET_POINTER_SIZE);
         }
-#endif
-        return TARGET_POINTER_SIZE;
-#else
+
         uint argSize;
         var hfaType = TYP_UNDEF;
         var isHfa = false;
@@ -33,32 +34,37 @@ public partial class Compiler
 
             if (Configuration.FEATURE_MULTIREG_ARGS)
             {
-#if TARGET_ARM64
-                if (structSize > MAX_PASS_MULTIREG_BYTES)
+                if (Configuration.TARGET_ARM64)
                 {
-                    return TARGET_POINTER_SIZE;
-                }
-                else if (structSize > (2 * TARGET_POINTER_SIZE))
-                {
-                    if (TargetOS.IsWindows && info.compIsVarArgs)
+                    if (structSize > Configuration.MAX_PASS_MULTIREG_BYTES)
                     {
-                        // Windows ARM64 varargs pass structs in general-purpose registers.
-                        isHfa = false;
+                        return unchecked((uint)Configuration.TARGET_POINTER_SIZE);
                     }
-                    if (!isHfa)
+                    else if (structSize > (2 * Configuration.TARGET_POINTER_SIZE))
                     {
-                        return TARGET_POINTER_SIZE;
+                        if (TargetOS.IsWindows && info.compIsVarArgs)
+                        {
+                            // Windows ARM64 varargs pass structs in general-purpose registers.
+                            isHfa = false;
+                        }
+                        if (!isHfa)
+                        {
+                            return unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+                        }
                     }
                 }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-                if (structSize > MAX_PASS_MULTIREG_BYTES)
+                else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
                 {
-                    return TARGET_POINTER_SIZE;
+                    if (structSize > Configuration.MAX_PASS_MULTIREG_BYTES)
+                    {
+                        return unchecked((uint)Configuration.TARGET_POINTER_SIZE);
+                    }
                 }
-#elif !TARGET_ARM
-                Globals.NYI("unknown target");
-                throw new FatalJitException(CORJIT_SKIPPED, "Unknown target for multi-register arguments.");
-#endif
+                else if (!Configuration.TARGET_ARM)
+                {
+                    Globals.NYI("unknown target");
+                    throw new FatalJitException(CORJIT_SKIPPED, "Unknown target for multi-register arguments.");
+                }
             }
             argSize = structSize;
         }
@@ -69,7 +75,6 @@ public partial class Compiler
 
         var argSizeAlignment = eeGetArgSizeAlignment(argType, hfaType == TYP_FLOAT);
         return roundUp(argSize, argSizeAlignment);
-#endif
     }
 
     private static uint eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
@@ -83,16 +88,16 @@ public partial class Compiler
             }
             if (varTypeIsStruct(type))
             {
-                return TARGET_POINTER_SIZE;
+                return unchecked((uint)Configuration.TARGET_POINTER_SIZE);
             }
 
             var argSize = genTypeSize(type);
-            assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
+            assert((0 < argSize) && (argSize <= Configuration.TARGET_POINTER_SIZE));
             return argSize;
         }
         else
         {
-            return TARGET_POINTER_SIZE;
+            return unchecked((uint)Configuration.TARGET_POINTER_SIZE);
         }
     }
 }
