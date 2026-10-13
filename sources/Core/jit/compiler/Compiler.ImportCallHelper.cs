@@ -3982,10 +3982,7 @@ public partial class Compiler
         {
             assert(compiler.compCurBB is not null);
 
-            var shouldCaptureCallSig = Configuration.TARGET_WASM;
-#if DEBUG
-            shouldCaptureCallSig = true;
-#endif
+            var shouldCaptureCallSig = Configuration.DEBUG || Configuration.TARGET_WASM;
             if (shouldCaptureCallSig)
             {
                 call._callSig = new StrongBox<CORINFO_SIG_INFO>(sigInfo);
