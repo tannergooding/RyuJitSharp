@@ -151,9 +151,10 @@ public sealed partial class Lowering
         {
             noway_assert(compiler.lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
             var frameAddress = compiler.gtNewLclVarAddrNode(TYP_BYREF, compiler.lvaInlinedPInvokeFrameVar);
-#if DEBUG
-            assert(compiler.lvaGetDesc(compiler.lvaInlinedPInvokeFrameVar).IsAddressExposed);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(compiler.lvaGetDesc(compiler.lvaInlinedPInvokeFrameVar).IsAddressExposed);
+            }
             var helper = compiler.gtNewHelperCallNode(TYP_VOID, CORINFO_HELP_JIT_PINVOKE_END, frameAddress);
             _ = compiler.fgMorphTree(helper);
             BlockRange().InsertAfter(call, LIR.SeqTree(compiler, helper));
