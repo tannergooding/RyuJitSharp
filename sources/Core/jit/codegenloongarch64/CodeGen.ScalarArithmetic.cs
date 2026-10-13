@@ -210,16 +210,17 @@ public sealed partial class CodeGen
             {
                 exceptionRaisingBlock = failBlk;
 
-#if DEBUG
-                var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
-                assert(add is not null);
-                assert(add.acdUsed);
-                assert(ReferenceEquals(exceptionRaisingBlock, add.acdDstBlk));
-                if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                if (Configuration.DEBUG)
                 {
-                    assert(add.acdStkLvlInit || IsFramePointerUsed);
+                    var add = _compiler.fgGetExcptnTarget(codeKind, _compiler.compCurBB);
+                    assert(add is not null);
+                    assert(add.acdUsed);
+                    assert(ReferenceEquals(exceptionRaisingBlock, add.acdDstBlk));
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                    {
+                        assert(add.acdStkLvlInit || IsFramePointerUsed);
+                    }
                 }
-#endif
             }
             else
             {

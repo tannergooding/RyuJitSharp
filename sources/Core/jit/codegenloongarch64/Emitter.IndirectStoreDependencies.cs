@@ -221,13 +221,14 @@ public partial class Emitter
         }
         else
         {
-#if DEBUG
-            if (addr.Oper is GT_LCL_ADDR)
+            if (Configuration.DEBUG)
             {
-                ref var local = ref compiler.lvaGetDesc(addr.AsLclVarCommon().LclNum);
-                assert(!local.lvTracked);
+                if (addr.Oper is GT_LCL_ADDR)
+                {
+                    ref var local = ref compiler.lvaGetDesc(addr.AsLclVarCommon().LclNum);
+                    assert(!local.lvTracked);
+                }
             }
-#endif
             emitIns_R_R_I(ins, attr, dataReg, addr.RegNum, 0);
         }
     }

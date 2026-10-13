@@ -667,12 +667,13 @@ public sealed partial class CodeGen
             }
         }
 
-#if DEBUG
-        var boundsCheckType = genActualType(src2.Type);
-        var src1Type = genActualType(src1.Type);
-        assert(boundsCheckType is TYP_INT or TYP_LONG);
-        assert(src1Type is TYP_INT or TYP_LONG);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var boundsCheckType = genActualType(src2.Type);
+            var src1Type = genActualType(src1.Type);
+            assert(boundsCheckType is TYP_INT or TYP_LONG);
+            assert(src1Type is TYP_INT or TYP_LONG);
+        }
 
         genJumpToThrowHlpBlk_la(boundsCheck.ThrowKind, INS_bgeu, reg1, null, reg2);
     }
