@@ -4139,8 +4139,11 @@ public partial class Compiler
                 {
                     // If this assert fires it means that canTailCall was set to false without setting a reason!
 
+                    if (Configuration.DEBUG)
+                    {
+                        assert(!canTailCallFailReasonUtf8.IsEmpty);
+                    }
 #if DEBUG
-                    assert(!canTailCallFailReasonUtf8.IsEmpty);
                     JITDUMP($"\nRejecting {(isExplicitTailCall ? "ex" : "im")}plicit tail call for [{call.TreeId:D6}], reason: '{Encoding.UTF8.GetString(canTailCallFailReasonUtf8)}'\n");
 #endif
 

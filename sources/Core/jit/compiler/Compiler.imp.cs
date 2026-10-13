@@ -1469,8 +1469,11 @@ public partial class Compiler
                 var movingStmt = lastStmt.NextStmt;
                 assert(movingStmt is not null);
 
+                if (Configuration.DEBUG)
+                {
+                    assert(impLastStmt is not null);
+                }
 #if DEBUG
-                assert(impLastStmt is not null);
                 JITDUMP($"Moving {FMT_STMT(movingStmt.Id)} through {FMT_STMT(impLastStmt.Id)} before {FMT_STMT(insertBeforeStmt.Id)}\n");
 #endif
 
@@ -4318,8 +4321,11 @@ public partial class Compiler
 
         if (simdReturnType != call.Type)
         {
+            if (Configuration.DEBUG)
+            {
+                assert(varTypeIsSimd(simdReturnType));
+            }
 #if DEBUG
-            assert(varTypeIsSimd(simdReturnType));
             JITDUMP($"changing the type of a call [{call.TreeId:D6}] from {call.Type.Name} to {simdReturnType.Name}\n");
 #endif
 
