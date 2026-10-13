@@ -20,9 +20,10 @@ public sealed partial class Lowering
         var jumpCount = cases.Length;
         var successors = descriptor.Succs;
         var targetCount = successors.Length;
-#if DEBUG
-        assert(!original.TryGetUse(node, out _));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(!original.TryGetUse(node, out _));
+        }
         JITDUMP($"Lowering switch {FMT_BB(original.bbNum)}, {jumpCount} cases\n");
 
         if (targetCount == 1)
