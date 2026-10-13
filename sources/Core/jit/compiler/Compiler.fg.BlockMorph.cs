@@ -217,10 +217,15 @@ public partial class Compiler
                 }
                 assert(apLocalPostorder is not null);
                 BitVecOps.Assign(apTraits, ref apLocalPostorder, apLocal);
+
+                if (Configuration.DEBUG)
+                {
+                    assert(apLocal is not null);
+                }
+
 #if DEBUG
                 if (verbose)
                 {
-                    assert(apLocal is not null);
                     optDumpAssertionIndices("Assertions in: ", apLocal);
                 }
 #endif
