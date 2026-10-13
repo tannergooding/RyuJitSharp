@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_WASM
     private sealed class WasmSpillSlot
     {
         public int LocalNumber { get; }
@@ -29,6 +28,7 @@ public partial class Compiler
 
     public PhaseStatus fgWasmSpillRefs()
     {
+        assert(Configuration.TARGET_WASM);
         var anyChanges = false;
         var defs = new List<GenTree>();
         var spillSlotsToZeroAtEndOfBlock = new List<int>();
@@ -201,5 +201,4 @@ public partial class Compiler
 
         return anyChanges ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
-#endif
 }

@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_WASM
     private struct WasmVirtualIPBlockData
     {
         // UNSET is the meet identity; MANY represents conflicting or unknown incoming values.
@@ -89,6 +88,7 @@ public partial class Compiler
 
     public PhaseStatus fgWasmVirtualIP()
     {
+        assert(Configuration.TARGET_WASM);
         var virtualIP = 0u;
         var updatesAdded = 0u;
         EHClauseInfo[] clauses = [];
@@ -157,7 +157,7 @@ public partial class Compiler
                     GT_ADD,
                     TYP_I_IMPL,
                     spLocal,
-                    gtNewIconNode(TYP_INT, (nint)TARGET_POINTER_SIZE));
+                    gtNewIconNode(TYP_INT, (nint)Configuration.TARGET_POINTER_SIZE));
                 var indirectFlags = GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
                 setVirtualIP = gtNewStoreIndNode(TYP_INT, virtualIPSlotAddress, virtualIPValue, indirectFlags);
             }
@@ -371,5 +371,4 @@ public partial class Compiler
 
         return updatesAdded == 0 ? PhaseStatus.MODIFIED_NOTHING : PhaseStatus.MODIFIED_EVERYTHING;
     }
-#endif
 }

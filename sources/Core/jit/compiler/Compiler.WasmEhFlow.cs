@@ -10,10 +10,10 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_WASM
     // Catch funclets resume through a dispatch switch in their nearest enclosing try.
     public unsafe PhaseStatus fgWasmEhFlow()
     {
+        assert(Configuration.TARGET_WASM);
         assert(fgNodeThreading is NodeThreading.LIR);
 
         var hasCatch = false;
@@ -299,5 +299,4 @@ public partial class Compiler
         var rethrowNode = new GenTree(GT_WASM_THROW_REF, TYP_VOID);
         rethrowBlock.InsertAtEnd(LIR.SeqTree(this, rethrowNode));
     }
-#endif
 }

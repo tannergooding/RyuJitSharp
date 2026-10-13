@@ -9,9 +9,10 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_WASM && DEBUG
+#if DEBUG
     public void fgDumpWasmControlFlowDot()
     {
+        assert(Configuration.TARGET_WASM);
         if (!verbose)
         {
             return;

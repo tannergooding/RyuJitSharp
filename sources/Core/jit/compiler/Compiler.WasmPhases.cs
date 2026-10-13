@@ -7,9 +7,9 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_WASM
     public PhaseStatus fgWasmTransformSccs()
     {
+        assert(Configuration.TARGET_WASM);
         assert(fgNodeThreading == NodeThreading.LIR);
 
         var fgWasm = new FgWasm(this);
@@ -54,5 +54,4 @@ public partial class Compiler
 
         return transformed ? PhaseStatus.MODIFIED_EVERYTHING : PhaseStatus.MODIFIED_NOTHING;
     }
-#endif
 }

@@ -10,7 +10,6 @@ namespace RyuJitSharp;
 // Represents a Wasm BLOCK/END or LOOP/END span in the linearized basic-block list.
 public sealed class WasmInterval
 {
-#if TARGET_WASM
     // interval kind
     public enum Kind
     {
@@ -35,6 +34,7 @@ public sealed class WasmInterval
 
     public WasmInterval(uint start, uint end, Kind kind)
     {
+        Configuration.EnsureWasmTarget();
         _chain = this;
         _start = start;
         _end = end;
@@ -170,6 +170,5 @@ public sealed class WasmInterval
             _ => "??",
         };
     }
-#endif
 #endif
 }

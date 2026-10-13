@@ -8,7 +8,6 @@ using System.Collections.Generic;
 
 namespace RyuJitSharp;
 
-#if TARGET_WASM
 // Includes nested SCCs wholly within this component, excluding its entry nodes.
 internal sealed class Scc
 {
@@ -529,4 +528,3 @@ internal sealed class Scc
         return modified;
     }
 }
-#endif

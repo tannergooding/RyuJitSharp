@@ -10,7 +10,6 @@ using static RyuJitSharp.BasicBlockFlags;
 
 namespace RyuJitSharp;
 
-#if TARGET_WASM
 internal sealed class WasmSuccessorEnumerator
 {
     private readonly BasicBlock[] _successors;
@@ -366,4 +365,3 @@ internal sealed partial class FgWasm
         return new FlowGraphDfsTree(compiler, postOrder, postorderIndex, hasCycle, profileAware: true, forWasm: true);
     }
 }
-#endif

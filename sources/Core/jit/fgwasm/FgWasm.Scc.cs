@@ -8,7 +8,6 @@ using System.Collections.Generic;
 
 namespace RyuJitSharp;
 
-#if TARGET_WASM
 internal sealed partial class FgWasm
 {
     private readonly Compiler _comp;
@@ -18,6 +17,7 @@ internal sealed partial class FgWasm
 
     internal FgWasm(Compiler comp)
     {
+        Configuration.EnsureWasmTarget();
         _comp = comp;
     }
 
@@ -279,4 +279,3 @@ internal sealed partial class FgWasm
     }
 #endif
 }
-#endif

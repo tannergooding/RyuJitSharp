@@ -13,9 +13,9 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_WASM
     public PhaseStatus fgWasmControlFlow()
     {
+        assert(Configuration.TARGET_WASM);
         assert(fgNodeThreading == NodeThreading.LIR);
 
         var fgWasm = new FgWasm(this);
@@ -529,5 +529,4 @@ public partial class Compiler
 
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
-#endif
 }

@@ -10,7 +10,6 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-#if TARGET_WASM
     private readonly struct WasmTrySideEntry
     {
         public BasicBlock Pred { get; }
@@ -43,6 +42,7 @@ public partial class Compiler
 
     public PhaseStatus fgWasmRepairTryEntries()
     {
+        assert(Configuration.TARGET_WASM);
         assert(fgNodeThreading is NodeThreading.LIR);
 
         if (compHndBBtabCount == 0)
@@ -362,5 +362,4 @@ public partial class Compiler
         fgInvalidateDfsTree();
         return PhaseStatus.MODIFIED_EVERYTHING;
     }
-#endif
 }

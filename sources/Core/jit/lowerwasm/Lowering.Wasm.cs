@@ -7,11 +7,15 @@ using System;
 
 namespace RyuJitSharp;
 
-#if TARGET_WASM
 public sealed partial class Lowering
 {
     private void AfterLowerBlocksWasm()
     {
+        if (!Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm stackification was dispatched for another target.");
+        }
+
         // Stackification runs before liveness so any newly introduced locals participate in register allocation.
         var stackifier = new Stackifier(this);
         foreach (var block in CompilerInstance.Blocks)
@@ -311,9 +315,13 @@ public sealed partial class Lowering
         }
     }
 
-#if FEATURE_HW_INTRINSICS
     private GenTree? LowerHWIntrinsicWasm(GenTreeHWIntrinsic node)
     {
+        if (!Configuration.TARGET_WASM || !Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Wasm hardware-intrinsic lowering is not available.");
+        }
+
         var intrinsic = node.HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(intrinsic);
         var hasImmediateOperand = HWIntrinsicInfo.HasImmediateOperand(intrinsic);
@@ -800,6 +808,4 @@ public sealed partial class Lowering
             MakeSrcContained(node, node.GetOp(3));
         }
     }
-#endif
 }
-#endif
