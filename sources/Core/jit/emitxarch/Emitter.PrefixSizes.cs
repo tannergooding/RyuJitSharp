@@ -48,10 +48,11 @@ public partial class Emitter
             return false;
         }
 
-#if DEBUG
-        var leadingByte = (insCode >> 16) & 0xFF;
-        assert(leadingByte is 0x00 or 0x66 or 0xF2 or 0xF3);
-#endif
+        if (Configuration.DEBUG)
+        {
+            var leadingByte = (insCode >> 16) & 0xFF;
+            assert(leadingByte is 0x00 or 0x66 or 0xF2 or 0xF3);
+        }
         return true;
     }
 

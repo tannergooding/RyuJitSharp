@@ -26,15 +26,16 @@ public partial class Emitter
     private static bool IsApxOnlyInstruction(instruction ins)
     {
         var isApxOnly = (prefixFlags(ins) & Encoding_EVEX_APX_ONLY) != 0;
-#if DEBUG
-        if (Configuration.TARGET_AMD64 && isApxOnly)
+        if (Configuration.DEBUG)
         {
-            var known = InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_push2, INS_pop2)
-                || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_APX_INSTRUCTION, LAST_APX_INSTRUCTION)
-                || ins is INS_tzcnt_apx or INS_lzcnt_apx or INS_popcnt_apx;
-            assert(known);
+            if (Configuration.TARGET_AMD64 && isApxOnly)
+            {
+                var known = InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_push2, INS_pop2)
+                    || InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_APX_INSTRUCTION, LAST_APX_INSTRUCTION)
+                    || ins is INS_tzcnt_apx or INS_lzcnt_apx or INS_popcnt_apx;
+                assert(known);
+            }
         }
-#endif
         return isApxOnly;
     }
 
