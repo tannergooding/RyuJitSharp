@@ -1834,10 +1834,11 @@ public sealed partial class CodeGen
         // Stack destinations do not need write barriers and must use a native memory operation.
         assert(!dstOnStack || isNativeOp);
 
-#if DEBUG
-        // Without a native memory operation, this path must be copying a type with GC pointers.
-        assert(isNativeOp || blkOp.Layout.HasGCPtr);
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Without a native memory operation, this path must be copying a type with GC pointers.
+            assert(isNativeOp || blkOp.Layout.HasGCPtr);
+        }
 
         var nullCheckDest = (blkOp.Flags & GTF_IND_NONFAULTING) == 0;
         var nullCheckSrc = false;
