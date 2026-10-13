@@ -109,14 +109,12 @@ public partial struct GCInfo
                     }
                     var fieldOffset = slot * Configuration.TARGET_POINTER_SIZE;
                     var offset = unchecked(variable.StackOffset + fieldOffset);
-#if DEBUG
-                    if (variable.lvPromoted)
+                    if (Configuration.DEBUG && variable.lvPromoted)
                     {
                         assert(compiler.lvaGetPromotionType(in variable) == Compiler.PROMOTION_TYPE_DEPENDENT);
                         var fieldLocal = compiler.lvaGetFieldLocal(in variable, (uint)fieldOffset);
                         assert(fieldLocal != BAD_VAR_NUM);
                     }
-#endif
                     var flags = GC_SLOT_UNTRACKED;
                     if (layout.GetGCPtrType(slot) == TYP_BYREF)
                     {
