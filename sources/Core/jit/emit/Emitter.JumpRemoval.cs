@@ -11,7 +11,12 @@ public partial class Emitter
 {
     public unsafe void emitRemoveJumpToNextInst()
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Jump-to-next-instruction removal is only available for xarch.");
+        }
+
         if (!emitContainsRemovableJmpCandidates)
         {
             return;
@@ -43,7 +48,7 @@ public partial class Emitter
             if (jmp.idjIsRemovableJmpCandidate)
             {
 #if DEBUG
-                assert(jmp.idInsFmt() == IF_LABEL);
+                assert(jmp.idInsFmt() == IF_XARCH_LABEL);
                 assert(jmp.idIns() == INS_jmp);
                 var debugInfo = jmp.idDebugOnlyInfo();
                 assert(debugInfo is not null);
@@ -103,8 +108,7 @@ public partial class Emitter
                     var codeSize = jmp.idCodeSize();
                     jmp.idCodeSize(0);
 
-#if TARGET_AMD64
-                    if (jmp.idjIsAfterCallBeforeEpilog)
+                    if (Configuration.TARGET_AMD64 && jmp.idjIsAfterCallBeforeEpilog)
                     {
                         if ((targetGroup.igFlags & InsGroupFlags.Epilog) != 0)
                         {
@@ -116,7 +120,6 @@ public partial class Emitter
                             jmp.idjIsAfterCallBeforeEpilog = false;
                         }
                     }
-#endif
 
                     jmpGroup.igSize = unchecked((ushort)(jmpGroup.igSize - codeSize));
                     jmpGroup.igFlags |= InsGroupFlags.UpdatedInstructionSize;
@@ -183,7 +186,6 @@ public partial class Emitter
         {
             JITDUMP("emitRemoveJumpToNextInst removed no unconditional jumps\n");
         }
-#endif
 #endif
     }
 }

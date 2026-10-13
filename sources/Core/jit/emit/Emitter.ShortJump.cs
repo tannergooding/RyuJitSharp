@@ -3,13 +3,20 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.Globals;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if !TARGET_WASM
     public void emitIns_ShortJ(instruction ins, BasicBlock dst)
     {
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Fixed-size prolog jumps are not available for WebAssembly.");
+        }
+
         const InsGroupFlags IGF_OUT_OF_ORDER_MASK = InsGroupFlags.Prolog | InsGroupFlags.Epilog
             | InsGroupFlags.FuncletProlog | InsGroupFlags.FuncletEpilog;
         assert(emitCurIG is not null);
@@ -17,5 +24,4 @@ public partial class Emitter
         // Prolog unwind offsets are fixed while recording, so binding cannot resize these jumps.
         emitIns_J(ins, dst, keepShort: true);
     }
-#endif
 }

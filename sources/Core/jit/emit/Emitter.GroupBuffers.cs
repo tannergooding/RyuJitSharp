@@ -7,13 +7,11 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
-    private const int SC_IG_BUFFER_NUM_SMALL_DESCS = 0;
-    private const int SC_IG_BUFFER_NUM_LARGE_DESCS = 200;
-#else
-    private const int SC_IG_BUFFER_NUM_SMALL_DESCS = 14;
-    private const int SC_IG_BUFFER_NUM_LARGE_DESCS = 50;
-#endif
+    private static int SC_IG_BUFFER_NUM_SMALL_DESCS =>
+        Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? 0 : 14;
+
+    private static int SC_IG_BUFFER_NUM_LARGE_DESCS =>
+        Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64 ? 200 : 50;
 
 #if EMITTER_STATS
     private static nuint emitSizeMethod;
@@ -32,14 +30,15 @@ public partial class Emitter
     {
         emitCurIG = ig;
 
-#if EMIT_TRACK_STACK_DEPTH
-        ig.igStkLvl = unchecked((uint)emitCurStackLvl);
-
-        if (ig.igStkLvl != emitCurStackLvl)
+        if (Configuration.EMIT_TRACK_STACK_DEPTH)
         {
-            IMPL_LIMITATION("Too many arguments pushed on stack");
+            ig.igStkLvl = unchecked((uint)emitCurStackLvl);
+
+            if (ig.igStkLvl != emitCurStackLvl)
+            {
+                IMPL_LIMITATION("Too many arguments pushed on stack");
+            }
         }
-#endif
 
         if (emitNoGCIG)
         {
@@ -67,9 +66,7 @@ public partial class Emitter
 
         emitCurIGfreeBase.Clear();
         emitCurIGfreeNext = 0;
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
         emitLastInsFullSize = 0;
-#endif
     }
 
     private void emitNewIG()
@@ -135,9 +132,7 @@ public partial class Emitter
         assert(emitCurIGfreeNext <= emitCurIGfreeEndp);
 
         var ig = emitCurIG;
-#if TARGET_ARMARCH
         emitLastMemBarrier = null;
-#endif
 
         var sz = emitCurIGfreeNext;
         var alignmentMask = (nuint)(nint.Size - 1);
@@ -343,12 +338,10 @@ public partial class Emitter
         {
             assert(emitLastInsIG == emitCurIG);
 
-#if TARGET_XARCH
-            if (emitLastIns.idIns() == INS_jmp)
+            if (Configuration.TARGET_XARCH && (emitLastIns.idIns() == INS_jmp))
             {
                 ig.igFlags |= InsGroupFlags.HasRemovableJump;
             }
-#endif
 
             emitLastIns = emitSavedDescriptor(ig, emitLastIns, sz);
             emitLastInsIG = ig;

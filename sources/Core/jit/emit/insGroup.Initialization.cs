@@ -11,9 +11,7 @@ public sealed partial class insGroup
 {
     public insGroup? igNext;
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
     public insGroup? igPrev;
-#endif
 
 #if DEBUG
     public insGroup? igSelf;
@@ -39,13 +37,9 @@ public sealed partial class insGroup
     internal nuint igStorageSize;
     internal nuint igDataOffset;
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
     public Emitter.instrDesc? igLastIns;
-#endif
 
-#if EMIT_TRACK_STACK_DEPTH
     public uint igStkLvl;
-#endif
 
     public byte igInsCnt;
 

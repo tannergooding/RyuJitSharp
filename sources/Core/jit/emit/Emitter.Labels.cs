@@ -116,15 +116,72 @@ public partial class Emitter
         return (emitLastIns is not null) && emitLastIns.idIsCall() && !emitLastIns.idIsNoGC();
     }
 
-#if !TARGET_XARCH && !TARGET_ARM && !TARGET_ARM64 && !TARGET_WASM && !TARGET_RISCV64
     public void emitIns(instruction ins)
     {
-#if TARGET_LOONGARCH64
-        emitInsLoongArch64(ins);
-#else
+        if (Configuration.TARGET_XARCH)
+        {
+            emitInsXarch(ins);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            emitInsArm32(ins);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            emitInsArm64(ins);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsLoongArch64(ins);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            emitInsRiscV64(ins);
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            emitInsWasm(ins);
+            return;
+        }
+
         throw new FatalJitException(CORJIT_SKIPPED,
-            $"Zero-operand instruction recording outside xarch is not ported ({ins}).");
-#endif
+            $"Zero-operand instruction recording is unsupported for this target ({ins}).");
     }
+
+    private void emitInsLoongArch64(instruction ins)
+    {
+        RequireLoongArch64Target();
+        var id = emitNewInstr(EA_8BYTE);
+        id.idIns(ins);
+        var code = emitInsCodeLoongArch64(ins);
+#if DEBUG
+        if (ins == INS_break)
+        {
+            code |= 0x5;
+        }
 #endif
+        id.idAddr().iiaSetInstrEncode(code);
+        id.idCodeSize(4);
+        appendToCurIG(id);
+    }
+
+    private static void RequireLoongArch64Target()
+    {
+        if (!Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "LoongArch64 emitter operations require LoongArch64.");
+        }
+    }
+
 }

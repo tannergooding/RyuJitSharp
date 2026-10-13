@@ -7,50 +7,36 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_ARM
-    internal nint emitGetInsSC(instrDesc id)
-#else
     internal static nint emitGetInsSC(instrDesc id)
-#endif
     {
-#if TARGET_ARM
-        // The outer ARM-only guard is intentional upstream; ARM64 stores scaled
-        // immediates for some formats and does not enter this frame-address path.
-        if (id.idIsLclVar())
+        if (id.idIsLargeCns())
         {
-            assert(_compiler is not null);
+            return ((instrDescCns)id).idcCnsVal;
+        }
+
+        return id.idSmallCns();
+    }
+
+    internal nint emitGetInsSCForTarget(instrDesc id)
+    {
+        // ARM32 local-variable immediates depend on the active frame layout.
+        if (Configuration.TARGET_ARM && id.idIsLclVar())
+        {
+            var compiler = _compiler ?? throw new FatalJitException(
+                "ARM32 local-variable immediate resolution requires an active compiler.");
             var varNum = id.idAddr().iiaLclVar.lvaVarNum();
             var offs = unchecked((int)id.idAddr().iiaLclVar.lvaOffset());
-#if TARGET_ARM
-            var adr = _compiler.lvaFrameAddress(varNum, id.idIsLclFPBase(), out var baseReg, offs,
+            var adr = compiler.lvaFrameAddress(varNum, id.idIsLclFPBase(), out var baseReg, offs,
                 CodeGen.instIsFP(id.idIns()));
-            var dsp = unchecked(adr + offs);
-            if ((id.idIns() == INS_sub) || (id.idIns() == INS_subw))
+            var displacement = unchecked(adr + offs);
+            if (id.idIns() is INS_sub or INS_subw)
             {
-                dsp = unchecked(-dsp);
+                displacement = unchecked(-displacement);
             }
-#elif TARGET_ARM64
-            // This branch is unreachable under the pinned outer ARM guard.
-            var adr = _compiler.lvaFrameAddress(varNum, out bool fpBased);
-            var dsp = unchecked(adr + offs);
-            if (id.idIns() == INS_sub)
-            {
-                dsp = unchecked(-dsp);
-            }
-#endif
-            return dsp;
+
+            return displacement;
         }
-        else
-#endif
-        {
-            if (id.idIsLargeCns())
-            {
-                return ((instrDescCns)id).idcCnsVal;
-            }
-            else
-            {
-                return id.idSmallCns();
-            }
-        }
+
+        return emitGetInsSC(id);
     }
 }

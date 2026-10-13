@@ -12,12 +12,17 @@ public partial class Emitter
     public void emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         GenTreeIndir indir, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register memory instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Two-register memory instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins) || IsApxExtendedEvexInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins) || IsApxExtendedEvexInstruction(ins));
 
@@ -27,7 +32,7 @@ public partial class Emitter
         id.idReg1(reg1);
         id.idReg2(reg2);
         emitHandleMemOp(indir, id,
-            (ins == INS_mulx) ? IF_RWR_RWR_ARD : emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
+            (ins == INS_mulx) ? IF_XARCH_RWR_RWR_ARD : emitInsModeFormat(ins, IF_XARCH_RRD_RRD_ARD), ins);
 
         if (IsSimdInstruction(ins))
         {
@@ -41,18 +46,22 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_R_R_A_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         GenTreeIndir indir, int ival, insFormat fmt, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Two-register memory-immediate recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Two-register memory-immediate recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 
@@ -70,18 +79,22 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public void emitIns_R_R_A_R(instruction ins, emitAttr attr, regNumber targetReg,
         regNumber op1Reg, regNumber op3Reg, GenTreeIndir indir, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-address-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Register-address-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
         assert(UseSimdEncoding());
 
@@ -91,7 +104,7 @@ public partial class Emitter
         id.idIns(ins);
         id.idReg1(targetReg);
         id.idReg2(op1Reg);
-        emitHandleMemOp(indir, id, IF_RWR_RRD_ARD_RRD, ins);
+        emitHandleMemOp(indir, id, IF_XARCH_RWR_RRD_ARD_RRD, ins);
 
         SetEvexBroadcastIfNeeded(id, instOptions);
         SetEvexEmbMaskIfNeeded(id, instOptions);
@@ -100,34 +113,51 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
-#if !TARGET_ARM64
     public void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
-        regNumber reg1, regNumber reg2, regNumber reg3, insOpts instOptions = INS_OPTS_NONE)
+        regNumber reg1, regNumber reg2, regNumber reg3, insOpts instOptions = INS_OPTS_NONE,
+        insScalableOpts scalableOptions = insScalableOpts.INS_SCALABLE_OPTS_NONE)
     {
-#if TARGET_ARM
-        if (!insOptsNone(instOptions))
+        if (Configuration.TARGET_ARM64)
         {
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 four-register instruction options are not ported.");
+            emitIns_R_R_R_RArm64(ins, attr, targetReg, reg1, reg2, reg3, instOptions, scalableOptions);
+            return;
         }
 
-        recordArm32InsRRRR(ins, attr, targetReg, reg1, reg2, reg3);
-#elif TARGET_LOONGARCH64
-        emitInsRRRRIloongArch64(ins, attr, targetReg, reg1, reg2, reg3);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Four-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            if (!insOptsNone(instOptions))
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "ARM32 four-register instruction options are not ported.");
+            }
+
+            recordArm32InsRRRR(ins, attr, targetReg, reg1, reg2, reg3);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRRRRIloongArch64(ins, attr, targetReg, reg1, reg2, reg3);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Four-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(isAvxBlendv(ins) || isAvx512Blendv(ins));
         assert(UseSimdEncoding());
 
         var id = emitNewInstr(attr);
         id.idIns(ins);
-        id.idInsFmt(IF_RWR_RRD_RRD_RRD);
+        id.idInsFmt(IF_XARCH_RWR_RRD_RRD_RRD);
         id.idReg1(targetReg);
         id.idReg2(reg1);
         id.idReg3(reg2);
@@ -145,7 +175,5 @@ public partial class Emitter
         id.idCodeSize(sz);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
-#endif
 }

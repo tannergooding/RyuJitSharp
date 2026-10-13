@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_SIMD
 using System.Runtime.InteropServices;
 
 namespace RyuJitSharp;
@@ -12,14 +11,21 @@ public partial class Emitter
 {
     public unsafe CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue)
     {
-        var cnsAlign = 8u;
-#if TARGET_XARCH
-        assert(_compiler is not null);
-        if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+        if (!Configuration.FEATURE_SIMD)
         {
-            cnsAlign = dataSection.MIN_DATA_ALIGN;
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
         }
-#endif
+
+        var cnsAlign = 8u;
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(_compiler is not null);
+            if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+            {
+                cnsAlign = dataSection.MIN_DATA_ALIGN;
+            }
+        }
+
         var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in constValue, 1));
         var cnum = emitDataConst(bytes, cnsAlign, TYP_SIMD8);
 
@@ -28,29 +34,40 @@ public partial class Emitter
 
     public unsafe CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue)
     {
-        var cnsAlign = 16u;
-#if TARGET_XARCH
-        assert(_compiler is not null);
-        if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+        if (!Configuration.FEATURE_SIMD)
         {
-            cnsAlign = dataSection.MIN_DATA_ALIGN;
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
         }
-#endif
+
+        var cnsAlign = 16u;
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(_compiler is not null);
+            if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+            {
+                cnsAlign = dataSection.MIN_DATA_ALIGN;
+            }
+        }
+
         var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in constValue, 1));
         var cnum = emitDataConst(bytes, cnsAlign, TYP_SIMD16);
 
         return Compiler.eeFindJitDataOffs(cnum);
     }
 
-#if TARGET_XARCH
     public unsafe CORINFO_FIELD_HANDLE emitSimdConst(in simd_t constValue, emitAttr attr)
     {
+        if (!Configuration.FEATURE_SIMD)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "SIMD constant emission requires SIMD support.");
+        }
+
         assert(_compiler is not null);
         var cnsSize = (int)EA_SIZE(attr);
         var cnsAlign = (uint)cnsSize;
         var dataType = cnsSize >= 8 ? Compiler.GetSimdTypeForSize(cnsSize) : TYP_FLOAT;
 
-        if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+        if (Configuration.TARGET_XARCH && (_compiler.compCodeOpt == Compiler.SMALL_CODE))
         {
             cnsAlign = dataSection.MIN_DATA_ALIGN;
         }
@@ -63,6 +80,12 @@ public partial class Emitter
 
     public unsafe void emitSimdConstCompressedLoad(in simd_t constValue, emitAttr attr, regNumber targetReg)
     {
+        if (!Configuration.FEATURE_SIMD || !Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Compressed SIMD constant loads require SIMD support on xarch.");
+        }
+
         assert(_compiler is not null);
         assert((EA_SIZE(attr) >= EA_8BYTE) && (EA_SIZE(attr) <= EA_64BYTE));
 
@@ -136,24 +159,28 @@ public partial class Emitter
         var cnum = emitSimdConst(in constValue, attr);
         emitIns_R_C(ins, attr, targetReg, cnum, 0);
     }
-#endif
 
-#if FEATURE_MASKED_HW_INTRINSICS
     public unsafe CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue)
     {
-        var cnsAlign = 8u;
-#if TARGET_XARCH
-        assert(_compiler is not null);
-        if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+        if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            cnsAlign = dataSection.MIN_DATA_ALIGN;
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "SIMD mask constant emission requires masked hardware intrinsic support.");
         }
-#endif
+
+        var cnsAlign = 8u;
+        if (Configuration.TARGET_XARCH)
+        {
+            assert(_compiler is not null);
+            if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+            {
+                cnsAlign = dataSection.MIN_DATA_ALIGN;
+            }
+        }
+
         var bytes = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in constValue, 1));
         var cnum = emitDataConst(bytes, cnsAlign, TYP_MASK);
 
         return Compiler.eeFindJitDataOffs(cnum);
     }
-#endif
 }
-#endif

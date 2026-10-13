@@ -11,38 +11,42 @@ public partial class Emitter
 {
     public unsafe void emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, regNumber reg, int offs)
     {
-#if TARGET_ARM
-        NYI("emitIns_C_R");
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field register instruction recording is not ported.");
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register stores require xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            NYI("emitIns_C_R");
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 static-field register instruction recording is not ported.");
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Static-field register stores require xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
             attr |= EA_DSP_RELOC_FLG;
         }
 
         var size = EA_SIZE(attr);
-#if TARGET_X86
-        assert(size <= EA_8BYTE);
-#else
-        assert(size <= EA_PTRSIZE);
-#endif
+        assert(size <= (Configuration.TARGET_X86 ? EA_8BYTE : EA_PTRSIZE));
         noway_assert(emitVerifyEncodable(ins, size, reg));
 
         var id = emitNewInstrDsp(attr, offs);
-        var fmt = (ins == INS_xchg) ? IF_MRW_RRW : emitInsModeFormat(ins, IF_MRD_RRD);
+        var fmt = (ins == INS_xchg) ? IF_XARCH_MRW_RRW : emitInsModeFormat(ins, IF_XARCH_MRD_RRD);
         id.idIns(ins);
         id.idInsFmt(fmt);
         id.idReg1(reg);
         uint sz;
-#if TARGET_X86
-        if ((ins == INS_mov) && (reg == REG_EAX))
+        if (Configuration.TARGET_X86 && (ins == INS_mov) &&
+            (reg == TargetRuntimeMetadata.IntegerReturnRegister))
         {
-            sz = 1 + TARGET_POINTER_SIZE;
+            sz = 1u + (uint)Configuration.TARGET_POINTER_SIZE;
 
             if (size == EA_2BYTE)
             {
@@ -55,7 +59,6 @@ public partial class Emitter
             }
         }
         else
-#endif
         {
             sz = emitInsSizeCV(id, insCodeMR(ins));
         }
@@ -70,77 +73,94 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public unsafe void emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO_FIELD_HANDLE fldHnd,
         int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if TARGET_ARM
-        if (instOptions != INS_OPTS_NONE)
+        if (Configuration.TARGET_ARM)
         {
-            NYI("ARM32 static-field instruction options");
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field instruction options are not ported.");
+            if (instOptions != INS_OPTS_NONE)
+            {
+                NYI("ARM32 static-field instruction options");
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "ARM32 static-field instruction options are not ported.");
+            }
+
+            if (ins == INS_mov)
+            {
+                assert(false, "Please use ins_Load() to select the correct instruction.");
+            }
+
+            assert(emitInsIsLoadArm32(ins) || (ins == INS_lea));
+            if (ins == INS_lea)
+            {
+                ins = INS_add;
+            }
+
+            var dataOffset = Compiler.eeGetJitDataOffs(fldHnd);
+            nint address = 0;
+            if (dataOffset >= 0)
+            {
+                NYI("JitDataOffset static fields");
+                throw new FatalJitException(CORJIT_SKIPPED, "JitDataOffset static fields are not ported.");
+            }
+
+            if (fldHnd == FLD_GLOBAL_FS)
+            {
+                NYI("Thread-Local-Storage static fields");
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Thread-Local-Storage static fields are not ported.");
+            }
+
+            if (fldHnd == FLD_GLOBAL_DS)
+            {
+                address = offs;
+                offs = 0;
+            }
+            else
+            {
+                NYI("Normal statics are expected to be handled in the importer");
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "Normal static-field instruction recording is not ported.");
+            }
+
+            var regTmp = reg;
+            if (isFloatReg(regTmp))
+            {
+                assert(false, "emitIns_R_C cannot be called with a floating-point target.");
+                NYI("emitIns_R_C with a floating-point target");
+                throw new FatalJitException(CORJIT_SKIPPED,
+                    "ARM32 static-field instruction recording requires a general register.");
+            }
+
+            codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regTmp, address);
+            if ((ins != INS_add) || (offs != 0) || (reg != regTmp))
+            {
+                emitIns_R_R_I(ins, attr, reg, regTmp, offs, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+            }
+
+            return;
         }
 
-        if (ins == INS_mov)
+        if (Configuration.TARGET_LOONGARCH64)
         {
-            assert(false, "Please use ins_Load() to select the correct instruction.");
+            assert(instOptions == INS_OPTS_NONE);
+            emitIns_R_CLoongArch64(ins, attr, reg, REG_NA, fldHnd, offs);
+            return;
         }
 
-        assert(emitInsIsLoad(ins) || (ins == INS_lea));
-        if (ins == INS_lea)
+        if (!Configuration.TARGET_XARCH)
         {
-            ins = INS_add;
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Static-field register instruction recording requires xarch.");
         }
 
-        var dataOffset = Compiler.eeGetJitDataOffs(fldHnd);
-        nint address = 0;
-        if (dataOffset >= 0)
+        if (Configuration.TARGET_AMD64)
         {
-            NYI("JitDataOffset static fields");
-            throw new FatalJitException(CORJIT_SKIPPED, "JitDataOffset static fields are not ported.");
+            RequireSupportedInstructionRecording();
         }
 
-        if (fldHnd == FLD_GLOBAL_FS)
-        {
-            NYI("Thread-Local-Storage static fields");
-            throw new FatalJitException(CORJIT_SKIPPED, "Thread-Local-Storage static fields are not ported.");
-        }
-
-        if (fldHnd == FLD_GLOBAL_DS)
-        {
-            address = offs;
-            offs = 0;
-        }
-        else
-        {
-            NYI("Normal statics are expected to be handled in the importer");
-            throw new FatalJitException(CORJIT_SKIPPED, "Normal static-field instruction recording is not ported.");
-        }
-
-        var regTmp = reg;
-        if (isFloatReg(regTmp))
-        {
-            assert(false, "emitIns_R_C cannot be called with a floating-point target.");
-            NYI("emitIns_R_C with a floating-point target");
-            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 static-field instruction recording requires a general register.");
-        }
-
-        codeGen.instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regTmp, address);
-        if ((ins != INS_add) || (offs != 0) || (reg != regTmp))
-        {
-            emitIns_R_R_I(ins, attr, reg, regTmp, offs, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
-        }
-#elif TARGET_LOONGARCH64
-        assert(instOptions == INS_OPTS_NONE);
-        emitIns_R_C(ins, attr, reg, REG_NA, fldHnd, offs);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Static-field register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
             attr |= EA_DSP_RELOC_FLG;
@@ -157,32 +177,31 @@ public partial class Emitter
         {
             id = emitNewInstrDsp(EA_1BYTE, offs);
             id.idIns(ins);
-            id.idInsFmt(IF_RWR_MRD_OFF);
+            id.idInsFmt(IF_XARCH_RWR_MRD_OFF);
             id.idReg1(reg);
-            assert((ins == INS_mov) && (reg == REG_EAX));
+            assert((ins == INS_mov) && (reg == TargetRuntimeMetadata.IntegerReturnRegister));
 
             // Special case: "mov eax, [addr]" is smaller.
-            sz = 1 + TARGET_POINTER_SIZE;
+            sz = 1u + (uint)Configuration.TARGET_POINTER_SIZE;
         }
         else
         {
-            var fmt = emitInsModeFormat(ins, IF_RRD_MRD);
+            var fmt = emitInsModeFormat(ins, IF_XARCH_RRD_MRD);
             id = emitNewInstrDsp(attr, offs);
             id.idIns(ins);
             id.idInsFmt(fmt);
             id.idReg1(reg);
 
-#if TARGET_X86
-            if ((ins == INS_mov) && (reg == REG_EAX))
+            if (Configuration.TARGET_X86 && (ins == INS_mov) &&
+                (reg == TargetRuntimeMetadata.IntegerReturnRegister))
             {
-                sz = 1 + TARGET_POINTER_SIZE;
+                sz = 1u + (uint)Configuration.TARGET_POINTER_SIZE;
                 if (size == EA_2BYTE)
                 {
                     sz++;
                 }
             }
             else
-#endif
             {
                 SetEvexBroadcastIfNeeded(id, instOptions);
                 SetEvexEmbMaskIfNeeded(id, instOptions);
@@ -205,15 +224,17 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 
     public unsafe void emitIns_SIMD_R_R_C(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg,
         CORINFO_FIELD_HANDLE fldHnd, int offs, insOpts instOptions)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "SIMD static-field instruction recording requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "SIMD static-field instruction recording requires xarch.");
+        }
+
         RequireSupportedInstructionRecording();
         if (UseSimdEncoding())
         {
@@ -225,6 +246,5 @@ public partial class Emitter
             _ = emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, canSkip: true);
             emitIns_R_C(ins, attr, targetReg, fldHnd, offs);
         }
-#endif
     }
 }

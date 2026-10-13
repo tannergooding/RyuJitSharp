@@ -9,9 +9,11 @@ public partial class Emitter
 {
     public unsafe byte* emitDataOffsetToPtr(uint offset)
     {
-#if !TARGET_AMD64 && !TARGET_WASM
-        throw new FatalJitException(CORJIT_SKIPPED, "Constant-data chunk lookup requires AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64 && !Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Constant-data chunk lookup requires AMD64 or WebAssembly.");
+        }
+
         noway_assert(offset < emitConsDsc.dsdOffs);
         noway_assert(emitNumDataChunks > 0);
         noway_assert(emitDataChunks is not null && emitDataChunkOffsets is not null);
@@ -42,6 +44,5 @@ public partial class Emitter
         var relativeOffset = offset - unchecked((uint)emitDataChunkOffsets[chunkIndex]);
         noway_assert(relativeOffset < emitDataChunks[chunkIndex].size);
         return emitDataChunks[chunkIndex].block + relativeOffset;
-#endif
     }
 }

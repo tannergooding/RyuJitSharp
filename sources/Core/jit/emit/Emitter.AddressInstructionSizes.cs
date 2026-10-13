@@ -9,23 +9,32 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private static bool baseRegisterRequiresSibByte(regNumber reg)
     {
-#if TARGET_AMD64
-        return reg is REG_ESP or REG_R12 or REG_R20 or REG_R28;
-#else
-        return reg == REG_ESP;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            return reg is REG_X64_RSP or REG_X64_R12 or REG_X64_R20 or REG_X64_R28;
+        }
+        if (Configuration.TARGET_X86)
+        {
+            return reg == REG_X86_ESP;
+        }
+
+        throw new FatalJitException("xarch address encoding is not available for this target.");
     }
 
     private static bool baseRegisterRequiresDisplacement(regNumber reg)
     {
-#if TARGET_AMD64
-        return reg is REG_EBP or REG_R13 or REG_R21 or REG_R29;
-#else
-        return reg == REG_EBP;
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            return reg is REG_X64_RBP or REG_X64_R13 or REG_X64_R21 or REG_X64_R29;
+        }
+        if (Configuration.TARGET_X86)
+        {
+            return reg == REG_X86_EBP;
+        }
+
+        throw new FatalJitException("xarch address encoding is not available for this target.");
     }
 
     private static bool isPrefetch(instruction ins)
@@ -40,12 +49,22 @@ public partial class Emitter
 
     public static emitAttr emitDecodeScale(uint ensz)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch address scale decoding is not available for this target.");
+        }
+
         assert(ensz < 4);
         return emitSizeDecode[(int)ensz];
     }
 
     public uint emitInsSizeAM(instrDesc id, ulong code)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch address instruction sizing is not available for this target.");
+        }
+
         assert(id.idIns() != INS_invalid);
         var ins = id.idIns();
         var attrSize = id.idOpSize();
@@ -65,12 +84,12 @@ public partial class Emitter
         }
         else
         {
-            reg = REG_NA;
-            rgx = REG_NA;
+            reg = TargetRuntimeMetadata.NoRegister;
+            rgx = TargetRuntimeMetadata.NoRegister;
 #if DEBUG
             switch (id.idInsFmt())
             {
-                case IF_RWR_LABEL or IF_MRW_CNS or IF_MRW_RRD or IF_MRW_SHF:
+                case IF_XARCH_RWR_LABEL or IF_XARCH_MRW_CNS or IF_XARCH_MRW_RRD or IF_XARCH_MRW_SHF:
                 {
                     break;
                 }
@@ -136,28 +155,25 @@ public partial class Emitter
             size += emitGetRexPrefixSize(id, ins);
         }
 
-        if (rgx == REG_NA)
+        if (rgx == TargetRuntimeMetadata.NoRegister)
         {
             // [reg+disp]
-            if (reg == REG_NA)
+            if (reg == TargetRuntimeMetadata.NoRegister)
             {
-#if TARGET_X86
-                if ((ins == INS_mov) && (id.idReg1() == REG_EAX) &&
-                    (id.idInsFmt() is IF_RWR_ARD or IF_AWR_RRD))
+                if (Configuration.TARGET_X86 && (ins == INS_mov) &&
+                    (id.idReg1() == TargetRuntimeMetadata.IntegerReturnRegister) &&
+                    (id.idInsFmt() is IF_XARCH_RWR_ARD or IF_XARCH_AWR_RRD))
                 {
                     assert((size == 2) || ((size == 3) && (id.idOpSize() == EA_2BYTE)));
                     size--;
                 }
-#endif
 
                 // [disp] uses disp32; AMD64 non-relocatable addresses also require SIB.
                 size += sizeof(int);
-#if TARGET_AMD64
-                if (!id.idIsDspReloc())
+                if (Configuration.TARGET_AMD64 && !id.idIsDspReloc())
                 {
                     size++;
                 }
-#endif
 
                 return size;
             }
@@ -192,7 +208,7 @@ public partial class Emitter
 
             if (emitDecodeScale(id.idAddr().iiaAddrMode.amScale) > EA_1BYTE)
             {
-                if (reg != REG_NA)
+                if (reg != TargetRuntimeMetadata.NoRegister)
                 {
                     // [reg + {2/4/8} * rgx + disp]
                     if (dspIsZero && !baseRegisterRequiresDisplacement(reg))
@@ -242,6 +258,11 @@ public partial class Emitter
 
     public uint emitInsSizeAM(instrDesc id, ulong code, int val)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch address instruction sizing is not available for this target.");
+        }
+
         assert(id.idIns() != INS_invalid);
         var ins = id.idIns();
         var valSize = EA_SIZE_IN_BYTES(id.idOpSize());
@@ -250,9 +271,10 @@ public partial class Emitter
         // BT mem,reg has poor performance; BT mem,imm would need special handling
         // because its immediate is always encoded in a byte.
         assert(ins != INS_bt);
-#if TARGET_AMD64
-        noway_assert((valSize <= sizeof(int)) || !id.idIsCnsReloc());
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            noway_assert((valSize <= sizeof(int)) || !id.idIsCnsReloc());
+        }
 
         if (valSize > sizeof(int))
         {
@@ -273,8 +295,6 @@ public partial class Emitter
         {
             assert(!IsSimdInstruction(ins));
         }
-
         return valSize + emitInsSizeAM(id, code);
     }
-#endif
 }

@@ -11,12 +11,16 @@ public partial class Emitter
 {
     public void emitIns_Data16()
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "DATA16 recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "DATA16 recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         var id = emitNewInstrSmall(EA_1BYTE);
         id.idIns(INS_data16);
         id.idInsFmt(IF_NONE);
@@ -24,6 +28,5 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + 1);
-#endif
     }
 }

@@ -12,20 +12,31 @@ public partial class Emitter
 {
     public unsafe void emitJumpDistBind()
     {
-#if TARGET_LOONGARCH64
-        emitJumpDistBindLoongArch64();
-#else
-#if TARGET_ARM
-        const uint smallConditionalSize = 2;
-        const uint smallJumpSize = 2;
-        const uint smallLabelSize = 2;
-        const uint mediumConditionalSize = 4;
-#elif TARGET_ARM64
-        const uint smallConditionalSize = 4;
-        const uint smallJumpSize = 4;
-        const uint smallLabelSize = 4;
-        const uint smallConstantSize = 4;
-#endif
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitJumpDistBindLoongArch64();
+            return;
+        }
+
+        uint smallConditionalSize = 0;
+        uint smallJumpSize = 0;
+        uint smallLabelSize = 0;
+        uint mediumConditionalSize = 0;
+        uint smallConstantSize = 0;
+        if (Configuration.TARGET_ARM)
+        {
+            smallConditionalSize = 2;
+            smallJumpSize = 2;
+            smallLabelSize = 2;
+            mediumConditionalSize = 4;
+        }
+        else if (Configuration.TARGET_ARM64)
+        {
+            smallConditionalSize = 4;
+            smallJumpSize = 4;
+            smallLabelSize = 4;
+            smallConstantSize = 4;
+        }
 #if DEBUG
         var compiler = _compiler ?? throw new FatalJitException("Jump distance binding requires an active compiler.");
         var interestingJumpNumber = -1;
@@ -57,9 +68,7 @@ public partial class Emitter
             uint groupAdjustment = 0;
             uint localAdjustment = 0;
             var minShortExtra = uint.MaxValue;
-#if TARGET_ARM || TARGET_RISCV64
             var minMediumExtra = uint.MaxValue;
-#endif
 
             for (var jump = emitJumpList; jump is not null; jump = jump.idjNext)
             {
@@ -72,111 +81,120 @@ public partial class Emitter
                 uint shortSize = 0;
                 var maxNegativeDistance = 0;
                 var maxPositiveDistance = 0;
-#if TARGET_ARM || TARGET_RISCV64
                 uint mediumSize = 0;
                 var maxMediumNegativeDistance = 0;
                 var maxMediumPositiveDistance = 0;
-#endif
 
-#if TARGET_XARCH
-                var format = jump.idInsFmt();
-                assert(format is IF_LABEL or IF_RWR_LABEL or IF_SWR_LABEL);
-                if (format == IF_LABEL)
+                if (Configuration.TARGET_XARCH)
                 {
-                    if (jump.idIns() is not (INS_call or INS_jmp))
+                    var format = jump.idInsFmt();
+                    assert(format is IF_XARCH_LABEL or IF_XARCH_RWR_LABEL or IF_XARCH_SWR_LABEL);
+                    if (format == IF_XARCH_LABEL)
                     {
-                        shortSize = unchecked((uint)JCC_SIZE_SMALL);
-                        maxNegativeDistance = JCC_DIST_SMALL_MAX_NEG;
-                        maxPositiveDistance = JCC_DIST_SMALL_MAX_POS;
+                        if (jump.idIns() is not (INS_call or INS_jmp))
+                        {
+                            shortSize = unchecked((uint)JCC_SIZE_SMALL);
+                            maxNegativeDistance = JCC_DIST_SMALL_MAX_NEG;
+                            maxPositiveDistance = JCC_DIST_SMALL_MAX_POS;
+                        }
+                        else
+                        {
+                            shortSize = unchecked((uint)JMP_SIZE_SMALL);
+                            maxNegativeDistance = JMP_DIST_SMALL_MAX_NEG;
+                            maxPositiveDistance = JMP_DIST_SMALL_MAX_POS;
+                        }
+                    }
+                }
+                else if (Configuration.TARGET_ARM)
+                {
+                    assert(jump.idInsFmt() is IF_ARM32_T2_J1 or IF_ARM32_T2_J2 or IF_ARM32_T1_I or IF_ARM32_T1_K or IF_ARM32_T1_M
+                        or IF_ARM32_T2_M1 or IF_ARM32_T2_N1 or IF_ARM32_T1_J3 or IF_ARM32_LARGEJMP);
+                    if (emitIsCondJump(jump))
+                    {
+                        shortSize = smallConditionalSize;
+                        maxNegativeDistance = -256;
+                        maxPositiveDistance = 254;
+                        mediumSize = mediumConditionalSize;
+                        maxMediumNegativeDistance = -1048576;
+                        maxMediumPositiveDistance = 1048574;
+                    }
+                    else if (emitIsCmpJump(jump))
+                    {
+                        shortSize = smallJumpSize;
+                        maxPositiveDistance = 126;
+                    }
+                    else if (emitIsUncondJump(jump))
+                    {
+                        shortSize = smallJumpSize;
+                        maxNegativeDistance = -2048;
+                        maxPositiveDistance = 2046;
+                    }
+                    else if (emitIsLoadLabel(jump))
+                    {
+                        shortSize = smallLabelSize;
+                        maxPositiveDistance = 1020;
                     }
                     else
                     {
-                        shortSize = unchecked((uint)JMP_SIZE_SMALL);
-                        maxNegativeDistance = JMP_DIST_SMALL_MAX_NEG;
-                        maxPositiveDistance = JMP_DIST_SMALL_MAX_POS;
+                        throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown ARM jump instruction.");
                     }
                 }
-#elif TARGET_ARM
-                assert(jump.idInsFmt() is IF_T2_J1 or IF_T2_J2 or IF_T1_I or IF_T1_K or IF_T1_M
-                    or IF_T2_M1 or IF_T2_N1 or IF_T1_J3 or IF_LARGEJMP);
-                if (emitIsCondJump(jump))
+                else if (Configuration.TARGET_ARM64)
                 {
-                    shortSize = smallConditionalSize;
-                    maxNegativeDistance = -256;
-                    maxPositiveDistance = 254;
-                    mediumSize = mediumConditionalSize;
-                    maxMediumNegativeDistance = -1048576;
-                    maxMediumPositiveDistance = 1048574;
+                    if (emitIsCondJump(jump))
+                    {
+                        shortSize = smallConditionalSize;
+                        var isTest = jump.idIns() is INS_tbz or INS_tbnz;
+                        maxNegativeDistance = isTest ? -32768 : -1048576;
+                        maxPositiveDistance = isTest ? 32767 : 1048575;
+                    }
+                    else if (emitIsUncondJump(jump))
+                    {
+                        shortSize = smallJumpSize;
+                    }
+                    else if (emitIsLoadLabel(jump))
+                    {
+                        shortSize = smallLabelSize;
+                        maxNegativeDistance = -1048576;
+                        maxPositiveDistance = 1048575;
+                    }
+                    else if (emitIsLoadConstant(jump))
+                    {
+                        shortSize = smallConstantSize;
+                        maxNegativeDistance = -1048576;
+                        maxPositiveDistance = 1048575;
+                    }
+                    else
+                    {
+                        throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown ARM64 jump instruction.");
+                    }
                 }
-                else if (emitIsCmpJump(jump))
+                else if (Configuration.TARGET_RISCV64)
                 {
-                    shortSize = smallJumpSize;
-                    maxPositiveDistance = 126;
-                }
-                else if (emitIsUncondJump(jump))
-                {
-                    shortSize = smallJumpSize;
-                    maxNegativeDistance = -2048;
-                    maxPositiveDistance = 2046;
-                }
-                else if (emitIsLoadLabel(jump))
-                {
-                    shortSize = smallLabelSize;
-                    maxPositiveDistance = 1020;
-                }
-                else
-                {
-                    assert(false, "Unknown jump instruction");
-                }
-#elif TARGET_ARM64
-                if (emitIsCondJump(jump))
-                {
-                    shortSize = smallConditionalSize;
-                    var isTest = jump.idIns() is INS_tbz or INS_tbnz;
-                    maxNegativeDistance = isTest ? -32768 : -1048576;
-                    maxPositiveDistance = isTest ? 32767 : 1048575;
-                }
-                else if (emitIsUncondJump(jump))
-                {
-                    shortSize = smallJumpSize;
-                }
-                else if (emitIsLoadLabel(jump))
-                {
-                    shortSize = smallLabelSize;
-                    maxNegativeDistance = -1048576;
-                    maxPositiveDistance = 1048575;
-                }
-                else if (emitIsLoadConstant(jump))
-                {
-                    shortSize = smallConstantSize;
-                    maxNegativeDistance = -1048576;
-                    maxPositiveDistance = 1048575;
+                    if (emitIsCmpJump(jump))
+                    {
+                        shortSize = 4;
+                        maxNegativeDistance = -4096;
+                        maxPositiveDistance = 4095;
+                        mediumSize = 8;
+                        maxMediumNegativeDistance = -1048576 + unchecked((int)shortSize);
+                        maxMediumPositiveDistance = 1048575 + unchecked((int)shortSize);
+                    }
+                    else if (emitIsUncondJump(jump))
+                    {
+                        shortSize = 4;
+                        maxNegativeDistance = -1048576;
+                        maxPositiveDistance = 1048575;
+                    }
+                    else
+                    {
+                        throw new FatalJitException(CORJIT_INTERNALERROR, "Unknown RISC-V jump instruction.");
+                    }
                 }
                 else
                 {
-                    assert(false, "Unknown jump instruction");
+                    throw new FatalJitException(CORJIT_SKIPPED, "Jump distance binding is not supported for this target.");
                 }
-#elif TARGET_RISCV64
-                if (emitIsCmpJump(jump))
-                {
-                    shortSize = 4;
-                    maxNegativeDistance = -4096;
-                    maxPositiveDistance = 4095;
-                    mediumSize = 8;
-                    maxMediumNegativeDistance = -1048576 + unchecked((int)shortSize);
-                    maxMediumPositiveDistance = 1048575 + unchecked((int)shortSize);
-                }
-                else if (emitIsUncondJump(jump))
-                {
-                    shortSize = 4;
-                    maxNegativeDistance = -1048576;
-                    maxPositiveDistance = 1048575;
-                }
-                else
-                {
-                    assert(false, "Unknown jump instruction");
-                }
-#endif
 
 #if DEBUG
                 assert(lastJump is null || !ReferenceEquals(lastIG, jumpIG) || lastJump.idjOffs < jump.idjOffs);
@@ -213,8 +231,7 @@ public partial class Emitter
                 jump.idjOffs = unchecked(jump.idjOffs - localAdjustment);
 
                 var distance = 0;
-#if TARGET_ARM64
-                if (jump.idAddr().iiaIsJitDataOffset())
+                if (Configuration.TARGET_ARM64 && jump.idAddr().iiaIsJitDataOffset())
                 {
                     assert(jump.idIsBound());
                     if (jump.idjShort)
@@ -241,8 +258,6 @@ public partial class Emitter
 
                     continue;
                 }
-#endif
-
                 insGroup targetIG;
                 if (jump.idIsBound())
                 {
@@ -262,32 +277,28 @@ public partial class Emitter
                 }
 
                 emitCheckFuncletBranch(jump, jumpIG);
-#if TARGET_XARCH
-                if (jump.idIns() is INS_push or INS_mov or INS_call or INS_push_hide)
+                if (Configuration.TARGET_XARCH &&
+                    (jump.idIns() is INS_push or INS_mov or INS_call or INS_push_hide))
                 {
                     continue;
                 }
-#elif TARGET_ARM
-                if (jump.idIns() is INS_push or INS_mov or INS_movt or INS_movw)
+                else if (Configuration.TARGET_ARM &&
+                    (jump.idIns() is INS_push or INS_mov or INS_movt or INS_movw))
                 {
                     continue;
                 }
-#elif TARGET_ARM64
-                if (emitIsUncondJump(jump))
+                else if (Configuration.TARGET_ARM64 && emitIsUncondJump(jump))
                 {
                     continue;
                 }
-#endif
 
                 var sourceOffset = unchecked(jumpIG.igOffs + jump.idjOffs);
                 var destinationOffset = targetIG.igOffs;
-#if TARGET_ARM
-                var encodingOffset = unchecked(sourceOffset + 4);
-#elif TARGET_ARM64 || TARGET_RISCV64
-                var encodingOffset = sourceOffset;
-#else
-                var encodingOffset = unchecked(sourceOffset + shortSize);
-#endif
+                var encodingOffset = Configuration.TARGET_ARM
+                    ? unchecked(sourceOffset + 4)
+                    : Configuration.TARGET_ARM64 || Configuration.TARGET_RISCV64
+                        ? sourceOffset
+                        : unchecked(sourceOffset + shortSize);
                 int extra;
 
                 if (jumpIG.IsBefore(targetIG))
@@ -369,8 +380,7 @@ public partial class Emitter
                         minShortExtra = unchecked((uint)extra);
                     }
 
-#if TARGET_ARM || TARGET_RISCV64
-                    if (emitIsCmpJump(jump))
+                    if ((Configuration.TARGET_ARM || Configuration.TARGET_RISCV64) && emitIsCmpJump(jump))
                     {
                         var mediumExtra = jumpIG.IsBefore(targetIG)
                             ? unchecked(distance - maxMediumPositiveDistance)
@@ -401,13 +411,10 @@ public partial class Emitter
                             minMediumExtra = unchecked((uint)mediumExtra);
                         }
                     }
-#endif
                     continue;
                 }
 
-#if TARGET_ARM64
             SHORT_JMP:
-#endif
                 emitSetShortJump(jump);
                 if (!jump.idjShort)
                 {
@@ -416,20 +423,32 @@ public partial class Emitter
 
                 var difference = unchecked(size - shortSize);
                 assert(size >= shortSize);
-#if TARGET_XARCH
-                jump.idCodeSize(shortSize);
-#elif TARGET_ARM
-                // emitSetShortJump updates the ARM format and instruction size.
-#elif TARGET_ARM64
-                assert(difference is 4 or 8);
-#elif TARGET_RISCV64
-                assert(difference is 0 or 4 or 8);
-#elif TARGET_WASM
-                unreached();
-#else
-#error Unsupported or unset target architecture
-#endif
-#if TARGET_ARM || TARGET_RISCV64
+                if (Configuration.TARGET_XARCH)
+                {
+                    jump.idCodeSize(shortSize);
+                }
+                else if (Configuration.TARGET_ARM)
+                {
+                    // emitSetShortJump updates the ARM format and instruction size.
+                }
+                else if (Configuration.TARGET_ARM64)
+                {
+                    assert(difference is 4 or 8);
+                }
+                else if (Configuration.TARGET_RISCV64)
+                {
+                    assert(difference is 0 or 4 or 8);
+                }
+                else if (Configuration.TARGET_WASM)
+                {
+                    unreached();
+                }
+                else
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Short-jump size update is not supported for this target.");
+                }
+
                 goto NEXT_JMP;
 
             MEDIUM_JMP:
@@ -445,7 +464,6 @@ public partial class Emitter
                 difference = unchecked(size - shortSize);
 
             NEXT_JMP:
-#endif
                 assert(((shortSize | unchecked((uint)distance)) == 0) || (shortSize == jump.idCodeSize()));
 #if DEBUG
                 if (compiler.verbose)
@@ -486,19 +504,19 @@ public partial class Emitter
             emitCheckIGList();
             if (compiler.verbose)
             {
-#if TARGET_ARM
-                jitprintf($"Total shrinkage = {groupAdjustment,3}, min extra short jump size = {minShortExtra,3}, " +
-                    $"min extra medium jump size = {minMediumExtra}\n");
-#else
-                jitprintf($"Total shrinkage = {groupAdjustment,3}, min extra jump size = {minShortExtra,3}\n");
-#endif
+                if (Configuration.TARGET_ARM)
+                {
+                    jitprintf($"Total shrinkage = {groupAdjustment,3}, min extra short jump size = {minShortExtra,3}, " +
+                        $"min extra medium jump size = {minMediumExtra}\n");
+                }
+                else
+                {
+                    jitprintf($"Total shrinkage = {groupAdjustment,3}, min extra jump size = {minShortExtra,3}\n");
+                }
             }
 #endif
-            if (minShortExtra > groupAdjustment
-#if TARGET_ARM
-                && minMediumExtra > groupAdjustment
-#endif
-                )
+            if (minShortExtra > groupAdjustment &&
+                (!Configuration.TARGET_ARM || minMediumExtra > groupAdjustment))
             {
                 break;
             }
@@ -514,7 +532,6 @@ public partial class Emitter
 
 #if DEBUG
         emitCheckIGList();
-#endif
 #endif
     }
 }

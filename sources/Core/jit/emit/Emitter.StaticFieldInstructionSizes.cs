@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     public uint emitInsSizeCV(instrDesc id, ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Static-field instruction sizing requires AMD64.");
+        }
+
         assert(id.idIns() != INS_invalid);
         var ins = id.idIns();
         var attrSize = id.idOpSize();
@@ -24,8 +28,6 @@ public partial class Emitter
             size += emitGetRexPrefixSize(id, ins);
             includeRexPrefixSize = false;
         }
-
         return size + emitInsSize(id, code, includeRexPrefixSize);
     }
-#endif
 }

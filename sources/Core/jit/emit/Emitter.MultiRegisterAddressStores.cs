@@ -12,12 +12,17 @@ public partial class Emitter
     public void emitIns_AR_R_R(instruction ins, emitAttr attr, regNumber op2Reg, regNumber op3Reg,
         regNumber @base, int offs, insOpts instOptions = INS_OPTS_NONE)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Address/two-register instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Address/two-register instruction recording requires xarch.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(IsSimdInstruction(ins));
         assert(IsThreeOperandAVXInstruction(ins));
 
@@ -25,7 +30,7 @@ public partial class Emitter
         id.idIns(ins);
         id.idReg1(op2Reg);
         id.idReg2(op3Reg);
-        id.idInsFmt(IF_AWR_RRD_RRD);
+        id.idInsFmt(IF_XARCH_AWR_RRD_RRD);
         id.idAddr().iiaAddrMode.amBaseReg = @base;
         id.idAddr().iiaAddrMode.amIndxReg = REG_NA;
 
@@ -36,6 +41,5 @@ public partial class Emitter
 
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)sz);
-#endif
     }
 }

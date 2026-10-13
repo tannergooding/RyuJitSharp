@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.Globals;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -13,10 +15,8 @@ public partial class Emitter
     private static uint emitTotalIDescCnsCnt;
     private static uint emitTotalIDescDspCnt;
     private static uint emitTotalIDescCnsDspCnt;
-#if TARGET_XARCH
     private static uint emitTotalIDescAmdCnt;
     private static uint emitTotalIDescCnsAmdCnt;
-#endif
 
     private static readonly uint[] emitSmallCns = new uint[SMALL_CNS_TSZ];
     private static uint emitSmallCnsCnt;
@@ -103,7 +103,7 @@ public partial class Emitter
         emitTotalIDescCnsCnt = unchecked(emitTotalIDescCnsCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescCns>(ConstantDescriptorSizes.Constant, attr);
+        return emitAllocAnyInstr<instrDescCns>(unchecked((nuint)ConstantDescriptorSizes.Constant), attr);
     }
 
     private instrDescCns emitAllocInstrCns(emitAttr attr, nuint cns)
@@ -121,7 +121,7 @@ public partial class Emitter
         emitTotalIDescDspCnt = unchecked(emitTotalIDescDspCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescDsp>(ConstantDescriptorSizes.Displacement, attr);
+        return emitAllocAnyInstr<instrDescDsp>(unchecked((nuint)ConstantDescriptorSizes.Displacement), attr);
     }
 
     private instrDescCnsDsp emitAllocInstrCnsDsp(emitAttr attr)
@@ -130,28 +130,39 @@ public partial class Emitter
         emitTotalIDescCnsDspCnt = unchecked(emitTotalIDescCnsDspCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescCnsDsp>(ConstantDescriptorSizes.ConstantDisplacement, attr);
+        return emitAllocAnyInstr<instrDescCnsDsp>(unchecked((nuint)ConstantDescriptorSizes.ConstantDisplacement), attr);
     }
 
-#if TARGET_XARCH
     private instrDescAmd emitAllocInstrAmd(emitAttr attr)
     {
+        RequireXarchAddressModeDescriptor();
+
 #if EMITTER_STATS
         emitTotalIDescAmdCnt = unchecked(emitTotalIDescAmdCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescAmd>(ConstantDescriptorSizes.AddressMode, attr);
+        return emitAllocAnyInstr<instrDescAmd>(unchecked((nuint)ConstantDescriptorSizes.AddressMode), attr);
     }
 
     private instrDescCnsAmd emitAllocInstrCnsAmd(emitAttr attr)
     {
+        RequireXarchAddressModeDescriptor();
+
 #if EMITTER_STATS
         emitTotalIDescCnsAmdCnt = unchecked(emitTotalIDescCnsAmdCnt + 1);
 #endif
 
-        return emitAllocAnyInstr<instrDescCnsAmd>(ConstantDescriptorSizes.ConstantAddressMode, attr);
+        return emitAllocAnyInstr<instrDescCnsAmd>(unchecked((nuint)ConstantDescriptorSizes.ConstantAddressMode), attr);
     }
-#endif
+
+    private static void RequireXarchAddressModeDescriptor()
+    {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Address-mode descriptor allocation requires xarch.");
+        }
+    }
 
     private instrDesc emitNewInstrCns(emitAttr attr, nint cns)
     {

@@ -19,23 +19,40 @@ public partial class Emitter
 
     public void emitIns_R_L(instruction ins, emitAttr attr, insGroup dst, regNumber reg)
     {
-#if TARGET_ARM64
-        emitIns_R_LArm64(ins, attr, dst, reg);
-#elif TARGET_RISCV64
-        emitIns_R_LRiscV64(ins, attr, dst, reg);
-#elif TARGET_LOONGARCH64
-        emitInsRLoongArchGroupLabel(ins, attr, dst, reg);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction-group address recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_LArm64(ins, attr, dst, reg);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            emitIns_R_LRiscV64(ins, attr, dst, reg);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRLoongArchGroupLabel(ins, attr, dst, reg);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Instruction-group address recording requires xarch, ARM64, RISC-V64, or LoongArch64.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(ins == INS_lea);
         var id = emitNewInstrJmp();
         id.idIns(ins);
         id.idReg1(reg);
-        id.idInsFmt(IF_RWR_LABEL);
+        id.idInsFmt(IF_XARCH_RWR_LABEL);
         id.idOpSize(EA_SIZE(attr));
         id.idjTargetIG = dst;
         id.idSetIsBound();
@@ -63,6 +80,5 @@ public partial class Emitter
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
     }
 }

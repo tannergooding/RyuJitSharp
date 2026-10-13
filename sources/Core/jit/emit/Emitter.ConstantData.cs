@@ -49,7 +49,7 @@ public partial class Emitter
     public uint emitBBTableDataGenBeg(uint numEntries, bool relativeAddr)
     {
         assert(emitDataSecCur is null);
-        var elemSize = relativeAddr ? 4u : TARGET_POINTER_SIZE;
+        uint elemSize = relativeAddr ? 4u : (uint)Configuration.TARGET_POINTER_SIZE;
         var emittedSize = unchecked(numEntries * elemSize);
         var secOffs = roundUp(emitConsDsc.dsdOffs, elemSize);
         emitConsDsc.dsdOffs = unchecked(secOffs + emittedSize);
@@ -92,7 +92,9 @@ public partial class Emitter
         var section = emitDataSecCur;
         assert(section is not null);
         assert(section.dsType is dataSection.sectionType.blockAbsoluteAddr or dataSection.sectionType.blockRelative32);
-        var elemSize = section.dsType == dataSection.sectionType.blockAbsoluteAddr ? TARGET_POINTER_SIZE : 4u;
+        uint elemSize = section.dsType == dataSection.sectionType.blockAbsoluteAddr
+            ? (uint)Configuration.TARGET_POINTER_SIZE
+            : 4u;
         assert(section.dsSize >= unchecked(elemSize * (index + 1)));
         section.Blocks[index] = label;
     }
@@ -183,12 +185,10 @@ public partial class Emitter
         }
 
         var cnsAlign = (uint)cnsSize;
-#if TARGET_XARCH
-        if (_compiler.compCodeOpt == Compiler.SMALL_CODE)
+        if (Configuration.TARGET_XARCH && _compiler.compCodeOpt == Compiler.SMALL_CODE)
         {
             cnsAlign = dataSection.MIN_DATA_ALIGN;
         }
-#endif
 
         var cnum = emitDataConst(data, cnsAlign, dataType);
 

@@ -84,8 +84,13 @@ public partial class Emitter
         ig.igGCregs = regMask.SRBM_NONE;
         ig.igInsCnt = 0;
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
+#if EMIT_BACKWARDS_NAVIGATION
         ig.igLastIns = null;
+#else
+        if (Configuration.TARGET_XARCH)
+        {
+            ig.igLastIns = null;
+        }
 #endif
 
         if (Configuration.FEATURE_LOOP_ALIGN)
@@ -107,9 +112,15 @@ public partial class Emitter
         ig.igNext = insertAfterIG.igNext;
         insertAfterIG.igNext = ig;
 
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
+#if EMIT_BACKWARDS_NAVIGATION
         ig.igPrev = insertAfterIG;
         ig.igNext?.igPrev = ig;
+#else
+        if (Configuration.TARGET_XARCH)
+        {
+            ig.igPrev = insertAfterIG;
+            ig.igNext?.igPrev = ig;
+        }
 #endif
 
         if (emitIGlast == insertAfterIG)

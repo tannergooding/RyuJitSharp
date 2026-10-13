@@ -11,35 +11,58 @@ public partial class Emitter
 {
     public static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind)
     {
-#if !TARGET_XARCH && !TARGET_ARMARCH && !TARGET_RISCV64
-        throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping requires xarch.");
-#else
-        assert(unchecked((uint)jumpKind) < (uint)emitJumpKind.EJ_COUNT);
-        return emitReverseJumpKinds[(int)jumpKind];
-#endif
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Reverse jump-kind mapping is not supported for this target.");
+        }
+
+        var index = unchecked((uint)jumpKind);
+        if (index >= (uint)Configuration.EMIT_JUMPKIND_COUNT)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid jump kind {jumpKind}.");
+        }
+
+        var result = emitReverseJumpKinds[(int)index];
+        if ((jumpKind != EJ_NONE) && (result == EJ_NONE))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, $"Jump kind {jumpKind} has no reverse mapping for this target.");
+        }
+
+        return result;
     }
 
-#if !TARGET_WASM
     public static instruction emitJumpKindToIns(emitJumpKind jumpKind)
     {
-#if !TARGET_XARCH && !TARGET_ARMARCH && !TARGET_RISCV64
-        throw new FatalJitException(CORJIT_SKIPPED, "Jump-kind instruction mapping requires xarch.");
-#else
-        assert(unchecked((uint)jumpKind) < (uint)emitJumpKindInstructions.Length);
-        return emitJumpKindInstructions[(int)jumpKind];
-#endif
-    }
-#endif
+        var index = unchecked((uint)jumpKind);
+        var jumpKindInstructions = emitJumpKindInstructions;
+        if (index >= (uint)jumpKindInstructions.Length)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, $"Invalid jump kind {jumpKind}.");
+        }
 
-#if TARGET_ARM
+        var result = jumpKindInstructions[(int)index];
+        if ((jumpKind != EJ_NONE) && (result == INS_invalid))
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, $"Jump kind {jumpKind} is not supported for this target.");
+        }
+
+        return result;
+    }
+
     public static emitJumpKind emitInsToJumpKind(instruction ins)
     {
-        for (var index = 0; index < emitJumpKindInstructions.Length; index++)
+        if (!Configuration.TARGET_ARM)
         {
-            if (ins == emitJumpKindInstructions[index])
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM jump-kind mapping is not supported for this target.");
+        }
+
+        for (var index = 1; index < Configuration.EMIT_JUMPKIND_COUNT; index++)
+        {
+            var mappedInstruction = emitJumpKindInstructions[index];
+            if ((mappedInstruction != INS_invalid) && (ins == mappedInstruction))
             {
                 var result = (emitJumpKind)index;
-                assert(EJ_NONE < result && result < EJ_COUNT);
+                assert(EJ_NONE < result && (int)result < Configuration.EMIT_JUMPKIND_COUNT);
                 return result;
             }
         }
@@ -47,7 +70,6 @@ public partial class Emitter
         unreached();
         return default;
     }
-#endif
 
 #if DEBUG || DEBUG_EMIT
 #pragma warning disable CA1802 // Keep the native debug selector non-constant so disabled tracing has no unreachable branches.
@@ -61,27 +83,48 @@ public partial class Emitter
 
     public void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
-#if TARGET_ARM
-        emitIns_R_LArm32(ins, attr, dst, reg);
-#elif TARGET_ARM64
-        emitIns_R_LArm64(ins, attr, dst, reg);
-#elif TARGET_LOONGARCH64
-        emitInsRLoongArchLabel(ins, attr, dst, reg);
-#elif TARGET_RISCV64
-        emitIns_R_LRiscV64(ins, attr, dst, reg);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Basic-block label address recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            emitIns_R_LArm32(ins, attr, dst, reg);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_LArm64(ins, attr, dst, reg);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            emitInsRLoongArchLabel(ins, attr, dst, reg);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            emitIns_R_LRiscV64(ins, attr, dst, reg);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Basic-block label address recording is not supported for this target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(_compiler is not null);
         assert(ins == INS_lea);
         assert(dst.HasFlag(BBF_HAS_LABEL));
         var id = emitNewInstrJmp();
         id.idIns(ins);
         id.idReg1(reg);
-        id.idInsFmt(IF_RWR_LABEL);
+        id.idInsFmt(IF_XARCH_RWR_LABEL);
         id.idOpSize(EA_SIZE(attr));
         id.idjTarget = dst;
         id.idjShort = false;
@@ -107,38 +150,92 @@ public partial class Emitter
         id.idCodeSize(size);
         dispIns(id);
         emitCurIGsize = unchecked(emitCurIGsize + (int)size);
-#endif
+    }
+
+    public void emitIns_R_D(instruction ins, emitAttr attr, uint offs, regNumber reg)
+    {
+        if (Configuration.TARGET_ARM)
+        {
+            emitIns_R_DArm32(ins, attr, offs, reg);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_R_DArm64(ins, attr, offs, reg);
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Data-label address recording is not supported for this target.");
+    }
+
+    public void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
+    {
+        if (Configuration.TARGET_ARM)
+        {
+            emitIns_J_RArm32(ins, attr, dst, reg);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_J_RArm64(ins, attr, dst, reg);
+            return;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Conditional register branches are not supported for this target.");
     }
 
     public void emitIns_J(instruction ins, BasicBlock dst, bool keepShort = false, bool isRemovableJmpCandidate = false)
     {
-#if TARGET_ARM64
-        emitIns_JArm64(ins, dst, keepShort);
-#elif TARGET_ARM
-        emitIns_JArm32(ins, dst, keepShort);
-#elif TARGET_RISCV64
-        assert(emitIsUncondJump(ins));
-        emitIns_Jump(ins, dst, ins is INS_jal ? REG_RA : REG_ZERO, REG_ZERO);
-#elif TARGET_LOONGARCH64
-        assert(!keepShort && !isRemovableJmpCandidate);
-        emitInsJLoongArch64(ins, dst, 0);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Label jump instruction recording requires xarch.");
-#else
-#if TARGET_AMD64
-        RequireSupportedInstructionRecording();
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            emitIns_JArm64(ins, dst, keepShort);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            emitIns_JArm32(ins, dst, keepShort);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            assert(emitIsUncondJump(ins));
+            emitIns_Jump(ins, dst, ins is INS_jal ? REG_RISCV64_RA : REG_RISCV64_ZERO, REG_RISCV64_ZERO);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            assert(!keepShort && !isRemovableJmpCandidate);
+            emitInsJLoongArch64(ins, dst, 0);
+            return;
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Label jump instruction recording is not supported for this target.");
+        }
+
+        if (Configuration.TARGET_AMD64)
+        {
+            RequireSupportedInstructionRecording();
+        }
+
         assert(_compiler is not null);
         assert(_compiler.compCurBB is not null);
-#if TARGET_AMD64
-        var lastInsIsCall = emitIsLastInsCall();
-#endif
+        var lastInsIsCall = Configuration.TARGET_AMD64 && emitIsLastInsCall();
         uint sz;
         var id = emitNewInstrJmp();
 
         assert(dst.HasFlag(BBF_HAS_LABEL));
         id.idIns(ins);
-        id.idInsFmt(IF_LABEL);
+        id.idInsFmt(IF_XARCH_LABEL);
 #if DEBUG
         if ((ins == INS_call) && (_compiler.compCurBB.Kind is BBJ_CALLFINALLY))
         {
@@ -154,9 +251,10 @@ public partial class Emitter
             id.idjIsRemovableJmpCandidate = true;
             // Removing a jump after a call may require a nop before an OS epilog.
             // The epilog check belongs to emitRemoveJumpToNextInst.
-#if TARGET_AMD64
-            id.idjIsAfterCallBeforeEpilog = lastInsIsCall;
-#endif
+            if (Configuration.TARGET_AMD64)
+            {
+                id.idjIsAfterCallBeforeEpilog = lastInsIsCall;
+            }
         }
         else
         {
@@ -256,15 +354,19 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
 
-#if TARGET_X86
-        emitAdjustStackDepthPushPop(ins);
-#endif
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            emitAdjustStackDepthPushPop(ins);
+        }
     }
 
-#if TARGET_RISCV64
     private void emitIns_Jump(instruction ins, BasicBlock dst, regNumber reg1, regNumber reg2)
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V jump recording is not supported for this target.");
+        }
+
         var compiler = _compiler ?? throw new FatalJitException("RISC-V jump recording requires an active compiler.");
         var currentBlock = compiler.compCurBB
             ?? throw new FatalJitException("RISC-V jump recording requires a current basic block.");
@@ -322,11 +424,14 @@ public partial class Emitter
         dispIns(id);
         appendToCurIG(id);
     }
-#endif
 
-#if TARGET_XARCH
-    private static void emitSetShortJump(instrDescJmp id)
+    private static void emitSetShortJumpXarch(instrDescJmp id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch short-jump selection is not supported for this target.");
+        }
+
         if (id.idjKeepLong)
         {
             return;
@@ -335,5 +440,4 @@ public partial class Emitter
         id.idjShort = true;
     }
 
-#endif
 }

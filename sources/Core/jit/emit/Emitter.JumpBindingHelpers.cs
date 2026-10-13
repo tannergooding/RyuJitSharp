@@ -9,18 +9,20 @@ public partial class Emitter
 {
     private unsafe insGroup emitBindJump(instrDescJmp jump)
     {
-#if TARGET_LOONGARCH64
-        assert(!jump.idIsBound());
-        var targetBlock = jump.idjTarget
-            ?? throw new FatalJitException("An unbound LoongArch64 jump requires a basic-block target.");
-        assert(targetBlock.HasFlag(BBF_HAS_LABEL));
-        var targetGroup = emitCodeGetCookie(targetBlock)
-            ?? throw new FatalJitException("A LoongArch64 jump target has no instruction-group cookie.");
-        jump.LoongArchIGlabel = targetGroup;
-        jump.idjTargetIG = targetGroup;
-        jump.idSetIsBound();
-        return targetGroup;
-#else
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            assert(!jump.idIsBound());
+            var targetBlock = jump.idjTarget
+                ?? throw new FatalJitException("An unbound LoongArch64 jump requires a basic-block target.");
+            assert(targetBlock.HasFlag(BBF_HAS_LABEL));
+            var targetGroup = emitCodeGetCookie(targetBlock)
+                ?? throw new FatalJitException("A LoongArch64 jump target has no instruction-group cookie.");
+            jump.LoongArchIGlabel = targetGroup;
+            jump.idjTargetIG = targetGroup;
+            jump.idSetIsBound();
+            return targetGroup;
+        }
+
         assert(!jump.idIsBound());
         var block = jump.idjTarget ?? throw new FatalJitException("An unbound jump requires a basic-block target.");
 #if DEBUG
@@ -53,27 +55,27 @@ public partial class Emitter
         jump.idjTargetIG = boundTarget;
         jump.idSetIsBound();
         return boundTarget;
-#endif
     }
 
     private void emitCheckFuncletBranch(instrDescJmp jump, insGroup jumpIG)
     {
-#if TARGET_LOONGARCH64 || TARGET_RISCV64
-        // Native does not yet record the debug information needed for these targets.
-        return;
-#elif DEBUG
+        if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
+        {
+            // Native does not yet record the debug information needed for these targets.
+            return;
+        }
+
+#if DEBUG
         assert(jump.idIsBound());
-#if TARGET_XARCH
-        if (jump.idIns() == INS_lea)
+        if (Configuration.TARGET_XARCH && jump.idIns() == INS_lea)
         {
             return;
         }
-#elif TARGET_ARM64
-        if (emitIsLoadLabel(jump) || emitIsLoadConstant(jump))
+
+        if (Configuration.TARGET_ARM64 && (emitIsLoadLabel(jump) || emitIsLoadConstant(jump)))
         {
             return;
         }
-#endif
 
         var targetIG = jump.idjTargetIG
             ?? throw new FatalJitException("A bound branch requires an instruction-group target.");
@@ -122,210 +124,277 @@ public partial class Emitter
 #endif
     }
 
-#if TARGET_ARM || TARGET_ARM64
     private static bool emitIsCondJump(instrDesc jump)
     {
-#if TARGET_ARM64
-        return jump.idInsFmt() is insFormat.IF_BI_0B or insFormat.IF_BI_1A
-            or insFormat.IF_BI_1B or insFormat.IF_LARGEJMP;
-#elif TARGET_ARM
-        return jump.idInsFmt() is insFormat.IF_T2_J1 or insFormat.IF_T1_K or insFormat.IF_LARGEJMP;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not ported.");
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            return jump.idInsFmt() is insFormat.IF_ARM64_BI_0B or insFormat.IF_ARM64_BI_1A
+                or insFormat.IF_ARM64_BI_1B or insFormat.IF_ARM64_LARGEJMP;
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return jump.idInsFmt() is insFormat.IF_ARM32_T2_J1 or insFormat.IF_ARM32_T1_K or insFormat.IF_ARM32_LARGEJMP;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM jump-format classification is not supported for this target.");
     }
 
     private static bool emitIsLoadLabel(instrDesc jump)
     {
-#if TARGET_ARM64
-        return jump.idInsFmt() is insFormat.IF_DI_1E or insFormat.IF_LARGEADR;
-#elif TARGET_ARM
-        return jump.idInsFmt() is insFormat.IF_T2_M1 or insFormat.IF_T1_J3 or insFormat.IF_T2_N1;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not ported.");
-#endif
-    }
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            return jump.idInsFmt() is insFormat.IF_ARM64_DI_1E or insFormat.IF_ARM64_LARGEADR;
+        }
 
-#if TARGET_ARM || TARGET_ARM64 || TARGET_RISCV64
+        if (Configuration.TARGET_ARM)
+        {
+            return jump.idInsFmt() is insFormat.IF_ARM32_T2_M1 or insFormat.IF_ARM32_T1_J3 or insFormat.IF_ARM32_T2_N1;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM label-load classification is not supported for this target.");
+    }
     private static bool emitIsUncondJump(instrDesc jump)
     {
-#if TARGET_ARM
-        return jump.idInsFmt() is insFormat.IF_T2_J2 or insFormat.IF_T1_M;
-#elif TARGET_ARM64
-        return jump.idInsFmt() == insFormat.IF_BI_0A;
-#elif TARGET_RISCV64
-        return emitIsUncondJump(jump.idIns());
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            return jump.idInsFmt() is insFormat.IF_ARM32_T2_J2 or insFormat.IF_ARM32_T1_M;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return jump.idInsFmt() == insFormat.IF_ARM64_BI_0A;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return emitIsUncondJump(jump.idIns());
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Unconditional jump classification is not supported for this target.");
     }
 
-#if TARGET_RISCV64
     private static bool emitIsUncondJump(instruction ins)
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "RISC-V jump classification is not supported for this target.");
+        }
+
         return ins is INS_j or INS_jal;
     }
-#endif
-#endif
 
-#if TARGET_ARM || TARGET_RISCV64
     private static bool emitIsCmpJump(instrDesc jump)
     {
-#if TARGET_ARM
-        return jump.idInsFmt() == insFormat.IF_T1_I;
-#elif TARGET_RISCV64
-        return emitIsCmpJump(jump.idIns());
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            return jump.idInsFmt() == insFormat.IF_ARM32_T1_I;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return emitIsCmpJump(jump.idIns());
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Compare-jump classification is not supported for this target.");
     }
 
-#if TARGET_RISCV64
     private static bool emitIsCmpJump(instruction ins)
     {
+        if (!Configuration.TARGET_RISCV64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "RISC-V compare-jump classification is not supported for this target.");
+        }
+
         return ins is INS_beqz or INS_bnez or INS_bne or INS_beq
             or INS_blt or INS_bltu or INS_bge or INS_bgeu;
     }
-#endif
 
     private static void emitSetMediumJump(instrDescJmp jump)
     {
-#if TARGET_ARM
-        if (jump.idjKeepLong)
+        if (Configuration.TARGET_ARM)
         {
+            if (jump.idjKeepLong)
+            {
+                return;
+            }
+
+#if DEBUG_EMIT
+            var debugInfo = jump.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+            {
+                jitprintf($"[9] Converting jump {debugInfo.idNum} to medium\n");
+            }
+#endif
+
+            assert(emitIsCondJump(jump));
+            jump.idInsFmt(insFormat.IF_ARM32_T2_J1);
+            jump.idjShort = false;
+            jump.idInsSize(emitInsSize(jump.idInsFmt()));
             return;
         }
 
-#if DEBUG_EMIT
-        var debugInfo = jump.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+        if (Configuration.TARGET_RISCV64)
         {
-            jitprintf($"[9] Converting jump {debugInfo.idNum} to medium\n");
-        }
-#endif
+            if (!jump.idjKeepLong)
+            {
+                assert(emitIsCmpJump(jump));
+                jump.idCodeSize(8);
+                jump.idjShort = false;
+            }
 
-        assert(emitIsCondJump(jump));
-        jump.idInsFmt(insFormat.IF_T2_J1);
-        jump.idjShort = false;
-        jump.idInsSize(emitInsSize(jump.idInsFmt()));
-#elif TARGET_RISCV64
-        if (!jump.idjKeepLong)
-        {
-            assert(emitIsCmpJump(jump));
-            jump.idCodeSize(8);
-            jump.idjShort = false;
+            return;
         }
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "ARM medium-jump selection is not ported.");
-#endif
+
+        throw new FatalJitException(CORJIT_SKIPPED,
+            "Medium-jump selection is not supported for this target.");
     }
-#endif
 
-#if TARGET_ARM64
     private static bool emitIsLoadConstant(instrDesc jump)
     {
-        return jump.idInsFmt() is insFormat.IF_LS_1A or insFormat.IF_LARGELDC;
-    }
-#endif
-
-#if !TARGET_XARCH && !TARGET_LOONGARCH64
-    private static void emitSetShortJump(instrDescJmp jump)
-    {
-#if TARGET_ARM64
-        if (jump.idjKeepLong)
+        if (!Configuration.TARGET_ARM64)
         {
-            return;
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM64 constant-load classification is not supported for this target.");
         }
 
-        var format = insFormat.IF_NONE;
-        if (emitIsCondJump(jump))
+        return jump.idInsFmt() is insFormat.IF_ARM64_LS_1A or insFormat.IF_ARM64_LARGELDC;
+    }
+
+    private static void emitSetShortJumpNonXarch(instrDescJmp jump)
+    {
+        if (Configuration.TARGET_ARM64)
         {
-            switch (jump.idIns())
+            if (jump.idjKeepLong)
             {
-                case INS_cbz:
-                case INS_cbnz:
-                {
-                    format = insFormat.IF_BI_1A;
-                    break;
-                }
+                return;
+            }
 
-                case INS_tbz:
-                case INS_tbnz:
+            var format = insFormat.IF_NONE;
+            if (emitIsCondJump(jump))
+            {
+                switch (jump.idIns())
                 {
-                    format = insFormat.IF_BI_1B;
-                    break;
-                }
+                    case INS_cbz:
+                    case INS_cbnz:
+                    {
+                        format = insFormat.IF_ARM64_BI_1A;
+                        break;
+                    }
 
-                default:
-                {
-                    format = insFormat.IF_BI_0B;
-                    break;
+                    case INS_tbz:
+                    case INS_tbnz:
+                    {
+                        format = insFormat.IF_ARM64_BI_1B;
+                        break;
+                    }
+
+                    default:
+                    {
+                        format = insFormat.IF_ARM64_BI_0B;
+                        break;
+                    }
                 }
             }
-        }
-        else if (emitIsLoadLabel(jump))
-        {
-            format = insFormat.IF_DI_1E;
-        }
-        else if (emitIsLoadConstant(jump))
-        {
-            format = insFormat.IF_LS_1A;
-        }
-        else
-        {
-            unreached();
-        }
+            else if (emitIsLoadLabel(jump))
+            {
+                format = insFormat.IF_ARM64_DI_1E;
+            }
+            else if (emitIsLoadConstant(jump))
+            {
+                format = insFormat.IF_ARM64_LS_1A;
+            }
+            else
+            {
+                unreached();
+            }
 
-        jump.idInsFmt(format);
-        jump.idjShort = true;
-#elif TARGET_ARM
-        if (jump.idjKeepLong)
-        {
-            return;
-        }
-
-        if (emitIsCondJump(jump))
-        {
-            jump.idInsFmt(insFormat.IF_T1_K);
-        }
-        else if (emitIsCmpJump(jump))
-        {
-            assert(jump.idjShort);
-            return;
-        }
-        else if (emitIsUncondJump(jump))
-        {
-            jump.idInsFmt(insFormat.IF_T1_M);
-        }
-        else if (emitIsLoadLabel(jump))
-        {
-            return;
-        }
-        else
-        {
-            unreached();
-        }
-
-        jump.idjShort = true;
-#if DEBUG_EMIT
-        var debugInfo = jump.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
-        {
-            jitprintf($"[8] Converting jump {debugInfo.idNum} to short\n");
-        }
-#endif
-        jump.idInsSize(emitInsSize(jump.idInsFmt()));
-#elif TARGET_WASM
-        throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
-#elif TARGET_RISCV64
-        if (!jump.idjKeepLong)
-        {
-            assert(emitIsCmpJump(jump) || emitIsUncondJump(jump));
-            jump.idCodeSize(4);
+            jump.idInsFmt(format);
             jump.idjShort = true;
+            return;
         }
-#else
+
+        if (Configuration.TARGET_ARM)
+        {
+            if (jump.idjKeepLong)
+            {
+                return;
+            }
+
+            if (emitIsCondJump(jump))
+            {
+                jump.idInsFmt(insFormat.IF_ARM32_T1_K);
+            }
+            else if (emitIsCmpJump(jump))
+            {
+                assert(jump.idjShort);
+                return;
+            }
+            else if (emitIsUncondJump(jump))
+            {
+                jump.idInsFmt(insFormat.IF_ARM32_T1_M);
+            }
+            else if (emitIsLoadLabel(jump))
+            {
+                return;
+            }
+            else
+            {
+                unreached();
+            }
+
+            jump.idjShort = true;
+#if DEBUG_EMIT
+            var debugInfo = jump.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            if ((debugInfo.idNum == unchecked((uint)INTERESTING_JUMP_NUM)) || (INTERESTING_JUMP_NUM == 0))
+            {
+                jitprintf($"[8] Converting jump {debugInfo.idNum} to short\n");
+            }
+#endif
+            jump.idInsSize(emitInsSize(jump.idInsFmt()));
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            throw new FatalJitException(CORJIT_INTERNALERROR, "Wasm has no short-jump instruction form.");
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            if (!jump.idjKeepLong)
+            {
+                assert(emitIsCmpJump(jump) || emitIsUncondJump(jump));
+                jump.idCodeSize(4);
+                jump.idjShort = true;
+            }
+
+            return;
+        }
+
         throw new FatalJitException(CORJIT_SKIPPED, "Non-xarch short-jump selection is not ported.");
-#endif
     }
-#endif
+
+    private static void emitSetShortJump(instrDescJmp jump)
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            emitSetShortJumpXarch(jump);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Short-jump selection is implemented by the LoongArch64 binder.");
+        }
+
+        emitSetShortJumpNonXarch(jump);
+    }
 }
