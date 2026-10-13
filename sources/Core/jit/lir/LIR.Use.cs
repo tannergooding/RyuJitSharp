@@ -143,8 +143,12 @@ public partial class LIR
             //          /--*  t18 int
             //          *  jmpTrue   void
 
+            if (Configuration.DEBUG)
+            {
+                assert(IsInitialized());
+            }
+
 #if DEBUG
-            assert(IsInitialized());
             assert(IsDummyUse() || _range.Contains(_user));
             assert(_range.Contains(replacement));
 #endif
@@ -210,8 +214,12 @@ public partial class LIR
             //          /--*  t18 int
             //          *  jmpTrue   void
 
+            if (Configuration.DEBUG)
+            {
+                assert(IsInitialized());
+            }
+
 #if DEBUG
-            assert(IsInitialized());
             assert(_range.Contains(_user));
             assert(_range.Contains(Def()));
 #endif
