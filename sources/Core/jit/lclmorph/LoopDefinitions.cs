@@ -30,13 +30,14 @@ internal sealed class LoopDefinitions
         }
 
         var traits = _loops.DfsTree.PostOrderTraits();
-#if DEBUG
-        // Each map excludes descendant loops, whose blocks must already be visited.
-        for (var child = loop.Child; child is not null; child = child.Sibling)
+        if (Configuration.DEBUG)
         {
-            assert(BitVecOps.IsMember(traits, _visitedBlocks, child.Header.bbPostorderNum));
+            // Each map excludes descendant loops, whose blocks must already be visited.
+            for (var child = loop.Child; child is not null; child = child.Sibling)
+            {
+                assert(BitVecOps.IsMember(traits, _visitedBlocks, child.Header.bbPostorderNum));
+            }
         }
-#endif
         var compiler = _loops.DfsTree.GetCompiler();
         map = new LocalDefinitionsMap();
         _maps[loop.Index] = map;

@@ -244,28 +244,30 @@ public sealed partial class SsaBuilder
             }
 
             ref var handlerMemoryPhi = ref succ.bbMemorySsaPhiFunc[(int)kind];
-#if DEBUG
-            if (_compiler.byrefStatesMatchGcHeapStates)
+            if (Configuration.DEBUG)
             {
-                assert(kind is not GcHeap);
-                if (kind is ByrefExposed)
+                if (_compiler.byrefStatesMatchGcHeapStates)
                 {
-                    assert(handlerMemoryPhi == succ.bbMemorySsaPhiFunc[(int)GcHeap]);
+                    assert(kind is not GcHeap);
+                    if (kind is ByrefExposed)
+                    {
+                        assert(handlerMemoryPhi == succ.bbMemorySsaPhiFunc[(int)GcHeap]);
+                    }
                 }
             }
-#endif
             if (handlerMemoryPhi == BasicBlock.EmptyMemoryPhiDef)
             {
                 handlerMemoryPhi = new BasicBlock.MemoryPhiArg(ssaNum);
             }
             else
             {
-#if DEBUG
-                for (var current = handlerMemoryPhi; current is not null; current = current._nextArg)
+                if (Configuration.DEBUG)
                 {
-                    assert(current.SsaNum != ssaNum);
+                    for (var current = handlerMemoryPhi; current is not null; current = current._nextArg)
+                    {
+                        assert(current.SsaNum != ssaNum);
+                    }
                 }
-#endif
                 handlerMemoryPhi = new BasicBlock.MemoryPhiArg(ssaNum, handlerMemoryPhi);
             }
 
