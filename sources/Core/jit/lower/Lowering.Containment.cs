@@ -17,17 +17,17 @@ public sealed partial class Lowering
         childNode.IsContained = true;
         assert(childNode.IsContained);
 
-#if DEBUG
-        if (IsContainableMemoryOp(childNode))
+        if (Configuration.DEBUG && IsContainableMemoryOp(childNode))
         {
             var isSafeToContainMem = IsSafeToContainMem(parentNode, childNode);
             if (!isSafeToContainMem)
             {
+#if DEBUG
                 JITDUMP($"** Unsafe mem containment of [{childNode.TreeId:D6}] in [{parentNode.TreeId:D6}]\n");
+#endif
                 assert(isSafeToContainMem);
             }
         }
-#endif
     }
 
     private void MakeSrcRegOptional(GenTree parentNode, GenTree childNode)
@@ -37,14 +37,17 @@ public sealed partial class Lowering
         childNode.IsRegOptional = true;
         assert(childNode.IsRegOptional);
 
-#if DEBUG
-        var isSafeToMarkRegOptional = IsSafeToMarkRegOptional(parentNode, childNode);
-        if (!isSafeToMarkRegOptional)
+        if (Configuration.DEBUG)
         {
-            JITDUMP($"** Unsafe regOptional of [{childNode.TreeId:D6}] in [{parentNode.TreeId:D6}]\n");
-            assert(isSafeToMarkRegOptional);
-        }
+            var isSafeToMarkRegOptional = IsSafeToMarkRegOptional(parentNode, childNode);
+            if (!isSafeToMarkRegOptional)
+            {
+#if DEBUG
+                JITDUMP($"** Unsafe regOptional of [{childNode.TreeId:D6}] in [{parentNode.TreeId:D6}]\n");
 #endif
+                assert(isSafeToMarkRegOptional);
+            }
+        }
     }
 
     private void TryMakeSrcContainedOrRegOptional(GenTree parentNode, GenTree childNode)
