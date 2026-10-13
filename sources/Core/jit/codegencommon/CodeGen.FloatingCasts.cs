@@ -126,12 +126,10 @@ public sealed partial class CodeGen
         var targetReg = cast.RegNum;
         assert(genIsValidFloatReg(targetReg));
         var op1 = cast.CastOp;
-#if DEBUG
-        if (op1.IsUsedFromReg)
+        if (Configuration.DEBUG && op1.IsUsedFromReg)
         {
             assert(genIsValidFloatReg(op1.RegNum));
         }
-#endif
         var dstType = cast.CastType;
         var srcType = op1.Type;
         assert(varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
@@ -276,12 +274,10 @@ public sealed partial class CodeGen
         var targetReg = cast.RegNum;
         assert(genIsValidFloatReg(targetReg));
         var op1 = cast.CastOp;
-#if DEBUG
-        if (op1.IsUsedFromReg)
+        if (Configuration.DEBUG && op1.IsUsedFromReg)
         {
             assert(genIsValidIntReg(op1.RegNum));
         }
-#endif
         var dstType = cast.CastType;
         var srcType = op1.Type.ActualType;
         assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
