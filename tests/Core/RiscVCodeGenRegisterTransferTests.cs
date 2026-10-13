@@ -11,11 +11,11 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class RiscVCodeGenRegisterTransferTests
 {
-    [TestCase(REG_A0, REG_A1, TYP_INT)]
-    [TestCase(REG_FT0, REG_FT1, TYP_FLOAT)]
-    [TestCase(REG_FT0, REG_A0, TYP_FLOAT)]
-    [TestCase(REG_FT0, REG_FT1, TYP_DOUBLE)]
-    [TestCase(REG_FT0, REG_A0, TYP_DOUBLE)]
+    [TestCase(REG_RISCV64_A0, REG_RISCV64_A1, TYP_INT)]
+    [TestCase(REG_RISCV64_FT0, REG_RISCV64_FT1, TYP_FLOAT)]
+    [TestCase(REG_RISCV64_FT0, REG_RISCV64_A0, TYP_FLOAT)]
+    [TestCase(REG_RISCV64_FT0, REG_RISCV64_FT1, TYP_DOUBLE)]
+    [TestCase(REG_RISCV64_FT0, REG_RISCV64_A0, TYP_DOUBLE)]
     public static void RegisterArgumentMoveReachesRiscVInstructionRecording(
         regNumber sourceReg, regNumber targetReg, var_types type)
     {
@@ -47,13 +47,13 @@ internal static class RiscVCodeGenRegisterTransferTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialCount = descriptors.Count;
             var initialSize = RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter);
-            var tree = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A1 };
+            var tree = new GenTreePhysReg(REG_RISCV64_A0, TYP_BYREF) { RegNum = REG_RISCV64_A1 };
 
             Assert.DoesNotThrow(() => codeGen.genCodeForPhysReg(tree));
 
             Assert.That(descriptors.Count, Is.EqualTo(initialCount + 1));
-            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_A1));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_A0));
+            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_RISCV64_A1));
+            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_RISCV64_A0));
             Assert.That(descriptors[^1].idCodeSize(), Is.GreaterThan(0u));
             Assert.That(RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter), Is.GreaterThan(initialSize));
         });

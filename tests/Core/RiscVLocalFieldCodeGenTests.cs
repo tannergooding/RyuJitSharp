@@ -23,7 +23,7 @@ internal static class RiscVLocalFieldCodeGenTests
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialCount = descriptors.Count;
             var initialSize = RiscVCodeGenPortTests.CurrentInstructionGroupSize(codeGen.Emitter);
-            var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, 12) { RegNum = REG_A0 };
+            var tree = new GenTreeLclFld(GT_LCL_FLD, TYP_INT, 0, 12) { RegNum = REG_RISCV64_A0 };
 
             var failure = RiscVCodeGenPortTests.CaptureFatalJitException(
                 () => codeGen.genCodeForLclFld(tree));

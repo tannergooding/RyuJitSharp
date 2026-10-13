@@ -21,8 +21,8 @@ internal static class RiscVInstructionEncodingTests
     public static void MapsTheNativeNoOperandInstructionFormat()
     {
         Assert.That((uint)Emitter.insFormat.IF_NONE, Is.Zero);
-        Assert.That((uint)Emitter.insFormat.IF_COUNT, Is.EqualTo(1u));
-        Assert.That(Emitter.emitFmtToOps.Length, Is.EqualTo((int)Emitter.insFormat.IF_COUNT));
+        Assert.That((uint)Emitter.insFormat.IF_RISCV64_COUNT, Is.EqualTo(1u));
+        Assert.That(Emitter.emitFmtToOps.Length, Is.EqualTo((int)Emitter.insFormat.IF_RISCV64_COUNT));
         Assert.That((ID_OPS)Emitter.emitFmtToOps[(int)Emitter.insFormat.IF_NONE], Is.EqualTo(ID_OPS.ID_OP_NONE));
     }
 
@@ -164,22 +164,22 @@ internal static class RiscVInstructionEncodingTests
     {
         var emitter = (Emitter)RuntimeHelpers.GetUninitializedObject(typeof(Emitter));
 
-        Assert.That(emitter.emitInsIsLoad(INS_lw), Is.True);
+        Assert.That(emitter.emitInsIsLoadRiscV64(INS_lw), Is.True);
         Assert.That(emitter.emitInsIsStore(INS_lw), Is.False);
-        Assert.That(emitter.emitInsIsLoadOrStore(INS_lw), Is.True);
-        Assert.That(emitter.emitInsIsLoad(INS_sw), Is.False);
+        Assert.That(emitter.emitInsIsLoadOrStoreRiscV64(INS_lw), Is.True);
+        Assert.That(emitter.emitInsIsLoadRiscV64(INS_sw), Is.False);
         Assert.That(emitter.emitInsIsStore(INS_sw), Is.True);
-        Assert.That(emitter.emitInsIsLoadOrStore(INS_sw), Is.True);
-        Assert.That(emitter.emitInsIsLoadOrStore(INS_addi), Is.False);
+        Assert.That(emitter.emitInsIsLoadOrStoreRiscV64(INS_sw), Is.True);
+        Assert.That(emitter.emitInsIsLoadOrStoreRiscV64(INS_addi), Is.False);
 
         foreach (var ins in new[] { INS_sd, INS_sw, INS_sb, INS_sh })
         {
             var descriptor = NewDescriptor(ins, isLocal: true);
-            Assert.That(emitter.emitInsWritesToLclVarStackLoc(descriptor), Is.True);
+            Assert.That(emitter.emitInsWritesToLclVarStackLocRiscV64(descriptor), Is.True);
         }
 
-        Assert.That(emitter.emitInsWritesToLclVarStackLoc(NewDescriptor(INS_sd, isLocal: false)), Is.False);
-        Assert.That(emitter.emitInsWritesToLclVarStackLoc(NewDescriptor(INS_lw, isLocal: true)), Is.False);
+        Assert.That(emitter.emitInsWritesToLclVarStackLocRiscV64(NewDescriptor(INS_sd, isLocal: false)), Is.False);
+        Assert.That(emitter.emitInsWritesToLclVarStackLocRiscV64(NewDescriptor(INS_lw, isLocal: true)), Is.False);
     }
 
     private static Emitter.instrDesc NewDescriptor(instruction ins, bool isLocal)

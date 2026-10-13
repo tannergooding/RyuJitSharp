@@ -17,10 +17,10 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static unsafe class LoongArch64CodeGenRegisterTransferTests
 {
-    [TestCase(REG_T0, REG_T1, TYP_LONG)]
-    [TestCase(REG_F0, REG_F1, TYP_FLOAT)]
-    [TestCase(REG_T0, REG_F0, TYP_FLOAT)]
-    [TestCase(REG_F0, REG_T0, TYP_FLOAT)]
+    [TestCase(REG_LOONGARCH64_T0, REG_LOONGARCH64_T1, TYP_LONG)]
+    [TestCase(REG_LOONGARCH64_F0, REG_LOONGARCH64_F1, TYP_FLOAT)]
+    [TestCase(REG_LOONGARCH64_T0, REG_LOONGARCH64_F0, TYP_FLOAT)]
+    [TestCase(REG_LOONGARCH64_F0, REG_LOONGARCH64_T0, TYP_FLOAT)]
     public static void RegisterArgumentMoveReachesLoongArchInstructionRecording(
         regNumber sourceReg, regNumber targetReg, var_types type)
     {
@@ -40,7 +40,7 @@ internal static unsafe class LoongArch64CodeGenRegisterTransferTests
     {
         WithCodeGen(codeGen =>
         {
-            var tree = new GenTreePhysReg(REG_T0, TYP_BYREF) { RegNum = REG_T1 };
+            var tree = new GenTreePhysReg(REG_LOONGARCH64_T0, TYP_BYREF) { RegNum = REG_LOONGARCH64_T1 };
 
             var failure = Assert.Throws<FatalJitException>(() => codeGen.genCodeForPhysReg(tree));
 

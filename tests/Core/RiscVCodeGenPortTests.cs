@@ -37,14 +37,31 @@ internal static unsafe class RiscVCodeGenPortTests
 {
     private const string RiscVRecorderDebugBoundary = "Instruction sanity checking outside AMD64 is not ported.";
 
+    internal static void EmitTargetLoadStoreOp(
+        Emitter emitter,
+        instruction ins,
+        emitAttr attr,
+        regNumber dataReg,
+        GenTreeIndir indir)
+    {
+        if (Configuration.TARGET_RISCV64)
+        {
+            emitter.emitInsLoadStoreOpRiscV64(ins, attr, dataReg, indir);
+        }
+        else
+        {
+            emitter.emitInsLoadStoreOpLoongArch64(ins, attr, dataReg, indir);
+        }
+    }
+
     [Test]
     public static void ReservedRegisterSelectionReturnsT6()
     {
         WithCodeGen((_, codeGen) =>
         {
-            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
 
-            Assert.That(codeGen.rsGetRsvdReg(), Is.EqualTo(REG_OPT_RSVD));
+            Assert.That(codeGen.rsGetRsvdReg(), Is.EqualTo(REG_OPT_RSVD_RISCV64));
         });
     }
 
@@ -125,16 +142,16 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(INS_sd, 16, false, REG_NA)]
-    [TestCase(INS_sw, 2048, true, REG_NA)]
-    [TestCase(INS_sh, 16, false, REG_A2)]
+    [TestCase(INS_sd, 16, false, REG_RISCV64_NA)]
+    [TestCase(INS_sw, 2048, true, REG_RISCV64_NA)]
+    [TestCase(INS_sh, 16, false, REG_RISCV64_A2)]
     public static void StackStoresRecordRiscVFrameBasesAndOffsets(
         instruction ins, int offset, bool framePointerBased, regNumber tempReg)
     {
         WithCodeGen((compiler, codeGen) =>
         {
             InitializeStackRecorderLocal(compiler, codeGen, framePointerBased, 32);
-            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
 
             var emitter = codeGen.Emitter;
             var descriptors = CurrentInstructionBuffer(emitter)
@@ -150,13 +167,15 @@ internal static unsafe class RiscVCodeGenPortTests
 #endif
             AssertRiscVInstructionBoundary(codeGen, failure, expectedBoundary, initialCount, initialSize);
 
-            var expectedImmediate = tempReg is REG_NA ? 32 + offset : offset;
+            var expectedImmediate = tempReg == REG_RISCV64_NA ? 32 + offset : offset;
             var frameReg = framePointerBased ? REG_FPBASE : REG_SPBASE;
             var finalDescriptor = descriptors[^1];
             Assert.That(finalDescriptor.idIns(), Is.EqualTo(ins));
             Assert.That(finalDescriptor.idReg1(), Is.EqualTo(REG_A0));
             Assert.That(finalDescriptor.idReg2(),
-                Is.EqualTo(Emitter.isValidSimm12(expectedImmediate) ? tempReg is REG_NA ? frameReg : tempReg : REG_OPT_RSVD));
+                Is.EqualTo(Emitter.isValidSimm12(expectedImmediate)
+                    ? tempReg == REG_RISCV64_NA ? frameReg : tempReg
+                    : REG_OPT_RSVD_RISCV64));
             Assert.That(finalDescriptor.idIsLclVar(), Is.True);
             Assert.That(finalDescriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(finalDescriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(unchecked((uint)offset)));
@@ -165,14 +184,14 @@ internal static unsafe class RiscVCodeGenPortTests
             {
                 Assert.That(finalDescriptor.idAddr().iiaInstrEncode,
                     Is.EqualTo(ExpectedStoreEncoding(ins, REG_A0,
-                        tempReg is REG_NA ? frameReg : tempReg, expectedImmediate)));
+                        tempReg == REG_RISCV64_NA ? frameReg : tempReg, expectedImmediate)));
             }
             else
             {
                 Assert.That(descriptors.Skip(initialCount).Select(descriptor => descriptor.idIns()),
                     Is.EqualTo((instruction[])[INS_lui, INS_add, ins]));
                 Assert.That(finalDescriptor.idAddr().iiaInstrEncode,
-                    Is.EqualTo(ExpectedStoreEncoding(ins, REG_A0, REG_OPT_RSVD, expectedImmediate & 0xFFF)));
+                    Is.EqualTo(ExpectedStoreEncoding(ins, REG_A0, REG_OPT_RSVD_RISCV64, expectedImmediate & 0xFFF)));
                 Assert.That(CurrentInstructionGroupSize(emitter),
                     Is.EqualTo(initialSize + descriptors.Skip(initialCount).Sum(descriptor => (int)descriptor.idCodeSize())));
             }
@@ -190,7 +209,7 @@ internal static unsafe class RiscVCodeGenPortTests
         WithCodeGen((compiler, codeGen) =>
         {
             InitializeStackRecorderLocal(compiler, codeGen, framePointerBased, baseOffset);
-            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
 
             var emitter = codeGen.Emitter;
             var descriptors = CurrentInstructionBuffer(emitter)
@@ -229,11 +248,11 @@ internal static unsafe class RiscVCodeGenPortTests
                         ? (instruction[])[INS_lui, INS_addi, INS_add]
                         : [INS_lui, INS_add, ins]));
                 var expectedCode = ins is INS_lea
-                    ? Emitter.emitInsCode(INS_add) |
+                    ? Emitter.emitInsCodeRiscV64(INS_add) |
                         (unchecked((uint)REG_A0) << 7) |
                         (unchecked((uint)frameReg) << 15) |
-                        (unchecked((uint)REG_OPT_RSVD) << 20)
-                    : ExpectedLoadEncoding(ins, REG_A0, REG_OPT_RSVD, imm & 0xFFF);
+                        (unchecked((uint)REG_OPT_RSVD_RISCV64) << 20)
+                    : ExpectedLoadEncoding(ins, REG_A0, REG_OPT_RSVD_RISCV64, imm & 0xFFF);
                 Assert.That(finalDescriptor.idAddr().iiaInstrEncode, Is.EqualTo(expectedCode));
                 Assert.That(CurrentInstructionGroupSize(emitter),
                     Is.EqualTo(initialSize + descriptors.Skip(initialCount).Sum(descriptor => (int)descriptor.idCodeSize())));
@@ -408,6 +427,44 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
+    [TestCase(EC_FUNC_TOKEN_INDIR)]
+    [TestCase(EC_INDIR_ARD)]
+    [TestCase(EC_COUNT)]
+    public static void EmitterRejectsUnsupportedRiscVCallKinds(EmitCallType callType)
+    {
+        WithCodeGen((compiler, codeGen) =>
+        {
+            var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
+            var parameters = new EmitCallParams
+            {
+                callType = callType,
+                ireg = REG_A0,
+                ptrVars = VarSetOps.MakeEmpty(compiler),
+            };
+            var failure = CaptureFatalJitException(() => codeGen.Emitter.emitIns_Call(in parameters));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain($"call kind {callType}"));
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
+        });
+    }
+
+    [Test]
+    public static void EmitterRejectsArm32RegisterRecordingOnRiscV()
+    {
+        WithCodeGen((_, codeGen) =>
+        {
+            var initialGroupSize = CurrentInstructionGroupSize(codeGen.Emitter);
+            var failure = CaptureFatalJitException(() => codeGen.Emitter.emitIns_R_R(
+                INS_addi, EA_4BYTE, REG_A0, REG_A1, insFlags.INS_FLAGS_DONT_CARE));
+
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message,
+                Does.Contain("ARM32 register-register instruction flags are not supported for this target."));
+            Assert.That(CurrentInstructionGroupSize(codeGen.Emitter), Is.EqualTo(initialGroupSize));
+        });
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public static void FinallyCallsRecordRiscVLabelJumps(bool retless)
@@ -481,7 +538,7 @@ internal static unsafe class RiscVCodeGenPortTests
             InitializeStackRecorderLocal(compiler, codeGen, framePointerBased: false, stackOffset: 0);
             compiler.lvaOutgoingArgSpaceVar = 0;
             compiler.lvaOutgoingArgSpaceSize.Value = TARGET_POINTER_SIZE;
-            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
             var source = new GenTreePhysReg(REG_A0, TYP_LONG) { RegNum = REG_A0 };
             var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, TARGET_POINTER_SIZE, false);
             var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
@@ -509,7 +566,7 @@ internal static unsafe class RiscVCodeGenPortTests
             InitializeStackRecorderLocal(compiler, codeGen, framePointerBased: false, stackOffset: 0);
             compiler.lvaOutgoingArgSpaceVar = 0;
             compiler.lvaOutgoingArgSpaceSize.Value = 16;
-            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+            codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
             var address = new GenTreePhysReg(REG_A0, TYP_BYREF) { RegNum = REG_A0 };
             var source = new GenTreeBlk(TYP_STRUCT, address, new ClassLayout(16)) { IsContained = true };
             var argument = new GenTreePutArgStk(TYP_VOID, source, null, 0, 16, false);
@@ -541,13 +598,13 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(INS_add, EA_8BYTE, REG_A0, REG_A1, REG_A2, INS_none, 4)]
-    [TestCase(INS_add, EA_8BYTE, REG_A0, REG_R0, REG_A1, INS_c_mv, 2)]
-    [TestCase(INS_add, EA_8BYTE, REG_A0, REG_A0, REG_A1, INS_c_add, 2)]
-    [TestCase(INS_and, EA_8BYTE, REG_A0, REG_A0, REG_A1, INS_c_and, 2)]
-    [TestCase(INS_fadd_s, EA_4BYTE, REG_FA0, REG_FA1, REG_FA2, INS_none, 4)]
-    [TestCase(INS_sc_w, EA_4BYTE, REG_A0, REG_A1, REG_A2, INS_none, 4)]
-    [TestCase(INS_lr_w, EA_4BYTE, REG_A0, REG_A1, REG_R0, INS_none, 4)]
+    [TestCase(INS_add, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, REG_RISCV64_A2, INS_none, 4)]
+    [TestCase(INS_add, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_R0, REG_RISCV64_A1, INS_c_mv, 2)]
+    [TestCase(INS_add, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A0, REG_RISCV64_A1, INS_c_add, 2)]
+    [TestCase(INS_and, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A0, REG_RISCV64_A1, INS_c_and, 2)]
+    [TestCase(INS_fadd_s, EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_FA1, REG_RISCV64_FA2, INS_none, 4)]
+    [TestCase(INS_sc_w, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, REG_RISCV64_A2, INS_none, 4)]
+    [TestCase(INS_lr_w, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, REG_RISCV64_R0, INS_none, 4)]
     public static void ThreeRegisterInstructionRecordsItsDescriptor(
         instruction ins,
         emitAttr attr,
@@ -595,23 +652,23 @@ internal static unsafe class RiscVCodeGenPortTests
     [TestCase(INS_c_mv, 0x00008002u)]
     public static void InstructionCodeMatchesTheRiscVOpcodeTable(instruction ins, uint expectedCode)
     {
-        Assert.That(Emitter.emitInsCode(ins), Is.EqualTo(expectedCode));
+        Assert.That(Emitter.emitInsCodeRiscV64(ins), Is.EqualTo(expectedCode));
     }
 
-    [TestCase(INS_mov, EA_8BYTE, REG_A0, REG_A1, 0x00058513u)]
-    [TestCase(INS_sext_w, EA_4BYTE, REG_A0, REG_A1, 0x0005851Bu)]
-    [TestCase(INS_not, EA_8BYTE, REG_A0, REG_A1, 0xFFF5C513u)]
-    [TestCase(INS_clz, EA_8BYTE, REG_A0, REG_A1, 0x60059513u)]
-    [TestCase(INS_rev8, EA_8BYTE, REG_A0, REG_A1, 0x6B85D513u)]
-    [TestCase(INS_fmv_x_w, EA_4BYTE, REG_A0, REG_FA1, 0xE0058553u)]
-    [TestCase(INS_fclass_d, EA_8BYTE, REG_A0, REG_FA1, 0xE2059553u)]
-    [TestCase(INS_fcvt_wu_d, EA_4BYTE, REG_A0, REG_FA1, 0xC2159553u)]
-    [TestCase(INS_fmv_d_x, EA_8BYTE, REG_FA0, REG_A1, 0xF2058553u)]
-    [TestCase(INS_fcvt_s_w, EA_4BYTE, REG_FA0, REG_A1, 0xD005F553u)]
-    [TestCase(INS_fcvt_d_w, EA_8BYTE, REG_FA0, REG_A1, 0xD2058553u)]
-    [TestCase(INS_fcvt_s_d, EA_4BYTE, REG_FA0, REG_FA1, 0x4015F553u)]
-    [TestCase(INS_fcvt_d_s, EA_8BYTE, REG_FA0, REG_FA1, 0x42058553u)]
-    [TestCase(INS_fsqrt_s, EA_4BYTE, REG_FA0, REG_FA1, 0x5805F553u)]
+    [TestCase(INS_mov, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 0x00058513u)]
+    [TestCase(INS_sext_w, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 0x0005851Bu)]
+    [TestCase(INS_not, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 0xFFF5C513u)]
+    [TestCase(INS_clz, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 0x60059513u)]
+    [TestCase(INS_rev8, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 0x6B85D513u)]
+    [TestCase(INS_fmv_x_w, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_FA1, 0xE0058553u)]
+    [TestCase(INS_fclass_d, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_FA1, 0xE2059553u)]
+    [TestCase(INS_fcvt_wu_d, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_FA1, 0xC2159553u)]
+    [TestCase(INS_fmv_d_x, EA_8BYTE, REG_RISCV64_FA0, REG_RISCV64_A1, 0xF2058553u)]
+    [TestCase(INS_fcvt_s_w, EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_A1, 0xD005F553u)]
+    [TestCase(INS_fcvt_d_w, EA_8BYTE, REG_RISCV64_FA0, REG_RISCV64_A1, 0xD2058553u)]
+    [TestCase(INS_fcvt_s_d, EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_FA1, 0x4015F553u)]
+    [TestCase(INS_fcvt_d_s, EA_8BYTE, REG_RISCV64_FA0, REG_RISCV64_FA1, 0x42058553u)]
+    [TestCase(INS_fsqrt_s, EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_FA1, 0x5805F553u)]
     public static void RegisterRegisterInstructionRecordsItsDescriptor(
         instruction ins,
         emitAttr attr,
@@ -738,16 +795,16 @@ internal static unsafe class RiscVCodeGenPortTests
     }
 
     [TestCase(EJ_jmp, INS_j)]
-    [TestCase(EJ_eq, INS_beq)]
-    [TestCase(EJ_ne, INS_bne)]
+    [TestCase(EJ_RISCV64_eq, INS_beq)]
+    [TestCase(EJ_RISCV64_ne, INS_bne)]
     public static void JumpKindMapsToItsRiscVInstruction(emitJumpKind jumpKind, instruction expectedInstruction)
     {
         Assert.That(Emitter.emitJumpKindToIns(jumpKind), Is.EqualTo(expectedInstruction));
     }
 
     [TestCase(EJ_jmp, EJ_jmp)]
-    [TestCase(EJ_eq, EJ_ne)]
-    [TestCase(EJ_ne, EJ_eq)]
+    [TestCase(EJ_RISCV64_eq, EJ_RISCV64_ne)]
+    [TestCase(EJ_RISCV64_ne, EJ_RISCV64_eq)]
     public static void JumpKindMapsToItsRiscVReverse(emitJumpKind jumpKind, emitJumpKind expectedReverse)
     {
         Assert.That(Emitter.emitReverseJumpKind(jumpKind), Is.EqualTo(expectedReverse));
@@ -945,22 +1002,22 @@ internal static unsafe class RiscVCodeGenPortTests
             var emitter = codeGen.Emitter;
             Assert.Multiple(() =>
             {
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_nop), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_j), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_lea), Is.True);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_sw), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fsd), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fence), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_beq), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fld), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fmadd_s), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_csrrw), Is.True);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_ecall), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_feq_s), Is.True);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fmv_x_w), Is.True);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fcvt_w_s), Is.True);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_fadd_s), Is.False);
-                Assert.That(emitter.emitInsMayWriteToGCReg(INS_add), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_nop), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_j), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_lea), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_sw), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_fsd), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_fence), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_beq), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_fld), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_fmadd_s), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_csrrw), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_ecall), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_feq_s), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_fmv_x_w), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_fcvt_w_s), Is.True);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_fadd_s), Is.False);
+                Assert.That(emitter.emitInsMayWriteToGCRegRiscV64(INS_add), Is.True);
             });
         });
     }
@@ -1320,7 +1377,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
 #if !DEBUG
     [Test]
-    public static void LargeCalleeSavedRegisterPrologSplitsRiscVFrameAllocation()
+    public static void LargeCalleeSavedRegisterPrologRejectsUnportedUnwindPadding()
     {
         WithProlog((compiler, codeGen) =>
         {
@@ -1329,24 +1386,8 @@ internal static unsafe class RiscVCodeGenPortTests
             var zeroed = true;
             var failure = CaptureFatalJitException(
                 () => codeGen.genPushCalleeSavedRegisters(REG_NA, ref zeroed));
-            Assert.That(failure, Is.Null);
-
-            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
-                ?? throw new AssertionException("Missing current instruction buffer.");
-            Assert.That(descriptors.Count, Is.GreaterThan(5));
-            Assert.That(descriptors[0].idIns(), Is.EqualTo(INS_addi));
-            Assert.That(descriptors[0].idReg1(), Is.EqualTo(REG_SPBASE));
-            Assert.That(descriptors[0].idSmallCns(), Is.EqualTo(-16));
-            Assert.That(descriptors[1].idIns(), Is.EqualTo(INS_sd));
-            Assert.That(descriptors[1].idReg1(), Is.EqualTo(REG_FP));
-            Assert.That(descriptors[1].idSmallCns(), Is.Zero);
-            Assert.That(descriptors[2].idIns(), Is.EqualTo(INS_sd));
-            Assert.That(descriptors[2].idReg1(), Is.EqualTo(REG_RA));
-            Assert.That(descriptors[2].idSmallCns(), Is.EqualTo(8));
-            Assert.That(descriptors[^1].idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptors[^1].idReg1(), Is.EqualTo(REG_SPBASE));
-            Assert.That(descriptors[^1].idReg2(), Is.EqualTo(REG_SPBASE));
-            Assert.That(descriptors[^1].idReg3(), Is.EqualTo(REG_SCRATCH));
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain("Target prolog unwind padding is not ported."));
         });
     }
 
@@ -1432,7 +1473,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
 #if !DEBUG
     [Test]
-    public static void LargeCalleeSavedRegisterEpilogSplitsStackRestoration()
+    public static void LargeCalleeSavedRegisterEpilogRejectsUnportedUnwindPadding()
     {
         WithEpilog((compiler, codeGen) =>
         {
@@ -1443,31 +1484,20 @@ internal static unsafe class RiscVCodeGenPortTests
             block.InsertAtEnd(new GenTreeUnOp(GT_RETURN, TYP_VOID, null));
 
             var failure = CaptureFatalJitException(() => codeGen.genFnEpilog(block));
-            Assert.That(failure, Is.Null);
-            var descriptors = CurrentInstructionBuffer(codeGen.Emitter)
-                ?? throw new AssertionException("Missing current instruction buffer.");
-            var returnIndex = descriptors.FindIndex(descriptor => descriptor.idIns() is INS_jalr);
-            Assert.That(returnIndex, Is.EqualTo(descriptors.Count - 1));
-            Assert.That(descriptors[returnIndex - 2].idIns(), Is.EqualTo(INS_ld));
-            Assert.That(descriptors[returnIndex - 2].idReg1(), Is.EqualTo(REG_FP));
-            Assert.That(descriptors[returnIndex - 2].idSmallCns(), Is.EqualTo(0));
-            Assert.That(descriptors[returnIndex - 3].idIns(), Is.EqualTo(INS_ld));
-            Assert.That(descriptors[returnIndex - 3].idReg1(), Is.EqualTo(REG_RA));
-            Assert.That(descriptors[returnIndex - 3].idSmallCns(), Is.EqualTo(8));
-            Assert.That(descriptors.Take(returnIndex - 3).Any(descriptor =>
-                (descriptor.idIns() is INS_add or INS_addi) && (descriptor.idReg1() is REG_SPBASE)), Is.True);
+            Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
+            Assert.That(failure?.Message, Does.Contain("Target prolog unwind padding is not ported."));
         });
     }
 #endif
 
-    [TestCase(EA_PTRSIZE, REG_A0, REG_A1, INS_mov, 0x00058513u, false)]
-    [TestCase(EA_4BYTE, REG_A0, REG_A1, INS_sext_w, 0x0005851Bu, false)]
-    [TestCase(EA_PTRSIZE, REG_A0, REG_FA1, INS_fmv_x_d, 0xE2058553u, false)]
-    [TestCase(EA_4BYTE, REG_A0, REG_FA1, INS_fmv_x_w, 0xE0058553u, false)]
-    [TestCase(EA_PTRSIZE, REG_FA0, REG_A1, INS_fmv_d_x, 0xF2058553u, false)]
-    [TestCase(EA_4BYTE, REG_FA0, REG_A1, INS_fmv_w_x, 0xF0058553u, false)]
-    [TestCase(EA_PTRSIZE, REG_FA0, REG_FA1, INS_fsgnj_d, 0x22B58553u, true)]
-    [TestCase(EA_4BYTE, REG_FA0, REG_FA1, INS_fsgnj_s, 0x20B58553u, true)]
+    [TestCase(EA_64BIT_PTRSIZE, REG_RISCV64_A0, REG_RISCV64_A1, INS_mov, 0x00058513u, false)]
+    [TestCase(EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, INS_sext_w, 0x0005851Bu, false)]
+    [TestCase(EA_64BIT_PTRSIZE, REG_RISCV64_A0, REG_RISCV64_FA1, INS_fmv_x_d, 0xE2058553u, false)]
+    [TestCase(EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_FA1, INS_fmv_x_w, 0xE0058553u, false)]
+    [TestCase(EA_64BIT_PTRSIZE, REG_RISCV64_FA0, REG_RISCV64_A1, INS_fmv_d_x, 0xF2058553u, false)]
+    [TestCase(EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_A1, INS_fmv_w_x, 0xF0058553u, false)]
+    [TestCase(EA_64BIT_PTRSIZE, REG_RISCV64_FA0, REG_RISCV64_FA1, INS_fsgnj_d, 0x22B58553u, true)]
+    [TestCase(EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_FA1, INS_fsgnj_s, 0x20B58553u, true)]
     public static void RegisterMoveRecordsTheExpectedTransfer(
         emitAttr attr,
         regNumber dstReg,
@@ -1545,20 +1575,20 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, 42, 0x02A58513u)]
-    [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, -2048, 0x80058513u)]
-    [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, 2047, 0x7FF58513u)]
-    [TestCase(INS_addi, EA_8BYTE, REG_A0, REG_A1, -42, 0xFD658513u)]
-    [TestCase(INS_addiw, EA_4BYTE, REG_A0, REG_A1, 42, 0x02A5851Bu)]
-    [TestCase(INS_lw, EA_4BYTE, REG_A0, REG_A1, 42, 0x02A5A503u)]
-    [TestCase(INS_flw, EA_4BYTE, REG_FA0, REG_A1, 42, 0x02A5A507u)]
-    [TestCase(INS_jalr, EA_8BYTE, REG_A0, REG_A1, 42, 0x02A58567u)]
-    [TestCase(INS_sw, EA_4BYTE, REG_A0, REG_A1, 42, 0x02A5A523u)]
-    [TestCase(INS_sw, EA_4BYTE, REG_A0, REG_A1, -2048, 0x80A5A023u)]
-    [TestCase(INS_sw, EA_4BYTE, REG_A0, REG_A1, 2047, 0x7EA5AFA3u)]
-    [TestCase(INS_fsw, EA_4BYTE, REG_FA0, REG_A1, 42, 0x02A5A527u)]
-    [TestCase(INS_csrrw, EA_8BYTE, REG_A0, REG_A1, 0xC00, 0xC0059573u)]
-    [TestCase(INS_csrrw, EA_8BYTE, REG_A0, REG_A1, 0xFFF, 0xFFF59573u)]
+    [TestCase(INS_addi, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 42, 0x02A58513u)]
+    [TestCase(INS_addi, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, -2048, 0x80058513u)]
+    [TestCase(INS_addi, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 2047, 0x7FF58513u)]
+    [TestCase(INS_addi, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, -42, 0xFD658513u)]
+    [TestCase(INS_addiw, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 42, 0x02A5851Bu)]
+    [TestCase(INS_lw, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 42, 0x02A5A503u)]
+    [TestCase(INS_flw, EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_A1, 42, 0x02A5A507u)]
+    [TestCase(INS_jalr, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 42, 0x02A58567u)]
+    [TestCase(INS_sw, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 42, 0x02A5A523u)]
+    [TestCase(INS_sw, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, -2048, 0x80A5A023u)]
+    [TestCase(INS_sw, EA_4BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 2047, 0x7EA5AFA3u)]
+    [TestCase(INS_fsw, EA_4BYTE, REG_RISCV64_FA0, REG_RISCV64_A1, 42, 0x02A5A527u)]
+    [TestCase(INS_csrrw, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 0xC00, 0xC0059573u)]
+    [TestCase(INS_csrrw, EA_8BYTE, REG_RISCV64_A0, REG_RISCV64_A1, 0xFFF, 0xFFF59573u)]
     public static void TwoRegisterImmediateInstructionRecordsItsDescriptor(
         instruction ins,
         emitAttr attr,
@@ -1635,10 +1665,10 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(INS_addi, REG_A0, REG_A0)]
-    [TestCase(INS_ld, REG_A1, REG_A1)]
-    [TestCase(INS_sd, REG_A0, REG_A1)]
-    [TestCase(INS_fld, REG_FA0, REG_A1)]
+    [TestCase(INS_addi, REG_RISCV64_A0, REG_RISCV64_A0)]
+    [TestCase(INS_ld, REG_RISCV64_A1, REG_RISCV64_A1)]
+    [TestCase(INS_sd, REG_RISCV64_A0, REG_RISCV64_A1)]
+    [TestCase(INS_fld, REG_RISCV64_FA0, REG_RISCV64_A1)]
     public static void RelocatableAddressInstructionRecordsTwoWordDescriptor(
         instruction ins,
         regNumber dataReg,
@@ -1700,12 +1730,12 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(INS_csrrwi, REG_A0, 0, 0, 0x00005573u)]
-    [TestCase(INS_csrrwi, REG_R0, 31, 0xFFF, 0xFFFFD073u)]
-    [TestCase(INS_csrrsi, REG_A0, 31, 0xFFF, 0xFFFFE573u)]
-    [TestCase(INS_csrrsi, REG_R0, 0, 0, 0x00006073u)]
-    [TestCase(INS_csrrci, REG_A0, 0, 0xFFF, 0xFFF07573u)]
-    [TestCase(INS_csrrci, REG_R0, 31, 0, 0x000FF073u)]
+    [TestCase(INS_csrrwi, REG_RISCV64_A0, 0, 0, 0x00005573u)]
+    [TestCase(INS_csrrwi, REG_RISCV64_R0, 31, 0xFFF, 0xFFFFD073u)]
+    [TestCase(INS_csrrsi, REG_RISCV64_A0, 31, 0xFFF, 0xFFFFE573u)]
+    [TestCase(INS_csrrsi, REG_RISCV64_R0, 0, 0, 0x00006073u)]
+    [TestCase(INS_csrrci, REG_RISCV64_A0, 0, 0xFFF, 0xFFF07573u)]
+    [TestCase(INS_csrrci, REG_RISCV64_R0, 31, 0, 0x000FF073u)]
     public static void RegisterTwoImmediateInstructionRecordsItsDescriptor(
         instruction ins,
         regNumber reg,
@@ -1727,7 +1757,7 @@ internal static unsafe class RiscVCodeGenPortTests
 #endif
 
             var failure = CaptureFatalJitException(
-                () => emitter.emitIns_R_I_I(ins, EA_8BYTE, reg, imm1, imm2));
+                () => emitter.emitIns_R_I_I(ins, EA_8BYTE, reg, (nint)imm1, (nint)imm2));
             AssertRiscVInstructionBoundary(
                 codeGen, failure, expectedBoundary, initialInstructionCount, initialGroupSize);
 
@@ -1812,7 +1842,7 @@ internal static unsafe class RiscVCodeGenPortTests
         regNumber reg3,
         instruction compressedIns)
     {
-        var code = Emitter.emitInsCode(compressedIns is INS_none ? ins : compressedIns);
+        var code = Emitter.emitInsCodeRiscV64(compressedIns is INS_none ? ins : compressedIns);
         if (compressedIns is INS_c_mv or INS_c_add)
         {
             code |= (unchecked((uint)reg3) << 2) | (unchecked((uint)reg1) << 7);
@@ -1975,8 +2005,7 @@ internal static unsafe class RiscVCodeGenPortTests
         });
     }
 
-    [TestCase(TYP_BYREF)]
-    [TestCase(TYP_I_IMPL)]
+    [TestCaseSource(nameof(LocalAddressTypes))]
     public static void LocalAddressRecordsRiscVStackAddressing(var_types type)
     {
         WithCodeGen((compiler, codeGen) =>
@@ -2003,6 +2032,12 @@ internal static unsafe class RiscVCodeGenPortTests
             Assert.That(descriptor.idAddr().iiaLclVar.lvaVarNum(), Is.Zero);
             Assert.That(descriptor.idAddr().iiaLclVar.lvaOffset(), Is.EqualTo(24u));
         });
+    }
+
+    private static IEnumerable<TestCaseData> LocalAddressTypes()
+    {
+        yield return new TestCaseData(TYP_BYREF);
+        yield return new TestCaseData(TYP_I_IMPL);
     }
 
 #if DEBUG
@@ -2080,7 +2115,7 @@ internal static unsafe class RiscVCodeGenPortTests
                 codeGen.Emitter.emitInsBinary(INS_add, EA_4BYTE, dst, src));
 
             Assert.That(failure?.Result, Is.EqualTo(CORJIT_SKIPPED));
-            Assert.That(failure?.Message, Does.Contain("Binary operand recording requires xarch."));
+            Assert.That(failure?.Message, Does.Contain("Binary operand recording is not supported for this target."));
         });
     }
 
@@ -2502,13 +2537,14 @@ internal static unsafe class RiscVCodeGenPortTests
         {
             codeGen.resetFramePointerUsedWritePhase();
             codeGen.IsFramePointerUsed = true;
+            SetUseBlockInit(codeGen, true);
 
             var emitter = codeGen.Emitter;
             var instructionBuffer = CurrentInstructionBuffer(emitter)
                 ?? throw new AssertionException("Missing current instruction buffer.");
             var initialInstructionCount = instructionBuffer.Count;
             var initRegZeroed = true;
-            var failure = CaptureFatalJitException(() => codeGen.genZeroInitFrameUsingBlockInit(
+            var failure = CaptureFatalJitException(() => codeGen.genZeroInitFrame(
                 low + size, low, REG_T0, ref initRegZeroed));
 
             Assert.That(initRegZeroed, Is.False);
@@ -3358,12 +3394,12 @@ internal static unsafe class RiscVCodeGenPortTests
         compiler.lvaTable[0] = local;
         codeGen.resetFramePointerUsedWritePhase();
         codeGen.IsFramePointerUsed = framePointerBased;
-        codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD);
+        codeGen.RegSet.rsMaskResvd = new regMaskTP(SRBM_OPT_RSVD_RISCV64);
     }
 
     private static uint ExpectedStoreEncoding(instruction ins, regNumber sourceReg, regNumber baseReg, nint imm)
     {
-        var code = Emitter.emitInsCode(ins);
+        var code = Emitter.emitInsCodeRiscV64(ins);
         code |= (unchecked((uint)sourceReg) & 0x1F) << 20;
         code |= (unchecked((uint)baseReg) & 0x1F) << 15;
         code |= ((unchecked((uint)(imm >> 5)) & 0x7F) << 25) |
@@ -3374,7 +3410,7 @@ internal static unsafe class RiscVCodeGenPortTests
 
     private static uint ExpectedLoadEncoding(instruction ins, regNumber targetReg, regNumber baseReg, nint imm)
     {
-        var code = Emitter.emitInsCode(ins);
+        var code = Emitter.emitInsCodeRiscV64(ins);
         code |= (unchecked((uint)targetReg) & 0x1F) << 7;
         code |= (unchecked((uint)baseReg) & 0x1F) << 15;
         code |= (unchecked((uint)imm) & 0xFFF) << 20;
@@ -3475,9 +3511,12 @@ internal static unsafe class RiscVCodeGenPortTests
     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "emitCurCodeOffset")]
     private static extern ref int CurrentCodeOffset(Emitter emitter);
 
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genRestoreCalleeSavedRegistersHelp")]
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "genRestoreCalleeSavedRegistersHelpRiscV64")]
     private static extern void RestoreCalleeSavedRegisters(CodeGen codeGen, regMaskTP mask, regNumber baseReg,
         int offset, bool reportUnwindData);
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseBlockInit")]
+    private static extern void SetUseBlockInit(CodeGen codeGen, bool value);
 
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "emitSizeOfInsDsc")]
     private static extern int DescriptorSize(Emitter emitter, Emitter.instrDesc descriptor);
