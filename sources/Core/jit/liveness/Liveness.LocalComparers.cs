@@ -16,16 +16,16 @@ public partial class Liveness<TLiveness>
     {
         private readonly LclVarDsc[] _locals = compiler.lvaTable;
         private readonly RefCountState _state = compiler.lvaRefCountState;
-#if DEBUG
         private readonly int _localCount = compiler.lvaCount;
-#endif
 
         public bool Less(int first, int second)
         {
-#if DEBUG
-            assert((uint)first < (uint)_localCount);
-            assert((uint)second < (uint)_localCount);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert((uint)first < (uint)_localCount);
+                assert((uint)second < (uint)_localCount);
+            }
+
             ref readonly var firstLocal = ref _locals[first];
             ref readonly var secondLocal = ref _locals[second];
             assert(firstLocal.lvTracked && secondLocal.lvTracked);
@@ -101,16 +101,16 @@ public partial class Liveness<TLiveness>
     {
         private readonly LclVarDsc[] _locals = compiler.lvaTable;
         private readonly RefCountState _state = compiler.lvaRefCountState;
-#if DEBUG
         private readonly int _localCount = compiler.lvaCount;
-#endif
 
         public bool Less(int first, int second)
         {
-#if DEBUG
-            assert((uint)first < (uint)_localCount);
-            assert((uint)second < (uint)_localCount);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert((uint)first < (uint)_localCount);
+                assert((uint)second < (uint)_localCount);
+            }
+
             ref readonly var firstLocal = ref _locals[first];
             ref readonly var secondLocal = ref _locals[second];
             assert(firstLocal.lvTracked && secondLocal.lvTracked);
