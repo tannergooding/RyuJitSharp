@@ -41,13 +41,17 @@ public partial class Emitter
             {
                 emitDispIns(lastInstruction, isNew: false, doffs: false, asmfm: false);
             }
-            assert(emitCurIGnonEmpty());
-            assert(lastInstructionStart < emitCurIGfreeNext);
-            assert(emitCurIGinsCnt >= 1);
-            assert((uint)emitCurIGsize >= lastInstruction.idCodeSize());
-            assert(lastInstruction.StorageIndex == emitCurIGfreeBase.Count - 1);
-            assert(emitCurIG is not null);
 #endif
+            if (Configuration.DEBUG)
+            {
+                assert(emitCurIGnonEmpty());
+                assert(lastInstructionStart < emitCurIGfreeNext);
+                assert(emitCurIGinsCnt >= 1);
+                assert((uint)emitCurIGsize >= lastInstruction.idCodeSize());
+                assert(lastInstruction.StorageIndex == emitCurIGfreeBase.Count - 1);
+                assert(emitCurIG is not null);
+            }
+
             var currentGroup = emitCurIG
                 ?? throw new FatalJitException(CORJIT_INTERNALERROR, "The current instruction group is required.");
 
