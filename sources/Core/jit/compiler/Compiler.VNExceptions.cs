@@ -227,10 +227,11 @@ public partial class Compiler
                 continue;
             }
 
-#if DEBUG
-            var app = new VNFuncApp();
-            assert(vnStore.GetVNFunc(normal, ref app) && app.FuncIs(vnf));
-#endif
+            if (Configuration.DEBUG)
+            {
+                var app = new VNFuncApp();
+                assert(vnStore.GetVNFunc(normal, ref app) && app.FuncIs(vnf));
+            }
             var overflow = vnStore.VNExcSetSingleton(vnStore.VNForFunc(TYP_REF, VNF_OverflowExc, normal));
             tree._vnPair[kind] = vnStore.VNWithExc(normal, vnStore.VNExcSetUnion(existing, overflow));
         }

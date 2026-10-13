@@ -38,19 +38,20 @@ public partial class Compiler
             return Continue;
         });
 
-#if DEBUG
-        _ = loop.VisitLoopBlocks(block => {
-            _ = block.VisitAllSuccs(this, successor => {
-                if (!loop.ContainsBlock(successor) && bbIsHandlerBeg(successor))
-                {
-                    assert(!optLocalIsLiveIntoBlock(lclNum, successor));
-                }
+        if (Configuration.DEBUG)
+        {
+            _ = loop.VisitLoopBlocks(block => {
+                _ = block.VisitAllSuccs(this, successor => {
+                    if (!loop.ContainsBlock(successor) && bbIsHandlerBeg(successor))
+                    {
+                        assert(!optLocalIsLiveIntoBlock(lclNum, successor));
+                    }
 
+                    return Continue;
+                });
                 return Continue;
             });
-            return Continue;
-        });
-#endif
+        }
         return result is not Abort;
     }
 
@@ -127,18 +128,20 @@ public partial class Compiler
             return true;
         }
 
-#if DEBUG
-        _ = loop.VisitLoopBlocks(block => {
-            _ = block.VisitAllSuccs(this, successor => {
-                if (!loop.ContainsBlock(successor) && bbIsHandlerBeg(successor))
-                {
-                    assert(!optLocalIsLiveIntoBlock(lclNum, successor));
-                }
+        if (Configuration.DEBUG)
+        {
+            _ = loop.VisitLoopBlocks(block => {
+                _ = block.VisitAllSuccs(this, successor => {
+                    if (!loop.ContainsBlock(successor) && bbIsHandlerBeg(successor))
+                    {
+                        assert(!optLocalIsLiveIntoBlock(lclNum, successor));
+                    }
+
+                    return Continue;
+                });
                 return Continue;
             });
-            return Continue;
-        });
-#endif
+        }
         return false;
     }
 
