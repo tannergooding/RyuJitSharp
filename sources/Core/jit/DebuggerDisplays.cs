@@ -344,7 +344,6 @@ public partial class Emitter
     }
 }
 
-#if DEBUG
 [DebuggerDisplay("LinearScan")]
 [DebuggerTypeProxy(typeof(LinearScan.DebuggerProxy))]
 public sealed partial class LinearScan
@@ -471,7 +470,6 @@ internal readonly struct DebuggerVarReg
 
     public regNumber Register { get; }
 }
-#endif
 
 internal static class DebuggerDisplayHelpers
 {

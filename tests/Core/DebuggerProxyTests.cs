@@ -106,6 +106,12 @@ internal static class DebuggerProxyTests
     }
 
     [Test]
+    public static void LinearScanDebuggerProxyIsAvailableInAllConfigurations()
+    {
+        AssertDebuggerMetadata<LinearScan>("LinearScan", typeof(LinearScan.DebuggerProxy));
+    }
+
+    [Test]
     public static void RegisterAllocationDebuggerDisplaysAreAvailableInAllConfigurations()
     {
         AssertDebuggerDisplay<Interval>("{DebuggerDisplayText,nq}");
