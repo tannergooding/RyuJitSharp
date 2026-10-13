@@ -23,16 +23,15 @@ public partial class Compiler
                 continue;
             }
 
-#if DEBUG
             var originalBlock = block;
-#endif
             while (fgExpandHelperForBlock(ref block, expansionFunction))
             {
                 result = PhaseStatus.MODIFIED_EVERYTHING;
-#if DEBUG
-                assert(originalBlock != block);
-                originalBlock = block;
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(originalBlock != block);
+                    originalBlock = block;
+                }
             }
         }
 

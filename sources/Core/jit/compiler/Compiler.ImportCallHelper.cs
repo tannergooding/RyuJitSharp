@@ -4190,8 +4190,11 @@ public partial class Compiler
                 {
 #if DEBUG
                     JITDUMP($"\nSaving late devirtualization info for call [{call.TreeId:D6}]\n");
-                    assert(call._inlineContext == compiler.impCurStmtDI.InlineContext);
 #endif
+                    if (Configuration.DEBUG)
+                    {
+                        assert(call._inlineContext == compiler.impCurStmtDI.InlineContext);
+                    }
 
                     call._lateDevirtualizationInfo = new LateDevirtualizationInfo {
                         methodHnd = callInfo.hMethod,
