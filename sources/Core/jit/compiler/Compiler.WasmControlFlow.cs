@@ -476,23 +476,26 @@ public partial class Compiler
 
         fgIndexToBlockMap = initialLayout;
 
-#if DEBUG
+        if (Configuration.DEBUG)
         {
             var order = 0;
             foreach (var block in Blocks)
             {
+#if DEBUG
                 if (block.bbPreorderNum != order)
                 {
                     JITDUMP(
                         $"Blocks out of order: {FMT_BB(block.bbNum)} has order {order}, " +
                         $"but bbPreorderNum={block.bbPreorderNum}\n");
                 }
+#endif
 
                 assert(block.bbPreorderNum == order, "block order disagrees with preorder num");
                 order++;
             }
         }
 
+        if (Configuration.DEBUG)
         {
             var regionClosed = new bool[compFuncInfoCount];
             var previousRegion = uint.MaxValue;
@@ -508,19 +511,20 @@ public partial class Compiler
                         regionClosed[previousRegion] = true;
                     }
 
+#if DEBUG
                     if (regionClosed[region])
                     {
                         JITDUMP(
                             $"Wasm function region {region} is not contiguous: " +
                             $"{FMT_BB(block.bbNum)} re-enters it\n");
                     }
+#endif
 
                     assert(!regionClosed[region], "wasm function region (main method / funclet) blocks are not contiguous");
                     previousRegion = region;
                 }
             }
         }
-#endif
 
 #if DEBUG
         fgDumpWasmControlFlow();
