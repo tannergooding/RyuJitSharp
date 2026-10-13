@@ -322,7 +322,7 @@ public partial class Compiler
         {
             (left, right) = (right, left);
         }
-        if (left.Oper is not GT_IND || left.Type is not TYP_I_IMPL and not TYP_REF and not TYP_BYREF)
+        if (left.Oper is not GT_IND || (left.Type is var __targetAliasValue0 && ((!(__targetAliasValue0 == TYP_I_IMPL) && !(__targetAliasValue0 is TYP_REF)) && !(__targetAliasValue0 is TYP_BYREF))))
         {
             return WALK_CONTINUE;
         }
@@ -358,7 +358,7 @@ public partial class Compiler
             if (addr.Oper is GT_ADD)
             {
                 var op = addr.AsOp();
-                if (!op.Op2.Oper.IsCnsIntOrI || op.Op2.Type is not TYP_I_IMPL || op.Op2.IsIconHandle())
+                if (!op.Op2.Oper.IsCnsIntOrI || (op.Op2.Type != TYP_I_IMPL) || op.Op2.IsIconHandle())
                 {
                     return WALK_CONTINUE;
                 }

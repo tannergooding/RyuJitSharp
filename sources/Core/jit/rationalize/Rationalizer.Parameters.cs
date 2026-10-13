@@ -222,13 +222,11 @@ public sealed partial class Rationalizer
                 CompilerInstance.lvaSetVarDoNotEnregister(field.LclNum, DoNotEnregisterReason.LocalField);
             }
             remappedLocal = CompilerInstance.lvaGrabTemp(false, $"V{field.LclNum:D2}.{selected.Register.Name}");
-#if TARGET_WASM
-            var fullWidthType = selected.GetRegisterType().ActualType;
-#else
-            var fullWidthType = TYP_I_IMPL;
-#endif
+            var fullWidthType = Configuration.TARGET_WASM
+                ? selected.GetRegisterType().ActualType
+                : TYP_I_IMPL;
             var registerType = genIsValidIntReg(selected.Register) ? fullWidthType : selected.GetRegisterType();
-            if ((registerType is TYP_I_IMPL) && varTypeIsGC(field.Type))
+            if ((registerType == TYP_I_IMPL) && varTypeIsGC(field.Type))
             {
                 registerType = field.Type;
             }
@@ -252,26 +250,21 @@ public sealed partial class Rationalizer
         }
 
         GenTree value = CompilerInstance.gtNewLclvNode(CompilerInstance.lvaGetDesc(remappedLocal).Type, remappedLocal);
-#if TARGET_WASM
-        if (varTypeIsSimd(value.Type) && !varTypeIsSimd(field.Type))
+        if (Configuration.TARGET_WASM && varTypeIsSimd(value.Type) && !varTypeIsSimd(field.Type))
         {
             var offset = field.LclOffs - selected.Offset;
             assert((offset % field.Type.Size) == 0);
             value = CompilerInstance.gtNewSimdGetElementNode(field.Type, value,
                 CompilerInstance.gtNewIconNode(TYP_INT, offset / field.Type.Size), field.Type, value.Type.Size);
         }
-        else
-#endif
-        if (varTypeUsesFloatReg(value.Type))
+        else if (varTypeUsesFloatReg(value.Type))
         {
             assert(field.LclOffs == selected.Offset);
             value.Type = field.Type;
-#if FEATURE_SIMD
-            if (value.Type is TYP_SIMD12)
+            if (Configuration.FEATURE_SIMD && value.Type is TYP_SIMD12)
             {
                 value.Type = TYP_SIMD16;
             }
-#endif
         }
         else
         {

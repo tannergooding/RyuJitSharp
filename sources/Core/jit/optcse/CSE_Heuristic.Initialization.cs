@@ -41,13 +41,14 @@ public sealed partial class CSE_Heuristic
                 continue;
             }
 
-#if FEATURE_FIXED_OUT_ARGS
-            noway_assert(m_compiler.lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
-            if (lclNum == m_compiler.lvaOutgoingArgSpaceVar)
+            if (Configuration.FEATURE_FIXED_OUT_ARGS)
             {
-                continue;
+                noway_assert(m_compiler.lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
+                if (lclNum == m_compiler.lvaOutgoingArgSpaceVar)
+                {
+                    continue;
+                }
             }
-#endif
 
             var varType = varDsc.Type;
             var registerClass = varTypeUsesIntReg(varType) ? 0 : varTypeUsesMaskReg(varType) ? 1 : 2;
@@ -61,12 +62,10 @@ public sealed partial class CSE_Heuristic
             };
 
             var onStack = (regAvailEstimate == 0) || varDsc.lvDoNotEnregister;
-#if TARGET_X86
-            if (varTypeIsLong(varType))
+            if (Configuration.TARGET_X86 && varTypeIsLong(varType))
             {
                 onStack = true;
             }
-#endif
             if (onStack && !varTypeHasUnknownSize(varType))
             {
                 frameSize += unchecked((uint)m_compiler.lvaLclStackHomeSize(lclNum));
@@ -102,35 +101,42 @@ public sealed partial class CSE_Heuristic
                 }
             }
 
-#if TARGET_XARCH
-            if (frameSize > 0x80)
+            if (Configuration.TARGET_XARCH)
             {
-                largeFrame = true;
-                break;
+                if (frameSize > 0x80)
+                {
+                    largeFrame = true;
+                    break;
+                }
             }
-#elif TARGET_ARM
-            if (frameSize > 0x400)
+            else if (Configuration.TARGET_ARM)
             {
-                largeFrame = true;
+                if (frameSize > 0x400)
+                {
+                    largeFrame = true;
+                }
+                if (frameSize > 0x10000)
+                {
+                    hugeFrame = true;
+                    break;
+                }
             }
-            if (frameSize > 0x10000)
+            else if (Configuration.TARGET_ARM64)
             {
-                hugeFrame = true;
-                break;
+                if (frameSize > 0x1000)
+                {
+                    largeFrame = true;
+                    break;
+                }
             }
-#elif TARGET_ARM64
-            if (frameSize > 0x1000)
+            else if (Configuration.TARGET_LOONGARCH64 || Configuration.TARGET_RISCV64)
             {
-                largeFrame = true;
-                break;
+                if (frameSize > 0x7ff)
+                {
+                    largeFrame = true;
+                    break;
+                }
             }
-#elif TARGET_LOONGARCH64 || TARGET_RISCV64
-            if (frameSize > 0x7ff)
-            {
-                largeFrame = true;
-                break;
-            }
-#endif
         }
 
         // Tracked locals are ordered by weighted reference count for LSRA.
@@ -151,12 +157,10 @@ public sealed partial class CSE_Heuristic
             if (varTypeUsesIntReg(varType))
             {
                 enregCount = ++enregCountInt;
-#if !TARGET_64BIT
-                if (varType is TYP_LONG)
+                if (!Configuration.TARGET_64BIT && varType is TYP_LONG)
                 {
                     enregCount = ++enregCountInt;
                 }
-#endif
                 cntAggressiveEnreg = CntAggressiveEnreg;
                 cntModerateEnreg = CntModerateEnreg;
             }

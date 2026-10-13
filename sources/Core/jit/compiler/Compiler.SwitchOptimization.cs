@@ -270,10 +270,12 @@ public partial class Compiler
     {
         var modified = false;
         assert(block.Kind is BBJ_COND);
-#if JIT32_GCENCODER
-        // The legacy encoder has a hard limit on the number of epilogues.
-        return modified;
-#else
+        if (Configuration.JIT32_GCENCODER)
+        {
+            // The legacy encoder has a hard limit on the number of epilogues.
+            return modified;
+        }
+
         if (info.compRetType is not TYP_UBYTE)
         {
             return modified;
@@ -365,10 +367,8 @@ public partial class Compiler
         DISPBLOCK(block);
 
         return modified;
-#endif
     }
 
-#if !JIT32_GCENCODER
     private static bool IsReturnBool(BasicBlock block, bool value)
     {
         if ((block.Kind is BBJ_RETURN) && (block.LastStmt is Statement stmt))
@@ -393,5 +393,4 @@ public partial class Compiler
 
         return false;
     }
-#endif
 }

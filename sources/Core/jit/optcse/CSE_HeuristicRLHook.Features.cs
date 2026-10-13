@@ -56,12 +56,10 @@ public partial class CSE_HeuristicRLHook : CSE_HeuristicCommon
             if (!varTypeIsFloating(local.Type))
             {
                 enregCount++;
-#if !TARGET_64BIT
-                if (local.Type is TYP_LONG)
+                if (!Configuration.TARGET_64BIT && local.Type is TYP_LONG)
                 {
                     enregCount++;
                 }
-#endif
             }
         }
 

@@ -7,9 +7,7 @@ using static RyuJitSharp.GenTreeFlags;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.var_types;
-#if FEATURE_HW_INTRINSICS
 using static RyuJitSharp.HWIntrinsicCategory;
-#endif
 
 namespace RyuJitSharp;
 
@@ -91,20 +89,19 @@ public abstract partial class CSE_HeuristicCommon
             }
 
             case GT_CNS_LNG:
-#if !TARGET_64BIT
             {
-                return false;
+                if (Configuration.TARGET_32BIT)
+                {
+                    return false;
+                }
+
+                break;
             }
-#endif
             case GT_CNS_INT:
             case GT_CNS_DBL:
             case GT_CNS_STR:
-#if FEATURE_SIMD
-            case GT_CNS_VEC:
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-            case GT_CNS_MSK:
-#endif
+            case GT_CNS_VEC when Configuration.FEATURE_SIMD:
+            case GT_CNS_MSK when Configuration.FEATURE_MASKED_HW_INTRINSICS:
             case GT_ARR_ELEM:
             case GT_ARR_LENGTH:
             case GT_MDARR_LENGTH:
@@ -149,34 +146,37 @@ public abstract partial class CSE_HeuristicCommon
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
                 var intrinsic = tree.AsHWIntrinsic();
                 var category = HWIntrinsicInfo.lookupCategory(intrinsic.HWIntrinsicId);
-#if TARGET_XARCH
-                if (category is not (HW_Category_SimpleSIMD or HW_Category_IMM or HW_Category_Scalar or
-                    HW_Category_SIMDScalar or HW_Category_Helper))
+                if (Configuration.TARGET_XARCH)
                 {
-                    return false;
+                    if (category is not (HW_Category_SimpleSIMD or HW_Category_IMM or HW_Category_Scalar or
+                        HW_Category_SIMDScalar or HW_Category_Helper))
+                    {
+                        return false;
+                    }
                 }
-#elif TARGET_ARM64
-                if (category is not (HW_Category_SIMD or HW_Category_SIMDByIndexedElement or
-                    HW_Category_ShiftLeftByImmediate or HW_Category_ShiftRightByImmediate or
-                    HW_Category_Scalar or HW_Category_Helper))
+                else if (Configuration.TARGET_ARM64)
                 {
-                    return false;
+                    if (category is not (HW_Category_SIMD or HW_Category_SIMDByIndexedElement or
+                        HW_Category_ShiftLeftByImmediate or HW_Category_ShiftRightByImmediate or
+                        HW_Category_Scalar or HW_Category_Helper))
+                    {
+                        return false;
+                    }
                 }
-#else
-                throw new System.NotImplementedException("CSE_HeuristicCommon.CanConsiderTree target intrinsic categories");
-#endif
+                else
+                {
+                    throw new System.NotImplementedException("CSE_HeuristicCommon.CanConsiderTree target intrinsic categories");
+                }
                 if (intrinsic.IsMemoryStore(out _) || intrinsic.IsMemoryLoad())
                 {
                     return false;
                 }
                 break;
             }
-#endif
 
             case GT_BLK:
             case GT_LCL_FLD:

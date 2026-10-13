@@ -36,9 +36,10 @@ public sealed partial class Rationalizer : Phase
 
         var compiler = CompilerInstance;
         var mapParameters = compiler.opts.OptimizationEnabled && !compiler.opts.IsOSR && (compiler.info.compArgsCount > 0);
-#if TARGET_ARM
-        mapParameters &= !compiler.compIsProfilerHookNeeded;
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            mapParameters &= !compiler.compIsProfilerHookNeeded;
+        }
         if (mapParameters)
         {
             _parameterUses = new ParameterUses[compiler.info.compArgsCount];
@@ -208,18 +209,21 @@ public sealed partial class Rationalizer : Phase
 
                 if (varTypeIsMask(operand.Type))
                 {
-#if FEATURE_MASKED_HW_INTRINSICS
-                    // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD_ARM64
+                    if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                    {
+                        // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD_ARM64
 
-                    var simdBaseType = CompilerInstance.getBaseTypeAndSizeOfSimdType(clsHnd, out var simdSize);
-                    assert(simdSize != 0);
+                        var simdBaseType = CompilerInstance.getBaseTypeAndSizeOfSimdType(clsHnd, out var simdSize);
+                        assert(simdSize != 0);
 
-                    var cvtNode = CompilerInstance.gtNewSimdCvtMaskToVectorNode(sigTyp, operand, simdBaseType, (byte)simdSize);
-                    block.InsertAfter(operand, new LIR.Range(CompilerInstance.fgSetTreeSeq(cvtNode), cvtNode));
-                    operand = cvtNode;
-#else
-                    unreached();
-#endif
+                        var cvtNode = CompilerInstance.gtNewSimdCvtMaskToVectorNode(sigTyp, operand, simdBaseType, (byte)simdSize);
+                        block.InsertAfter(operand, new LIR.Range(CompilerInstance.fgSetTreeSeq(cvtNode), cvtNode));
+                        operand = cvtNode;
+                    }
+                    else
+                    {
+                        unreached();
+                    }
                 }
                 arg = NewCallArg.CreateForStruct(operand, sigTyp, CompilerInstance.typGetObjLayout(clsHnd));
             }
@@ -267,22 +271,25 @@ public sealed partial class Rationalizer : Phase
 
             if (varTypeIsMask(tree.Type))
             {
-#if FEATURE_MASKED_HW_INTRINSICS
-                // No managed call returns TYP_MASK, so convert it from a TYP_SIMD_ARM64
-
-                var simdBaseType = CompilerInstance.getBaseTypeAndSizeOfSimdType(call.RetClsHnd, out var simdSize);
-                assert(simdSize != 0);
-
-                result = CompilerInstance.gtNewSimdCvtVectorToMaskNode(TYP_MASK, result, simdBaseType, (byte)simdSize);
-
-                if (tmpNum == BAD_VAR_NUM)
+                if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
                 {
-                    // Propagate flags of "call" to its parent.
-                    result.Flags |= (call.Flags & GTF_ALL_EFFECT) | GTF_CALL;
+                    // No managed call returns TYP_MASK, so convert it from a TYP_SIMD_ARM64
+
+                    var simdBaseType = CompilerInstance.getBaseTypeAndSizeOfSimdType(call.RetClsHnd, out var simdSize);
+                    assert(simdSize != 0);
+
+                    result = CompilerInstance.gtNewSimdCvtVectorToMaskNode(TYP_MASK, result, simdBaseType, (byte)simdSize);
+
+                    if (tmpNum == BAD_VAR_NUM)
+                    {
+                        // Propagate flags of "call" to its parent.
+                        result.Flags |= (call.Flags & GTF_ALL_EFFECT) | GTF_CALL;
+                    }
                 }
-#else
-                unreached();
-#endif
+                else
+                {
+                    unreached();
+                }
             }
 
             GetParent(parents).ReplaceOperand(ref use, result);
@@ -384,7 +391,6 @@ public sealed partial class Rationalizer : Phase
         RewriteNodeAsCall(ref use, in sigInfo, parents, callHnd, intrinsic.EntryPoint, operands, isSpecialIntrinsic: true);
     }
 
-#if TARGET_ARM64
     private void RewriteSubLshDiv(ref GenTree use)
     {
         if (!CompilerInstance.opts.OptimizationEnabled)
@@ -435,7 +441,6 @@ public sealed partial class Rationalizer : Phase
             BlockRange.Remove(shift);
         }
     }
-#endif
 
     // Root visitor
     private Compiler.fgWalkResult RewriteNode(ref GenTree useEdge, GenTreeStack parentStack)
@@ -597,36 +602,33 @@ public sealed partial class Rationalizer : Phase
             {
                 // Non-target intrinsics should have already been rewritten back into user calls.
                 assert(compiler.IsTargetIntrinsic(node.AsIntrinsic().IntrinsicName));
-#if TARGET_ARM64 && FEATURE_HW_INTRINSICS
-                if ((node.AsIntrinsic().IntrinsicName is NI_PRIMITIVE_PopCount) &&
+                if (Configuration.TARGET_ARM64 && Configuration.FEATURE_HW_INTRINSICS &&
+                    (node.AsIntrinsic().IntrinsicName is NI_PRIMITIVE_PopCount) &&
                     RewriteHWIntrinsicCmpMaskExtractMsbPopCount(ref useEdge, parentStack))
                 {
                     node = useEdge;
                 }
-                else if ((node.AsIntrinsic().IntrinsicName is NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_LeadingZeroCount) &&
+                else if (Configuration.TARGET_ARM64 && Configuration.FEATURE_HW_INTRINSICS &&
+                    (node.AsIntrinsic().IntrinsicName is NI_PRIMITIVE_TrailingZeroCount or NI_PRIMITIVE_LeadingZeroCount) &&
                     RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(ref useEdge, parentStack))
                 {
                     node = useEdge;
                 }
-#endif
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
+            case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
             {
-#if TARGET_ARM64
-                if (IsZeroCount(node) && RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(ref useEdge, parentStack))
+                if (Configuration.TARGET_ARM64 && IsZeroCount(node) &&
+                    RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(ref useEdge, parentStack))
                 {
                     node = useEdge;
                     break;
                 }
-#endif
                 RewriteHWIntrinsic(ref useEdge, parentStack);
                 node = useEdge;
                 break;
             }
-#endif
 
             case GT_CAST:
             {

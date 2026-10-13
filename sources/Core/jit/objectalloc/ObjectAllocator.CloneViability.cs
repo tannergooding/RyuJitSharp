@@ -145,7 +145,7 @@ public sealed partial class ObjectAllocator
             return null;
         }
 
-        if (op1.Type is not TYP_I_IMPL)
+        if ((op1.Type != TYP_I_IMPL))
         {
             JITDUMP("... no JTRUE(cmp(ind:int, ...))\n");
             return null;

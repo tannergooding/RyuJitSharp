@@ -77,7 +77,7 @@ public sealed partial class ObjectAllocator
     private void UpdateAncestorTypes(GenTree tree, GenTreeStack ancestors,
         var_types newType, ClassLayout? newLayout, bool retypeFields)
     {
-        assert(newType is TYP_BYREF or TYP_I_IMPL);
+        assert((newType is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)));
         var compiler = CompilerInstance;
         var parentIndex = 1;
         var keepChecking = true;
@@ -193,7 +193,7 @@ public sealed partial class ObjectAllocator
                     assert(parentType is not TYP_REF);
                     if (parentType != newType)
                     {
-                        assert(newType is TYP_I_IMPL && parentType is TYP_BYREF);
+                        assert((newType == TYP_I_IMPL) && parentType is TYP_BYREF);
                         parent.ChangeType(newType);
                         parentIndex++;
                         keepChecking = true;
@@ -422,7 +422,7 @@ public sealed partial class ObjectAllocator
                             var copy = compiler.gtCloneExpr(objectLocal)
                                 ?? throw new FatalJitException("UNBOX requires a cloneable local.");
                             var payload = compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF, copy,
-                                compiler.gtNewIconNode(TYP_I_IMPL, TARGET_POINTER_SIZE));
+                                compiler.gtNewIconNode(TYP_I_IMPL, Configuration.TARGET_POINTER_SIZE));
                             use = compiler.gtNewCommaNode(TYP_BYREF, call, payload);
                         }
                     }
@@ -517,13 +517,13 @@ public sealed partial class ObjectAllocator
                     ?? throw new FatalJitException("Tracked struct requires its layout.");
                 if (!layout.HasGCPtr)
                 {
-                    assert(newType is TYP_I_IMPL);
+                    assert((newType == TYP_I_IMPL));
                     JITDUMP($"V{local:D2} not GC\n");
                     descriptor.lvTracked = false;
                     continue;
                 }
 
-                if (newType is TYP_I_IMPL)
+                if ((newType == TYP_I_IMPL))
                 {
                     JITDUMP($"Changing layout of struct V{local:D2} to block\n");
                     descriptor.ChangeLayout(GetNonGCLayout(layout));
@@ -545,7 +545,7 @@ public sealed partial class ObjectAllocator
 
                 if (descriptor.Type != newType)
                 {
-                    assert(!descriptor.lvIsParam || newType is not TYP_I_IMPL);
+                    assert(!descriptor.lvIsParam || (newType != TYP_I_IMPL));
                     JITDUMP($"Changing the type of V{local:D2} from {StackPointerTypeName(descriptor.Type)} to {StackPointerTypeName(newType)}\n");
                     descriptor.Type = newType;
                 }
@@ -573,7 +573,7 @@ public sealed partial class ObjectAllocator
         {
             TYP_REF => "ref",
             TYP_BYREF => "byref",
-            TYP_I_IMPL => "long",
+            var __targetAliasValue1 when __targetAliasValue1 == TYP_I_IMPL => "long",
             _ => throw new FatalJitException("Unexpected type for stack-pointer retyping.")
         };
     }

@@ -19,7 +19,6 @@ public sealed partial class Rationalizer
         }
     }
 
-#if FEATURE_HW_INTRINSICS
     private unsafe void RewriteHWIntrinsicAsUserCall(ref GenTree use, GenTreeStack parents)
     {
         var node = use.AsHWIntrinsic();
@@ -33,10 +32,9 @@ public sealed partial class Rationalizer
         GenTree? result = null;
         switch (intrinsic)
         {
-#if TARGET_XARCH
-            case NI_AVX_Compare:
-            case NI_AVX_CompareScalar:
-            case NI_AVX512_CompareMask:
+            case NI_AVX_Compare when Configuration.TARGET_XARCH:
+            case NI_AVX_CompareScalar when Configuration.TARGET_XARCH:
+            case NI_AVX512_CompareMask when Configuration.TARGET_XARCH:
             {
                 assert(operands.Length == 3);
                 if (operands[2].Oper.IsCnsIntOrI)
@@ -50,19 +48,15 @@ public sealed partial class Rationalizer
                 }
                 break;
             }
-#endif
-#if !TARGET_WASM
-            case NI_Vector_CreateGeometricSequence:
+            case NI_Vector_CreateGeometricSequence when !Configuration.TARGET_WASM:
             {
                 assert(operands.Length == 2);
                 if (operands[1].Oper.IsConst)
                 {
-#if TARGET_XARCH
-                    var canGenerate = operands[0].Oper.IsConst || (size != 32) || !varTypeIsIntegral(baseType) ||
-                        CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_AVX2);
-#else
-                    var canGenerate = !varTypeIsLong(baseType) || operands[0].Oper.IsConst || (size == 8);
-#endif
+                    var canGenerate = Configuration.TARGET_XARCH
+                        ? operands[0].Oper.IsConst || (size != 32) || !varTypeIsIntegral(baseType) ||
+                            CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_AVX2)
+                        : !varTypeIsLong(baseType) || operands[0].Oper.IsConst || (size == 8);
                     if (canGenerate)
                     {
                         result = CompilerInstance.gtNewSimdCreateGeometricSequenceNode(type, operands[0], operands[1], baseType, size);
@@ -70,7 +64,6 @@ public sealed partial class Rationalizer
                 }
                 break;
             }
-#endif
             case NI_Vector_Shuffle:
             case NI_Vector_ShuffleNative:
             case NI_Vector_ShuffleNativeFallback:
@@ -84,40 +77,43 @@ public sealed partial class Rationalizer
                 }
                 break;
             }
-#if TARGET_XARCH
-            case NI_Vector_ExtractMostSignificantBits when size == 16:
+            case NI_Vector_ExtractMostSignificantBits when Configuration.TARGET_XARCH && size == 16:
             {
                 assert(varTypeIsShort(baseType));
                 return;
             }
-#endif
             default:
             {
                 if (signature.numArgs == 0)
                 {
                     break;
                 }
-#if TARGET_XARCH
-                var immediate = operands[^1];
-                if (!HWIntrinsicInfo.isImmOp(intrinsic, immediate))
+                if (Configuration.TARGET_XARCH)
                 {
-                    break;
+                    var immediate = operands[^1];
+                    if (!HWIntrinsicInfo.isImmOp(intrinsic, immediate))
+                    {
+                        break;
+                    }
+                    if (CompilerInstance.CheckHWIntrinsicImmRange(intrinsic, baseType, immediate, false, 0,
+                        HWIntrinsicInfo.lookupImmUpperBound(intrinsic), HWIntrinsicInfo.HasFullRangeImm(intrinsic), out _))
+                    {
+                        node.Flags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
+                        return;
+                    }
                 }
-                if (CompilerInstance.CheckHWIntrinsicImmRange(intrinsic, baseType, immediate, false, 0,
-                    HWIntrinsicInfo.lookupImmUpperBound(intrinsic), HWIntrinsicInfo.HasFullRangeImm(intrinsic), out _))
+                else if (Configuration.TARGET_ARM64)
                 {
-                    node.Flags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
-                    return;
+                    if (CanKeepHWIntrinsicImmediate(node, in signature))
+                    {
+                        node.Flags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
+                        return;
+                    }
                 }
-#elif TARGET_ARM64
-                if (CanKeepHWIntrinsicImmediate(node, in signature))
+                else
                 {
-                    node.Flags &= ~(GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
-                    return;
+                    throw new NotImplementedException("Target-specific hardware immediate rationalization is not ported.");
                 }
-#else
-                throw new NotImplementedException("Target-specific hardware immediate rationalization is not ported.");
-#endif
                 break;
             }
         }
@@ -157,19 +153,17 @@ public sealed partial class Rationalizer
         assert(!node.IsUserCall);
         switch (node.HWIntrinsicId)
         {
-#if TARGET_XARCH
-            case NI_AVX512_BlendVariableMask:
+            case NI_AVX512_BlendVariableMask when Configuration.TARGET_XARCH:
             {
                 RewriteHWIntrinsicBlendv(ref use, parents);
                 break;
             }
-            case NI_AVX512_ConvertMaskToVector:
-            case NI_AVX512_MoveMask:
+            case NI_AVX512_ConvertMaskToVector when Configuration.TARGET_XARCH:
+            case NI_AVX512_MoveMask when Configuration.TARGET_XARCH:
             {
                 RewriteHWIntrinsicMaskOp(ref use, parents);
                 break;
             }
-#endif
             case NI_Vector_ExtractMostSignificantBits:
             {
                 RewriteHWIntrinsicExtractMsb(ref use, parents);
@@ -178,7 +172,6 @@ public sealed partial class Rationalizer
         }
     }
 
-#if TARGET_XARCH
     private void RewriteHWIntrinsicBlendv(ref GenTree use, GenTreeStack parents)
     {
         var node = use.AsHWIntrinsic();
@@ -441,66 +434,68 @@ public sealed partial class Rationalizer
         }
         return false;
     }
-#endif
-
     private void RewriteHWIntrinsicExtractMsb(ref GenTree use, GenTreeStack parents)
     {
-#if TARGET_XARCH
-        var node = use.AsHWIntrinsic();
-        var baseType = varTypeIsUnsigned(node.SimdBaseType) ? TYP_UBYTE : TYP_BYTE;
-        var size = node.SimdSize;
-        var type = Compiler.GetSimdTypeForSize(size);
-        var first = node.GetOp(1);
-        var indices = CompilerInstance.gtNewVconNode(type);
-        // Pack the high byte of each 16-bit element into the low eight bytes;
-        // pshufb's high index bit zeroes the other eight bytes in each lane.
-        indices.SimdVal.u64[0] = 0x0F0D0B0907050301;
-        indices.SimdVal.u64[1] = 0x8080808080808080;
-        var shuffle = NI_X86Base_Shuffle;
-        if (size == 32)
+        if (Configuration.TARGET_XARCH)
         {
-            indices.SimdVal.u64[2] = 0x0F0D0B0907050301;
-            indices.SimdVal.u64[3] = 0x8080808080808080;
-            shuffle = NI_AVX2_Shuffle;
-        }
-        BlockRange.InsertAfter(first, indices);
-        GenTree temporary = CompilerInstance.gtNewSimdHWIntrinsicNode(type, shuffle, baseType, size, first, indices);
-        BlockRange.InsertAfter(indices, temporary);
-        first = temporary;
-        if (size == 32)
-        {
-            var otherType = baseType is TYP_UBYTE ? TYP_ULONG : TYP_LONG;
-            var control = CompilerInstance.gtNewIconNode(TYP_INT, 0xD8);
-            BlockRange.InsertAfter(first, control);
-            temporary = CompilerInstance.gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, otherType, size, first, control);
-            BlockRange.InsertAfter(control, temporary);
+            var node = use.AsHWIntrinsic();
+            var baseType = varTypeIsUnsigned(node.SimdBaseType) ? TYP_UBYTE : TYP_BYTE;
+            var size = node.SimdSize;
+            var type = Compiler.GetSimdTypeForSize(size);
+            var first = node.GetOp(1);
+            var indices = CompilerInstance.gtNewVconNode(type);
+            // Pack the high byte of each 16-bit element into the low eight bytes;
+            // pshufb's high index bit zeroes the other eight bytes in each lane.
+            indices.SimdVal.u64[0] = 0x0F0D0B0907050301;
+            indices.SimdVal.u64[1] = 0x8080808080808080;
+            var shuffle = NI_X86Base_Shuffle;
+            if (size == 32)
+            {
+                indices.SimdVal.u64[2] = 0x0F0D0B0907050301;
+                indices.SimdVal.u64[3] = 0x8080808080808080;
+                shuffle = NI_AVX2_Shuffle;
+            }
+            BlockRange.InsertAfter(first, indices);
+            GenTree temporary = CompilerInstance.gtNewSimdHWIntrinsicNode(type, shuffle, baseType, size, first, indices);
+            BlockRange.InsertAfter(indices, temporary);
             first = temporary;
-            temporary = CompilerInstance.gtNewSimdGetLowerNode(TYP_SIMD16, first, baseType, size);
-            BlockRange.InsertAfter(first, temporary);
-            first = temporary;
-            size = 16;
+            if (size == 32)
+            {
+                var otherType = baseType is TYP_UBYTE ? TYP_ULONG : TYP_LONG;
+                var control = CompilerInstance.gtNewIconNode(TYP_INT, 0xD8);
+                BlockRange.InsertAfter(first, control);
+                temporary = CompilerInstance.gtNewSimdHWIntrinsicNode(type, NI_AVX2_Permute4x64, otherType, size, first, control);
+                BlockRange.InsertAfter(control, temporary);
+                first = temporary;
+                temporary = CompilerInstance.gtNewSimdGetLowerNode(TYP_SIMD16, first, baseType, size);
+                BlockRange.InsertAfter(first, temporary);
+                first = temporary;
+                size = 16;
+            }
+            node.ChangeHWIntrinsicId(NI_X86Base_MoveMask);
+            node.SimdSize = size;
+            node.SimdBaseType = baseType;
+            node.SetOp(1, first);
         }
-        node.ChangeHWIntrinsicId(NI_X86Base_MoveMask);
-        node.SimdSize = size;
-        node.SimdBaseType = baseType;
-        node.SetOp(1, first);
-#elif TARGET_ARM64
-        if (RewriteHWIntrinsicCmpMaskExtractMsb(ref use, parents))
+        else if (Configuration.TARGET_ARM64)
         {
-            return;
-        }
+            if (RewriteHWIntrinsicCmpMaskExtractMsb(ref use, parents))
+            {
+                return;
+            }
 
-        var node = use.AsHWIntrinsic();
-        if ((parents.Count > 1) && (IsPrimitivePopCount(GetParent(parents)) || IsZeroCount(GetParent(parents))) &&
-            IsHWIntrinsicCmpMaskExtractMsb(node, out _))
+            var node = use.AsHWIntrinsic();
+            if ((parents.Count > 1) && (IsPrimitivePopCount(GetParent(parents)) || IsZeroCount(GetParent(parents))) &&
+                IsHWIntrinsicCmpMaskExtractMsb(node, out _))
+            {
+                return;
+            }
+
+            RewriteHWIntrinsicExtractMsbArm64(node, parents, ref use);
+        }
+        else
         {
-            return;
+            throw new NotImplementedException("Target-specific most-significant-bit rationalization is not ported.");
         }
-
-        RewriteHWIntrinsicExtractMsbArm64(node, parents, ref use);
-#else
-        throw new NotImplementedException("Target-specific most-significant-bit rationalization is not ported.");
-#endif
     }
-#endif
 }

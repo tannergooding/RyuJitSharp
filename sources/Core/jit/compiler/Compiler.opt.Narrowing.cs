@@ -25,8 +25,7 @@ public partial class Compiler
         var noValueNumbers = new ValueNumPair();
         switch (operation)
         {
-#if !TARGET_64BIT
-            case GT_CNS_LNG:
+            case GT_CNS_LNG when !Configuration.TARGET_64BIT:
             {
                 var value = tree.AsIntConCommon().IntegralValue;
                 long mask = destinationType switch {
@@ -52,7 +51,6 @@ public partial class Compiler
 
                 return true;
             }
-#endif
             case GT_CNS_INT:
             {
                 if (tree.AsIntCon().ImmedValNeedsReloc(this))
@@ -66,10 +64,8 @@ public partial class Compiler
                     TYP_UBYTE => 0xFF,
                     TYP_SHORT => 0x7FFF,
                     TYP_USHORT => 0xFFFF,
-#if TARGET_64BIT
-                    TYP_INT => 0x7FFFFFFF,
-                    TYP_UINT => 0xFFFFFFFF,
-#endif
+                    TYP_INT when Configuration.TARGET_64BIT => 0x7FFFFFFF,
+                    TYP_UINT when Configuration.TARGET_64BIT => 0xFFFFFFFF,
                     _ => 0,
                 };
                 if ((mask == 0) || ((value & mask) != value))
@@ -77,14 +73,12 @@ public partial class Compiler
                     return false;
                 }
 
-#if TARGET_64BIT
-                if (doIt)
+                if (Configuration.TARGET_64BIT && doIt)
                 {
                     tree.Type = TYP_INT;
                     tree.AsIntCon().IconValue = unchecked((int)value);
                     fgUpdateConstTreeValueNumber(tree);
                 }
-#endif
                 return true;
             }
 

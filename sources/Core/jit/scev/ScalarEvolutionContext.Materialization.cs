@@ -105,12 +105,10 @@ public sealed partial class ScalarEvolutionContext
                     }
                     else
                     {
-#if !TARGET_64BIT
-                        if ((oper is GT_MUL) && binop.Type is TYP_LONG)
+                        if (!Configuration.TARGET_64BIT && (oper is GT_MUL) && binop.Type is TYP_LONG)
                         {
                             return false;
                         }
-#endif
                         result = _compiler.gtNewBinaryNode(oper, binop.Type, op1, op2);
                     }
                 }

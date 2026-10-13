@@ -16,12 +16,12 @@ public abstract partial class CSE_HeuristicCommon
             return true;
         }
 
-        if ((cseLclVarTyp is TYP_BYREF) && (expTyp is TYP_I_IMPL))
+        if ((cseLclVarTyp is TYP_BYREF) && ((expTyp == TYP_I_IMPL)))
         {
             return true;
         }
 
-        if ((cseLclVarTyp is TYP_I_IMPL) && (expTyp is TYP_BYREF))
+        if (((cseLclVarTyp == TYP_I_IMPL)) && (expTyp is TYP_BYREF))
         {
             return true;
         }

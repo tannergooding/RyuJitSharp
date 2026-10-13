@@ -14,8 +14,8 @@ public partial class Compiler
         private static int EncodeContinuationIndex(int offset, int firstBit, int numBits)
         {
             assert(numBits < 32);
-            assert((offset % TARGET_POINTER_SIZE) == 0);
-            var index = 1 + (offset / TARGET_POINTER_SIZE);
+            assert((offset % Configuration.TARGET_POINTER_SIZE) == 0);
+            var index = 1 + (offset / Configuration.TARGET_POINTER_SIZE);
             var mask = (1 << numBits) - 1;
             if ((index & mask) != index)
             {

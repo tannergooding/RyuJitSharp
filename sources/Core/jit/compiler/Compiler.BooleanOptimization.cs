@@ -391,15 +391,14 @@ public partial class Compiler
                             retry = true;
                             changedCount++;
                         }
-#if TARGET_ARM64
-                        else if (descriptor.optOptimizeCompareChainCondBlock())
+                        else if (Configuration.TARGET_ARM64 && descriptor.optOptimizeCompareChainCondBlock())
                         {
                             changed = true;
                             retry = true;
                             changedCount++;
                         }
-#elif TARGET_AMD64
-                        else if (canUseApxEvexEncoding() && (JitConfig.EnableApxConditionalChaining != 0) &&
+                        else if (Configuration.TARGET_AMD64 && canUseApxEvexEncoding() &&
+                                 (JitConfig.EnableApxConditionalChaining != 0) &&
                                  !optSwitchDetectForCcmp(first, ccmpVec) &&
                                  descriptor.optOptimizeCompareChainCondBlock())
                         {
@@ -407,7 +406,6 @@ public partial class Compiler
                             retry = true;
                             changedCount++;
                         }
-#endif
                     }
 #if DEBUG
                     else if (!second.HasFlag(BBF_DONT_REMOVE) && (second.Kind is not BBJ_COND))

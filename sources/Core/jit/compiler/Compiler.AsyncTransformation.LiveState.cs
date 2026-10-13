@@ -42,12 +42,10 @@ public partial class Compiler
             var visitor = new CallLocalExclusionVisitor(this, block, excludedLocals);
             _ = call.VisitLogicalLocalDefs(_compiler, ref visitor);
 
-#if TARGET_WASM
-            if (_compiler.lvaWasmSpArg != BAD_VAR_NUM)
+            if (Configuration.TARGET_WASM && (_compiler.lvaWasmSpArg != BAD_VAR_NUM))
             {
                 _ = excludedLocals.Add(_compiler.lvaWasmSpArg);
             }
-#endif
 
             analyses.GetLiveLocals(builder, local =>
                 !_compiler.lvaGetDesc(local).lvOnlyUsedOnSynchronousPath && !excludedLocals.Contains(local));

@@ -45,22 +45,18 @@ public partial class Rationalizer
                     rationalizer.RewriteIntrinsicAsUserCall(ref use, _ancestors);
                 }
             }
-#if FEATURE_HW_INTRINSICS
-            else if (node.Oper.IsHWIntrinsic)
+            else if (Configuration.FEATURE_HW_INTRINSICS && node.Oper.IsHWIntrinsic)
             {
                 if (node.AsHWIntrinsic().IsUserCall)
                 {
                     rationalizer.RewriteHWIntrinsicAsUserCall(ref use, _ancestors);
                 }
             }
-#endif
 
-#if TARGET_ARM64
-            if (node.Oper is GT_SUB)
+            if (Configuration.TARGET_ARM64 && node.Oper is GT_SUB)
             {
                 rationalizer.RewriteSubLshDiv(ref use);
             }
-#endif
 
             return Compiler.WALK_CONTINUE;
         }

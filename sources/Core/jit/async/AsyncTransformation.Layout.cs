@@ -16,7 +16,7 @@ internal sealed class AsyncReturnInfo(AsyncReturnTypeInfo type)
     public int Alignment { get; set; }
     public int Offset { get; set; }
     public int Size { get; set; }
-    public int HeapAlignment => Math.Min(Alignment, TARGET_POINTER_SIZE);
+    public int HeapAlignment => Math.Min(Alignment, Configuration.TARGET_POINTER_SIZE);
 }
 
 internal sealed class AsyncLiveLocalInfo(int lclNum)
@@ -25,7 +25,7 @@ internal sealed class AsyncLiveLocalInfo(int lclNum)
     public int Alignment { get; set; }
     public int Offset { get; set; }
     public int Size { get; set; }
-    public int HeapAlignment => Math.Min(Alignment, TARGET_POINTER_SIZE);
+    public int HeapAlignment => Math.Min(Alignment, Configuration.TARGET_POINTER_SIZE);
 }
 
 internal sealed class AsyncContinuationLayout
@@ -252,8 +252,8 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
             }
             else if (dsc.Type is TYP_REF)
             {
-                info.Alignment = TARGET_POINTER_SIZE;
-                info.Size = TARGET_POINTER_SIZE;
+                info.Alignment = Configuration.TARGET_POINTER_SIZE;
+                info.Size = Configuration.TARGET_POINTER_SIZE;
             }
             else
             {
@@ -305,27 +305,27 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
 
         if (NeedsOSRAddress)
         {
-            layout.OSRAddressOffset = Allocate(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+            layout.OSRAddressOffset = Allocate(Configuration.TARGET_POINTER_SIZE, Configuration.TARGET_POINTER_SIZE);
         }
 
         if (NeedsExecutionContext)
         {
-            layout.ExecutionContextOffset = Allocate(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+            layout.ExecutionContextOffset = Allocate(Configuration.TARGET_POINTER_SIZE, Configuration.TARGET_POINTER_SIZE);
         }
 
         if (NeedsContinuationContext)
         {
-            layout.ContinuationContextOffset = Allocate(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+            layout.ContinuationContextOffset = Allocate(Configuration.TARGET_POINTER_SIZE, Configuration.TARGET_POINTER_SIZE);
         }
 
         if (NeedsException)
         {
-            layout.ExceptionOffset = Allocate(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+            layout.ExceptionOffset = Allocate(Configuration.TARGET_POINTER_SIZE, Configuration.TARGET_POINTER_SIZE);
         }
 
         foreach (var ret in layout.Returns)
         {
-            layout.Size = roundUp(layout.Size, TARGET_POINTER_SIZE);
+            layout.Size = roundUp(layout.Size, Configuration.TARGET_POINTER_SIZE);
             ret.Offset = Allocate(ret.HeapAlignment, ret.Size);
         }
 
@@ -342,7 +342,8 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
             var storageType = member.GetStorageType(out var memberLayout);
             var alignment = memberLayout?.GetAlignmentRequirement(_compiler) ?? storageType.Alignment;
             var size = memberLayout is null ? storageType.Size : checked((int)memberLayout.Size);
-            layout.ContinuationMemberOffsets[memberIndex] = Allocate(Math.Min(alignment, TARGET_POINTER_SIZE), size);
+            layout.ContinuationMemberOffsets[memberIndex] =
+                Allocate(Math.Min(alignment, Configuration.TARGET_POINTER_SIZE), size);
         }
 
         // A suspension tail captures all three members of each live inline frame together.
@@ -375,13 +376,13 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
                 var storageType = member.GetStorageType(out var memberLayout);
                 assert(memberLayout is null);
                 layout.ContinuationMemberOffsets[j] =
-                    Allocate(Math.Min((int)storageType.Alignment, TARGET_POINTER_SIZE), storageType.Size);
+                    Allocate(Math.Min((int)storageType.Alignment, Configuration.TARGET_POINTER_SIZE), storageType.Size);
             }
         }
 
         if (NeedsKeepAlive)
         {
-            layout.KeepAliveOffset = Allocate(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+            layout.KeepAliveOffset = Allocate(Configuration.TARGET_POINTER_SIZE, Configuration.TARGET_POINTER_SIZE);
         }
 
         foreach (var info in layout.Locals)
@@ -389,18 +390,18 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
             info.Offset = Allocate(info.HeapAlignment, info.Size);
         }
 
-        layout.Size = roundUp(layout.Size, TARGET_POINTER_SIZE);
+        layout.Size = roundUp(layout.Size, Configuration.TARGET_POINTER_SIZE);
 #if DEBUG
         layout.Dump(_compiler, 2);
 #endif
-        var gcSlots = new bool[layout.Size / TARGET_POINTER_SIZE];
+        var gcSlots = new bool[layout.Size / Configuration.TARGET_POINTER_SIZE];
         void SetReference(int offset)
         {
             if (offset >= 0)
             {
-                assert((offset % TARGET_POINTER_SIZE) == 0);
+                assert((offset % Configuration.TARGET_POINTER_SIZE) == 0);
                 assert(offset < layout.Size);
-                var slot = offset / TARGET_POINTER_SIZE;
+                var slot = offset / Configuration.TARGET_POINTER_SIZE;
                 assert(!gcSlots[slot]);
                 gcSlots[slot] = true;
             }
@@ -419,7 +420,7 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
                 {
                     if (classLayout.IsGCRef(slot))
                     {
-                        SetReference(offset + slot * TARGET_POINTER_SIZE);
+                        SetReference(offset + slot * Configuration.TARGET_POINTER_SIZE);
                     }
                 }
             }
@@ -480,7 +481,8 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
                 }
                 while ((i < gcSlots.Length) && gcSlots[i]);
 
-                JITDUMP($"    [{start * TARGET_POINTER_SIZE,3}..{i * TARGET_POINTER_SIZE,3}) obj refs\n");
+                JITDUMP($"    [{start * Configuration.TARGET_POINTER_SIZE,3}.." +
+                    $"{i * Configuration.TARGET_POINTER_SIZE,3}) obj refs\n");
             }
         }
 #endif

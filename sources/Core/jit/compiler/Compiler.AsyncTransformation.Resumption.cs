@@ -88,7 +88,7 @@ public partial class Compiler
             ref var descriptor = ref _compiler.lvaGetDesc(definition.LclNum);
             var one = _compiler.gtNewIconNode(TYP_I_IMPL, 1);
             GenTree store;
-            if ((definition.LclOffs == 0) && (descriptor.Type is TYP_I_IMPL))
+            if ((definition.LclOffs == 0) && ((descriptor.Type == TYP_I_IMPL)))
             {
                 store = _compiler.gtNewStoreLclVarNode(definition.LclNum, one);
             }
@@ -291,16 +291,16 @@ public partial class Compiler
                     {
                         if (structLayout.IsGCPtr(i))
                         {
-                            ClearReference(resultOffset + (i * TARGET_POINTER_SIZE),
+                            ClearReference(resultOffset + (i * Configuration.TARGET_POINTER_SIZE),
                                 structLayout.GetGCPtrType(i));
                         }
                     }
                 }
                 else
                 {
-                    var sliceOffset = firstSlot * TARGET_POINTER_SIZE;
+                    var sliceOffset = firstSlot * Configuration.TARGET_POINTER_SIZE;
                     var sliceLayout = structLayout.SliceLayout(_compiler,
-                        sliceOffset, slotCount * TARGET_POINTER_SIZE);
+                        sliceOffset, slotCount * Configuration.TARGET_POINTER_SIZE);
                     var continuation = _compiler.gtNewLclvNode(TYP_REF, _compiler.lvaAsyncContinuationArg);
                     var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, resultOffset + sliceOffset);
                     var address = _compiler.gtNewBinaryNode(GT_ADD, TYP_BYREF,

@@ -16,9 +16,11 @@ public partial class Compiler
     private bool optSwitchDetectForConversion(BasicBlock firstBlock)
     {
         assert(firstBlock.Kind is BBJ_COND);
-#if TARGET_ARM
-        return false;
-#else
+        if (Configuration.TARGET_ARM)
+        {
+            return false;
+        }
+
         if (!IsSwitchConstantTestCondBlock(firstBlock, true, out var trueTarget,
                 out var falseTarget, out var reversed, out var variableNode, out var constant))
         {
@@ -62,7 +64,6 @@ public partial class Compiler
         }
 
         return false;
-#endif
     }
 
     private bool optSwitchConvertChain(BasicBlock firstBlock, int count, nint[] values,
@@ -71,11 +72,7 @@ public partial class Compiler
         assert(firstBlock.Kind is BBJ_COND);
         assert(!varTypeIsSmall(switchValue.Type));
 
-#if TARGET_ARM64
-        const int minTests = 5;
-#else
-        const int minTests = SwitchMinTests;
-#endif
+        var minTests = Configuration.TARGET_ARM64 ? 5 : SwitchMinTests;
         if (count < minTests)
         {
             return false;

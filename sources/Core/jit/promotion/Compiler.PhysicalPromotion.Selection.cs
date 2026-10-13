@@ -465,8 +465,9 @@ public partial class Compiler
 
             if (layout.IntersectsGCPtr(access.Offset, accessSize))
             {
-                if (((access.Offset % TARGET_POINTER_SIZE) != 0) ||
-                    (layout.GetGCPtrType(access.Offset / TARGET_POINTER_SIZE) != access.AccessType))
+                var pointerSize = Configuration.TARGET_POINTER_SIZE;
+                if (((access.Offset % pointerSize) != 0) ||
+                    (layout.GetGCPtrType(access.Offset / pointerSize) != access.AccessType))
                 {
                     return false;
                 }

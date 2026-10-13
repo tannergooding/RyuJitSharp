@@ -77,12 +77,11 @@ public partial struct AliasSet
                 {
                     isWrite = true;
                 }
-#if FEATURE_HW_INTRINSICS
-                else if (node.Oper.IsHWIntrinsic && node.AsHWIntrinsic().IsMemoryStoreOrBarrier)
+                else if (Configuration.FEATURE_HW_INTRINSICS && node.Oper.IsHWIntrinsic &&
+                    node.AsHWIntrinsic().IsMemoryStoreOrBarrier)
                 {
                     isWrite = true;
                 }
-#endif
 
                 assert(isWrite || !node.RequiresAsgFlag);
 

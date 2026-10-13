@@ -50,12 +50,12 @@ public sealed partial class ScalarEvolutionContext
         {
             if (varTypeIsGC(op1.Type))
             {
-                assert(op2.Type is TYP_I_IMPL);
+                assert((op2.Type == TYP_I_IMPL));
                 resultType = TYP_BYREF;
             }
             else if (varTypeIsGC(op2.Type))
             {
-                assert(op1.Type is TYP_I_IMPL);
+                assert((op1.Type == TYP_I_IMPL));
                 resultType = TYP_BYREF;
             }
             else

@@ -259,18 +259,14 @@ public partial class Compiler
         if (compMethodReturnsMultiRegRetType &&
             visitor.ParentNode?.Oper is GT_RETURN or GT_SWIFT_ERROR_RET)
         {
-#if TARGET_X86
-            if (fwdSubNode.Type is TYP_LONG)
+            if (Configuration.TARGET_X86 && (fwdSubNode.Type is TYP_LONG))
             {
                 JITDUMP(" TYP_LONG fwd sub node, target is x86\n");
                 return false;
             }
-#endif
             if (fwdSubNode.Oper is not GT_LCL_VAR)
             {
-#if TARGET_ARM
-                if (fwdSubNode.Type is not TYP_LONG)
-#endif
+                if (!Configuration.TARGET_ARM || (fwdSubNode.Type is not TYP_LONG))
                 {
                     JITDUMP(" parent is multi-reg struct return, fwd sub node is not lcl var\n");
                     return false;

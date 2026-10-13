@@ -248,11 +248,8 @@ public partial class Compiler
                 var cursor = cursors[i];
                 if (cursor.IV is not null)
                 {
-#if TARGET_ARM64
-                    var allowRephrasingViaScaling = !cursor.Tree.IsPartOfAddressMode;
-#else
-                    var allowRephrasingViaScaling = true;
-#endif
+                    var allowRephrasingViaScaling =
+                        !Configuration.TARGET_ARM64 || !cursor.Tree.IsPartOfAddressMode;
                     if (commonIV is null)
                     {
                         commonIV = cursor.IV;

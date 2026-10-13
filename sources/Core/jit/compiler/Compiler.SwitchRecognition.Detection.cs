@@ -12,7 +12,7 @@ namespace RyuJitSharp;
 
 public partial class Compiler
 {
-    private const int SwitchMaxDistance = (TARGET_POINTER_SIZE * 8) - 1;
+    private static int SwitchMaxDistance => (Configuration.TARGET_POINTER_SIZE * 8) - 1;
     private const int SwitchMinTests = 3;
     private const int ConvertSwitchToCcmpMinTest = 5;
 

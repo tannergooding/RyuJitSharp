@@ -207,14 +207,11 @@ public partial class Compiler
                 stmtIdx++;
                 if (block.HasTerminator && (stmt == block.LastStmt))
                 {
-#if JIT32_GCENCODER
-                    break;
-#else
-                    if ((block.Kind is not BBJ_RETURN) || (block == genReturnBB))
+                    if (Configuration.JIT32_GCENCODER ||
+                        (block.Kind is not BBJ_RETURN) || (block == genReturnBB))
                     {
                         break;
                     }
-#endif
                 }
 
                 var visitor = new BoundsChecksVisitor(stmt, stmtIdx, locations);

@@ -153,7 +153,7 @@ public sealed partial class ObjectAllocator
                 var clsHnd = data.AsAllocObj().ClsHnd;
                 var allocType = AllocationKind(data);
                 var size = 0;
-                if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, allocType, TARGET_POINTER_SIZE,
+                if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, allocType, Configuration.TARGET_POINTER_SIZE,
                     ref size, out _, preliminaryCheck: true))
                 {
                     var pseudoIndex = NewPseudoIndex();

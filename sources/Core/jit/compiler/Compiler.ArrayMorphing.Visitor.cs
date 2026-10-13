@@ -107,11 +107,14 @@ public partial class Compiler
             }
 
             assert(fullTree is not null);
-#if TARGET_64BIT
-            fullTree = compiler.gtNewCastNode(TYP_I_IMPL, fullTree, true, TYP_I_IMPL);
-#else
-            throw new PlatformNotSupportedException("MD-array morphing requires the Windows AMD64 path.");
-#endif
+            if (Configuration.TARGET_64BIT)
+            {
+                fullTree = compiler.gtNewCastNode(TYP_I_IMPL, fullTree, true, TYP_I_IMPL);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException("MD-array morphing requires the Windows AMD64 path.");
+            }
             var elementSize = compiler.gtNewIconNode(TYP_I_IMPL, unchecked((nint)(uint)arrElem.ArrElemSize));
             var scale = compiler.gtNewBinaryNode(GT_MUL, TYP_I_IMPL, fullTree, elementSize);
             var dataOffset = compiler.gtNewIconNode(TYP_I_IMPL, eeGetMDArrayDataOffset(rank));

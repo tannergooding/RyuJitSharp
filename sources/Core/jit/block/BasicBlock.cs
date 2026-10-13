@@ -1182,20 +1182,21 @@ public sealed partial class BasicBlock : LIR.Range
             return false;
         }
 
-#if TARGET_WASM
-        var intervals = compiler.fgWasmIntervals;
-        if (intervals is not null)
+        if (Configuration.TARGET_WASM)
         {
-            var targetIndex = target.bbPreorderNum;
-            foreach (var interval in intervals)
+            var intervals = compiler.fgWasmIntervals;
+            if (intervals is not null)
             {
-                if ((interval.IsTry() || interval.IsExnRefWrapper()) && (interval.End() == targetIndex))
+                var targetIndex = target.bbPreorderNum;
+                foreach (var interval in intervals)
                 {
-                    return false;
+                    if ((interval.IsTry() || interval.IsExnRefWrapper()) && (interval.End() == targetIndex))
+                    {
+                        return false;
+                    }
                 }
             }
         }
-#endif
         return true;
     }
 

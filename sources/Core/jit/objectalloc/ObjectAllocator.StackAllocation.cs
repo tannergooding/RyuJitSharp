@@ -44,9 +44,10 @@ public sealed partial class ObjectAllocator
             compiler.compSuppressedZeroInit = true;
         }
 
-#if !TARGET_64BIT
-        descriptor.lvStructDoubleAlign = alignTo8;
-#endif
+        if (!Configuration.TARGET_64BIT)
+        {
+            descriptor.lvStructDoubleAlign = alignTo8;
+        }
         var stackAddress = compiler.gtNewLclAddrNode(TYP_I_IMPL, local, 0);
         _ = newArr.Args.PushBack(NewCallArg.CreateForPrimitive(stackAddress)
             .WithWellKnownArg(WellKnownArg.StackArrayLocal));
@@ -130,9 +131,10 @@ public sealed partial class ObjectAllocator
     {
         assert(layout.IsValueClass);
         var compiler = CompilerInstance;
-        var builder = new ClassLayoutBuilder(compiler, checked((uint)(TARGET_POINTER_SIZE + layout.Size)));
-        builder.CopyPaddingFrom(TARGET_POINTER_SIZE, layout);
-        builder.CopyGCInfoFrom(TARGET_POINTER_SIZE, layout);
+        var pointerSize = Configuration.TARGET_POINTER_SIZE;
+        var builder = new ClassLayoutBuilder(compiler, checked((uint)(pointerSize + layout.Size)));
+        builder.CopyPaddingFrom(pointerSize, layout);
+        builder.CopyGCInfoFrom(pointerSize, layout);
 #if DEBUG
         builder.CopyNameFrom(layout, "[boxed] ");
 #endif

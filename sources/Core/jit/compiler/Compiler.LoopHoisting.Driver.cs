@@ -87,8 +87,7 @@ public partial class Compiler
         context.LoopVarCount = (int)VarSetOps.Count(this, loopVars);
         context.HoistedExprCount = 0;
 
-#if !TARGET_64BIT
-        if (!VarSetOps.IsEmpty(this, lvaLongVars))
+        if (!Configuration.TARGET_64BIT && !VarSetOps.IsEmpty(this, lvaLongVars))
         {
             var loopLongVars = VarSetOps.Intersection(this, loopVars, lvaLongVars);
             var inOutLongVars = VarSetOps.Intersection(this, sideEffects.VarInOut, lvaLongVars);
@@ -102,7 +101,6 @@ public partial class Compiler
             context.LoopVarCount += (int)VarSetOps.Count(this, loopLongVars);
             context.LoopVarInOutCount += (int)VarSetOps.Count(this, inOutLongVars);
         }
-#endif
 #if DEBUG
         if (verbose)
         {
@@ -142,34 +140,35 @@ public partial class Compiler
             context.HoistedFPExprCount = 0;
         }
 
-#if FEATURE_MASKED_HW_INTRINSICS
-        if (!VarSetOps.IsEmpty(this, lvaMaskVars))
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
         {
-            var loopMskVars = VarSetOps.Intersection(this, loopVars, lvaMaskVars);
-            var inOutMskVars = VarSetOps.Intersection(this, sideEffects.VarInOut, lvaMaskVars);
-            context.LoopVarMskCount = (int)VarSetOps.Count(this, loopMskVars);
-            context.LoopVarInOutMskCount = (int)VarSetOps.Count(this, inOutMskVars);
-            context.HoistedMskExprCount = 0;
-            context.LoopVarCount -= context.LoopVarMskCount;
-            context.LoopVarInOutCount -= context.LoopVarInOutMskCount;
-#if DEBUG
-            if (verbose)
+            if (!VarSetOps.IsEmpty(this, lvaMaskVars))
             {
-                jitprintf($"  INOUT-MSK({context.LoopVarInOutMskCount})=");
-                dumpConvertedVarSet(this, inOutMskVars);
-                jitprintf($"\n  LOOPV-MSK({context.LoopVarMskCount})=");
-                dumpConvertedVarSet(this, loopMskVars);
-                jitprintf("\n");
+                var loopMskVars = VarSetOps.Intersection(this, loopVars, lvaMaskVars);
+                var inOutMskVars = VarSetOps.Intersection(this, sideEffects.VarInOut, lvaMaskVars);
+                context.LoopVarMskCount = (int)VarSetOps.Count(this, loopMskVars);
+                context.LoopVarInOutMskCount = (int)VarSetOps.Count(this, inOutMskVars);
+                context.HoistedMskExprCount = 0;
+                context.LoopVarCount -= context.LoopVarMskCount;
+                context.LoopVarInOutCount -= context.LoopVarInOutMskCount;
+#if DEBUG
+                if (verbose)
+                {
+                    jitprintf($"  INOUT-MSK({context.LoopVarInOutMskCount})=");
+                    dumpConvertedVarSet(this, inOutMskVars);
+                    jitprintf($"\n  LOOPV-MSK({context.LoopVarMskCount})=");
+                    dumpConvertedVarSet(this, loopMskVars);
+                    jitprintf("\n");
+                }
+#endif
             }
-#endif
+            else
+            {
+                context.LoopVarMskCount = 0;
+                context.LoopVarInOutMskCount = 0;
+                context.HoistedMskExprCount = 0;
+            }
         }
-        else
-        {
-            context.LoopVarMskCount = 0;
-            context.LoopVarInOutMskCount = 0;
-            context.HoistedMskExprCount = 0;
-        }
-#endif
         var dfsTree = _dfsTree ?? throw new FatalJitException("Loop hoisting requires a DFS tree.");
         var domTree = _domTree ?? throw new FatalJitException("Loop hoisting requires dominators.");
         var traits = dfsTree.PostOrderTraits();
@@ -220,9 +219,10 @@ public partial class Compiler
         optHoistLoopBlocks(loop, traits, defExec, context);
 
         var numHoisted = context.HoistedExprCount + context.HoistedFPExprCount;
-#if FEATURE_MASKED_HW_INTRINSICS
-        numHoisted += context.HoistedMskExprCount;
-#endif
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            numHoisted += context.HoistedMskExprCount;
+        }
         return numHoisted > 0;
     }
 }

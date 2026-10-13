@@ -30,7 +30,6 @@ public partial class Compiler
             public GenTree? Node;
         }
 
-#if TARGET_RISCV64
         private readonly struct IntConstSelectOper
         {
             public genTreeOps Oper { get; }
@@ -108,7 +107,6 @@ public partial class Compiler
 
             return new IntConstSelectOper(GT_NONE, default);
         }
-#endif
 
         public OptIfConversionDsc(Compiler compiler, BasicBlock startBlock)
         {
@@ -447,40 +445,40 @@ public partial class Compiler
                     JITDUMP("Abort: SELECT of type float\n");
                     return true;
                 }
-#if TARGET_RISCV64
-                // RISC-V can lower integer SELECT only when Zicond is available; otherwise it must keep
-                // the branchy form.
-                var canCodegenSelect = _compiler.compOpportunisticallyDependsOn(InstructionSet_Zicond) &&
-                    varTypeIsIntegralOrI(select.Type);
-                if (!canCodegenSelect)
+                if (Configuration.TARGET_RISCV64)
                 {
-                    JITDUMP("Skipping if-conversion that could not be optimized to ordinary operations\n");
+                    // RISC-V can lower integer SELECT only when Zicond is available; otherwise it must keep
+                    // the branchy form.
+                    var canCodegenSelect = _compiler.compOpportunisticallyDependsOn(InstructionSet_Zicond) &&
+                        varTypeIsIntegralOrI(select.Type);
+                    if (!canCodegenSelect)
+                    {
+                        JITDUMP("Skipping if-conversion that could not be optimized to ordinary operations\n");
+                        return true;
+                    }
+
+                    var selectNode = select.AsConditional();
+                    var selectTrue = selectNode.Op1;
+                    var selectFalse = selectNode.Op2;
+                    var selectTrueIsLocalNoOp = selectTrue.Oper is GT_LCL_VAR;
+                    var selectFalseIsLocalNoOp = selectFalse.Oper is GT_LCL_VAR;
+                    var selectTrueIsSmallImm = selectTrue.Oper.IsIntegralConst &&
+                        Emitter.isValidSimm12(unchecked((nint)selectTrue.AsIntConCommon().IntegralValue));
+                    var selectFalseIsSmallImm = selectFalse.Oper.IsIntegralConst &&
+                        Emitter.isValidSimm12(unchecked((nint)selectFalse.AsIntConCommon().IntegralValue));
+
+                    if ((selectTrueIsLocalNoOp && selectFalseIsSmallImm) ||
+                        (selectTrueIsSmallImm && selectFalseIsLocalNoOp))
+                    {
+                        JITDUMP("Skipping if-conversion: branchy form fits in ~2 insns; Zicond would need 5+\n");
+                        return true;
+                    }
+                }
+                else if (Configuration.TARGET_32BIT && select.Type is TYP_LONG)
+                {
+                    JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
                     return true;
                 }
-
-                var selectNode = select.AsConditional();
-                var selectTrue = selectNode.Op1;
-                var selectFalse = selectNode.Op2;
-                var selectTrueIsLocalNoOp = selectTrue.Oper is GT_LCL_VAR;
-                var selectFalseIsLocalNoOp = selectFalse.Oper is GT_LCL_VAR;
-                var selectTrueIsSmallImm = selectTrue.Oper.IsIntegralConst &&
-                    Emitter.isValidSimm12(unchecked((nint)selectTrue.AsIntConCommon().IntegralValue));
-                var selectFalseIsSmallImm = selectFalse.Oper.IsIntegralConst &&
-                    Emitter.isValidSimm12(unchecked((nint)selectFalse.AsIntConCommon().IntegralValue));
-
-                if ((selectTrueIsLocalNoOp && selectFalseIsSmallImm) ||
-                    (selectTrueIsSmallImm && selectFalseIsLocalNoOp))
-                {
-                    JITDUMP("Skipping if-conversion: branchy form fits in ~2 insns; Zicond would need 5+\n");
-                    return true;
-                }
-#elif !TARGET_64BIT
-            if (select.Type is TYP_LONG)
-            {
-                JITDUMP("Abort: SELECT of type Long on 32-bit system\n");
-                return true;
-            }
-#endif
             }
 
             var thenNode = _thenOperation.Node!;
@@ -589,121 +587,124 @@ public partial class Compiler
                 return _compiler.gtWrapWithSideEffects(trueInput, cond);
             }
 
-#if TARGET_RISCV64
-            var isCondReversed = false;
-            var selectOper = MatchIntConstSelectValues(trueValue, falseValue);
-            if (!selectOper.IsMatched)
+            if (Configuration.TARGET_RISCV64)
             {
-                isCondReversed = true;
-                selectOper = MatchIntConstSelectValues(falseValue, trueValue);
-            }
-
-            if (selectOper.IsMatched)
-            {
-                var left = isCondReversed ? trueInput : falseInput;
-                var right = isCondReversed ? _compiler.gtReverseCond(cond) : cond;
-                if (selectOper.BitIndex > 0)
+                var isCondReversed = false;
+                var selectOper = MatchIntConstSelectValues(trueValue, falseValue);
+                if (!selectOper.IsMatched)
                 {
-                    assert(selectOper.Oper is GT_LSH);
-                    left.AsIntConCommon().SetValueTruncating(selectOper.BitIndex);
-                    var temp = left;
-                    left = right;
-                    right = temp;
+                    isCondReversed = true;
+                    selectOper = MatchIntConstSelectValues(falseValue, trueValue);
                 }
 
-                return _compiler.gtNewBinaryNode(selectOper.Oper, selectOper.Type, left, right);
+                if (selectOper.IsMatched)
+                {
+                    var left = isCondReversed ? trueInput : falseInput;
+                    var right = isCondReversed ? _compiler.gtReverseCond(cond) : cond;
+                    if (selectOper.BitIndex > 0)
+                    {
+                        assert(selectOper.Oper is GT_LSH);
+                        left.AsIntConCommon().SetValueTruncating(selectOper.BitIndex);
+                        var temp = left;
+                        left = right;
+                        right = temp;
+                    }
+
+                    return _compiler.gtNewBinaryNode(selectOper.Oper, selectOper.Type, left, right);
+                }
             }
-#endif
 
             return null;
         }
 
         private GenTreeOp? TrySelectToLclOpCond(GenTreeConditional select)
         {
-#if TARGET_RISCV64
-            var cond = select.Cond;
-            var oper = select.Op1;
-            var lcl = select.Op2;
-            if (!cond.Oper.IsCompare)
+            if (Configuration.TARGET_RISCV64)
             {
-                return null;
-            }
-
-            var isCondReversed = !lcl.Oper.IsAnyLocal;
-            if (isCondReversed)
-            {
-                (oper, lcl) = (lcl, oper);
-            }
-
-            if (lcl.Oper.IsAnyLocal &&
-                ((oper.Oper is GT_ADD or GT_OR or GT_XOR) || oper.Oper.IsShift))
-            {
-                var lcl2 = oper.AsOp().Op1;
-                var one = oper.AsOp().Op2;
-                if (oper.Oper.IsCommutative && !one.Oper.IsIntegralConst)
+                var cond = select.Cond;
+                var oper = select.Op1;
+                var lcl = select.Op2;
+                if (!cond.Oper.IsCompare)
                 {
-                    (lcl2, one) = (one, lcl2);
+                    return null;
                 }
 
-                var isDecrement = oper.Oper is GT_ADD && one.IsIntegralConst(-1);
-                if (one.IsIntegralConst(1) || isDecrement)
+                var isCondReversed = !lcl.Oper.IsAnyLocal;
+                if (isCondReversed)
                 {
-                    var localNumber = lcl.AsLclVarCommon().LclNum;
-                    if ((lcl2.Oper is GT_LCL_VAR) && (lcl2.AsLclVar().LclNum == localNumber))
-                    {
-                        var result = oper.AsOp();
-                        result.Op1 = lcl2;
-                        result.Op2 = isCondReversed ? _compiler.gtReverseCond(cond) : cond;
-                        if (isDecrement)
-                        {
-                            result.SetOper(GT_SUB);
-                        }
+                    (oper, lcl) = (lcl, oper);
+                }
 
-                        result.Flags |= cond.Flags & GTF_ALL_EFFECT;
-                        return result;
+                if (lcl.Oper.IsAnyLocal &&
+                    ((oper.Oper is GT_ADD or GT_OR or GT_XOR) || oper.Oper.IsShift))
+                {
+                    var lcl2 = oper.AsOp().Op1;
+                    var one = oper.AsOp().Op2;
+                    if (oper.Oper.IsCommutative && !one.Oper.IsIntegralConst)
+                    {
+                        (lcl2, one) = (one, lcl2);
+                    }
+
+                    var isDecrement = oper.Oper is GT_ADD && one.IsIntegralConst(-1);
+                    if (one.IsIntegralConst(1) || isDecrement)
+                    {
+                        var localNumber = lcl.AsLclVarCommon().LclNum;
+                        if ((lcl2.Oper is GT_LCL_VAR) && (lcl2.AsLclVar().LclNum == localNumber))
+                        {
+                            var result = oper.AsOp();
+                            result.Op1 = lcl2;
+                            result.Op2 = isCondReversed ? _compiler.gtReverseCond(cond) : cond;
+                            if (isDecrement)
+                            {
+                                result.SetOper(GT_SUB);
+                            }
+
+                            result.Flags |= cond.Flags & GTF_ALL_EFFECT;
+                            return result;
+                        }
                     }
                 }
             }
-#endif
             return null;
         }
 
         private GenTreeOp? TrySelectToCondOpLcl(GenTreeConditional select)
         {
-#if TARGET_RISCV64
-            var cond = select.Cond;
-            var oper = select.Op1;
-            var zero = select.Op2;
-            if (!cond.Oper.IsCompare)
+            if (Configuration.TARGET_RISCV64)
             {
-                return null;
-            }
-
-            var isCondReversed = !zero.Oper.IsIntegralConst;
-            if (isCondReversed)
-            {
-                (oper, zero) = (zero, oper);
-            }
-
-            if (zero.IsIntegralConst(0) && oper.OperIs(GT_AND, GT_LSH))
-            {
-                var one = oper.AsOp().Op1;
-                var expr = oper.AsOp().Op2;
-                if (oper.Oper.IsCommutative && !one.Oper.IsIntegralConst)
+                var cond = select.Cond;
+                var oper = select.Op1;
+                var zero = select.Op2;
+                if (!cond.Oper.IsCompare)
                 {
-                    (one, expr) = (expr, one);
+                    return null;
                 }
 
-                if (one.IsIntegralConst(1))
+                var isCondReversed = !zero.Oper.IsIntegralConst;
+                if (isCondReversed)
                 {
-                    var result = oper.AsOp();
-                    result.Op1 = isCondReversed ? _compiler.gtReverseCond(cond) : cond;
-                    result.Op2 = expr;
-                    result.Flags |= cond.Flags & GTF_ALL_EFFECT;
-                    return result;
+                    (oper, zero) = (zero, oper);
+                }
+
+                if (zero.IsIntegralConst(0) && oper.OperIs(GT_AND, GT_LSH))
+                {
+                    var one = oper.AsOp().Op1;
+                    var expr = oper.AsOp().Op2;
+                    if (oper.Oper.IsCommutative && !one.Oper.IsIntegralConst)
+                    {
+                        (one, expr) = (expr, one);
+                    }
+
+                    if (one.IsIntegralConst(1))
+                    {
+                        var result = oper.AsOp();
+                        result.Op1 = isCondReversed ? _compiler.gtReverseCond(cond) : cond;
+                        result.Op2 = expr;
+                        result.Flags |= cond.Flags & GTF_ALL_EFFECT;
+                        return result;
+                    }
                 }
             }
-#endif
             return null;
         }
     }

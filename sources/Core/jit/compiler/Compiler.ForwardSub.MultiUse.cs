@@ -13,7 +13,7 @@ public partial class Compiler
 {
     private bool fgIsCheapReorderableAddressTree(GenTree tree)
     {
-        if (tree.Type is not TYP_BYREF and not TYP_I_IMPL)
+        if ((tree.Type is var __targetAliasValue0 && (!(__targetAliasValue0 is TYP_BYREF) && !(__targetAliasValue0 == TYP_I_IMPL))))
         {
             return false;
         }

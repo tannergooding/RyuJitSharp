@@ -281,14 +281,12 @@ public sealed partial class ObjectAllocator
                 continue;
             }
 
-#if FEATURE_IMPLICIT_BYREFS
-            if (lclDsc.lvIsParam && lclDsc.IsImplicitByRef)
+            if (Configuration.FEATURE_IMPLICIT_BYREFS && lclDsc.lvIsParam && lclDsc.IsImplicitByRef)
             {
                 JITDUMP($"   V{lclNum:D2} is an implicit byref param\n");
                 MarkIndexAsEscaping(bvIndex);
                 continue;
             }
-#endif
             if (lclDsc.lvIsParam || lclDsc.lvIsOSRLocal)
             {
                 AddConnGraphEdgeIndex(bvIndex, _unknownSourceIndex);

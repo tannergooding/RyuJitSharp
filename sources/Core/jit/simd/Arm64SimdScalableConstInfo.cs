@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 namespace RyuJitSharp;
 
 public struct Arm64SimdScalableConstInfo
@@ -18,6 +17,11 @@ public struct Arm64SimdScalableConstInfo
 
     public static Arm64SimdScalableConstInfo Decode(in simdscalable_t simdVal)
     {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM64 scalable SIMD constants are not supported on this target.");
+        }
+
         var info = new Arm64SimdScalableConstInfo {
             baseType = simdVal.BaseType,
             indexImm = -1,
@@ -155,12 +159,12 @@ public struct Arm64SimdScalableConstInfo
 
         if (baseType == TYP_FLOAT)
         {
-            return Emitter.emitIns_valid_imm_for_fmov(simdVal.Index.f32[0]);
+            return TargetCostEstimation.IsArm64FloatImmediate(simdVal.Index.f32[0]);
         }
 
         assert(baseType == TYP_DOUBLE);
 
-        return Emitter.emitIns_valid_imm_for_fmov(simdVal.Index.f64[0]);
+        return TargetCostEstimation.IsArm64FloatImmediate(simdVal.Index.f64[0]);
     }
 
     public readonly bool CanEncodeSequenceIndex() => indexHasImm && indexImm is >= -16 and <= 15;
@@ -183,12 +187,11 @@ public struct Arm64SimdScalableConstInfo
 
         if (baseType == TYP_FLOAT)
         {
-            return Emitter.emitIns_valid_imm_for_fmov(simdVal.Index.f32[0]);
+            return TargetCostEstimation.IsArm64FloatImmediate(simdVal.Index.f32[0]);
         }
 
         assert(baseType == TYP_DOUBLE);
 
-        return Emitter.emitIns_valid_imm_for_fmov(simdVal.Index.f64[0]);
+        return TargetCostEstimation.IsArm64FloatImmediate(simdVal.Index.f64[0]);
     }
 }
-#endif

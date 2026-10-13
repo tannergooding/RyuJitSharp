@@ -283,8 +283,7 @@ public partial class Compiler
                         break;
                     }
 
-#if FEATURE_HW_INTRINSICS
-                    case GT_HWINTRINSIC:
+                    case GT_HWINTRINSIC when Configuration.FEATURE_HW_INTRINSICS:
                     {
                         if (tree.AsHWIntrinsic().IsMemoryStoreOrBarrier)
                         {
@@ -293,7 +292,6 @@ public partial class Compiler
 
                         break;
                     }
-#endif
 
                     case GT_LOCKADD:
                     case GT_XORR:

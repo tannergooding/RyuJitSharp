@@ -22,11 +22,9 @@ public partial class Compiler
         public int LoopVarInOutFPCount;
         public int LoopVarFPCount;
         public int HoistedFPExprCount;
-#if FEATURE_MASKED_HW_INTRINSICS
         public int LoopVarInOutMskCount;
         public int LoopVarMskCount;
         public int HoistedMskExprCount;
-#endif
 
         public VNSet GetHoistedInCurLoop() => _hoistedInCurLoop ??= [];
 
@@ -40,12 +38,15 @@ public partial class Compiler
     private void optComputeInterestingVarSets()
     {
         lvaFloatVars = VarSetOps.MakeEmpty(this);
-#if !TARGET_64BIT
-        lvaLongVars = VarSetOps.MakeEmpty(this);
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-        lvaMaskVars = VarSetOps.MakeEmpty(this);
-#endif
+        if (!Configuration.TARGET_64BIT)
+        {
+            lvaLongVars = VarSetOps.MakeEmpty(this);
+        }
+
+        if (Configuration.FEATURE_MASKED_HW_INTRINSICS)
+        {
+            lvaMaskVars = VarSetOps.MakeEmpty(this);
+        }
         for (var i = 0; i < lvaCount; i++)
         {
             ref var descriptor = ref lvaGetDesc(i);
@@ -58,18 +59,14 @@ public partial class Compiler
             {
                 VarSetOps.AddElemD(this, lvaFloatVars, descriptor._varIndex);
             }
-#if !TARGET_64BIT
-            else if (varTypeIsLong(descriptor.Type))
+            else if (!Configuration.TARGET_64BIT && varTypeIsLong(descriptor.Type))
             {
                 VarSetOps.AddElemD(this, lvaLongVars, descriptor._varIndex);
             }
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-            else if (varTypeUsesMaskReg(descriptor.Type))
+            else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeUsesMaskReg(descriptor.Type))
             {
                 VarSetOps.AddElemD(this, lvaMaskVars, descriptor._varIndex);
             }
-#endif
         }
     }
 

@@ -289,7 +289,7 @@ internal partial struct LocalAddressVisitor
                         ((lhsOffset - rhsOffset) <= int.MaxValue))
                     {
                         // Native tolerates an incorrectly typed BYREF SUB left by inlining.
-                        assert(node.Type is TYP_I_IMPL or TYP_BYREF);
+                        assert((node.Type is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF)));
                         var constant = new GenTreeIntCon(TYP_I_IMPL, (nint)(lhsOffset - rhsOffset),
                             fields: null, node, ReplacementThreading);
                         constant._vnPair.SetBoth(ValueNumStore.NoVN);
@@ -391,7 +391,7 @@ internal partial struct LocalAddressVisitor
                 var cast = node.AsCast();
                 assert(TopValue(1).Node == node);
                 assert(TopValue(0).Node == cast.Op1);
-                var pointerCast = cast.CastType is TYP_I_IMPL or TYP_U_IMPL or TYP_BYREF;
+                var pointerCast = (cast.CastType is var __targetAliasValue1 && ((__targetAliasValue1 == TYP_I_IMPL || __targetAliasValue1 == TYP_U_IMPL) || __targetAliasValue1 is TYP_BYREF));
 
                 if (!pointerCast || node.HasOverflowCheck || !TopValue(0).IsAddress ||
                     !TopValue(1).AddOffset(ref TopValue(0), 0))
@@ -588,7 +588,7 @@ internal partial struct LocalAddressVisitor
     {
         assert((local.Oper is GT_LCL_VAR) && (_lclAddrAssertions is not null));
 
-        if (local.Type is not TYP_I_IMPL and not TYP_BYREF)
+        if ((local.Type is var __targetAliasValue2 && (!(__targetAliasValue2 == TYP_I_IMPL) && !(__targetAliasValue2 is TYP_BYREF))))
         {
             return;
         }

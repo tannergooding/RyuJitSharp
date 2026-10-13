@@ -36,7 +36,8 @@ public sealed partial class CSE_Heuristic
         {
             canEnregister = false;
             var size = expr.GetLayout(m_compiler).Size;
-            slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
+            var pointerSize = (uint)Configuration.TARGET_POINTER_SIZE;
+            slotCount = (size + pointerSize - 1) / pointerSize;
         }
         else if (varTypeUsesIntReg(expr.Type))
         {
@@ -96,13 +97,16 @@ public sealed partial class CSE_Heuristic
                         jitprintf($"Codesize CSE Promotion ({(hugeFrame ? "huge" : "large")} frame)\n");
                     }
 #endif
-#if TARGET_XARCH
-                    cseDefCost = 6;
-                    cseUseCost = 5;
-#else
-                    cseDefCost = hugeFrame ? 12u : 8u;
-                    cseUseCost = cseDefCost;
-#endif
+                    if (Configuration.TARGET_XARCH)
+                    {
+                        cseDefCost = 6;
+                        cseUseCost = 5;
+                    }
+                    else
+                    {
+                        cseDefCost = hugeFrame ? 12u : 8u;
+                        cseUseCost = cseDefCost;
+                    }
                 }
                 else
                 {
@@ -112,23 +116,24 @@ public sealed partial class CSE_Heuristic
                         jitprintf("Codesize CSE Promotion (small frame)\n");
                     }
 #endif
-#if TARGET_XARCH
-                    cseDefCost = 3;
-                    cseUseCost = 2;
-#else
-                    cseDefCost = 2;
-                    cseUseCost = 2;
-#endif
+                    if (Configuration.TARGET_XARCH)
+                    {
+                        cseDefCost = 3;
+                        cseUseCost = 2;
+                    }
+                    else
+                    {
+                        cseDefCost = 2;
+                        cseUseCost = 2;
+                    }
                 }
             }
 
-#if TARGET_XARCH
-            if (varTypeIsFloating(expr.Type))
+            if (Configuration.TARGET_XARCH && varTypeIsFloating(expr.Type))
             {
                 cseDefCost += 2;
                 cseUseCost += 1;
             }
-#endif
         }
         else
         {
@@ -239,16 +244,12 @@ public sealed partial class CSE_Heuristic
                     {
                         hasRequiredSpill = true;
                     }
-#if FEATURE_SIMD && (TARGET_XARCH || TARGET_ARM64)
-#if TARGET_XARCH
-                    else if (expr.Type is TYP_SIMD32 or TYP_SIMD64)
-#elif TARGET_ARM64
-                    else if (expr.Type is TYP_SIMD16)
-#endif
+                    else if (Configuration.FEATURE_SIMD &&
+                        ((Configuration.TARGET_XARCH && (expr.Type is TYP_SIMD32 or TYP_SIMD64)) ||
+                         (Configuration.TARGET_ARM64 && expr.Type is TYP_SIMD16)))
                     {
                         hasRequiredSpill = true;
                     }
-#endif
                 }
 #pragma warning restore CA1508
 

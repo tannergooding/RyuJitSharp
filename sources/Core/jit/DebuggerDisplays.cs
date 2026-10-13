@@ -184,12 +184,10 @@ public partial class GenTree
                 return $"CNS_STR, {valueNumbers}";
             }
 
-#if FEATURE_SIMD
-            if (Oper is GT_CNS_VEC)
+            if (Configuration.FEATURE_SIMD && Oper is GT_CNS_VEC)
             {
                 return $"CNS_VEC, {valueNumbers}";
             }
-#endif
 
             if (this is GenTreeIntConCommon integerConstant)
             {
@@ -221,12 +219,10 @@ public partial class GenTree
                 return $"{prefix}[{cast.CastType.Name} <- {cast.CastOp.Type.Name}], {valueNumbers}";
             }
 
-#if FEATURE_HW_INTRINSICS
-            if (this is GenTreeHWIntrinsic intrinsic)
+            if (Configuration.FEATURE_HW_INTRINSICS && this is GenTreeHWIntrinsic intrinsic)
             {
                 return $"{prefix}[{intrinsic.HWIntrinsicId}, {Type.Name}], {valueNumbers}";
             }
-#endif
 
             return $"{prefix}[{Oper.Name}, {Type.Name}], {valueNumbers}";
         }
@@ -253,12 +249,10 @@ public sealed partial class Interval
     {
         get
         {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            if (isUpperVector)
+            if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE && isUpperVector)
             {
                 return $"[U{relatedInterval?.varNum ?? varNum}, #{intervalIndex}, reg={physReg}]";
             }
-#endif
 
             if (isLocalVar)
             {
@@ -300,39 +294,37 @@ public partial class Emitter
             {
                 get
                 {
-#if TARGET_XARCH
-                    var instruction = _descriptor.idIns();
-                    var register = _descriptor.idReg1();
-                    var format = _descriptor.idInsFmt();
-
-                    if (format is IF_RRD or IF_RWR or IF_RRW)
+                    if (Configuration.TARGET_XARCH)
                     {
-                        return $"{instruction} {register}";
+                        var instruction = _descriptor.idIns();
+                        var register = _descriptor.idReg1();
+                        var format = _descriptor.idInsFmt();
+
+                        if (format is IF_XARCH_RRD or IF_XARCH_RWR or IF_XARCH_RRW)
+                        {
+                            return $"{instruction} {register}";
+                        }
+
+                        if (format is IF_XARCH_RRD_CNS or IF_XARCH_RWR_CNS or IF_XARCH_RRW_CNS or IF_XARCH_RRW_SHF)
+                        {
+                            return $"{instruction} {register}, {GetConstant()}";
+                        }
                     }
 
-                    if (format is IF_RRD_CNS or IF_RWR_CNS or IF_RRW_CNS)
-                    {
-                        return $"{instruction} {register}, {GetConstant()}";
-                    }
-
-                    if (format is IF_RRW_SHF)
-                    {
-                        return $"{instruction} {register}, {GetConstant()}";
-                    }
-#endif
                     return _descriptor.idIns().ToString();
                 }
             }
 
             private nint GetConstant()
             {
-#if TARGET_ARM
-                return _descriptor.idIsLargeCns()
-                    ? ((instrDescCns)_descriptor).idcCnsVal
-                    : _descriptor.idSmallCns();
-#else
+                if (Configuration.TARGET_ARM)
+                {
+                    return _descriptor.idIsLargeCns()
+                        ? ((instrDescCns)_descriptor).idcCnsVal
+                        : _descriptor.idSmallCns();
+                }
+
                 return emitGetInsSC(_descriptor);
-#endif
             }
         }
     }
@@ -381,7 +373,7 @@ public sealed partial class LinearScan
             "RegistersWithConstants",
             DebuggerDisplayHelpers.GetRegisters(_linearScan._registersWithConstants));
 
-        private DebuggerVarMapBlock[] GetVarToRegMaps(regNumber[]?[]? maps)
+        private DebuggerVarMapBlock[] GetVarToRegMaps(regNumberSmall[]?[]? maps)
         {
             if (maps is null)
             {
@@ -392,13 +384,13 @@ public sealed partial class LinearScan
             for (var block = _linearScan._compiler.fgFirstBB; block is not null; block = block.Next)
             {
                 var blockNumber = checked((int)block.bbNum);
-                if ((uint)blockNumber >= (uint)maps.Length || maps[blockNumber] is not regNumber[] map)
+                if ((uint)blockNumber >= (uint)maps.Length || maps[blockNumber] is not regNumberSmall[] map)
                 {
                     continue;
                 }
 
                 var variables = new List<DebuggerVarReg>();
-                for (var index = 0; index < map.Length; index++)
+                for (var index = 0; index < map.Length && index < _linearScan._compiler.lvaTrackedCount; index++)
                 {
                     if (!VarSetOps.IsMember(_linearScan._compiler, block.bbLiveIn, index))
                     {
@@ -412,7 +404,7 @@ public sealed partial class LinearScan
                     var variableNumber = interval is Interval liveInterval
                         ? liveInterval.varNum
                         : checked((uint)index);
-                    variables.Add(new DebuggerVarReg(variableNumber, map[index]));
+                    variables.Add(new DebuggerVarReg(variableNumber, (regNumber)map[index]));
                 }
 
                 blocks.Add(new DebuggerVarMapBlock(blockNumber, [.. variables]));

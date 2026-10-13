@@ -69,13 +69,12 @@ public partial class Compiler
                 Metrics.LoopsMadeDownwardsCounted++;
                 changed = true;
             }
-#if TARGET_XARCH && TARGET_64BIT
-            if (optWidenIVs(scevContext, loop, loopInfo))
+            if (Configuration.TARGET_XARCH && Configuration.TARGET_64BIT &&
+                optWidenIVs(scevContext, loop, loopInfo))
             {
                 Metrics.LoopsIVWidened++;
                 changed = true;
             }
-#endif
             if (optRemoveUnusedIVs(loop, loopInfo))
             {
                 changed = true;

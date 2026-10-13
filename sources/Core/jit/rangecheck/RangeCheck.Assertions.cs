@@ -81,11 +81,9 @@ public sealed partial class RangeCheck
 
         if (varTypeIsGC(type))
         {
-#if TARGET_64BIT
-            return new(new(LimitType.Unknown));
-#else
-            return GetRangeFromType(TYP_INT);
-#endif
+            return Configuration.TARGET_64BIT
+                ? new(new(LimitType.Unknown))
+                : GetRangeFromType(TYP_INT);
         }
 
         if (store.IsVNConstant(vn))
@@ -104,22 +102,23 @@ public sealed partial class RangeCheck
         var app = new VNFuncApp();
         if (store.GetVNFunc(vn, ref app))
         {
-#if FEATURE_HW_INTRINSICS
-            var intrinsic = default(NamedIntrinsic);
-            var simdSize = 0;
-            var simdBaseType = TYP_UNDEF;
-            if (store.IsVNHWIntrinsicFunc(vn, ref app, ref intrinsic, ref simdSize, ref simdBaseType))
+            if (Configuration.FEATURE_HW_INTRINSICS)
             {
-                if (HWIntrinsicInfo.ReturnsBoolean(intrinsic))
+                var intrinsic = default(NamedIntrinsic);
+                var simdSize = 0;
+                var simdBaseType = TYP_UNDEF;
+                if (store.IsVNHWIntrinsicFunc(vn, ref app, ref intrinsic, ref simdSize, ref simdBaseType))
                 {
-                    result = new(new(LimitType.Constant, 0), new(LimitType.Constant, 1));
-                }
-                else if (HWIntrinsicInfo.ReturnsScalarT(intrinsic) && varTypeIsSmall(simdBaseType))
-                {
-                    result = GetRangeFromType(simdBaseType);
+                    if (HWIntrinsicInfo.ReturnsBoolean(intrinsic))
+                    {
+                        result = new(new(LimitType.Constant, 0), new(LimitType.Constant, 1));
+                    }
+                    else if (HWIntrinsicInfo.ReturnsScalarT(intrinsic) && varTypeIsSmall(simdBaseType))
+                    {
+                        result = GetRangeFromType(simdBaseType);
+                    }
                 }
             }
-#endif
             switch (app.Func)
             {
                 case VNF_Cast:
@@ -266,14 +265,11 @@ public sealed partial class RangeCheck
                     break;
                 }
 
-#if FEATURE_HW_INTRINSICS
-                case VNF_HWI_Vector_ExtractMostSignificantBits:
-#if TARGET_XARCH
-                case VNF_HWI_X86Base_MoveMask:
-                case VNF_HWI_AVX_MoveMask:
-                case VNF_HWI_AVX2_MoveMask:
-                case VNF_HWI_AVX512_MoveMask:
-#endif
+                case VNF_HWI_Vector_ExtractMostSignificantBits when Configuration.FEATURE_HW_INTRINSICS:
+                case VNF_HWI_X86Base_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX512_MoveMask when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
                 {
                     var baseType = TYP_UNDEF;
                     var size = store.GetVNHWIntrinsicSizeAndBaseType(app, ref baseType);
@@ -285,19 +281,15 @@ public sealed partial class RangeCheck
                     break;
                 }
 
-#if TARGET_XARCH
-                case VNF_HWI_AVX2_LeadingZeroCount:
-                case VNF_HWI_AVX2_TrailingZeroCount:
-                case VNF_HWI_AVX2_X64_LeadingZeroCount:
-                case VNF_HWI_AVX2_X64_TrailingZeroCount:
-                case VNF_HWI_X86Base_PopCount:
-                case VNF_HWI_X86Base_X64_PopCount:
-#elif TARGET_ARM64
-                case VNF_HWI_ArmBase_LeadingZeroCount:
-                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
-                case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-#endif
-#endif
+                case VNF_HWI_AVX2_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_TrailingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_X64_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_AVX2_X64_TrailingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_X86Base_PopCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_X86Base_X64_PopCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_XARCH:
+                case VNF_HWI_ArmBase_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
+                case VNF_HWI_ArmBase_Arm64_LeadingSignCount when Configuration.FEATURE_HW_INTRINSICS && Configuration.TARGET_ARM64:
                 case VNF_LeadingZeroCount:
                 case VNF_TrailingZeroCount:
                 case VNF_PopCount:

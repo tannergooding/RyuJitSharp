@@ -16,40 +16,39 @@ public partial class Compiler
     internal static bool optConstantCSEEnabled()
     {
         var config = JitConfig.JitConstCSE;
-        return config is CONST_CSE_ENABLE_ALL or CONST_CSE_ENABLE_ALL_NO_SHARING
-#if TARGET_ARM64 || TARGET_ARM || TARGET_RISCV64
-            or CONST_CSE_ENABLE_ARM_RISCV64 or CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING
-#endif
-            ;
+
+        if (config is CONST_CSE_ENABLE_ALL or CONST_CSE_ENABLE_ALL_NO_SHARING)
+        {
+            return true;
+        }
+
+        var supportsArmRiscVMode =
+            Configuration.TARGET_ARM64 || Configuration.TARGET_ARM || Configuration.TARGET_RISCV64;
+
+        return supportsArmRiscVMode &&
+               (config is CONST_CSE_ENABLE_ARM_RISCV64 or CONST_CSE_ENABLE_ARM_RISCV64_NO_SHARING);
     }
 
     private static bool optSharedConstantCSEEnabled()
     {
         var config = JitConfig.JitConstCSE;
-        return config is CONST_CSE_ENABLE_ALL
-#if TARGET_ARM64 || TARGET_ARM || TARGET_RISCV64
-            or CONST_CSE_ENABLE_ARM_RISCV64
-#endif
-            ;
-    }
 
-#if TARGET_XARCH
-    private const int CSE_CONST_SHARED_LOW_BITS = 16;
-#else
-    private const int CSE_CONST_SHARED_LOW_BITS = 12;
-#endif
+        return (config is CONST_CSE_ENABLE_ALL) ||
+               ((Configuration.TARGET_ARM64 || Configuration.TARGET_ARM || Configuration.TARGET_RISCV64) &&
+                (config is CONST_CSE_ENABLE_ARM_RISCV64));
+    }
 
     private static nuint CseSharedSignBit => (nuint)1 << (IntPtr.Size * 8 - 1);
 
     private static bool Is_Shared_Const_CSE(nuint key) => (key & CseSharedSignBit) != 0;
 
     private static nuint Encode_Shared_Const_CSE_Value(nuint key)
-        => CseSharedSignBit | (key >> CSE_CONST_SHARED_LOW_BITS);
+        => CseSharedSignBit | (key >> Globals.CSE_CONST_SHARED_LOW_BITS);
 
     private static nuint Decode_Shared_Const_CSE_Value(nuint key)
     {
         assert(Is_Shared_Const_CSE(key));
-        return (key & ~CseSharedSignBit) << CSE_CONST_SHARED_LOW_BITS;
+        return (key & ~CseSharedSignBit) << Globals.CSE_CONST_SHARED_LOW_BITS;
     }
 
     private static int getCSEAvailBit(int cseNum) => genCseNum2Bit(cseNum) * 2;
@@ -74,9 +73,11 @@ public partial class Compiler
     private static int optCSEKeyToHashIndex(nuint key, nint hashSize)
     {
         var hash = unchecked((uint)key);
-#if TARGET_64BIT
-        hash ^= (uint)(key >> 32);
-#endif
+        if (Configuration.TARGET_64BIT)
+        {
+            hash ^= (uint)(key >> 32);
+        }
+
         hash = unchecked(hash * (uint)(hashSize + 1));
         hash >>= 7;
         return (int)(hash % (uint)hashSize);

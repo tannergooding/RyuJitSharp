@@ -14,9 +14,9 @@ public partial class Compiler
         private GenTreeIndir LoadFromOffset(GenTree baseNode, int offset, var_types type,
             GenTreeFlags flags = GTF_IND_NONFAULTING)
         {
-            assert(baseNode.Type is TYP_REF or TYP_BYREF or TYP_I_IMPL);
+            assert((baseNode.Type is var __targetAliasValue0 && ((__targetAliasValue0 is TYP_REF || __targetAliasValue0 is TYP_BYREF) || __targetAliasValue0 == TYP_I_IMPL)));
             var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, offset);
-            var addressType = baseNode.Type is TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF;
+            var addressType = (baseNode.Type == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
             var address = _compiler.gtNewBinaryNode(GT_ADD, addressType, baseNode, offsetNode);
             return _compiler.gtNewIndir(type, address, flags);
         }
@@ -24,9 +24,9 @@ public partial class Compiler
         private GenTreeStoreInd StoreAtOffset(GenTree baseNode, int offset, GenTree value,
             var_types type, GenTreeFlags flags = GTF_IND_NONFAULTING)
         {
-            assert(baseNode.Type is TYP_REF or TYP_BYREF or TYP_I_IMPL);
+            assert((baseNode.Type is var __targetAliasValue1 && ((__targetAliasValue1 is TYP_REF || __targetAliasValue1 is TYP_BYREF) || __targetAliasValue1 == TYP_I_IMPL)));
             var offsetNode = _compiler.gtNewIconNode(TYP_I_IMPL, offset);
-            var addressType = baseNode.Type is TYP_I_IMPL ? TYP_I_IMPL : TYP_BYREF;
+            var addressType = (baseNode.Type == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF;
             var address = _compiler.gtNewBinaryNode(GT_ADD, addressType, baseNode, offsetNode);
             return _compiler.gtNewStoreIndNode(type, address, value, flags);
         }
@@ -75,7 +75,7 @@ public partial class Compiler
             var awaiter = argument.Node;
             assert(awaiter.Type is TYP_STRUCT);
             var alignment = awaiterLayout.GetAlignmentRequirement(_compiler);
-            var isStructAligned = Math.Min(alignment, TARGET_POINTER_SIZE) == alignment;
+            var isStructAligned = Math.Min(alignment, Configuration.TARGET_POINTER_SIZE) == alignment;
 
             if (awaiter is GenTreeFieldList fieldList)
             {

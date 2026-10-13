@@ -123,17 +123,18 @@ public partial class Compiler
                     : domTree.Intersect(insertionPoint, backEdge.SourceBlock);
             }
 
-#if TARGET_ARM64
-            var postUseInsertionPoint = FindPostUseUpdateInsertionPoint(cursors, insertionPoint, out afterStmt);
-            if (postUseInsertionPoint is not null)
+            if (Configuration.TARGET_ARM64)
             {
+                var postUseInsertionPoint = FindPostUseUpdateInsertionPoint(cursors, insertionPoint, out afterStmt);
+                if (postUseInsertionPoint is not null)
+                {
 #if DEBUG
-                var latestUse = afterStmt ?? throw new FatalJitException("Post-use placement needs a use statement.");
-                JITDUMP($"    Found a legal insertion point after a last use of the IV in {FMT_BB(postUseInsertionPoint.bbNum)} after {FMT_STMT(latestUse.Id)}\n");
+                    var latestUse = afterStmt ?? throw new FatalJitException("Post-use placement needs a use statement.");
+                    JITDUMP($"    Found a legal insertion point after a last use of the IV in {FMT_BB(postUseInsertionPoint.bbNum)} after {FMT_STMT(latestUse.Id)}\n");
 #endif
-                return postUseInsertionPoint;
+                    return postUseInsertionPoint;
+                }
             }
-#endif
 
             while ((insertionPoint is not null) && _loop.ContainsBlock(insertionPoint) &&
                 _loop.MayExecuteBlockMultipleTimesPerIteration(insertionPoint))
@@ -149,7 +150,6 @@ public partial class Compiler
             return insertionPoint;
         }
 
-#if TARGET_ARM64
         private BasicBlock? FindPostUseUpdateInsertionPoint(List<CursorInfo> cursors,
             BasicBlock? backEdgeDominator, out Statement? afterStmt)
         {
@@ -203,7 +203,6 @@ public partial class Compiler
 
             return null;
         }
-#endif
 
         private bool InsertionPointPostDominatesUses(BasicBlock insertionPoint, List<CursorInfo> cursors)
         {

@@ -28,15 +28,12 @@ public partial class Compiler
             {
                 available += CNT_CALLEE_TRASH_INT - 1;
             }
-#if !TARGET_64BIT
-            if (varTypeIsLong(tree.Type))
+            if (!Configuration.TARGET_64BIT && varTypeIsLong(tree.Type))
             {
                 available = (available + 1) / 2;
             }
-#endif
         }
-#if FEATURE_MASKED_HW_INTRINSICS
-        else if (varTypeUsesMaskReg(tree.Type))
+        else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeUsesMaskReg(tree.Type))
         {
             hoisted = context.HoistedMskExprCount;
             loopVars = context.LoopVarMskCount;
@@ -47,7 +44,6 @@ public partial class Compiler
                 available += CNT_CALLEE_TRASH_MASK - 1;
             }
         }
-#endif
         else
         {
             assert(varTypeUsesFloatReg(tree.Type));
@@ -55,19 +51,19 @@ public partial class Compiler
             loopVars = context.LoopVarFPCount;
             inOut = context.LoopVarInOutFPCount;
             available = CNT_CALLEE_SAVED_FLOAT;
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            if (loopContainsCall && varTypeNeedsPartialCalleeSave(tree.Type))
+            if (Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE &&
+                loopContainsCall && varTypeNeedsPartialCalleeSave(tree.Type))
             {
                 available = 0;
             }
-#endif
             if (!loopContainsCall)
             {
                 available += CNT_CALLEE_TRASH_FLOAT - 1;
             }
-#if TARGET_ARM
-            available /= 2;
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                available /= 2;
+            }
         }
 
         available -= hoisted;
@@ -135,19 +131,15 @@ public partial class Compiler
         if (varTypeUsesIntReg(tree.Type))
         {
             context.HoistedExprCount++;
-#if !TARGET_64BIT
-            if (varTypeIsLong(tree.Type))
+            if (!Configuration.TARGET_64BIT && varTypeIsLong(tree.Type))
             {
                 context.HoistedExprCount++;
             }
-#endif
         }
-#if FEATURE_MASKED_HW_INTRINSICS
-        else if (varTypeUsesMaskReg(tree.Type))
+        else if (Configuration.FEATURE_MASKED_HW_INTRINSICS && varTypeUsesMaskReg(tree.Type))
         {
             context.HoistedMskExprCount++;
         }
-#endif
         else
         {
             assert(varTypeUsesFloatReg(tree.Type));

@@ -96,9 +96,10 @@ public partial class Compiler
                 var layout = store.GetLayout(compiler);
                 var size = checked((int)(segment.End - segment.Start));
                 var type = TYP_UNDEF;
-                if ((size == TARGET_POINTER_SIZE) && ((segment.Start % TARGET_POINTER_SIZE) == 0))
+                var pointerSize = Configuration.TARGET_POINTER_SIZE;
+                if ((size == pointerSize) && ((segment.Start % pointerSize) == 0))
                 {
-                    type = layout.GetGCPtrType(checked((int)(segment.Start / TARGET_POINTER_SIZE)));
+                    type = layout.GetGCPtrType(checked((int)(segment.Start / pointerSize)));
                 }
                 else if (!layout.IntersectsGCPtr(checked((int)segment.Start), size))
                 {
@@ -107,16 +108,12 @@ public partial class Compiler
                         1 => TYP_UBYTE,
                         2 => TYP_USHORT,
                         4 => TYP_INT,
-#if TARGET_64BIT
-                        8 => TYP_LONG,
-#endif
-#if FEATURE_SIMD
-                        16 when compiler.GetPreferredVectorByteLength() >= 16 => TYP_SIMD16,
-#if TARGET_XARCH
-                        32 when compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
-                        64 when compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
-#endif
-#endif
+                        8 when Configuration.TARGET_64BIT => TYP_LONG,
+                        16 when Configuration.FEATURE_SIMD && compiler.GetPreferredVectorByteLength() >= 16 => TYP_SIMD16,
+                        32 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH &&
+                            compiler.GetPreferredVectorByteLength() >= 32 => TYP_SIMD32,
+                        64 when Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH &&
+                            compiler.GetPreferredVectorByteLength() >= 64 => TYP_SIMD64,
                         _ => TYP_UNDEF,
                     };
                 }

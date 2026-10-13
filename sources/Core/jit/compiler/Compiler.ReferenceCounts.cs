@@ -20,13 +20,11 @@ public partial class Compiler
         }
 
         var originalLocalCount = lvaCount;
-#if JIT32_GCENCODER
-        if (compLocallocUsed)
+        if (Configuration.JIT32_GCENCODER && compLocallocUsed)
         {
             lvaLocAllocSPvar = lvaGrabTempWithImplicitUse(false, "LocAllocSPvar");
             lvaGetDesc(lvaLocAllocSPvar).Type = TYP_I_IMPL;
         }
-#endif
         lvaRefCountState = RCS_NORMAL;
 #if DEBUG
         const bool setSlotNumbers = true;
@@ -69,19 +67,21 @@ public partial class Compiler
         return allocator.WillEnregisterLocalVars();
     }
 
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     public static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         assert(type is not TYP_STRUCT);
-#if TARGET_AMD64
-        return type is TYP_SIMD32 or TYP_SIMD64;
-#elif TARGET_ARM64
-        return type is TYP_SIMD16 or TYP_SIMD12;
-#else
-#error Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            return type is TYP_SIMD32 or TYP_SIMD64;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return type is TYP_SIMD16 or TYP_SIMD12;
+        }
+
+        throw new FatalJitException("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE.");
     }
-#endif
 
     public void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     {
@@ -332,9 +332,8 @@ public partial class Compiler
                 }
                 else if (!descriptor.lvDoNotEnregister)
                 {
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    if (!varTypeNeedsPartialCalleeSave(descriptor.GetRegisterType()))
-#endif
+                    if (!Configuration.FEATURE_PARTIAL_SIMD_CALLEE_SAVE ||
+                        !varTypeNeedsPartialCalleeSave(descriptor.GetRegisterType()))
                     {
                         descriptor.lvSingleDefRegCandidate = true;
                         JITDUMP($"Marking EH Var V{localNumber:D2} as a register candidate.\n");
@@ -344,7 +343,7 @@ public partial class Compiler
         }
 
         assert((tree.Type == descriptor.Type) || (tree.Type == descriptor.Type.ActualType) ||
-            ((tree.Type is TYP_BYREF) && (descriptor.Type is TYP_I_IMPL)) ||
+            ((tree.Type is TYP_BYREF) && ((descriptor.Type == TYP_I_IMPL))) ||
             ((tree.Type is TYP_INT) && (descriptor.Type is TYP_LONG)));
     }
 

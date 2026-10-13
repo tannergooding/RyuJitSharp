@@ -19,10 +19,8 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
         Nop,
         BitCast,
         NarrowCast,
-#if FEATURE_HW_INTRINSICS
         GetElement,
         WithElement,
-#endif
         LclVar,
         LclFld,
     }
@@ -81,12 +79,10 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                 var suitable = _compiler.opts.compJitOptimizeStructHiddenBuffer && varTypeIsStruct(varDsc.Type) &&
                     !_compiler.lvaIsUnknownSizeLocal(lclNum) && !_compiler.lvaIsImplicitByRefLocal(lclNum) &&
                     (!varDsc.lvIsStructField || !_compiler.lvaIsImplicitByRefLocal(varDsc.lvParentLcl));
-#if TARGET_X86
-                if (_compiler.lvaIsArgAccessedViaVarArgsCookie(lclNum))
+                if (Configuration.TARGET_X86 && _compiler.lvaIsArgAccessedViaVarArgsCookie(lclNum))
                 {
                     suitable = false;
                 }
-#endif
                 if (suitable)
                 {
                     _compiler.lvaSetHiddenBufferStructArg(lclNum);
@@ -100,7 +96,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
 
                 if ((resumedDef is not null) && (value.Node == resumedDef.Node))
                 {
-                    defSize = TARGET_POINTER_SIZE;
+                    defSize = (uint)Configuration.TARGET_POINTER_SIZE;
                 }
             }
 
@@ -135,16 +131,17 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
             }
         }
 
-#if TARGET_64BIT
-        // Match JIT64's extra storage for byref int32 arguments: some P/Invoke
-        // signatures incorrectly write a native-sized value through these addresses.
-        if ((call is not null) && !varDsc.lvIsParam && !varDsc.lvIsStructField &&
-            (varDsc.Type.ActualType is TYP_INT) && escapeAddress)
+        if (Configuration.TARGET_64BIT)
         {
-            varDsc.lvQuirkToLong = true;
-            JITDUMP($"Adding a quirk for the storage size of V{value.LclNum:D2} of type {varDsc.Type.Name}\n");
+            // Match JIT64's extra storage for byref int32 arguments: some P/Invoke
+            // signatures incorrectly write a native-sized value through these addresses.
+            if ((call is not null) && !varDsc.lvIsParam && !varDsc.lvIsStructField &&
+                (varDsc.Type.ActualType is TYP_INT) && escapeAddress)
+            {
+                varDsc.lvQuirkToLong = true;
+                JITDUMP($"Adding a quirk for the storage size of V{value.LclNum:D2} of type {varDsc.Type.Name}\n");
+            }
         }
-#endif
         MorphLocalAddress(ref value.Use, lclNum, value.Offset);
         value.Node.Flags |= defFlags;
         value.Consume();
@@ -188,7 +185,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
 
     internal void MorphLocalAddress(ref GenTree use, int lclNum, uint offset)
     {
-        assert(use.Type is TYP_BYREF or TYP_I_IMPL);
+        assert((use.Type is var __targetAliasValue0 && (__targetAliasValue0 is TYP_BYREF || __targetAliasValue0 == TYP_I_IMPL)));
 #if DEBUG
         assert(_compiler.lvaGetDesc(lclNum).IsAddressExposed ||
             ((_lclAddrAssertions is not null) && _lclAddrAssertions.IsMarkedForExposure(lclNum)) ||
@@ -261,7 +258,6 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
             // Vector fields include scalar floats, a Plane's Vector3 and halves
             // of larger vectors. Preserve the native construction and ID order.
             case IndirTransform.GetElement:
@@ -286,13 +282,9 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                         break;
                     }
 
-#if TARGET_XARCH
-                    case TYP_SIMD16:
-                    case TYP_SIMD32:
-#elif TARGET_ARM64
-                    case TYP_SIMD8:
-#endif
-#if TARGET_XARCH || TARGET_ARM64
+                    case TYP_SIMD8 when Configuration.TARGET_ARM64:
+                    case TYP_SIMD16 when Configuration.TARGET_XARCH:
+                    case TYP_SIMD32 when Configuration.TARGET_XARCH:
                     {
                         assert((elementType.Size * 2) == varDsc.Type.Size);
 
@@ -307,7 +299,6 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                         }
                         break;
                     }
-#endif
 
                     default:
                     {
@@ -353,13 +344,9 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                         break;
                     }
 
-#if TARGET_XARCH
-                    case TYP_SIMD16:
-                    case TYP_SIMD32:
-#elif TARGET_ARM64
-                    case TYP_SIMD8:
-#endif
-#if TARGET_XARCH || TARGET_ARM64
+                    case TYP_SIMD8 when Configuration.TARGET_ARM64:
+                    case TYP_SIMD16 when Configuration.TARGET_XARCH:
+                    case TYP_SIMD32 when Configuration.TARGET_XARCH:
                     {
                         assert((elementType.Size * 2) == varDsc.Type.Size);
 
@@ -376,7 +363,6 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                         }
                         break;
                     }
-#endif
 
                     default:
                     {
@@ -390,8 +376,6 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                 ReplaceNode(ref use, lclNode);
                 break;
             }
-#endif
-
             case IndirTransform.LclVar:
             {
                 var type = indir.Type;
@@ -488,8 +472,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                 return IndirTransform.LclFld;
             }
 
-#if FEATURE_HW_INTRINSICS
-            if (varTypeIsSimd(varDsc.Type))
+            if (Configuration.FEATURE_HW_INTRINSICS && varTypeIsSimd(varDsc.Type))
             {
                 if (indir.Type is TYP_FLOAT)
                 {
@@ -505,25 +488,21 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                         return isDef ? IndirTransform.WithElement : IndirTransform.GetElement;
                     }
                 }
-#if TARGET_ARM64
-                else if (indir.Type is TYP_SIMD8)
+                else if (Configuration.TARGET_ARM64 && indir.Type is TYP_SIMD8)
                 {
                     if ((varDsc.Type is TYP_SIMD16) && ((offset % 8) is 0))
                     {
                         return isDef ? IndirTransform.WithElement : IndirTransform.GetElement;
                     }
                 }
-#endif
-#if FEATURE_SIMD && TARGET_XARCH
-                else if ((((indir.Type is TYP_SIMD16) && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
-                          ((indir.Type is TYP_SIMD32) && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))) &&
-                         ((indir.Type.Size * 2) == varDsc.Type.Size) && ((offset % indir.Type.Size) is 0))
+                else if (Configuration.FEATURE_SIMD && Configuration.TARGET_XARCH &&
+                    (((indir.Type is TYP_SIMD16) && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
+                     ((indir.Type is TYP_SIMD32) && _compiler.compOpportunisticallyDependsOn(InstructionSet_AVX512))) &&
+                    ((indir.Type.Size * 2) == varDsc.Type.Size) && ((offset % indir.Type.Size) is 0))
                 {
                     return isDef ? IndirTransform.WithElement : IndirTransform.GetElement;
                 }
-#endif
             }
-#endif
 
             if (!isDef && (offset is 0))
             {
@@ -532,7 +511,7 @@ internal partial struct LocalAddressVisitor : IGenTreeVisitor<LocalAddressVisito
                     return IndirTransform.NarrowCast;
                 }
 
-                if ((indir.Type.Size == varDsc.Type.Size) && (indir.Type.Size <= TARGET_POINTER_SIZE) &&
+                if ((indir.Type.Size == varDsc.Type.Size) && (indir.Type.Size <= Configuration.TARGET_POINTER_SIZE) &&
                     (varTypeIsFloating(indir.Type) || varTypeIsFloating(varDsc.Type)) && !varDsc.lvPromoted)
                 {
                     return IndirTransform.BitCast;

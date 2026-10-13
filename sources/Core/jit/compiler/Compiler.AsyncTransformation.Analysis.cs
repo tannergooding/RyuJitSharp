@@ -436,12 +436,10 @@ public partial class Compiler
 
         public bool IsLive(int lclNum)
         {
-#if FEATURE_FIXED_OUT_ARGS
-            if (lclNum == _compiler.lvaOutgoingArgSpaceVar)
+            if (Configuration.FEATURE_FIXED_OUT_ARGS && (lclNum == _compiler.lvaOutgoingArgSpaceVar))
             {
                 return false;
             }
-#endif
 
             if ((lclNum == _compiler.info.compRetBuffArg) ||
                 (lclNum == _compiler.lvaGSSecurityCookie) ||
