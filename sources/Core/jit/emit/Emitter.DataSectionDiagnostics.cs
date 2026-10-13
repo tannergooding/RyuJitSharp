@@ -35,7 +35,7 @@ public partial class Emitter
                 var igFirst = emitCodeGetCookie(firstBlock)
                     ?? throw new FatalJitException("Label-table diagnostics require the first emitted label.");
                 var isRelative = data.dsType == dataSection.sectionType.blockRelative32;
-                var blockCount = data.dsSize / (isRelative ? 4u : TARGET_POINTER_SIZE);
+                var blockCount = data.dsSize / (isRelative ? 4u : Configuration.TARGET_POINTER_SIZE);
 
                 for (uint i = 0; i < blockCount; i++)
                 {
@@ -64,27 +64,30 @@ public partial class Emitter
                     }
                     else
                     {
-#if TARGET_64BIT
-                        if (compiler.opts.disDiffable)
+                        if (Configuration.TARGET_64BIT)
                         {
-                            jitprintf($"\tdq\t{blockLabel}\n");
+                            if (compiler.opts.disDiffable)
+                            {
+                                jitprintf($"\tdq\t{blockLabel}\n");
+                            }
+                            else
+                            {
+                                var address = emitOffsetToPtr(ig.igOffs);
+                                jitprintf($"\tdq\t{(nuint)address:X16}h");
+                            }
                         }
                         else
                         {
-                            var address = emitOffsetToPtr(ig.igOffs);
-                            jitprintf($"\tdq\t{(nuint)address:X16}h");
+                            if (compiler.opts.disDiffable)
+                            {
+                                jitprintf($"\tdd\t{blockLabel}\n");
+                            }
+                            else
+                            {
+                                var address = emitOffsetToPtr(ig.igOffs);
+                                jitprintf($"\tdd\t{unchecked((uint)(nuint)address):X8}h");
+                            }
                         }
-#else
-                        if (compiler.opts.disDiffable)
-                        {
-                            jitprintf($"\tdd\t{blockLabel}\n");
-                        }
-                        else
-                        {
-                            var address = emitOffsetToPtr(ig.igOffs);
-                            jitprintf($"\tdd\t{unchecked((uint)(nuint)address):X8}h");
-                        }
-#endif
                     }
 
                     if (!compiler.opts.disDiffable)
@@ -102,11 +105,12 @@ public partial class Emitter
                 // The oracle divides by host-sized emitLocation, not the target entry size,
                 // and prints dq even for 32-bit targets. Preserve both diagnostic quirks.
                 var infoCount = data.dsSize / (2u * (uint)sizeof(nint));
+                var entrySize = 2u * (uint)Configuration.TARGET_POINTER_SIZE;
                 for (uint i = 0; i < infoCount; i++)
                 {
                     if (i > 0)
                     {
-                        label = $"RWD{unchecked(data.dsOffset + (i * (uint)sizeof(CORINFO_AsyncResumeInfo))):D2}";
+                        label = $"RWD{unchecked(data.dsOffset + (i * entrySize)):D2}";
                         jitprintf($"{label,-7}");
                     }
 

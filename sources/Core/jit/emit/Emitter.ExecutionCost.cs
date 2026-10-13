@@ -3,6 +3,8 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using static RyuJitSharp.Globals;
+
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -85,29 +87,40 @@ public partial class Emitter
     private const float PERFSCORE_THROUGHPUT_RD = PERFSCORE_THROUGHPUT_2X;
     private const float PERFSCORE_THROUGHPUT_WR = PERFSCORE_THROUGHPUT_1C;
     private const float PERFSCORE_THROUGHPUT_RW = PERFSCORE_THROUGHPUT_1C;
-#if TARGET_XARCH
-    private const float PERFSCORE_LATENCY_RD_STACK = PERFSCORE_LATENCY_2C;
-    private const float PERFSCORE_LATENCY_WR_STACK = PERFSCORE_LATENCY_2C;
-    private const float PERFSCORE_LATENCY_RD_WR_STACK = PERFSCORE_LATENCY_5C;
-    private const float PERFSCORE_LATENCY_RD_CONST_ADDR = PERFSCORE_LATENCY_2C;
-    private const float PERFSCORE_LATENCY_WR_CONST_ADDR = PERFSCORE_LATENCY_2C;
-    private const float PERFSCORE_LATENCY_RD_WR_CONST_ADDR = PERFSCORE_LATENCY_5C;
-    private const float PERFSCORE_LATENCY_RD_GENERAL = PERFSCORE_LATENCY_3C;
-    private const float PERFSCORE_LATENCY_WR_GENERAL = PERFSCORE_LATENCY_3C;
-    private const float PERFSCORE_LATENCY_RD_WR_GENERAL = PERFSCORE_LATENCY_6C;
-#elif TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
-    private const float PERFSCORE_LATENCY_RD_STACK = PERFSCORE_LATENCY_3C;
-    private const float PERFSCORE_LATENCY_WR_STACK = PERFSCORE_LATENCY_1C;
-    private const float PERFSCORE_LATENCY_RD_WR_STACK = PERFSCORE_LATENCY_3C;
-    private const float PERFSCORE_LATENCY_RD_CONST_ADDR = PERFSCORE_LATENCY_3C;
-    private const float PERFSCORE_LATENCY_WR_CONST_ADDR = PERFSCORE_LATENCY_1C;
-    private const float PERFSCORE_LATENCY_RD_WR_CONST_ADDR = PERFSCORE_LATENCY_3C;
-    private const float PERFSCORE_LATENCY_RD_GENERAL = PERFSCORE_LATENCY_4C;
-    private const float PERFSCORE_LATENCY_WR_GENERAL = PERFSCORE_LATENCY_1C;
-    private const float PERFSCORE_LATENCY_RD_WR_GENERAL = PERFSCORE_LATENCY_4C;
-#else
-#error Unknown TARGET
-#endif
+    private static readonly float PERFSCORE_LATENCY_RD_STACK =
+        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_3C);
+    private static readonly float PERFSCORE_LATENCY_WR_STACK =
+        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_1C);
+    private static readonly float PERFSCORE_LATENCY_RD_WR_STACK =
+        GetTargetedLatency(PERFSCORE_LATENCY_5C, PERFSCORE_LATENCY_3C);
+    private static readonly float PERFSCORE_LATENCY_RD_CONST_ADDR =
+        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_3C);
+    private static readonly float PERFSCORE_LATENCY_WR_CONST_ADDR =
+        GetTargetedLatency(PERFSCORE_LATENCY_2C, PERFSCORE_LATENCY_1C);
+    private static readonly float PERFSCORE_LATENCY_RD_WR_CONST_ADDR =
+        GetTargetedLatency(PERFSCORE_LATENCY_5C, PERFSCORE_LATENCY_3C);
+    private static readonly float PERFSCORE_LATENCY_RD_GENERAL =
+        GetTargetedLatency(PERFSCORE_LATENCY_3C, PERFSCORE_LATENCY_4C);
+    private static readonly float PERFSCORE_LATENCY_WR_GENERAL =
+        GetTargetedLatency(PERFSCORE_LATENCY_3C, PERFSCORE_LATENCY_1C);
+    private static readonly float PERFSCORE_LATENCY_RD_WR_GENERAL =
+        GetTargetedLatency(PERFSCORE_LATENCY_6C, PERFSCORE_LATENCY_4C);
+
+    private static float GetTargetedLatency(float xarchLatency, float otherLatency)
+    {
+        if (Configuration.TARGET_XARCH)
+        {
+            return xarchLatency;
+        }
+
+        if (Configuration.TARGET_ARMARCH || Configuration.TARGET_LOONGARCH64 ||
+            Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
+        {
+            return otherLatency;
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Execution-cost estimates are not available for this target.");
+    }
 
     internal struct insExecutionCharacteristics
     {

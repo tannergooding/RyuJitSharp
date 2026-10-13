@@ -10,13 +10,9 @@ public partial class Emitter
     private unsafe void emitDispCommentForHandle(nint handle, nint cookie, GenTreeFlags flags)
     {
         var compiler = _compiler ?? throw new FatalJitException("Handle display requires an active compiler.");
-#if TARGET_XARCH
-        const string prefix = "      ;";
-#elif TARGET_WASM
-        const string prefix = "      ;;";
-#else
-        const string prefix = "      //";
-#endif
+        var prefix = Configuration.TARGET_XARCH ? "      ;"
+            : Configuration.TARGET_WASM ? "      ;;"
+            : "      //";
         var kind = flags & GTF_ICON_HDL_MASK;
         if (cookie != 0)
         {

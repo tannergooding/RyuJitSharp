@@ -7,12 +7,29 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
+    public static bool isDoubleReg(regNumber reg)
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException("ARM32 double-register validation is not available for this target.");
+        }
+
+        var register = unchecked((uint)reg);
+        return register >= (uint)REG_ARM32_F0 &&
+            register <= (uint)REG_ARM32_F31 &&
+            ((register & 1) == 0);
+    }
+
     public void emitDispRegSet(regMaskTP registers)
     {
-#if HAS_FIXED_REGISTER_SET
+        if (!Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            return;
+        }
+
         jitprintf(" {");
         var separator = "";
-        for (var reg = REG_FIRST; reg < ACTUAL_REG_COUNT; reg++)
+        for (var reg = TargetRuntimeMetadata.FirstRegister; reg < ACTUAL_REG_COUNT; reg++)
         {
             if (registers.IsEmpty)
             {
@@ -29,6 +46,5 @@ public partial class Emitter
             jitprintf(emitRegName(reg));
         }
         jitprintf("}");
-#endif
     }
 }

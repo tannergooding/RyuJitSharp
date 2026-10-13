@@ -231,13 +231,11 @@ public partial class Emitter
                     do
                     {
                         assert(instruction is not null);
-#if TARGET_XARCH
-                        if (emitJmpInstHasNoCode(instruction))
+                        if (Configuration.TARGET_XARCH && emitJmpInstHasNoCode(instruction))
                         {
                             assert(count == 1);
                             break;
                         }
-#endif
 
                         emitDispIns(instruction, false, true, false, offset, null, 0, ig);
                         offset = unchecked(offset + instruction.idCodeSize());
@@ -254,17 +252,18 @@ public partial class Emitter
 
     public void emitDispIGlist(bool displayInstructions = false)
     {
-#if !TARGET_XARCH && !EMIT_BACKWARDS_NAVIGATION
         insGroup? previous = null;
+#if EMIT_BACKWARDS_NAVIGATION
+        const bool useBackwardNavigation = true;
+#else
+        var useBackwardNavigation = Configuration.TARGET_XARCH;
 #endif
         for (var ig = emitIGlist; ig is not null; ig = ig.igNext)
         {
-#if TARGET_XARCH || EMIT_BACKWARDS_NAVIGATION
-            var displayFunc = (ig.igPrev is null) || (ig.igPrev.igFuncIdx != ig.igFuncIdx);
-#else
-            var displayFunc = (previous is null) || (previous.igFuncIdx != ig.igFuncIdx);
+            var displayFunc = useBackwardNavigation
+                ? (ig.igPrev is null) || (ig.igPrev.igFuncIdx != ig.igFuncIdx)
+                : (previous is null) || (previous.igFuncIdx != ig.igFuncIdx);
             previous = ig;
-#endif
             emitDispIG(ig, displayFunc, displayInstructions);
         }
     }
@@ -285,13 +284,13 @@ public partial class Emitter
 
             if (!jump.idIsBound())
             {
-#if TARGET_ARM64
-                if (jump.idInsFmt() is insFormat.IF_LARGEADR or insFormat.IF_LARGELDC)
+                var isArm64LargeAddress = Configuration.TARGET_ARM64 &&
+                    jump.idInsFmt() is (insFormat.IF_ARM64_LARGEADR or insFormat.IF_ARM64_LARGELDC);
+                if (isArm64LargeAddress)
                 {
                     jitprintf($" -> {jump.idReg1().Name}");
                 }
                 else
-#endif
                 {
                     var target = jump.idjTarget is BasicBlock block ? emitCodeGetCookie(block) : null;
                     jitprintf(target is null ? " -> ILLEGAL" : $" -> IG{target.GetDisplayId():D2}");
@@ -305,18 +304,15 @@ public partial class Emitter
                 {
                     jitprintf(" (long)");
                 }
-#if TARGET_XARCH
-                if (jump.idjIsRemovableJmpCandidate)
+                if (Configuration.TARGET_XARCH && jump.idjIsRemovableJmpCandidate)
                 {
                     jitprintf(" ; removal candidate");
                 }
-#endif
-#if TARGET_AMD64
-                if (jump.idjIsAfterCallBeforeEpilog)
+
+                if (Configuration.TARGET_AMD64 && jump.idjIsAfterCallBeforeEpilog)
                 {
                     jitprintf(" ; after call before epilog");
                 }
-#endif
             }
 
             jitprintf("\n");

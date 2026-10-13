@@ -4,11 +4,6 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System;
-#if TARGET_64BIT
-using target_size_t = System.UInt64;
-#else
-using target_size_t = System.UInt32;
-#endif
 
 namespace RyuJitSharp;
 
@@ -51,13 +46,8 @@ public partial class Emitter
                     JITDUMP($"  section {secNum++}, size {dscSize}, block absolute addr\n");
                 }
 #endif
-                assert(dscSize != 0 && dscSize % TARGET_POINTER_SIZE == 0);
-                var numElems = dscSize / TARGET_POINTER_SIZE;
-#if TARGET_64BIT
-                var bDstRW = (nuint*)dstRW;
-#else
-                var bDstRW = (uint*)dstRW;
-#endif
+                assert(dscSize != 0 && dscSize % Configuration.TARGET_POINTER_SIZE == 0);
+                var numElems = dscSize / Configuration.TARGET_POINTER_SIZE;
                 for (uint i = 0; i < numElems; i++)
                 {
                     var block = dsc.Blocks[i]
@@ -65,24 +55,26 @@ public partial class Emitter
                     var lab = emitCodeGetCookie(block)
                         ?? throw new FatalJitException("An absolute-label table requires an emitted block label.");
                     var target = emitOffsetToPtr(lab.igOffs);
+                    var targetSlot = (byte*)dstRW + unchecked((nint)(i * (uint)Configuration.TARGET_POINTER_SIZE));
 
-#if TARGET_ARM
-                    if (!compiler.opts.compReloc)
+                    if (Configuration.TARGET_ARM && !compiler.opts.compReloc)
                     {
                         target = (byte*)((nuint)target | 1u);
                     }
-#endif
-#if TARGET_64BIT
-                    bDstRW[i] = (nuint)target;
-#else
-                    bDstRW[i] = unchecked((uint)(nuint)target);
-#endif
+
+                    var targetAddress = unchecked((ulong)(nuint)target);
+                    if (!Configuration.TARGET_64BIT)
+                    {
+                        targetAddress = unchecked((uint)targetAddress);
+                    }
+                    WriteTargetSize(targetSlot, targetAddress);
+
                     if (compiler.opts.compReloc)
                     {
-                        emitRecordRelocation(&bDstRW[i], target, CorInfoReloc.DIRECT);
+                        emitRecordRelocation(targetSlot, target, CorInfoReloc.DIRECT);
                     }
 
-                    JITDUMP($"  {FMT_BB(block.bbNum)}: 0x{bDstRW[i]:x}\n");
+                    JITDUMP($"  {FMT_BB(block.bbNum)}: 0x{targetAddress:x}\n");
                 }
             }
             else if (dsc.dsType == dataSection.sectionType.blockRelative32)
@@ -119,31 +111,37 @@ public partial class Emitter
                     JITDUMP($"  section {secNum++}, size {dscSize}, async resume info\n");
                 }
 #endif
-                var numElems = dscSize / (uint)sizeof(CORINFO_AsyncResumeInfo);
-                var aDstRW = (CORINFO_AsyncResumeInfo*)dstRW;
+                var targetPointerSize = (uint)Configuration.TARGET_POINTER_SIZE;
+                var entrySize = targetPointerSize * 2u;
+                var numElems = dscSize / entrySize;
                 for (uint i = 0; i < numElems; i++)
                 {
                     var location = dsc.Locations[i];
-#if TARGET_WASM
-                    var target = location.Valid() && compiler.IsReadyToRun ? emitCodeBlock : null;
-#else
-                    var target = location.Valid() ? emitOffsetToPtr(location.CodeOffset(this)) : null;
-#endif
+                    byte* entry = (byte*)dstRW + unchecked((nint)(i * entrySize));
+                    byte* resumeSlot = entry;
+                    byte* diagnosticSlot = entry + targetPointerSize;
+                    byte* target;
+                    if (Configuration.TARGET_WASM)
+                    {
+                        target = location.Valid() && compiler.IsReadyToRun ? emitCodeBlock : null;
+                    }
+                    else
+                    {
+                        target = location.Valid() ? emitOffsetToPtr(location.CodeOffset(this)) : null;
+                    }
 
-                    aDstRW[i].Resume = unchecked((target_size_t)(nuint)emitAsyncResumeStubEntryPoint);
-                    aDstRW[i].DiagnosticIP = unchecked((target_size_t)(nuint)target);
+                    WriteTargetSize(resumeSlot, unchecked((ulong)(nuint)emitAsyncResumeStubEntryPoint));
+                    WriteTargetSize(diagnosticSlot, unchecked((ulong)(nuint)target));
 
                     if (compiler.opts.compReloc)
                     {
-                        emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc.DIRECT);
+                        emitRecordRelocation(resumeSlot, emitAsyncResumeStubEntryPoint, CorInfoReloc.DIRECT);
                         if (target is not null)
                         {
-#if TARGET_WASM
-                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target,
-                                CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32);
-#else
-                            emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc.DIRECT);
-#endif
+                            var relocationType = Configuration.TARGET_WASM
+                                ? CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32
+                                : CorInfoReloc.DIRECT;
+                            emitRecordRelocation(diagnosticSlot, target, relocationType);
                         }
                     }
 
@@ -192,6 +190,18 @@ public partial class Emitter
                 }
 #endif
             }
+        }
+    }
+
+    private static unsafe void WriteTargetSize(void* destination, ulong value)
+    {
+        if (Configuration.TARGET_64BIT)
+        {
+            *(ulong*)destination = value;
+        }
+        else
+        {
+            *(uint*)destination = unchecked((uint)value);
         }
     }
 }

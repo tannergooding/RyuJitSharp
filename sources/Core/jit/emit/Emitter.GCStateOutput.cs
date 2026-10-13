@@ -72,44 +72,47 @@ public partial class Emitter
         {
             return;
         }
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        assert(gcType is GCT_GCREF or GCT_BYREF);
-        ref var current = ref (gcType == GCT_GCREF ? ref emitThisGCrefRegs : ref emitThisByrefRegs);
-        ref var other = ref (gcType == GCT_GCREF ? ref emitThisByrefRegs : ref emitThisGCrefRegs);
-        assert(new regMaskTP(current) != regs);
-
-        if (emitFullGCinfo)
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            var dead = new regMaskTP(current) & ~regs;
-            var life = ~new regMaskTP(current) & regs;
-            assert((dead | life).IsNonEmpty);
-            assert((dead & life).IsEmpty);
+            assert(gcType is GCT_GCREF or GCT_BYREF);
+            ref var current = ref (gcType == GCT_GCREF ? ref emitThisGCrefRegs : ref emitThisByrefRegs);
+            ref var other = ref (gcType == GCT_GCREF ? ref emitThisByrefRegs : ref emitThisGCrefRegs);
+            assert(new regMaskTP(current) != regs);
 
-            var changed = (ulong)(regMask)(dead | life);
-            do
+            if (emitFullGCinfo)
             {
-                var reg = (regNumber)BitOperations.TrailingZeroCount(changed);
-                var bit = new regMaskTP(reg.SingleTypeMask);
-                if ((life & bit).IsNonEmpty)
-                {
-                    emitGCregLiveUpd(gcType, reg, addr);
-                }
-                else
-                {
-                    emitGCregDeadUpd(reg, addr);
-                }
-                changed &= changed - 1;
-            }
-            while (changed != 0);
+                var dead = new regMaskTP(current) & ~regs;
+                var life = ~new regMaskTP(current) & regs;
+                assert((dead | life).IsNonEmpty);
+                assert((dead & life).IsEmpty);
 
-            assert(new regMaskTP(current) == regs);
+                var changed = (ulong)(regMask)(dead | life);
+                do
+                {
+                    var reg = (regNumber)BitOperations.TrailingZeroCount(changed);
+                    var bit = new regMaskTP(reg.SingleTypeMask);
+                    if ((life & bit).IsNonEmpty)
+                    {
+                        emitGCregLiveUpd(gcType, reg, addr);
+                    }
+                    else
+                    {
+                        emitGCregDeadUpd(reg, addr);
+                    }
+                    changed &= changed - 1;
+                }
+                while (changed != 0);
+
+                assert(new regMaskTP(current) == regs);
+            }
+            else
+            {
+                other &= ~(regMask)regs;
+                current = (regMask)regs;
+            }
+            assert((emitThisGCrefRegs & emitThisByrefRegs) == SRBM_NONE);
         }
-        else
-        {
-            other &= ~(regMask)regs;
-            current = (regMask)regs;
-        }
-        assert((emitThisGCrefRegs & emitThisByrefRegs) == SRBM_NONE);
 #endif
     }
 }

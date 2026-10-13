@@ -18,11 +18,11 @@ public partial class Emitter
 #if DEBUG
         assert(emitIssuing);
 #endif
-        assert((offs % TARGET_POINTER_SIZE) == 0);
+        assert((offs % Configuration.TARGET_POINTER_SIZE) == 0);
         assert(gcType is GCT_GCREF or GCT_BYREF);
         if (disp == -1)
         {
-            disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
+            disp = (offs - emitGCrFrameOffsMin) / Configuration.TARGET_POINTER_SIZE;
         }
         assert((nuint)disp < (uint)emitGCrFrameOffsCnt);
         var descriptor = new GCInfo.varPtrDsc
@@ -63,7 +63,7 @@ public partial class Emitter
         assert((offs % sizeof(int)) == 0);
         if (disp == -1)
         {
-            disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
+            disp = (offs - emitGCrFrameOffsMin) / Configuration.TARGET_POINTER_SIZE;
         }
         assert((uint)disp < (uint)emitGCrFrameOffsCnt);
         assert(emitGCrFrameLiveTab is not null);
@@ -87,8 +87,8 @@ public partial class Emitter
         assert(_compiler is not null);
         assert((offs % sizeof(int)) == 0);
         assert(gcType is GCT_GCREF or GCT_BYREF);
-#if FEATURE_FIXED_OUT_ARGS
-        if (unchecked((uint)varNum) == _compiler.lvaOutgoingArgSpaceVar)
+        if (Configuration.FEATURE_FIXED_OUT_ARGS &&
+            (unchecked((uint)varNum) == _compiler.lvaOutgoingArgSpaceVar))
         {
             if (emitFullGCinfo)
             {
@@ -104,7 +104,6 @@ public partial class Emitter
             }
         }
         else
-#endif
         {
             if ((offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax))
             {
@@ -125,7 +124,7 @@ public partial class Emitter
                     }
                 }
 
-                var disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
+                var disp = (offs - emitGCrFrameOffsMin) / Configuration.TARGET_POINTER_SIZE;
                 assert(disp < emitGCrFrameOffsCnt);
                 assert(emitGCrFrameLiveTab is not null);
                 if (emitGCrFrameLiveTab[disp] is null)
@@ -156,7 +155,7 @@ public partial class Emitter
         assert((offs % sizeof(int)) == 0);
         if ((offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax))
         {
-            var disp = (offs - emitGCrFrameOffsMin) / TARGET_POINTER_SIZE;
+            var disp = (offs - emitGCrFrameOffsMin) / Configuration.TARGET_POINTER_SIZE;
             assert(disp < emitGCrFrameOffsCnt);
             assert(emitGCrFrameLiveTab is not null);
             if (emitGCrFrameLiveTab[disp] is not null)

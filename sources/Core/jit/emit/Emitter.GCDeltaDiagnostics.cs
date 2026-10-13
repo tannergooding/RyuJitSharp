@@ -13,21 +13,35 @@ public partial class Emitter
 {
     private void emitDispInsIndent()
     {
-#if TARGET_AMD64
-        const int basicIndent = 7;
-        const int hexEncodingSize = 21;
-#elif TARGET_X86
-        const int basicIndent = 7;
-        const int hexEncodingSize = 13;
-#elif TARGET_ARM
-        const int basicIndent = 12;
-        const int hexEncodingSize = 11;
-#elif TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_WASM
-        const int basicIndent = 12;
-        const int hexEncodingSize = 19;
-#else
-#error Unsupported instruction indentation target
-#endif
+        int basicIndent;
+        int hexEncodingSize;
+        if (Configuration.TARGET_AMD64)
+        {
+            basicIndent = 7;
+            hexEncodingSize = 21;
+        }
+        else if (Configuration.TARGET_X86)
+        {
+            basicIndent = 7;
+            hexEncodingSize = 13;
+        }
+        else if (Configuration.TARGET_ARM)
+        {
+            basicIndent = 12;
+            hexEncodingSize = 11;
+        }
+        else if (Configuration.TARGET_ARM64 || Configuration.TARGET_LOONGARCH64 ||
+                 Configuration.TARGET_RISCV64 || Configuration.TARGET_WASM)
+        {
+            basicIndent = 12;
+            hexEncodingSize = 19;
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "GC-delta indentation is not supported for this target.");
+        }
+
         var compiler = _compiler ?? throw new FatalJitException("GC delta diagnostics require an active compiler.");
         // Native %.*s cannot print past its 29-character space literal.
         const string indentation = "                             ";
@@ -142,11 +156,15 @@ public partial class Emitter
             {
                 case rpdARG_PUSH:
                 {
-#if FEATURE_FIXED_OUT_ARGS
-                    jitprintf(" arg write");
-#else
-                    jitprintf($" arg push {arg}");
-#endif
+                    if (Configuration.FEATURE_FIXED_OUT_ARGS)
+                    {
+                        jitprintf(" arg write");
+                    }
+                    else
+                    {
+                        jitprintf($" arg push {arg}");
+                    }
+
                     break;
                 }
 

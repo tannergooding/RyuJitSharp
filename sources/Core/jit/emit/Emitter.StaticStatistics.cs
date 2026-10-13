@@ -40,13 +40,8 @@ public partial class Emitter
     internal static void emitStaticStats()
     {
         var (word, regMaskSize, regMaskAlignment, doubleAlignment) = NativeStaticLayout();
-#if TARGET_ARM64
-        const int cgcaSize = 80;
-#elif TARGET_RISCV64
-        var cgcaSize = instrDescCGCA.NativeSize;
-#else
-        const int cgcaSize = 72;
-#endif
+        var cgcaSize = Configuration.TARGET_ARM64 ? 80 :
+            Configuration.TARGET_RISCV64 ? instrDescCGCA.NativeSize : 72;
 
         var igBuffSize = (SC_IG_BUFFER_NUM_SMALL_DESCS * SMALL_IDSC_SIZE)
             + (SC_IG_BUFFER_NUM_LARGE_DESCS * INSTR_DESC_SIZE);
@@ -72,26 +67,30 @@ public partial class Emitter
         PrintDescriptor("instrDesc             ", INSTR_DESC_SIZE);
         PrintDescriptor("instrDescCns          ", ConstantDescriptorSizes.Constant);
         PrintDescriptor("instrDescDsp          ", ConstantDescriptorSizes.Displacement);
-#if TARGET_ARM64
-        PrintDescriptor("instrDescLclVarPair   ", 24);
-        PrintDescriptor("instrDescLclVarPairCns", 32);
-#endif
-#if TARGET_ARM
-        PrintDescriptor("instrDescReloc        ", 24);
-#endif
-#if TARGET_XARCH
-        PrintDescriptor("instrDescAmd          ", ConstantDescriptorSizes.AddressMode);
-        PrintDescriptor("instrDescCnsAmd       ", ConstantDescriptorSizes.ConstantAddressMode);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            PrintDescriptor("instrDescLclVarPair   ", 24);
+            PrintDescriptor("instrDescLclVarPairCns", 32);
+        }
+        if (Configuration.TARGET_ARM)
+        {
+            PrintDescriptor("instrDescReloc        ", 24);
+        }
+        if (Configuration.TARGET_XARCH)
+        {
+            PrintDescriptor("instrDescAmd          ", ConstantDescriptorSizes.AddressMode);
+            PrintDescriptor("instrDescCnsAmd       ", ConstantDescriptorSizes.ConstantAddressMode);
+        }
         PrintDescriptor("instrDescCnsDsp       ", ConstantDescriptorSizes.ConstantDisplacement);
         if (Configuration.FEATURE_LOOP_ALIGN)
         {
             PrintDescriptor("instrDescAlign        ", DescriptorSizes.Align);
         }
         PrintDescriptor("instrDescJmp          ", DescriptorSizes.Jump);
-#if !TARGET_ARM64
-        PrintDescriptor("instrDescLbl          ", DescriptorSizes.Label);
-#endif
+        if (!Configuration.TARGET_ARM64)
+        {
+            PrintDescriptor("instrDescLbl          ", DescriptorSizes.Label);
+        }
         PrintDescriptor("instrDescCGCA         ", cgcaSize);
 
         jitprintf("\n");
@@ -100,26 +99,30 @@ public partial class Emitter
         PrintCapacity("instrDesc              per IG buffer", igBuffSize, INSTR_DESC_SIZE);
         PrintCapacity("instrDescCns           per IG buffer", igBuffSize, ConstantDescriptorSizes.Constant);
         PrintCapacity("instrDescDsp           per IG buffer", igBuffSize, ConstantDescriptorSizes.Displacement);
-#if TARGET_ARM64
-        PrintCapacity("instrDescLclVarPair    per IG buffer", igBuffSize, 24);
-        PrintCapacity("instrDescLclVarPairCns per IG buffer", igBuffSize, 32);
-#endif
-#if TARGET_ARM
-        PrintCapacity("instrDescReloc         per IG buffer", igBuffSize, 24);
-#endif
-#if TARGET_XARCH
-        PrintCapacity("instrDescAmd           per IG buffer", igBuffSize, ConstantDescriptorSizes.AddressMode);
-        PrintCapacity("instrDescCnsAmd        per IG buffer", igBuffSize, ConstantDescriptorSizes.ConstantAddressMode);
-#endif
+        if (Configuration.TARGET_ARM64)
+        {
+            PrintCapacity("instrDescLclVarPair    per IG buffer", igBuffSize, 24);
+            PrintCapacity("instrDescLclVarPairCns per IG buffer", igBuffSize, 32);
+        }
+        if (Configuration.TARGET_ARM)
+        {
+            PrintCapacity("instrDescReloc         per IG buffer", igBuffSize, 24);
+        }
+        if (Configuration.TARGET_XARCH)
+        {
+            PrintCapacity("instrDescAmd           per IG buffer", igBuffSize, ConstantDescriptorSizes.AddressMode);
+            PrintCapacity("instrDescCnsAmd        per IG buffer", igBuffSize, ConstantDescriptorSizes.ConstantAddressMode);
+        }
         PrintCapacity("instrDescCnsDsp        per IG buffer", igBuffSize, ConstantDescriptorSizes.ConstantDisplacement);
         if (Configuration.FEATURE_LOOP_ALIGN)
         {
             PrintCapacity("instrDescAlign         per IG buffer", igBuffSize, DescriptorSizes.Align);
         }
         PrintCapacity("instrDescJmp           per IG buffer", igBuffSize, DescriptorSizes.Jump);
-#if !TARGET_ARM64
-        PrintCapacity("instrDescLbl           per IG buffer", igBuffSize, DescriptorSizes.Label);
-#endif
+        if (!Configuration.TARGET_ARM64)
+        {
+            PrintCapacity("instrDescLbl           per IG buffer", igBuffSize, DescriptorSizes.Label);
+        }
         PrintCapacity("instrDescCGCA          per IG buffer", igBuffSize, cgcaSize);
 
         var gcPointer = new NativeLayout();
@@ -176,9 +179,10 @@ public partial class Emitter
         {
             AddField(ref group, "igLoopBackEdge     ", word, word, print);
         }
-#if REGMASK_BITS_64
-        AddField(ref group, "igGCregs           ", sizeof(ulong), regMaskAlignment, print);
-#endif
+        if (Configuration.REGMASK_BITS_64)
+        {
+            AddField(ref group, "igGCregs           ", sizeof(ulong), regMaskAlignment, print);
+        }
         var (groupDataOffset, groupDataSize) = group.Add(word, word);
 
         if (print)
@@ -190,38 +194,44 @@ public partial class Emitter
 #if EMIT_BACKWARDS_NAVIGATION
         AddField(ref group, "igLastIns          ", word, word, print);
 #endif
-#if EMIT_TRACK_STACK_DEPTH
-        AddField(ref group, "igStkLvl           ", sizeof(uint), sizeof(uint), print);
-#endif
-#if !REGMASK_BITS_64
-        AddField(ref group, "igGCregs           ", sizeof(uint), sizeof(uint), print);
-#endif
+        if (Configuration.EMIT_TRACK_STACK_DEPTH)
+        {
+            AddField(ref group, "igStkLvl           ", sizeof(uint), sizeof(uint), print);
+        }
+        if (!Configuration.REGMASK_BITS_64)
+        {
+            AddField(ref group, "igGCregs           ", sizeof(uint), sizeof(uint), print);
+        }
         AddField(ref group, "igInsCnt           ", sizeof(byte), sizeof(byte), print);
         return group;
     }
 
     private static (int Word, int RegisterMaskSize, int RegisterMaskAlignment, int DoubleAlignment) NativeStaticLayout()
     {
-#if TARGET_32BIT && TARGET_ARM && REGMASK_BITS_64
-        if (Configuration.TARGET_WINDOWS)
+        if (Configuration.TARGET_32BIT && Configuration.TARGET_ARM && Configuration.REGMASK_BITS_64)
         {
-            // emit.h packs ARM32 structures to four-byte alignment for MSVC.
-            return (4, 8, 4, 4);
+            if (Configuration.TARGET_WINDOWS)
+            {
+                // emit.h packs ARM32 structures to four-byte alignment for MSVC.
+                return (4, 8, 4, 4);
+            }
+            if (Configuration.TARGET_UNIX)
+            {
+                // ARM Unix uses the ABI's natural eight-byte alignment for double and regMaskSmall.
+                return (4, 8, 8, 8);
+            }
         }
-        if (Configuration.TARGET_UNIX)
+        else if (Configuration.TARGET_64BIT && Configuration.REGMASK_BITS_64 &&
+            Configuration.HAS_MORE_THAN_64_REGISTERS)
         {
-            // ARM Unix uses the ABI's natural eight-byte alignment for double and regMaskSmall.
-            return (4, 8, 8, 8);
+            if (Configuration.TARGET_WINDOWS && (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64))
+            {
+                // target.h: two 64-bit register-mask words; emit.h:2484-2525 adds a
+                // second-GC-return bitfield on ARM64. Windows places the following
+                // bool bitfield in another storage unit, making that descriptor 80 bytes.
+                return (8, 16, 8, 8);
+            }
         }
-#elif TARGET_64BIT && REGMASK_BITS_64 && HAS_MORE_THAN_64_REGISTERS
-        if (Configuration.TARGET_WINDOWS && (Configuration.TARGET_AMD64 || Configuration.TARGET_ARM64))
-        {
-            // target.h: two 64-bit register-mask words; emit.h:2484-2525 adds a
-            // second-GC-return bitfield on ARM64. Windows places the following
-            // bool bitfield in another storage unit, making that descriptor 80 bytes.
-            return (8, 16, 8, 8);
-        }
-#endif
         throw new FatalJitException(CORJIT_SKIPPED, "Native emitter layout reporting requires the target-specific pointer, register-mask and descriptor layouts.");
     }
 

@@ -14,9 +14,11 @@ public partial class Emitter
 #if EMITTER_STATS
     internal static void emitterStats(StreamWriter output)
     {
-#if !TARGET_XARCH && !TARGET_ARM64 && !TARGET_ARM
-        throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch, arm, and arm64 is not ported.");
-#else
+        if (!Configuration.TARGET_XARCH && !Configuration.TARGET_ARM64 && !Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "emitterStats outside xarch, arm, and arm64 is not ported.");
+        }
+
         if (totAllocdSize > 0)
         {
             assert(totActualSize <= totAllocdSize);
@@ -127,29 +129,37 @@ public partial class Emitter
             WriteEmitterDescriptorCount(output, "Total instrDesc:", emitTotalIDescCnt);
             WriteEmitterDescriptorCount(output, "Total instrDescCns:", emitTotalIDescCnsCnt);
             WriteEmitterDescriptorCount(output, "Total instrDescDsp:", emitTotalIDescDspCnt);
-#if TARGET_ARM64
-            WriteEmitterDescriptorCount(output, "Total instrDescLclVarPair:", emitTotalIDescLclVarPairCnt);
-            WriteEmitterDescriptorCount(output, "Total instrDescLclVarPairCns:", emitTotalIDescLclVarPairCnsCnt);
-#endif
-#if TARGET_ARM
-            WriteEmitterDescriptorCount(output, "Total instrDescReloc:", emitTotalIDescRelocCnt);
-#endif
-#if TARGET_XARCH
-            WriteEmitterDescriptorCount(output, "Total instrDescAmd:", emitTotalIDescAmdCnt);
-            WriteEmitterDescriptorCount(output, "Total instrDescCnsAmd:", emitTotalIDescCnsAmdCnt);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                WriteEmitterDescriptorCount(output, "Total instrDescLclVarPair:", emitTotalIDescLclVarPairCnt);
+                WriteEmitterDescriptorCount(output, "Total instrDescLclVarPairCns:", emitTotalIDescLclVarPairCnsCnt);
+            }
+
+            if (Configuration.TARGET_ARM)
+            {
+                WriteEmitterDescriptorCount(output, "Total instrDescReloc:", emitTotalIDescRelocCnt);
+            }
+
+            if (Configuration.TARGET_XARCH)
+            {
+                WriteEmitterDescriptorCount(output, "Total instrDescAmd:", emitTotalIDescAmdCnt);
+                WriteEmitterDescriptorCount(output, "Total instrDescCnsAmd:", emitTotalIDescCnsAmdCnt);
+            }
             WriteEmitterDescriptorCount(output, "Total instrDescCnsDsp:", emitTotalIDescCnsDspCnt);
             if (Configuration.FEATURE_LOOP_ALIGN)
             {
                 WriteEmitterDescriptorCount(output, "Total instrDescAlign:", emitTotalIDescAlignCnt);
             }
             WriteEmitterDescriptorCount(output, "Total instrDescJmp:", emitTotalIDescJmpCnt);
-#if !TARGET_ARM64
-            WriteEmitterDescriptorCount(output, "Total instrDescLbl:", emitTotalIDescLblCnt);
-#endif
-#if !TARGET_WASM
-            WriteEmitterDescriptorCount(output, "Total instrDescCGCA:", emitTotalIDescCGCACnt);
-#endif
+            if (!Configuration.TARGET_ARM64)
+            {
+                WriteEmitterDescriptorCount(output, "Total instrDescLbl:", emitTotalIDescLblCnt);
+            }
+
+            if (!Configuration.TARGET_WASM)
+            {
+                WriteEmitterDescriptorCount(output, "Total instrDescCGCA:", emitTotalIDescCGCACnt);
+            }
 
             output.Write("\n");
         }
@@ -216,7 +226,6 @@ public partial class Emitter
         }
 
         output.Write(FormattableString.Invariant($"{emitTotMemAlloc,8} bytes allocated in the emitter\n"));
-#endif
     }
 
     private static void WriteEmitterDescriptorCount(StreamWriter output, string name, uint count)

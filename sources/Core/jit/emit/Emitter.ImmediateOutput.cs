@@ -10,24 +10,24 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
-    private const CorInfoReloc RELOC_DISP32 = CorInfoReloc.RELATIVE32;
-#else
-    private const CorInfoReloc RELOC_DISP32 = CorInfoReloc.DIRECT;
-#endif
+    private static CorInfoReloc RELOC_DISP32 =>
+        Configuration.TARGET_AMD64 ? CorInfoReloc.RELATIVE32 : CorInfoReloc.DIRECT;
 
     public unsafe byte* emitOutputRI(byte* dst, instrDesc id)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate output requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Register-immediate output requires xarch.");
+        }
+
         var size = id.idOpSize();
         var ins = id.idIns();
         var reg = id.idReg1();
         var val = emitGetInsCns(id);
-#if TARGET_X86
-        val = unchecked((int)val);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            val = unchecked((int)val);
+        }
         var valInByte = ImmCanUseSByteEncoding(ins, val);
         assert(!id.idHasReg2());
         assert(ins != INS_bt);
@@ -84,13 +84,11 @@ public partial class Emitter
             {
                 dst += emitOutputLong(dst, (long)val);
             }
-#if TARGET_AMD64
-            else
+            else if (Configuration.TARGET_AMD64)
             {
                 assert(size == EA_PTRSIZE);
                 dst += emitOutputSizeT(dst, (long)val);
             }
-#endif
             if (id.idIsCnsReloc())
             {
                 assert(_compiler is not null);
@@ -108,7 +106,7 @@ public partial class Emitter
         {
             bool useSigned;
             bool useACC;
-            if (reg == REG_EAX && !instrIs3opImul(ins))
+            if ((reg == TargetRuntimeMetadata.IntegerReturnRegister) && !IsThreeOperandImulInstruction(ins))
             {
                 if (size == EA_1BYTE || ins == INS_test)
                 {
@@ -155,12 +153,11 @@ public partial class Emitter
                 {
                     code = insEncodeMIreg(id, reg, size,
                         AddX86PrefixIfNeeded(id, (ulong)insCodeMI(ins), size));
-#if TARGET_AMD64
-                    if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_31))
+                    if (Configuration.TARGET_AMD64 &&
+                        InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_31))
                     {
                         _ = insEncodeReg345(id, inst3opImulReg(ins), size, &code);
                     }
-#endif
                 }
             }
 
@@ -187,13 +184,17 @@ public partial class Emitter
                     break;
                 }
 
-#if TARGET_AMD64
                 case EA_8BYTE:
                 {
+                    if (!Configuration.TARGET_AMD64)
+                    {
+                        throw new FatalJitException(CORJIT_SKIPPED,
+                            "Eight-byte immediate encoding requires AMD64.");
+                    }
+
                     code = AddRexWPrefix(id, code) | 1;
                     break;
                 }
-#endif
 
                 default:
                 {
@@ -228,10 +229,14 @@ public partial class Emitter
                     }
 
                     case EA_4BYTE:
-#if TARGET_AMD64
                     case EA_8BYTE:
-#endif
                     {
+                        if ((size == EA_8BYTE) && !Configuration.TARGET_AMD64)
+                        {
+                            throw new FatalJitException(CORJIT_SKIPPED,
+                                "Eight-byte immediate output requires AMD64.");
+                        }
+
                         dst += emitOutputLong(dst, (long)val);
                         break;
                     }
@@ -248,18 +253,18 @@ public partial class Emitter
         {
             switch (id.idInsFmt())
             {
-                case IF_RRD_CNS:
+                case IF_XARCH_RRD_CNS:
                 {
                     break;
                 }
 
-                case IF_RWR_CNS:
+                case IF_XARCH_RWR_CNS:
                 {
                     emitGCregLiveUpd(id.idGCref(), reg, dst);
                     break;
                 }
 
-                case IF_RRW_CNS:
+                case IF_XARCH_RRW_CNS:
                 {
                     assert(id.idGCref() == GCT_BYREF);
 #if DEBUG
@@ -293,7 +298,7 @@ public partial class Emitter
         {
             switch (id.idInsFmt())
             {
-                case IF_RRD_CNS:
+                case IF_XARCH_RRD_CNS:
                 {
                     assert(ins is not (INS_mulEAX or INS_imulEAX));
                     if (instrIs3opImul(ins))
@@ -303,8 +308,8 @@ public partial class Emitter
                     break;
                 }
 
-                case IF_RRW_CNS:
-                case IF_RWR_CNS:
+                case IF_XARCH_RRW_CNS:
+                case IF_XARCH_RWR_CNS:
                 {
                     assert(!instrIs3opImul(ins));
                     emitGCregDeadUpd(reg, dst);
@@ -322,26 +327,29 @@ public partial class Emitter
             }
         }
         return dst;
-#endif
     }
 
     public unsafe byte* emitOutputIV(byte* dst, instrDesc id)
     {
-#if !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Immediate output requires xarch.");
-#else
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Immediate output requires xarch.");
+        }
+
         var ins = id.idIns();
         var size = id.idOpSize();
         var val = emitGetInsCns(id);
-#if TARGET_X86
-        val = unchecked((int)val);
-#endif
+        if (Configuration.TARGET_X86)
+        {
+            val = unchecked((int)val);
+        }
         var valInByte = unchecked((sbyte)val) == val;
         assert(!IsSSEInstruction(ins));
         assert(!IsSimdVexOrEvexEncodableInstruction(ins));
-#if TARGET_AMD64
-        noway_assert(size < EA_8BYTE || (unchecked((int)val) == val && !id.idIsCnsReloc()));
-#endif
+        if (Configuration.TARGET_AMD64)
+        {
+            noway_assert(size < EA_8BYTE || (unchecked((int)val) == val && !id.idIsCnsReloc()));
+        }
         if (id.idIsCnsReloc())
         {
             valInByte = false;
@@ -417,6 +425,5 @@ public partial class Emitter
         }
         assert(ins == INS_push || id.idGCref() == GCT_NONE);
         return dst;
-#endif
     }
 }

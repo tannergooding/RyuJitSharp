@@ -13,9 +13,10 @@ public partial class Emitter
 
     public static string emitIfName(uint format)
     {
-        if (format < (uint)insFormat.IF_COUNT)
+        var formatNames = emitFmtNames;
+        if (format < (uint)formatNames.Length)
         {
-            return ((insFormat)format).ToString();
+            return formatNames[(int)format];
         }
 
         return $"??{format.ToString(CultureInfo.InvariantCulture)}??";

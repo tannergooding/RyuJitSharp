@@ -12,19 +12,41 @@ public partial class Emitter
 {
     public unsafe nuint emitOutputInstr(insGroup ig, instrDesc id, byte** dp)
     {
-#if TARGET_LOONGARCH64
-        return emitOutputInstrLoongArch64(ig, id, dp);
-#elif TARGET_ARM64
-        return emitOutputInstrArm64(ig, id, dp);
-#elif TARGET_ARM
-        return emitOutputInstrArm32(ig, id, dp);
-#elif TARGET_WASM
-        return emitOutputInstrWasm(ig, id, dp);
-#elif TARGET_RISCV64
-        return emitOutputInstrRiscV64(ig, id, dp);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Instruction output requires xarch.");
-#else
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            return emitOutputInstrLoongArch64(ig, id, dp);
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return emitOutputInstrArm64(ig, id, dp);
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return emitOutputInstrArm32(ig, id, dp);
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return emitOutputInstrWasm(ig, id, dp);
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            return emitOutputInstrRiscV64(ig, id, dp);
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Instruction output is not implemented for this target.");
+        }
+
+        return emitOutputInstrXarch(ig, id, dp);
+    }
+
+    private unsafe nuint emitOutputInstrXarch(insGroup ig, instrDesc id, byte** dp)
+    {
         assert(_compiler is not null);
         assert(emitCurIG is not null);
 #if DEBUG
@@ -41,7 +63,7 @@ public partial class Emitter
         var convertedJmpToNop = false;
         var size = id.idOpSize();
         assert(ins != INS_imul || size >= EA_4BYTE);
-        assert(!instrIs3opImul(ins) || size >= EA_4BYTE);
+        assert(!IsThreeOperandImulInstruction(ins) || size >= EA_4BYTE);
 
         VARSET_TP GCvars = [];
         regMaskTP gcrefRegs;
@@ -79,23 +101,24 @@ public partial class Emitter
                     dst = emitOutputData16(dst);
                     sz = emitSizeOfInsDsc_NONE(id);
                     // TLS linker relaxation may replace this sequence with one that trashes RAX.
-                    emitGCregDeadUpd(REG_RAX, dst);
+                    emitGCregDeadUpd(TargetRuntimeMetadata.IntegerReturnRegister, dst);
                     break;
                 }
                 if (ins == INS_cdq)
                 {
-                    emitGCregDeadUpd(REG_EDX, dst);
+                    emitGCregDeadUpd(TargetRuntimeMetadata.IntegerReturnRegister1, dst);
                 }
                 assert(id.idGCref() == GCT_NONE);
                 code = insCodeMR(ins);
-#if TARGET_AMD64
-                code = AddX86PrefixIfNeeded(id, code, EA_4BYTE);
-                if ((ins is INS_cdq or INS_cwde) && TakesRexWPrefix(id))
+                if (Configuration.TARGET_AMD64)
                 {
-                    code = AddRexWPrefix(id, code);
+                    code = AddX86PrefixIfNeeded(id, code, EA_4BYTE);
+                    if ((ins is INS_cdq or INS_cwde) && TakesRexWPrefix(id))
+                    {
+                        code = AddRexWPrefix(id, code);
+                    }
+                    dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
                 }
-                dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, ref code);
-#endif
                 if ((code & 0xFF000000) != 0)
                 {
                     dst += emitOutputWord(dst, (long)(code >> 16));
@@ -119,14 +142,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_CNS:
+            case IF_XARCH_CNS:
             {
                 dst = emitOutputIV(dst, id);
                 sz = emitSizeOfInsDsc_CNS(id);
                 break;
             }
 
-            case IF_LABEL:
+            case IF_XARCH_LABEL:
             {
                 var jmp = (instrDescJmp)id;
                 assert(id.idGCref() == GCT_NONE);
@@ -135,14 +158,12 @@ public partial class Emitter
                     assert(id.idIsBound());
                     dst = emitOutputLJ(ig, dst, id);
                 }
-#if TARGET_AMD64
-                else if (jmp.idjIsAfterCallBeforeEpilog)
+                else if (Configuration.TARGET_AMD64 && jmp.idjIsAfterCallBeforeEpilog)
                 {
                     assert(id.idCodeSize() == 1);
                     dst = emitOutputNOP(dst, 1);
                     convertedJmpToNop = true;
                 }
-#endif
                 else
                 {
                     assert(jmp.idjIsRemovableJmpCandidate);
@@ -152,19 +173,19 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_LABEL:
-            case IF_SWR_LABEL:
+            case IF_XARCH_RWR_LABEL:
+            case IF_XARCH_SWR_LABEL:
             {
                 assert(id.idGCref() == GCT_NONE);
                 assert(id.idIsBound() || emitJmpInstHasNoCode(id));
                 assert(!((instrDescJmp)id).idjIsRemovableJmpCandidate);
                 dst = emitOutputLJ(ig, dst, id);
-                sz = id.idInsFmt() == IF_SWR_LABEL ? DescriptorSizes.Label : DescriptorSizes.Jump;
+                sz = id.idInsFmt() == IF_XARCH_SWR_LABEL ? DescriptorSizes.Label : DescriptorSizes.Jump;
                 break;
             }
 
-            case IF_METHOD:
-            case IF_METHPTR:
+            case IF_XARCH_METHOD:
+            case IF_XARCH_METHPTR:
             {
                 args = emitGetInsCDinfo(id);
                 if (id.idIsLargeCall())
@@ -186,37 +207,36 @@ public partial class Emitter
                 }
                 addr = (byte*)id.idAddr().iiaAddr;
                 assert(addr != null);
-                if (insFmt == IF_METHPTR)
+                if (insFmt == IF_XARCH_METHPTR)
                 {
                     assert(ins is INS_call or INS_tail_i_jmp);
                     code = AddX86PrefixIfNeeded(id, insCodeMR(ins), size);
                     if (id.idIsDspReloc())
                     {
                         dst += emitOutputWord(dst, (long)(code | 0x0500));
-#if TARGET_AMD64
-                        dst += emitOutputLong(dst, 0);
-#else
-                        dst += emitOutputLong(dst, (nint)addr);
-#endif
+                        dst += emitOutputLong(dst, Configuration.TARGET_AMD64 ? 0 : (nint)addr);
                         emitRecordRelocation(dst - sizeof(int), addr, RELOC_DISP32);
                     }
                     else
                     {
-#if TARGET_X86
-                        dst += emitOutputWord(dst, (long)(code | 0x0500));
-#else
-                        noway_assert(!_compiler.opts.compReloc);
-                        noway_assert(codeGen.genAddrRelocTypeHint((nuint)addr) != CorInfoReloc.RELATIVE32);
-                        noway_assert(unchecked((int)(nint)addr) == (nint)addr);
-                        dst += emitOutputWord(dst, (long)(code | 0x0400));
-                        dst += emitOutputByte(dst, 0x25);
-#endif
+                        if (Configuration.TARGET_X86)
+                        {
+                            dst += emitOutputWord(dst, (long)(code | 0x0500));
+                        }
+                        else
+                        {
+                            noway_assert(!_compiler.opts.compReloc);
+                            noway_assert(codeGen.genAddrRelocTypeHint((nuint)addr) != CorInfoReloc.RELATIVE32);
+                            noway_assert(unchecked((int)(nint)addr) == (nint)addr);
+                            dst += emitOutputWord(dst, (long)(code | 0x0400));
+                            dst += emitOutputByte(dst, 0x25);
+                        }
                         dst += emitOutputLong(dst, unchecked((int)(nint)addr));
                     }
                     goto DONE_CALL;
                 }
 
-                assert(insFmt == IF_METHOD);
+                assert(insFmt == IF_XARCH_METHOD);
                 if (ins == INS_l_jmp)
                 {
                     dst += emitOutputByte(dst, (long)insCode(ins));
@@ -235,12 +255,15 @@ public partial class Emitter
                         dst += emitOutputByte(dst, (long)callCode);
                     }
                 }
-#if TARGET_AMD64
-                assert(id.idIsDspReloc());
-                dst += emitOutputLong(dst, 0);
-#else
-                dst += emitOutputLong(dst, addr - (dst + sizeof(int)));
-#endif
+                if (Configuration.TARGET_AMD64)
+                {
+                    assert(id.idIsDspReloc());
+                    dst += emitOutputLong(dst, 0);
+                }
+                else
+                {
+                    dst += emitOutputLong(dst, addr - (dst + sizeof(int)));
+                }
                 if (id.idIsDspReloc())
                 {
                     emitRecordRelocation(dst - sizeof(int), addr, CorInfoReloc.RELATIVE32);
@@ -248,16 +271,16 @@ public partial class Emitter
                 goto DONE_CALL;
             }
 
-            case IF_RRD:
-            case IF_RWR:
-            case IF_RRW:
+            case IF_XARCH_RRD:
+            case IF_XARCH_RWR:
+            case IF_XARCH_RRW:
             {
                 dst = emitOutputR(dst, id);
                 sz = SMALL_IDSC_SIZE;
                 break;
             }
 
-            case IF_RRW_SHF:
+            case IF_XARCH_RRW_SHF:
             {
                 code = AddX86PrefixIfNeeded(id, insCodeMR(ins), size);
                 code = insEncodeMRreg(id, id.idReg1(), size, code);
@@ -282,7 +305,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_SHF:
+            case IF_XARCH_RWR_RRD_SHF:
             {
                 assert(IsApxExtendedEvexInstruction(ins));
                 code = AddX86PrefixIfNeeded(id, insCodeMR(ins), size);
@@ -305,36 +328,36 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_RRD:
-            case IF_RWR_RRD:
-            case IF_RRW_RRD:
-            case IF_RRW_RRW:
+            case IF_XARCH_RRD_RRD:
+            case IF_XARCH_RWR_RRD:
+            case IF_XARCH_RRW_RRD:
+            case IF_XARCH_RRW_RRW:
             {
                 dst = emitOutputRR(dst, id);
                 sz = SMALL_IDSC_SIZE;
                 break;
             }
 
-            case IF_RRD_CNS:
-            case IF_RWR_CNS:
-            case IF_RRW_CNS:
+            case IF_XARCH_RRD_CNS:
+            case IF_XARCH_RWR_CNS:
+            case IF_XARCH_RRW_CNS:
             {
                 dst = emitOutputRI(dst, id);
                 sz = emitSizeOfInsDsc_CNS(id);
                 break;
             }
 
-            case IF_RRD_RRD_RRD:
-            case IF_RWR_RRD_RRD:
-            case IF_RRW_RRD_RRD:
-            case IF_RWR_RWR_RRD:
+            case IF_XARCH_RRD_RRD_RRD:
+            case IF_XARCH_RWR_RRD_RRD:
+            case IF_XARCH_RRW_RRD_RRD:
+            case IF_XARCH_RWR_RWR_RRD:
             {
                 dst = emitOutputRRR(dst, id);
                 sz = INSTR_DESC_SIZE;
                 break;
             }
 
-            case IF_RWR_RRD_RRD_CNS:
+            case IF_XARCH_RWR_RRD_RRD_CNS:
             {
                 dst = emitOutputRRR(dst, id);
                 dst += emitOutputByte(dst, emitGetInsSC(id));
@@ -342,7 +365,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_RRD_RRD:
+            case IF_XARCH_RWR_RRD_RRD_RRD:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins));
                 var op4Reg = id.idReg4();
@@ -354,16 +377,16 @@ public partial class Emitter
                     sz = INSTR_DESC_SIZE;
                     break;
                 }
-                var val = (encodeRegAsIval(op4Reg) - XMMBASE) << 4;
+                var val = (encodeRegAsIval(op4Reg) - unchecked((uint)TargetRuntimeMetadata.FloatingRegisterFirst)) << 4;
                 dst = emitOutputRRR(dst, id);
                 dst += emitOutputByte(dst, val);
                 sz = INSTR_DESC_SIZE;
                 break;
             }
 
-            case IF_RRD_RRD_CNS:
-            case IF_RWR_RRD_CNS:
-            case IF_RRW_RRD_CNS:
+            case IF_XARCH_RRD_RRD_CNS:
+            case IF_XARCH_RWR_RRD_CNS:
+            case IF_XARCH_RRW_RRD_CNS:
             {
                 assert(id.idGCref() == GCT_NONE);
                 regNumber mReg;
@@ -393,14 +416,18 @@ public partial class Emitter
                             code |= 1;
                             break;
                         }
-#if TARGET_AMD64
                         case EA_8BYTE:
                         {
+                            if (!Configuration.TARGET_AMD64)
+                            {
+                                throw new FatalJitException(CORJIT_INTERNALERROR,
+                                    "8-byte APX immediate operands require AMD64.");
+                            }
+
                             code = AddRexWPrefix(id, code);
                             code |= 1;
                             break;
                         }
-#endif
                         default:
                         {
                             throw new FatalJitException("Unexpected APX immediate operand size.");
@@ -428,9 +455,7 @@ public partial class Emitter
                                 dst += emitOutputWord(dst, val);
                                 break;
                             }
-#if TARGET_AMD64
-                            case EA_8BYTE:
-#endif
+                            case EA_8BYTE when Configuration.TARGET_AMD64:
                             case EA_4BYTE:
                             {
                                 dst += emitOutputLong(dst, val);
@@ -448,9 +473,9 @@ public partial class Emitter
                     {
                         emitGCregDeadUpd(id.idReg1(), dst);
                     }
-                    if (id.idInsFmt() == IF_RWR_RRD_CNS)
+                    if (id.idInsFmt() == IF_XARCH_RWR_RRD_CNS)
                     {
-                        assert(!instrIs3opImul(ins));
+                        assert(!IsThreeOperandImulInstruction(ins));
                         emitGCregDeadUpd(id.idReg1(), dst);
                     }
                     else
@@ -546,22 +571,22 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARD:
-            case IF_AWR:
-            case IF_ARW:
+            case IF_XARCH_ARD:
+            case IF_XARCH_AWR:
+            case IF_XARCH_ARW:
             {
                 dst = emitCodeWithInstructionSize(dst, emitOutputAM(dst, id, insCodeMR(ins), null), &callInstrSize);
                 if (ins == INS_call)
                 {
                     goto IND_CALL;
                 }
-                sz = id.idInsFmt() == IF_ARD ? emitSizeOfInsDsc_SPEC(id) : emitSizeOfInsDsc_AMD(id);
+                sz = id.idInsFmt() == IF_XARCH_ARD ? emitSizeOfInsDsc_SPEC(id) : emitSizeOfInsDsc_AMD(id);
                 break;
             }
 
-            case IF_RRD_ARD_CNS:
-            case IF_RWR_ARD_CNS:
-            case IF_RRW_ARD_CNS:
+            case IF_XARCH_RRD_ARD_CNS:
+            case IF_XARCH_RWR_ARD_CNS:
+            case IF_XARCH_RRW_ARD_CNS:
             {
                 assert(IsSimdInstruction(ins));
                 emitGetInsAmdCns(id, ref cnsVal);
@@ -589,9 +614,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARD_RRD_CNS:
-            case IF_AWR_RRD_CNS:
-            case IF_ARW_RRD_CNS:
+            case IF_XARCH_ARD_RRD_CNS:
+            case IF_XARCH_AWR_RRD_CNS:
+            case IF_XARCH_ARW_RRD_CNS:
             {
                 assert(IsSimdInstruction(ins));
                 emitGetInsAmdCns(id, ref cnsVal);
@@ -600,19 +625,19 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_ARD:
-            case IF_RWR_ARD:
-            case IF_RRW_ARD:
-            case IF_RRD_RRD_ARD:
-            case IF_RWR_RRD_ARD:
-            case IF_RRW_RRD_ARD:
-            case IF_RWR_RWR_ARD:
+            case IF_XARCH_RRD_ARD:
+            case IF_XARCH_RWR_ARD:
+            case IF_XARCH_RRW_ARD:
+            case IF_XARCH_RRD_RRD_ARD:
+            case IF_XARCH_RWR_RRD_ARD:
+            case IF_XARCH_RRW_RRD_ARD:
+            case IF_XARCH_RWR_RWR_ARD:
             {
                 code = insCodeRM(ins);
                 if (IsApxNddCompatibleInstruction(ins) && id.idIsEvexNdContextSet())
                 {
                     // Native APX output canonicalizes this format before encoding its NDD operands.
-                    id.idInsFmt(IF_RWR_RRD_ARD);
+                    id.idInsFmt(IF_XARCH_RWR_RRD_ARD);
                     code = AddX86PrefixIfNeeded(id, code, size);
                     code = insEncodeReg3456(id, id.idReg1(), size, code);
                     regcode = insEncodeReg345(id, id.idReg2(), size, &code) << 8;
@@ -634,9 +659,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_ARD_RRD:
-            case IF_RWR_ARD_RRD:
-            case IF_RRW_ARD_RRD:
+            case IF_XARCH_RRD_ARD_RRD:
+            case IF_XARCH_RWR_ARD_RRD:
+            case IF_XARCH_RRW_ARD_RRD:
             {
                 assert(IsAVX2GatherInstruction(ins));
                 dst = emitOutputAM(dst, id, insCodeRM(ins), null);
@@ -644,13 +669,13 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_ARD_CNS:
-            case IF_RWR_RRD_ARD_RRD:
+            case IF_XARCH_RWR_RRD_ARD_CNS:
+            case IF_XARCH_RWR_RRD_ARD_RRD:
             {
                 assert(IsSimdInstruction(ins));
                 code = insCodeRM(ins);
                 emitGetInsAmdCns(id, ref cnsVal);
-                if (insFmt == IF_RWR_RRD_ARD_RRD)
+                if (insFmt == IF_XARCH_RWR_RRD_ARD_RRD)
                 {
                     var op3Reg = decodeRegFromIval(cnsVal.cnsVal);
                     if (isMaskReg(op3Reg))
@@ -662,7 +687,8 @@ public partial class Emitter
                         break;
                     }
                     assert(isLowSimdReg(op3Reg));
-                    cnsVal.cnsVal = unchecked((sbyte)((cnsVal.cnsVal - XMMBASE) << 4));
+                    cnsVal.cnsVal = unchecked((sbyte)((cnsVal.cnsVal -
+                        unchecked((nint)TargetRuntimeMetadata.FloatingRegisterFirst)) << 4));
                 }
                 if (EncodedBySSE38orSSE3A(ins))
                 {
@@ -678,10 +704,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARD_RRD:
-            case IF_AWR_RRD:
-            case IF_ARW_RRD:
-            case IF_ARW_RRW:
+            case IF_XARCH_ARD_RRD:
+            case IF_XARCH_AWR_RRD:
+            case IF_XARCH_ARW_RRD:
+            case IF_XARCH_ARW_RRW:
             {
                 code = insCodeMR(ins);
                 if (EncodedBySSE38orSSE3A(ins))
@@ -698,7 +724,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_AWR_RRD_RRD:
+            case IF_XARCH_AWR_RRD_RRD:
             {
                 code = AddX86PrefixIfNeeded(id, insCodeMR(ins), size);
                 dst = emitOutputAM(dst, id, code, null);
@@ -706,9 +732,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARD_CNS:
-            case IF_AWR_CNS:
-            case IF_ARW_CNS:
+            case IF_XARCH_ARD_CNS:
+            case IF_XARCH_AWR_CNS:
+            case IF_XARCH_ARW_CNS:
             {
                 emitGetInsAmdCns(id, ref cnsVal);
                 dst = emitOutputAM(dst, id, insCodeMI(ins), &cnsVal);
@@ -716,7 +742,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_ARW_SHF:
+            case IF_XARCH_ARW_SHF:
             {
                 emitGetInsAmdCns(id, ref cnsVal);
                 dst = emitOutputAM(dst, id, insCodeMR(ins), &cnsVal);
@@ -724,20 +750,24 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SRD:
-            case IF_SWR:
-            case IF_SRW:
+            case IF_XARCH_SRD:
+            case IF_XARCH_SWR:
+            case IF_XARCH_SRW:
             {
                 assert(ins != INS_pop_hide);
                 if (ins == INS_pop)
                 {
-#if !FEATURE_FIXED_OUT_ARGS
-                    emitCurStackLvl -= sizeof(int);
-#endif
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                    {
+                        emitCurStackLvl -= sizeof(int);
+                    }
+
                     dst = emitOutputSV(dst, id, insCodeMR(ins), null);
-#if !FEATURE_FIXED_OUT_ARGS
-                    emitCurStackLvl += sizeof(int);
-#endif
+                    if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+                    {
+                        emitCurStackLvl += sizeof(int);
+                    }
+
                     break;
                 }
                 dst = emitCodeWithInstructionSize(dst, emitOutputSV(dst, id, insCodeMR(ins), null), &callInstrSize);
@@ -748,9 +778,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SRD_CNS:
-            case IF_SWR_CNS:
-            case IF_SRW_CNS:
+            case IF_XARCH_SRD_CNS:
+            case IF_XARCH_SWR_CNS:
+            case IF_XARCH_SRW_CNS:
             {
                 emitGetInsCns(id, ref cnsVal);
                 dst = emitOutputSV(dst, id, insCodeMI(ins), &cnsVal);
@@ -758,7 +788,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SRW_SHF:
+            case IF_XARCH_SRW_SHF:
             {
                 emitGetInsCns(id, ref cnsVal);
                 dst = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
@@ -766,9 +796,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SRD_RRD_CNS:
-            case IF_SWR_RRD_CNS:
-            case IF_SRW_RRD_CNS:
+            case IF_XARCH_SRD_RRD_CNS:
+            case IF_XARCH_SWR_RRD_CNS:
+            case IF_XARCH_SRW_RRD_CNS:
             {
                 assert(IsSimdInstruction(ins) || ins is INS_shld or INS_shrd);
                 emitGetInsAmdCns(id, ref cnsVal);
@@ -777,9 +807,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_SRD_CNS:
-            case IF_RWR_SRD_CNS:
-            case IF_RRW_SRD_CNS:
+            case IF_XARCH_RRD_SRD_CNS:
+            case IF_XARCH_RWR_SRD_CNS:
+            case IF_XARCH_RRW_SRD_CNS:
             {
                 assert(IsSimdInstruction(ins));
                 emitGetInsCns(id, ref cnsVal);
@@ -811,9 +841,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_SRD:
-            case IF_RWR_SRD:
-            case IF_RRW_SRD:
+            case IF_XARCH_RRD_SRD:
+            case IF_XARCH_RWR_SRD:
+            case IF_XARCH_RRW_SRD:
             {
                 code = insCodeRM(ins);
                 if (EncodedBySSE38orSSE3A(ins) || ins == INS_crc32)
@@ -834,10 +864,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_RRD_SRD:
-            case IF_RWR_RRD_SRD:
-            case IF_RRW_RRD_SRD:
-            case IF_RWR_RWR_SRD:
+            case IF_XARCH_RRD_RRD_SRD:
+            case IF_XARCH_RWR_RRD_SRD:
+            case IF_XARCH_RRW_RRD_SRD:
+            case IF_XARCH_RWR_RWR_SRD:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
                 if (IsApxNddEncodableInstruction(ins) && id.idIsEvexNdContextSet())
@@ -864,14 +894,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_SRD_CNS:
-            case IF_RWR_RRD_SRD_RRD:
+            case IF_XARCH_RWR_RRD_SRD_CNS:
+            case IF_XARCH_RWR_RRD_SRD_RRD:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins));
                 code = AddX86PrefixIfNeeded(id, insCodeRM(ins), size);
                 code = insEncodeReg3456(id, id.idReg2(), size, code);
                 emitGetInsCns(id, ref cnsVal);
-                if (insFmt == IF_RWR_RRD_SRD_RRD)
+                if (insFmt == IF_XARCH_RWR_RRD_SRD_RRD)
                 {
                     var op3Reg = decodeRegFromIval(cnsVal.cnsVal);
                     if (isMaskReg(op3Reg))
@@ -883,7 +913,8 @@ public partial class Emitter
                         break;
                     }
                     assert(isLowSimdReg(op3Reg));
-                    cnsVal.cnsVal = unchecked((sbyte)((cnsVal.cnsVal - XMMBASE) << 4));
+                    cnsVal.cnsVal = unchecked((sbyte)((cnsVal.cnsVal -
+                        unchecked((nint)TargetRuntimeMetadata.FloatingRegisterFirst)) << 4));
                 }
                 if (EncodedBySSE38orSSE3A(ins))
                 {
@@ -898,10 +929,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SRD_RRD:
-            case IF_SWR_RRD:
-            case IF_SRW_RRD:
-            case IF_SRW_RRW:
+            case IF_XARCH_SRD_RRD:
+            case IF_XARCH_SWR_RRD:
+            case IF_XARCH_SRW_RRD:
+            case IF_XARCH_SRW_RRW:
             {
                 code = insCodeMR(ins);
                 if (EncodedBySSE38orSSE3A(ins))
@@ -922,39 +953,39 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_SRD_RRD:
-            case IF_RWR_SRD_RRD:
-            case IF_RRW_SRD_RRD:
+            case IF_XARCH_RRD_SRD_RRD:
+            case IF_XARCH_RWR_SRD_RRD:
+            case IF_XARCH_RRW_SRD_RRD:
             {
                 assert(IsAVX2GatherInstruction(ins));
                 throw new FatalJitException("A gather cannot use a stack instruction format.");
             }
 
-            case IF_SWR_RRD_RRD:
+            case IF_XARCH_SWR_RRD_RRD:
             {
                 throw new FatalJitException("Unexpected three-register stack-store format.");
             }
 
-            case IF_MRD:
-            case IF_MRW:
-            case IF_MWR:
+            case IF_XARCH_MRD:
+            case IF_XARCH_MRW:
+            case IF_XARCH_MWR:
             {
                 noway_assert(ins != INS_call);
                 dst = emitOutputCV(dst, id, insCodeMR(ins) | 0x0500, null);
-                sz = id.idInsFmt() == IF_MRD ? emitSizeOfInsDsc_SPEC(id) : emitSizeOfInsDsc_DSP(id);
+                sz = id.idInsFmt() == IF_XARCH_MRD ? emitSizeOfInsDsc_SPEC(id) : emitSizeOfInsDsc_DSP(id);
                 break;
             }
 
-            case IF_MRD_OFF:
+            case IF_XARCH_MRD_OFF:
             {
                 dst = emitOutputCV(dst, id, insCodeMI(ins), null);
                 sz = INSTR_DESC_SIZE;
                 break;
             }
 
-            case IF_RRD_MRD_CNS:
-            case IF_RWR_MRD_CNS:
-            case IF_RRW_MRD_CNS:
+            case IF_XARCH_RRD_MRD_CNS:
+            case IF_XARCH_RWR_MRD_CNS:
+            case IF_XARCH_RRW_MRD_CNS:
             {
                 assert(IsSimdInstruction(ins));
                 emitGetInsDcmCns(id, ref cnsVal);
@@ -986,9 +1017,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MRD_RRD_CNS:
-            case IF_MWR_RRD_CNS:
-            case IF_MRW_RRD_CNS:
+            case IF_XARCH_MRD_RRD_CNS:
+            case IF_XARCH_MWR_RRD_CNS:
+            case IF_XARCH_MRW_RRD_CNS:
             {
                 assert(ins is INS_vextractf32x4 or INS_vextractf32x8 or INS_vextractf64x2 or INS_vextractf64x4
                     or INS_vextracti32x4 or INS_vextracti32x8 or INS_vextracti64x2 or INS_vextracti64x4 or INS_vcvtps2ph);
@@ -999,9 +1030,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_MRD:
-            case IF_RWR_MRD:
-            case IF_RRW_MRD:
+            case IF_XARCH_RRD_MRD:
+            case IF_XARCH_RWR_MRD:
+            case IF_XARCH_RRW_MRD:
             {
                 code = insCodeRM(ins);
                 if (EncodedBySSE38orSSE3A(ins) || ins == INS_crc32)
@@ -1023,10 +1054,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_RRD_MRD:
-            case IF_RWR_RRD_MRD:
-            case IF_RRW_RRD_MRD:
-            case IF_RWR_RWR_MRD:
+            case IF_XARCH_RRD_RRD_MRD:
+            case IF_XARCH_RWR_RRD_MRD:
+            case IF_XARCH_RRW_RRD_MRD:
+            case IF_XARCH_RWR_RWR_MRD:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins));
                 code = AddX86PrefixIfNeeded(id, insCodeRM(ins), size);
@@ -1044,14 +1075,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_MRD_CNS:
-            case IF_RWR_RRD_MRD_RRD:
+            case IF_XARCH_RWR_RRD_MRD_CNS:
+            case IF_XARCH_RWR_RRD_MRD_RRD:
             {
                 assert(IsSimdVexOrEvexEncodableInstruction(ins));
                 code = AddX86PrefixIfNeeded(id, insCodeRM(ins), size);
                 code = insEncodeReg3456(id, id.idReg2(), size, code);
                 emitGetInsCns(id, ref cnsVal);
-                if (insFmt == IF_RWR_RRD_MRD_RRD)
+                if (insFmt == IF_XARCH_RWR_RRD_MRD_RRD)
                 {
                     var op3Reg = decodeRegFromIval(cnsVal.cnsVal);
                     if (isMaskReg(op3Reg))
@@ -1063,7 +1094,8 @@ public partial class Emitter
                         break;
                     }
                     assert(isLowSimdReg(op3Reg));
-                    cnsVal.cnsVal = unchecked((sbyte)((cnsVal.cnsVal - XMMBASE) << 4));
+                    cnsVal.cnsVal = unchecked((sbyte)((cnsVal.cnsVal -
+                        unchecked((nint)TargetRuntimeMetadata.FloatingRegisterFirst)) << 4));
                 }
                 if (EncodedBySSE38orSSE3A(ins))
                 {
@@ -1078,7 +1110,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_MRD_OFF:
+            case IF_XARCH_RWR_MRD_OFF:
             {
                 code = AddX86PrefixIfNeeded(id, insCode(ins), size);
                 if (IsDstDstSrcAVXInstruction(ins))
@@ -1091,10 +1123,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MRD_RRD:
-            case IF_MWR_RRD:
-            case IF_MRW_RRD:
-            case IF_MRW_RRW:
+            case IF_XARCH_MRD_RRD:
+            case IF_XARCH_MWR_RRD:
+            case IF_XARCH_MRW_RRD:
+            case IF_XARCH_MRW_RRW:
             {
                 code = insCodeMR(ins);
                 if (EncodedBySSE38orSSE3A(ins))
@@ -1115,9 +1147,9 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MRD_CNS:
-            case IF_MWR_CNS:
-            case IF_MRW_CNS:
+            case IF_XARCH_MRD_CNS:
+            case IF_XARCH_MWR_CNS:
+            case IF_XARCH_MRW_CNS:
             {
                 emitGetInsDcmCns(id, ref cnsVal);
                 dst = emitOutputCV(dst, id, insCodeMI(ins) | 0x0500, &cnsVal);
@@ -1125,7 +1157,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MRW_SHF:
+            case IF_XARCH_MRW_SHF:
             {
                 emitGetInsDcmCns(id, ref cnsVal);
                 dst = emitOutputCV(dst, id, insCodeMR(ins) | 0x0500, &cnsVal);
@@ -1133,15 +1165,15 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRD_MRD_RRD:
-            case IF_RWR_MRD_RRD:
-            case IF_RRW_MRD_RRD:
+            case IF_XARCH_RRD_MRD_RRD:
+            case IF_XARCH_RWR_MRD_RRD:
+            case IF_XARCH_RRW_MRD_RRD:
             {
                 assert(IsAVX2GatherInstruction(ins));
                 throw new FatalJitException("A gather cannot use a static-memory instruction format.");
             }
 
-            case IF_MWR_RRD_RRD:
+            case IF_XARCH_MWR_RRD_RRD:
             {
                 throw new FatalJitException("Unexpected three-register static-store format.");
             }
@@ -1192,29 +1224,27 @@ public partial class Emitter
 #endif
         if (id.idGCref() == GCT_GCREF)
         {
-            gcrefRegs |= new regMaskTP(SRBM_EAX);
+            gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
         else if (id.idGCref() == GCT_BYREF)
         {
-            byrefRegs |= new regMaskTP(SRBM_EAX);
+            byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegisterMask;
         }
-#if UNIX_AMD64_ABI
-        if (id.idIsLargeCall())
+        if (Configuration.UNIX_AMD64_ABI && id.idIsLargeCall())
         {
             var secondRetType = ((instrDescCGCA)id).idSecondGCref();
             if (secondRetType == GCT_GCREF)
             {
-                gcrefRegs |= new regMaskTP(SRBM_RDX);
+                gcrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
             else if (secondRetType == GCT_BYREF)
             {
-                byrefRegs |= new regMaskTP(SRBM_RDX);
+                byrefRegs |= TargetRuntimeMetadata.IntegerReturnRegister1Mask;
             }
         }
-#endif
         if (id.idIsLargeCall() && ((instrDescCGCA)id).hasAsyncContinuationRet())
         {
-            gcrefRegs |= new regMaskTP(REG_ASYNC_CONTINUATION_RET.SingleTypeMask);
+            gcrefRegs |= new regMaskTP(TargetRuntimeMetadata.AsyncContinuationReturnRegister.SingleTypeMask);
         }
         if (gcrefRegs != new regMaskTP(emitThisGCrefRegs))
         {
@@ -1253,49 +1283,58 @@ public partial class Emitter
 #endif
 
     DONE_OUTPUT:
-#if TARGET_AMD64
-        assert((ins == INS_jmp && id.idIns() == INS_nop) || sz == emitSizeOfInsDsc(id));
-#else
-        assert(sz == emitSizeOfInsDsc(id));
-#endif
-#if !FEATURE_FIXED_OUT_ARGS
-        var updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
-        updateStackLevel = updateStackLevel && !emitIGisInFuncletProlog(ig) && !emitIGisInFuncletEpilog(ig);
-        if (updateStackLevel)
-        {
-            switch (ins)
+            if (Configuration.TARGET_AMD64)
             {
-                case INS_push:
+                assert((ins == INS_jmp && id.idIns() == INS_nop) || sz == emitSizeOfInsDsc(id));
+            }
+            else
+            {
+                assert(sz == emitSizeOfInsDsc(id));
+            }
+
+            if (!Configuration.FEATURE_FIXED_OUT_ARGS)
+            {
+                var updateStackLevel = !emitIGisInProlog(ig) && !emitIGisInEpilog(ig);
+                updateStackLevel = updateStackLevel && !emitIGisInFuncletProlog(ig) && !emitIGisInFuncletEpilog(ig);
+                if (updateStackLevel)
                 {
-                    emitStackPush(dst, id.idGCref());
-                    break;
-                }
-                case INS_pop:
-                {
-                    emitStackPop(dst, false, 0);
-                    break;
-                }
-                case INS_sub:
-                {
-                    if (id.idInsFmt() == IF_RRW_CNS && id.idReg1() == REG_ESP)
+                    switch (ins)
                     {
-                        assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
-                        emitStackPushN(dst, unchecked((uint)(emitGetInsSC(id) / TARGET_POINTER_SIZE)));
+                        case INS_push:
+                        {
+                            emitStackPush(dst, id.idGCref());
+                            break;
+                        }
+                        case INS_pop:
+                        {
+                            emitStackPop(dst, false, 0);
+                            break;
+                        }
+                        case INS_sub:
+                        {
+                            if (id.idInsFmt() == IF_XARCH_RRW_CNS &&
+                                id.idReg1() == TargetRuntimeMetadata.StackPointerBaseRegister)
+                            {
+                                assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
+                                emitStackPushN(dst,
+                                    unchecked((uint)(emitGetInsSC(id) / Configuration.TARGET_POINTER_SIZE)));
+                            }
+                            break;
+                        }
+                        case INS_add:
+                        {
+                            if (id.idInsFmt() == IF_XARCH_RRW_CNS &&
+                                id.idReg1() == TargetRuntimeMetadata.StackPointerBaseRegister)
+                            {
+                                assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
+                                emitStackPop(dst, false, 0,
+                                    unchecked((uint)(emitGetInsSC(id) / Configuration.TARGET_POINTER_SIZE)));
+                            }
+                            break;
+                        }
                     }
-                    break;
-                }
-                case INS_add:
-                {
-                    if (id.idInsFmt() == IF_RRW_CNS && id.idReg1() == REG_ESP)
-                    {
-                        assert(unchecked((uint)emitGetInsSC(id)) < uint.MaxValue);
-                        emitStackPop(dst, false, 0, unchecked((uint)(emitGetInsSC(id) / TARGET_POINTER_SIZE)));
-                    }
-                    break;
                 }
             }
-        }
-#endif
         assert(emitCurStackLvl >= 0);
         assert(*dp != dst || emitInstHasNoCode(id));
 #if DEBUG
@@ -1305,8 +1344,7 @@ public partial class Emitter
 #endif
         if (display && (!emitJmpInstHasNoCode(id) || convertedJmpToNop))
         {
-#if TARGET_AMD64
-            if (convertedJmpToNop)
+            if (Configuration.TARGET_AMD64 && convertedJmpToNop)
             {
                 id.idIns(INS_nop);
                 id.idInsFmt(IF_NONE);
@@ -1321,7 +1359,6 @@ public partial class Emitter
                 }
             }
             else
-#endif
             {
                 emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (nuint)(dst - *dp), ig);
             }
@@ -1379,9 +1416,11 @@ public partial class Emitter
 #if DEBUG
         if (ins is INS_mulEAX or INS_imulEAX)
         {
-            assert(((SRBM_EAX | SRBM_EDX) & (emitThisGCrefRegs | emitThisByrefRegs)) == SRBM_NONE);
+            var returnRegisters = TargetRuntimeMetadata.IntegerReturnMask |
+                TargetRuntimeMetadata.IntegerReturnRegister1Mask.Lower;
+            assert((returnRegisters & (emitThisGCrefRegs | emitThisByrefRegs)) == SRBM_NONE);
         }
-        if (instrIs3opImul(ins))
+        if (IsThreeOperandImulInstruction(ins))
         {
             var mask = inst3opImulReg(ins).SingleTypeMask;
             assert((mask & (emitThisGCrefRegs | emitThisByrefRegs)) == SRBM_NONE);
@@ -1393,6 +1432,5 @@ public partial class Emitter
 #endif
 
         return (nuint)sz;
-#endif
     }
 }

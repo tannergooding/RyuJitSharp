@@ -14,8 +14,11 @@ public partial class Emitter
     {
         // Checked pointer arithmetic rejects valid negative writable-alias offsets.
         *unchecked(dst + writeableOffset) = unchecked((byte)val);
-#if DEBUG && TARGET_AMD64
-        assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
+#if DEBUG
+        if (Configuration.TARGET_AMD64)
+        {
+            assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
+        }
 #endif
         return sizeof(byte);
     }
@@ -23,8 +26,11 @@ public partial class Emitter
     public unsafe byte emitOutputWord(byte* dst, long val)
     {
         Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((short)val));
-#if DEBUG && TARGET_AMD64
-        assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
+#if DEBUG
+        if (Configuration.TARGET_AMD64)
+        {
+            assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
+        }
 #endif
         return sizeof(short);
     }
@@ -32,20 +38,27 @@ public partial class Emitter
     public unsafe byte emitOutputLong(byte* dst, long val)
     {
         Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((int)val));
-#if DEBUG && TARGET_AMD64
-        assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
+#if DEBUG
+        if (Configuration.TARGET_AMD64)
+        {
+            assert(((val & 0xFF00000000L) == 0) || ((val & -0x100000000L) == -0x100000000L));
+        }
 #endif
         return sizeof(int);
     }
 
     public unsafe byte emitOutputSizeT(byte* dst, long val)
     {
-#if TARGET_64BIT
-        Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), val);
-#else
-        Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((int)val));
-#endif
-        return TARGET_POINTER_SIZE;
+        if (Configuration.TARGET_64BIT)
+        {
+            Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), val);
+        }
+        else
+        {
+            Unsafe.WriteUnaligned(unchecked(dst + writeableOffset), unchecked((int)val));
+        }
+
+        return (byte)Configuration.TARGET_POINTER_SIZE;
     }
 
     public unsafe void emitRecordRelocation(void* location, void* target, CorInfoReloc relocType, int addlDelta = 0,

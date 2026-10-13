@@ -34,13 +34,21 @@ public partial class Emitter
 
     public unsafe byte* emitOutputLJ(insGroup? ig, byte* dst, instrDesc i)
     {
-#if TARGET_ARM64
-        return emitOutputLJArm64Core(ig, dst, i);
-#elif TARGET_ARM
-        return emitOutputLJArm32Core(ig, dst, i);
-#elif !TARGET_XARCH
-        throw new FatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
-#else
+        if (Configuration.TARGET_ARM64)
+        {
+            return emitOutputLJArm64Core(ig, dst, i);
+        }
+
+        if (Configuration.TARGET_ARM)
+        {
+            return emitOutputLJArm32Core(ig, dst, i);
+        }
+
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Label output requires xarch.");
+        }
+
         var id = i as instrDescJmp ?? throw new FatalJitException("Label output requires a jump descriptor.");
         var compiler = _compiler ?? throw new FatalJitException("Label output requires an active compiler.");
         var ins = id.idIns();
@@ -208,7 +216,7 @@ public partial class Emitter
                 try
                 {
                     // The target is held in idjTargetIG, leaving the address union for the destination local.
-                    id.idInsFmt(emitInsModeFormat(ins, IF_SRD_CNS));
+                    id.idInsFmt(emitInsModeFormat(ins, IF_XARCH_SRD_CNS));
                     id.idSetIsDspReloc(false);
                     dst = emitOutputSV(dst, id, (ulong)insCodeMI(ins), null);
                 }
@@ -227,7 +235,7 @@ public partial class Emitter
                 idAmd.idOpSize(id.idOpSize());
                 idAmd.idGCref(id.idGCref());
                 idAmd.idDebugOnlyInfo(id.idDebugOnlyInfo());
-                idAmd.idInsFmt(emitInsModeFormat(ins, IF_RRD_ARD));
+                idAmd.idInsFmt(emitInsModeFormat(ins, IF_XARCH_RRD_ARD));
                 idAmd.idAddr().iiaAddrMode.amBaseReg = REG_NA;
                 idAmd.idAddr().iiaAddrMode.amIndxReg = REG_NA;
                 emitSetAmdDisp(idAmd, unchecked((nint)distVal));
@@ -290,6 +298,5 @@ public partial class Emitter
             emitGCregDeadUpdMask(new regMaskTP(emitThisGCrefRegs | emitThisByrefRegs), dst);
         }
         return dst;
-#endif
     }
 }

@@ -18,22 +18,21 @@ public partial class Emitter
         assert(!emitFullGCinfo);
         var offs = emitCurCodeOffs(codePos);
 
-#if JIT32_GCENCODER
-        var regs = new regMaskTP(emitThisGCrefRegs | emitThisByrefRegs) & ~new regMaskTP(SRBM_INTRET);
-        if (regs.IntRegSet == SRBM_NONE)
+        if (Configuration.JIT32_GCENCODER)
         {
-#if EMIT_TRACK_STACK_DEPTH
-            if (emitCurStackLvl == 0)
+            var regs = new regMaskTP(emitThisGCrefRegs | emitThisByrefRegs) & ~TargetRuntimeMetadata.IntegerReturnRegisterMask;
+            if (regs.IntRegSet == SRBM_NONE)
             {
-                return;
-            }
-#endif
-            if (emitSimpleStkUsed ? u1.emitSimpleStkMask == 0 : u2.emitGcArgTrackCnt == 0)
-            {
-                return;
+                if (Configuration.EMIT_TRACK_STACK_DEPTH && emitCurStackLvl == 0)
+                {
+                    return;
+                }
+                if (emitSimpleStkUsed ? u1.emitSimpleStkMask == 0 : u2.emitGcArgTrackCnt == 0)
+                {
+                    return;
+                }
             }
         }
-#endif
 
 #if DEBUG
         var compiler = _compiler ?? throw new FatalJitException("GC call output requires an active compiler.");
@@ -51,11 +50,10 @@ public partial class Emitter
         }
 #endif
 
-#if EMIT_TRACK_STACK_DEPTH
-#if !UNIX_AMD64_ABI
-        noway_assert(unchecked((uint)emitCurStackLvl) / sizeof(uint) <= ushort.MaxValue);
-#endif
-#endif
+        if (Configuration.EMIT_TRACK_STACK_DEPTH && !Configuration.UNIX_AMD64_ABI)
+        {
+            noway_assert(unchecked((uint)emitCurStackLvl) / sizeof(uint) <= ushort.MaxValue);
+        }
 
         if (emitSimpleStkUsed)
         {
@@ -80,7 +78,7 @@ public partial class Emitter
             if (emitStackNeedsGC(gcType))
             {
                 noway_assert(gcArgs < argTable.Length);
-                argTable[gcArgs] = unchecked(i * (uint)TARGET_POINTER_SIZE);
+                argTable[gcArgs] = unchecked(i * (uint)Configuration.TARGET_POINTER_SIZE);
                 if (gcType == GCT_BYREF)
                 {
                     argTable[gcArgs] |= byref_OFFSET_FLAG;
@@ -94,7 +92,9 @@ public partial class Emitter
 #if DEBUG
     private string emitGetFrameReg()
     {
-        return emitHasFramePtr ? STR_FPBASE : STR_SPBASE;
+        return emitHasFramePtr
+            ? TargetRuntimeMetadata.FramePointerBaseName
+            : TargetRuntimeMetadata.StackPointerBaseName;
     }
 
     private void emitDispVarSet()
@@ -115,7 +115,7 @@ public partial class Emitter
             }
             spaced = true;
 
-            var offset = unchecked(emitGCrFrameOffsMin + i * TARGET_POINTER_SIZE);
+            var offset = unchecked(emitGCrFrameOffsMin + i * Configuration.TARGET_POINTER_SIZE);
             jitprintf($"[{emitGetFrameReg()}");
             if (offset < 0)
             {

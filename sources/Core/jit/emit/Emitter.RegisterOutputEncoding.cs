@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_AMD64
     private static bool IsBitTestInstruction(instruction ins) =>
         ins is INS_bt or INS_bts or INS_btr or INS_btc;
 
@@ -17,10 +16,11 @@ public partial class Emitter
         InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_SSE_INSTRUCTION, LAST_SSE_INSTRUCTION);
 
     private static bool IsCFCMOV(instruction ins) =>
+        Configuration.TARGET_AMD64 &&
         InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, FIRST_CFCMOV_INSTRUCTION, LAST_CFCMOV_INSTRUCTION);
 
     private static bool IsApxConditionalInstruction(instruction ins) =>
-        IsCCMP(ins) || IsCFCMOV(ins) || IsCTEST(ins);
+        Configuration.TARGET_AMD64 && (IsCCMP(ins) || IsCFCMOV(ins) || IsCTEST(ins));
 
     private bool IsDstDstSrcAVXInstruction(instruction ins) =>
         UseVexEncodings && (prefixFlags(ins) & INS_FLAGS_IsDstDstSrcAVXInstruction) != 0;
@@ -33,7 +33,7 @@ public partial class Emitter
 
     private static regNumber inst3opImulReg(instruction ins)
     {
-        assert(instrIs3opImul(ins));
+        assert(IsThreeOperandImulInstruction(ins));
         var reg = (regNumber)(ins - INS_imul_AX);
         assert(reg.IsIntReg);
         check3opImulValues();
@@ -47,10 +47,10 @@ public partial class Emitter
             INS_blsi => (regNumber)3,
             INS_blsmsk => (regNumber)2,
             INS_blsr => (regNumber)1,
-            _ => REG_NA,
+            _ => TargetRuntimeMetadata.NoRegister,
         };
 
-        if (reg == REG_NA)
+        if (reg == TargetRuntimeMetadata.NoRegister)
         {
             assert(IsBMIInstruction(ins));
         }
@@ -69,10 +69,10 @@ public partial class Emitter
             INS_psrad or INS_psraw or INS_vpsraq => (regNumber)4,
             INS_vprold or INS_vprolq => (regNumber)1,
             INS_vprord or INS_vprorq => (regNumber)0,
-            _ => REG_NA,
+            _ => TargetRuntimeMetadata.NoRegister,
         };
 
-        if (reg == REG_NA)
+        if (reg == TargetRuntimeMetadata.NoRegister)
         {
             assert(false, "Invalid instruction for SSE2 instruction of the form: opcode reg, immed8");
         }
@@ -109,6 +109,11 @@ public partial class Emitter
 
     private ulong AddX86PrefixIfNeeded(instrDesc id, ulong code, emitAttr size)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch prefix output is not available for this target.");
+        }
+
         if (TakesEvexPrefix(id))
         {
             return AddEvexPrefix(id, code, size);
@@ -126,6 +131,11 @@ public partial class Emitter
 
     private ulong AddX86PrefixIfNeededAndNotPresent(instrDesc id, ulong code, emitAttr size)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch prefix output is not available for this target.");
+        }
+
         if (TakesEvexPrefix(id))
         {
             return hasEvexPrefix(code) ? code : AddEvexPrefix(id, code, size);
@@ -143,6 +153,11 @@ public partial class Emitter
 
     private ulong AddRex2Prefix(instruction ins, ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("REX2 output requires AMD64.");
+        }
+
         assert(IsRex2EncodableInstruction(ins));
         if (InstructionOrdinalMaps.IsNativeInstructionOrdinalInRange(ins, INS_imul_08, INS_imul_15))
         {
@@ -158,6 +173,11 @@ public partial class Emitter
 
     private static uint GetCCFromCCMPOrCTEST(instruction ins)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("CCMP and CTEST output requires AMD64.");
+        }
+
         assert(IsCCMP(ins) || IsCTEST(ins));
         return ins switch
         {
@@ -181,11 +201,13 @@ public partial class Emitter
         };
     }
 
-#endif
-
-#if TARGET_XARCH
     private ulong AddEvexPrefix(instrDesc id, ulong code, emitAttr size)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("EVEX output requires xarch.");
+        }
+
         var ins = id.idIns();
         assert(IsEvexEncodableInstruction(ins));
         if (instrIsExtendedReg3opImul(ins))
@@ -219,14 +241,12 @@ public partial class Emitter
             {
                 code |= 0x10000000000UL;
             }
-#if TARGET_AMD64
-            if (IsCCMP(ins) || IsCTEST(ins))
+            if (Configuration.TARGET_AMD64 && (IsCCMP(ins) || IsCTEST(ins)))
             {
                 code &= 0xFFFF87F0FFFFFFFFUL;
                 code |= (ulong)GetCCFromCCMPOrCTEST(ins) << 32;
                 code |= (ulong)id.idGetEvexDFV() << 43;
             }
-#endif
             return code;
         }
         assert(!IsApxExtendedEvexInstruction(ins));
@@ -275,10 +295,10 @@ public partial class Emitter
             }
         }
 
-        var maskReg = REG_NA;
+        var maskReg = TargetRuntimeMetadata.NoRegister;
         switch (id.idInsFmt())
         {
-            case IF_RWR_RRD_ARD_RRD:
+            case IF_XARCH_RWR_RRD_ARD_RRD:
             {
                 assert(!id.idIsEvexAaaContextSet());
                 CnsVal cnsVal = default;
@@ -288,7 +308,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_MRD_RRD:
+            case IF_XARCH_RWR_RRD_MRD_RRD:
             {
                 assert(!id.idIsEvexAaaContextSet());
                 CnsVal cnsVal = default;
@@ -298,7 +318,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_SRD_RRD:
+            case IF_XARCH_RWR_RRD_SRD_RRD:
             {
                 assert(!id.idIsEvexAaaContextSet());
                 CnsVal cnsVal = default;
@@ -308,7 +328,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RWR_RRD_RRD_RRD:
+            case IF_XARCH_RWR_RRD_RRD_RRD:
             {
                 assert(!id.idIsEvexAaaContextSet());
                 maskReg = id.idReg4();
@@ -317,23 +337,21 @@ public partial class Emitter
 
             default:
             {
-#if TARGET_AMD64
-                if (IsCCMP(ins) || IsCTEST(ins))
+                if (Configuration.TARGET_AMD64 && (IsCCMP(ins) || IsCTEST(ins)))
                 {
                     break;
                 }
-#endif
                 var aaa = id.idGetEvexAaaContext();
                 if (aaa != 0)
                 {
-                    maskReg = (regNumber)((int)REG_K0 + (int)aaa);
+                    maskReg = (regNumber)((int)REG_X64_K0 + (int)aaa);
                 }
                 break;
             }
         }
         if (isMaskReg(maskReg))
         {
-            code |= (ulong)(maskReg - REG_K0) << 32;
+            code |= (ulong)(maskReg - REG_X64_K0) << 32;
             if (id.idIsEvexZContextSet())
             {
                 code |= 0x0000008000000000UL;
@@ -342,11 +360,13 @@ public partial class Emitter
         return code;
     }
 
-#endif
-
-#if TARGET_AMD64
     private ulong AddRexRPrefix(instrDesc id, ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("REX.R output requires AMD64.");
+        }
+
         if (hasEvexPrefix(code))
         {
             return code & 0xFF7FFFFFFFFFFFFFUL;
@@ -365,6 +385,11 @@ public partial class Emitter
 
     private ulong AddEvexRPrimePrefix(ulong code)
     {
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("EVEX R-prime output requires AMD64.");
+        }
+
         assert((UseEvexEncodings || UsePromotedEvexEncodings) && hasEvexPrefix(code));
 
         return code & 0xFFEFFFFFFFFFFFFFUL;
@@ -372,10 +397,15 @@ public partial class Emitter
 
     private unsafe uint insEncodeReg345(instrDesc id, regNumber reg, emitAttr size, ulong* code)
     {
-        assert(reg < REG_STK);
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch register encoding is not available for this target.");
+        }
+
+        assert(Globals.genIsValidReg(reg));
         assert(code is not null || !IsExtendedReg(reg));
 
-        if (IsExtendedReg(reg))
+        if (Configuration.TARGET_AMD64 && IsExtendedReg(reg))
         {
             if (isHighSimdReg(reg))
             {
@@ -398,7 +428,8 @@ public partial class Emitter
                 }
             }
         }
-        else if ((EA_SIZE(size) == EA_1BYTE) && (reg > REG_RBX) && (code is not null))
+        else if (Configuration.TARGET_AMD64 && (EA_SIZE(size) == EA_1BYTE) &&
+            (reg > REG_X64_RBX) && (code is not null))
         {
             *code = hasRex2Prefix(*code) || hasEvexPrefix(*code) ? *code
                 : AddRexPrefix(id.idIns(), *code);
@@ -412,8 +443,13 @@ public partial class Emitter
 
     private ulong insEncodeReg3456(instrDesc id, regNumber reg, emitAttr size, ulong code)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch register encoding is not available for this target.");
+        }
+
         var ins = id.idIns();
-        assert(reg < REG_STK);
+        assert(Globals.genIsValidReg(reg));
         assert(IsSimdVexOrEvexEncodableInstruction(ins) || IsApxExtendedEvexInstruction(ins));
         assert(hasVexPrefix(code) || hasEvexPrefix(code));
         ulong bits = RegEncoding(reg);
@@ -446,5 +482,4 @@ public partial class Emitter
         }
         return code ^ (bits << 43);
     }
-#endif
 }

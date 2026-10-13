@@ -10,9 +10,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private GCInfo.GCtype emitRegGCtype(regNumber reg)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch GC register classification is not available for this target.");
+        }
+
 #if DEBUG
         assert(emitIssuing);
 #endif
@@ -31,22 +35,25 @@ public partial class Emitter
 
     private unsafe void emitHandleGCrefRegs(byte* dst, instrDesc id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch GC register output is not available for this target.");
+        }
+
         var reg1 = id.idReg1();
         var reg2 = id.idReg2();
         switch (id.idInsFmt())
         {
-            case IF_RRD_RRD:
+            case IF_XARCH_RRD_RRD:
             {
                 break;
             }
 
-            case IF_RWR_RRD:
+            case IF_XARCH_RWR_RRD:
             {
-#if TARGET_X86
-                if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == REG_ECX)
-#else
-                if (emitSyncThisObjReg != REG_NA && emitIGisInProlog(emitCurIG) && reg2 == REG_ARG_0)
-#endif
+                if (emitSyncThisObjReg != TargetRuntimeMetadata.NoRegister &&
+                    emitIGisInProlog(emitCurIG) &&
+                    reg2 == TargetRuntimeMetadata.FirstIntegerArgumentRegister)
                 {
                     var compiler = _compiler ?? throw new System.InvalidOperationException("Emitter is not initialized.");
                     assert(compiler.lvaIsOriginalThisArg(0));
@@ -62,11 +69,11 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRW_RRD:
-            case IF_RWR_RRD_RRD:
+            case IF_XARCH_RRW_RRD:
+            case IF_XARCH_RWR_RRD_RRD:
             {
                 var targetReg = reg1;
-                if (id.idInsFmt() == IF_RWR_RRD_RRD)
+                if (id.idInsFmt() == IF_XARCH_RWR_RRD_RRD)
                 {
                     reg1 = id.idReg2();
                     reg2 = id.idReg3();
@@ -108,7 +115,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RRW_RRW:
+            case IF_XARCH_RRW_RRW:
             {
                 assert(id.idIns() == INS_xchg);
                 var gc1 = emitRegGCtype(reg1);
@@ -146,11 +153,13 @@ public partial class Emitter
         }
     }
 
-#endif
-
-#if TARGET_XARCH
     private static bool emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException("xarch GC register output is not available for this target.");
+        }
+
         var ins = id.idIns();
         if (!IsSimdInstruction(ins))
         {
@@ -215,5 +224,4 @@ public partial class Emitter
             }
         }
     }
-#endif
 }

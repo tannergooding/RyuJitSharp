@@ -9,7 +9,6 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     private const ulong EXTENDED_EVEX_PP_BITS = 0x10000000000UL;
 
     private static bool HasRegularWideForm(instruction ins) => (CodeGen.instInfo[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] & INS_FLAGS_HasWBit) != 0;
@@ -29,7 +28,6 @@ public partial class Emitter
         return scales[(int)scale - 1];
     }
 
-#if TARGET_AMD64
     private ulong AddEvexVPrimePrefix(ulong code)
     {
         assert((UseEvexEncodings || UsePromotedEvexEncodings) && hasEvexPrefix(code));
@@ -39,8 +37,20 @@ public partial class Emitter
 
     private unsafe uint insEncodeRegSIB(instrDesc id, regNumber reg, ulong* code)
     {
-        assert(reg < REG_STK);
-        assert((code != null) || (reg < REG_R8) || ((reg >= REG_XMM0) && (reg < REG_XMM8)));
+        assert(Globals.genIsValidReg(reg));
+        if (Configuration.TARGET_X86)
+        {
+            var x86RegBits = (uint)reg;
+            assert(x86RegBits < 8);
+            return x86RegBits;
+        }
+        if (!Configuration.TARGET_AMD64)
+        {
+            throw new FatalJitException("xarch SIB register encoding is not available for this target.");
+        }
+
+        assert((code is not null) || (reg < REG_X64_R8) ||
+            ((reg >= REG_X64_XMM0) && (reg < REG_X64_XMM8)));
         if (IsExtendedReg(reg))
         {
             if (isHighSimdReg(reg))
@@ -70,6 +80,4 @@ public partial class Emitter
 
         return regBits;
     }
-#endif
-#endif
 }

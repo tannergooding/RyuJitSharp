@@ -9,9 +9,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-#if TARGET_XARCH
     internal static insFormat getMemoryOperation(instrDesc id)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+        }
+
         var ins = id.idIns();
         var insFmt = id.idInsFmt();
 
@@ -26,42 +30,36 @@ public partial class Emitter
 
     internal static insFormat ExtractMemoryFormat(insFormat insFmt)
     {
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
+        }
+
         var isInfo = emitGetSchedInfo(insFmt);
         var mask = isInfo & (IS_GM_RD | IS_GM_RW | IS_GM_WR);
         if (mask != 0)
         {
-            var result = (insFormat)((uint)IF_MRD + ((uint)mask >> 13));
-            assert(result is IF_MRD or IF_MWR or IF_MRW);
+            var result = (insFormat)((uint)IF_XARCH_MRD + ((uint)mask >> 13));
+            assert(result is IF_XARCH_MRD or IF_XARCH_MWR or IF_XARCH_MRW);
             return result;
         }
 
         mask = isInfo & (IS_SF_RD | IS_SF_RW | IS_SF_WR);
         if (mask != 0)
         {
-            var result = (insFormat)((uint)IF_SRD + ((uint)mask >> 16));
-            assert(result is IF_SRD or IF_SWR or IF_SRW);
+            var result = (insFormat)((uint)IF_XARCH_SRD + ((uint)mask >> 16));
+            assert(result is IF_XARCH_SRD or IF_XARCH_SWR or IF_XARCH_SRW);
             return result;
         }
 
         mask = isInfo & (IS_AM_RD | IS_AM_RW | IS_AM_WR);
         if (mask != 0)
         {
-            var result = (insFormat)((uint)IF_ARD + ((uint)mask >> 19));
-            assert(result is IF_ARD or IF_AWR or IF_ARW);
+            var result = (insFormat)((uint)IF_XARCH_ARD + ((uint)mask >> 19));
+            assert(result is IF_XARCH_ARD or IF_XARCH_AWR or IF_XARCH_ARW);
             return result;
         }
 
         return IF_NONE;
     }
-#else
-    internal static insFormat getMemoryOperation(instrDesc id)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
-    }
-
-    internal static insFormat ExtractMemoryFormat(insFormat insFmt)
-    {
-        throw new FatalJitException(CORJIT_SKIPPED, "Xarch execution memory classification is unavailable on this target.");
-    }
-#endif
 }

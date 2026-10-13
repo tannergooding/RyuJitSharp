@@ -68,28 +68,32 @@ public partial class Emitter
 #if DEBUG
         assert(emitIssuing);
 #endif
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        if (emitIGisInEpilog(emitCurIG))
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            return;
-        }
-        var mask = reg.SingleTypeMask;
-        if ((emitThisGCrefRegs & mask) != SRBM_NONE)
-        {
-            assert((emitThisByrefRegs & mask) == SRBM_NONE);
-            if (emitFullGCinfo)
+            if (emitIGisInEpilog(emitCurIG))
             {
-                emitGCregDeadSet(GCT_GCREF, new regMaskTP(mask), dst);
+                return;
             }
-            emitThisGCrefRegs &= ~mask;
-        }
-        else if ((emitThisByrefRegs & mask) != SRBM_NONE)
-        {
-            if (emitFullGCinfo)
+
+            var mask = reg.SingleTypeMask;
+            if ((emitThisGCrefRegs & mask) != SRBM_NONE)
             {
-                emitGCregDeadSet(GCT_BYREF, new regMaskTP(mask), dst);
+                assert((emitThisByrefRegs & mask) == SRBM_NONE);
+                if (emitFullGCinfo)
+                {
+                    emitGCregDeadSet(GCT_GCREF, new regMaskTP(mask), dst);
+                }
+                emitThisGCrefRegs &= ~mask;
             }
-            emitThisByrefRegs &= ~mask;
+            else if ((emitThisByrefRegs & mask) != SRBM_NONE)
+            {
+                if (emitFullGCinfo)
+                {
+                    emitGCregDeadSet(GCT_BYREF, new regMaskTP(mask), dst);
+                }
+                emitThisByrefRegs &= ~mask;
+            }
         }
 #endif
     }
@@ -104,30 +108,33 @@ public partial class Emitter
             return;
         }
 
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        var gcrefRegs = new regMaskTP(emitThisGCrefRegs) & regs;
-        assert(emitSyncThisObjReg == REG_NA ||
-            (regMaskTP.CreateFromRegNum(emitSyncThisObjReg, emitSyncThisObjReg.SingleTypeMask) & regs).IsEmpty);
-
-        if (gcrefRegs.IsNonEmpty)
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            assert((emitThisByrefRegs & (regMask)gcrefRegs) == SRBM_NONE);
-            if (emitFullGCinfo)
-            {
-                emitGCregDeadSet(GCT_GCREF, gcrefRegs, addr);
-            }
-            emitThisGCrefRegs &= ~(regMask)gcrefRegs;
-        }
+            var gcrefRegs = new regMaskTP(emitThisGCrefRegs) & regs;
+            assert(emitSyncThisObjReg == REG_NA ||
+                (regMaskTP.CreateFromRegNum(emitSyncThisObjReg, emitSyncThisObjReg.SingleTypeMask) & regs).IsEmpty);
 
-        var byrefRegs = new regMaskTP(emitThisByrefRegs) & regs;
-        if (byrefRegs.IsNonEmpty)
-        {
-            assert((emitThisGCrefRegs & (regMask)byrefRegs) == SRBM_NONE);
-            if (emitFullGCinfo)
+            if (gcrefRegs.IsNonEmpty)
             {
-                emitGCregDeadSet(GCT_BYREF, byrefRegs, addr);
+                assert((emitThisByrefRegs & (regMask)gcrefRegs) == SRBM_NONE);
+                if (emitFullGCinfo)
+                {
+                    emitGCregDeadSet(GCT_GCREF, gcrefRegs, addr);
+                }
+                emitThisGCrefRegs &= ~(regMask)gcrefRegs;
             }
-            emitThisByrefRegs &= ~(regMask)byrefRegs;
+
+            var byrefRegs = new regMaskTP(emitThisByrefRegs) & regs;
+            if (byrefRegs.IsNonEmpty)
+            {
+                assert((emitThisGCrefRegs & (regMask)byrefRegs) == SRBM_NONE);
+                if (emitFullGCinfo)
+                {
+                    emitGCregDeadSet(GCT_BYREF, byrefRegs, addr);
+                }
+                emitThisByrefRegs &= ~(regMask)byrefRegs;
+            }
         }
 #endif
     }
@@ -137,35 +144,39 @@ public partial class Emitter
 #if DEBUG
         assert(emitIssuing);
 #endif
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        if (emitIGisInEpilog(emitCurIG))
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            return;
+            if (emitIGisInEpilog(emitCurIG))
+            {
+                return;
+            }
+
+            assert(gcType is GCT_GCREF or GCT_BYREF);
+            var mask = reg.SingleTypeMask;
+            var live = gcType == GCT_GCREF ? emitThisGCrefRegs : emitThisByrefRegs;
+            var other = gcType == GCT_GCREF ? emitThisByrefRegs : emitThisGCrefRegs;
+            if ((live & mask) == SRBM_NONE)
+            {
+                if ((other & mask) != SRBM_NONE)
+                {
+                    emitGCregDeadUpd(reg, dst);
+                }
+                if (emitFullGCinfo)
+                {
+                    emitGCregLiveSet(gcType, new regMaskTP(mask), dst, reg == emitSyncThisObjReg);
+                }
+                if (gcType == GCT_GCREF)
+                {
+                    emitThisGCrefRegs |= mask;
+                }
+                else
+                {
+                    emitThisByrefRegs |= mask;
+                }
+            }
+            assert((emitThisGCrefRegs & emitThisByrefRegs) == SRBM_NONE);
         }
-        assert(gcType is GCT_GCREF or GCT_BYREF);
-        var mask = reg.SingleTypeMask;
-        var live = gcType == GCT_GCREF ? emitThisGCrefRegs : emitThisByrefRegs;
-        var other = gcType == GCT_GCREF ? emitThisByrefRegs : emitThisGCrefRegs;
-        if ((live & mask) == SRBM_NONE)
-        {
-            if ((other & mask) != SRBM_NONE)
-            {
-                emitGCregDeadUpd(reg, dst);
-            }
-            if (emitFullGCinfo)
-            {
-                emitGCregLiveSet(gcType, new regMaskTP(mask), dst, reg == emitSyncThisObjReg);
-            }
-            if (gcType == GCT_GCREF)
-            {
-                emitThisGCrefRegs |= mask;
-            }
-            else
-            {
-                emitThisByrefRegs |= mask;
-            }
-        }
-        assert((emitThisGCrefRegs & emitThisByrefRegs) == SRBM_NONE);
 #endif
     }
 }
