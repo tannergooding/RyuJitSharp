@@ -103,8 +103,11 @@ public partial class Compiler
         {
 #if DEBUG
             assert(!compMinOptsIsUsed);
-            assert(!compMinOptsIsSet || (compMinOpts == val));
 #endif
+            if (Configuration.DEBUG)
+            {
+                assert(!compMinOptsIsSet || (compMinOpts == val));
+            }
 
             compMinOpts = val;
             compMinOptsIsSet = true;

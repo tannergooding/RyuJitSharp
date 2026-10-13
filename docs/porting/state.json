@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Runtime-gate the Release-visible compMinOptsIsSet/compMinOpts consistency assertion in sources/Core/jit/compiler/Compiler.Options.cs::SetMinOpts, retain the DEBUG-only compMinOptsIsUsed check, and run MinOpts-focused arithmetic tests in Debug and Release.",
+    "nextAction": "Runtime-gate the Release-visible frame-offset and temporary-register assertions in sources/Core/jit/compiler/Compiler.FinalFrameLayout.cs and Compiler.FinalFrameLayout.Locals.cs, then run CodeGenFrameFinalizationTests in Debug and Release.",
     "validationGaps": [
       "The last fast full-Core run had three unresolved failures outside the refreshed paths. Recover their failing test identities and logs, then rerun affected checks before claiming full-Core validation.",
       "The non-interop host-dispatch batch passed focused Debug tests (571/571) and Release tests (520/520; two unrelated xarch test sources were excluded with a temporary target). Full-analysis compiler builds passed in Debug and Release, including CLR API timing in Release. Full-analysis Core test builds remain blocked by unrelated analyzer diagnostics in Debug and missing xarch register names in the two excluded Release test sources.",
@@ -39,9 +39,15 @@
       "CodeGen.EHReporting.cs::genReportEHClauses remains DEBUG-guarded because the method publishes EE-facing clauses through _compiler.eeSetEHinfo; defer this group to the interop review.",
       "Lowering.Arm64OperandContainment.cs::IsContainableUnaryOrBinaryOp runtime-gates its Release-visible parent/child shape assertions. Arm64OperandContainmentTests passed 62/62 in Debug and 62/62 in Release with win-arm64 target semantics using tests\\Targets\\RyuJitSharp.Target.UnitTests.csproj and analyzers disabled.",
       "The compCurBB assertions in Compiler.ap.LocalDispatch.cs and Compiler.ap.Locals.cs remain inside DEBUG-only verbose dump blocks: moving them independently fails Release compilation because verbose is DEBUG-only and breaks Debug nullable flow to the dump formatter.",
-      "Emitter.Locations.cs::emitFindOffset runtime-gates the Release-visible instruction-count assertion while retaining the DEBUG-only igSelf assertion first. EmitterLocationTests passed 14/14 in Debug and 13/13 in Release with analyzers disabled; Release excluded the two known unsupported xarch test sources. Full-analysis attempts were blocked by the already-recorded IDE0058/IDE0059 diagnostics in unchanged JIT files."
+      "Emitter.Locations.cs::emitFindOffset runtime-gates the Release-visible instruction-count assertion while retaining the DEBUG-only igSelf assertion first. EmitterLocationTests passed 14/14 in Debug and 13/13 in Release with analyzers disabled; Release excluded the two known unsupported xarch test sources. Full-analysis attempts were blocked by the already-recorded IDE0058/IDE0059 diagnostics in unchanged JIT files.",
+      "Compiler.Options.cs::SetMinOpts runtime-gates the Release-visible min-opts consistency assertion while retaining the DEBUG-only usage-tracking assertion. MinOpts-focused arithmetic tests passed 36/36 in Debug and 35/35 in Release with analyzers disabled; Release excluded the two known unsupported xarch test sources. Full-analysis attempts were blocked by the already-recorded IDE0058/IDE0059 diagnostics in unchanged JIT files."
     ],
-    "activeBatch": null,
+    "activeBatch": {
+      "scope": "Move the Release-visible compMinOptsIsSet/compMinOpts consistency assertion in sources/Core/jit/compiler/Compiler.Options.cs::SetMinOpts out of the mixed DEBUG guard while retaining the DEBUG-only compMinOptsIsUsed check.",
+      "completion": "Assertion ordering and Debug behavior remain unchanged; Release compilation confirms the consistency fields are available without compMinOptsIsUsed.",
+      "validation": "Run MinOpts-focused ArithmeticLoweringTests and ArithmeticMorphTests in Debug and Release.",
+      "deferred": "Do not move compMinOptsIsUsed out of DEBUG because the usage-tracking field is DEBUG-only."
+    },
     "parityEvidence": {
       "asyncResumeCodegen": {
         "upstreamCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
