@@ -132,8 +132,11 @@ public sealed partial class CodeGen
 
 #if DEBUG
             assert(_regSet.tmpGetAllFree());
-            assert(_regSet.tmpListBeg() is null);
 #endif
+            if (Configuration.DEBUG)
+            {
+                assert(_regSet.tmpListBeg() is null);
+            }
         }
         else
         {
