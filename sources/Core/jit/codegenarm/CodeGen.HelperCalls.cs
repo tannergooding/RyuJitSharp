@@ -3,19 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genEmitHelperCall(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
-        regNumber callTargetReg = REG_NA)
+    public unsafe void genEmitHelperCallArm(CorInfoHelpFunc helper, int argSize, emitAttr retSize,
+        regNumber callTargetReg = REG_ARM32_NA)
     {
         void* addr = null;
         void** pAddr = null;
 
-#if DEBUG && PROFILING_SUPPORTED
-        if (!_compiler.compProfilerHookNeeded && _compiler.opts.compJitELTHookEnabled &&
+#if DEBUG
+        if (Configuration.PROFILING_SUPPORTED && !_compiler.compProfilerHookNeeded &&
+            _compiler.opts.compJitELTHookEnabled &&
             (helper is CORINFO_HELP_PROF_FCN_ENTER or CORINFO_HELP_PROF_FCN_LEAVE or CORINFO_HELP_PROF_FCN_TAILCALL))
         {
             addr = _compiler.compProfilerMethHnd;
@@ -44,9 +44,9 @@ public sealed partial class CodeGen
 
         if ((addr == null) || !validImmForBL((nint)addr))
         {
-            if (callTargetReg is REG_NA)
+            if (callTargetReg is REG_ARM32_NA)
             {
-                callTargetReg = REG_R12;
+                callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET_ARM;
             }
 
             if (addr != null)
@@ -70,7 +70,6 @@ public sealed partial class CodeGen
             genEmitCallWithCurrentGC(ref parameters);
         }
 
-        _regSet.verifyRegistersUsed(new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH));
+        _regSet.verifyRegistersUsed(new regMaskTP(SRBM_INT_CALLEE_TRASH_ARM | SRBM_FLT_CALLEE_TRASH_ARM));
     }
 }
-#endif

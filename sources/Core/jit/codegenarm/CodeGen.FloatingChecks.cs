@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.emitJumpKind;
@@ -16,7 +15,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCkfinite(GenTree treeNode)
+    public void genCkfiniteArm(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CKFINITE);
 
@@ -49,4 +48,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

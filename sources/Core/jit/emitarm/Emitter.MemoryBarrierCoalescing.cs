@@ -3,15 +3,20 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.insBarrier;
 
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    internal bool emitTryCoalesceLastMemBarrier(insBarrier barrier)
+    private bool emitTryCoalesceLastMemBarrierArm32(insBarrier barrier)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 memory-barrier coalescing is not available for this target.");
+        }
+
         assert(barrier == INS_BARRIER_SY);
 
         var lastMemBarrier = emitLastMemBarrier;
@@ -24,4 +29,3 @@ public partial class Emitter
         return true;
     }
 }
-#endif

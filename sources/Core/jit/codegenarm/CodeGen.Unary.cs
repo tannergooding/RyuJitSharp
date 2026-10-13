@@ -3,13 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForNegNot(GenTreeUnOp tree)
+    public void genCodeForNegNotArm(GenTree treeNode)
     {
+        var tree = treeNode.AsUnOp();
         assert(tree.Oper is GT_NEG or GT_NOT);
 
         var targetType = tree.Type;
@@ -19,7 +19,7 @@ public sealed partial class CodeGen
         var ins = genGetInsForOper(tree.Oper, targetType);
 
         assert(!tree.IsContained);
-        assert(targetReg != REG_NA);
+        assert(targetReg != REG_ARM32_NA);
 
         var operand = tree.Op1;
         assert(!operand.IsContained);
@@ -37,4 +37,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

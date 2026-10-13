@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForShiftLong(GenTree tree)
+    public void genCodeForShiftLongArm(GenTree tree)
     {
         // Only the non-RMW case here.
         var oper = tree.Oper;
@@ -66,4 +65,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

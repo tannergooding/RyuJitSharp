@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Globals;
 
@@ -13,6 +12,7 @@ public partial class Emitter
 {
     private unsafe byte* emitOutputLJArm32Core(insGroup? ig, byte* dst, instrDesc i)
     {
+        RequireArm32Target();
         assert(_compiler is not null);
 
         var id = (instrDescJmp)i;
@@ -41,7 +41,7 @@ public partial class Emitter
 
             case INS_adr:
             {
-                shortDistance = unchecked((uint)LBL_DIST_SMALL_MAX_NEG);
+                shortDistance = unchecked((uint)LBL_DIST_SMALL_MAX_NEG_ARM);
                 loadLabel = true;
                 break;
             }
@@ -49,7 +49,7 @@ public partial class Emitter
             case INS_movw:
             case INS_movt:
             {
-                shortDistance = unchecked((uint)LBL_DIST_SMALL_MAX_NEG);
+                shortDistance = unchecked((uint)LBL_DIST_SMALL_MAX_NEG_ARM);
                 relAddr = false;
                 loadLabel = true;
                 break;
@@ -102,7 +102,7 @@ public partial class Emitter
                 jitprintf($"[3] Label block is at {dstOffs:X8} - {emitOffsAdj:X2} = {unchecked(dstOffs - (uint)emitOffsAdj):X8}\n");
             }
 #endif
-            noway_assert(id.idInsFmt() != IF_T1_I);
+            noway_assert(id.idInsFmt() != IF_ARM32_T1_I);
             if (isJump && unchecked((uint)(distVal - 4)) >= shortDistance)
             {
                 emitSetShortJump(id);
@@ -162,21 +162,21 @@ public partial class Emitter
             else
             {
                 id.idjAddr = dstOffs > srcOffs ? dst : null;
-                if (format == IF_LARGEJMP)
+                if (format == IF_ARM32_LARGEJMP)
                 {
                     dst = emitOutputShortBranch(
                         dst,
                         emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(ins))),
-                        IF_T1_K,
+                        IF_ARM32_T1_K,
                         2,
                         null);
                     ins = INS_b;
-                    format = IF_T2_J2;
+                    format = IF_ARM32_T2_J2;
                     distVal = unchecked(distVal - 2);
                 }
 
-                code = emitInsCode(ins, format);
-                if (format == IF_T2_J1)
+                code = emitInsCodeArm32(ins, format);
+                if (format == IF_ARM32_T2_J1)
                 {
                     assert(!id.idjKeepLong);
                     assert(!emitJumpCrossHotColdBoundary(srcOffs, dstOffs));
@@ -193,7 +193,7 @@ public partial class Emitter
                     code |= (unchecked((uint)(distVal >> 1)) & 0x020000) >> 4;
                     code |= (unchecked((uint)(distVal >> 1)) & 0x040000) >> 7;
                 }
-                else if (format == IF_T2_J2)
+                else if (format == IF_ARM32_T2_J2)
                 {
                     assert((distVal & 1) == 0);
                     if (_compiler.opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs))
@@ -247,9 +247,9 @@ public partial class Emitter
         else if (loadLabel)
         {
             id.idjAddr = distVal > 0 ? dst : null;
-            code = emitInsCode(ins, format);
+            code = emitInsCodeArm32(ins, format);
 
-            if (format == IF_T1_J3)
+            if (format == IF_ARM32_T1_J3)
             {
                 assert((dstOffs & 3) == 0);
                 assert(distVal >= 0);
@@ -257,7 +257,7 @@ public partial class Emitter
                 code |= (uint)(distVal >> 2) & 0xFF;
                 dst = unchecked(dst + emitOutput_Thumb1Instr(dst, code));
             }
-            else if (format == IF_T2_M1)
+            else if (format == IF_ARM32_T2_M1)
             {
                 assert(distVal >= -4095);
                 assert(distVal <= 4095);
@@ -273,7 +273,7 @@ public partial class Emitter
                 code |= (uint)id.idReg1() << 8;
                 dst = unchecked(dst + emitOutput_Thumb2Instr(dst, code));
             }
-            else if (format == IF_T2_N1)
+            else if (format == IF_ARM32_T2_N1)
             {
                 assert(ins is INS_movt or INS_movw);
                 code |= insEncodeRegT2_D(id.idReg1());
@@ -306,4 +306,3 @@ public partial class Emitter
         return dst;
     }
 }
-#endif

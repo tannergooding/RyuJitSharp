@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.Globals;
@@ -19,6 +18,11 @@ public partial class Emitter
     public void emitIns_R_R_I_I(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         int imm1, int imm2, insFlags flags = INS_FLAGS_DONT_CARE)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 multioperand recording is not available for this target.");
+        }
+
         insFormat fmt;
         insFlags sf;
 
@@ -31,8 +35,8 @@ public partial class Emitter
         {
             case INS_bfi:
             {
-                assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
-                assert(reg2 != REG_PC);
+                assert(reg1 != REG_ARM32_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+                assert(reg2 != REG_ARM32_PC);
                 assert(insDoesNotSetFlags(flags));
                 assert((lsb >= 0) && (lsb <= 31)); // required for encoding
                 assert((width > 0) && (width <= 32)); // required for encoding
@@ -40,7 +44,7 @@ public partial class Emitter
                 assert(msb >= lsb); // required for encoding
 
                 imm = unchecked((lsb << 5) | msb);
-                fmt = IF_T2_D0;
+                fmt = IF_ARM32_T2_D0;
                 sf = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -48,8 +52,8 @@ public partial class Emitter
             case INS_sbfx:
             case INS_ubfx:
             {
-                assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
-                assert(reg2 != REG_PC);
+                assert(reg1 != REG_ARM32_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+                assert(reg2 != REG_ARM32_PC);
                 assert(insDoesNotSetFlags(flags));
                 assert((lsb >= 0) && (lsb <= 31)); // required for encoding
                 assert((width > 0) && (width <= 32)); // required for encoding
@@ -57,7 +61,7 @@ public partial class Emitter
                 assert(msb >= lsb); // required for encoding
 
                 imm = unchecked((lsb << 5) | (width - 1));
-                fmt = IF_T2_D0;
+                fmt = IF_ARM32_T2_D0;
                 sf = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -66,13 +70,13 @@ public partial class Emitter
             {
                 // imm1 is the shift amount (fixed at zero); imm2 is saturation width N (1-32).
                 // The encoding stores N-1 in sat_imm and leaves the shift fields zero.
-                assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
-                assert(reg2 != REG_PC);
+                assert(reg1 != REG_ARM32_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+                assert(reg2 != REG_ARM32_PC);
                 assert(insDoesNotSetFlags(flags));
                 assert((imm1 == 0) && (imm2 >= 1) && (imm2 <= 32)); // required for encoding
 
                 imm = unchecked((lsb << 5) | (width - 1));
-                fmt = IF_T2_D0;
+                fmt = IF_ARM32_T2_D0;
                 sf = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -81,13 +85,13 @@ public partial class Emitter
             {
                 // imm1 is the shift amount (fixed at zero); imm2 is saturation width N (0-31).
                 // The encoding stores N directly in sat_imm and leaves the shift fields zero.
-                assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
-                assert(reg2 != REG_PC);
+                assert(reg1 != REG_ARM32_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+                assert(reg2 != REG_ARM32_PC);
                 assert(insDoesNotSetFlags(flags));
                 assert((imm1 == 0) && (imm2 >= 0) && (imm2 <= 31)); // required for encoding
 
                 imm = unchecked((lsb << 5) | width);
-                fmt = IF_T2_D0;
+                fmt = IF_ARM32_T2_D0;
                 sf = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -99,7 +103,7 @@ public partial class Emitter
             }
         }
 
-        assert(fmt == IF_T2_D0);
+        assert(fmt == IF_ARM32_T2_D0);
         assert(sf != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrSC(attr, imm);
@@ -114,4 +118,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

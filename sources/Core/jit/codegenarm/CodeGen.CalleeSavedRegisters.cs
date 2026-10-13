@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -17,19 +16,18 @@ public sealed partial class CodeGen
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
 
         var pushRegs = _regSet.rsGetModifiedCalleeSavedRegsMask();
-#if ETW_EBP_FRAMED
-        if (!IsFramePointerUsed && _regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE)))
+        if (Configuration.ETW_EBP_FRAMED && !IsFramePointerUsed &&
+            _regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE_ARM)))
         {
             noway_assert(false, "!\"Used register RBM_FPBASE as a scratch register!\"");
         }
-#endif
         if (IsFramePointerUsed)
         {
-            pushRegs |= new regMaskTP(SRBM_FPBASE);
+            pushRegs |= new regMaskTP(SRBM_FPBASE_ARM);
         }
 
         // Always save LR: partially interruptible leaf methods still require return-address hijacking.
-        pushRegs |= new regMaskTP(SRBM_LR);
+        pushRegs |= new regMaskTP(SRBM_ARM32_LR);
         _regSet.rsSetCalleeSavedRegsMask(pushRegs);
 
 #if DEBUG
@@ -43,7 +41,7 @@ public sealed partial class CodeGen
             assert(_compiler.compCalleeRegsPushed == count);
         }
 #endif
-        var pushFloat = pushRegs & new regMaskTP(SRBM_ALLFLOAT);
+        var pushFloat = pushRegs & new regMaskTP(SRBM_ALLFLOAT_ARM);
         var pushInt = pushRegs & ~pushFloat;
         pushInt |= genStackAllocRegisterMaskArmCore(unchecked((uint)_compiler.compLclFrameSize), pushFloat);
 
@@ -63,7 +61,7 @@ public sealed partial class CodeGen
         assert(Emitter.emitGeneratingEpilogOrFuncletEpilog());
 
         var popRegs = _regSet.rsGetModifiedCalleeSavedRegsMask();
-        var popFloat = popRegs & new regMaskTP(SRBM_ALLFLOAT);
+        var popFloat = popRegs & new regMaskTP(SRBM_ALLFLOAT_ARM);
         var popInt = popRegs & ~popFloat;
 
         if (popFloat.IsNonEmpty)
@@ -80,18 +78,18 @@ public sealed partial class CodeGen
 
         if (IsFramePointerUsed)
         {
-            assert(!_regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE)));
-            popInt |= new regMaskTP(SRBM_FPBASE);
+            assert(!_regSet.rsRegsModified(new regMaskTP(SRBM_FPBASE_ARM)));
+            popInt |= new regMaskTP(SRBM_FPBASE_ARM);
         }
 
         if (genCanUsePopToReturnArmCore(popInt, jmpEpilog))
         {
-            popInt |= new regMaskTP(SRBM_PC);
+            popInt |= new regMaskTP(SRBM_ARM32_PC);
             genUsedPopToReturn = true;
         }
         else
         {
-            popInt |= new regMaskTP(SRBM_LR);
+            popInt |= new regMaskTP(SRBM_ARM32_LR);
             genUsedPopToReturn = false;
         }
 
@@ -103,8 +101,8 @@ public sealed partial class CodeGen
     private void genPushFltRegsArmCore(regMaskTP regMask)
     {
         assert(regMask.IsNonEmpty, conditionExpression: "regMask != 0");
-        assert((regMask & new regMaskTP(SRBM_ALLFLOAT)) == regMask,
-            conditionExpression: "(regMask & RBM_ALLFLOAT) == regMask");
+        assert((regMask & new regMaskTP(SRBM_ALLFLOAT_ARM)) == regMask,
+            conditionExpression: "(regMask & RBM_ALLFLOAT_ARM) == regMask");
 
         var bits = unchecked((ulong)regMask.Lower);
         var lowReg = (regNumber)BitOperations.TrailingZeroCount(bits);
@@ -112,7 +110,7 @@ public sealed partial class CodeGen
         var tmpMask = unchecked((bits >> (int)lowReg) + 1);
         assert(LsraGlobals.genMaxOneBit(unchecked((SingleTypeRegSet)tmpMask)),
             conditionExpression: "genMaxOneBit(tmpMask)");
-        assert(lowReg == REG_F16, conditionExpression: "lowReg == REG_F16");
+        assert(lowReg == REG_ARM32_F16, conditionExpression: "lowReg == REG_F16");
 
         noway_assert(floatRegCanHoldType(lowReg, TYP_DOUBLE));
         noway_assert((slots % 2) == 0);
@@ -122,8 +120,8 @@ public sealed partial class CodeGen
     private void genPopFltRegsArmCore(regMaskTP regMask)
     {
         assert(regMask.IsNonEmpty, conditionExpression: "regMask != 0");
-        assert((regMask & new regMaskTP(SRBM_ALLFLOAT)) == regMask,
-            conditionExpression: "(regMask & RBM_ALLFLOAT) == regMask");
+        assert((regMask & new regMaskTP(SRBM_ALLFLOAT_ARM)) == regMask,
+            conditionExpression: "(regMask & RBM_ALLFLOAT_ARM) == regMask");
 
         var bits = unchecked((ulong)regMask.Lower);
         var lowReg = (regNumber)BitOperations.TrailingZeroCount(bits);
@@ -156,8 +154,8 @@ public sealed partial class CodeGen
         // R0/R1 can contain return values; only one- and two-word frames use scratch-register pushes.
         return frameSize switch
         {
-            REGSIZE_BYTES => new regMaskTP(SRBM_R3),
-            2 * REGSIZE_BYTES => new regMaskTP(SRBM_R2 | SRBM_R3),
+            REGSIZE_BYTES_ARM => new regMaskTP(SRBM_ARM32_R3),
+            2 * REGSIZE_BYTES_ARM => new regMaskTP(SRBM_ARM32_R2 | SRBM_ARM32_R3),
             _ => RBM_NONE,
         };
     }
@@ -191,4 +189,3 @@ public sealed partial class CodeGen
         _compiler.unwindPopMaskFloat(mask);
     }
 }
-#endif

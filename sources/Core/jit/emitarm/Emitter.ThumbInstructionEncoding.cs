@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.insFlags;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
@@ -83,70 +82,70 @@ public partial class Emitter
 
     internal static uint insEncodeRegT1_M4(regNumber reg)
     {
-        assert(reg < REG_STK);
+        assert(reg < REG_ARM32_STK);
 
         return (uint)reg << 3;
     }
 
     internal static uint insEncodeRegT1_D4(regNumber reg)
     {
-        assert(reg < REG_STK);
+        assert(reg < REG_ARM32_STK);
 
         return ((uint)reg & 0x7) | (((uint)reg & 0x8) << 4);
     }
 
     internal static uint insEncodeRegT1_M3(regNumber reg)
     {
-        assert(reg < REG_R8);
+        assert(reg < REG_ARM32_R8);
 
         return (uint)reg << 6;
     }
 
     internal static uint insEncodeRegT1_N3(regNumber reg)
     {
-        assert(reg < REG_R8);
+        assert(reg < REG_ARM32_R8);
 
         return (uint)reg << 3;
     }
 
     internal static uint insEncodeRegT1_D3(regNumber reg)
     {
-        assert(reg < REG_R8);
+        assert(reg < REG_ARM32_R8);
 
         return (uint)reg;
     }
 
     internal static uint insEncodeRegT1_DI(regNumber reg)
     {
-        assert(reg < REG_R8);
+        assert(reg < REG_ARM32_R8);
 
         return (uint)reg << 8;
     }
 
     internal static uint insEncodeRegT2_T(regNumber reg)
     {
-        assert(reg < REG_STK);
+        assert(reg < REG_ARM32_STK);
 
         return (uint)reg << 12;
     }
 
     internal static uint insEncodeRegT2_D(regNumber reg)
     {
-        assert(reg < REG_STK);
+        assert(reg < REG_ARM32_STK);
 
         return (uint)reg << 8;
     }
 
     internal static uint insEncodeRegT2_M(regNumber reg)
     {
-        assert(reg < REG_STK);
+        assert(reg < REG_ARM32_STK);
 
         return (uint)reg;
     }
 
     internal static uint insEncodeRegT2_N(regNumber reg)
     {
-        assert(reg < REG_STK);
+        assert(reg < REG_ARM32_STK);
 
         return (uint)reg << 16;
     }
@@ -164,7 +163,7 @@ public partial class Emitter
             assert(isFloatReg(reg));
         }
 
-        var result = unchecked((uint)reg - (uint)REG_F0);
+        var result = unchecked((uint)reg - (uint)REG_ARM32_F0);
         if (size == (int)EA_8BYTE)
         {
             result >>= 1;
@@ -205,6 +204,8 @@ public partial class Emitter
 
     internal unsafe uint emitOutput_Thumb1Instr(byte* dst, uint code)
     {
+        RequireArm32Target();
+
         var word1 = code & 0xFFFF;
         assert(word1 == code);
 
@@ -218,6 +219,8 @@ public partial class Emitter
 
     internal unsafe uint emitOutput_Thumb2Instr(byte* dst, uint code)
     {
+        RequireArm32Target();
+
         var word1 = (code >> 16) & 0xFFFF;
         var word2 = code & 0xFFFF;
         assert(((word1 << 16) | word2) == code);
@@ -316,4 +319,3 @@ public partial class Emitter
         return result;
     }
 }
-#endif

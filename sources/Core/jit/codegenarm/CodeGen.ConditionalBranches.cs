@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForJTrue(GenTreeUnOp jtrue)
+    public void genCodeForJTrueArm(GenTreeUnOp jtrue)
     {
         var block = _compiler.compCurBB;
         assert(block is not null);
@@ -27,4 +26,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

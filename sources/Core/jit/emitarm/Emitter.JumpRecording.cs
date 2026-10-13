@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 
 namespace RyuJitSharp;
@@ -20,7 +19,7 @@ public partial class Emitter
             case INS_b:
             case INS_bl:
             {
-                format = IF_T2_J2;
+                format = IF_ARM32_T2_J2;
                 break;
             }
 
@@ -39,7 +38,7 @@ public partial class Emitter
             case INS_bgt:
             case INS_ble:
             {
-                format = IF_LARGEJMP;
+                format = IF_ARM32_LARGEJMP;
                 break;
             }
 
@@ -111,7 +110,7 @@ public partial class Emitter
 
                 switch (format)
                 {
-                    case IF_T2_J2:
+                    case IF_ARM32_T2_J2:
                     {
                         if (JMP_DIST_SMALL_MAX_NEG <= negativeJumpDistance)
                         {
@@ -120,7 +119,7 @@ public partial class Emitter
                         break;
                     }
 
-                    case IF_LARGEJMP:
+                    case IF_ARM32_LARGEJMP:
                     {
                         if (JCC_DIST_SMALL_MAX_NEG <= negativeJumpDistance)
                         {
@@ -146,4 +145,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

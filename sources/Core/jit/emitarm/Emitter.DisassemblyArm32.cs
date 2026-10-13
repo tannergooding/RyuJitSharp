@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.GCInfo.GCtype;
@@ -75,11 +74,11 @@ public partial class Emitter
     private void emitDispRegRange(regNumber reg, int length, emitAttr attr)
     {
         jitprintf("{");
-        emitDispReg(reg, attr, false);
+        emitDispRegArm32(reg, attr, false);
         if (length > 1)
         {
             jitprintf("-");
-            emitDispReg((regNumber)((int)reg + length - 1), attr, false);
+            emitDispRegArm32((regNumber)((int)reg + length - 1), attr, false);
         }
         jitprintf("}");
     }
@@ -98,12 +97,12 @@ public partial class Emitter
         }
         else
         {
-            hasPC = (mask & (int)SRBM_PC) != 0;
-            hasLR = (mask & (int)SRBM_LR) != 0;
-            mask &= ~((int)SRBM_PC | (int)SRBM_LR);
+            hasPC = (mask & (int)SRBM_ARM32_PC) != 0;
+            hasLR = (mask & (int)SRBM_ARM32_LR) != 0;
+            mask &= ~((int)SRBM_ARM32_PC | (int)SRBM_ARM32_LR);
         }
 
-        var reg = REG_R0;
+        var reg = REG_ARM32_R0;
         uint bit = 1;
         var remaining = unchecked((uint)mask);
 
@@ -133,7 +132,7 @@ public partial class Emitter
                 jitprintf(",");
             }
 
-            jitprintf(emitRegName(REG_LR));
+            jitprintf(emitRegName(REG_ARM32_LR));
             printedOne = true;
         }
 
@@ -144,13 +143,13 @@ public partial class Emitter
                 jitprintf(",");
             }
 
-            jitprintf(emitRegName(REG_PC));
+            jitprintf(emitRegName(REG_ARM32_PC));
         }
 
         jitprintf("}");
     }
 
-    private void emitDispShiftOpts(insOpts options)
+    private void emitDispShiftOptsArm32(insOpts options)
     {
         if (options == INS_OPTS_LSL)
         {
@@ -174,13 +173,13 @@ public partial class Emitter
         }
     }
 
-    private void emitDispReg(regNumber reg, emitAttr attr, bool addComma)
+    private void emitDispRegArm32(regNumber reg, emitAttr attr, bool addComma)
     {
         if (isFloatReg(reg))
         {
             if (attr == EA_8BYTE)
             {
-                var regIndex = ((int)reg - (int)REG_F0) >> 1;
+                var regIndex = ((int)reg - (int)REG_ARM32_F0) >> 1;
                 if (regIndex < 10)
                 {
                     jitprintf($"d{regIndex}");
@@ -211,7 +210,7 @@ public partial class Emitter
     private void emitDispAddrR(regNumber reg, emitAttr attr)
     {
         jitprintf("[");
-        emitDispReg(reg, attr, false);
+        emitDispRegArm32(reg, attr, false);
         jitprintf("]");
         emitDispGC(attr);
     }
@@ -219,7 +218,7 @@ public partial class Emitter
     private void emitDispAddrRI(regNumber reg, int immediate, emitAttr attr)
     {
         jitprintf("[");
-        emitDispReg(reg, attr, false);
+        emitDispRegArm32(reg, attr, false);
         if (immediate != 0)
         {
             if (immediate >= 0)
@@ -237,9 +236,9 @@ public partial class Emitter
     private void emitDispAddrRR(regNumber baseReg, regNumber indexReg, emitAttr attr)
     {
         jitprintf("[");
-        emitDispReg(baseReg, attr, false);
+        emitDispRegArm32(baseReg, attr, false);
         jitprintf("+");
-        emitDispReg(indexReg, attr, false);
+        emitDispRegArm32(indexReg, attr, false);
         jitprintf("]");
         emitDispGC(attr);
     }
@@ -247,7 +246,7 @@ public partial class Emitter
     private void emitDispAddrRRI(regNumber baseReg, regNumber indexReg, int shift, emitAttr attr)
     {
         jitprintf("[");
-        emitDispReg(baseReg, attr, false);
+        emitDispRegArm32(baseReg, attr, false);
         jitprintf("+");
         if (shift > 0)
         {
@@ -255,7 +254,7 @@ public partial class Emitter
             jitprintf("*");
         }
 
-        emitDispReg(indexReg, attr, false);
+        emitDispRegArm32(indexReg, attr, false);
         jitprintf("]");
         emitDispGC(attr);
     }
@@ -263,7 +262,7 @@ public partial class Emitter
     private void emitDispAddrPUW(regNumber reg, int immediate, insOpts options, emitAttr attr)
     {
         jitprintf("[");
-        emitDispReg(reg, attr, false);
+        emitDispRegArm32(reg, attr, false);
         if (insOptAnyInc(options))
         {
             jitprintf("!");
@@ -293,7 +292,7 @@ public partial class Emitter
         return ins is INS_cmp or INS_cmn or INS_teq or INS_tst;
     }
 
-    private void emitDispInst(instruction ins, insFlags flags)
+    private void emitDispInstArm32(instruction ins, insFlags flags)
     {
         var instructionName = codeGen.genInsName(ins);
         var length = instructionName.Length;
@@ -312,7 +311,7 @@ public partial class Emitter
         } while (length < 8);
     }
 
-    public unsafe void emitDispInsHex(instrDesc id, byte* code, nuint size)
+    public unsafe void emitDispInsHexArm32(instrDesc id, byte* code, nuint size)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
         if (!compiler.opts.disCodeBytes || compiler.opts.disDiffable)
@@ -364,41 +363,41 @@ public partial class Emitter
         }
     }
 
-    public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
+    public unsafe void emitDispInsArm32(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
-        if ((id.idInsFmt() == IF_LARGEJMP) && id.idIsBound())
+        if ((id.idInsFmt() == IF_ARM32_LARGEJMP) && id.idIsBound())
         {
-            emitDispLargeJmp(id, isNew, doffs, asmfm, offset, code, size, ig);
+            emitDispLargeJmpArm32(id, isNew, doffs, asmfm, offset, code, size, ig);
         }
         else
         {
-            emitDispInsHelp(id, isNew, doffs, asmfm, offset, code, size, ig);
+            emitDispInsHelpArm32(id, isNew, doffs, asmfm, offset, code, size, ig);
         }
     }
 
-    private unsafe void emitDispLargeJmp(instrDesc id, bool isNew, bool doffs, bool asmfm,
+    private unsafe void emitDispLargeJmpArm32(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset, byte* code, nuint size, insGroup? ig)
     {
         // Keep the real descriptor intact; these displayed instructions are synthesized for a pseudo-op.
         var conditionalJump = new instrDescJmp();
         conditionalJump.idIns(emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(id.idIns()))));
-        conditionalJump.idInsFmt(IF_T1_K);
-        conditionalJump.idInsSize(emitInsSize(IF_T1_K));
+        conditionalJump.idInsFmt(IF_ARM32_T1_K);
+        conditionalJump.idInsSize(emitInsSize(IF_ARM32_T1_K));
         conditionalJump.idjShort = true;
         conditionalJump.idAddr().iiaSetInstrCount(1);
         conditionalJump.idDebugOnlyInfo(id.idDebugOnlyInfo());
 
         var conditionalSize = code == null ? 0u : 2u;
-        emitDispInsHelp(conditionalJump, false, doffs, asmfm, offset, code, conditionalSize, null);
+        emitDispInsHelpArm32(conditionalJump, false, doffs, asmfm, offset, code, conditionalSize, null);
 
         code += conditionalSize;
         offset = unchecked(offset + 2);
 
         var unconditionalJump = new instrDescJmp();
         unconditionalJump.idIns(INS_b);
-        unconditionalJump.idInsFmt(IF_T2_J2);
-        unconditionalJump.idInsSize(emitInsSize(IF_T2_J2));
+        unconditionalJump.idInsFmt(IF_ARM32_T2_J2);
+        unconditionalJump.idInsSize(emitInsSize(IF_ARM32_T2_J2));
         unconditionalJump.idjShort = false;
         if (id.idIsBound())
         {
@@ -412,10 +411,10 @@ public partial class Emitter
         unconditionalJump.idDebugOnlyInfo(id.idDebugOnlyInfo());
 
         var branchSize = code == null ? 0u : 4u;
-        emitDispInsHelp(unconditionalJump, isNew, doffs, asmfm, offset, code, branchSize, ig);
+        emitDispInsHelpArm32(unconditionalJump, isNew, doffs, asmfm, offset, code, branchSize, ig);
     }
 
-    private unsafe void emitDispInsHelp(instrDesc id, bool isNew, bool doffs, bool asmfm,
+    private unsafe void emitDispInsHelpArm32(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset, byte* code, nuint size, insGroup? ig)
     {
         var compiler = _compiler ?? throw new FatalJitException("Instruction display requires an active compiler.");
@@ -448,12 +447,12 @@ public partial class Emitter
             codeRW = unchecked(code + writeableOffset);
         }
 
-        emitDispInsHex(id, codeRW, size);
+        emitDispInsHexArm32(id, codeRW, size);
         jitprintf("      ");
 
         var ins = id.idIns();
         var format = id.idInsFmt();
-        emitDispInst(ins, id.idInsFlags());
+        emitDispInstArm32(ins, id.idInsFlags());
         assert(!isNew || ((nuint)emitSizeOfInsDsc(id) == emitCurIGfreeNext - id.StorageOffset));
 
         var attr = id.idGCref() switch
@@ -467,39 +466,39 @@ public partial class Emitter
 
         switch (format)
         {
-            case IF_T1_A:
-            case IF_T2_A:
+            case IF_ARM32_T1_A:
+            case IF_ARM32_T2_A:
             {
                 break;
             }
 
-            case IF_T1_L0:
-            case IF_T2_B:
+            case IF_ARM32_T1_L0:
+            case IF_ARM32_T2_B:
             {
-                emitDispImm(unchecked((int)emitGetInsSC(id)), false);
+                emitDispImm(unchecked((int)emitGetInsSCForTarget(id)), false);
                 break;
             }
 
-            case IF_T1_B:
+            case IF_ARM32_T1_B:
             {
-                emitDispCond(unchecked((int)emitGetInsSC(id)));
+                emitDispCond(unchecked((int)emitGetInsSCForTarget(id)));
                 break;
             }
 
-            case IF_T1_L1:
-            case IF_T2_I1:
+            case IF_ARM32_T1_L1:
+            case IF_ARM32_T2_I1:
             {
-                emitDispRegmask(unchecked((int)emitGetInsSC(id)), true);
+                emitDispRegmask(unchecked((int)emitGetInsSCForTarget(id)), true);
                 break;
             }
 
-            case IF_T2_E2:
+            case IF_ARM32_T2_E2:
             {
                 if (ins == INS_vmrs)
                 {
-                    if (id.idReg1() != REG_R15)
+                    if (id.idReg1() != REG_ARM32_R15)
                     {
-                        emitDispReg(id.idReg1(), attr, true);
+                        emitDispRegArm32(id.idReg1(), attr, true);
                         jitprintf("FPSCR");
                     }
                     else
@@ -509,20 +508,20 @@ public partial class Emitter
                 }
                 else
                 {
-                    emitDispReg(id.idReg1(), attr, false);
+                    emitDispRegArm32(id.idReg1(), attr, false);
                 }
                 break;
             }
 
-            case IF_T1_D1:
+            case IF_ARM32_T1_D1:
             {
-                emitDispReg(id.idReg1(), attr, false);
+                emitDispRegArm32(id.idReg1(), attr, false);
                 break;
             }
 
-            case IF_T1_D2:
+            case IF_ARM32_T1_D2:
             {
-                emitDispReg(id.idReg3(), attr, false);
+                emitDispRegArm32(id.idReg3(), attr, false);
                 var debugInfo = id.idDebugOnlyInfo()
                     ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
                 if (debugInfo.idMemCookie != 0)
@@ -533,27 +532,27 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T1_F:
+            case IF_ARM32_T1_F:
             {
-                emitDispReg(REG_SP, attr, true);
-                emitDispImm(unchecked((int)emitGetInsSC(id)), false);
+                emitDispRegArm32(REG_ARM32_SP, attr, true);
+                emitDispImm(unchecked((int)emitGetInsSCForTarget(id)), false);
                 break;
             }
 
-            case IF_T1_J0:
-            case IF_T2_L1:
-            case IF_T2_L2:
+            case IF_ARM32_T1_J0:
+            case IF_ARM32_T2_L1:
+            case IF_ARM32_T2_L2:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                immediate = unchecked((int)emitGetInsSC(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 emitDispImm(immediate, false);
                 break;
             }
 
-            case IF_T2_N:
+            case IF_ARM32_T2_N:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                immediate = unchecked((int)emitGetInsSC(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 if (compiler.opts.disDiffable)
                 {
                     immediate = 0xD1FF;
@@ -562,18 +561,18 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T2_N3:
+            case IF_ARM32_T2_N3:
             {
-                emitDispReg(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg1(), attr, true);
                 jitprintf(ins == INS_movw ? "LOW RELOC " : "HIGH RELOC ");
                 emitDispReloc(emitGetInsRelocValue(id));
                 break;
             }
 
-            case IF_T2_N2:
+            case IF_ARM32_T2_N2:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                immediate = unchecked((int)emitGetInsSC(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 dataSection? labelTable = null;
                 for (var section = emitConsDsc.dsdList; section is not null; section = section.dsNext)
                 {
@@ -608,7 +607,7 @@ public partial class Emitter
                     if (isBound)
                     {
                         jitprintf($"\n\n    J_M{compiler.compMethodID:D3}_DS{immediate:D2} LABEL   DWORD");
-                        var blockCount = labelTable.dsSize / TARGET_POINTER_SIZE;
+                        var blockCount = labelTable.dsSize / Configuration.TARGET_POINTER_SIZE;
                         for (uint index = 0; index < blockCount; index++)
                         {
                             var block = blocks[index]
@@ -622,54 +621,54 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T2_H2:
-            case IF_T2_K2:
+            case IF_ARM32_T2_H2:
+            case IF_ARM32_T2_K2:
             {
-                emitDispAddrRI(id.idReg1(), unchecked((int)emitGetInsSC(id)), attr);
+                emitDispAddrRI(id.idReg1(), unchecked((int)emitGetInsSCForTarget(id)), attr);
                 break;
             }
 
-            case IF_T2_K3:
+            case IF_ARM32_T2_K3:
             {
-                emitDispAddrRI(REG_PC, unchecked((int)emitGetInsSC(id)), attr);
+                emitDispAddrRI(REG_ARM32_PC, unchecked((int)emitGetInsSCForTarget(id)), attr);
                 break;
             }
 
-            case IF_T1_J1:
-            case IF_T2_I0:
+            case IF_ARM32_T1_J1:
+            case IF_ARM32_T2_I0:
             {
-                emitDispReg(id.idReg1(), attr, false);
+                emitDispRegArm32(id.idReg1(), attr, false);
                 jitprintf("!, ");
-                emitDispRegmask(unchecked((int)emitGetInsSC(id)), false);
+                emitDispRegmask(unchecked((int)emitGetInsSCForTarget(id)), false);
                 break;
             }
 
-            case IF_T1_D0:
-            case IF_T1_E:
-            case IF_T2_C3:
-            case IF_T2_C9:
-            case IF_T2_C10:
+            case IF_ARM32_T1_D0:
+            case IF_ARM32_T1_E:
+            case IF_ARM32_T2_C3:
+            case IF_ARM32_T2_C9:
+            case IF_ARM32_T2_C10:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, false);
-                if ((format == IF_T1_E) && (ins == INS_rsb))
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, false);
+                if ((format == IF_ARM32_T1_E) && (ins == INS_rsb))
                 {
                     jitprintf(", 0");
                 }
                 break;
             }
 
-            case IF_T2_E1:
+            case IF_ARM32_T2_E1:
             {
-                emitDispReg(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg1(), attr, true);
                 emitDispAddrR(id.idReg2(), attr);
                 break;
             }
 
-            case IF_T2_D1:
+            case IF_ARM32_T2_D1:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                immediate = unchecked((int)emitGetInsSC(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 var leastSignificantBit = (immediate >> 5) & 0x1f;
                 var mostSignificantBit = immediate & 0x1f;
                 emitDispImm(leastSignificantBit, true);
@@ -677,75 +676,75 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T1_C:
-            case IF_T1_G:
-            case IF_T2_C2:
-            case IF_T2_H1:
-            case IF_T2_K1:
-            case IF_T2_L0:
-            case IF_T2_M0:
+            case IF_ARM32_T1_C:
+            case IF_ARM32_T1_G:
+            case IF_ARM32_T2_C2:
+            case IF_ARM32_T2_H1:
+            case IF_ARM32_T2_K1:
+            case IF_ARM32_T2_L0:
+            case IF_ARM32_T2_M0:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                immediate = unchecked((int)emitGetInsSC(id));
-                if (emitInsIsLoadOrStore(ins))
+                emitDispRegArm32(id.idReg1(), attr, true);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
+                if (emitInsIsArmLoadOrStore(ins))
                 {
                     emitDispAddrRI(id.idReg2(), immediate, attr);
                 }
                 else
                 {
-                    emitDispReg(id.idReg2(), attr, true);
+                    emitDispRegArm32(id.idReg2(), attr, true);
                     emitDispImm(immediate, false);
                 }
                 break;
             }
 
-            case IF_T1_J2:
+            case IF_ARM32_T1_J2:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                immediate = unchecked((int)emitGetInsSC(id));
-                if (emitInsIsLoadOrStore(ins))
+                emitDispRegArm32(id.idReg1(), attr, true);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
+                if (emitInsIsArmLoadOrStore(ins))
                 {
-                    emitDispAddrRI(REG_SP, immediate, attr);
+                    emitDispAddrRI(REG_ARM32_SP, immediate, attr);
                 }
                 else
                 {
-                    emitDispReg(REG_SP, attr, true);
+                    emitDispRegArm32(REG_ARM32_SP, attr, true);
                     emitDispImm(immediate, false);
                 }
                 break;
             }
 
-            case IF_T2_K4:
+            case IF_ARM32_T2_K4:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispAddrRI(REG_PC, unchecked((int)emitGetInsSC(id)), attr);
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispAddrRI(REG_ARM32_PC, unchecked((int)emitGetInsSCForTarget(id)), attr);
                 break;
             }
 
-            case IF_T2_C1:
-            case IF_T2_C8:
+            case IF_ARM32_T2_C1:
+            case IF_ARM32_T2_C8:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, false);
-                immediate = unchecked((int)emitGetInsSC(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, false);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 if (id.idInsOpt() == INS_OPTS_RRX)
                 {
-                    emitDispShiftOpts(id.idInsOpt());
+                    emitDispShiftOptsArm32(id.idInsOpt());
                     assert(immediate == 1);
                 }
                 else if (immediate > 0)
                 {
-                    emitDispShiftOpts(id.idInsOpt());
+                    emitDispShiftOptsArm32(id.idInsOpt());
                     emitDispImm(immediate, false);
                 }
                 break;
             }
 
-            case IF_T2_C6:
+            case IF_ARM32_T2_C6:
             {
-                immediate = unchecked((int)emitGetInsSC(id));
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, immediate != 0);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, immediate != 0);
                 if (immediate != 0)
                 {
                     emitDispImm(immediate, false);
@@ -753,45 +752,45 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T2_C7:
+            case IF_ARM32_T2_C7:
             {
-                emitDispAddrRRI(id.idReg1(), id.idReg2(), unchecked((int)emitGetInsSC(id)), attr);
+                emitDispAddrRRI(id.idReg1(), id.idReg2(), unchecked((int)emitGetInsSCForTarget(id)), attr);
                 break;
             }
 
-            case IF_T2_H0:
+            case IF_ARM32_T2_H0:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispAddrPUW(id.idReg2(), unchecked((int)emitGetInsSC(id)), id.idInsOpt(), attr);
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispAddrPUW(id.idReg2(), unchecked((int)emitGetInsSCForTarget(id)), id.idInsOpt(), attr);
                 break;
             }
 
-            case IF_T1_H:
+            case IF_ARM32_T1_H:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                if (emitInsIsLoadOrStore(ins))
+                emitDispRegArm32(id.idReg1(), attr, true);
+                if (emitInsIsArmLoadOrStore(ins))
                 {
                     emitDispAddrRR(id.idReg2(), id.idReg3(), attr);
                 }
                 else
                 {
-                    emitDispReg(id.idReg2(), attr, true);
-                    emitDispReg(id.idReg3(), attr, false);
+                    emitDispRegArm32(id.idReg2(), attr, true);
+                    emitDispRegArm32(id.idReg3(), attr, false);
                 }
                 break;
             }
 
-            case IF_T2_C4:
-            case IF_T2_C5:
-            case IF_T2_VFP3:
+            case IF_ARM32_T2_C4:
+            case IF_ARM32_T2_C5:
+            case IF_ARM32_T2_VFP3:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, true);
-                emitDispReg(id.idReg3(), attr, false);
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, true);
+                emitDispRegArm32(id.idReg3(), attr, false);
                 break;
             }
 
-            case IF_T2_VFP2:
+            case IF_ARM32_T2_VFP2:
             {
                 switch (ins)
                 {
@@ -799,8 +798,8 @@ public partial class Emitter
                     case INS_vcvt_d2u:
                     case INS_vcvt_d2f:
                     {
-                        emitDispReg(id.idReg1(), EA_4BYTE, true);
-                        emitDispReg(id.idReg2(), EA_8BYTE, false);
+                        emitDispRegArm32(id.idReg1(), EA_4BYTE, true);
+                        emitDispRegArm32(id.idReg2(), EA_8BYTE, false);
                         break;
                     }
 
@@ -808,30 +807,30 @@ public partial class Emitter
                     case INS_vcvt_u2d:
                     case INS_vcvt_f2d:
                     {
-                        emitDispReg(id.idReg1(), EA_8BYTE, true);
-                        emitDispReg(id.idReg2(), EA_4BYTE, false);
+                        emitDispRegArm32(id.idReg1(), EA_8BYTE, true);
+                        emitDispRegArm32(id.idReg2(), EA_4BYTE, false);
                         break;
                     }
 
                     default:
                     {
-                        emitDispReg(id.idReg1(), attr, true);
-                        emitDispReg(id.idReg2(), attr, false);
+                        emitDispRegArm32(id.idReg1(), attr, true);
+                        emitDispRegArm32(id.idReg2(), attr, false);
                         break;
                     }
                 }
                 break;
             }
 
-            case IF_T2_VLDST:
+            case IF_ARM32_T2_VLDST:
             {
-                immediate = unchecked((int)emitGetInsSC(id));
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 switch (ins)
                 {
                     case INS_vldr:
                     case INS_vstr:
                     {
-                        emitDispReg(id.idReg1(), attr, true);
+                        emitDispRegArm32(id.idReg1(), attr, true);
                         emitDispAddrPUW(id.idReg2(), immediate, id.idInsOpt(), attr);
                         break;
                     }
@@ -839,7 +838,7 @@ public partial class Emitter
                     case INS_vldm:
                     case INS_vstm:
                     {
-                        emitDispReg(id.idReg2(), attr, false);
+                        emitDispRegArm32(id.idReg2(), attr, false);
                         if (insOptAnyInc(id.idInsOpt()))
                         {
                             jitprintf("!");
@@ -865,23 +864,23 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T2_VMOVD:
+            case IF_ARM32_T2_VMOVD:
             {
                 switch (ins)
                 {
                     case INS_vmov_i2d:
                     {
-                        emitDispReg(id.idReg1(), attr, true);
-                        emitDispReg(id.idReg2(), EA_4BYTE, true);
-                        emitDispReg(id.idReg3(), EA_4BYTE, false);
+                        emitDispRegArm32(id.idReg1(), attr, true);
+                        emitDispRegArm32(id.idReg2(), EA_4BYTE, true);
+                        emitDispRegArm32(id.idReg3(), EA_4BYTE, false);
                         break;
                     }
 
                     case INS_vmov_d2i:
                     {
-                        emitDispReg(id.idReg1(), EA_4BYTE, true);
-                        emitDispReg(id.idReg2(), EA_4BYTE, true);
-                        emitDispReg(id.idReg3(), attr, false);
+                        emitDispRegArm32(id.idReg1(), EA_4BYTE, true);
+                        emitDispRegArm32(id.idReg2(), EA_4BYTE, true);
+                        emitDispRegArm32(id.idReg3(), attr, false);
                         break;
                     }
 
@@ -894,25 +893,25 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T2_VMOVS:
+            case IF_ARM32_T2_VMOVS:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, false);
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, false);
                 break;
             }
 
-            case IF_T2_G1:
+            case IF_ARM32_T2_G1:
             {
-                emitDispReg(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg1(), attr, true);
                 emitDispAddrRR(id.idReg2(), id.idReg3(), attr);
                 break;
             }
 
-            case IF_T2_D0:
+            case IF_ARM32_T2_D0:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, true);
-                immediate = unchecked((int)emitGetInsSC(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, true);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 if (ins == INS_bfi)
                 {
                     var leastSignificantBit = (immediate >> 5) & 0x1f;
@@ -937,61 +936,61 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T2_C0:
+            case IF_ARM32_T2_C0:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, true);
-                emitDispReg(id.idReg3(), attr, false);
-                immediate = unchecked((int)emitGetInsSC(id));
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, true);
+                emitDispRegArm32(id.idReg3(), attr, false);
+                immediate = unchecked((int)emitGetInsSCForTarget(id));
                 if (id.idInsOpt() == INS_OPTS_RRX)
                 {
-                    emitDispShiftOpts(id.idInsOpt());
+                    emitDispShiftOptsArm32(id.idInsOpt());
                     assert(immediate == 1);
                 }
                 else if (immediate > 0)
                 {
-                    emitDispShiftOpts(id.idInsOpt());
+                    emitDispShiftOptsArm32(id.idInsOpt());
                     emitDispImm(immediate, false);
                 }
                 break;
             }
 
-            case IF_T2_E0:
+            case IF_ARM32_T2_E0:
             {
-                emitDispReg(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg1(), attr, true);
                 if (id.idIsLclVar())
                 {
                     emitDispAddrRRI(id.idReg2(), codeGen.rsGetRsvdReg(), 0, attr);
                 }
                 else
                 {
-                    emitDispAddrRRI(id.idReg2(), id.idReg3(), unchecked((int)emitGetInsSC(id)), attr);
+                    emitDispAddrRRI(id.idReg2(), id.idReg3(), unchecked((int)emitGetInsSCForTarget(id)), attr);
                 }
                 break;
             }
 
-            case IF_T2_G0:
+            case IF_ARM32_T2_G0:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, true);
-                emitDispAddrPUW(id.idReg3(), unchecked((int)emitGetInsSC(id)), id.idInsOpt(), attr);
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, true);
+                emitDispAddrPUW(id.idReg3(), unchecked((int)emitGetInsSCForTarget(id)), id.idInsOpt(), attr);
                 break;
             }
 
-            case IF_T2_F1:
-            case IF_T2_F2:
+            case IF_ARM32_T2_F1:
+            case IF_ARM32_T2_F2:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                emitDispReg(id.idReg2(), attr, true);
-                emitDispReg(id.idReg3(), attr, true);
-                emitDispReg(id.idReg4(), attr, false);
+                emitDispRegArm32(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg2(), attr, true);
+                emitDispRegArm32(id.idReg3(), attr, true);
+                emitDispRegArm32(id.idReg4(), attr, false);
                 break;
             }
 
-            case IF_T1_J3:
-            case IF_T2_M1:
+            case IF_ARM32_T1_J3:
+            case IF_ARM32_T2_M1:
             {
-                emitDispReg(id.idReg1(), attr, true);
+                emitDispRegArm32(id.idReg1(), attr, true);
                 if (id.idIsBound())
                 {
                     var jump = id as instrDescJmp
@@ -1011,33 +1010,33 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T1_I:
+            case IF_ARM32_T1_I:
             {
-                emitDispReg(id.idReg1(), attr, true);
-                goto case IF_T1_K;
+                emitDispRegArm32(id.idReg1(), attr, true);
+                goto case IF_ARM32_T1_K;
             }
 
-            case IF_T1_K:
-            case IF_T1_M:
+            case IF_ARM32_T1_K:
+            case IF_ARM32_T1_M:
             {
                 assert(((instrDescJmp)id).idjShort);
                 jitprintf("SHORT ");
-                goto case IF_T2_N1;
+                goto case IF_ARM32_T2_N1;
             }
 
-            case IF_T2_N1:
+            case IF_ARM32_T2_N1:
             {
-                if (format == IF_T2_N1)
+                if (format == IF_ARM32_T2_N1)
                 {
-                    emitDispReg(id.idReg1(), attr, true);
+                    emitDispRegArm32(id.idReg1(), attr, true);
                     jitprintf(ins == INS_movw ? "LOW ADDRESS " : "HIGH ADDRESS ");
                 }
-                goto case IF_T2_J1;
+                goto case IF_ARM32_T2_J1;
             }
 
-            case IF_T2_J1:
-            case IF_T2_J2:
-            case IF_LARGEJMP:
+            case IF_ARM32_T2_J1:
+            case IF_ARM32_T2_J2:
+            case IF_ARM32_LARGEJMP:
             {
                 if (id.idAddr().iiaHasInstrCount())
                 {
@@ -1075,7 +1074,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_T2_J3:
+            case IF_ARM32_T2_J3:
             {
                 var debugInfo = id.idDebugOnlyInfo()
                     ?? throw new FatalJitException("Instruction display requires descriptor debug information.");
@@ -1103,4 +1102,3 @@ public partial class Emitter
         jitprintf("\n");
     }
 }
-#endif

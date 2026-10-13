@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 
@@ -11,20 +10,20 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private void genLclHeapArm32(GenTree tree)
+    private void genLclHeapArm(GenTree tree)
     {
         assert(tree.Oper == GT_LCLHEAP);
         assert(_compiler.compLocallocUsed);
 
         var size = tree.AsUnOp().Op1;
-        noway_assert(size.Type.ActualType is TYP_INT or TYP_I_IMPL);
+        noway_assert((size.Type.ActualType is var __targetAliasValue0 && (__targetAliasValue0 is TYP_INT || __targetAliasValue0 == TYP_I_IMPL)));
 
         var regCnt = tree.RegNum;
         var type = size.Type.ActualType;
         var attr = type.EmitSize;
         BasicBlock? endLabel = null;
         uint stackAdjustment = 0;
-        var regTmp = REG_NA;
+        var regTmp = REG_ARM32_NA;
         const int IllegalLastTouchDelta = -1;
         var lastTouchDelta = IllegalLastTouchDelta;
 
@@ -56,19 +55,20 @@ public sealed partial class CodeGen
 
         if (_compiler.lvaOutgoingArgSpaceSize.Value > 0)
         {
-            assert((_compiler.lvaOutgoingArgSpaceSize.Value % STACK_ALIGN) == 0);
+            assert((_compiler.lvaOutgoingArgSpaceSize.Value % Configuration.STACK_ALIGN) == 0);
             // Restore outgoing argument space after the dynamic allocation and probe it if needed.
-            _ = genStackPointerAdjustment(_compiler.lvaOutgoingArgSpaceSize.Value, regTmp);
+            _ = genStackPointerAdjustmentArm(_compiler.lvaOutgoingArgSpaceSize.Value, regTmp);
             stackAdjustment = unchecked(stackAdjustment + (uint)_compiler.lvaOutgoingArgSpaceSize.Value);
         }
 
         if (size.Oper.IsCnsIntOrI)
         {
             var amount = unchecked((uint)size.AsIntCon().IconValue);
-            amount = unchecked((amount + (uint)STACK_ALIGN - 1) & ~((uint)STACK_ALIGN - 1));
-            assert(STACK_ALIGN == (REGSIZE_BYTES * 2));
-            assert((amount % (uint)REGSIZE_BYTES) == 0);
-            var pushCount = amount / (uint)REGSIZE_BYTES;
+            amount = unchecked((amount + (uint)Configuration.STACK_ALIGN - 1) &
+                ~((uint)Configuration.STACK_ALIGN - 1));
+            assert(Configuration.STACK_ALIGN == (Configuration.REGSIZE_BYTES * 2));
+            assert((amount % (uint)Configuration.REGSIZE_BYTES) == 0);
+            var pushCount = amount / (uint)Configuration.REGSIZE_BYTES;
 
             if (pushCount <= 4)
             {
@@ -85,8 +85,8 @@ public sealed partial class CodeGen
             }
             else if (!_compiler.info.compInitMem && (amount < _compiler.eeGetPageSize()))
             {
-                Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, regCnt, REG_SP, 0, INS_FLAGS_DONT_CARE);
-                inst_RV_IV(INS_sub, REG_SP, unchecked((nint)amount), EA_PTRSIZE);
+                Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, regCnt, REG_ARM32_SP, 0, INS_FLAGS_DONT_CARE);
+                inst_RV_IV(INS_sub, REG_ARM32_SP, unchecked((nint)amount), EA_PTRSIZE);
                 lastTouchDelta = unchecked((int)amount);
                 goto ALLOC_DONE;
             }
@@ -95,8 +95,8 @@ public sealed partial class CodeGen
         }
         else
         {
-            inst_RV_IV(INS_add, regCnt, STACK_ALIGN - 1, type.EmitActualSize);
-            inst_RV_IV(INS_and, regCnt, ~(STACK_ALIGN - 1), type.EmitActualSize);
+            inst_RV_IV(INS_add, regCnt, Configuration.STACK_ALIGN - 1, type.EmitActualSize);
+            inst_RV_IV(INS_and, regCnt, ~(Configuration.STACK_ALIGN - 1), type.EmitActualSize);
         }
 
         if (_compiler.info.compInitMem)
@@ -104,11 +104,11 @@ public sealed partial class CodeGen
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, regTmp);
             var loop = genCreateTempLabel();
             genDefineTempLabel(loop);
-            noway_assert(STACK_ALIGN == 8);
+            noway_assert(Configuration.STACK_ALIGN == 8);
             inst_IV(INS_push, unchecked((nint)genRegMask(regTmp).Lower));
             inst_IV(INS_push, unchecked((nint)genRegMask(regTmp).Lower));
             assert(genIsValidIntReg(regCnt));
-            Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, regCnt, STACK_ALIGN, INS_FLAGS_SET);
+            Emitter.emitIns_R_I(INS_sub, EA_PTRSIZE, regCnt, Configuration.STACK_ALIGN, INS_FLAGS_SET);
             inst_JMP(EJ_ne, loop);
             lastTouchDelta = 0;
         }
@@ -118,25 +118,25 @@ public sealed partial class CodeGen
             // after each page is touched.
             var loop = genCreateTempLabel();
             var done = genCreateTempLabel();
-            Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt, INS_FLAGS_SET);
+            Emitter.emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE_ARM, regCnt, INS_FLAGS_SET);
             inst_JMP(EJ_vc, loop);
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
             genDefineTempLabel(loop);
-            Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, regTmp, REG_SPBASE, 0, INS_FLAGS_DONT_CARE);
-            Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE,
+            Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, regTmp, REG_SPBASE_ARM, 0, INS_FLAGS_DONT_CARE);
+            Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE_ARM,
                 unchecked((int)_compiler.eeGetPageSize()), INS_FLAGS_DONT_CARE);
             Emitter.emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);
             inst_JMP(EJ_lo, done);
-            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, regTmp, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM, regTmp, canSkip: false);
             inst_JMP(EJ_jmp, loop);
             genDefineTempLabel(done);
-            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE_ARM, regCnt, canSkip: false);
         }
 
     ALLOC_DONE:
         if (stackAdjustment != 0)
         {
-            assert((stackAdjustment % STACK_ALIGN) == 0);
+            assert((stackAdjustment % Configuration.STACK_ALIGN) == 0);
             assert((lastTouchDelta == IllegalLastTouchDelta) || (lastTouchDelta >= 0));
 
             var needsProbe = lastTouchDelta == IllegalLastTouchDelta;
@@ -144,25 +144,26 @@ public sealed partial class CodeGen
             {
                 // The native unsigned additions wrap at target width before the host-sized page comparison.
                 var probeDistance = unchecked(stackAdjustment + unchecked((uint)lastTouchDelta) +
-                    (uint)STACK_PROBE_BOUNDARY_THRESHOLD_BYTES);
+                    (uint)STACK_PROBE_BOUNDARY_THRESHOLD_BYTES_ARM);
                 needsProbe = (nuint)probeDistance > _compiler.eeGetPageSize();
             }
 
             if (needsProbe)
             {
-                _ = genStackPointerConstantAdjustmentLoopWithProbe(unchecked(-(nint)stackAdjustment), regTmp);
+                _ = genStackPointerConstantAdjustmentLoopWithProbeArm(
+                    unchecked(-(nint)stackAdjustment), regTmp);
             }
             else
             {
-                genStackPointerConstantAdjustment(unchecked(-(nint)stackAdjustment), regTmp);
+                genStackPointerConstantAdjustmentArm(unchecked(-(nint)stackAdjustment), regTmp);
             }
 
-            _ = genInstrWithConstant(INS_add, EA_PTRSIZE, regCnt, REG_SPBASE,
+            _ = genInstrWithConstantArm(INS_add, EA_PTRSIZE, regCnt, REG_SPBASE_ARM,
                 unchecked((nint)stackAdjustment), regTmp);
         }
         else
         {
-            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, regCnt, REG_SPBASE, canSkip: false);
+            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, regCnt, REG_SPBASE_ARM, canSkip: false);
         }
 
     BAILOUT:
@@ -174,4 +175,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

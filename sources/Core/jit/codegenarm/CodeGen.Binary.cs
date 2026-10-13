@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForBinary(GenTreeOp treeNode)
+    public void genCodeForBinaryArm(GenTreeOp treeNode)
     {
         var oper = treeNode.Oper;
         var targetReg = treeNode.RegNum;
@@ -22,7 +21,7 @@ public sealed partial class CodeGen
 
         var ins = genGetInsForOper(oper, targetType);
 
-        noway_assert(targetReg != REG_NA);
+        noway_assert(targetReg != REG_ARM32_NA);
 
         if (oper is GT_ADD_LO or GT_SUB_LO)
         {
@@ -38,4 +37,3 @@ public sealed partial class CodeGen
         genProduceReg(treeNode);
     }
 }
-#endif

@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -12,12 +12,17 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_R_D(instruction ins, emitAttr attr, uint offs, regNumber reg)
+    private void emitIns_R_DArm32(instruction ins, emitAttr attr, uint offs, regNumber reg)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 data-label address recording is not available for this target.");
+        }
+
         assert(_compiler is not null);
         noway_assert((ins == INS_movw) || (ins == INS_movt));
 
-        var format = IF_T2_N2;
+        var format = IF_ARM32_T2_N2;
         var id = emitNewInstrSC(attr, unchecked((nint)offs));
         var size = emitInsSize(format);
 
@@ -35,4 +40,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

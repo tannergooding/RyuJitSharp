@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 
@@ -11,7 +10,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForLclVar(GenTreeLclVar tree)
+    public void genCodeForLclVarArm(GenTreeLclVar tree)
     {
         assert((tree.Flags & GTF_VAR_DEF) == 0);
 
@@ -24,14 +23,14 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForStoreLclFld(GenTreeLclFld tree)
+    public void genCodeForStoreLclFldArm(GenTreeLclFld tree)
     {
         var targetType = tree.Type;
         var targetReg = tree.RegNum;
         var offset = tree.LclOffs;
 
         noway_assert(targetType is not TYP_STRUCT);
-        noway_assert(targetReg == REG_NA);
+        noway_assert(targetReg == REG_ARM32_NA);
 
         var varNum = tree.LclNum;
         ref var varDsc = ref _compiler.lvaGetDesc(varNum);
@@ -50,7 +49,7 @@ public sealed partial class CodeGen
         {
             dataReg = data.RegNum;
         }
-        assert(dataReg != REG_NA);
+        assert(dataReg != REG_ARM32_NA);
 
         if (tree.IsOffsetMisaligned)
         {
@@ -79,10 +78,10 @@ public sealed partial class CodeGen
         }
 
         genUpdateLife(tree);
-        varDsc.RegNum = REG_STK;
+        varDsc.RegNum = REG_ARM32_STK;
     }
 
-    public void genCodeForStoreLclVar(GenTreeLclVar tree)
+    public void genCodeForStoreLclVarArm(GenTreeLclVar tree)
     {
         var data = tree.Op1;
         if (data.SkipCopyOrReload.IsMultiRegNode)
@@ -113,10 +112,10 @@ public sealed partial class CodeGen
         {
             dataReg = data.RegNum;
         }
-        assert(dataReg != REG_NA);
+        assert(dataReg != REG_ARM32_NA);
 
         var targetReg = tree.RegNum;
-        if (targetReg == REG_NA)
+        if (targetReg == REG_ARM32_NA)
         {
             inst_set_SV_var(tree);
             var ins = ins_StoreFromSrc(dataReg, targetType);
@@ -136,17 +135,4 @@ public sealed partial class CodeGen
         genUpdateLifeStore(tree, targetReg, ref varDsc);
     }
 
-    private void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
-    {
-        if (targetReg != REG_NA)
-        {
-            genProduceReg(tree);
-        }
-        else
-        {
-            genUpdateLife(tree);
-            varDsc.RegNum = REG_STK;
-        }
-    }
 }
-#endif

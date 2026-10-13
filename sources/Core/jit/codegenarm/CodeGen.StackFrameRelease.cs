@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 
@@ -11,7 +10,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private unsafe void genFreeLclFrame(uint frameSize, ref bool unwindStarted)
+    private unsafe void genFreeLclFrameArm(uint frameSize, ref bool unwindStarted)
     {
         assert(Emitter.emitGeneratingEpilogOrFuncletEpilog());
 
@@ -29,12 +28,12 @@ public sealed partial class CodeGen
                 unwindStarted = true;
             }
 
-            Emitter.emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, unchecked((int)frameSize), INS_FLAGS_DONT_CARE);
+            Emitter.emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE_ARM, unchecked((int)frameSize), INS_FLAGS_DONT_CARE);
         }
         else
         {
             // LR is restored after this adjustment; r12 may hold a fast-tailcall target.
-            var tmpReg = REG_LR;
+            var tmpReg = REG_ARM32_LR;
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, unchecked((nint)frameSize));
             if (unwindStarted)
             {
@@ -48,10 +47,9 @@ public sealed partial class CodeGen
                 unwindStarted = true;
             }
 
-            Emitter.emitIns_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, tmpReg, INS_FLAGS_DONT_CARE);
+            Emitter.emitIns_R_R(INS_add, EA_PTRSIZE, REG_SPBASE_ARM, tmpReg, INS_FLAGS_DONT_CARE);
         }
 
         _compiler.unwindAllocStack(frameSize);
     }
 }
-#endif

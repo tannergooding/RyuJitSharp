@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.Globals;
@@ -52,7 +51,7 @@ public partial class Emitter
             default:
             {
                 NYI("emitIns_R_S");
-                baseRegUsed = REG_NA;
+                baseRegUsed = REG_ARM32_NA;
                 return;
             }
         }
@@ -73,7 +72,7 @@ public partial class Emitter
         {
             if (undisp <= 0x03fc)
             {
-                fmt = IF_T2_VLDST;
+                fmt = IF_ARM32_T2_VLDST;
             }
             else
             {
@@ -86,32 +85,32 @@ public partial class Emitter
         }
         else if (emitInsIsLoadOrStoreForCodeGen(ins))
         {
-            if (isLowRegister(reg1) && (reg2 == REG_SP) && (ins == INS_ldr) &&
+            if (isLowRegister(reg1) && (reg2 == REG_ARM32_SP) && (ins == INS_ldr) &&
                 ((disp & 0x03fc) == disp))
             {
-                fmt = IF_T1_J2;
+                fmt = IF_ARM32_T1_J2;
             }
             else if ((disp >= 0) && (disp <= 0x0fff))
             {
-                fmt = IF_T2_K1;
+                fmt = IF_ARM32_T2_K1;
             }
             else if (undisp <= 0x0ff)
             {
-                fmt = IF_T2_H0;
+                fmt = IF_ARM32_T2_H0;
             }
             else
             {
                 var rsvdReg = codeGen.rsGetRsvdReg();
                 recordArm32InsGenStackOffset(rsvdReg, varx, offs, isFloatUsage: false, out baseRegUsed);
-                fmt = IF_T2_E0;
+                fmt = IF_ARM32_T2_E0;
                 assert(baseRegUsed == reg2);
             }
         }
         else if (ins == INS_add)
         {
-            if (isLowRegister(reg1) && (reg2 == REG_SP) && ((disp & 0x03fc) == disp))
+            if (isLowRegister(reg1) && (reg2 == REG_ARM32_SP) && ((disp & 0x03fc) == disp))
             {
-                fmt = IF_T1_J2;
+                fmt = IF_ARM32_T1_J2;
             }
             else if (undisp <= 0x0fff)
             {
@@ -122,7 +121,7 @@ public partial class Emitter
                 }
 
                 ins = ins == INS_add ? INS_addw : INS_subw;
-                fmt = IF_T2_M0;
+                fmt = IF_ARM32_T2_M0;
             }
             else
             {
@@ -135,11 +134,11 @@ public partial class Emitter
         }
         else if (ins is INS_movw or INS_movt)
         {
-            fmt = IF_T2_N;
+            fmt = IF_ARM32_T2_N;
         }
 
-        assert((fmt == IF_T1_J2) || (fmt == IF_T2_E0) || (fmt == IF_T2_H0) || (fmt == IF_T2_K1) ||
-            (fmt == IF_T2_L0) || (fmt == IF_T2_N) || (fmt == IF_T2_VLDST) || (fmt == IF_T2_M0));
+        assert((fmt == IF_ARM32_T1_J2) || (fmt == IF_ARM32_T2_E0) || (fmt == IF_ARM32_T2_H0) || (fmt == IF_ARM32_T2_K1) ||
+            (fmt == IF_ARM32_T2_L0) || (fmt == IF_ARM32_T2_N) || (fmt == IF_ARM32_T2_VLDST) || (fmt == IF_ARM32_T2_M0));
         assert(sf != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrCns(attr, disp);
@@ -150,9 +149,9 @@ public partial class Emitter
         id.idInsOpt(INS_OPTS_NONE);
         id.idReg1(reg1);
         id.idReg2(reg2);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
-        if (reg2 == REG_FPBASE)
+        if (reg2 == TargetRuntimeMetadata.FramePointerBaseRegister)
         {
             id.idSetIsLclFPBase();
         }
@@ -228,7 +227,7 @@ public partial class Emitter
         {
             if (undisp <= 0x03fc)
             {
-                fmt = IF_T2_VLDST;
+                fmt = IF_ARM32_T2_VLDST;
             }
             else
             {
@@ -239,29 +238,29 @@ public partial class Emitter
                 return;
             }
         }
-        else if (isLowRegister(reg1) && (reg2 == REG_SP) && (ins == INS_str) &&
+        else if (isLowRegister(reg1) && (reg2 == REG_ARM32_SP) && (ins == INS_str) &&
             ((disp & 0x03fc) == disp))
         {
-            fmt = IF_T1_J2;
+            fmt = IF_ARM32_T1_J2;
         }
         else if ((disp >= 0) && (disp <= 0x0fff))
         {
-            fmt = IF_T2_K1;
+            fmt = IF_ARM32_T2_K1;
         }
         else if (undisp <= 0x0ff)
         {
-            fmt = IF_T2_H0;
+            fmt = IF_ARM32_T2_H0;
         }
         else
         {
             var rsvdReg = codeGen.rsGetRsvdReg();
             recordArm32InsGenStackOffset(rsvdReg, varx, offs, isFloatUsage: false, out var baseRegUsed);
-            fmt = IF_T2_E0;
+            fmt = IF_ARM32_T2_E0;
             assert(baseRegUsed == reg2);
         }
 
-        assert((fmt == IF_T1_J2) || (fmt == IF_T2_E0) || (fmt == IF_T2_H0) ||
-            (fmt == IF_T2_VLDST) || (fmt == IF_T2_K1));
+        assert((fmt == IF_ARM32_T1_J2) || (fmt == IF_ARM32_T2_E0) || (fmt == IF_ARM32_T2_H0) ||
+            (fmt == IF_ARM32_T2_VLDST) || (fmt == IF_ARM32_T2_K1));
         assert(sf != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrCns(attr, disp);
@@ -272,9 +271,9 @@ public partial class Emitter
         id.idInsOpt(INS_OPTS_NONE);
         id.idReg1(reg1);
         id.idReg2(reg2);
-        id.idAddr().iiaLclVar.initLclVarAddr(varx, unchecked((uint)offs));
+        id.idAddr().iiaInitLclVarAddr(varx, unchecked((uint)offs));
         id.idSetIsLclVar();
-        if (reg2 == REG_FPBASE)
+        if (reg2 == TargetRuntimeMetadata.FramePointerBaseRegister)
         {
             id.idSetIsLclFPBase();
         }
@@ -289,4 +288,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

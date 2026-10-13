@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
 
@@ -11,19 +10,25 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForDivMod(GenTreeOp tree)
+    public void genCodeForIncSaturateArm(GenTree tree)
+    {
+        throw new FatalJitException(CORJIT_SKIPPED, "ARM32 saturating increment code generation is not ported.");
+    }
+
+    public void genCodeForDivModArm(GenTreeOp tree)
     {
         assert(tree.Oper is GT_DIV or GT_UDIV or GT_MOD or GT_UMOD);
         noway_assert((tree.Oper is GT_DIV) || !varTypeIsFloating(tree.Type));
 
-#if USE_HELPERS_FOR_INT_DIV
-        noway_assert(!varTypeIsIntOrI(tree.Type));
-#endif
+        if (Configuration.USE_HELPERS_FOR_INT_DIV)
+        {
+            noway_assert(!varTypeIsIntOrI(tree.Type));
+        }
 
         var targetType = tree.Type;
         var targetReg = tree.RegNum;
         genConsumeOperands(tree);
-        noway_assert(targetReg != REG_NA);
+        noway_assert(targetReg != REG_ARM32_NA);
 
         var dividend = tree.Op1;
         var divisor = tree.Op2;
@@ -51,13 +56,13 @@ public sealed partial class CodeGen
                 else
                 {
                     Emitter.emitIns_R_I(INS_cmp, size, divisor.RegNum, 0);
-                    genJumpToThrowHlpBlk(emitJumpKind.EJ_eq, SCK_DIV_BY_ZERO);
+                    genJumpToThrowHlpBlk(emitJumpKind.EJ_ARMARCH_eq, SCK_DIV_BY_ZERO);
                 }
             }
 
             if ((exceptionFlags & ExceptionSetFlags.ArithmeticException) != ExceptionSetFlags.None)
             {
-                genCodeForDivModOverflowCheck(tree);
+                genCodeForDivModOverflowCheckArm(tree);
             }
 
             Emitter.emitIns_R_R_R(ins, size, targetReg, dividend.RegNum, divisor.RegNum);
@@ -66,7 +71,7 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 
-    private void genCodeForDivModOverflowCheck(GenTreeOp tree)
+    private void genCodeForDivModOverflowCheckArm(GenTreeOp tree)
     {
         assert(tree.Oper is GT_DIV);
         assert(!tree.Op2.IsIntegralConst(0));
@@ -77,10 +82,9 @@ public sealed partial class CodeGen
         var sdivLabel = genCreateTempLabel();
 
         Emitter.emitIns_R_I(INS_cmp, size, divisorReg, -1);
-        inst_JMP(emitJumpKind.EJ_ne, sdivLabel);
+        inst_JMP(emitJumpKind.EJ_ARMARCH_ne, sdivLabel);
         Emitter.emitIns_R_I(INS_cmp, size, dividendReg, 1);
-        genJumpToThrowHlpBlk(emitJumpKind.EJ_vs, SCK_ARITH_EXCPN);
+        genJumpToThrowHlpBlk(emitJumpKind.EJ_ARMARCH_vs, SCK_ARITH_EXCPN);
         genDefineTempLabel(sdivLabel);
     }
 }
-#endif

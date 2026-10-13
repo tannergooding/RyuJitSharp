@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -17,8 +16,10 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
+    public void emitInsLoadStoreOpArm32(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir)
     {
+        RequireArm32Target();
+
         if (indir.IsUnaligned)
         {
             if (indir.Oper is GT_STOREIND)
@@ -28,7 +29,7 @@ public partial class Emitter
                 {
                     var tmpReg = codeGen.InternalRegisters.GetSingle(indir);
                     _ = emitIns_Mov(INS_vmov_f2i, EA_4BYTE, tmpReg, dataReg, canSkip: false);
-                    emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg, indir, 0);
+                    emitInsLoadStoreOpArm32(INS_str, EA_4BYTE, tmpReg, indir, 0);
                     return;
                 }
                 else if (type is TYP_DOUBLE)
@@ -36,8 +37,8 @@ public partial class Emitter
                     var tmpReg1 = codeGen.InternalRegisters.Extract(indir);
                     var tmpReg2 = codeGen.InternalRegisters.GetSingle(indir);
                     emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, tmpReg1, tmpReg2, dataReg);
-                    emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg1, indir, 0);
-                    emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg2, indir, 4);
+                    emitInsLoadStoreOpArm32(INS_str, EA_4BYTE, tmpReg1, indir, 0);
+                    emitInsLoadStoreOpArm32(INS_str, EA_4BYTE, tmpReg2, indir, 4);
                     return;
                 }
             }
@@ -47,7 +48,7 @@ public partial class Emitter
                 if (type is TYP_FLOAT)
                 {
                     var tmpReg = codeGen.InternalRegisters.GetSingle(indir);
-                    emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg, indir, 0);
+                    emitInsLoadStoreOpArm32(INS_ldr, EA_4BYTE, tmpReg, indir, 0);
                     _ = emitIns_Mov(INS_vmov_i2f, EA_4BYTE, dataReg, tmpReg, canSkip: false);
                     return;
                 }
@@ -55,19 +56,20 @@ public partial class Emitter
                 {
                     var tmpReg1 = codeGen.InternalRegisters.Extract(indir);
                     var tmpReg2 = codeGen.InternalRegisters.GetSingle(indir);
-                    emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg1, indir, 0);
-                    emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg2, indir, 4);
+                    emitInsLoadStoreOpArm32(INS_ldr, EA_4BYTE, tmpReg1, indir, 0);
+                    emitInsLoadStoreOpArm32(INS_ldr, EA_4BYTE, tmpReg2, indir, 4);
                     emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, dataReg, tmpReg1, tmpReg2);
                     return;
                 }
             }
         }
 
-        emitInsLoadStoreOp(ins, attr, dataReg, indir, 0);
+        emitInsLoadStoreOpArm32(ins, attr, dataReg, indir, 0);
     }
 
-    private void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir, int offset)
+    private void emitInsLoadStoreOpArm32(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir indir, int offset)
     {
+        RequireArm32Target();
         var addr = indir.Addr;
 
         if (addr.IsContained)
@@ -115,7 +117,7 @@ public partial class Emitter
                             emitIns_R_R_R(INS_add, leaBasePartialAddrAttr, tmpReg, memBase.RegNum, index.RegNum);
                         }
 
-                        noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
+                        noway_assert(emitInsIsLoadArm32(ins) || (tmpReg != dataReg));
                         emitIns_R_R_I(ins, attr, dataReg, tmpReg, offset,
                             INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
                     }
@@ -124,7 +126,7 @@ public partial class Emitter
                         codeGen.instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                         emitIns_R_R_R(INS_add, leaBasePartialAddrAttr, tmpReg, tmpReg, memBase.RegNum);
 
-                        noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
+                        noway_assert(emitInsIsLoadArm32(ins) || (tmpReg != dataReg));
                         noway_assert(tmpReg != index.RegNum);
                         emitIns_R_R_R_I(ins, attr, dataReg, tmpReg, index.RegNum, lsl,
                             INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
@@ -190,6 +192,8 @@ public partial class Emitter
 
     private void recordArm32InsRAR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
     {
+        RequireArm32Target();
+
         if (ins == INS_mov)
         {
             assert(false, "Please use ins_Load() to select the correct instruction.");
@@ -210,7 +214,7 @@ public partial class Emitter
             return;
         }
 
-        if (emitInsIsLoad(ins))
+        if (emitInsIsLoadArm32(ins))
         {
             recordArm32InsRRI(ins, attr, ireg, reg, offs, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
             return;
@@ -233,6 +237,8 @@ public partial class Emitter
 
     private void recordArm32InsAR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
     {
+        RequireArm32Target();
+
         if (ins == INS_mov)
         {
             assert(false, "Please use ins_Store() to select the correct instruction.");
@@ -244,6 +250,8 @@ public partial class Emitter
     private void recordArm32InsRARR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
         regNumber rg2, int disp)
     {
+        RequireArm32Target();
+
         if (ins == INS_mov)
         {
             assert(false, "Please use ins_Load() to select the correct instruction.");
@@ -260,7 +268,7 @@ public partial class Emitter
             return;
         }
 
-        if (emitInsIsLoad(ins) && (disp == 0))
+        if (emitInsIsLoadArm32(ins) && (disp == 0))
         {
             recordArm32InsRRRImm(
                 ins, attr, ireg, reg, rg2, 0, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
@@ -274,6 +282,8 @@ public partial class Emitter
     private void recordArm32InsARRR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
         regNumber rg2, int disp)
     {
+        RequireArm32Target();
+
         if (ins == INS_mov)
         {
             assert(false, "Please use ins_Store() to select the correct instruction.");
@@ -300,13 +310,15 @@ public partial class Emitter
     private void recordArm32InsRARX(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
         regNumber rg2, uint mul, int disp)
     {
+        RequireArm32Target();
+
         if (ins == INS_mov)
         {
             assert(false, "Please use ins_Load() to select the correct instruction.");
         }
 
         var shift = unchecked((int)genLog2(mul));
-        if ((ins != INS_lea) && !emitInsIsLoad(ins))
+        if ((ins != INS_lea) && !emitInsIsLoadArm32(ins))
         {
             assert(false, "emitIns_R_ARX received an unexpected instruction.");
             NYI("emitIns_R_ARX");
@@ -327,7 +339,7 @@ public partial class Emitter
         var useForm2 = false;
         var mustUseForm1 = (unchecked((uint)disp) % mul) != 0 || (reg == ireg);
         if (!mustUseForm1 &&
-            (reg >= REG_R8) && (ireg < REG_R8) && (rg2 < REG_R8) && ((disp >> shift) <= 7))
+            (reg >= REG_ARM32_R8) && (ireg < REG_ARM32_R8) && (rg2 < REG_ARM32_R8) && ((disp >> shift) <= 7))
         {
             useForm2 = true;
         }
@@ -347,4 +359,3 @@ public partial class Emitter
         }
     }
 }
-#endif

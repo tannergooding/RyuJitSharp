@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.Globals;
@@ -17,26 +16,110 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    private insFormat emitInsFormat(instruction ins)
+    private static bool isArm32LowRegister(regNumber reg)
     {
-        assert((uint)InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins) < (uint)s_instructionFormats.Length);
-        assert(s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)] != IF_NONE);
-        return s_instructionFormats[InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins)];
+        return reg <= REG_ARM32_R7;
+    }
+
+    private static bool isArm32GeneralRegister(regNumber reg)
+    {
+        return reg <= REG_ARM32_R15;
+    }
+
+    private static bool isArm32FloatRegister(regNumber reg)
+    {
+        return (uint)reg >= (uint)REG_ARM32_F0 && (uint)reg <= (uint)REG_ARM32_F31;
+    }
+
+    private static bool isArm32DoubleRegister(regNumber reg)
+    {
+        return isArm32FloatRegister(reg) && ((uint)reg % 2) == 0;
+    }
+
+    private static bool isArm32MovInstruction(instruction ins)
+    {
+        return ins is INS_mov or INS_sxtb or INS_sxth or INS_uxtb or INS_uxth or
+            INS_vmov or INS_vmov_i2f or INS_vmov_f2i;
+    }
+
+    private static bool isArm32ModifiedImmediate(int value)
+    {
+        return TargetCostEstimation.IsArm32ModifiedImmediate(value);
+    }
+
+    private static uint unsignedAbsArm32(int value)
+    {
+        return value < 0 ? unchecked(0u - (uint)value) : (uint)value;
+    }
+
+    private static bool insSetsFlagsArm32(insFlags flags)
+    {
+        return flags != INS_FLAGS_NOT_SET;
+    }
+
+    private static bool insDoesNotSetFlagsArm32(insFlags flags)
+    {
+        return flags != INS_FLAGS_SET;
+    }
+
+    private static insFlags insMustSetFlagsArm32(insFlags flags)
+    {
+        return flags == INS_FLAGS_SET ? INS_FLAGS_SET : INS_FLAGS_NOT_SET;
+    }
+
+    private static bool insOptsNoneArm32(insOpts opt)
+    {
+        return opt == INS_OPTS_NONE;
+    }
+
+    private static bool insOptAnyIncArm32(insOpts opt)
+    {
+        return opt == INS_OPTS_LDST_PRE_DEC || opt == INS_OPTS_LDST_POST_INC;
+    }
+
+    private static bool insOptsPostIncArm32(insOpts opt)
+    {
+        return opt == INS_OPTS_LDST_POST_INC;
+    }
+
+    private static bool insOptAnyShiftArm32(insOpts opt)
+    {
+        var value = (uint)opt;
+        return value >= (uint)INS_OPTS_RRX && value <= (uint)INS_OPTS_ROR;
+    }
+
+    private static bool insOptsRRXArm32(insOpts opt)
+    {
+        return opt == INS_OPTS_RRX;
+    }
+
+    private static bool insOptsLSLArm32(insOpts opt)
+    {
+        return opt == INS_OPTS_LSL;
+    }
+
+    private insFormat emitInsFormatArm32(instruction ins)
+    {
+        RequireArm32Target();
+        var ordinal = InstructionOrdinalMaps.GetNativeInstructionOrdinal(ins);
+        assert((uint)ordinal < (uint)s_armInstructionFormats.Length);
+        assert(s_armInstructionFormats[ordinal] != IF_NONE);
+        return s_armInstructionFormats[ordinal];
     }
 
     private static insSize emitInsSize(insFormat format)
     {
-        if ((format >= IF_T1_A) && (format < IF_T2_A))
+        if ((format >= IF_ARM32_T1_A) && (format < IF_ARM32_T2_A))
         {
             return ISZ_16BIT;
         }
 
-        if ((format >= IF_T2_A) && (format < IF_INVALID))
+        if ((format >= IF_ARM32_T2_A) && (format < IF_ARM32_ARM_INVALID))
         {
             return ISZ_32BIT;
         }
 
-        if (format == IF_LARGEJMP)
+        if (format == IF_ARM32_LARGEJMP)
         {
             return ISZ_48BIT;
         }
@@ -56,30 +139,6 @@ public partial class Emitter
 
         switch (ins)
         {
-#if FEATURE_ITINSTRUCTION
-            case INS_it:
-            case INS_itt:
-            case INS_ite:
-            case INS_ittt:
-            case INS_itte:
-            case INS_itet:
-            case INS_itee:
-            case INS_itttt:
-            case INS_ittte:
-            case INS_ittet:
-            case INS_ittee:
-            case INS_itett:
-            case INS_itete:
-            case INS_iteet:
-            case INS_iteee:
-            {
-                assert((imm & 0x0f) == imm);
-                format = IF_T1_B;
-                attr = EA_4BYTE;
-                break;
-            }
-#endif
-
             case INS_push:
             case INS_pop:
             {
@@ -102,11 +161,11 @@ public partial class Emitter
 
                 if (((imm & 0x00ff) == imm) && !useThumb2)
                 {
-                    format = IF_T1_L1;
+                    format = IF_ARM32_T1_L1;
                 }
                 else if (!isSingleBit)
                 {
-                    format = IF_T2_I1;
+                    format = IF_ARM32_T2_I1;
                 }
                 else
                 {
@@ -138,7 +197,7 @@ public partial class Emitter
             {
                 if ((imm & 0x000f) == imm)
                 {
-                    format = IF_T2_B;
+                    format = IF_ARM32_T2_B;
                     attr = EA_4BYTE;
                 }
                 else
@@ -155,8 +214,8 @@ public partial class Emitter
             }
         }
 
-        assert((format == IF_T1_B) || (format == IF_T1_L0) || (format == IF_T1_L1)
-            || (format == IF_T2_I1) || (format == IF_T2_B));
+        assert((format == IF_ARM32_T1_B) || (format == IF_ARM32_T1_L0) || (format == IF_ARM32_T1_L1)
+            || (format == IF_ARM32_T2_I1) || (format == IF_ARM32_T2_B));
 
         var id = emitNewInstrSC(attr, imm);
         id.idIns(ins);
@@ -177,35 +236,35 @@ public partial class Emitter
             case INS_pop:
             case INS_push:
             {
-                if (isLowRegister(reg))
+                if (isArm32LowRegister(reg))
                 {
                     recordArm32InsI(ins, attr, (nint)(1 << (int)reg));
                     return;
                 }
 
                 assert(size == EA_PTRSIZE);
-                format = IF_T2_E2;
+                format = IF_ARM32_T2_E2;
                 break;
             }
 
             case INS_vmrs:
             {
                 assert(size == EA_PTRSIZE);
-                format = IF_T2_E2;
+                format = IF_ARM32_T2_E2;
                 break;
             }
 
             case INS_bx:
             {
                 assert(size == EA_PTRSIZE);
-                format = IF_T1_D1;
+                format = IF_ARM32_T1_D1;
                 break;
             }
 
             case INS_rsb:
             case INS_mvn:
             {
-                emitIns_R_R_I(ins, attr, reg, reg, 0, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+                recordArm32InsRRI(ins, attr, reg, reg, 0, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
                 return;
             }
 
@@ -216,7 +275,7 @@ public partial class Emitter
             }
         }
 
-        assert((format == IF_T1_D1) || (format == IF_T2_E2));
+        assert((format == IF_ARM32_T1_D1) || (format == IF_ARM32_T2_E2));
         var id = emitNewInstrSmall(attr);
         id.idIns(ins);
         id.idInsFmt(format);
@@ -241,13 +300,13 @@ public partial class Emitter
             case INS_add:
             case INS_sub:
             {
-                assert(reg != REG_PC);
-                if ((reg == REG_SP) && insDoesNotSetFlags(flags) && ((imm & 0x01fc) == imm))
+                assert(reg != REG_ARM32_PC);
+                if ((reg == TargetRuntimeMetadata.StackPointerBaseRegister) && insDoesNotSetFlagsArm32(flags) && ((imm & 0x01fc) == imm))
                 {
-                    format = IF_T1_F;
+                    format = IF_ARM32_T1_F;
                     recordedFlags = INS_FLAGS_NOT_SET;
                 }
-                else if (isLowRegister(reg) && insSetsFlags(flags) && (unsigned_abs(imm) <= 0x00ff))
+                else if (isArm32LowRegister(reg) && insSetsFlagsArm32(flags) && (unsignedAbsArm32(imm) <= 0x00ff))
                 {
                     if (imm < 0)
                     {
@@ -255,12 +314,12 @@ public partial class Emitter
                         imm = unchecked(-imm);
                     }
 
-                    format = IF_T1_J0;
+                    format = IF_ARM32_T1_J0;
                     recordedFlags = INS_FLAGS_SET;
                 }
                 else
                 {
-                    emitIns_R_R_I(ins, attr, reg, reg, imm, flags);
+                    recordArm32InsRRI(ins, attr, reg, reg, imm, flags, INS_OPTS_NONE);
                     return;
                 }
                 break;
@@ -268,8 +327,8 @@ public partial class Emitter
 
             case INS_adc:
             {
-                assert(reg != REG_PC);
-                emitIns_R_R_I(ins, attr, reg, reg, imm, flags);
+                assert(reg != REG_ARM32_PC);
+                recordArm32InsRRI(ins, attr, reg, reg, imm, flags, INS_OPTS_NONE);
                 return;
             }
 
@@ -279,18 +338,18 @@ public partial class Emitter
                 assert(imm > 0);
                 if (attr == EA_8BYTE)
                 {
-                    assert(isDoubleReg(reg));
+                    assert(isArm32DoubleRegister(reg));
                     assert(imm <= 16);
                     imm *= 2;
                 }
                 else
                 {
                     assert(attr == EA_4BYTE);
-                    assert(isFloatReg(reg));
+                    assert(isArm32FloatRegister(reg));
                     assert(imm <= 16);
                 }
 
-                assert((((int)reg - (int)REG_F0) + imm) <= 32);
+                assert((((int)reg - (int)REG_ARM32_F0) + imm) <= 32);
                 imm *= 4;
                 if (ins == INS_vpush)
                 {
@@ -298,7 +357,7 @@ public partial class Emitter
                 }
 
                 recordedFlags = INS_FLAGS_NOT_SET;
-                format = IF_T2_VLDST;
+                format = IF_ARM32_T2_VLDST;
                 break;
             }
 
@@ -321,7 +380,7 @@ public partial class Emitter
                     useThumb2 = true;
                 }
 
-                if (!isLowRegister(reg))
+                if (!isArm32LowRegister(reg))
                 {
                     useThumb2 = true;
                 }
@@ -335,11 +394,11 @@ public partial class Emitter
                 imm &= ~0xe000;
                 if (((imm & 0x00ff) == imm) && !useThumb2)
                 {
-                    format = IF_T1_J1;
+                    format = IF_ARM32_T1_J1;
                 }
                 else if (!onlyThumb1)
                 {
-                    format = IF_T2_I0;
+                    format = IF_ARM32_T2_I0;
                 }
                 else
                 {
@@ -348,7 +407,7 @@ public partial class Emitter
                     return;
                 }
 
-                if (format == IF_T2_I0)
+                if (format == IF_ARM32_T2_I0)
                 {
                     imm <<= 2;
                     if (hasPc)
@@ -377,35 +436,35 @@ public partial class Emitter
             case INS_lsl:
             case INS_lsr:
             {
-                assert(reg != REG_PC);
-                emitIns_R_R_I(ins, attr, reg, reg, imm, flags);
+                assert(reg != REG_ARM32_PC);
+                recordArm32InsRRI(ins, attr, reg, reg, imm, flags, INS_OPTS_NONE);
                 return;
             }
 
             case INS_mov:
             {
                 assert(!EA_IS_CNS_RELOC(attr));
-                if (isLowRegister(reg) && insSetsFlags(flags) && ((imm & 0x00ff) == imm))
+                if (isArm32LowRegister(reg) && insSetsFlagsArm32(flags) && ((imm & 0x00ff) == imm))
                 {
-                    format = IF_T1_J0;
+                    format = IF_ARM32_T1_J0;
                     recordedFlags = INS_FLAGS_SET;
                 }
-                else if (isModImmConst(imm))
+                else if (isArm32ModifiedImmediate(imm))
                 {
-                    format = IF_T2_L1;
-                    recordedFlags = insMustSetFlags(flags);
+                    format = IF_ARM32_T2_L1;
+                    recordedFlags = insMustSetFlagsArm32(flags);
                 }
-                else if (isModImmConst(~imm))
+                else if (isArm32ModifiedImmediate(~imm))
                 {
                     ins = INS_mvn;
                     imm = ~imm;
-                    format = IF_T2_L1;
-                    recordedFlags = insMustSetFlags(flags);
+                    format = IF_ARM32_T2_L1;
+                    recordedFlags = insMustSetFlagsArm32(flags);
                 }
-                else if (insDoesNotSetFlags(flags) && ((imm & 0x0000ffff) == imm))
+                else if (insDoesNotSetFlagsArm32(flags) && ((imm & 0x0000ffff) == imm))
                 {
                     ins = INS_movw;
-                    format = IF_T2_N;
+                    format = IF_ARM32_T2_N;
                     recordedFlags = INS_FLAGS_NOT_SET;
                 }
                 else
@@ -421,10 +480,10 @@ public partial class Emitter
             case INS_movt:
             {
                 assert(!EA_IS_RELOC(attr));
-                assert(insDoesNotSetFlags(flags));
+                assert(insDoesNotSetFlagsArm32(flags));
                 if ((imm & 0x0000ffff) == imm)
                 {
-                    format = IF_T2_N;
+                    format = IF_ARM32_T2_N;
                     recordedFlags = INS_FLAGS_NOT_SET;
                 }
                 else
@@ -438,10 +497,10 @@ public partial class Emitter
 
             case INS_mvn:
             {
-                if (isModImmConst(imm))
+                if (isArm32ModifiedImmediate(imm))
                 {
-                    format = IF_T2_L1;
-                    recordedFlags = insMustSetFlags(flags);
+                    format = IF_ARM32_T2_L1;
+                    recordedFlags = insMustSetFlagsArm32(flags);
                 }
                 else
                 {
@@ -454,22 +513,22 @@ public partial class Emitter
 
             case INS_cmp:
             {
-                assert(reg != REG_PC);
+                assert(reg != REG_ARM32_PC);
                 assert(!EA_IS_CNS_RELOC(attr));
-                assert(insSetsFlags(flags));
+                assert(insSetsFlagsArm32(flags));
                 recordedFlags = INS_FLAGS_SET;
-                if (isLowRegister(reg) && ((imm & 0x00ff) == imm))
+                if (isArm32LowRegister(reg) && ((imm & 0x00ff) == imm))
                 {
-                    format = IF_T1_J0;
+                    format = IF_ARM32_T1_J0;
                 }
-                else if (isModImmConst(imm))
+                else if (isArm32ModifiedImmediate(imm))
                 {
-                    format = IF_T2_L2;
+                    format = IF_ARM32_T2_L2;
                 }
-                else if (isModImmConst(unchecked(-imm)))
+                else if (isArm32ModifiedImmediate(unchecked(-imm)))
                 {
                     ins = INS_cmn;
-                    format = IF_T2_L2;
+                    format = IF_ARM32_T2_L2;
                     imm = unchecked(-imm);
                 }
                 else
@@ -485,12 +544,12 @@ public partial class Emitter
             case INS_tst:
             case INS_teq:
             {
-                assert(reg != REG_PC);
-                assert(insSetsFlags(flags));
+                assert(reg != REG_ARM32_PC);
+                assert(insSetsFlagsArm32(flags));
                 recordedFlags = INS_FLAGS_SET;
-                if (isModImmConst(imm))
+                if (isArm32ModifiedImmediate(imm))
                 {
-                    format = IF_T2_L2;
+                    format = IF_ARM32_T2_L2;
                 }
                 else
                 {
@@ -501,33 +560,19 @@ public partial class Emitter
                 break;
             }
 
-#if FEATURE_PLI_INSTRUCTION
-            case INS_pli:
-            {
-                assert(insDoesNotSetFlags(flags));
-                if ((reg == REG_SP) && (unsigned_abs(imm) <= 0x0fff))
-                {
-                    format = IF_T2_K3;
-                    recordedFlags = INS_FLAGS_NOT_SET;
-                }
-
-                goto case INS_pld;
-            }
-#endif
-
             case INS_pld:
             case INS_pldw:
             {
-                assert(insDoesNotSetFlags(flags));
+                assert(insDoesNotSetFlagsArm32(flags));
                 recordedFlags = INS_FLAGS_NOT_SET;
                 if ((imm >= 0) && (imm <= 0x0fff))
                 {
-                    format = IF_T2_K2;
+                    format = IF_ARM32_T2_K2;
                 }
                 else if ((imm < 0) && (unchecked(-imm) <= 0x00ff))
                 {
                     imm = unchecked(-imm);
-                    format = IF_T2_H2;
+                    format = IF_ARM32_T2_H2;
                 }
                 else
                 {
@@ -545,10 +590,10 @@ public partial class Emitter
             }
         }
 
-        assert((format == IF_T1_F) || (format == IF_T1_J0) || (format == IF_T1_J1) ||
-            (format == IF_T2_H2) || (format == IF_T2_I0) || (format == IF_T2_K2) ||
-            (format == IF_T2_K3) || (format == IF_T2_L1) || (format == IF_T2_L2) ||
-            (format == IF_T2_M1) || (format == IF_T2_N) || (format == IF_T2_VLDST));
+        assert((format == IF_ARM32_T1_F) || (format == IF_ARM32_T1_J0) || (format == IF_ARM32_T1_J1) ||
+            (format == IF_ARM32_T2_H2) || (format == IF_ARM32_T2_I0) || (format == IF_ARM32_T2_K2) ||
+            (format == IF_ARM32_T2_K3) || (format == IF_ARM32_T2_L1) || (format == IF_ARM32_T2_L2) ||
+            (format == IF_ARM32_T2_M1) || (format == IF_ARM32_T2_N) || (format == IF_ARM32_T2_VLDST));
         assert(recordedFlags != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrSC(attr, imm);
@@ -570,7 +615,7 @@ public partial class Emitter
     private bool recordArm32InsMov(instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg,
         bool canSkip, insFlags flags)
     {
-        assert(IsMovInstruction(ins));
+        assert(isArm32MovInstruction(ins));
 
         var size = EA_SIZE(attr);
         insFormat format;
@@ -580,28 +625,28 @@ public partial class Emitter
         {
             case INS_mov:
             {
-                if (insDoesNotSetFlags(flags))
+                if (insDoesNotSetFlagsArm32(flags))
                 {
                     if (canSkip && (dstReg == srcReg))
                     {
                         return false;
                     }
 
-                    format = IF_T1_D0;
+                    format = IF_ARM32_T1_D0;
                     recordedFlags = INS_FLAGS_NOT_SET;
                 }
                 else
                 {
                     recordedFlags = INS_FLAGS_SET;
-                    format = isLowRegister(dstReg) && isLowRegister(srcReg) ? IF_T1_E : IF_T2_C3;
+                    format = isArm32LowRegister(dstReg) && isArm32LowRegister(srcReg) ? IF_ARM32_T1_E : IF_ARM32_T2_C3;
                 }
                 break;
             }
 
             case INS_vmov:
             {
-                assert(dstReg != REG_PC);
-                assert(srcReg != REG_PC);
+                assert(dstReg != REG_ARM32_PC);
+                assert(srcReg != REG_ARM32_PC);
                 if (canSkip && (dstReg == srcReg))
                 {
                     return false;
@@ -609,36 +654,36 @@ public partial class Emitter
 
                 if (size == EA_8BYTE)
                 {
-                    assert(isDoubleReg(dstReg));
-                    assert(isDoubleReg(srcReg));
+                    assert(isArm32DoubleRegister(dstReg));
+                    assert(isArm32DoubleRegister(srcReg));
                 }
                 else
                 {
-                    assert(isFloatReg(dstReg));
-                    assert(isFloatReg(srcReg));
+                    assert(isArm32FloatRegister(dstReg));
+                    assert(isArm32FloatRegister(srcReg));
                 }
 
-                format = IF_T2_VFP2;
+                format = IF_ARM32_T2_VFP2;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
 
             case INS_vmov_i2f:
             {
-                assert(srcReg != REG_PC);
-                assert(isFloatReg(dstReg));
-                assert(isGeneralRegister(srcReg));
-                format = IF_T2_VMOVS;
+                assert(srcReg != REG_ARM32_PC);
+                assert(isArm32FloatRegister(dstReg));
+                assert(isArm32GeneralRegister(srcReg));
+                format = IF_ARM32_T2_VMOVS;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
 
             case INS_vmov_f2i:
             {
-                assert(dstReg != REG_PC);
-                assert(isGeneralRegister(dstReg));
-                assert(isFloatReg(srcReg));
-                format = IF_T2_VMOVS;
+                assert(dstReg != REG_ARM32_PC);
+                assert(isArm32GeneralRegister(dstReg));
+                assert(isArm32FloatRegister(srcReg));
+                format = IF_ARM32_T2_VMOVS;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -659,17 +704,17 @@ public partial class Emitter
                     return false;
                 }
 
-                assert(dstReg != REG_PC);
-                assert(srcReg != REG_PC);
-                assert(insDoesNotSetFlags(flags));
-                if (isLowRegister(dstReg) && isLowRegister(srcReg))
+                assert(dstReg != REG_ARM32_PC);
+                assert(srcReg != REG_ARM32_PC);
+                assert(insDoesNotSetFlagsArm32(flags));
+                if (isArm32LowRegister(dstReg) && isArm32LowRegister(srcReg))
                 {
-                    format = IF_T1_E;
+                    format = IF_ARM32_T1_E;
                     recordedFlags = INS_FLAGS_NOT_SET;
                 }
                 else
                 {
-                    emitIns_R_R_I(ins, attr, dstReg, srcReg, 0, INS_FLAGS_NOT_SET);
+                    recordArm32InsRRI(ins, attr, dstReg, srcReg, 0, INS_FLAGS_NOT_SET, INS_OPTS_NONE);
                     return true;
                 }
                 break;
@@ -682,8 +727,8 @@ public partial class Emitter
             }
         }
 
-        assert((format == IF_T1_D0) || (format == IF_T1_E) || (format == IF_T2_C3) ||
-            (format == IF_T2_VFP2) || (format == IF_T2_VMOVS));
+        assert((format == IF_ARM32_T1_D0) || (format == IF_ARM32_T1_E) || (format == IF_ARM32_T2_C3) ||
+            (format == IF_ARM32_T2_VFP2) || (format == IF_ARM32_T2_VMOVS));
         assert(recordedFlags != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrSmall(attr);
@@ -702,9 +747,10 @@ public partial class Emitter
     private void recordArm32InsRR(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         insFlags flags, insOpts opt)
     {
-        assert(insOptsNone(opt));
+        RequireArm32Target();
+        assert(insOptsNoneArm32(opt));
 
-        if (IsMovInstruction(ins))
+        if (isArm32MovInstruction(ins))
         {
             assert(false, "Use emitIns_Mov to preserve move-elision behavior.");
             _ = recordArm32InsMov(ins, attr, reg1, reg2, canSkip: false, flags);
@@ -720,10 +766,10 @@ public partial class Emitter
         {
             case INS_add:
             {
-                assert(reg1 != REG_PC);
-                if (insDoesNotSetFlags(flags))
+                assert(reg1 != REG_ARM32_PC);
+                if (insDoesNotSetFlagsArm32(flags))
                 {
-                    format = IF_T1_D0;
+                    format = IF_ARM32_T1_D0;
                     recordedFlags = INS_FLAGS_NOT_SET;
                     break;
                 }
@@ -734,19 +780,19 @@ public partial class Emitter
 
             case INS_sub:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
                 recordArm32InsRRR(ins, attr, reg1, reg1, reg2, flags);
                 return;
             }
 
             case INS_cmp:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(insSetsFlags(flags));
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(insSetsFlagsArm32(flags));
                 recordedFlags = INS_FLAGS_SET;
-                format = isLowRegister(reg1) && isLowRegister(reg2) ? IF_T1_E : IF_T1_D0;
+                format = isArm32LowRegister(reg1) && isArm32LowRegister(reg2) ? IF_ARM32_T1_E : IF_ARM32_T1_D0;
                 break;
             }
 
@@ -754,8 +800,8 @@ public partial class Emitter
             case INS_vcvt_d2u:
             case INS_vcvt_d2f:
             {
-                assert(isFloatReg(reg1));
-                assert(isDoubleReg(reg2));
+                assert(isArm32FloatRegister(reg1));
+                assert(isArm32DoubleRegister(reg2));
                 goto VCVT_COMMON;
             }
 
@@ -763,8 +809,8 @@ public partial class Emitter
             case INS_vcvt_u2d:
             case INS_vcvt_i2d:
             {
-                assert(isDoubleReg(reg1));
-                assert(isFloatReg(reg2));
+                assert(isArm32DoubleRegister(reg1));
+                assert(isArm32FloatRegister(reg2));
                 goto VCVT_COMMON;
             }
 
@@ -774,8 +820,8 @@ public partial class Emitter
             case INS_vcvt_f2u:
             {
                 assert(size == EA_4BYTE);
-                assert(isFloatReg(reg1));
-                assert(isFloatReg(reg2));
+                assert(isArm32FloatRegister(reg1));
+                assert(isArm32FloatRegister(reg2));
                 goto VCVT_COMMON;
             }
 
@@ -786,13 +832,13 @@ public partial class Emitter
             {
                 if (size == EA_8BYTE)
                 {
-                    assert(isDoubleReg(reg1));
-                    assert(isDoubleReg(reg2));
+                    assert(isArm32DoubleRegister(reg1));
+                    assert(isArm32DoubleRegister(reg2));
                 }
                 else
                 {
-                    assert(isFloatReg(reg1));
-                    assert(isFloatReg(reg2));
+                    assert(isArm32FloatRegister(reg1));
+                    assert(isArm32FloatRegister(reg2));
                 }
 
                 goto VCVT_COMMON;
@@ -803,8 +849,8 @@ public partial class Emitter
             case INS_vsub:
             case INS_vdiv:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
                 recordArm32InsRRR(ins, attr, reg1, reg1, reg2, INS_FLAGS_DONT_CARE);
                 return;
             }
@@ -820,7 +866,7 @@ public partial class Emitter
             case INS_strb:
             case INS_strh:
             {
-                emitIns_R_R_I(ins, attr, reg1, reg2, 0, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+                recordArm32InsRRI(ins, attr, reg1, reg2, 0, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
                 return;
             }
 
@@ -831,11 +877,11 @@ public partial class Emitter
             case INS_orr:
             case INS_sbc:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                if (insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg2))
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                if (insSetsFlagsArm32(flags) && isArm32LowRegister(reg1) && isArm32LowRegister(reg2))
                 {
-                    format = IF_T1_E;
+                    format = IF_ARM32_T1_E;
                     recordedFlags = INS_FLAGS_SET;
                     break;
                 }
@@ -845,8 +891,8 @@ public partial class Emitter
 
             case INS_orn:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
                 recordArm32InsRRRImm(ins, attr, reg1, reg1, reg2, 0, flags, INS_OPTS_NONE);
                 return;
             }
@@ -855,11 +901,11 @@ public partial class Emitter
             case INS_lsl:
             case INS_lsr:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                if (insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg2))
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                if (insSetsFlagsArm32(flags) && isArm32LowRegister(reg1) && isArm32LowRegister(reg2))
                 {
-                    format = IF_T1_E;
+                    format = IF_ARM32_T1_E;
                     recordedFlags = INS_FLAGS_SET;
                     break;
                 }
@@ -869,20 +915,20 @@ public partial class Emitter
 
             case INS_ror:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                format = IF_T2_C4;
-                recordedFlags = insMustSetFlags(flags);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                format = IF_ARM32_T2_C4;
+                recordedFlags = insMustSetFlagsArm32(flags);
                 break;
             }
 
             case INS_mul:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                if ((insMustSetFlags(flags) == INS_FLAGS_SET) && isLowRegister(reg1) && (reg1 == reg2))
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                if ((insMustSetFlagsArm32(flags) == INS_FLAGS_SET) && isArm32LowRegister(reg1) && (reg1 == reg2))
                 {
-                    format = IF_T1_E;
+                    format = IF_ARM32_T1_E;
                     recordedFlags = INS_FLAGS_SET;
                     break;
                 }
@@ -895,16 +941,16 @@ public partial class Emitter
             case INS_cmn:
             case INS_tst:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                if (insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg2))
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                if (insSetsFlagsArm32(flags) && isArm32LowRegister(reg1) && isArm32LowRegister(reg2))
                 {
-                    format = IF_T1_E;
+                    format = IF_ARM32_T1_E;
                     recordedFlags = INS_FLAGS_SET;
                     break;
                 }
 
-                emitIns_R_R_I(ins, attr, reg1, reg2, 0, flags, INS_OPTS_NONE);
+                recordArm32InsRRI(ins, attr, reg1, reg2, 0, flags, INS_OPTS_NONE);
                 return;
             }
 
@@ -912,18 +958,18 @@ public partial class Emitter
             case INS_tbh:
             {
                 assert(size == EA_4BYTE);
-                assert(insDoesNotSetFlags(flags));
-                format = IF_T2_C9;
+                assert(insDoesNotSetFlagsArm32(flags));
+                format = IF_ARM32_T2_C9;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
 
             case INS_clz:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(insDoesNotSetFlags(flags));
-                format = IF_T2_C10;
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(insDoesNotSetFlagsArm32(flags));
+                format = IF_ARM32_T2_C10;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -934,8 +980,8 @@ public partial class Emitter
             case INS_strexh:
             {
                 assert(size == EA_4BYTE);
-                assert(insDoesNotSetFlags(flags));
-                format = IF_T2_E1;
+                assert(insDoesNotSetFlagsArm32(flags));
+                format = IF_ARM32_T2_E1;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -950,13 +996,13 @@ public partial class Emitter
         goto RECORD;
 
     VCVT_COMMON:
-        format = IF_T2_VFP2;
+        format = IF_ARM32_T2_VFP2;
         recordedFlags = INS_FLAGS_NOT_SET;
 
     RECORD:
-        assert((format == IF_T1_D0) || (format == IF_T1_E) || (format == IF_T2_C3) ||
-            (format == IF_T2_C9) || (format == IF_T2_C10) || (format == IF_T2_VFP2) ||
-            (format == IF_T2_VMOVD) || (format == IF_T2_VMOVS) || (format == IF_T2_E1));
+        assert((format == IF_ARM32_T1_D0) || (format == IF_ARM32_T1_E) || (format == IF_ARM32_T2_C3) ||
+            (format == IF_ARM32_T2_C9) || (format == IF_ARM32_T2_C10) || (format == IF_ARM32_T2_VFP2) ||
+            (format == IF_ARM32_T2_VMOVD) || (format == IF_ARM32_T2_VMOVS) || (format == IF_ARM32_T2_E1));
         assert(recordedFlags != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrSmall(attr);
@@ -982,9 +1028,9 @@ public partial class Emitter
         {
             case INS_add:
             {
-                if (reg3 == REG_SP)
+                if (reg3 == TargetRuntimeMetadata.StackPointerBaseRegister)
                 {
-                    (reg2, reg3) = (REG_SP, reg2);
+                    (reg2, reg3) = (TargetRuntimeMetadata.StackPointerBaseRegister, reg2);
                 }
 
                 goto case INS_sub;
@@ -992,18 +1038,18 @@ public partial class Emitter
 
             case INS_sub:
             {
-                assert(reg3 != REG_SP);
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert((reg3 != REG_PC) || (ins == INS_add));
-                if (isLowRegister(reg1) && isLowRegister(reg2) && isLowRegister(reg3) && insSetsFlags(flags))
+                assert(reg3 != TargetRuntimeMetadata.StackPointerBaseRegister);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert((reg3 != REG_ARM32_PC) || (ins == INS_add));
+                if (isArm32LowRegister(reg1) && isArm32LowRegister(reg2) && isArm32LowRegister(reg3) && insSetsFlagsArm32(flags))
                 {
-                    format = IF_T1_H;
+                    format = IF_ARM32_T1_H;
                     recordedFlags = INS_FLAGS_SET;
                     break;
                 }
 
-                if ((ins == INS_add) && insDoesNotSetFlags(flags))
+                if ((ins == INS_add) && insDoesNotSetFlagsArm32(flags))
                 {
                     if (reg1 == reg2)
                     {
@@ -1028,9 +1074,9 @@ public partial class Emitter
             case INS_orr:
             case INS_sbc:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
                 if (reg1 == reg2)
                 {
                     recordArm32InsRR(ins, attr, reg1, reg3, flags, INS_OPTS_NONE);
@@ -1042,9 +1088,9 @@ public partial class Emitter
 
             case INS_orn:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
                 recordArm32InsRRRImm(ins, attr, reg1, reg2, reg3, 0, flags, INS_OPTS_NONE);
                 return;
             }
@@ -1053,10 +1099,10 @@ public partial class Emitter
             case INS_lsl:
             case INS_lsr:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
-                if ((reg1 == reg2) && insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg3))
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
+                if ((reg1 == reg2) && insSetsFlagsArm32(flags) && isArm32LowRegister(reg1) && isArm32LowRegister(reg3))
                 {
                     recordArm32InsRR(ins, attr, reg1, reg3, flags, INS_OPTS_NONE);
                     return;
@@ -1067,28 +1113,28 @@ public partial class Emitter
 
             case INS_ror:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
-                format = IF_T2_C4;
-                recordedFlags = insMustSetFlags(flags);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
+                format = IF_ARM32_T2_C4;
+                recordedFlags = insMustSetFlagsArm32(flags);
                 break;
             }
 
             case INS_mul:
             {
-                if (insMustSetFlags(flags) == INS_FLAGS_SET)
+                if (insMustSetFlagsArm32(flags) == INS_FLAGS_SET)
                 {
-                    assert(reg1 != REG_PC);
-                    assert(reg2 != REG_PC);
-                    assert(reg3 != REG_PC);
+                    assert(reg1 != REG_ARM32_PC);
+                    assert(reg2 != REG_ARM32_PC);
+                    assert(reg3 != REG_ARM32_PC);
 
-                    if ((reg1 == reg2) && isLowRegister(reg1))
+                    if ((reg1 == reg2) && isArm32LowRegister(reg1))
                     {
                         recordArm32InsRR(ins, attr, reg1, reg3, flags, INS_OPTS_NONE);
                         return;
                     }
-                    if ((reg1 == reg3) && isLowRegister(reg1))
+                    if ((reg1 == reg3) && isArm32LowRegister(reg1))
                     {
                         recordArm32InsRR(ins, attr, reg1, reg2, flags, INS_OPTS_NONE);
                         return;
@@ -1099,32 +1145,37 @@ public partial class Emitter
                     return;
                 }
 
-#if !USE_HELPERS_FOR_INT_DIV
-                goto case INS_sdiv;
-#else
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
-                assert(insDoesNotSetFlags(flags));
-                format = IF_T2_C5;
+                if (!Configuration.USE_HELPERS_FOR_INT_DIV)
+                {
+                    goto case INS_sdiv;
+                }
+
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
+                assert(insDoesNotSetFlagsArm32(flags));
+                format = IF_ARM32_T2_C5;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
-#endif
             }
 
-#if !USE_HELPERS_FOR_INT_DIV
             case INS_sdiv:
             case INS_udiv:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
-                assert(insDoesNotSetFlags(flags));
-                format = IF_T2_C5;
+                if (Configuration.USE_HELPERS_FOR_INT_DIV)
+                {
+                    unreached();
+                    return;
+                }
+
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
+                assert(insDoesNotSetFlagsArm32(flags));
+                format = IF_ARM32_T2_C5;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
-#endif
 
             case INS_ldrb:
             case INS_strb:
@@ -1136,10 +1187,10 @@ public partial class Emitter
             case INS_str:
             {
                 assert(size == EA_4BYTE);
-                assert(insDoesNotSetFlags(flags));
-                if (isLowRegister(reg1) && isLowRegister(reg2) && isLowRegister(reg3))
+                assert(insDoesNotSetFlagsArm32(flags));
+                if (isArm32LowRegister(reg1) && isArm32LowRegister(reg2) && isArm32LowRegister(reg3))
                 {
-                    format = IF_T1_H;
+                    format = IF_ARM32_T1_H;
                     recordedFlags = INS_FLAGS_NOT_SET;
                     break;
                 }
@@ -1155,42 +1206,42 @@ public partial class Emitter
             {
                 if (size == EA_8BYTE)
                 {
-                    assert(isDoubleReg(reg1));
-                    assert(isDoubleReg(reg2));
-                    assert(isDoubleReg(reg3));
+                    assert(isArm32DoubleRegister(reg1));
+                    assert(isArm32DoubleRegister(reg2));
+                    assert(isArm32DoubleRegister(reg3));
                 }
                 else
                 {
-                    assert(isFloatReg(reg1));
-                    assert(isFloatReg(reg2));
-                    assert(isFloatReg(reg3));
+                    assert(isArm32FloatRegister(reg1));
+                    assert(isArm32FloatRegister(reg2));
+                    assert(isArm32FloatRegister(reg3));
                 }
 
-                format = IF_T2_VFP3;
+                format = IF_ARM32_T2_VFP3;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
 
             case INS_vmov_i2d:
             {
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
-                assert(isDoubleReg(reg1));
-                assert(isGeneralRegister(reg2));
-                assert(isGeneralRegister(reg3));
-                format = IF_T2_VMOVD;
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
+                assert(isArm32DoubleRegister(reg1));
+                assert(isArm32GeneralRegister(reg2));
+                assert(isArm32GeneralRegister(reg3));
+                format = IF_ARM32_T2_VMOVD;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
 
             case INS_vmov_d2i:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(isGeneralRegister(reg1));
-                assert(isGeneralRegister(reg2));
-                assert(isDoubleReg(reg3));
-                format = IF_T2_VMOVD;
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(isArm32GeneralRegister(reg1));
+                assert(isArm32GeneralRegister(reg2));
+                assert(isArm32DoubleRegister(reg3));
+                format = IF_ARM32_T2_VMOVD;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -1198,8 +1249,8 @@ public partial class Emitter
             case INS_ldrexd:
             case INS_strexd:
             {
-                assert(insDoesNotSetFlags(flags));
-                format = IF_T2_G1;
+                assert(insDoesNotSetFlagsArm32(flags));
+                format = IF_ARM32_T2_G1;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -1211,8 +1262,8 @@ public partial class Emitter
             }
         }
 
-        assert((format == IF_T1_H) || (format == IF_T2_C4) || (format == IF_T2_C5) ||
-            (format == IF_T2_VFP3) || (format == IF_T2_VMOVD) || (format == IF_T2_G1));
+        assert((format == IF_ARM32_T1_H) || (format == IF_ARM32_T2_C4) || (format == IF_ARM32_T2_C5) ||
+            (format == IF_ARM32_T2_VFP3) || (format == IF_ARM32_T2_VMOVD) || (format == IF_ARM32_T2_G1));
         assert(recordedFlags != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstr(attr);
@@ -1242,13 +1293,13 @@ public partial class Emitter
             {
                 if (imm == 0)
                 {
-                    if (isLowRegister(reg1) && isLowRegister(reg2) && isLowRegister(reg3) && insSetsFlags(flags))
+                    if (isArm32LowRegister(reg1) && isArm32LowRegister(reg2) && isArm32LowRegister(reg3) && insSetsFlagsArm32(flags))
                     {
                         recordArm32InsRRR(ins, attr, reg1, reg2, reg3, flags);
                         return;
                     }
 
-                    if ((ins == INS_add) && insDoesNotSetFlags(flags))
+                    if ((ins == INS_add) && insDoesNotSetFlagsArm32(flags))
                     {
                         if (reg1 == reg2)
                         {
@@ -1274,11 +1325,11 @@ public partial class Emitter
             case INS_orr:
             case INS_sbc:
             {
-                assert(reg1 != REG_PC);
-                assert(reg2 != REG_PC);
-                assert(reg3 != REG_PC);
+                assert(reg1 != REG_ARM32_PC);
+                assert(reg2 != REG_ARM32_PC);
+                assert(reg3 != REG_ARM32_PC);
                 assert((imm >= 0) && (imm <= 31));
-                assert(!insOptAnyInc(opt));
+                assert(!insOptAnyIncArm32(opt));
 
                 if (imm == 0)
                 {
@@ -1287,9 +1338,9 @@ public partial class Emitter
                         opt = INS_OPTS_NONE;
                     }
 
-                    assert(insOptsNone(opt));
-                    if (isLowRegister(reg1) && isLowRegister(reg2) && isLowRegister(reg3) &&
-                        insSetsFlags(flags))
+                    assert(insOptsNoneArm32(opt));
+                    if (isArm32LowRegister(reg1) && isArm32LowRegister(reg2) && isArm32LowRegister(reg3) &&
+                        insSetsFlagsArm32(flags))
                     {
                         if (reg1 == reg2)
                         {
@@ -1305,15 +1356,15 @@ public partial class Emitter
                 }
                 else
                 {
-                    assert(insOptAnyShift(opt));
-                    if (insOptsRRX(opt))
+                    assert(insOptAnyShiftArm32(opt));
+                    if (insOptsRRXArm32(opt))
                     {
                         assert(imm == 1);
                     }
                 }
 
-                format = IF_T2_C0;
-                recordedFlags = insMustSetFlags(flags);
+                format = IF_ARM32_T2_C0;
+                recordedFlags = insMustSetFlagsArm32(flags);
                 break;
             }
 
@@ -1327,18 +1378,18 @@ public partial class Emitter
             case INS_str:
             {
                 assert(size == EA_4BYTE);
-                assert(insDoesNotSetFlags(flags));
+                assert(insDoesNotSetFlagsArm32(flags));
                 assert((imm & 0x0003) == imm);
 
-                if ((imm == 0) && insOptsNone(opt) && isLowRegister(reg1) &&
-                    isLowRegister(reg2) && isLowRegister(reg3))
+                if ((imm == 0) && insOptsNoneArm32(opt) && isArm32LowRegister(reg1) &&
+                    isArm32LowRegister(reg2) && isArm32LowRegister(reg3))
                 {
                     recordArm32InsRRR(ins, attr, reg1, reg2, reg3, flags);
                     return;
                 }
 
-                assert(insOptsNone(opt) || insOptsLSL(opt));
-                format = IF_T2_E0;
+                assert(insOptsNoneArm32(opt) || insOptsLSLArm32(opt));
+                format = IF_ARM32_T2_E0;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -1346,13 +1397,13 @@ public partial class Emitter
             case INS_ldrd:
             case INS_strd:
             {
-                assert(insDoesNotSetFlags(flags));
+                assert(insDoesNotSetFlagsArm32(flags));
                 assert((imm & 0x03) == 0);
                 recordedFlags = INS_FLAGS_NOT_SET;
 
-                if (insOptAnyInc(opt))
+                if (insOptAnyIncArm32(opt))
                 {
-                    if (insOptsPostInc(opt))
+                    if (insOptsPostIncArm32(opt))
                     {
                         assert(imm > 0);
                     }
@@ -1363,13 +1414,13 @@ public partial class Emitter
                 }
                 else
                 {
-                    assert(insOptsNone(opt));
+                    assert(insOptsNoneArm32(opt));
                 }
 
-                if (unsigned_abs(imm) <= 0x03fc)
+                if (unsignedAbsArm32(imm) <= 0x03fc)
                 {
                     imm >>= 2;
-                    format = IF_T2_G0;
+                    format = IF_ARM32_T2_G0;
                 }
                 else
                 {
@@ -1387,7 +1438,7 @@ public partial class Emitter
             }
         }
 
-        assert((format == IF_T2_C0) || (format == IF_T2_E0) || (format == IF_T2_G0));
+        assert((format == IF_ARM32_T2_C0) || (format == IF_ARM32_T2_E0) || (format == IF_ARM32_T2_G0));
         assert(recordedFlags != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrCns(attr, imm);
@@ -1416,14 +1467,14 @@ public partial class Emitter
             case INS_umlal:
             {
                 assert(reg1 != reg2);
-                format = IF_T2_F1;
+                format = IF_ARM32_T2_F1;
                 break;
             }
 
             case INS_mla:
             case INS_mls:
             {
-                format = IF_T2_F2;
+                format = IF_ARM32_T2_F2;
                 break;
             }
 
@@ -1434,10 +1485,10 @@ public partial class Emitter
             }
         }
 
-        assert(reg1 != REG_PC);
-        assert(reg2 != REG_PC);
-        assert(reg3 != REG_PC);
-        assert(reg4 != REG_PC);
+        assert(reg1 != REG_ARM32_PC);
+        assert(reg2 != REG_ARM32_PC);
+        assert(reg3 != REG_ARM32_PC);
+        assert(reg4 != REG_ARM32_PC);
 
         var id = emitNewInstr(attr);
         id.idIns(ins);
@@ -1456,6 +1507,7 @@ public partial class Emitter
     public void emitIns_R_I_I(instruction ins, emitAttr attr, regNumber reg, int imm1, int imm2,
         insFlags flags = INS_FLAGS_DONT_CARE)
     {
+        RequireArm32Target();
         insFormat format;
         int encodedImmediate;
         insFlags recordedFlags;
@@ -1464,7 +1516,7 @@ public partial class Emitter
         {
             case INS_bfc:
             {
-                assert(reg != REG_PC);
+                assert(reg != REG_ARM32_PC);
 
                 var leastSignificantBit = imm1;
                 var mostSignificantBit = unchecked(leastSignificantBit + imm2 - 1);
@@ -1473,8 +1525,8 @@ public partial class Emitter
                 assert(mostSignificantBit >= leastSignificantBit);
 
                 encodedImmediate = unchecked((leastSignificantBit << 5) | mostSignificantBit);
-                assert(insDoesNotSetFlags(flags));
-                format = IF_T2_D1;
+                assert(insDoesNotSetFlagsArm32(flags));
+                format = IF_ARM32_T2_D1;
                 recordedFlags = INS_FLAGS_NOT_SET;
                 break;
             }
@@ -1486,7 +1538,7 @@ public partial class Emitter
             }
         }
 
-        assert(format == IF_T2_D1);
+        assert(format == IF_ARM32_T2_D1);
         assert(recordedFlags != INS_FLAGS_DONT_CARE);
 
         var id = emitNewInstrSC(attr, encodedImmediate);
@@ -1500,4 +1552,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

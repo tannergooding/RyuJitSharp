@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.genTreeOps;
 using static RyuJitSharp.instruction;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreInd(GenTreeStoreInd tree)
+    public void genCodeForStoreIndArm(GenTreeStoreInd tree)
     {
         var data = tree.Data;
         var addr = tree.Addr;
@@ -28,10 +27,10 @@ public sealed partial class CodeGen
         {
             genConsumeOperands(tree);
 
-            noway_assert(data.RegNum != REG_ARG_0);
+            noway_assert(data.RegNum != REG_ARG_0_ARM);
 
-            inst_Mov(addr.Type, REG_ARG_0, addr.RegNum, canSkip: true);
-            inst_Mov(data.Type, REG_ARG_1, data.RegNum, canSkip: true);
+            inst_Mov(addr.Type, REG_ARG_0_ARM, addr.RegNum, canSkip: true);
+            inst_Mov(data.Type, REG_ARG_1_ARM, data.RegNum, canSkip: true);
             genGCWriteBarrier(writeBarrierForm);
         }
         else
@@ -50,10 +49,9 @@ public sealed partial class CodeGen
             var dataReg = data.RegNum;
             var ins = ins_StoreFromSrc(dataReg, type);
             var attr = type.EmitActualSize;
-            Emitter.emitInsLoadStoreOp(ins, attr, dataReg, tree);
+            Emitter.emitInsLoadStoreOpArm32(ins, attr, dataReg, tree);
 
             genUpdateLife(tree);
         }
     }
 }
-#endif

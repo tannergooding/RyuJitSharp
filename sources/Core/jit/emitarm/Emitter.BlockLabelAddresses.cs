@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.instruction;
 using static RyuJitSharp.regNumber;
@@ -25,7 +24,7 @@ public partial class Emitter
             case INS_adr:
             {
                 id = emitNewInstrLbl();
-                format = IF_T2_M1;
+                format = IF_ARM32_T2_M1;
                 break;
             }
 
@@ -33,7 +32,7 @@ public partial class Emitter
             case INS_movw:
             {
                 id = emitNewInstrJmp();
-                format = IF_T2_N1;
+                format = IF_ARM32_T2_N1;
                 break;
             }
 
@@ -44,7 +43,7 @@ public partial class Emitter
             }
         }
 
-        assert((format == IF_T2_M1) || (format == IF_T2_N1));
+        assert((format == IF_ARM32_T2_M1) || (format == IF_ARM32_T2_N1));
         var size = emitInsSize(format);
 
         id.idIns(ins);
@@ -66,7 +65,7 @@ public partial class Emitter
 
         if (ins == INS_adr)
         {
-            id.idReg2(REG_PC);
+            id.idReg2(REG_ARM32_PC);
             id.idjKeepLong = _compiler.fgInDifferentRegions(_compiler.compCurBB, dst);
         }
         else
@@ -92,4 +91,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

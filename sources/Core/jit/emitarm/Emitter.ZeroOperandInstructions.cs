@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.Globals;
@@ -13,13 +12,14 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns(instruction ins)
+    public void emitInsArm32(instruction ins)
     {
+        RequireArm32Target();
         var id = emitNewInstrSmall(EA_4BYTE);
-        var format = emitInsFormat(ins);
+        var format = emitInsFormatArm32(ins);
         var size = emitInsSize(format);
 
-        assert((format == IF_T1_A) || (format == IF_T2_A));
+        assert((format == IF_ARM32_T1_A) || (format == IF_ARM32_T2_A));
 
         id.idIns(ins);
         id.idInsFmt(format);
@@ -29,4 +29,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif

@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.insOpts;
 using static RyuJitSharp.instruction;
@@ -12,7 +11,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private bool genInstrWithConstant(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
+    private bool genInstrWithConstantArm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
         nint imm, regNumber tmpReg, insFlags flags = INS_FLAGS_DONT_CARE)
     {
         var immFitsInIns = false;
@@ -48,7 +47,7 @@ public sealed partial class CodeGen
         }
         else
         {
-            assert(tmpReg != REG_NA);
+            assert(tmpReg != REG_ARM32_NA);
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
             Emitter.emitIns_R_R_R(ins, attr, reg1, reg2, tmpReg);
         }
@@ -56,10 +55,9 @@ public sealed partial class CodeGen
         return immFitsInIns;
     }
 
-    private bool genStackPointerAdjustment(nint spDelta, regNumber tmpReg)
+    private bool genStackPointerAdjustmentArm(nint spDelta, regNumber tmpReg)
     {
-        return genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spDelta, tmpReg,
+        return genInstrWithConstantArm(INS_add, EA_PTRSIZE, REG_SPBASE_ARM, REG_SPBASE_ARM, spDelta, tmpReg,
             INS_FLAGS_DONT_CARE);
     }
 }
-#endif

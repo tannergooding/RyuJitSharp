@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
+using static RyuJitSharp.Globals;
 using static RyuJitSharp.Emitter.insFormat;
 using static RyuJitSharp.Emitter.insSize;
 using static RyuJitSharp.instruction;
@@ -13,8 +13,13 @@ namespace RyuJitSharp;
 
 public partial class Emitter
 {
-    public void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
+    private void emitIns_J_RArm32(instruction ins, emitAttr attr, BasicBlock dst, regNumber reg)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM32 conditional-register branches are not available for this target.");
+        }
+
         assert(dst.HasFlag(BBF_HAS_LABEL));
 
         var format = IF_NONE;
@@ -23,7 +28,7 @@ public partial class Emitter
             case INS_cbz:
             case INS_cbnz:
             {
-                format = IF_T1_I;
+                format = IF_ARM32_T1_I;
                 break;
             }
 
@@ -34,13 +39,13 @@ public partial class Emitter
             }
         }
 
-        assert(format == IF_T1_I);
+        assert(format == IF_ARM32_T1_I);
         assert(isLowRegister(reg));
 
         var id = emitNewInstrJmp();
         id.idIns(ins);
-        id.idInsFmt(IF_T1_I);
-        id.idInsSize(emitInsSize(IF_T1_I));
+        id.idInsFmt(IF_ARM32_T1_I);
+        id.idInsSize(emitInsSize(IF_ARM32_T1_I));
         id.idReg1(reg);
         id.idjShort = true;
         id.idjTarget = dst;
@@ -58,4 +63,3 @@ public partial class Emitter
         appendToCurIG(id);
     }
 }
-#endif
