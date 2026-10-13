@@ -191,13 +191,13 @@ public sealed class TreeLifeUpdater
         else if (varDsc.lvPromoted)
         {
             var isMultiRegLocal = lclVarTree.IsMultiRegLclVar;
-#if DEBUG
-            if (isMultiRegLocal)
+
+            if (Configuration.DEBUG && isMultiRegLocal)
             {
                 assert(lclVarTree == tree);
                 assert((lclVarTree.Flags & GTF_VAR_USEASG) == 0);
             }
-#endif
+
             var isAnyFieldDying = lclVarTree.HasLastUse;
 
             if (isBorn || isAnyFieldDying)
@@ -243,12 +243,14 @@ public sealed class TreeLifeUpdater
                             , tree
 #endif
                             );
-#if DEBUG
-                        // genProduceReg must have spilled a field marked for spill before this point.
-                        var fieldNeedsSpill = ((lclVarTree.Flags & GTF_SPILL) != 0) &&
-                            ((lclVarTree.AsLclVar().GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
-                        assert(!fieldNeedsSpill);
-#endif
+
+                        if (Configuration.DEBUG)
+                        {
+                            // genProduceReg must have spilled a field marked for spill before this point.
+                            var fieldNeedsSpill = ((lclVarTree.Flags & GTF_SPILL) != 0) &&
+                                ((lclVarTree.AsLclVar().GetRegSpillFlagByIdx(i) & GTF_SPILL) != 0);
+                            assert(!fieldNeedsSpill);
+                        }
                     }
 
                     if (isInMemory &&
