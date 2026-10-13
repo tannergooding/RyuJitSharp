@@ -1481,14 +1481,15 @@ public partial class Emitter
                         ofs2 = lclVarAddr2.lvaOffset();
                         adr2 = compiler.lvaFrameAddress(varNum2, out var FPbased2, FPbased);
                         ofs2Dist = EA_SIZE_IN_BYTES(size);
-#if DEBUG
-                        assert(FPbased == FPbased2);
-                        if (!FPbased)
+                        if (Configuration.DEBUG)
                         {
-                            assert(encodingZRtoSP(id.idReg3()) == REG_ARM64_SP);
+                            assert(FPbased == FPbased2);
+                            if (!FPbased)
+                            {
+                                assert(encodingZRtoSP(id.idReg3()) == REG_ARM64_SP);
+                            }
+                            assert(varNum2 != -1);
                         }
-                        assert(varNum2 != -1);
-#endif
                     }
                     else
                     {
@@ -1498,12 +1499,13 @@ public partial class Emitter
                     ofs2 &= ~(ofs2Dist - 1);
                     if (id.idGCrefReg2() != GCT_NONE)
                     {
-#if DEBUG
-                        if (id.idGCref() != GCT_NONE)
+                        if (Configuration.DEBUG)
                         {
-                            assert(((uint)adr + ofs + ofs2Dist) == ((uint)adr2 + ofs2));
+                            if (id.idGCref() != GCT_NONE)
+                            {
+                                assert(((uint)adr + ofs + ofs2Dist) == ((uint)adr2 + ofs2));
+                            }
                         }
-#endif
                         emitGCvarLiveUpd(adr2 + (int)ofs2, varNum2, id.idGCrefReg2(), dst
 #if DEBUG
                             , (uint)varNum2

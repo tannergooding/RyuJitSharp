@@ -75,9 +75,12 @@ public partial class Emitter
 #endif
         }
 
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+            assert(_compiler.compCurBB is not null);
+        }
 #if DEBUG
-        assert(_compiler is not null);
-        assert(_compiler.compCurBB is not null);
         if ((ins == INS_bl_local) && (_compiler.compCurBB.Kind == BBJ_CALLFINALLY))
         {
             var debugInfo = id.idDebugOnlyInfo();

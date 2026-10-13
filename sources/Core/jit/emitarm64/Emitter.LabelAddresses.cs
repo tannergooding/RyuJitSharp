@@ -82,8 +82,11 @@ public partial class Emitter
         id.idReg1(reg);
         id.idOpSize(EA_PTRSIZE);
         id.idjKeepLong = false;
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler is not null);
+        }
 #if DEBUG
-        assert(_compiler is not null);
         if (_compiler.opts.compLongAddress)
         {
             id.idjKeepLong = true;
