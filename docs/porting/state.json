@@ -9,8 +9,8 @@
   },
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
-    "stage": "universal-compilation",
-    "nextAction": "Port `runtime-port/src/coreclr/jit/simd.h::EvaluateSimdIsNaN` and its helper family. Keep `genAsyncResumeInfo` and its ABI conditional deferred until the B209 target-width table/emitter dependency closure is ported and tested.",
+    "stage": "B209-target-width-closure",
+    "nextAction": "Port the B209 target-width table/emitter dependency closure for `CORINFO_AsyncResumeInfo`: preserve target-width sizing for both `TARGET_SIZE_T` fields across allocation, serialization, and diagnostics, then validate ARM32 table layout. Keep `genAsyncResumeInfo` deferred until this closure is ported and tested.",
     "deferredParityAction": "Capture the next bounded three-method CoreLib sample with DOTNET_JitDisasmDiffable=1 against pinned e23d559, include a native repeat, and compare complete dumps; do not expand to a whole-CoreLib capture.",
     "activeBatch": null,
     "parityEvidence": {
@@ -84,7 +84,7 @@
       ],
       "disposition": "Managed simd_t uses universal simd64_t storage while SimdStorageSize preserves native logical capacities (64 bytes on xarch, 32 on ARM64, 16 otherwise). Active vector payloads and typed VN identity remain limited to the native type size; this is an internal representation change, not an observable deviation.",
       "sourceCommit": "e23d559ac0db234786d68bd5135fed6ad9621750",
-      "validation": "UniversalSimdStorageTests passed with full analyzers in Debug and Release using a win-x64 test host and win-x64, win-x86, linux-arm64, browser-wasm, and linux-riscv64 target configurations. Unsupported SIMD cases skipped explicitly. Generated-code parity capture remains deferred."
+      "validation": "UniversalSimdStorageTests passed with full analyzers in Debug and Release using a win-x64 test host and win-x64, win-x86, linux-arm64, browser-wasm, and linux-riscv64 target configurations. The new predicate helpers passed in Debug/Release for win-x64 (11/11) and linux-arm64 (10/10), plus the Debug Core suite (17,778 passed, 15 skipped); focused target tests used analyzer-disabled builds because unrelated test analyzer errors block full-analysis test builds. Full-analysis library builds passed in Debug/Release. The browser-wasm target build is blocked by CS9135 in the unchanged, deferred `CodeGen.AsyncResumeInfo.cs:27` path. Generated-code parity capture remains deferred."
     },
     {
       "area": "universal-instruction-set-identities",

@@ -538,6 +538,104 @@ public static partial class Globals
         }
     }
 
+    public static simd_t EvaluateSimdIsNaN(var_types baseType, ReadOnlySpan<byte> value, int simdSize)
+    {
+        EnsureSimdSupported();
+        assert(varTypeIsArithmetic(baseType));
+
+        var result = default(simd_t);
+        if (varTypeIsFloating(baseType))
+        {
+            EvaluateBinarySimd(GT_NE, false, baseType, result.AsSpan<byte>()[..value.Length], value, value, simdSize);
+        }
+        return result;
+    }
+
+    public static var_types GetSimdIntegralBaseType(var_types baseType)
+    {
+        if (baseType is TYP_FLOAT)
+        {
+            return TYP_INT;
+        }
+        if (baseType is TYP_DOUBLE)
+        {
+            return TYP_LONG;
+        }
+        return baseType;
+    }
+
+    public static simd_t EvaluateSimdIsNegative(var_types baseType, ReadOnlySpan<byte> value, int simdSize)
+    {
+        EnsureSimdSupported();
+        assert(varTypeIsArithmetic(baseType));
+
+        var result = default(simd_t);
+        if (!varTypeIsUnsigned(baseType))
+        {
+            var zero = simd_t.Zero;
+            EvaluateBinarySimd(GT_LT, false, GetSimdIntegralBaseType(baseType),
+                result.AsSpan<byte>()[..value.Length], value, zero.AsSpan<byte>()[..value.Length], simdSize);
+        }
+        return result;
+    }
+
+    public static simd_t EvaluateSimdIsZero(var_types baseType, ReadOnlySpan<byte> value, int simdSize)
+    {
+        var result = default(simd_t);
+        var zero = simd_t.Zero;
+        EvaluateBinarySimd(GT_EQ, false, baseType,
+            result.AsSpan<byte>()[..value.Length], value, zero.AsSpan<byte>()[..value.Length], simdSize);
+        return result;
+    }
+
+    public static simd_t EvaluateSimdIsNegativeZero(var_types baseType, ReadOnlySpan<byte> value, int simdSize)
+    {
+        assert(varTypeIsFloating(baseType));
+
+        var result = EvaluateSimdIsZero(baseType, value, simdSize);
+        var sign = EvaluateSimdIsNegative(baseType, value, simdSize);
+        EvaluateBinarySimd(GT_AND, false, baseType, result.AsSpan<byte>()[..value.Length],
+            result.AsSpan<byte>()[..value.Length], sign.AsSpan<byte>()[..value.Length], simdSize);
+        return result;
+    }
+
+    public static simd_t EvaluateSimdIsPositiveZero(var_types baseType, ReadOnlySpan<byte> value, int simdSize)
+    {
+        assert(varTypeIsFloating(baseType));
+
+        var result = EvaluateSimdIsZero(baseType, value, simdSize);
+        var sign = EvaluateSimdIsNegative(baseType, value, simdSize);
+        EvaluateBinarySimd(GT_AND_NOT, false, baseType, result.AsSpan<byte>()[..value.Length],
+            result.AsSpan<byte>()[..value.Length], sign.AsSpan<byte>()[..value.Length], simdSize);
+        return result;
+    }
+
+    public static bool EvaluateSimdAnyWhereAllBitsSet(var_types baseType, ReadOnlySpan<byte> value, int simdSize)
+    {
+        var result = default(simd_t);
+        var allBitsSet = simd_t.AllBitsSet;
+        EvaluateBinarySimd(GT_EQ, false, GetSimdIntegralBaseType(baseType),
+            result.AsSpan<byte>()[..value.Length], value, allBitsSet.AsSpan<byte>()[..value.Length], simdSize);
+
+        for (var index = 0; index < simdSize; index++)
+        {
+            if (result.u8[index] != 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static bool EvaluateSimdAllWhereAllBitsSet(var_types baseType, ReadOnlySpan<byte> value, int simdSize)
+    {
+        var result = default(simd_t);
+        var allBitsSet = simd_t.AllBitsSet;
+        EvaluateBinarySimd(GT_EQ, false, GetSimdIntegralBaseType(baseType),
+            result.AsSpan<byte>()[..value.Length], value, allBitsSet.AsSpan<byte>()[..value.Length], simdSize);
+        return result.AsSpan<byte>()[..simdSize].SequenceEqual(allBitsSet.AsSpan<byte>()[..simdSize]);
+    }
+
     private static void EvaluateBinaryIntegralSimd<T>(genTreeOps oper, bool scalar,
         Span<byte> result, ReadOnlySpan<byte> arg0, ReadOnlySpan<byte> arg1, int simdSize)
         where T : unmanaged, IBinaryInteger<T>
