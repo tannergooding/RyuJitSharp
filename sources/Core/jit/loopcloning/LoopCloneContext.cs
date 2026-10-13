@@ -214,15 +214,16 @@ public sealed class LoopCloneContext
                 }
             }
         }
-#if DEBUG
-        for (var i = 0; i < conditions.Count; i++)
+        if (Configuration.DEBUG)
         {
-            for (var j = 0; j < conditions.Count; j++)
+            for (var i = 0; i < conditions.Count; i++)
             {
-                assert((i == j) || !conditions[i].Combines(conditions[j], out _));
+                for (var j = 0; j < conditions.Count; j++)
+                {
+                    assert((i == j) || !conditions[i].Combines(conditions[j], out _));
+                }
             }
         }
-#endif
     }
 
     public void OptimizeConditions(int loopNum, bool verbose = false)
