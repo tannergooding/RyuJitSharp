@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForJTrue(GenTreeUnOp jtrue)
+    public void genCodeForJTrueWasm(GenTreeUnOp jtrue)
     {
         var block = _compiler.compCurBB;
         assert(block is not null);
@@ -49,7 +48,7 @@ public sealed partial class CodeGen
         };
 
         // A finally takes SP and FP as arguments, and returns nothing.
-        var pointerType = TARGET_POINTER_SIZE == 4 ? CORINFO_WASM_TYPE_I32 : CORINFO_WASM_TYPE_I64;
+        var pointerType = Configuration.TARGET_POINTER_SIZE == 4 ? CORINFO_WASM_TYPE_I32 : CORINFO_WASM_TYPE_I64;
         var typeStack = new ArrayStack<CorInfoWasmType>();
         typeStack.Push(CORINFO_WASM_TYPE_VOID);
         typeStack.Push(pointerType);
@@ -94,7 +93,7 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genTableBasedSwitch(GenTree treeNode)
+    public void genTableBasedSwitchWasm(GenTree treeNode)
     {
         var block = _compiler.compCurBB;
         assert(block is not null);
@@ -381,4 +380,3 @@ public sealed partial class CodeGen
         instGen(INS_end);
     }
 }
-#endif

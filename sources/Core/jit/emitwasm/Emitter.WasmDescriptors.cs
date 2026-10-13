@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using static RyuJitSharp.Emitter.insFormat;
 
@@ -63,7 +62,7 @@ public partial class Emitter
 
     private instrDescLclVarDecl emitNewInstrLclVarDecl(emitAttr attr, uint localCount, WasmValueType type, int localOffset)
     {
-        var id = emitAllocAnyInstr<instrDescLclVarDecl>(DescriptorSizes.WasmLocalVarDecl, attr);
+        var id = emitAllocAnyInstr<instrDescLclVarDecl>((nuint)DescriptorSizes.WasmLocalVarDecl, attr);
         id.lclCnt = localCount;
         id.lclType = type;
 
@@ -77,7 +76,7 @@ public partial class Emitter
 
     private instrDescValTypeImm emitNewInstrValTypeImm(emitAttr attr, WasmValueType type, uint immediate)
     {
-        var id = emitAllocAnyInstr<instrDescValTypeImm>(DescriptorSizes.WasmValTypeImm, attr);
+        var id = emitAllocAnyInstr<instrDescValTypeImm>((nuint)DescriptorSizes.WasmValTypeImm, attr);
         id.valType = type;
         id.imm = immediate;
         return id;
@@ -104,42 +103,54 @@ public partial class Emitter
 
     public static WasmValueType emitGetLclVarDeclType(instrDesc id)
     {
+        RequireWasmTarget();
+
         assert(id.idIsLclVarDecl());
         return ((instrDescLclVarDecl)id).lclType;
     }
 
     public static uint emitGetLclVarDeclCount(instrDesc id)
     {
+        RequireWasmTarget();
+
         assert(id.idIsLclVarDecl());
         return ((instrDescLclVarDecl)id).lclCnt;
     }
 
     public static WasmValueType emitGetValTypeImmType(instrDesc id)
     {
+        RequireWasmTarget();
+
         assert(id.idIsValTypeImm());
         return ((instrDescValTypeImm)id).valType;
     }
 
     public static uint emitGetValTypeImmImm(instrDesc id)
     {
+        RequireWasmTarget();
+
         assert(id.idIsValTypeImm());
         return ((instrDescValTypeImm)id).imm;
     }
 
     public static ReadOnlySpan<byte> emitGetV128ImmValue(instrDesc id)
     {
+        RequireWasmTarget();
+
         assert(id.idIsV128Imm());
         return ((instrDescV128Imm)id).v128Bytes;
     }
 
     public static byte emitGetLaneImmValue(instrDesc id)
     {
+        RequireWasmTarget();
+
         if (id.idIsMemargLaneImm())
         {
             return ((instrDescMemargLane)id).lane;
         }
 
-        if (id.idInsFmt() == IF_LANE)
+        if (id.idInsFmt() == IF_WASM_LANE)
         {
             var lane = emitGetInsSC(id);
             assert((nuint)lane <= byte.MaxValue);
@@ -176,4 +187,3 @@ public partial class Emitter
         }
     }
 }
-#endif

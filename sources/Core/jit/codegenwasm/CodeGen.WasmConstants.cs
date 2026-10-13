@@ -3,12 +3,9 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using System.Diagnostics;
-#if FEATURE_SIMD
 using System.Runtime.InteropServices;
-#endif
 
 namespace RyuJitSharp;
 
@@ -81,7 +78,6 @@ public sealed partial class CodeGen
         WasmProduceReg(treeNode);
     }
 
-#if FEATURE_SIMD
     public void genCodeForVectorConstant(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CNS_VEC);
@@ -97,6 +93,4 @@ public sealed partial class CodeGen
         GetEmitter().emitIns_V128Imm(INS_v128_const, bytes);
         WasmProduceReg(treeNode);
     }
-#endif
 }
-#endif

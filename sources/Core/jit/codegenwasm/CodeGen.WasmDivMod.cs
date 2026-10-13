@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForDivMod(GenTreeOp treeNode)
+    public void genCodeForDivModWasm(GenTreeOp treeNode)
     {
         genConsumeOperands(treeNode);
 
@@ -18,7 +17,7 @@ public sealed partial class CodeGen
             var is64BitOp = treeNode.Type is TYP_LONG;
             var size = is64BitOp ? EA_8BYTE : EA_4BYTE;
             var divisor = treeNode.Op2;
-            var divisorReg = REG_NA;
+            var divisorReg = REG_WASM_NA;
 
             // AnyVal / 0 throws DivideByZeroException.
             if ((exceptions & ExceptionSetFlags.DivideByZeroException) is not ExceptionSetFlags.None)
@@ -32,7 +31,7 @@ public sealed partial class CodeGen
             // MinInt / -1 throws ArithmeticException.
             if ((exceptions & ExceptionSetFlags.ArithmeticException) is not ExceptionSetFlags.None)
             {
-                if (divisorReg is REG_NA)
+                if (divisorReg is REG_WASM_NA)
                 {
                     divisorReg = GetMultiUseOperandReg(divisor);
                 }
@@ -129,4 +128,3 @@ public sealed partial class CodeGen
         WasmProduceReg(treeNode);
     }
 }
-#endif

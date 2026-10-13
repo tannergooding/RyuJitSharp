@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public static partial class Globals
@@ -20,6 +19,7 @@ public static partial class Globals
 
     public static string WasmValueTypeName(WasmValueType type)
     {
+        Configuration.EnsureWasmTarget();
         assert((uint)s_wasmValueTypeNames.Length == (uint)WasmValueType.Count);
         assert((type >= WasmValueType.Invalid) && (type < WasmValueType.Count));
         return s_wasmValueTypeNames[(uint)type];
@@ -31,4 +31,3 @@ public static partial class Globals
         return ref type;
     }
 }
-#endif

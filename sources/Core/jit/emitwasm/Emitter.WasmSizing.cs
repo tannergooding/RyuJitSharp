@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using System.Numerics;
 
@@ -12,27 +11,6 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
     private const uint PADDED_RELOC_SIZE = 5;
-
-    public void emitIns(instruction ins)
-    {
-        var id = emitNewInstrSmall(EA_8BYTE);
-        id.idIns(ins);
-        id.idInsFmt(emitInsFormat(ins));
-
-        dispIns(id);
-        appendToCurIG(id);
-    }
-
-    public static instruction emitJumpKindToIns(emitJumpKind jumpKind)
-    {
-        return jumpKind switch
-        {
-            EJ_NONE => INS_nop,
-            EJ_jmp => INS_br,
-            EJ_jmpif => INS_br_if,
-            _ => throw new FatalJitException(CORJIT_INTERNALERROR, $"Unexpected Wasm jump kind {jumpKind}."),
-        };
-    }
 
     public static int SizeOfULEB128(ulong value)
     {
@@ -50,6 +28,8 @@ public partial class Emitter
 
     public static byte GetWasmValueTypeCode(WasmValueType type)
     {
+        RequireWasmTarget();
+
         ReadOnlySpan<byte> typeCodeMapping =
         [
             0x00, // Invalid
@@ -68,16 +48,20 @@ public partial class Emitter
 
     public void emitIns_I_Ty(instruction ins, uint immediate, WasmValueType valueType, int localIndex)
     {
+        RequireWasmTarget();
+
         var id = emitNewInstrLclVarDecl(EA_8BYTE, immediate, valueType, localIndex);
         id.idIns(ins);
-        id.idInsFmt(emitInsFormat(ins));
+        id.idInsFmt(emitInsFormatWasm(ins));
 
         dispIns(id);
         appendToCurIG(id);
     }
 
-    public void emitIns_S(instruction ins, emitAttr attr, int localNum, int offset)
+    private void emitIns_SWasm(instruction ins, emitAttr attr, int localNum, int offset)
     {
+        RequireWasmTarget();
+
         assert(_compiler is not null);
         var localOffset = _compiler.lvaFrameAddress(localNum, out _);
         var addressOffset = unchecked(localOffset + offset);
@@ -85,7 +69,7 @@ public partial class Emitter
 
         var id = emitNewInstrSC(attr, addressOffset);
         id.idIns(ins);
-        id.idInsFmt(emitInsFormat(ins));
+        id.idInsFmt(emitInsFormatWasm(ins));
 
         if (_debugInfoSize > 0)
         {
@@ -101,6 +85,8 @@ public partial class Emitter
 
     public void emitFuncletAddressConstant(nint funcletId)
     {
+        RequireWasmTarget();
+
         assert(_compiler is not null);
 
         // NativeAOT uses absolute table indices; R2R adds the module's table base.
@@ -124,6 +110,8 @@ public partial class Emitter
 
     public void emitAddressConstant(nint address)
     {
+        RequireWasmTarget();
+
         emitImageBase();
         emitIns_I(INS_i32_const_address, EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), address);
         emitIns(INS_i32_add);
@@ -134,8 +122,10 @@ public partial class Emitter
         emitIns_BlockTy(ins, WasmValueType.Invalid);
     }
 
-    public void emitIns_I(instruction ins, emitAttr attr, nint immediate)
+    private void emitIns_IWasm(instruction ins, emitAttr attr, nint immediate)
     {
+        RequireWasmTarget();
+
         if ((ins == INS_local_get) && (_compiler is not null) && _compiler.opts.OptimizationEnabled
             && emitCanPeepholeLastIns())
         {
@@ -151,7 +141,7 @@ public partial class Emitter
 
         var id = emitNewInstrSC(attr, immediate);
         id.idIns(ins);
-        id.idInsFmt(emitInsFormat(ins));
+        id.idInsFmt(emitInsFormatWasm(ins));
 
         dispIns(id);
         appendToCurIG(id);
@@ -164,9 +154,11 @@ public partial class Emitter
 
     public void emitIns_Ty_I(instruction ins, WasmValueType type, uint immediate)
     {
+        RequireWasmTarget();
+
         var id = emitNewInstrValTypeImm(EA_8BYTE, type, immediate);
         id.idIns(ins);
-        id.idInsFmt(emitInsFormat(ins));
+        id.idInsFmt(emitInsFormatWasm(ins));
 
         dispIns(id);
         appendToCurIG(id);
@@ -174,9 +166,11 @@ public partial class Emitter
 
     public void emitIns_J(instruction ins, emitAttr attr, uint depth, BasicBlock? target)
     {
+        RequireWasmTarget();
+
         var id = emitNewInstrSC(attr, unchecked((nint)depth));
         id.idIns(ins);
-        id.idInsFmt(emitInsFormat(ins));
+        id.idInsFmt(emitInsFormatWasm(ins));
 
         if ((_debugInfoSize > 0) && (target is not null))
         {
@@ -191,9 +185,12 @@ public partial class Emitter
 
     public void emitIns_V128Imm(instruction ins, ReadOnlySpan<byte> immediate)
     {
-        var id = emitAllocAnyInstr<instrDescV128Imm>(DescriptorSizes.WasmV128Imm, EA_16BYTE);
-        var format = emitInsFormat(ins);
-        assert(format == insFormat.IF_V128);
+        RequireWasmTarget();
+
+        var id = emitAllocAnyInstr<instrDescV128Imm>(
+            unchecked((nuint)DescriptorSizes.WasmV128Imm), EA_16BYTE);
+        var format = emitInsFormatWasm(ins);
+        assert(format == insFormat.IF_WASM_V128);
 
         id.idInsFmt(format);
         id.idIns(ins);
@@ -205,12 +202,14 @@ public partial class Emitter
 
     public void emitIns_Lane(instruction ins, byte laneIndex)
     {
+        RequireWasmTarget();
+
         var elementSize = CodeGen.instSimdElemSize(ins);
         assert(isValidVectorIndex(elementSize, laneIndex));
 
         var id = emitNewInstrSC((emitAttr)elementSize, laneIndex);
-        var format = emitInsFormat(ins);
-        assert(format == insFormat.IF_LANE);
+        var format = emitInsFormatWasm(ins);
+        assert(format == insFormat.IF_WASM_LANE);
         id.idInsFmt(format);
         id.idIns(ins);
 
@@ -220,6 +219,8 @@ public partial class Emitter
 
     public void emitDataOffsetConstant(nuint dataOffset)
     {
+        RequireWasmTarget();
+
         assert(_compiler is not null);
         nint imageBase;
         unsafe
@@ -230,7 +231,7 @@ public partial class Emitter
 
         var id = emitNewInstrSC(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), unchecked((nint)dataOffset));
         id.idIns(INS_i32_const_dataoffs);
-        id.idInsFmt(insFormat.IF_DATAOFFS);
+        id.idInsFmt(insFormat.IF_WASM_DATAOFFS);
         dispIns(id);
         appendToCurIG(id);
 
@@ -250,7 +251,9 @@ public partial class Emitter
 
     public void emitIns_MemargAddress(instruction ins, emitAttr attr, nint address)
     {
-        assert(emitInsFormat(ins) == insFormat.IF_MEMARG);
+        RequireWasmTarget();
+
+        assert(emitInsFormatWasm(ins) == insFormat.IF_WASM_MEMARG);
         assert(_compiler is not null);
         assert(_compiler.opts.compReloc);
         emitIns_I(ins, EA_SET_FLG(attr, EA_CNS_RELOC_FLG), address);
@@ -265,47 +268,49 @@ public partial class Emitter
 
     private static uint GetWasmCodeSize(instrDesc id)
     {
+        RequireWasmTarget();
+
         var instruction = id.idIns();
         var opcode = GetInsOpcode(instruction);
         var size = HasOpcodePrefix(instruction) ? 1u + (uint)SizeOfULEB128(opcode) : 1u;
 
         switch (id.idInsFmt())
         {
-            case insFormat.IF_OPCODE:
+            case insFormat.IF_WASM_OPCODE:
             {
                 break;
             }
 
-            case insFormat.IF_BLOCK:
+            case insFormat.IF_WASM_BLOCK:
             {
                 size++;
                 break;
             }
 
-            case insFormat.IF_RAW_ULEB128:
+            case insFormat.IF_WASM_RAW_ULEB128:
             {
                 assert(!id.idIsCnsReloc());
                 size = (uint)SizeOfULEB128(unchecked((ulong)emitGetInsSC(id)));
                 break;
             }
 
-            case insFormat.IF_CODE_SIZE:
+            case insFormat.IF_WASM_CODE_SIZE:
             {
                 assert(!id.idIsCnsReloc());
                 size = PADDED_RELOC_SIZE;
                 break;
             }
 
-            case insFormat.IF_LOCAL_DECL:
+            case insFormat.IF_WASM_LOCAL_DECL:
             {
                 assert(id.idIsLclVarDecl());
                 size = (uint)SizeOfULEB128(emitGetLclVarDeclCount(id)) + 1;
                 break;
             }
 
-            case insFormat.IF_FUNCIDX:
-            case insFormat.IF_ULEB128:
-            case insFormat.IF_GLOBALIDX:
+            case insFormat.IF_WASM_FUNCIDX:
+            case insFormat.IF_WASM_ULEB128:
+            case insFormat.IF_WASM_GLOBALIDX:
             {
                 size += id.idIsCnsReloc()
                     ? PADDED_RELOC_SIZE
@@ -313,9 +318,9 @@ public partial class Emitter
                 break;
             }
 
-            case insFormat.IF_MEMADDR:
-            case insFormat.IF_FUNCPTR:
-            case insFormat.IF_SLEB128:
+            case insFormat.IF_WASM_MEMADDR:
+            case insFormat.IF_WASM_FUNCPTR:
+            case insFormat.IF_WASM_SLEB128:
             {
                 size += id.idIsCnsReloc()
                     ? PADDED_RELOC_SIZE
@@ -323,15 +328,15 @@ public partial class Emitter
                 break;
             }
 
-            case insFormat.IF_FUNCLETPTR:
-            case insFormat.IF_FUNCLETIDX:
-            case insFormat.IF_DATAOFFS:
+            case insFormat.IF_WASM_FUNCLETPTR:
+            case insFormat.IF_WASM_FUNCLETIDX:
+            case insFormat.IF_WASM_DATAOFFS:
             {
                 size += PADDED_RELOC_SIZE;
                 break;
             }
 
-            case insFormat.IF_CALL_INDIRECT:
+            case insFormat.IF_WASM_CALL_INDIRECT:
             {
                 size += id.idIsCnsReloc()
                     ? PADDED_RELOC_SIZE
@@ -340,19 +345,19 @@ public partial class Emitter
                 break;
             }
 
-            case insFormat.IF_F32:
+            case insFormat.IF_WASM_F32:
             {
                 size += sizeof(float);
                 break;
             }
 
-            case insFormat.IF_F64:
+            case insFormat.IF_WASM_F64:
             {
                 size += sizeof(double);
                 break;
             }
 
-            case insFormat.IF_MEMARG:
+            case insFormat.IF_WASM_MEMARG:
             {
                 var align = emitGetAlignHintLog2(id);
                 assert(align < 64);
@@ -363,7 +368,7 @@ public partial class Emitter
                 break;
             }
 
-            case insFormat.IF_MEMIDX_MEMIDX:
+            case insFormat.IF_WASM_MEMIDX_MEMIDX:
             {
                 var offsetSize = id.idIsCnsReloc()
                     ? PADDED_RELOC_SIZE
@@ -372,31 +377,31 @@ public partial class Emitter
                 break;
             }
 
-            case insFormat.IF_TRY_TABLE:
+            case insFormat.IF_WASM_TRY_TABLE:
             {
                 size += 1 + (uint)SizeOfULEB128(emitGetValTypeImmImm(id));
                 break;
             }
 
-            case insFormat.IF_CATCH_DECL:
+            case insFormat.IF_WASM_CATCH_DECL:
             {
                 size = 1 + PADDED_RELOC_SIZE + (uint)SizeOfULEB128(unchecked((ulong)emitGetInsSC(id)));
                 break;
             }
 
-            case insFormat.IF_V128:
+            case insFormat.IF_WASM_V128:
             {
                 size += 16;
                 break;
             }
 
-            case insFormat.IF_LANE:
+            case insFormat.IF_WASM_LANE:
             {
                 size++;
                 break;
             }
 
-            case insFormat.IF_MEMARG_LANE:
+            case insFormat.IF_WASM_MEMARG_LANE:
             {
                 var align = emitGetAlignHintLog2(id);
                 assert(align < 64);
@@ -418,4 +423,3 @@ public partial class Emitter
         return size;
     }
 }
-#endif

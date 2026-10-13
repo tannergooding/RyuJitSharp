@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-#if TARGET_WASM
     private unsafe void genCreateAndStoreGCInfoWasm()
     {
         var maxVirtualIP = 0u;
@@ -44,5 +43,4 @@ public sealed partial class CodeGen
         _compiler.compInfoBlkAddr = encoder.Emit();
         _compiler.compInfoBlkSize = unchecked((nint)encoder.GetEncodedGCInfoSize());
     }
-#endif
 }

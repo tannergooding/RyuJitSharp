@@ -4,7 +4,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public enum WasmValueType : uint
@@ -19,10 +18,6 @@ public enum WasmValueType : uint
     Count,
 
     First = I32,
-#if TARGET_64BIT
-    I = I64,
-#else
+    // This implementation supports Wasm32, whose native integer and reference type is i32.
     I = I32,
-#endif
 }
-#endif

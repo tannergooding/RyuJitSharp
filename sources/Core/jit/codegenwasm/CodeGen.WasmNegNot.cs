@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private void genCodeForNegNot(GenTreeUnOp tree)
+    private void genCodeForNegNotWasm(GenTreeUnOp tree)
     {
         assert(tree.Oper is GT_NEG or GT_NOT);
         genConsumeOperands(tree);
@@ -68,4 +67,3 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 }
-#endif

@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genFloatToIntCast(GenTreeCast tree)
+    public void genFloatToIntCastWasm(GenTreeCast tree)
     {
         assert(!tree.HasOverflowCheck);
 
@@ -58,7 +57,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    public void genIntToFloatCast(GenTree tree)
+    public void genIntToFloatCastWasm(GenTree tree)
     {
         assert(tree.Oper is GT_CAST);
         assert(!tree.HasOverflowCheck);
@@ -107,7 +106,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    public void genFloatToFloatCast(GenTree tree)
+    public void genFloatToFloatCastWasm(GenTree tree)
     {
         var toType = tree.Type;
         var fromType = tree.AsCast().CastOp.Type;
@@ -150,4 +149,3 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 }
-#endif

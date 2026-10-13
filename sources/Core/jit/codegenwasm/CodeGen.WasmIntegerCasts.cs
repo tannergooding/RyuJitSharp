@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using static RyuJitSharp.CodeGen.GenIntCastDesc.CheckKind;
 using static RyuJitSharp.CodeGen.GenIntCastDesc.ExtendKind;
 
@@ -11,14 +10,14 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genIntToIntCast(GenTreeCast cast)
+    public void genIntToIntCastWasm(GenTreeCast cast)
     {
         var desc = new GenIntCastDesc(cast);
         if (desc.Check != CHECK_NONE)
         {
             var castValue = cast.CastOp;
             var castReg = GetMultiUseOperandReg(castValue);
-            genIntCastOverflowCheck(cast, in desc, castReg);
+            genIntCastOverflowCheckWasm(cast, in desc, castReg);
         }
 
         var toType = genActualType(cast.CastType);
@@ -96,7 +95,7 @@ public sealed partial class CodeGen
         WasmProduceReg(cast);
     }
 
-    public void genIntCastOverflowCheck(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
+    public void genIntCastOverflowCheckWasm(GenTreeCast cast, in GenIntCastDesc desc, regNumber reg)
     {
         var is64BitSrc = desc.CheckSrcSize == 8u;
         var srcSize = is64BitSrc ? EA_8BYTE : EA_4BYTE;
@@ -199,4 +198,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

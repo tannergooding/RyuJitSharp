@@ -3,20 +3,17 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     private const int LINEAR_MEMORY_INDEX = 0;
 
-#if TARGET_64BIT
-    private const instruction INS_I_const = INS_i64_const;
-    private const instruction INS_I_add = INS_i64_add;
-#else
-    private const instruction INS_I_const = INS_i32_const;
-    private const instruction INS_I_add = INS_i32_add;
-#endif
+    private static readonly instruction INS_I_const =
+        Configuration.TARGET_64BIT ? INS_i64_const : INS_i32_const;
+
+    private static readonly instruction INS_I_add =
+        Configuration.TARGET_64BIT ? INS_i64_add : INS_i32_add;
 
     public void ensureCurrentFuncIsUnwindable()
     {
@@ -27,14 +24,14 @@ public sealed partial class CodeGen
     public uint GetStackPointerRegIndex()
     {
         var spReg = GetStackPointerReg(_compiler.funCurrentFuncIdx());
-        assert(spReg is not REG_NA);
+        assert(spReg is not REG_WASM_NA);
         return regNumberExtensions.WasmRegToIndex(spReg);
     }
 
     public uint GetFramePointerRegIndex()
     {
         var fpReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
-        assert(fpReg is not REG_NA);
+        assert(fpReg is not REG_WASM_NA);
         return regNumberExtensions.WasmRegToIndex(fpReg);
     }
 
@@ -57,23 +54,23 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genEnregisterOSRArgsAndLocals(regNumber initReg, ref bool initRegZeroed)
+    public void genEnregisterOSRArgsAndLocalsWasm(regNumber initReg, ref bool initRegZeroed)
     {
         unreached();
     }
 
-    public void genPushCalleeSavedRegisters(regNumber initReg, ref bool initRegZeroed)
+    public void genPushCalleeSavedRegistersWasm(regNumber initReg, ref bool initRegZeroed)
     {
         // Wasm has no machine registers that need saving in the prolog.
     }
 
-    public unsafe void genAllocLclFrame(
+    public unsafe void genAllocLclFrameWasm(
         uint frameSize, regNumber initReg, ref bool initRegZeroed, regMaskTP maskArgRegsLiveIn)
     {
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
 
         var spReg = GetStackPointerReg(_compiler.funCurrentFuncIdx());
-        if (spReg is REG_NA)
+        if (spReg is REG_WASM_NA)
         {
             assert(!IsFramePointerUsed);
             return;
@@ -105,7 +102,7 @@ public sealed partial class CodeGen
         }
 
         var fpReg = GetFramePointerReg(_compiler.funCurrentFuncIdx());
-        if ((fpReg is not REG_NA) && (fpReg != spReg))
+        if ((fpReg is not REG_WASM_NA) && (fpReg != spReg))
         {
             Emitter.emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)spLocalIndex));
             Emitter.emitIns_I(
@@ -168,7 +165,7 @@ public sealed partial class CodeGen
             case TYP_BYREF:
             case TYP_REF:
             {
-                assert((segment.Offset == 0) && (segment.Size == TARGET_POINTER_SIZE));
+                assert((segment.Offset == 0) && (segment.Size == Configuration.TARGET_POINTER_SIZE));
                 return descriptor.Type;
             }
 
@@ -182,9 +179,10 @@ public sealed partial class CodeGen
                 var layout = descriptor.Layout;
                 assert(layout is not null);
                 assert((segment.Offset >= 0) && ((uint)segment.Offset < layout.Size));
-                if (((segment.Offset % TARGET_POINTER_SIZE) == 0) && (segment.Size == TARGET_POINTER_SIZE))
+                if (((segment.Offset % Configuration.TARGET_POINTER_SIZE) == 0) &&
+                    (segment.Size == Configuration.TARGET_POINTER_SIZE))
                 {
-                    return layout.GetGCPtrType(segment.Offset / TARGET_POINTER_SIZE);
+                    return layout.GetGCPtrType(segment.Offset / Configuration.TARGET_POINTER_SIZE);
                 }
 
                 if (_compiler.info.compCallConv == CorInfoCallConvExtension.Swift)
@@ -328,9 +326,9 @@ public sealed partial class CodeGen
             assert(_compiler.funCurrentFuncIdx() == ROOT_FUNC_IDX);
             var framePointer = GetFramePointerReg(ROOT_FUNC_IDX);
             var stackPointer = GetStackPointerReg(ROOT_FUNC_IDX);
-            assert(stackPointer is not REG_NA);
+            assert(stackPointer is not REG_WASM_NA);
 
-            var frameBase = (framePointer is not REG_NA) ? framePointer : stackPointer;
+            var frameBase = (framePointer is not REG_WASM_NA) ? framePointer : stackPointer;
             Emitter.emitIns_I(INS_local_get, EA_PTRSIZE,
                 unchecked((nint)regNumberExtensions.WasmRegToIndex(frameBase)));
             if (genTotalFrameSize != 0)
@@ -386,7 +384,7 @@ public sealed partial class CodeGen
             return;
         }
 
-        var frameSize = roundUp(2 * TARGET_POINTER_SIZE, STACK_ALIGN);
+        var frameSize = roundUp(2 * Configuration.TARGET_POINTER_SIZE, Configuration.STACK_ALIGN);
         _compiler.unwindAllocStack(unchecked((uint)frameSize));
 
         var stackPointerIndex = unchecked((nint)GetStackPointerRegIndex());
@@ -413,4 +411,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

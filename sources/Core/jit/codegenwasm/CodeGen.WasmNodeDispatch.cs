@@ -7,7 +7,6 @@
 using System.Runtime.CompilerServices;
 #endif
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
@@ -15,27 +14,32 @@ public sealed partial class CodeGen
     // Native Wasm codegen currently builds without WASM_THREAD_SUPPORT.
     private const bool WasmThreadSupport = false;
 
-#if TARGET_64BIT
-    private const instruction INS_I_load = INS_i64_load;
-    private const instruction INS_I_store = INS_i64_store;
-    private const instruction INS_I_and = INS_i64_and;
-    private const instruction INS_I_eqz = INS_i64_eqz;
-    private const instruction INS_I_mul = INS_i64_mul;
-    private const instruction INS_I_sub = INS_i64_sub;
-    private const instruction INS_I_le_u = INS_i64_le_u;
-    private const instruction INS_I_ge_u = INS_i64_ge_u;
-    private const instruction INS_I_gt_u = INS_i64_gt_u;
-#else
-    private const instruction INS_I_load = INS_i32_load;
-    private const instruction INS_I_store = INS_i32_store;
-    private const instruction INS_I_and = INS_i32_and;
-    private const instruction INS_I_eqz = INS_i32_eqz;
-    private const instruction INS_I_mul = INS_i32_mul;
-    private const instruction INS_I_sub = INS_i32_sub;
-    private const instruction INS_I_le_u = INS_i32_le_u;
-    private const instruction INS_I_ge_u = INS_i32_ge_u;
-    private const instruction INS_I_gt_u = INS_i32_gt_u;
-#endif
+    private static readonly instruction INS_I_load =
+        Configuration.TARGET_64BIT ? INS_i64_load : INS_i32_load;
+
+    private static readonly instruction INS_I_store =
+        Configuration.TARGET_64BIT ? INS_i64_store : INS_i32_store;
+
+    private static readonly instruction INS_I_and =
+        Configuration.TARGET_64BIT ? INS_i64_and : INS_i32_and;
+
+    private static readonly instruction INS_I_eqz =
+        Configuration.TARGET_64BIT ? INS_i64_eqz : INS_i32_eqz;
+
+    private static readonly instruction INS_I_mul =
+        Configuration.TARGET_64BIT ? INS_i64_mul : INS_i32_mul;
+
+    private static readonly instruction INS_I_sub =
+        Configuration.TARGET_64BIT ? INS_i64_sub : INS_i32_sub;
+
+    private static readonly instruction INS_I_le_u =
+        Configuration.TARGET_64BIT ? INS_i64_le_u : INS_i32_le_u;
+
+    private static readonly instruction INS_I_ge_u =
+        Configuration.TARGET_64BIT ? INS_i64_ge_u : INS_i32_ge_u;
+
+    private static readonly instruction INS_I_gt_u =
+        Configuration.TARGET_64BIT ? INS_i64_gt_u : INS_i32_gt_u;
 
     private unsafe void genCodeForTreeNodeWasm(GenTree treeNode)
     {
@@ -53,13 +57,11 @@ public sealed partial class CodeGen
             return;
         }
 
-#if FEATURE_HW_INTRINSICS
-        if (treeNode.Oper.IsHWIntrinsic)
+        if (Configuration.FEATURE_HW_INTRINSICS && treeNode.Oper.IsHWIntrinsic)
         {
-            genHWIntrinsic(treeNode.AsHWIntrinsic());
+            genHWIntrinsicWasm(treeNode.AsHWIntrinsic());
             return;
         }
-#endif
 
         switch (treeNode.Oper)
         {
@@ -70,7 +72,7 @@ public sealed partial class CodeGen
             case GT_XOR:
             case GT_AND:
             {
-                genCodeForBinary(treeNode.AsOp());
+                genCodeForBinaryWasm(treeNode.AsOp());
                 break;
             }
 
@@ -79,7 +81,7 @@ public sealed partial class CodeGen
             case GT_UDIV:
             case GT_UMOD:
             {
-                genCodeForDivMod(treeNode.AsOp());
+                genCodeForDivModWasm(treeNode.AsOp());
                 break;
             }
 
@@ -89,7 +91,7 @@ public sealed partial class CodeGen
             case GT_ROL:
             case GT_ROR:
             {
-                genCodeForShift(treeNode);
+                genCodeForShiftWasm(treeNode);
                 break;
             }
 
@@ -100,37 +102,37 @@ public sealed partial class CodeGen
             case GT_GE:
             case GT_GT:
             {
-                genCodeForCompare(treeNode.AsOp());
+                genCodeForCompareWasm(treeNode.AsOp());
                 break;
             }
 
             case GT_LCL_ADDR:
             {
-                genCodeForLclAddr(treeNode.AsLclFld());
+                genCodeForLclAddrWasm(treeNode.AsLclFld());
                 break;
             }
 
             case GT_LCL_FLD:
             {
-                genCodeForLclFld(treeNode.AsLclFld());
+                genCodeForLclFldWasm(treeNode.AsLclFld());
                 break;
             }
 
             case GT_LCL_VAR:
             {
-                genCodeForLclVar(treeNode.AsLclVar());
+                genCodeForLclVarWasm(treeNode.AsLclVar());
                 break;
             }
 
             case GT_STORE_LCL_VAR:
             {
-                genCodeForStoreLclVar(treeNode.AsLclVar());
+                genCodeForStoreLclVarWasm(treeNode.AsLclVar());
                 break;
             }
 
             case GT_PHYSREG:
             {
-                genCodeForPhysReg(treeNode.AsPhysReg());
+                genCodeForPhysRegWasm(treeNode.AsPhysReg());
                 break;
             }
 
@@ -142,13 +144,13 @@ public sealed partial class CodeGen
 
             case GT_JTRUE:
             {
-                genCodeForJTrue(treeNode.AsUnOp());
+                genCodeForJTrueWasm(treeNode.AsUnOp());
                 break;
             }
 
             case GT_SWITCH:
             {
-                genTableBasedSwitch(treeNode);
+                genTableBasedSwitchWasm(treeNode);
                 break;
             }
 
@@ -199,37 +201,37 @@ public sealed partial class CodeGen
             case GT_NEG:
             case GT_NOT:
             {
-                genCodeForNegNot(treeNode.AsUnOp());
+                genCodeForNegNotWasm(treeNode.AsUnOp());
                 break;
             }
 
             case GT_IND:
             {
-                genCodeForIndir(treeNode.AsIndir());
+                genCodeForIndirWasm(treeNode.AsIndir());
                 break;
             }
 
             case GT_STOREIND:
             {
-                genCodeForStoreInd(treeNode.AsStoreInd());
+                genCodeForStoreIndWasm(treeNode.AsStoreInd());
                 break;
             }
 
             case GT_CALL:
             {
-                genCall(treeNode.AsCall());
+                genCallWasm(treeNode.AsCall());
                 break;
             }
 
             case GT_NULLCHECK:
             {
-                genCodeForNullCheck(treeNode.AsIndir());
+                genCodeForNullCheckWasm(treeNode.AsIndir());
                 break;
             }
 
             case GT_BOUNDS_CHECK:
             {
-                genRangeCheck(treeNode);
+                genRangeCheckWasm(treeNode);
                 break;
             }
 
@@ -243,25 +245,25 @@ public sealed partial class CodeGen
 
             case GT_LCLHEAP:
             {
-                genLclHeap(treeNode);
+                genLclHeapWasm(treeNode);
                 break;
             }
 
             case GT_INDEX_ADDR:
             {
-                genCodeForIndexAddr(treeNode.AsIndexAddr());
+                genCodeForIndexAddrWasm(treeNode.AsIndexAddr());
                 break;
             }
 
             case GT_LEA:
             {
-                genLeaInstruction(treeNode.AsAddrMode());
+                genLeaInstructionWasm(treeNode.AsAddrMode());
                 break;
             }
 
             case GT_STORE_BLK:
             {
-                genCodeForStoreBlk(treeNode.AsBlk());
+                genCodeForStoreBlkWasm(treeNode.AsBlk());
                 break;
             }
 
@@ -275,7 +277,7 @@ public sealed partial class CodeGen
 
             case GT_INTRINSIC:
             {
-                genIntrinsic(treeNode.AsIntrinsic());
+                genIntrinsicWasm(treeNode.AsIntrinsic());
                 break;
             }
 
@@ -303,17 +305,20 @@ public sealed partial class CodeGen
 
             case GT_CKFINITE:
             {
-                genCkfinite(treeNode);
+                genCkfiniteWasm(treeNode);
                 break;
             }
 
-#if FEATURE_SIMD
             case GT_CNS_VEC:
             {
-                genCodeForVectorConstant(treeNode);
-                break;
+                if (Configuration.FEATURE_SIMD)
+                {
+                    genCodeForVectorConstant(treeNode);
+                    break;
+                }
+
+                goto default;
             }
-#endif
 
             case GT_ASYNC_CONTINUATION:
             {
@@ -351,7 +356,6 @@ public sealed partial class CodeGen
         }
     }
 
-#if FEATURE_HW_INTRINSICS
     private readonly struct WasmHWIntrinsic
     {
         private readonly GenTreeHWIntrinsic _node;
@@ -437,7 +441,7 @@ public sealed partial class CodeGen
         WasmCodegenDependencyNotPorted($"Emitter.emitIns_J for {ins}, depth {depth}, without a block target");
     }
 
-    private void genHWIntrinsic(GenTreeHWIntrinsic node)
+    private void genHWIntrinsicWasm(GenTreeHWIntrinsic node)
     {
         var info = new WasmHWIntrinsic(node);
         genConsumeMultiOpOperands(node);
@@ -638,9 +642,7 @@ public sealed partial class CodeGen
         GetEmitter().emitIns(INS_unreachable);
         genEmitEndBlock();
     }
-#endif
-
-    private void genCodeForCompare(GenTreeOp tree)
+    private void genCodeForCompareWasm(GenTreeOp tree)
     {
         assert(tree.OperIsCmpCompare());
 
@@ -649,15 +651,15 @@ public sealed partial class CodeGen
 
         if (varTypeIsFloating(op1Type))
         {
-            genCompareFloat(tree);
+            genCompareFloatWasm(tree);
         }
         else
         {
-            genCompareInt(tree);
+            genCompareIntWasm(tree);
         }
     }
 
-    private void genCompareInt(GenTreeOp treeNode)
+    private void genCompareIntWasm(GenTreeOp treeNode)
     {
         assert(treeNode.OperIsCmpCompare());
 
@@ -783,7 +785,7 @@ public sealed partial class CodeGen
         WasmProduceReg(treeNode);
     }
 
-    private void genCompareFloat(GenTreeOp treeNode)
+    private void genCompareFloatWasm(GenTreeOp treeNode)
     {
         assert(treeNode.OperIsCmpCompare());
 
@@ -902,7 +904,7 @@ public sealed partial class CodeGen
         WasmProduceReg(treeNode);
     }
 
-    private void genCodeForLclAddr(GenTreeLclFld tree)
+    private void genCodeForLclAddrWasm(GenTreeLclFld tree)
     {
         assert(tree.OperIs(GT_LCL_ADDR));
 
@@ -921,7 +923,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    private void genCodeForLclFld(GenTreeLclFld tree)
+    private void genCodeForLclFldWasm(GenTreeLclFld tree)
     {
         assert(tree.OperIs(GT_LCL_FLD));
         _ = _compiler.lvaGetDesc(tree.LclNum);
@@ -929,7 +931,7 @@ public sealed partial class CodeGen
         var type = tree.Type;
         if (type is TYP_SIMD12)
         {
-            genLoadLclTypeSimd12(tree);
+            genLoadLclTypeSimd12Wasm(tree);
         }
         else
         {
@@ -940,7 +942,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    private void genLoadLclTypeSimd12(GenTreeLclVarCommon tree)
+    private void genLoadLclTypeSimd12Wasm(GenTreeLclVarCommon tree)
     {
         var frameOffset = _compiler.lvaFrameAddress(tree.LclNum, out var fpBased) + tree.LclOffs;
         noway_assert(frameOffset >= 0);
@@ -956,7 +958,7 @@ public sealed partial class CodeGen
         emitter.emitIns_MemargLane(INS_v128_load32_lane, EA_4BYTE, frameOffset + 8, 2);
     }
 
-    private void genCodeForLclVar(GenTreeLclVar tree)
+    private void genCodeForLclVarWasm(GenTreeLclVar tree)
     {
         assert(tree.OperIs(GT_LCL_VAR) && !tree.IsMultiReg);
         ref var varDsc = ref _compiler.lvaGetDesc(tree.LclNum);
@@ -995,7 +997,7 @@ public sealed partial class CodeGen
         }
     }
 
-    private void genCodeForStoreLclVar(GenTreeLclVar tree)
+    private void genCodeForStoreLclVarWasm(GenTreeLclVar tree)
     {
         assert(tree.Oper is GT_STORE_LCL_VAR);
         var op1 = tree.Op1;
@@ -1010,23 +1012,23 @@ public sealed partial class CodeGen
 
         var wasmLclIndex = regNumberExtensions.WasmRegToIndex(targetReg);
         GetEmitter().emitIns_I(INS_local_set, type.EmitSize, unchecked((nint)wasmLclIndex));
-        genUpdateLifeStore(tree, targetReg, ref varDsc);
+        genUpdateLifeStoreWasm(tree, targetReg, ref varDsc);
     }
 
-    private void genUpdateLifeStore(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
+    private void genUpdateLifeStoreWasm(GenTree tree, regNumber targetReg, ref LclVarDsc varDsc)
     {
-        if (targetReg != REG_NA)
+        if (targetReg != REG_WASM_NA)
         {
             genProduceReg(tree);
         }
         else
         {
             genUpdateLife(tree);
-            varDsc.RegNum = REG_STK;
+            varDsc.RegNum = REG_WASM_STK;
         }
     }
 
-    private void genCodeForPhysReg(GenTreePhysReg tree)
+    private void genCodeForPhysRegWasm(GenTreePhysReg tree)
     {
         assert(genIsValidReg(tree.SrcReg));
         var wasmLclIndex = regNumberExtensions.WasmRegToIndex(tree.SrcReg);
@@ -1041,7 +1043,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    private void genCodeForIndir(GenTreeIndir tree)
+    private void genCodeForIndirWasm(GenTreeIndir tree)
     {
         assert(tree.Oper is GT_IND);
         var type = tree.Type;
@@ -1067,7 +1069,7 @@ public sealed partial class CodeGen
         }
         else if (type is TYP_SIMD12)
         {
-            genLoadIndTypeSimd12(tree);
+            genLoadIndTypeSimd12Wasm(tree);
         }
         else
         {
@@ -1077,7 +1079,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    private void genLoadIndTypeSimd12(GenTreeIndir tree)
+    private void genLoadIndTypeSimd12Wasm(GenTreeIndir tree)
     {
         var emitter = GetEmitter();
 
@@ -1106,7 +1108,7 @@ public sealed partial class CodeGen
         return 0;
     }
 
-    private void genCodeForStoreInd(GenTreeStoreInd tree)
+    private void genCodeForStoreIndWasm(GenTreeStoreInd tree)
     {
         var data = tree.Data;
         var addr = tree.Addr;
@@ -1145,7 +1147,7 @@ public sealed partial class CodeGen
             }
             else if (type is TYP_SIMD12)
             {
-                genStoreIndTypeSimd12(tree);
+                genStoreIndTypeSimd12Wasm(tree);
             }
             else
             {
@@ -1156,11 +1158,11 @@ public sealed partial class CodeGen
         genUpdateLife(tree);
     }
 
-    private void genStoreIndTypeSimd12(GenTreeStoreInd tree)
+    private void genStoreIndTypeSimd12Wasm(GenTreeStoreInd tree)
     {
         var emitter = GetEmitter();
         var addr = tree.Addr;
-        ref var internalRegs = ref _internalRegisters.GetAll(tree);
+        ref var internalRegs = ref _internalRegisters.GetAllWasm(tree);
         assert(internalRegs.Count == 1);
         var valueReg = _internalRegisters.Extract(tree);
         var wasmValueIndex = regNumberExtensions.WasmRegToIndex(valueReg);
@@ -1189,13 +1191,13 @@ public sealed partial class CodeGen
         }
     }
 
-    private void genCall(GenTreeCall call)
+    private void genCallWasm(GenTreeCall call)
     {
         var thisArg = call.NeedsNullCheck
             ? call.Args.ThisArg
                 ?? throw new FatalJitException(CORJIT_INTERNALERROR, "Call requiring a null check has no this argument.")
             : null;
-        var thisReg = REG_NA;
+        var thisReg = REG_WASM_NA;
 
         if (thisArg is not null)
         {
@@ -1221,11 +1223,11 @@ public sealed partial class CodeGen
             genEmitNullCheck(thisReg, thisArg.Node.Type);
         }
 
-        genCallInstruction(call);
+        genCallInstructionWasm(call);
         WasmProduceReg(call);
     }
 
-    private unsafe void genCallInstruction(GenTreeCall call)
+    private unsafe void genCallInstructionWasm(GenTreeCall call)
     {
         ensureCurrentFuncIsUnwindable();
 
@@ -1402,7 +1404,7 @@ public sealed partial class CodeGen
 
     // Keep Wasm helper signatures and target setup separate from the common helper-call NYI.
     private unsafe void genEmitHelperCallWasm(
-        CorInfoHelpFunc helper, int argSize, emitAttr retSize, regNumber callTargetReg = REG_NA)
+        CorInfoHelpFunc helper, int argSize, emitAttr retSize, regNumber callTargetReg = REG_WASM_NA)
     {
         ensureCurrentFuncIsUnwindable();
 
@@ -1432,11 +1434,9 @@ public sealed partial class CodeGen
         nint typeCount = 0;
         var helperIsManaged = false;
 
-#if TARGET_64BIT
-        const CorInfoWasmType wasmPointerType = CORINFO_WASM_TYPE_I64;
-#else
-        const CorInfoWasmType wasmPointerType = CORINFO_WASM_TYPE_I32;
-#endif
+        var wasmPointerType = Configuration.TARGET_64BIT
+            ? CORINFO_WASM_TYPE_I64
+            : CORINFO_WASM_TYPE_I32;
 
         switch (helper)
         {
@@ -1550,13 +1550,13 @@ public sealed partial class CodeGen
         };
     }
 
-    private void genCodeForNullCheck(GenTreeIndir tree)
+    private void genCodeForNullCheckWasm(GenTreeIndir tree)
     {
         genConsumeAddress(tree.Addr);
 
         if ((tree.Flags & GTF_IND_NONFAULTING) == 0)
         {
-            genEmitNullCheck(REG_NA, tree.Addr.Type);
+            genEmitNullCheck(REG_WASM_NA, tree.Addr.Type);
         }
         else
         {
@@ -1568,7 +1568,7 @@ public sealed partial class CodeGen
     {
         var emitter = GetEmitter();
 
-        if (reg is not REG_NA)
+        if (reg is not REG_WASM_NA)
         {
             genEmitLocalGet(reg, WasmValueType.I);
         }
@@ -1588,22 +1588,20 @@ public sealed partial class CodeGen
         genJumpToThrowHlpBlk(SCK_NULL_CHECK);
     }
 
-    private void genRangeCheck(GenTree tree)
+    private void genRangeCheckWasm(GenTree tree)
     {
         assert(tree.Oper is GT_BOUNDS_CHECK);
         var boundsCheck = tree.AsBoundsChk();
 
         // Incoming stack operands are index, then length (top of stack).
         genConsumeOperands(boundsCheck);
-#if FEATURE_SIMD
-        if (varTypeIsSimd(boundsCheck.Index.Type))
+        if (Configuration.FEATURE_SIMD && varTypeIsSimd(boundsCheck.Index.Type))
         {
             GetEmitter().emitIns(INS_i8x16_splat);
             GetEmitter().emitIns(INS_i8x16_ge_u);
             GetEmitter().emitIns(INS_v128_any_true);
         }
         else
-#endif
         {
             GetEmitter().emitIns(INS_I_ge_u);
         }
@@ -1611,7 +1609,7 @@ public sealed partial class CodeGen
         genJumpToThrowHlpBlk(boundsCheck.ThrowKind);
     }
 
-    private void genLclHeap(GenTree tree)
+    private void genLclHeapWasm(GenTree tree)
     {
         assert(tree.OperIs(GT_LCLHEAP));
         assert(_compiler.compLocallocUsed);
@@ -1619,7 +1617,7 @@ public sealed partial class CodeGen
 
         var needsZeroing = _compiler.info.compInitMem;
         var size = tree.AsOp().Op1;
-        nuint reservedSpace = STACK_ALIGN;
+        nuint reservedSpace = unchecked((nuint)Configuration.STACK_ALIGN);
 
         if (size.IsContainedIntOrIImmed)
         {
@@ -1630,7 +1628,7 @@ public sealed partial class CodeGen
             }
             else
             {
-                var alignmentMask = unchecked((nuint)(STACK_ALIGN - 1));
+                var alignmentMask = unchecked((nuint)(Configuration.STACK_ALIGN - 1));
                 amount = unchecked((amount + reservedSpace + alignmentMask) & ~alignmentMask);
 
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
@@ -1648,7 +1646,7 @@ public sealed partial class CodeGen
 
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
-                GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+                GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, Configuration.TARGET_POINTER_SIZE);
 
                 GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
                 GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
@@ -1663,9 +1661,9 @@ public sealed partial class CodeGen
         {
             _ = genConsumeReg(size);
 
-            if (genTypeSize(genActualType(size.Type)) < TARGET_POINTER_SIZE)
+            if (genTypeSize(genActualType(size.Type)) < Configuration.TARGET_POINTER_SIZE)
             {
-                assert(TARGET_POINTER_SIZE == 8);
+                assert(Configuration.TARGET_POINTER_SIZE == 8);
                 GetEmitter().emitIns(INS_i64_extend_u_i32);
             }
 
@@ -1691,9 +1689,9 @@ public sealed partial class CodeGen
             GetEmitter().emitIns_I(
                 INS_I_const,
                 EA_PTRSIZE,
-                unchecked((nint)(reservedSpace + (nuint)STACK_ALIGN - (nuint)1)));
+                unchecked((nint)(reservedSpace + (nuint)Configuration.STACK_ALIGN - (nuint)1)));
             GetEmitter().emitIns(INS_I_add);
-            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)~(nint)(STACK_ALIGN - 1)));
+            GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, unchecked((nint)~(nint)(Configuration.STACK_ALIGN - 1)));
             GetEmitter().emitIns(INS_I_and);
 
             if (needsZeroing)
@@ -1720,7 +1718,7 @@ public sealed partial class CodeGen
 
             GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
             GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetFramePointerRegIndex()));
-            GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, TARGET_POINTER_SIZE);
+            GetEmitter().emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, Configuration.TARGET_POINTER_SIZE);
 
             GetEmitter().emitIns_I(INS_local_get, EA_PTRSIZE, unchecked((nint)GetStackPointerRegIndex()));
             GetEmitter().emitIns_I(INS_I_const, EA_PTRSIZE, 0);
@@ -1735,7 +1733,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    private void genCodeForIndexAddr(GenTreeIndexAddr tree)
+    private void genCodeForIndexAddrWasm(GenTreeIndexAddr tree)
     {
         genConsumeOperands(tree);
 
@@ -1786,7 +1784,7 @@ public sealed partial class CodeGen
         WasmProduceReg(tree);
     }
 
-    private void genLeaInstruction(GenTreeAddrMode lea)
+    private void genLeaInstructionWasm(GenTreeAddrMode lea)
     {
         genConsumeOperands(lea);
         assert(lea.HasIndex || lea.HasBaseAddress);
@@ -1817,7 +1815,7 @@ public sealed partial class CodeGen
         WasmProduceReg(lea);
     }
 
-    private unsafe void genCodeForStoreBlk(GenTreeBlk blkOp)
+    private unsafe void genCodeForStoreBlkWasm(GenTreeBlk blkOp)
     {
         assert(blkOp.OperIs(GT_STORE_BLK));
 
@@ -1828,7 +1826,7 @@ public sealed partial class CodeGen
         if (blkOp._kind is GenTreeBlk.BlkOpKindLoop)
         {
             assert(!isCopyBlk);
-            genCodeForInitBlkLoop(blkOp);
+            genCodeForInitBlkLoopWasm(blkOp);
             genUpdateLife(blkOp);
             return;
         }
@@ -1847,8 +1845,8 @@ public sealed partial class CodeGen
         var destType = TYP_UNKNOWN;
         var src = blkOp.Data;
         var srcType = TYP_UNKNOWN;
-        var destReg = REG_NA;
-        var srcReg = REG_NA;
+        var destReg = REG_WASM_NA;
+        var srcReg = REG_WASM_NA;
         uint destOffset = 0;
         uint srcOffset = 0;
 
@@ -1938,7 +1936,7 @@ public sealed partial class CodeGen
             if (src.IsContained)
             {
                 assert(isCopyBlk);
-                assert(srcReg != REG_NA);
+                assert(srcReg != REG_WASM_NA);
                 // A contained source may not be on the value stack, so manufacture its address.
                 genEmitLocalGet(srcReg, WasmValueType.I);
                 if (srcOffset != 0)
@@ -1996,8 +1994,8 @@ public sealed partial class CodeGen
             }
 
             i++;
-            destOffset = unchecked(destOffset + TARGET_POINTER_SIZE);
-            srcOffset = unchecked(srcOffset + TARGET_POINTER_SIZE);
+            destOffset = unchecked(destOffset + (uint)Configuration.TARGET_POINTER_SIZE);
+            srcOffset = unchecked(srcOffset + (uint)Configuration.TARGET_POINTER_SIZE);
         }
 
         assert(gcPtrCount == 0);
@@ -2010,7 +2008,7 @@ public sealed partial class CodeGen
         genUpdateLife(blkOp);
     }
 
-    private void genCodeForInitBlkLoop(GenTreeBlk blkOp)
+    private void genCodeForInitBlkLoopWasm(GenTreeBlk blkOp)
     {
         // TODO-WASM: In multi-threaded Wasm we will need to generate a for loop that atomically zeroes one GC ref
         //  at a time. Right now we're single-threaded, so we can just use memory.fill.
@@ -2038,7 +2036,7 @@ public sealed partial class CodeGen
         return unchecked(((uint)intrinsic << shift) | (uint)type);
     }
 
-    private void genIntrinsic(GenTreeIntrinsic tree)
+    private void genIntrinsicWasm(GenTreeIntrinsic tree)
     {
         genConsumeOperands(tree);
 
@@ -2227,4 +2225,3 @@ public sealed partial class CodeGen
         throw new FatalJitException(CORJIT_SKIPPED, $"Wasm {dependency} is not ported.");
     }
 }
-#endif

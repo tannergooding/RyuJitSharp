@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using static RyuJitSharp.Emitter.insFormat;
 
@@ -12,12 +11,12 @@ namespace RyuJitSharp;
 public partial class Emitter
 {
 #if DEBUG
-    private static void emitInsSanityCheck(instrDesc id)
+    private static void emitInsSanityCheckWasm(instrDesc id)
     {
     }
 #endif
 
-    public unsafe void emitDispIns(instrDesc id, bool isNew, bool doffs, bool asmfm,
+    public unsafe void emitDispInsWasm(instrDesc id, bool isNew, bool doffs, bool asmfm,
         uint offset = 0, byte* code = null, nuint size = 0, insGroup? ig = null)
     {
         assert(_compiler is not null);
@@ -72,12 +71,12 @@ public partial class Emitter
         var format = id.idInsFmt();
         switch (format)
         {
-            case IF_OPCODE:
+            case IF_WASM_OPCODE:
             {
                 break;
             }
 
-            case IF_BLOCK:
+            case IF_WASM_BLOCK:
             {
                 var type = (WasmValueType)emitGetInsSC(id);
                 if (type != WasmValueType.Invalid)
@@ -87,10 +86,10 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RAW_ULEB128:
-            case IF_ULEB128:
-            case IF_FUNCIDX:
-            case IF_GLOBALIDX:
+            case IF_WASM_RAW_ULEB128:
+            case IF_WASM_ULEB128:
+            case IF_WASM_FUNCIDX:
+            case IF_WASM_GLOBALIDX:
             {
                 jitprintf($" {unchecked((ulong)emitGetInsSC(id))}");
                 dispJumpTargetIfAny(id);
@@ -99,21 +98,21 @@ public partial class Emitter
                 break;
             }
 
-            case IF_CALL_INDIRECT:
+            case IF_WASM_CALL_INDIRECT:
             {
                 jitprintf($" {unchecked((ulong)emitGetInsSC(id))} 0");
                 dispHandleIfAny(id);
                 break;
             }
 
-            case IF_MEMIDX_MEMIDX:
+            case IF_WASM_MEMIDX_MEMIDX:
             {
                 var immediate = unchecked((ulong)emitGetInsSC(id));
                 jitprintf($" {immediate} {immediate}");
                 break;
             }
 
-            case IF_LOCAL_DECL:
+            case IF_WASM_LOCAL_DECL:
             {
                 var count = emitGetLclVarDeclCount(id);
                 var type = emitGetLclVarDeclType(id);
@@ -138,39 +137,39 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MEMADDR:
-            case IF_FUNCPTR:
-            case IF_SLEB128:
+            case IF_WASM_MEMADDR:
+            case IF_WASM_FUNCPTR:
+            case IF_WASM_SLEB128:
             {
                 jitprintf($" {emitGetInsSC(id)}");
                 dispLocalInfoIfAny(id);
                 break;
             }
 
-            case IF_FUNCLETPTR:
-            case IF_FUNCLETIDX:
+            case IF_WASM_FUNCLETPTR:
+            case IF_WASM_FUNCLETIDX:
             {
                 jitprintf($"funclet {emitGetInsSC(id)}");
                 dispLocalInfoIfAny(id);
                 break;
             }
 
-            case IF_DATAOFFS:
+            case IF_WASM_DATAOFFS:
             {
                 jitprintf($"data 0x{unchecked((ulong)emitGetInsSC(id)):x}");
                 dispLocalInfoIfAny(id);
                 break;
             }
 
-            case IF_F32:
-            case IF_F64:
+            case IF_WASM_F32:
+            case IF_WASM_F64:
             {
                 var value = BitConverter.Int64BitsToDouble(emitGetInsSC(id));
                 jitprintf($" {Globals.formatFloat(value, "F6")}");
                 break;
             }
 
-            case IF_MEMARG:
+            case IF_WASM_MEMARG:
             {
                 var alignment = emitGetAlignHintLog2(id);
                 var immediate = emitGetInsSC(id);
@@ -186,7 +185,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_TRY_TABLE:
+            case IF_WASM_TRY_TABLE:
             {
                 var type = emitGetValTypeImmType(id);
                 if (type != WasmValueType.Invalid)
@@ -196,14 +195,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_CATCH_DECL:
+            case IF_WASM_CATCH_DECL:
             {
                 jitprintf(" RtlRestoreContextTag");
                 dispJumpTargetIfAny(id);
                 break;
             }
 
-            case IF_CODE_SIZE:
+            case IF_WASM_CODE_SIZE:
             {
                 var currentGroup = ig ?? emitCurIG;
                 assert(currentGroup is not null);
@@ -222,7 +221,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_V128:
+            case IF_WASM_V128:
             {
                 var immediate = emitGetV128ImmValue(id);
                 for (var index = 0; index < immediate.Length; index++)
@@ -232,13 +231,13 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LANE:
+            case IF_WASM_LANE:
             {
                 jitprintf($" [{emitGetLaneImmValue(id)}]");
                 break;
             }
 
-            case IF_MEMARG_LANE:
+            case IF_WASM_MEMARG_LANE:
             {
                 var alignment = emitGetAlignHintLog2(id);
                 var immediate = unchecked((ulong)emitGetInsSC(id));
@@ -310,4 +309,3 @@ public partial class Emitter
         }
     }
 }
-#endif

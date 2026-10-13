@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 using System;
 using System.Runtime.CompilerServices;
 using static RyuJitSharp.Emitter.insFormat;
@@ -24,20 +23,20 @@ public partial class Emitter
 
         switch (format)
         {
-            case IF_OPCODE:
+            case IF_WASM_OPCODE:
             {
                 dst += emitOutputOpcode(dst, ins);
                 break;
             }
 
-            case IF_BLOCK:
+            case IF_WASM_BLOCK:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputValtypeSig(dst, (WasmValueType)emitGetInsSC(id));
                 break;
             }
 
-            case IF_ULEB128:
+            case IF_WASM_ULEB128:
             {
                 assert(!id.idIsCnsReloc());
                 dst += emitOutputOpcode(dst, ins);
@@ -45,7 +44,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_SLEB128:
+            case IF_WASM_SLEB128:
             {
                 assert(!id.idIsCnsReloc());
                 dst += emitOutputOpcode(dst, ins);
@@ -53,28 +52,28 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MEMADDR:
+            case IF_WASM_MEMADDR:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB);
                 break;
             }
 
-            case IF_FUNCLETIDX:
+            case IF_WASM_FUNCLETIDX:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputConstantFunclet(dst, id, CorInfoReloc.WASM_FUNCTION_INDEX_LEB);
                 break;
             }
 
-            case IF_FUNCLETPTR:
+            case IF_WASM_FUNCLETPTR:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputConstantFunclet(dst, id, CorInfoReloc.WASM_TABLE_INDEX_SLEB);
                 break;
             }
 
-            case IF_DATAOFFS:
+            case IF_WASM_DATAOFFS:
             {
                 dst += emitOutputOpcode(dst, ins);
                 var dataOffset = unchecked((uint)emitGetInsSC(id));
@@ -84,28 +83,28 @@ public partial class Emitter
                 break;
             }
 
-            case IF_FUNCPTR:
+            case IF_WASM_FUNCPTR:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputConstant(dst, id, SIGNED, CorInfoReloc.WASM_TABLE_INDEX_SLEB);
                 break;
             }
 
-            case IF_FUNCIDX:
+            case IF_WASM_FUNCIDX:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc.WASM_FUNCTION_INDEX_LEB);
                 break;
             }
 
-            case IF_GLOBALIDX:
+            case IF_WASM_GLOBALIDX:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc.WASM_GLOBAL_INDEX_LEB);
                 break;
             }
 
-            case IF_CALL_INDIRECT:
+            case IF_WASM_CALL_INDIRECT:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputConstant(dst, id, UNSIGNED, CorInfoReloc.WASM_TYPE_INDEX_LEB);
@@ -113,7 +112,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_F32:
+            case IF_WASM_F32:
             {
                 dst += emitOutputOpcode(dst, ins);
                 var bits = emitGetInsSC(id);
@@ -123,7 +122,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_F64:
+            case IF_WASM_F64:
             {
                 dst += emitOutputOpcode(dst, ins);
                 var bits = unchecked((ulong)emitGetInsSC(id));
@@ -132,14 +131,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_RAW_ULEB128:
+            case IF_WASM_RAW_ULEB128:
             {
                 assert(!id.idIsCnsReloc());
                 dst += emitOutputULEB128(dst, unchecked((ulong)emitGetInsSC(id)));
                 break;
             }
 
-            case IF_MEMARG:
+            case IF_WASM_MEMARG:
             {
                 dst += emitOutputOpcode(dst, ins);
                 var align = emitGetAlignHintLog2(id);
@@ -150,7 +149,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LOCAL_DECL:
+            case IF_WASM_LOCAL_DECL:
             {
                 assert(id.idIsLclVarDecl());
                 dst += emitOutputULEB128(dst, emitGetLclVarDeclCount(id));
@@ -158,7 +157,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_MEMIDX_MEMIDX:
+            case IF_WASM_MEMIDX_MEMIDX:
             {
                 dst += emitOutputOpcode(dst, ins);
                 var constant = emitGetInsSC(id);
@@ -167,7 +166,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_TRY_TABLE:
+            case IF_WASM_TRY_TABLE:
             {
                 dst += emitOutputOpcode(dst, ins);
                 assert(id.idIsValTypeImm());
@@ -176,7 +175,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_CATCH_DECL:
+            case IF_WASM_CATCH_DECL:
             {
                 dst += emitOutputByte(dst, 1);
                 emitRecordRelocation(dst, emitCodeBlock, CorInfoReloc.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB);
@@ -185,7 +184,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_CODE_SIZE:
+            case IF_WASM_CODE_SIZE:
             {
                 assert(_compiler is not null);
                 assert(emitCurIG is not null);
@@ -202,7 +201,7 @@ public partial class Emitter
                 break;
             }
 
-            case IF_V128:
+            case IF_WASM_V128:
             {
                 dst += emitOutputOpcode(dst, ins);
                 var immediate = emitGetV128ImmValue(id);
@@ -213,14 +212,14 @@ public partial class Emitter
                 break;
             }
 
-            case IF_LANE:
+            case IF_WASM_LANE:
             {
                 dst += emitOutputOpcode(dst, ins);
                 dst += emitOutputByte(dst, emitGetLaneImmValue(id));
                 break;
             }
 
-            case IF_MEMARG_LANE:
+            case IF_WASM_MEMARG_LANE:
             {
                 dst += emitOutputOpcode(dst, ins);
                 var lane = emitGetLaneImmValue(id);
@@ -244,18 +243,17 @@ public partial class Emitter
         assert(_compiler is not null);
         if (_compiler.opts.disAsm || _compiler.verbose)
         {
-            emitDispIns(id, false, _compiler.opts.dspGCtbls, true, emitCurCodeOffs(*dp), *dp,
+            emitDispInsWasm(id, false, _compiler.opts.dspGCtbls, true, emitCurCodeOffs(*dp), *dp,
                 unchecked((nuint)(dst - *dp)), ig);
         }
 #else
-        assert(_compiler is not null);
-        if (_compiler.opts.disAsm)
+        var compiler = _compiler;
+        if ((compiler is not null) && compiler.opts.disAsm)
         {
-            emitDispIns(id, false, false, true, emitCurCodeOffs(*dp), *dp,
+            emitDispInsWasm(id, false, false, true, emitCurCodeOffs(*dp), *dp,
                 unchecked((nuint)(dst - *dp)), ig);
         }
 #endif
-
         *dp = dst;
         return unchecked((nuint)size);
     }
@@ -367,4 +365,3 @@ public partial class Emitter
         return emitOutputByte(destination, typeCode);
     }
 }
-#endif

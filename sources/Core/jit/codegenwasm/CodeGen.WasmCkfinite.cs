@@ -3,12 +3,11 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_WASM
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    private void genCkfinite(GenTree treeNode)
+    private void genCkfiniteWasm(GenTree treeNode)
     {
         assert(treeNode.Oper is GT_CKFINITE);
 
@@ -54,4 +53,3 @@ public sealed partial class CodeGen
         WasmProduceReg(treeNode);
     }
 }
-#endif
