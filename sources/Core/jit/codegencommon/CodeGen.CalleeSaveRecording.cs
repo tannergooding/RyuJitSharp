@@ -52,12 +52,10 @@ public sealed partial class CodeGen
             Emitter.RequireSupportedInstructionRecording();
         }
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
-#if DEBUG
-        if (_compiler.opts.IsOSR)
+        if (Configuration.DEBUG && _compiler.opts.IsOSR)
         {
             assert(_compiler.funCurrentFunc().funKind != FuncKind.FUNC_ROOT);
         }
-#endif
         var pushRegs = _regSet.rsGetModifiedIntCalleeSavedRegsMask();
         if (Configuration.ETW_EBP_FRAMED)
         {
@@ -69,16 +67,17 @@ public sealed partial class CodeGen
             pushRegs &= ~new regMaskTP(TargetRuntimeMetadata.SelectXarch(SRBM_X86_EBP, SRBM_X64_RBP));
         }
 
-#if DEBUG
-        var count = BitOperations.PopCount((ulong)pushRegs.IntRegSet);
-        if (_compiler.compCalleeRegsPushed != count)
+        if (Configuration.DEBUG)
         {
-            jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. Got: {count} ");
-            dspRegMask(pushRegs);
-            jitprintf("\n");
-            assert(_compiler.compCalleeRegsPushed == count);
+            var count = BitOperations.PopCount((ulong)pushRegs.IntRegSet);
+            if (_compiler.compCalleeRegsPushed != count)
+            {
+                jitprintf($"Error: unexpected number of callee-saved registers to push. Expected: {_compiler.compCalleeRegsPushed}. Got: {count} ");
+                dspRegMask(pushRegs);
+                jitprintf("\n");
+                assert(_compiler.compCalleeRegsPushed == count);
+            }
         }
-#endif
         if (Configuration.TARGET_AMD64 && _compiler.canUseApxEvexEncoding() && (JitConfig.EnableApxPP2 != 0))
         {
             genPushCalleeSavedRegistersFromMaskAPX(pushRegs);
