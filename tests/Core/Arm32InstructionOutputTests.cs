@@ -35,7 +35,7 @@ internal static unsafe class Arm32InstructionOutputTests
 
         var jump = new Emitter.instrDescJmp();
         jump.idIns(INS_b);
-        jump.idInsFmt(IF_T1_M);
+        jump.idInsFmt(IF_ARM32_T1_M);
         jump.idOpSize(EA_4BYTE);
         jump.idInsOpt(INS_OPTS_NONE);
         jump.idSetIsBound();
@@ -64,7 +64,7 @@ internal static unsafe class Arm32InstructionOutputTests
 
         var jump = new Emitter.instrDescJmp();
         jump.idIns(INS_b);
-        jump.idInsFmt(IF_T2_J2);
+        jump.idInsFmt(IF_ARM32_T2_J2);
         jump.idOpSize(EA_4BYTE);
         jump.idInsOpt(INS_OPTS_NONE);
         jump.idSetIsBound();
@@ -94,7 +94,7 @@ internal static unsafe class Arm32InstructionOutputTests
 
         var jump = new Emitter.instrDescJmp();
         jump.idIns(INS_b);
-        jump.idInsFmt(IF_T2_J2);
+        jump.idInsFmt(IF_ARM32_T2_J2);
         jump.idOpSize(EA_4BYTE);
         jump.idInsOpt(INS_OPTS_NONE);
         jump.idSetIsBound();
@@ -125,7 +125,7 @@ internal static unsafe class Arm32InstructionOutputTests
 
         var jump = new Emitter.instrDescJmp();
         jump.idIns(INS_b);
-        jump.idInsFmt(IF_T1_M);
+        jump.idInsFmt(IF_ARM32_T1_M);
         jump.idOpSize(EA_4BYTE);
         jump.idInsOpt(INS_OPTS_NONE);
         jump.idSetIsBound();
@@ -167,9 +167,9 @@ internal static unsafe class Arm32InstructionOutputTests
         });
     }
 
-    [TestCase(INS_add, IF_T1_D0, 0, "add     r0, r1")]
-    [TestCase(INS_ldr, IF_T2_H2, -4, "ldr     [r0-0x04]")]
-    [TestCase(INS_b, IF_T1_B, 10, "b       ge")]
+    [TestCase(INS_add, IF_ARM32_T1_D0, 0, "add     r0, r1")]
+    [TestCase(INS_ldr, IF_ARM32_T2_H2, -4, "ldr     [r0-0x04]")]
+    [TestCase(INS_b, IF_ARM32_T1_B, 10, "b       ge")]
     public static void InstructionDisplayFormatsArm32Operands(
         instruction ins, Emitter.insFormat format, int immediate, string expected)
     {
@@ -188,7 +188,7 @@ internal static unsafe class Arm32InstructionOutputTests
         var output = CaptureDisplay((compiler, emitter) =>
         {
             compiler.opts.disDiffable = true;
-            var id = DisplayEmitter.Descriptor(INS_movw, IF_T2_N, 0x1234);
+            var id = DisplayEmitter.Descriptor(INS_movw, IF_ARM32_T2_N, 0x1234);
             emitter.emitDispIns(id, false, false, true);
         });
 
@@ -210,7 +210,7 @@ internal static unsafe class Arm32InstructionOutputTests
             emitter.emitCodeBlock = code;
             emitter.emitTotalHotCodeSize = 2;
             emitter.writeableOffset = writableOffset;
-            var id = DisplayEmitter.Descriptor(INS_add, IF_T1_D0, 0);
+            var id = DisplayEmitter.Descriptor(INS_add, IF_ARM32_T1_D0, 0);
 
             emitter.emitDispIns(id, false, false, true, code: code, size: 2);
         });
@@ -239,7 +239,7 @@ internal static unsafe class Arm32InstructionOutputTests
 
             var code = coldCode + 1;
             var offset = CurrentCodeOffset(emitter, code);
-            var id = DisplayEmitter.Descriptor(INS_add, IF_T1_D0, 0);
+            var id = DisplayEmitter.Descriptor(INS_add, IF_ARM32_T1_D0, 0);
 
             emitter.emitDispIns(id, false, true, true, offset, code, 2);
         });
@@ -256,7 +256,7 @@ internal static unsafe class Arm32InstructionOutputTests
         {
             var jump = new Emitter.instrDescJmp();
             jump.idIns(INS_beq);
-            jump.idInsFmt(IF_LARGEJMP);
+            jump.idInsFmt(IF_ARM32_LARGEJMP);
             jump.idOpSize(EA_4BYTE);
             jump.idInsOpt(INS_OPTS_NONE);
             jump.idSetIsBound();
@@ -278,7 +278,7 @@ internal static unsafe class Arm32InstructionOutputTests
 
             emitter.emitDispIns(jump, false, false, true, code: buffer, size: 6);
             Assert.That(jump.idIns(), Is.EqualTo(INS_beq));
-            Assert.That(jump.idInsFmt(), Is.EqualTo(IF_LARGEJMP));
+            Assert.That(jump.idInsFmt(), Is.EqualTo(IF_ARM32_LARGEJMP));
             Assert.That(jump.idIsBound(), Is.True);
             Assert.That(jump.idjTargetIG, Is.SameAs(target));
         });

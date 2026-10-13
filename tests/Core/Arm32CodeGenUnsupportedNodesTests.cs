@@ -26,20 +26,20 @@ namespace RyuJitSharp.UnitTests;
 internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 {
     [TestCase(INS_b, emitJumpKind.EJ_jmp, emitJumpKind.EJ_jmp)]
-    [TestCase(INS_beq, emitJumpKind.EJ_eq, emitJumpKind.EJ_ne)]
-    [TestCase(INS_bne, emitJumpKind.EJ_ne, emitJumpKind.EJ_eq)]
-    [TestCase(INS_bhs, emitJumpKind.EJ_hs, emitJumpKind.EJ_lo)]
-    [TestCase(INS_blo, emitJumpKind.EJ_lo, emitJumpKind.EJ_hs)]
-    [TestCase(INS_bmi, emitJumpKind.EJ_mi, emitJumpKind.EJ_pl)]
-    [TestCase(INS_bpl, emitJumpKind.EJ_pl, emitJumpKind.EJ_mi)]
-    [TestCase(INS_bvs, emitJumpKind.EJ_vs, emitJumpKind.EJ_vc)]
-    [TestCase(INS_bvc, emitJumpKind.EJ_vc, emitJumpKind.EJ_vs)]
-    [TestCase(INS_bhi, emitJumpKind.EJ_hi, emitJumpKind.EJ_ls)]
-    [TestCase(INS_bls, emitJumpKind.EJ_ls, emitJumpKind.EJ_hi)]
-    [TestCase(INS_bge, emitJumpKind.EJ_ge, emitJumpKind.EJ_lt)]
-    [TestCase(INS_blt, emitJumpKind.EJ_lt, emitJumpKind.EJ_ge)]
-    [TestCase(INS_bgt, emitJumpKind.EJ_gt, emitJumpKind.EJ_le)]
-    [TestCase(INS_ble, emitJumpKind.EJ_le, emitJumpKind.EJ_gt)]
+    [TestCase(INS_beq, emitJumpKind.EJ_ARMARCH_eq, emitJumpKind.EJ_ARMARCH_ne)]
+    [TestCase(INS_bne, emitJumpKind.EJ_ARMARCH_ne, emitJumpKind.EJ_ARMARCH_eq)]
+    [TestCase(INS_bhs, emitJumpKind.EJ_ARMARCH_hs, emitJumpKind.EJ_ARMARCH_lo)]
+    [TestCase(INS_blo, emitJumpKind.EJ_ARMARCH_lo, emitJumpKind.EJ_ARMARCH_hs)]
+    [TestCase(INS_bmi, emitJumpKind.EJ_ARMARCH_mi, emitJumpKind.EJ_ARMARCH_pl)]
+    [TestCase(INS_bpl, emitJumpKind.EJ_ARMARCH_pl, emitJumpKind.EJ_ARMARCH_mi)]
+    [TestCase(INS_bvs, emitJumpKind.EJ_ARMARCH_vs, emitJumpKind.EJ_ARMARCH_vc)]
+    [TestCase(INS_bvc, emitJumpKind.EJ_ARMARCH_vc, emitJumpKind.EJ_ARMARCH_vs)]
+    [TestCase(INS_bhi, emitJumpKind.EJ_ARMARCH_hi, emitJumpKind.EJ_ARMARCH_ls)]
+    [TestCase(INS_bls, emitJumpKind.EJ_ARMARCH_ls, emitJumpKind.EJ_ARMARCH_hi)]
+    [TestCase(INS_bge, emitJumpKind.EJ_ARMARCH_ge, emitJumpKind.EJ_ARMARCH_lt)]
+    [TestCase(INS_blt, emitJumpKind.EJ_ARMARCH_lt, emitJumpKind.EJ_ARMARCH_ge)]
+    [TestCase(INS_bgt, emitJumpKind.EJ_ARMARCH_gt, emitJumpKind.EJ_ARMARCH_le)]
+    [TestCase(INS_ble, emitJumpKind.EJ_ARMARCH_le, emitJumpKind.EJ_ARMARCH_gt)]
     public static void ArmJumpKindsMapToInstructionsAndReverseConditions(
         instruction ins, emitJumpKind jumpKind, emitJumpKind reverseJumpKind)
     {
@@ -53,34 +53,34 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
     {
         var mappings = new (GenCondition.CodeKind Code, emitJumpKind JumpKind1, genTreeOps Oper, emitJumpKind JumpKind2)[]
         {
-            (GenCondition.SLT, emitJumpKind.EJ_lt, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.SLE, emitJumpKind.EJ_le, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.SGE, emitJumpKind.EJ_ge, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.SGT, emitJumpKind.EJ_gt, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.S, emitJumpKind.EJ_mi, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.NS, emitJumpKind.EJ_pl, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.EQ, emitJumpKind.EJ_eq, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.NE, emitJumpKind.EJ_ne, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.ULT, emitJumpKind.EJ_lo, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.ULE, emitJumpKind.EJ_ls, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.UGE, emitJumpKind.EJ_hs, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.UGT, emitJumpKind.EJ_hi, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.C, emitJumpKind.EJ_hs, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.NC, emitJumpKind.EJ_lo, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FEQ, emitJumpKind.EJ_eq, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FNE, emitJumpKind.EJ_gt, GT_AND, emitJumpKind.EJ_lo),
-            (GenCondition.FLT, emitJumpKind.EJ_lo, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FLE, emitJumpKind.EJ_ls, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FGE, emitJumpKind.EJ_ge, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FGT, emitJumpKind.EJ_gt, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.O, emitJumpKind.EJ_vs, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.NO, emitJumpKind.EJ_vc, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FEQU, emitJumpKind.EJ_eq, GT_OR, emitJumpKind.EJ_vs),
-            (GenCondition.FNEU, emitJumpKind.EJ_ne, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FLTU, emitJumpKind.EJ_lt, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FLEU, emitJumpKind.EJ_le, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FGEU, emitJumpKind.EJ_hs, GT_NONE, emitJumpKind.EJ_NONE),
-            (GenCondition.FGTU, emitJumpKind.EJ_hi, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.SLT, emitJumpKind.EJ_ARMARCH_lt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.SLE, emitJumpKind.EJ_ARMARCH_le, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.SGE, emitJumpKind.EJ_ARMARCH_ge, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.SGT, emitJumpKind.EJ_ARMARCH_gt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.S, emitJumpKind.EJ_ARMARCH_mi, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NS, emitJumpKind.EJ_ARMARCH_pl, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.EQ, emitJumpKind.EJ_ARMARCH_eq, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NE, emitJumpKind.EJ_ARMARCH_ne, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.ULT, emitJumpKind.EJ_ARMARCH_lo, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.ULE, emitJumpKind.EJ_ARMARCH_ls, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.UGE, emitJumpKind.EJ_ARMARCH_hs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.UGT, emitJumpKind.EJ_ARMARCH_hi, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.C, emitJumpKind.EJ_ARMARCH_hs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NC, emitJumpKind.EJ_ARMARCH_lo, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FEQ, emitJumpKind.EJ_ARMARCH_eq, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FNE, emitJumpKind.EJ_ARMARCH_gt, GT_AND, emitJumpKind.EJ_ARMARCH_lo),
+            (GenCondition.FLT, emitJumpKind.EJ_ARMARCH_lo, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FLE, emitJumpKind.EJ_ARMARCH_ls, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGE, emitJumpKind.EJ_ARMARCH_ge, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGT, emitJumpKind.EJ_ARMARCH_gt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.O, emitJumpKind.EJ_ARMARCH_vs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.NO, emitJumpKind.EJ_ARMARCH_vc, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FEQU, emitJumpKind.EJ_ARMARCH_eq, GT_OR, emitJumpKind.EJ_ARMARCH_vs),
+            (GenCondition.FNEU, emitJumpKind.EJ_ARMARCH_ne, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FLTU, emitJumpKind.EJ_ARMARCH_lt, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FLEU, emitJumpKind.EJ_ARMARCH_le, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGEU, emitJumpKind.EJ_ARMARCH_hs, GT_NONE, emitJumpKind.EJ_NONE),
+            (GenCondition.FGTU, emitJumpKind.EJ_ARMARCH_hi, GT_NONE, emitJumpKind.EJ_NONE),
         };
 
         ArmCalleeSavedRegisterTests.WithCodeGen((_, _) =>
@@ -95,11 +95,11 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_add, REG_R3, 7, INS_FLAGS_SET, INS_add, IF_T1_J0, 7, INS_FLAGS_SET)]
-    [TestCase(INS_add, REG_R3, -7, INS_FLAGS_SET, INS_sub, IF_T1_J0, 7, INS_FLAGS_SET)]
-    [TestCase(INS_add, REG_SP, 12, INS_FLAGS_NOT_SET, INS_add, IF_T1_F, 12, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_mov, REG_R8, 0x1234, INS_FLAGS_NOT_SET, INS_movw, IF_T2_N, 0x1234, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_cmp, REG_R8, -1, INS_FLAGS_SET, INS_cmp, IF_T2_L2, -1, INS_FLAGS_SET)]
+    [TestCase(INS_add, REG_R3, 7, INS_FLAGS_SET, INS_add, IF_ARM32_T1_J0, 7, INS_FLAGS_SET)]
+    [TestCase(INS_add, REG_R3, -7, INS_FLAGS_SET, INS_sub, IF_ARM32_T1_J0, 7, INS_FLAGS_SET)]
+    [TestCase(INS_add, REG_SP, 12, INS_FLAGS_NOT_SET, INS_add, IF_ARM32_T1_F, 12, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_mov, REG_R8, 0x1234, INS_FLAGS_NOT_SET, INS_movw, IF_ARM32_T2_N, 0x1234, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_cmp, REG_R8, -1, INS_FLAGS_SET, INS_cmp, IF_ARM32_T2_L2, -1, INS_FLAGS_SET)]
     public static void RegisterImmediateInstructionRecordingUsesThumbFormats(
         instruction ins, regNumber reg, int immediate, insFlags flags, instruction expectedIns,
         Emitter.insFormat expectedFormat, int expectedImmediate, insFlags expectedFlags)
@@ -118,13 +118,13 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_mov, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_SET, IF_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_NOT_SET, IF_T1_D0, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_SET, IF_T2_C3, INS_FLAGS_SET)]
-    [TestCase(INS_vmov, REG_F2, REG_F4, EA_8BYTE, INS_FLAGS_DONT_CARE, IF_T2_VFP2, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_vmov, REG_F2, REG_F0, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_T2_VFP2, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_vmov_i2f, REG_F1, REG_R3, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_T2_VMOVS, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_sxtb, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_NOT_SET, IF_T1_E, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_mov, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_SET, IF_ARM32_T1_E, INS_FLAGS_SET)]
+    [TestCase(INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_NOT_SET, IF_ARM32_T1_D0, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_mov, REG_R8, REG_R9, EA_4BYTE, INS_FLAGS_SET, IF_ARM32_T2_C3, INS_FLAGS_SET)]
+    [TestCase(INS_vmov, REG_F2, REG_F4, EA_8BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VFP2, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_vmov, REG_F2, REG_F0, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VFP2, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_vmov_i2f, REG_F1, REG_R3, EA_4BYTE, INS_FLAGS_DONT_CARE, IF_ARM32_T2_VMOVS, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_sxtb, REG_R2, REG_R3, EA_4BYTE, INS_FLAGS_NOT_SET, IF_ARM32_T1_E, INS_FLAGS_NOT_SET)]
     public static void RegisterMoveRecordingUsesNativeThumbFormats(
         instruction ins, regNumber dstReg, regNumber srcReg, emitAttr attr, insFlags flags,
         Emitter.insFormat expectedFormat, insFlags expectedFlags)
@@ -158,8 +158,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_cmp, REG_R3, REG_R4, IF_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_clz, REG_R8, REG_R9, IF_T2_C10, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_cmp, REG_R3, REG_R4, IF_ARM32_T1_E, INS_FLAGS_SET)]
+    [TestCase(INS_clz, REG_R8, REG_R9, IF_ARM32_T2_C10, INS_FLAGS_NOT_SET)]
     public static void RegisterRegisterInstructionRecordingUsesThumbFormats(
         instruction ins, regNumber reg1, regNumber reg2, Emitter.insFormat expectedFormat, insFlags expectedFlags)
     {
@@ -188,15 +188,15 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No flags-aware register-register instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_cmp));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T1_E));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T1_E));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R4));
         });
     }
 
-    [TestCase(INS_add, REG_R0, REG_R1, REG_R2, IF_T1_H, INS_FLAGS_SET)]
-    [TestCase(INS_vadd, REG_F0, REG_F1, REG_F2, IF_T2_VFP3, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_add, REG_R0, REG_R1, REG_R2, IF_ARM32_T1_H, INS_FLAGS_SET)]
+    [TestCase(INS_vadd, REG_F0, REG_F1, REG_F2, IF_ARM32_T2_VFP3, INS_FLAGS_NOT_SET)]
     public static void ThreeRegisterInstructionRecordingUsesThumbFormats(
         instruction ins, regNumber reg1, regNumber reg2, regNumber reg3,
         Emitter.insFormat expectedFormat, insFlags expectedFlags)
@@ -217,8 +217,8 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_add, REG_R0, REG_R1, REG_R2, 1, INS_FLAGS_SET, INS_OPTS_LSL, IF_T2_C0, INS_FLAGS_SET)]
-    [TestCase(INS_ldr, REG_R0, REG_R1, REG_R2, 0, INS_FLAGS_NOT_SET, INS_OPTS_NONE, IF_T1_H, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_add, REG_R0, REG_R1, REG_R2, 1, INS_FLAGS_SET, INS_OPTS_LSL, IF_ARM32_T2_C0, INS_FLAGS_SET)]
+    [TestCase(INS_ldr, REG_R0, REG_R1, REG_R2, 0, INS_FLAGS_NOT_SET, INS_OPTS_NONE, IF_ARM32_T1_H, INS_FLAGS_NOT_SET)]
     public static void ThreeRegisterImmediateInstructionRecordingPreservesShiftAndFormat(
         instruction ins, regNumber reg1, regNumber reg2, regNumber reg3, int immediate, insFlags flags,
         insOpts opt, Emitter.insFormat expectedFormat, insFlags expectedFlags)
@@ -241,12 +241,12 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
         });
     }
 
-    [TestCase(INS_smull, IF_T2_F1)]
-    [TestCase(INS_umull, IF_T2_F1)]
-    [TestCase(INS_smlal, IF_T2_F1)]
-    [TestCase(INS_umlal, IF_T2_F1)]
-    [TestCase(INS_mla, IF_T2_F2)]
-    [TestCase(INS_mls, IF_T2_F2)]
+    [TestCase(INS_smull, IF_ARM32_T2_F1)]
+    [TestCase(INS_umull, IF_ARM32_T2_F1)]
+    [TestCase(INS_smlal, IF_ARM32_T2_F1)]
+    [TestCase(INS_umlal, IF_ARM32_T2_F1)]
+    [TestCase(INS_mla, IF_ARM32_T2_F2)]
+    [TestCase(INS_mls, IF_ARM32_T2_F2)]
     public static void FourRegisterMultiplyInstructionRecordingUsesNativeThumbFormats(
         instruction ins, Emitter.insFormat expectedFormat)
     {
@@ -302,7 +302,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No local-stack instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(ins));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_H0));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_H0));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_SPBASE));
@@ -325,7 +325,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No local-address instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_add));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T1_J2));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T1_J2));
             Assert.That(descriptor.idOpSize(), Is.EqualTo(EA_4BYTE));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R0));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_SPBASE));
@@ -423,7 +423,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No bit-field instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_bfc));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_D1));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_D1));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)271));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R5));
@@ -444,15 +444,15 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No relocatable instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_movw));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_N3));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_N3));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That((nuint)RelocationValue(codeGen.Emitter, descriptor), Is.EqualTo(address));
         }, captureAssertions: true);
     }
 
-    [TestCase(INS_dmb, IF_T2_B, 15, 15)]
-    [TestCase(INS_push, IF_T1_L1, 12, 48)]
-    [TestCase(INS_pop, IF_T2_I1, 0x4001, 5)]
+    [TestCase(INS_dmb, IF_ARM32_T2_B, 15, 15)]
+    [TestCase(INS_push, IF_ARM32_T1_L1, 12, 48)]
+    [TestCase(INS_pop, IF_ARM32_T2_I1, 0x4001, 5)]
     public static void ImmediateOnlyInstructionRecordingPreservesThumbFormatAndMask(
         instruction ins, Emitter.insFormat expectedFormat, int immediate, int expectedEncoding)
     {
@@ -465,7 +465,7 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
             Assert.That(descriptor.idIns(), Is.EqualTo(ins));
             Assert.That(descriptor.idInsFmt(), Is.EqualTo(expectedFormat));
             Assert.That(descriptor.idInsSize(), Is.EqualTo(
-                expectedFormat < IF_T2_A ? ISZ_16BIT : ISZ_32BIT));
+                expectedFormat < IF_ARM32_T2_A ? ISZ_16BIT : ISZ_32BIT));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedEncoding));
         });
     }
@@ -479,15 +479,15 @@ internal static unsafe class Arm32CodeGenUnsupportedNodesTests
 
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No high-register push was recorded.");
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_E2));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_E2));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R8));
         });
     }
 
-    [TestCase(INS_rsb, REG_R7, IF_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_rsb, REG_R8, IF_T2_L0, INS_FLAGS_NOT_SET)]
-    [TestCase(INS_mvn, REG_R7, IF_T1_E, INS_FLAGS_SET)]
-    [TestCase(INS_mvn, REG_R8, IF_T2_C1, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_rsb, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET)]
+    [TestCase(INS_rsb, REG_R8, IF_ARM32_T2_L0, INS_FLAGS_NOT_SET)]
+    [TestCase(INS_mvn, REG_R7, IF_ARM32_T1_E, INS_FLAGS_SET)]
+    [TestCase(INS_mvn, REG_R8, IF_ARM32_T2_C1, INS_FLAGS_NOT_SET)]
     public static void SingleRegisterRsbAndMvnUseNativeThumbFormats(
         instruction ins, regNumber reg, Emitter.insFormat expectedFormat, insFlags expectedFlags)
     {
@@ -676,7 +676,7 @@ internal static unsafe class Arm32CkfiniteCodeGenTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("No two-immediate instruction was recorded.");
             Assert.That(descriptor.idIns(), Is.EqualTo(ins));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_D0));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_D0));
             Assert.That(descriptor.idInsSize(), Is.EqualTo(ISZ_32BIT));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R2));

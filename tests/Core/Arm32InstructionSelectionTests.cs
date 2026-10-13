@@ -31,7 +31,7 @@ internal static class Arm32InstructionSelectionTests
                 ?? throw new AssertionException("Missing immediate instruction.");
             Assert.That(immediateFits, Is.True);
             Assert.That(descriptor.idIns(), Is.EqualTo(expectedInstruction));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_L0));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_L0));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_NOT_SET));
             Assert.That(descriptor.idReg1(), Is.EqualTo(REG_R3));
             Assert.That(descriptor.idReg2(), Is.EqualTo(REG_R4));
@@ -50,7 +50,7 @@ internal static class Arm32InstructionSelectionTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("Missing immediate instruction.");
             Assert.That(immediateFits, Is.True);
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T1_G));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T1_G));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_SET));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)1));
         });
@@ -66,7 +66,7 @@ internal static class Arm32InstructionSelectionTests
             var descriptor = LastInstruction(codeGen.Emitter)
                 ?? throw new AssertionException("Missing zero immediate instruction.");
             Assert.That(descriptor.idIns(), Is.EqualTo(INS_mov));
-            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T1_J0));
+            Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T1_J0));
             Assert.That(descriptor.idInsFlags(), Is.EqualTo(INS_FLAGS_SET));
             Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)0));
         });

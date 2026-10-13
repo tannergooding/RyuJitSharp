@@ -16,23 +16,23 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm32InstructionCodeTests
 {
-    [TestCase(INS_add, IF_T1_D0, 0x4400u)]
-    [TestCase(INS_add, IF_T1_H, 0x1800u)]
-    [TestCase(INS_add, IF_T1_J0, 0x3000u)]
-    [TestCase(INS_add, IF_T1_G, 0x1C00u)]
-    [TestCase(INS_add, IF_T2_L0, 0xF1000000u)]
-    [TestCase(INS_add, IF_T2_C0, 0xEB000000u)]
-    [TestCase(INS_add, IF_T1_F, 0xB000u)]
-    [TestCase(INS_add, IF_T1_J2, 0xA800u)]
-    [TestCase(INS_add, IF_T1_J3, 0xA000u)]
-    [TestCase(INS_ldr, IF_T1_H, 0x5800u)]
-    [TestCase(INS_ldr, IF_T1_C, 0x6800u)]
-    [TestCase(INS_ldr, IF_T2_E0, 0xF8500000u)]
-    [TestCase(INS_ldr, IF_T2_H0, 0xF8500800u)]
-    [TestCase(INS_ldr, IF_T2_K1, 0xF8D00000u)]
-    [TestCase(INS_ldr, IF_T2_K4, 0xF85F0000u)]
-    [TestCase(INS_ldr, IF_T1_J2, 0x9800u)]
-    [TestCase(INS_ldr, IF_T1_J3, 0x4800u)]
+    [TestCase(INS_add, IF_ARM32_T1_D0, 0x4400u)]
+    [TestCase(INS_add, IF_ARM32_T1_H, 0x1800u)]
+    [TestCase(INS_add, IF_ARM32_T1_J0, 0x3000u)]
+    [TestCase(INS_add, IF_ARM32_T1_G, 0x1C00u)]
+    [TestCase(INS_add, IF_ARM32_T2_L0, 0xF1000000u)]
+    [TestCase(INS_add, IF_ARM32_T2_C0, 0xEB000000u)]
+    [TestCase(INS_add, IF_ARM32_T1_F, 0xB000u)]
+    [TestCase(INS_add, IF_ARM32_T1_J2, 0xA800u)]
+    [TestCase(INS_add, IF_ARM32_T1_J3, 0xA000u)]
+    [TestCase(INS_ldr, IF_ARM32_T1_H, 0x5800u)]
+    [TestCase(INS_ldr, IF_ARM32_T1_C, 0x6800u)]
+    [TestCase(INS_ldr, IF_ARM32_T2_E0, 0xF8500000u)]
+    [TestCase(INS_ldr, IF_ARM32_T2_H0, 0xF8500800u)]
+    [TestCase(INS_ldr, IF_ARM32_T2_K1, 0xF8D00000u)]
+    [TestCase(INS_ldr, IF_ARM32_T2_K4, 0xF85F0000u)]
+    [TestCase(INS_ldr, IF_ARM32_T1_J2, 0x9800u)]
+    [TestCase(INS_ldr, IF_ARM32_T1_J3, 0x4800u)]
     [TestCase(INS_nop, IF_NONE, 0xBF00u)]
     public static void NativeGoldenOpcodesPreserveEncodingColumnsAndDirectFormatBehavior(
         instruction ins, Emitter.insFormat format, uint expected)
@@ -134,30 +134,30 @@ internal static class Arm32InstructionCodeTests
 
     private static IEnumerable<TestCaseData> EncodingGroups()
     {
-        yield return Group(IF_EN9, [
-            IF_T1_D0, IF_T1_H, IF_T1_J0, IF_T1_G, IF_T2_L0,
-            IF_T2_C0, IF_T1_F, IF_T1_J2, IF_T1_J3,
+        yield return Group(IF_ARM32_EN9, [
+            IF_ARM32_T1_D0, IF_ARM32_T1_H, IF_ARM32_T1_J0, IF_ARM32_T1_G, IF_ARM32_T2_L0,
+            IF_ARM32_T2_C0, IF_ARM32_T1_F, IF_ARM32_T1_J2, IF_ARM32_T1_J3,
         ]);
-        yield return Group(IF_EN8, [IF_T1_H, IF_T1_C, IF_T2_E0, IF_T2_H0, IF_T2_K1, IF_T2_K4, IF_T1_J2, IF_T1_J3]);
-        yield return Group(IF_EN6A, [IF_T1_H, IF_T1_C, IF_T2_E0, IF_T2_H0, IF_T2_K1, IF_T2_K4]);
-        yield return Group(IF_EN6B, [IF_T1_H, IF_T1_C, IF_T2_E0, IF_T2_H0, IF_T2_K1, IF_T1_J2]);
-        yield return Group(IF_EN5A, [IF_T1_E, IF_T1_D0, IF_T1_J0, IF_T2_L1, IF_T2_C3]);
-        yield return Group(IF_EN5B, [IF_T1_E, IF_T1_D0, IF_T1_J0, IF_T2_L2, IF_T2_C8]);
-        yield return Group(IF_EN4A, [IF_T1_E, IF_T1_C, IF_T2_C4, IF_T2_C2]);
-        yield return Group(IF_EN4B, [IF_T2_K2, IF_T2_H2, IF_T2_C7, IF_T2_K3]);
-        yield return Group(IF_EN4C, [IF_T2_N, IF_T2_N1, IF_T2_N2, IF_T2_N3]);
-        yield return Group(IF_EN3A, [IF_T1_E, IF_T2_C0, IF_T2_L0]);
-        yield return Group(IF_EN3B, [IF_T1_E, IF_T2_C8, IF_T2_L2]);
-        yield return Group(IF_EN3C, [IF_T1_E, IF_T2_C1, IF_T2_L1]);
-        yield return Group(IF_EN3D, [IF_T1_L1, IF_T2_E2, IF_T2_I1]);
-        yield return Group(IF_EN3E, [IF_T1_M, IF_T2_J2, IF_T2_J3]);
-        yield return Group(IF_EN2A, [IF_T1_K, IF_T2_J1]);
-        yield return Group(IF_EN2B, [IF_T1_D1, IF_T1_D2]);
-        yield return Group(IF_EN2C, [IF_T1_D2, IF_T2_J3]);
-        yield return Group(IF_EN2D, [IF_T1_J1, IF_T2_I0]);
-        yield return Group(IF_EN2E, [IF_T1_E, IF_T2_C6]);
-        yield return Group(IF_EN2F, [IF_T1_E, IF_T2_C5]);
-        yield return Group(IF_EN2G, [IF_T1_J3, IF_T2_M1]);
+        yield return Group(IF_ARM32_EN8, [IF_ARM32_T1_H, IF_ARM32_T1_C, IF_ARM32_T2_E0, IF_ARM32_T2_H0, IF_ARM32_T2_K1, IF_ARM32_T2_K4, IF_ARM32_T1_J2, IF_ARM32_T1_J3]);
+        yield return Group(IF_ARM32_EN6A, [IF_ARM32_T1_H, IF_ARM32_T1_C, IF_ARM32_T2_E0, IF_ARM32_T2_H0, IF_ARM32_T2_K1, IF_ARM32_T2_K4]);
+        yield return Group(IF_ARM32_EN6B, [IF_ARM32_T1_H, IF_ARM32_T1_C, IF_ARM32_T2_E0, IF_ARM32_T2_H0, IF_ARM32_T2_K1, IF_ARM32_T1_J2]);
+        yield return Group(IF_ARM32_EN5A, [IF_ARM32_T1_E, IF_ARM32_T1_D0, IF_ARM32_T1_J0, IF_ARM32_T2_L1, IF_ARM32_T2_C3]);
+        yield return Group(IF_ARM32_EN5B, [IF_ARM32_T1_E, IF_ARM32_T1_D0, IF_ARM32_T1_J0, IF_ARM32_T2_L2, IF_ARM32_T2_C8]);
+        yield return Group(IF_ARM32_EN4A, [IF_ARM32_T1_E, IF_ARM32_T1_C, IF_ARM32_T2_C4, IF_ARM32_T2_C2]);
+        yield return Group(IF_ARM32_EN4B, [IF_ARM32_T2_K2, IF_ARM32_T2_H2, IF_ARM32_T2_C7, IF_ARM32_T2_K3]);
+        yield return Group(IF_ARM32_EN4C, [IF_ARM32_T2_N, IF_ARM32_T2_N1, IF_ARM32_T2_N2, IF_ARM32_T2_N3]);
+        yield return Group(IF_ARM32_EN3A, [IF_ARM32_T1_E, IF_ARM32_T2_C0, IF_ARM32_T2_L0]);
+        yield return Group(IF_ARM32_EN3B, [IF_ARM32_T1_E, IF_ARM32_T2_C8, IF_ARM32_T2_L2]);
+        yield return Group(IF_ARM32_EN3C, [IF_ARM32_T1_E, IF_ARM32_T2_C1, IF_ARM32_T2_L1]);
+        yield return Group(IF_ARM32_EN3D, [IF_ARM32_T1_L1, IF_ARM32_T2_E2, IF_ARM32_T2_I1]);
+        yield return Group(IF_ARM32_EN3E, [IF_ARM32_T1_M, IF_ARM32_T2_J2, IF_ARM32_T2_J3]);
+        yield return Group(IF_ARM32_EN2A, [IF_ARM32_T1_K, IF_ARM32_T2_J1]);
+        yield return Group(IF_ARM32_EN2B, [IF_ARM32_T1_D1, IF_ARM32_T1_D2]);
+        yield return Group(IF_ARM32_EN2C, [IF_ARM32_T1_D2, IF_ARM32_T2_J3]);
+        yield return Group(IF_ARM32_EN2D, [IF_ARM32_T1_J1, IF_ARM32_T2_I0]);
+        yield return Group(IF_ARM32_EN2E, [IF_ARM32_T1_E, IF_ARM32_T2_C6]);
+        yield return Group(IF_ARM32_EN2F, [IF_ARM32_T1_E, IF_ARM32_T2_C5]);
+        yield return Group(IF_ARM32_EN2G, [IF_ARM32_T1_J3, IF_ARM32_T2_M1]);
     }
 
     private static TestCaseData Group(Emitter.insFormat group, Emitter.insFormat[] formats)
@@ -167,9 +167,9 @@ internal static class Arm32InstructionCodeTests
 
     private static bool IsGroupedFormat(Emitter.insFormat format)
     {
-        return format is IF_EN9 or IF_EN8 or IF_EN6A or IF_EN6B or IF_EN5A or IF_EN5B
-            or IF_EN4A or IF_EN4B or IF_EN4C or IF_EN3A or IF_EN3B or IF_EN3C or IF_EN3D or IF_EN3E
-            or IF_EN2A or IF_EN2B or IF_EN2C or IF_EN2D or IF_EN2E or IF_EN2F or IF_EN2G;
+        return format is IF_ARM32_EN9 or IF_ARM32_EN8 or IF_ARM32_EN6A or IF_ARM32_EN6B or IF_ARM32_EN5A or IF_ARM32_EN5B
+            or IF_ARM32_EN4A or IF_ARM32_EN4B or IF_ARM32_EN4C or IF_ARM32_EN3A or IF_ARM32_EN3B or IF_ARM32_EN3C or IF_ARM32_EN3D or IF_ARM32_EN3E
+            or IF_ARM32_EN2A or IF_ARM32_EN2B or IF_ARM32_EN2C or IF_ARM32_EN2D or IF_ARM32_EN2E or IF_ARM32_EN2F or IF_ARM32_EN2G;
     }
 
     private static Emitter NewEmitter()

@@ -641,7 +641,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         var firstRegister = (regNumber)BitOperations.TrailingZeroCount(unchecked((ulong)floatMask.Lower));
         var singleWords = BitOperations.PopCount(unchecked((ulong)floatMask.Lower));
         Assert.That(descriptor.idIns(), Is.EqualTo(ins));
-        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_T2_VLDST));
+        Assert.That(descriptor.idInsFmt(), Is.EqualTo(IF_ARM32_T2_VLDST));
         Assert.That(descriptor.idReg1(), Is.EqualTo(firstRegister));
         var expectedImmediate = (ins == INS_vpush ? -1 : 1) * singleWords * sizeof(uint);
         Assert.That(codeGen.Emitter.emitGetInsSC(descriptor), Is.EqualTo((nint)expectedImmediate));
@@ -658,9 +658,9 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         imm &= ~0xe000;
 
         var format = (((imm & 0x00ff) == imm) && !useThumb2)
-            ? IF_T1_L1
+            ? IF_ARM32_T1_L1
             : !isSingleBit
-                ? IF_T2_I1
+                ? IF_ARM32_T2_I1
                 : throw new AssertionException("Unexpected single-register ARM push/pop encoding.");
 
         imm <<= 2;

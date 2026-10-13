@@ -15,8 +15,8 @@ namespace RyuJitSharp.UnitTests;
 
 internal static class Arm32InstructionFormatTests
 {
-    [TestCase(INS_add, IF_EN9)]
-    [TestCase(INS_ldr, IF_EN8)]
+    [TestCase(INS_add, IF_ARM32_EN9)]
+    [TestCase(INS_ldr, IF_ARM32_EN8)]
     public static void InstructionFormatsMatchTheNativeTable(instruction ins, Emitter.insFormat expectedFormat)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((_, codeGen) =>
@@ -43,19 +43,19 @@ internal static class Arm32InstructionFormatTests
         });
     }
 
-    [TestCase(IF_T1_A, ISZ_16BIT)]
-    [TestCase(IF_T1_M, ISZ_16BIT)]
-    [TestCase(IF_T2_A, ISZ_32BIT)]
-    [TestCase(IF_T2_M1, ISZ_32BIT)]
-    [TestCase(IF_LARGEJMP, ISZ_48BIT)]
+    [TestCase(IF_ARM32_T1_A, ISZ_16BIT)]
+    [TestCase(IF_ARM32_T1_M, ISZ_16BIT)]
+    [TestCase(IF_ARM32_T2_A, ISZ_32BIT)]
+    [TestCase(IF_ARM32_T2_M1, ISZ_32BIT)]
+    [TestCase(IF_ARM32_LARGEJMP, ISZ_48BIT)]
     public static void InstructionSizesMatchNativeFormatRanges(
         Emitter.insFormat format, Emitter.insSize expectedSize)
     {
         Assert.That(InstructionSize(null, format), Is.EqualTo(expectedSize));
     }
 
-    [TestCase(INS_nop, IF_T1_A, ISZ_16BIT, 2u)]
-    [TestCase(INS_nopw, IF_T2_A, ISZ_32BIT, 4u)]
+    [TestCase(INS_nop, IF_ARM32_T1_A, ISZ_16BIT, 2u)]
+    [TestCase(INS_nopw, IF_ARM32_T2_A, ISZ_32BIT, 4u)]
     public static void ZeroOperandInstructionsUseTheirNativeFormatAndSize(
         instruction ins, Emitter.insFormat expectedFormat, Emitter.insSize expectedSize, uint expectedCodeSize)
     {

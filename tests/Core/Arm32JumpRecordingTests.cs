@@ -20,22 +20,22 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm32JumpRecordingTests
 {
-    [TestCase(INS_b, IF_T2_J2, ISZ_32BIT, 4u, false)]
-    [TestCase(INS_bl, IF_T2_J2, ISZ_32BIT, 4u, true)]
-    [TestCase(INS_beq, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bne, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bhs, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_blo, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bmi, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bpl, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bvs, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bvc, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bhi, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bls, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bge, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_blt, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_bgt, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
-    [TestCase(INS_ble, IF_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_b, IF_ARM32_T2_J2, ISZ_32BIT, 4u, false)]
+    [TestCase(INS_bl, IF_ARM32_T2_J2, ISZ_32BIT, 4u, true)]
+    [TestCase(INS_beq, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bne, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bhs, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_blo, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bmi, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bpl, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bvs, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bvc, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bhi, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bls, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bge, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_blt, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_bgt, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
+    [TestCase(INS_ble, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, false)]
     public static void BranchesUseNativeFormatsAndRecordTheirTargets(
         instruction ins, Emitter.insFormat expectedFormat, Emitter.insSize expectedSize,
         uint expectedCodeSize, bool expectedKeepLong)
@@ -68,8 +68,8 @@ internal static class Arm32JumpRecordingTests
         });
     }
 
-    [TestCase(INS_b, IF_T1_M)]
-    [TestCase(INS_beq, IF_T1_K)]
+    [TestCase(INS_b, IF_ARM32_T1_M)]
+    [TestCase(INS_beq, IF_ARM32_T1_K)]
     public static void ForcedShortBranchesSelectTheirNativeFormats(instruction ins, Emitter.insFormat expectedFormat)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
@@ -92,27 +92,27 @@ internal static class Arm32JumpRecordingTests
     [Test]
     public static void BackwardBranchesSelectFormatsAtNativeDistanceBoundaries()
     {
-        AssertBackwardBranch(INS_b, -JMP_DIST_SMALL_MAX_NEG - 4, IF_T1_M, ISZ_16BIT, 2u, isShort: true);
-        AssertBackwardBranch(INS_b, -JMP_DIST_SMALL_MAX_NEG - 3, IF_T2_J2, ISZ_32BIT, 4u, isShort: false);
-        AssertBackwardBranch(INS_beq, -JCC_DIST_SMALL_MAX_NEG - 4, IF_T1_K, ISZ_16BIT, 2u, isShort: true);
-        AssertBackwardBranch(INS_beq, -JCC_DIST_SMALL_MAX_NEG - 3, IF_T2_J1, ISZ_32BIT, 4u, isShort: false);
-        AssertBackwardBranch(INS_beq, -JCC_DIST_MEDIUM_MAX_NEG - 4, IF_T2_J1, ISZ_32BIT, 4u, isShort: false);
-        AssertBackwardBranch(INS_beq, -JCC_DIST_MEDIUM_MAX_NEG - 3, IF_LARGEJMP, ISZ_48BIT, 6u, isShort: false);
+        AssertBackwardBranch(INS_b, -JMP_DIST_SMALL_MAX_NEG - 4, IF_ARM32_T1_M, ISZ_16BIT, 2u, isShort: true);
+        AssertBackwardBranch(INS_b, -JMP_DIST_SMALL_MAX_NEG - 3, IF_ARM32_T2_J2, ISZ_32BIT, 4u, isShort: false);
+        AssertBackwardBranch(INS_beq, -JCC_DIST_SMALL_MAX_NEG - 4, IF_ARM32_T1_K, ISZ_16BIT, 2u, isShort: true);
+        AssertBackwardBranch(INS_beq, -JCC_DIST_SMALL_MAX_NEG - 3, IF_ARM32_T2_J1, ISZ_32BIT, 4u, isShort: false);
+        AssertBackwardBranch(INS_beq, -JCC_DIST_MEDIUM_MAX_NEG - 4, IF_ARM32_T2_J1, ISZ_32BIT, 4u, isShort: false);
+        AssertBackwardBranch(INS_beq, -JCC_DIST_MEDIUM_MAX_NEG - 3, IF_ARM32_LARGEJMP, ISZ_48BIT, 6u, isShort: false);
     }
 
     [Test]
     public static void ShortSelectionLeavesLabelLoadsLongAndPreservesCompareBranches()
     {
         var labelLoad = new Emitter.instrDescJmp();
-        labelLoad.idInsFmt(IF_T2_M1);
+        labelLoad.idInsFmt(IF_ARM32_T2_M1);
         SetShortJump(null, labelLoad);
-        Assert.That(labelLoad.idInsFmt(), Is.EqualTo(IF_T2_M1));
+        Assert.That(labelLoad.idInsFmt(), Is.EqualTo(IF_ARM32_T2_M1));
         Assert.That(labelLoad.idjShort, Is.False);
 
         var compareBranch = new Emitter.instrDescJmp { idjShort = true };
-        compareBranch.idInsFmt(IF_T1_I);
+        compareBranch.idInsFmt(IF_ARM32_T1_I);
         SetShortJump(null, compareBranch);
-        Assert.That(compareBranch.idInsFmt(), Is.EqualTo(IF_T1_I));
+        Assert.That(compareBranch.idInsFmt(), Is.EqualTo(IF_ARM32_T1_I));
         Assert.That(compareBranch.idjShort, Is.True);
     }
 
@@ -130,7 +130,7 @@ internal static class Arm32JumpRecordingTests
 
             var jump = RecordJump(emitter, INS_beq, target);
 
-            Assert.That(jump.idInsFmt(), Is.EqualTo(IF_LARGEJMP));
+            Assert.That(jump.idInsFmt(), Is.EqualTo(IF_ARM32_LARGEJMP));
             Assert.That(jump.idjKeepLong, Is.True);
             Assert.That(jump.idjShort, Is.False);
         });
@@ -152,7 +152,7 @@ internal static class Arm32JumpRecordingTests
             var jump = RecordConditionalRegisterBranch(emitter, ins, EA_4BYTE, target, reg);
 
             Assert.That(jump.idIns(), Is.EqualTo(ins));
-            Assert.That(jump.idInsFmt(), Is.EqualTo(IF_T1_I));
+            Assert.That(jump.idInsFmt(), Is.EqualTo(IF_ARM32_T1_I));
             Assert.That(jump.idInsSize(), Is.EqualTo(ISZ_16BIT));
             Assert.That(jump.idReg1(), Is.EqualTo(reg));
             Assert.That(jump.idjTarget, Is.SameAs(target));

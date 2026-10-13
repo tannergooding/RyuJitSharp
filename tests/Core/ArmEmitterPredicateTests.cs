@@ -88,21 +88,21 @@ internal static class ArmEmitterPredicateTests
             Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(ins, IF_NONE)), Is.True);
         }
 
-        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_pop, IF_T1_M)), Is.True);
-        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_pop, IF_T2_E2)), Is.False);
-        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_add, IF_T1_E)), Is.False);
+        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_pop, IF_ARM32_T1_M)), Is.True);
+        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_pop, IF_ARM32_T2_E2)), Is.False);
+        Assert.That(EmitInsMayWriteMultipleRegs(s_emitter, NewDescriptor(INS_add, IF_ARM32_T1_E)), Is.False);
     }
 
-    [TestCase(IF_T1_C, INS_add, true)]
-    [TestCase(IF_T2_C0, INS_add, true)]
-    [TestCase(IF_T1_C, INS_str, false)]
-    [TestCase(IF_T1_C, INS_push, false)]
-    [TestCase(IF_T1_C, INS_cmp, false)]
-    [TestCase(IF_T1_C, INS_teq, false)]
-    [TestCase(IF_T2_VMOVS, INS_vmov_f2i, true)]
-    [TestCase(IF_T2_VMOVS, INS_vmov_i2f, false)]
-    [TestCase(IF_T2_VMOVD, INS_vmov_d2i, true)]
-    [TestCase(IF_T2_VMOVD, INS_vmov_i2d, false)]
+    [TestCase(IF_ARM32_T1_C, INS_add, true)]
+    [TestCase(IF_ARM32_T2_C0, INS_add, true)]
+    [TestCase(IF_ARM32_T1_C, INS_str, false)]
+    [TestCase(IF_ARM32_T1_C, INS_push, false)]
+    [TestCase(IF_ARM32_T1_C, INS_cmp, false)]
+    [TestCase(IF_ARM32_T1_C, INS_teq, false)]
+    [TestCase(IF_ARM32_T2_VMOVS, INS_vmov_f2i, true)]
+    [TestCase(IF_ARM32_T2_VMOVS, INS_vmov_i2f, false)]
+    [TestCase(IF_ARM32_T2_VMOVD, INS_vmov_d2i, true)]
+    [TestCase(IF_ARM32_T2_VMOVD, INS_vmov_i2d, false)]
     [TestCase(IF_NONE, INS_add, false)]
     public static void GCRegisterWriteClassificationUsesInstructionFormatAndOpcode(
         Emitter.insFormat format, instruction ins, bool expected)
@@ -113,9 +113,9 @@ internal static class ArmEmitterPredicateTests
         Assert.That(EmitInsMayWriteToGCReg(s_emitter, descriptor), Is.EqualTo(expected));
     }
 
-    [TestCase(REG_R0, EA_PTRSIZE)]
+    [TestCase(REG_R0, EA_32BIT_PTRSIZE)]
     [TestCase(REG_SP, EA_4BYTE)]
-    [TestCase(REG_R15, EA_PTRSIZE)]
+    [TestCase(REG_R15, EA_32BIT_PTRSIZE)]
     public static void GeneralRegisterNamesUseTheCompilerRegisterTable(regNumber reg, emitAttr attr)
     {
         ArmCalleeSavedRegisterTests.WithCodeGen((compiler, codeGen) =>
@@ -129,7 +129,7 @@ internal static class ArmEmitterPredicateTests
         });
     }
 
-    [TestCase(REG_F0, EA_PTRSIZE)]
+    [TestCase(REG_F0, EA_32BIT_PTRSIZE)]
     [TestCase(REG_F31, EA_4BYTE)]
     public static void FloatRegisterNamesUseTheFloatingCompilerRegisterTable(regNumber reg, emitAttr attr)
     {
@@ -275,18 +275,18 @@ internal static class ArmEmitterPredicateTests
         });
     }
 
-    [TestCase("emitIsCondJump", Emitter.insFormat.IF_T2_J1, true)]
-    [TestCase("emitIsCondJump", Emitter.insFormat.IF_T1_K, true)]
-    [TestCase("emitIsCondJump", Emitter.insFormat.IF_LARGEJMP, true)]
+    [TestCase("emitIsCondJump", Emitter.insFormat.IF_ARM32_T2_J1, true)]
+    [TestCase("emitIsCondJump", Emitter.insFormat.IF_ARM32_T1_K, true)]
+    [TestCase("emitIsCondJump", Emitter.insFormat.IF_ARM32_LARGEJMP, true)]
     [TestCase("emitIsCondJump", Emitter.insFormat.IF_NONE, false)]
-    [TestCase("emitIsCmpJump", Emitter.insFormat.IF_T1_I, true)]
+    [TestCase("emitIsCmpJump", Emitter.insFormat.IF_ARM32_T1_I, true)]
     [TestCase("emitIsCmpJump", Emitter.insFormat.IF_NONE, false)]
-    [TestCase("emitIsUncondJump", Emitter.insFormat.IF_T2_J2, true)]
-    [TestCase("emitIsUncondJump", Emitter.insFormat.IF_T1_M, true)]
+    [TestCase("emitIsUncondJump", Emitter.insFormat.IF_ARM32_T2_J2, true)]
+    [TestCase("emitIsUncondJump", Emitter.insFormat.IF_ARM32_T1_M, true)]
     [TestCase("emitIsUncondJump", Emitter.insFormat.IF_NONE, false)]
-    [TestCase("emitIsLoadLabel", Emitter.insFormat.IF_T2_M1, true)]
-    [TestCase("emitIsLoadLabel", Emitter.insFormat.IF_T1_J3, true)]
-    [TestCase("emitIsLoadLabel", Emitter.insFormat.IF_T2_N1, true)]
+    [TestCase("emitIsLoadLabel", Emitter.insFormat.IF_ARM32_T2_M1, true)]
+    [TestCase("emitIsLoadLabel", Emitter.insFormat.IF_ARM32_T1_J3, true)]
+    [TestCase("emitIsLoadLabel", Emitter.insFormat.IF_ARM32_T2_N1, true)]
     [TestCase("emitIsLoadLabel", Emitter.insFormat.IF_NONE, false)]
     public static void JumpFormatClassifiersMatchArmFormats(
         string methodName,

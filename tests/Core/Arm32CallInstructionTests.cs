@@ -142,7 +142,7 @@ internal static unsafe class Arm32CallInstructionTests
             var id = LastInstruction(codeGen.Emitter) ??
                 throw new AssertionException("Missing direct call descriptor.");
             Assert.That(id.idIns(), Is.EqualTo(expectedInstruction));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_T2_J3));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM32_T2_J3));
             Assert.That(id.idInsSize(), Is.EqualTo(ISZ_32BIT));
             Assert.That((nuint)id.idAddr().iiaAddr, Is.EqualTo((nuint)parameters.addr));
             Assert.That(id.idIsNoGC(), Is.EqualTo(isJump));
@@ -199,7 +199,7 @@ internal static unsafe class Arm32CallInstructionTests
             var id = LastInstruction(codeGen.Emitter) ??
                 throw new AssertionException("Missing register call descriptor.");
             Assert.That(id.idIns(), Is.EqualTo(expectedInstruction));
-            Assert.That(id.idInsFmt(), Is.EqualTo(IF_T1_D2));
+            Assert.That(id.idInsFmt(), Is.EqualTo(IF_ARM32_T1_D2));
             Assert.That(id.idInsSize(), Is.EqualTo(ISZ_16BIT));
             Assert.That(id.idReg3(), Is.EqualTo(REG_R7));
             Assert.That(id.idIsNoGC(), Is.True);

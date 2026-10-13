@@ -19,9 +19,9 @@ namespace RyuJitSharp.UnitTests;
 [NonParallelizable]
 internal static class Arm32BlockLabelAddressTests
 {
-    [TestCase(INS_adr, IF_T2_M1, false, true)]
-    [TestCase(INS_movt, IF_T2_N1, true, false)]
-    [TestCase(INS_movw, IF_T2_N1, true, false)]
+    [TestCase(INS_adr, IF_ARM32_T2_M1, false, true)]
+    [TestCase(INS_movt, IF_ARM32_T2_N1, true, false)]
+    [TestCase(INS_movw, IF_ARM32_T2_N1, true, false)]
     public static void LabelAddressesRecordTheirNativeFormatsAndTargetMetadata(
         instruction ins, Emitter.insFormat expectedFormat, bool expectedKeepLong, bool hasPcRegister)
     {
