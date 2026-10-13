@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH
 using static RyuJitSharp.EmitCallType;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.instruction;
@@ -58,63 +57,66 @@ public sealed partial class CodeGen
             _compiler.info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
         }
 
-#if TARGET_ARM
-        // Keep large-frame immediate materialization outside unwind codes until an
-        // instruction that changes the frame is emitted.
-        var unwindStarted = false;
+        if (Configuration.TARGET_ARM)
+        {
+            // Keep large-frame immediate materialization outside unwind codes until an
+            // instruction that changes the frame is emitted.
+            var unwindStarted = false;
 
-        if (_compiler.compLocallocUsed)
+            if (_compiler.compLocallocUsed)
+            {
+                _compiler.unwindBegEpilog();
+                unwindStarted = true;
+                inst_Mov(TYP_I_IMPL, REG_SPBASE_ARM, REG_SAVED_LOCALLOC_SP, canSkip: false);
+                _compiler.unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
+            }
+
+            if (jmpEpilog ||
+                genStackAllocRegisterMask(unchecked((uint)_compiler.compLclFrameSize),
+                    _regSet.rsGetModifiedFltCalleeSavedRegsMask()) == RBM_NONE)
+            {
+                genFreeLclFrameArm(unchecked((uint)_compiler.compLclFrameSize), ref unwindStarted);
+            }
+
+            if (!unwindStarted)
+            {
+                _compiler.unwindBegEpilog();
+                unwindStarted = true;
+            }
+
+            if (jmpEpilog && lastNode.OperIs(GT_JMP) && addrInfo.accessType == IAT_RELPVALUE)
+            {
+                // Use LR as the relative-address base before the epilog restores its saved value.
+                var indCallReg = REG_INDIRECT_CALL_TARGET_REG_ARM;
+                var vptrReg1 = REG_ARM32_LR;
+
+                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (nint)addrInfo.addr);
+                _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, vptrReg1, indCallReg, canSkip: false);
+                Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0, INS_FLAGS_DONT_CARE);
+                Emitter.emitIns_R_R(INS_add, EA_PTRSIZE, indCallReg, vptrReg1);
+            }
+
+            genPopCalleeSavedRegisters(jmpEpilog);
+
+            var preSpillRegs = _regSet.rsMaskPreSpillRegs(true);
+            if (preSpillRegs.IsNonEmpty)
+            {
+                noway_assert(!genUsedPopToReturn);
+                var preSpillRegArgSize = unchecked((int)genCountBits(preSpillRegs)) * Configuration.REGSIZE_BYTES;
+                inst_RV_IV(INS_add, REG_SPBASE_ARM, preSpillRegArgSize, EA_PTRSIZE);
+                _compiler.unwindAllocStack(unchecked((uint)preSpillRegArgSize));
+            }
+
+            if (jmpEpilog)
+            {
+                noway_assert(!genUsedPopToReturn);
+            }
+        }
+        else
         {
             _compiler.unwindBegEpilog();
-            unwindStarted = true;
-            inst_Mov(TYP_I_IMPL, REG_SP, REG_SAVED_LOCALLOC_SP, canSkip: false);
-            _compiler.unwindSetFrameReg(REG_SAVED_LOCALLOC_SP, 0);
+            genPopCalleeSavedRegistersAndFreeLclFrameArm64(jmpEpilog);
         }
-
-        if (jmpEpilog ||
-            genStackAllocRegisterMask(unchecked((uint)_compiler.compLclFrameSize),
-                _regSet.rsGetModifiedFltCalleeSavedRegsMask()) == RBM_NONE)
-        {
-            genFreeLclFrame(unchecked((uint)_compiler.compLclFrameSize), ref unwindStarted);
-        }
-
-        if (!unwindStarted)
-        {
-            _compiler.unwindBegEpilog();
-            unwindStarted = true;
-        }
-
-        if (jmpEpilog && lastNode.OperIs(GT_JMP) && addrInfo.accessType == IAT_RELPVALUE)
-        {
-            // Use LR as the relative-address base before the epilog restores its saved value.
-            var indCallReg = REG_R12;
-            var vptrReg1 = REG_LR;
-
-            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (nint)addrInfo.addr);
-            _ = Emitter.emitIns_Mov(INS_mov, EA_PTRSIZE, vptrReg1, indCallReg, canSkip: false);
-            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0, INS_FLAGS_DONT_CARE);
-            Emitter.emitIns_R_R(INS_add, EA_PTRSIZE, indCallReg, vptrReg1);
-        }
-
-        genPopCalleeSavedRegisters(jmpEpilog);
-
-        var preSpillRegs = _regSet.rsMaskPreSpillRegs(true);
-        if (preSpillRegs.IsNonEmpty)
-        {
-            noway_assert(!genUsedPopToReturn);
-            var preSpillRegArgSize = unchecked((int)genCountBits(preSpillRegs)) * REGSIZE_BYTES;
-            inst_RV_IV(INS_add, REG_SPBASE, preSpillRegArgSize, EA_PTRSIZE);
-            _compiler.unwindAllocStack(unchecked((uint)preSpillRegArgSize));
-        }
-
-        if (jmpEpilog)
-        {
-            noway_assert(!genUsedPopToReturn);
-        }
-#else
-        _compiler.unwindBegEpilog();
-        genPopCalleeSavedRegistersAndFreeLclFrame(jmpEpilog);
-#endif
 
         if (jmpEpilog)
         {
@@ -122,15 +124,18 @@ public sealed partial class CodeGen
             noway_assert(block.Kind is BBJ_RETURN);
             noway_assert(block.FirstNode is not null);
 
-#if !FEATURE_FASTTAILCALL
-            noway_assert(lastNode.OperIs(GT_JMP));
-#else
-            noway_assert(!lastNode.OperIs(GT_JMP) || (lastNode.Next is null));
-            noway_assert(lastNode.OperIs(GT_JMP) ||
-                (lastNode.OperIs(GT_CALL) && lastNode.AsCall().IsFastTailCall));
+            if (!Configuration.FEATURE_FASTTAILCALL)
+            {
+                noway_assert(lastNode.OperIs(GT_JMP));
+            }
+            else
+            {
+                noway_assert(!lastNode.OperIs(GT_JMP) || (lastNode.Next is null));
+                noway_assert(lastNode.OperIs(GT_JMP) ||
+                    (lastNode.OperIs(GT_CALL) && lastNode.AsCall().IsFastTailCall));
+            }
 
-            if (lastNode.OperIs(GT_JMP))
-#endif
+            if (!Configuration.FEATURE_FASTTAILCALL || lastNode.OperIs(GT_JMP))
             {
                 noway_assert(methHnd != null);
                 noway_assert(addrInfo.addr != null);
@@ -157,20 +162,21 @@ public sealed partial class CodeGen
                     case IAT_PVALUE:
                     {
                         parameters.callType = EC_INDIR_R;
-#if TARGET_ARM
-                        parameters.ireg = REG_R12;
-#else
-                        parameters.ireg = REG_INDIRECT_CALL_TARGET_REG;
-#endif
+                        parameters.ireg = Configuration.TARGET_ARM
+                            ? REG_INDIRECT_CALL_TARGET_REG_ARM
+                            : REG_INDIRECT_CALL_TARGET_REG_ARM64;
                         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, parameters.ireg, (nint)addrInfo.addr);
                         if (addrInfo.accessType == IAT_PVALUE)
                         {
-#if TARGET_ARM
-                            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, parameters.ireg, parameters.ireg, 0,
-                                INS_FLAGS_DONT_CARE);
-#else
-                            Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, parameters.ireg, parameters.ireg, 0);
-#endif
+                            if (Configuration.TARGET_ARM)
+                            {
+                                Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, parameters.ireg, parameters.ireg, 0,
+                                    INS_FLAGS_DONT_CARE);
+                            }
+                            else
+                            {
+                                Emitter.emitIns_R_R_I(INS_ldr, EA_PTRSIZE, parameters.ireg, parameters.ireg, 0);
+                            }
                             _regSet.verifyRegUsed(parameters.ireg);
                         }
                         break;
@@ -179,7 +185,7 @@ public sealed partial class CodeGen
                     case IAT_RELPVALUE:
                     {
                         parameters.callType = EC_INDIR_R;
-                        parameters.ireg = REG_R12;
+                        parameters.ireg = Configuration.TARGET_ARM ? REG_ARM32_R12 : REG_ARM64_R12;
                         _regSet.verifyRegUsed(parameters.ireg);
                         break;
                     }
@@ -193,28 +199,28 @@ public sealed partial class CodeGen
                 parameters.isJump = true;
                 genEmitCallWithCurrentGC(ref parameters);
             }
-#if FEATURE_FASTTAILCALL
             else
             {
-                genCallInstruction(lastNode.AsCall());
+                genCallInstructionArmArch(lastNode.AsCall());
             }
-#endif
         }
         else
         {
-#if TARGET_ARM
-            if (!genUsedPopToReturn)
+            if (Configuration.TARGET_ARM)
             {
-                inst_RV(INS_bx, REG_LR, TYP_I_IMPL);
-                _compiler.unwindBranch16();
+                if (!genUsedPopToReturn)
+                {
+                    inst_RV(INS_bx, REG_ARM32_LR, TYP_I_IMPL);
+                    _compiler.unwindBranch16();
+                }
             }
-#else
-            inst_RV(INS_ret, REG_LR, TYP_I_IMPL);
-            _compiler.unwindReturn(REG_LR);
-#endif
+            else
+            {
+                inst_RV(INS_ret, REG_ARM64_LR, TYP_I_IMPL);
+                _compiler.unwindReturn(REG_ARM64_LR);
+            }
         }
 
         _compiler.unwindEndEpilog();
     }
 }
-#endif

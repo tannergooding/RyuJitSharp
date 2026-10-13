@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH
 using static RyuJitSharp.ManagedInstructionSet;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.NamedIntrinsic;
@@ -17,8 +16,14 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genIntrinsic(GenTreeIntrinsic tree)
+    public void genIntrinsicArmArch(GenTreeIntrinsic tree)
     {
+        if (!Configuration.TARGET_ARMARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM architecture intrinsic generation is unavailable for this target.");
+        }
+
         var srcNode = tree.Op1;
 
 #if DEBUG
@@ -34,17 +39,18 @@ public sealed partial class CodeGen
             case NI_System_Math_Abs:
             {
                 genConsumeOperands(tree.AsOp());
-#if TARGET_ARM64
-                Emitter.emitInsBinary(INS_fabs, tree.Type.EmitActualSize, tree, srcNode);
-#else
-                Emitter.emitInsBinary(INS_vabs, tree.Type.EmitActualSize, tree, srcNode);
-#endif
+                var instruction = Configuration.TARGET_ARM64 ? INS_fabs : INS_vabs;
+                Emitter.emitInsBinary(instruction, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 
-#if TARGET_ARM64
             case NI_System_Math_Ceiling:
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Ceiling intrinsic generation requires ARM64.");
+                }
+
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitInsBinary(INS_frintp, tree.Type.EmitActualSize, tree, srcNode);
                 break;
@@ -52,6 +58,11 @@ public sealed partial class CodeGen
 
             case NI_System_Math_Floor:
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Floor intrinsic generation requires ARM64.");
+                }
+
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitInsBinary(INS_frintm, tree.Type.EmitActualSize, tree, srcNode);
                 break;
@@ -59,6 +70,11 @@ public sealed partial class CodeGen
 
             case NI_System_Math_Truncate:
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Truncate intrinsic generation requires ARM64.");
+                }
+
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitInsBinary(INS_frintz, tree.Type.EmitActualSize, tree, srcNode);
                 break;
@@ -66,6 +82,11 @@ public sealed partial class CodeGen
 
             case NI_System_Math_Round:
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "Round intrinsic generation requires ARM64.");
+                }
+
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitInsBinary(INS_frintn, tree.Type.EmitActualSize, tree, srcNode);
                 break;
@@ -73,6 +94,11 @@ public sealed partial class CodeGen
 
             case NI_PRIMITIVE_PopCount:
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "PopCount intrinsic generation requires ARM64.");
+                }
+
                 genConsumeOperands(tree.AsOp());
 
                 var srcReg = srcNode.RegNum;
@@ -107,6 +133,11 @@ public sealed partial class CodeGen
 
             case NI_PRIMITIVE_TrailingZeroCount:
             {
+                if (!Configuration.TARGET_ARM64)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "TrailingZeroCount intrinsic generation requires ARM64.");
+                }
+
                 genConsumeOperands(tree.AsOp());
 
                 var srcReg = srcNode.RegNum;
@@ -126,22 +157,22 @@ public sealed partial class CodeGen
                 Emitter.emitIns_R_R(INS_clz, srcNode.Type.EmitActualSize, dstReg, dstReg, INS_OPTS_NONE);
                 break;
             }
-#endif // TARGET_ARM64
 
             case NI_System_Math_Sqrt:
             {
                 genConsumeOperands(tree.AsOp());
-#if TARGET_ARM64
-                Emitter.emitInsBinary(INS_fsqrt, tree.Type.EmitActualSize, tree, srcNode);
-#else
-                Emitter.emitInsBinary(INS_vsqrt, tree.Type.EmitActualSize, tree, srcNode);
-#endif
+                var instruction = Configuration.TARGET_ARM64 ? INS_fsqrt : INS_vsqrt;
+                Emitter.emitInsBinary(instruction, tree.Type.EmitActualSize, tree, srcNode);
                 break;
             }
 
-#if TARGET_ARM
             case NI_PRIMITIVE_SaturateToInt8:
             {
+                if (!Configuration.TARGET_ARM)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "SaturateToInt8 intrinsic generation requires ARM.");
+                }
+
                 // SSAT Rd, #8, Rn - saturate int32 to signed 8-bit range [-128, 127]
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitIns_R_R_I_I(INS_ssat, EA_4BYTE, tree.RegNum, srcNode.RegNum, 0, 8);
@@ -150,6 +181,11 @@ public sealed partial class CodeGen
 
             case NI_PRIMITIVE_SaturateToInt16:
             {
+                if (!Configuration.TARGET_ARM)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "SaturateToInt16 intrinsic generation requires ARM.");
+                }
+
                 // SSAT Rd, #16, Rn - saturate int32 to signed 16-bit range [-32768, 32767]
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitIns_R_R_I_I(INS_ssat, EA_4BYTE, tree.RegNum, srcNode.RegNum, 0, 16);
@@ -158,6 +194,11 @@ public sealed partial class CodeGen
 
             case NI_PRIMITIVE_SaturateToUInt8:
             {
+                if (!Configuration.TARGET_ARM)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "SaturateToUInt8 intrinsic generation requires ARM.");
+                }
+
                 // USAT Rd, #8, Rn - saturate int32 to unsigned 8-bit range [0, 255]
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitIns_R_R_I_I(INS_usat, EA_4BYTE, tree.RegNum, srcNode.RegNum, 0, 8);
@@ -166,28 +207,54 @@ public sealed partial class CodeGen
 
             case NI_PRIMITIVE_SaturateToUInt16:
             {
+                if (!Configuration.TARGET_ARM)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "SaturateToUInt16 intrinsic generation requires ARM.");
+                }
+
                 // USAT Rd, #16, Rn - saturate int32 to unsigned 16-bit range [0, 65535]
                 genConsumeOperands(tree.AsOp());
                 Emitter.emitIns_R_R_I_I(INS_usat, EA_4BYTE, tree.RegNum, srcNode.RegNum, 0, 16);
                 break;
             }
-#endif // TARGET_ARM
 
-#if FEATURE_SIMD
             // The handling is a bit more complex so genSimdUpperSave/Restore
             // handles genConsumeOperands and genProduceReg.
             case NI_SIMD_UpperRestore:
             {
-                genSimdUpperRestore(tree);
+                if (!Configuration.FEATURE_SIMD)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-register restoration is unsupported.");
+                }
+
+                if (Configuration.TARGET_ARM64)
+                {
+                    genSimdUpperRestoreArm64(tree);
+                }
+                else
+                {
+                    genSimdUpperRestore(tree);
+                }
                 return;
             }
 
             case NI_SIMD_UpperSave:
             {
-                genSimdUpperSave(tree);
+                if (!Configuration.FEATURE_SIMD)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED, "SIMD upper-register saving is unsupported.");
+                }
+
+                if (Configuration.TARGET_ARM64)
+                {
+                    genSimdUpperSaveArm64(tree);
+                }
+                else
+                {
+                    genSimdUpperSave(tree);
+                }
                 return;
             }
-#endif // FEATURE_SIMD
 
             default:
             {
@@ -200,4 +267,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

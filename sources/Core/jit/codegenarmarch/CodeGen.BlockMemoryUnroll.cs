@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM || TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -16,12 +15,12 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForInitBlkUnroll(GenTreeBlk node)
+    public void genCodeForInitBlkUnrollArmArch(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);
 
         var dstLclNum = BAD_VAR_NUM;
-        var dstAddrBaseReg = REG_NA;
+        var dstAddrBaseReg = regNumberExtensions.NotAvailable;
         var dstOffset = 0;
         var dstAddr = node.Addr;
 
@@ -70,7 +69,8 @@ public sealed partial class CodeGen
         assert(size <= int.MaxValue);
         assert(dstOffset < int.MaxValue - unchecked((int)size));
 
-#if TARGET_ARM64
+        if (Configuration.TARGET_ARM64)
+        {
         var helper = new InitBlockUnrollHelper(dstOffset, size);
         regNumber srcReg;
 
@@ -81,7 +81,7 @@ public sealed partial class CodeGen
         else
         {
             assert(src.IsIntegralConst(0));
-            srcReg = REG_ZR;
+            srcReg = genGetZeroRegArm64();
         }
 
         var dstReg = dstAddrBaseReg;
@@ -90,18 +90,18 @@ public sealed partial class CodeGen
         if (dstLclNum != BAD_VAR_NUM)
         {
             var baseAddr = _compiler.lvaFrameAddress(dstLclNum, out var fpBased);
-            dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
+            dstReg = fpBased ? REG_FPBASE_ARM64 : REG_SPBASE_ARM64;
             dstRegAddrAlignment = fpBased ? genSPtoFPdelta % 16 : 0;
 
             helper.SetDstOffset(baseAddr + dstOffset);
         }
 
-        if (!helper.CanEncodeAllOffsets(REGSIZE_BYTES))
+        if (!helper.CanEncodeAllOffsets(Configuration.REGSIZE_BYTES))
         {
             var dstOffsetAdjustment = helper.GetDstOffset() - dstRegAddrAlignment;
             dstRegAddrAlignment = 0;
 
-            var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT));
+            var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_ARM64));
             genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
             dstReg = tempReg;
 
@@ -109,20 +109,20 @@ public sealed partial class CodeGen
         }
 
         var shouldUse16ByteWideInstrs = false;
-        var hasAvailableSimdReg = size > FP_REGSIZE_BYTES;
+        var hasAvailableSimdReg = size > FP_REGSIZE_BYTES_ARM64;
         var canUse16ByteWideInstrs =
             hasAvailableSimdReg && (dstRegAddrAlignment == 0) &&
-            helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
+            helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES_ARM64);
 
         if (canUse16ByteWideInstrs)
         {
-            var instrCount16ByteWide = helper.InstructionCount(FP_REGSIZE_BYTES) + 1;
-            shouldUse16ByteWideInstrs = instrCount16ByteWide < helper.InstructionCount(REGSIZE_BYTES);
+            var instrCount16ByteWide = helper.InstructionCount(FP_REGSIZE_BYTES_ARM64) + 1;
+            shouldUse16ByteWideInstrs = instrCount16ByteWide < helper.InstructionCount(Configuration.REGSIZE_BYTES);
         }
 
         if (shouldUse16ByteWideInstrs)
         {
-            var simdReg = InternalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT));
+            var simdReg = InternalRegisters.GetSingle(node, new regMaskTP(SRBM_ALLFLOAT_ARM64));
             var initValue = (int)(src.AsIntCon().IconValue & 0xFF);
             emit.emitIns_R_I(INS_movi, EA_16BYTE, simdReg, initValue, INS_OPTS_16B);
 
@@ -132,12 +132,13 @@ public sealed partial class CodeGen
         {
             helper.UnrollBaseInstrs(srcReg, dstReg, emit);
         }
-#endif
+        }
 
-#if TARGET_ARM
+        else if (Configuration.TARGET_ARM)
+        {
         var srcReg = genConsumeReg(src);
 
-        for (uint regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
+        for (uint regSize = (uint)Configuration.REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)
             {
@@ -183,17 +184,12 @@ public sealed partial class CodeGen
             }
             else
             {
-#if TARGET_ARM64
-                emit.emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset, INS_OPTS_NONE);
-#else
                 emit.emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset, INS_FLAGS_DONT_CARE);
-#endif
             }
         }
-#endif
+        }
     }
 
-#if TARGET_ARM64
     private interface IBlockUnrollInstructionStream
     {
         void LoadPairRegs(int offset, int regSizeBytes);
@@ -363,7 +359,7 @@ public sealed partial class CodeGen
             var ins = INS_ldr;
             var tempReg = _intReg1;
 
-            if ((regSizeBytes == 16) || (_intReg1 == REG_NA))
+            if ((regSizeBytes == 16) || (_intReg1 == regNumberExtensions.NotAvailable))
             {
                 tempReg = _simdReg1;
             }
@@ -384,7 +380,7 @@ public sealed partial class CodeGen
             var ins = INS_str;
             var tempReg = _intReg1;
 
-            if ((regSizeBytes == 16) || (_intReg1 == REG_NA))
+            if ((regSizeBytes == 16) || (_intReg1 == regNumberExtensions.NotAvailable))
             {
                 tempReg = _simdReg1;
             }
@@ -460,13 +456,13 @@ public sealed partial class CodeGen
         public readonly void Unroll(regNumber intReg, regNumber simdReg, regNumber addrReg, Emitter emitter)
         {
             var stream = new ProducingStream(intReg, simdReg, simdReg, addrReg, emitter);
-            UnrollInitBlock(ref stream, FP_REGSIZE_BYTES);
+            UnrollInitBlock(ref stream, FP_REGSIZE_BYTES_ARM64);
         }
 
         public readonly void UnrollBaseInstrs(regNumber intReg, regNumber addrReg, Emitter emitter)
         {
             var stream = new ProducingStreamBaseInstrs(intReg, intReg, addrReg, emitter);
-            UnrollInitBlock(ref stream, REGSIZE_BYTES);
+            UnrollInitBlock(ref stream, Configuration.REGSIZE_BYTES);
         }
 
         private readonly void UnrollInitBlock<TStream>(ref TStream stream, int initialRegSizeBytes)
@@ -548,6 +544,4 @@ public sealed partial class CodeGen
             }
         }
     }
-#endif
 }
-#endif

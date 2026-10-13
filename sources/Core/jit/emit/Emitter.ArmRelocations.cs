@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public partial class Emitter
@@ -14,6 +13,7 @@ public partial class Emitter
 
     private unsafe instrDescReloc emitNewInstrReloc(emitAttr attr, nuint address)
     {
+        RequireArm32Target();
         assert(EA_IS_RELOC(attr));
 
         var id = emitAllocAnyInstr<instrDescReloc>(
@@ -31,6 +31,7 @@ public partial class Emitter
 
     private unsafe byte* emitGetInsRelocValue(instrDesc id)
     {
+        RequireArm32Target();
         return ((instrDescReloc)id).idrRelocVal;
     }
 
@@ -38,6 +39,7 @@ public partial class Emitter
     // Otherwise the emitter requests the absolute relocation used for compilation-time fixup.
     public unsafe void emitHandlePCRelativeMov32(void* location, void* target)
     {
+        RequireArm32Target();
         assert(_compiler is not null);
 
         if (_compiler.opts.jitFlags->IsSet(JitFlags.JIT_FLAG_RELATIVE_CODE_RELOCS))
@@ -50,4 +52,3 @@ public partial class Emitter
         }
     }
 }
-#endif

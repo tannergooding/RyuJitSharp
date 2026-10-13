@@ -3,14 +3,18 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM
 namespace RyuJitSharp;
 
 public partial class Emitter
 {
     public void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insFlags flags)
     {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "ARM32 register-register instruction flags are not supported for this target.");
+        }
+
         recordArm32InsRR(ins, attr, reg1, reg2, flags, insOpts.INS_OPTS_NONE);
     }
 }
-#endif

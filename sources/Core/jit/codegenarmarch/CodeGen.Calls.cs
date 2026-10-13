@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH
 #if DEBUG
 using System.Runtime.CompilerServices;
 #endif
@@ -15,19 +14,34 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public unsafe void genCall(GenTreeCall call)
+    public unsafe void genCallArmArch(GenTreeCall call)
     {
+        var intCalleeTrashMask = Configuration.TARGET_ARM64
+            ? SRBM_INT_CALLEE_TRASH_ARM64
+            : SRBM_INT_CALLEE_TRASH_ARM;
+        var intCalleeSavedMask = Configuration.TARGET_ARM64
+            ? SRBM_INT_CALLEE_SAVED_ARM64
+            : SRBM_INT_CALLEE_SAVED_ARM;
+        var floatCalleeTrashMask = Configuration.TARGET_ARM64
+            ? SRBM_FLT_CALLEE_TRASH_ARM64
+            : SRBM_FLT_CALLEE_TRASH_ARM;
+        var intReturnMask = Configuration.TARGET_ARM64 ? SRBM_INTRET_ARM64 : SRBM_INTRET_ARM;
+        var linkRegisterMask = Configuration.TARGET_ARM64 ? SRBM_ARM64_LR : SRBM_ARM32_LR;
+
         genCallPlaceRegArgs(call);
 
         if (call.NeedsNullCheck)
         {
             var thisReg = genGetThisArgReg(call);
-#if TARGET_ARM
-            var tempReg = InternalRegisters.Extract(call);
-            Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, tempReg, thisReg, 0, INS_FLAGS_DONT_CARE);
-#else
-            Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, thisReg, 0);
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                var tempReg = InternalRegisters.Extract(call);
+                Emitter.emitIns_R_R_I(INS_ldr, EA_4BYTE, tempReg, thisReg, 0, INS_FLAGS_DONT_CARE);
+            }
+            else
+            {
+                genEmitCallNullCheckArm64(thisReg);
+            }
         }
 
         if (call.IsFastTailCall)
@@ -45,7 +59,7 @@ public sealed partial class CodeGen
 
                 var tempReg = InternalRegisters.GetSingle(call);
                 // The saved target must survive the epilog's callee-saved register restoration.
-                assert(new regMaskTP(SRBM_INT_CALLEE_TRASH & ~SRBM_LR).IsRegNumInMask(tempReg));
+                assert(new regMaskTP(intCalleeTrashMask & ~linkRegisterMask).IsRegNumInMask(tempReg));
 
                 regNumber callAddressReg;
                 if (call.IsVirtualStubRelativeIndir)
@@ -55,7 +69,9 @@ public sealed partial class CodeGen
                 }
                 else
                 {
-                    callAddressReg = REG_R2R_INDIRECT_PARAM;
+                    callAddressReg = Configuration.TARGET_ARM64
+                        ? REG_R2R_INDIRECT_PARAM_ARM64
+                        : REG_R2R_INDIRECT_PARAM_ARM;
                 }
                 Emitter.emitIns_R_R(ins_Load(TYP_I_IMPL), TYP_I_IMPL.EmitActualSize, tempReg, callAddressReg);
                 InternalRegisters.Add(call, genRegMask(tempReg));
@@ -69,14 +85,14 @@ public sealed partial class CodeGen
 
             // The runtime can't find callee-saved registers through an InlinedCallFrame.
             assert(((GCInfo.gcRegGCrefSetCur | GCInfo.gcRegByrefSetCur)
-                & new regMaskTP(SRBM_INT_CALLEE_SAVED)).IsEmpty);
+                & new regMaskTP(intCalleeSavedMask)).IsEmpty);
         }
 
-        genCallInstruction(call);
+        genCallInstructionArmArch(call);
         genDefinePendingCallLabel(call);
 
 #if DEBUG
-        var killMask = new regMaskTP(SRBM_INT_CALLEE_TRASH | SRBM_FLT_CALLEE_TRASH);
+        var killMask = new regMaskTP(intCalleeTrashMask | floatCalleeTrashMask);
         if (call.IsHelperCall())
         {
             killMask = _compiler.compHelperCallKillSet(call.HelperNum);
@@ -104,48 +120,40 @@ public sealed partial class CodeGen
             }
             else
             {
-#if TARGET_ARM
-                var compUseSoftFP = _compiler.opts.compUseSoftFP;
-#endif
-#if TARGET_ARM
-                if (call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
+                var compUseSoftFP = Configuration.TARGET_ARM && _compiler.opts.compUseSoftFP;
+                if (Configuration.TARGET_ARM && call.IsHelperCall(CORINFO_HELP_INIT_PINVOKE_FRAME))
                 {
-                    returnReg = REG_PINVOKE_TCB;
+                    returnReg = REG_PINVOKE_TCB_ARM;
                 }
                 else if (compUseSoftFP)
                 {
-                    returnReg = REG_INTRET;
+                    returnReg = REG_INTRET_ARM;
                 }
-                else
-#else
-                if (call.IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
+                else if (!Configuration.TARGET_ARM &&
+                    call.IsHelperCall(CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT))
                 {
-                    returnReg = REG_R15;
+                    returnReg = REG_ARM64_R15;
                 }
-                else
-#endif
-                if (varTypeUsesFloatArgReg(returnType))
+                else if (varTypeUsesFloatArgReg(returnType))
                 {
                     returnReg = REG_FLOATRET;
                 }
                 else
                 {
-                    returnReg = REG_INTRET;
+                    returnReg = Configuration.TARGET_ARM64 ? REG_INTRET_ARM64 : REG_INTRET_ARM;
                 }
 
                 if (call.RegNum != returnReg)
                 {
-#if TARGET_ARM
-                    if (compUseSoftFP && (returnType is TYP_DOUBLE))
+                    if (Configuration.TARGET_ARM && compUseSoftFP && (returnType is TYP_DOUBLE))
                     {
                         inst_RV_RV_RV(INS_vmov_i2d, call.RegNum, returnReg, REG_NEXT(returnReg), EA_8BYTE);
                     }
-                    else if (compUseSoftFP && (returnType is TYP_FLOAT))
+                    else if (Configuration.TARGET_ARM && compUseSoftFP && (returnType is TYP_FLOAT))
                     {
                         inst_Mov(returnType, call.RegNum, returnReg, canSkip: false);
                     }
                     else
-#endif
                     {
                         inst_Mov(returnType, call.RegNum, returnReg, canSkip: false);
                     }
@@ -157,14 +165,15 @@ public sealed partial class CodeGen
 
         if ((call.Next is null) && !_compiler.opts.MinOpts && !_compiler.opts.compDbgCode)
         {
-            GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INTRET));
+            GCInfo.gcMarkRegSetNpt(new regMaskTP(intReturnMask));
         }
     }
 
-    public unsafe void genCallInstruction(GenTreeCall call)
+    public unsafe void genCallInstructionArmArch(GenTreeCall call)
     {
         ref readonly var returnTypeDesc = ref call.ReturnTypeDesc;
         var parameters = new EmitCallParams();
+        var linkRegisterMask = Configuration.TARGET_ARM64 ? SRBM_ARM64_LR : SRBM_ARM32_LR;
 
         if (!call.IsUnusedValue)
         {
@@ -188,10 +197,11 @@ public sealed partial class CodeGen
             }
         }
 
-#if TARGET_ARM
-        assert(parameters.secondRetSize is not EA_GCREF);
-        assert(parameters.secondRetSize is not EA_BYREF);
-#endif
+        if (Configuration.TARGET_ARM)
+        {
+            assert(parameters.secondRetSize != EA_GCREF);
+            assert(parameters.secondRetSize != EA_BYREF);
+        }
 
         parameters.isJump = call.IsFastTailCall;
         parameters.hasAsyncRet = call.IsAsync;
@@ -216,8 +226,7 @@ public sealed partial class CodeGen
 
             assert(genIsValidIntReg(target.RegNum));
 
-#if TARGET_ARM64
-            var isTlsHandleTarget =
+            var isTlsHandleTarget = Configuration.TARGET_ARM64 &&
                 _compiler.IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS.IsUnix && target.IsTlsIconHandle();
 
             if (isTlsHandleTarget)
@@ -230,56 +239,58 @@ public sealed partial class CodeGen
                 parameters.retSize = EA_SET_FLG(parameters.retSize, EA_CNS_TLSGD_RELOC);
                 parameters.noSafePoint = true;
 
-                Emitter.emitIns_R(INS_mrs_tpid0, attr, REG_R1);
-                GCInfo.gcMarkRegSetNpt(RBM_R0);
+                Emitter.emitIns_R(INS_mrs_tpid0, attr, REG_ARM64_R1);
+                GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_ARM64_R0));
 #if DEBUG
-                Emitter.emitIns_Adrp_Ldr_Add(attr, REG_R0, target.RegNum, (nint)parameters.methHnd,
+                genEmitTlsDescriptorAddressArm64(attr, REG_ARM64_R0, target.RegNum, (nint)parameters.methHnd,
                     unchecked((nuint)icon.TargetHandle), icon.Flags);
 #else
-                Emitter.emitIns_Adrp_Ldr_Add(attr, REG_R0, target.RegNum, (nint)parameters.methHnd);
+                genEmitTlsDescriptorAddressArm64(attr, REG_ARM64_R0, target.RegNum, (nint)parameters.methHnd);
 #endif
             }
-#endif
-
             parameters.callType = EC_INDIR_R;
             parameters.ireg = target.RegNum;
             genEmitCallWithCurrentGC(ref parameters);
 
-#if TARGET_ARM64
             if (isTlsHandleTarget)
             {
-                Emitter.emitIns_R_R_R(INS_add, EA_8BYTE, REG_R0, REG_R1, REG_R0);
+                Emitter.emitIns_R_R_R(INS_add, EA_8BYTE, REG_ARM64_R0, REG_ARM64_R1, REG_ARM64_R0);
             }
-#endif
         }
         else
         {
-            var callThroughIndirectionReg = REG_NA;
+            var callThroughIndirectionReg = regNumberExtensions.NotAvailable;
             if (!call.IsHelperCall(CORINFO_HELP_DISPATCH_INDIRECT_CALL))
             {
                 callThroughIndirectionReg = getCallIndirectionCellReg(call);
             }
 
-            if (callThroughIndirectionReg != REG_NA)
+            if (callThroughIndirectionReg != regNumberExtensions.NotAvailable)
             {
                 assert(call.IsR2RRelativeIndir || call.IsVirtualStubRelativeIndir);
                 regNumber targetAddressReg;
                 if (!call.IsFastTailCall)
                 {
-#if TARGET_ARM
-                    // ARM32 allocates a temporary to avoid the larger IP-based load encoding.
-                    targetAddressReg = InternalRegisters.GetSingle(call);
-#else
-                    // ARM64 uses IP0 directly and saves the temporary register.
-                    targetAddressReg = REG_INDIRECT_CALL_TARGET_REG;
-#endif
+                    if (Configuration.TARGET_ARM)
+                    {
+                        // ARM32 allocates a temporary to avoid the larger IP-based load encoding.
+                        targetAddressReg = InternalRegisters.GetSingle(call);
+                    }
+                    else
+                    {
+                        // ARM64 uses IP0 directly and saves the temporary register.
+                        targetAddressReg = REG_INDIRECT_CALL_TARGET_REG_ARM64;
+                    }
                     Emitter.emitIns_R_R(ins_Load(TYP_I_IMPL), TYP_I_IMPL.EmitActualSize, targetAddressReg,
                         callThroughIndirectionReg);
                 }
                 else
                 {
                     targetAddressReg = InternalRegisters.GetSingle(call);
-                    assert(new regMaskTP(SRBM_INT_CALLEE_TRASH & ~SRBM_LR).IsRegNumInMask(targetAddressReg));
+                    var intCalleeTrashMask = Configuration.TARGET_ARM64
+                        ? SRBM_INT_CALLEE_TRASH_ARM64
+                        : SRBM_INT_CALLEE_TRASH_ARM;
+                    assert(new regMaskTP(intCalleeTrashMask & ~linkRegisterMask).IsRegNumInMask(targetAddressReg));
                 }
 
                 assert(genIsValidIntReg(targetAddressReg));
@@ -293,8 +304,7 @@ public sealed partial class CodeGen
                 assert(call._directCallAddress is not null);
                 parameters.addr = call._directCallAddress;
 
-#if TARGET_ARM
-                if (!validImmForBL((nint)parameters.addr))
+                if (Configuration.TARGET_ARM && !validImmForBL((nint)parameters.addr))
                 {
                     var tempReg = InternalRegisters.GetSingle(call);
                     instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, tempReg, (nint)parameters.addr);
@@ -304,7 +314,6 @@ public sealed partial class CodeGen
                     genEmitCallWithCurrentGC(ref parameters);
                 }
                 else
-#endif
                 {
                     parameters.callType = EC_FUNC_TOKEN;
                     genEmitCallWithCurrentGC(ref parameters);
@@ -313,4 +322,3 @@ public sealed partial class CodeGen
         }
     }
 }
-#endif

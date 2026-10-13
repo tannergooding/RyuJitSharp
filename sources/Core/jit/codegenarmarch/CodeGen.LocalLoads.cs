@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if TARGET_ARM || TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.insFlags;
@@ -13,21 +12,20 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForLclFld(GenTreeLclFld tree)
+    public void genCodeForLclFldArmArch(GenTreeLclFld tree)
     {
         assert(tree.Oper is GT_LCL_FLD);
 
         var targetType = tree.Type;
         var targetReg = tree.RegNum;
         NYI_IF(targetType is TYP_STRUCT, "GT_LCL_FLD: struct load local field not supported");
-        assert(targetReg is not REG_NA);
+        assert(targetReg != regNumberExtensions.NotAvailable);
 
         var offset = tree.LclOffs;
         var localNumber = tree.LclNum;
         assert((uint)localNumber < _compiler.lvaCount);
 
-#if TARGET_ARM
-        if (tree.IsOffsetMisaligned)
+        if (Configuration.TARGET_ARM && tree.IsOffsetMisaligned)
         {
             // ARM32 only supports unaligned integer accesses, so floating-point values are
             // loaded through integer registers.
@@ -52,7 +50,6 @@ public sealed partial class CodeGen
             }
         }
         else
-#endif
         {
             var size = targetType.EmitActualSize;
             var loadInstruction = ins_Load(targetType);
@@ -62,4 +59,3 @@ public sealed partial class CodeGen
         genProduceReg(tree);
     }
 }
-#endif

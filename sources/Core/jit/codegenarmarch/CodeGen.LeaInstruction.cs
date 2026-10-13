@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM || TARGET_ARM64
 using System.Numerics;
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
@@ -16,7 +15,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genLeaInstruction(GenTreeAddrMode lea)
+    public void genLeaInstructionArmArch(GenTreeAddrMode lea)
     {
         genConsumeOperands(lea);
         var size = lea.Type.EmitSize;
@@ -41,13 +40,16 @@ public sealed partial class CodeGen
                 // A fully interruptible GC byref cannot temporarily point outside its object.
                 if (!useLargeOffsetSequence && Emitter.emitIns_valid_imm_for_add(offset))
                 {
-                    genScaledAdd(size, tempReg, baseAddress.RegNum, index.RegNum, scale);
-#if TARGET_ARM
-                    Emitter.emitIns_R_R_I(
-                        INS_add, size, lea.RegNum, tempReg, offset, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
-#else
-                    Emitter.emitIns_R_R_I(INS_add, size, lea.RegNum, tempReg, offset, INS_OPTS_NONE);
-#endif
+                    genScaledAddArmArch(size, tempReg, baseAddress.RegNum, index.RegNum, scale);
+                    if (Configuration.TARGET_ARM)
+                    {
+                        Emitter.emitIns_R_R_I(
+                            INS_add, size, lea.RegNum, tempReg, offset, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+                    }
+                    else
+                    {
+                        Emitter.emitIns_R_R_I(INS_add, size, lea.RegNum, tempReg, offset, INS_OPTS_NONE);
+                    }
                 }
                 else
                 {
@@ -55,14 +57,13 @@ public sealed partial class CodeGen
                     noway_assert(tempReg != baseAddress.RegNum);
 
                     instGen_Set_Reg_To_Imm(EA_PTRSIZE, tempReg, offset);
-                    genScaledAdd(EA_PTRSIZE, tempReg, tempReg, index.RegNum, scale);
+                    genScaledAddArmArch(EA_PTRSIZE, tempReg, tempReg, index.RegNum, scale);
                     Emitter.emitIns_R_R_R(INS_add, size, lea.RegNum, baseAddress.RegNum, tempReg);
                 }
             }
             else
             {
-#if TARGET_ARM64
-                if (index.IsContained)
+                if (Configuration.TARGET_ARM64 && index.IsContained)
                 {
                     if (index.Oper is GT_BFIZ)
                     {
@@ -81,9 +82,8 @@ public sealed partial class CodeGen
                         scale, cast.IsUnsigned ? INS_OPTS_UXTW : INS_OPTS_SXTW);
                 }
                 else
-#endif
                 {
-                    genScaledAdd(size, lea.RegNum, baseAddress.RegNum, index.RegNum, scale);
+                    genScaledAddArmArch(size, lea.RegNum, baseAddress.RegNum, index.RegNum, scale);
                 }
             }
         }
@@ -95,13 +95,17 @@ public sealed partial class CodeGen
             {
                 if (offset != 0)
                 {
-#if TARGET_ARM
-                    Emitter.emitIns_R_R_I(
-                        INS_add, size, lea.RegNum, baseAddress.RegNum, offset, INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
-#else
-                    Emitter.emitIns_R_R_I(
-                        INS_add, size, lea.RegNum, baseAddress.RegNum, offset, INS_OPTS_NONE);
-#endif
+                    if (Configuration.TARGET_ARM)
+                    {
+                        Emitter.emitIns_R_R_I(
+                            INS_add, size, lea.RegNum, baseAddress.RegNum, offset,
+                            INS_FLAGS_DONT_CARE, INS_OPTS_NONE);
+                    }
+                    else
+                    {
+                        Emitter.emitIns_R_R_I(
+                            INS_add, size, lea.RegNum, baseAddress.RegNum, offset, INS_OPTS_NONE);
+                    }
                 }
                 else
                 {
@@ -124,4 +128,3 @@ public sealed partial class CodeGen
         genProduceReg(lea);
     }
 }
-#endif

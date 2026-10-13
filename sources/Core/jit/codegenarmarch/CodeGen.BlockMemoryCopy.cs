@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM || TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.genTreeOps;
@@ -17,12 +16,12 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForCpBlkUnroll(GenTreeBlk node)
+    public void genCodeForCpBlkUnrollArmArch(GenTreeBlk node)
     {
         assert(node.Oper is GT_STORE_BLK);
 
         var dstLclNum = BAD_VAR_NUM;
-        var dstAddrBaseReg = REG_NA;
+        var dstAddrBaseReg = regNumberExtensions.NotAvailable;
         var dstOffset = 0;
         var dstAddr = node.Addr;
 
@@ -53,7 +52,7 @@ public sealed partial class CodeGen
         }
 
         var srcLclNum = BAD_VAR_NUM;
-        var srcAddrBaseReg = REG_NA;
+        var srcAddrBaseReg = regNumberExtensions.NotAvailable;
         var srcOffset = 0;
         var src = node.Data;
 
@@ -109,14 +108,15 @@ public sealed partial class CodeGen
         assert(srcOffset < int.MaxValue - unchecked((int)size));
         assert(dstOffset < int.MaxValue - unchecked((int)size));
 
-#if TARGET_ARM64
+        if (Configuration.TARGET_ARM64)
+        {
         var helper = new CopyBlockUnrollHelper(srcOffset, dstOffset, size);
         var srcReg = srcAddrBaseReg;
 
         if (srcLclNum != BAD_VAR_NUM)
         {
             var baseAddr = _compiler.lvaFrameAddress(srcLclNum, out var fpBased);
-            srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
+            srcReg = fpBased ? REG_FPBASE_ARM64 : REG_SPBASE_ARM64;
             helper.SetSrcOffset(baseAddr + srcOffset);
         }
 
@@ -125,11 +125,11 @@ public sealed partial class CodeGen
         if (dstLclNum != BAD_VAR_NUM)
         {
             var baseAddr = _compiler.lvaFrameAddress(dstLclNum, out var fpBased);
-            dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
+            dstReg = fpBased ? REG_FPBASE_ARM64 : REG_SPBASE_ARM64;
             helper.SetDstOffset(baseAddr + dstOffset);
         }
 
-        helper.TryEncodeAllOffsets(REGSIZE_BYTES, out var canEncodeAllLoads, out var canEncodeAllStores);
+        helper.TryEncodeAllOffsets(Configuration.REGSIZE_BYTES, out var canEncodeAllLoads, out var canEncodeAllStores);
 
         srcOffset = helper.GetSrcOffset();
         dstOffset = helper.GetDstOffset();
@@ -155,25 +155,27 @@ public sealed partial class CodeGen
         helper.SetDstOffset(dstOffset - dstOffsetAdjustment);
 
         // Wider accesses can reduce alignment penalties, but address materialization must still save instructions.
-        var canUse16ByteWideInstrs = size >= (uint)(2 * FP_REGSIZE_BYTES);
+        var canUse16ByteWideInstrs = size >= (uint)(2 * FP_REGSIZE_BYTES_ARM64);
         var shouldUse16ByteWideInstrs = false;
 
         if (canUse16ByteWideInstrs)
         {
             helper.TryEncodeAllOffsets(
-                FP_REGSIZE_BYTES,
+                FP_REGSIZE_BYTES_ARM64,
                 out var canEncodeAll16ByteWideLoads,
                 out var canEncodeAll16ByteWideStores);
 
             if (canEncodeAll16ByteWideLoads && canEncodeAll16ByteWideStores)
             {
                 shouldUse16ByteWideInstrs =
-                    helper.InstructionCount(FP_REGSIZE_BYTES) < helper.InstructionCount(REGSIZE_BYTES);
+                    helper.InstructionCount(FP_REGSIZE_BYTES_ARM64) <
+                    helper.InstructionCount(Configuration.REGSIZE_BYTES);
             }
             else if (canEncodeAllLoads && canEncodeAllStores &&
                 (canEncodeAll16ByteWideLoads || canEncodeAll16ByteWideStores))
             {
-                if (helper.InstructionCount(FP_REGSIZE_BYTES) + 1 < helper.InstructionCount(REGSIZE_BYTES))
+                if (helper.InstructionCount(FP_REGSIZE_BYTES_ARM64) + 1 <
+                    helper.InstructionCount(Configuration.REGSIZE_BYTES))
                 {
                     shouldUse16ByteWideInstrs = true;
 
@@ -194,7 +196,7 @@ public sealed partial class CodeGen
 
 #if DEBUG
         assert(helper.CanEncodeAllOffsets(
-            shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES : REGSIZE_BYTES));
+            shouldUse16ByteWideInstrs ? FP_REGSIZE_BYTES_ARM64 : Configuration.REGSIZE_BYTES));
 #endif
 
         if (!node._gcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
@@ -204,7 +206,7 @@ public sealed partial class CodeGen
             GetEmitter().emitDisableGC();
         }
 
-        var allIntRegisters = new regMaskTP(SRBM_ALLINT);
+        var allIntRegisters = new regMaskTP(SRBM_ALLINT_ARM64);
 
         if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
         {
@@ -230,8 +232,8 @@ public sealed partial class CodeGen
         }
 
         var intRegCount = InternalRegisters.Count(node, allIntRegisters);
-        var intReg1 = REG_NA;
-        var intReg2 = REG_NA;
+        var intReg1 = regNumberExtensions.NotAvailable;
+        var intReg2 = regNumberExtensions.NotAvailable;
 
         if (intRegCount >= 2)
         {
@@ -250,12 +252,12 @@ public sealed partial class CodeGen
 
         if (shouldUse16ByteWideInstrs)
         {
-            var allFloatRegisters = new regMaskTP(SRBM_ALLFLOAT);
+            var allFloatRegisters = new regMaskTP(SRBM_ALLFLOAT_ARM64);
             var simdReg1 = InternalRegisters.Extract(node, allFloatRegisters);
             var simdReg2 = InternalRegisters.GetSingle(node, allFloatRegisters);
 
             helper.Unroll(
-                FP_REGSIZE_BYTES,
+                FP_REGSIZE_BYTES_ARM64,
                 intReg1,
                 simdReg1,
                 simdReg2,
@@ -267,12 +269,14 @@ public sealed partial class CodeGen
         {
             helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, emit);
         }
-#endif
+        }
 
-#if TARGET_ARM
-        var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT));
+        else if (Configuration.TARGET_ARM)
+        {
+        var tempReg = InternalRegisters.Extract(node, new regMaskTP(SRBM_ALLINT_ARM));
 
-        for (uint regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += (int)regSize, dstOffset += (int)regSize)
+        for (uint regSize = (uint)Configuration.REGSIZE_BYTES; size > 0; size -= regSize,
+            srcOffset += (int)regSize, dstOffset += (int)regSize)
         {
             while (regSize > size)
             {
@@ -334,7 +338,7 @@ public sealed partial class CodeGen
                 emit.emitIns_R_R_I(storeIns, attr, tempReg, dstAddrBaseReg, dstOffset, INS_FLAGS_DONT_CARE);
             }
         }
-#endif
+        }
 
         if (node.IsVolatile)
         {
@@ -342,7 +346,6 @@ public sealed partial class CodeGen
         }
     }
 
-#if TARGET_ARM64
     private struct CopyBlockUnrollHelper
     {
         private int _srcStartOffset;
@@ -410,7 +413,7 @@ public sealed partial class CodeGen
         {
             var loadStream = new ProducingStreamBaseInstrs(intReg1, intReg2, srcAddrReg, emitter);
             var storeStream = new ProducingStreamBaseInstrs(intReg1, intReg2, dstAddrReg, emitter);
-            UnrollCopyBlock(ref loadStream, ref storeStream, REGSIZE_BYTES);
+            UnrollCopyBlock(ref loadStream, ref storeStream, Configuration.REGSIZE_BYTES);
         }
 
         private readonly void UnrollCopyBlock<TStream>(
@@ -514,6 +517,4 @@ public sealed partial class CodeGen
             }
         }
     }
-#endif
 }
-#endif

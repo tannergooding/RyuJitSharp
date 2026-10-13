@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM || TARGET_ARM64
 using static RyuJitSharp.Globals;
 using static RyuJitSharp.emitAttr;
 using static RyuJitSharp.instruction;
@@ -13,7 +12,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genCodeForStoreBlk(GenTreeBlk blkOp)
+    public void genCodeForStoreBlkArmArch(GenTreeBlk blkOp)
     {
         assert(blkOp.Oper is GT_STORE_BLK);
         var isCopyBlk = blkOp.IsCopyBlkOp;
@@ -23,7 +22,7 @@ public sealed partial class CodeGen
             case GenTreeBlk.BlkOpKindLoop:
             {
                 assert(!isCopyBlk);
-                genCodeForInitBlkLoop(blkOp);
+                genCodeForInitBlkLoopArmArch(blkOp);
                 break;
             }
 
@@ -39,7 +38,7 @@ public sealed partial class CodeGen
 
                     if (blkOp._kind is GenTreeBlk.BlkOpKindUnroll)
                     {
-                        genCodeForCpBlkUnroll(blkOp);
+                        genCodeForCpBlkUnrollArmArch(blkOp);
                     }
                     else
                     {
@@ -55,7 +54,7 @@ public sealed partial class CodeGen
                 else
                 {
                     assert(!blkOp._gcUnsafe);
-                    genCodeForInitBlkUnroll(blkOp);
+                    genCodeForInitBlkUnrollArmArch(blkOp);
                 }
                 break;
             }
@@ -68,16 +67,12 @@ public sealed partial class CodeGen
         }
     }
 
-    public void genCodeForInitBlkLoop(GenTreeBlk initBlkNode)
+    public void genCodeForInitBlkLoopArmArch(GenTreeBlk initBlkNode)
     {
         var dstNode = initBlkNode.Addr;
         var dstReg = genConsumeReg(dstNode);
 
-#if TARGET_ARM64
-        var zeroReg = REG_ZR;
-#else
-        var zeroReg = genConsumeReg(initBlkNode.Data);
-#endif
+        var zeroReg = Configuration.TARGET_ARM64 ? genGetZeroRegArm64() : genConsumeReg(initBlkNode.Data);
 
         if (initBlkNode.IsVolatile)
         {
@@ -85,30 +80,34 @@ public sealed partial class CodeGen
         }
 
         var size = initBlkNode.Layout.Size;
-        assert((size >= TARGET_POINTER_SIZE) && ((size % TARGET_POINTER_SIZE) == 0));
+        assert((size >= Configuration.TARGET_POINTER_SIZE) && ((size % Configuration.TARGET_POINTER_SIZE) == 0));
 
         // Store the first word before forming the loop's potentially large offset.
         Emitter.emitIns_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg);
-        if (size > TARGET_POINTER_SIZE)
+        if (size > Configuration.TARGET_POINTER_SIZE)
         {
             GCInfo.gcMarkRegPtrVal(dstReg, dstNode.Type);
 
             var offsetReg = InternalRegisters.GetSingle(initBlkNode);
-            instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg, unchecked((nint)(size - TARGET_POINTER_SIZE)));
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, offsetReg,
+                unchecked((nint)(size - Configuration.TARGET_POINTER_SIZE)));
 
             var loop = genCreateTempLabel();
             genDefineTempLabel(loop);
 
             Emitter.emitIns_R_R_R(INS_str, EA_PTRSIZE, zeroReg, dstReg, offsetReg);
-#if TARGET_ARM64
-            Emitter.emitIns_R_R_I(INS_subs, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE);
-#else
-            Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg, TARGET_POINTER_SIZE, INS_FLAGS_SET);
-#endif
+            if (Configuration.TARGET_ARM64)
+            {
+                Emitter.emitIns_R_R_I(INS_subs, EA_PTRSIZE, offsetReg, offsetReg, Configuration.TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                Emitter.emitIns_R_R_I(INS_sub, EA_PTRSIZE, offsetReg, offsetReg,
+                    Configuration.TARGET_POINTER_SIZE, INS_FLAGS_SET);
+            }
             inst_JMP(EJ_ne, loop);
 
             GCInfo.gcMarkRegSetNpt(genRegMask(dstReg));
         }
     }
 }
-#endif

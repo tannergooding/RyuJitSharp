@@ -3,13 +3,19 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARMARCH
+using static RyuJitSharp.Globals;
+
 namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
     private void genCodeForTreeNodeArmArch(GenTree treeNode)
     {
+        if (!Configuration.TARGET_ARMARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "ARM code generation was requested for a non-ARM target.");
+        }
+
         var targetReg = treeNode.RegNum;
         var targetType = treeNode.Type;
 
@@ -42,7 +48,9 @@ public sealed partial class CodeGen
 
             case GT_START_PREEMPTGC:
             {
-                GCInfo.gcMarkRegSetNpt(new regMaskTP(SRBM_INT_CALLEE_SAVED));
+                GCInfo.gcMarkRegSetNpt(new regMaskTP(Configuration.TARGET_ARM64
+                    ? SRBM_INT_CALLEE_SAVED_ARM64
+                    : SRBM_INT_CALLEE_SAVED_ARM));
                 genDefineTempLabel(genCreateTempLabel());
                 break;
             }
@@ -50,9 +58,10 @@ public sealed partial class CodeGen
             case GT_PROF_HOOK:
             {
                 noway_assert(_compiler.compIsProfilerHookNeeded);
-#if PROFILING_SUPPORTED
-                genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
-#endif
+                if (Configuration.PROFILING_SUPPORTED)
+                {
+                    genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
+                }
                 break;
             }
 
@@ -64,14 +73,43 @@ public sealed partial class CodeGen
 
             case GT_CNS_INT:
             case GT_CNS_DBL:
-#if FEATURE_SIMD
-            case GT_CNS_VEC:
-#endif
-#if FEATURE_MASKED_HW_INTRINSICS
-            case GT_CNS_MSK:
-#endif
             {
-                genSetRegToConst(targetReg, targetType, treeNode);
+                if (Configuration.TARGET_ARM64)
+                {
+                    genSetRegToConstArm64(targetReg, targetType, treeNode);
+                }
+                else
+                {
+                    genSetRegToConstArm(targetReg, targetType, treeNode);
+                }
+                genProduceReg(treeNode);
+                break;
+            }
+
+            case GT_CNS_VEC:
+            {
+                if (!Configuration.FEATURE_SIMD)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "SIMD constants are not supported by this ARM configuration.");
+                }
+
+                requireArm64Codegen(treeNode);
+                genSetRegToConstArm64(targetReg, targetType, treeNode);
+                genProduceReg(treeNode);
+                break;
+            }
+
+            case GT_CNS_MSK:
+            {
+                if (!Configuration.FEATURE_MASKED_HW_INTRINSICS)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Masked SIMD constants are not supported by this ARM configuration.");
+                }
+
+                requireArm64Codegen(treeNode);
+                genSetRegToConstArm64(targetReg, targetType, treeNode);
                 genProduceReg(treeNode);
                 break;
             }
@@ -79,29 +117,38 @@ public sealed partial class CodeGen
             case GT_NOT:
             case GT_NEG:
             {
-#if TARGET_ARM64
-                genCodeForNegNot(treeNode.AsOp());
-#else
-                genCodeForNegNot(treeNode.AsUnOp());
-#endif
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForNegNotArm64(treeNode);
+                }
+                else
+                {
+                    genCodeForNegNotArm(treeNode);
+                }
                 break;
             }
 
-#if TARGET_ARM64
             case GT_BSWAP:
             case GT_BSWAP16:
             {
-                genCodeForBswap(treeNode);
+                requireArm64Codegen(treeNode);
+                genCodeForBswapArm64(treeNode);
                 break;
             }
-#endif
 
             case GT_MOD:
             case GT_UMOD:
             case GT_DIV:
             case GT_UDIV:
             {
-                genCodeForDivMod(treeNode.AsOp());
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForDivModArm64(treeNode.AsOp());
+                }
+                else
+                {
+                    genCodeForDivModArm(treeNode.AsOp());
+                }
                 break;
             }
 
@@ -116,18 +163,30 @@ public sealed partial class CodeGen
                 goto case GT_ADD;
             }
 
-#if !TARGET_64BIT
             case GT_ADD_LO:
             case GT_ADD_HI:
             case GT_SUB_LO:
             case GT_SUB_HI:
-#endif
+            {
+                requireArm32Codegen(treeNode);
+                genConsumeOperands(treeNode.AsOp());
+                genCodeForBinaryArm(treeNode.AsOp());
+                break;
+            }
+
             case GT_ADD:
             case GT_SUB:
             case GT_MUL:
             {
                 genConsumeOperands(treeNode.AsOp());
-                genCodeForBinary(treeNode.AsOp());
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForBinaryArm64(treeNode.AsOp());
+                }
+                else
+                {
+                    genCodeForBinaryArm(treeNode.AsOp());
+                }
                 break;
             }
 
@@ -137,18 +196,17 @@ public sealed partial class CodeGen
             // case GT_ROL: // ARM has no ROL instruction; lowering converts it to ROR.
             case GT_ROR:
             {
-                genCodeForShift(treeNode);
+                genCodeForShiftArmArch(treeNode);
                 break;
             }
 
-#if !TARGET_64BIT
             case GT_LSH_HI:
             case GT_RSH_LO:
             {
-                genCodeForShiftLong(treeNode);
+                requireArm32Codegen(treeNode);
+                genCodeForShiftLongArm(treeNode);
                 break;
             }
-#endif
 
             case GT_CAST:
             {
@@ -170,25 +228,46 @@ public sealed partial class CodeGen
 
             case GT_LCL_FLD:
             {
-                genCodeForLclFld(treeNode.AsLclFld());
+                genCodeForLclFldArmArch(treeNode.AsLclFld());
                 break;
             }
 
             case GT_LCL_VAR:
             {
-                genCodeForLclVar(treeNode.AsLclVar());
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForLclVarArm64(treeNode.AsLclVar());
+                }
+                else
+                {
+                    genCodeForLclVarArm(treeNode.AsLclVar());
+                }
                 break;
             }
 
             case GT_STORE_LCL_FLD:
             {
-                genCodeForStoreLclFld(treeNode.AsLclFld());
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForStoreLclFldArm64(treeNode.AsLclFld());
+                }
+                else
+                {
+                    genCodeForStoreLclFldArm(treeNode.AsLclFld());
+                }
                 break;
             }
 
             case GT_STORE_LCL_VAR:
             {
-                genCodeForStoreLclVar(treeNode.AsLclVar());
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForStoreLclVarArm64(treeNode.AsLclVar());
+                }
+                else
+                {
+                    genCodeForStoreLclVarArm(treeNode.AsLclVar());
+                }
                 break;
             }
 
@@ -199,13 +278,17 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if SWIFT_SUPPORT
             case GT_SWIFT_ERROR_RET:
             {
+                if (!Configuration.SWIFT_SUPPORT)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Swift error returns are not supported by this ARM configuration.");
+                }
+
                 genSwiftErrorReturn(treeNode);
                 break;
             }
-#endif
 
             case GT_PATCHPOINT:
             case GT_PATCHPOINT_FORCED:
@@ -216,19 +299,19 @@ public sealed partial class CodeGen
 
             case GT_IND:
             {
-                genCodeForIndir(treeNode.AsIndir());
+                genCodeForIndirArmArch(treeNode.AsIndir());
                 break;
             }
 
             case GT_INDEX_ADDR:
             {
-                genCodeForIndexAddr(treeNode.AsIndexAddr());
+                genCodeForIndexAddrArmArch(treeNode.AsIndexAddr());
                 break;
             }
 
             case GT_LEA:
             {
-                genLeaInstruction(treeNode.AsAddrMode());
+                genLeaInstructionArmArch(treeNode.AsAddrMode());
                 break;
             }
 
@@ -238,37 +321,40 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if TARGET_ARM64
             case GT_INC_SATURATE:
             {
-                genCodeForIncSaturate(treeNode);
+                requireArm64Codegen(treeNode);
+                genCodeForIncSaturateArm64(treeNode);
                 break;
             }
 
             case GT_MULHI:
             {
-                genCodeForMulHi(treeNode.AsOp());
+                requireArm64Codegen(treeNode);
+                genCodeForMulHiArm64(treeNode.AsOp());
                 break;
             }
 
             case GT_SWAP:
             {
-                genCodeForSwap(treeNode.AsOp());
+                requireArm64Codegen(treeNode);
+                genCodeForSwapArm64(treeNode.AsOp());
                 break;
             }
 
             case GT_BFIZ:
             {
-                genCodeForBfiz(treeNode.AsOp());
+                requireArm64Codegen(treeNode);
+                genCodeForBfizArm64(treeNode.AsOp());
                 break;
             }
 
             case GT_BFX:
             {
-                genCodeForBfx(treeNode.AsBfm());
+                requireArm64Codegen(treeNode);
+                genCodeForBfxArm64(treeNode.AsBfm());
                 break;
             }
-#endif
 
             case GT_JMP:
             {
@@ -278,23 +364,35 @@ public sealed partial class CodeGen
 
             case GT_CKFINITE:
             {
-                genCkfinite(treeNode);
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCkfiniteArm64(treeNode);
+                }
+                else
+                {
+                    genCkfiniteArm(treeNode);
+                }
                 break;
             }
 
             case GT_INTRINSIC:
             {
-                genIntrinsic(treeNode.AsIntrinsic());
+                genIntrinsicArmArch(treeNode.AsIntrinsic());
                 break;
             }
 
-#if FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
             {
-                genHWIntrinsic(treeNode.AsHWIntrinsic());
+                if (!Configuration.FEATURE_HW_INTRINSICS)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Hardware intrinsics are not supported by this ARM configuration.");
+                }
+
+                requireArm64Codegen(treeNode);
+                genHWIntrinsicArm64(treeNode.AsHWIntrinsic());
                 break;
             }
-#endif
 
             case GT_EQ:
             case GT_NE:
@@ -307,18 +405,34 @@ public sealed partial class CodeGen
             case GT_CMP:
             case GT_TEST:
             {
+                if (Configuration.TARGET_ARM64)
+                {
+                    requireArm64Codegen(treeNode);
+                }
+                else
+                {
+                    requireArm32Codegen(treeNode);
+                }
+
                 genConsumeOperands(treeNode.AsOp());
-                genCodeForCompare(treeNode.AsOp());
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForCompareArm64(treeNode.AsOp());
+                }
+                else
+                {
+                    genCodeForCompareArm(treeNode.AsOp());
+                }
                 break;
             }
 
-#if TARGET_ARM64
             case GT_SELECT_NEG:
             case GT_SELECT_INV:
             case GT_SELECT_INC:
             case GT_SELECT:
             {
-                genCodeForSelect(treeNode.AsConditional());
+                requireArm64Codegen(treeNode);
+                genCodeForSelectArm64(treeNode.AsConditional());
                 break;
             }
 
@@ -327,27 +441,36 @@ public sealed partial class CodeGen
             case GT_SELECT_INCCC:
             case GT_SELECTCC:
             {
-                genCodeForSelect(treeNode.AsOp());
+                requireArm64Codegen(treeNode);
+                genCodeForSelectArm64(treeNode.AsOp());
                 break;
             }
 
             case GT_JCMP:
             case GT_JTEST:
             {
-                genCodeForJumpCompare(treeNode.AsOpCC());
+                requireArm64Codegen(treeNode);
+                genCodeForJumpCompareArm64(treeNode.AsOpCC());
                 break;
             }
 
             case GT_CCMP:
             {
+                requireArm64Codegen(treeNode);
                 genCodeForCCMP(treeNode.AsCCMP());
                 break;
             }
-#endif
 
             case GT_JTRUE:
             {
-                genCodeForJTrue(treeNode.AsUnOp());
+                if (Configuration.TARGET_ARM64)
+                {
+                    genCodeForJTrueArm64(treeNode.AsUnOp());
+                }
+                else
+                {
+                    genCodeForJTrueArm(treeNode.AsUnOp());
+                }
                 break;
             }
 
@@ -371,7 +494,16 @@ public sealed partial class CodeGen
 
             case GT_STOREIND:
             {
-                genCodeForStoreInd(treeNode.AsStoreInd());
+                if (Configuration.TARGET_ARM64)
+                {
+                    requireArm64Codegen(treeNode);
+                    genCodeForStoreIndArm64(treeNode.AsStoreInd());
+                }
+                else
+                {
+                    requireArm32Codegen(treeNode);
+                    genCodeForStoreIndArm(treeNode.AsStoreInd());
+                }
                 break;
             }
 
@@ -400,7 +532,7 @@ public sealed partial class CodeGen
 
             case GT_CALL:
             {
-                genCall(treeNode.AsCall());
+                genCallArmArch(treeNode.AsCall());
                 break;
             }
 
@@ -415,30 +547,34 @@ public sealed partial class CodeGen
                 break;
             }
 
-#if TARGET_ARM64
             case GT_XCHG:
             case GT_XORR:
             case GT_XAND:
             case GT_XADD:
             {
+                requireArm64Codegen(treeNode);
                 genLockedInstructions(treeNode.AsOp());
                 break;
             }
 
             case GT_CMPXCHG:
             {
+                requireArm64Codegen(treeNode);
                 genCodeForCmpXchg(treeNode.AsCmpXchg());
                 break;
             }
-#endif
 
-#if SWIFT_SUPPORT
             case GT_SWIFT_ERROR:
             {
+                if (!Configuration.SWIFT_SUPPORT)
+                {
+                    throw new FatalJitException(CORJIT_SKIPPED,
+                        "Swift error values are not supported by this ARM configuration.");
+                }
+
                 genCodeForSwiftErrorReg(treeNode);
                 break;
             }
-#endif
 
             case GT_RELOAD:
             case GT_NOP:
@@ -468,7 +604,7 @@ public sealed partial class CodeGen
 
             case GT_BOUNDS_CHECK:
             {
-                genRangeCheck(treeNode);
+                genRangeCheckArmArch(treeNode);
                 break;
             }
 
@@ -480,7 +616,7 @@ public sealed partial class CodeGen
 
             case GT_NULLCHECK:
             {
-                genCodeForNullCheck(treeNode.AsIndir());
+                genCodeForNullCheckArmArch(treeNode.AsIndir());
                 break;
             }
 
@@ -493,11 +629,14 @@ public sealed partial class CodeGen
             case GT_LABEL:
             {
                 genPendingCallLabel = genCreateTempLabel();
-#if TARGET_ARM
-                genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
-#else
-                Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#endif
+                if (Configuration.TARGET_ARM)
+                {
+                    genMov32RelocatableDisplacement(genPendingCallLabel, targetReg);
+                }
+                else
+                {
+                    Emitter.emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+                }
                 break;
             }
 
@@ -539,30 +678,43 @@ public sealed partial class CodeGen
 
             case GT_STORE_BLK:
             {
-                genCodeForStoreBlk(treeNode.AsBlk());
+                genCodeForStoreBlkArmArch(treeNode.AsBlk());
                 break;
             }
 
             case GT_JMPTABLE:
             {
-                genJumpTable(treeNode);
+                if (Configuration.TARGET_ARM64)
+                {
+                    genJumpTableArm64(treeNode);
+                }
+                else
+                {
+                    genJumpTableArm(treeNode);
+                }
                 break;
             }
 
             case GT_SWITCH_TABLE:
             {
-                genTableBasedSwitch(treeNode);
+                if (Configuration.TARGET_ARM64)
+                {
+                    genTableBasedSwitchArm64(treeNode);
+                }
+                else
+                {
+                    genTableBasedSwitchArm(treeNode);
+                }
                 break;
             }
 
-#if TARGET_ARM
             case GT_LONG:
             {
+                requireArm32Codegen(treeNode);
                 assert(treeNode.IsUsedFromReg);
                 genConsumeRegs(treeNode);
                 break;
             }
-#endif
 
             case GT_IL_OFFSET:
             {
@@ -576,5 +728,22 @@ public sealed partial class CodeGen
             }
         }
     }
+
+    private static void requireArm64Codegen(GenTree treeNode)
+    {
+        if (!Configuration.TARGET_ARM64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                $"ARM64 code generation for {treeNode.Oper} is not supported on this target.");
+        }
+    }
+
+    private static void requireArm32Codegen(GenTree treeNode)
+    {
+        if (!Configuration.TARGET_ARM)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                $"ARM32 code generation for {treeNode.Oper} is not supported on this target.");
+        }
+    }
 }
-#endif

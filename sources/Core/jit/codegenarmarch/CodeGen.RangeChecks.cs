@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM || TARGET_ARM64
 using static RyuJitSharp.SpecialCodeKind;
 using static RyuJitSharp.emitJumpKind;
 using static RyuJitSharp.insFlags;
@@ -14,7 +13,7 @@ namespace RyuJitSharp;
 
 public sealed partial class CodeGen
 {
-    public void genRangeCheck(GenTree oper)
+    public void genRangeCheckArmArch(GenTree oper)
     {
         noway_assert(oper.Oper is GT_BOUNDS_CHECK);
         var bounds = oper.AsBoundsChk();
@@ -34,8 +33,7 @@ public sealed partial class CodeGen
             src2 = index;
             jumpKind = EJ_ls;
 
-#if TARGET_ARM64
-            if (index.IsIntegralConst(0))
+            if (Configuration.TARGET_ARM64 && index.IsIntegralConst(0))
             {
                 assert(!length.IsContained);
                 genJumpToThrowHlpBlk(bounds.ThrowKind, (target, isInline) =>
@@ -45,7 +43,6 @@ public sealed partial class CodeGen
                 });
                 return;
             }
-#endif
         }
         else
         {
@@ -68,14 +65,16 @@ public sealed partial class CodeGen
         }
         else
         {
-#if TARGET_ARM
-            Emitter.emitIns_R_R(INS_cmp, size, src1.RegNum, src2.RegNum, INS_FLAGS_DONT_CARE);
-#else
-            Emitter.emitIns_R_R(INS_cmp, size, src1.RegNum, src2.RegNum);
-#endif
+            if (Configuration.TARGET_ARM)
+            {
+                Emitter.emitIns_R_R(INS_cmp, size, src1.RegNum, src2.RegNum, INS_FLAGS_DONT_CARE);
+            }
+            else
+            {
+                Emitter.emitIns_R_R(INS_cmp, size, src1.RegNum, src2.RegNum);
+            }
         }
 
         genJumpToThrowHlpBlk(jumpKind, bounds.ThrowKind);
     }
 }
-#endif
