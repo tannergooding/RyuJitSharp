@@ -41,7 +41,7 @@ public partial struct GCInfo
         {
             return WriteBarrierForm.WBF_NoBarrier;
         }
-        if (address.Type is TYP_I_IMPL)
+        if ((address.Type == TYP_I_IMPL))
         {
             return WriteBarrierForm.WBF_BarrierUnknown;
         }

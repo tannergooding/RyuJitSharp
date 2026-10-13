@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86 && JIT32_GCENCODER && DUMP_GC_TABLES
+#if DUMP_GC_TABLES
 using System;
 using System.Diagnostics;
 
@@ -22,6 +22,7 @@ public partial struct GCInfo
 
     internal readonly unsafe nuint gcInfoBlockHdrDump(byte* table, ref InfoHdr header, out uint methodSize)
     {
+        EnsureJit32GCDump();
         var gcDump = new Jit32GCDump(GCINFO_VERSION);
 #if DEBUG
         gcDump.gcPrintf = gcDump_logf;
@@ -38,6 +39,7 @@ public partial struct GCInfo
 
     internal readonly unsafe nuint gcDumpPtrTable(byte* table, InfoHdr header, uint methodSize)
     {
+        EnsureJit32GCDump();
         if (header.noGCRegionCnt > 0)
         {
 #pragma warning disable CA1303
@@ -63,6 +65,7 @@ public partial struct GCInfo
 
     internal readonly unsafe void gcFindPtrsInFrame(void* infoBlock, void* codeBlock, uint offs)
     {
+        EnsureJit32GCDump();
         var gcDump = new Jit32GCDump(GCINFO_VERSION);
 #if DEBUG
         gcDump.gcPrintf = gcDump_logf;
@@ -71,6 +74,14 @@ public partial struct GCInfo
 #endif
 
         gcDump.DumpPtrsInFrame((byte*)infoBlock, (byte*)codeBlock, offs, verifyGCTables);
+    }
+
+    private static void EnsureJit32GCDump()
+    {
+        if (!Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "JIT32 GC table dumping requires the JIT32 GC encoder.");
+        }
     }
 
     // GCDump support is kept with its GCInfo callers. Its native definitions in

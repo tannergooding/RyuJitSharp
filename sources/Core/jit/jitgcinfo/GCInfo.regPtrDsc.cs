@@ -30,9 +30,7 @@ public partial struct GCInfo
         public CompilerRegData rpdCompiler;
         public CallRegData rpdCallData;
 
-#if !JIT32_GCENCODER
         public byte rpdCallInstrSize;
-#endif
         public bool rpdArg;
         internal rpdArgType_t rpdArgType;
         internal GCtype rpdGCtype;
@@ -43,9 +41,7 @@ public partial struct GCInfo
 
         internal GCtype rpdGCtypeGet() => rpdGCtype;
 
-#if !JIT32_GCENCODER
         public bool rpdIsCallInstr() => rpdCall && (rpdCallInstrSize != 0);
-#endif
 
         public struct CompilerRegData
         {

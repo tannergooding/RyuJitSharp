@@ -58,47 +58,50 @@ public partial struct GCInfo
 #endif
     )
     {
-#if HAS_FIXED_REGISTER_SET
-        // Live register variables retain their pointer classification.
-        var byrefSet = gcRegByrefSetCur & ~(mask & ~RegSet.GetMaskVars());
-        var gcrefSet = gcRegGCrefSetCur & ~(mask & ~RegSet.GetMaskVars());
+        if (Configuration.HAS_FIXED_REGISTER_SET)
+        {
+            // Live register variables retain their pointer classification.
+            var byrefSet = gcRegByrefSetCur & ~(mask & ~RegSet.GetMaskVars());
+            var gcrefSet = gcRegGCrefSetCur & ~(mask & ~RegSet.GetMaskVars());
 #if DEBUG
-        gcDspGCrefSetChanges(gcrefSet, forceOutput);
-        gcDspByrefSetChanges(byrefSet, forceOutput);
+            gcDspGCrefSetChanges(gcrefSet, forceOutput);
+            gcDspByrefSetChanges(byrefSet, forceOutput);
 #endif
-        gcRegByrefSetCur = byrefSet;
-        gcRegGCrefSetCur = gcrefSet;
-#else
-        throw new FatalJitException(CORJIT_SKIPPED, "Non-pointer GC register marking without a fixed register set is not implemented.");
-#endif
+            gcRegByrefSetCur = byrefSet;
+            gcRegGCrefSetCur = gcrefSet;
+        }
+        else
+        {
+            throw new FatalJitException(CORJIT_SKIPPED,
+                "Non-pointer GC register marking without a fixed register set is not implemented.");
+        }
     }
 
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
     public void gcMarkRegPtrVal(regNumber reg, var_types type)
-#else
-    public readonly void gcMarkRegPtrVal(regNumber reg, var_types type)
-#endif
     {
-#if EMIT_GENERATE_GCINFO && HAS_FIXED_REGISTER_SET
-        var mask = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
-        switch (type)
+#if EMIT_GENERATE_GCINFO
+        if (Configuration.HAS_FIXED_REGISTER_SET)
         {
-            case TYP_REF:
+            var mask = regMaskTP.CreateFromRegNum(reg, reg.SingleTypeMask);
+            switch (type)
             {
-                gcMarkRegSetGCref(mask);
-                break;
-            }
+                case TYP_REF:
+                {
+                    gcMarkRegSetGCref(mask);
+                    break;
+                }
 
-            case TYP_BYREF:
-            {
-                gcMarkRegSetByref(mask);
-                break;
-            }
+                case TYP_BYREF:
+                {
+                    gcMarkRegSetByref(mask);
+                    break;
+                }
 
-            default:
-            {
-                gcMarkRegSetNpt(mask);
-                break;
+                default:
+                {
+                    gcMarkRegSetNpt(mask);
+                    break;
+                }
             }
         }
 #endif

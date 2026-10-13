@@ -15,21 +15,8 @@ public partial struct GCInfo
     {
         var pointerSize = (nuint)System.IntPtr.Size;
         var uintSize = (nuint)sizeof(uint);
-#if REGMASK_BITS_8
-        const nuint regMaskSize = sizeof(byte);
-        const nuint regMaskAlignment = sizeof(byte);
-#elif REGMASK_BITS_16
-        const nuint regMaskSize = sizeof(ushort);
-        const nuint regMaskAlignment = sizeof(ushort);
-#elif REGMASK_BITS_32
-        const nuint regMaskSize = sizeof(uint);
-        const nuint regMaskAlignment = sizeof(uint);
-#elif REGMASK_BITS_64
-        const nuint regMaskSize = sizeof(ulong);
-        const nuint regMaskAlignment = sizeof(ulong);
-#else
-#error Unsupported REGMASK_BITS size
-#endif
+        var regMaskSize = Configuration.REGMASK_BITS_32 ? (nuint)sizeof(uint) : (nuint)sizeof(ulong);
+        var regMaskAlignment = regMaskSize;
 
         var unionAlignment = regMaskAlignment > uintSize ? regMaskAlignment : uintSize;
         var maskPairSize = unchecked(2 * regMaskSize);
@@ -40,9 +27,10 @@ public partial struct GCInfo
 
         var offset = unchecked(alignNativeRegPtrDscOffset(pointerSize, uintSize) + uintSize);
         offset = unchecked(alignNativeRegPtrDscOffset(offset, unionAlignment) + unionSize);
-#if !JIT32_GCENCODER
-        offset = unchecked(offset + (nuint)sizeof(byte));
-#endif
+        if (!Configuration.JIT32_GCENCODER)
+        {
+            offset = unchecked(offset + (nuint)sizeof(byte));
+        }
         offset = unchecked(alignNativeRegPtrDscOffset(offset, sizeof(ushort)) + (nuint)sizeof(ushort));
 
         var structAlignment = pointerSize > unionAlignment ? pointerSize : unionAlignment;

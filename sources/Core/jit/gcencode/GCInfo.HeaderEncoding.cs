@@ -12,9 +12,12 @@ public partial struct GCInfo
 {
     public readonly unsafe void gcInfoBlockHdrSave(GcInfoEncoder gcInfoEncoder, uint methodSize, uint prologSize)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI || JIT32_GCENCODER
-        throw new FatalJitException(CORJIT_SKIPPED, "Modern GC encoding requires Windows AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
+            Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Modern GC encoding requires Windows AMD64.");
+        }
+
         var compiler = Compiler;
 #if DEBUG
         if (compiler.verbose)
@@ -27,7 +30,7 @@ public partial struct GCInfo
 
         if (_codeGen.IsFramePointerUsed)
         {
-            encoder.SetStackBaseRegister((uint)REG_FPBASE);
+            encoder.SetStackBaseRegister((uint)TargetRuntimeMetadata.FramePointerBaseRegister);
         }
         if (compiler.info.compIsVarArgs)
         {
@@ -51,7 +54,7 @@ public partial struct GCInfo
                 var callerSpOffset = compiler.lvaToCallerSPRelativeOffset(offset, _codeGen.IsFramePointerUsed);
                 var patchpoint = compiler.info.compPatchpointInfo;
                 assert(patchpoint is not null);
-                assert(callerSpOffset == patchpoint->GenericContextArgOffset - (2 * REGSIZE_BYTES));
+                assert(callerSpOffset == patchpoint->GenericContextArgOffset - (2 * Configuration.REGSIZE_BYTES));
             }
 #endif
             encoder.SetGenericsInstContextStackSlot(offset, contextType);
@@ -65,7 +68,7 @@ public partial struct GCInfo
             {
                 var callerSpOffset = compiler.lvaToCallerSPRelativeOffset(offset, _codeGen.IsFramePointerUsed, true);
                 assert(callerSpOffset == compiler.info.compPatchpointInfo->KeptAliveThisOffset -
-                    (2 * REGSIZE_BYTES));
+                    (2 * Configuration.REGSIZE_BYTES));
             }
 #endif
             encoder.SetGenericsInstContextStackSlot(offset, GENERIC_CONTEXTPARAM_THIS);
@@ -98,7 +101,6 @@ public partial struct GCInfo
         {
             Compiler.genMethodNCnt = unchecked(Compiler.genMethodNCnt + 1);
         }
-#endif
 #endif
     }
 }

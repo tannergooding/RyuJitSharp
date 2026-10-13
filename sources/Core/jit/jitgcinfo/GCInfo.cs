@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if EMIT_GENERATE_GCINFO && !JIT32_GCENCODER
+#if EMIT_GENERATE_GCINFO
 using System.Collections.Generic;
 #endif
 
@@ -24,12 +24,9 @@ public partial struct GCInfo
         gcCallDescList = null;
         gcCallDescLast = null;
 #if EMIT_GENERATE_GCINFO
-#if JIT32_GCENCODER
         gcEpilogTable = null;
-#else
         _regSlotMap = null;
         _stackSlotMap = null;
-#endif
 #endif
     }
 
@@ -46,11 +43,8 @@ public partial struct GCInfo
     private CallDsc? gcCallDescLast;
 
 #if EMIT_GENERATE_GCINFO
-#if JIT32_GCENCODER
     private unsafe byte* gcEpilogTable;
-#else
     private Dictionary<RegSlotIdKey, uint>? _regSlotMap;
     private Dictionary<StackSlotIdKey, uint>? _stackSlotMap;
-#endif
 #endif
 }

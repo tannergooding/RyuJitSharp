@@ -3,7 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_X86 && JIT32_GCENCODER && DUMP_GC_TABLES
+#if DUMP_GC_TABLES
 namespace RyuJitSharp;
 
 public partial struct GCInfo

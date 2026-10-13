@@ -13,9 +13,7 @@ public partial struct GCInfo
         public nint cdBlock;
         public uint cdOffs;
 
-#if !JIT32_GCENCODER
         public ushort cdCallInstrSize;
-#endif
 
         public ushort cdArgCnt;
 

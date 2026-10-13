@@ -28,9 +28,12 @@ public partial struct GCInfo
     public void gcMakeRegPtrTable(GcInfoEncoder gcInfoEncoder, uint codeSize, uint prologSize,
         MakeRegPtrMode mode, ref uint callCount)
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI || JIT32_GCENCODER
-        throw new FatalJitException(CORJIT_SKIPPED, "Modern GC table encoding requires Windows AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
+            Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Modern GC table encoding requires Windows AMD64.");
+        }
+
         var compiler = Compiler;
         var encoder = new GcInfoEncoderWithLogging(gcInfoEncoder, compiler);
         var noTrackedGCSlots = compiler.opts.MinOpts;
@@ -94,7 +97,7 @@ public partial struct GCInfo
             }
 
             if ((variable.Type == TYP_STRUCT) && variable.HasGCPtr && variable.lvOnFrame &&
-                (variable.lvExactSize >= TARGET_POINTER_SIZE))
+                (variable.lvExactSize >= Configuration.TARGET_POINTER_SIZE))
             {
                 var layout = variable.Layout
                     ?? throw new FatalJitException(CORJIT_SKIPPED, "GC struct local has no layout.");
@@ -104,7 +107,7 @@ public partial struct GCInfo
                     {
                         continue;
                     }
-                    var fieldOffset = slot * TARGET_POINTER_SIZE;
+                    var fieldOffset = slot * Configuration.TARGET_POINTER_SIZE;
                     var offset = unchecked(variable.StackOffset + fieldOffset);
 #if DEBUG
                     if (variable.lvPromoted)
@@ -251,10 +254,8 @@ public partial struct GCInfo
         {
             gcMakeFramelessCallSites(encoder, mode);
         }
-#endif
     }
 
-#if TARGET_AMD64 && WINDOWS_AMD64_ABI && !JIT32_GCENCODER
     private readonly void gcAssignStackSlot(GcInfoEncoderWithLogging encoder, int offset,
         GcSlotFlags flags, GcStackSlotBase stackBase)
     {
@@ -323,7 +324,7 @@ public partial struct GCInfo
             var reg = (uint)BitOperations.TrailingZeroCount(mask);
             var bit = 1UL << (int)reg;
             liveRegs = state == GC_SLOT_DEAD ? liveRegs & ~bit : liveRegs | bit;
-            assert(reg != (uint)REG_SPBASE);
+            assert(reg != (uint)TargetRuntimeMetadata.StackPointerBaseRegister);
             var flags = (byrefs & bit) != 0 ? GC_SLOT_INTERIOR : GC_SLOT_BASE;
             var key = new RegSlotIdKey((ushort)reg, (uint)flags);
             var map = _regSlotMap ?? throw new FatalJitException(CORJIT_SKIPPED, "Register slot map was not initialized.");
@@ -485,8 +486,8 @@ public partial struct GCInfo
             }
             if (item.rpdIsCallInstr())
             {
-                var gcrefs = (ulong)item.rpdCallData.rpdCallGCrefRegs << (int)REG_INT_FIRST;
-                var byrefs = (ulong)item.rpdCallData.rpdCallByrefRegs << (int)REG_INT_FIRST;
+                var gcrefs = (ulong)item.rpdCallData.rpdCallGCrefRegs << (int)TargetRuntimeMetadata.IntegerRegisterFirst;
+                var byrefs = (ulong)item.rpdCallData.rpdCallByrefRegs << (int)TargetRuntimeMetadata.IntegerRegisterFirst;
                 assert((gcrefs & byrefs) == 0);
                 var mask = gcrefs | byrefs;
                 assert(item.rpdOffs >= item.rpdCallInstrSize);
@@ -510,5 +511,4 @@ public partial struct GCInfo
             gcDefineCallSites(encoder, offsets, sizes, total);
         }
     }
-#endif
 }

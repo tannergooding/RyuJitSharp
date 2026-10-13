@@ -14,9 +14,7 @@ public partial struct GCInfo
         {
             cdBlock = 0,
             cdOffs = offset,
-#if !JIT32_GCENCODER
             cdCallInstrSize = instructionSize,
-#endif
             cdGCrefRegs = gcrefRegs,
             cdByrefRegs = byrefRegs,
             cdArgCnt = argCount,

@@ -13,9 +13,12 @@ public partial struct GCInfo
 {
     public void gcMarkFilterVarsPinned()
     {
-#if !TARGET_AMD64 || !WINDOWS_AMD64_ABI
-        throw new FatalJitException(CORJIT_SKIPPED, "GC filter lifetimes require Windows AMD64.");
-#else
+        if (!Configuration.TARGET_AMD64 || !Configuration.WINDOWS_AMD64_ABI ||
+            Configuration.JIT32_GCENCODER)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "GC filter lifetimes require Windows AMD64.");
+        }
+
         var compiler = Compiler;
         assert(compiler.compHndBBtabCount > 0);
         foreach (ref var handler in new EHClauses(compiler))
@@ -153,46 +156,46 @@ public partial struct GCInfo
                 }
             }
         }
-#endif
     }
 
-#if JIT32_GCENCODER
-    private readonly void gcInsertVarPtrDscSplit(varPtrDsc descriptor, varPtrDsc begin)
-#else
     private void gcInsertVarPtrDscSplit(varPtrDsc descriptor, varPtrDsc begin)
-#endif
     {
-#if JIT32_GCENCODER
-        // The JIT32 GC format requires the lifetime list to remain sorted by begin offset.
-        assert(descriptor is not null);
-        assert(begin is not null);
-        assert(descriptor.vpdBegOfs >= begin.vpdBegOfs);
-
-        var current = begin.vpdNext;
-        var insertionPoint = begin;
-
-        while ((current is not null) && (current.vpdBegOfs < descriptor.vpdBegOfs))
+        if (Configuration.JIT32_GCENCODER)
         {
-            insertionPoint = current;
-            current = current.vpdNext;
-        }
+            // The JIT32 GC format requires the lifetime list to remain sorted by begin offset.
+            assert(descriptor is not null);
+            assert(begin is not null);
+            assert(descriptor.vpdBegOfs >= begin.vpdBegOfs);
 
-        descriptor.vpdNext = insertionPoint.vpdNext;
-        insertionPoint.vpdNext = descriptor;
-#else
-        _ = begin;
-        descriptor.vpdNext = gcVarPtrList;
-        gcVarPtrList = descriptor;
-#endif
+            var current = begin.vpdNext;
+            var insertionPoint = begin;
+
+            while ((current is not null) && (current.vpdBegOfs < descriptor.vpdBegOfs))
+            {
+                insertionPoint = current;
+                current = current.vpdNext;
+            }
+
+            descriptor.vpdNext = insertionPoint.vpdNext;
+            insertionPoint.vpdNext = descriptor;
+        }
+        else
+        {
+            _ = begin;
+            descriptor.vpdNext = gcVarPtrList;
+            gcVarPtrList = descriptor;
+        }
     }
 
-#if DEBUG && TARGET_AMD64 && WINDOWS_AMD64_ABI
+#if DEBUG
     private readonly unsafe void gcDumpVarPtrDsc(varPtrDsc descriptor)
     {
         var offset = unchecked((int)(descriptor.vpdVarNum & ~OffsetMask));
         var gcType = (descriptor.vpdVarNum & ByrefOffsetFlag) != 0 ? "byr" : "gcr";
         var pinned = (descriptor.vpdVarNum & PinnedOffsetFlag) != 0 ? "pinned-ptr" : "";
-        var location = Compiler.IsFramePointerUsed ? STR_FPBASE : STR_SPBASE;
+        var location = Compiler.IsFramePointerUsed
+            ? TargetRuntimeMetadata.FramePointerBaseName
+            : TargetRuntimeMetadata.StackPointerBaseName;
         var displacement = offset switch
         {
             < 0 => $"-0x{unchecked((uint)-offset):X2}",
