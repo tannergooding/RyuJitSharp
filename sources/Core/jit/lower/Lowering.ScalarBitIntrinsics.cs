@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private GenTreeHWIntrinsic? TryLowerAndOpToResetLowestSetBit(GenTreeOp andNode)
     {
         assert((andNode.Oper is GT_AND) && varTypeIsIntegral(andNode.Type));
@@ -58,13 +57,11 @@ public sealed partial class Lowering
         }
 
         NamedIntrinsic intrinsic;
-#if TARGET_AMD64
-        if (andNode.Type is TYP_LONG)
+        if (Configuration.TARGET_AMD64 && (andNode.Type is TYP_LONG))
         {
             intrinsic = NI_AVX2_X64_ResetLowestSetBit;
         }
         else
-#endif
         {
             assert(andNode.Type is TYP_INT);
             intrinsic = NI_AVX2_ResetLowestSetBit;
@@ -125,13 +122,11 @@ public sealed partial class Lowering
         }
 
         NamedIntrinsic intrinsic;
-#if TARGET_AMD64
-        if (andNode.Type is TYP_LONG)
+        if (Configuration.TARGET_AMD64 && (andNode.Type is TYP_LONG))
         {
             intrinsic = NI_AVX2_X64_ExtractLowestSetBit;
         }
         else
-#endif
         {
             assert(andNode.Type is TYP_INT);
             intrinsic = NI_AVX2_ExtractLowestSetBit;
@@ -224,13 +219,11 @@ public sealed partial class Lowering
         }
 
         NamedIntrinsic intrinsic;
-#if TARGET_AMD64
-        if (andNode.Type is TYP_LONG)
+        if (Configuration.TARGET_AMD64 && (andNode.Type is TYP_LONG))
         {
             intrinsic = NI_AVX2_X64_ZeroHighBits;
         }
         else
-#endif
         {
             assert(andNode.Type is TYP_INT);
             intrinsic = NI_AVX2_ZeroHighBits;
@@ -373,13 +366,11 @@ public sealed partial class Lowering
         }
 
         NamedIntrinsic intrinsic;
-#if TARGET_AMD64
-        if (xorNode.Type is TYP_LONG)
+        if (Configuration.TARGET_AMD64 && (xorNode.Type is TYP_LONG))
         {
             intrinsic = NI_AVX2_X64_GetMaskUpToLowestSetBit;
         }
         else
-#endif
         {
             assert(xorNode.Type is TYP_INT);
             intrinsic = NI_AVX2_GetMaskUpToLowestSetBit;
@@ -404,5 +395,4 @@ public sealed partial class Lowering
         ContainCheckHWIntrinsic(blsmskNode);
         return blsmskNode;
     }
-#endif
 }

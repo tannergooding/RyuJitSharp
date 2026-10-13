@@ -12,7 +12,11 @@ public sealed partial class Lowering
 {
     private unsafe GenTree? LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Vector Dot multiply/sum lowering is not ported for this target.");
+        }
+
         var intrinsicId = node.HWIntrinsicId;
         var simdBaseType = node.SimdBaseType;
         var simdSize = node.SimdSize;
@@ -147,14 +151,26 @@ public sealed partial class Lowering
         use.ReplaceWith(tmp1);
         BlockRange().Remove(node);
         return LowerNode(tmp1);
-#else
-        throw new NotImplementedException("Non-xarch Dot multiply/sum lowering is not ported.");
-#endif
     }
 
     private unsafe GenTree? LowerHWIntrinsicDot(GenTreeHWIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            if (Configuration.TARGET_RISCV64)
+            {
+                NYI_RISCV64("LowerHWIntrinsicDot");
+                throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic Dot lowering is not ported.");
+            }
+
+            if (Configuration.TARGET_LOONGARCH64)
+            {
+                throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Dot lowering is not ported.");
+            }
+
+            throw new FatalJitException(CORJIT_SKIPPED, "Vector Dot lowering is not ported for this target.");
+        }
+
         var intrinsicId = node.HWIntrinsicId;
         var simdBaseType = node.SimdBaseType;
         var simdSize = node.SimdSize;
@@ -409,13 +425,5 @@ public sealed partial class Lowering
 
         BlockRange().Remove(node);
         return tmp1.Next;
-#elif FEATURE_HW_INTRINSICS && TARGET_RISCV64
-        NYI_RISCV64("LowerHWIntrinsicDot");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic Dot lowering is not ported.");
-#elif TARGET_LOONGARCH64
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Dot lowering is not ported.");
-#else
-        throw new NotImplementedException("Non-xarch vector Dot lowering is not ported.");
-#endif
     }
 }

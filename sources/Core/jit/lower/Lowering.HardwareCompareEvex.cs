@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private GenTree? LowerHWIntrinsicCmpOpEvex(GenTreeHWIntrinsic node, genTreeOps cmpOp,
         var_types baseType, var_types maskBaseType, var_types simdType, byte size,
         GenTree first, GenTree firstMask, GenTree? second, GenCondition condition)
@@ -185,5 +184,4 @@ public sealed partial class Lowering
         }
         return next;
     }
-#endif
 }

@@ -11,7 +11,11 @@ public sealed partial class Lowering
 {
     private GenTree? LowerHWIntrinsicToScalar(GenTreeHWIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Vector ToScalar lowering is not ported for this target.");
+        }
+
         var baseType = node.SimdBaseType;
         var simdSize = node.SimdSize;
         var simdType = Compiler.GetSimdTypeForSize(simdSize);
@@ -72,8 +76,5 @@ public sealed partial class Lowering
 
         ContainCheckHWIntrinsic(node);
         return node.Next;
-#else
-        throw new NotImplementedException("Non-xarch vector-to-scalar lowering is not ported.");
-#endif
     }
 }

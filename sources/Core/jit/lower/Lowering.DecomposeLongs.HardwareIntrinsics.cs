@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if LOWER_DECOMPOSE_LONGS && FEATURE_HW_INTRINSICS
 using System;
 
 namespace RyuJitSharp;
@@ -14,6 +13,13 @@ public sealed partial class Lowering
     {
         private GenTree? DecomposeHWIntrinsic(ref LIR.Use use)
         {
+            if (!Configuration.FEATURE_HW_INTRINSICS)
+            {
+                throw new FatalJitException(
+                    CORJIT_SKIPPED,
+                    "Hardware-intrinsic long decomposition is not available.");
+            }
+
             var tree = use.Def();
             assert(tree.Oper is GT_HWINTRINSIC);
             var node = tree.AsHWIntrinsic();
@@ -175,4 +181,3 @@ public sealed partial class Lowering
         }
     }
 }
-#endif

@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     internal bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic parentNode, GenTree childNode,
         out bool supportsRegOptional)
     {
@@ -32,7 +31,7 @@ public sealed partial class Lowering
         {
             case HW_Category_MemoryLoad:
             {
-                assert(childNode.Type.ActualType is TYP_I_IMPL);
+                assert((childNode.Type.ActualType == TYP_I_IMPL));
                 operandSize = expectedSize;
                 break;
             }
@@ -299,11 +298,7 @@ public sealed partial class Lowering
                 var source = intrinsic.GetOp(1);
                 if (IsInvariantInRange(source, parentNode, intrinsic))
                 {
-#if TARGET_X86
-                    if (source.IsContained && source.Oper is not GT_LONG)
-#else
-                    if (source.IsContained)
-#endif
+                    if (source.IsContained && (!Configuration.TARGET_X86 || source.Oper is not GT_LONG))
                     {
                         return true;
                     }
@@ -398,5 +393,4 @@ public sealed partial class Lowering
             MakeSrcRegOptional(parentNode, childNode);
         }
     }
-#endif
 }

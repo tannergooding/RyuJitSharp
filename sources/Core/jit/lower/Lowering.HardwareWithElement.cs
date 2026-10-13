@@ -11,7 +11,11 @@ public sealed partial class Lowering
 {
     private unsafe GenTree? LowerHWIntrinsicWithElement(GenTreeHWIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Vector WithElement lowering is not ported for this target.");
+        }
+
         var intrinsicId = node.HWIntrinsicId;
         var simdType = node.Type;
         var simdBaseType = node.SimdBaseType;
@@ -193,8 +197,5 @@ public sealed partial class Lowering
         }
 
         return nextNode;
-#else
-        throw new NotImplementedException("Non-xarch vector WithElement lowering is not ported.");
-#endif
     }
 }

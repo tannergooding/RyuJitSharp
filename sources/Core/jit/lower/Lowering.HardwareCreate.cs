@@ -11,7 +11,11 @@ public sealed partial class Lowering
 {
     private unsafe GenTree? LowerHWIntrinsicCreate(GenTreeHWIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Vector Create lowering is not ported for this target.");
+        }
+
         var intrinsicId = node.HWIntrinsicId;
         var simdType = node.Type;
         var simdBaseType = node.SimdBaseType;
@@ -39,14 +43,12 @@ public sealed partial class Lowering
             assert(simdSize is 16 or 32 or 64);
             foreach (var arg in node.Operands)
             {
-#if !TARGET_64BIT
-                if (arg.Oper.IsLong)
+                if (!Configuration.TARGET_64BIT && arg.Oper.IsLong)
                 {
                     BlockRange().Remove(arg.AsOp().Op1);
                     assert(arg.AsOp().Op2 is not null);
                     BlockRange().Remove(arg.AsOp().Op2);
                 }
-#endif
                 BlockRange().Remove(arg);
             }
 
@@ -375,15 +377,5 @@ public sealed partial class Lowering
         }
 
         return LowerNode(node);
-#elif FEATURE_HW_INTRINSICS && TARGET_WASM
-        return LowerHWIntrinsicCreateWasm(node);
-#elif FEATURE_HW_INTRINSICS && TARGET_RISCV64
-        NYI_RISCV64("LowerHWIntrinsicCreate");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic Create lowering is not ported.");
-#elif TARGET_LOONGARCH64
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic Create lowering is not ported.");
-#else
-        throw new NotImplementedException("Non-xarch vector Create lowering is not ported.");
-#endif
     }
 }

@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private bool TryInvertMask(GenTree node, byte simdSize, var_types simdBaseType)
     {
         assert(node.Type is TYP_MASK);
@@ -68,5 +67,4 @@ public sealed partial class Lowering
         }
         return false;
     }
-#endif
 }

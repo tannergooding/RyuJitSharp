@@ -7,9 +7,13 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private void LowerBswapOp(GenTreeUnOp node)
     {
+        if (!Configuration.FEATURE_HW_INTRINSICS || !Configuration.TARGET_XARCH)
+        {
+            return;
+        }
+
         assert(node.Oper is GT_BSWAP or GT_BSWAP16);
         if (!CompilerInstance.opts.OptimizationEnabled ||
             !CompilerInstance.compOpportunisticallyDependsOn(InstructionSet_AVX2))
@@ -24,11 +28,14 @@ public sealed partial class Lowering
             MakeSrcContained(node, operand);
         }
     }
-#endif
 
     private void ContainCheckIntrinsic(GenTreeIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Scalar intrinsic containment is not ported for this target.");
+        }
+
         assert(node.Oper is GT_INTRINSIC);
         if (node.IntrinsicName is NI_System_Math_Ceiling or NI_System_Math_Floor or
             NI_System_Math_Truncate or NI_System_Math_Round or NI_System_Math_Sqrt)
@@ -43,8 +50,5 @@ public sealed partial class Lowering
                 TryMakeSrcContainedOrRegOptional(node, operand);
             }
         }
-#else
-        throw new System.NotImplementedException("Scalar intrinsic containment outside xarch is not ported.");
-#endif
     }
 }

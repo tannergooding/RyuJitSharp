@@ -11,7 +11,11 @@ public sealed partial class Lowering
 {
     private void LowerFusedMultiplyOp(GenTreeHWIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Fused multiply lowering is not ported for this target.");
+        }
+
         assert(node.Operands.Length == 3);
         assert(varTypeIsFloating(node.SimdBaseType));
         var negated = false;
@@ -185,8 +189,5 @@ public sealed partial class Lowering
         }
 
         node.ChangeHWIntrinsicId(intrinsic);
-#else
-        throw new NotImplementedException("Non-xarch fused multiply lowering is not ported.");
-#endif
     }
 }

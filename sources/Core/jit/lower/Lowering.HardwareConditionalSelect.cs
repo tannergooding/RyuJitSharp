@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private GenTree? LowerHWIntrinsicCndSel(GenTreeHWIntrinsic node)
     {
         var compiler = CompilerInstance;
@@ -125,5 +124,4 @@ public sealed partial class Lowering
         LowerRange(firstNewNode, lastNewNode);
         return next;
     }
-#endif
 }

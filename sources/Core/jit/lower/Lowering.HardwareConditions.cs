@@ -11,7 +11,11 @@ public sealed partial class Lowering
 {
     private void LowerHWIntrinsicCC(GenTreeHWIntrinsic node, NamedIntrinsic newIntrinsicId, GenCondition condition)
     {
-#if TARGET_XARCH
+        if (!Configuration.TARGET_XARCH)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware condition-code lowering is not available for this target.");
+        }
+
         var cc = LowerNodeCC(node, condition);
         assert((HWIntrinsicInfo.lookupNumArgs(newIntrinsicId) == 2) || (newIntrinsicId is NI_AVX512_KORTEST));
         node.ChangeHWIntrinsicId(newIntrinsicId);
@@ -73,8 +77,5 @@ public sealed partial class Lowering
             node.SetOp(2, operand);
             cc?.Condition = GenCondition.Swap(cc.Condition);
         }
-#else
-        throw new NotImplementedException("Non-xarch hardware condition-code lowering is not ported.");
-#endif
     }
 }

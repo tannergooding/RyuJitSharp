@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private void ContainHWIntrinsicOperand(GenTreeHWIntrinsic parentNode, GenTree childNode)
     {
         if (childNode is GenTreeHWIntrinsic intrinsic &&
@@ -15,11 +14,8 @@ public sealed partial class Lowering
         {
             var scalar = intrinsic.GetOp(1);
 
-            var decomposedLong = false;
-#if TARGET_X86
             // A decomposed long still needs the vector move represented by CreateScalar.
-            decomposedLong = scalar.Oper is GT_LONG;
-#endif
+            var decomposedLong = Configuration.TARGET_X86 && (scalar.Oper is GT_LONG);
             if (!decomposedLong)
             {
                 var foundUse = BlockRange().TryGetUse(childNode, out var use);
@@ -36,7 +32,7 @@ public sealed partial class Lowering
 
     private void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic node, GenTree addr, uint size)
     {
-        assert(addr.Type.ActualType is TYP_I_IMPL or TYP_BYREF);
+        assert((addr.Type.ActualType is var __targetAliasValue0 && (__targetAliasValue0 == TYP_I_IMPL || __targetAliasValue0 is TYP_BYREF)));
 
         if (((addr.Oper is GT_LCL_ADDR) && IsContainableLclAddr(addr.AsLclFld(), size)) ||
             (addr.Oper.IsCnsIntOrI && addr.AsIntConCommon().FitsInAddrBase(CompilerInstance)))
@@ -64,5 +60,4 @@ public sealed partial class Lowering
             }
         }
     }
-#endif
 }

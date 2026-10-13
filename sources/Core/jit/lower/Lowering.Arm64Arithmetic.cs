@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if TARGET_ARM64
 using System.Numerics;
 
 namespace RyuJitSharp;
@@ -72,17 +71,6 @@ public sealed partial class Lowering
         }
 
         return false;
-    }
-
-    private GenTree? LowerNeg(GenTreeUnOp node)
-    {
-        if (TryLowerNegToMulLongOp(node, out var next))
-        {
-            return next;
-        }
-
-        ContainCheckNeg(node);
-        return node.Next;
     }
 
     private bool TryLowerNegToMulLongOp(GenTreeUnOp op, out GenTree? next)
@@ -277,4 +265,3 @@ public sealed partial class Lowering
         return true;
     }
 }
-#endif

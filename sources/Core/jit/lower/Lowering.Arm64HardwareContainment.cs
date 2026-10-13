@@ -3,14 +3,13 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using System;
 
 namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-    private static bool IsValidConstForMovImm(GenTreeHWIntrinsic node)
+    private static bool IsValidConstForMovImmArm64(GenTreeHWIntrinsic node)
     {
         var id = node.HWIntrinsicId;
         assert((id is NI_Vector_Create or NI_Vector_CreateScalar or NI_Vector_CreateScalarUnsafe or
@@ -34,7 +33,7 @@ public sealed partial class Lowering
         return false;
     }
 
-    private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
+    private void ContainCheckHWIntrinsicArm64(GenTreeHWIntrinsic node)
     {
         var id = node.HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(id);
@@ -173,7 +172,7 @@ public sealed partial class Lowering
             case NI_AdvSimd_Arm64_DuplicateToVector64:
             case NI_AdvSimd_Arm64_DuplicateToVector128:
             {
-                if (IsValidConstForMovImm(node))
+                if (IsValidConstForMovImmArm64(node))
                 {
                     MakeSrcContained(node, node.GetOp(1));
                 }
@@ -370,4 +369,3 @@ public sealed partial class Lowering
         }
     }
 }
-#endif

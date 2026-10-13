@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed partial class Lowering
@@ -163,7 +162,7 @@ public sealed partial class Lowering
             case NI_Sve_ConditionalSelect:
             case NI_Sve_ConditionalSelect_Predicates:
             {
-                return LowerHWIntrinsicCndSel(node);
+                return LowerSveConditionalSelect(node);
             }
 
             case NI_Sve_SetFfr:
@@ -358,4 +357,3 @@ public sealed partial class Lowering
         return node.Next;
     }
 }
-#endif

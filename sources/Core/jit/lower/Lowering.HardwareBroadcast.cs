@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic parentNode, GenTreeVecCon cnsVec)
     {
         assert(!cnsVec.IsAllBitsSet);
@@ -136,5 +135,4 @@ public sealed partial class Lowering
         MakeSrcContained(broadcastNode, constScalar);
         MakeSrcContained(parentNode, broadcastNode);
     }
-#endif
 }

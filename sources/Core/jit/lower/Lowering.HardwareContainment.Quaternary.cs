@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private void ContainCheckHWIntrinsicQuaternary(GenTreeHWIntrinsic node, NamedIntrinsic intrinsicId,
         HWIntrinsicCategory category, bool isContainedImm)
     {
@@ -238,5 +237,4 @@ public sealed partial class Lowering
             }
         }
     }
-#endif
 }

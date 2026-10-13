@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private GenTree? LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic node)
     {
 #if DEBUG
@@ -312,5 +311,4 @@ public sealed partial class Lowering
         node.SetOp(first, node.GetOp(second));
         node.SetOp(second, operand);
     }
-#endif
 }

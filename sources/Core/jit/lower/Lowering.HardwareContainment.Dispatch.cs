@@ -7,8 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
-    private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
+    private void ContainCheckHWIntrinsicXarch(GenTreeHWIntrinsic node)
     {
         var intrinsicId = node.HWIntrinsicId;
         var category = HWIntrinsicInfo.lookupCategory(intrinsicId);
@@ -74,12 +73,50 @@ public sealed partial class Lowering
             }
         }
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS && TARGET_LOONGARCH64
-    private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
+    private void ContainCheckHWIntrinsicLoongArch64(GenTreeHWIntrinsic node)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic containment is not ported.");
     }
-#endif
+
+    private void ContainCheckHWIntrinsic(GenTreeHWIntrinsic node)
+    {
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            return;
+        }
+
+        if (Configuration.TARGET_XARCH)
+        {
+            ContainCheckHWIntrinsicXarch(node);
+            return;
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            ContainCheckHWIntrinsicArm64(node);
+            return;
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            ContainCheckHWIntrinsicWasm(node);
+            return;
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            ContainCheckHWIntrinsicLoongArch64(node);
+            return;
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            ContainCheckHWIntrinsicRiscV64(node);
+            return;
+        }
+
+        // Targets without architecture-specific containment leave the node unchanged.
+        return;
+    }
 }

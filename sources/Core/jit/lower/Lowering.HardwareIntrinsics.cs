@@ -9,17 +9,50 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_LOONGARCH64
-    private bool IsValidConstForMovImm(GenTreeHWIntrinsic node)
+    private bool IsValidConstForMovImmLoongArch64(GenTreeHWIntrinsic node)
     {
         throw new FatalJitException(CORJIT_SKIPPED,
             "LoongArch64 hardware-intrinsic immediate materialization is not ported.");
     }
-#endif
 
     private GenTree? LowerHWIntrinsic(GenTreeHWIntrinsic node)
     {
-#if TARGET_XARCH
+        if (!Configuration.FEATURE_HW_INTRINSICS)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not available.");
+        }
+
+        if (Configuration.TARGET_XARCH)
+        {
+            return LowerHWIntrinsicXarch(node);
+        }
+
+        if (Configuration.TARGET_ARM64)
+        {
+            return LowerHWIntrinsicArm64(node);
+        }
+
+        if (Configuration.TARGET_WASM)
+        {
+            return LowerHWIntrinsicWasm(node);
+        }
+
+        if (Configuration.TARGET_LOONGARCH64)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
+        }
+
+        if (Configuration.TARGET_RISCV64)
+        {
+            NYI_RISCV64("LowerHWIntrinsic");
+            throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic lowering is not ported.");
+        }
+
+        throw new FatalJitException(CORJIT_SKIPPED, "Hardware-intrinsic lowering is not ported for this target.");
+    }
+
+    private GenTree? LowerHWIntrinsicXarch(GenTreeHWIntrinsic node)
+    {
         if (node.Type is TYP_SIMD12)
         {
             node.Type = TYP_SIMD16;
@@ -279,11 +312,11 @@ public sealed partial class Lowering
             }
             case NI_Vector_op_Equality:
             {
-                return LowerHWIntrinsicCmpOp(node, GT_EQ);
+                return LowerHWIntrinsicCmpOpXarch(node, GT_EQ);
             }
             case NI_Vector_op_Inequality:
             {
-                return LowerHWIntrinsicCmpOp(node, GT_NE);
+                return LowerHWIntrinsicCmpOpXarch(node, GT_NE);
             }
             case NI_AVX512_Fixup:
             case NI_AVX512_FixupScalar:
@@ -813,17 +846,5 @@ public sealed partial class Lowering
 
         ContainCheckHWIntrinsic(node);
         return node.Next;
-#elif TARGET_ARM64
-        return LowerHWIntrinsicArm64(node);
-#elif FEATURE_HW_INTRINSICS && TARGET_WASM
-        return LowerHWIntrinsicWasm(node);
-#elif TARGET_LOONGARCH64
-        throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic lowering is not ported.");
-#elif FEATURE_HW_INTRINSICS && TARGET_RISCV64
-        NYI_RISCV64("LowerHWIntrinsic");
-        throw new FatalJitException(CORJIT_SKIPPED, "RISC-V64 hardware-intrinsic lowering is not ported.");
-#else
-        throw new NotImplementedException("Hardware-intrinsic lowering outside xarch and ARM64 is not ported.");
-#endif
     }
 }

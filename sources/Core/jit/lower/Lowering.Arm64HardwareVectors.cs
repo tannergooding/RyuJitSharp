@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 using System;
 
 namespace RyuJitSharp;
@@ -29,7 +28,7 @@ public sealed partial class Lowering
             id, baseType, size, node.Operands, ref value);
         var scalar = HWIntrinsicInfo.IsVectorCreateScalar(id);
         var count = node.Operands.Length;
-        if (constant && (count == 1) && IsValidConstForMovImm(node))
+        if (constant && (count == 1) && IsValidConstForMovImmArm64(node))
         {
             constant = false;
         }
@@ -285,4 +284,3 @@ public sealed partial class Lowering
         return current.Next;
     }
 }
-#endif

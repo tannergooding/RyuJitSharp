@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if FEATURE_HW_INTRINSICS && TARGET_ARM64
 namespace RyuJitSharp;
 
 public sealed partial class Lowering
@@ -52,7 +51,7 @@ public sealed partial class Lowering
         return vector.Next;
     }
 
-    private GenTree? LowerHWIntrinsicCndSel(GenTreeHWIntrinsic node)
+    private GenTree? LowerSveConditionalSelect(GenTreeHWIntrinsic node)
     {
         var id = node.HWIntrinsicId;
         assert(HWIntrinsicInfo.IsSveConditionalSelect(id));
@@ -246,4 +245,3 @@ public sealed partial class Lowering
         return canContain;
     }
 }
-#endif

@@ -7,8 +7,7 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
-    private GenTree? LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic node, genTreeOps cmpOp)
+    private GenTree? LowerHWIntrinsicCmpOpXarch(GenTreeHWIntrinsic node, genTreeOps cmpOp)
     {
         var intrinsicId = node.HWIntrinsicId;
         var baseType = node.SimdBaseType;
@@ -176,12 +175,9 @@ public sealed partial class Lowering
         compare.IsUnusedValue = false;
         return LowerNode(compare);
     }
-#endif
 
-#if FEATURE_HW_INTRINSICS && TARGET_LOONGARCH64
-    private GenTree? LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic node, genTreeOps cmpOp)
+    private GenTree? LowerHWIntrinsicCmpOpLoongArch64(GenTreeHWIntrinsic node, genTreeOps cmpOp)
     {
         throw new FatalJitException(CORJIT_SKIPPED, "LoongArch64 hardware-intrinsic comparisons are not ported.");
     }
-#endif
 }

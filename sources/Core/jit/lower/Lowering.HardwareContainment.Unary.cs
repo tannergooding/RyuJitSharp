@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if FEATURE_HW_INTRINSICS && TARGET_XARCH
     private void ContainCheckHWIntrinsicUnary(GenTreeHWIntrinsic node, NamedIntrinsic intrinsicId,
         HWIntrinsicCategory category, var_types simdBaseType, uint simdSize)
     {
@@ -86,12 +85,10 @@ public sealed partial class Lowering
                             op1 is GenTreeHWIntrinsic create &&
                             create.HWIntrinsicId is NI_Vector_CreateScalar or NI_Vector_CreateScalarUnsafe)
                         {
-#if TARGET_X86
-                            if (create.GetOp(1).Oper is GT_LONG)
+                            if (Configuration.TARGET_X86 && create.GetOp(1).Oper is GT_LONG)
                             {
                                 return;
                             }
-#endif
                             node.GetOpRef(1) = create.GetOp(1);
                             BlockRange().Remove(create);
                             op1 = node.GetOp(1);
@@ -101,9 +98,7 @@ public sealed partial class Lowering
                                 CompilerInstance.opts.Tier0OptimizationEnabled &&
                                 !varTypeIsFloating(cast.CastType) &&
                                 !varTypeIsFloating(cast.CastOp.Type) &&
-#if TARGET_X86
-                                cast.CastOp.Oper is not GT_LONG &&
-#endif
+                                (!Configuration.TARGET_X86 || cast.CastOp.Oper is not GT_LONG) &&
                                 cast.CastType.Size >= simdBaseType.Size &&
                                 cast.CastOp.Type.Size >= simdBaseType.Size)
                             {
@@ -152,11 +147,10 @@ public sealed partial class Lowering
                         return;
                     }
 
-#if TARGET_X86
                     case NI_Vector_CreateScalar:
                     case NI_Vector_CreateScalarUnsafe:
                     {
-                        if (op1.Oper is GT_LONG)
+                        if (Configuration.TARGET_X86 && (op1.Oper is GT_LONG))
                         {
                             assert(varTypeIsLong(simdBaseType));
                             foreach (var longOp in op1.Operands)
@@ -181,13 +175,12 @@ public sealed partial class Lowering
 
                     case NI_Vector_ToScalar:
                     {
-                        if (varTypeIsLong(simdBaseType))
+                        if (Configuration.TARGET_X86 && varTypeIsLong(simdBaseType))
                         {
                             return;
                         }
                         break;
                     }
-#endif
                 }
 
                 assert(!node.IsMemoryLoad());
@@ -201,5 +194,4 @@ public sealed partial class Lowering
             }
         }
     }
-#endif
 }
