@@ -374,18 +374,14 @@ public sealed partial class RangeCheck
 
             if (!asserted.IsValid())
             {
-#if DEBUG
                 JITDUMP($"assertedRange is invalid: [{asserted}] - bail out\n");
-#endif
                 return false;
             }
 
             var copy = current;
             copy.LowerLimit = TightenLimit(asserted.LowerLimit, copy.LowerLimit, preferredBound, true);
             copy.UpperLimit = TightenLimit(asserted.UpperLimit, copy.UpperLimit, preferredBound, false);
-#if DEBUG
             JITDUMP($"Tightening pRange: [{current}] with assertedRange: [{asserted}] into [{copy}]\n");
-#endif
             if (!copy.IsValid())
             {
                 JITDUMP("invalid range after tightening\n");

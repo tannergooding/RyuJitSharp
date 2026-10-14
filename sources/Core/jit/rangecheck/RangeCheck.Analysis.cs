@@ -38,9 +38,7 @@ public sealed partial class RangeCheck
             return false;
         }
 
-#if DEBUG
         JITDUMP($"Range value {computed}\n");
-#endif
         _searchPath.Clear();
         Widen(block, tree, ref computed);
         if (computed.UpperLimit.IsUnknown || computed.LowerLimit.IsUnknown)
@@ -209,13 +207,9 @@ public sealed partial class RangeCheck
 
                 assert(!argRange.LowerLimit.IsUndef && !argRange.UpperLimit.IsUndef);
                 MergeAssertion(block, arg, ref argRange);
-#if DEBUG
                 JITDUMP($"Merging ranges {result} {argRange}:");
-#endif
                 result = RangeOps.Merge(result, argRange, monotonicallyIncreasing);
-#if DEBUG
                 JITDUMP($"{result}\n");
-#endif
             }
         }
         else if (tree.Oper is GT_COMMA)
@@ -299,14 +293,10 @@ public sealed partial class RangeCheck
             GT_UMOD => RangeOps.UnsignedMod(leftRange, rightRange),
             _ => new(new(LimitType.Unknown)),
         };
-#if DEBUG
         JITDUMP($"BinOp {leftRange} {binary.Oper.Name} {rightRange} = {result}\n");
-#endif
         if (!result.IsValid())
         {
-#if DEBUG
             JITDUMP($"BinOp range is invalid: {result}\n");
-#endif
             return new(new(LimitType.Unknown));
         }
 
