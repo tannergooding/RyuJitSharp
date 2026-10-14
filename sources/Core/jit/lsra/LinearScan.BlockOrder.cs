@@ -101,12 +101,15 @@ public sealed partial class LinearScan
 
         _blockSequencingDone = true;
 
-#if DEBUG
-        foreach (var block in _compiler.Blocks)
+        if (Configuration.DEBUG)
         {
-            assert(isBlockVisited(block));
+            foreach (var block in _compiler.Blocks)
+            {
+                assert(isBlockVisited(block));
+            }
         }
 
+#if DEBUG
         JITDUMP("Final LSRA Block Sequence:\n");
         for (var block = startBlockSequence(); block is not null; block = moveToNextBlock())
         {

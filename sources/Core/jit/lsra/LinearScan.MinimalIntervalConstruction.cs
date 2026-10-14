@@ -248,12 +248,15 @@ public sealed partial class LinearScan
             _actualRegistersMask = new regMaskTP(~SRBM_NONE);
         }
 
-#if DEBUG
-        foreach (var block in _compiler.Blocks)
+        if (Configuration.DEBUG)
         {
-            assert(isBlockVisited(block));
+            foreach (var block in _compiler.Blocks)
+            {
+                assert(isBlockVisited(block));
+            }
         }
 
+#if DEBUG
         if (VERBOSE)
         {
             dumpLsraIntervals("BEFORE VALIDATING INTERVALS");
