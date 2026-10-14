@@ -12064,10 +12064,14 @@ public partial class Compiler
     /// </remarks>
     public void impImportLeave(BasicBlock block)
     {
+        if (Configuration.DEBUG && verbose)
+        {
+            jitprintf($"\nBefore import CEE_LEAVE in {FMT_BB(block.bbNum)} (targeting {FMT_BB(block.Target.bbNum)}):\n");
+        }
+
 #if DEBUG
         if (verbose)
         {
-            jitprintf($"\nBefore import CEE_LEAVE in {FMT_BB(block.bbNum)} (targeting {FMT_BB(block.Target.bbNum)}):\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
@@ -12117,12 +12121,10 @@ public partial class Compiler
                     step.Kind = BBJ_EHCATCHRET; // convert the BBJ_LEAVE to BBJ_EHCATCHRET
                     stepType = ST_Catch;
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"impImportLeave - jumping out of a catch (EH#{XTnum}), convert block {FMT_BB(step.bbNum)} to BBJ_EHCATCHRET block\n");
                     }
-#endif
                 }
                 else
                 {
@@ -12152,12 +12154,10 @@ public partial class Compiler
                     step = exitBlock;
                     stepType = ST_Catch;
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"impImportLeave - jumping out of a catch (EH#{XTnum}), new BBJ_EHCATCHRET block {FMT_BB(exitBlock.bbNum)}\n");
                     }
-#endif
                 }
             }
             else if (HBtab.HasFinallyHandler && jitIsBetween(blkAddr, tryBeg, tryEnd) && !jitIsBetween(jmpAddr, tryBeg, tryEnd))
@@ -12189,12 +12189,10 @@ public partial class Compiler
                     var newEdge = fgAddRefPred(HBtab.ebdHndBeg, callBlock);
                     callBlock.SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"impImportLeave - jumping out of a finally-protected try (EH#{XTnum}), convert block {FMT_BB(block.bbNum)} to BBJ_ALWAYS, add BBJ_CALLFINALLY block {FMT_BB(callBlock.bbNum)}\n");
                     }
-#endif
                 }
                 else
                 {
@@ -12236,12 +12234,10 @@ public partial class Compiler
                         step2.inheritWeight(block);
                         step2.SetFlags(BBF_IMPORTED);
 
-#if DEBUG
-                        if (verbose)
+                        if (Configuration.DEBUG && verbose)
                         {
                             jitprintf($"impImportLeave - jumping out of a finally-protected try (EH#{XTnum}), step block is BBJ_EHCATCHRET ({FMT_BB(step.bbNum)}), new BBJ_ALWAYS step-step block {FMT_BB(step2.bbNum)}\n");
                         }
-#endif
 
                         step = step2;
                         assert(stepType == ST_Catch); // Leave it as catch type for now.
@@ -12277,12 +12273,10 @@ public partial class Compiler
                         callBlock.SetKindAndTargetEdge(BBJ_CALLFINALLY, newEdge);
                     }
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"impImportLeave - jumping out of a finally-protected try (EH#{XTnum}), new BBJ_CALLFINALLY block {FMT_BB(callBlock.bbNum)}\n");
                     }
-#endif
                 }
 
                 // callBlock should be set up at this point
@@ -12296,12 +12290,10 @@ public partial class Compiler
                 step.inheritWeight(block);
                 step.SetFlags(BBF_IMPORTED);
 
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"impImportLeave - jumping out of a finally-protected try (EH#{XTnum}), created step (BBJ_CALLFINALLYRET) block {FMT_BB(step.bbNum)}\n");
                 }
-#endif
             }
             else if (HBtab.HasCatchHandler && jitIsBetween(blkAddr, tryBeg, tryEnd) && !jitIsBetween(jmpAddr, tryBeg, tryEnd))
             {
@@ -12376,8 +12368,7 @@ public partial class Compiler
                     catchStep.inheritWeight(block);
                     catchStep.SetFlags(BBF_IMPORTED);
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         if (stepType is ST_FinallyReturn)
                         {
@@ -12389,7 +12380,6 @@ public partial class Compiler
                             jitprintf($"impImportLeave - return from catch jumping out of a catch-protected try (EH#{XTnum}), new BBJ_ALWAYS block {FMT_BB(catchStep.bbNum)}\n");
                         }
                     }
-#endif
 
                     // This block is the new step.
                     step = catchStep;
@@ -12403,12 +12393,10 @@ public partial class Compiler
             // convert the BBJ_LEAVE to a BBJ_ALWAYS
             block.Kind = BBJ_ALWAYS;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"impImportLeave - no enclosing finally-protected try blocks or catch handlers; convert CEE_LEAVE block {FMT_BB(block.bbNum)} to BBJ_ALWAYS\n");
             }
-#endif
         }
         else
         {
@@ -12425,12 +12413,10 @@ public partial class Compiler
                 step.TargetEdge = newEdge;
             }
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"impImportLeave - final destination of step blocks set to {FMT_BB(leaveTarget.bbNum)}\n");
             }
-#endif
 
             // Queue up the jump target for importing
 
@@ -12439,10 +12425,16 @@ public partial class Compiler
 
 #if DEBUG
         fgVerifyHandlerTab();
+#endif
 
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\nAfter import CEE_LEAVE:\n");
+        }
+
+#if DEBUG
+        if (verbose)
+        {
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
