@@ -252,13 +252,11 @@ public partial class Compiler
 
         if (optCSECandidateCount == MAX_CSE_CNT)
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("Exceeded the MAX_CSE_CNT, not using tree:\n");
                 gtDispTree(tree);
             }
-#endif
             return 0;
         }
 
@@ -269,8 +267,7 @@ public partial class Compiler
         tree._cseNum = checked((sbyte)cseIndex);
         descriptor.ComputeNumLocals(this);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\nCandidate {FMT_CSE(cseIndex)}, key=");
 
@@ -288,7 +285,6 @@ public partial class Compiler
             jitprintf($" in {FMT_BB(compCurBB.bbNum)}, [cost={tree.CostEx,2}, size={tree.CostSz,2}]: \n");
             gtDispTree(tree);
         }
-#endif
         return cseIndex;
     }
 
