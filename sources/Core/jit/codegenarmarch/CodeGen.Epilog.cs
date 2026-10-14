@@ -13,12 +13,10 @@ public sealed partial class CodeGen
 {
     private unsafe void genFnEpilogArmArch(BasicBlock block)
     {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFnEpilog()\n");
         }
-#endif
 
         VarSetOps.Assign(_compiler, ref GCInfo.gcVarPtrSetCur, Emitter.InitGCrefVars);
         GCInfo.gcRegGCrefSetCur = Emitter.InitGCrefRegs;
