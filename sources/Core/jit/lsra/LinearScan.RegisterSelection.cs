@@ -536,24 +536,20 @@ public sealed partial class LinearScan
         private void try_FREE()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             _found = applySelection(RegisterScore.FREE, _freeCandidates);
         }
 
         private void try_CONST_AVAILABLE()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             if (CurrentInterval.isConstant && RefTypeIsDef(CurrentRefPosition.refType))
             {
                 var newCandidates = _candidates & _matchingConstants;
@@ -569,12 +565,10 @@ public sealed partial class LinearScan
         private void try_THIS_ASSIGNED()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             if (CurrentInterval.assignedReg is not null)
             {
                 _found = applySelection(RegisterScore.THIS_ASSIGNED, _freeCandidates & _preferences & _prevRegBit);
@@ -584,12 +578,10 @@ public sealed partial class LinearScan
         private void try_COVERS()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             calculateCoversSets();
             _found = applySelection(RegisterScore.COVERS, _coversSet & _preferenceSet);
         }
@@ -597,80 +589,80 @@ public sealed partial class LinearScan
         private void try_OWN_PREFERENCE()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG)
             {
-                return;
-            }
+                if (_freeCandidates == SRBM_NONE)
+                {
+                    return;
+                }
 
-            calculateCoversSets();
-#endif
+                calculateCoversSets();
+            }
             _found = applySelection(RegisterScore.OWN_PREFERENCE, _preferenceSet & _freeCandidates);
         }
 
         private void try_COVERS_RELATED()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG)
             {
-                return;
-            }
+                if (_freeCandidates == SRBM_NONE)
+                {
+                    return;
+                }
 
-            calculateCoversSets();
-#endif
+                calculateCoversSets();
+            }
             _found = applySelection(RegisterScore.COVERS_RELATED, _coversRelatedSet & _freeCandidates);
         }
 
         private void try_RELATED_PREFERENCE()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             _found = applySelection(RegisterScore.RELATED_PREFERENCE, _relatedPreferences & _freeCandidates);
         }
 
         private void try_CALLER_CALLEE()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             _found = applySelection(RegisterScore.CALLER_CALLEE, _callerCalleePrefs & _freeCandidates);
         }
 
         private void try_UNASSIGNED()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG)
             {
-                return;
-            }
+                if (_freeCandidates == SRBM_NONE)
+                {
+                    return;
+                }
 
-            calculateCoversSets();
-#endif
+                calculateCoversSets();
+            }
             _found = applySelection(RegisterScore.UNASSIGNED, _unassignedSet);
         }
 
         private void try_COVERS_FULL()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG)
             {
-                return;
-            }
+                if (_freeCandidates == SRBM_NONE)
+                {
+                    return;
+                }
 
-            calculateCoversSets();
-#endif
+                calculateCoversSets();
+            }
             var newCandidates = _candidates & _coversFullSet & _freeCandidates;
             if (newCandidates != SRBM_NONE)
             {
@@ -683,12 +675,10 @@ public sealed partial class LinearScan
         private void try_BEST_FIT()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             var bestFitSet = SRBM_NONE;
             var bestFitLocation = _coversFullApplied ? MaxLocation : MinLocation;
             for (var bestFitCandidates = _candidates; bestFitCandidates != SRBM_NONE;)
@@ -730,12 +720,10 @@ public sealed partial class LinearScan
 
         private void try_IS_PREV_REG()
         {
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             if ((CurrentInterval.assignedReg is not null) && _coversFullApplied)
             {
                 _found = applySingleRegSelection(RegisterScore.IS_PREV_REG, _prevRegBit);
@@ -745,12 +733,10 @@ public sealed partial class LinearScan
         private void try_REG_ORDER()
         {
             assert(!_found);
-#if DEBUG
-            if (_freeCandidates == SRBM_NONE)
+            if (Configuration.DEBUG && (_freeCandidates == SRBM_NONE))
             {
                 return;
             }
-#endif
             var lowestRegOrder = uint.MaxValue;
             var lowestRegOrderBit = SRBM_NONE;
             for (var regOrderCandidates = _candidates; regOrderCandidates != SRBM_NONE;)
