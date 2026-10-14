@@ -17,12 +17,10 @@ public sealed partial class CodeGen
             return;
         }
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genHomeRegisterParams()\n");
         }
-#endif
         if (_calleeRegArgMaskLiveIn.IsEmpty)
         {
             return;
@@ -210,12 +208,10 @@ public sealed partial class CodeGen
 
     public void genEnregisterIncomingStackArgs()
     {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genEnregisterIncomingStackArgs()\n");
         }
-#endif
         assert(!_compiler.opts.IsOSR);
         assert(Emitter.emitGeneratingPrologOrFuncletProlog());
         assert(_compiler.fgFirstBB is not null);

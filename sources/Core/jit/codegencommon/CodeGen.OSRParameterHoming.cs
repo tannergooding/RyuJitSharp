@@ -76,13 +76,11 @@ public sealed partial class CodeGen
                     offset += genSPtoFPdelta;
                 }
 
-#if DEBUG
-                if (_verbose)
+                if (Configuration.DEBUG && _verbose)
                 {
                     jitprintf($"---OSR--- V{varNum:D2} (reg) old rbp offset {tier0Offset} old frame " +
                         $"{originalFrameSize} this frame sp-fp {genSPtoFPdelta} new offset {offset} (0x{offset:x2})\n");
                 }
-#endif
                 Emitter.emitIns_R_AR(ins_Load(localType), size, local.RegNum, genFramePointerReg(), offset);
             }
             else
