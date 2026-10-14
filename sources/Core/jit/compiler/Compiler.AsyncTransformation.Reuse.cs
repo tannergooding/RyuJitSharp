@@ -205,9 +205,7 @@ public partial class Compiler
                     var node = currentNodes[i];
                     if (!node.Oper.IsAnyLocal && !node.IsInvariant)
                     {
-#if DEBUG
                         JITDUMP($"    No; {kind} argument is too complex\n");
-#endif
                         return false;
                     }
 
