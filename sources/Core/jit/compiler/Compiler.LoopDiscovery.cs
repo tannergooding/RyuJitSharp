@@ -29,12 +29,10 @@ public partial class Compiler
 
     public PhaseStatus optFindLoopsPhase()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("*************** In optFindLoopsPhase()\n");
         }
-#endif
         assert(_dfsTree is not null);
         optFindLoops();
         Metrics.LoopsFoundDuringOpts = _loops!.NumLoops;

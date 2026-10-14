@@ -73,12 +73,10 @@ public partial class Compiler
         {
             assert(anyIRchange);
             Metrics.LoopsUnrolled += unrollCount;
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\nFinished unrolling {unrollCount} loops in {passes} passes\n");
             }
-#endif
             _ = fgDfsBlocksAndRemove();
             assert(_dfsTree is not null);
             _loops = FlowGraphNaturalLoops.Find(_dfsTree);

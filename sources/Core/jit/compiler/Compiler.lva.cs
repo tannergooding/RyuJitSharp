@@ -2622,12 +2622,10 @@ public partial class Compiler
             if (!Configuration.TARGET_64BIT &&
                 (info.compCompHnd->getClassAlignmentRequirement(layout.ClassHandle, Configuration.TARGET_X86) == 8))
             {
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"Marking struct in V{varNum:D2} with double align flag\n");
                 }
-#endif
                 varDsc.lvStructDoubleAlign = true;
             }
 

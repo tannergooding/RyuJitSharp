@@ -12819,12 +12819,10 @@ public partial class Compiler
         var newEdge = fgAddRefPred(genReturnBB, block);
         block.SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Synchronized method - convert block {FMT_BB(block.bbNum)} to BBJ_ALWAYS [targets {FMT_BB(block.Target.bbNum)}]\n");
         }
-#endif
     }
 
     public unsafe void fgAddReversePInvokeEnterExit()

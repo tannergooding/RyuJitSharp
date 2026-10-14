@@ -89,12 +89,10 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\n{message} Block {FMT_BB(block.bbNum)} becomes a throw block.\n");
             }
-#endif
             fgRemoveRestOfBlock = false;
         }
 

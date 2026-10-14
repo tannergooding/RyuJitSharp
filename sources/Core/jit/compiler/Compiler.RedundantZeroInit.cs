@@ -12,12 +12,10 @@ public partial class Compiler
 {
     public void optRemoveRedundantZeroInits()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("*************** In optRemoveRedundantZeroInits()\n");
         }
-#endif
 
         var refCounts = new Dictionary<int, uint>();
         var bitVecTraits = new BitVecTraits(this, lvaCount);

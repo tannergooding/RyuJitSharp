@@ -343,12 +343,10 @@ public partial class Compiler
 
     public PhaseStatus optOptimizeBools()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("*************** In optOptimizeBools()\n");
         }
-#endif
         var changedCount = 0;
         var passes = 0;
         var stress = false;
