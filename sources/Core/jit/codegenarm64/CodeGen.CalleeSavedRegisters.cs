@@ -50,8 +50,7 @@ public sealed partial class CodeGen
             int offset;
             var saveFloat = pushRegs & new regMaskTP(SRBM_ALLFLOAT_ARM64);
             var saveInt = pushRegs & ~saveFloat;
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("Save float regs: ");
                 dspRegMask(saveFloat);
@@ -60,7 +59,6 @@ public sealed partial class CodeGen
                 dspRegMask(saveInt);
                 jitprintf("\n");
             }
-#endif
             if (JitConfig.JitPacEnabled != 0)
             {
                 genEmitPacInPrologArm64Dependency();
