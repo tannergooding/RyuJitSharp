@@ -393,25 +393,26 @@ public sealed partial class WasmRegAlloc
         {
             var data = GetFuncletData(index);
 
-#if DEBUG
-            if (index == ROOT_FUNC_IDX)
+            if (Configuration.DEBUG)
             {
-                if (data.StackPointerReg != REG_NA)
+                if (index == ROOT_FUNC_IDX)
                 {
-                    JITDUMP($"Allocated function SP into: {data.StackPointerReg.Name}\n");
-                }
+                    if (data.StackPointerReg != REG_NA)
+                    {
+                        JITDUMP($"Allocated function SP into: {data.StackPointerReg.Name}\n");
+                    }
 
-                if (data.FramePointerReg != REG_NA)
+                    if (data.FramePointerReg != REG_NA)
+                    {
+                        JITDUMP($"Allocated function FP into: {data.FramePointerReg.Name}\n");
+                    }
+                }
+                else
                 {
-                    JITDUMP($"Allocated function FP into: {data.FramePointerReg.Name}\n");
+                    JITDUMP($"Allocated funclet {index} SP into {data.StackPointerReg.Name}\n");
+                    JITDUMP($"Allocated funclet {index} FP into {data.FramePointerReg.Name}\n");
                 }
             }
-            else
-            {
-                JITDUMP($"Allocated funclet {index} SP into {data.StackPointerReg.Name}\n");
-                JITDUMP($"Allocated funclet {index} FP into {data.FramePointerReg.Name}\n");
-            }
-#endif
 
             if (data.StackPointerReg != REG_NA)
             {

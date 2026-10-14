@@ -134,15 +134,17 @@ public sealed partial class LinearScan
             }
         }
 
-#if DEBUG
-        var insertion = insertionPoint is null ? "bottom" : "top";
-        JITDUMP($"   {FMT_BB(block.bbNum)} {insertion}");
-        if (toBlock is not null)
+        if (Configuration.DEBUG)
         {
-            JITDUMP($" ({FMT_BB(fromBlock.bbNum)}->{FMT_BB(toBlock.bbNum)})");
+            var insertion = insertionPoint is null ? "bottom" : "top";
+            JITDUMP($"   {FMT_BB(block.bbNum)} {insertion}");
+            if (toBlock is not null)
+            {
+                JITDUMP($" ({FMT_BB(fromBlock.bbNum)}->{FMT_BB(toBlock.bbNum)})");
+            }
+
+            JITDUMP($": move V{interval.varNum:D2} from {fromReg.Name} to {toReg.Name} ({reason})\n");
         }
-        JITDUMP($": move V{interval.varNum:D2} from {fromReg.Name} to {toReg.Name} ({reason})\n");
-#endif
         noway_assert(!block.isBBCallFinallyPairTail);
         insertMove(block, insertionPoint, interval.varNum, fromReg, toReg);
         assert((fromReg == REG_STK || toReg == REG_STK)
