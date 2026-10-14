@@ -130,15 +130,13 @@ public partial class Emitter
             id.idHasShift(false);
         }
 
-#if DEBUG
-        if (ins is INS_mov or INS_movn)
+        if (Configuration.DEBUG && (ins is INS_mov or INS_movn))
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
             debugInfo.idMemCookie = 0;
             debugInfo.idFlags = GTF_EMPTY;
         }
-#endif
         dispIns(id);
         appendToCurIG(id);
     }
@@ -155,12 +153,13 @@ public partial class Emitter
         id.idInsFmt(IF_DI_1B);
         id.idInsOpt(INS_OPTS_LSL);
         id.idReg1(reg);
-#if DEBUG
-        var debugInfo = id.idDebugOnlyInfo();
-        assert(debugInfo is not null);
-        debugInfo.idFlags = GTF_EMPTY;
-        debugInfo.idMemCookie = 0;
-#endif
+        if (Configuration.DEBUG)
+        {
+            var debugInfo = id.idDebugOnlyInfo();
+            assert(debugInfo is not null);
+            debugInfo.idFlags = GTF_EMPTY;
+            debugInfo.idMemCookie = 0;
+        }
 
         dispIns(id);
         appendToCurIG(id);
