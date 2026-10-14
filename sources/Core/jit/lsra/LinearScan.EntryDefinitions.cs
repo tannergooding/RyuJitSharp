@@ -43,12 +43,13 @@ public sealed partial class LinearScan
     private void insertZeroInitRefPositions()
     {
         assert(_enregisterLocalVars);
-#if DEBUG
-        assert(_compiler.fgFirstBB is not null);
-        var expectedLiveVariables = VarSetOps.Intersection(
-            _compiler, _registerCandidateVars, _compiler.fgFirstBB.bbLiveIn);
-        assert(VarSetOps.Equal(_compiler, _currentLiveVariables, expectedLiveVariables));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler.fgFirstBB is not null);
+            var expectedLiveVariables = VarSetOps.Intersection(
+                _compiler, _registerCandidateVars, _compiler.fgFirstBB.bbLiveIn);
+            assert(VarSetOps.Equal(_compiler, _currentLiveVariables, expectedLiveVariables));
+        }
 
         _ = VarSetOps.VisitBits(_compiler, _currentLiveVariables, variableIndex =>
         {
