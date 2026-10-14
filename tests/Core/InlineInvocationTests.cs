@@ -198,8 +198,11 @@ internal static unsafe class InlineInvocationTests
                 Assert.That(statement.RootNode.Oper, Is.EqualTo(returnsValue ? GT_NOP : GT_CALL));
                 Assert.That(placeholder.SubstExpr, Is.SameAs(returnsValue ? call : null));
                 Assert.That(placeholder.SubstBB, Is.SameAs(returnsValue ? compiler.compCurBB : null));
+                if (TestConfiguration.IsDebug)
+                {
+                    Assert.That(call.WasInlineCandidate, Is.EqualTo(!guardedOnly));
+                }
 #if DEBUG
-                Assert.That(call.WasInlineCandidate, Is.EqualTo(!guardedOnly));
                 var failedContext = candidate.inlinersContext?.Child;
                 Assert.That(failedContext is not null, Is.EqualTo(!guardedOnly));
 

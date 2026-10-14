@@ -796,6 +796,12 @@ public sealed class GenTreeCall : GenTree
             _callDebugFlags = (_callDebugFlags & ~GTF_CALL_MD_WAS_CANDIDATE) | (value ? GTF_CALL_MD_WAS_CANDIDATE : 0);
         }
     }
+#else
+    public bool WasInlineCandidate
+    {
+        get => throw new System.InvalidOperationException("Inline-candidate history is only available in Debug builds.");
+        set => throw new System.InvalidOperationException("Inline-candidate history is only available in Debug builds.");
+    }
 #endif
 
     /// <summary>Record a guarded devirtualization (GDV) candidate info for this call.</summary>
