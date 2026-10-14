@@ -10,7 +10,7 @@
   "checkpoint": {
     "csharpBaselineCommit": "a305a61e3d6e9b1eabc4abcd4273b1b655979285",
     "stage": "parity-validation",
-    "nextAction": "Review and commit the scoped Compiler.fg.cs verbose-diagnostic changes from the parallel source lane; retain nullable and Debug-only guards.",
+    "nextAction": "Inspect Compiler.LoopCloning.Candidates.cs verbose blocks; separate any Release-safe dump calls from DEBUG-only ArrIndex/SpanIndex.Print helpers.",
     "validationGaps": [
       "Runtime-gated 173 Debug-only Core test assertion blocks and reduced DEBUG blocks in sources/Core/jit from 2,413 to 2,179, including conditional JITDUMP-only diagnostics. Calls that depend on Debug-only symbols such as compCurBB, InitTree, rpNum, reason, opcode.Name, and DspThreadLocalOffset remain guarded. The full Core test suites rebuilt and passed in Debug (17,815 passed, 15 skipped) and Release (16,108 passed, 15 skipped; known unsupported xarch emitter test sources excluded). Default full-analysis source builds remain blocked by 158 Debug and 192 Release analyzer diagnostics in unchanged files; no diagnostics were reported in changed files.",
       "Compiler.ValueNumber.cs now runtime-gates its eight verbose PHI, memory-SSA, tree, and array-map dump blocks. Release no-op stubs cover vnPrint, vnpPrint, and gtDispTree; Statement.Id has an explicit Release throwing shim, while _updated remains DEBUG-only. Compiler builds passed with analyzers disabled in Debug and Release, focused ValueNum tests passed 885/885 in Debug and 828/828 in Release, and the full Release Core suite passed 16,108 with 15 skipped. Default full-analysis source builds retain the previously recorded unrelated analyzer blockers, with no diagnostics in changed files.",
@@ -53,6 +53,7 @@
       "Compiler.ap.LocalDispatch.cs retains its DEBUG verbose dump because compCurBB is nullable and only checked by a Debug-only assert; removing the guard would reintroduce a Release nullable dereference.",
       "Compiler.LoopInversion.cs retains the fgDumpBlock guard: removing it failed Release compilation with CS0103 because fgDumpBlock is DEBUG-only. LoopDiscoveryTests passed 33/33 in Debug; the failed Release attempt reached the test project and stopped on the expected missing helper, after which the guard was restored.",
       "TestConfiguration.CreateJitTlsWithCompiler centralizes 10 isolated DEBUG TLS/compiler setup pairs across Arm64EmitterRecordingTests, GSCookieTemporaryMaskTests, and LinearScanLifetimeSpillKillClosureTests. Debug creates TLS and assigns JitTls.Compiler; Release returns null without changing its thread-static compiler. Full Core suites passed 17,815 with 15 skipped in Debug and 16,109 with 15 skipped in Release; the temporary fixture exclusion was removed.",
+      "Compiler.fg.cs unguards the verbose inline-header, statement-removal, and unread-local diagnostics whose inputs are Release-visible; DEBUG-only currentDumpStmt, nullable block state, AddCodeDsc.acdNum, and BasicBlock.s_nMaxTrees remain guarded. The combined full Core suites passed 17,815 with 15 skipped in Debug and 16,109 with 15 skipped in Release.",
       "Compiler.ap.LocalDispatch.cs keeps its verbose tree dump guarded because compCurBB is nullable after a Debug-only assert.",
       "Compiler.fg.BlockMorph.cs now relies on its outer Configuration.DEBUG stress-clone gate for two verbose gtDispTree blocks, removing nested DEBUG guards while retaining the DEBUG-only gtHashValue comparison. Full Core suites passed 17,815 with 15 skipped in Debug and 16,109 with 15 skipped in Release; the temporary Release fixture exclusion was removed after validation.",
       "Compiler.fg.Tree.cs, Compiler.ap.Phase.cs, and Compiler.gt.cs now call gtDispTree/gtDispStmt without DEBUG wrappers where Release stubs already exist. Full Core suites passed 17,815 with 15 skipped in Debug and 16,109 with 15 skipped in Release; the temporary Release fixture exclusion was removed after validation.",
@@ -236,10 +237,10 @@
       "Thirteen output-only _verbose banners in CodeGen.FuncletPrologEpilog.cs, codegenloongarch64/CodeGen.FuncletPrologEpilog.cs, codegenwasm/CodeGen.WasmProlog.cs, and codegen/CodeGen.cs now use Configuration.DEBUG; no codegen decisions or emitted instructions changed. CodeGenPrologTests, CodeGenEpilogTests, and CodeGenPrologFrameSetupTests passed 52/52 in Debug and Release with win-x64 semantics. Arm64FuncletPrologEpilogTests.FuncletPrologPreservesArm64FrameShapes passed 3/3 in Debug and Release with win-arm64 semantics. RiscVCodeGenPortTests.FuncletPrologPreservesRiscVFrameShapes and FuncletEpilogRestoresRiscVFrameShapes passed 6/6 in Debug and Release with linux-riscv64 semantics. RyuJitSharp builds passed for win-arm Debug/Release, linux-loongarch64 Debug/Release, and browser-wasm Debug/Release. TRX: artifacts\\tst\\Debug\\FuncletBanner.win-x64.Debug.trx, artifacts\\tst\\Release\\FuncletBanner.win-x64.Release.trx, artifacts\\tst\\Debug\\FuncletBanner.win-arm64.Debug.trx, artifacts\\tst\\Release\\FuncletBanner.win-arm64.Release.trx, artifacts\\tst\\Debug\\FuncletBanner.linux-riscv64.Debug.trx, and artifacts\\tst\\Release\\FuncletBanner.linux-riscv64.Release.trx."
     ],
     "activeBatch": {
-      "scope": "Review verbose-diagnostic edits in sources/Core/jit/compiler/Compiler.fg.cs from the parallel lane.",
-      "doneWhen": "Only Release-safe dumps remain unguarded; nullable and DEBUG-only state stays protected, then commit the validated source change.",
-      "validation": "Review the file diff, check formatting, and use the combined Debug/Release Core test results.",
-      "deferred": "Do not change flowgraph behavior or add Debug-state shims."
+      "scope": "Classify verbose diagnostic blocks in Compiler.LoopCloning.Candidates.cs for Release-safe tree dumps versus DEBUG-only array/span printers.",
+      "doneWhen": "Only Release-safe calls are moved out of DEBUG guards; loop candidate selection and Debug-only array metadata remain unchanged.",
+      "validation": "Inspect Print method declarations and Release stubs before editing, then run focused loop-cloning tests if changed.",
+      "deferred": "Do not add Release array/span printer stubs or change loop cloning decisions."
     },
     "parityEvidence": {
       "asyncResumeCodegen": {

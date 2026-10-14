@@ -525,6 +525,7 @@ public partial class Compiler
 
 #if DEBUG
         var currentDumpStmt = null as Statement;
+#endif
 
         if (verbose)
         {
@@ -532,7 +533,6 @@ public partial class Compiler
             printTreeId(iciCall);
             jitprintf(" -----------\n");
         }
-#endif
 
         // Mark success.
         inlineInfo.inlineContext.SetSucceeded(inlineInfo);
@@ -11261,7 +11261,6 @@ public partial class Compiler
     {
         assert(fgOrder == FGOrderTree);
 
-#if DEBUG
         // Don't print if it is a GT_NOP. Too much noise from the inliner.
         if (verbose && (stmt.RootNode.Oper is not GT_NOP))
         {
@@ -11269,7 +11268,6 @@ public partial class Compiler
             gtDispStmt(stmt);
             jitprintf($" from {FMT_BB(block.bbNum)}\n");
         }
-#endif
 
         if (opts.compDbgCode && (stmt.PrevStmt != stmt) && stmt.DebugInfo.IsValid)
         {
@@ -15278,10 +15276,8 @@ public partial class Compiler
         {
             if (BitVecOps.IsMember(traits, unreadLocals, store.LclNum))
             {
-#if DEBUG
                 JITDUMP($"V{store.LclNum:D2} is unread; removing store data in {FMT_STMT(store.Statement.Id)}\n");
                 DISPSTMT(store.Statement);
-#endif
                 var data = store.DataOwner.Data;
                 var constant = new GenTreeIntCon(data.Type, 0, fields: null, data, NodeThreading.AllLocals);
                 constant._vnPair.SetBoth(ValueNumStore.NoVN);
