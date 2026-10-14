@@ -61,13 +61,11 @@ public sealed partial class CSE_Heuristic
             if (cseRefCnt >= aggressiveRefCnt)
             {
                 candidate.SetAggressive();
-#if DEBUG
-                if (m_compiler.verbose)
+                if (Configuration.DEBUG && m_compiler.verbose)
                 {
                     jitprintf($"Aggressive CSE Promotion ({formatFloat(cseRefCnt, "F6")} >= " +
                         $"{formatFloat(aggressiveRefCnt, "F6")})\n");
                 }
-#endif
                 cseDefCost = 1;
                 cseUseCost = 1;
 
@@ -91,12 +89,10 @@ public sealed partial class CSE_Heuristic
                 candidate.SetConservative();
                 if (largeFrame)
                 {
-#if DEBUG
-                    if (m_compiler.verbose)
+                    if (Configuration.DEBUG && m_compiler.verbose)
                     {
                         jitprintf($"Codesize CSE Promotion ({(hugeFrame ? "huge" : "large")} frame)\n");
                     }
-#endif
                     if (Configuration.TARGET_XARCH)
                     {
                         cseDefCost = 6;
@@ -110,12 +106,10 @@ public sealed partial class CSE_Heuristic
                 }
                 else
                 {
-#if DEBUG
-                    if (m_compiler.verbose)
+                    if (Configuration.DEBUG && m_compiler.verbose)
                     {
                         jitprintf("Codesize CSE Promotion (small frame)\n");
                     }
-#endif
                     if (Configuration.TARGET_XARCH)
                     {
                         cseDefCost = 3;
@@ -140,21 +134,18 @@ public sealed partial class CSE_Heuristic
             if ((cseRefCnt >= aggressiveRefCnt) && canEnregister)
             {
                 candidate.SetAggressive();
-#if DEBUG
-                if (m_compiler.verbose)
+                if (Configuration.DEBUG && m_compiler.verbose)
                 {
                     jitprintf($"Aggressive CSE Promotion ({formatFloat(cseRefCnt, "F6")} >= " +
                         $"{formatFloat(aggressiveRefCnt, "F6")})\n");
                 }
-#endif
                 cseDefCost = 1;
                 cseUseCost = 1;
             }
             else if (cseRefCnt >= moderateRefCnt)
             {
                 candidate.SetModerate();
-#if DEBUG
-                if (m_compiler.verbose)
+                if (Configuration.DEBUG && m_compiler.verbose)
                 {
                     if (!candidate.LiveAcrossCall() && canEnregister)
                     {
@@ -168,7 +159,6 @@ public sealed partial class CSE_Heuristic
                             $"({formatFloat(cseRefCnt, "F6")} >= {formatFloat(moderateRefCnt, "F6")})\n");
                     }
                 }
-#endif
 
                 cseDefCost = 2;
                 if (!candidate.LiveAcrossCall() && canEnregister)
@@ -187,8 +177,7 @@ public sealed partial class CSE_Heuristic
             else
             {
                 candidate.SetConservative();
-#if DEBUG
-                if (m_compiler.verbose)
+                if (Configuration.DEBUG && m_compiler.verbose)
                 {
                     if (!candidate.LiveAcrossCall() && canEnregister)
                     {
@@ -201,8 +190,6 @@ public sealed partial class CSE_Heuristic
                             $"({formatFloat(cseRefCnt, "F6")} < {formatFloat(moderateRefCnt, "F6")})\n");
                     }
                 }
-#endif
-
                 cseDefCost = 2;
                 cseUseCost = !candidate.LiveAcrossCall() && canEnregister ? 2u : 3u;
 
@@ -280,8 +267,7 @@ public sealed partial class CSE_Heuristic
         var yesCseCost = (candidate.DefCount() * cseDefCost) +
             (candidate.UseCount() * cseUseCost) + extraYesCost;
 
-#if DEBUG
-        if (m_compiler.verbose)
+        if (Configuration.DEBUG && m_compiler.verbose)
         {
             JITDUMP($"cseRefCnt={formatFloat(cseRefCnt, "F6")}, " +
                 $"aggressiveRefCnt={formatFloat(aggressiveRefCnt, "F6")}, " +
@@ -296,7 +282,6 @@ public sealed partial class CSE_Heuristic
                 $"{formatFloat(yesCseCost, "F6")}) " +
                 $"{(noCseCost >= yesCseCost ? "passes" : "fails")}\n");
         }
-#endif
 
         if (yesCseCost <= noCseCost)
         {
