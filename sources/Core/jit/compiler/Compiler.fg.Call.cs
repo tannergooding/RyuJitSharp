@@ -18,8 +18,7 @@ public partial class Compiler
 
         void FailTailCall(string reason, int localNumber = BAD_VAR_NUM)
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("\nRejecting tail call in morph for call ");
                 printTreeId(call);
@@ -30,7 +29,6 @@ public partial class Compiler
                 }
                 jitprintf("\n");
             }
-#endif
             var reasonUtf8 = Encoding.UTF8.GetBytes(reason + '\0');
             fixed (byte* pointer = reasonUtf8)
             {
@@ -264,8 +262,7 @@ public partial class Compiler
             call._callMoreFlags &= ~GTF_CALL_M_IMPLICIT_TAILCALL;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("\nGTF_CALL_M_TAILCALL bit set for call ");
             printTreeId(call);
@@ -277,7 +274,6 @@ public partial class Compiler
                 jitprintf("\n");
             }
         }
-#endif
         if (call.IsR2RRelativeIndir && canFastTailCall && !fastTailCallToLoop && !call.IsDelegateInvoke)
         {
             fixed (CORINFO_CONST_LOOKUP* entryPoint = &call._entryPoint)
