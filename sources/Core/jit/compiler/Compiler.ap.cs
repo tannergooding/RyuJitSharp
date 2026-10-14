@@ -215,9 +215,11 @@ public partial class Compiler
     {
         assert((assertIndex != NO_ASSERTION_INDEX) && (assertIndex <= optAssertionCount));
         var assertion = optAssertionTabPrivate[assertIndex - 1];
-#if DEBUG
-        optDebugCheckAssertion(assertion);
-#endif
+        if (Configuration.DEBUG)
+        {
+            optDebugCheckAssertion(assertion);
+        }
+
         return assertion;
     }
 
@@ -460,9 +462,11 @@ public partial class Compiler
                 BitVecOps.AddElemD(apTraits, GetAssertionDep(newAssertion.Op2.LclNum), optAssertionCount - 1);
             }
         }
-#if DEBUG
-        optDebugCheckAssertions(optAssertionCount);
-#endif
+        if (Configuration.DEBUG)
+        {
+            optDebugCheckAssertions(optAssertionCount);
+        }
+
         return optAssertionCount;
     }
 
@@ -595,7 +599,6 @@ public partial class Compiler
         }
     }
 
-#if DEBUG
     public void optDebugCheckAssertion(AssertionDsc assertion)
     {
         switch (assertion.Op1.Kind)
@@ -656,6 +659,7 @@ public partial class Compiler
         }
     }
 
+#if DEBUG
     public unsafe void optPrintAssertion(AssertionDsc assertion, AssertionIndex assertionIndex = 0)
     {
         if (assertionIndex > 0)
