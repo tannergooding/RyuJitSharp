@@ -2304,40 +2304,41 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidSimm(imm, 4));
-#if DEBUG
-                switch (ins)
+                if (Configuration.DEBUG)
                 {
-                    case INS_sve_ldnt1b:
+                    switch (ins)
                     {
-                        assert(opt == INS_OPTS_SCALABLE_B);
-                        break;
-                    }
+                        case INS_sve_ldnt1b:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_B);
+                            break;
+                        }
 
-                    case INS_sve_ldnt1h:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_H);
-                        break;
-                    }
+                        case INS_sve_ldnt1h:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_H);
+                            break;
+                        }
 
-                    case INS_sve_ldnt1w:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_S);
-                        break;
-                    }
+                        case INS_sve_ldnt1w:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_S);
+                            break;
+                        }
 
-                    case INS_sve_ldnt1d:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_D);
-                        break;
-                    }
+                        case INS_sve_ldnt1d:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_D);
+                            break;
+                        }
 
-                    default:
-                    {
-                        assert(false, "Invalid instruction");
-                        break;
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
                     }
                 }
-#endif
                 fmt = IF_ARM64_SVE_IM_3A;
                 break;
             }
@@ -2356,70 +2357,71 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
-#if DEBUG
-                switch (ins)
+                if (Configuration.DEBUG)
                 {
-                    case INS_sve_ld1rqb:
-                    case INS_sve_ld1rqd:
-                    case INS_sve_ld1rqh:
-                    case INS_sve_ld1rqw:
+                    switch (ins)
                     {
-                        assert(isValidSimm_MultipleOf(imm, 4, 16));
-                        break;
-                    }
+                        case INS_sve_ld1rqb:
+                        case INS_sve_ld1rqd:
+                        case INS_sve_ld1rqh:
+                        case INS_sve_ld1rqw:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 16));
+                            break;
+                        }
 
-                    case INS_sve_ld1rob:
-                    case INS_sve_ld1rod:
-                    case INS_sve_ld1roh:
-                    case INS_sve_ld1row:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 32));
-                        break;
-                    }
+                        case INS_sve_ld1rob:
+                        case INS_sve_ld1rod:
+                        case INS_sve_ld1roh:
+                        case INS_sve_ld1row:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 32));
+                            break;
+                        }
 
-                    default:
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
+                    }
+                    switch (ins)
                     {
-                        assert(false, "Invalid instruction");
-                        break;
+                        case INS_sve_ld1rqb:
+                        case INS_sve_ld1rob:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_B);
+                            break;
+                        }
+
+                        case INS_sve_ld1rqh:
+                        case INS_sve_ld1roh:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_H);
+                            break;
+                        }
+
+                        case INS_sve_ld1rqw:
+                        case INS_sve_ld1row:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_S);
+                            break;
+                        }
+
+                        case INS_sve_ld1rqd:
+                        case INS_sve_ld1rod:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_D);
+                            break;
+                        }
+
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
                     }
                 }
-                switch (ins)
-                {
-                    case INS_sve_ld1rqb:
-                    case INS_sve_ld1rob:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_B);
-                        break;
-                    }
-
-                    case INS_sve_ld1rqh:
-                    case INS_sve_ld1roh:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_H);
-                        break;
-                    }
-
-                    case INS_sve_ld1rqw:
-                    case INS_sve_ld1row:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_S);
-                        break;
-                    }
-
-                    case INS_sve_ld1rqd:
-                    case INS_sve_ld1rod:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_D);
-                        break;
-                    }
-
-                    default:
-                    {
-                        assert(false, "Invalid instruction");
-                        break;
-                    }
-                }
-#endif
                 fmt = IF_ARM64_SVE_IO_3A;
                 break;
             }
@@ -2433,34 +2435,35 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
-#if DEBUG
-                switch (ins)
+                if (Configuration.DEBUG)
                 {
-                    case INS_sve_ld2q:
+                    switch (ins)
                     {
-                        assert(isValidSimm_MultipleOf(imm, 4, 2));
-                        break;
-                    }
+                        case INS_sve_ld2q:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 2));
+                            break;
+                        }
 
-                    case INS_sve_ld3q:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 3));
-                        break;
-                    }
+                        case INS_sve_ld3q:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 3));
+                            break;
+                        }
 
-                    case INS_sve_ld4q:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 4));
-                        break;
-                    }
+                        case INS_sve_ld4q:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 4));
+                            break;
+                        }
 
-                    default:
-                    {
-                        assert(false, "Invalid instruction");
-                        break;
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
                     }
                 }
-#endif
                 fmt = IF_ARM64_SVE_IQ_3A;
                 break;
             }
@@ -2483,83 +2486,84 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
-#if DEBUG
-                switch (ins)
+                if (Configuration.DEBUG)
                 {
-                    case INS_sve_ld2b:
-                    case INS_sve_ld2h:
-                    case INS_sve_ld2w:
-                    case INS_sve_ld2d:
+                    switch (ins)
                     {
-                        assert(isValidSimm_MultipleOf(imm, 4, 2));
-                        break;
-                    }
+                        case INS_sve_ld2b:
+                        case INS_sve_ld2h:
+                        case INS_sve_ld2w:
+                        case INS_sve_ld2d:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 2));
+                            break;
+                        }
 
-                    case INS_sve_ld3b:
-                    case INS_sve_ld3h:
-                    case INS_sve_ld3w:
-                    case INS_sve_ld3d:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 3));
-                        break;
-                    }
+                        case INS_sve_ld3b:
+                        case INS_sve_ld3h:
+                        case INS_sve_ld3w:
+                        case INS_sve_ld3d:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 3));
+                            break;
+                        }
 
-                    case INS_sve_ld4b:
-                    case INS_sve_ld4h:
-                    case INS_sve_ld4w:
-                    case INS_sve_ld4d:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 4));
-                        break;
-                    }
+                        case INS_sve_ld4b:
+                        case INS_sve_ld4h:
+                        case INS_sve_ld4w:
+                        case INS_sve_ld4d:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 4));
+                            break;
+                        }
 
-                    default:
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
+                    }
+                    switch (ins)
                     {
-                        assert(false, "Invalid instruction");
-                        break;
+                        case INS_sve_ld2b:
+                        case INS_sve_ld3b:
+                        case INS_sve_ld4b:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_B);
+                            break;
+                        }
+
+                        case INS_sve_ld2h:
+                        case INS_sve_ld3h:
+                        case INS_sve_ld4h:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_H);
+                            break;
+                        }
+
+                        case INS_sve_ld2w:
+                        case INS_sve_ld3w:
+                        case INS_sve_ld4w:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_S);
+                            break;
+                        }
+
+                        case INS_sve_ld2d:
+                        case INS_sve_ld3d:
+                        case INS_sve_ld4d:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_D);
+                            break;
+                        }
+
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
                     }
                 }
-                switch (ins)
-                {
-                    case INS_sve_ld2b:
-                    case INS_sve_ld3b:
-                    case INS_sve_ld4b:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_B);
-                        break;
-                    }
-
-                    case INS_sve_ld2h:
-                    case INS_sve_ld3h:
-                    case INS_sve_ld4h:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_H);
-                        break;
-                    }
-
-                    case INS_sve_ld2w:
-                    case INS_sve_ld3w:
-                    case INS_sve_ld4w:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_S);
-                        break;
-                    }
-
-                    case INS_sve_ld2d:
-                    case INS_sve_ld3d:
-                    case INS_sve_ld4d:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_D);
-                        break;
-                    }
-
-                    default:
-                    {
-                        assert(false, "Invalid instruction");
-                        break;
-                    }
-                }
-#endif
                 fmt = IF_ARM64_SVE_IS_3A;
                 break;
             }
@@ -2573,34 +2577,35 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
-#if DEBUG
-                switch (ins)
+                if (Configuration.DEBUG)
                 {
-                    case INS_sve_st2q:
+                    switch (ins)
                     {
-                        assert(isValidSimm_MultipleOf(imm, 4, 2));
-                        break;
-                    }
+                        case INS_sve_st2q:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 2));
+                            break;
+                        }
 
-                    case INS_sve_st3q:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 3));
-                        break;
-                    }
+                        case INS_sve_st3q:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 3));
+                            break;
+                        }
 
-                    case INS_sve_st4q:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 4));
-                        break;
-                    }
+                        case INS_sve_st4q:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 4));
+                            break;
+                        }
 
-                    default:
-                    {
-                        assert(false, "Invalid instruction");
-                        break;
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
                     }
                 }
-#endif
                 fmt = IF_ARM64_SVE_JE_3A;
                 break;
             }
@@ -2616,40 +2621,41 @@ public partial class Emitter
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
                 assert(isValidSimm(imm, 4));
-#if DEBUG
-                switch (ins)
+                if (Configuration.DEBUG)
                 {
-                    case INS_sve_stnt1b:
+                    switch (ins)
                     {
-                        assert(opt == INS_OPTS_SCALABLE_B);
-                        break;
-                    }
+                        case INS_sve_stnt1b:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_B);
+                            break;
+                        }
 
-                    case INS_sve_stnt1h:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_H);
-                        break;
-                    }
+                        case INS_sve_stnt1h:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_H);
+                            break;
+                        }
 
-                    case INS_sve_stnt1w:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_S);
-                        break;
-                    }
+                        case INS_sve_stnt1w:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_S);
+                            break;
+                        }
 
-                    case INS_sve_stnt1d:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_D);
-                        break;
-                    }
+                        case INS_sve_stnt1d:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_D);
+                            break;
+                        }
 
-                    default:
-                    {
-                        assert(false, "Invalid instruction");
-                        break;
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
                     }
                 }
-#endif
                 fmt = IF_ARM64_SVE_JM_3A;
                 break;
             }
@@ -2675,16 +2681,17 @@ public partial class Emitter
                         }
                         else
                         {
-#if DEBUG
-                            if (ins == INS_sve_st1w)
+                            if (Configuration.DEBUG)
                             {
-                                assert(opt == INS_OPTS_SCALABLE_Q);
+                                if (ins == INS_sve_st1w)
+                                {
+                                    assert(opt == INS_OPTS_SCALABLE_Q);
+                                }
+                                else
+                                {
+                                    assert(opt == INS_OPTS_SCALABLE_D);
+                                }
                             }
-                            else
-                            {
-                                assert(opt == INS_OPTS_SCALABLE_D);
-                            }
-#endif
                             fmt = IF_ARM64_SVE_JN_3C;
                         }
                     }
@@ -2725,83 +2732,84 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isLowPredicateRegister(reg2));
                 assert(isGeneralRegister(reg3));
-#if DEBUG
-                switch (ins)
+                if (Configuration.DEBUG)
                 {
-                    case INS_sve_st2b:
-                    case INS_sve_st2h:
-                    case INS_sve_st2w:
-                    case INS_sve_st2d:
+                    switch (ins)
                     {
-                        assert(isValidSimm_MultipleOf(imm, 4, 2));
-                        break;
-                    }
+                        case INS_sve_st2b:
+                        case INS_sve_st2h:
+                        case INS_sve_st2w:
+                        case INS_sve_st2d:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 2));
+                            break;
+                        }
 
-                    case INS_sve_st3b:
-                    case INS_sve_st3h:
-                    case INS_sve_st3w:
-                    case INS_sve_st3d:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 3));
-                        break;
-                    }
+                        case INS_sve_st3b:
+                        case INS_sve_st3h:
+                        case INS_sve_st3w:
+                        case INS_sve_st3d:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 3));
+                            break;
+                        }
 
-                    case INS_sve_st4b:
-                    case INS_sve_st4h:
-                    case INS_sve_st4w:
-                    case INS_sve_st4d:
-                    {
-                        assert(isValidSimm_MultipleOf(imm, 4, 4));
-                        break;
-                    }
+                        case INS_sve_st4b:
+                        case INS_sve_st4h:
+                        case INS_sve_st4w:
+                        case INS_sve_st4d:
+                        {
+                            assert(isValidSimm_MultipleOf(imm, 4, 4));
+                            break;
+                        }
 
-                    default:
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
+                    }
+                    switch (ins)
                     {
-                        assert(false, "Invalid instruction");
-                        break;
+                        case INS_sve_st2b:
+                        case INS_sve_st3b:
+                        case INS_sve_st4b:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_B);
+                            break;
+                        }
+
+                        case INS_sve_st2h:
+                        case INS_sve_st3h:
+                        case INS_sve_st4h:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_H);
+                            break;
+                        }
+
+                        case INS_sve_st2w:
+                        case INS_sve_st3w:
+                        case INS_sve_st4w:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_S);
+                            break;
+                        }
+
+                        case INS_sve_st2d:
+                        case INS_sve_st3d:
+                        case INS_sve_st4d:
+                        {
+                            assert(opt == INS_OPTS_SCALABLE_D);
+                            break;
+                        }
+
+                        default:
+                        {
+                            assert(false, "Invalid instruction");
+                            break;
+                        }
                     }
                 }
-                switch (ins)
-                {
-                    case INS_sve_st2b:
-                    case INS_sve_st3b:
-                    case INS_sve_st4b:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_B);
-                        break;
-                    }
-
-                    case INS_sve_st2h:
-                    case INS_sve_st3h:
-                    case INS_sve_st4h:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_H);
-                        break;
-                    }
-
-                    case INS_sve_st2w:
-                    case INS_sve_st3w:
-                    case INS_sve_st4w:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_S);
-                        break;
-                    }
-
-                    case INS_sve_st2d:
-                    case INS_sve_st3d:
-                    case INS_sve_st4d:
-                    {
-                        assert(opt == INS_OPTS_SCALABLE_D);
-                        break;
-                    }
-
-                    default:
-                    {
-                        assert(false, "Invalid instruction");
-                        break;
-                    }
-                }
-#endif
                 fmt = IF_ARM64_SVE_JO_3A;
                 break;
             }
@@ -2823,28 +2831,29 @@ public partial class Emitter
                 {
                     assert(insOptsScalableWords(opt));
                     assert(isVectorRegister(reg3));
-#if DEBUG
-                    switch (ins)
+                    if (Configuration.DEBUG)
                     {
-                        case INS_sve_st1b:
+                        switch (ins)
                         {
-                            assert(isValidUimm(imm, 5));
-                            break;
-                        }
+                            case INS_sve_st1b:
+                            {
+                                assert(isValidUimm(imm, 5));
+                                break;
+                            }
 
-                        case INS_sve_st1h:
-                        {
-                            assert(isValidUimm_MultipleOf(imm, 5, 2));
-                            break;
-                        }
+                            case INS_sve_st1h:
+                            {
+                                assert(isValidUimm_MultipleOf(imm, 5, 2));
+                                break;
+                            }
 
-                        default:
-                        {
-                            assert(false, "Invalid instruction");
-                            break;
+                            default:
+                            {
+                                assert(false, "Invalid instruction");
+                                break;
+                            }
                         }
                     }
-#endif
                     fmt = IF_ARM64_SVE_JI_3A_A;
                 }
                 break;

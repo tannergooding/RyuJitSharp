@@ -55,16 +55,17 @@ public partial class Emitter
                     assert(insScalableOptsNone(sopt));
                     assert(insOptsScalableStandard(opt));
                     assert(isVectorRegister(reg1));
-#if DEBUG
-                    if (opt == INS_OPTS_SCALABLE_D)
+                    if (Configuration.DEBUG)
                     {
-                        assert(size == EA_8BYTE);
+                        if (opt == INS_OPTS_SCALABLE_D)
+                        {
+                            assert(size == EA_8BYTE);
+                        }
+                        else
+                        {
+                            assert(size == EA_4BYTE);
+                        }
                     }
-                    else
-                    {
-                        assert(size == EA_4BYTE);
-                    }
-#endif
                     reg2 = encodingSPtoZR(reg2);
                     fmt = IF_ARM64_SVE_CB_2A;
                 }
@@ -286,16 +287,17 @@ public partial class Emitter
                 assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
-#if DEBUG
-                if (opt == INS_OPTS_SCALABLE_S)
+                if (Configuration.DEBUG)
                 {
-                    assert(ins == INS_sve_sm4e);
+                    if (opt == INS_OPTS_SCALABLE_S)
+                    {
+                        assert(ins == INS_sve_sm4e);
+                    }
+                    else
+                    {
+                        assert(opt == INS_OPTS_SCALABLE_B);
+                    }
                 }
-                else
-                {
-                    assert(opt == INS_OPTS_SCALABLE_B);
-                }
-#endif
                 fmt = IF_ARM64_SVE_GK_2A;
                 break;
             }
@@ -343,16 +345,17 @@ public partial class Emitter
                 assert(insOptsScalableStandard(opt));
                 assert(isVectorRegister(reg1));
                 assert(isGeneralRegisterOrSP(reg2));
-#if DEBUG
-                if (opt == INS_OPTS_SCALABLE_D)
+                if (Configuration.DEBUG)
                 {
-                    assert(size == EA_8BYTE);
+                    if (opt == INS_OPTS_SCALABLE_D)
+                    {
+                        assert(size == EA_8BYTE);
+                    }
+                    else
+                    {
+                        assert(size == EA_4BYTE);
+                    }
                 }
-                else
-                {
-                    assert(size == EA_4BYTE);
-                }
-#endif
                 reg2 = encodingSPtoZR(reg2);
                 fmt = IF_ARM64_SVE_CB_2A;
                 // MOV is the preferred disassembly for DUP.
@@ -914,39 +917,40 @@ public partial class Emitter
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 assert(isScalableVectorSize(size));
-#if DEBUG
-                switch (opt)
+                if (Configuration.DEBUG)
                 {
-                    case INS_OPTS_SCALABLE_B:
+                    switch (opt)
                     {
-                        assert(isValidUimm(imm, 4));
-                        break;
-                    }
+                        case INS_OPTS_SCALABLE_B:
+                        {
+                            assert(isValidUimm(imm, 4));
+                            break;
+                        }
 
-                    case INS_OPTS_SCALABLE_H:
-                    {
-                        assert(isValidUimm(imm, 3));
-                        break;
-                    }
+                        case INS_OPTS_SCALABLE_H:
+                        {
+                            assert(isValidUimm(imm, 3));
+                            break;
+                        }
 
-                    case INS_OPTS_SCALABLE_S:
-                    {
-                        assert(isValidUimm(imm, 2));
-                        break;
-                    }
+                        case INS_OPTS_SCALABLE_S:
+                        {
+                            assert(isValidUimm(imm, 2));
+                            break;
+                        }
 
-                    case INS_OPTS_SCALABLE_D:
-                    {
-                        assert(isValidUimm(imm, 1));
-                        break;
-                    }
+                        case INS_OPTS_SCALABLE_D:
+                        {
+                            assert(isValidUimm(imm, 1));
+                            break;
+                        }
 
-                    default:
-                    {
-                        break;
+                        default:
+                        {
+                            break;
+                        }
                     }
                 }
-#endif
                 fmt = IF_ARM64_SVE_BX_2A;
                 break;
             }
