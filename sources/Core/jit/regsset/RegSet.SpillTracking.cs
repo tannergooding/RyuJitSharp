@@ -24,12 +24,10 @@ public partial struct RegSet
 
     public readonly void tmpEnd()
     {
-#if DEBUG
-        if (Compiler.verbose && (tmpCount > 0))
+        if (Configuration.DEBUG && Compiler.verbose && (tmpCount > 0))
         {
             jitprintf($"{tmpCount} tmps used\n");
         }
-#endif
     }
 
     public readonly void rsSpillChk()
