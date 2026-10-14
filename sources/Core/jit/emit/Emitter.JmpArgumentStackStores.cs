@@ -58,25 +58,26 @@ public partial class Emitter
         var reservedReg = codeGen.rsGetRsvdReg();
         assert(tmpReg != reservedReg);
 
-#if DEBUG
-        switch (ins)
+        if (Configuration.DEBUG)
         {
-            case INS_sd:
-            case INS_sw:
-            case INS_sh:
-            case INS_sb:
-            case INS_fsd:
-            case INS_fsw:
+            switch (ins)
             {
-                break;
-            }
-            default:
-            {
-                NYI_RISCV64("illegal ins within emitIns_S_R_R!");
-                return;
+                case INS_sd:
+                case INS_sw:
+                case INS_sh:
+                case INS_sb:
+                case INS_fsd:
+                case INS_fsw:
+                {
+                    break;
+                }
+                default:
+                {
+                    NYI_RISCV64("illegal ins within emitIns_S_R_R!");
+                    return;
+                }
             }
         }
-#endif
 
         var baseOffset = _compiler.lvaFrameAddress(varNum, out var framePointerBased);
         var frameReg = framePointerBased ? TargetRuntimeMetadata.FramePointerBaseRegister : TargetRuntimeMetadata.StackPointerBaseRegister;
