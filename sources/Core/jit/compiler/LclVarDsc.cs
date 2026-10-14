@@ -866,8 +866,10 @@ public partial struct LclVarDsc
             _debugFlags = (_debugFlags & ~DebugFlags.TrackedWithoutIndex) | (value ? DebugFlags.TrackedWithoutIndex : DebugFlags.None);
         }
     }
+#endif
 
     /// <summary>true if this var has updated class handle or exactness</summary>
+#if DEBUG
     public bool lvClassInfoUpdated
     {
         readonly get
@@ -880,7 +882,11 @@ public partial struct LclVarDsc
             _debugFlags = (_debugFlags & ~DebugFlags.ClassInfoUpdated) | (value ? DebugFlags.ClassInfoUpdated : DebugFlags.None);
         }
     }
+#else
+    public bool lvClassInfoUpdated => false;
+#endif
 
+#if DEBUG
     /// <summary>CSE temp for a hoisted tree</summary>
     public bool lvIsHoist
     {

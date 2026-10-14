@@ -1368,9 +1368,10 @@ public sealed partial class BasicBlock : LIR.Range
 
     public static BasicBlock New(Compiler compiler)
     {
-#if DEBUG
-        assert(compiler.fgSafeBasicBlockCreation);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(compiler.fgSafeBasicBlockCreation);
+        }
 
         // scopeInfo needs to be able to differentiate between blocks which
         // correspond to some instrs (and so may have some LocalVarInfo

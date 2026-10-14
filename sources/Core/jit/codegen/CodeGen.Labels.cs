@@ -10,9 +10,10 @@ public sealed partial class CodeGen
     // Keep region endpoints in sync with genReportEH. No blocks may be added or removed afterward.
     private void genMarkLabelsForCodegen()
     {
-#if DEBUG
-        assert(!_compiler.fgSafeBasicBlockCreation);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(!_compiler.fgSafeBasicBlockCreation);
+        }
         JITDUMP("Mark labels for codegen\n");
 
         if (Configuration.DEBUG)

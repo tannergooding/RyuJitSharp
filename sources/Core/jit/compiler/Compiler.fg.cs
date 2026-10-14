@@ -2016,6 +2016,9 @@ public partial class Compiler
 
     /// <summary>When false, assert when creating a new flow edge</summary>
     public bool fgSafeFlowEdgeCreation = true;
+#else
+    public bool fgSafeBasicBlockCreation => true;
+    public bool fgSafeFlowEdgeCreation => true;
 #endif
 
     /// <summary>Set to TRUE to turn off struct promotion for this method.</summary>
@@ -2233,9 +2236,11 @@ public partial class Compiler
 
     public bool fgHasLoops;
 
-#if DEBUG
     /// <summary>Has the flowgraph EH normalization phase been done?</summary>
+#if DEBUG
     public bool fgNormalizeEHDone;
+#else
+    public bool fgNormalizeEHDone => false;
 #endif
 
     /// <summary>Note that this one is used outside of debug.</summary>
@@ -2610,11 +2615,12 @@ public partial class Compiler
         }
         else
         {
-#if DEBUG
-            // Create a new edge
-            // We may be disallowing edge creation, except for edges targeting special blocks.
-            assert(fgSafeFlowEdgeCreation || block.HasFlag(BBF_CAN_ADD_PRED));
-#endif
+            if (Configuration.DEBUG)
+            {
+                // Create a new edge
+                // We may be disallowing edge creation, except for edges targeting special blocks.
+                assert(fgSafeFlowEdgeCreation || block.HasFlag(BBF_CAN_ADD_PRED));
+            }
 
 #if MEASURE_BLOCK_SIZE
             unchecked
@@ -2784,10 +2790,11 @@ public partial class Compiler
     /// <summary>Check control flow constraints for well formed IL. Bail if any of the constraints are violated.</summary>
     public void fgCheckBasicBlockControlFlow()
     {
-#if DEBUG
-        // These rules aren't quite correct after EH normalization has introduced new blocks
-        assert(!fgNormalizeEHDone);
-#endif
+        if (Configuration.DEBUG)
+        {
+            // These rules aren't quite correct after EH normalization has introduced new blocks
+            assert(!fgNormalizeEHDone);
+        }
 
         foreach (var blk in Blocks)
         {
@@ -3109,10 +3116,11 @@ public partial class Compiler
     /// <remarks>Consider removing this check here if we can do it cheaply during importing.</remarks>
     public void fgControlFlowPermitted(BasicBlock blkSrc, BasicBlock blkDest, bool isLeave = false)
     {
-#if DEBUG
-        // These rules aren't quite correct after EH normalization has introduced new blocks
-        assert(!fgNormalizeEHDone);
-#endif
+        if (Configuration.DEBUG)
+        {
+            // These rules aren't quite correct after EH normalization has introduced new blocks
+            assert(!fgNormalizeEHDone);
+        }
 
         var srcInCatch = false;
         ref var srcHndTab = ref ehInitHndRange(blkSrc, out var srcHndBeg, out var srcHndEnd, out var srcInFilter);
@@ -4398,9 +4406,10 @@ public partial class Compiler
                             // to do if we haven't ever updated the type.
                             if (info.compRetType == TYP_REF)
                             {
-#if DEBUG
-                                assert(!lvaDsc.lvClassInfoUpdated);
-#endif
+                                if (Configuration.DEBUG)
+                                {
+                                    assert(!lvaDsc.lvClassInfoUpdated);
+                                }
                             }
 
                             JITDUMP($"Marked return spill temp V{lvaInlineeReturnSpillTemp:D2} as NOT single def temp\n");
@@ -6845,10 +6854,11 @@ public partial class Compiler
     /// <returns>true if flow from "blkSrc" to "blkDest" is legal</returns>
     public bool fgFlowToFirstBlockOfInnerTry(BasicBlock blkSrc, BasicBlock blkDest, bool sibling)
     {
-#if DEBUG
-        // These rules aren't quite correct after EH normalization has introduced new blocks
-        assert(!fgNormalizeEHDone);
-#endif
+        if (Configuration.DEBUG)
+        {
+            // These rules aren't quite correct after EH normalization has introduced new blocks
+            assert(!fgNormalizeEHDone);
+        }
 
         noway_assert(blkDest.hasTryIndex);
 
