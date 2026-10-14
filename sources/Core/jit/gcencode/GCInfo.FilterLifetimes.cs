@@ -3,9 +3,7 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System.Runtime.CompilerServices;
-#endif
 
 namespace RyuJitSharp;
 
@@ -47,13 +45,11 @@ public partial struct GCInfo
                 {
                     if (end > filterEnd)
                     {
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             jitprintf($"Splitting lifetime for filter: [{filterBeg:X4}, {filterEnd:X4}).\nOld: ");
                             gcDumpVarPtrDsc(variable);
                         }
-#endif
                         var pinned = new varPtrDsc
                         {
                             vpdVarNum = variable.vpdVarNum | PinnedOffsetFlag,
@@ -69,8 +65,7 @@ public partial struct GCInfo
                         variable.vpdEndOfs = filterBeg;
                         gcInsertVarPtrDscSplit(pinned, variable);
                         gcInsertVarPtrDscSplit(after, variable);
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             jitprintf("New (1 of 3): ");
                             gcDumpVarPtrDsc(variable);
@@ -79,17 +74,14 @@ public partial struct GCInfo
                             jitprintf("New (3 of 3): ");
                             gcDumpVarPtrDsc(after);
                         }
-#endif
                     }
                     else
                     {
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             jitprintf("Splitting lifetime for filter.\nOld: ");
                             gcDumpVarPtrDsc(variable);
                         }
-#endif
                         var pinned = new varPtrDsc
                         {
                             vpdVarNum = variable.vpdVarNum | PinnedOffsetFlag,
@@ -98,26 +90,22 @@ public partial struct GCInfo
                         };
                         variable.vpdEndOfs = filterBeg;
                         gcInsertVarPtrDscSplit(pinned, variable);
-#if DEBUG
-                        if (compiler.verbose)
+                        if (Configuration.DEBUG && compiler.verbose)
                         {
                             jitprintf("New (1 of 2): ");
                             gcDumpVarPtrDsc(variable);
                             jitprintf("New (2 of 2): ");
                             gcDumpVarPtrDsc(pinned);
                         }
-#endif
                     }
                 }
                 else if (end > filterEnd)
                 {
-#if DEBUG
-                    if (compiler.verbose)
+                    if (Configuration.DEBUG && compiler.verbose)
                     {
                         jitprintf("Splitting lifetime for filter.\nOld: ");
                         gcDumpVarPtrDsc(variable);
                     }
-#endif
                     var pinned = new varPtrDsc
                     {
                         vpdVarNum = variable.vpdVarNum | PinnedOffsetFlag,
@@ -126,33 +114,27 @@ public partial struct GCInfo
                     };
                     variable.vpdBegOfs = filterEnd;
                     gcInsertVarPtrDscSplit(pinned, variable);
-#if DEBUG
-                    if (compiler.verbose)
+                    if (Configuration.DEBUG && compiler.verbose)
                     {
                         jitprintf("New (1 of 2): ");
                         gcDumpVarPtrDsc(pinned);
                         jitprintf("New (2 of 2): ");
                         gcDumpVarPtrDsc(variable);
                     }
-#endif
                 }
                 else
                 {
-#if DEBUG
-                    if (compiler.verbose)
+                    if (Configuration.DEBUG && compiler.verbose)
                     {
                         jitprintf("Pinning lifetime for filter.\nOld: ");
                         gcDumpVarPtrDsc(variable);
                     }
-#endif
                     variable.vpdVarNum |= PinnedOffsetFlag;
-#if DEBUG
-                    if (compiler.verbose)
+                    if (Configuration.DEBUG && compiler.verbose)
                     {
                         jitprintf("New : ");
                         gcDumpVarPtrDsc(variable);
                     }
-#endif
                 }
             }
         }
@@ -187,7 +169,6 @@ public partial struct GCInfo
         }
     }
 
-#if DEBUG
     private readonly unsafe void gcDumpVarPtrDsc(varPtrDsc descriptor)
     {
         var offset = unchecked((int)(descriptor.vpdVarNum & ~OffsetMask));
@@ -207,5 +188,4 @@ public partial struct GCInfo
         jitprintf($"[{FMT_PTR((void*)address)}] {gcType}{pinned} var at [{location}{displacement}] " +
             $"live from {descriptor.vpdBegOfs:X4} to {descriptor.vpdEndOfs:X4}\n");
     }
-#endif
 }
