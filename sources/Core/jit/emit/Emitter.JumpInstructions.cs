@@ -133,8 +133,12 @@ public partial class Emitter
         id.idjOffs = unchecked((uint)emitCurIGsize);
         id.idjNext = emitCurIGjmpList;
         emitCurIGjmpList = id;
+        if (Configuration.DEBUG)
+        {
+            assert(_compiler.compCurBB is not null);
+        }
+
 #if DEBUG
-        assert(_compiler.compCurBB is not null);
         if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
         {
             var debugInfo = id.idDebugOnlyInfo();

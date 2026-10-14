@@ -65,8 +65,12 @@ public partial class Emitter
             return;
         }
 
+        if (Configuration.DEBUG)
+        {
+            assert(jump.idIsBound());
+        }
+
 #if DEBUG
-        assert(jump.idIsBound());
         if (Configuration.TARGET_XARCH && jump.idIns() == INS_lea)
         {
             return;
