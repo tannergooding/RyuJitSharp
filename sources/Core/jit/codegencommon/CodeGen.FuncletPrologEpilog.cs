@@ -28,12 +28,10 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARM)
         {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletProlog()\n");
         }
-#endif
         assert(block is not null);
         assert(_compiler.bbIsFuncletBeg(block));
 
@@ -72,12 +70,10 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARM64)
         {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletProlog()\n");
         }
-#endif
         assert(block is not null);
         assert(_compiler.bbIsFuncletBeg(block));
         GCInfo.gcResetForBB();
@@ -202,12 +198,10 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_RISCV64)
         {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletProlog()\n");
         }
-#endif
         // TODO-RISCV64: Implement varargs.
         assert(block is not null);
         assert(_compiler.bbIsFuncletBeg(block));
@@ -272,12 +266,10 @@ public sealed partial class CodeGen
             {
                 Emitter.RequireSupportedInstructionRecording();
             }
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletProlog()\n");
         }
-#endif
             if (Configuration.TARGET_AMD64)
             {
                 assert(!_regSet.rsRegsModified(new regMaskTP(SRBM_X64_RBP)));
@@ -323,12 +315,10 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARM)
         {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletEpilog()\n");
         }
-#endif
         var unwindStarted = false;
         assert((genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ARM32_LR)).IsNonEmpty);
 
@@ -364,12 +354,10 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_ARM64)
         {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletEpilog()\n");
         }
-#endif
         _compiler.unwindBegEpilog();
 
         var maskRestoreRegsFloat = genFuncletInfo.fiSaveRegs & new regMaskTP(SRBM_ALLFLOAT);
@@ -481,12 +469,10 @@ public sealed partial class CodeGen
         }
         else if (Configuration.TARGET_RISCV64)
         {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletEpilog()\n");
         }
-#endif
         _compiler.unwindBegEpilog();
 
         var frameSize = unchecked((int)genFuncletInfo.fiSpDelta);
@@ -536,12 +522,10 @@ public sealed partial class CodeGen
             {
                 Emitter.RequireSupportedInstructionRecording();
             }
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletEpilog()\n");
         }
-#endif
         genClearAvxStateInEpilog();
             if (Configuration.TARGET_AMD64)
             {

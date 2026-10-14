@@ -202,12 +202,10 @@ public sealed partial class CodeGen
 
     private void genHomeRegisterParamsWasm()
     {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genHomeRegisterParams()\n");
         }
-#endif
         // Wasm assigns homed values to newly declared locals, so register cycles cannot occur.
         void SpillParameter(int localNumber, int offset, int parameterLocalNumber, in AbiPassingSegment segment)
         {
@@ -355,12 +353,10 @@ public sealed partial class CodeGen
     private void genFuncletPrologWasm(BasicBlock block)
     {
         assert(_compiler.bbIsFuncletBeg(block));
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletProlog()\n");
         }
-#endif
 
         Emitter.emitIns(INS_code_size);
 

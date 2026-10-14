@@ -11,12 +11,10 @@ public sealed partial class CodeGen
 {
     private unsafe void genFuncletPrologLoongArch64(BasicBlock block)
     {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletProlog()\n");
         }
-#endif
 
         assert(block is not null);
         assert(_compiler.bbIsFuncletBeg(block));
@@ -67,12 +65,10 @@ public sealed partial class CodeGen
 
     private unsafe void genFuncletEpilogLoongArch64()
     {
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("*************** In genFuncletEpilog()\n");
         }
-#endif
 
         _compiler.unwindBegEpilog();
 

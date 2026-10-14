@@ -430,12 +430,10 @@ public sealed partial class CodeGen : ICodeGen
         _cgFramePointerRequired.Value = value;
         if (!Configuration.TARGET_X86 && !Configuration.TARGET_WASM && value)
         {
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("Method has EH, marking method as fully interruptible\n");
             }
-#endif
             // Aborted frames expose live catch/finally slots only when fully interruptible.
             _cgInterruptible = true;
         }
