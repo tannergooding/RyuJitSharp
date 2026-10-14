@@ -93,9 +93,10 @@ public sealed partial class ObjectAllocator
         {
             var reason = candidate.OnHeapReason
                 ?? throw new FatalJitException("A rejected stack allocation requires a reason.");
-#if DEBUG
-            JITDUMP($"Allocating V{candidate.Local:D2} / [{candidate.Tree.TreeId:D6}] on the heap: {reason}\n");
-#endif
+            if (Configuration.DEBUG)
+            {
+                JITDUMP($"Allocating V{candidate.Local:D2} / [{TreeIdForDump(candidate.Tree):D6}] on the heap: {reason}\n");
+            }
             if (candidate.Kind is ObjectAllocationType.OAT_NEWOBJ or ObjectAllocationType.OAT_NEWOBJ_HEAP)
             {
                 var store = candidate.Tree.AsLclVar();

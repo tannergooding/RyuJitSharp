@@ -69,9 +69,11 @@ public sealed partial class ObjectAllocator
         var def = variable.Def ?? throw new InvalidOperationException("Missing enumerator definition.");
         var defBlock = def.Block;
         var defStmt = def.Stmt;
-#if DEBUG
-        JITDUMP($"V{info.Local:D2} has single def in {FMT_BB(defBlock.bbNum)} at [{defStmt.RootNode.TreeId:D6}]\n");
-#endif
+        if (Configuration.DEBUG)
+        {
+            JITDUMP($"V{info.Local:D2} has single def in {FMT_BB(defBlock.bbNum)} at " +
+                $"[{TreeIdForDump(defStmt.RootNode):D6}]\n");
+        }
         info.DefBlock = defBlock;
 
         var toVisit = new Stack<BasicBlock>();

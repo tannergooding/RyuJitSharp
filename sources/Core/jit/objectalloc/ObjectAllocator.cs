@@ -163,9 +163,11 @@ public sealed partial class ObjectAllocator : Phase
                     continue;
                 }
 
-#if DEBUG
-                JITDUMP($"Allocating V{store.LclNum:D2} / [{tree.TreeId:D6}] on the heap: [object stack allocation disabled]\n");
-#endif
+                if (Configuration.DEBUG)
+                {
+                    JITDUMP($"Allocating V{store.LclNum:D2} / [{TreeIdForDump(tree):D6}] on the heap: " +
+                        "[object stack allocation disabled]\n");
+                }
 
                 if (allocType is ObjectAllocationType.OAT_NEWOBJ or ObjectAllocationType.OAT_NEWOBJ_HEAP)
                 {
