@@ -100,8 +100,8 @@ internal static unsafe class CodeGenMetadataPhaseTests
                 void* code = null;
                 var size = -1;
 
+                using var tls = TestConfiguration.CreateJitTls(&state.JitInfo);
 #if DEBUG
-                using var tls = new JitTls(&state.JitInfo);
                 JitTls.Compiler = compiler;
                 s_assertion = null;
                 compiler.opts.dspMetrics = displayMetrics;

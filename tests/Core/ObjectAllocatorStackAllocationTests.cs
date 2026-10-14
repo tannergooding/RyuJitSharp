@@ -81,10 +81,8 @@ internal static unsafe class ObjectAllocatorStackAllocationTests
 
     private static void WithAllocator(Action<Compiler, ObjectAllocator, BasicBlock> action)
     {
-#if DEBUG
         ICorJitInfo jitInfo = default;
-        using var tls = new JitTls(&jitInfo);
-#endif
+        using var tls = TestConfiguration.CreateJitTls(&jitInfo);
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG

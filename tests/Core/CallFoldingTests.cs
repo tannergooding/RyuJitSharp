@@ -580,8 +580,8 @@ internal static unsafe class CallFoldingTests
             ICorJitInfo jitInfo = new() { lpVtbl = &vtable };
 #if DEBUG
             vtable.Base.Base.runWithSPMIErrorTrap = &InstructionRecordingTestSupport.UnavailableMethodMetadata;
-            using var tls = new JitTls(null);
 #endif
+            using var tls = TestConfiguration.CreateJitTls();
             var previous = JitTls.Compiler;
             var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
             compiler.info = new Compiler.Info { compCompHnd = &jitInfo, compRetBuffArg = BAD_VAR_NUM };

@@ -370,8 +370,8 @@ internal static unsafe class CodeGenEmissionPhaseTests
         };
         compiler.info.compCompHnd = &state.JitInfo;
         codeGen.Emitter.emitCmpHandle = &state.JitInfo;
+        using var tls = TestConfiguration.CreateJitTls(&state.JitInfo);
 #if DEBUG
-        using var tls = new JitTls(&state.JitInfo);
         JitTls.Compiler = compiler;
         s_assertion = null;
         try

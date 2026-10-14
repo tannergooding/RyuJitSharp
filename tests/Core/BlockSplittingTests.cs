@@ -477,8 +477,8 @@ internal static unsafe class BlockSplittingTests
 #if DEBUG
         TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
-        using var jitTls = new JitTls(null);
 #endif
+        using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
 
