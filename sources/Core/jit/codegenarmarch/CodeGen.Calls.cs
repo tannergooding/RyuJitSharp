@@ -91,16 +91,17 @@ public sealed partial class CodeGen
         genCallInstructionArmArch(call);
         genDefinePendingCallLabel(call);
 
-#if DEBUG
-        var killMask = new regMaskTP(intCalleeTrashMask | floatCalleeTrashMask);
-        if (call.IsHelperCall())
+        if (Configuration.DEBUG)
         {
-            killMask = _compiler.compHelperCallKillSet(call.HelperNum);
-        }
+            var killMask = new regMaskTP(intCalleeTrashMask | floatCalleeTrashMask);
+            if (call.IsHelperCall())
+            {
+                killMask = _compiler.compHelperCallKillSet(call.HelperNum);
+            }
 
-        assert((GCInfo.gcRegGCrefSetCur & killMask).IsEmpty);
-        assert((GCInfo.gcRegByrefSetCur & killMask).IsEmpty);
-#endif
+            assert((GCInfo.gcRegGCrefSetCur & killMask).IsEmpty);
+            assert((GCInfo.gcRegByrefSetCur & killMask).IsEmpty);
+        }
 
         var returnType = call.Type;
         if (returnType is not TYP_VOID)
