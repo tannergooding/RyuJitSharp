@@ -86,22 +86,25 @@ public partial class Compiler
         {
             if (isRecompute)
             {
-#if DEBUG
-                for (var localNumber = 0; localNumber < lvaCount; localNumber++)
+                if (Configuration.DEBUG)
                 {
-                    ref var descriptor = ref lvaGetDesc(localNumber);
-                    var specialVarargsParameter = descriptor.lvIsParam && lvaIsArgAccessedViaVarArgsCookie(localNumber);
-                    if (specialVarargsParameter)
+                    for (var localNumber = 0; localNumber < lvaCount; localNumber++)
                     {
-                        assert(descriptor.lvRefCnt() == 0);
+                        ref var descriptor = ref lvaGetDesc(localNumber);
+                        var specialVarargsParameter = descriptor.lvIsParam && lvaIsArgAccessedViaVarArgsCookie(localNumber);
+                        if (specialVarargsParameter)
+                        {
+                            assert(descriptor.lvRefCnt() == 0);
+                        }
+                        else
+                        {
+                            assert(descriptor.lvImplicitlyReferenced);
+                        }
+
+                        assert(!descriptor.lvTracked);
                     }
-                    else
-                    {
-                        assert(descriptor.lvImplicitlyReferenced);
-                    }
-                    assert(!descriptor.lvTracked);
                 }
-#endif
+
                 return;
             }
 
