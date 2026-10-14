@@ -345,10 +345,16 @@ public partial class Compiler
 
         /// <summary>Display the GC tables</summary>
         public bool dspGCtbls;
+#endif
 
         /// <summary>Display metrics</summary>
+#if DEBUG
         public bool dspMetrics;
+#else
+        public bool dspMetrics => false;
+#endif
 
+#if DEBUG
         /// <summary>If set, for non-adaptive alignment, ensure loop jmps are not on or cross alignment boundary.</summary>
         public bool compJitAlignLoopForJcc;
 #endif

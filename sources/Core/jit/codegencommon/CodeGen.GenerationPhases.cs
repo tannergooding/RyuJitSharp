@@ -248,52 +248,63 @@ public sealed partial class CodeGen
             jitprintf($"; END METHOD {_compiler.eeGetMethodFullName(_compiler.info.compMethodHnd)}\n");
         }
 
-#if DEBUG
-        var dspMetrics = _compiler.opts.dspMetrics;
-        var dspSummary = _compiler.opts.disAsm || _verbose;
-        var dspMetricsOnly = dspMetrics && !dspSummary;
-        if (dspSummary || dspMetrics)
+        if (Configuration.DEBUG)
         {
-            if (!dspMetricsOnly)
+            var dspMetrics = _compiler.opts.dspMetrics;
+            var dspSummary = _compiler.opts.disAsm || _verbose;
+            var dspMetricsOnly = dspMetrics && !dspSummary;
+            if (dspSummary || dspMetrics)
             {
-                jitprintf("\n");
-            }
-
-            jitprintf($"; Total bytes of code {_codeSize}, prolog size {_prologSize}, PerfScore {_compiler.Metrics.PerfScore:F2}, instruction count {instrCount}, allocated bytes for code {Emitter.emitTotalHotCodeSize + Emitter.emitTotalColdCodeSize}");
-
-            if (dspMetrics)
-            {
-                jitprintf($", num cse {_compiler.CseCount} num cand {_compiler.CseCandidateCount}");
-                _compiler.optGetCSEheuristic().DumpMetrics();
-
-                if (_compiler.info.compMethodSpmiIndex >= 0)
+                if (!dspMetricsOnly)
                 {
-                    jitprintf($" spmi index {_compiler.info.compMethodSpmiIndex}");
+                    jitprintf("\n");
                 }
-            }
+
+                jitprintf($"; Total bytes of code {_codeSize}, prolog size {_prologSize}, PerfScore {_compiler.Metrics.PerfScore:F2}");
+#if DEBUG
+                jitprintf($", instruction count {instrCount}");
+#endif
+                jitprintf($", allocated bytes for code {Emitter.emitTotalHotCodeSize + Emitter.emitTotalColdCodeSize}");
+
+                if (dspMetrics)
+                {
+                    jitprintf($", num cse {_compiler.CseCount} num cand {_compiler.CseCandidateCount}");
+#if DEBUG
+                    _compiler.optGetCSEheuristic().DumpMetrics();
+#endif
+
+                    if (_compiler.info.compMethodSpmiIndex >= 0)
+                    {
+                        jitprintf($" spmi index {_compiler.info.compMethodSpmiIndex}");
+                    }
+                }
 
 #if TRACK_LSRA_STATS
-            if (JitConfig.DisplayLsraStats == 3)
-            {
-                var allocator = _compiler.RegisterAllocator;
-                assert(allocator is not null);
-                allocator.dumpLsraStatsSummary(jitstdout());
-            }
+                if (JitConfig.DisplayLsraStats == 3)
+                {
+                    var allocator = _compiler.RegisterAllocator;
+                    assert(allocator is not null);
+                    allocator.dumpLsraStatsSummary(jitstdout());
+                }
 #endif
-            jitprintf($" (MethodHash={_compiler.info.compMethodHash():x8}) for method {_compiler.info.compFullName} ({_compiler.compGetTieringName(true)})\n");
-            if (!dspMetricsOnly)
-            {
-                jitprintf("; ============================================================\n\n");
+#if DEBUG
+                jitprintf($" (MethodHash={_compiler.info.compMethodHash():x8}) for method {_compiler.info.compFullName} ({_compiler.compGetTieringName(true)})\n");
+#endif
+                if (!dspMetricsOnly)
+                {
+                    jitprintf("; ============================================================\n\n");
+                }
+                jitstdout().Flush();
             }
-            jitstdout().Flush();
         }
+#if DEBUG
         if (_verbose)
         {
             jitprintf("*************** After end code gen, before unwindEmit()\n");
             Emitter.emitDispIGlist(displayInstructions: true);
         }
 #else
-        if (_compiler.opts.disAsm)
+        else if (_compiler.opts.disAsm)
         {
             jitprintf($"\n; Total bytes of code {_codeSize} for method {_compiler.eeGetMethodFullName(_compiler.info.compMethodHnd)} ({_compiler.compGetTieringName(true)})\n\n");
         }
