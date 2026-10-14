@@ -391,9 +391,10 @@ internal static unsafe class LivenessBackwardLIRTests
     public static void PhysicalCallDefinitionsKillAtTheCallNotAtTheAddress(bool async, bool partial)
     {
         WithCompiler(1, compiler => {
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+        }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             address.Flags |= GTF_VAR_DEF | (partial ? GTF_VAR_USEASG : GTF_EMPTY);
             var intervening = new GenTreeLclVar(TYP_INT, 0);

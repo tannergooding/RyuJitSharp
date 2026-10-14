@@ -1225,9 +1225,10 @@ internal static class PhysicalPromotionTests
             _ = layouts.AddObjLayout(compiler, layout);
             typeof(Compiler).GetField("_classLayoutTable", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(compiler, layouts);
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+        }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, checked((ushort)offset));
             address.Flags |= GTF_VAR_DEF;
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
@@ -1820,9 +1821,10 @@ internal static class PhysicalPromotionTests
         _ = layouts.AddObjLayout(compiler, layout);
         typeof(Compiler).GetField("_classLayoutTable", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(compiler, layouts);
-#if DEBUG
+    if (TestConfiguration.IsDebug)
+    {
         compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+    }
         var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
         address.Flags |= GTF_VAR_DEF;
         var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);

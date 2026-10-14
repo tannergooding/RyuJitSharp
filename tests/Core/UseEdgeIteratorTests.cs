@@ -503,9 +503,10 @@ internal static unsafe class UseEdgeIteratorTests
         WithCompiler(compiler => {
             compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(16) }];
             compiler.lvaCount = 1;
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+        }
             var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 8);
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
             call.SetIsAsync(default);
@@ -553,10 +554,11 @@ internal static unsafe class UseEdgeIteratorTests
                 new LclVarDsc { Type = TYP_INT },
             ];
             compiler.lvaCount = compiler.lvaTable.Length;
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
             compiler.lvaTable[1].IsDefinedViaAddress = true;
-#endif
+        }
             var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             var ret = compiler.gtNewLclAddrNode(TYP_BYREF, 1, 0);
             var read = compiler.gtNewLclvNode(TYP_INT, 2);

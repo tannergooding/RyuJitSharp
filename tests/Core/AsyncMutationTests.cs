@@ -21,9 +21,10 @@ internal static unsafe class AsyncMutationTests
         WithCompiler(compiler => {
             compiler.lvaTable[0].Type = TYP_I_IMPL;
             compiler.lvaTable[0].lvTracked = tracked;
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+        }
             var address = compiler.gtNewLclVarAddrNode(TYP_BYREF, 0);
             address.Flags |= GTF_VAR_DEF;
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);

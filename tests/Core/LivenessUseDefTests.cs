@@ -289,9 +289,10 @@ internal static unsafe class LivenessUseDefTests
     public static void PhysicalCallDefinitionsOccurAfterInterveningLocalUses(bool async)
     {
         WithCompiler(1, true, compiler => {
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+        }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             address.Flags |= GTF_VAR_DEF;
             var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
@@ -437,9 +438,10 @@ internal static unsafe class LivenessUseDefTests
         WithCompiler(1, false, compiler => {
             compiler.fgNodeThreading = NodeThreading.AllLocals;
             compiler.compQmarkUsed = qmarkUsed;
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+        }
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             address.Flags |= GTF_VAR_DEF;
             var argumentRead = compiler.gtNewLclvNode(TYP_INT, 0);
@@ -482,9 +484,10 @@ internal static unsafe class LivenessUseDefTests
             parent.lvFieldLclStart = 1;
             parent.lvFieldCnt = 3;
             parent.setLvRefCnt(0);
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             parent.IsDefinedViaAddress = true;
-#endif
+        }
             compiler.lvaTable[3].lvPinned = true;
             var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
             address.Flags |= GTF_VAR_DEF;

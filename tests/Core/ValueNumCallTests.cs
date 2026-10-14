@@ -271,9 +271,10 @@ internal static unsafe class ValueNumCallTests
             compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL }];
             compiler.lvaCount = 1;
             ref var local = ref compiler.lvaTable[0];
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             local.IsDefinedViaAddress = true;
-#endif
+        }
             var ssa = local.lvPerSsaData.AllocSsaNum();
             var call = new GenTreeCall(TYP_VOID) { _callType = CT_USER_FUNC };
             call._callMoreFlags |= GTF_CALL_M_ASYNC;

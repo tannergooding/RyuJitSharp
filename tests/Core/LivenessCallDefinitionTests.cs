@@ -172,9 +172,10 @@ internal static unsafe class LivenessCallDefinitionTests
         compiler.lvaTrackedCount = 1;
         compiler.lvaTrackedCountInSizeTUnits = 1;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_I_IMPL, lvTracked = true }];
-#if DEBUG
+    if (TestConfiguration.IsDebug)
+    {
         compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+    }
         JitTls.Compiler = compiler;
         try
         {

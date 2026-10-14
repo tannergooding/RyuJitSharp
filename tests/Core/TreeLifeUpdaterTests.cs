@@ -168,10 +168,11 @@ internal static unsafe class TreeLifeUpdaterTests
             compiler.lvaTable[2].RegNum = REG_STK;
             compiler.lvaTable[1].lvLRACandidate = false;
             compiler.lvaTable[2].lvLRACandidate = false;
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[1].IsDefinedViaAddress = true;
             compiler.lvaTable[2].IsDefinedViaAddress = true;
-#endif
+        }
             var resumed = compiler.gtNewLclAddrNode(TYP_BYREF, 1, 0);
             var retbuf = compiler.gtNewLclAddrNode(TYP_BYREF, 2, 0);
             resumed.Flags |= GTF_VAR_DEF;

@@ -1395,9 +1395,10 @@ internal static unsafe class LocalMorphTests
             compiler.lvaTable[0].Type = TYP_STRUCT;
             compiler.lvaTable[0].Layout = new ClassLayout(8);
             compiler.lvaTable[1].Type = TYP_LONG;
-#if DEBUG
+        if (TestConfiguration.IsDebug)
+        {
             compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+        }
             GenTree address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 4);
             address.Flags |= GTF_VAR_DEF;
             var read = compiler.gtNewLclvNode(TYP_LONG, 1);
@@ -1477,9 +1478,10 @@ internal static unsafe class LocalMorphTests
             var argument = NewCallArg.CreateForPrimitive(address);
             if (definition)
             {
-#if DEBUG
+            if (TestConfiguration.IsDebug)
+            {
                 compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+            }
                 address.Flags |= GTF_VAR_DEF;
                 call._callMoreFlags |= GenTreeCallFlags.GTF_CALL_M_RETBUFFARG_LCLOPT;
                 argument = argument.WithWellKnownArg(WellKnownArg.RetBuffer);
@@ -1558,9 +1560,10 @@ internal static unsafe class LocalMorphTests
                 GenTree definition;
                 if (addressDefinition)
                 {
-#if DEBUG
+                if (TestConfiguration.IsDebug)
+                {
                     compiler.lvaTable[0].IsDefinedViaAddress = true;
-#endif
+                }
                     var address = compiler.gtNewLclAddrNode(TYP_BYREF, 0, 0);
                     address.Flags |= GTF_VAR_DEF;
                     var call = compiler.gtNewCallNode(TYP_VOID, gtCallTypes.CT_USER_FUNC, null);
