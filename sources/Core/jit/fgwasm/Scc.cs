@@ -119,12 +119,10 @@ internal sealed class Scc
             }
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             Dump();
         }
-#endif
     }
 
     internal uint NumEntries() => (uint)BitVecOps.Count(_traits, _entries);
@@ -149,7 +147,6 @@ internal sealed class Scc
 
     internal weight_t TotalEntryWeight() => _entryWeight;
 
-#if DEBUG
     internal void Dump(int indent = 0)
     {
         var iterator = new BitVecOps.Iter(_traits, _blocks);
@@ -226,7 +223,6 @@ internal sealed class Scc
             child.DumpAll(indent + 3);
         }
     }
-#endif
 
     internal void FindNested()
     {
@@ -241,17 +237,14 @@ internal sealed class Scc
         }
 
         JITDUMP($"Scc {_num}  has {nestedCount} non-entry blocks. Scc Graph:\n");
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             DumpDot();
         }
-#endif
         JITDUMP($"\nLooking for nested SCCs in SCC {_num}\n");
         var postOrder = new BasicBlock[nestedCount];
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"digraph scc_{_num}_nested_subgraph{nestedCount} {{\n");
             var iterator = new BitVecOps.Iter(_traits, nestedBlocks);
@@ -270,7 +263,6 @@ internal sealed class Scc
 
             JITDUMP("}\n");
         }
-#endif
 
         var numBlocks = _fgWasm.WasmRunSubgraphDfs(
             static (block, preorderNum) => { },
@@ -318,12 +310,10 @@ internal sealed class Scc
         if (numHeaders > 1)
         {
             JITDUMP("Transforming Scc via switch dispatch: ");
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 Dump();
             }
-#endif
             modified = true;
 
             var controlVarNum = _compiler.lvaGrabTemp(shortLifetime: false, "Scc control var");

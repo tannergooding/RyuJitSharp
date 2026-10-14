@@ -160,7 +160,6 @@ public sealed class WasmInterval
         }
     }
 
-#if DEBUG
     public string KindString()
     {
         return _kind switch {
@@ -170,5 +169,4 @@ public sealed class WasmInterval
             _ => "??",
         };
     }
-#endif
 }

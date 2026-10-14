@@ -58,12 +58,10 @@ internal sealed partial class FgWasm
 
             foreach (var scc in sccs.BottomUpOrder())
             {
-#if DEBUG
-                if (_comp.verbose)
+                if (Configuration.DEBUG && _comp.verbose)
                 {
                     scc.DumpAll();
                 }
-#endif
                 numIrreducible = unchecked(numIrreducible + scc.NumIrr());
             }
         }
@@ -267,7 +265,6 @@ internal sealed partial class FgWasm
         return preorderIndex;
     }
 
-#if DEBUG
     internal IEnumerable<BasicBlock> SccDiagnosticSuccessors(BasicBlock block)
     {
         var successors = new WasmSuccessorEnumerator(Comp(), block, useProfile: true);
@@ -277,5 +274,4 @@ internal sealed partial class FgWasm
             yield return successor;
         }
     }
-#endif
 }
