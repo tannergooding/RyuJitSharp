@@ -71,11 +71,7 @@ internal static unsafe class InstructionSetDependencyTests
             compiler.opts.compSupportsISA.AddInstructionSet(instructionSet);
         }
 
-#if DEBUG
-        using var tls = new JitTls(&info.Interface);
-        JitTls.Compiler = compiler;
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompilerAndLogEnv(compiler, &info.Interface);
         if (Configuration.TARGET_WASM)
         {
             Assert.That(ExactlyDependsOn(compiler, instructionSet, false), Is.False);
@@ -104,11 +100,7 @@ internal static unsafe class InstructionSetDependencyTests
         TestJitInfo info = new() { Interface = new() { lpVtbl = &vtable } };
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.info.compCompHnd = &info.Interface;
-#if DEBUG
-        using var tls = new JitTls(&info.Interface);
-        JitTls.Compiler = compiler;
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        using var tls = TestConfiguration.CreateJitTlsWithCompilerAndLogEnv(compiler, &info.Interface);
         if (Configuration.TARGET_WASM)
         {
             Assert.That(compiler.compOpportunisticallyDependsOn(instructionSet), Is.False);

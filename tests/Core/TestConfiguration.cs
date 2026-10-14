@@ -31,6 +31,19 @@ internal static class TestConfiguration
 #endif
     }
 
+    public static unsafe IDisposable? CreateJitTlsWithCompilerAndLogEnv(
+        Compiler? compiler, ICorJitInfo* jitInfo)
+    {
+#if DEBUG
+        var jitTls = new JitTls(jitInfo);
+        JitTls.Compiler = compiler;
+        JitTls.LogEnv.Compiler = compiler;
+        return jitTls;
+#else
+        return null;
+#endif
+    }
+
     public static void SetJitTlsLogCompiler(Compiler? compiler)
     {
 #if DEBUG
