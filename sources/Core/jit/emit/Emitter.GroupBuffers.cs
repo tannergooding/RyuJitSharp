@@ -230,18 +230,16 @@ public partial class Emitter
             }
         }
 
-#if DEBUG
-        if (_compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.opts.dspCode && !_compiler.verbose)
         {
-            if (_compiler.verbose)
-            {
-                jitprintf("Saved:\n      ");
-                emitDispIG(ig, displayFunc: false, displayInstructions: false, displayLocation: false);
-            }
-            else
-            {
-                jitprintf($"      {emitLabelString(ig)}:        ; funclet={ig.igFuncIdx:D2}\n");
-            }
+            jitprintf($"      {emitLabelString(ig)}:        ; funclet={ig.igFuncIdx:D2}\n");
+        }
+
+#if DEBUG
+        if (_compiler.opts.dspCode && _compiler.verbose)
+        {
+            jitprintf("Saved:\n      ");
+            emitDispIG(ig, displayFunc: false, displayInstructions: false, displayLocation: false);
         }
 #endif
 
