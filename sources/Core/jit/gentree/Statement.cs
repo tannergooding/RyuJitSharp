@@ -70,6 +70,8 @@ public sealed partial class Statement
             _lastILOffset = value;
         }
     }
+#else
+    public int Id => throw new System.InvalidOperationException("Statement IDs are only available in Debug builds.");
 #endif
 
     public bool IsPhiDefnStmt => _rootNode.IsPhiDefn;

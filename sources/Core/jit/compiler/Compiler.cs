@@ -3276,5 +3276,13 @@ public partial class Compiler
             jitprintf(">");
         }
     }
+#else
+    public void vnPrint(ValueNum vn, int level)
+    {
+    }
+
+    public void vnpPrint(ValueNumPair vnp, int level)
+    {
+    }
 #endif
 }

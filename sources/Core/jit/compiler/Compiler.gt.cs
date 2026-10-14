@@ -3574,6 +3574,10 @@ public partial class Compiler
     public void gtDispBlockStmts(BasicBlock block)
     {
     }
+
+    public void gtDispTree(GenTree? tree, string msg = "", bool topOnly = false, bool isLIR = false)
+    {
+    }
 #endif
 
     /// <summary>Extracts side effects from the given expression.</summary>

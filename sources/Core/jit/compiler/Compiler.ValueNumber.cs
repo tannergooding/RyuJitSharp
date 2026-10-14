@@ -185,19 +185,16 @@ public partial class Compiler
         var statement = block.FirstStmt;
         for (; (statement is not null) && statement.IsPhiDefnStmt; statement = statement.NextStmt)
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\n***** BB{block.bbNum:D2}, STMT{statement.Id:D5}(before)\n");
                 gtDispTree(statement.RootNode);
                 jitprintf("\n");
             }
-#endif
 
             fgValueNumberPhiDef(statement.RootNode.AsLclVar(), block);
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\n***** BB{block.bbNum:D2}, STMT{statement.Id:D5}(after)\n");
                 gtDispTree(statement.RootNode);
@@ -207,7 +204,6 @@ public partial class Compiler
                     jitprintf("---------\n");
                 }
             }
-#endif
         }
 
         assert(vnStore is not null);
@@ -276,34 +272,29 @@ public partial class Compiler
                     fgSetCurrentMemoryVN(ByrefExposed, memoryVN);
                 }
             }
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"The SSA definition for {kind} (#{block.bbMemorySsaNumIn[(int)kind]}) at start of BB{block.bbNum:D2} is ");
                 vnPrint(fgCurMemoryVN[(int)kind], 1);
                 jitprintf("\n");
             }
-#endif
         }
 
         for (; statement is not null; statement = statement.NextStmt)
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\n***** BB{block.bbNum:D2}, STMT{statement.Id:D5}(before)\n");
                 gtDispTree(statement.RootNode);
                 jitprintf("\n");
             }
-#endif
             foreach (var tree in statement.TreeList)
             {
                 compCurTree = tree;
                 fgValueNumberTree(tree);
                 compCurTree = null;
             }
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\n***** BB{block.bbNum:D2}, STMT{statement.Id:D5}(after)\n");
                 gtDispTree(statement.RootNode);
@@ -313,7 +304,6 @@ public partial class Compiler
                     jitprintf("---------\n");
                 }
             }
-#endif
         }
 
         foreach (var kind in new AllMemoryKinds())
@@ -366,8 +356,7 @@ public partial class Compiler
                 var canUseNewVN = optVNIsLoopInvariant(values.Conservative, loop, loopInvariantCache);
                 if (canUseNewVN)
                 {
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"Updating phi arg [{phiArg.TreeId:D6}] VN from ");
                         vnpPrint(phiArg._vnPair, 0);
@@ -375,7 +364,6 @@ public partial class Compiler
                         vnpPrint(values, 0);
                         jitprintf("\n");
                     }
-#endif
                 }
                 else
                 {
@@ -431,14 +419,12 @@ public partial class Compiler
         }
 #endif
         definition._vnPair = definitionValues;
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"SSA PHI definition: set VN of local {newSsaDef.LclNum}/{newSsaDef.SsaNum} to ");
             vnpPrint(definitionValues, 1);
             jitprintf($" {(sameValues.BothDefined() ? "(all same)" : "")}.\n");
         }
-#endif
 
         newSsaDef._vnPair = ValueNumStore.VNPForVoid();
         phiNode._vnPair = definitionValues;
@@ -510,14 +496,12 @@ public partial class Compiler
             {
                 foreach (var elementClass in sideEffects.EnumerateModifiedElemTypesInNativeOrder())
                 {
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         var elementType = DecodeElemType(elementClass);
                         var name = elementType is TYP_STRUCT ? eeGetClassName(elementClass) : elementType.Name;
                         jitprintf($"     Array map {name}[]\n");
                     }
-#endif
                     var elementTypeVN = vnStore.VNForHandle((nint)elementClass.Value, GTF_ICON_CLASS_HDL);
                     var uniqueVN = vnStore.VNForExpr(entryBlock, TYP_MEM);
                     newMemoryVN = vnStore.VNForMapStore(newMemoryVN, elementTypeVN, uniqueVN);
