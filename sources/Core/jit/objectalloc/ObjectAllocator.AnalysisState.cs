@@ -82,7 +82,6 @@ public sealed partial class ObjectAllocator
         return result;
     }
 
-#if DEBUG
     private void DumpIndex(int bvIndex)
     {
         if (bvIndex < _firstPseudoIndex)
@@ -102,10 +101,8 @@ public sealed partial class ObjectAllocator
             jitprintf($" U{bvIndex:D2}");
             return;
         }
-
         jitprintf($" ?{bvIndex:D2}");
     }
-#endif
 
     private bool CanIndexEscape(int index)
     {

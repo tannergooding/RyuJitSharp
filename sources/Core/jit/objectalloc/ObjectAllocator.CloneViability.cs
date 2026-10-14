@@ -26,19 +26,15 @@ public sealed partial class ObjectAllocator
             }
 
             JITDUMP("Cloned blocks for");
-#if DEBUG
-            if (CompilerInstance.verbose)
+            if (Configuration.DEBUG && CompilerInstance.verbose)
             {
                 DumpIndex(info.PseudoIndex);
             }
-#endif
             JITDUMP(" overlap with those for");
-#if DEBUG
-            if (CompilerInstance.verbose)
+            if (Configuration.DEBUG && CompilerInstance.verbose)
             {
                 DumpIndex(other.PseudoIndex);
             }
-#endif
             JITDUMP(" unable to clone\n");
             return true;
         }
@@ -59,24 +55,20 @@ public sealed partial class ObjectAllocator
             if (CloneBlockComplexityExceeds(block, slack, ref size))
             {
                 JITDUMP("Rejecting");
-#if DEBUG
-                if (CompilerInstance.verbose)
+                if (Configuration.DEBUG && CompilerInstance.verbose)
                 {
                     DumpIndex(info.PseudoIndex);
                 }
-#endif
                 JITDUMP($" cloning: exceeds size limit {sizeLimit}\n");
                 return false;
             }
         }
 
         JITDUMP("Accepting");
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             DumpIndex(info.PseudoIndex);
         }
-#endif
         JITDUMP($" cloning: size {size} does not exceed size limit {sizeLimit}\n");
         return true;
     }
