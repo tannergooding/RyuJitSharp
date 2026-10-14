@@ -280,9 +280,10 @@ public sealed partial class ObjectAllocator
 
                 default:
                 {
-#if DEBUG
-                    JITDUMP($"UpdateAncestorTypes: unexpected op {parent.Oper} in [{parent.TreeId:D6}]\n");
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        JITDUMP($"UpdateAncestorTypes: unexpected op {parent.Oper} in [{TreeIdForDump(parent):D6}]\n");
+                    }
                     throw new FatalJitException("Unexpected parent while retyping a stack-object use.");
                 }
             }
@@ -348,13 +349,16 @@ public sealed partial class ObjectAllocator
                 newType = TYP_I_IMPL;
                 tree = compiler.gtNewLclVarAddrNode(TYP_I_IMPL, stackLocal);
                 use = tree;
+                if (Configuration.DEBUG)
+                {
+                    JITDUMP($"Update V{local:D2} to V{stackLocal:D2} in use [{TreeIdForDump(tree):D6}]\n");
 #if DEBUG
-                JITDUMP($"Update V{local:D2} to V{stackLocal:D2} in use [{tree.TreeId:D6}]\n");
                 if (compiler.verbose)
                 {
                     compiler.gtDispTree(tree);
                 }
 #endif
+                }
             }
             else if (newType is TYP_STRUCT)
             {
@@ -387,9 +391,10 @@ public sealed partial class ObjectAllocator
                 assert(boxLocal.Oper is GT_LCL_VAR or GT_LCL_ADDR);
                 if (boxLocal.Oper is GT_LCL_ADDR)
                 {
-#if DEBUG
-                    JITDUMP($"Removing BOX wrapper [{tree.TreeId:D6}]\n");
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        JITDUMP($"Removing BOX wrapper [{TreeIdForDump(tree):D6}]\n");
+                    }
                     use = boxLocal;
                 }
             }
@@ -398,9 +403,10 @@ public sealed partial class ObjectAllocator
                 var call = tree.AsCall();
                 if (call.IsHelperCall(CORINFO_HELP_UNBOX))
                 {
-#if DEBUG
-                    JITDUMP($"Found unbox helper call [{call.TreeId:D6}]\n");
-#endif
+                    if (Configuration.DEBUG)
+                    {
+                        JITDUMP($"Found unbox helper call [{TreeIdForDump(call):D6}]\n");
+                    }
                     var argument = call.Args.GetArgByIndex(1)
                         ?? throw new FatalJitException("UNBOX requires its object argument.");
                     var objectNode = argument.Node;
@@ -437,9 +443,10 @@ public sealed partial class ObjectAllocator
                         var local = receiver.AsLclVarCommon();
                         if (receiver.Oper is GT_LCL_ADDR || _allocator.DoesLclVarPointToStack(local.LclNum))
                         {
-#if DEBUG
-                            JITDUMP($"Expanding delegate invoke [{call.TreeId:D6}]\n");
-#endif
+                            if (Configuration.DEBUG)
+                            {
+                                JITDUMP($"Expanding delegate invoke [{TreeIdForDump(call):D6}]\n");
+                            }
                             var copy = compiler.gtClone(local, complexOK: true)
                                 ?? throw new FatalJitException("Delegate invoke requires a cloneable receiver.");
                             var instanceOffset = compiler.eeGetEEInfo().offsetOfDelegateInstance;
