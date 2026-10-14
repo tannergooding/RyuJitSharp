@@ -3587,12 +3587,10 @@ public partial class Compiler
 
             while (opts.optRepeatIteration <= opts.optRepeatCount)
             {
-#if DEBUG
-                if (verbose && opts.optRepeat)
+                if (Configuration.DEBUG && verbose && opts.optRepeat)
                 {
                     jitprintf($"\n*************** JitOptRepeat: iteration {opts.optRepeatIteration} of {opts.optRepeatCount}\n\n");
                 }
-#endif
 
                 fgModified = false;
 
@@ -4194,12 +4192,10 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            if (compiler.verbose && !compiler.compIsForInlining)
+            if (Configuration.DEBUG && compiler.verbose && !compiler.compIsForInlining)
             {
                 jitprintf($"OPTIONS: opts.MinOpts() == {dspBool(compiler.opts.MinOpts)}\n");
             }
-#endif
 
             // Control the optimizations
 
