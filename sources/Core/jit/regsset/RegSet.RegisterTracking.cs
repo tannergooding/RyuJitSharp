@@ -145,8 +145,8 @@ public partial struct RegSet
                    ((_rsModifiedRegsMask & AllCalleeSavedMask) == ((_rsModifiedRegsMask | mask) & AllCalleeSavedMask)));
         }
 
-#if DEBUG
-        if (Compiler.verbose && !suppressDump && (_rsModifiedRegsMask != (_rsModifiedRegsMask | mask)))
+        if (Configuration.DEBUG && Compiler.verbose && !suppressDump &&
+            (_rsModifiedRegsMask != (_rsModifiedRegsMask | mask)))
         {
             jitprintf("Marking regs modified: ");
             dspRegMask(mask);
@@ -156,7 +156,6 @@ public partial struct RegSet
             dspRegMask(_rsModifiedRegsMask | mask);
             jitprintf(")\n");
         }
-#endif
 
         _rsModifiedRegsMask |= mask;
     }
@@ -178,8 +177,7 @@ public partial struct RegSet
                    ((remaining & AllCalleeSavedMask) == (_rsModifiedRegsMask & AllCalleeSavedMask)));
         }
 
-#if DEBUG
-        if (Compiler.verbose)
+        if (Configuration.DEBUG && Compiler.verbose)
         {
             jitprintf("Removing modified regs: ");
             dspRegMask(mask);
@@ -197,7 +195,6 @@ public partial struct RegSet
             }
             jitprintf("\n");
         }
-#endif
 
         _rsModifiedRegsMask = remaining;
     }
