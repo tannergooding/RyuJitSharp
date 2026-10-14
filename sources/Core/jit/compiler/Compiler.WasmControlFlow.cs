@@ -517,11 +517,12 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        fgDumpWasmControlFlow();
-        fgDumpWasmControlFlowDot();
-        assert(!fgTrysContiguous());
-#endif
+        if (Configuration.DEBUG)
+        {
+            fgDumpWasmControlFlow();
+            fgDumpWasmControlFlowDot();
+            assert(!fgTrysContiguous());
+        }
 
         return PhaseStatus.MODIFIED_EVERYTHING;
     }

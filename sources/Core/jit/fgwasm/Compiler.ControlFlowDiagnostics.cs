@@ -3,7 +3,6 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
-#if DEBUG
 using System;
 
 namespace RyuJitSharp;
@@ -225,4 +224,3 @@ public partial class Compiler
         }
     }
 }
-#endif
