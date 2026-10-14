@@ -147,10 +147,9 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            JITDUMP("Default value analysis: per-block mutated vars\n");
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
+                JITDUMP("Default value analysis: per-block mutated vars\n");
                 foreach (var block in compiler.Blocks)
                 {
                     if (!VarSetOps.IsEmpty(compiler, mutatedVars[block.bbNum]))
@@ -159,7 +158,6 @@ public partial class Compiler
                     }
                 }
             }
-#endif
             _mutatedVarsIn = CreateSets(compiler);
             var firstBlock = compiler.fgFirstBB ?? throw new InvalidOperationException("Async analysis requires an entry block");
             var trackedToVar = compiler.lvaTrackedToVarNum ??
@@ -178,10 +176,9 @@ public partial class Compiler
             var callback = new AsyncMutationDataFlowCallback(compiler, mutatedVars, _mutatedVarsIn);
             new DataFlow(compiler).ForwardAnalysis(ref callback);
 
-#if DEBUG
-            JITDUMP("Default value analysis: per-block mutated vars on entry\n");
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
+                JITDUMP("Default value analysis: per-block mutated vars on entry\n");
                 foreach (var block in compiler.Blocks)
                 {
                     var values = _mutatedVarsIn[block.bbNum];
@@ -189,7 +186,6 @@ public partial class Compiler
                         $"{(VarSetOps.IsEmpty(compiler, values) ? "<none>" : AsyncAnalysis.PrintVarSet(compiler, values))}\n");
                 }
             }
-#endif
         }
 
         public VARSET_TP GetMutatedVarsIn(BasicBlock block)
@@ -280,10 +276,9 @@ public partial class Compiler
                 }
             }
 
-#if DEBUG
-            JITDUMP("Preserved value analysis: per-block mutated vars after resumption\n");
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
+                JITDUMP("Preserved value analysis: per-block mutated vars after resumption\n");
                 foreach (var block in compiler.Blocks)
                 {
                     if (!VarSetOps.IsEmpty(compiler, mutatedVars[block.bbNum]))
@@ -292,15 +287,13 @@ public partial class Compiler
                     }
                 }
             }
-#endif
             _mutatedVarsIn = CreateSets(compiler);
             var callback = new AsyncMutationDataFlowCallback(compiler, mutatedVars, _mutatedVarsIn);
             new DataFlow(compiler).ForwardAnalysis(ref callback);
 
-#if DEBUG
-            JITDUMP("Preserved value analysis: per-block mutated vars on entry\n");
-            if (compiler.verbose)
+            if (Configuration.DEBUG && compiler.verbose)
             {
+                JITDUMP("Preserved value analysis: per-block mutated vars on entry\n");
                 foreach (var block in compiler.Blocks)
                 {
                     var values = _mutatedVarsIn[block.bbNum];
@@ -310,7 +303,6 @@ public partial class Compiler
                     JITDUMP($"  {FMT_BB(block.bbNum)} mutated since resumption on entry: {description}\n");
                 }
             }
-#endif
         }
 
 #if DEBUG

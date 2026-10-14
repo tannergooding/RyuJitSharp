@@ -224,12 +224,10 @@ public partial class Compiler
             var resumeReachable = analyses.ResumeReachable;
             var mutated = VarSetOps.MakeCopy(_compiler, analyses.MutatedSinceResumption);
             JITDUMP($"  This suspension point is{(resumeReachable ? "" : " NOT")} resume-reachable\n");
-#if DEBUG
-            if (resumeReachable && _compiler.verbose)
+            if (Configuration.DEBUG && resumeReachable && _compiler.verbose)
             {
                 JITDUMP($"  Locals mutated since previous resumption: {AsyncAnalysis.PrintVarSet(_compiler, mutated)}\n");
             }
-#endif
             var builder = new AsyncContinuationLayoutBuilder(_compiler);
             CreateLiveSetForSuspension(block, call, defs, analyses, builder);
             BuildContinuation(block, call, ContinuationNeedsKeepAlive(analyses), builder);

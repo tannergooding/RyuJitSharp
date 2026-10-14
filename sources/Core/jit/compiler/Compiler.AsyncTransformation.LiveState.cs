@@ -51,8 +51,7 @@ public partial class Compiler
                 !_compiler.lvaGetDesc(local).lvOnlyUsedOnSynchronousPath && !excludedLocals.Contains(local));
             LiftLIREdges(block, defs, builder);
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 JITDUMP($"  {builder.Locals.Count} live locals\n");
                 if (builder.Locals.Count != 0)
@@ -67,7 +66,6 @@ public partial class Compiler
                     JITDUMP("\n");
                 }
             }
-#endif
         }
 
         private bool IsCallDefLiveInEHSucc(BasicBlock block, int lclNum)
