@@ -28,11 +28,12 @@ public partial class Emitter
         var descriptor = new GCInfo.varPtrDsc
         {
             vpdBegOfs = emitCurCodeOffs(addr),
-#if DEBUG
-            vpdEndOfs = 0xFACEDEAD,
-#endif
             vpdVarNum = unchecked((uint)offs),
         };
+        if (Configuration.DEBUG)
+        {
+            descriptor.vpdEndOfs = 0xFACEDEAD;
+        }
         if (gcType == GCT_BYREF)
         {
             descriptor.vpdVarNum |= byref_OFFSET_FLAG;
@@ -71,9 +72,10 @@ public partial class Emitter
         emitGCrFrameLiveTab[disp] = null;
         assert(descriptor is not null);
         assert((descriptor.vpdVarNum & ~OFFSET_MASK) == unchecked((uint)offs));
-#if DEBUG
-        assert(descriptor.vpdEndOfs == 0xFACEDEAD);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(descriptor.vpdEndOfs == 0xFACEDEAD);
+        }
         descriptor.vpdEndOfs = emitCurCodeOffs(addr);
         emitThisGCrefVset = false;
     }
