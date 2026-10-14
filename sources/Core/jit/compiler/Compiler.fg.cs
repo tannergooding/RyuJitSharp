@@ -2653,10 +2653,11 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        // Pred list should (still) be ordered.
-        assert(block.checkPredListOrder());
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Pred list should (still) be ordered.
+            assert(block.checkPredListOrder());
+        }
 
         return flow;
     }
@@ -9683,10 +9684,11 @@ public partial class Compiler
 
         newTarget.bbRefs += dupCount;
 
-#if DEBUG
-        // Pred list of target should still be ordered
-        assert(newTarget.checkPredListOrder());
-#endif
+        if (Configuration.DEBUG)
+        {
+            // Pred list of target should still be ordered
+            assert(newTarget.checkPredListOrder());
+        }
     }
 
     /// <summary>Removes a predecessor edge from one block to another, no matter what the "dup count" is.</summary>
@@ -15939,9 +15941,10 @@ public partial class Compiler
         listp = ref fgGetPredInsertPoint(newPred, target);
         edge.NextPredEdge = listp;
         listp = edge;
-#if DEBUG
-        assert(target.checkPredListOrder());
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(target.checkPredListOrder());
+        }
     }
 
     /// <summary>Find the first valid root-method statement offset, or BAD_IL_OFFSET if none exists.</summary>

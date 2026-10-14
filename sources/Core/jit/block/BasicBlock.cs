@@ -1808,7 +1808,6 @@ public sealed partial class BasicBlock : LIR.Range
 
     public void bbSetRunRarely() => scaleBBWeight(BB_ZERO_WEIGHT);
 
-#if DEBUG
     /// <summary>see if pred list is properly ordered</summary>
     /// <returns>false if pred list is not in increasing bbID order.</returns>
     public bool checkPredListOrder()
@@ -1829,6 +1828,7 @@ public sealed partial class BasicBlock : LIR.Range
         return true;
     }
 
+#if DEBUG
     /// <summary>Print a simple basic block header for various output, including a list of predecessors and successors.</summary>
     /// <param name="showKind"></param>
     /// <param name="showFlags"></param>
