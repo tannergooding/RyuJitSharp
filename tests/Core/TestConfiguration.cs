@@ -31,6 +31,13 @@ internal static class TestConfiguration
 #endif
     }
 
+    public static void SetJitTlsLogCompiler(Compiler? compiler)
+    {
+#if DEBUG
+        JitTls.LogEnv.Compiler = compiler;
+#endif
+    }
+
     public static void EnableSafeBasicBlockCreation(Compiler compiler)
     {
 #if DEBUG

@@ -120,9 +120,7 @@ internal static unsafe class CSELiveAcrossCallCostTests
         TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
         {
             action(compiler);

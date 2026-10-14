@@ -914,9 +914,7 @@ internal static unsafe class Arm64HWIntrinsicImportTests
         Array.Fill(s_argumentTypes, CORINFO_TYPE_UNDEF);
         Array.Clear(s_argumentClasses);
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
         {
             fixed (byte* name = "Vector128`1\0"u8)

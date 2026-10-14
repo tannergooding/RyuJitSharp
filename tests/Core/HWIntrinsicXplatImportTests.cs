@@ -547,9 +547,7 @@ internal static unsafe class HWIntrinsicXplatImportTests
         ];
         compiler.lvaCount = 3;
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
         {
             test(compiler);

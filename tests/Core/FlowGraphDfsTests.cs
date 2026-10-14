@@ -143,9 +143,7 @@ internal static unsafe class FlowGraphDfsTests
         using var jitTls = TestConfiguration.CreateJitTls();
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
 
         try
         {

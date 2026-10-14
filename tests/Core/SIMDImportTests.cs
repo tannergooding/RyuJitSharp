@@ -242,9 +242,7 @@ internal static unsafe class SIMDImportTests
         compiler.stackState.esStack = new StackEntry[1];
         compiler.lvaTable = [];
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
 
         try
         {

@@ -372,9 +372,7 @@ internal static unsafe class HWIntrinsicSpecialImportTests
         ];
         compiler.lvaCount = compiler.lvaTable.Length;
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
         {
             test(compiler);

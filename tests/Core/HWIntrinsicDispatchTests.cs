@@ -543,9 +543,7 @@ internal static unsafe class HWIntrinsicDispatchTests
         AltJitAssertOnNyi(ref JitConfig) = 0;
 #endif
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
         {
             test(compiler);

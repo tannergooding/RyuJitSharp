@@ -418,9 +418,7 @@ internal static unsafe class SwiftAbiTests
         using var tls = TestConfiguration.CreateJitTls(&state.Interface);
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
-#if DEBUG
-        JitTls.LogEnv.Compiler = compiler;
-#endif
+        TestConfiguration.SetJitTlsLogCompiler(compiler);
         try
         {
             fixed (byte* nameBytes = Encoding.UTF8.GetBytes(name + '\0'))
