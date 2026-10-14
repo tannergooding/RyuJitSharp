@@ -317,10 +317,12 @@ public partial struct Disassembler
     {
         if (Configuration.DISASM_DEBUG)
         {
-#if DEBUG
-            assert(_compiler is not null);
-            if (_compiler.verbose)
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(_compiler is not null);
+            }
+
+            if (!Configuration.DEBUG || _compiler.verbose)
             {
                 jitprintf(text);
             }

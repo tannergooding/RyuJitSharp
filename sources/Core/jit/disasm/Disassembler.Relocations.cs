@@ -31,9 +31,7 @@ public partial struct Disassembler
 
         if (Configuration.DISASM_DEBUG)
         {
-#if DEBUG
-            if (compiler.verbose)
-#endif
+            if (!Configuration.DEBUG || compiler.verbose)
             {
                 jitprintf($"Relocation {relocAddr:X16} => {targetAddr:X16}\n");
             }

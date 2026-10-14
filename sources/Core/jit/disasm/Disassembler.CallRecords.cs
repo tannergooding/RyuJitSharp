@@ -55,9 +55,7 @@ public partial struct Disassembler
         {
             if (Configuration.DISASM_DEBUG)
             {
-#if DEBUG
-                if (compiler.verbose)
-#endif
+                if (!Configuration.DEBUG || compiler.verbose)
                 {
                     jitprintf($"Helper function: {addr:X16} => {(nuint)methHnd:X16}\n");
                 }
@@ -69,9 +67,7 @@ public partial struct Disassembler
         {
             if (Configuration.DISASM_DEBUG)
             {
-#if DEBUG
-                if (compiler.verbose)
-#endif
+                if (!Configuration.DEBUG || compiler.verbose)
                 {
                     jitprintf($"Function: {addr:X16} => {(nuint)methHnd:X16}\n");
                 }
