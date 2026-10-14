@@ -25,14 +25,12 @@ public sealed partial class CodeGen
             var tier0IntSaves = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters)
                 & new regMaskTP(SRBM_OSR_INT_CALLEE_SAVED);
             var tier0SavedSize = BitOperations.PopCount((ulong)tier0IntSaves.IntRegSet) * Configuration.REGSIZE_BYTES;
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("--OSR--- tier0 has already saved ");
                 dspRegMask(tier0IntSaves);
                 jitprintf("\n");
             }
-#endif
             assert((tier0IntSaves & RBM_X64_RBP) == RBM_X64_RBP);
             _compiler.unwindPush(REG_X64_RBP);
             tier0IntSaves &= ~RBM_X64_RBP;
@@ -63,14 +61,12 @@ public sealed partial class CodeGen
 
             var patchpoint = _compiler.info.compPatchpointInfo;
             var tier0CalleeSaves = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters);
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("--OSR--- tier0 has already saved ");
                 dspRegMask(tier0CalleeSaves);
                 jitprintf("\nEmitting restores\n");
             }
-#endif
 
             var restoreRegsFrame = tier0CalleeSaves & new regMaskTP(SRBM_ARM64_FP | TargetRuntimeMetadata.LinkRegisterMask);
             var restoreRegsFloat = tier0CalleeSaves & new regMaskTP(SRBM_ALLFLOAT);
@@ -153,14 +149,12 @@ public sealed partial class CodeGen
 
             var patchpoint = _compiler.info.compPatchpointInfo;
             var tier0CalleeSaves = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters);
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("--OSR--- tier0 has already saved ");
                 dspRegMask(tier0CalleeSaves);
                 jitprintf("\nEmitting restores\n");
             }
-#endif
             genRestoreCalleeSavedRegistersHelpRiscV64(
                 tier0CalleeSaves & ~(RBM_FP | RBM_RA), TargetRuntimeMetadata.FramePointerRegister, 16,
                 reportUnwindData: false);
@@ -178,14 +172,12 @@ public sealed partial class CodeGen
 
             var patchpoint = _compiler.info.compPatchpointInfo;
             var tier0CalleeSaves = new regMaskTP((regMask)patchpoint->CalleeSaveRegisters);
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("--OSR--- tier0 has already saved ");
                 dspRegMask(tier0CalleeSaves);
                 jitprintf("\nEmitting restores\n");
             }
-#endif
             genRestoreCalleeSavedRegistersHelpLoongArch64(
                 tier0CalleeSaves & ~(RBM_FP | RBM_RA), TargetRuntimeMetadata.FramePointerRegister, 16,
                 reportUnwindData: false);
@@ -220,8 +212,7 @@ public sealed partial class CodeGen
         var osrIntSaves = pushRegs & new regMaskTP(SRBM_OSR_INT_CALLEE_SAVED);
         var additionalSaves = osrIntSaves & ~tier0IntSaves;
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("---OSR--- int callee saves are ");
             dspRegMask(osrIntSaves);
@@ -231,7 +222,6 @@ public sealed partial class CodeGen
             dspRegMask(additionalSaves);
             jitprintf("\n");
         }
-#endif
         var osrFrameSize = _compiler.compLclFrameSize;
         var tier0FrameSize = patchpoint->TotalFrameSize;
         var osrCalleeSaveSize = _compiler.compCalleeRegsPushed * Configuration.REGSIZE_BYTES;

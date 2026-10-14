@@ -63,14 +63,12 @@ public sealed partial class CodeGen
             {
                 _regSet.rsSetRegsModified(new regMaskTP(SRBM_UNKBASE));
             }
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf("Modified regs: ");
                 dspRegMask(_regSet.rsGetModifiedRegsMask());
                 jitprintf("\n");
             }
-#endif
             var framePointerReg = genFramePointerReg();
             var framePointer = genRegMask(framePointerReg);
             if (_compiler.opts.compDbgEnC)
@@ -204,14 +202,12 @@ public sealed partial class CodeGen
                 maskCalleeRegsPushed |= framePointer | new regMaskTP(returnAddressMask);
             }
             _compiler.compCalleeRegsPushed = BitOperations.PopCount(unchecked((ulong)maskCalleeRegsPushed.Lower));
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf($"Callee-saved registers pushed: {_compiler.compCalleeRegsPushed} ");
                 dspRegMask(maskCalleeRegsPushed);
                 jitprintf("\n");
             }
-#endif
         }
         _compiler.lvaAssignFrameOffsets(Compiler.FINAL_FRAME_LAYOUT);
 #if DEBUG
