@@ -52,11 +52,9 @@ public partial class Compiler
         }
 
         var signature = (void*)signatureNode.AsIntCon().IconValue;
-#if DEBUG
         JITDUMP($"Expanding runtime lookup for [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}:\n");
         DISPTREE(call);
         JITDUMP("\n");
-#endif
         if (!SignatureToLookupInfoMap.TryGetValue(signature, out var runtimeLookup))
         {
             throw new FatalJitException("Runtime lookup signature is not registered.");

@@ -11,9 +11,7 @@ public partial class Compiler
 {
     private unsafe void impPopArgsForSwiftCall(GenTreeCall call, in CORINFO_SIG_INFO sig, ref GenTree? swiftErrorNode)
     {
-#if DEBUG
         JITDUMP($"Creating args for Swift call [{call.TreeId:D6}]\n");
-#endif
 
         var swiftErrorIndex = uint.MaxValue;
         var swiftSelfIndex = uint.MaxValue;
@@ -170,9 +168,7 @@ public partial class Compiler
                 IMPL_LIMITATION("SIMD types are currently unsupported in Swift calls");
             }
 
-#if DEBUG
             JITDUMP($"  Argument {argIndexAfterPop} is a struct [{arg.Node.TreeId:D6}]\n");
-#endif
             assert(arg.Node.Oper.IsLocalRead);
             var structVal = arg.Node.AsLclVarCommon();
             var insertAfter = arg;
@@ -286,19 +282,15 @@ public partial class Compiler
                             loweredNode = combined;
                         }
 
-#if DEBUG
                         JITDUMP($"    Adding expanded primitive argument [{loweredNode.TreeId:D6}]\n");
                         DISPTREE(loweredNode);
-#endif
                         insertAfter = call.Args.InsertAfter(insertAfter,
                             NewCallArg.CreateForPrimitive(loweredNode, loweredType));
                     }
                 }
             }
 
-#if DEBUG
             JITDUMP($"  Removing plain struct argument [{structVal.TreeId:D6}]\n");
-#endif
             call.Args.Remove(arg);
             arg = insertAfter.Next;
         }

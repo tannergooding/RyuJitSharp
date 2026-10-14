@@ -80,11 +80,9 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
         JITDUMP($"Expanding new array helper for stack allocated array at [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}:\n");
         DISPTREE(call);
         JITDUMP("\n");
-#endif
 
         ref var callUse = ref gtSplitTree(block, stmt, call, out var newStmt, out var split);
         if (split)

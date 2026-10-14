@@ -52,11 +52,9 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
         JITDUMP($"Expanding thread static local access for [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}:\n");
         DISPTREE(call);
         JITDUMP("\n");
-#endif
 
         var threadStaticInfo = default(CORINFO_THREAD_STATIC_INFO_NATIVEAOT);
         info.compCompHnd->getThreadLocalStaticInfo_NativeAOT(&threadStaticInfo);
@@ -204,11 +202,9 @@ public partial class Compiler
             throw new FatalJitException("CoreCLR TLS expansion is unsupported for this target.");
         }
 
-#if DEBUG
         JITDUMP($"Expanding thread static local access for [{call.TreeId:D6}] in {FMT_BB(block.bbNum)}:\n");
         DISPTREE(call);
         JITDUMP("\n");
-#endif
         var metadata = default(CORINFO_THREAD_STATIC_BLOCKS_INFO);
         info.compCompHnd->getThreadLocalStaticBlocksInfo(&metadata);
         JITDUMP("getThreadLocalStaticBlocksInfo\n:");
