@@ -279,11 +279,7 @@ public partial struct Disassembler
         {
             var cb = CbDisassemble(pdis, ibCur, addr + (ulong)ibCur, disGetLinearAddr(ibCur),
                 disGetBufferSize(ibCur), pfile, findLabels: false, printit, dispOffs: !_diffable,
-#if DEBUG
-                dispCodeBytes: !_diffable
-#else
-                dispCodeBytes: false
-#endif
+                dispCodeBytes: Configuration.DEBUG && !_diffable
             );
             ibCur = unchecked(ibCur + (uint)cb);
         }

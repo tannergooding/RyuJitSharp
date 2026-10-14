@@ -78,13 +78,11 @@ public partial class Compiler
                 changed = true;
             }
         }
-#if DEBUG
-        if (changed)
+        if (Configuration.DEBUG && changed)
         {
             JITDUMP($"Lower - Cast of Simple Op {cast.Oper.Name}:\n");
             DISPTREE(cast);
         }
-#endif
         return changed;
     }
 
@@ -107,13 +105,11 @@ public partial class Compiler
                 changed = true;
             }
         }
-#if DEBUG
-        if (changed)
+        if (Configuration.DEBUG && changed)
         {
             JITDUMP($"Lower - Downcast of Small Op {node.Oper.Name}:\n");
             DISPTREE(node);
         }
-#endif
         return changed;
     }
 }

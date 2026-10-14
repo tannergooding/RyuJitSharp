@@ -40,8 +40,7 @@ public partial class Emitter
         var gcrefRegs = parameters.gcrefRegs & savedSet;
         var byrefRegs = parameters.byrefRegs & savedSet;
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"Call: GCvars={VarSetOps.ToString(compiler, parameters.ptrVars)} ");
             dumpConvertedVarSet(compiler, parameters.ptrVars);
@@ -53,7 +52,6 @@ public partial class Emitter
             emitDispRegSet(byrefRegs);
             jitprintf("\n");
         }
-#endif
 
         nint jalrOffset = 0;
         if ((parameters.callType is EC_FUNC_TOKEN) && !IsAddressInRange(parameters.addr))

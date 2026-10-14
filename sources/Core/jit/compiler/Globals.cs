@@ -279,7 +279,6 @@ public partial class Globals
         }
     }
 
-#if DEBUG
     /// <summary>describe the detailed devirtualization reason</summary>
     /// <param name="detail">detail to describe</param>
     /// <returns>descriptive string</returns>
@@ -304,7 +303,6 @@ public partial class Globals
         CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE => "Support for type equivalence in devirtualization is not yet implemented in crossgen2",
         _ => "undefined",
     };
-#endif
 
     public static IRegAlloc GetRegisterAllocator(Compiler compiler)
     {
@@ -479,7 +477,6 @@ public partial class Globals
         return result;
     }
 
-#if DEBUG
     /// <summary>Return a string representation of a weighted ref count</summary>
     /// <param name="refCntWtd">weight to format</param>
     /// <param name="padForDecimalPlaces">If true, pad any integral or non-numeric output on the right with three spaces, representing space for ".00".</param>
@@ -524,7 +521,6 @@ public partial class Globals
             }
         }
     }
-#endif
 
     // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
     // These are used when DOTNET_JitEltHookEnabled=1

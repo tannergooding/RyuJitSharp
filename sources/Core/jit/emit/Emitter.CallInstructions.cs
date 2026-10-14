@@ -40,8 +40,7 @@ public partial class Emitter
             var gcrefRegs = parameters.gcrefRegs & savedSet;
             var byrefRegs = parameters.byrefRegs & savedSet;
 
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf($"\t\t\t\t\t\t\tCall: GCvars={VarSetOps.ToString(_compiler, parameters.ptrVars)} ");
                 dumpConvertedVarSet(_compiler, parameters.ptrVars);
@@ -53,7 +52,6 @@ public partial class Emitter
                 emitDispRegSet(byrefRegs);
                 jitprintf("\n");
             }
-#endif
             assert((parameters.argSize % Configuration.REGSIZE_BYTES) == 0);
             var argCnt = unchecked((int)(parameters.argSize / Configuration.REGSIZE_BYTES));
             var useInd = callType is EC_INDIR_R or EC_INDIR_ARD;

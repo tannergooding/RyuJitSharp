@@ -113,12 +113,10 @@ public partial class Compiler
                         }
 
                         madeChanges = true;
-#if DEBUG
-                        if (verbose)
+                        if (Configuration.DEBUG && verbose)
                         {
                             jitprintf($"\nKeeping empty block {FMT_BB(block.bbNum)} - it is the target of a catch return\n");
                         }
-#endif
                         break;
                     }
                 }

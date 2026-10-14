@@ -51,13 +51,11 @@ public partial class Emitter
         assert(emitCurIG is not null);
         assert(emitCurIGfreeBase is not null);
 
-#if DEBUG
-        if (_compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 1)
+        if (Configuration.DEBUG && _compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 1)
             && (emitCurIGinsCnt != 0) && !emitCurIG.endsWithAlignInstr())
         {
             emitNxtIG(extend: true);
         }
-#endif
 
         assert(IsCodeAligned(emitCurIGsize));
         var fullSize = size + (nuint)_debugInfoSize;

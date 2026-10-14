@@ -300,21 +300,25 @@ public partial class Compiler
                     (call.IsTailCallViaJitHelper && (compCurBB.Kind is BBJ_THROW)) ||
                     (!call.IsTailCall && (compCurBB.Kind is BBJ_RETURN)));
             }
-#if DEBUG
-            if (compStressCompile(STRESS_CLONE_EXPR, 30))
+            if (Configuration.DEBUG && compStressCompile(STRESS_CLONE_EXPR, 30))
             {
+#if DEBUG
                 if (verbose)
                 {
                     jitprintf("\nfgMorphTree (stressClone from):\n");
                     gtDispTree(morphedTree);
                 }
+#endif
                 morphedTree = gtCloneExpr(morphedTree);
+#if DEBUG
                 if (verbose)
                 {
                     jitprintf("\nfgMorphTree (stressClone to):\n");
                     gtDispTree(morphedTree);
                 }
+#endif
             }
+#if DEBUG
             if (verbose && (gtHashValue(morphedTree) != oldHash))
             {
                 jitprintf($"\nfgMorphTree {FMT_BB(block.bbNum)}, {FMT_STMT(statement.Id)} (after)\n");

@@ -112,12 +112,11 @@ public partial class Compiler
             FAST_CODE => 20u,
             _ => 0u,
         };
-#if DEBUG
-        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
+        if (Configuration.DEBUG && compStressCompile(STRESS_UNROLL_LOOPS, 50))
         {
             iterLimit *= 10;
         }
-#endif
+
         var unrollLimitSz = compCodeOpt switch
         {
             BLENDED_CODE => 300,
@@ -182,14 +181,11 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
-        if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
+        if (Configuration.DEBUG && compStressCompile(STRESS_UNROLL_LOOPS, 50))
         {
             unrollLimitSz *= 4;
         }
-        else
-#endif
-        if (totalIter <= 1)
+        else if (totalIter <= 1)
         {
             unrollLimitSz = int.MaxValue;
         }

@@ -32,13 +32,11 @@ public partial class Compiler
 
         if (fgIsThrow(morphedTree))
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("We have a top-level fgIsThrow stmt\n");
                 jitprintf("Removing the rest of block as unreachable:\n");
             }
-#endif
             noway_assert((morphedTree.Flags & GTF_COLON_COND) == 0);
             fgRemoveRestOfBlock = true;
         }

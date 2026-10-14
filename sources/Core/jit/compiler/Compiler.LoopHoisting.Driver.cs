@@ -91,18 +91,15 @@ public partial class Compiler
         {
             var loopLongVars = VarSetOps.Intersection(this, loopVars, lvaLongVars);
             var inOutLongVars = VarSetOps.Intersection(this, sideEffects.VarInOut, lvaLongVars);
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\n  LONGVARS({VarSetOps.Count(this, lvaLongVars)})=");
                 dumpConvertedVarSet(this, lvaLongVars);
             }
-#endif
             context.LoopVarCount += (int)VarSetOps.Count(this, loopLongVars);
             context.LoopVarInOutCount += (int)VarSetOps.Count(this, inOutLongVars);
         }
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\n  USEDEF  ({VarSetOps.Count(this, sideEffects.VarUseDef)})=");
             dumpConvertedVarSet(this, sideEffects.VarUseDef);
@@ -112,7 +109,6 @@ public partial class Compiler
             dumpConvertedVarSet(this, loopVars);
             jitprintf("\n");
         }
-#endif
         if (!VarSetOps.IsEmpty(this, lvaFloatVars))
         {
             var loopFPVars = VarSetOps.Intersection(this, loopVars, lvaFloatVars);
@@ -122,8 +118,7 @@ public partial class Compiler
             context.HoistedFPExprCount = 0;
             context.LoopVarCount -= context.LoopVarFPCount;
             context.LoopVarInOutCount -= context.LoopVarInOutFPCount;
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"  INOUT-FP({context.LoopVarInOutFPCount})=");
                 dumpConvertedVarSet(this, inOutFPVars);
@@ -131,7 +126,6 @@ public partial class Compiler
                 dumpConvertedVarSet(this, loopFPVars);
                 jitprintf("\n");
             }
-#endif
         }
         else
         {
@@ -151,8 +145,7 @@ public partial class Compiler
                 context.HoistedMskExprCount = 0;
                 context.LoopVarCount -= context.LoopVarMskCount;
                 context.LoopVarInOutCount -= context.LoopVarInOutMskCount;
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"  INOUT-MSK({context.LoopVarInOutMskCount})=");
                     dumpConvertedVarSet(this, inOutMskVars);
@@ -160,7 +153,6 @@ public partial class Compiler
                     dumpConvertedVarSet(this, loopMskVars);
                     jitprintf("\n");
                 }
-#endif
             }
             else
             {

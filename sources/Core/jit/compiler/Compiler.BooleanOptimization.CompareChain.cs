@@ -163,10 +163,9 @@ public partial class Compiler
             return true;
         }
 
-#if DEBUG
         public void optOptimizeBoolsGcStress()
         {
-            if (!_compiler.compStressCompile(STRESS_OPT_BOOLS_GC, 20))
+            if (!Configuration.DEBUG || !_compiler.compStressCompile(STRESS_OPT_BOOLS_GC, 20))
             {
                 return;
             }
@@ -194,6 +193,5 @@ public partial class Compiler
                 _compiler.fgSetStmtSeq(statement);
             }
         }
-#endif
     }
 }

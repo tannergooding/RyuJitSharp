@@ -12,14 +12,12 @@ public partial class Emitter
     public unsafe void emitOutputDataSec(dataSecDsc sec, AllocMemChunk* chunks)
     {
         var compiler = _compiler ?? throw new FatalJitException("Data-section output requires an active compiler.");
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"\nEmitting data sections: {sec.dsdOffs} total bytes\n");
         }
 
         var secNum = 0u;
-#endif
         if (compiler.opts.disAsm)
         {
             emitDispDataSec(sec, chunks);
@@ -40,12 +38,10 @@ public partial class Emitter
 
             if (dsc.dsType == dataSection.sectionType.blockAbsoluteAddr)
             {
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && compiler.verbose)
                 {
                     JITDUMP($"  section {secNum++}, size {dscSize}, block absolute addr\n");
                 }
-#endif
                 assert(dscSize != 0 && dscSize % Configuration.TARGET_POINTER_SIZE == 0);
                 var numElems = dscSize / Configuration.TARGET_POINTER_SIZE;
                 for (uint i = 0; i < numElems; i++)
@@ -79,12 +75,10 @@ public partial class Emitter
             }
             else if (dsc.dsType == dataSection.sectionType.blockRelative32)
             {
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && compiler.verbose)
                 {
                     JITDUMP($"  section {secNum++}, size {dscSize}, block relative addr\n");
                 }
-#endif
                 var numElems = dscSize / sizeof(uint);
                 var uDstRW = (uint*)dstRW;
                 var firstBlock = compiler.fgFirstBB
@@ -105,12 +99,10 @@ public partial class Emitter
             }
             else if (dsc.dsType == dataSection.sectionType.asyncResumeInfo)
             {
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && compiler.verbose)
                 {
                     JITDUMP($"  section {secNum++}, size {dscSize}, async resume info\n");
                 }
-#endif
                 var targetPointerSize = (uint)Configuration.TARGET_POINTER_SIZE;
                 var entrySize = targetPointerSize * 2u;
                 var numElems = dscSize / entrySize;
@@ -158,8 +150,7 @@ public partial class Emitter
                 var size = checked((int)dscSize);
                 dsc.Data.AsSpan(0, size).CopyTo(new Span<byte>(dstRW, size));
 
-#if DEBUG
-                if (compiler.verbose)
+                if (Configuration.DEBUG && compiler.verbose)
                 {
                     jitprintf($"  section {secNum++,3}, size {dscSize,2}, RWD{dsc.dsOffset,2}:\t");
                     for (var i = 0; i < size; i++)
@@ -188,7 +179,6 @@ public partial class Emitter
                     }
                     jitprintf("\n");
                 }
-#endif
             }
         }
     }

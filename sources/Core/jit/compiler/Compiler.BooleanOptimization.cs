@@ -407,13 +407,12 @@ public partial class Compiler
                             changedCount++;
                         }
                     }
-#if DEBUG
-                    else if (!second.HasFlag(BBF_DONT_REMOVE) && (second.Kind is not BBJ_COND))
+                    else if (Configuration.DEBUG && !second.HasFlag(BBF_DONT_REMOVE) &&
+                             (second.Kind is not BBJ_COND))
                     {
                         new OptBoolsDsc(first, second, this).optOptimizeBoolsGcStress();
                         stress = true;
                     }
-#endif
                 }
 
                 if (!retry)

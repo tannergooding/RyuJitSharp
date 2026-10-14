@@ -13,20 +13,17 @@ public partial class Compiler
         {
             compChangeLife(newLife, forCodeGen);
         }
-#if DEBUG
-        else if (verbose)
+        else if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Liveness not changing: {VarSetOps.ToString(this, compCurLife)} ");
             dumpConvertedVarSet(this, compCurLife);
             jitprintf("\n");
         }
-#endif
     }
 
     private void compChangeLife(nint[] newLife, bool forCodeGen)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Change life {VarSetOps.ToString(this, compCurLife)} ");
             dumpConvertedVarSet(this, compCurLife);
@@ -34,7 +31,6 @@ public partial class Compiler
             dumpConvertedVarSet(this, newLife);
             jitprintf("\n");
         }
-#endif
         noway_assert(!VarSetOps.Equal(this, compCurLife, newLife));
 
         if (!forCodeGen)

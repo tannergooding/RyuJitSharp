@@ -32,9 +32,7 @@ public partial class Compiler
 
         var treeExcVN = vnStore.VNExceptionSet(tree._vnPair.Liberal);
         JITDUMP($"\noptRedundantRelop in {FMT_BB(block.bbNum)}; jump tree is\n");
-#if DEBUG
         DISPTREE(jumpTree);
-#endif
 
         var previous = statement;
         GenTree? candidateTree = null;
@@ -61,9 +59,7 @@ public partial class Compiler
 
             var previousTree = previous.RootNode;
             JITDUMP(" ... checking previous tree\n");
-#if DEBUG
             DISPTREE(previousTree);
-#endif
             if (previousTree.Oper is GT_NOP)
             {
                 continue;
@@ -245,9 +241,7 @@ public partial class Compiler
         }
 
         JITDUMP(" -- done! new jump tree is\n");
-#if DEBUG
         DISPTREE(jumpTree);
-#endif
         return true;
     }
 }

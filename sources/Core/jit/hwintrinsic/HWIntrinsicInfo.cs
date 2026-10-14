@@ -466,12 +466,10 @@ public readonly partial struct HWIntrinsicInfo
         return GetRvaSpanEntry(s_intCosts, GetTableIndex(id));
     }
 
-#if DEBUG
     public static string lookupName(NamedIntrinsic id)
     {
         return GetName(GetTableIndex(id)).ToString();
     }
-#endif
 
     public static bool MaybeMemoryLoad(NamedIntrinsic id)
     {

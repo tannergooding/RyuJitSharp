@@ -123,9 +123,7 @@ public struct Limit
         _ => FormattableString.Invariant($"InvalidLimit({(int)Type})"),
     };
 
-#if DEBUG
     public override readonly string ToString() => FormatValue();
-#endif
 }
 
 [DebuggerDisplay("{DebuggerDisplayText,nq}")]
@@ -197,7 +195,5 @@ public struct Range
 
     internal readonly string FormatValue() => $"<{LowerLimit.FormatValue()}, {UpperLimit.FormatValue()}>";
 
-#if DEBUG
     public override readonly string ToString() => FormatValue();
-#endif
 }

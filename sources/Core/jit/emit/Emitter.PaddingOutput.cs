@@ -198,14 +198,13 @@ public partial class Emitter
 #endif
         compiler.Metrics.LoopsAligned++;
 
-#if DEBUG
-        if (compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 50)
+        if (Configuration.DEBUG && compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 50)
             && alignInstr.isPlacedAfterJmp && paddingToAdd >= 1)
         {
             dst += emitOutputByte(dst, unchecked((long)insCodeMR(INS_BREAKPOINT)));
             paddingToAdd--;
         }
-#endif
+
         return emitOutputNOP(dst, paddingToAdd);
     }
 }

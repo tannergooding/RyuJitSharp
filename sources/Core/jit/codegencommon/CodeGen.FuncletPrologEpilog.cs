@@ -591,15 +591,13 @@ public sealed partial class CodeGen
         genFuncletInfo.fiSaveRegs = saveRegs;
         genFuncletInfo.fiSpDelta = spDelta;
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("\nFunclet prolog / epilog info\n");
             jitprintf("                        Save regs: ");
             dspRegMask(saveRegs);
             jitprintf($"\n                         SP delta: {genFuncletInfo.fiSpDelta}\n");
         }
-#endif
         }
         else if (Configuration.TARGET_ARM64)
         {
@@ -721,8 +719,7 @@ public sealed partial class CodeGen
         genFuncletInfo.fiSaveRegs = saveRegs;
         genFuncletInfo.fiSP_to_FPLR_save_delta = spToFplrSaveDelta;
         genFuncletInfo.fiSP_to_CalleeSave_delta = spToCalleeSaveDelta;
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("\nFunclet prolog / epilog info\n");
             jitprintf("                        Save regs: ");
@@ -733,7 +730,6 @@ public sealed partial class CodeGen
             jitprintf($"                       SP delta 1: {genFuncletInfo.fiSpDelta1}\n");
             jitprintf($"                       SP delta 2: {genFuncletInfo.fiSpDelta2}\n");
         }
-#endif
 
         if (Configuration.DEBUG)
         {
@@ -770,8 +766,7 @@ public sealed partial class CodeGen
         genFuncletInfo.fiSpDelta = unchecked((uint)-unchecked((int)alignedFrameSize));
         genFuncletInfo.fiSaveRegs = saveRegs;
 
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf("\nFunclet prolog / epilog info\n");
             jitprintf("                        Save regs: ");
@@ -779,7 +774,6 @@ public sealed partial class CodeGen
             jitprintf($"\n  SP to CalleeSaved location delta: {genFuncletInfo.fiSP_to_CalleeSave_delta}\n");
             jitprintf($"                       SP delta: {unchecked((int)genFuncletInfo.fiSpDelta)}\n");
         }
-#endif
 
         if (Configuration.DEBUG)
         {
@@ -815,12 +809,10 @@ public sealed partial class CodeGen
             var totalFrameSize = Configuration.REGSIZE_BYTES + outgoing;
             var padding = (16 - (totalFrameSize % 16)) % 16;
             genFuncletInfo.fiSpDelta = unchecked((uint)padding + outgoing);
-#if DEBUG
-            if (_verbose)
+            if (Configuration.DEBUG && _verbose)
             {
                 jitprintf($"\nFunclet prolog / epilog info\n                         SP delta: {genFuncletInfo.fiSpDelta}\n");
             }
-#endif
         }
     }
 }

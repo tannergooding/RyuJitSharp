@@ -40,8 +40,7 @@ public partial class Emitter
         var gcrefRegs = parameters.gcrefRegs & savedSet;
         var byrefRegs = parameters.byrefRegs & savedSet;
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"Call: GCvars={VarSetOps.ToString(compiler, parameters.ptrVars)} ");
             dumpConvertedVarSet(compiler, parameters.ptrVars);
@@ -53,7 +52,6 @@ public partial class Emitter
             emitDispRegSet(byrefRegs);
             jitprintf("\n");
         }
-#endif
 
         assert((parameters.argSize % Configuration.REGSIZE_BYTES) == 0);
         var argCount = unchecked((int)(parameters.argSize / Configuration.REGSIZE_BYTES));

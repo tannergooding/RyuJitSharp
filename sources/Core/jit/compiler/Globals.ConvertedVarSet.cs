@@ -3,13 +3,16 @@
 // Based on the RyuJIT compiler from dotnet/runtime.
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
+using System.Diagnostics;
+
 namespace RyuJitSharp;
 
 public static partial class Globals
 {
-#if DEBUG
+    [Conditional("DEBUG")]
     public static void dumpConvertedVarSet(Compiler compiler, VARSET_TP vars)
     {
+#if DEBUG
         var localNumbers = new bool[compiler.lvaCount];
         _ = VarSetOps.VisitBits(compiler, vars, index =>
         {
@@ -37,6 +40,6 @@ public static partial class Globals
         }
 
         jitprintf("}");
-    }
 #endif
+    }
 }

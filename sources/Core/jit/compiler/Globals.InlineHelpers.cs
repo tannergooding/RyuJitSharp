@@ -18,10 +18,11 @@ public partial class Globals
 
     public static genTreeOps LargeOpOpcode()
     {
-#if DEBUG
-        throw new FatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeSizes native allocation sizes are not ported.");
-#else
+        if (Configuration.DEBUG)
+        {
+            throw new FatalJitException(CORJIT_SKIPPED, "GenTree::s_gtNodeSizes native allocation sizes are not ported.");
+        }
+
         return GT_CALL;
-#endif
     }
 }

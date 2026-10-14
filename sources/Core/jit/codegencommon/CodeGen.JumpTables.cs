@@ -19,23 +19,19 @@ public sealed partial class CodeGen
         assert(tree.Oper == GT_JMPTABLE);
         var targets = _compiler.compCurBB.SwitchTargets.Cases;
         var tableBase = Emitter.emitBBTableDataGenBeg((uint)targets.Length, relativeAddr);
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             jitprintf($"\n      J_M{_compiler.compMethodID:D3}_DS{tableBase:D2} LABEL   DWORD\n");
         }
-#endif
 
         for (var i = 0; i < targets.Length; i++)
         {
             var target = targets[i].DestinationBlock;
             noway_assert(target.HasFlag(BBF_HAS_LABEL));
-#if DEBUG
-            if (_compiler.verbose)
+            if (Configuration.DEBUG && _compiler.verbose)
             {
                 jitprintf($"            DD      L_M{_compiler.compMethodID:D3}_{FMT_BB(target.bbNum)}\n");
             }
-#endif
             Emitter.emitDataGenData((uint)i, target);
         }
         Emitter.emitDataGenEnd();

@@ -48,7 +48,11 @@ public partial class Compiler
 
 #if DEBUG
     public bool verbose;
+#else
+    public bool verbose => false;
+#endif
 
+#if DEBUG
     public bool verboseTrees;
 
     /// <summary>If true, dump trees using only ASCII characters</summary>

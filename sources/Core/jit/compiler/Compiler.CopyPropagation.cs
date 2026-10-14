@@ -268,13 +268,11 @@ public partial class Compiler
             gtUpdateSideEffects(statement, tree);
             newLclSsaDef.AddUse(block);
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 JITDUMP("copy propagated to:\n");
                 DISPNODE(tree);
             }
-#endif
             return true;
         }
         return false;
@@ -316,8 +314,8 @@ public partial class Compiler
 
     public bool optBlockCopyProp(BasicBlock block, LclNumToLiveDefsMap curSsaName)
     {
-#if DEBUG
         JITDUMP($"Copy Assertion for {FMT_BB(block.bbNum)}\n");
+#if DEBUG
         if (verbose)
         {
             JITDUMP("  curSsaName stack: ");

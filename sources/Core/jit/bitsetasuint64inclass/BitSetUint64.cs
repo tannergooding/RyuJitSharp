@@ -4,9 +4,7 @@
 // Original source is Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License (MIT).
 
 using System.Numerics;
-#if DEBUG
 using System.Globalization;
-#endif
 
 namespace RyuJitSharp;
 
@@ -165,7 +163,6 @@ public static class BitSetUInt64Ops<TEnv, TBitSetTraits>
         }
     }
 
-#if DEBUG
     public static string ToString(TEnv env, ulong bitSet)
     {
         return Format(bitSet);
@@ -177,7 +174,6 @@ public static class BitSetUInt64Ops<TEnv, TBitSetTraits>
             CultureInfo.InvariantCulture,
             $"{unchecked((uint)bitSet):X8}{unchecked((uint)(bitSet >> 32)):X8}");
     }
-#endif
 
     public static ulong UninitVal()
     {
@@ -617,12 +613,10 @@ public static class BitSetUint64Ops<TEnv, TBitSetTraits>
         return new BitSetUint64<TEnv, TBitSetTraits>(env, full: true);
     }
 
-#if DEBUG
     public static string ToString(TEnv env, BitSetUint64<TEnv, TBitSetTraits> bitSet)
     {
         return BitSetUInt64Ops<TEnv, TBitSetTraits>.ToString(env, bitSet.Bits);
     }
-#endif
 
     public struct Iter
     {

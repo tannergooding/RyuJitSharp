@@ -28,13 +28,11 @@ public partial class Emitter
         }
         compiler.info.compTotalHotCodeSize = emitTotalHotCodeSize;
         compiler.info.compTotalColdCodeSize = emitTotalColdCodeSize;
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"\nHot  code size = 0x{emitTotalHotCodeSize:X} bytes\n");
             jitprintf($"Cold code size = 0x{emitTotalColdCodeSize:X} bytes\n");
         }
-#endif
     }
 
     public void emitEndFN()

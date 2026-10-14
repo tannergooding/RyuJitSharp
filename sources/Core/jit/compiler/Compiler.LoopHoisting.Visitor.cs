@@ -128,11 +128,9 @@ public partial class Compiler
         {
             _currentBlock = block;
             var blockWeight = block.getBBWeight(_compiler);
-#if DEBUG
             JITDUMP($"\n    HoistBlock {FMT_BB(block.bbNum)} " +
                 $"(weight={refCntWtd2str(blockWeight, padForDecimalPlaces: true),6}) " +
                 $"of loop L{_loop.Index:D2} (head: {FMT_BB(_loop.Header.bbNum)})\n");
-#endif
             if (blockWeight < BB_UNITY_WEIGHT / 10)
             {
                 JITDUMP("      block weight is too small to perform hoisting.\n");

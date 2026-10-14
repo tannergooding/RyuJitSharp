@@ -16,13 +16,12 @@ public sealed partial class RangeCheck
         ASSERT_TP? assertions, bool fast = true)
     {
         var budget = 256;
-#if DEBUG
-        if (comp.compStressCompile(Compiler.STRESS_GET_RANGE, 50))
+        if (Configuration.DEBUG && comp.compStressCompile(Compiler.STRESS_GET_RANGE, 50))
         {
             fast = false;
             budget *= 16;
         }
-#endif
+
         if (fast)
         {
             return GetRangeFromAssertions(comp, tree,

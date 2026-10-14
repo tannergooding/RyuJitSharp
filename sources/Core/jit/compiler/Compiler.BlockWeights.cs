@@ -21,8 +21,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("Return blocks:");
             if (fgReturnBlocks is null)
@@ -38,7 +37,6 @@ public partial class Compiler
             }
             jitprintf("\n");
         }
-#endif
     }
 
     public PhaseStatus optSetBlockWeights()
@@ -128,28 +126,25 @@ public partial class Compiler
     {
         var domTree = _domTree ?? throw new InvalidOperationException("Loop weights require dominators.");
         _ = loop.VisitLoopBlocks(curBlk => {
-#if DEBUG
             void ReportBlockWeight(string message)
             {
-                if (verbose)
-                {
-                    jitprintf($"\n    {FMT_BB(curBlk.bbNum)}(wt={FMT_WT(curBlk.getBBWeight(this))}){message}");
-                }
+                jitprintf($"\n    {FMT_BB(curBlk.bbNum)}(wt={FMT_WT(curBlk.getBBWeight(this))}){message}");
             }
-#endif
             if (curBlk.hasProfileWeight && fgHaveProfileWeights)
             {
-#if DEBUG
-                ReportBlockWeight("; unchanged: has profile weight");
-#endif
+                if (Configuration.DEBUG && verbose)
+                {
+                    ReportBlockWeight("; unchanged: has profile weight");
+                }
                 return BasicBlockVisit.Continue;
             }
 
             if (curBlk.isRunRarely)
             {
-#if DEBUG
-                ReportBlockWeight("; unchanged: run rarely");
-#endif
+                if (Configuration.DEBUG && verbose)
+                {
+                    ReportBlockWeight("; unchanged: run rarely");
+                }
                 return BasicBlockVisit.Continue;
             }
 
@@ -171,9 +166,10 @@ public partial class Compiler
             }
 
             curBlk.scaleBBWeight(scale);
-#if DEBUG
-            ReportBlockWeight("");
-#endif
+            if (Configuration.DEBUG && verbose)
+            {
+                ReportBlockWeight("");
+            }
             return BasicBlockVisit.Continue;
         });
     }

@@ -125,7 +125,9 @@ public partial class Compiler
             gtDispTree(hoist);
             jitprintf("\n");
         }
+#endif
 
+#if DEBUG
         if (_nodeTestData is not null && _nodeTestData.TryGetValue(origExpr, out var annotation) &&
             annotation._tl is TL_LoopHoist)
         {

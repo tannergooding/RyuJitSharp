@@ -34,4 +34,14 @@ internal static unsafe class GlobalDisplayFormattingTests
         }
 #endif
     }
+
+    [Test]
+    public static void PureCompilerDiagnosticFormattersRetainTheirNativeText()
+    {
+        Assert.That(Globals.DevirtualizationDetailToString(
+            CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS), Is.EqualTo("success"));
+        Assert.That(Globals.refCntWtd2str(Globals.BB_UNITY_WEIGHT), Is.EqualTo("1"));
+        Assert.That(GenTree.gtGetHandleKindString(Globals.GTF_ICON_CLASS_HDL),
+            Is.EqualTo(nameof(Globals.GTF_ICON_CLASS_HDL)));
+    }
 }

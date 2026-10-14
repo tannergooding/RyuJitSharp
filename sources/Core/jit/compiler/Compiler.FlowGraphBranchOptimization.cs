@@ -120,14 +120,12 @@ public partial class Compiler
         }
 
         var costIsTooHigh = estDupCostSz > maxDupCostSz;
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\nDuplication of the conditional block {FMT_BB(bDest.bbNum)} (always branch from {FMT_BB(bJump.bbNum)}) " +
                       $"{(costIsTooHigh ? "not done" : "performed")}, because the cost of duplication ({estDupCostSz}) is " +
                       $"{(costIsTooHigh ? "greater" : "less or equal")} than {maxDupCostSz}, haveProfileWeights = {dspBool(haveProfileWeights)}\n");
         }
-#endif
 
         // Costing may have reordered trees even when the duplication is rejected.
         if (costIsTooHigh)

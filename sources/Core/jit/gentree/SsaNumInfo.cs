@@ -160,15 +160,16 @@ public readonly struct SsaNumInfo
     /// <remarks>Under stress, we randomly reduce the number of refs that can be encoded compactly, to stress the outlined encoding logic.</remarks>
     private static bool NumCanBeEncodedCompactly(int index, int ssaNum)
     {
-#if DEBUG
-        var compiler = JitTls.Compiler;
-        assert(compiler is not null);
-
-        if (compiler.compStressCompile(Compiler.STRESS_SSA_INFO, 20))
+        if (Configuration.DEBUG)
         {
-            return unchecked((uint)ssaNum - 2) < (uint)index;
+            var compiler = JitTls.Compiler;
+            assert(compiler is not null);
+
+            if (compiler.compStressCompile(Compiler.STRESS_SSA_INFO, 20))
+            {
+                return unchecked((uint)ssaNum - 2) < (uint)index;
+            }
         }
-#endif
 
         assert(index < MAX_NumOfFieldsInPromotableStruct);
 

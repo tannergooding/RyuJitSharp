@@ -147,7 +147,8 @@ public sealed partial class CodeGen
         {
             jitprintf("\n__epilog:\n");
         }
-        if (_verbose)
+#endif
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf($"gcVarPtrSetCur={VarSetOps.ToString(_compiler, GCInfo.gcVarPtrSetCur)} ");
             dumpConvertedVarSet(_compiler, GCInfo.gcVarPtrSetCur);
@@ -159,7 +160,6 @@ public sealed partial class CodeGen
             Emitter.emitDispRegSet(GCInfo.gcRegByrefSetCur);
             jitprintf("\n");
         }
-#endif
         genClearAvxStateInEpilog();
         genRestoreCalleeSavedFltRegs();
 

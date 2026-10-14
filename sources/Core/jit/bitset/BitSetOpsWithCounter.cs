@@ -184,13 +184,11 @@ public static class BitSetOpsWithCounter<TEnv, TBitSetTraits>
         return BitSetOps<TEnv, TBitSetTraits>.Equal(env, bitSet1, bitSet2);
     }
 
-#if DEBUG
     public static string ToString(TEnv env, ReadOnlySpan<nint> bitSet)
     {
         RecordOp(env, BitSetSupport.Operation.BSOP_ToString);
         return BitSetOps<TEnv, TBitSetTraits>.ToString(env, bitSet);
     }
-#endif
 
     public static bool VisitBits(TEnv env, ReadOnlySpan<nint> bitSet, Func<int, bool> func)
         => BitSetOps<TEnv, TBitSetTraits>.VisitBits(env, bitSet, func);

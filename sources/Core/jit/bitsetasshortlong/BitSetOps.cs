@@ -315,7 +315,6 @@ public struct BitSetOps<TEnv, TBitSetTraits>
         return bs2.SequenceEqual(bs1);
     }
 
-#if DEBUG
     // Returns a string valid until the allocator releases the memory.
     public static unsafe string ToString(TEnv env, ReadOnlySpan<nint> bs)
     {
@@ -343,7 +342,6 @@ public struct BitSetOps<TEnv, TBitSetTraits>
         }
         return stringBuilder.ToString();
     }
-#endif
 
     public static nint[] MakeEmpty(TEnv env)
         => MakeEmptyArrayBits(env);

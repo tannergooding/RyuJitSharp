@@ -195,20 +195,21 @@ public partial class Compiler
 
                         var trueSuccessor = domBlock.TrueTarget;
                         var falseSuccessor = domBlock.FalseTarget;
-#if DEBUG
-                        if (info.VnRelation is ValueNumStore.VN_RELATION_KIND.VRK_Inferred)
+                        if (Configuration.DEBUG)
                         {
-                            JITDUMP($"\nDominator {FMT_BB(domBlock.bbNum)} of {FMT_BB(block.bbNum)} can infer value of dominated relop\n");
+                            if (info.VnRelation is ValueNumStore.VN_RELATION_KIND.VRK_Inferred)
+                            {
+                                JITDUMP($"\nDominator {FMT_BB(domBlock.bbNum)} of {FMT_BB(block.bbNum)} can infer value of dominated relop\n");
+                            }
+                            else
+                            {
+                                JITDUMP($"\nDominator {FMT_BB(domBlock.bbNum)} of {FMT_BB(block.bbNum)} " +
+                                    $"has relop with {ValueNumStore.VNRelationString(info.VnRelation)} liberal VN\n");
+                            }
+                            DISPTREE(domCmpTree);
+                            JITDUMP(" Redundant compare; current relop:\n");
+                            DISPTREE(tree);
                         }
-                        else
-                        {
-                            JITDUMP($"\nDominator {FMT_BB(domBlock.bbNum)} of {FMT_BB(block.bbNum)} " +
-                                $"has relop with {ValueNumStore.VNRelationString(info.VnRelation)} liberal VN\n");
-                        }
-                        DISPTREE(domCmpTree);
-                        JITDUMP(" Redundant compare; current relop:\n");
-                        DISPTREE(tree);
-#endif
                         var trueReaches = optReachable(trueSuccessor, block, domBlock);
                         var falseReaches = optReachable(falseSuccessor, block, domBlock);
                         if (trueReaches && falseReaches && info.CanInferFromTrue && info.CanInferFromFalse)

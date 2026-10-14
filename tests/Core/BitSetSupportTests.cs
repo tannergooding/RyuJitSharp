@@ -32,6 +32,21 @@ internal static class BitSetSupportTests
     }
 
     [Test]
+    public static void NativeBitSetFormatterUsesHighWordFirstAndPadsEachWord()
+    {
+        var environment = new TestEnvironment(size: 2 * IntPtr.Size * 8);
+        nint[] bitSet = [(nint)0x1234, (nint)0x5678];
+        var expected = IntPtr.Size == sizeof(long)
+            ? "00000000000056780000000000001234"
+            : "0000567800001234";
+
+        Assert.That(BitSetOps<TestEnvironment, TestBitSetTraits>.ToString(environment, bitSet), Is.EqualTo(expected));
+        Assert.That(
+            BitSetOps<TestEnvironment, TestBitSetTraits>.ToString(new TestEnvironment(size: 0), []),
+            Is.EqualTo(new string('0', IntPtr.Size * 2)));
+    }
+
+    [Test]
     public static void OperationCounterWritesSortedCountsAtTheNativeInterval()
     {
         var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -195,9 +210,9 @@ internal static class BitSetSupportTests
             BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.Equal(environment, singleton, intersection),
             Is.True);
 
-#if DEBUG
-        _ = BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.ToString(environment, bitSet);
-#endif
+        Assert.That(
+            BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.ToString(environment, bitSet),
+            Is.EqualTo(BitSetOps<TestEnvironment, TestBitSetTraits>.ToString(environment, bitSet)));
 
         var iterator = new BitSetOpsWithCounter<TestEnvironment, TestBitSetCounterTraits>.Iter(environment, singleton);
         var bit = uint.MaxValue;
@@ -232,9 +247,7 @@ internal static class BitSetSupportTests
             BitSetSupport.Operation.BSOP_Diff,
             BitSetSupport.Operation.BSOP_IsSubset,
             BitSetSupport.Operation.BSOP_Equal,
-#if DEBUG
             BitSetSupport.Operation.BSOP_ToString,
-#endif
         ];
 
         foreach (var operation in countedOperations)

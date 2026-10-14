@@ -21,13 +21,11 @@ public partial class Compiler
             return PhaseStatus.MODIFIED_NOTHING;
         }
 
-#if DEBUG
-        if (compStressCompile(STRESS_NO_OLD_PROMOTION, 10))
+        if (Configuration.DEBUG && compStressCompile(STRESS_NO_OLD_PROMOTION, 10))
         {
             JITDUMP("  skipping due to stress\n");
             return PhaseStatus.MODIFIED_NOTHING;
         }
-#endif
 
         if (info.compIsVarArgs)
         {

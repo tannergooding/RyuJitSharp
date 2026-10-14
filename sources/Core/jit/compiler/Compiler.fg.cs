@@ -107,13 +107,11 @@ public partial class Compiler
 
         if (inlineResult.IsFailure)
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("Recursive or deep inline recursion detected. Will not expand this INLINECANDIDATE \n");
             }
 
-#endif
             createdContext = null;
             return;
         }
@@ -173,12 +171,10 @@ public partial class Compiler
                     compileFlagsForInlinee.Clear(JitFlags.JIT_FLAG_ASYNC);
                 }
 
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"\nInvoking compiler for the inlinee method {eeGetMethodFullName(fncHandle)} :\n");
                 }
-#endif
 
                 CorJitResult result;
 
@@ -203,12 +199,10 @@ public partial class Compiler
 
         if (!success)
         {
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"\nInlining failed due to an exception during invoking the compiler for the inlinee method {eeGetMethodFullName(fncHandle)}.\n");
             }
-#endif
 
             // If we haven't yet determined why this inline fails, use
             // a catch-all something bad happened observation.
@@ -244,12 +238,10 @@ public partial class Compiler
 
             if (retExpr.SubstExpr is null)
             {
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"\nInlining failed because pInlineInfo->retExpr is not set in the inlinee method {eeGetMethodFullName(fncHandle)}.\n");
                 }
-#endif
 
                 inlineResult.NoteFatal(InlineObservation.CALLSITE_LACKS_RETURN);
                 return;
@@ -273,14 +265,11 @@ public partial class Compiler
 #endif
         fgInsertInlineeBlocks(inlineInfo);
 
-#if DEBUG
-
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Successfully inlined {eeGetMethodFullName(fncHandle)} ({inlineCandidateInfo.methInfo.ILCodeSize} IL bytes) (depth {inlineDepth}) [{inlineResult.ReasonString}]\n");
             jitprintf("--------------------------------------------------------------------------------------------\n");
         }
-#endif
 
 #if DEBUG
         impInlinedCodeSize += inlineCandidateInfo.methInfo.ILCodeSize;
@@ -933,18 +922,14 @@ public partial class Compiler
 
         // Update optMethodFlags
 
-#if DEBUG
         var optMethodFlagsBefore = optMethodFlags;
-#endif
 
         optMethodFlags |= InlineeCompiler.optMethodFlags;
 
-#if DEBUG
-        if (optMethodFlags != optMethodFlagsBefore)
+        if (Configuration.DEBUG && (optMethodFlags != optMethodFlagsBefore))
         {
             JITDUMP($"INLINER: Updating optMethodFlags --  root:{(int)(optMethodFlagsBefore):x} callee:{(int)(InlineeCompiler.optMethodFlags):x} new:{(int)(optMethodFlags):x}\n");
         }
-#endif
 
         // Update profile consistency
         // If inlinee is inconsistent, root method will be inconsistent too.
@@ -1476,12 +1461,10 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (call.Args.CountUserArgs() > 0)
+        if (Configuration.DEBUG && (call.Args.CountUserArgs() > 0))
         {
             JITDUMP("\nArguments setup:\n");
         }
-#endif
 
         var ilArgNum = 0;
         var newStmt = null as Statement;
@@ -1552,12 +1535,10 @@ public partial class Compiler
         if ((lclCnt != 0) && ((inlineeMethodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0) && ((bbInALoop && !bbIsReturn) || !info.compInitMem))
         {
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf("\nZero init inlinee locals:\n");
             }
-#endif
 
             for (var lclNum = 0; lclNum < lclCnt; lclNum++)
             {
@@ -1839,8 +1820,7 @@ public partial class Compiler
 
                     if (!BitVecOps.TryAddElemD(traits, visited, succ.bbNum))
                     {
-#if DEBUG
-                        if (verbose)
+                        if (Configuration.DEBUG && verbose)
                         {
                             jitprintf("Found a cycle that does not go through a GC safe point:\n");
                             jitprintf(FMT_BB(succ.bbNum));
@@ -1855,11 +1835,9 @@ public partial class Compiler
                                     break;
                                 }
                             }
-
                             jitprintf("\n");
                         }
 
-#endif
                         return true;
                     }
 
@@ -4158,25 +4136,21 @@ public partial class Compiler
             /* Multiple pointers in EHblkDsc can point to same block. We can not early out after the first match. */
             if (HBtab.ebdTryBeg == block)
             {
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"EH#{ehGetIndex(HBtab)}: New first block of try: {FMT_BB(bPrev.bbNum)}\n");
                 }
 
-#endif
                 HBtab.ebdTryBeg = bPrev;
                 bPrev.SetFlags(BBF_DONT_REMOVE);
             }
 
             if (HBtab.ebdHndBeg == block)
             {
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"EH#{ehGetIndex(HBtab)}: New first block of handler: {FMT_BB(bPrev.bbNum)}\n");
                 }
-#endif
 
                 HBtab.ebdHndBeg = bPrev;
                 bPrev.SetFlags(BBF_DONT_REMOVE);
@@ -4197,13 +4171,11 @@ public partial class Compiler
                     assert(bFilterLast.Kind is BBJ_EHFILTERRET);
                     assert(bFilterLast.Target == block);
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"EH#{ehGetIndex(HBtab)}: Updating target for filter ret block: {FMT_BB(bFilterLast.bbNum)} => {FMT_BB(bPrev.bbNum)}\n");
                     }
 
-#endif
                     // Change the target for bFilterLast from the old first 'block' to the new first 'bPrev'
                     fgRedirectEdge(ref bFilterLast.TargetEdgeRef, bPrev);
                 }
@@ -4211,12 +4183,10 @@ public partial class Compiler
 
             if (HBtab.HasFilter && (HBtab.ebdFilter == block))
             {
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"EH#{ehGetIndex(HBtab)}: New first block of filter: {FMT_BB(bPrev.bbNum)}\n");
                 }
-#endif
 
                 // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
                 noway_assert(block.CountOfInEdges > 0);
@@ -4233,16 +4203,17 @@ public partial class Compiler
     /// <summary>Main entry point to discover the basic blocks for the current function.</summary>
     public unsafe void fgFindBasicBlocks()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"*************** In fgFindBasicBlocks() for {info.compFullName}\n");
         }
 
         // Call this here so any dump printing it inspires doesn't appear in the bb table.
         //
-        fgStressBBProf();
-#endif
+        if (Configuration.DEBUG)
+        {
+            _ = fgStressBBProf();
+        }
 
         // Allocate the 'jump target' bit vector
         var jumpTarget = new BitArray(info.compILCodeSize + 1);
@@ -4367,8 +4338,7 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             var anyJumpTargets = false;
             jitprintf("Jump targets:\n");
@@ -4387,7 +4357,6 @@ public partial class Compiler
                 jitprintf("  none\n");
             }
         }
-#endif
 
         // Now create the basic blocks
         fgMakeBasicBlocks(info.compCode, info.compILCodeSize, jumpTarget);
@@ -8260,12 +8229,10 @@ public partial class Compiler
                 {
                     makeBlock = true;
 
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf($"Splitting at BBoffs = {nxtBBoffs:D4}\n");
                     }
-#endif
                 }
 
                 if (!makeBlock)
@@ -8976,10 +8943,14 @@ public partial class Compiler
             return;
         }
 
+        if (Configuration.DEBUG && verbose)
+        {
+            jitprintf("*************** In fgNormalizeEH()\n");
+        }
+
 #if DEBUG
         if (verbose)
         {
-            jitprintf("*************** In fgNormalizeEH()\n");
             fgDispBasicBlocks();
             fgDispHandlerTab();
         }
@@ -9063,12 +9034,10 @@ public partial class Compiler
                 assert(handlerStart.bbRefs >= 2);
                 handlerStart.bbRefs--;
 
-#if DEBUG
-                if (verbose)
+                if (Configuration.DEBUG && verbose)
                 {
                     jitprintf($"Handler begin for EH#{XTnum:D2} and 'try' begin for EH{ehGetIndex(handlerStartContainingTry):D2} are the same block; inserted new {FMT_BB(newHndStart.bbNum)} before {FMT_BB(eh.ebdHndBeg.bbNum)} as new handler begin for EH#{XTnum}.\n");
                 }
-#endif
 
                 // The new block is the new handler begin.
                 eh.ebdHndBeg = newHndStart;
@@ -9199,12 +9168,10 @@ public partial class Compiler
                             // separated by some nesting.
                             // clang-format on
 
-#if DEBUG
-                            if (verbose)
+                            if (Configuration.DEBUG && verbose)
                             {
                                 jitprintf($"Mutually protect regions EH#{mutualProtectIndex} and EH#{ehGetIndex(ehOuter)}; leaving identical 'try' begin blocks.\n");
                             }
-#endif
 
                             // We still need to update the tryBeg, if something more nested already did that.
                             ehOuter.ebdTryBeg = insertBeforeBlk;
@@ -9812,12 +9779,10 @@ public partial class Compiler
             // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
             noway_assert(!block.isBBCallFinallyPairTail);
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"Removing empty {FMT_BB(block.bbNum)}\n");
             }
-#endif
 
             if (Configuration.DEBUG)
             {
@@ -10459,12 +10424,10 @@ public partial class Compiler
 
         var target = block.TrueTarget;
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Block {FMT_BB(block.bbNum)} becoming a BBJ_ALWAYS to {FMT_BB(target.bbNum)} (jump target is the same whether the condition is true or false)\n");
         }
-#endif
 
         if (block.IsLIR)
         {
@@ -11436,12 +11399,10 @@ public partial class Compiler
             // Update the EH table with the newHndLast block
             handlerTab.ebdHndLast = newHndLast;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"EH#{ehGetIndex(handlerTab)}: New last block of handler: {FMT_BB(newHndLast.bbNum)}\n");
             }
-#endif
         }
     }
 
@@ -11581,12 +11542,10 @@ public partial class Compiler
             // Update the EH table with the newTryLast block
             handlerTab.ebdTryLast = newTryLast;
 
-#if DEBUG
-            if (verbose)
+            if (Configuration.DEBUG && verbose)
             {
                 jitprintf($"EH#{ehGetIndex(handlerTab)}: New last block of try: {FMT_BB(newTryLast.bbNum)}\n");
             }
-#endif
         }
     }
 
@@ -11665,12 +11624,10 @@ public partial class Compiler
         // set the bbHndIndex value in some nested cases, and that can lead to a security exploit
         // that allows the execution of arbitrary code.
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("fgSortEHTable: Sorting EH table\n");
         }
-#endif
 
         for (ushort xtabnum1 = 0; xtabnum1 < compHndBBtabCount; xtabnum1++)
         {
@@ -11700,33 +11657,34 @@ public partial class Compiler
                     ((hndBegOff >= xtab1._ebdHndBegOffset) && (hndEndOff <= xtab1._ebdHndEndOffset)) ||
                     (xtab1.HasFilter && ((hndBegOff >= xtab1._ebdFilterBegOffset) && (hndEndOff <= xtab1._ebdHndBegOffset))))
                 {
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG)
                     {
-                        jitprintf($"fgSortEHTable: Swapping out-of-order EH#{xtabnum1} and EH#{xtabnum2}\n");
+                        if (verbose)
+                        {
+                            jitprintf($"fgSortEHTable: Swapping out-of-order EH#{xtabnum1} and EH#{xtabnum2}\n");
+                        }
+
+                        // Assert that the 'try' region is also nested in the same place as the handler
+
+                        var tryBegOff = xtab2._ebdTryBegOffset;
+                        var tryEndOff = xtab2._ebdTryEndOffset;
+                        assert(tryEndOff > tryBegOff);
+
+                        if ((hndBegOff >= xtab1._ebdTryBegOffset) && (hndEndOff <= xtab1._ebdTryEndOffset))
+                        {
+                            assert((tryBegOff >= xtab1._ebdTryBegOffset) && (tryEndOff <= xtab1._ebdTryEndOffset));
+                        }
+
+                        if ((hndBegOff >= xtab1._ebdHndBegOffset) && (hndEndOff <= xtab1._ebdHndEndOffset))
+                        {
+                            assert((tryBegOff >= xtab1._ebdHndBegOffset) && (tryEndOff <= xtab1._ebdHndEndOffset));
+                        }
+
+                        if (xtab1.HasFilter && ((hndBegOff >= xtab1._ebdFilterBegOffset) && (hndEndOff <= xtab1._ebdHndBegOffset)))
+                        {
+                            assert((tryBegOff >= xtab1._ebdFilterBegOffset) && (tryEndOff <= xtab1._ebdHndBegOffset));
+                        }
                     }
-
-                    // Assert that the 'try' region is also nested in the same place as the handler
-
-                    var tryBegOff = xtab2._ebdTryBegOffset;
-                    var tryEndOff = xtab2._ebdTryEndOffset;
-                    assert(tryEndOff > tryBegOff);
-
-                    if ((hndBegOff >= xtab1._ebdTryBegOffset) && (hndEndOff <= xtab1._ebdTryEndOffset))
-                    {
-                        assert((tryBegOff >= xtab1._ebdTryBegOffset) && (tryEndOff <= xtab1._ebdTryEndOffset));
-                    }
-
-                    if ((hndBegOff >= xtab1._ebdHndBegOffset) && (hndEndOff <= xtab1._ebdHndEndOffset))
-                    {
-                        assert((tryBegOff >= xtab1._ebdHndBegOffset) && (tryEndOff <= xtab1._ebdHndEndOffset));
-                    }
-
-                    if (xtab1.HasFilter && ((hndBegOff >= xtab1._ebdFilterBegOffset) && (hndEndOff <= xtab1._ebdHndBegOffset)))
-                    {
-                        assert((tryBegOff >= xtab1._ebdFilterBegOffset) && (tryEndOff <= xtab1._ebdHndBegOffset));
-                    }
-#endif
 
                     // Swap them!
                     (xtab1, xtab2) = (xtab2, xtab1);
@@ -12430,12 +12388,10 @@ public partial class Compiler
     /// <summary>Insert an already-unlinked block range after another block. The caller owns updating fgFirstFuncletBB.</summary>
     public void fgMoveBlocksAfter(BasicBlock start, BasicBlock end, BasicBlock insertAfterBlk)
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"Relocated block{(start == end ? "" : "s")} [{FMT_BB(start.bbNum)}..{FMT_BB(end.bbNum)}] inserted after {FMT_BB(insertAfterBlk.bbNum)}{(insertAfterBlk.IsLast ? " at the end of method" : "")}\n");
         }
-#endif
 
         if (insertAfterBlk == fgLastBB)
         {
@@ -12474,12 +12430,10 @@ public partial class Compiler
             return;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\nRemoving unreachable {FMT_BB(block.bbNum)}\n");
         }
-#endif
 
         noway_assert(!block.IsFirst); // Can't use this function to remove the first block
 
@@ -13499,12 +13453,10 @@ public partial class Compiler
 
     public PhaseStatus fgFindOperOrder()
     {
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("*************** In fgFindOperOrder()\n");
         }
-#endif
 
         // Walk the basic blocks and for each statement determine the evaluation order, cost, FP levels, etc...
 
@@ -14635,9 +14587,10 @@ public partial class Compiler
                     if (block.TryIndex == xtnum)
                     {
                         noway_assert(block.HasFlag(BBF_REMOVED));
-#if DEBUG
-                        block.TryIndex = MAX_XCPTN_INDEX;
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            block.TryIndex = MAX_XCPTN_INDEX;
+                        }
                     }
                     else if (block.TryIndex > xtnum)
                     {
@@ -14650,9 +14603,10 @@ public partial class Compiler
                     if (block.HndIndex == xtnum)
                     {
                         noway_assert(block.HasFlag(BBF_REMOVED));
-#if DEBUG
-                        block.HndIndex = MAX_XCPTN_INDEX;
-#endif
+                        if (Configuration.DEBUG)
+                        {
+                            block.HndIndex = MAX_XCPTN_INDEX;
+                        }
                     }
                     else if (block.HndIndex > xtnum)
                     {
@@ -14753,8 +14707,7 @@ public partial class Compiler
             return false;
         }
 
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"{fgBBcount - dfsTree.PostOrderCount}/{fgBBcount} blocks are unreachable and will be removed:\n");
 
@@ -14766,7 +14719,6 @@ public partial class Compiler
                 }
             }
         }
-#endif
 
         // Call-finally removal can expose additional unreachable blocks that
         // the previous DFS did not find.
@@ -15331,11 +15283,9 @@ public partial class Compiler
                 // Rebuild the entire list immediately; no transient link transfer
                 // is needed between this owner update and resequencing.
                 fgSequenceLocals(store.Statement);
-#if DEBUG
                 JITDUMP("\nResult:\n");
                 DISPSTMT(store.Statement);
                 JITDUMP("\n");
-#endif
                 changed = true;
             }
         }
@@ -15824,13 +15774,11 @@ public partial class Compiler
                 var nonCallAppearances = totalAppearances - callAppearances;
                 var undoPromotion = (lvaGetPromotionType(in newVarDsc) is PROMOTION_TYPE_DEPENDENT) ||
                     (nonCallAppearances <= varDsc.lvFieldCnt);
-#if DEBUG
-                if (compStressCompile(STRESS_BYREF_PROMOTION, 25))
+                if (Configuration.DEBUG && compStressCompile(STRESS_BYREF_PROMOTION, 25))
                 {
                     undoPromotion = !undoPromotion;
                     JITDUMP($"Stress -- changing byref undo promotion for V{lclNum:D2} to {(undoPromotion ? "" : "NOT")} undo\n");
                 }
-#endif
                 JITDUMP($"{(undoPromotion ? "Undoing" : "Keeping")} promotion of implicit by-ref V{lclNum:D2}: {(lvaGetPromotionType(in newVarDsc) is PROMOTION_TYPE_DEPENDENT ? "dependent;" : "")} total: {totalAppearances} non-call: {nonCallAppearances} fields: {varDsc.lvFieldCnt}\n");
 
                 if (!undoPromotion)

@@ -16,12 +16,10 @@ public partial class Compiler
 {
     public unsafe bool fgUpdateFlowGraph(bool doTailDuplication = false, bool isPhase = false)
     {
-#if DEBUG
-        if (verbose && !isPhase)
+        if (Configuration.DEBUG && verbose && !isPhase)
         {
             jitprintf("\n*************** In fgUpdateFlowGraph()");
         }
-#endif
         noway_assert(opts.OptimizationEnabled);
         assert(fgFirstColdBlock is null);
 

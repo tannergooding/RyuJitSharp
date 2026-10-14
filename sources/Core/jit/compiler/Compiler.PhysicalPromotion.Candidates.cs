@@ -432,14 +432,15 @@ public partial class Compiler
                     }
                 }
 
-#if DEBUG
-                JITDUMP($"V{aggregate.LclNum:D2} promoted with {aggregate.Replacements.Count} replacements\n");
-                foreach (var replacement in aggregate.Replacements)
+                if (Configuration.DEBUG)
                 {
-                    JITDUMP($"  [{replacement.Offset:D3}..{replacement.Offset + replacement.AccessType.Size:D3}) " +
-                        $"promoted as {replacement.AccessType.Name} V{replacement.LclNum:D2}\n");
+                    JITDUMP($"V{aggregate.LclNum:D2} promoted with {aggregate.Replacements.Count} replacements\n");
+                    foreach (var replacement in aggregate.Replacements)
+                    {
+                        JITDUMP($"  [{replacement.Offset:D3}..{replacement.Offset + replacement.AccessType.Size:D3}) " +
+                            $"promoted as {replacement.AccessType.Name} V{replacement.LclNum:D2}\n");
+                    }
                 }
-#endif
 
                 // The managed layout caches its SegmentList; native assignment copies the segments.
                 aggregate.Unpromoted = PhysicalPromotionCopyNonPadding(

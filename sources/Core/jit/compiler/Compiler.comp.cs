@@ -1141,13 +1141,13 @@ public partial class Compiler
             info.compFlags |= CORINFO_FLG_FORCEINLINE;
         }
 
-#if DEBUG
         // Check for ForceInline stress.
-        if (compStressCompile(STRESS_FORCE_INLINE, 0))
+        if (Configuration.DEBUG && compStressCompile(STRESS_FORCE_INLINE, 0))
         {
             info.compFlags |= CORINFO_FLG_FORCEINLINE;
         }
 
+#if DEBUG
         if (compIsForInlining)
         {
             JITLOG(LL_INFO100000, $"\nINLINER impTokenLookupContextHandle for {eeGetMethodFullName(info.compMethodHnd)} is 0x{FMT_DSP_PTR(impTokenLookupContextHandle)}.\n");

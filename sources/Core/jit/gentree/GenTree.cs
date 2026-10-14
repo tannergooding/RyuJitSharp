@@ -2282,7 +2282,6 @@ public partial class GenTree
     }
 #nullable restore
 
-#if DEBUG
     public static string gtGetHandleKindString(GenTreeFlags flags)
     {
         var handleKind = flags & GTF_ICON_HDL_MASK;
@@ -2311,7 +2310,6 @@ public partial class GenTree
             _ => "ILLEGAL!",
         };
     }
-#endif
 
     /// <summary>Returns true if the data pointed to by a handle address is guaranteed to be invariant.</summary>
     /// <param name="flags">the handle kind</param>

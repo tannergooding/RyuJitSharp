@@ -1,6 +1,5 @@
 // Copyright (c) Tanner Gooding and Contributors. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
 
-#if DEBUG
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using static RyuJitSharp.Globals;
@@ -83,4 +82,3 @@ internal static class RegisterMaskStringTests
         Assert.That(second, Is.EqualTo("2".PadLeft(FullWidth, '0')));
     }
 }
-#endif

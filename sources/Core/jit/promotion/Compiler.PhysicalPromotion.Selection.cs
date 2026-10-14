@@ -572,13 +572,12 @@ public partial class Compiler
                 return true;
             }
 
-#if DEBUG
-            if (compiler.compStressCompile(STRESS_PHYSICAL_PROMOTION_COST, 25))
+            if (Configuration.DEBUG && compiler.compStressCompile(STRESS_PHYSICAL_PROMOTION_COST, 25))
             {
                 JITDUMP("  Promoting replacement (stress)\n\n");
                 return true;
             }
-#endif
+
             JITDUMP("  Disqualifying replacement\n\n");
             return false;
         }

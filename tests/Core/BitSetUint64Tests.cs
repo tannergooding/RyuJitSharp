@@ -227,11 +227,10 @@ internal static class BitSetUint64Tests
         Assert.That(element, Is.EqualTo(73));
     }
 
-#if DEBUG
     [TestCase(0UL, "0000000000000000")]
     [TestCase(0x123456789ABCDEF0UL, "9ABCDEF012345678")]
     [TestCase(ulong.MaxValue, "FFFFFFFFFFFFFFFF")]
-    public static void DebugStringFormatsLowWordBeforeHighWord(ulong bits, string expected)
+    public static void StringFormatsLowWordBeforeHighWord(ulong bits, string expected)
     {
         var env = new BitSetUint64TestEnvironment(64);
         var bitSet = new TestBitSet(env, full: false)
@@ -242,7 +241,6 @@ internal static class BitSetUint64Tests
         Assert.That(TestOps.ToString(env, bitSet), Is.EqualTo(expected));
         Assert.That(TestRawOps.ToString(env, bits), Is.EqualTo(expected));
     }
-#endif
 }
 
 internal sealed class BitSetUint64TestEnvironment

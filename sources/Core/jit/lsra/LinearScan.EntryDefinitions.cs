@@ -30,11 +30,7 @@ public sealed partial class LinearScan
 
     private bool stressInitialParamReg()
     {
-#if DEBUG
-        return _compiler.compStressCompile(Compiler.compStressArea.STRESS_INITIAL_PARAM_REG, 25);
-#else
-        return false;
-#endif
+        return Configuration.DEBUG && _compiler.compStressCompile(Compiler.compStressArea.STRESS_INITIAL_PARAM_REG, 25);
     }
 
     // currentLiveVariables must contain exactly the register candidates live on entry.

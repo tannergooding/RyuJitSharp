@@ -360,9 +360,7 @@ public partial class Compiler
 
     private void lvaMarkLocalVars(BasicBlock block)
     {
-#if DEBUG
         JITDUMP($"\n*** marking local variables in block {FMT_BB(block.bbNum)} (weight={refCntWtd2str(block.getBBWeight(this))})\n");
-#endif
         for (var statement = block.GetFirstNonPhiDef(); statement is not null; statement = statement.NextStmt)
         {
             var visitor = new MarkLocalVarsVisitor(this, block, statement);

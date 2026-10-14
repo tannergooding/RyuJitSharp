@@ -1361,15 +1361,13 @@ public partial class Emitter
 #endif
                         sz = (nuint)DescriptorSizes.Align;
                         ins = INS_nop;
-#if DEBUG
-                        var alignInstr = (instrDescAlign)id;
-                        if (compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 50)
-                            && alignInstr.isPlacedAfterJmp && !skipIns)
+                        if (Configuration.DEBUG &&
+                            compiler.compStressCompile(Compiler.compStressArea.STRESS_EMITTER, 50) &&
+                            ((instrDescAlign)id).isPlacedAfterJmp && !skipIns)
                         {
                             ins = INS_BREAKPOINT;
                             fmt = IF_ARM64_SI_0A;
                         }
-#endif
                     }
                     if (!skipIns)
                     {

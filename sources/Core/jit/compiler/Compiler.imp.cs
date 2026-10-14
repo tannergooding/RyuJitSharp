@@ -1110,9 +1110,7 @@ public partial class Compiler
                 {
                     // Continue checking other candidates, maybe some of them will succeed.
 
-#if DEBUG
                     JITDUMP($"Can't figure out which method would be invoked, sorry. [{DevirtualizationDetailToString(dvInfo.detail)}]\n");
-#endif
 
                     break;
                 }
@@ -3344,9 +3342,7 @@ public partial class Compiler
 
         if (derivedMethod is null)
         {
-#if DEBUG
             JITDUMP($"--- no derived method: {DevirtualizationDetailToString(dvInfo.detail)}\n");
-#endif
         }
         else
         {
@@ -5359,9 +5355,9 @@ public partial class Compiler
         {
             impFixPredLists();
 
-#if DEBUG
             JITDUMP("\nAfter impImport() added blocks for try,catch,finally");
 
+#if DEBUG
             if (verbose)
             {
                 fgDispBasicBlocks();

@@ -27,8 +27,9 @@ public sealed partial class CodeGen
         {
             jitprintf("\n__epilog:\n");
         }
+#endif
 
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             jitprintf($"gcVarPtrSetCur={VarSetOps.ToString(_compiler, GCInfo.gcVarPtrSetCur)} ");
             dumpConvertedVarSet(_compiler, GCInfo.gcVarPtrSetCur);
@@ -40,7 +41,6 @@ public sealed partial class CodeGen
             Emitter.emitDispRegSet(GCInfo.gcRegByrefSetCur);
             jitprintf("\n");
         }
-#endif
 
         var jumpEpilog = block.HasFlag(BBF_HAS_JMP);
         var lastNode = block.GetLastNode()
