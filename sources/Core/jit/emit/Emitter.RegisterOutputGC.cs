@@ -17,9 +17,10 @@ public partial class Emitter
             throw new FatalJitException("xarch GC register classification is not available for this target.");
         }
 
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
 
         var mask = reg.SingleTypeMask;
         if ((emitThisGCrefRegs & mask) != SRBM_NONE)

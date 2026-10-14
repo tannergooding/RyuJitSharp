@@ -15,9 +15,10 @@ public partial class Emitter
 
     private unsafe void emitGCvarLiveSet(int offs, GCInfo.GCtype gcType, byte* addr, nint disp = -1)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         assert((offs % Configuration.TARGET_POINTER_SIZE) == 0);
         assert(gcType is GCT_GCREF or GCT_BYREF);
         if (disp == -1)
@@ -58,9 +59,10 @@ public partial class Emitter
 
     private unsafe void emitGCvarDeadSet(int offs, byte* addr, nint disp = -1)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         assert((offs % sizeof(int)) == 0);
         if (disp == -1)
         {
@@ -150,9 +152,10 @@ public partial class Emitter
 #endif
         )
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         assert(_compiler is not null);
         assert((offs % sizeof(int)) == 0);
         if ((offs >= emitGCrFrameOffsMin) && (offs < emitGCrFrameOffsMax))

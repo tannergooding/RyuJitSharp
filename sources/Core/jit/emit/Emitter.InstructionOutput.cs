@@ -49,8 +49,11 @@ public partial class Emitter
     {
         assert(_compiler is not null);
         assert(emitCurIG is not null);
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
 #if DEBUG
-        assert(emitIssuing);
         var dspOffs = _compiler.opts.dspGCtbls;
 #else
         const bool dspOffs = false;

@@ -12,9 +12,10 @@ public partial class Emitter
 {
     public unsafe void emitRecordGCcall(byte* codePos, byte callInstrSize)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         assert(!emitFullGCinfo);
         var offs = emitCurCodeOffs(codePos);
 

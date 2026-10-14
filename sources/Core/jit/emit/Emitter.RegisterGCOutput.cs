@@ -28,9 +28,10 @@ public partial class Emitter
 
     private unsafe void emitGCregLiveSet(GCInfo.GCtype gcType, regMaskTP mask, byte* dst, bool isThis)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         assert(gcType != GCT_NONE);
         assert(!isThis || (_compiler ?? throw new System.InvalidOperationException("Emitter is not initialized."))
             .lvaKeepAliveAndReportThis());
@@ -48,9 +49,10 @@ public partial class Emitter
 
     private unsafe void emitGCregDeadSet(GCInfo.GCtype gcType, regMaskTP mask, byte* dst)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         assert(gcType != GCT_NONE && emitFullGCinfo);
         assert((new regMaskTP(emitThisGCrefRegs | emitThisByrefRegs) & mask).IsNonEmpty);
         var descriptor = gcInfo.gcRegPtrAllocDsc();
@@ -65,9 +67,10 @@ public partial class Emitter
 
     private unsafe void emitGCregDeadUpd(regNumber reg, byte* dst)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
 #if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {
@@ -100,9 +103,10 @@ public partial class Emitter
 
     private unsafe void emitGCregDeadUpdMask(regMaskTP regs, byte* addr)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         if (emitIGisInEpilog(emitCurIG))
         {
             return;
@@ -141,9 +145,10 @@ public partial class Emitter
 
     private unsafe void emitGCregLiveUpd(GCInfo.GCtype gcType, regNumber reg, byte* dst)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
 #if EMIT_GENERATE_GCINFO
         if (Configuration.HAS_FIXED_REGISTER_SET)
         {

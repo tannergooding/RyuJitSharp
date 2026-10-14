@@ -158,9 +158,10 @@ public partial class Emitter
         }
 
 #if EMIT_GENERATE_GCINFO
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         if (Configuration.JIT32_GCENCODER)
         {
             assert(!emitSimpleStkUsed);

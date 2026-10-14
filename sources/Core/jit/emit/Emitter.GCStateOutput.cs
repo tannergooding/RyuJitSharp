@@ -13,9 +13,10 @@ public partial class Emitter
     private unsafe void emitUpdateLiveGCvars(VARSET_TP vars, byte* addr)
     {
         assert(_compiler is not null);
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         if (emitIGisInEpilog(emitCurIG))
         {
             return;
@@ -65,9 +66,10 @@ public partial class Emitter
 
     private unsafe void emitUpdateLiveGCregs(GCInfo.GCtype gcType, regMaskTP regs, byte* addr)
     {
-#if DEBUG
-        assert(emitIssuing);
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(emitIssuing);
+        }
         if (emitIGisInEpilog(emitCurIG))
         {
             return;

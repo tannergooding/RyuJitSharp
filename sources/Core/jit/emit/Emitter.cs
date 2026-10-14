@@ -102,6 +102,8 @@ public partial class Emitter
 #if DEBUG
     /// <summary>If we have started issuing instructions from the list of instrDesc, this is set</summary>
     public bool emitIssuing;
+#else
+    public bool emitIssuing => false;
 #endif
 
     /// <summary>Hot code block</summary>
