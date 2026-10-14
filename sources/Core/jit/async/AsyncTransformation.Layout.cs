@@ -453,8 +453,7 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
             }
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             var referenceCount = 0;
             foreach (var slot in gcSlots)
@@ -485,18 +484,15 @@ internal sealed class AsyncContinuationLayoutBuilder(Compiler compiler)
                     $"{i * Configuration.TARGET_POINTER_SIZE,3}) obj refs\n");
             }
         }
-#endif
         fixed (bool* refs = gcSlots)
         {
             layout.ClassHnd = _compiler.info.compCompHnd->getContinuationType(layout.Size, refs, gcSlots.Length);
         }
 
-#if DEBUG
-        if (_compiler.verbose)
+        if (Configuration.DEBUG && _compiler.verbose)
         {
             JITDUMP($"  Result = {_compiler.eeGetClassName(layout.ClassHnd)}\n");
         }
-#endif
         return layout;
     }
 }
