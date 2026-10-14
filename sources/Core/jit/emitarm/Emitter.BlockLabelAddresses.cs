@@ -51,14 +51,15 @@ public partial class Emitter
         id.idInsFmt(format);
         id.idInsSize(size);
 
-#if DEBUG
-        if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
+        if (Configuration.DEBUG)
         {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            debugInfo.idCatchRet = true;
+            if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                debugInfo.idCatchRet = true;
+            }
         }
-#endif
 
         id.idjTarget = dst;
         id.idjShort = false;

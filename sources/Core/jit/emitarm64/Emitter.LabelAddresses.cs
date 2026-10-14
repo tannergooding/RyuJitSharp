@@ -36,14 +36,12 @@ public partial class Emitter
 
         var compiler = _compiler ?? throw new InvalidOperationException("Emitter is not initialized.");
         assert(compiler.compCurBB is not null);
-#if DEBUG
-        if (compiler.compCurBB.Kind == BBJ_EHCATCHRET)
+        if (Configuration.DEBUG && (compiler.compCurBB.Kind == BBJ_EHCATCHRET))
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
             debugInfo.idCatchRet = true;
         }
-#endif
 
         id.idjKeepLong = compiler.fgInDifferentRegions(compiler.compCurBB, dst);
 #if DEBUG

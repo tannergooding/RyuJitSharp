@@ -79,15 +79,13 @@ public partial class Emitter
         {
             assert(_compiler is not null);
             assert(_compiler.compCurBB is not null);
+            if ((ins == INS_bl_local) && (_compiler.compCurBB.Kind == BBJ_CALLFINALLY))
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                debugInfo.idFinallyCall = true;
+            }
         }
-#if DEBUG
-        if ((ins == INS_bl_local) && (_compiler.compCurBB.Kind == BBJ_CALLFINALLY))
-        {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            debugInfo.idFinallyCall = true;
-        }
-#endif
 
         id.idjIG = emitCurIG;
         id.idjOffs = unchecked((uint)emitCurIGsize);

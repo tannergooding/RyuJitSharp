@@ -77,14 +77,12 @@ public partial class Emitter
 #endif
         }
 
-#if DEBUG
-        if ((ins == INS_bl) && (_compiler.compCurBB.Kind == BBJ_CALLFINALLY))
+        if (Configuration.DEBUG && (ins == INS_bl) && (_compiler.compCurBB.Kind == BBJ_CALLFINALLY))
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
             debugInfo.idFinallyCall = true;
         }
-#endif
 
         id.idjIG = emitCurIG;
         id.idjOffs = unchecked((uint)emitCurIGsize);

@@ -66,15 +66,13 @@ public partial class Emitter
         {
             assert(_compiler is not null);
             assert(_compiler.compCurBB is not null);
+            if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                debugInfo.idCatchRet = true;
+            }
         }
-#if DEBUG
-        if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
-        {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            debugInfo.idCatchRet = true;
-        }
-#endif
 #if EMITTER_STATS
         emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
 #endif

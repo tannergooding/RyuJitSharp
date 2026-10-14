@@ -71,14 +71,12 @@ public partial class Emitter
         id.idCodeSize(2 * sizeof(uint));
         id.idReg1(reg);
 
-#if DEBUG
-        if (_compiler?.compCurBB?.Kind == BBJ_EHCATCHRET)
+        if (Configuration.DEBUG && (_compiler?.compCurBB?.Kind == BBJ_EHCATCHRET))
         {
             var debugInfo = id.idDebugOnlyInfo()
                 ?? throw new InvalidOperationException("RISC-V label instructions require debug descriptor info.");
             debugInfo.idCatchRet = true;
         }
-#endif
 
         dispIns(id);
         appendToCurIG(id);

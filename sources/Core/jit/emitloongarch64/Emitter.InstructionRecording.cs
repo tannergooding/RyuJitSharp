@@ -142,16 +142,17 @@ public partial class Emitter
             id.idOpSize(EA_PTRSIZE);
         }
 
-#if DEBUG
-        var currentBlock = compiler.compCurBB;
-        assert(currentBlock is not null);
-        if (currentBlock.Kind == BBJ_EHCATCHRET)
+        if (Configuration.DEBUG)
         {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            debugInfo.idCatchRet = true;
+            var currentBlock = compiler.compCurBB;
+            assert(currentBlock is not null);
+            if (currentBlock.Kind == BBJ_EHCATCHRET)
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                debugInfo.idCatchRet = true;
+            }
         }
-#endif
         appendToCurIG(id);
     }
 

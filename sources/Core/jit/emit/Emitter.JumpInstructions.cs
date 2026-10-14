@@ -135,17 +135,16 @@ public partial class Emitter
         emitCurIGjmpList = id;
         if (Configuration.DEBUG)
         {
+            assert(_compiler is not null);
             assert(_compiler.compCurBB is not null);
-        }
 
-#if DEBUG
-        if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
-        {
-            var debugInfo = id.idDebugOnlyInfo();
-            assert(debugInfo is not null);
-            debugInfo.idCatchRet = true;
+            if (_compiler.compCurBB.Kind == BBJ_EHCATCHRET)
+            {
+                var debugInfo = id.idDebugOnlyInfo();
+                assert(debugInfo is not null);
+                debugInfo.idCatchRet = true;
+            }
         }
-#endif
 #if EMITTER_STATS
         emitTotalIGjmps = unchecked(emitTotalIGjmps + 1);
 #endif
@@ -240,14 +239,12 @@ public partial class Emitter
         assert(dst.HasFlag(BBF_HAS_LABEL));
         id.idIns(ins);
         id.idInsFmt(IF_XARCH_LABEL);
-#if DEBUG
-        if ((ins == INS_call) && (_compiler.compCurBB.Kind is BBJ_CALLFINALLY))
+        if (Configuration.DEBUG && (ins == INS_call) && (_compiler.compCurBB.Kind is BBJ_CALLFINALLY))
         {
             var debugInfo = id.idDebugOnlyInfo();
             assert(debugInfo is not null);
             debugInfo.idFinallyCall = true;
         }
-#endif
 
         if (isRemovableJmpCandidate)
         {
