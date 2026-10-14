@@ -442,17 +442,19 @@ public partial class Compiler
         // Immutable descriptors can be shared without changing native value-copy semantics.
         optAssertionTabPrivate[optAssertionCount] = newAssertion;
         optAssertionCount++;
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf("GenTreeNode creates assertion:\n");
+#if DEBUG
             assert(optAssertionPropCurrentTree is not null);
             assert(compCurBB is not null);
             gtDispTree(optAssertionPropCurrentTree, topOnly: true);
-            jitprintf($"In {FMT_BB(compCurBB.bbNum)} New {(optLocalAssertionProp ? "Local" : "Global")} ");
-            optPrintAssertion(newAssertion, optAssertionCount);
-        }
 #endif
+            jitprintf($"In {FMT_BB(compCurBB.bbNum)} New {(optLocalAssertionProp ? "Local" : "Global")} ");
+#if DEBUG
+            optPrintAssertion(newAssertion, optAssertionCount);
+#endif
+        }
         optCanPropLclVar |= newAssertion.CanPropLclVar;
         if (optLocalAssertionProp)
         {

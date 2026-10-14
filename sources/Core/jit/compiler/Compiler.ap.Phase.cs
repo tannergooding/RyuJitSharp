@@ -291,14 +291,14 @@ public partial class Compiler
 
                 if (optAssertionPropagatedCurrentStmt)
                 {
-#if DEBUG
-                    if (verbose)
+                    if (Configuration.DEBUG && verbose)
                     {
                         jitprintf("Re-morphing this stmt:\n");
+#if DEBUG
                         gtDispStmt(statement);
+#endif
                         jitprintf("\n");
                     }
-#endif
                     var wasConditional = block.Kind is BBJ_COND;
                     var trueBlock = wasConditional ? block.TrueTarget : null;
                     var falseBlock = wasConditional ? block.FalseTarget : null;
