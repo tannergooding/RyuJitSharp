@@ -304,9 +304,7 @@ internal static class LinearScanEdgeResolutionTests
         {
             compiler.compRationalIRForm = true;
             compiler.fgPredsComputed = true;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var source = BasicBlock.New(compiler, duplicateSwitchTarget ? BBJ_SWITCH : BBJ_COND);
             var splitSuccessor = BasicBlock.New(compiler, BBJ_RETURN);
             var other = BasicBlock.New(compiler, BBJ_ALWAYS);
@@ -389,7 +387,7 @@ internal static class LinearScanEdgeResolutionTests
         {
             compiler.compRationalIRForm = true;
             compiler.fgPredsComputed = true;
-            compiler.fgSafeFlowEdgeCreation = true;
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var source = BasicBlock.New(compiler, BBJ_SWITCH);
             var firstTarget = BasicBlock.New(compiler, BBJ_RETURN);
             var secondTarget = BasicBlock.New(compiler, BBJ_RETURN);
@@ -465,9 +463,7 @@ internal static class LinearScanEdgeResolutionTests
             compiler.compHndBBtabCount = 1;
             compiler.lvaTable[0].Type = type;
             compiler.lvaTable[1].Type = TYP_FLOAT;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var source = BasicBlock.New(compiler, BBJ_COND);
             var split = BasicBlock.New(compiler, BBJ_RETURN);
             var other = BasicBlock.New(compiler, BBJ_ALWAYS);
@@ -543,9 +539,7 @@ internal static class LinearScanEdgeResolutionTests
             compiler.compRationalIRForm = true;
             compiler.fgPredsComputed = true;
             compiler.compHndBBtabCount = 1;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var source = BasicBlock.New(compiler, BBJ_COND);
             var other = BasicBlock.New(compiler, BBJ_ALWAYS);
             var join = BasicBlock.New(compiler, BBJ_RETURN);
@@ -665,9 +659,7 @@ internal static class LinearScanEdgeResolutionTests
         {
             compiler.compRationalIRForm = true;
             compiler.fgPredsComputed = true;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var source = BasicBlock.New(compiler, BBJ_ALWAYS);
             var other = BasicBlock.New(compiler, BBJ_ALWAYS);
             var target = BasicBlock.New(compiler, BBJ_RETURN);

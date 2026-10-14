@@ -350,9 +350,7 @@ internal static unsafe class LinearScanLocalIntervalConstructionTests
     private static void WithBuilder(int candidateCount, Action<Compiler, LinearScan> action)
     {
         LinearScanLocalCandidatesTests.WithCandidates(candidateCount, (compiler, allocator) => {
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             compiler.fgPredsComputed = true;
             compiler.compHndBBtab = [];
             var codeGen = compiler.codeGen ?? throw new AssertionException("Codegen state is missing.");

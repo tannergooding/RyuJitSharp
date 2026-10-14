@@ -193,9 +193,7 @@ internal static unsafe class CodeGenLabelTests
 
     private static BasicBlock[] CreateBlocks(Compiler compiler, params BBKinds[] kinds)
     {
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         var blocks = new BasicBlock[kinds.Length];
         for (var index = 0; index < blocks.Length; index++)
         {

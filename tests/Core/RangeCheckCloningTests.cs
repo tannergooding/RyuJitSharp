@@ -220,8 +220,8 @@ internal static unsafe class RangeCheckCloningTests
         compiler.info.compMethodInfo = &methodInfo;
 #if DEBUG
         compiler.info.compFullName = nameof(RangeCheckCloningTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         compiler.vnStore = new ValueNumStore(compiler);
         compiler.MethodHasBoundsChecks = true;

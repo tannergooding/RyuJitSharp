@@ -298,10 +298,8 @@ internal static unsafe class CSEPhaseTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
         CseStart(compiler) = BAD_VAR_NUM;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         try
         {

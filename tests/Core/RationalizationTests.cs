@@ -136,9 +136,7 @@ internal static unsafe class RationalizationTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitConfig = new JitConfigValues();
         JitTls.Compiler = compiler;
         try

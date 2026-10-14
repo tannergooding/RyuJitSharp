@@ -53,9 +53,7 @@ internal static unsafe class Arm64CalleeSavedRegisterTests
         WithCodeGen((compiler, codeGen) =>
         {
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             compiler.fgFirstBB = block;
             compiler.fgLastBB = block;

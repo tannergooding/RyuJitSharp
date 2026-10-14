@@ -315,7 +315,7 @@ internal static unsafe class ObjectAllocatorPhaseTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
 #if DEBUG
         compiler.info.compFullName = nameof(ObjectAllocatorPhaseTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         compiler.lvaTable = new LclVarDsc[8];
         compiler.lvaCount = 1;

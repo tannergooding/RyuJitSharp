@@ -313,10 +313,8 @@ internal static unsafe class SwitchLoweringTests
         compiler.fgNodeThreading = NodeThreading.LIR;
         compiler.fgPredsComputed = true;
         compiler.fgPgoConsistent = true;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try

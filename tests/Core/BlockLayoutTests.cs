@@ -183,8 +183,8 @@ internal static unsafe class BlockLayoutTests
         compiler.compHndBBtab = [];
         compiler.fgPredsComputed = true;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.info.compFullName = nameof(BlockLayoutTests);
 #endif
         JitTls.Compiler = compiler;

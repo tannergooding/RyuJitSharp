@@ -313,8 +313,8 @@ internal static unsafe class HeadTailMergeTests
         compiler.info = new Compiler.Info();
 #if DEBUG
         compiler.info.compFullName = nameof(HeadTailMergeTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 2;

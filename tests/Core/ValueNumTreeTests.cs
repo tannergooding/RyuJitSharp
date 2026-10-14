@@ -383,9 +383,7 @@ internal static unsafe class ValueNumTreeTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);

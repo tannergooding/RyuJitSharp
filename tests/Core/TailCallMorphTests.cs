@@ -409,10 +409,8 @@ internal static unsafe class TailCallMorphTests
         compiler.MethodHasRecursiveTailCall = true;
         compiler.fgGlobalMorph = true;
         compiler.fgPredsComputed = true;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         try
         {

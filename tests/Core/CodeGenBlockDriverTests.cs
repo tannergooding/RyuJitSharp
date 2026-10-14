@@ -354,9 +354,7 @@ internal static unsafe class CodeGenBlockDriverTests
 
     internal static BasicBlock[] Blocks(Compiler compiler, params BBKinds[] kinds)
     {
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         var blocks = kinds.Select(kind => BasicBlock.New(compiler, kind)).ToArray();
         foreach (var block in blocks)
         {

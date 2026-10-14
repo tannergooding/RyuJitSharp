@@ -39,8 +39,8 @@ internal static unsafe class InductionVariablePhaseTests
         compiler.lvaTrackedCountInSizeTUnits = 1;
 #if DEBUG
         compiler.info.compFullName = nameof(CountedLoopBecomesDownwardsAndUnusedPrimaryIVIsRemoved);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         JitTls.Compiler = compiler;
         try

@@ -217,8 +217,8 @@ internal static unsafe class PatchpointTransformationTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(true);
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var jitTls = new JitTls(null);
 #endif
         var previousCompiler = JitTls.Compiler;

@@ -198,8 +198,8 @@ internal static unsafe class ScalarEvolutionTests
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
 #if DEBUG
         compiler.info.compFullName = nameof(ScalarEvolutionTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         JitTls.Compiler = compiler;
         try

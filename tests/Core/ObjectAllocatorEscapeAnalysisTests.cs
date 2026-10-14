@@ -114,9 +114,7 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
             PrepareWithPseudo(compiler, allocator);
             var pseudo = Get<int>(allocator, "_firstPseudoIndex");
             var clone = AddCloneInfo(allocator, pseudo);
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_ALWAYS);
             Set(clone, "AllocBlock", block);
 
@@ -134,9 +132,7 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
         WithAllocator((compiler, allocator) => {
             PrepareWithPseudo(compiler, allocator);
             var clone = AddCloneInfo(allocator, Get<int>(allocator, "_firstPseudoIndex"));
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             Set(clone, "AllocBlock", BasicBlock.New(compiler, BBKinds.BBJ_ALWAYS));
             Set(clone, "HasConflictingRedefinition", true);
 
@@ -249,9 +245,7 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
             PrepareWithPseudo(compiler, allocator);
             var pseudo = Get<int>(allocator, "_firstPseudoIndex");
             var clone = AddCloneInfo(allocator, pseudo);
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             compiler.fgInsertStmtAtEnd(block, compiler.gtNewStmt(compiler.gtNewIconNode(TYP_INT, 1)));
             Set(clone, "BlocksToClone", new System.Collections.Generic.List<BasicBlock> { block });
@@ -372,9 +366,7 @@ internal static unsafe class ObjectAllocatorEscapeAnalysisTests
 
         try
         {
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             if (withGraph || withEhRegion)
             {
                 var alloc = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);

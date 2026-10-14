@@ -441,8 +441,8 @@ internal static unsafe class PostImportCleanupTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var jitTls = new JitTls(null);
 #endif
         var previousCompiler = JitTls.Compiler;

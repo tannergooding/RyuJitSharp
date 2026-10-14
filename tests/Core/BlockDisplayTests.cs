@@ -27,8 +27,8 @@ internal static class BlockDisplayTests
         compiler.opts.jitFlags = &flags;
         JitTls.Compiler = compiler;
         compiler.compHndBBtab = [];
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.fgPredsComputed = true;
         var block = BasicBlock.New(compiler, conditional ? BBJ_COND : BBJ_RETURN);
         compiler.fgFirstBB = block;

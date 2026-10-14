@@ -1035,7 +1035,7 @@ internal static unsafe class ProfileSynthesisTests
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(ProfileSynthesisTests);
 #endif
         JitTls.Compiler = compiler;

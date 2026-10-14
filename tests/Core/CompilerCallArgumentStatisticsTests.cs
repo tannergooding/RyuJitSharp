@@ -22,9 +22,7 @@ internal static unsafe class CompilerCallArgumentStatisticsTests
     public static void CallStatisticsCountTheLirCallKinds()
     {
         WithStatistics(() => WithCompiler(compiler => {
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             compiler.fgNodeThreading = NodeThreading.LIR;
 
             var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);

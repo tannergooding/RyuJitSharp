@@ -255,7 +255,7 @@ internal static unsafe class ArrayMorphingTests
         compiler.info.compIsStatic = true;
 #if DEBUG
         compiler.info.compFullName = nameof(ArrayMorphingTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         compiler.compHndBBtab = [];
         compiler.opts.jitFlags = &flags;

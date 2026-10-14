@@ -71,9 +71,7 @@ internal static unsafe class Arm64CodeGenHelperCallTests
             codeGen.GCInfo.gcVarPtrSetCur = [0];
             codeGen.GCInfo.gcRegGCrefSetCur = default;
             codeGen.GCInfo.gcRegByrefSetCur = default;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var currentBlock = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             compiler.fgFirstBB = currentBlock;
             compiler.fgLastBB = currentBlock;

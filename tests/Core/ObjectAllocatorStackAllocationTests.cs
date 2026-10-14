@@ -88,7 +88,7 @@ internal static unsafe class ObjectAllocatorStackAllocationTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(ObjectAllocatorStackAllocationTests);
 #endif
         compiler.lvaTable = new LclVarDsc[2];

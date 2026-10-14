@@ -728,9 +728,7 @@ internal static unsafe class LivenessUseDefTests
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         compiler.lvaCount = count;
         compiler.lvaTable = new LclVarDsc[count];
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitTls.Compiler = compiler;
         MaxLocalsToTrack(ref JitConfig) = 1024;
         try

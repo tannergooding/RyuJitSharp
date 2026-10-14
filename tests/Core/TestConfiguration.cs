@@ -14,4 +14,18 @@ internal static class TestConfiguration
         return null;
 #endif
     }
+
+    public static void EnableSafeBasicBlockCreation(Compiler compiler)
+    {
+#if DEBUG
+        compiler.fgSafeBasicBlockCreation = true;
+#endif
+    }
+
+    public static void EnableSafeFlowEdgeCreation(Compiler compiler)
+    {
+#if DEBUG
+        compiler.fgSafeFlowEdgeCreation = true;
+#endif
+    }
 }

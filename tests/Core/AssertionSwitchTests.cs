@@ -249,10 +249,8 @@ internal static unsafe class AssertionSwitchTests
         compiler.lvaCount = 1;
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.fgPredsComputed = true;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         try
         {

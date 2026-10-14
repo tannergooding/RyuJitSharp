@@ -630,7 +630,7 @@ internal static unsafe class EHVerificationTests
         var previousConfig = JitConfig;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.fgImportDone = true;
         compiler.info.compFullName = nameof(EHVerificationTests);
         JitFlags flags = default;

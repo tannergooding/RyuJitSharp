@@ -446,9 +446,7 @@ internal static unsafe class ArmCalleeSavedRegisterTests
         {
             codeGen.GCInfo.gcVarPtrSetCur = VarSetOps.MakeEmpty(compiler);
             compiler.info.compMatchedVM = false;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             compiler.fgFirstBB = block;
             compiler.fgLastBB = block;

@@ -605,8 +605,8 @@ internal static unsafe class IfConversionTests
         EnableZicond(compiler);
 #endif
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         IfConversionEnabled(ref JitConfig) = 1;
 #endif
         JitTls.Compiler = compiler;

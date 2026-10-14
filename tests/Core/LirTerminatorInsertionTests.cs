@@ -133,9 +133,7 @@ internal static class LirTerminatorInsertionTests
     private static BasicBlock NewBlock(Compiler compiler, BBKinds kind)
     {
         compiler.compRationalIRForm = true;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 
         return BasicBlock.New(compiler, kind);
     }

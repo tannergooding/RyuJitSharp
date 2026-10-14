@@ -315,7 +315,7 @@ internal static unsafe class BoundsCheckCoalescingTests
         compiler.info = new Compiler.Info();
 #if DEBUG
         compiler.info.compFullName = nameof(BoundsCheckCoalescingTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         var store = new ValueNumStore(compiler);
         compiler.vnStore = store;

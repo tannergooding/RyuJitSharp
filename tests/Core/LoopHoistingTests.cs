@@ -376,8 +376,8 @@ internal static unsafe class LoopHoistingTests
         compiler.info = new Compiler.Info();
 #if DEBUG
         compiler.info.compFullName = nameof(LoopHoistingTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         JitTls.Compiler = compiler;
         try

@@ -35,9 +35,7 @@ internal static unsafe class Arm64OptimizerTests
             compiler.compHndBBtab = [];
             compiler.lvaCount = 1;
             compiler.lvaTable = [new LclVarDsc { Type = type }];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var heuristic = new CSE_Heuristic(compiler);
             heuristic.Initialize();
             // Compiler.compCodeOpt currently fixes BLENDED_CODE, so exercise the size heuristic directly.
@@ -124,9 +122,7 @@ internal static unsafe class Arm64OptimizerTests
         WithCompiler(compiler =>
         {
             compiler.compHndBBtab = [];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBJ_ALWAYS);
             Statement[] statements =
             [
@@ -151,10 +147,8 @@ internal static unsafe class Arm64OptimizerTests
         {
             compiler.compHndBBtab = [];
             compiler.fgNodeThreading = NodeThreading.AllTrees;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             BasicBlock[] blocks =
             [
                 BasicBlock.New(compiler, BBJ_RETURN),

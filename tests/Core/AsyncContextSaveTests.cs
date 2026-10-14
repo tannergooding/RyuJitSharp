@@ -736,10 +736,8 @@ internal static unsafe class AsyncContextSaveTests
         compiler.compEHID = 7;
         compiler.fgPredsComputed = true;
         compiler.compInlineContext = (InlineContext)RuntimeHelpers.GetUninitializedObject(typeof(InlineContext));
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         s_metadataQueries = 0;
         s_methodQueries = 0;

@@ -185,10 +185,8 @@ internal static unsafe class LinearScanSequencingInitializationTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);
         compiler.opts.compFlags = minOpts ? CLFLG_MINOPT : 0;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #if TARGET_AMD64
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;

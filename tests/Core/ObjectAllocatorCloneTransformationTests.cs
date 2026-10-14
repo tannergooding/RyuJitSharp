@@ -45,8 +45,8 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
         compiler.info.compFullName = nameof(ObjectAllocatorCloneTransformationTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         compiler.info.compCompHnd = &jitInfo;
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
@@ -171,8 +171,8 @@ internal static unsafe class ObjectAllocatorCloneTransformationTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
         compiler.info.compFullName = nameof(ObjectAllocatorCloneTransformationTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         compiler.info.compCompHnd = &jitInfo;
         compiler.lvaTable = new LclVarDsc[1];

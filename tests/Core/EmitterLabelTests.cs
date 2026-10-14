@@ -170,9 +170,7 @@ internal static class EmitterLabelTests
             (compiler, codeGen, _) =>
             {
                 compiler.fgPredsComputed = true;
-#if DEBUG
-                compiler.fgSafeFlowEdgeCreation = true;
-#endif
+                TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
                 action(compiler, codeGen, codeGen.Emitter);
             });
     }

@@ -416,7 +416,7 @@ internal static unsafe class ProfileCountTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = "ProfileCountTests";
 #endif
         JitTls.Compiler = compiler;

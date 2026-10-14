@@ -226,9 +226,7 @@ internal static class SsaPhaseTests
             compiler.lvaSecretStubArg = BAD_VAR_NUM;
             compiler.lvaRetAddrVar = BAD_VAR_NUM;
             compiler.lvaOutgoingArgSpaceVar = BAD_VAR_NUM;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             action(compiler);
         });
     }

@@ -454,9 +454,7 @@ internal static unsafe class AssertionRelationalTests
             var index = compiler.optAddAssertion(
                 AssertionDsc.CreateVNNonNullAssertion(compiler, argumentVN));
             BitOps.AddElemD(traits, knownNonNull, index - 1);
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var entry = BasicBlock.New(compiler, BBKinds.BBJ_COND);
             var join = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var other = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);

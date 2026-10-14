@@ -685,10 +685,8 @@ internal static unsafe class SwitchOptimizationTests
         compiler.fgPredsComputed = true;
         compiler.fgPgoConsistent = true;
         compiler.info.compRetType = TYP_INT;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
 

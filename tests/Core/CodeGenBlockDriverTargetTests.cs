@@ -78,9 +78,7 @@ internal static unsafe class CodeGenBlockDriverTargetTests
 #if TARGET_WASM
         compiler.fgWasmIntervals = [];
 #endif
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.compHndBBtab = [];
         compiler.fgFuncletsCreated = true;
         compiler.compFuncInfos = [new FuncInfoDsc { funKind = FuncKind.FUNC_ROOT }];

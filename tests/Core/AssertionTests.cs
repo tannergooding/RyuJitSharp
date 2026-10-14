@@ -169,9 +169,7 @@ internal static unsafe class AssertionTests
             compiler.compHndBBtab = [];
             compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
             compiler.fgNodeThreading = NodeThreading.AllTrees;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             action(compiler);
         });
     }
@@ -311,9 +309,7 @@ internal static unsafe class AssertionTests
             var assertions = BitOps.MakeEmpty(traits);
             var index = compiler.optAddAssertion(AssertionDsc.CreateSubtype(compiler, value, type, false));
             BitOps.AddElemD(traits, assertions, index - 1);
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var entry = BasicBlock.New(compiler, BBKinds.BBJ_COND);
             var join = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var other = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
@@ -348,9 +344,7 @@ internal static unsafe class AssertionTests
             var ee = new ICorJitInfo { lpVtbl = &vtable };
             compiler.info.compCompHnd = &ee;
             compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
@@ -567,9 +561,7 @@ internal static unsafe class AssertionTests
             {
                 compiler.lvaTable[0].Layout = new ClassLayout(8);
             }
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var zero = type is TYP_STRUCT
                 ? AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true)
@@ -599,9 +591,7 @@ internal static unsafe class AssertionTests
                 new LclVarDsc { Type = TYP_STRUCT, Layout = layout },
             ];
             compiler.fgNodeThreading = NodeThreading.AllTrees;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var assertions = InstallAssertions(compiler, [
                 AssertionDsc.CreateConstLclVarAssertion(
@@ -623,9 +613,7 @@ internal static unsafe class AssertionTests
         WithCompiler(compiler => {
             var layout = new ClassLayout(8);
             compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT, Layout = layout }, new LclVarDsc { Type = TYP_BYREF }];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var assertions = InstallAssertions(compiler, [
                 AssertionDsc.CreateConstLclVarAssertion(compiler, 0, ValueNumStore.NoVN, O2K_ZEROOBJ, ValueNumStore.NoVN, true),
@@ -677,9 +665,7 @@ internal static unsafe class AssertionTests
     {
         WithCompiler(compiler => {
             compiler.lvaTable = [new LclVarDsc { Type = TYP_STRUCT, Layout = new ClassLayout(8) }, new LclVarDsc { Type = TYP_INT }];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             compiler.info.compRetNativeType = TYP_LONG;
             var assertions = InstallAssertions(compiler, [
@@ -717,9 +703,7 @@ internal static unsafe class AssertionTests
     {
         WithCompiler(compiler => {
             compiler.lvaTable = [new LclVarDsc { Type = TYP_REF }, new LclVarDsc { Type = TYP_INT }];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             compiler.compCurBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var store = new ValueNumStore(compiler);
             compiler.vnStore = store;
@@ -992,9 +976,7 @@ internal static unsafe class AssertionTests
             var assertions = BitOps.MakeEmpty(traits);
             var index = compiler.optAddAssertion(AssertionDsc.CreateVNNonNullAssertion(compiler, unknown));
             BitOps.AddElemD(traits, assertions, index - 1);
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var entry = BasicBlock.New(compiler, BBKinds.BBJ_COND);
             var join = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var other = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
@@ -1167,9 +1149,7 @@ internal static unsafe class AssertionTests
             compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }, new LclVarDsc { Type = TYP_INT }];
             var traits = compiler.apTraits ?? throw new InvalidOperationException();
             compiler.apLocal = BitOps.MakeEmpty(traits);
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_COND);
             var ifTrue = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var ifFalse = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);

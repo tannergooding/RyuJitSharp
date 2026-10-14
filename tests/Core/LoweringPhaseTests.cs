@@ -211,10 +211,8 @@ internal static unsafe class LoweringPhaseTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(minOpts);
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitConfig = new JitConfigValues();
         MaxLocalsToTrack(ref JitConfig) = 1024;
         JitTls.Compiler = compiler;

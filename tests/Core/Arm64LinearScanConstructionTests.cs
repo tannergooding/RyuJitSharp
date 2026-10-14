@@ -585,10 +585,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     public static void FullAllocationAssignsWrappedDefinitionsAndClearsReservation(bool spillNextRegister)
     {
         WithCompiler(false, false, (compiler, codeGen) => {
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             compiler.lvaRefCountState = RCS_NORMAL;
             compiler.compFloatingPointUsed = true;
             compiler.info.compNeedsConsecutiveRegisters = true;
@@ -655,10 +653,8 @@ internal static unsafe class Arm64LinearScanConstructionTests
     public static void FullAllocationAssignsPartiallySpilledUpperVectorRestore()
     {
         WithCompiler(false, false, (compiler, codeGen) => {
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             compiler.lvaRefCountState = RCS_NORMAL;
             compiler.compFloatingPointUsed = true;
             compiler.fgPredsComputed = true;

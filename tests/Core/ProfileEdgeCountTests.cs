@@ -334,7 +334,7 @@ internal static unsafe class ProfileEdgeCountTests
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(ProfileEdgeCountTests);
 #endif
         JitTls.Compiler = compiler;

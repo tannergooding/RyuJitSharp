@@ -208,9 +208,7 @@ internal static class LinearScanLocalCandidatesTests
             compiler.lvaTable = new LclVarDsc[count];
             compiler.lvaTrackedToVarNum = new int[count];
             compiler.fgBBVarSetsInited = true;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             for (var index = 0; index < count; index++)
             {
                 compiler.lvaTrackedToVarNum[index] = index;

@@ -110,9 +110,7 @@ internal static class LinearScanBlockLocationTests
             compiler.lvaTrackedFixed = true;
             compiler.fgBBNumMax = 3;
             compiler.fgPredsComputed = true;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var allocator = new LinearScan(compiler);
             MaxBlockBeforeResolution(allocator) = 3;
             allocator.initVarRegMaps();

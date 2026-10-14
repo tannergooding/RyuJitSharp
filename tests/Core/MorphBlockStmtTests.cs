@@ -108,9 +108,7 @@ internal static unsafe class MorphBlockStmtTests
             var falseBlock = new BasicBlock(null, null);
             compiler.fgFirstBB = block;
             compiler.fgPredsComputed = true;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var trueEdge = compiler.fgAddRefPred(trueBlock, block);
             var falseEdge = compiler.fgAddRefPred(falseBlock, block);
             block.SetCond(trueEdge, falseEdge);
@@ -144,9 +142,7 @@ internal static unsafe class MorphBlockStmtTests
             compiler.fgFirstBB = block;
             compiler.fgPredsComputed = true;
             compiler.fgPgoConsistent = true;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var firstEdge = compiler.fgAddRefPred(first, block);
             var duplicateEdge = compiler.fgAddRefPred(first, block);
             var secondEdge = compiler.fgAddRefPred(second, block);

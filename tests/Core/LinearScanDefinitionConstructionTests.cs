@@ -151,9 +151,7 @@ internal static unsafe class LinearScanDefinitionConstructionTests
             compiler.lvaTrackedCountInSizeTUnits = 1;
             compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
 
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBJ_ALWAYS);
             block.bbLiveIn = [missingBlockLiveness ? 0 : 1];
             block.bbVarDef = [0];

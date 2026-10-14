@@ -281,7 +281,7 @@ internal static unsafe class BlockWeightTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         using var tls = new JitTls(null);
 #endif
         JitFlags flags = default;

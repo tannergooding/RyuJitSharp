@@ -408,7 +408,7 @@ internal static unsafe class FlowGraphDominanceTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         using var tls = new JitTls(null);
 #endif
         var previousCompiler = JitTls.Compiler;

@@ -366,10 +366,8 @@ internal static unsafe class SwitchRecognitionTests
         compiler.compHndBBtab = [];
         compiler.fgPredsComputed = true;
         compiler.fgNodeThreading = NodeThreading.AllTrees;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         try
         {

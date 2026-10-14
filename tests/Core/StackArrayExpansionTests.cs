@@ -247,7 +247,7 @@ internal static unsafe class StackArrayExpansionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
         compiler.info.compFullName = nameof(StackArrayExpansionTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;

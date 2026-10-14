@@ -118,8 +118,8 @@ internal static unsafe class CSELiveAcrossCallCostTests
 #if DEBUG
         compiler.info.compFullName = nameof(CSELiveAcrossCallCostTests);
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         JitTls.Compiler = compiler;
 #if DEBUG

@@ -345,7 +345,7 @@ internal static unsafe class ForwardSubTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
 #if DEBUG
         compiler.info.compFullName = nameof(ForwardSubTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         compiler.compHndBBtab = [];
         compiler.lvaArg0Var = BAD_VAR_NUM;

@@ -102,10 +102,8 @@ internal static unsafe class UseEdgeIteratorTests
     {
         WithCompiler(compiler => {
             compiler.fgPredsComputed = true;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_COND);
             var left = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             var right = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
@@ -599,7 +597,7 @@ internal static unsafe class UseEdgeIteratorTests
             Assert.That(statement.TreeListEnd, Is.SameAs(expectedLocals[^1]));
             Assert.That(call.Next, Is.Null);
 #if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             compiler.fgFirstBB = compiler.fgLastBB = block;
             compiler.fgInsertStmtAtEnd(block, statement);

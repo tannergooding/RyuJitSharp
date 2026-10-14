@@ -350,7 +350,7 @@ internal static unsafe class SsaLivenessTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
 #if DEBUG
         compiler.info.compFullName = nameof(SsaLivenessTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         compiler.compHndBBtab = [];
         compiler.lvaArg0Var = BAD_VAR_NUM;

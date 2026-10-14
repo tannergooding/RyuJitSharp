@@ -237,8 +237,8 @@ internal static unsafe class CSEHeuristicDiagnosticTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
         compiler.opts.compCodeOpt = Compiler.BLENDED_CODE;
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.verbose = true;
         JitTls.Compiler = compiler;
         try

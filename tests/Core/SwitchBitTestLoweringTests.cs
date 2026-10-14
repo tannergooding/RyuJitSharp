@@ -157,9 +157,7 @@ internal static unsafe class SwitchBitTestLoweringTests
         compiler.lvaCount = 1;
         compiler.fgPredsComputed = true;
         compiler.fgPgoConsistent = true;
-#if DEBUG
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         try

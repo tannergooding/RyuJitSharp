@@ -364,7 +364,7 @@ internal static unsafe class NaturalLoopIterationTests
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(NaturalLoopIterationTests);
 #endif
         JitTls.Compiler = compiler;

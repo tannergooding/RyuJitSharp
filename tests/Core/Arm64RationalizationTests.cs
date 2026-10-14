@@ -302,7 +302,7 @@ internal static unsafe class Arm64RationalizationTests
         compiler.compHndBBtab = [];
         compiler.fgNodeThreading = lir ? NodeThreading.LIR : NodeThreading.AllTrees;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(Arm64RationalizationTests);
 #endif
         JitTls.Compiler = compiler;

@@ -558,8 +558,8 @@ internal static unsafe partial class IndirectCallTransformationTests
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         using var jitTls = new JitTls(&jitInfo);
 #endif
         var previousCompiler = JitTls.Compiler;

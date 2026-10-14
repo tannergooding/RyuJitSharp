@@ -101,8 +101,8 @@ internal static unsafe class Arm64SwitchLoweringTests
         compiler.fgPredsComputed = true;
         compiler.fgPgoConsistent = true;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.info.compFullName = nameof(Arm64SwitchLoweringTests);
 #endif
         JitTls.Compiler = compiler;

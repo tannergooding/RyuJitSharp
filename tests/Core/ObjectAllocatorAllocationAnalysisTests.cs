@@ -123,7 +123,7 @@ internal static unsafe class ObjectAllocatorAllocationAnalysisTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
         compiler.info.compFullName = nameof(ObjectAllocatorAllocationAnalysisTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
         compiler.lvaTable = new LclVarDsc[types.Length];

@@ -267,9 +267,7 @@ internal static unsafe class FlowGraphHelperTests
         JitFlags jitFlags = default;
         compiler.opts.jitFlags = &jitFlags;
         JitTls.Compiler = compiler;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 
         try
         {
@@ -551,9 +549,7 @@ internal static unsafe class FlowGraphHelperTests
 
     private static void PrepareMorphInitialization(Compiler compiler)
     {
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.codeGen = new CodeGen(compiler) { IsFramePointerRequired = false };
         compiler.fgFirstBB = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
         compiler.fgLastBB = compiler.fgFirstBB;

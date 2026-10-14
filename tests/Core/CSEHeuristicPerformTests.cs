@@ -343,8 +343,8 @@ internal static unsafe class CSEHeuristicPerformTests
         compiler.opts.jitFlags = &flags;
         compiler.opts.SetMinOpts(false);
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.info.compFullName = nameof(CSEHeuristicPerformTests);
         CseHash(ref JitConfig) = -1;
 #endif

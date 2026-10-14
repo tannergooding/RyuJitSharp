@@ -498,7 +498,7 @@ internal static unsafe class FlowGraphDfsTests
         var compiler = CreateCompiler();
 #if DEBUG
         using var jitTls = new JitTls(null);
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         var previous = JitTls.Compiler;
         JitTls.Compiler = compiler;
@@ -613,9 +613,7 @@ internal static unsafe class FlowGraphDfsTests
     public static void SwitchOperandsPreserveFullTableWidth(int caseCount)
     {
         var compiler = CreateCompiler();
-#if DEBUG
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         var methodInfo = new CORINFO_METHOD_INFO();
         var flags = new JitFlags();
         compiler.info.compMethodInfo = &methodInfo;
@@ -924,10 +922,7 @@ internal static unsafe class FlowGraphDfsTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
 
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         return compiler;
     }
 

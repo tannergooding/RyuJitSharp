@@ -417,8 +417,8 @@ internal static unsafe class VNIntrinsicExpansionTests
         compiler.info.compMethodInfo = &methodInfo;
 #if DEBUG
         compiler.info.compFullName = nameof(VNIntrinsicExpansionTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         compiler.compHndBBtab = [];
         compiler.lvaTable = new LclVarDsc[4];

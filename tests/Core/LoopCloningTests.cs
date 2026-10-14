@@ -437,8 +437,8 @@ internal static unsafe class LoopCloningTests
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.info.compFullName = nameof(LoopCloningTests);
 #endif
         JitTls.Compiler = compiler;

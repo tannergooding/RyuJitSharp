@@ -520,9 +520,7 @@ internal static unsafe class LivenessOrchestrationLIRTests
         compiler.lvaRefCountState = RefCountState.RCS_NORMAL;
         compiler.lvaCount = count;
         compiler.lvaTable = new LclVarDsc[count];
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitTls.Compiler = compiler;
         compiler.codeGen = new CodeGen(compiler);
         MaxLocalsToTrack(ref JitConfig) = 1024;

@@ -394,8 +394,8 @@ internal static unsafe class ThreadLocalExpansionTests
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
         compiler.info.compFullName = nameof(ThreadLocalExpansionTests);
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
 #endif
         JitFlags flags = default;
         compiler.opts.jitFlags = &flags;

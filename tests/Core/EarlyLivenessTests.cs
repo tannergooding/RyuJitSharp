@@ -273,7 +273,7 @@ internal static unsafe class EarlyLivenessTests
         compiler.info.compRetBuffArg = BAD_VAR_NUM;
 #if DEBUG
         compiler.info.compFullName = nameof(EarlyLivenessTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         compiler.compHndBBtab = [];
         compiler.lvaArg0Var = BAD_VAR_NUM;

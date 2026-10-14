@@ -60,10 +60,8 @@ internal static unsafe class InductionVariableConsumerTests
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         compiler.lvaTable = [new LclVarDsc { Type = TYP_INT }];
         compiler.lvaCount = 1;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
 
         try
@@ -217,10 +215,8 @@ internal static unsafe class InductionVariableConsumerTests
         compiler.opts.SetMinOpts(false);
         compiler.compHndBBtab = [];
         compiler.fgNodeThreading = NodeThreading.AllTrees;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         try
         {

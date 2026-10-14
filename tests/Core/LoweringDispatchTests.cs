@@ -600,9 +600,7 @@ internal static unsafe class LoweringDispatchTests
             compiler.compCurBB = block;
             compiler.fgPredsComputed = true;
             compiler.fgPgoConsistent = true;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var target = NewBlock();
             var exit = NewBlock();
             exit.SetKindAndTargetEdge(BBKinds.BBJ_RETURN, null);

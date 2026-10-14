@@ -221,10 +221,8 @@ internal static class FuncletCreationTests
         {
             compiler.compHndBBtab = [];
             compiler.fgPredsComputed = true;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             action(compiler, codeGen);
         });
     }

@@ -313,7 +313,7 @@ internal static class EmitterJumpInstructionTests
             var target = Label();
             if (finallyBlock)
             {
-                compiler.fgSafeBasicBlockCreation = true;
+                TestConfiguration.EnableSafeBasicBlockCreation(compiler);
                 compiler.compCurBB = BasicBlock.New(compiler, BBJ_CALLFINALLY);
                 compiler.compCurBB.TargetEdge = new FlowEdge(compiler.compCurBB, target, null);
                 compiler.fgSafeBasicBlockCreation = false;

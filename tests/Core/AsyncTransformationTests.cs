@@ -39,10 +39,8 @@ internal static unsafe class AsyncTransformationTests
         compiler.fgPredsComputed = true;
         compiler.lvaTable = new LclVarDsc[16];
         compiler.lvaCount = 1;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         try
         {

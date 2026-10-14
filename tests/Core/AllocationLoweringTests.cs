@@ -103,9 +103,7 @@ internal static unsafe class AllocationLoweringTests
             compiler.lvaTable = new LclVarDsc[1];
             compiler.lvaCount = 1;
             compiler.lvaTable[0].Type = TYP_REF;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var block = BasicBlock.New(compiler, BBKinds.BBJ_RETURN);
             block.SetFlags(BasicBlockFlags.BBF_HAS_NEWOBJ);
             compiler.fgFirstBB = block;

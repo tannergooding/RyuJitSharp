@@ -328,7 +328,7 @@ internal static unsafe class ExceptionalPredecessorTests
         compiler.compHndBBtab = [];
         compiler.info = new Compiler.Info();
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(ExceptionalPredecessorTests);
 #endif
         JitTls.Compiler = compiler;

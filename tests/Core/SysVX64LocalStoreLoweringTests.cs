@@ -126,7 +126,7 @@ internal static unsafe class SysVX64LocalStoreLoweringTests
         compiler.lvaTable = new LclVarDsc[4];
         compiler.lvaCount = 2;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(SysVX64LocalStoreLoweringTests);
 #endif
         JitTls.Compiler = compiler;

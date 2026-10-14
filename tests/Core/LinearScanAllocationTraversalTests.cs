@@ -410,10 +410,8 @@ internal static unsafe class LinearScanAllocationTraversalTests
         compiler.opts.compFlags = CLFLG_MINOPT;
         compiler.lvaRefCountState = RCS_NORMAL;
         compiler.compFloatingPointUsed = true;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         CompilerAllIntRegs(compiler) = SRBM_ALLINT_INIT;
         CompilerAllFloatRegs(compiler) = SRBM_ALLFLOAT_INIT;
         CompilerAllMaskRegs(compiler) = SRBM_ALLMASK_INIT;

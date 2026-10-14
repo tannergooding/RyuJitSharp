@@ -232,9 +232,7 @@ internal static unsafe class ProfileSpanningTreeTests
         JitConfig = new JitConfigValues();
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
         compiler.compHndBBtab = [];
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         JitTls.Compiler = compiler;
 
         try

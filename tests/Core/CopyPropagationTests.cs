@@ -451,7 +451,7 @@ internal static unsafe class CopyPropagationTests
         compiler.compHndBBtab = [];
 #if DEBUG
         compiler.info.compFullName = nameof(CopyPropagationTests);
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
 #endif
         JitTls.Compiler = compiler;
         try

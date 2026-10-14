@@ -221,10 +221,8 @@ internal static unsafe class BooleanOptimizationTests
         compiler.compHndBBtab = [];
         compiler.fgPredsComputed = true;
         compiler.info.compRetType = TYP_INT;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         JitTls.Compiler = compiler;
         try
         {
@@ -315,10 +313,8 @@ internal static unsafe class BooleanOptimizationTests
         compiler.lvaCount = 4;
         compiler.compHndBBtab = [];
         compiler.fgPredsComputed = true;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.fgNodeThreading = NodeThreading.AllTrees;
         JitTls.Compiler = compiler;
         try

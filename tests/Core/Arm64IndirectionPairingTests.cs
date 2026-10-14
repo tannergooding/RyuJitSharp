@@ -340,7 +340,7 @@ internal static unsafe class Arm64IndirectionPairingTests
         compiler.lvaTable[0].Type = TYP_LONG;
         compiler.lvaTable[1].Type = TYP_LONG;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(Arm64IndirectionPairingTests);
 #endif
         JitTls.Compiler = compiler;

@@ -336,9 +336,7 @@ internal static unsafe class SwiftAbiTests
 
     private static BasicBlock AddBlock(Compiler compiler, BBKinds kind)
     {
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         var block = BasicBlock.New(compiler, kind);
         if (compiler.fgLastBB is BasicBlock previous)
         {

@@ -291,9 +291,7 @@ internal static unsafe class LinearScanRegisterAssignmentTests
         compiler.opts.SetMinOpts(true);
         compiler.opts.compFlags = CLFLG_MINOPT | (trackedLocal ? CLFLG_REGVAR : 0);
         compiler.compFloatingPointUsed = true;
-#if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-#endif
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         if (trackedLocal)
         {
             compiler.fgBBNumMax = 2;

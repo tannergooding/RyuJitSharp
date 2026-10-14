@@ -117,10 +117,8 @@ internal static unsafe class WasmCallArgumentMorphTests
     public static void FatPointerTransformUsesWasmHighBit()
     {
         WithCompiler(compiler => {
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             compiler.compHndBBtab = [];
             compiler.fgPredsComputed = true;
             var block = BasicBlock.New(compiler, BBJ_RETURN);

@@ -361,10 +361,8 @@ internal static unsafe class Arm64LinearScanLocalResolutionTests
         Arm64LinearScanConstructionTests.WithCompiler(false, false, (compiler, codeGen) => {
             CORINFO_METHOD_INFO methodInfo = default;
             compiler.info.compMethodInfo = &methodInfo;
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             if (enableLocals)
             {
                 compiler.opts.compFlags |= CLFLG_REGVAR;

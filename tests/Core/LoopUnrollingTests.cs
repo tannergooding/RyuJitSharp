@@ -388,8 +388,8 @@ internal static unsafe class LoopUnrollingTests
         CORINFO_METHOD_INFO methodInfo = default;
         compiler.info.compMethodInfo = &methodInfo;
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
-        compiler.fgSafeFlowEdgeCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+        TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
         compiler.info.compFullName = nameof(LoopUnrollingTests);
 #endif
         JitTls.Compiler = compiler;

@@ -167,9 +167,7 @@ internal static class FlowGraphEdgeSplitTests
     {
         SsaLivenessTests.WithCompiler(0, compiler => {
             compiler.fgPredsComputed = true;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             action(compiler);
         });
     }

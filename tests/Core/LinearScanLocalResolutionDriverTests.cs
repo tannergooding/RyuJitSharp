@@ -440,7 +440,7 @@ internal static class LinearScanLocalResolutionDriverTests
             compiler.lvaTable = [new LclVarDsc { Type = TYP_SIMD32 }];
             compiler.compRationalIRForm = true;
             compiler.fgNodeThreading = NodeThreading.LIR;
-            compiler.fgSafeBasicBlockCreation = true;
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
             var allocator = new LinearScan(compiler);
             var block = BasicBlock.New(compiler, kind);
             var local = new Interval(TYP_FLOAT, SRBM_XMM6)
@@ -481,9 +481,7 @@ internal static class LinearScanLocalResolutionDriverTests
             compiler.fgLocalVarLivenessDone = true;
             compiler.fgNodeThreading = NodeThreading.LIR;
             compiler.compHndBBtab = [];
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             compiler.lvaTrackedFixed = true;
             compiler.srbmIntCalleeTrash = SRBM_INT_CALLEE_TRASH_INIT;
             compiler.srbmFltCalleeTrash = SRBM_FLT_CALLEE_TRASH_INIT;

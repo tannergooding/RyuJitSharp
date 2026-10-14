@@ -19,10 +19,8 @@ internal static class CompilerScopeCursorTests
         {
             compiler.opts.compDbgCode = true;
             compiler.compHndBBtab = [];
-#if DEBUG
-            compiler.fgSafeBasicBlockCreation = true;
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeBasicBlockCreation(compiler);
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             compiler.info.compVarScopes = [
                 new() { vsdLifeBeg = 3, vsdLifeEnd = 4 },
                 new() { vsdLifeBeg = 0, vsdLifeEnd = 2 },

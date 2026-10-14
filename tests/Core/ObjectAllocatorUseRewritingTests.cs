@@ -232,7 +232,7 @@ internal static unsafe class ObjectAllocatorUseRewritingTests
         var previous = JitTls.Compiler;
         var compiler = (Compiler)RuntimeHelpers.GetUninitializedObject(typeof(Compiler));
 #if DEBUG
-        compiler.fgSafeBasicBlockCreation = true;
+        TestConfiguration.EnableSafeBasicBlockCreation(compiler);
         compiler.info.compFullName = nameof(ObjectAllocatorUseRewritingTests);
 #endif
         compiler.lvaTable = new LclVarDsc[types.Length];

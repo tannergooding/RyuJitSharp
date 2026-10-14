@@ -23,9 +23,7 @@ internal static class OSREntryFlowTests
             compiler.fgPredsComputed = true;
             compiler.fgPgoConsistent = true;
             compiler.fgCalledCount = calledCount;
-#if DEBUG
-            compiler.fgSafeFlowEdgeCreation = true;
-#endif
+            TestConfiguration.EnableSafeFlowEdgeCreation(compiler);
             var original = BasicBlock.New(compiler, BBJ_RETURN);
             var target = BasicBlock.New(compiler, BBJ_RETURN);
             var tail = BasicBlock.New(compiler, BBJ_RETURN);
