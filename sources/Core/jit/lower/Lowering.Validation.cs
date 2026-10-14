@@ -7,7 +7,6 @@ namespace RyuJitSharp;
 
 public sealed partial class Lowering
 {
-#if DEBUG
     private static void CheckCallArg(GenTree arg)
     {
         if (!arg.IsValue && !arg.Oper.IsPutArgStk)
@@ -133,5 +132,4 @@ public sealed partial class Lowering
 
         return true;
     }
-#endif
 }

@@ -27,9 +27,10 @@ public sealed partial class Lowering
             node = LowerNode(node);
         }
 
-#if DEBUG
-        assert(CheckBlock(compiler, block));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert(CheckBlock(compiler, block));
+        }
     }
 
     private void LowerJmpMethod(GenTree jmp)
