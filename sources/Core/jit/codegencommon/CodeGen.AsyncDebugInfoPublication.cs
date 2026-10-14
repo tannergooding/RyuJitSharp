@@ -56,8 +56,7 @@ public sealed partial class CodeGen
         }
 
         jitInfo->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars, asyncVars.Count);
-#if DEBUG
-        if (_verbose)
+        if (Configuration.DEBUG && _verbose)
         {
             // The EE owns the submitted buffers now; retain native diagnostic
             // ordering without reading transferred storage.
@@ -72,6 +71,5 @@ public sealed partial class CodeGen
                 jitprintf($"  [{index}] VarNumber = {unchecked((uint)asyncVars[index].VarNumber)}, Offset = {unchecked((uint)asyncVars[index].Offset):x}\n");
             }
         }
-#endif
     }
 }
