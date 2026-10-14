@@ -41,12 +41,10 @@ public sealed partial class CodeGen
 
     private void genLogLabel(BasicBlock block)
     {
-#if DEBUG
-        if (_compiler.opts.dspCode)
+        if (Configuration.DEBUG && _compiler.opts.dspCode)
         {
             jitprintf($"\n      L_M{unchecked((uint)_compiler.compMethodID):D3}_{FMT_BB(block.bbNum)}:\n");
         }
-#endif
     }
 
     public void genDefineTempLabel(BasicBlock label)
