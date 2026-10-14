@@ -54,7 +54,11 @@ public partial class Compiler
 
 #if DEBUG
         public bool compMinOptsIsUsed;
+#else
+        public bool compMinOptsIsUsed => false;
+#endif
 
+#if DEBUG
         public bool MinOpts
         {
             get
@@ -101,9 +105,10 @@ public partial class Compiler
 
         public unsafe void SetMinOpts(bool val)
         {
-#if DEBUG
-            assert(!compMinOptsIsUsed);
-#endif
+            if (Configuration.DEBUG)
+            {
+                assert(!compMinOptsIsUsed);
+            }
             if (Configuration.DEBUG)
             {
                 assert(!compMinOptsIsSet || (compMinOpts == val));
