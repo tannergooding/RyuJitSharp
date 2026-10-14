@@ -3037,8 +3037,7 @@ public partial class Compiler
 
         var isOriginalThisArg = (varNum == info.compThisArg) && !info.compIsStatic;
 
-#if DEBUG
-        if (isOriginalThisArg)
+        if (Configuration.DEBUG && isOriginalThisArg)
         {
             ref var varDsc = ref lvaGetDesc(varNum);
             // Should never write to or take the address of the original 'this' arg
@@ -3051,7 +3050,6 @@ public partial class Compiler
                 (!Configuration.JIT32_GCENCODER &&
                     ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0))));
         }
-#endif
 
         return isOriginalThisArg;
     }

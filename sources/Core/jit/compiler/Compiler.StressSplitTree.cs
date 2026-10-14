@@ -164,17 +164,18 @@ public partial class Compiler
             }
         }
 
-#if DEBUG
-        foreach (var block in Blocks)
+        if (Configuration.DEBUG)
         {
-            for (var stmt = block.GetFirstNonPhiDef(); stmt is not null; stmt = stmt.NextStmt)
+            foreach (var block in Blocks)
             {
-                foreach (var tree in stmt.TreeList)
+                for (var stmt = block.GetFirstNonPhiDef(); stmt is not null; stmt = stmt.NextStmt)
                 {
-                    assert(tree.Oper is not GT_COMMA);
+                    foreach (var tree in stmt.TreeList)
+                    {
+                        assert(tree.Oper is not GT_COMMA);
+                    }
                 }
             }
         }
-#endif
     }
 }

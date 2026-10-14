@@ -246,10 +246,11 @@ public sealed partial class Lowering
                 BlockRange().InsertBefore(store, address);
                 // Lowering may replace the block store; native lowering changes its operator in place.
                 var nextNode = LowerStoreBlock(store);
-#if DEBUG
                 var loweredStore = nextNode is null ? BlockRange().LastNode : nextNode.Prev;
-                assert(loweredStore is not null);
-#endif
+                if (Configuration.DEBUG)
+                {
+                    assert(loweredStore is not null);
+                }
                 JITDUMP("lowering store lcl var/field (after):\n");
 #if DEBUG
                 DISPTREERANGE(BlockRange(), loweredStore);
