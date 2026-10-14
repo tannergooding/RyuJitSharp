@@ -56,22 +56,16 @@ public sealed partial class ValueNumStore
             var loadExactSize = loadSize.ExactSize;
             if ((offset < 0) || (locationSize.ExactSize < unchecked(loadOffset + loadExactSize)))
             {
-#if DEBUG
                 JITDUMP("    *** VNForLoad: out-of-bounds load!\n");
-#endif
                 return VNForExpr(_compiler.compCurBB, loadType);
             }
 
-#if DEBUG
             JITDUMP("  VNForLoad:\n");
-#endif
             loadValue = VNForMapPhysicalSelect(vnk, loadType, locationValue, loadOffset, loadExactSize);
         }
         else
         {
-#if DEBUG
             JITDUMP("    *** VNForLoad: out-of-bounds load, due to unknown load size\n");
-#endif
             return VNForExpr(_compiler.compCurBB, loadType);
         }
 
@@ -95,9 +89,7 @@ public sealed partial class ValueNumStore
         assert(!LoadStoreIsEntire(locationSize, offset, storeSize));
         if (!locationSize.IsExact || !storeSize.IsExact)
         {
-#if DEBUG
             JITDUMP("    *** VNForStore: location or store size is unknown\n");
-#endif
             return NoVN;
         }
 
@@ -107,16 +99,12 @@ public sealed partial class ValueNumStore
         var storeOffset = unchecked((uint)offset);
         if ((offset < 0) || (exactLocationSize < unchecked(storeOffset + exactStoreSize)))
         {
-#if DEBUG
             JITDUMP($"    *** VNForStore: out-of-bounds store -- location size is {exactLocationSize}, " +
                 $"offset is {offset}, store size is {exactStoreSize}\n");
-#endif
             return NoVN;
         }
 
-#if DEBUG
         JITDUMP("  VNForStore:\n");
-#endif
         return VNForMapPhysicalStore(locationValue, storeOffset, exactStoreSize, value);
     }
 
@@ -137,14 +125,14 @@ public sealed partial class ValueNumStore
             assert((typeOfValue is TYP_STRUCT) || (indType is TYP_STRUCT) ||
                 (indSize.IsExact && (indType.Size == indSize.ExactSize)));
             value = VNForBitCast(value, indType, indSize);
-#if DEBUG
             JITDUMP("    VNForLoadStoreBitcast returns ");
+#if DEBUG
             if (_compiler.verbose)
             {
                 _compiler.vnPrint(value, 1);
             }
-            JITDUMP("\n");
 #endif
+            JITDUMP("\n");
         }
 
         assert(TypeOfVN(value).ActualType == indType.ActualType);
