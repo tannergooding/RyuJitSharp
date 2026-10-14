@@ -153,12 +153,10 @@ public partial class Compiler
         }
         patchpointInfo->CalleeSaveRegisters = unchecked((long)pushRegs.Lower);
         JITDUMP("--OSR-- Tier0 callee saves: ");
-#if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             dspRegMask(new regMaskTP(unchecked((regMask)patchpointInfo->CalleeSaveRegisters)));
         }
-#endif
         JITDUMP("\n");
 
         info.compCompHnd->setPatchpointInfo(patchpointInfo);
