@@ -2427,13 +2427,14 @@ public partial class GenTree
     public GenTree? GetOp2IfPresent()
     {
         var op2 = _oper.IsBinary ? AsOp().Op2 : null;
-#if DEBUG
-        assert((op2 is not null) || !RequiresNonNullOp2(_oper));
-#endif
+        if (Configuration.DEBUG)
+        {
+            assert((op2 is not null) || !RequiresNonNullOp2(_oper));
+        }
+
         return op2;
     }
 
-#if DEBUG
     private static bool RequiresNonNullOp2(genTreeOps oper)
     {
         return oper switch
@@ -2445,7 +2446,6 @@ public partial class GenTree
             _ => false,
         };
     }
-#endif
 
     public int IsLclVarUpdateTree(ref GenTree? otherTree, ref genTreeOps updateOper)
     {
