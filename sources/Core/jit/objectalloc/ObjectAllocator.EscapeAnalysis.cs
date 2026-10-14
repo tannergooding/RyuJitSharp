@@ -99,8 +99,8 @@ public sealed partial class ObjectAllocator
                         BitVecOps.UnionD(bitVecTraits, escapingNodes, newEscapingNodes);
                         BitVecOps.RemoveElemD(bitVecTraits, escapingNodesToProcess, lclIndex);
 
-#if DEBUG
-                        if (!BitVecOps.IsEmpty(bitVecTraits, newEscapingNodes) && CompilerInstance.verbose)
+                        if (Configuration.DEBUG && !BitVecOps.IsEmpty(bitVecTraits, newEscapingNodes) &&
+                            CompilerInstance.verbose)
                         {
                             BitVecOps.VisitBits(bitVecTraits, newEscapingNodes, newLclIndex => {
                                 DumpIndex(lclIndex);
@@ -110,7 +110,6 @@ public sealed partial class ObjectAllocator
                                 return true;
                             });
                         }
-#endif
                     }
 
                     return true;
@@ -145,12 +144,10 @@ public sealed partial class ObjectAllocator
             else
             {
                 JITDUMP("   not optimizing, so will mark");
-#if DEBUG
-                if (CompilerInstance.verbose)
+                if (Configuration.DEBUG && CompilerInstance.verbose)
                 {
                     DumpIndex(pseudoIndex);
                 }
-#endif
                 JITDUMP(" as escaping\n");
                 MarkIndexAsEscaping(pseudoIndex);
                 BitVecOps.AddElemD(bitVecTraits, escapingNodesToProcess, pseudoIndex);
@@ -165,12 +162,10 @@ public sealed partial class ObjectAllocator
     {
         if (!_cloneMap.TryGetValue(pseudoIndex, out var info))
         {
-#if DEBUG
-            if (CompilerInstance.verbose)
+            if (Configuration.DEBUG && CompilerInstance.verbose)
             {
                 DumpIndex(pseudoIndex);
             }
-#endif
             JITDUMP("  has no guard info\n");
             return false;
         }
@@ -182,12 +177,10 @@ public sealed partial class ObjectAllocator
         if (BitVecOps.IsEmpty(bitVecTraits, pseudoAdjacencies))
         {
             JITDUMP("   No conditionally escaping uses under");
-#if DEBUG
-            if (CompilerInstance.verbose)
+            if (Configuration.DEBUG && CompilerInstance.verbose)
             {
                 DumpIndex(pseudoIndex);
             }
-#endif
             JITDUMP(", so no reason to clone\n");
             return false;
         }
@@ -196,19 +189,15 @@ public sealed partial class ObjectAllocator
         BitVecOps.VisitBits(bitVecTraits, pseudoAdjacencies, lclNumIndex => {
             if (BitVecOps.IsMember(bitVecTraits, escapingNodes, lclNumIndex))
             {
-#if DEBUG
-                if (CompilerInstance.verbose)
+                if (Configuration.DEBUG && CompilerInstance.verbose)
                 {
                     DumpIndex(lclNumIndex);
                 }
-#endif
                 JITDUMP("   escapes independently of");
-#if DEBUG
-                if (CompilerInstance.verbose)
+                if (Configuration.DEBUG && CompilerInstance.verbose)
                 {
                     DumpIndex(pseudoIndex);
                 }
-#endif
                 JITDUMP("\n");
                 independentlyEscaping = true;
                 return false;
@@ -229,31 +218,25 @@ public sealed partial class ObjectAllocator
                 if (BitVecOps.IsMember(bitVecTraits, escapingNodes, LocalToIndex(v)))
                 {
                     JITDUMP("   alloc temp");
-#if DEBUG
-                    if (CompilerInstance.verbose)
+                    if (Configuration.DEBUG && CompilerInstance.verbose)
                     {
                         DumpIndex(LocalToIndex(v));
                     }
-#endif
                     JITDUMP("   escapes independently of");
-#if DEBUG
-                    if (CompilerInstance.verbose)
+                    if (Configuration.DEBUG && CompilerInstance.verbose)
                     {
                         DumpIndex(pseudoIndex);
                     }
-#endif
                     JITDUMP("\n");
                     return false;
                 }
             }
         }
 
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             DumpIndex(pseudoIndex);
         }
-#endif
         JITDUMP($"   is guarding the escape of V{info.Local:D2}\n");
         if (info.AllocTemps is not null)
         {
@@ -275,12 +258,10 @@ public sealed partial class ObjectAllocator
         }
 
         JITDUMP("\n*** Can prevent escape under");
-#if DEBUG
-        if (CompilerInstance.verbose)
+        if (Configuration.DEBUG && CompilerInstance.verbose)
         {
             DumpIndex(pseudoIndex);
         }
-#endif
         JITDUMP(" via cloning ***\n");
         info.WillClone = true;
 
