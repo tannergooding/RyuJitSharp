@@ -1498,12 +1498,10 @@ public partial class Compiler
             return tmpNum;
         }
 
-    #if DEBUG
-        if (verbose)
+        if (Configuration.DEBUG && verbose)
         {
             jitprintf($"\nlvaGrabTemps({cnt}) returning {lvaCount}..{lvaCount + cnt - 1} (long lifetime temps) called for {reason}");
         }
-    #endif
 
         // Could handle this...
         assert(!lvaLocalVarRefCounted);

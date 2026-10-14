@@ -1575,12 +1575,10 @@ public partial struct LclVarDsc
             }
         }
 
-#if DEBUG
-        if (compiler.verbose)
+        if (Configuration.DEBUG && compiler.verbose)
         {
             jitprintf($"New refCnts for V{compiler.lvaGetLclNum(this):D2}: refCnt = {lvRefCnt(state),2}, refCntWtd = {refCntWtd2str(lvRefCntWtd(state))}\n");
         }
-#endif
     }
 
     /// <summary>Returns true if this variable contains GC pointers (including being a GC pointer itself).</summary>
